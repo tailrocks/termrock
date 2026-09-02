@@ -941,6 +941,7 @@ impl<'a> Combobox<'a> {
                 crate::style::ControlState::Default
             },
             invalid,
+            state.focused && state.enabled,
         );
         let mut y = area.y;
         if area.height >= 2 && !self.label.is_empty() {

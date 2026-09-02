@@ -1241,6 +1241,15 @@ pub fn stories() -> Vec<Story> {
             panel_empty_story,
         ),
         Story::new(
+            "panel/framed-title",
+            "Junie framed pane title",
+            StoryIdentity::PublicUi(PublicUiId::Panel),
+            "Bordered panel title row matching junie Framed · split pane.",
+            29,
+            1,
+            panel_framed_title_story,
+        ),
+        Story::new(
             "panel/collapsible",
             "Panel collapsible",
             StoryIdentity::PublicUi(PublicUiId::Panel),
@@ -1320,6 +1329,33 @@ pub fn stories() -> Vec<Story> {
             48,
             3,
             button_group_interactor,
+        ),
+        Story::new(
+            "button-group/actions",
+            "Junie action buttons",
+            StoryIdentity::PublicUi(PublicUiId::Button),
+            "Run task / Preview / Cancel / Delete branch with junie playground labels.",
+            48,
+            1,
+            button_group_actions_story,
+        ),
+        Story::new(
+            "button-group/dialogs",
+            "Junie dialog launchers",
+            StoryIdentity::PublicUi(PublicUiId::Button),
+            "Confirm run / Rename task… / Three choices… / Delete branch…",
+            64,
+            1,
+            button_group_dialogs_story,
+        ),
+        Story::new(
+            "button-group/pickers",
+            "Junie picker launchers",
+            StoryIdentity::PublicUi(PublicUiId::Button),
+            "Open quickly / Switch tab / Choose a level",
+            45,
+            1,
+            button_group_pickers_story,
         ),
         Story::new(
             "button-group/connected",
@@ -1581,6 +1617,15 @@ pub fn stories() -> Vec<Story> {
             8,
             12,
             sidebar_rail_story,
+        ),
+        Story::new(
+            "sidebar/junie-nav",
+            "Junie workspace nav",
+            StoryIdentity::PublicUi(PublicUiId::Sidebar),
+            "Workspace/Project/Preferences nav: letter icons, current ›, badge 3.",
+            28,
+            13,
+            sidebar_junie_nav_story,
         ),
         Story::mounted(
             "navigation-list/basic",
@@ -2086,6 +2131,33 @@ pub fn stories() -> Vec<Story> {
             6,
             list_interactor,
         ),
+        Story::new(
+            "list/languages",
+            "Junie language list",
+            StoryIdentity::PublicUi(PublicUiId::List),
+            "Single-select language list with junie showcase labels; Rust chosen.",
+            25,
+            13,
+            list_languages_story,
+        ),
+        Story::new(
+            "list/panel-targets",
+            "Junie panel targets",
+            StoryIdentity::PublicUi(PublicUiId::List),
+            "Nested panel target list: Local, CLI, Cloud disabled.",
+            12,
+            3,
+            list_panel_targets_story,
+        ),
+        Story::new(
+            "list/scroll-rows",
+            "Junie scrolling rows",
+            StoryIdentity::PublicUi(PublicUiId::List),
+            "Long list Row 001–120 with flagged meta every 7th row.",
+            26,
+            13,
+            list_scroll_rows_story,
+        ),
         Story::mounted(
             "tree/navigation",
             "Tree navigation",
@@ -2094,6 +2166,15 @@ pub fn stories() -> Vec<Story> {
             42,
             7,
             tree_interactor,
+        ),
+        Story::new(
+            "tree/project",
+            "Junie project tree",
+            StoryIdentity::PublicUi(PublicUiId::Tree),
+            "Junie showcase project tree: src/tests/docs with file sizes.",
+            51,
+            15,
+            tree_project_story,
         ),
         Story::new(
             "tree/empty",
@@ -2193,6 +2274,15 @@ pub fn stories() -> Vec<Story> {
             42,
             2,
             progress,
+        ),
+        Story::new(
+            "progress-bar/states",
+            "Junie progress states",
+            StoryIdentity::PublicUi(PublicUiId::ProgressBar),
+            "Queued / Halfway / Completed / Failed / Paused with junie labels.",
+            70,
+            5,
+            progress_states_story,
         ),
         Story::new(
             "progress-bar/detailed",
@@ -3554,6 +3644,24 @@ pub fn stories() -> Vec<Story> {
             table_sorted,
         ),
         Story::new(
+            "table/tasks",
+            "Junie task ids",
+            StoryIdentity::PublicUi(PublicUiId::Table),
+            "Junie showcase task table ID column: #1040–#1046.",
+            8,
+            8,
+            table_tasks_story,
+        ),
+        Story::new(
+            "data-table/grid-ids",
+            "Junie data grid ids",
+            StoryIdentity::PublicUi(PublicUiId::DataTable),
+            "Junie grid chrome plus id cells 1001–1007.",
+            12,
+            10,
+            table_grid_rows_story,
+        ),
+        Story::new(
             "table/narrow",
             "Narrow table",
             StoryIdentity::PublicUi(PublicUiId::Table),
@@ -3714,6 +3822,15 @@ pub fn stories() -> Vec<Story> {
             40,
             7,
             text_area_review,
+        ),
+        Story::new(
+            "text-area/task-description",
+            "Junie task description",
+            StoryIdentity::PublicUi(PublicUiId::TextArea),
+            "Idle 28-line task description; body crop matches junie playground.",
+            43,
+            10,
+            text_area_task_description_story,
         ),
         Story::new(
             "status-bar/basic",
@@ -5002,6 +5119,15 @@ pub fn stories() -> Vec<Story> {
             6,
             code_block_highlights_story,
         ),
+        Story::new(
+            "code-block/retry-rs",
+            "Junie retry.rs first line",
+            StoryIdentity::PublicUi(PublicUiId::CodeBlock),
+            "Focused current-block first line of the junie code editor sample.",
+            52,
+            1,
+            code_block_retry_rs_story,
+        ),
         Story::mounted(
             "markdown-view/basic",
             "Markdown view",
@@ -5519,7 +5645,7 @@ pub fn stories() -> Vec<Story> {
             "button/variants",
             "Button variants",
             StoryIdentity::PublicUi(PublicUiId::Button),
-            "Primary, secondary, quiet, outline, destructive, link, success, command.",
+            "Primary, secondary, quiet, destructive.",
             56,
             10,
             button_variants_story,
@@ -5607,9 +5733,9 @@ pub fn stories() -> Vec<Story> {
         ),
         Story::new(
             "button/inline",
-            "Button inline link",
+            "Button inline quiet",
             StoryIdentity::PublicUi(PublicUiId::Button),
-            "Link-like inline action among prose.",
+            "Quiet inline action among prose.",
             48,
             3,
             button_inline_story,
@@ -5991,6 +6117,15 @@ pub fn stories() -> Vec<Story> {
             40,
             3,
             chip_status_story,
+        ),
+        Story::new(
+            "chip/pending-filter",
+            "Junie pending filter chip",
+            StoryIdentity::PublicUi(PublicUiId::Chip),
+            "Removable filter chip status = 'pending'.",
+            23,
+            1,
+            chip_pending_filter_story,
         ),
         Story::new(
             "token-strip/wrap",
@@ -10107,6 +10242,24 @@ pub fn stories() -> Vec<Story> {
             text_input_interactor,
         ),
         Story::new(
+            "text-input/project-name",
+            "Junie project name",
+            StoryIdentity::PublicUi(PublicUiId::TextInput),
+            "Idle field with junie playground value payments-gateway.",
+            47,
+            1,
+            text_input_project_name_story,
+        ),
+        Story::new(
+            "text-input/task-name",
+            "Junie task name",
+            StoryIdentity::PublicUi(PublicUiId::TextInput),
+            "Empty required field showing junie placeholder Short imperative summary.",
+            47,
+            1,
+            text_input_task_name_story,
+        ),
+        Story::new(
             "text-input/secret",
             "TextInput secret",
             StoryIdentity::PublicUi(PublicUiId::TextInput),
@@ -11902,6 +12055,14 @@ fn panel_empty_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
         .paint(area, frame.buffer_mut(), None);
 }
 
+fn panel_framed_title_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    fill_junie_surface(frame, area, system);
+    let _ = Panel::new(system)
+        .variant(PanelVariant::Bordered)
+        .title("Framed · split pane")
+        .paint(area, frame.buffer_mut(), None);
+}
+
 fn panel_collapsible_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{Panel, PanelState};
     let mut state = PanelState::new();
@@ -12065,6 +12226,33 @@ fn panel_actions_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
             usize::from(body.width),
             system.style(Role::Danger),
         );
+    }
+}
+
+fn progress_states_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{ProgressBar, ProgressKind, ProgressStatus};
+    fill_junie_surface(frame, area, system);
+    let samples = [
+        ("Queued    ", 0.0, ProgressStatus::Running),
+        ("Halfway   ", 0.5, ProgressStatus::Running),
+        ("Completed ", 1.0, ProgressStatus::Complete),
+        ("Failed    ", 0.64, ProgressStatus::Failed),
+        ("Paused    ", 0.3, ProgressStatus::Paused),
+    ];
+    for (i, (label, fraction, status)) in samples.iter().enumerate() {
+        let y = area.y.saturating_add(i as u16);
+        if y >= area.bottom() {
+            break;
+        }
+        ProgressBar::new(
+            ProgressKind::Determinate {
+                fraction: *fraction,
+            },
+            system,
+        )
+        .label(label)
+        .status(*status)
+        .paint(Rect::new(area.x, y, area.width, 1), frame.buffer_mut());
     }
 }
 
@@ -12438,6 +12626,105 @@ fn toolbar_compact_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
         &Toolbar::new(&items, system).compact().overflow_id("more"),
         area,
         &mut state,
+    );
+}
+
+fn fill_junie_surface(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    frame
+        .buffer_mut()
+        .set_style(area, system.style(Role::Surface));
+}
+
+fn button_group_actions_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::ButtonVariant;
+    fill_junie_surface(frame, area, system);
+    let ground = system.junie_theme().surface;
+    let specs = [
+        (ButtonVariant::Primary, "Run task"),
+        (ButtonVariant::Secondary, "Preview"),
+        (ButtonVariant::Quiet, "Cancel"),
+        (ButtonVariant::Destructive, "Delete branch"),
+    ];
+    let mut x = area.x;
+    let row_h = 1u16.min(area.height);
+    for (variant, label) in specs {
+        if x >= area.right() || row_h == 0 {
+            break;
+        }
+        let mut state = ButtonState::new();
+        let btn = Button::new(label, system)
+            .variant(variant)
+            .container(ground);
+        let w = btn.preferred_width().min(area.right().saturating_sub(x));
+        if w == 0 {
+            break;
+        }
+        let _ = btn.paint(
+            Rect::new(x, area.y, w, row_h),
+            frame.buffer_mut(),
+            &mut state,
+        );
+        x = x.saturating_add(w).saturating_add(2);
+    }
+}
+
+fn paint_junie_button_row(
+    frame: &mut Frame<'_>,
+    area: Rect,
+    system: &DesignSystem,
+    specs: &[(termrock::widgets::ButtonVariant, &str)],
+) {
+    fill_junie_surface(frame, area, system);
+    let ground = system.junie_theme().surface;
+    let mut x = area.x;
+    let row_h = 1u16.min(area.height);
+    for (variant, label) in specs {
+        if x >= area.right() || row_h == 0 {
+            break;
+        }
+        let mut state = ButtonState::new();
+        let btn = Button::new(*label, system)
+            .variant(*variant)
+            .container(ground);
+        let w = btn.preferred_width().min(area.right().saturating_sub(x));
+        if w == 0 {
+            break;
+        }
+        let _ = btn.paint(
+            Rect::new(x, area.y, w, row_h),
+            frame.buffer_mut(),
+            &mut state,
+        );
+        x = x.saturating_add(w).saturating_add(2);
+    }
+}
+
+fn button_group_dialogs_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::ButtonVariant;
+    paint_junie_button_row(
+        frame,
+        area,
+        system,
+        &[
+            (ButtonVariant::Primary, "Confirm run"),
+            (ButtonVariant::Secondary, "Rename task…"),
+            (ButtonVariant::Secondary, "Three choices…"),
+            (ButtonVariant::Destructive, "Delete branch…"),
+        ],
+    );
+}
+
+fn button_group_pickers_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::ButtonVariant;
+    paint_junie_button_row(
+        frame,
+        area,
+        system,
+        &[
+            (ButtonVariant::Primary, "Open quickly"),
+            (ButtonVariant::Secondary, "Switch tab"),
+            (ButtonVariant::Secondary, "Choose a level"),
+        ],
     );
 }
 
@@ -12826,6 +13113,36 @@ fn resizable_drawers_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
     }
 }
 
+fn tree_project_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    fill_junie_surface(frame, area, system);
+    let nodes = [
+        TreeNode::new("src", Line::from("src"), 0)
+            .branch()
+            .expanded(),
+        TreeNode::new("api", Line::from("api"), 1).branch(),
+        TreeNode::new("db", Line::from("db"), 1).branch(),
+        TreeNode::new("workers", Line::from("workers"), 1).branch(),
+        TreeNode::new("config.rs", Line::from("config.rs"), 1).badge(Line::from("1.9 KB")),
+        TreeNode::new("lib.rs", Line::from("lib.rs"), 1).badge(Line::from("640 B")),
+        TreeNode::new("main.rs", Line::from("main.rs"), 1).badge(Line::from("1.2 KB")),
+        TreeNode::new("tests", Line::from("tests"), 0)
+            .branch()
+            .expanded(),
+        TreeNode::new("checkout.rs", Line::from("checkout.rs"), 1).badge(Line::from("5.3 KB")),
+        TreeNode::new("auth_flow.rs", Line::from("auth_flow.rs"), 1).badge(Line::from("3.0 KB")),
+        TreeNode::new("fixtures", Line::from("fixtures"), 1).branch(),
+        TreeNode::new("docs", Line::from("docs"), 0)
+            .branch()
+            .expanded(),
+        TreeNode::new("architecture.md", Line::from("architecture.md"), 1)
+            .badge(Line::from("7.7 KB")),
+        TreeNode::new("webhooks.md", Line::from("webhooks.md"), 1).badge(Line::from("2.2 KB")),
+        TreeNode::new("Cargo.toml", Line::from("Cargo.toml"), 0).badge(Line::from("1.4 KB")),
+    ];
+    let mut state = TreeState::<&str>::new(None);
+    frame.render_stateful_widget(&Tree::new(&nodes, system).focused(false), area, &mut state);
+}
+
 fn tree_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let tokens = system.clone();
     let nodes: [TreeNode<'_, &str>; 0] = [];
@@ -13046,6 +13363,27 @@ fn sidebar_rail_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
     let items = example_agent_workbench_nav();
     let mut state = SidebarState::new(Some("chat")).with_presentation(SidebarPresentation::Rail);
     state.set_focused(true);
+    Sidebar::new(&items, system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn sidebar_junie_nav_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    fill_junie_surface(frame, area, system);
+    let items = [
+        NavItem::section("workspace", "Workspace"),
+        NavItem::new("tasks", "Tasks").icon("T").badge("3"),
+        NavItem::new("runs", "Runs").icon("R"),
+        NavItem::new("branches", "Branches").icon("B"),
+        NavItem::section("project", "Project"),
+        NavItem::new("members", "Members").icon("M"),
+        NavItem::new("environment", "Environment").icon("E"),
+        NavItem::new("billing", "Billing").icon("$").enabled(false),
+        NavItem::section("preferences", "Preferences"),
+        NavItem::new("keyboard", "Keyboard").icon("K"),
+        NavItem::new("appearance", "Appearance").icon("A"),
+    ];
+    let mut state = SidebarState::new(Some("tasks"));
+    state.set_focused(false);
+    state.set_accepts_input(false);
     Sidebar::new(&items, system).paint(area, frame.buffer_mut(), &mut state);
 }
 
@@ -13639,6 +13977,61 @@ fn list(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     state.enable_multi_select();
     state.selection_mut().unwrap().toggle(&"alpha");
     frame.render_stateful_widget(&List::new(&rows, &tokens), area, &mut state);
+}
+
+fn list_languages_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    fill_junie_surface(frame, area, system);
+    const LANGS: [&str; 13] = [
+        "Rust",
+        "TypeScript",
+        "Python",
+        "Kotlin",
+        "Go",
+        "Java",
+        "Swift",
+        "C#",
+        "Ruby",
+        "Scala",
+        "Elixir",
+        "Haskell",
+        "Zig",
+    ];
+    let rows: Vec<ListRow<'_, &str>> = LANGS
+        .iter()
+        .map(|label| ListRow::item(*label, Line::from(*label)))
+        .collect();
+    let mut state = ListState::new(Some("Rust"));
+    frame.render_stateful_widget(&List::new(&rows, system).focused(false), area, &mut state);
+}
+
+fn list_panel_targets_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    fill_junie_surface(frame, area, system);
+    let rows = [
+        ListRow::item("local", Line::from("Local")),
+        ListRow::item("cli", Line::from("CLI")),
+        ListRow::item("cloud", Line::from("Cloud")).disabled(),
+    ];
+    let mut state = ListState::<&str>::new(None);
+    frame.render_stateful_widget(&List::new(&rows, system).focused(false), area, &mut state);
+}
+
+fn list_scroll_rows_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    fill_junie_surface(frame, area, system);
+    let labels: Vec<String> = (1..=120).map(|i| format!("Row {i:03}")).collect();
+    let rows: Vec<ListRow<'_, usize>> = labels
+        .iter()
+        .enumerate()
+        .map(|(idx, label)| {
+            let row = ListRow::item(idx, Line::from(label.as_str()));
+            if (idx + 1).is_multiple_of(7) {
+                row.secondary(Line::from("flagged"))
+            } else {
+                row
+            }
+        })
+        .collect();
+    let mut state = ListState::<usize>::new(None);
+    frame.render_stateful_widget(&List::new(&rows, system).focused(false), area, &mut state);
 }
 
 fn list_multi(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -16109,6 +16502,65 @@ fn render_virtual_grid(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem,
 fn table_sorted(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     render_table(frame, area, system, TableVariant::Sorted);
 }
+
+fn table_tasks_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    fill_junie_surface(frame, area, system);
+    let muted = system.style(Role::TextMuted);
+    let columns = [Column::new("id", "ID", ColumnWidth::Fixed(5))];
+    let cells = [
+        [Line::from(Span::styled("#1040", muted))],
+        [Line::from(Span::styled("#1041", muted))],
+        [Line::from(Span::styled("#1042", muted))],
+        [Line::from(Span::styled("#1043", muted))],
+        [Line::from(Span::styled("#1044", muted))],
+        [Line::from(Span::styled("#1045", muted))],
+        [Line::from(Span::styled("#1046", muted))],
+    ];
+    let rows: Vec<TableRow<'_, usize>> = cells
+        .iter()
+        .enumerate()
+        .map(|(index, cells)| TableRow::new(index, cells))
+        .collect();
+    let mut state = TableState::<usize, &str>::new(None);
+    frame.render_stateful_widget(
+        &Table::new(&columns, &rows, system).focused(false),
+        area,
+        &mut state,
+    );
+}
+
+fn table_grid_rows_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{ColumnModel, DataColumn, LoadState};
+    fill_junie_surface(frame, area, system);
+    let columns = ColumnModel::new(vec![DataColumn::new(
+        "id",
+        "id",
+        DataColumnWidth::Fixed(4),
+    )]);
+    let c0: &[&str] = &["1001"];
+    let c1: &[&str] = &["1002"];
+    let c2: &[&str] = &["1003"];
+    let c3: &[&str] = &["1004"];
+    let c4: &[&str] = &["1005"];
+    let c5: &[&str] = &["1006"];
+    let c6: &[&str] = &["1007"];
+    let rows = [
+        (0u64, c0),
+        (1, c1),
+        (2, c2),
+        (3, c3),
+        (4, c4),
+        (5, c5),
+        (6, c6),
+    ];
+    let mut state = DataTableState::<u64, &str>::new();
+    state.load = LoadState::Ready { count: 7 };
+    DataTable::new(system, &columns, &rows)
+        .focused(false)
+        .row_numbers(true)
+        .render(area, frame.buffer_mut(), &mut state);
+}
+
 fn table_narrow(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     render_table(frame, area, system, TableVariant::Narrow);
 }
@@ -16301,6 +16753,8 @@ fn text_area_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 fn text_area_scrolled(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let text = "zero\none\ntwo\nthree\nfour\nfive: deliberately wide content beyond the viewport";
     let mut state = TextAreaState::new(text);
+    state.set_accepts_input(true);
+    state.set_editing(true);
     state.set_cursor(TextCursor {
         line: 5,
         byte: text.lines().last().unwrap().len(),
@@ -16339,6 +16793,26 @@ fn text_area_review(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
         area,
         &mut state,
     );
+}
+
+fn text_area_task_description_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    fill_junie_surface(frame, area, system);
+    let text = (1..=28)
+        .map(|i| {
+            let body = match i % 4 {
+                0 => "Run the integration suite and attach the report.",
+                1 => "Read src/api/billing.rs before touching invoices.",
+                2 => "Keep the public API stable; add, never rename.",
+                _ => "Open a PR against main with a clear summary.",
+            };
+            format!("{i:>2}. {body}")
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
+    let mut state = TextAreaState::new(text);
+    state.set_accepts_input(false);
+    state.set_cursor(TextCursor { line: 0, byte: 0 });
+    frame.render_stateful_widget(&TextArea::new(system), area, &mut state);
 }
 fn render_text_area(
     frame: &mut Frame<'_>,
@@ -18844,6 +19318,21 @@ fn code_block_wrap_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
         .paint(area, frame.buffer_mut(), &mut state);
 }
 
+fn code_block_retry_rs_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::RoleTokenSyntax;
+    fill_junie_surface(frame, area, system);
+    let lines = ["// Retry a request with exponential backoff."];
+    let hi = RoleTokenSyntax::rust(system);
+    let mut state = CodeBlockState::new();
+    state.set_focused(false);
+    state.set_cursor_line(Some(0));
+    let _ = CodeBlock::new(&lines, system)
+        .line_numbers(true)
+        .current_block(0, 1)
+        .highlighter(&hi)
+        .paint(area, frame.buffer_mut(), &mut state);
+}
+
 fn code_block_highlights_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{CodeGutterMark, RoleTokenSyntax};
     let lines = ["ok line", "error here", "ok line"];
@@ -19699,11 +20188,7 @@ fn button_variants_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
         (ButtonVariant::Primary, "Primary"),
         (ButtonVariant::Secondary, "Secondary"),
         (ButtonVariant::Quiet, "Quiet"),
-        (ButtonVariant::Outline, "Outline"),
         (ButtonVariant::Destructive, "Delete"),
-        (ButtonVariant::Link, "Link"),
-        (ButtonVariant::Success, "Success"),
-        (ButtonVariant::Command, "Command"),
     ];
     let mut y = area.y;
     for (v, label) in variants {
@@ -19868,7 +20353,7 @@ fn button_inline_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
     frame.render_widget(Paragraph::new("See also "), chunks[0]);
     let mut state = ButtonState::new();
     state.activation.set_accepts_input(true);
-    Button::new("documentation", system).as_link().render(
+    Button::new("documentation", system).as_quiet().render(
         chunks[1],
         frame.buffer_mut(),
         &mut state,
@@ -19892,8 +20377,8 @@ fn button_no_color_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
     let chunks = Layout::vertical([Constraint::Length(1); 3]).split(area);
     for (i, (v, label)) in [
         (ButtonVariant::Primary, "Primary"),
-        (ButtonVariant::Outline, "Outline"),
-        (ButtonVariant::Link, "Link action"),
+        (ButtonVariant::Secondary, "Secondary"),
+        (ButtonVariant::Quiet, "Quiet"),
     ]
     .into_iter()
     .enumerate()
@@ -20773,6 +21258,15 @@ fn chip_status_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
         frame.buffer_mut(),
         &mut l,
     );
+}
+
+fn chip_pending_filter_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    use termrock::widgets::{Chip, ChipState};
+    fill_junie_surface(frame, area, system);
+    let mut state = ChipState::new(true);
+    let _ = Chip::new("pending", "status = 'pending'", system)
+        .removable(true)
+        .paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn token_strip_wrap_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -24860,6 +25354,22 @@ fn callout_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
         area,
         frame.buffer_mut(),
     );
+}
+
+fn text_input_project_name_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    fill_junie_surface(frame, area, system);
+    let mut state = TextInputState::new("payments-gateway");
+    state.set_editing(false);
+    let _ = TextInput::new("", system).paint(area, frame.buffer_mut(), &mut state);
+}
+
+fn text_input_task_name_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    fill_junie_surface(frame, area, system);
+    let mut state = TextInputState::new("");
+    state.set_editing(false);
+    let _ = TextInput::new("", system)
+        .placeholder("Short imperative summary")
+        .paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn text_input_secret_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {

@@ -269,7 +269,7 @@ fn recipe_pairs(preset: &'static str, system: &DesignSystem) -> Vec<Measured> {
         ControlState::Disabled,
     ] {
         for invalid in [false, true] {
-            let recipe = system.input_recipe(state, invalid);
+            let recipe = system.input_recipe(state, invalid, false);
             let ground = style_ground(palette, recipe.fill);
             measure(
                 &mut out,

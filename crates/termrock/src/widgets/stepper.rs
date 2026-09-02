@@ -31,7 +31,7 @@ use crate::{
         CollectionItem, CollectionState, NavigationMove, RovingOrientation, SemanticNode,
         SemanticRole, SemanticScene, SemanticState, UiIntent,
     },
-    style::{ButtonRecipeVariant, ControlState, DesignSystem, ListRowVisualState, Role},
+    style::{ButtonRecipeVariant, ControlState, DesignSystem, Glyph, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
 };
 
@@ -81,16 +81,17 @@ impl StepStatus {
     }
 
     /// Non-color mark (always paired with style roles). One junie vocabulary.
+    ///
+    /// Progress marks, not checkbox wells: `[✓]` / `[ ]` belong to Checkbox.
     #[must_use]
     pub const fn mark(self) -> &'static str {
         match self {
-            Self::Complete => crate::style::Glyph::CheckOn.resolve().text,
-            Self::Current => "[›]",
-            Self::Error => "[!]",
-            Self::Disabled => "[⊘]",
-            Self::Optional => "[◦]",
-            Self::Skipped => "[–]",
-            Self::Future => crate::style::Glyph::CheckOff.resolve().text,
+            Self::Complete => Glyph::Success.resolve().text,
+            Self::Current => Glyph::SelectionMarker.resolve().text,
+            Self::Error => Glyph::Error.resolve().text,
+            Self::Disabled | Self::Skipped => Glyph::Remove.resolve().text,
+            // Optional is a `◦` suffix on the title in horizontal paint, not a well.
+            Self::Optional | Self::Future => " ",
         }
     }
 
@@ -889,13 +890,29 @@ impl<'a> Stepper<'a> {
             let mark = status.mark();
             let title = take_display_cols(&step.title, max_title);
             let opt = if step.optional && !compact { "◦" } else { "" };
+            let content = format!("{mark} {opt}{title}");
+            let remaining = area.right().saturating_sub(x);
+            if remaining == 0 {
+                break;
+            }
+            let content_w = display_cols(&content) as u16;
+            // Join lives between steps. Do not paint a dangling ` · ` when the
+            // next title cannot start (separator consumed the leftover cells).
             let sep = if i + 1 < self.items.len() {
-                " → "
+                self.system.glyphs.meta_join()
             } else {
                 ""
             };
-            let cell = format!("{mark}{opt}{title}{sep}");
-            let w = (display_cols(&cell) as u16).min(area.right().saturating_sub(x));
+            let sep_w = display_cols(sep) as u16;
+            let cell = if content_w < remaining
+                && !sep.is_empty()
+                && content_w.saturating_add(sep_w) < remaining
+            {
+                format!("{content}{sep}")
+            } else {
+                content
+            };
+            let w = (display_cols(&cell) as u16).min(remaining);
             if w == 0 {
                 break;
             }
@@ -1196,16 +1213,31 @@ mod tests {
 
     #[test]
     fn marks_non_color() {
+        assert_eq!(StepStatus::Complete.mark(), Glyph::Success.resolve().text);
         assert_eq!(
-            StepStatus::Complete.mark(),
-            crate::style::Glyph::CheckOn.resolve().text
+            StepStatus::Current.mark(),
+            Glyph::SelectionMarker.resolve().text
         );
-        assert_eq!(StepStatus::Error.mark(), "[!]");
-        assert_eq!(StepStatus::Disabled.mark(), "[⊘]");
-        assert_eq!(
-            StepStatus::Future.mark(),
-            crate::style::Glyph::CheckOff.resolve().text
-        );
+        assert_eq!(StepStatus::Error.mark(), Glyph::Error.resolve().text);
+        assert_eq!(StepStatus::Disabled.mark(), Glyph::Remove.resolve().text);
+        assert_eq!(StepStatus::Skipped.mark(), Glyph::Remove.resolve().text);
+        assert_eq!(StepStatus::Optional.mark(), " ");
+        assert_eq!(StepStatus::Future.mark(), " ");
+        for status in [
+            StepStatus::Complete,
+            StepStatus::Current,
+            StepStatus::Error,
+            StepStatus::Disabled,
+            StepStatus::Optional,
+            StepStatus::Skipped,
+            StepStatus::Future,
+        ] {
+            assert!(
+                !status.mark().contains('[') && !status.mark().contains(']'),
+                "checkbox well leaked from {status:?}: {:?}",
+                status.mark()
+            );
+        }
     }
 
     #[test]
@@ -1309,13 +1341,37 @@ mod tests {
             .map(|c| c.symbol().to_string())
             .collect();
         assert!(
-            text.contains("Account") || text.contains("[x]") || text.contains("Region"),
+            text.contains("Account") || text.contains("Region"),
             "{text}"
+        );
+        assert!(
+            text.contains(Glyph::Success.resolve().text) && text.contains(" Account"),
+            "complete is catalog success with a space before the title: {text}"
+        );
+        assert!(
+            text.contains(&format!("{} Region", Glyph::SelectionMarker.resolve().text))
+                || text.contains(&format!(
+                    "{} ◦Region",
+                    Glyph::SelectionMarker.resolve().text
+                )),
+            "current is catalog selection marker with a space before the title: {text}"
+        );
+        assert!(
+            text.contains(system.glyphs.meta_join()),
+            "horizontal steps join with catalog meta_join: {text}"
+        );
+        assert!(
+            !text.contains("[✓]")
+                && !text.contains("[›]")
+                && !text.contains("[ ]")
+                && !text.contains(" → "),
+            "invented wells / arrows leaked: {text}"
         );
 
         let mut s2 = focused_linear(items.len());
         s2.set_orientation(StepperOrientation::Vertical);
-        let area2 = Rect::new(0, 0, 24, 12);
+        // Wider than STEPPER_NARROW_MAX_WIDTH so this is a vertical list, not numeric.
+        let area2 = Rect::new(0, 0, 56, 16);
         let mut buf2 = Buffer::empty(area2);
         Stepper::new(&items, &system).paint(area2, &mut buf2, &mut s2);
         let t2: String = buf2
@@ -1323,7 +1379,18 @@ mod tests {
             .iter()
             .map(|c| c.symbol().to_string())
             .collect();
-        assert!(t2.contains("Account") || t2.contains("[>]"), "{t2}");
+        assert!(
+            t2.contains("Account")
+                && t2.contains(&format!(
+                    "{} Account",
+                    Glyph::SelectionMarker.resolve().text
+                )),
+            "{t2}"
+        );
+        assert!(
+            !t2.contains("[✓]") && !t2.contains("[›]") && !t2.contains("[ ]"),
+            "invented wells leaked: {t2}"
+        );
     }
 
     #[test]
@@ -1368,7 +1435,11 @@ mod tests {
             .iter()
             .map(|c| c.symbol().to_string())
             .collect();
-        assert!(text.contains("[!]"), "{text}");
+        assert!(
+            text.contains(Glyph::Error.resolve().text),
+            "colorless error still uses catalog error mark: {text}"
+        );
+        assert!(!text.contains("[!]"), "invented error well leaked: {text}");
     }
 
     #[test]

@@ -1,7 +1,7 @@
 setup-wizard/capability 82x24 (story 80x22)
                                                                                   
  ╭ First run ───────────────────────────────────────────────────────────────────╮ 
- │  [✓]Welcome → [›]Terminal → [ ]Account → [ ]◦Connection → [ ]◦Choices → [ ]T │ 
+ │  ✓ Welcome · › Terminal ·   Account ·   ◦Connection ·   ◦Choices ·   Trust   │ 
  │  Capability check                                                            │ 
  │  Terminal capabilities                                                       │ 
  │  ▎ truecolor       ok                                                        │ 

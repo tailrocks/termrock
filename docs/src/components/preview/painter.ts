@@ -130,7 +130,8 @@ export function paintCanvas(
         continue
       }
       const weight = boldFontWeight(cell.bold)
-      context.font = `${weight} ${fontSize}px ${PREVIEW_MONO_STACK}`
+      const italic = cell.italic ? 'italic ' : ''
+      context.font = `${italic}${weight} ${fontSize}px ${PREVIEW_MONO_STACK}`
       context.fillStyle = paintFg(cell)
       context.textBaseline = isBoxOrBlockGlyph(ch) ? 'middle' : 'alphabetic'
       const textWidth = context.measureText(ch).width

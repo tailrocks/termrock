@@ -1,24 +1,24 @@
+ ▪ Junie Design system / Components / Editable tables     i Inspector   ? Help
 
+▎  Overview          Editable tables  Navigation is reversed cell; editing is …
+▎  Buttons
+▎  Inputs              Tasks                                           0 edits
+▎  Text areas
+▎  Forms                  ID     Task                              Owner    …
+▎  Lists               ▎  #1040  Add rate limiting to auth endpo…  mira      ┃
+▎  Trees               ▎  #1041  Migrate sessions table to UUID …  jonas     ┃
+▎  Tables              ▎  #1042  Fix flaky checkout integration …  ana       ┃
+▎› Editable tables     ▎  #1043  Write release notes for 3.2       mira      ┃
+▎  Panels              ▎  #1044  Replace deprecated Vue mixins     kai       ┃
+▎  Sidebars            ▎  #1045  Upgrade Postgres driver to 0.9    jonas     ┃
+▎  Dialogs             ▎  #1046  Extract billing service module    sofia     ┃
+▎  Progress            ▎  #1047  Add OpenTelemetry tracing spans   kai       │
+▎  Scrolling           ▎  #1048  Remove legacy feature flags       ana       │
+▎  Code editor         ▎  #1049  Generate API client from OpenAPI  sofia     │
+▎  Data grid
+▎  Chips & selects
+▎  Pickers           reversed  cell cursor (navigation)
+▎  Settings          ▁         editing cursor + accent underline
+▎  Task runner       !         validation error
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+ ↑ ↓ Move  Enter Open  Tab Into page  q Quit

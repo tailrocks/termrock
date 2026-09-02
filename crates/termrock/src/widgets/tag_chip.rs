@@ -313,6 +313,7 @@ impl<'a, Id: Clone> Tag<'a, Id> {
             disabled: self.disabled,
             part: state.part,
             hovered_remove: state.hovered_remove,
+            overlay: false,
         }
         .paint(area, buffer);
         state.parts = Some(parts);
@@ -528,6 +529,8 @@ struct TokenPaint<'a> {
     disabled: bool,
     part: TokenPart,
     hovered_remove: bool,
+    /// Chip wells sit on overlay (junie Toggle/Secondary). Tags stay quiet.
+    overlay: bool,
 }
 
 impl TokenPaint<'_> {
@@ -559,6 +562,7 @@ impl TokenPaint<'_> {
             self.focused,
             self.selected,
             self.disabled,
+            self.overlay,
         );
         if self.focused {
             style = style.add_modifier(Modifier::BOLD);
@@ -573,12 +577,17 @@ impl TokenPaint<'_> {
             style,
         );
 
-        let gutter_style = if self.focused {
-            style.patch(self.system.style(Role::Focus))
-        } else {
-            // Hidden until the chip owns the keyboard: same tone as the well.
-            style
-        };
+        let fill_bg = style.bg.unwrap_or(self.system.junie_theme().surface);
+        let gutter_style = self.system.gutter(
+            crate::style::VisualState {
+                focused: self.focused,
+                selected: self.selected,
+                disabled: self.disabled,
+                ..crate::style::VisualState::default()
+            },
+            fill_bg,
+            false,
+        );
         buffer.set_stringn(area.x, area.y, gutter, 1, gutter_style);
 
         let inner_w = u16::try_from(display_cols(&inner)).unwrap_or(0);
@@ -667,9 +676,16 @@ fn token_style(
     focused: bool,
     selected: bool,
     disabled: bool,
+    overlay: bool,
 ) -> ratatui_core::style::Style {
+    // Junie chips always use Toggle/Secondary overlay fill. Enabled vs not
+    // is foreground weight, not a second well. Tags stay Quiet on surface.
     let recipe = system.button_recipe(
-        ButtonRecipeVariant::Quiet,
+        if overlay || selected {
+            ButtonRecipeVariant::Secondary
+        } else {
+            ButtonRecipeVariant::Quiet
+        },
         if disabled {
             ControlState::Disabled
         } else if matches!(status, TokenStatus::Loading) {
@@ -687,9 +703,6 @@ fn token_style(
     let mut style = recipe.fill.patch(recipe.label);
     if matches!(status, TokenStatus::Error) {
         style = style.patch(system.style(Role::Danger));
-    }
-    if selected {
-        style = style.patch(system.list_row_recipe(true, focused, !disabled).label);
     }
     if focused {
         style = style.add_modifier(Modifier::BOLD);
@@ -936,6 +949,7 @@ impl<'a, Id: Clone> Chip<'a, Id> {
             disabled: self.disabled,
             part: state.part,
             hovered_remove: state.hovered_remove,
+            overlay: true,
         }
         .paint(area, buffer);
         state.parts = Some(parts);

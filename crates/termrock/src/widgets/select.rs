@@ -841,6 +841,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
                     ControlState::Default
                 },
                 matches!(self.validation, Validation::Invalid(_)),
+                false,
             );
             let mut style = label_recipe.value;
             if state.focused {
@@ -921,10 +922,10 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
         } else {
             ControlState::Default
         };
-        let recipe = self.system.input_recipe(control_state, invalid);
+        let recipe = self.system.input_recipe(control_state, invalid, false);
         buffer.set_style(area, recipe.fill);
         // Prompt column is reserved in every state so the value does not shift
-        // when focus arrives. The ▎ bar itself is only visible while editing.
+        // when focus arrives. Idle paints ▎ with fg=bg; focus makes it visible.
         if let Some((glyph, style)) = recipe.prompt
             && area.width > 0
         {
@@ -1573,11 +1574,11 @@ mod tests {
             system.glyphs.selection_gutter()
         );
         assert!(
-            buffer[(state.trigger.x + 1, state.trigger.y)]
+            !buffer[(state.trigger.x + 1, state.trigger.y)]
                 .style()
                 .add_modifier
                 .contains(Modifier::UNDERLINED),
-            "editing underlines the field"
+            "closed focused select is not editing"
         );
     }
 

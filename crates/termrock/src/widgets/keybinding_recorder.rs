@@ -877,6 +877,7 @@ impl<'a> KeybindingRecorder<'a> {
                     ControlState::Default
                 },
                 invalid,
+                state.is_recording(),
             );
             let live = state.display_live();
             let rec_mark = if state.is_recording() { "● " } else { "" };

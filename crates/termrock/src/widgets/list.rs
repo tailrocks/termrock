@@ -292,6 +292,10 @@ pub struct ListState<Id> {
     virtual_total: usize,
     /// Absolute start index of the painted window in the full universe.
     virtual_window_start: usize,
+    /// Junie single-select membership. Independent of the keyboard cursor:
+    /// arrows move [`collection`] active; Enter/Space writes this. `new(None)`
+    /// is chosen-none (no `›`).
+    chosen: Option<Id>,
 }
 
 impl<Id> Default for ListState<Id> {
@@ -308,6 +312,7 @@ impl<Id> Default for ListState<Id> {
             search_query: None,
             virtual_total: 0,
             virtual_window_start: 0,
+            chosen: None,
         }
     }
 }
@@ -320,7 +325,7 @@ impl<Id> ListState<Id> {
         Id: Clone + PartialEq,
     {
         let mut collection = CollectionState::new();
-        collection.set_active(selected);
+        collection.set_active(selected.clone());
         Self {
             collection,
             hovered: None,
@@ -333,6 +338,7 @@ impl<Id> ListState<Id> {
             search_query: None,
             virtual_total: 0,
             virtual_window_start: 0,
+            chosen: selected,
         }
     }
 
@@ -435,6 +441,12 @@ impl<Id> ListState<Id> {
     /// Returns the stable identity selected for keyboard interaction.
     pub const fn selected(&self) -> Option<&Id> {
         self.collection.active()
+    }
+
+    /// Junie single-select membership (`›`). Distinct from the keyboard cursor.
+    #[must_use]
+    pub const fn chosen(&self) -> Option<&Id> {
+        self.chosen.as_ref()
     }
 
     #[must_use]
@@ -782,14 +794,19 @@ impl<Id: Clone + PartialEq> ListState<Id> {
 
     #[must_use]
     /// Returns the semantic action associated with the supplied stable identity.
-    pub fn activate(&self, rows: &[ListRow<'_, Id>]) -> Outcome<Id> {
+    pub fn activate(&mut self, rows: &[ListRow<'_, Id>]) -> Outcome<Id> {
         self.collection
             .active()
+            .cloned()
             .and_then(|selected| {
                 rows.iter()
-                    .find(|row| row.enabled && row.role.is_navigable() && &row.id == selected)
+                    .find(|row| row.enabled && row.role.is_navigable() && row.id == selected)
+                    .map(|row| row.id.clone())
             })
-            .map_or(Outcome::Ignored, |row| Outcome::Activated(row.id.clone()))
+            .map_or(Outcome::Ignored, |id| {
+                self.chosen = Some(id.clone());
+                Outcome::Activated(id)
+            })
     }
 
     /// Updates hover state from the current pointer position and painted hit regions.
@@ -1182,7 +1199,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
             let chosen = if state.selection.is_some() {
                 checked
             } else {
-                cursor
+                state.chosen.as_ref() == Some(&row.id)
             };
             let visual_state = ListRowVisualState {
                 selected: chosen,
@@ -1376,16 +1393,23 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                             x = x.saturating_add(primary_w);
                         }
                         if show_secondary && let Some(sec) = row.secondary.as_ref() {
-                            let avail = mid_end.saturating_sub(x);
-                            if avail > 2 {
-                                x = x.saturating_add(1);
-                                let sw = u16::try_from(sec.width())
-                                    .unwrap_or(u16::MAX)
-                                    .min(mid_end.saturating_sub(x));
-                                if sw > 0 {
-                                    buffer.set_line(x, rect.y, sec, sw);
-                                    buffer.set_style(Rect::new(x, rect.y, sw, 1), secondary_style);
-                                }
+                            // Junie list meta is right-aligned with one trailing
+                            // pad cell, never packed against the label.
+                            let sw = u16::try_from(sec.width()).unwrap_or(u16::MAX);
+                            if sw > 0 && mid_end > x.saturating_add(sw).saturating_add(1) {
+                                let mx = mid_end
+                                    .saturating_sub(sw.saturating_add(1))
+                                    .max(x.saturating_add(1));
+                                buffer.set_line(
+                                    mx,
+                                    rect.y,
+                                    sec,
+                                    sw.min(mid_end.saturating_sub(mx)),
+                                );
+                                buffer.set_style(
+                                    Rect::new(mx, rect.y, sw.min(mid_end.saturating_sub(mx)), 1),
+                                    secondary_style,
+                                );
                             }
                         }
                         let mut cursor = right;
@@ -1579,6 +1603,45 @@ mod tests {
             state.handle_intent(&rows, UiIntent::Cancel),
             Outcome::Cancelled
         );
+    }
+
+    #[test]
+    fn chosen_stays_put_when_cursor_moves() {
+        let rows = rows();
+        let system = DesignSystem::junie();
+        let mut state = ListState::new(Some("first"));
+        assert_eq!(state.chosen(), Some(&"first"));
+        assert_eq!(
+            state.handle_intent(&rows, UiIntent::Move(NavigationMove::Next)),
+            Outcome::Changed
+        );
+        assert_eq!(state.selected(), Some(&"second"));
+        assert_eq!(state.chosen(), Some(&"first"));
+        let area = Rect::new(0, 0, 16, 4);
+        let mut buffer = Buffer::empty(area);
+        (&List::new(&rows, &system).focused(true)).render(area, &mut buffer, &mut state);
+        let first = state.regions().iter().find(|r| r.id == "first").unwrap().area;
+        let second = state
+            .regions()
+            .iter()
+            .find(|r| r.id == "second")
+            .unwrap()
+            .area;
+        assert_eq!(
+            buffer[(first.x.saturating_add(1), first.y)].symbol(),
+            system.glyphs.selection_marker(),
+            "› stays on chosen after cursor move"
+        );
+        assert_eq!(
+            buffer[(second.x.saturating_add(1), second.y)].symbol(),
+            " ",
+            "cursor row is not chosen"
+        );
+        assert_eq!(
+            state.handle_intent(&rows, UiIntent::Activate),
+            Outcome::Activated("second")
+        );
+        assert_eq!(state.chosen(), Some(&"second"));
     }
 
     fn rows() -> [ListRow<'static, &'static str>; 4] {

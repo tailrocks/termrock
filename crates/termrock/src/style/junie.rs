@@ -388,7 +388,10 @@ impl JunieTheme {
         } else {
             self.focus
         };
-        Style::new().fg(fg).bg(bg)
+        // Cell::set_style merges add_modifier. Primary fill is bold; the
+        // gutter is never weight — strip BOLD so idle `▎` on accent matches
+        // junie (colour only).
+        Style::new().fg(fg).bg(bg).remove_modifier(Modifier::BOLD)
     }
 
     /// Commit-control paint by kind and interaction state.

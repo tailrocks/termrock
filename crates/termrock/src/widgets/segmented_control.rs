@@ -13,7 +13,7 @@
 //!
 //! **vs [`RadioGroup`](crate::widgets::RadioGroup).** RadioGroup is a form field
 //! with legend, descriptions, and radio marks. SegmentedControl is toolbar-dense
-//! connected segments (`[List] Grid · Table`).
+//! exclusive choice (`▎List · Grid · Table`).
 //!
 //! **vs [`ToggleGroup`](crate::widgets::ToggleGroup).** ToggleGroup allows multi
 //! sticky tools; SegmentedControl is always single-select exclusive.
@@ -22,18 +22,22 @@
 //! workbench seed; prefer SegmentedControl for product-neutral view/mode chips.
 //! ModeRibbon may project into SegmentedControl later.
 //!
-//! **Active state.** Selected segment uses brackets + bold / reverse — never a
-//! full neon fill as the only cue.
+//! **Active state.** Selected segment is leading `▎`
+//! ([`crate::style::Glyph::SelectionGutter`]) + bold label. Idle segments
+//! reserve the gutter (`fg = bg`) with a secondary/muted label. Facts join
+//! with ` · `. Never boxed `[inner]` pills; never `│` as the default join;
+//! never a full neon fill as the only cue.
 //!
 //! **Narrow.** Low-priority segments overflow to `…`. Below `collapse_below`,
-//! the control collapses to a Select-like trigger (host paints the option menu).
+//! the control collapses to a Select-like trigger `▎Label ▾` (host paints the
+//! option menu).
 //!
 //! Research: desktop segmented controls, shadcn patterns, IDE mode selectors.
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
-    style::Modifier,
+    style::{Color, Modifier, Style},
     widgets::Widget,
 };
 
@@ -43,9 +47,7 @@ use crate::interaction::{
     SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, default_button_intent,
     default_list_intent,
 };
-use crate::style::{
-    ButtonKind, ButtonRecipeVariant, ControlState, DesignSystem, Role, VisualState,
-};
+use crate::style::{DesignSystem, Glyph, VisualState};
 use crate::text::{display_cols, take_display_cols};
 
 // ── Types ───────────────────────────────────────────────────────────────────
@@ -347,26 +349,134 @@ impl<'a, Id> SegmentedControl<'a, Id> {
         self.colorless || self.system.mono()
     }
 
-    fn format_face(&self, item: &SegmentedItem<'a, Id>, selected: bool) -> String {
-        let inner = item.face_inner();
-        if selected {
-            format!("[{inner}]")
+    fn join(&self) -> &'static str {
+        self.system.glyphs.meta_join()
+    }
+
+    fn join_width(&self) -> u16 {
+        u16::try_from(display_cols(self.join()).max(1)).unwrap_or(1)
+    }
+
+    fn gutter_glyph(&self) -> &'static str {
+        self.system.glyphs.selection_gutter()
+    }
+
+    fn chevron(&self, open: bool) -> &'static str {
+        if open {
+            Glyph::ChevronUp.resolve().text
         } else {
-            format!(" {inner} ")
+            Glyph::ChevronDown.resolve().text
         }
     }
 
-    fn segment_width(&self, item: &SegmentedItem<'a, Id>, selected: bool) -> u16 {
-        let face = self.format_face(item, selected);
-        u16::try_from(display_cols(&face).max(3)).unwrap_or(3)
+    fn segment_width(&self, item: &SegmentedItem<'a, Id>) -> u16 {
+        let gutter = display_cols(self.gutter_glyph());
+        let inner = display_cols(&item.face_inner());
+        u16::try_from(gutter.saturating_add(inner).max(2)).unwrap_or(2)
+    }
+
+    fn collapsed_width(&self, item: &SegmentedItem<'a, Id>) -> u16 {
+        self.segment_width(item)
+            .saturating_add(1)
+            .saturating_add(u16::try_from(display_cols(self.chevron(false))).unwrap_or(1))
     }
 
     fn overflow_trigger_width(&self) -> u16 {
-        u16::try_from(display_cols(self.overflow_label).saturating_add(2)).unwrap_or(3)
+        u16::try_from(display_cols(self.overflow_label).max(1)).unwrap_or(1)
     }
 
-    fn sep_glyph(&self) -> &'static str {
-        if self.mono() { "|" } else { "│" }
+    fn face_style(&self, selected: bool, hovered: bool, enabled: bool) -> Style {
+        let theme = self.system.junie_theme();
+        let bg = if hovered && enabled && !self.mono() {
+            theme.lift(theme.surface)
+        } else {
+            theme.surface
+        };
+        let fg = if !enabled {
+            theme.disabled
+        } else if selected || hovered {
+            theme.text_primary
+        } else {
+            theme.text_secondary
+        };
+        let mut style = Style::new().fg(fg).bg(bg);
+        if selected && enabled {
+            style = style.add_modifier(Modifier::BOLD);
+        }
+        style
+    }
+
+    fn gutter_style(&self, selected: bool, hovered: bool, enabled: bool, bg: Color) -> Style {
+        self.system.gutter(
+            VisualState {
+                // Exclusive-choice bar marks the chosen segment; idle keeps
+                // the column with fg = bg.
+                focused: selected && enabled,
+                hovered: hovered && enabled,
+                selected,
+                disabled: !enabled,
+                ..VisualState::default()
+            },
+            bg,
+            false,
+        )
+    }
+
+    fn paint_choice(
+        &self,
+        rect: Rect,
+        buffer: &mut Buffer,
+        item: &SegmentedItem<'a, Id>,
+        selected: bool,
+        hovered: bool,
+        trailing: Option<&str>,
+    ) {
+        if rect.is_empty() {
+            return;
+        }
+        let style = self.face_style(selected, hovered, item.enabled);
+        let bg = style.bg.unwrap_or(self.system.junie_theme().surface);
+        let gutter = self.gutter_glyph();
+        buffer.set_stringn(
+            rect.x,
+            rect.y,
+            gutter,
+            1.min(usize::from(rect.width)),
+            self.gutter_style(selected, hovered, item.enabled, bg),
+        );
+        if rect.width <= 1 {
+            return;
+        }
+        let mut x = rect.x.saturating_add(1);
+        let trail_cols = trailing
+            .map(|t| display_cols(t).saturating_add(1))
+            .unwrap_or(0);
+        let inner_budget = usize::from(rect.right().saturating_sub(x)).saturating_sub(trail_cols);
+        let inner = take_display_cols(&item.face_inner(), inner_budget);
+        let iw = display_cols(&inner);
+        if iw > 0 {
+            buffer.set_stringn(x, rect.y, &inner, iw, style);
+            x = x.saturating_add(u16::try_from(iw).unwrap_or(u16::MAX));
+        }
+        let Some(trail) = trailing else {
+            return;
+        };
+        if x >= rect.right() {
+            return;
+        }
+        buffer.set_stringn(x, rect.y, " ", 1, style);
+        x = x.saturating_add(1);
+        if x >= rect.right() {
+            return;
+        }
+        let t = take_display_cols(trail, usize::from(rect.right().saturating_sub(x)));
+        buffer.set_stringn(
+            x,
+            rect.y,
+            &t,
+            display_cols(&t),
+            self.system.junie_theme().muted().bg(bg),
+        );
     }
 
     /// Plan visible indices, overflow indices, and presentation.
@@ -411,13 +521,12 @@ impl<'a, Id> SegmentedControl<'a, Id> {
             pb.cmp(&pa).then(a.cmp(&b))
         });
 
-        let gap = 1u16; // separator
+        let gap = self.join_width();
         let mut used = 0u16;
         let mut keep = Vec::new();
         let mut overflow = Vec::new();
         for &idx in &order {
-            let sel = selected == Some(&self.items[idx].id);
-            let w = self.segment_width(&self.items[idx], sel);
+            let w = self.segment_width(&self.items[idx]);
             let extra = if keep.is_empty() { 0 } else { gap };
             let remaining_after = order.len() - keep.len() - overflow.len() - 1;
             let reserve = if remaining_after > 0 || !overflow.is_empty() {
@@ -460,9 +569,8 @@ impl<'a, Id> SegmentedControl<'a, Id> {
             let trigger = self.overflow_trigger_width().saturating_add(gap);
             while !keep.is_empty() {
                 let total = keep.iter().enumerate().fold(0u16, |acc, (i, &idx)| {
-                    let sel = selected == Some(&self.items[idx].id);
                     acc.saturating_add(if i > 0 { gap } else { 0 })
-                        .saturating_add(self.segment_width(&self.items[idx], sel))
+                        .saturating_add(self.segment_width(&self.items[idx]))
                 });
                 if total.saturating_add(trigger) <= width {
                     break;
@@ -498,33 +606,6 @@ impl<'a, Id> SegmentedControl<'a, Id> {
 impl<'a, Id: Clone + PartialEq> SegmentedControl<'a, Id> {
     fn item_by_id(&self, id: &Id) -> Option<&SegmentedItem<'a, Id>> {
         self.items.iter().find(|i| &i.id == id)
-    }
-
-    fn face_style(
-        &self,
-        selected: bool,
-        focused: bool,
-        hovered: bool,
-        enabled: bool,
-    ) -> ratatui_core::style::Style {
-        let theme = self.system.junie_theme();
-        let visual = VisualState {
-            focused: focused && enabled,
-            hovered: hovered && enabled,
-            selected,
-            disabled: !enabled,
-            ..VisualState::default()
-        };
-        let kind = if selected {
-            ButtonKind::Toggle
-        } else {
-            ButtonKind::Subtle
-        };
-        let mut style = theme.button(kind, visual, theme.surface);
-        if selected && enabled {
-            style = style.add_modifier(Modifier::BOLD);
-        }
-        style
     }
 
     /// Paint control.
@@ -588,19 +669,20 @@ impl<'a, Id: Clone + PartialEq> SegmentedControl<'a, Id> {
 
         match presentation {
             SegmentedPresentation::Collapsed => {
-                // Select-like face: [Selected ▾] or selected label + chevron
+                // Select-like face: ▎Label ▾ (gutter + label + chevron)
                 let sel_idx = visible.first().copied().unwrap_or(0);
                 let item = &self.items[sel_idx];
-                let chev = if self.mono() { "v" } else { "▾" };
-                let open = if state.menu_open { "^" } else { chev };
-                let inner = item.face_inner();
-                let face = format!("[{inner} {open}]");
-                let text = take_display_cols(&face, usize::from(area.width));
-                let focused = state.surface_focused;
-                let style = self.face_style(true, focused, false, item.enabled);
-                buffer.set_stringn(area.x, area.y, &text, usize::from(area.width), style);
-                let w = display_cols(&text).min(usize::from(area.width)) as u16;
-                let rect = Rect::new(area.x, area.y, w.max(1), 1.min(area.height));
+                let w = self.collapsed_width(item).min(area.width).max(1);
+                let rect = Rect::new(area.x, area.y, w, 1.min(area.height));
+                let hovered = state.hovered.as_ref() == Some(&item.id);
+                self.paint_choice(
+                    rect,
+                    buffer,
+                    item,
+                    true,
+                    hovered,
+                    Some(self.chevron(state.menu_open)),
+                );
                 collapsed_trigger = Some(rect);
                 item_parts.push(SegmentedItemParts {
                     id: item.id.clone(),
@@ -618,35 +700,30 @@ impl<'a, Id: Clone + PartialEq> SegmentedControl<'a, Id> {
             SegmentedPresentation::Expanded | SegmentedPresentation::Overflow => {
                 let mut x = area.x;
                 let mut first = true;
+                let join = self.join();
+                let join_w = self.join_width();
+                let theme = self.system.junie_theme();
+                let join_style = theme.muted().bg(theme.surface);
                 for &idx in &visible {
                     if !first {
-                        if x < area.right() && area.height > 0 {
-                            buffer.set_stringn(
-                                x,
-                                area.y,
-                                self.sep_glyph(),
-                                1,
-                                self.system.style(Role::Border),
-                            );
-                            x = x.saturating_add(1);
+                        let remain = area.right().saturating_sub(x);
+                        if remain > 0 && area.height > 0 {
+                            let painted = take_display_cols(join, usize::from(remain.min(join_w)));
+                            let pw = display_cols(&painted);
+                            buffer.set_stringn(x, area.y, &painted, pw, join_style);
+                            x = x.saturating_add(u16::try_from(pw).unwrap_or(0));
                         }
                     }
                     first = false;
                     let item = &self.items[idx];
                     let selected = state.selected.as_ref() == Some(&item.id);
-                    let w = self
-                        .segment_width(item, selected)
-                        .min(area.right().saturating_sub(x));
+                    let w = self.segment_width(item).min(area.right().saturating_sub(x));
                     if w == 0 {
                         break;
                     }
                     let rect = Rect::new(x, area.y, w, 1.min(area.height));
-                    let focused = state.surface_focused && state.cursor.as_ref() == Some(&item.id);
                     let hovered = state.hovered.as_ref() == Some(&item.id);
-                    let face = self.format_face(item, selected);
-                    let text = take_display_cols(&face, usize::from(w));
-                    let style = self.face_style(selected, focused, hovered, item.enabled);
-                    buffer.set_stringn(rect.x, rect.y, &text, usize::from(w), style);
+                    self.paint_choice(rect, buffer, item, selected, hovered, None);
                     item_parts.push(SegmentedItemParts {
                         id: item.id.clone(),
                         area: rect,
@@ -656,15 +733,12 @@ impl<'a, Id: Clone + PartialEq> SegmentedControl<'a, Id> {
                 }
                 if matches!(presentation, SegmentedPresentation::Overflow) && !overflow.is_empty() {
                     if !first {
-                        if x < area.right() && area.height > 0 {
-                            buffer.set_stringn(
-                                x,
-                                area.y,
-                                self.sep_glyph(),
-                                1,
-                                self.system.style(Role::Border),
-                            );
-                            x = x.saturating_add(1);
+                        let remain = area.right().saturating_sub(x);
+                        if remain > 0 && area.height > 0 {
+                            let painted = take_display_cols(join, usize::from(remain.min(join_w)));
+                            let pw = display_cols(&painted);
+                            buffer.set_stringn(x, area.y, &painted, pw, join_style);
+                            x = x.saturating_add(u16::try_from(pw).unwrap_or(0));
                         }
                     }
                     let tw = self
@@ -672,22 +746,12 @@ impl<'a, Id: Clone + PartialEq> SegmentedControl<'a, Id> {
                         .min(area.right().saturating_sub(x));
                     if tw > 0 {
                         let rect = Rect::new(x, area.y, tw, 1.min(area.height));
-                        let recipe = self.system.button_recipe(
-                            ButtonRecipeVariant::Quiet,
-                            if state.menu_open {
-                                ControlState::Focused
-                            } else {
-                                ControlState::Default
-                            },
-                            self.system.junie_theme().surface,
-                        );
-                        let mut style = recipe.fill.patch(recipe.label);
+                        let mut style = theme.muted().bg(theme.surface);
                         if state.menu_open {
-                            // The open segment is held down: the explicit
-                            // reversal pair, not a stacked modifier.
-                            style = self.system.reversed();
-                        } else {
-                            style = style.add_modifier(Modifier::BOLD);
+                            style = theme
+                                .primary()
+                                .bg(theme.surface)
+                                .add_modifier(Modifier::BOLD);
                         }
                         let label = take_display_cols(self.overflow_label, usize::from(tw));
                         buffer.set_stringn(rect.x, rect.y, &label, usize::from(tw), style);
@@ -1104,6 +1168,16 @@ mod tests {
         ]
     }
 
+    fn cell(buffer: &Buffer, x: u16, y: u16) -> String {
+        buffer[(x, y)].symbol().to_string()
+    }
+
+    fn row_text(buffer: &Buffer, y: u16, width: u16) -> String {
+        (0..width)
+            .map(|x| buffer[(x, y)].symbol().to_string())
+            .collect()
+    }
+
     #[test]
     fn select_on_arrow_follow_focus() {
         let system = DesignSystem::default();
@@ -1189,6 +1263,24 @@ mod tests {
         let parts = g.paint(Rect::new(0, 0, 14, 1), &mut buf, &mut state);
         assert_eq!(parts.presentation, SegmentedPresentation::Collapsed);
         assert!(parts.collapsed_trigger.is_some());
+        let row = row_text(&buf, 0, 14);
+        assert!(
+            row.contains(system.glyphs.selection_gutter()),
+            "collapsed trigger leading gutter: {row:?}"
+        );
+        assert!(row.contains("List"), "collapsed trigger label: {row:?}");
+        assert!(
+            row.contains(Glyph::ChevronDown.resolve().text),
+            "collapsed trigger chevron: {row:?}"
+        );
+        assert!(
+            !row.contains('['),
+            "collapsed trigger is not a boxed pill: {row:?}"
+        );
+        assert!(
+            !row.contains(']'),
+            "collapsed trigger is not a boxed pill: {row:?}"
+        );
         let out = g.handle_key(
             &mut state,
             KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
@@ -1311,10 +1403,6 @@ mod tests {
         assert!(parts.items.is_empty());
     }
 
-    fn cell(buffer: &Buffer, x: u16, y: u16) -> String {
-        buffer[(x, y)].symbol().to_string()
-    }
-
     #[test]
     fn selected_hover_focus_disabled_buffer() {
         let system = DesignSystem::junie();
@@ -1331,7 +1419,7 @@ mod tests {
         let mut buf = Buffer::empty(area);
         let parts = g.paint(area, &mut buf, &mut state);
         let list = parts.items.iter().find(|i| i.id == "list").unwrap();
-        assert_eq!(cell(&buf, list.area.x, 0), "[");
+        assert_eq!(cell(&buf, list.area.x, 0), system.glyphs.selection_gutter());
         assert!(
             buf[(list.area.x.saturating_add(1), 0)]
                 .modifier
@@ -1349,5 +1437,55 @@ mod tests {
 
         let off = parts.items.iter().find(|i| i.id == "off").unwrap();
         assert_eq!(buf[(off.area.x.saturating_add(1), 0)].fg, theme.disabled);
+    }
+
+    #[test]
+    fn exclusive_choice_face_is_gutter_not_boxes() {
+        let system = DesignSystem::junie();
+        let items = [
+            SegmentedItem::new("list", "List"),
+            SegmentedItem::new("grid", "Grid"),
+            SegmentedItem::new("table", "Table"),
+        ];
+        let g = SegmentedControl::new(&items, &system);
+        let mut state = SegmentedControlState::new(Some("list"));
+        state.set_surface_focused(true);
+        let area = Rect::new(0, 0, 40, 1);
+        let mut buf = Buffer::empty(area);
+        let parts = g.paint(area, &mut buf, &mut state);
+        let list = parts.items.iter().find(|i| i.id == "list").unwrap();
+        let face: String = (list.area.x..list.area.right())
+            .map(|x| buf[(x, 0)].symbol().to_string())
+            .collect();
+        assert!(
+            face.contains(system.glyphs.selection_gutter()),
+            "selected face contains ▎: {face:?}"
+        );
+        assert!(
+            face.contains("List"),
+            "selected face contains List: {face:?}"
+        );
+        let row = row_text(&buf, 0, area.width);
+        // Old boxed pills were `format!("[{inner}]")` → `[List]`.
+        assert!(
+            !row.contains("[List]"),
+            "boxed selected pill is gone: {row:?}"
+        );
+        assert!(
+            !row.contains('['),
+            "no '[' around List on exclusive-choice row: {row:?}"
+        );
+        assert!(
+            !row.contains(']'),
+            "no ']' around List on exclusive-choice row: {row:?}"
+        );
+        assert!(
+            !row.contains('│') && !row.contains('|'),
+            "default join is meta_join, not a rule: {row:?}"
+        );
+        assert!(
+            row.contains(system.glyphs.meta_join()) || row.contains('·'),
+            "segments join with · : {row:?}"
+        );
     }
 }

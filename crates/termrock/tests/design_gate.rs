@@ -891,7 +891,7 @@ fn pressed_is_an_explicit_reversal() {
         assert_eq!(recipe.fill.bg, Some(WHITE), "{variant:?} pressed");
         assert!(!recipe.label.add_modifier.contains(Modifier::REVERSED));
     }
-    let input = system.input_recipe(ControlState::Focused, false);
+    let input = system.input_recipe(ControlState::Focused, false, false);
     assert_eq!(input.cursor.fg, Some(BLACK));
     assert_eq!(input.cursor.bg, Some(WHITE));
 }
@@ -1580,8 +1580,17 @@ fn a_focused_field_says_so() {
         Modifier::BOLD
     );
     assert_eq!(system.junie_theme().label(false).fg, Some(WHITE_70));
-    let recipe = system.input_recipe(ControlState::Focused, false);
+    let recipe = system.input_recipe(ControlState::Focused, false, false);
     assert!(recipe.prompt.is_some(), "the recipe ships the prompt glyph");
+    assert!(
+        !recipe.border.add_modifier.contains(Modifier::UNDERLINED),
+        "nav-focus does not underline"
+    );
+    let editing = system.input_recipe(ControlState::Focused, false, true);
+    assert!(
+        editing.border.add_modifier.contains(Modifier::UNDERLINED),
+        "editing underlines"
+    );
 }
 
 /// Every field in the input family wears the same chrome (junie: one field
@@ -1671,9 +1680,9 @@ fn inputs_share_field_chrome() {
 #[test]
 fn interaction_underline_is_three_color() {
     /// file -> the D5 class its underline belongs to. Files that reach the
-    /// underline through a recipe role (`ButtonVariant::Link`, `Role::Link` in
-    /// `primitives.rs` / `link.rs`) paint no literal here and stay off the
-    /// list; the recipe gates pin their affordance instead.
+    /// underline through a recipe role (`Role::Link` in `link.rs`) paint no
+    /// literal here and stay off the list; the recipe gates pin their
+    /// affordance instead.
     const LAW_CLASSES: &[(&str, &str)] = &[
         ("markdown.rs", "link affordance (MarkdownInlineKind::Link)"),
         ("citation.rs", "link affordance (a citation is a link)"),
@@ -1748,9 +1757,14 @@ fn interaction_underline_is_three_color() {
     // The field side: editing and a failed contract underline, resting does
     // not. The diagnostic rides the underline colour — the text itself keeps
     // its tier, because repainting the value would say nothing.
-    let editing = system.input_recipe(ControlState::Focused, false);
+    let nav = system.input_recipe(ControlState::Focused, false, false);
+    assert!(
+        !nav.border.add_modifier.contains(Modifier::UNDERLINED),
+        "nav-focus does not underline"
+    );
+    let editing = system.input_recipe(ControlState::Focused, false, true);
     assert!(editing.border.add_modifier.contains(Modifier::UNDERLINED));
-    let invalid = system.input_recipe(ControlState::Focused, true);
+    let invalid = system.input_recipe(ControlState::Focused, true, false);
     assert!(invalid.border.add_modifier.contains(Modifier::UNDERLINED));
     assert_eq!(
         invalid.border.underline_color,
@@ -1763,7 +1777,7 @@ fn interaction_underline_is_three_color() {
     );
     assert!(
         !system
-            .input_recipe(ControlState::Default, false)
+            .input_recipe(ControlState::Default, false, false)
             .border
             .add_modifier
             .contains(Modifier::UNDERLINED),
@@ -1776,7 +1790,7 @@ fn interaction_underline_is_three_color() {
 #[test]
 fn editing_underline_is_accent() {
     let system = DesignSystem::junie();
-    let editing = system.input_recipe(ControlState::Focused, false);
+    let editing = system.input_recipe(ControlState::Focused, false, true);
     assert_eq!(
         editing.border.underline_color,
         Some(GREEN),
@@ -3668,7 +3682,7 @@ fn family_focus_and_selection_survive_monochrome() {
     );
 
     // Field: the prompt glyph survives the collapse.
-    let field = mono.input_recipe(ControlState::Focused, false);
+    let field = mono.input_recipe(ControlState::Focused, false, false);
     assert_eq!(
         field.prompt.expect("prompt glyph").0,
         "▎",

@@ -171,6 +171,8 @@ pub struct TextAreaState {
     /// Dual-axis viewport via canonical [`ScrollAreaState`] (native-feel input box).
     scroll: ScrollAreaState,
     accepts_input: bool,
+    /// Two-mode like junie TextInput: focused-idle vs editing.
+    editing: bool,
     read_only: bool,
     wrap: TextWrap,
     indent: String,
@@ -215,6 +217,7 @@ impl TextAreaState {
                 .chain(ScrollChain::Capture)
                 .wheel_steps(3, 4),
             accepts_input: false,
+            editing: false,
             read_only: false,
             wrap: TextWrap::None,
             indent: DEFAULT_INDENT.to_owned(),
@@ -490,8 +493,23 @@ impl TextAreaState {
     }
 
     /// Host input gate (scene/overlay ownership). Does not clear buffer.
+    /// Does not enter editing — host or Enter/F2 does.
     pub const fn set_accepts_input(&mut self, accepts: bool) {
         self.accepts_input = accepts;
+        if !accepts {
+            self.editing = false;
+        }
+    }
+
+    /// Begin/leave editing. No-op when read-only.
+    pub const fn set_editing(&mut self, editing: bool) {
+        self.editing = editing && !self.read_only && self.accepts_input;
+    }
+
+    /// Whether the document currently accepts inserts (not merely focused).
+    #[must_use]
+    pub const fn is_editing(&self) -> bool {
+        self.editing && self.accepts_input && !self.read_only
     }
 
     /// Whether host granted keyboard/pointer input.
@@ -660,15 +678,57 @@ impl TextAreaState {
         }
     }
 
-    /// Routes keyboard editing when host granted input. Enter inserts a newline.
+    /// Routes keyboard. Idle (focused, not editing): Enter/F2 begin edit,
+    /// j/k and arrows scroll. Editing: Enter inserts a newline; Esc commits.
     pub fn handle_key(&mut self, key: KeyEvent) -> TextAreaOutcome {
         if !self.accepts_input || key.kind == KeyEventKind::Release {
             return TextAreaOutcome::Ignored;
         }
+        let plain = key.modifiers.is_empty();
+        if !self.editing || self.read_only {
+            return match key.code {
+                KeyCode::Enter | KeyCode::F(2) if plain && !self.read_only => {
+                    self.editing = true;
+                    TextAreaOutcome::Changed
+                }
+                KeyCode::Up | KeyCode::Char('k') if plain => {
+                    if self.scroll_by(0, -1) {
+                        TextAreaOutcome::Changed
+                    } else {
+                        TextAreaOutcome::Ignored
+                    }
+                }
+                KeyCode::Down | KeyCode::Char('j') if plain => {
+                    if self.scroll_by(0, 1) {
+                        TextAreaOutcome::Changed
+                    } else {
+                        TextAreaOutcome::Ignored
+                    }
+                }
+                KeyCode::PageUp if plain => {
+                    let step = -isize::try_from(self.viewport_height.max(1)).unwrap_or(isize::MAX);
+                    if self.vertical(step) {
+                        TextAreaOutcome::Changed
+                    } else {
+                        TextAreaOutcome::Ignored
+                    }
+                }
+                KeyCode::PageDown if plain => {
+                    let step = isize::try_from(self.viewport_height.max(1)).unwrap_or(isize::MAX);
+                    if self.vertical(step) {
+                        TextAreaOutcome::Changed
+                    } else {
+                        TextAreaOutcome::Ignored
+                    }
+                }
+                _ => TextAreaOutcome::Ignored,
+            };
+        }
         if key.code == KeyCode::Esc {
             // junie: Esc finishes editing and keeps the document.
+            self.editing = false;
             self.select_anchor = None;
-            return TextAreaOutcome::Cancelled;
+            return TextAreaOutcome::Changed;
         }
 
         let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
@@ -1553,7 +1613,7 @@ impl StatefulWidget for &TextArea<'_> {
 
         let theme = self.system.junie_theme();
         let focused = state.accepts_input;
-        let editing = focused && !state.read_only;
+        let editing = state.editing && focused && !state.read_only;
         let invalid = self.error.is_some();
         let visual = VisualState {
             focused,
@@ -1628,7 +1688,11 @@ impl StatefulWidget for &TextArea<'_> {
         state.viewport_width = usize::from(text.width);
         state.viewport_height = usize::from(text.height);
         state.measure();
-        state.reveal();
+        // Junie only follows the cursor while editing. Idle view stays put
+        // so a committed document is not scrolled to EOF.
+        if editing {
+            state.reveal();
+        }
         if text.is_empty() {
             paint_textarea_footer(self, area, field, state, buffer, theme, editing);
             return;
@@ -1976,6 +2040,7 @@ mod tests {
     fn normalized_editing_and_goal_column_contract() {
         let mut state = TextAreaState::new("ab🧪\r\nx\r12345");
         state.set_accepts_input(true);
+        state.set_editing(true);
         assert_eq!(state.lines().collect::<Vec<_>>(), ["ab🧪", "x", "12345"]);
         assert!(state.set_cursor(TextCursor { line: 2, byte: 4 }));
         assert_eq!(
@@ -1993,6 +2058,7 @@ mod tests {
     fn paste_split_join_and_invalid_cursor_are_safe() {
         let mut state = TextAreaState::new("e\u{301}x");
         state.set_accepts_input(true);
+        state.set_editing(true);
         assert!(!state.set_cursor(TextCursor { line: 0, byte: 1 }));
         assert!(state.set_cursor(TextCursor { line: 0, byte: 3 }));
         assert_eq!(state.insert_text("A\r\nB\rC"), TextAreaOutcome::Changed);
@@ -2308,6 +2374,8 @@ mod tests {
         for case in cases {
             let mut state = TextAreaState::new(case.text);
             state.set_accepts_input(true);
+            state.set_editing(true);
+        state.set_editing(true);
             assert!(state.set_cursor(case.cursor), "{} cursor", case.name);
             let outcome = state.handle_key(KeyEvent::new(case.key, KeyModifiers::NONE));
             assert_eq!(
@@ -2329,6 +2397,7 @@ mod tests {
     fn multi_line_deltas_and_ranges_restore_without_document_snapshots() {
         let mut state = TextAreaState::new("alpha\nbeta\ngamma");
         state.set_accepts_input(true);
+        state.set_editing(true);
         assert_eq!(
             state.extract_range(c(0, 2), c(2, 2)).as_deref(),
             Some("pha\nbeta\nga")
@@ -2374,6 +2443,7 @@ mod tests {
         }
         let mut state = TextAreaState::new(lines);
         state.set_accepts_input(true);
+        state.set_editing(true);
         state.viewport_width = 24;
         state.viewport_height = 6;
         state.sync_scroll_metrics();
@@ -2393,6 +2463,7 @@ mod tests {
         let system = crate::style::DesignSystem::new(theme.clone());
         let mut state = TextAreaState::new("wide content beyond viewport\none\ntwo\nthree\nfour");
         state.set_accepts_input(true);
+        state.set_editing(true);
         assert!(state.set_cursor(c(0, 0)));
         let area = Rect::new(2, 2, 14, 8);
         let mut buffer = Buffer::empty(Rect::new(0, 0, 20, 12));
@@ -2434,6 +2505,7 @@ mod tests {
         let system = crate::style::DesignSystem::default();
         let mut state = TextAreaState::new("Explain this module");
         state.set_accepts_input(true);
+        state.set_editing(true);
         let area = Rect::new(0, 0, 22, 5);
         let mut buffer = Buffer::empty(area);
 
@@ -2458,6 +2530,7 @@ mod tests {
             TextAreaOutcome::Ignored
         );
         state.set_accepts_input(true);
+        state.set_editing(true);
         assert_eq!(
             state.handle_key(KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE)),
             TextAreaOutcome::Changed
@@ -2474,10 +2547,12 @@ mod tests {
     fn escape_cancels_without_mutating_multiline_text() {
         let mut state = TextAreaState::new("one\ntwo");
         state.set_accepts_input(true);
+        state.set_editing(true);
         assert_eq!(
             state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
-            TextAreaOutcome::Cancelled
+            TextAreaOutcome::Changed
         );
+        assert!(!state.is_editing());
         assert_eq!(state.text(), "one\ntwo");
     }
 
@@ -2485,6 +2560,7 @@ mod tests {
     fn measurement_invalidates_only_on_edits_and_tiny_control_input_is_safe() {
         let mut state = TextAreaState::new("ab");
         state.set_accepts_input(true);
+        state.set_editing(true);
         assert_eq!(state.max_width, 2);
         assert_eq!(state.insert_text("\u{7}東京"), TextAreaOutcome::Changed);
         assert_eq!(state.text(), "ab東京");
@@ -2506,6 +2582,7 @@ mod tests {
     fn selection_shift_and_select_all_and_delete() {
         let mut state = TextAreaState::new("hello world");
         state.set_accepts_input(true);
+        state.set_editing(true);
         assert!(state.set_cursor(c(0, 0)));
         assert_eq!(
             state.handle_key(KeyEvent::new(KeyCode::Right, KeyModifiers::SHIFT)),
@@ -2530,6 +2607,7 @@ mod tests {
     fn undo_redo_and_clipboard_outcomes() {
         let mut state = TextAreaState::new("ab");
         state.set_accepts_input(true);
+        state.set_editing(true);
         assert_eq!(
             state.handle_key(KeyEvent::new(KeyCode::Char('c'), KeyModifiers::NONE)),
             TextAreaOutcome::Changed
@@ -2576,6 +2654,7 @@ mod tests {
     fn word_motion_and_indent() {
         let mut state = TextAreaState::new("foo bar");
         state.set_accepts_input(true);
+        state.set_editing(true);
         assert!(state.set_cursor(c(0, 0)));
         assert_eq!(
             state.handle_key(KeyEvent::new(KeyCode::Right, KeyModifiers::CONTROL)),
@@ -2609,6 +2688,7 @@ mod tests {
     fn soft_wrap_preserves_caret_row_on_reflow() {
         let mut state = TextAreaState::new("abcdefghijklmnopqrstuvwxyz");
         state.set_accepts_input(true);
+        state.set_editing(true);
         state.set_wrap(TextWrap::Soft);
         state.viewport_width = 10;
         state.viewport_height = 4;
@@ -2630,6 +2710,7 @@ mod tests {
         let system = crate::style::DesignSystem::default();
         let mut state = TextAreaState::new("a\nb\nc");
         state.set_accepts_input(true);
+        state.set_editing(true);
         let area = Rect::new(0, 0, 24, 8);
         let mut buffer = Buffer::empty(area);
         (&TextArea::new(&system)
@@ -2658,6 +2739,7 @@ mod tests {
             .join("\n");
         let mut state = TextAreaState::new(text);
         state.set_accepts_input(true);
+        state.set_editing(true);
         state.viewport_width = 40;
         state.viewport_height = 12;
         state.sync_scroll_metrics();
@@ -2699,6 +2781,8 @@ mod tests {
         for seed in samples {
             let mut state = TextAreaState::new(seed);
             state.set_accepts_input(true);
+            state.set_editing(true);
+        state.set_editing(true);
             state.viewport_width = 12;
             state.viewport_height = 4;
             for (i, key) in keys.iter().cycle().take(48).enumerate() {
@@ -2711,6 +2795,24 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn enter_begins_edit_when_idle_without_inserting() {
+        let mut state = TextAreaState::new("ab");
+        state.set_accepts_input(true);
+        assert!(!state.is_editing());
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
+            TextAreaOutcome::Changed
+        );
+        assert!(state.is_editing());
+        assert_eq!(state.text(), "ab");
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
+            TextAreaOutcome::Changed
+        );
+        assert_eq!(state.text(), "\nab");
     }
 
     #[test]
@@ -2729,6 +2831,7 @@ mod tests {
         let theme = system.junie_theme();
         let mut state = TextAreaState::new("hello\nworld");
         state.set_accepts_input(true);
+        state.set_editing(true);
         assert!(state.set_cursor(c(0, 2)));
         let area = Rect::new(0, 0, 28, 6);
         let mut buffer = Buffer::empty(area);
@@ -2751,8 +2854,9 @@ mod tests {
         assert_eq!(cursor.y, field_y);
         assert_eq!(
             state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
-            TextAreaOutcome::Cancelled
+            TextAreaOutcome::Changed
         );
+        assert!(!state.is_editing());
         assert_eq!(state.text(), "hello\nworld");
     }
 
@@ -2760,6 +2864,7 @@ mod tests {
     fn enter_inserts_newline_while_editing() {
         let mut state = TextAreaState::new("ab");
         state.set_accepts_input(true);
+        state.set_editing(true);
         assert!(state.set_cursor(c(0, 1)));
         assert_eq!(
             state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),

@@ -1329,15 +1329,20 @@ impl DesignSystem {
     }
 
     /// Text input part×state recipe.
+    ///
+    /// Keyboard focus is the gutter. `editing` is the insert session: accent
+    /// underline. A focused-but-not-editing field is the well plus `▎` only.
     #[must_use]
-    pub fn input_recipe(&self, state: ControlState, invalid: bool) -> InputRecipe {
+    pub fn input_recipe(&self, state: ControlState, invalid: bool, editing: bool) -> InputRecipe {
         let theme = self.junie_theme();
-        let editing = matches!(state, ControlState::Focused);
+        let focused = matches!(state, ControlState::Focused);
+        let disabled = matches!(state, ControlState::Disabled);
+        let visual_editing = editing && focused && !disabled;
         let visual = VisualState {
-            hovered: matches!(state, ControlState::Hovered) && !editing,
-            disabled: matches!(state, ControlState::Disabled),
-            focused: editing,
-            editing,
+            hovered: matches!(state, ControlState::Hovered) && !visual_editing,
+            disabled,
+            focused,
+            editing: visual_editing,
             ..VisualState::default()
         };
         // junie field law: the well is `field`, hover lifts to `field_hover`
@@ -1356,12 +1361,13 @@ impl DesignSystem {
         // A field has no frame; the border slot carries the underline
         // affordance. Editing underlines in accent and an invalid value moves
         // that underline to the error colour — the 3-colour underline law.
-        // Resting is the subtle hairline. Focus snaps; there is no cross-fade.
+        // Resting is the subtle hairline. Nav-focus is the gutter, not an
+        // underline. Focus snaps; there is no cross-fade.
         let border = if invalid {
             Style::new()
                 .add_modifier(Modifier::UNDERLINED)
                 .underline_color(theme.error)
-        } else if editing {
+        } else if visual_editing {
             Style::new()
                 .add_modifier(Modifier::UNDERLINED)
                 .underline_color(theme.accent)
@@ -1943,7 +1949,7 @@ mod tests {
     fn input_recipe_follows_the_junie_field() {
         let system = DesignSystem::junie();
         let theme = system.junie_theme();
-        let idle = system.input_recipe(ControlState::Default, false);
+        let idle = system.input_recipe(ControlState::Default, false, false);
         assert_eq!(idle.fill.bg, Some(theme.field));
         assert_eq!(idle.value.fg, Some(theme.text_primary));
         assert_eq!(idle.placeholder.fg, Some(theme.text_muted));
@@ -1955,29 +1961,39 @@ mod tests {
             "idle gutter is reserved, fg=bg"
         );
 
-        let focused = system.input_recipe(ControlState::Focused, false);
+        let nav = system.input_recipe(ControlState::Focused, false, false);
         assert!(
-            focused.border.add_modifier.contains(Modifier::UNDERLINED),
+            !nav.border.add_modifier.contains(Modifier::UNDERLINED),
+            "nav-focus does not underline"
+        );
+        assert_eq!(
+            nav.prompt.expect("focused field carries the gutter").1.fg,
+            Some(theme.focus)
+        );
+
+        let editing = system.input_recipe(ControlState::Focused, false, true);
+        assert!(
+            editing.border.add_modifier.contains(Modifier::UNDERLINED),
             "editing underlines"
         );
         assert_eq!(
-            focused.border.underline_color,
+            editing.border.underline_color,
             Some(theme.accent),
             "the editing underline is the accent, not a brighter border"
         );
         assert_eq!(
-            focused
+            editing
                 .prompt
-                .expect("focused field carries the gutter")
+                .expect("editing field carries the gutter")
                 .1
                 .fg,
             Some(theme.focus)
         );
 
-        let hovered = system.input_recipe(ControlState::Hovered, false);
+        let hovered = system.input_recipe(ControlState::Hovered, false, false);
         assert_eq!(hovered.fill.bg, Some(theme.field_hover));
 
-        let bad = system.input_recipe(ControlState::Default, true);
+        let bad = system.input_recipe(ControlState::Default, true, false);
         assert!(
             bad.border.add_modifier.contains(Modifier::UNDERLINED),
             "an invalid field underlines"

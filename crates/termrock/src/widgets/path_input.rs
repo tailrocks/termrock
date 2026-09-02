@@ -998,6 +998,7 @@ impl<'a> PathInput<'a> {
                 ControlState::Default
             },
             invalid || destructive,
+            state.focused,
         );
 
         let mut y = area.y;

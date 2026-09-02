@@ -49,6 +49,12 @@ pub struct FrameCell {
     /// Reverse video (already resolved into fg/bg when true; flag kept for hosts).
     #[serde(default)]
     pub reversed: bool,
+    /// Italic modifier (comments, review chrome).
+    #[serde(default)]
+    pub italic: bool,
+    /// Strikethrough / crossed-out.
+    #[serde(default)]
+    pub strike: bool,
 }
 
 /// Full terminal frame for a story paint.
@@ -156,7 +162,7 @@ pub fn encode_buffer(buffer: &Buffer) -> (u16, u16, Vec<FrameCell>) {
     for y in 0..area.height {
         for x in 0..area.width {
             let cell = &buffer[(x, y)];
-            let (fg, bg, bold, dim, underline, reversed) =
+            let (fg, bg, bold, dim, underline, reversed, italic, strike) =
                 resolve_cell_paint(cell.fg, cell.bg, cell.modifier);
             cells.push(FrameCell {
                 ch: cell.symbol().to_string(),
@@ -166,6 +172,8 @@ pub fn encode_buffer(buffer: &Buffer) -> (u16, u16, Vec<FrameCell>) {
                 dim,
                 underline,
                 reversed,
+                italic,
+                strike,
             });
         }
     }
@@ -176,7 +184,7 @@ fn resolve_cell_paint(
     fg: Color,
     bg: Color,
     modifier: Modifier,
-) -> ([u8; 3], [u8; 3], bool, bool, bool, bool) {
+) -> ([u8; 3], [u8; 3], bool, bool, bool, bool, bool, bool) {
     let mut fg_rgb = color_to_rgb(fg, true);
     let mut bg_rgb = color_to_rgb(bg, false);
     let reversed = modifier.contains(Modifier::REVERSED);
@@ -197,6 +205,8 @@ fn resolve_cell_paint(
         modifier.contains(Modifier::DIM),
         modifier.contains(Modifier::UNDERLINED),
         reversed,
+        modifier.contains(Modifier::ITALIC),
+        modifier.contains(Modifier::CROSSED_OUT),
     )
 }
 
@@ -208,9 +218,8 @@ pub fn story_by_id(id: &str) -> Option<Story> {
 
 /// Paint a story once and return the unresolved [`Buffer`].
 ///
-/// This is the full-fidelity seam: every modifier, including italic and
-/// crossed-out, remains present here. [`encode_buffer`] and frame JSON below
-/// this point are lossy.
+/// Full-fidelity seam: modifiers including italic and crossed-out stay on
+/// [`FrameCell`] so verify/junie color can match junie comments.
 #[must_use]
 pub fn paint_story_buffer(
     story: Story,

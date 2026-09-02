@@ -156,7 +156,7 @@
       "bin": "showcase",
       "args": [
         "--page",
-        "Editable"
+        "Editable tables"
       ],
       "keys": [],
       "mouse": [],
@@ -165,10 +165,10 @@
       "junie_commit": "e43cf67",
       "junie_dirty": false,
       "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T04:12:01Z",
+      "captured_at": "2026-09-02T13:23:22Z",
       "sha256": {
-        "txt": "230e71cf46470f5324e1fa293c66192e1f53171058af80ab97a3426be76e8a44",
-        "ansi": "230e71cf46470f5324e1fa293c66192e1f53171058af80ab97a3426be76e8a44"
+        "txt": "52dfda04a81136fbdc6d52e5262ebdb855b408319b38c1616b268eb73050ca83",
+        "ansi": "a690c22db267795adf2d903c780144c798be17fd998a6dcbc7c575dbfb8cf201"
       }
     },
     "showcase_panels_120x40": {
@@ -270,7 +270,7 @@
       "bin": "showcase",
       "args": [
         "--page",
-        "Editor"
+        "Code editor"
       ],
       "keys": [],
       "mouse": [],
@@ -279,17 +279,17 @@
       "junie_commit": "e43cf67",
       "junie_dirty": false,
       "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T04:12:07Z",
+      "captured_at": "2026-09-02T13:23:22Z",
       "sha256": {
-        "txt": "230e71cf46470f5324e1fa293c66192e1f53171058af80ab97a3426be76e8a44",
-        "ansi": "230e71cf46470f5324e1fa293c66192e1f53171058af80ab97a3426be76e8a44"
+        "txt": "8bd89b90317a79a12000a6e00e8ae5b2da94c90bf8591df84dea6ada39ae1468",
+        "ansi": "59936a7e6f5faa5c4a4b2428a7d78bf3fba416ebbc8813ca1e75ef78d05b24fd"
       }
     },
     "showcase_grid_120x40": {
       "bin": "showcase",
       "args": [
         "--page",
-        "Grid"
+        "Data grid"
       ],
       "keys": [],
       "mouse": [],
@@ -298,17 +298,17 @@
       "junie_commit": "e43cf67",
       "junie_dirty": false,
       "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T04:12:08Z",
+      "captured_at": "2026-09-02T13:23:22Z",
       "sha256": {
-        "txt": "230e71cf46470f5324e1fa293c66192e1f53171058af80ab97a3426be76e8a44",
-        "ansi": "230e71cf46470f5324e1fa293c66192e1f53171058af80ab97a3426be76e8a44"
+        "txt": "44658ef6a599211f09b76b6f83c98a0157c65a34aa1122b478be19c67b5e6884",
+        "ansi": "1c1ffc92ee7ed3289e339674de6141e1a6e1cc1d762537a1cfa3f68ee5b03682"
       }
     },
     "showcase_chips_120x40": {
       "bin": "showcase",
       "args": [
         "--page",
-        "Chips"
+        "Chips & selects"
       ],
       "keys": [],
       "mouse": [],
@@ -317,10 +317,10 @@
       "junie_commit": "e43cf67",
       "junie_dirty": false,
       "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T04:12:08Z",
+      "captured_at": "2026-09-02T13:23:22Z",
       "sha256": {
-        "txt": "230e71cf46470f5324e1fa293c66192e1f53171058af80ab97a3426be76e8a44",
-        "ansi": "230e71cf46470f5324e1fa293c66192e1f53171058af80ab97a3426be76e8a44"
+        "txt": "c460394add91b648737aa6f173a86664f20b8352a46712aefa5e36ca17143e2b",
+        "ansi": "a8f1f21e68744a113c9c9dfed5b0e9844782fcf828082d74a3a30a67b316d4c0"
       }
     },
     "showcase_pickers_120x40": {
@@ -536,7 +536,7 @@
       "bin": "showcase",
       "args": [
         "--page",
-        "Editable"
+        "Editable tables"
       ],
       "keys": [],
       "mouse": [],
@@ -545,10 +545,10 @@
       "junie_commit": "e43cf67",
       "junie_dirty": false,
       "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T04:12:19Z",
+      "captured_at": "2026-09-02T13:23:22Z",
       "sha256": {
-        "txt": "49cb2d2ab1323ea968a401fbd24a20d2b51aa1879c735f4b16f487797c9fa81f",
-        "ansi": "49cb2d2ab1323ea968a401fbd24a20d2b51aa1879c735f4b16f487797c9fa81f"
+        "txt": "a0b7224b4952648e3881150c4389dd9364eee08935bac7d160c7eca662979c7a",
+        "ansi": "6f31c0cffba29a1a61852529ff00ced105c35e680c02b1c64e22ea42e86f0c4e"
       }
     },
     "showcase_panels_80x24": {
@@ -650,7 +650,7 @@
       "bin": "showcase",
       "args": [
         "--page",
-        "Editor"
+        "Code editor"
       ],
       "keys": [],
       "mouse": [],
@@ -659,17 +659,17 @@
       "junie_commit": "e43cf67",
       "junie_dirty": false,
       "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T04:12:25Z",
+      "captured_at": "2026-09-02T13:23:22Z",
       "sha256": {
-        "txt": "49cb2d2ab1323ea968a401fbd24a20d2b51aa1879c735f4b16f487797c9fa81f",
-        "ansi": "49cb2d2ab1323ea968a401fbd24a20d2b51aa1879c735f4b16f487797c9fa81f"
+        "txt": "b723d7e82c8ca85e7ad61eeee55c3edc0e5cb6cbb7e4404ca3f8cc06db402bc9",
+        "ansi": "bcbb5df61756e95a2464efb5eb531aaa27d5e6d0a1f7c38eb7acec49897851e1"
       }
     },
     "showcase_grid_80x24": {
       "bin": "showcase",
       "args": [
         "--page",
-        "Grid"
+        "Data grid"
       ],
       "keys": [],
       "mouse": [],
@@ -678,17 +678,17 @@
       "junie_commit": "e43cf67",
       "junie_dirty": false,
       "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T04:12:25Z",
+      "captured_at": "2026-09-02T13:23:22Z",
       "sha256": {
-        "txt": "49cb2d2ab1323ea968a401fbd24a20d2b51aa1879c735f4b16f487797c9fa81f",
-        "ansi": "49cb2d2ab1323ea968a401fbd24a20d2b51aa1879c735f4b16f487797c9fa81f"
+        "txt": "7624ffde9e1bc44038de4828a6b32238da0ebc8709e99d086dab04f3173e7a9b",
+        "ansi": "2f4cbd5b93181a8538d56a66aeabae21de5925a7b81374af1f7f2e31a823cf19"
       }
     },
     "showcase_chips_80x24": {
       "bin": "showcase",
       "args": [
         "--page",
-        "Chips"
+        "Chips & selects"
       ],
       "keys": [],
       "mouse": [],
@@ -697,10 +697,10 @@
       "junie_commit": "e43cf67",
       "junie_dirty": false,
       "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T04:12:26Z",
+      "captured_at": "2026-09-02T13:23:22Z",
       "sha256": {
-        "txt": "49cb2d2ab1323ea968a401fbd24a20d2b51aa1879c735f4b16f487797c9fa81f",
-        "ansi": "49cb2d2ab1323ea968a401fbd24a20d2b51aa1879c735f4b16f487797c9fa81f"
+        "txt": "3aeef058478348e0190a9b671b82e1bc7a0a06a72243066e546cfc70c6f161bd",
+        "ansi": "452520bb8aeb465d193b2f1e1b9381bb1b425d3b7c2fddf1a01f7118ec560d58"
       }
     },
     "showcase_pickers_80x24": {
@@ -851,5 +851,5 @@
   },
   "junie_commit": "e43cf67",
   "tmux": "tmux 3.7c",
-  "updated_at": "2026-09-02T04:12:34Z"
+  "updated_at": "2026-09-02T13:23:22Z"
 }

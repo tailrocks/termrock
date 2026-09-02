@@ -293,6 +293,11 @@ impl ActivationState {
 // ── Button / IconButton ─────────────────────────────────────────────────────
 
 /// Visual / semantic button chrome.
+///
+/// Junie kinds: primary, secondary, subtle ([`Self::Quiet`]), danger
+/// ([`Self::Destructive`]). Toggle is [`crate::widgets::Toggle`], not a
+/// button variant. Idle anatomy is `▎label` (gutter reserved, fg=bg when
+/// unfocused); width is label+2.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
 pub enum ButtonVariant {
@@ -301,18 +306,10 @@ pub enum ButtonVariant {
     /// Default secondary action (pad + border role when focused).
     #[default]
     Secondary,
-    /// Quiet / ghost (minimal chrome; focus = bold label + border role).
+    /// Quiet / ghost / subtle (minimal chrome; focus = bold label + gutter).
     Quiet,
-    /// Outline (border role + pad; brackets only secondary ASCII cue).
-    Outline,
     /// Destructive (Danger); must not be unsafe default focus.
     Destructive,
-    /// Link-like (always underlined; never brackets).
-    Link,
-    /// Success-affirming action.
-    Success,
-    /// Command / palette-style action (prefix cue + outline weight).
-    Command,
 }
 
 impl ButtonVariant {
@@ -323,22 +320,14 @@ impl ButtonVariant {
             Self::Primary => "primary",
             Self::Secondary => "secondary",
             Self::Quiet => "quiet",
-            Self::Outline => "outline",
             Self::Destructive => "destructive",
-            Self::Link => "link",
-            Self::Success => "success",
-            Self::Command => "command",
         }
     }
 
     const fn recipe(self) -> ButtonRecipeVariant {
         match self {
             Self::Primary => ButtonRecipeVariant::Primary,
-            Self::Success => ButtonRecipeVariant::Secondary,
-            Self::Command => ButtonRecipeVariant::Outline,
             Self::Destructive => ButtonRecipeVariant::Destructive,
-            Self::Link => ButtonRecipeVariant::Link,
-            Self::Outline => ButtonRecipeVariant::Outline,
             Self::Quiet => ButtonRecipeVariant::Quiet,
             Self::Secondary => ButtonRecipeVariant::Secondary,
         }
@@ -468,38 +457,10 @@ impl<'a> Button<'a> {
         self
     }
 
-    /// Fluent Outline.
-    #[must_use]
-    pub const fn as_outline(mut self) -> Self {
-        self.variant = ButtonVariant::Outline;
-        self
-    }
-
     /// Fluent Destructive.
     #[must_use]
     pub const fn as_destructive(mut self) -> Self {
         self.variant = ButtonVariant::Destructive;
-        self
-    }
-
-    /// Fluent Link.
-    #[must_use]
-    pub const fn as_link(mut self) -> Self {
-        self.variant = ButtonVariant::Link;
-        self
-    }
-
-    /// Fluent Success.
-    #[must_use]
-    pub const fn as_success(mut self) -> Self {
-        self.variant = ButtonVariant::Success;
-        self
-    }
-
-    /// Fluent Command.
-    #[must_use]
-    pub const fn as_command(mut self) -> Self {
-        self.variant = ButtonVariant::Command;
         self
     }
 
@@ -674,10 +635,9 @@ impl Button<'_> {
         let surface = state.activation.accepts_input() && !disabled && !loading;
         let armed = state.activation.is_armed() || state.activation.is_confirm_armed();
         let hovered = state.hovered && surface;
-        let mono = self.mono();
+        let _ = self.mono();
 
-        // Public variants collapse onto the product-neutral recipe vocabulary;
-        // Success/Command retain their semantic label cues below.
+        // Public kinds map onto the recipe vocabulary; paint adds no extra glyphs.
         let recipe_variant = self.variant.recipe();
         // One focus owner: focus is a fact the host supplies, never something
         // a button infers from being enabled. An enabled button is idle, not
@@ -705,14 +665,11 @@ impl Button<'_> {
         // M2: the recipe is the whole face. Nothing is added on top — a press
         // is the recipe's own explicit reversal, not a modifier stacked on an
         // already-resolved pair.
-        let mut style = if !a11y_ok {
+        let style = if !a11y_ok {
             theme.style(Role::Danger)
         } else {
             recipe.fill.patch(recipe.label)
         };
-        if matches!(self.variant, ButtonVariant::Success) && recipe.fill.bg.is_none() {
-            style = style.patch(theme.style(Role::Success));
-        }
 
         let narrow = area.width < 12;
         let tiny = area.width < 6;
@@ -733,20 +690,6 @@ impl Button<'_> {
             if let Some(g) = self.leading {
                 body.push_str(g);
                 body.push(' ');
-            }
-        }
-        // Variant-specific non-bracket cues (prefix is secondary to role/weight).
-        if !loading {
-            match self.variant {
-                ButtonVariant::Command if !tiny => {
-                    body.push(if mono { '>' } else { '›' });
-                    body.push(' ');
-                }
-                ButtonVariant::Destructive if mono && !tiny => {
-                    body.push('!');
-                    body.push(' ');
-                }
-                _ => {}
             }
         }
         if tiny && !self.label.is_empty() {
@@ -777,14 +720,7 @@ impl Button<'_> {
         // column is reserved either way, so focus never shifts the label.
         let pad = self.size.pad_cols();
         let pad_s = " ".repeat(pad);
-        let label = match self.variant {
-            ButtonVariant::Link | ButtonVariant::Quiet => format!("{pad_s}{body}"),
-            ButtonVariant::Outline if mono => {
-                // Brackets only as ASCII secondary chrome alongside the border.
-                format!("{pad_s}[{body}]")
-            }
-            _ => format!("{pad_s}{body}{pad_s}"),
-        };
+        let label = format!("{pad_s}{body}{pad_s}");
         // A busy button reserves two more cells for the spinner prefix.
         let busy_pad = u16::from(loading).saturating_mul(2);
         let paint_w = if self.full_width {
@@ -816,7 +752,7 @@ impl Button<'_> {
         if paint_w > 0 {
             // Junie: col 0 is always `▎`. Unfocused, fg equals the fill so the
             // glyph is present but invisible. Use the resolver, not a guessed
-            // plane — Quiet/Link have no fill of their own and sit on `ground`.
+            // plane — Quiet has no fill of its own and sits on `ground`.
             let visual = VisualState {
                 focused,
                 hovered,
@@ -1497,6 +1433,20 @@ mod tests {
     }
 
     #[test]
+    fn idle_secondary_is_gutter_then_label() {
+        let system = DesignSystem::default();
+        let mut state = ButtonState::new();
+        let area = Rect::new(0, 0, 16, 1);
+        let mut buffer = Buffer::empty(area);
+        Button::new("Run", &system).paint(area, &mut buffer, &mut state);
+        assert_eq!(buffer[(0, 0)].symbol(), "▎");
+        assert_eq!(buffer[(0, 0)].fg, buffer[(0, 0)].bg);
+        assert_eq!(buffer[(1, 0)].symbol(), "R");
+        assert_ne!(buffer[(1, 0)].symbol(), "›");
+        assert_eq!(Button::new("Run", &system).preferred_width(), 5);
+    }
+
+    #[test]
     fn focused_button_paints_visible_gutter() {
         let system = DesignSystem::junie();
         let mut state = ButtonState::new();
@@ -1656,11 +1606,7 @@ mod tests {
             ButtonVariant::Primary,
             ButtonVariant::Secondary,
             ButtonVariant::Quiet,
-            ButtonVariant::Outline,
             ButtonVariant::Destructive,
-            ButtonVariant::Link,
-            ButtonVariant::Success,
-            ButtonVariant::Command,
         ] {
             let mut buf = Buffer::empty(area);
             Button::new("Act", &system)
@@ -1674,7 +1620,7 @@ mod tests {
     fn semantic_bold_focus_survives_no_color_paint() {
         let system = DesignSystem::default().no_color();
         let area = Rect::new(0, 0, 12, 1);
-        for variant in [ButtonVariant::Success, ButtonVariant::Command] {
+        for variant in [ButtonVariant::Secondary, ButtonVariant::Quiet] {
             let mut idle = Buffer::empty(area);
             let mut idle_state = ButtonState::new();
             Button::new("Run", &system)
@@ -1693,22 +1639,6 @@ mod tests {
 
             assert_ne!(idle.content(), focused.content(), "{variant:?}");
         }
-    }
-
-    #[test]
-    fn link_variant_not_bracket_only() {
-        let system = DesignSystem::default().no_color();
-        let mut state = ButtonState::new();
-        state.activation.set_accepts_input(true);
-        let area = Rect::new(0, 0, 12, 1);
-        let mut buf = Buffer::empty(area);
-        Button::new("docs", &system)
-            .as_link()
-            .colorless(true)
-            .paint(area, &mut buf, &mut state);
-        let text: String = (0..12).map(|x| buf[(x, 0)].symbol().to_string()).collect();
-        assert!(text.contains("docs"), "{text}");
-        assert!(!text.trim_start().starts_with('['), "{text}");
     }
 
     #[test]

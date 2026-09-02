@@ -998,6 +998,7 @@ impl<'a> TokenField<'a> {
                 ControlState::Default
             },
             invalid,
+            state.focused && matches!(state.zone, TokenFieldZone::Draft),
         );
 
         let mut y = area.y;

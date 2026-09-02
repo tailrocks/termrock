@@ -3,9 +3,7 @@
 
 Input is whatever `cargo run -p termrock-lookbook -- frame --story <id>` prints on
 stdout (a single TerminalFrame). Field names are mapped onto the grid vocabulary
-used by ansi2grid.py / diff_grid.py — notably `reversed` -> `reverse`. termrock's
-FrameCell carries no italic/strike bits (encode_buffer is lossy by design), so those
-are written as false; the color layer documents the asymmetry instead of guessing.
+used by ansi2grid.py / diff_grid.py — notably `reversed` -> `reverse`.
 
 Usage: frame2grid.py <frame.json|-> <out.grid.json>
 """
@@ -34,10 +32,10 @@ def convert(frame):
                 "bg": list(c["bg"]),
                 "bold": bool(c.get("bold", False)),
                 "dim": bool(c.get("dim", False)),
-                "italic": False,  # not representable in termrock FrameCell
+                "italic": bool(c.get("italic", False)),
                 "underline": bool(c.get("underline", False)),
                 "reverse": bool(c.get("reversed", c.get("reverse", False))),
-                "strike": False,  # not representable in termrock FrameCell
+                "strike": bool(c.get("strike", False)),
             }
         )
     return {"cols": cols, "rows": rows, "cells": out}

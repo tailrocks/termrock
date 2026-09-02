@@ -37,11 +37,18 @@ use crate::{
     },
 };
 
-/// Selection gutter width: one marker cell plus its breathing space.
-///
-/// Stated once so the gutter cannot drift between the row, the header and the
-/// hit regions (plans/022 Step 6).
-const GUTTER_W: u16 = 2;
+/// Junie grid chrome: `▎` + select `✓` + change slot + optional row numbers
+/// + a pad column. Matches `junie-tui` `gutter_w = 3 + num_w + row_numbers`.
+fn grid_chrome_width(row_count: usize, row_numbers: bool) -> u16 {
+    let num_w = if row_numbers {
+        u16::try_from(row_count.max(1).to_string().len())
+            .unwrap_or(2)
+            .max(2)
+    } else {
+        0
+    };
+    3 + num_w + u16::from(row_numbers)
+}
 
 /// Column separator, from the glyph catalog rather than a file-local literal.
 const RESIZE_HIT: u16 = 1;
@@ -1056,6 +1063,8 @@ pub struct DataTable<'a, RowId, ColId> {
     focused: bool,
     /// Request host fullscreen promotion affordance chrome.
     fullscreen_hint: bool,
+    /// 1-based row index column (junie grid default).
+    row_numbers: bool,
 }
 
 impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColId> {
@@ -1074,6 +1083,7 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
             toolbar: None,
             focused: false,
             fullscreen_hint: false,
+            row_numbers: true,
         }
     }
 
@@ -1103,6 +1113,17 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
     pub const fn fullscreen_hint(mut self, on: bool) -> Self {
         self.fullscreen_hint = on;
         self
+    }
+
+    /// 1-based row index column after the change slot.
+    #[must_use]
+    pub const fn row_numbers(mut self, on: bool) -> Self {
+        self.row_numbers = on;
+        self
+    }
+
+    fn chrome_width(&self) -> u16 {
+        grid_chrome_width(self.rows.len(), self.row_numbers)
     }
 
     /// Paint O(visible) rows only.
@@ -1140,7 +1161,7 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
             y = y.saturating_add(1);
         }
 
-        let col_budget = area.width.saturating_sub(GUTTER_W);
+        let col_budget = area.width.saturating_sub(self.chrome_width());
         state.viewport_width = col_budget;
         self.columns.resolve_paint_widths(
             col_budget.saturating_add(state.h_offset),
@@ -1313,8 +1334,15 @@ fn paint_header_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
         Rect::new(area.x, y, area.width, 1),
         super::table_chrome::header_band(table.system),
     );
-    buffer.set_stringn(area.x, y, "  ", usize::from(GUTTER_W), style);
-    let origin = area.x.saturating_add(GUTTER_W);
+    let chrome = table.chrome_width();
+    buffer.set_stringn(
+        area.x,
+        y,
+        &" ".repeat(usize::from(chrome)),
+        usize::from(chrome),
+        style,
+    );
+    let origin = area.x.saturating_add(chrome);
     let clip_right = area.right();
     let mut x = origin;
     // Apply h_offset only to unpinned center columns; pin start paints first.
@@ -1410,7 +1438,7 @@ fn paint_clip_chevrons<RowId: Clone + Ord, ColId: Clone + PartialEq>(
     let style = table.system.style(Role::TextFaint);
     let glyphs = table.system.glyphs;
     if state.h_offset > 0 {
-        let x = area.x.saturating_add(GUTTER_W);
+        let x = area.x.saturating_add(table.chrome_width());
         if x < area.right() {
             buffer.set_stringn(x, y, glyphs.resolve(Glyph::ChevronLeft).text, 1, style);
         }
@@ -1420,7 +1448,7 @@ fn paint_clip_chevrons<RowId: Clone + Ord, ColId: Clone + PartialEq>(
         .iter()
         .map(|(_, w)| w.saturating_add(1))
         .sum();
-    let visible = area.width.saturating_sub(GUTTER_W);
+    let visible = area.width.saturating_sub(table.chrome_width());
     if total.saturating_sub(state.h_offset) > visible {
         let x = area.right().saturating_sub(1);
         buffer.set_stringn(x, y, glyphs.resolve(Glyph::ChevronRight).text, 1, style);
@@ -1469,10 +1497,61 @@ fn paint_data_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
     let style = chrome.label_style(base);
 
     chrome.paint_wash(buffer, Rect::new(area.x, y, area.width, 1));
-    buffer.set_stringn(area.x, y, " ", 1, style);
-    buffer.set_stringn(area.x.saturating_add(1), y, " ", 1, style);
+    let theme = table.system.junie_theme();
+    let visual = crate::style::VisualState {
+        focused: cursor && surface_focused,
+        selected,
+        hovered: state.hovered_row.as_ref() == Some(id),
+        ..crate::style::VisualState::default()
+    };
+    let bg = style.bg.unwrap_or(theme.surface);
+    let gutter_w = table.chrome_width();
+    buffer.set_stringn(
+        area.x,
+        y,
+        table.system.glyphs.selection_gutter(),
+        1,
+        table.system.gutter(visual, bg, false),
+    );
+    if gutter_w > 1 {
+        let mark = if selected {
+            table.system.glyphs.resolve(Glyph::Success).text
+        } else {
+            " "
+        };
+        let mark_style = if selected {
+            style.fg(if cursor && surface_focused {
+                theme.accent
+            } else {
+                theme.text_secondary
+            })
+        } else {
+            style
+        };
+        buffer.set_stringn(area.x.saturating_add(1), y, mark, 1, mark_style);
+    }
+    if gutter_w > 2 {
+        buffer.set_stringn(area.x.saturating_add(2), y, " ", 1, style);
+    }
+    if table.row_numbers && gutter_w > 3 {
+        let num_w = gutter_w.saturating_sub(4).max(2);
+        let n = logical_row.saturating_add(1);
+        let label = format!("{n:>width$}", width = usize::from(num_w));
+        let nstyle = style.fg(if cursor && surface_focused {
+            theme.text_secondary
+        } else {
+            theme.text_faint
+        });
+        buffer.set_stringn(
+            area.x.saturating_add(3),
+            y,
+            &crate::text::take_display_cols(&label, usize::from(num_w)),
+            usize::from(num_w),
+            nstyle,
+        );
+    }
 
-    let origin = area.x.saturating_add(GUTTER_W);
+    let origin = area.x.saturating_add(gutter_w);
     let clip_right = area.right();
     let h_off = i32::from(state.h_offset);
     let mut logical = 0i32;

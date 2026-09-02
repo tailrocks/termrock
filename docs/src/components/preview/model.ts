@@ -7,6 +7,8 @@ export type FrameCell = {
   readonly dim?: boolean
   readonly underline?: boolean
   readonly reversed?: boolean
+  readonly italic?: boolean
+  readonly strike?: boolean
 }
 
 export type TerminalFrame = {

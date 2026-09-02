@@ -1192,86 +1192,182 @@ impl<'a, Id> NavigationList<'a, Id> {
                 painted += 1;
             }
 
+            // Junie NavList: section headers are a faint label at col 3, no
+            // gutter, and a blank row between groups. Items are list anatomy
+            // (▎ › icon label, badge right-aligned) — `›` is the current
+            // route, not a disclosure chevron.
+            if matches!(item.kind, NavItemKind::Section) && !self.rail {
+                if y > area.y {
+                    y = y.saturating_add(1);
+                    if y >= area.bottom() {
+                        break;
+                    }
+                }
+                let label_w = usize::from(area.width.saturating_sub(3));
+                if label_w > 0 {
+                    buffer.set_stringn(
+                        area.x.saturating_add(3),
+                        y,
+                        take_display_cols(&item.label, label_w),
+                        label_w,
+                        self.system.style(Role::TextFaint),
+                    );
+                }
+                y = y.saturating_add(1);
+                continue;
+            }
+
             let route = state.route.as_ref() == Some(&item.id);
             let focus = state.collection.active() == Some(&item.id) && surface;
-            let style = if !item.enabled && item.kind.is_route() {
+            let disabled = !item.enabled && item.kind.is_route();
+            // Junie `row()` fills idle rows with primary; only the label is
+            // stepped down to secondary. Spacer/marker cells stay primary.
+            let fill = if disabled {
                 self.system.style(Role::TextDisabled)
-            } else if route {
-                // The active route is a strong label on the selection wash —
-                // never a full-width slab of brand color.
+            } else if route && focus {
                 self.system
-                    .style(Role::TextStrong)
+                    .style(Role::Text)
                     .patch(self.system.style(Role::SelectionTint))
                     .add_modifier(Modifier::BOLD)
             } else if focus {
-                self.system.style(Role::Focus).add_modifier(Modifier::BOLD)
-            } else if matches!(item.kind, NavItemKind::Section) {
-                self.system
-                    .style(Role::TextMuted)
-                    .add_modifier(Modifier::BOLD)
+                self.system.style(Role::Text).add_modifier(Modifier::BOLD)
             } else {
                 self.system.style(Role::Text)
             };
-
-            // Col 0 is always the focus bar. Unfocused rows keep the glyph
-            // with fg=bg from the row recipe; never a blank column.
-            let gutter = self.system.glyphs.selection_gutter();
-
-            let text = if self.rail {
-                let ch = item
-                    .icon
-                    .as_ref()
-                    .and_then(|i| i.chars().next())
-                    .or_else(|| item.label.chars().next())
-                    .unwrap_or('·');
-                format!("{gutter}{ch}")
+            let style = if disabled {
+                fill
+            } else if route || focus {
+                fill
             } else {
-                let indent = "  ".repeat(usize::from(item.depth));
-                let chev = if item.has_children {
-                    if item.expanded { "▾ " } else { "▸ " }
-                } else {
-                    "  "
-                };
-                let icon = item
-                    .icon
-                    .as_deref()
-                    .map(|i| format!("{i} "))
-                    .unwrap_or_default();
-                let status = item
-                    .status
-                    .mark(false)
-                    .map(|m| format!("{m} "))
-                    .unwrap_or_default();
-                let badge = item
-                    .badge
-                    .as_deref()
-                    .map(|b| format!(" [{b}]"))
-                    .unwrap_or_default();
-                format!("{gutter}{indent}{chev}{status}{icon}{}{badge}", item.label)
+                self.system.style(Role::TextSecondary)
             };
 
             let rect = Rect::new(area.x, y, area.width, 1);
-            buffer.set_stringn(
-                rect.x,
-                rect.y,
-                take_display_cols(&text, usize::from(rect.width)),
-                usize::from(rect.width),
-                style,
-            );
+            buffer.set_style(rect, fill);
             let visual = VisualState {
                 focused: focus,
                 selected: route,
                 disabled: !item.enabled,
                 ..VisualState::default()
             };
-            let bg = style.bg.unwrap_or(self.system.junie_theme().surface);
-            buffer.set_stringn(
-                rect.x,
-                rect.y,
-                self.system.glyphs.selection_gutter(),
-                1,
-                self.system.gutter(visual, bg, false),
-            );
+            let theme = self.system.junie_theme();
+            let bg = style.bg.unwrap_or(theme.surface);
+            let gutter = self.system.glyphs.selection_gutter();
+            if self.rail {
+                let ch = item
+                    .icon
+                    .as_ref()
+                    .and_then(|i| i.chars().next())
+                    .or_else(|| item.label.chars().next())
+                    .unwrap_or('·');
+                buffer.set_stringn(
+                    rect.x,
+                    rect.y,
+                    take_display_cols(&format!("{gutter}{ch}"), usize::from(rect.width)),
+                    usize::from(rect.width),
+                    style,
+                );
+            } else {
+                let indent = u16::from(item.depth).saturating_mul(2);
+                buffer.set_stringn(
+                    rect.x,
+                    rect.y,
+                    gutter,
+                    1,
+                    self.system.gutter(visual, bg, false),
+                );
+                if rect.width > 1 {
+                    let marker = if route {
+                        "›"
+                    } else if item.has_children {
+                        if item.expanded { "▾" } else { "▸" }
+                    } else {
+                        " "
+                    };
+                    let marker_style = if route && item.enabled {
+                        fill.fg(theme.accent)
+                    } else {
+                        fill
+                    };
+                    buffer.set_stringn(rect.x.saturating_add(1), rect.y, marker, 1, marker_style);
+                }
+                let mut cluster_x = rect.x.saturating_add(3).saturating_add(indent);
+                if let Some(mark) = item.status.mark(self.system.mono())
+                    && cluster_x < rect.right()
+                {
+                    buffer.set_stringn(cluster_x, rect.y, mark, 1, style);
+                    cluster_x = cluster_x.saturating_add(2);
+                }
+                if let Some(icon) = item.icon.as_deref()
+                    && cluster_x < rect.right()
+                {
+                    let icon_style = if item.enabled {
+                        style.fg(theme.text_muted)
+                    } else {
+                        style
+                    };
+                    buffer.set_stringn(
+                        cluster_x,
+                        rect.y,
+                        take_display_cols(
+                            icon,
+                            usize::from(rect.right().saturating_sub(cluster_x)),
+                        ),
+                        usize::from(rect.right().saturating_sub(cluster_x)),
+                        icon_style,
+                    );
+                }
+                let label_x = if item.icon.is_some() {
+                    cluster_x.saturating_add(2)
+                } else {
+                    cluster_x
+                };
+                if label_x < rect.right() {
+                    let badge_w = item
+                        .badge
+                        .as_deref()
+                        .map(|b| {
+                            u16::try_from(display_cols(b))
+                                .unwrap_or(0)
+                                .saturating_add(1)
+                        })
+                        .unwrap_or(0);
+                    let label_w = rect.right().saturating_sub(label_x).saturating_sub(badge_w);
+                    if label_w > 0 {
+                        buffer.set_stringn(
+                            label_x,
+                            rect.y,
+                            take_display_cols(&item.label, usize::from(label_w)),
+                            usize::from(label_w),
+                            style,
+                        );
+                    }
+                }
+                if let Some(badge) = item.badge.as_deref() {
+                    let bw = u16::try_from(display_cols(badge)).unwrap_or(0);
+                    if bw > 0 {
+                        let bx = rect
+                            .right()
+                            .saturating_sub(bw.saturating_add(1))
+                            .max(rect.x);
+                        let badge_style = if item.enabled {
+                            style.fg(theme.accent)
+                        } else {
+                            style
+                        };
+                        buffer.set_stringn(bx, rect.y, badge, usize::from(bw), badge_style);
+                    }
+                }
+            }
+            if self.rail {
+                buffer.set_stringn(
+                    rect.x,
+                    rect.y,
+                    gutter,
+                    1,
+                    self.system.gutter(visual, bg, false),
+                );
+            }
             if item.kind.is_focusable() {
                 state.regions.push(HitRegion {
                     id: item.id.clone(),

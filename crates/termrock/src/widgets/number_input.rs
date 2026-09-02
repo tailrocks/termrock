@@ -1030,6 +1030,7 @@ impl<'a> NumberInput<'a> {
                 ControlState::Default
             },
             invalid,
+            state.editing,
         );
 
         let mut y = area.y;

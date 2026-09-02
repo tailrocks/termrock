@@ -804,6 +804,7 @@ impl<'a> SearchInput<'a> {
                 ControlState::Default
             },
             invalid,
+            state.focused,
         );
 
         let mut y = area.y;

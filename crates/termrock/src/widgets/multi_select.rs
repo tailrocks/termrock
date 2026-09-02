@@ -890,6 +890,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
                 ControlState::Default
             },
             invalid,
+            false,
         );
         let mut y = area.y;
         if (matches!(state.recipe, SelectRecipe::Form) || !self.label.is_empty())

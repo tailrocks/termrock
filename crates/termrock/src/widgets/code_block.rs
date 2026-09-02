@@ -1100,7 +1100,6 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
         if !well.is_empty() {
             buffer.set_style(well, fs);
         }
-        let gutter_bar = self.system.gutter(visual, field_bg, false);
         let block = self.resolved_block(state);
 
         let mono = self.is_monochrome();
@@ -1127,19 +1126,33 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
                 continue;
             };
             let raw = self.lines[win_i];
-            let mut prepared = prepare_code_display(raw, tab, self.controls);
-            if false && matches!(self.controls, ControlRender::Placeholder) {
-                prepared = prepared.replace('·', ".");
-            }
+            let prepared = prepare_code_display(raw, tab, self.controls);
             let kinds = self.highlights_for(abs, state);
 
-            // Gutter: `▎` is focus only (cursor line). Marker is `›` for the
-            // current block or `!` for a diagnostic — never a second `▎`.
+            // Junie: the bar marks the cursor line only, like a list row.
+            // Unfocused, fg equals the field so the glyph is present but
+            // invisible. Marker is `›` for the current block or `!` for a
+            // diagnostic — never a second `▎`.
             if parts.gutter.width > 0 {
                 let y = parts.body.y.saturating_add(row);
                 let gx = parts.gutter.x;
-                if state.cursor_line == Some(abs) && state.focused {
-                    buffer.set_stringn(gx, y, self.system.glyphs.selection_gutter(), 1, gutter_bar);
+                let on_cursor = state.cursor_line == Some(abs);
+                if on_cursor {
+                    let line_gutter = self.system.gutter(
+                        VisualState {
+                            focused: state.focused,
+                            ..visual
+                        },
+                        field_bg,
+                        false,
+                    );
+                    buffer.set_stringn(
+                        gx,
+                        y,
+                        self.system.glyphs.selection_gutter(),
+                        1,
+                        line_gutter,
+                    );
                 }
                 if let Some(m) = self.mark_for(abs) {
                     // A diagnostic owns the marker slot (`!`).
@@ -1158,7 +1171,7 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
                     buffer.set_stringn(
                         gx.saturating_add(1),
                         y,
-                        "›",
+                        self.system.glyphs.selection_marker(),
                         1,
                         fs.fg(if state.focused {
                             theme.accent
@@ -1178,7 +1191,7 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
                     } else if in_block {
                         fs.fg(theme.text_secondary)
                     } else {
-                        fs.fg(theme.text_faint)
+                        fs.fg(theme.text_muted)
                     };
                     buffer.set_stringn(
                         gx.saturating_add(3),
@@ -2083,8 +2096,8 @@ mod tests {
         assert_eq!(buf[(0, 1)].symbol(), "▎", "focus bar on cursor line");
         assert_eq!(buf[(1, 1)].symbol(), "›", "block marker, not a second bar");
         assert_ne!(buf[(1, 1)].symbol(), "▎");
-        // line numbers are faint off the cursor line
-        assert_eq!(buf[(3, 2)].fg, system.junie_theme().text_faint);
+        // line numbers are muted off the current block
+        assert_eq!(buf[(3, 2)].fg, system.junie_theme().text_muted);
     }
 
     #[test]

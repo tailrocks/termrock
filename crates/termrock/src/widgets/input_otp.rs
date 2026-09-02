@@ -373,7 +373,9 @@ impl<'a> InputOtp<'a> {
         } else {
             ControlState::Default
         };
-        let recipe = self.system.input_recipe(control_state, false);
+        let recipe = self
+            .system
+            .input_recipe(control_state, false, state.focused);
         let mut y = area.y;
         if let Some(label) = self.label {
             if area.height >= 2 {
