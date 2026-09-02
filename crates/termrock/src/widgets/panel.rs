@@ -1589,21 +1589,12 @@ mod tests {
 
         assert_eq!(overlay[(4, 2)].bg, system.style(Role::Elevated).bg.unwrap());
         // Framed in-flow panes sit on the canvas; overlays lift to elevated.
-        let canvas_bg = system
-            .style(Role::Canvas)
-            .bg
-            .or(Some(ratatui_core::style::Color::Reset));
-        assert!(
-            in_flow[(4, 2)].bg
-                == system
-                    .style(Role::Canvas)
-                    .bg
-                    .unwrap_or(ratatui_core::style::Color::Reset)
-                || in_flow[(4, 2)].bg == ratatui_core::style::Color::Reset,
+        assert_eq!(
+            in_flow[(4, 2)].bg,
+            system.style(Role::Canvas).bg.unwrap(),
             "framed fill is canvas, got {:?}",
             in_flow[(4, 2)].bg
         );
-        let _ = canvas_bg;
         assert_ne!(
             overlay[(4, 2)].bg,
             in_flow[(4, 2)].bg,

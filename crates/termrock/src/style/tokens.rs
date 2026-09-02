@@ -861,7 +861,7 @@ impl DesignSystem {
 
     /// junie hover ladder: exactly one plane above the container ground.
     ///
-    /// canvas → elevated, surface/elevated → popover, field → field hover,
+    /// canvas → elevated, surface/elevated → overlay, field → field hover,
     /// anything else → popover.
     #[must_use]
     pub fn lift(&self, bg: Color) -> Color {
