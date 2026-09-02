@@ -17,7 +17,6 @@
 //! the standalone field used *inside* those surfaces.
 //!
 //! Research: fzf, television, browser find, VisiData, editor search bars.
-
 use std::collections::VecDeque;
 use std::time::Duration;
 use web_time::Instant;
@@ -694,7 +693,6 @@ pub struct SearchInput<'a> {
     filters: &'a [SearchFilterChip<'a>],
     show_clear: bool,
     show_leading_icon: bool,
-    ascii: bool,
     validation: Validation<'a>,
 }
 
@@ -711,7 +709,6 @@ impl<'a> SearchInput<'a> {
             filters: &[],
             show_clear: true,
             show_leading_icon: true,
-            ascii: false,
             validation: Validation::Valid,
         }
     }
@@ -767,13 +764,7 @@ impl<'a> SearchInput<'a> {
 
     /// ASCII glyphs.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// External validation.
-    #[must_use]
     pub const fn validation(mut self, validation: Validation<'a>) -> Self {
         self.validation = validation;
         self
@@ -845,7 +836,7 @@ impl<'a> SearchInput<'a> {
 
         // Leading icon (contracts before query)
         if self.show_leading_icon && row.width > 4 {
-            let icon = if self.ascii { "/" } else { "⌕" };
+            let icon = { "⌕" };
             buffer.set_stringn(x, row.y, icon, 1, field_recipe.placeholder);
             x = x.saturating_add(2);
         }
@@ -861,13 +852,7 @@ impl<'a> SearchInput<'a> {
                 break;
             }
             let rect = Rect::new(x, row.y, w, 1);
-            buffer.set_stringn(
-                x,
-                row.y,
-                &label,
-                usize::from(w),
-                field_recipe.cursor.add_modifier(Modifier::REVERSED),
-            );
+            buffer.set_stringn(x, row.y, &label, usize::from(w), field_recipe.cursor);
             chip_rects.push(rect);
             x = x.saturating_add(w).saturating_add(1);
         }
@@ -908,9 +893,11 @@ impl<'a> SearchInput<'a> {
             right = right.saturating_sub(2);
             if show_clear {
                 clear_rect = Some(Rect::new(right.saturating_add(1), row.y, 1, 1));
-                let action = self
-                    .system
-                    .button_recipe(ButtonRecipeVariant::Quiet, ControlState::Default);
+                let action = self.system.button_recipe(
+                    ButtonRecipeVariant::Quiet,
+                    ControlState::Default,
+                    self.system.junie_theme().surface,
+                );
                 buffer.set_stringn(
                     right.saturating_add(1),
                     row.y,
@@ -974,13 +961,7 @@ impl<'a> SearchInput<'a> {
         }
         let label = match self.status {
             SearchStatus::Idle => String::new(),
-            SearchStatus::Searching => {
-                if self.ascii {
-                    "...".into()
-                } else {
-                    "…".into()
-                }
-            }
+            SearchStatus::Searching => "…".into(),
             SearchStatus::Results { count } => format!("{count}"),
             SearchStatus::NoResults => "0".into(),
             SearchStatus::Error => "err".into(),
@@ -1163,7 +1144,6 @@ mod tests {
         let parts = SearchInput::new(&system)
             .filters(&chips)
             .status(SearchStatus::Results { count: 12 })
-            .ascii(true)
             .paint(area, &mut buf, &mut state);
         assert!(!parts.meta.is_empty() || parts.meta.width > 0);
         assert!(!parts.filter_chips.is_empty());
@@ -1181,7 +1161,6 @@ mod tests {
         let mut buf = Buffer::empty(area);
         let parts = SearchInput::new(&system)
             .filters(&chips)
-            .ascii(true)
             .paint(area, &mut buf, &mut state);
         let chip = parts.filter_chips[0];
         assert_eq!(
@@ -1236,9 +1215,7 @@ mod tests {
         state.set_focused(true);
         let area = Rect::new(0, 0, 48, 2);
         let mut buf = Buffer::empty(area);
-        let w = SearchInput::new(&system)
-            .status(SearchStatus::Results { count: 3 })
-            .ascii(true);
+        let w = SearchInput::new(&system).status(SearchStatus::Results { count: 3 });
         for _ in 0..200 {
             let _ = w.paint(area, &mut buf, &mut state);
         }

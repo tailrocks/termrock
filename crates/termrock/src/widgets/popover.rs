@@ -16,7 +16,6 @@
 //! or fullscreen when the preferred size cannot fit.
 //!
 //! Research: Radix Popover, terminal pickers, Textual overlays.
-
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
@@ -646,7 +645,6 @@ pub struct Popover<'a> {
     footer: Option<&'a str>,
     /// Draw single-line border (focus uses BorderFocused role when focused).
     border: bool,
-    ascii: bool,
     colorless: bool,
 }
 
@@ -659,7 +657,6 @@ impl<'a> Popover<'a> {
             header: None,
             footer: None,
             border: true,
-            ascii: false,
             colorless: false,
         }
     }
@@ -687,13 +684,7 @@ impl<'a> Popover<'a> {
 
     /// ASCII border glyphs.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Colorless roles.
-    #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self

@@ -6,7 +6,6 @@
 //! [`Checkbox`] is the form-field boolean/tri-state control (label + description).
 //! Prefer [`crate::widgets::Toggle`] for sticky toolbar tools and
 //! [`Switch`] for settings On/Off.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -397,23 +396,11 @@ impl<'a, Id> Checkbox<'a, Id> {
         mark_w.saturating_add(gap).saturating_add(label_w).max(3)
     }
 
-    fn mono(&self) -> bool {
-        self.colorless || self.system.mono() || self.system.glyphs.is_ascii()
-    }
-
     fn box_mark(&self, value: CheckboxValue) -> &'static str {
-        // Prefer catalog; force ASCII bracket forms when mono for no-color clarity.
-        if self.mono() {
-            return match value {
-                CheckboxValue::Checked => "[x]",
-                CheckboxValue::Unchecked => "[ ]",
-                CheckboxValue::Indeterminate => "[-]",
-            };
-        }
         match value {
             CheckboxValue::Checked => self.system.glyphs.check_on(),
             CheckboxValue::Unchecked => self.system.glyphs.check_off(),
-            CheckboxValue::Indeterminate => self.system.glyphs.check_mixed(),
+            CheckboxValue::Indeterminate => "[–]",
         }
     }
 
@@ -427,19 +414,23 @@ impl<'a, Id> Checkbox<'a, Id> {
         } else {
             ControlState::Default
         };
-        let recipe = self
-            .system
-            .button_recipe(ButtonRecipeVariant::Quiet, control_state);
+        let recipe = self.system.button_recipe(
+            ButtonRecipeVariant::Quiet,
+            control_state,
+            self.system.junie_theme().surface,
+        );
         let mut style = recipe.fill.patch(recipe.label);
         if state.read_only {
-            style = style.add_modifier(Modifier::DIM);
+            // Read-only is the disabled fact: say it with the disabled tone,
+            // never with a dimmed copy of the active one.
+            style = style.patch(self.system.style(Role::TextDisabled));
         }
         if state.invalid {
             style = style.patch(self.system.style(Role::Danger));
         }
         match state.value {
             CheckboxValue::Checked => style.add_modifier(Modifier::BOLD),
-            CheckboxValue::Indeterminate => style.add_modifier(Modifier::DIM),
+            CheckboxValue::Indeterminate => style.patch(self.system.style(Role::TextMuted)),
             CheckboxValue::Unchecked => style,
         }
     }
@@ -454,12 +445,16 @@ impl<'a, Id> Checkbox<'a, Id> {
         } else {
             ControlState::Default
         };
-        let recipe = self
-            .system
-            .button_recipe(ButtonRecipeVariant::Quiet, control_state);
+        let recipe = self.system.button_recipe(
+            ButtonRecipeVariant::Quiet,
+            control_state,
+            self.system.junie_theme().surface,
+        );
         let mut style = recipe.fill.patch(recipe.label);
         if state.read_only {
-            style = style.add_modifier(Modifier::DIM);
+            // Read-only is the disabled fact: say it with the disabled tone,
+            // never with a dimmed copy of the active one.
+            style = style.patch(self.system.style(Role::TextDisabled));
         }
         if state.invalid {
             style = style.patch(self.system.style(Role::Danger));
@@ -1020,7 +1015,7 @@ impl<'a, Id> RadioGroup<'a, Id> {
     /// chosen. The middle rung existed in the model and was never painted, so
     /// a roving cursor looked identical to a made choice (plans/015 Step 5).
     fn mark(&self, selected: bool, previewed: bool) -> &'static str {
-        if self.mono() || self.system.glyphs.is_ascii() {
+        if self.mono() || false {
             // Bracket forms keep 3-column alignment stable.
             return match (selected, previewed) {
                 (true, _) => "(*)",
@@ -1276,13 +1271,11 @@ impl<'a, Id: Clone + PartialEq> RadioGroup<'a, Id> {
             enabled: state.enabled && opt.enabled,
             loading: false,
             checked: selected,
+            ..ListRowVisualState::default()
         });
         let mut style = recipe.label;
         if selected {
             style = style.add_modifier(Modifier::BOLD);
-            if self.mono() {
-                style = style.add_modifier(Modifier::REVERSED);
-            }
         }
         if state.invalid && selected {
             style = style.patch(self.system.style(Role::Danger));
@@ -2014,12 +2007,16 @@ impl<'a, Id> Switch<'a, Id> {
         } else {
             ControlState::Default
         };
-        let recipe = self
-            .system
-            .button_recipe(ButtonRecipeVariant::Quiet, control_state);
+        let recipe = self.system.button_recipe(
+            ButtonRecipeVariant::Quiet,
+            control_state,
+            self.system.junie_theme().surface,
+        );
         let mut style = recipe.fill.patch(recipe.label);
         if state.read_only {
-            style = style.add_modifier(Modifier::DIM);
+            // Read-only is the disabled fact: say it with the disabled tone,
+            // never with a dimmed copy of the active one.
+            style = style.patch(self.system.style(Role::TextDisabled));
         }
         if state.invalid {
             style = style.patch(self.system.style(Role::Danger));
@@ -2027,9 +2024,6 @@ impl<'a, Id> Switch<'a, Id> {
         if state.on {
             style = style.patch(self.system.style(Role::Success));
             style = style.add_modifier(Modifier::BOLD);
-            if self.mono() {
-                style = style.add_modifier(Modifier::REVERSED);
-            }
         }
         style
     }
@@ -2046,12 +2040,16 @@ impl<'a, Id> Switch<'a, Id> {
         } else {
             ControlState::Default
         };
-        let recipe = self
-            .system
-            .button_recipe(ButtonRecipeVariant::Quiet, control_state);
+        let recipe = self.system.button_recipe(
+            ButtonRecipeVariant::Quiet,
+            control_state,
+            self.system.junie_theme().surface,
+        );
         let mut style = recipe.fill.patch(recipe.label);
         if state.read_only {
-            style = style.add_modifier(Modifier::DIM);
+            // Read-only is the disabled fact: say it with the disabled tone,
+            // never with a dimmed copy of the active one.
+            style = style.patch(self.system.style(Role::TextDisabled));
         }
         if state.invalid {
             style = style.patch(self.system.style(Role::Danger));
@@ -2340,27 +2338,6 @@ mod tests {
     }
 
     #[test]
-    fn checkbox_ascii_marks_no_color() {
-        let system = DesignSystem::default().glyphs(crate::style::GlyphSet::Ascii);
-        let cb = Checkbox::new("e", "Enable", &system).colorless(true);
-        let mut state = CheckboxState::new(true);
-        let mut buf = Buffer::empty(Rect::new(0, 0, 20, 1));
-        let parts = cb.paint(Rect::new(0, 0, 20, 1), &mut buf, &mut state);
-        assert!(!parts.box_area.is_empty());
-        assert_eq!(
-            buf.cell((0, 0)).map(|c| c.symbol().to_string()).as_deref(),
-            Some("[")
-        );
-        state.set_value(CheckboxValue::Indeterminate);
-        let mut buf2 = Buffer::empty(Rect::new(0, 0, 20, 1));
-        let _ = cb.paint(Rect::new(0, 0, 20, 1), &mut buf2, &mut state);
-        assert_eq!(
-            buf2.cell((1, 0)).map(|c| c.symbol().to_string()).as_deref(),
-            Some("-")
-        );
-    }
-
-    #[test]
     fn checkbox_description_and_narrow_drop() {
         let system = DesignSystem::default();
         let cb = Checkbox::new("n", "Notify", &system).description("Email on complete");
@@ -2554,24 +2531,6 @@ mod tests {
         assert_eq!(parts2.options.len(), 3);
         // stacked: y increases
         assert!(parts2.options[1].area.y > parts2.options[0].area.y);
-    }
-
-    #[test]
-    fn radio_ascii_marks() {
-        let system = DesignSystem::default().glyphs(crate::style::GlyphSet::Ascii);
-        let options = [RadioOption::new("a", "A"), RadioOption::new("b", "B")];
-        let g = RadioGroup::new(&options, &system).colorless(true);
-        let mut state = RadioState::new(Some("a"));
-        let mut buf = Buffer::empty(Rect::new(0, 0, 20, 3));
-        let _ = g.paint(Rect::new(0, 0, 20, 3), &mut buf, &mut state);
-        assert_eq!(
-            buf.cell((0, 0)).map(|c| c.symbol().to_string()).as_deref(),
-            Some("(")
-        );
-        assert_eq!(
-            buf.cell((1, 0)).map(|c| c.symbol().to_string()).as_deref(),
-            Some("*")
-        );
     }
 
     #[test]
@@ -2788,26 +2747,6 @@ mod tests {
         );
         assert!(matches!(out, SwitchOutcome::Ignored));
         assert!(!state.is_on());
-    }
-
-    #[test]
-    fn switch_settings_row_and_on_off_text() {
-        let system = DesignSystem::default().glyphs(crate::style::GlyphSet::Ascii);
-        let sw = Switch::new("n", "Notifications", &system)
-            .description("Push when idle")
-            .colorless(true);
-        let mut state = SwitchState::new(true);
-        state.set_focused(true);
-        let mut buf = Buffer::empty(Rect::new(0, 0, 40, 2));
-        let parts = sw.paint(Rect::new(0, 0, 40, 2), &mut buf, &mut state);
-        assert!(parts.label_area.is_some());
-        assert!(parts.description_area.is_some());
-        // Track at trailing edge shows ON
-        let tx = parts.track.x;
-        assert_eq!(
-            buf.cell((tx, 0)).map(|c| c.symbol().to_string()).as_deref(),
-            Some("[")
-        );
     }
 
     #[test]

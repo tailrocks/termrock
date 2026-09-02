@@ -4,7 +4,6 @@
 //! Lookbook focus / layer identities for [`termrock::interaction::InteractionScene`].
 //!
 //! No host-local FocusRing — scene + OverlayStack are the sole authorities.
-
 use termrock::interaction::InteractionScene;
 use termrock::style::PanelChrome;
 

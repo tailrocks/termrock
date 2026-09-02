@@ -10,7 +10,6 @@
 //! Focus belongs to interactive *descendants* by default. Only
 //! [`PanelVariant::Interactive`] (or collapsible header) registers panel-level
 //! focus / activation.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -907,16 +906,12 @@ impl<'a> Panel<'a> {
         let border_cells: u16 = if has_border { 1 } else { 0 };
         let inner = shrink(area, border_cells, border_cells, border_cells, border_cells);
         let spacing = self.tokens.spacing;
-        let pad_x = if inner.width >= spacing.pad_x.saturating_mul(2).saturating_add(4) {
-            spacing.pad_x
+        let pad_x = if inner.width >= spacing.card_inset.saturating_mul(2).saturating_add(4) {
+            spacing.card_inset
         } else {
             0
         };
-        let pad_y = if inner.height >= spacing.pad_y.saturating_mul(2).saturating_add(1) {
-            spacing.pad_y
-        } else {
-            0
-        };
+        let pad_y = if inner.height >= 3 { 1 } else { 0 };
         let inner = shrink(inner, pad_x, pad_y, pad_x, pad_y);
 
         let slots = self.slots_for_width(area.width);
@@ -1408,7 +1403,7 @@ mod tests {
 
     #[test]
     fn overlay_panels_fill_from_the_elevated_rung() {
-        let system = DesignSystem::phosphor();
+        let system = DesignSystem::junie();
         let area = Rect::new(0, 0, 12, 5);
 
         let mut overlay = Buffer::empty(area);
@@ -1452,15 +1447,15 @@ mod tests {
         for y in [0u16, area.height - 1] {
             let row: String = (0..area.width).map(|x| buffer[(x, y)].symbol()).collect();
             // Corners survive: the label never overruns its own border.
-            assert!(row.starts_with('┌') || row.starts_with('└'), "{row:?}");
-            assert!(row.ends_with('┐') || row.ends_with('┘'), "{row:?}");
+            assert!(row.starts_with('╭') || row.starts_with('╰'), "{row:?}");
+            assert!(row.ends_with('╮') || row.ends_with('╯'), "{row:?}");
             assert!(row.contains('…'), "{row:?}");
         }
     }
 
     #[test]
     fn danger_chrome_marks_its_title_for_colorless_terminals() {
-        let system = DesignSystem::phosphor();
+        let system = DesignSystem::junie();
         let panel = Panel::new(&system)
             .title("Delete branch")
             .emphasis(PanelChrome::Danger);
@@ -1468,56 +1463,9 @@ mod tests {
             .title_line(panel.slots_for_width(24), None)
             .expect("panel has a title");
         assert!(
-            title.starts_with(system.glyphs.resolve(crate::style::Glyph::Warning).text),
-            "danger titles carry the warning mark, got {title:?}"
+            title.starts_with(system.glyphs.resolve(crate::style::Glyph::Error).text),
+            "danger titles carry the error mark, got {title:?}"
         );
-    }
-
-    fn render_border(system: &DesignSystem) -> Buffer {
-        let area = Rect::new(0, 0, 8, 4);
-        let mut buffer = Buffer::empty(area);
-        Panel::new(system)
-            .variant(PanelVariant::Bordered)
-            .paint(area, &mut buffer, None);
-        buffer
-    }
-
-    #[test]
-    fn rounded_shape_changes_corners_only() {
-        let square = render_border(&DesignSystem::default());
-        let rounded = render_border(&DesignSystem::default().border_shape(BorderShape::Rounded));
-        for (position, square_symbol, rounded_symbol) in [
-            ((0, 0), "\u{250c}", "\u{256d}"),
-            ((7, 0), "┐", "╮"),
-            ((0, 3), "└", "╰"),
-            ((7, 3), "┘", "╯"),
-        ] {
-            assert_eq!(square[position].symbol(), square_symbol);
-            assert_eq!(rounded[position].symbol(), rounded_symbol);
-            assert_eq!(square[position].style(), rounded[position].style());
-        }
-        assert_eq!(square[(3, 0)].symbol(), "─");
-        assert_eq!(rounded[(3, 0)].symbol(), "─");
-        assert_eq!(square[(0, 2)].symbol(), "│");
-        assert_eq!(rounded[(0, 2)].symbol(), "│");
-    }
-
-    #[test]
-    fn ascii_maps_both_shapes_to_plus() {
-        let square = render_border(&DesignSystem::default().glyphs(GlyphSet::Ascii));
-        let rounded = render_border(
-            &DesignSystem::default()
-                .glyphs(GlyphSet::Ascii)
-                .border_shape(BorderShape::Rounded),
-        );
-        assert_eq!(square, rounded);
-        assert_eq!(square[(0, 0)].symbol(), "+");
-        assert_eq!(square[(7, 3)].symbol(), "+");
-    }
-
-    #[test]
-    fn square_is_the_default_border_shape() {
-        assert_eq!(DesignSystem::default().border_shape, BorderShape::Square);
     }
 
     #[test]

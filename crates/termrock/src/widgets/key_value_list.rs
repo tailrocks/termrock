@@ -13,7 +13,6 @@
 //! contraction, and redaction. Prefer KeyValueList for new settings/summary UI.
 //!
 //! Research: system-info TUIs, detail panels, shadcn DescriptionList patterns.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -26,25 +25,13 @@ use crate::interaction::{
     EventResult, NavigationMove, PageMove, SemanticNode, SemanticRole, SemanticScene,
     SemanticState, UiIntent, default_list_intent,
 };
-use crate::style::{Density, DesignSystem, Role};
+use crate::style::{DesignSystem, Role};
 use crate::text::{display_cols, take_display_cols, wrap_display_cols};
 
 const ROW_GUTTER: u16 = 2;
 
-pub(crate) const fn kv_group_gap(density: Density) -> u16 {
-    if matches!(density, Density::Comfortable) {
-        1
-    } else {
-        0
-    }
-}
-
-pub(crate) const fn kv_stack_below(density: Density) -> u16 {
-    if matches!(density, Density::Comfortable) {
-        48
-    } else {
-        36
-    }
+pub(crate) const fn kv_stack_below() -> u16 {
+    36
 }
 
 /// Column vs stacked anatomy.
@@ -108,7 +95,7 @@ impl KvStatus {
             Self::Success => Role::Success,
             Self::Warning => Role::Warning,
             Self::Danger => Role::Danger,
-            Self::Info => Role::Info,
+            Self::Info => Role::TextSecondary,
         }
     }
 }
@@ -396,7 +383,6 @@ pub enum KeyValueListOutcome<Id> {
 pub struct KeyValueList<'a, Id> {
     entries: &'a [KvEntry<'a, Id>],
     system: &'a DesignSystem,
-    density: Density,
     layout: KvLayout,
     /// Fixed key column width (0 = auto max key).
     key_width: u16,
@@ -411,7 +397,6 @@ impl<'a, Id> KeyValueList<'a, Id> {
         Self {
             entries,
             system,
-            density: Density::Comfortable,
             layout: KvLayout::Auto,
             key_width: 0,
             separator: system.kv_separator().text(),
@@ -421,27 +406,13 @@ impl<'a, Id> KeyValueList<'a, Id> {
     /// Dense recipe (settings drawers).
     #[must_use]
     pub const fn dense(entries: &'a [KvEntry<'a, Id>], system: &'a DesignSystem) -> Self {
-        Self {
-            entries,
-            system,
-            density: Density::Compact,
-            layout: KvLayout::Auto,
-            key_width: 0,
-            separator: system.kv_separator().text(),
-        }
+        Self::new(entries, system)
     }
 
     /// Reading recipe (docs / summaries).
     #[must_use]
     pub const fn reading(entries: &'a [KvEntry<'a, Id>], system: &'a DesignSystem) -> Self {
         Self::new(entries, system)
-    }
-
-    /// Density override.
-    #[must_use]
-    pub const fn density(mut self, density: Density) -> Self {
-        self.density = density;
-        self
     }
 
     /// Layout override.
@@ -470,7 +441,7 @@ impl<'a, Id> KeyValueList<'a, Id> {
     pub fn resolved_layout(&self, width: u16) -> KvLayout {
         match self.layout {
             KvLayout::Auto => {
-                if width < kv_stack_below(self.density) {
+                if width < kv_stack_below() {
                     KvLayout::Stacked
                 } else {
                     KvLayout::Columns
@@ -500,11 +471,7 @@ impl<'a, Id: Clone + PartialEq> KeyValueList<'a, Id> {
     #[must_use]
     pub fn display_value(&self, entry: &KvEntry<'a, Id>, state: &KeyValueListState<Id>) -> String {
         if entry.secret && !state.is_revealed(&entry.id) {
-            return if self.system.glyphs.is_ascii() {
-                "********".into()
-            } else {
-                "••••••••".into()
-            };
+            return "••••••••".into();
         }
         entry.value.to_string()
     }
@@ -522,7 +489,7 @@ impl<'a, Id: Clone + PartialEq> KeyValueList<'a, Id> {
             return 0;
         }
         if entry.group {
-            return 1u16.saturating_add(kv_group_gap(self.density));
+            return 1u16;
         }
         let value = self.display_value(entry, state);
         let show_ann = entry.annotation.is_some_and(|a| !a.is_empty());
@@ -890,34 +857,18 @@ impl<'a, Id: Clone + PartialEq> KeyValueList<'a, Id> {
         }
         let mark = if entry.secret {
             if state.is_revealed(&entry.id) {
-                if self.system.glyphs.is_ascii() {
-                    " hide"
-                } else {
-                    " ◉"
-                }
-            } else if self.system.glyphs.is_ascii() {
-                " show"
+                " ◉"
             } else {
                 " •••"
             }
         } else if entry.copyable {
             if state.copied.as_ref() == Some(&entry.id) {
-                if self.system.glyphs.is_ascii() {
-                    " ok"
-                } else {
-                    " ✓"
-                }
-            } else if self.system.glyphs.is_ascii() {
-                " cpy"
+                " ✓"
             } else {
                 " ⧉"
             }
         } else if entry.href.is_some() {
-            if self.system.glyphs.is_ascii() {
-                " ^"
-            } else {
-                " ↗"
-            }
+            " ↗"
         } else {
             return;
         };
@@ -1267,7 +1218,7 @@ mod tests {
 
     #[test]
     fn separator_comes_from_the_shared_key_value_token() {
-        let system = crate::style::DesignSystem::phosphor();
+        let system = crate::style::DesignSystem::junie();
         let entries = sample_entries();
         assert_eq!(
             KeyValueList::new(&entries, &system).separator,

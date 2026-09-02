@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Phosphor PNG export for the widget families used by Jackin.
-
 use std::{
     fs, io,
     path::{Path, PathBuf},

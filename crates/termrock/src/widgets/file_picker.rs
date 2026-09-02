@@ -14,7 +14,6 @@
 //! path/FS-shaped with breadcrumbs and entry kinds.
 //!
 //! Research: Yazi, ranger, lf, broot, desktop dialogs, fuzzy finders.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -1322,7 +1321,6 @@ impl FilePickerState {
 pub struct FilePicker<'a> {
     system: &'a DesignSystem,
     title: &'a str,
-    ascii: bool,
     show_preview: bool,
     show_count: bool,
     show_breadcrumbs: bool,
@@ -1338,7 +1336,6 @@ impl<'a> FilePicker<'a> {
         Self {
             system,
             title: "Open",
-            ascii: false,
             show_preview: true,
             show_count: true,
             show_breadcrumbs: true,
@@ -1357,13 +1354,7 @@ impl<'a> FilePicker<'a> {
 
     /// ASCII glyphs.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Show preview column when space allows.
-    #[must_use]
     pub const fn show_preview(mut self, on: bool) -> Self {
         self.show_preview = on;
         self
@@ -1453,16 +1444,18 @@ impl<'a> FilePicker<'a> {
                     break;
                 }
                 if i > 0 {
-                    let sep = if self.ascii { ">" } else { "›" };
+                    let sep = { "›" };
                     buffer.set_stringn(x, y, sep, 1, self.system.style(Role::TextMuted));
                     x = x.saturating_add(2);
                 }
                 let label = take_display_cols(&crumb.label, 12);
                 let w = display_cols(&label) as u16;
                 let rect = Rect::new(x, y, w.min(inner.right().saturating_sub(x)), 1);
-                let recipe = self
-                    .system
-                    .button_recipe(ButtonRecipeVariant::Quiet, ControlState::Default);
+                let recipe = self.system.button_recipe(
+                    ButtonRecipeVariant::Quiet,
+                    ControlState::Default,
+                    self.system.junie_theme().surface,
+                );
                 buffer.set_style(rect, recipe.fill);
                 buffer.set_stringn(
                     rect.x,
@@ -1482,9 +1475,8 @@ impl<'a> FilePicker<'a> {
             let path_row = Rect::new(inner.x, y, inner.width, 1);
             state.path_area = path_row;
             let _ = PathInput::new(self.system)
-                .placeholder(if self.ascii { "Path..." } else { "Path…" })
+                .placeholder("Path…")
                 .show_browse(false)
-                .ascii(self.ascii)
                 .paint(path_row, buffer, &mut state.path);
             y = y.saturating_add(1);
         }
@@ -1492,13 +1484,7 @@ impl<'a> FilePicker<'a> {
         // Status / error
         if self.show_status && y < inner.bottom() {
             let msg = match state.status {
-                FileListingStatus::Loading => {
-                    if self.ascii {
-                        "Loading..."
-                    } else {
-                        "Loading…"
-                    }
-                }
+                FileListingStatus::Loading => "Loading…",
                 FileListingStatus::Error => state
                     .error_message
                     .as_deref()
@@ -1622,41 +1608,19 @@ impl<'a> FilePicker<'a> {
                 focused: active && state.focused,
                 hovered: state.hovered.as_deref() == Some(entry.id.as_str()),
                 enabled: entry.error.is_none(),
+                error: entry.error.is_some(),
                 loading: false,
                 checked: is_sel,
+                ..ListRowVisualState::default()
             });
             if recipe.use_fill {
                 buffer.set_style(rect, recipe.label);
             } else if recipe.use_tint {
                 buffer.set_style(rect, recipe.tint);
             }
-            let kind_mark = if self.ascii {
-                match entry.kind {
-                    FileEntryKind::Directory | FileEntryKind::SymlinkDir => "d",
-                    FileEntryKind::File | FileEntryKind::SymlinkFile => "f",
-                    FileEntryKind::Other => "?",
-                }
-            } else {
-                match entry.kind {
-                    FileEntryKind::Directory | FileEntryKind::SymlinkDir => {
-                        self.system.glyphs.resolve(Glyph::Folder).text
-                    }
-                    _ => " ",
-                }
-            };
-            let kind_mark = if self.ascii {
-                kind_mark
-            } else if entry.kind.is_dir() {
-                "/"
-            } else {
-                " "
-            };
+            let kind_mark = if entry.kind.is_dir() { "/" } else { " " };
             let check = if state.multi {
-                if is_sel {
-                    if self.ascii { "[x]" } else { "[✓]" }
-                } else {
-                    "[ ]"
-                }
+                if is_sel { "[✓]" } else { "[ ]" }
             } else if is_sel {
                 "*"
             } else {
@@ -1685,7 +1649,6 @@ impl<'a> FilePicker<'a> {
 
         if state.entries.is_empty() && matches!(state.status, FileListingStatus::Ready) {
             super::EmptyState::new("Empty folder", self.system)
-                .inline()
                 .paint(Rect::new(area.x, area.y, area.width, 1), buffer);
         }
     }
@@ -1954,9 +1917,7 @@ mod tests {
         ));
         let area = Rect::new(0, 0, 70, 18);
         let mut buffer = Buffer::empty(area);
-        FilePicker::new(&system)
-            .ascii(true)
-            .paint(area, &mut buffer, &mut state);
+        FilePicker::new(&system).paint(area, &mut buffer, &mut state);
         let file_position = state
             .entry_hits
             .iter()
@@ -2014,9 +1975,7 @@ mod tests {
         assert!(state.apply_listing(1, "/p", sample_entries("/p"), None));
         let area = Rect::new(0, 0, 70, 18);
         let mut buffer = Buffer::empty(area);
-        FilePicker::new(&system)
-            .ascii(true)
-            .paint(area, &mut buffer, &mut state);
+        FilePicker::new(&system).paint(area, &mut buffer, &mut state);
         let file_position = state
             .entry_hits
             .iter()
@@ -2309,7 +2268,6 @@ mod tests {
         let mut buf = Buffer::empty(area);
         FilePicker::new(&system)
             .title("Open file")
-            .ascii(true)
             .paint(area, &mut buf, &mut state);
         assert!(!state.list_area.is_empty());
         assert!(!state.entry_hits.is_empty());
@@ -2326,7 +2284,6 @@ mod tests {
         let mut buf = Buffer::empty(area);
         FilePicker::new(&system)
             .show_preview(false)
-            .ascii(true)
             .paint(area, &mut buf, &mut state);
         assert!(state.preview_area.is_empty() || state.preview_area.width == 0);
     }
@@ -2420,9 +2377,7 @@ mod tests {
         let _ = state.apply_listing(1, "/a/b", sample_entries("/a/b"), None);
         let area = Rect::new(0, 0, 70, 18);
         let mut buf = Buffer::empty(area);
-        FilePicker::new(&system)
-            .ascii(true)
-            .paint(area, &mut buf, &mut state);
+        FilePicker::new(&system).paint(area, &mut buf, &mut state);
         assert!(!state.breadcrumb_hits.is_empty());
         let (path, rect) = state.breadcrumb_hits[0].clone();
         assert!(matches!(
@@ -2471,7 +2426,7 @@ mod tests {
         let _ = state.apply_listing(1, "/hot", entries, None);
         let area = Rect::new(0, 0, 72, 20);
         let mut buf = Buffer::empty(area);
-        let w = FilePicker::new(&system).ascii(true);
+        let w = FilePicker::new(&system);
         for _ in 0..50 {
             w.paint(area, &mut buf, &mut state);
         }

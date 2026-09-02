@@ -16,13 +16,12 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::layout::Rect;
 
 use ratatui_core::{buffer::Buffer, widgets::StatefulWidget};
 
-use crate::style::{CapabilityPreviewHost, Density, DesignSystem, Role};
+use crate::style::{CapabilityPreviewHost, DesignSystem, Role};
 use crate::widgets::{
     DetailRow, DetailTable, DetailTableState, Panel, StatusBar, StatusBarState, StatusSlot, Tree,
     TreeNode, TreeState,
@@ -47,7 +46,6 @@ pub struct ResourceBrowserSlots {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ResourceBrowserLayout {
     /// Density.
-    pub density: Density,
     /// Left rail width.
     pub rail_width: u16,
     /// Right preview width; 0 hides preview.
@@ -59,7 +57,6 @@ pub struct ResourceBrowserLayout {
 impl Default for ResourceBrowserLayout {
     fn default() -> Self {
         Self {
-            density: Density::Compact,
             rail_width: 28,
             preview_width: 32,
             status_height: 1,
@@ -74,7 +71,6 @@ pub fn layout_resource_browser(area: Rect, config: ResourceBrowserLayout) -> Res
         area,
         AppShellConfig {
             recipe: AppShellRecipe::Workbench,
-            density: config.density,
             header_height: 0,
             sidebar_width: config.rail_width.max(1),
             inspector_width: config.preview_width,

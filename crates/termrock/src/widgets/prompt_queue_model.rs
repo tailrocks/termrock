@@ -6,7 +6,6 @@
 //! Used by [`crate::widgets::PromptComposer`] (FIFO chrome) and the
 //! `termrock::patterns::PromptQueue` management recipe. Domain hosts own
 //! persistence and drain policy; these types carry no I/O.
-
 use super::SemanticStatus;
 
 /// Lifecycle of one queued prompt.

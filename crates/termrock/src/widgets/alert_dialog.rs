@@ -21,7 +21,6 @@
 //!
 //! Research: Radix AlertDialog, database drop/truncate UX, cloud consoles,
 //! permission surfaces.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect, text::Text, widgets::StatefulWidget};
 
@@ -813,7 +812,6 @@ fn alert_nav_intent(key: KeyEvent) -> Option<UiIntent> {
 #[derive(Debug, Clone, Copy)]
 pub struct AlertDialog<'a, Id> {
     system: &'a DesignSystem,
-    ascii: bool,
     colorless: bool,
     _id: core::marker::PhantomData<Id>,
 }
@@ -824,7 +822,6 @@ impl<'a, Id> AlertDialog<'a, Id> {
     pub const fn new(system: &'a DesignSystem) -> Self {
         Self {
             system,
-            ascii: false,
             colorless: false,
             _id: core::marker::PhantomData,
         }
@@ -832,13 +829,7 @@ impl<'a, Id> AlertDialog<'a, Id> {
 
     /// ASCII markers.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Reduced color.
-    #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self
@@ -855,14 +846,13 @@ impl<'a, Id> AlertDialog<'a, Id> {
         let title = state.title().to_string();
         let rev = state.scope.reversibility.label();
         let loading = state.dialog.is_loading();
-        let body = build_body_text(state, self.ascii);
+        let body = build_body_text(state, false);
         let footer = footer_hints(state);
         let dialog = Dialog::new(&title, body, self.system)
             .description(rev)
             .variant(DialogVariant::Danger)
             .recipe(DialogRecipe::Destructive)
             .loading(loading)
-            .ascii(self.ascii)
             .colorless(self.colorless)
             .hints(footer);
 
@@ -879,7 +869,7 @@ impl<'a, Id> AlertDialog<'a, Id> {
                 &state.typed_buffer,
                 state.typed_satisfied(),
                 self.system,
-                self.ascii,
+                false,
             );
         }
 
@@ -887,11 +877,7 @@ impl<'a, Id> AlertDialog<'a, Id> {
         if let Some(left) = state.countdown_left_ms {
             if left > 0 {
                 let secs = left.div_ceil(1000);
-                let msg = if self.ascii {
-                    format!("wait {secs}s")
-                } else {
-                    format!("Wait {secs}s before confirming")
-                };
+                let msg = { format!("Wait {secs}s before confirming") };
                 let strip = state.dialog.slots().validation;
                 let y = if strip.is_empty() {
                     state
@@ -929,7 +915,6 @@ impl<'a, Id> AlertDialog<'a, Id> {
         };
         let actions = state.actions();
         (&ActionBar::new(&actions, self.system)
-            .ascii(self.ascii)
             .colorless(self.colorless)
             .vertical(narrow))
             .render(action_area, buffer, &mut bar_state);

@@ -10,7 +10,6 @@
 //! `select_all` / `invert` / `extend_range`. Membership of ids outside the
 //! window is retained until [`SelectionModel::reconcile`] is told the universe
 //! of still-valid ids (or `reconcile_retain` keeps unknown ids for lazy hosts).
-
 use crate::style::SelectionChrome;
 
 /// How selection membership behaves.
@@ -79,14 +78,10 @@ impl<Id> SelectionDelta<Id> {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum SelectionVisual {
-    /// Leading gutter glyph (`▌` / `>`).
+    /// Leading gutter glyph (`▎`).
     Gutter,
-    /// Full-row fill (`Role::Selection`).
-    Fill,
-    /// Soft tint (`Role::Focus`).
+    /// Soft tint (`Role::SelectionTint`).
     Tint,
-    /// Full-row fill plus a leading `▸` marker (classic loud cursor).
-    Marker,
     /// Multi-select check mark (Unicode/ASCII via glyph set).
     Check,
 }
@@ -96,17 +91,15 @@ impl SelectionVisual {
     #[must_use]
     pub const fn from_chrome(chrome: SelectionChrome) -> Self {
         match chrome {
-            SelectionChrome::Fill => Self::Fill,
             SelectionChrome::Gutter => Self::Gutter,
             SelectionChrome::Tint => Self::Tint,
-            SelectionChrome::Marker => Self::Marker,
         }
     }
 
     /// Whether this recipe requires a non-color glyph cue.
     #[must_use]
     pub const fn requires_glyph(self) -> bool {
-        matches!(self, Self::Gutter | Self::Marker | Self::Check)
+        matches!(self, Self::Gutter | Self::Check)
     }
 }
 
@@ -853,10 +846,14 @@ mod tests {
     fn visual_recipe_requires_glyph_for_gutter_and_check() {
         assert!(SelectionVisual::Gutter.requires_glyph());
         assert!(SelectionVisual::Check.requires_glyph());
-        assert!(!SelectionVisual::Fill.requires_glyph());
+        assert!(!SelectionVisual::Tint.requires_glyph());
         assert_eq!(
             SelectionVisual::from_chrome(SelectionChrome::Gutter),
             SelectionVisual::Gutter
+        );
+        assert_eq!(
+            SelectionVisual::from_chrome(SelectionChrome::Tint),
+            SelectionVisual::Tint
         );
     }
 

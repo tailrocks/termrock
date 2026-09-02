@@ -5,7 +5,7 @@ use termrock::keymap::glyph;
 use termrock::{
     input::KeyCode,
     keymap::KeyChord,
-    style::{ColorCapability, DesignSystem, GlyphSet, RolePalette},
+    style::{ColorCapability, DesignSystem, RolePalette},
 };
 
 use crate::{
@@ -20,15 +20,20 @@ fn list_story_visibly_uses_the_selected_theme() {
         .into_iter()
         .find(|story| story.id == "list/selection")
         .expect("list story exists");
-    let phosphor = render_story_to_buffer(story, &RolePalette::tailrocks_phosphor());
-    let slate = render_story_to_buffer(story, &RolePalette::slate());
+    // One palette ships, so the visible contrast a theme selection buys is now
+    // the capability rung: truecolor tokens against their ANSI-16 projection.
+    let truecolor = render_story_to_buffer(story, &RolePalette::junie());
+    let ansi = render_story_to_buffer(
+        story,
+        &RolePalette::junie().quantized(ColorCapability::Ansi16),
+    );
 
-    assert_eq!(phosphor.area, slate.area);
+    assert_eq!(truecolor.area, ansi.area);
     assert!(
-        phosphor
+        truecolor
             .content()
             .iter()
-            .zip(slate.content())
+            .zip(ansi.content())
             .any(|(left, right)| left.symbol() == right.symbol()
                 && !left.symbol().trim().is_empty()
                 && (left.fg, left.bg, left.modifier) != (right.fg, right.bg, right.modifier)),
@@ -49,13 +54,8 @@ fn every_preset_survives_capability_ladder() {
                 .unwrap_or_else(|| panic!("representative story missing: {id}"))
         })
         .collect();
-    let presets = [
-        DesignSystem::phosphor(),
-        DesignSystem::slate(),
-        DesignSystem::paper(),
-        DesignSystem::ansi(),
-        DesignSystem::high_contrast(),
-    ];
+    // junie is the only shipped preset; the ladder question is per rung now.
+    let presets = [DesignSystem::junie()];
     for preset in presets {
         for capability in [
             ColorCapability::Truecolor,
@@ -63,13 +63,7 @@ fn every_preset_survives_capability_ladder() {
             ColorCapability::Ansi16,
             ColorCapability::Monochrome,
         ] {
-            let system = preset.clone().quantize(capability).glyphs(
-                if matches!(capability, ColorCapability::Monochrome) {
-                    GlyphSet::Ascii
-                } else {
-                    preset.glyphs
-                },
-            );
+            let system = preset.clone().quantize(capability);
             for story in &representatives {
                 let buffer = render_story_to_buffer_with_system(*story, &system);
                 assert!(
@@ -82,7 +76,7 @@ fn every_preset_survives_capability_ladder() {
                 );
             }
         }
-        let no_color = preset.no_color().glyphs(GlyphSet::Ascii);
+        let no_color = preset.no_color();
         for story in &representatives {
             let buffer = render_story_to_buffer_with_system(*story, &no_color);
             assert!(

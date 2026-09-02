@@ -9,7 +9,6 @@
 //! One row type instead: a glyph carries what mode this is, the body reads as
 //! text, and a query row sits in a well with the caret as the only live cell
 //! (plans/007's rule, generalised).
-
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Style};
 
 use crate::style::{DesignSystem, Role};
@@ -166,12 +165,9 @@ impl<'a> ChromeRow<'a> {
                 .saturating_add(u16::try_from(caret_col).unwrap_or(0))
                 .min(area.right().saturating_sub(1));
             let cell = &mut buffer[(x, area.y)];
-            let ground = cell.style().bg;
-            let mut style = system.style(Role::Accent);
-            if let Some(bg) = ground {
-                style = style.bg(bg);
-            }
-            style = style.add_modifier(ratatui_core::style::Modifier::REVERSED);
+            // The caret over an existing symbol is the explicit reversal
+            // pair, never a modifier that re-swaps the cell's own colours.
+            let style = system.reversed();
             cell.set_style(style);
         }
     }
@@ -203,7 +199,7 @@ mod tests {
                 !cell.symbol().trim().is_empty() && Some(cell.fg) == accent
             })
             .count();
-        assert_eq!(live, 2, "the slash and the caret, and nothing else");
+        assert_eq!(live, 1, "the slash, and nothing else in the accent");
     }
 
     #[test]
@@ -260,8 +256,13 @@ mod tests {
             + "_";
         let caret_x = u16::try_from(display_cols(&line).saturating_sub(1)).unwrap();
         assert_eq!(buffer[(caret_x, 0)].symbol(), "_");
+        // The caret over an existing symbol is the explicit reversal pair
+        // (canvas on body text), not a stacked modifier.
+        let theme = system.junie_theme();
+        assert_eq!(buffer[(caret_x, 0)].fg, theme.canvas);
+        assert_eq!(buffer[(caret_x, 0)].bg, theme.text_primary);
         assert!(
-            buffer[(caret_x, 0)]
+            !buffer[(caret_x, 0)]
                 .modifier
                 .contains(ratatui_core::style::Modifier::REVERSED)
         );

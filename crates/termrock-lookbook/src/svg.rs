@@ -3,7 +3,6 @@
 
 //! SVG generation from story renders: buffer-to-SVG conversion,
 //! writing SVG files to disk, and checking whether existing files are current.
-
 use std::{
     collections::BTreeSet,
     ffi::OsStr,

@@ -2,7 +2,6 @@
 //!
 //! **Architecture Invariant:** T2.
 //! Entry point: [`main`] — lookbook binary entry.
-
 mod app;
 mod focus;
 mod host_frame;
@@ -151,7 +150,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     if first == OsStr::new("render") {
-        let usage = "usage: termrock-lookbook render [--theme <phosphor|slate>] --out <dir>";
+        let usage = "usage: termrock-lookbook render [--theme <junie>] --out <dir>";
         let mut out_dir = None;
         let mut theme = None;
         while let Some(flag) = args.next() {
@@ -159,8 +158,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 out_dir = args.next().map(PathBuf::from);
             } else if flag == OsStr::new("--theme") && theme.is_none() {
                 theme = match args.next().as_deref() {
-                    Some(value) if value == OsStr::new("phosphor") => Some(RolePalette::default()),
-                    Some(value) if value == OsStr::new("slate") => Some(RolePalette::slate()),
+                    Some(value) if value == OsStr::new("junie") => Some(RolePalette::default()),
                     _ => return Err(usage.into()),
                 };
             } else {

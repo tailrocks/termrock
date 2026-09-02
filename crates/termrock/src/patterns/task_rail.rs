@@ -27,7 +27,6 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::collections::BTreeSet;
 
@@ -832,7 +831,7 @@ pub fn project_task_rail_list_rows(
                 } else {
                     semantic.default_label()
                 };
-                list_row.status = Some(Line::from(format!("| {} {verb}", semantic.glyph(ascii))));
+                list_row.status = Some(Line::from(format!("| {} {verb}", semantic.glyph())));
                 if detail {
                     let mut sec = String::new();
                     if let Some(a) = &item.actor {
@@ -1341,7 +1340,6 @@ pub struct TaskRail<'a> {
     items: &'a [ActivityModel],
     system: &'a DesignSystem,
     title: &'a str,
-    ascii: bool,
     colorless: bool,
 }
 
@@ -1353,7 +1351,6 @@ impl<'a> TaskRail<'a> {
             items,
             system,
             title: "Tasks",
-            ascii: false,
             colorless: false,
         }
     }
@@ -1367,13 +1364,7 @@ impl<'a> TaskRail<'a> {
 
     /// ASCII.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Colorless.
-    #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self
@@ -1393,7 +1384,7 @@ impl<'a> TaskRail<'a> {
 
         // Status-summary only: one line
         if matches!(state.recommended, TaskRailPresentation::StatusSummary) && area.height <= 1 {
-            let s = task_rail_status_summary(self.items, self.ascii);
+            let s = task_rail_status_summary(self.items, false);
             self.system.paint_row(
                 buffer,
                 Rect::new(area.x, area.y, area.width, 1),
@@ -1444,7 +1435,7 @@ impl<'a> TaskRail<'a> {
         let rows = build_task_rail_rows(&filtered, &state.collapsed, state.hide_completed);
         state.last_rows = rows.clone();
         let detail = matches!(state.zoom, TaskRailZoom::Detail);
-        let list_rows = project_task_rail_list_rows(&filtered, &rows, self.ascii, detail);
+        let list_rows = project_task_rail_list_rows(&filtered, &rows, false, detail);
 
         StatefulWidget::render(
             &List::new(&list_rows, self.system).focused(state.focused && state.accepts_input),
@@ -1463,7 +1454,9 @@ impl<'a> TaskRail<'a> {
                 style = self.system.style(Role::Warning);
             }
             if self.colorless && state.focused {
-                style = style.add_modifier(Modifier::REVERSED);
+                // Mono focus on the footer is the explicit reversal pair (D5);
+                // the swap modifier would re-invert whatever the cell carried.
+                style = self.system.reversed();
             }
             self.system.paint_row(
                 buffer,
@@ -1744,9 +1737,7 @@ mod tests {
             .paint(area, &mut buf, &mut st);
         assert!(!st.last_rows.is_empty());
         let narrow = Rect::new(0, 0, 14, 12);
-        TaskRail::new(&items, &system)
-            .ascii(true)
-            .paint(narrow, &mut buf, &mut st);
+        TaskRail::new(&items, &system).paint(narrow, &mut buf, &mut st);
         assert_eq!(st.recommended, TaskRailPresentation::Drawer);
 
         let mut monochrome = Buffer::empty(area);
@@ -1769,14 +1760,12 @@ mod tests {
         let system = DesignSystem::default();
         let label = "実行 Cafe\u{301}";
         let items = [ActivityModel::new("unicode", label).status(SemanticStatus::Running)];
-        for ascii in [false, true] {
+        for _ascii in [false, true] {
             for (width, height) in [(48, 10), (14, 4), (1, 1), (0, 0)] {
                 let area = Rect::new(0, 0, width, height);
                 let mut buffer = Buffer::empty(area);
                 let mut state = TaskRailState::new();
-                TaskRail::new(&items, &system)
-                    .ascii(ascii)
-                    .paint(area, &mut buffer, &mut state);
+                TaskRail::new(&items, &system).paint(area, &mut buffer, &mut state);
                 if width == 48 {
                     let text: String = buffer.content().iter().map(|cell| cell.symbol()).collect();
                     assert!(text.contains('実'), "{text:?}");

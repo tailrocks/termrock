@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Capability flags and fallback policy table.
-
-use crate::style::{ColorCapability, GlyphSet};
+use crate::style::ColorCapability;
 
 /// Named optional terminal capability.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -17,10 +16,6 @@ pub enum CapabilityKind {
     AnsiColor,
     /// Chromatic color disabled (`NO_COLOR` / monochrome).
     NoColor,
-    /// Unicode presentation (box drawing, wide glyphs).
-    Unicode,
-    /// Force ASCII-only glyphs.
-    AsciiOnly,
     /// Conventional keyboard (raw mode key events).
     Keyboard,
     /// Enhanced keyboard protocol (e.g. kitty keyboard / modifyOtherKeys).
@@ -53,13 +48,11 @@ pub enum CapabilityKind {
 
 impl CapabilityKind {
     /// All kinds (for doctor iteration).
-    pub const ALL: [Self; 20] = [
+    pub const ALL: [Self; 18] = [
         Self::Truecolor,
         Self::Color256,
         Self::AnsiColor,
         Self::NoColor,
-        Self::Unicode,
-        Self::AsciiOnly,
         Self::Keyboard,
         Self::EnhancedKeyboard,
         Self::Mouse,
@@ -84,8 +77,6 @@ impl CapabilityKind {
             Self::Color256 => "color256",
             Self::AnsiColor => "ansi_color",
             Self::NoColor => "no_color",
-            Self::Unicode => "unicode",
-            Self::AsciiOnly => "ascii_only",
             Self::Keyboard => "keyboard",
             Self::EnhancedKeyboard => "enhanced_keyboard",
             Self::Mouse => "mouse",
@@ -111,8 +102,6 @@ impl CapabilityKind {
             Self::Color256 => "256 colors",
             Self::AnsiColor => "ANSI 8/16 colors",
             Self::NoColor => "No color",
-            Self::Unicode => "Unicode glyphs",
-            Self::AsciiOnly => "ASCII-only glyphs",
             Self::Keyboard => "Keyboard input",
             Self::EnhancedKeyboard => "Enhanced keyboard protocol",
             Self::Mouse => "Mouse",
@@ -172,12 +161,12 @@ mod fallback_tests {
     }
 }
 
-const FALLBACKS: [FallbackPolicy; 20] = [
+const FALLBACKS: [FallbackPolicy; 18] = [
     FallbackPolicy {
         kind: CapabilityKind::Truecolor,
         fallback: "Quantize theme to 256 → 16 → mono via ColorCapability",
         story: "capability/color-ladder",
-        contract_test: "quantize_palette keeps roles",
+        contract_test: "quantized keeps roles",
     },
     FallbackPolicy {
         kind: CapabilityKind::Color256,
@@ -196,18 +185,6 @@ const FALLBACKS: [FallbackPolicy; 20] = [
         fallback: "N/A when chromatic color enabled; when set, Role modifiers + glyphs",
         story: "capability/no-color",
         contract_test: "NO_COLOR forces mono",
-    },
-    FallbackPolicy {
-        kind: CapabilityKind::Unicode,
-        fallback: "GlyphSet::Ascii substitutes",
-        story: "capability/ascii-glyphs",
-        contract_test: "glyphset ascii markers",
-    },
-    FallbackPolicy {
-        kind: CapabilityKind::AsciiOnly,
-        fallback: "Force GlyphSet::Ascii even if Unicode available",
-        story: "capability/ascii-glyphs",
-        contract_test: "ascii override",
     },
     FallbackPolicy {
         kind: CapabilityKind::Keyboard,
@@ -301,7 +278,6 @@ pub struct CapabilitySet {
     /// Color ladder (mutually exclusive preference; NoColor → Monochrome).
     pub color: ColorCapability,
     /// Glyph set.
-    pub glyphs: GlyphSet,
     /// Mouse reporting desired.
     pub mouse: bool,
     /// Bracketed paste desired.
@@ -339,12 +315,6 @@ impl CapabilitySet {
         !matches!(self.color, ColorCapability::Monochrome)
     }
 
-    /// Whether Unicode glyphs are preferred.
-    #[must_use]
-    pub const fn unicode_glyphs(self) -> bool {
-        matches!(self.glyphs, GlyphSet::Unicode)
-    }
-
     /// Query a kind (environment + feature enablement).
     #[must_use]
     pub const fn enabled(self, kind: CapabilityKind) -> bool {
@@ -356,8 +326,6 @@ impl CapabilitySet {
             ),
             CapabilityKind::AnsiColor => self.has_color(),
             CapabilityKind::NoColor => !self.has_color(),
-            CapabilityKind::Unicode => self.unicode_glyphs(),
-            CapabilityKind::AsciiOnly => !self.unicode_glyphs(),
             CapabilityKind::Keyboard => self.keyboard,
             CapabilityKind::EnhancedKeyboard => self.enhanced_keyboard,
             CapabilityKind::Mouse => self.mouse,

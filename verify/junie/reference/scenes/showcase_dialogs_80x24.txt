@@ -1,0 +1,24 @@
+ ▪ Junie Design system / Components / Dialogs             i Inspector   ? Help
+
+▎  Overview          Dialogs  Focus is trapped, the page dims, Esc always canc…
+▎  Buttons
+▎  Inputs              Open a dialog
+▎  Text areas
+▎  Forms               ▎Confirm run   ▎Rename task…   ▎Three choices…   ▎Del…
+▎  Lists
+▎  Trees               Confirm: primary action focused first · y / n answer d…
+▎  Tables              Prompt: editing inside a modal, Enter submits, validat…
+▎  Editable tables     Destructive: Cancel focused first, action in danger st…
+▎  Panels              Task: Migrate sessions table
+▎  Sidebars
+▎› Dialogs
+▎  Progress            Results
+▎  Scrolling
+▎  Code editor         Nothing yet
+▎  Data grid
+▎  Chips & selects
+▎  Pickers
+▎  Settings
+▎  Task runner
+
+ ↑ ↓ Move  Enter Open  Tab Into page  q Quit

@@ -17,7 +17,6 @@
 //! Tiny terminals set [`SelectPresentation::Fullscreen`].
 //!
 //! Research: Radix Select, Huh select, Textual Select, terminal pickers.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -773,7 +772,6 @@ pub struct Select<'a, Id> {
     placeholder: &'a str,
     label: &'a str,
     validation: Validation<'a>,
-    ascii: bool,
 }
 
 impl<'a, Id> Select<'a, Id> {
@@ -786,7 +784,6 @@ impl<'a, Id> Select<'a, Id> {
             placeholder: "Select",
             label: "",
             validation: Validation::Valid,
-            ascii: false,
         }
     }
 
@@ -808,13 +805,6 @@ impl<'a, Id> Select<'a, Id> {
     #[must_use]
     pub const fn validation(mut self, validation: Validation<'a>) -> Self {
         self.validation = validation;
-        self
-    }
-
-    /// ASCII chevrons.
-    #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
         self
     }
 }
@@ -960,13 +950,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
             })
             .unwrap_or(self.placeholder);
 
-        let chev = if self.ascii {
-            if state.is_open() { "^" } else { "v" }
-        } else if state.is_open() {
-            "▴"
-        } else {
-            "▾"
-        };
+        let chev = if state.is_open() { "▴" } else { "▾" };
         let text_x = area.x.saturating_add(1).min(area.right());
         let text_w = area.width.saturating_sub(2);
         let muted = state.value.is_none();
@@ -1127,6 +1111,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
                         enabled: !opt.disabled,
                         loading: false,
                         checked: is_val,
+                        ..ListRowVisualState::default()
                     });
                     if recipe.use_fill {
                         buffer.set_style(rect, recipe.label);
@@ -1134,17 +1119,9 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
                         buffer.set_style(rect, recipe.tint);
                     }
                     let style = recipe.label;
-                    let mark = if is_val {
-                        if self.ascii { "*" } else { "✓" }
-                    } else {
-                        " "
-                    };
+                    let mark = if is_val { "✓" } else { " " };
                     let label = if let Some(desc) = &opt.description {
-                        format!(
-                            "{mark} {} {} {desc}",
-                            opt.label,
-                            if self.ascii { "-" } else { "—" }
-                        )
+                        format!("{mark} {} {} {desc}", opt.label, { "—" })
                     } else {
                         format!("{mark} {}", opt.label)
                     };

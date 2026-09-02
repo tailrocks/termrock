@@ -18,7 +18,6 @@
 //! roving focus is independent until activation (Enter / click).
 //!
 //! Research: IDE sidebars, Yazi, Posting, OpenCode, shadcn sidebar.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -1059,7 +1058,6 @@ impl<Id> SidebarState<Id> {
 pub struct NavigationList<'a, Id> {
     items: &'a [NavItem<Id>],
     system: &'a DesignSystem,
-    ascii: bool,
     rail: bool,
     show_filter: bool,
 }
@@ -1071,7 +1069,6 @@ impl<'a, Id> NavigationList<'a, Id> {
         Self {
             items,
             system,
-            ascii: false,
             rail: false,
             show_filter: true,
         }
@@ -1079,13 +1076,7 @@ impl<'a, Id> NavigationList<'a, Id> {
 
     /// ASCII marks.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Rail (compact) paint.
-    #[must_use]
     pub const fn rail(mut self, on: bool) -> Self {
         self.rail = on;
         self
@@ -1213,9 +1204,7 @@ impl<'a, Id> NavigationList<'a, Id> {
                     .patch(self.system.style(Role::SelectionTint))
                     .add_modifier(Modifier::BOLD)
             } else if focus {
-                self.system
-                    .style(Role::Focus)
-                    .add_modifier(Modifier::REVERSED)
+                self.system.style(Role::Focus).add_modifier(Modifier::BOLD)
             } else if matches!(item.kind, NavItemKind::Section) {
                 self.system
                     .style(Role::TextMuted)
@@ -1238,18 +1227,12 @@ impl<'a, Id> NavigationList<'a, Id> {
                     .as_ref()
                     .and_then(|i| i.chars().next())
                     .or_else(|| item.label.chars().next())
-                    .unwrap_or(if self.ascii { '.' } else { '·' });
+                    .unwrap_or('·');
                 format!("{gutter}{ch}")
             } else {
                 let indent = "  ".repeat(usize::from(item.depth));
                 let chev = if item.has_children {
-                    if item.expanded {
-                        if self.ascii { "v " } else { "▾ " }
-                    } else if self.ascii {
-                        "> "
-                    } else {
-                        "▸ "
-                    }
+                    if item.expanded { "▾ " } else { "▸ " }
                 } else {
                     "  "
                 };
@@ -1260,7 +1243,7 @@ impl<'a, Id> NavigationList<'a, Id> {
                     .unwrap_or_default();
                 let status = item
                     .status
-                    .mark(self.ascii)
+                    .mark(false)
                     .map(|m| format!("{m} "))
                     .unwrap_or_default();
                 let badge = item
@@ -1312,7 +1295,6 @@ pub struct Sidebar<'a, Id> {
     items: &'a [NavItem<Id>],
     system: &'a DesignSystem,
     focused: bool,
-    ascii: bool,
     title: &'a str,
     show_panel: bool,
 }
@@ -1326,7 +1308,6 @@ impl<'a, Id: Clone + PartialEq> Sidebar<'a, Id> {
             system,
             // A surface does not own focus until its host says so.
             focused: false,
-            ascii: false,
             title: "",
             show_panel: false,
         }
@@ -1341,13 +1322,7 @@ impl<'a, Id: Clone + PartialEq> Sidebar<'a, Id> {
 
     /// ASCII rail glyph fallback.
     #[must_use]
-    pub const fn ascii(mut self, ascii: bool) -> Self {
-        self.ascii = ascii;
-        self
-    }
-
     /// Optional title when panel chrome on.
-    #[must_use]
     pub const fn title(mut self, title: &'a str) -> Self {
         self.title = title;
         self
@@ -1394,7 +1369,6 @@ impl<'a, Id: Clone + PartialEq> Sidebar<'a, Id> {
 
         let rail = matches!(state.presentation, SidebarPresentation::Rail);
         NavigationList::new(self.items, self.system)
-            .ascii(self.ascii)
             .rail(rail)
             .paint(inner, buffer, &mut state.nav);
     }
@@ -1794,9 +1768,7 @@ mod tests {
         assert_eq!(state.focus(), Some(&"hidden"));
         let area = Rect::new(0, 0, 24, 8);
         let mut buf = Buffer::empty(area);
-        NavigationList::new(&items, &system)
-            .ascii(true)
-            .paint(area, &mut buf, &mut state);
+        NavigationList::new(&items, &system).paint(area, &mut buf, &mut state);
         // After paint, focus must not remain on collapsed child
         assert_ne!(
             state.focus(),
@@ -1878,16 +1850,13 @@ mod tests {
         let area = Rect::new(0, 0, 24, 12);
         let mut buf = Buffer::empty(area);
         Sidebar::new(&items, &system)
-            .ascii(true)
             .show_panel(true)
             .title("Settings")
             .paint(area, &mut buf, &mut state);
         assert!(!state.nav.regions.is_empty());
         let _ = state.toggle_rail();
         let rail_area = Rect::new(0, 0, 6, 12);
-        Sidebar::new(&items, &system)
-            .ascii(true)
-            .paint(rail_area, &mut buf, &mut state);
+        Sidebar::new(&items, &system).paint(rail_area, &mut buf, &mut state);
         assert_eq!(state.presentation(), SidebarPresentation::Rail);
     }
 
@@ -1899,9 +1868,7 @@ mod tests {
         state.set_focused(true);
         let area = Rect::new(0, 0, 20, 6);
         let mut buf = Buffer::empty(area);
-        Sidebar::new(&items, &system)
-            .ascii(true)
-            .paint(area, &mut buf, &mut state);
+        Sidebar::new(&items, &system).paint(area, &mut buf, &mut state);
         let hit = state.nav.regions.iter().find(|r| r.id == "b").expect("b");
         assert!(matches!(
             state.handle_mouse(
@@ -1956,7 +1923,7 @@ mod tests {
         state.set_focused(true);
         let area = Rect::new(0, 0, 28, 16);
         let mut buf = Buffer::empty(area);
-        let w = Sidebar::new(&items, &system).ascii(true);
+        let w = Sidebar::new(&items, &system);
         for _ in 0..50 {
             w.paint(area, &mut buf, &mut state);
         }

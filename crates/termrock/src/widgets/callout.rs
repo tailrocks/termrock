@@ -19,7 +19,6 @@
 //! **vs Toast.** Transient overlay. Callout/Alert live in layout flow.
 //!
 //! Research: shadcn Alert, Glow quote rails, CLI warnings, system diagnostics.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 #![allow(unused_variables, unused_mut)] // unit-test fixtures
 use ratatui_core::{
@@ -82,7 +81,7 @@ impl CalloutTone {
     #[must_use]
     pub const fn role(self) -> Role {
         match self {
-            Self::Info => Role::Info,
+            Self::Info => Role::TextSecondary,
             Self::Success => Role::Success,
             Self::Warning => Role::Warning,
             Self::Danger | Self::Destructive => Role::Danger,
@@ -116,14 +115,10 @@ impl CalloutTone {
         }
     }
 
-    /// Glyph for current mode.
+    /// Glyph for the one vocabulary.
     #[must_use]
-    pub const fn glyph(self, ascii: bool) -> &'static str {
-        if ascii {
-            self.glyph_ascii()
-        } else {
-            self.glyph_unicode()
-        }
+    pub const fn glyph(self) -> &'static str {
+        self.glyph_unicode()
     }
 }
 
@@ -325,7 +320,6 @@ struct PaintArgs<'a, Id> {
     action_cursor: Option<&'a Id>,
     focused: bool,
     enabled: bool,
-    ascii: bool,
     colorless: bool,
     emphasize: bool,
 }
@@ -382,13 +376,7 @@ fn paint_feedback<Id: Clone + PartialEq>(
     // Optional outer border for section recipe (no full-surface fill).
     let mut inner = area;
     if section && area.width >= 2 && area.height >= 2 {
-        let ascii_system;
-        let surface_system = if args.ascii {
-            ascii_system = args.system.clone().glyphs(GlyphSet::Ascii);
-            &ascii_system
-        } else {
-            args.system
-        };
+        let surface_system = args.system;
         inner = Surface::new(surface_system)
             .recipe(surface_recipe)
             .bordered(true)
@@ -404,7 +392,7 @@ fn paint_feedback<Id: Clone + PartialEq>(
     // The rail is one cell plus the density's own gap (plans/022 Step 6).
     let gutter_w = 1u16;
     slots.gutter = Rect::new(inner.x, inner.y, gutter_w.min(inner.width), inner.height);
-    let rail = if args.ascii { "|" } else { "│" };
+    let rail = "│";
     for y in inner.y..inner.bottom() {
         buffer.set_stringn(inner.x, y, rail, 1, tone_style);
     }
@@ -437,7 +425,7 @@ fn paint_feedback<Id: Clone + PartialEq>(
     let _ = rows_needed;
 
     let mut y = inner.y;
-    let glyph = tone.glyph(args.ascii);
+    let glyph = tone.glyph();
     let glyph_w = display_cols(glyph) as u16;
 
     // Title line: glyph + title (+ dismiss on far right for compact)
@@ -445,7 +433,7 @@ fn paint_feedback<Id: Clone + PartialEq>(
     buffer.set_stringn(content_x, y, glyph, usize::from(content_w), tone_style);
 
     let title_x = content_x.saturating_add(glyph_w.saturating_add(1));
-    let dismiss_label = if args.ascii { "[x]" } else { "×" };
+    let dismiss_label = "×";
     let dismiss_w = if args.content.dismissible {
         display_cols(dismiss_label) as u16
     } else {
@@ -514,11 +502,7 @@ fn paint_feedback<Id: Clone + PartialEq>(
     if let Some(src) = args.content.source {
         if y < inner.bottom() {
             slots.source = Rect::new(content_x, y, content_w, 1);
-            let line = if args.ascii {
-                format!("-- {src}")
-            } else {
-                format!("— {src}")
-            };
+            let line = format!("— {src}");
             buffer.set_stringn(
                 content_x,
                 y,
@@ -566,7 +550,7 @@ fn paint_feedback<Id: Clone + PartialEq>(
         }
         if args.content.dismissible && args.actions.is_empty() {
             // hint when only dismiss
-            let hint = if args.ascii { "esc" } else { "esc" };
+            let hint = "esc";
             buffer.set_stringn(content_x, y, hint, usize::from(content_w), muted);
         }
     }
@@ -589,7 +573,6 @@ pub struct Callout<'a, Id = ()> {
     actions: &'a [Action<'a, Id>],
     dismissible: bool,
     show_details: bool,
-    ascii: bool,
     colorless: bool,
 }
 
@@ -608,7 +591,6 @@ impl<'a> Callout<'a, ()> {
             actions: &[],
             dismissible: false,
             show_details: false,
-            ascii: false,
             colorless: false,
         }
     }
@@ -687,13 +669,7 @@ impl<'a, Id> Callout<'a, Id> {
 
     /// ASCII glyphs.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Colorless.
-    #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self
@@ -739,7 +715,6 @@ impl<'a, Id> Callout<'a, Id> {
                 action_cursor: None,
                 focused: false,
                 enabled: true,
-                ascii: self.ascii,
                 colorless: self.colorless,
                 emphasize: false,
             },
@@ -1095,7 +1070,6 @@ pub struct Alert<'a, Id = ()> {
     system: &'a DesignSystem,
     actions: &'a [Action<'a, Id>],
     dismissible: bool,
-    ascii: bool,
     colorless: bool,
 }
 
@@ -1113,7 +1087,6 @@ impl<'a, Id> Alert<'a, Id> {
             system,
             actions: &[],
             dismissible: true,
-            ascii: false,
             colorless: false,
         }
     }
@@ -1183,13 +1156,7 @@ impl<'a, Id> Alert<'a, Id> {
 
     /// ASCII.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Colorless.
-    #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self
@@ -1240,7 +1207,6 @@ impl<'a, Id> Alert<'a, Id> {
                 action_cursor: state.action_cursor.as_ref(),
                 focused: state.focused,
                 enabled: state.enabled,
-                ascii: self.ascii,
                 colorless: self.colorless,
                 emphasize: true,
             },
@@ -1385,27 +1351,7 @@ mod tests {
             .source("diag")
             .paint(area, &mut buf);
         assert!(!slots.root.is_empty());
-        assert_eq!(buf[(0, 0)].symbol(), "\u{250c}");
-    }
-
-    #[test]
-    fn callout_ascii_colorless() {
-        let system = DesignSystem::default();
-        let area = Rect::new(0, 0, 32, 3);
-        let mut buf = Buffer::empty(area);
-        let _ = Callout::new("Err", &system)
-            .tone(CalloutTone::Danger)
-            .ascii(true)
-            .colorless(true)
-            .description("failed")
-            .paint(area, &mut buf);
-        assert_eq!(buf[(0, 0)].symbol(), "|");
-        let text: String = buf
-            .content()
-            .iter()
-            .map(|c| c.symbol().to_string())
-            .collect();
-        assert!(text.contains("x") || text.contains("Err"), "{text}");
+        assert_eq!(buf[(0, 0)].symbol(), "\u{256d}"); // Rounded is the canonical border
     }
 
     #[test]

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Empty, loading, error, and banner feedback views.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
@@ -44,7 +43,7 @@ impl Widget for &LoadingView<'_> {
         let frame = if self.system.motion.animate_spinners() && !self.frame.is_empty() {
             self.frame
         } else {
-            SemanticStatus::Running.glyph_for_set(self.system.glyphs)
+            SemanticStatus::Running.glyph()
         };
         let text = format!("{rail} {frame} {}", self.label);
         let row = Center::new(area.width, 1)
@@ -52,7 +51,7 @@ impl Widget for &LoadingView<'_> {
             .layout(area)
             .child;
         let x = paint_centered_line(area, buffer, row.y, &text, self.system.style(Role::Text));
-        let status_style = self.system.style(Role::InfoDim);
+        let status_style = self.system.style(Role::TextMuted);
         crate::widgets::row_chrome::paint_status_glyph(
             buffer,
             Rect::new(x, row.y, area.right().saturating_sub(x), 1),
@@ -108,12 +107,11 @@ impl Widget for &Banner<'_> {
             return;
         }
         let rail = self.system.glyphs.resolve(Glyph::RailHeavy).text;
-        let ascii = matches!(self.system.glyphs, crate::style::GlyphSet::Ascii);
         let (glyph, role) = match self.severity {
-            Severity::Info => (if ascii { "i" } else { "ℹ" }, Role::Info),
-            Severity::Success => (if ascii { "+" } else { "✓" }, Role::TextStrong),
+            Severity::Info => ("•", Role::TextSecondary),
+            Severity::Success => ("✓", Role::TextStrong),
             Severity::Warning => ("!", Role::Warning),
-            Severity::Error => (if ascii { "x" } else { "✗" }, Role::Danger),
+            Severity::Error => ("×", Role::Danger),
         };
         let line = format!("{rail} {glyph} {}", self.message);
         let clipped = take_display_cols(&line, usize::from(area.width));

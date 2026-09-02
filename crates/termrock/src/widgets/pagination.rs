@@ -15,7 +15,6 @@
 //! rows are in memory; prefer Pagination when the host must fetch page N.
 //!
 //! Research: shadcn Pagination, database clients, API result browsers.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -832,7 +831,6 @@ impl PaginationState {
 #[derive(Debug, Clone, Copy)]
 pub struct Pagination<'a> {
     system: &'a DesignSystem,
-    ascii: bool,
     show_summary: bool,
     show_page_size: bool,
 }
@@ -843,7 +841,6 @@ impl<'a> Pagination<'a> {
     pub const fn new(system: &'a DesignSystem) -> Self {
         Self {
             system,
-            ascii: false,
             show_summary: true,
             show_page_size: true,
         }
@@ -851,13 +848,7 @@ impl<'a> Pagination<'a> {
 
     /// ASCII glyphs.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Show item summary.
-    #[must_use]
     pub const fn show_summary(mut self, on: bool) -> Self {
         self.show_summary = on;
         self
@@ -890,10 +881,10 @@ impl<'a> Pagination<'a> {
         };
         state.visible_pages = state.compute_visible_pages(max_buttons);
 
-        let first = if self.ascii { "|<" } else { "«" };
-        let prev = if self.ascii { "<" } else { "‹" };
-        let next = if self.ascii { ">" } else { "›" };
-        let last = if self.ascii { ">|" } else { "»" };
+        let first = { "«" };
+        let prev = { "‹" };
+        let next = { "›" };
+        let last = { "»" };
 
         let mut x = area.x;
         let y = area.y;
@@ -918,11 +909,10 @@ impl<'a> Pagination<'a> {
             let style = if !enabled {
                 system.style(Role::TextDisabled)
             } else if focused_part {
-                system
-                    .style(Role::Focus)
-                    .add_modifier(Modifier::REVERSED | Modifier::BOLD)
+                // Focus is the accent tone and weight, never a reversal.
+                system.style(Role::Focus).add_modifier(Modifier::BOLD)
             } else if active {
-                // The current page is the bold one; the focused page reverses.
+                // The current page is the bold one.
                 system.style(Role::TextStrong).add_modifier(Modifier::BOLD)
             } else {
                 system.style(Role::Text)
@@ -934,11 +924,7 @@ impl<'a> Pagination<'a> {
             *x = (*x).saturating_add(w).saturating_add(1);
         };
 
-        let loading = if state.loading {
-            if self.ascii { " ..." } else { " …" }
-        } else {
-            ""
-        };
+        let loading = if state.loading { " …" } else { "" };
 
         match state.presentation {
             PaginationPresentation::Minimal => {
@@ -1143,9 +1129,7 @@ impl<'a> Pagination<'a> {
                     if avail > 0 {
                         let w = w.min(avail);
                         let style = if state.focused && matches!(state.part, PaginationPart::Jump) {
-                            self.system
-                                .style(Role::Focus)
-                                .add_modifier(Modifier::REVERSED)
+                            self.system.style(Role::Focus).add_modifier(Modifier::BOLD)
                         } else {
                             self.system.style(Role::TextMuted)
                         };
@@ -1413,9 +1397,7 @@ mod tests {
         state.set_focused(true);
         let area = Rect::new(0, 0, 72, 1);
         let mut buf = Buffer::empty(area);
-        Pagination::new(&system)
-            .ascii(true)
-            .paint(area, &mut buf, &mut state);
+        Pagination::new(&system).paint(area, &mut buf, &mut state);
         assert!(!state.hits.is_empty());
         // click next if present
         if let Some((_, rect)) = state
@@ -1444,9 +1426,7 @@ mod tests {
         state.set_focused(true);
         let area = Rect::new(0, 0, 18, 1);
         let mut buf = Buffer::empty(area);
-        Pagination::new(&system)
-            .ascii(true)
-            .paint(area, &mut buf, &mut state);
+        Pagination::new(&system).paint(area, &mut buf, &mut state);
         assert_eq!(state.presentation(), PaginationPresentation::Minimal);
     }
 
@@ -1477,7 +1457,7 @@ mod tests {
         state.set_focused(true);
         let area = Rect::new(0, 0, 64, 1);
         let mut buf = Buffer::empty(area);
-        let w = Pagination::new(&system).ascii(true);
+        let w = Pagination::new(&system);
         for _ in 0..50 {
             w.paint(area, &mut buf, &mut state);
         }

@@ -8,7 +8,7 @@ use ratatui_core::{
 };
 
 use super::*;
-use crate::style::{Density, DesignSystem, Role, RolePalette};
+use crate::style::{DesignSystem, Role, RolePalette};
 
 #[cfg(feature = "serde")]
 #[test]
@@ -34,7 +34,7 @@ fn areas() -> [Rect; 5] {
 fn leaf_widgets_render_at_tiny_and_off_origin_areas() {
     let theme = RolePalette::default();
     let system = crate::style::DesignSystem::from_palette(theme.clone());
-    let panel_tokens = DesignSystem::new(theme.clone(), Density::default());
+    let panel_tokens = DesignSystem::from_palette(theme.clone());
     let panel = Panel::new(&panel_tokens)
         .title("Title")
         .emphasis(PanelChrome::Focused);
@@ -60,7 +60,7 @@ fn leaf_widgets_render_at_tiny_and_off_origin_areas() {
 fn focused_quiet_panel_remains_borderless() {
     let theme = RolePalette::default();
     let system = crate::style::DesignSystem::from_palette(theme.clone());
-    let panel_tokens = DesignSystem::new(theme.clone(), Density::default());
+    let panel_tokens = DesignSystem::from_palette(theme.clone());
     let area = Rect::new(0, 0, 10, 3);
     let mut buffer = Buffer::empty(area);
     let panel = Panel::new(&panel_tokens).emphasis(PanelChrome::Focused);
@@ -72,7 +72,7 @@ fn focused_quiet_panel_remains_borderless() {
 fn inactive_quiet_panel_remains_borderless() {
     let theme = RolePalette::default();
     let system = crate::style::DesignSystem::from_palette(theme.clone());
-    let panel_tokens = DesignSystem::new(theme.clone(), Density::default());
+    let panel_tokens = DesignSystem::from_palette(theme.clone());
     let area = Rect::new(0, 0, 10, 3);
     let mut buffer = Buffer::empty(area);
     Panel::new(&panel_tokens).render(area, &mut buffer);
@@ -347,7 +347,7 @@ fn theme_override_reaches_active_tab_cells() {
 fn owned_panel_render_matches_borrowed_render() {
     let theme = RolePalette::default();
     let system = crate::style::DesignSystem::from_palette(theme.clone());
-    let panel_tokens = DesignSystem::new(theme.clone(), Density::default());
+    let panel_tokens = DesignSystem::from_palette(theme.clone());
     let area = Rect::new(0, 0, 12, 3);
     let mut owned = Buffer::empty(area);
     let mut borrowed = Buffer::empty(area);

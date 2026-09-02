@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Persistent application-pattern demos built only from public pattern APIs.
-
 use ratatui::{Frame, layout::Rect, text::Line};
 use termrock::{
     input::{KeyCode, KeyEvent, MouseEvent},
@@ -859,7 +858,6 @@ impl StoryInteraction for AppDashboardDemo {
         let rows = Self::workloads();
         frame.render_stateful_widget(
             &List::new(&rows, &system)
-                .comfortable()
                 .focused(self.state.pane() == termrock::patterns::AppDashboardPane::Main),
             main_body,
             &mut self.workloads,
@@ -955,7 +953,7 @@ impl StoryInteraction for MetricsDashboardDemo {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
         let system = self.system.clone();
         let (tiles, alerts) = Self::fixtures();
-        MetricsDashboard::new(&tiles, &alerts, &system)
+        let _ = MetricsDashboard::new(&tiles, &alerts, &system)
             .title("ops")
             .render(area, frame.buffer_mut(), &mut self.state);
     }
@@ -1064,7 +1062,7 @@ impl StoryInteraction for SchemaBrowserDemo {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
         let system = self.system.clone();
         let entries = Self::entries();
-        SchemaBrowser::new(&entries, &system)
+        let _ = SchemaBrowser::new(&entries, &system)
             .title("catalog")
             .render(area, frame.buffer_mut(), &mut self.state);
     }

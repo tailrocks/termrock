@@ -14,7 +14,6 @@
 //! KeyboardHelp composes many of them into help chrome.
 //!
 //! Research: Zellij help, lazygit keybindings, Vim help, Textual bindings.
-
 #![allow(unused_imports)] // test-only imports retained
 use std::collections::BTreeMap;
 
@@ -912,7 +911,6 @@ pub struct KeyboardHelp<'a> {
     entries: &'a [HelpEntry],
     system: &'a DesignSystem,
     title: &'a str,
-    ascii: bool,
     colorless: bool,
 }
 
@@ -924,7 +922,6 @@ impl<'a> KeyboardHelp<'a> {
             entries,
             system,
             title: "Keyboard",
-            ascii: false,
             colorless: false,
         }
     }
@@ -938,13 +935,7 @@ impl<'a> KeyboardHelp<'a> {
 
     /// ASCII.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Colorless.
-    #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self
@@ -982,11 +973,7 @@ impl<'a> KeyboardHelp<'a> {
         let mut x = area.x;
         let y = area.y;
         // The widget's own ASCII switch outranks the system profile here.
-        let glyphs = if self.ascii {
-            crate::style::GlyphSet::Ascii
-        } else {
-            self.system.glyphs
-        };
+        let glyphs = { self.system.glyphs };
         let sep = glyphs.meta_join();
         for (i, e) in slice.iter().enumerate() {
             if x >= area.right() {
@@ -1033,9 +1020,9 @@ impl<'a> KeyboardHelp<'a> {
                 " {}{}",
                 take_display_cols(&e.action, 16),
                 if e.remapped {
-                    if self.ascii { "*" } else { "∗" }
+                    "∗"
                 } else if e.conflict {
-                    if self.ascii { "!" } else { "⚠" }
+                    "⚠"
                 } else {
                     ""
                 }
@@ -1081,22 +1068,14 @@ impl<'a> KeyboardHelp<'a> {
         if show_search {
             state.query.set_focused(surface);
             let _ = crate::widgets::TextInput::new("", self.system)
-                .placeholder(if self.ascii {
-                    "Filter bindings..."
-                } else {
-                    "Filter bindings…"
-                })
+                .placeholder("Filter bindings…")
                 .paint(
                     Rect::new(inner.x, y, inner.width, 1),
                     buffer,
                     &mut state.query,
                 );
             y = y.saturating_add(1);
-            let line = if self.ascii {
-                "-".repeat(usize::from(inner.width))
-            } else {
-                "─".repeat(usize::from(inner.width))
-            };
+            let line = { "─".repeat(usize::from(inner.width)) };
             buffer.set_stringn(
                 inner.x,
                 y,
@@ -1177,16 +1156,8 @@ impl<'a> KeyboardHelp<'a> {
 
             let flags = format!(
                 "{}{}",
-                if e.remapped {
-                    if self.ascii { "*" } else { "∗" }
-                } else {
-                    ""
-                },
-                if e.conflict {
-                    if self.ascii { "!" } else { "!" }
-                } else {
-                    ""
-                }
+                if e.remapped { "∗" } else { "" },
+                if e.conflict { "!" } else { "" }
             );
             let mouse = e
                 .mouse
@@ -1204,7 +1175,7 @@ impl<'a> KeyboardHelp<'a> {
                 if active {
                     self.system
                         .style(Role::TextStrong)
-                        .add_modifier(Modifier::REVERSED)
+                        .add_modifier(Modifier::BOLD)
                 } else if e.conflict {
                     // A conflicting binding is a warning, and says so.
                     self.system
@@ -1565,9 +1536,7 @@ mod tests {
         let mut st = KeyboardHelpState::new();
         let area = Rect::new(0, 0, 60, 1);
         let mut buf = Buffer::empty(area);
-        KeyboardHelp::new(&e, &sys)
-            .ascii(true)
-            .paint(area, &mut buf, &mut st);
+        KeyboardHelp::new(&e, &sys).paint(area, &mut buf, &mut st);
         let text: String = buf
             .content()
             .iter()
@@ -1662,7 +1631,6 @@ mod tests {
         let area = Rect::new(0, 0, 40, 1);
         let mut buf = Buffer::empty(area);
         KeyboardHelp::new(&e, &sys)
-            .ascii(true)
             .colorless(true)
             .paint(area, &mut buf, &mut st);
     }

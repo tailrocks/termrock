@@ -7,13 +7,12 @@
 //! execution, 1M virtual windows).
 //!
 //! Research: Rich tables, Glow, DB clients, btop, TermRock DataTable.
-
 use std::num::NonZeroU16;
 
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
-    style::{Modifier, Style},
+    style::Style,
     text::Line,
     widgets::StatefulWidget,
 };
@@ -1042,6 +1041,8 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
                     enabled: row.enabled,
                     loading: false,
                     checked: false,
+
+                    ..ListRowVisualState::default()
                 },
             );
             let style = row_style(self.tokens, row, &chrome, striped);
@@ -1050,6 +1051,9 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
             } else {
                 chrome.secondary_style(style)
             };
+            // The wash goes down before the cells, so a cell that states
+            // itself with an explicit pair (the cursor) keeps its ground.
+            chrome.paint_wash(buffer, row_area);
 
             // Shared responsive anatomy (ContentPriority), not magic width cutoffs.
             let (show_leading_tier, show_badge_tier) =
@@ -1104,8 +1108,7 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
                     buffer.set_line(bx, y, badge, bw);
                 }
             }
-            chrome.paint(buffer, row_area);
-            super::surface::normalize_content_band(self.tokens, buffer, row_area);
+            chrome.paint_gutter(buffer, row_area);
             if owns_id && row.enabled {
                 state.row_regions.push(TableRowRegion {
                     id: row.id.clone(),
@@ -1318,9 +1321,9 @@ fn paint_data_cells<RowId: Clone + Eq, ColumnId: Clone + Eq>(
                 let kind = table.columns[column_index].kind;
                 let mut cell_style = kind.cell_style(style, quiet);
                 if cell_focused {
-                    // Cell cursor is intentionally the only collection state
-                    // that reverses. Rows use gutter + tint.
-                    cell_style = cell_style.add_modifier(Modifier::REVERSED);
+                    // A cell cursor is a cell: the explicit reversal pair.
+                    // Rows use gutter + tint and never reverse.
+                    cell_style = table.tokens.reversed();
                 }
                 // Only paint text when column left edge is in view (avoid partial misalignment).
                 let fully_left = col_left >= i32::from(clip_left);
@@ -1611,8 +1614,8 @@ fn render_line_overflow(
     );
 }
 
-fn sort_glyph(system: &DesignSystem, direction: SortDirection) -> &'static str {
-    super::table_chrome::sort_marker(system, matches!(direction, SortDirection::Ascending))
+fn sort_glyph(_system: &DesignSystem, direction: SortDirection) -> &'static str {
+    super::table_chrome::sort_marker(matches!(direction, SortDirection::Ascending))
 }
 
 #[cfg(test)]
@@ -1860,7 +1863,7 @@ mod tests {
             .iter()
             .map(|cell| cell.symbol())
             .collect::<String>();
-        assert!(text.contains("CPU ↓"));
+        assert!(text.contains("CPU ▾"));
         assert!(text.contains("東 京 🧪"));
         assert!(
             state
@@ -2267,14 +2270,19 @@ mod tests {
         (&Table::new(&columns, &rows, &gutter)).render(area, &mut buffer, &mut state);
         assert_eq!(buffer[(0, 1)].symbol(), gutter.glyphs.selection_gutter());
 
-        let fill_sys = DesignSystem::default().selection(crate::style::SelectionChrome::Fill);
+        let tint_sys = DesignSystem::junie().selection(crate::style::SelectionChrome::Tint);
         let mut state = TableState::new(Some(1));
         let mut buffer = Buffer::empty(area);
-        (&Table::new(&columns, &rows, &fill_sys)).render(area, &mut buffer, &mut state);
-        assert_eq!(buffer[(0, 1)].symbol(), fill_sys.glyphs.selection_gutter());
+        (&Table::new(&columns, &rows, &tint_sys)).render(area, &mut buffer, &mut state);
+        assert_eq!(
+            buffer[(0, 1)].symbol(),
+            " ",
+            "tint chrome leaves the gutter slot empty"
+        );
         assert_eq!(
             buffer[(5, 1)].bg,
-            fill_sys.style(Role::SelectionTint).bg.unwrap()
+            tint_sys.style(Role::SelectionTint).bg.unwrap(),
+            "the focused row still wears the tint"
         );
     }
 

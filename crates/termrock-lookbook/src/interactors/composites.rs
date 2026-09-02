@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Persistent composite-pattern demos using public pattern state machines.
-
 use ratatui::{Frame, layout::Rect};
 use termrock::{
     input::{KeyEvent, MouseEvent},
@@ -289,7 +288,7 @@ impl StoryInteraction for CompositePatternDemo {
                     .render(area, frame.buffer_mut(), state)
             }
             CompositeKind::Results(state) => {
-                ResultGrid::new(&system, &result_columns(), &result_rows())
+                let _ = ResultGrid::new(&system, &result_columns(), &result_rows())
                     .title("query results")
                     .render(area, frame.buffer_mut(), state);
             }

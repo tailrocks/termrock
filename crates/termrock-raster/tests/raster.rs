@@ -62,8 +62,10 @@ fn panel_story_png_has_exact_size_and_phosphor_border() {
 
 #[test]
 fn wide_grapheme_spans_two_cells_and_shadow_cell_is_ignored() {
+    // A wide symbol the vendored face chain actually maps (CJK is deliberately
+    // not vendored; see `fonts.rs`).
     let mut a = Buffer::empty(Rect::new(0, 0, 4, 1));
-    a.set_string(0, 0, "界", Style::new().fg(Color::Green));
+    a.set_string(0, 0, "🚀", Style::new().fg(Color::Green));
     let mut b = a.clone();
     b[(1, 0)].set_symbol("X");
     let palette = RolePalette::default();

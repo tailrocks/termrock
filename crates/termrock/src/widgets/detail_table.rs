@@ -584,11 +584,6 @@ impl<Id: Clone + PartialEq> StatefulWidget for &DetailTable<'_, Id> {
                     state,
                     &mut scratch,
                 );
-                super::surface::normalize_content_band(
-                    self.system,
-                    buffer,
-                    Rect::new(area.x, y, area.width, 1),
-                );
             }
         }
     }
@@ -803,7 +798,7 @@ mod tests {
 
     #[test]
     fn separator_comes_from_the_shared_key_value_token() {
-        let system = crate::style::DesignSystem::phosphor();
+        let system = crate::style::DesignSystem::junie();
         let rows = rows();
         // The colon rule used to be hardcoded here while its two sibling
         // key-value widgets used a two-cell gutter.

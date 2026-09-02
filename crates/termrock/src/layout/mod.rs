@@ -2,7 +2,6 @@
 //!
 //! Component-local packing: [`Stack`] / [`Inline`] / [`layout_stack`].
 //! Multi-pane shells: [`WorkSurface`] / [`Workspace`].
-
 mod center;
 mod dialog;
 mod grid;

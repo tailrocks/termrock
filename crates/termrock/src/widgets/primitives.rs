@@ -6,7 +6,6 @@
 //! **Law:** Enter/Space or one pointer gesture activates once; disabled and
 //! loading never activate. Press confirms; Release never activates. Effects
 //! remain consumer-owned outcomes.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -364,10 +363,13 @@ impl ButtonSize {
         }
     }
 
+    /// junie has exactly one density: the leading pad cell **is** the `▎`
+    /// gutter column and one air cell trails, so a button is `label + 2`
+    /// wide. Both names resolve to it; the knob survives only because
+    /// consumers outside this batch still name it.
     const fn pad_cols(self) -> usize {
         match self {
-            Self::Compact => 1,
-            Self::Normal => 2,
+            Self::Compact | Self::Normal => 1,
         }
     }
 }
@@ -403,8 +405,10 @@ pub struct Button<'a> {
     full_width: bool,
     /// Required when label is empty (icon-only).
     accessible_label: Option<&'a str>,
-    ascii: bool,
     colorless: bool,
+    /// Plane the button sits on (dialog body, panel, popover). `None` = the
+    /// chrome surface.
+    container: Option<ratatui_core::style::Color>,
 }
 
 impl<'a> Button<'a> {
@@ -420,9 +424,17 @@ impl<'a> Button<'a> {
             trailing: None,
             full_width: false,
             accessible_label: None,
-            ascii: false,
             colorless: false,
+            container: None,
         }
+    }
+
+    /// Names the plane this button sits on, so a dialog button does not pin
+    /// the chrome surface as its ground (junie resolvers take the container).
+    #[must_use]
+    pub const fn container(mut self, container: ratatui_core::style::Color) -> Self {
+        self.container = Some(container);
+        self
     }
 
     /// Variant chrome.
@@ -532,13 +544,7 @@ impl<'a> Button<'a> {
 
     /// ASCII chrome / loading fallback.
     #[must_use]
-    pub const fn ascii(mut self, ascii: bool) -> Self {
-        self.ascii = ascii;
-        self
-    }
-
     /// Reduced-color paint (force non-color cues).
-    #[must_use]
     pub const fn colorless(mut self, colorless: bool) -> Self {
         self.colorless = colorless;
         self
@@ -563,6 +569,9 @@ impl<'a> Button<'a> {
     }
 
     /// Preferred width in cells (label + chrome + glyphs).
+    ///
+    /// Idle width: a busy button reserves two more cells for its spinner
+    /// prefix, which [`Self::paint`] accounts for at paint time.
     #[must_use]
     pub fn preferred_width(&self) -> u16 {
         let pad = self.size.pad_cols().saturating_mul(2);
@@ -585,12 +594,10 @@ impl<'a> Button<'a> {
 
     fn mono(&self) -> bool {
         self.colorless
-            || self.ascii
             || matches!(
                 self.system.capability,
                 crate::style::ColorCapability::Monochrome
             )
-            || self.system.glyphs.is_ascii()
     }
 }
 
@@ -603,6 +610,9 @@ pub struct ButtonState {
     pub region: Option<Rect>,
     /// Pointer hover (host updates via [`Self::handle_mouse`]).
     pub hovered: bool,
+    /// The control owns the keyboard (host sets it; focus is never inferred
+    /// from being enabled — exactly one bar in a form at a time).
+    pub focused: bool,
 }
 
 impl ButtonState {
@@ -613,6 +623,7 @@ impl ButtonState {
             activation: ActivationState::new(),
             region: None,
             hovered: false,
+            focused: false,
         }
     }
 
@@ -672,6 +683,10 @@ impl Button<'_> {
         // Public variants collapse onto the product-neutral recipe vocabulary;
         // Success/Command retain their semantic label cues below.
         let recipe_variant = self.variant.recipe();
+        // One focus owner: focus is a fact the host supplies, never something
+        // a button infers from being enabled. An enabled button is idle, not
+        // focused — idle weight belonged to every button in the form.
+        let focused = state.focused && surface;
         let control_state = if disabled {
             ControlState::Disabled
         } else if loading {
@@ -680,12 +695,20 @@ impl Button<'_> {
             ControlState::Pressed
         } else if hovered {
             ControlState::Hovered
-        } else if surface {
+        } else if focused {
             ControlState::Focused
         } else {
             ControlState::Default
         };
-        let recipe = theme.button_recipe(recipe_variant, control_state);
+        // N2: the caller names the plane; a dialog button must not pin the
+        // chrome surface as its ground.
+        let ground = self
+            .container
+            .unwrap_or_else(|| theme.junie_theme().surface);
+        let recipe = theme.button_recipe(recipe_variant, control_state, ground);
+        // M2: the recipe is the whole face. Nothing is added on top — a press
+        // is the recipe's own explicit reversal, not a modifier stacked on an
+        // already-resolved pair.
         let mut style = if !a11y_ok {
             theme.style(Role::Danger)
         } else {
@@ -693,42 +716,6 @@ impl Button<'_> {
         };
         if matches!(self.variant, ButtonVariant::Success) && recipe.fill.bg.is_none() {
             style = style.patch(theme.style(Role::Success));
-        }
-
-        // Non-color / structural affordance (never brackets alone).
-        match self.variant {
-            ButtonVariant::Primary | ButtonVariant::Success | ButtonVariant::Command => {
-                style = style.add_modifier(Modifier::BOLD);
-                if surface
-                    && matches!(
-                        self.variant,
-                        ButtonVariant::Success | ButtonVariant::Command
-                    )
-                {
-                    // Success and Command borrow recipes whose focus delta is
-                    // bold, while their semantic face is already bold. Reverse
-                    // the focused face so focus cannot collapse into idle.
-                    style = style.add_modifier(Modifier::REVERSED);
-                }
-            }
-            ButtonVariant::Link => {
-                style = style.add_modifier(Modifier::UNDERLINED);
-            }
-            ButtonVariant::Outline | ButtonVariant::Quiet | ButtonVariant::Secondary => {
-                // Focus speaks through the recipe's border and a bold label.
-                // Underlining every focusable button made a form of ordinary
-                // controls look like a page of hyperlinks.
-                if surface {
-                    style = style.add_modifier(Modifier::BOLD);
-                }
-            }
-            ButtonVariant::Destructive => {
-                style = style.add_modifier(Modifier::BOLD);
-            }
-        }
-        if armed {
-            // The press is the one moment the button inverts.
-            style = style.add_modifier(Modifier::BOLD | Modifier::REVERSED);
         }
 
         let narrow = area.width < 12;
@@ -739,11 +726,7 @@ impl Button<'_> {
 
         // Catalog on both paths: the ASCII profile already carries the
         // degraded form, so no literal is needed to spell it out.
-        let load_g = if mono || self.ascii {
-            Glyph::Loading.resolve(GlyphSet::Ascii).text
-        } else {
-            theme.glyphs.resolve(Glyph::Loading).text
-        };
+        let load_g = theme.glyphs.resolve(Glyph::Loading).text;
         let mut body = String::new();
         if loading {
             body.push_str(load_g);
@@ -776,7 +759,8 @@ impl Button<'_> {
             if let Some(g) = self.leading {
                 body.push_str(g);
             } else if !a11y_ok {
-                body.push_str(if mono { "!" } else { "⚠" });
+                // The refusal mark is `!`, the vocabulary's only error glyph.
+                body.push('!');
             }
         } else {
             body.push_str(self.label);
@@ -791,27 +775,27 @@ impl Button<'_> {
             body.push_str(" ?");
         }
 
-        // Pad: whitespace before chrome (Glow-like), not bracket-only identity.
+        // Anatomy: the `▎` gutter cell leads, the body follows, pad trails.
+        // The bar is the focus indicator — accent while this button owns the
+        // keyboard, invisible (fg = its own ground) when it does not. The
+        // column is reserved either way, so focus never shifts the label.
         let pad = self.size.pad_cols();
         let pad_s = " ".repeat(pad);
         let label = match self.variant {
-            ButtonVariant::Link | ButtonVariant::Quiet => {
-                if pad == 0 {
-                    body
-                } else {
-                    format!("{pad_s}{body}")
-                }
-            }
+            ButtonVariant::Link | ButtonVariant::Quiet => format!("{pad_s}{body}"),
             ButtonVariant::Outline if mono => {
                 // Brackets only as ASCII secondary chrome alongside the border.
                 format!("{pad_s}[{body}]")
             }
             _ => format!("{pad_s}{body}{pad_s}"),
         };
+        // A busy button reserves two more cells for the spinner prefix.
+        let busy_pad = u16::from(loading).saturating_mul(2);
         let paint_w = if self.full_width {
             area.width
         } else {
-            area.width.min(self.preferred_width().max(3))
+            area.width
+                .min(self.preferred_width().saturating_add(busy_pad).max(3))
         };
         let text = take_display_cols(&label, usize::from(paint_w));
         // Full-width: paint the resolved recipe across the complete hit band
@@ -821,6 +805,36 @@ impl Button<'_> {
             buffer.set_style(Rect::new(area.x, area.y, area.width, 1), style);
         }
         buffer.set_stringn(area.x, area.y, &text, usize::from(paint_w), style);
+        let theme_t = theme.junie_theme();
+        let on_accent =
+            matches!(recipe_variant, ButtonRecipeVariant::Primary) && !disabled && !loading;
+        if paint_w > 0 {
+            let gutter_fg = if !focused {
+                // Unfocused gutter is invisible: the same colour as the fill
+                // it sits on, but the column stays reserved.
+                recipe.fill.bg.unwrap_or(ground)
+            } else if on_accent {
+                theme.style(Role::Text).fg.unwrap_or(theme_t.text_primary)
+            } else {
+                theme.style(Role::Focus).fg.unwrap_or(theme_t.focus)
+            };
+            let cell = &mut buffer[(area.x, area.y)];
+            let mut gutter_style = cell.style();
+            gutter_style.fg = Some(gutter_fg);
+            gutter_style.add_modifier = ratatui_core::style::Modifier::empty();
+            gutter_style.sub_modifier = ratatui_core::style::Modifier::empty();
+            cell.set_symbol(theme.glyphs.selection_gutter());
+            cell.set_style(gutter_style);
+        }
+        // Busy states activity with the accent spinner cell, never with a
+        // second fill or a hue on the label.
+        if loading
+            && let Some((glyph, glyph_style)) = recipe.busy_glyph
+            && let Some(x) = area.x.checked_add(u16::try_from(pad).unwrap_or(u16::MAX))
+            && x < area.right()
+        {
+            buffer.set_stringn(x, area.y, glyph, 1, glyph_style);
+        }
         let root = Rect {
             x: area.x,
             y: area.y,
@@ -939,8 +953,9 @@ pub struct IconButton<'a> {
     badge: Option<&'a str>,
     /// Toggle affordance (pressed chrome when state.pressed).
     toggle: bool,
-    ascii: bool,
     colorless: bool,
+    /// Plane the button sits on; `None` = the chrome surface.
+    container: Option<ratatui_core::style::Color>,
 }
 
 impl<'a> IconButton<'a> {
@@ -961,9 +976,17 @@ impl<'a> IconButton<'a> {
             size: IconButtonSize::Toolbar,
             badge: None,
             toggle: false,
-            ascii: false,
             colorless: false,
+            container: None,
         }
+    }
+
+    /// Names the plane this icon button sits on (junie resolvers take the
+    /// container, so a toolbar on a panel is not pinned to the surface).
+    #[must_use]
+    pub const fn container(mut self, container: ratatui_core::style::Color) -> Self {
+        self.container = Some(container);
+        self
     }
 
     /// Variant (quiet / primary / destructive common).
@@ -1010,13 +1033,7 @@ impl<'a> IconButton<'a> {
 
     /// Force ASCII path.
     #[must_use]
-    pub const fn ascii(mut self, ascii: bool) -> Self {
-        self.ascii = ascii;
-        self
-    }
-
     /// Text fallback when glyph cannot fit (low capability / 1-col squeeze).
-    #[must_use]
     pub const fn text_fallback(mut self, text: &'a str) -> Self {
         self.text_fallback = Some(text);
         self
@@ -1095,9 +1112,7 @@ impl<'a> IconButton<'a> {
     }
 
     fn mono(&self) -> bool {
-        self.ascii
-            || self.colorless
-            || self.system.glyphs.is_ascii()
+        self.colorless
             || matches!(
                 self.system.capability,
                 crate::style::ColorCapability::Monochrome
@@ -1146,6 +1161,8 @@ pub struct IconButtonState {
     pub hovered: bool,
     /// Toggle pressed (only meaningful when button is toggle).
     pub pressed: bool,
+    /// The control owns the keyboard (host sets it).
+    pub focused: bool,
 }
 
 impl IconButtonState {
@@ -1158,6 +1175,7 @@ impl IconButtonState {
             hit: None,
             hovered: false,
             pressed: false,
+            focused: false,
         }
     }
 
@@ -1240,12 +1258,12 @@ impl<'a> IconButton<'a> {
         };
         let face = if loading {
             if mono {
-                Glyph::Loading.resolve(GlyphSet::Ascii).text.to_string()
+                Glyph::Loading.resolve().text.to_string()
             } else {
                 self.system.glyphs.resolve(Glyph::Loading).text.to_string()
             }
         } else if !a11y_ok {
-            if mono { "!".into() } else { "⚠".into() }
+            "!".into()
         } else {
             self.paint_face(face_budget)
         };
@@ -1284,25 +1302,25 @@ impl<'a> IconButton<'a> {
             ControlState::Pressed
         } else if state.hovered {
             ControlState::Hovered
-        } else if surface {
+        } else if state.focused && surface {
             ControlState::Focused
         } else {
             ControlState::Default
         };
-        let recipe = self.system.button_recipe(self.variant.recipe(), icon_state);
+        let ground = self
+            .container
+            .unwrap_or_else(|| self.system.junie_theme().surface);
+        let recipe = self
+            .system
+            .button_recipe(self.variant.recipe(), icon_state, ground);
+        // The recipe is the whole face: a press is the recipe's own explicit
+        // reversal, a latch speaks through weight, and nothing is stacked on.
         let mut style = if !a11y_ok {
             self.system.style(Role::Danger)
         } else {
             recipe.fill.patch(recipe.label)
         };
-        if toggled || armed {
-            // A pressed or latched icon button inverts its face; there is no
-            // label here for a weight change to land on.
-            style = style.add_modifier(Modifier::BOLD | Modifier::REVERSED);
-        } else if surface {
-            style = style.add_modifier(Modifier::BOLD);
-        }
-        if matches!(self.variant, ButtonVariant::Destructive) {
+        if toggled {
             style = style.add_modifier(Modifier::BOLD);
         }
 
@@ -1463,9 +1481,11 @@ mod tests {
             .as_primary()
             .paint(area, &mut buffer, &mut state);
         let cell = &buffer[(2, 0)];
-        let accent = system.style(Role::ActionFocused);
-        assert_eq!(cell.bg, accent.bg.unwrap());
-        assert_eq!(cell.fg, accent.fg.unwrap());
+        // junie: the primary button is the accent chip — accent fill, canvas
+        // label — and focus speaks through the gutter/weight, never a second
+        // fill.
+        assert_eq!(cell.bg, system.style(Role::Accent).fg.unwrap());
+        assert_eq!(cell.fg, system.style(Role::TextOnAccent).fg.unwrap());
     }
 
     #[test]
@@ -1638,6 +1658,7 @@ mod tests {
             let mut focused = Buffer::empty(area);
             let mut focused_state = ButtonState::new();
             focused_state.activation.set_accepts_input(true);
+            focused_state.focused = true;
             Button::new("Run", &system).variant(variant).paint(
                 area,
                 &mut focused,
@@ -1743,17 +1764,6 @@ mod tests {
             .badge("3")
             .paint(area, &mut buf, &mut state);
         assert_eq!(parts.badge.width, 1);
-    }
-
-    #[test]
-    fn icon_button_text_fallback() {
-        let system = DesignSystem::default().glyphs(crate::style::GlyphSet::Ascii);
-        let btn = IconButton::new("🔍", "Search", &system)
-            .ascii_glyph("/")
-            .text_fallback("S");
-        assert_eq!(btn.face_glyph(), "/");
-        let face = btn.paint_face(1);
-        assert!(!face.is_empty());
     }
 
     #[test]

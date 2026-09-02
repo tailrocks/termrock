@@ -17,7 +17,6 @@
 //! Recipes: section, settings, logs, FAQ.
 //!
 //! References: Radix Accordion, mutual collapsibles, settings/help TUIs.
-
 #![allow(unused_variables, unused_mut)] // unit-test fixtures
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 

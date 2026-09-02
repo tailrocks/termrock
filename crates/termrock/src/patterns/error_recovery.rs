@@ -29,7 +29,6 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-
 use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::StatefulWidget};
 
 use crate::{
@@ -1257,7 +1256,7 @@ pub fn render_error_recovery(buffer: &mut Buffer, area: Rect, surfaces: ErrorRec
                         buffer,
                         Rect::new(inner.x, y, inner.width, 1),
                         &cue,
-                        system.style(Role::Info),
+                        system.style(Role::TextSecondary),
                     );
                 }
             }

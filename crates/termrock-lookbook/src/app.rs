@@ -1,5 +1,4 @@
 //! Lookbook-owned model, rendering, and interaction routing.
-
 use std::{ops::ControlFlow, time::Duration};
 
 use ratatui::{
@@ -17,7 +16,7 @@ use termrock::{
     patterns::{StudioShellLayout, layout_studio_shell},
     runtime::{FrameTick, Instant},
     scroll::{self, ScrollSpan},
-    style::{Density, Role, RolePalette},
+    style::{Role, RolePalette},
     widgets::{
         DesignInspector, DesignInspectorFrame, InspectorPanel, List as ComponentList, ListRow,
         ListState as ComponentListState, Panel, PanelVariant, ProgressBar, ProgressKind,
@@ -129,7 +128,6 @@ impl Lookbook {
         let studio = layout_studio_shell(
             studio_area,
             StudioShellLayout {
-                density: Density::Compact,
                 inspector_height: 4,
                 knobs_width: if has_controls { 28 } else { 0 },
                 status_height: 0,
@@ -573,18 +571,6 @@ impl Lookbook {
             self.focus(FocusId::Preview);
             return ControlFlow::Continue(());
         }
-        if key.code == KeyCode::Char('t') && key.modifiers == shell_modifiers {
-            self.host.theme = if self.host.theme == RolePalette::tailrocks_phosphor() {
-                RolePalette::slate()
-            } else {
-                RolePalette::default()
-            };
-            self.demo
-                .set_system(termrock_lookbook::design::lookbook_system(
-                    self.host.theme.clone(),
-                ));
-            return ControlFlow::Continue(());
-        }
         if is_focused(&self.host.scene, FocusId::Preview) {
             self.handle_preview_key(key, chord);
             return ControlFlow::Continue(());
@@ -797,7 +783,9 @@ mod tests {
             KeyModifiers::CONTROL | KeyModifiers::ALT,
         ));
 
-        assert_eq!(app.host.theme, RolePalette::slate());
+        // junie is the only shipped theme: the shell chord must leave the
+        // gallery on it, at every focus target.
+        assert_eq!(app.host.theme, RolePalette::junie());
     }
 
     #[test]
@@ -820,7 +808,7 @@ mod tests {
             KeyCode::Char('t'),
             KeyModifiers::CONTROL | KeyModifiers::ALT,
         ));
-        assert_eq!(app.host.theme, RolePalette::slate());
+        assert_eq!(app.host.theme, RolePalette::junie());
     }
 
     #[test]

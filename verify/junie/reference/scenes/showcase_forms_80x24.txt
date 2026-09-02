@@ -1,0 +1,24 @@
+ ▪ Junie Design system / Components / Forms               i Inspector   ? Help
+
+▎  Overview          Forms  Sections, required fields, validation, submission
+▎  Buttons
+▎  Inputs              New task                                  Ctrl+S Submit
+▎  Text areas
+▎› Forms               Task                         Options
+▎  Lists                 Task name *                  Mode
+▎  Trees               ▎ Short imperative summ…     ▎( ) Fast
+▎  Tables                                           ▎(●) Balanced
+▎  Editable tables       Description                ▎( ) Thorough
+▎  Panels              ▎ What should Junie do…
+▎  Sidebars            ▎                            ▎[✓] Run tests before op…
+▎  Dialogs             ▎                            ▎[ ] Open a pull request…
+▎  Progress            ▎
+▎  Scrolling             Optional · Markdown        ▎○── Auto-approve changes
+▎  Code editor                                      ▎──● Notify on completion
+▎  Data grid           Review                         Managed by your organizati
+▎  Chips & selects       Reviewer  optional
+▎  Pickers             ▎ name@company.com
+▎  Settings            ▎Create task   ▎Reset
+▎  Task runner
+
+ ↑ ↓ Move  Enter Open  Tab Into page  q Quit

@@ -20,7 +20,6 @@
 //! live run progress.
 //!
 //! Research: CI pipelines, installers, agent task plans.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -118,8 +117,8 @@ impl ProgressStepStatus {
 
     /// Non-color mark.
     #[must_use]
-    pub const fn mark(self, ascii: bool) -> &'static str {
-        match (self, ascii) {
+    pub const fn mark(self, _ascii: bool) -> &'static str {
+        match (self, false) {
             (Self::Queued, true) => "[ ]",
             (Self::Queued, false) => "[ ]",
             (Self::Running, true) => "[>]",
@@ -374,7 +373,6 @@ pub struct ProgressStepsState {
     focused: bool,
     accepts_input: bool,
     enabled: bool,
-    ascii: bool,
     /// Show footer hint when interactive.
     show_hint: bool,
 }
@@ -397,7 +395,6 @@ impl ProgressStepsState {
             focused: false,
             accepts_input: true,
             enabled: true,
-            ascii: false,
             show_hint: true,
         }
     }
@@ -436,10 +433,6 @@ impl ProgressStepsState {
     }
 
     /// ASCII marks.
-    pub fn set_ascii(&mut self, on: bool) {
-        self.ascii = on;
-    }
-
     /// Cursor.
     #[must_use]
     pub fn cursor(&self) -> Option<&str> {
@@ -656,7 +649,6 @@ impl ProgressStepsState {
 pub struct ProgressSteps<'a> {
     steps: &'a [ProgressStep],
     system: &'a DesignSystem,
-    ascii: bool,
     title: Option<&'a str>,
 }
 
@@ -667,7 +659,6 @@ impl<'a> ProgressSteps<'a> {
         Self {
             steps,
             system,
-            ascii: false,
             title: None,
         }
     }
@@ -681,13 +672,7 @@ impl<'a> ProgressSteps<'a> {
 
     /// ASCII marks.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Resolve presentation.
-    #[must_use]
     pub fn presentation(
         &self,
         state: &ProgressStepsState,
@@ -703,7 +688,6 @@ impl<'a> ProgressSteps<'a> {
         if area.is_empty() {
             return;
         }
-        let ascii = self.ascii || state.ascii;
         let pres = self.presentation(state, area.width);
 
         if matches!(pres, ProgressStepsPresentation::Summary) {
@@ -765,7 +749,7 @@ impl<'a> ProgressSteps<'a> {
             let selected = state.cursor.as_ref() == Some(&step.id)
                 && matches!(state.mode, ProgressStepsMode::Interactive)
                 && state.focused;
-            let mark = step.status.mark(ascii);
+            let mark = step.status.mark(false);
             let dur = step.duration_ms.map(format_duration_ms).unwrap_or_default();
             let verb = step.effective_verb();
             let line = if expanded {
@@ -813,7 +797,7 @@ impl<'a> ProgressSteps<'a> {
                         ProgressStepStatus::Failed | ProgressStepStatus::Cancelled
                     )
                 {
-                    let retry = if ascii { " [r] retry" } else { " ↻ retry" };
+                    let retry = { " ↻ retry" };
                     detail = format!("{detail}{retry}");
                 }
                 if !detail.is_empty() {
@@ -1114,31 +1098,6 @@ mod tests {
     }
 
     #[test]
-    fn resize_cjk_combining_and_ascii_safe() {
-        let system = DesignSystem::default();
-        let label = "検証 Cafe\u{301}";
-        let steps = [ProgressStep::new("unicode", label).status(ProgressStepStatus::Running)];
-        for ascii in [false, true] {
-            for (width, height) in [(48, 6), (20, 1), (1, 1), (0, 0)] {
-                let area = Rect::new(0, 0, width, height);
-                let mut buffer = Buffer::empty(area);
-                let mut state = ProgressStepsState::new();
-                state.set_ascii(ascii);
-                ProgressSteps::new(&steps, &system).ascii(ascii).paint(
-                    area,
-                    &mut buffer,
-                    &mut state,
-                );
-                if width == 48 {
-                    let text: String = buffer.content().iter().map(|cell| cell.symbol()).collect();
-                    assert!(text.contains('検'), "{text:?}");
-                    assert!(text.contains("Cafe\u{301}"), "{text:?}");
-                }
-            }
-        }
-    }
-
-    #[test]
     fn maps_to_step_status_for_stepper_hosts() {
         assert_eq!(
             ProgressStepStatus::Running.to_step_status(),
@@ -1288,27 +1247,5 @@ mod tests {
                 .collect::<String>()
         };
         assert_eq!(paint(), paint());
-    }
-
-    #[test]
-    fn ascii_marks() {
-        let system = DesignSystem::default();
-        let steps = example_agent_plan_steps();
-        let mut state = ProgressStepsState::new();
-        state.set_ascii(true);
-        let area = Rect::new(0, 0, 40, 10);
-        let mut buf = Buffer::empty(area);
-        ProgressSteps::new(&steps, &system)
-            .ascii(true)
-            .paint(area, &mut buf, &mut state);
-        let text: String = buf
-            .content()
-            .iter()
-            .map(|c| c.symbol().to_string())
-            .collect();
-        assert!(
-            text.contains("[!]") || text.contains("[x]") || text.contains("Build"),
-            "{text}"
-        );
     }
 }

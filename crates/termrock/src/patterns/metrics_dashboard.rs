@@ -23,7 +23,6 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
@@ -611,8 +610,6 @@ pub struct MetricsDashboardState {
     pub grid_cols: usize,
     /// Last slots.
     pub slots: MetricsDashboardSlots,
-    /// ASCII.
-    pub ascii: bool,
     accepts_input: bool,
 }
 
@@ -638,7 +635,6 @@ impl MetricsDashboardState {
             layout_override: None,
             grid_cols: 2,
             slots: MetricsDashboardSlots::default(),
-            ascii: false,
             accepts_input: true,
         }
     }
@@ -914,7 +910,6 @@ pub struct MetricsDashboard<'a> {
     system: &'a DesignSystem,
     focused: bool,
     title: Option<&'a str>,
-    ascii: bool,
     hints: bool,
 }
 
@@ -933,7 +928,6 @@ impl<'a> MetricsDashboard<'a> {
             focused: true,
             hints: true,
             title: None,
-            ascii: false,
         }
     }
 
@@ -964,17 +958,11 @@ impl<'a> MetricsDashboard<'a> {
 
     /// ASCII.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Paint using public Sparkline/Gauge APIs only.
     pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut MetricsDashboardState) {
         if area.is_empty() {
             return;
         }
-        let ascii = self.ascii || state.ascii;
         let mode = state.layout_mode(area.width);
         let slots = layout_metrics_dashboard(area, self.tiles.len(), self.alerts.len(), mode);
         // grid cols for nav
@@ -1048,7 +1036,6 @@ impl<'a> MetricsDashboard<'a> {
             tile.view(self.system)
                 .presentation(presentation)
                 .focused(focused)
-                .ascii(ascii)
                 .paint(rect, buffer);
         }
 
@@ -1063,14 +1050,9 @@ impl<'a> MetricsDashboard<'a> {
                 let focused = matches!(state.focus, MetricsFocus::Alerts)
                     && i == state.focus_alert
                     && self.focused;
-                let mark = if focused {
-                    if ascii { ">" } else { "›" }
-                } else {
-                    " "
-                };
-                let indicator = StatusIndicator::new(a.severity.semantic(), self.system)
-                    .label(a.severity.id())
-                    .ascii(ascii);
+                let mark = if focused { "›" } else { " " };
+                let indicator =
+                    StatusIndicator::new(a.severity.semantic(), self.system).label(a.severity.id());
                 let status_text = indicator.text(None);
                 let line = format!("{mark} {status_text} · {}", a.message);
                 self.system.paint_row(
@@ -1276,7 +1258,7 @@ mod tests {
         let mut state = MetricsDashboardState::new();
         let area = Rect::new(0, 0, 80, 20);
         let mut buf = Buffer::empty(area);
-        MetricsDashboard::new(&tiles, &alerts, &system)
+        let _ = MetricsDashboard::new(&tiles, &alerts, &system)
             .title("Ops")
             .render(area, &mut buf, &mut state);
         assert!(!state.slots.tiles.is_empty());
@@ -1292,7 +1274,8 @@ mod tests {
 
         let area_n = Rect::new(0, 0, 40, 12);
         let mut buf_n = Buffer::empty(area_n);
-        MetricsDashboard::new(&tiles, &alerts, &system).render(area_n, &mut buf_n, &mut state);
+        let _ =
+            MetricsDashboard::new(&tiles, &alerts, &system).render(area_n, &mut buf_n, &mut state);
         assert_eq!(state.layout_mode(40), MetricsDashboardLayoutMode::Summary);
     }
 
@@ -1362,7 +1345,7 @@ mod tests {
         let area = Rect::new(0, 0, 120, 36);
         let mut buf = Buffer::empty(area);
         for _ in 0..6 {
-            MetricsDashboard::new(&tiles, &[], &system).render(area, &mut buf, &mut state);
+            let _ = MetricsDashboard::new(&tiles, &[], &system).render(area, &mut buf, &mut state);
             let _ = state.handle_key(
                 KeyEvent::new(KeyCode::Right, KeyModifiers::NONE),
                 &tiles,

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Named-part row projection for priority-aware contraction.
-
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Style, text::Line};
 
 use crate::style::ListRowRecipe;
@@ -371,16 +370,15 @@ mod tests {
 
     #[test]
     fn paint_with_gives_every_part_its_own_tone() {
-        use crate::style::{Density, DesignSystem, ListRowVisualState, RolePalette};
+        use crate::style::{DesignSystem, ListRowVisualState, RolePalette};
 
-        let system = DesignSystem::new(RolePalette::default(), Density::Compact);
+        let system = DesignSystem::from_palette(RolePalette::default());
         let recipe = system.resolve_list_row(ListRowVisualState {
             selected: false,
             focused: false,
             hovered: false,
             enabled: true,
-            loading: false,
-            checked: false,
+            ..ListRowVisualState::default()
         });
         let row = ComposedRow {
             id: "r",

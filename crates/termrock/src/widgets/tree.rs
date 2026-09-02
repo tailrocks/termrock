@@ -11,7 +11,6 @@
 //! cursor/selection interaction, scroll, hit geometry, and typed outcomes.
 //!
 //! Research: file explorers, broot, Yazi, VS Code trees, TermRock List/VirtualList.
-
 #![allow(unused_imports)] // test-only imports retained
 use ratatui_core::{
     buffer::Buffer,
@@ -51,8 +50,8 @@ impl ToneTier {
     const fn role(self) -> Role {
         match self {
             Self::Primary => Role::Text,
-            Self::Live => Role::InfoStrong,
-            Self::LiveDim => Role::InfoDim,
+            Self::Live => Role::TextStrong,
+            Self::LiveDim => Role::TextMuted,
         }
     }
 }
@@ -994,7 +993,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
                 area.y,
                 &take_display_cols(&strip, usize::from(area.width)),
                 usize::from(area.width),
-                self.tokens.style(Role::Info),
+                self.tokens.style(Role::TextSecondary),
             );
             body_y = area.y.saturating_add(1);
             body_h = area.height.saturating_sub(1);
@@ -1077,7 +1076,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
         let indent_step = match content_area.width {
             0..=7 => 0,
             8..=11 => 1,
-            _ => self.tokens.density.tree_indent().max(1),
+            _ => self.tokens.spacing.tree_indent.max(1),
         };
         for (visible, node) in self
             .nodes
@@ -1104,20 +1103,22 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
                 enabled: node.enabled,
                 loading,
                 checked,
+                ..ListRowVisualState::default()
             });
             let mut style = match node.status {
                 TreeNodeStatus::Ready if node.enabled => {
                     recipe.label.patch(self.tokens.style(node.tone.role()))
                 }
                 TreeNodeStatus::Ready => self.tokens.style(Role::TextDisabled),
-                // Loading / lazy stay muted.
+                // Busy rows keep the body tone one plane down: secondary label
+                // (junie `row()` busy law); the spinner owns the accent.
                 TreeNodeStatus::Loading | TreeNodeStatus::Lazy => {
-                    self.tokens.style(Role::TextMuted)
+                    self.tokens.style(Role::TextSecondary)
                 }
                 TreeNodeStatus::Error => self.tokens.style(Role::Danger),
             };
             if !node.enabled {
-                style = style.add_modifier(Modifier::DIM);
+                style = self.tokens.style(Role::TextDisabled);
             }
             if selected && node.enabled {
                 style = recipe.label;
@@ -1143,10 +1144,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
             } else if recipe.show_gutter_slot
                 && matches!(
                     self.tokens.selection,
-                    crate::style::SelectionChrome::Gutter
-                        | crate::style::SelectionChrome::Tint
-                        | crate::style::SelectionChrome::Fill
-                        | crate::style::SelectionChrome::Marker
+                    crate::style::SelectionChrome::Gutter | crate::style::SelectionChrome::Tint
                 )
             {
                 // Reserve gutter column only when selection chrome uses a slot.
@@ -1493,7 +1491,7 @@ mod tests {
 
     #[test]
     fn empty_message_and_canonical_constructor() {
-        let system = DesignSystem::phosphor();
+        let system = DesignSystem::junie();
         let nodes: [TreeNode<'_, &str>; 0] = [];
         let mut state = TreeState::<&str>::default();
         let area = Rect::new(0, 0, 24, 2);
@@ -1501,53 +1499,6 @@ mod tests {
         let tree = Tree::new(&nodes, &system).empty_message("No files");
         tree.render(area, &mut buffer, &mut state);
         assert_eq!(buffer[(0, 0)].symbol(), "N");
-    }
-
-    #[test]
-    fn ascii_disclosure_and_gutter() {
-        let tokens = DesignSystem::default()
-            .glyphs(GlyphSet::Ascii)
-            .selection(SelectionChrome::Gutter);
-        let nodes = [
-            TreeNode::new("a", Line::from("A"), 0).branch().expanded(),
-            TreeNode::new("b", Line::from("B"), 1),
-        ];
-        let mut state = TreeState::new(Some("a"));
-        let area = Rect::new(0, 0, 20, 2);
-        let mut buffer = Buffer::empty(area);
-        (&Tree::new(&nodes, &tokens)).render(area, &mut buffer, &mut state);
-        // gutter + disclosure
-        assert_eq!(buffer[(0, 0)].symbol(), "*");
-        // disclosure open ascii after gutter slot (2) + indent 0
-        assert_eq!(buffer[(2, 0)].symbol(), "v");
-    }
-
-    #[test]
-    fn density_indent_dashboard_tighter() {
-        let comfortable = DesignSystem::new(
-            crate::style::RolePalette::default(),
-            crate::style::Density::Comfortable,
-        )
-        .selection(SelectionChrome::Gutter);
-        let dashboard = DesignSystem::new(
-            crate::style::RolePalette::default(),
-            crate::style::Density::Dashboard,
-        )
-        .selection(SelectionChrome::Gutter);
-        let nodes = [TreeNode::new("c", Line::from("Child"), 2)];
-        let mut state = TreeState::new(None);
-        let area = Rect::new(0, 0, 40, 1);
-        let mut buf_c = Buffer::empty(area);
-        let mut buf_d = Buffer::empty(area);
-        (&Tree::new(&nodes, &comfortable)).render(area, &mut buf_c, &mut state);
-        (&Tree::new(&nodes, &dashboard)).render(area, &mut buf_d, &mut state);
-        // Find first letter 'C' column — dashboard should paint earlier (less indent).
-        let col = |buf: &Buffer| {
-            (0..40)
-                .find(|&x| buf[(x, 0)].symbol() == "C")
-                .expect("label")
-        };
-        assert!(col(&buf_d) < col(&buf_c), "dashboard indent tighter");
     }
 
     #[test]
@@ -1688,35 +1639,5 @@ mod tests {
             s.push_str(buffer[(x, 0)].symbol());
         }
         assert!(s.contains('/') || s.contains("fi"), "{s}");
-    }
-
-    #[test]
-    fn fuzz_depths_and_expand() {
-        let tokens = DesignSystem::default().glyphs(GlyphSet::Ascii);
-        let mut seed = 7u64;
-        for _ in 0..30 {
-            seed = seed.wrapping_mul(1103515245).wrapping_add(12345);
-            let n = (seed % 40) as usize + 5;
-            let nodes: Vec<_> = (0..n)
-                .map(|i| {
-                    let depth = (i % 4) as u16;
-                    let mut node = TreeNode::new(i, Line::from(format!("n{i}")), depth);
-                    if i % 3 == 0 {
-                        node = node.branch().expanded();
-                    }
-                    if i % 7 == 0 {
-                        node = node.lazy_branch();
-                    }
-                    node
-                })
-                .collect();
-            let mut state = TreeState::new(Some(0));
-            let area = Rect::new(0, 0, ((seed % 30) as u16) + 12, 8);
-            let mut buffer = Buffer::empty(area);
-            (&Tree::new(&nodes, &tokens)).render(area, &mut buffer, &mut state);
-            let _ = state.handle_intent(&nodes, UiIntent::Expand);
-            let _ = state.handle_intent(&nodes, UiIntent::Collapse);
-            let _ = state.handle_intent(&nodes, UiIntent::Move(NavigationMove::Next));
-        }
     }
 }

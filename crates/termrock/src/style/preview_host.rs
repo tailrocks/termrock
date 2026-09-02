@@ -11,12 +11,9 @@
 //! frame, then re-register desired surfaces. Placement IDs are stable for a
 //! `(kind, resource_id)` key so steady selection does not thrash
 //! Delete+Replace every frame.
-
 use ratatui_core::layout::Rect;
 
-use super::{
-    ColorCapability, DesignSystem, RolePalette, degrade_projection_chrome, quantize_palette,
-};
+use super::{ColorCapability, DesignSystem, RolePalette};
 
 /// Kind of capability-aware preview surface (media/resource host).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -161,24 +158,23 @@ impl CapabilityPreviewHost {
         self
     }
 
-    /// Theme quantized for the active capability.
+    /// Theme resolved for the active capability.
     #[must_use]
     pub fn projected_theme(&self) -> RolePalette {
-        quantize_palette(self.system.palette(), self.capability)
+        self.system.palette().quantized(self.capability)
     }
 
-    /// Tokens with projected theme, capability, and degraded interaction chrome.
+    /// Tokens with the palette resolved for the active capability.
     ///
-    /// A projection that quantizes only the palette lies: on a monochrome
-    /// terminal a `SelectionChrome::Fill` row has no fill left to paint, so the
-    /// projection also falls back to the gutter glyph and the ASCII set — the
-    /// same downgrade [`DesignSystem::no_color`] performs.
+    /// One downgrade, applied where the tokens are born; there is no separate
+    /// chrome-degrading pass, because selection chrome is already canonical
+    /// (gutter + tint) and a colourless terminal suppresses the tint in the
+    /// row recipe itself.
     #[must_use]
     pub fn projected_tokens(&self) -> DesignSystem {
         let mut tokens = self.system.clone();
         tokens.palette = self.projected_theme();
         tokens.capability = self.capability;
-        degrade_projection_chrome(&mut tokens);
         tokens
     }
 

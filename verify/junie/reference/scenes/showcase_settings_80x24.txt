@@ -1,0 +1,24 @@
+ ▪ Junie Design system / Screens / Settings               i Inspector   ? Help
+
+▎  Overview          Project settings  Composed: tabs, form, editable table, l…
+▎  Buttons
+▎  Inputs            ▎General   ▎Members   ▎Environment
+▎  Text areas        ─━━━━━━━━──────────────────────────────────────────────────
+▎  Forms
+▎  Lists               General
+▎  Trees
+▎  Tables                Project name *               Visibility
+▎  Editable tables     ▎ payments-gateway           ▎(●) Private
+▎  Panels                                           ▎( ) Internal
+▎  Sidebars              Description                ▎( ) Public
+▎  Dialogs             ▎ Handles checkout, in…
+▎  Progress            ▎                            ▎○── Auto-merge approved PRs
+▎  Scrolling           ▎                            ▎──● Protect main branch
+▎  Code editor
+▎  Data grid
+▎  Chips & selects
+▎  Pickers
+▎› Settings            ▎Save changes   No changes
+▎  Task runner
+
+ ↑ ↓ Move  Enter Open  Tab Into page  q Quit

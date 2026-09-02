@@ -16,7 +16,6 @@
 //! [`DropdownMenuOutcome::PreferCommandPalette`] + [`flatten_menu_nodes`].
 //!
 //! Research: Radix menus, desktop context menus, Textual, lazygit, file managers.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -1051,7 +1050,6 @@ impl DropdownMenuState {
 pub struct DropdownMenu<'a, Id> {
     items: &'a [MenuNode<Id>],
     system: &'a DesignSystem,
-    ascii: bool,
     colorless: bool,
     /// When painting nested cascade, which depth this call targets.
     depth: usize,
@@ -1064,17 +1062,9 @@ impl<'a, Id> DropdownMenu<'a, Id> {
         Self {
             items,
             system,
-            ascii: false,
             colorless: false,
             depth: 0,
         }
-    }
-
-    /// ASCII glyphs.
-    #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
     }
 
     /// Reduced-color roles.
@@ -1134,7 +1124,7 @@ impl<'a, Id> DropdownMenu<'a, Id> {
                 Some(i) => i,
                 None => break,
             };
-            let size = measure_menu_panel(items, self.ascii);
+            let size = measure_menu_panel(items, false);
             if depth == 0 {
                 // Host usually places root; clamp to area.
                 let placed = if state.context_mode {
@@ -1241,11 +1231,7 @@ impl<'a, Id> DropdownMenu<'a, Id> {
                 // leaves a visible notch; it meets the border with a tee
                 // instead (plans/022 Step 2).
                 let glyphs = self.system.glyphs;
-                let rule = if self.ascii {
-                    "-"
-                } else {
-                    glyphs.resolve(Glyph::RuleH).text
-                };
+                let rule = { glyphs.resolve(Glyph::RuleH).text };
                 let line: String = std::iter::repeat_n(rule, usize::from(inner.width)).collect();
                 buffer.set_stringn(
                     inner.x,
@@ -1254,25 +1240,6 @@ impl<'a, Id> DropdownMenu<'a, Id> {
                     usize::from(inner.width),
                     self.system.style(Role::Border),
                 );
-                if !self.ascii && inner.x > area.x {
-                    buffer.set_stringn(
-                        inner.x.saturating_sub(1),
-                        y,
-                        glyphs.resolve(Glyph::RuleTeeLeft).text,
-                        1,
-                        self.system.style(Role::Border),
-                    );
-                    let right = inner.x.saturating_add(inner.width);
-                    if right < area.right() {
-                        buffer.set_stringn(
-                            right,
-                            y,
-                            glyphs.resolve(Glyph::RuleTeeRight).text,
-                            1,
-                            self.system.style(Role::Border),
-                        );
-                    }
-                }
                 y = y.saturating_add(1);
                 continue;
             }
@@ -1288,7 +1255,7 @@ impl<'a, Id> DropdownMenu<'a, Id> {
                 continue;
             }
             if matches!(item.kind, MenuRowKind::Loading) {
-                let prefix = if self.ascii { "... " } else { "… " };
+                let prefix = { "… " };
                 buffer.set_stringn(
                     inner.x,
                     y,
@@ -1327,6 +1294,7 @@ impl<'a, Id> DropdownMenu<'a, Id> {
                     MenuRowKind::Checkbox { checked: true }
                         | MenuRowKind::Radio { selected: true, .. }
                 ),
+                ..ListRowVisualState::default()
             });
             if recipe.use_fill {
                 buffer.set_style(hit, recipe.label);
@@ -1352,26 +1320,26 @@ impl<'a, Id> DropdownMenu<'a, Id> {
             };
 
             let mark = match &item.kind {
-                MenuRowKind::Checkbox { checked: true } if self.ascii => "[x] ",
+                MenuRowKind::Checkbox { checked: true } if false => "[x] ",
                 MenuRowKind::Checkbox { checked: true } => "✓ ",
-                MenuRowKind::Checkbox { checked: false } if self.ascii => "[ ] ",
+                MenuRowKind::Checkbox { checked: false } if false => "[ ] ",
                 MenuRowKind::Checkbox { checked: false } => "  ",
-                MenuRowKind::Radio { selected: true, .. } if self.ascii => "(*) ",
+                MenuRowKind::Radio { selected: true, .. } if false => "(*) ",
                 MenuRowKind::Radio { selected: true, .. } => "● ",
                 MenuRowKind::Radio {
                     selected: false, ..
-                } if self.ascii => "( ) ",
+                } if false => "( ) ",
                 MenuRowKind::Radio {
                     selected: false, ..
                 } => "○ ",
-                _ if active && self.ascii => "> ",
+                _ if active && false => "> ",
                 _ if active => "› ",
                 _ => "  ",
             };
-            let label = format_mnemonic_label(&item.label, item.mnemonic, self.ascii);
+            let label = format_mnemonic_label(&item.label, item.mnemonic, false);
             let mut line = format!("{mark}{label}");
             if matches!(item.kind, MenuRowKind::Submenu) {
-                line.push(if self.ascii { '>' } else { '›' });
+                line.push('›');
             }
             if !item.enabled {
                 if let Some(reason) = &item.disabled_reason {
@@ -1379,8 +1347,6 @@ impl<'a, Id> DropdownMenu<'a, Id> {
                     line.push('(');
                     line.push_str(reason);
                     line.push(')');
-                } else if self.ascii {
-                    line.push_str(" #");
                 } else {
                     line.push_str(" ⊘");
                 }

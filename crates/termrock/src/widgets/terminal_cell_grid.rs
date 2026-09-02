@@ -2,15 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Borrowed terminal-cell projection into a Ratatui buffer.
-
 use ratatui_core::{
     buffer::{Buffer, CellDiffOption},
     layout::Rect,
-    style::{Color, Modifier, Style},
+    style::Style,
     widgets::Widget,
 };
 
-use crate::style::{ColorCapability, DesignSystem, quantize_color};
+use crate::style::{ColorCapability, DesignSystem, downgrade};
 
 /// One projected terminal cell.
 ///
@@ -61,7 +60,7 @@ pub trait TerminalCellSource {
 #[derive(Clone, Copy)]
 pub struct TerminalCellGrid<'a> {
     source: &'a dyn TerminalCellSource,
-    monochrome: bool,
+    capability: ColorCapability,
 }
 
 impl core::fmt::Debug for TerminalCellGrid<'_> {
@@ -73,24 +72,25 @@ impl core::fmt::Debug for TerminalCellGrid<'_> {
 }
 
 impl<'a> TerminalCellGrid<'a> {
-    /// Borrows a terminal-cell snapshot for this frame.
+    /// Borrows a terminal-cell snapshot for this frame (verbatim colour).
     #[must_use]
     pub const fn new(source: &'a dyn TerminalCellSource) -> Self {
         Self {
             source,
-            monochrome: false,
+            capability: ColorCapability::Truecolor,
         }
     }
 
-    /// Borrows a snapshot and follows the active system's colorless policy.
+    /// Borrows a snapshot and follows the active system's colour rung.
     ///
-    /// Color output remains named ANSI-16 even when the host theme supports a
-    /// deeper palette: emulator data must not become a second theme authority.
+    /// Emulator content is not a theme authority: it is downgraded through the
+    /// same single [`crate::style::downgrade`] rung the tokens use, never
+    /// re-quantized by a second projector.
     #[must_use]
     pub const fn for_system(source: &'a dyn TerminalCellSource, system: &DesignSystem) -> Self {
         Self {
             source,
-            monochrome: system.mono(),
+            capability: system.capability,
         }
     }
 }
@@ -115,7 +115,14 @@ impl Widget for TerminalCellGrid<'_> {
                 } else {
                     cell.symbol
                 });
-                destination.set_style(project_terminal_style(cell.style, self.monochrome));
+                let mut style = cell.style;
+                if let Some(fg) = style.fg {
+                    style.fg = Some(downgrade(fg, self.capability));
+                }
+                if let Some(bg) = style.bg {
+                    style.bg = Some(downgrade(bg, self.capability));
+                }
+                destination.set_style(style);
                 let diff = match cell.diff {
                     // Skip would preserve stale destination content and violate
                     // this widget's one-frame projection contract.
@@ -131,28 +138,6 @@ impl Widget for TerminalCellGrid<'_> {
             }
         }
     }
-}
-
-fn project_terminal_style(mut style: Style, monochrome: bool) -> Style {
-    if monochrome {
-        let had_ground = style.bg.is_some_and(|color| color != Color::Reset);
-        style = Style {
-            fg: None,
-            bg: None,
-            ..style
-        };
-        if had_ground {
-            style = style.add_modifier(Modifier::REVERSED);
-        }
-        return style;
-    }
-    if let Some(fg) = style.fg {
-        style.fg = Some(quantize_color(fg, ColorCapability::Ansi16));
-    }
-    if let Some(bg) = style.bg {
-        style.bg = Some(quantize_color(bg, ColorCapability::Ansi16));
-    }
-    style
 }
 
 #[cfg(test)]
@@ -199,7 +184,7 @@ mod tests {
     }
 
     #[test]
-    fn extended_colors_are_projected_to_named_ansi() {
+    fn content_follows_the_single_downgrade_rung() {
         let grid = Grid(vec![vec![TerminalCell::new(
             "x",
             Style::new()
@@ -207,31 +192,37 @@ mod tests {
                 .bg(Color::Indexed(27)),
         )]]);
         let area = Rect::new(0, 0, 1, 1);
+
+        // Verbatim by default: content is not a theme authority, but a
+        // truecolor host also does not silently rewrite it.
         let mut buffer = Buffer::empty(area);
         TerminalCellGrid::new(&grid).render(area, &mut buffer);
-        assert!(!matches!(
-            buffer[(0, 0)].fg,
-            Color::Rgb(..) | Color::Indexed(..)
-        ));
-        assert!(!matches!(
-            buffer[(0, 0)].bg,
-            Color::Rgb(..) | Color::Indexed(..)
-        ));
-    }
+        assert_eq!(buffer[(0, 0)].fg, Color::Rgb(240, 30, 30));
+        assert_eq!(buffer[(0, 0)].bg, Color::Indexed(27));
 
-    #[test]
-    fn no_color_keeps_background_information_as_reverse() {
-        let grid = Grid(vec![vec![TerminalCell::new(
-            "x",
-            Style::new().bg(Color::Red),
-        )]]);
-        let system = DesignSystem::default().no_color();
-        let area = Rect::new(0, 0, 1, 1);
+        // At the ANSI-16 rung the same downgrade the tokens use lands on
+        // named slots.
         let mut buffer = Buffer::empty(area);
-        TerminalCellGrid::for_system(&grid, &system).render(area, &mut buffer);
-        assert_eq!(buffer[(0, 0)].fg, Color::Reset);
-        assert_eq!(buffer[(0, 0)].bg, Color::Reset);
-        assert!(buffer[(0, 0)].modifier.contains(Modifier::REVERSED));
+        TerminalCellGrid::for_system(
+            &grid,
+            &DesignSystem::junie().quantize(crate::style::ColorCapability::Ansi16),
+        )
+        .render(area, &mut buffer);
+        // RGB collapses to a named slot; an index the terminal already owns
+        // passes through untouched.
+        assert_eq!(buffer[(0, 0)].fg, Color::LightRed);
+        assert_eq!(buffer[(0, 0)].bg, Color::Indexed(27));
+
+        // Monochrome keeps hierarchy through the grey buckets — never through
+        // a REVERSED substitution.
+        let mut buffer = Buffer::empty(area);
+        TerminalCellGrid::for_system(&grid, &DesignSystem::junie().no_color())
+            .render(area, &mut buffer);
+        assert!(matches!(
+            buffer[(0, 0)].fg,
+            Color::Black | Color::DarkGray | Color::Gray | Color::White
+        ));
+        assert!(!buffer[(0, 0)].modifier.contains(Modifier::REVERSED));
     }
 
     #[test]

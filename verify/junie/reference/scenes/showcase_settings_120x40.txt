@@ -1,0 +1,40 @@
+ ▪ Junie Design system / Screens / Settings                                  truecolor · 120×40   i Inspector   ? Help
+
+   Foundations            Project settings  Composed: tabs, form, editable table, list, dialogs
+▎  Overview
+                          ▎General   ▎Members   ▎Environment
+   Components             ─━━━━━━━━─────────────────────────────────────────────────────────────────────────────────────
+▎  Buttons
+▎  Inputs                   General
+▎  Text areas
+▎  Forms                      Project name *                                 Visibility
+▎  Lists                    ▎ payments-gateway                             ▎(●) Private
+▎  Trees                                                                   ▎( ) Internal
+▎  Tables                     Description                                  ▎( ) Public
+▎  Editable tables          ▎ Handles checkout, invoicing and refund…
+▎  Panels                   ▎                                              ▎○── Auto-merge approved PRs off
+▎  Sidebars                 ▎                                              ▎──● Protect main branch on
+▎  Dialogs
+▎  Progress
+▎  Scrolling
+▎  Code editor
+▎  Data grid
+▎  Chips & selects          ▎Save changes   No changes
+▎  Pickers
+
+   Screens
+▎› Settings
+▎  Task runner
+
+
+
+
+
+
+
+
+
+
+
+
+ ↑ ↓ Move  Enter Open  Tab Into page  q Quit

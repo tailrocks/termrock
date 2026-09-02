@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Persistent demo sessions shared by native Lookbook and web hosts.
-
 use std::cell::Cell;
 
 use ratatui::{
@@ -275,23 +274,14 @@ pub struct DemoUpdate {
     pub semantic_revision: u64,
 }
 
-/// Which shipped preset a palette is, for frame metadata.
-///
-/// The demo used to report `"phosphor"` whatever the host had picked, so every
-/// docs preview claimed the same theme (plans/011 Step 4).
+/// Which shipped theme a palette is, for frame metadata. TermRock ships one
+/// theme, so anything not identical to it is a host customization.
 pub(crate) fn theme_id_for(palette: &RolePalette) -> &'static str {
-    for (id, preset) in [
-        ("phosphor", RolePalette::tailrocks_phosphor()),
-        ("slate", RolePalette::slate()),
-        ("paper", RolePalette::paper()),
-        ("ansi", RolePalette::ansi()),
-        ("high-contrast", RolePalette::high_contrast()),
-    ] {
-        if palette == &preset {
-            return id;
-        }
+    if palette == &RolePalette::junie() {
+        "junie"
+    } else {
+        "custom"
     }
-    "custom"
 }
 
 /// One long-lived Rust demo instance.

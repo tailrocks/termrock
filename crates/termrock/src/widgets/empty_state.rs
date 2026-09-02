@@ -12,7 +12,6 @@
 //! **Recipes.** Table, logs, sessions, projects, and search examples.
 //!
 //! Research: shadcn empty patterns, IDE welcome screens, polished CLI onboarding.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -29,7 +28,7 @@ use crate::{
         SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, default_button_intent,
     },
     layout::{Center, CenterAxis, FlexSize, Stack, center_line_x},
-    style::{Density, DesignSystem, GlyphSet, Role},
+    style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
     widgets::{Button, ButtonState, ButtonVariant, Surface, SurfaceRecipe},
 };
@@ -83,28 +82,6 @@ impl EmptyKind {
         }
     }
 
-    /// Default illustration glyph (ASCII).
-    #[must_use]
-    pub const fn glyph_ascii(self) -> &'static str {
-        match self {
-            Self::FirstUse => "*",
-            Self::NoData => "o",
-            Self::NoResults => "0",
-            Self::FilteredOut => "v",
-            Self::PermissionLimited => "x",
-        }
-    }
-
-    /// Glyph for capability.
-    #[must_use]
-    pub const fn glyph(self, ascii: bool) -> &'static str {
-        if ascii {
-            self.glyph_ascii()
-        } else {
-            self.glyph_unicode()
-        }
-    }
-
     /// Title role (permission stays warning-toned; others muted title emphasis).
     #[must_use]
     pub const fn title_role(self) -> Role {
@@ -113,13 +90,6 @@ impl EmptyKind {
             Self::FirstUse => Role::TextStrong,
             _ => Role::TextStrong,
         }
-    }
-}
-
-const fn empty_density_id(density: Density) -> &'static str {
-    match density {
-        Density::Comfortable => "full",
-        Density::Compact | Density::Dashboard => "inline",
     }
 }
 
@@ -240,8 +210,6 @@ pub struct EmptyState<'a> {
     shortcut: Option<&'a str>,
     illustration: Option<&'a str>,
     context: Option<&'a str>,
-    density: Density,
-    force_ascii: bool,
     system: &'a DesignSystem,
 }
 
@@ -259,8 +227,6 @@ impl<'a> EmptyState<'a> {
             shortcut: None,
             illustration: None,
             context: None,
-            density: Density::Comfortable,
-            force_ascii: false,
             system,
         }
     }
@@ -321,59 +287,24 @@ impl<'a> EmptyState<'a> {
         self
     }
 
-    /// Density override.
-    #[must_use]
-    pub const fn density(mut self, density: Density) -> Self {
-        self.density = density;
-        self
-    }
-
-    /// Concise inline form.
-    #[must_use]
-    pub const fn inline(mut self) -> Self {
-        self.density = Density::Compact;
-        self
-    }
-
-    /// Force ASCII glyphs.
-    #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.force_ascii = on;
-        self
-    }
-
     /// Resolved kind.
     #[must_use]
     pub const fn empty_kind(self) -> EmptyKind {
         self.kind
     }
 
-    fn use_ascii(&self) -> bool {
-        self.force_ascii || matches!(self.system.glyphs, GlyphSet::Ascii)
-    }
-
-    /// Illustration glyph for current capability.
+    /// Illustration glyph.
     #[must_use]
-    pub fn resolved_glyph(&self) -> &'a str {
+    pub const fn resolved_glyph(&self) -> &'a str {
         if let Some(g) = self.illustration {
             return g;
         }
-        // Leak-free: return static from kind
-        // SAFETY: kind glyphs are 'static; we re-borrow as 'a via transmute not needed —
-        // store as &'static and cast through lifetime is fine for statics.
-        let g: &'static str = self.kind.glyph(self.use_ascii());
-        g
+        self.kind.glyph_unicode()
     }
 
-    fn effective_density(&self, area: Rect) -> Density {
-        if matches!(self.density, Density::Compact)
-            || area.width <= EMPTY_STATE_INLINE_MAX_WIDTH
-            || area.height <= EMPTY_STATE_INLINE_MAX_HEIGHT
-        {
-            Density::Compact
-        } else {
-            Density::Comfortable
-        }
+    /// Inline (single-line) form fits when the pane is narrow or short.
+    const fn inline_form(&self, area: Rect) -> bool {
+        area.width <= EMPTY_STATE_INLINE_MAX_WIDTH || area.height <= EMPTY_STATE_INLINE_MAX_HEIGHT
     }
 
     /// Rows needed for Full density (host layout).
@@ -382,7 +313,7 @@ impl<'a> EmptyState<'a> {
         if width == 0 {
             return 0;
         }
-        if width <= EMPTY_STATE_INLINE_MAX_WIDTH || matches!(self.density, Density::Compact) {
+        if width <= EMPTY_STATE_INLINE_MAX_WIDTH {
             return if self.primary.is_some() && self.explanation.is_some() {
                 2
             } else {
@@ -422,9 +353,10 @@ impl<'a> EmptyState<'a> {
         if area.is_empty() {
             return;
         }
-        match self.effective_density(area) {
-            Density::Compact | Density::Dashboard => self.paint_inline(area, buffer, state),
-            Density::Comfortable => self.paint_full(area, buffer, state),
+        if self.inline_form(area) {
+            self.paint_inline(area, buffer, state);
+        } else {
+            self.paint_full(area, buffer, state);
         }
     }
 
@@ -593,9 +525,7 @@ impl<'a> EmptyState<'a> {
             ButtonVariant::Quiet
         };
         let trailing = action.shortcut;
-        let mut btn = Button::new(action.label, self.system)
-            .variant(variant)
-            .ascii(self.use_ascii());
+        let mut btn = Button::new(action.label, self.system).variant(variant);
         if let Some(sc) = trailing {
             btn = btn.trailing(sc);
         }
@@ -739,10 +669,9 @@ impl<'a> EmptyState<'a> {
         }
         let focus = state.map(|s| s.focus).unwrap_or(EmptyFocus::None);
         let desc = format!(
-            "empty-state kind={} title={} density={} primary={} secondary={} focus={}",
+            "empty-state kind={} title={} primary={} secondary={} focus={}",
             self.kind.id(),
             self.title,
-            empty_density_id(self.effective_density(area)),
             self.primary.map(|a| a.label).unwrap_or("-"),
             self.secondary.map(|a| a.label).unwrap_or("-"),
             match focus {
@@ -890,7 +819,6 @@ mod tests {
         ] {
             set.insert(k.glyph_unicode());
             assert!(!k.id().is_empty());
-            assert!(!k.glyph_ascii().is_empty());
         }
         assert!(set.len() >= 5);
     }
@@ -952,11 +880,14 @@ mod tests {
     }
 
     #[test]
-    fn force_inline_density() {
+    fn inline_measure_height() {
         let system = system();
-        let e = EmptyState::new("X", &system).inline();
-        assert_eq!(e.density, Density::Compact);
-        assert_eq!(e.measure_height(80), 1);
+        let e = EmptyState::new("X", &system);
+        assert_eq!(
+            e.measure_height(crate::widgets::empty_state::EMPTY_STATE_INLINE_MAX_WIDTH),
+            1
+        );
+        assert_eq!(e.measure_height(80), 2);
     }
 
     #[test]
@@ -1059,12 +990,10 @@ mod tests {
     }
 
     #[test]
-    fn ascii_capability() {
+    fn kind_glyph_resolved() {
         let system = system();
-        let e = EmptyState::new("Empty", &system)
-            .kind(EmptyKind::NoResults)
-            .ascii(true);
-        assert_eq!(e.resolved_glyph(), "0");
+        let e = EmptyState::new("Empty", &system).kind(EmptyKind::NoResults);
+        assert_eq!(e.resolved_glyph(), "∅");
     }
 
     #[test]

@@ -15,7 +15,6 @@
 //! host resolves bracketed paste / OSC 52 / system clipboard.
 //!
 //! Research: prompt-toolkit, Reedline, Textual Input, terminal line editors.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -1157,9 +1156,12 @@ impl<'a> TextInput<'a> {
                     .saturating_add(u16::try_from(end_col).unwrap_or(0))
                     .min(field.right());
                 if ex > sx {
+                    // D8: selected text is body text on the popover plane —
+                    // one explicit pair, never a modifier that re-swaps
+                    // whatever the cell already carried.
                     buffer.set_style(
                         Rect::new(sx, field.y, ex.saturating_sub(sx), 1),
-                        recipe.cursor.add_modifier(Modifier::REVERSED),
+                        self.system.selected_text(),
                     );
                 }
             }
@@ -1173,10 +1175,10 @@ impl<'a> TextInput<'a> {
             .saturating_add(u16::try_from(cursor_column).unwrap_or(u16::MAX))
             .min(field.right().saturating_sub(1));
         let cursor_rect = if state.focused && state.enabled {
-            buffer.set_style(
-                Rect::new(cursor_x, field.y, 1, 1),
-                recipe.cursor.add_modifier(Modifier::REVERSED),
-            );
+            // B3: the caret cell is the recipe's explicit reversal
+            // (canvas on text_primary). `+REVERSED` here re-swapped that pair
+            // back into an invisible white-on-black cell.
+            buffer.set_style(Rect::new(cursor_x, field.y, 1, 1), recipe.cursor);
             Some(Rect::new(cursor_x, field.y, 1, 1))
         } else {
             None
@@ -1201,6 +1203,7 @@ impl<'a> TextInput<'a> {
                 } else {
                     ControlState::Disabled
                 },
+                self.system.junie_theme().surface,
             );
             buffer.set_style(cr, clear_recipe.fill);
             buffer.set_stringn(
@@ -1332,6 +1335,49 @@ impl StatefulWidget for TextInput<'_> {
 mod tests {
 
     #[test]
+    fn the_caret_cell_is_the_explicit_reversal() {
+        // B3: `recipe.cursor + REVERSED` swapped the pair twice and left a
+        // white-on-black caret — invisible exactly where the eye is told to
+        // look. The painted cell must be canvas on text_primary, with no
+        // reversal modifier anywhere in the field.
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let area = Rect::new(0, 0, 16, 1);
+        let mut state = TextInputState::new("abc");
+        state.set_focused(true);
+        assert!(state.set_cursor_byte(0), "the caret sits on a grapheme");
+        let mut buffer = Buffer::empty(area);
+        let parts = TextInput::new("", &system).paint(area, &mut buffer, &mut state);
+
+        let cursor = parts.cursor.expect("a focused field paints a caret");
+        let cell = &buffer[(cursor.x, cursor.y)];
+        assert_eq!(cell.symbol(), "a", "the caret sits on the focused grapheme");
+        assert_eq!(cell.fg, theme.canvas, "caret fg is the canvas");
+        assert_eq!(cell.bg, theme.text_primary, "caret bg is body text");
+        assert!(!cell.style().add_modifier.contains(Modifier::REVERSED));
+        assert!(!cell.style().sub_modifier.contains(Modifier::REVERSED));
+    }
+
+    #[test]
+    fn selected_text_uses_the_selection_pair() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let area = Rect::new(0, 0, 16, 1);
+        let mut state = TextInputState::new("abcdef");
+        state.set_focused(true);
+        assert!(state.apply(EditAction::Home { select: false }));
+        assert!(state.apply(EditAction::MoveRight { select: true }));
+        assert!(state.apply(EditAction::MoveRight { select: true }));
+        let mut buffer = Buffer::empty(area);
+        TextInput::new("", &system).paint(area, &mut buffer, &mut state);
+
+        let cell = &buffer[(area.x + 1, area.y)];
+        assert_eq!(cell.fg, theme.text_primary);
+        assert_eq!(cell.bg, theme.popover, "selection is text on popover");
+        assert!(!cell.style().add_modifier.contains(Modifier::REVERSED));
+    }
+
+    #[test]
     fn focus_prompt_keeps_value_column_stable() {
         let system = DesignSystem::default();
         let area = Rect::new(0, 0, 16, 1);
@@ -1373,24 +1419,8 @@ mod tests {
     }
 
     #[test]
-    fn unlabeled_validation_uses_the_row_directly_below_the_field() {
-        let system = DesignSystem::default().glyphs(crate::style::GlyphSet::Ascii);
-        let area = Rect::new(0, 0, 24, 2);
-        let mut buffer = Buffer::empty(area);
-        let mut state = TextInputState::new("bad");
-        TextInput::new("", &system)
-            .validation(Validation::Invalid("invalid value"))
-            .paint(area, &mut buffer, &mut state);
-
-        assert_eq!(
-            buffer[(area.x, area.y + 1)].symbol(),
-            system.glyphs.resolve(Glyph::Error).text
-        );
-    }
-
-    #[test]
     fn a_required_field_says_so_before_you_submit() {
-        let system = DesignSystem::phosphor();
+        let system = DesignSystem::junie();
         let area = Rect::new(0, 0, 20, 3);
         let mut buffer = Buffer::empty(area);
         let mut state = TextInputState::new("");
@@ -1417,7 +1447,7 @@ mod tests {
 
     #[test]
     fn an_invalid_field_leads_its_message_with_a_glyph() {
-        let system = DesignSystem::phosphor();
+        let system = DesignSystem::junie();
         let area = Rect::new(0, 0, 24, 3);
         let mut buffer = Buffer::empty(area);
         let mut state = TextInputState::new("x");

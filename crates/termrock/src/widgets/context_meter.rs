@@ -14,7 +14,6 @@
 //! **vs charts/Gauge.** Domain-neutral viz; this is AI/context budget semantics.
 //!
 //! Research: Amp compaction, OpenCode context displays, AI chat token meters.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
 
@@ -661,7 +660,6 @@ impl ContextMeterState {
 pub struct ContextMeter<'a> {
     budget: &'a ContextBudget,
     system: &'a DesignSystem,
-    ascii: bool,
     colorless: bool,
     mono: bool,
 }
@@ -673,7 +671,6 @@ impl<'a> ContextMeter<'a> {
         Self {
             budget,
             system,
-            ascii: false,
             colorless: false,
             mono: false,
         }
@@ -681,13 +678,7 @@ impl<'a> ContextMeter<'a> {
 
     /// ASCII glyphs.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Colorless.
-    #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self
@@ -718,10 +709,9 @@ impl<'a> ContextMeter<'a> {
         };
         let bar_style = self.system.style(bar_role);
         let mut text_style = self.system.style(Role::Text);
-        if state.focused && !self.colorless {
+        if state.focused {
+            // Weight carries focus in colour and monochrome alike.
             text_style = text_style.add_modifier(Modifier::BOLD);
-        } else if state.focused && self.colorless {
-            text_style = text_style.add_modifier(Modifier::REVERSED);
         }
 
         match state.presentation {
@@ -767,7 +757,6 @@ impl<'a> ContextMeter<'a> {
         };
         let indicator = StatusIndicator::new(semantic, self.system)
             .label(verb)
-            .ascii(self.ascii)
             .colorless(self.colorless);
         let indicator_width = indicator.measure_width(None).min(area.width);
         indicator.paint(Rect::new(area.x, area.y, indicator_width, 1), buffer);
@@ -810,7 +799,7 @@ impl<'a> ContextMeter<'a> {
         }
         // line 0: bar, line 1: numbers
         let bar_w = w.saturating_sub(2).min(24);
-        let bar = meter_bar(frac, bar_w, self.ascii, indeterminate);
+        let bar = meter_bar(frac, bar_w, false, indeterminate);
         let bar_line = format!("[{bar}]");
         buffer.set_stringn(
             area.x,
@@ -852,7 +841,7 @@ impl<'a> ContextMeter<'a> {
 
         // bar + compact
         let bar_w = w.saturating_sub(2).min(32);
-        let bar = meter_bar(frac, bar_w, self.ascii, indeterminate);
+        let bar = meter_bar(frac, bar_w, false, indeterminate);
         buffer.set_stringn(
             area.x,
             y,
@@ -983,7 +972,7 @@ impl<'a> ContextMeter<'a> {
                     self.system.style(if self.colorless {
                         Role::Text
                     } else {
-                        Role::Info
+                        Role::TextSecondary
                     }),
                 );
             }
@@ -1163,9 +1152,7 @@ mod tests {
             st.presentation = ContextMeterPresentation::Compact;
             ContextMeter::new(b, &system).paint(area, &mut buf, &mut st);
             st.presentation = ContextMeterPresentation::Expanded;
-            ContextMeter::new(b, &system)
-                .ascii(true)
-                .paint(area, &mut buf, &mut st);
+            ContextMeter::new(b, &system).paint(area, &mut buf, &mut st);
         }
     }
 
@@ -1177,11 +1164,10 @@ mod tests {
         let mut buffer = Buffer::empty(area);
         let mut state = ContextMeterState::new();
         ContextMeter::new(&budget, &system)
-            .ascii(true)
             .colorless(true)
             .paint(area, &mut buffer, &mut state);
         let text: String = buffer.content().iter().map(|cell| cell.symbol()).collect();
-        assert!(text.contains("| ! warning"), "{text:?}");
+        assert!(text.contains("\u{2503} ! warning"), "{text:?}");
         let warning_fg = system.style(Role::Warning).fg;
         assert!(
             buffer

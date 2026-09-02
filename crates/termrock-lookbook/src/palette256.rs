@@ -6,7 +6,6 @@
 //! Both exporters used to render `Color::Indexed` as flat white, which made a
 //! 256-colour or ANSI-16 preview a page of white text — exactly the profiles a
 //! capability ladder exists to show (plans/011 Step 3).
-
 /// RGB for an xterm-256 palette index.
 #[must_use]
 pub fn xterm256_to_rgb(index: u8) -> [u8; 3] {

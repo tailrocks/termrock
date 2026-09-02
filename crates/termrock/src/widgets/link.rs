@@ -16,7 +16,6 @@
 //! typed outcomes; it never writes raw OSC bytes to the PTY itself.
 //!
 //! References: Rich hyperlinks, OSC 8, CLI docs conventions.
-
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
 
 use crate::input::{KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind};
@@ -25,7 +24,7 @@ use crate::interaction::{
     default_button_intent,
 };
 use crate::osc::{HyperlinkRegion, Request, encode_hyperlink_close, encode_hyperlink_open};
-use crate::style::{ButtonRecipeVariant, ControlState, DesignSystem};
+use crate::style::{ButtonRecipeVariant, ControlState, DesignSystem, Role};
 use crate::text::{display_cols, take_display_cols};
 
 // ── Destination ─────────────────────────────────────────────────────────────
@@ -97,45 +96,6 @@ impl LinkVariant {
 
 /// When a link draws the underline.
 ///
-/// Underline is the one interaction cue the grammar keeps
-/// (`docs/design/termrock-design-language.md` §5.7), and even here it is
-/// opt-in: the default affordance is the `Link` color plus the external
-/// chevron. Monochrome always underlines regardless of this policy — without
-/// color there is nothing else that says "link".
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
-#[non_exhaustive]
-pub enum LinkStyle {
-    /// Color (and the `↗` cue for external destinations) only.
-    #[default]
-    Color,
-    /// Underline while hovered or focused.
-    UnderlineOnHover,
-    /// Classic web link: always underlined.
-    AlwaysUnderline,
-}
-
-impl LinkStyle {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Color => "color",
-            Self::UnderlineOnHover => "underline-on-hover",
-            Self::AlwaysUnderline => "always-underline",
-        }
-    }
-
-    /// Whether this policy underlines in the given interaction state.
-    #[must_use]
-    pub const fn underlines(self, hovered: bool) -> bool {
-        match self {
-            Self::Color => false,
-            Self::UnderlineOnHover => hovered,
-            Self::AlwaysUnderline => true,
-        }
-    }
-}
-
 /// How to show the destination string.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -253,7 +213,6 @@ pub struct Link<'a> {
     destination: LinkDestination<'a>,
     system: &'a DesignSystem,
     variant: LinkVariant,
-    link_style: LinkStyle,
     destination_display: DestinationDisplay,
     /// Capability: OSC 8 available this session.
     hyperlinks: bool,
@@ -274,7 +233,6 @@ impl<'a> Link<'a> {
             destination: LinkDestination::Url(url),
             system,
             variant: LinkVariant::Plain,
-            link_style: LinkStyle::Color,
             destination_display: DestinationDisplay::Auto,
             hyperlinks: false,
             show_external_cue: true,
@@ -291,20 +249,12 @@ impl<'a> Link<'a> {
             destination: LinkDestination::AppRoute(route),
             system,
             variant: LinkVariant::Plain,
-            link_style: LinkStyle::Color,
             destination_display: DestinationDisplay::Never,
             hyperlinks: false,
             show_external_cue: false,
             osc_id: None,
             max_cols: 0,
         }
-    }
-
-    /// Sets when this link underlines (default: [`LinkStyle::Color`]).
-    #[must_use]
-    pub const fn link_style(mut self, link_style: LinkStyle) -> Self {
-        self.link_style = link_style;
-        self
     }
 
     /// Variant chrome.
@@ -397,17 +347,13 @@ impl<'a> Link<'a> {
             }
         } else if self.destination.is_external() && self.show_external_cue {
             // Minimal risk cue when full URL hidden under OSC.
-            let cue = if self.system.glyphs.is_ascii() {
-                " ^"
-            } else {
-                " ↗"
-            };
+            let cue = " ↗";
             s.push_str(cue);
         }
         if self.destination.is_external()
             && self.show_external_cue
             && self.shows_destination()
-            && self.system.glyphs.is_ascii()
+            && false
         {
             // Ensure ASCII risk marker when URL is shown.
             if !s.contains('^') {
@@ -466,30 +412,26 @@ impl<'a> Link<'a> {
         } else {
             ControlState::Default
         };
-        let recipe = self
-            .system
-            .button_recipe(ButtonRecipeVariant::Link, control_state);
+        let recipe = self.system.button_recipe(
+            ButtonRecipeVariant::Link,
+            control_state,
+            self.system.junie_theme().surface,
+        );
         let mut style = recipe.fill.patch(recipe.label);
         if state.visited {
-            style = style.add_modifier(Modifier::DIM);
-        }
-        if self.underlines(state.hovered || state.focused) {
-            style = style.add_modifier(Modifier::UNDERLINED);
+            // A visited link steps down the ladder to the secondary tier; DIM
+            // is not part of the vocabulary.
+            style = style.fg(self
+                .system
+                .style(Role::TextSecondary)
+                .fg
+                .unwrap_or(ratatui_core::style::Color::Reset));
         }
         if state.focused {
             style = style.add_modifier(Modifier::BOLD);
         }
         style = ratatui_core::style::Style { bg: None, ..style };
         style
-    }
-
-    /// Whether this link underlines right now: policy, or no color at all.
-    fn underlines(&self, hovered: bool) -> bool {
-        self.link_style.underlines(hovered)
-            || matches!(
-                self.system.capability,
-                crate::style::ColorCapability::Monochrome
-            )
     }
 
     /// Whether OSC 8 should wrap this paint (host emits bytes).
@@ -739,7 +681,6 @@ pub struct ActionLink<'a> {
     label: &'a str,
     system: &'a DesignSystem,
     variant: LinkVariant,
-    link_style: LinkStyle,
     /// Optional risk / scope note always visible when set (e.g. "runs cargo").
     risk_note: Option<&'a str>,
 }
@@ -752,16 +693,8 @@ impl<'a> ActionLink<'a> {
             label,
             system,
             variant: LinkVariant::Plain,
-            link_style: LinkStyle::Color,
             risk_note: None,
         }
-    }
-
-    /// Sets when this link underlines (default: [`LinkStyle::Color`]).
-    #[must_use]
-    pub const fn link_style(mut self, link_style: LinkStyle) -> Self {
-        self.link_style = link_style;
-        self
     }
 
     /// Variant.
@@ -842,18 +775,12 @@ impl<'a> ActionLink<'a> {
         } else {
             ControlState::Default
         };
-        let recipe = self
-            .system
-            .button_recipe(ButtonRecipeVariant::Link, control_state);
+        let recipe = self.system.button_recipe(
+            ButtonRecipeVariant::Link,
+            control_state,
+            self.system.junie_theme().surface,
+        );
         let mut style = recipe.fill.patch(recipe.label);
-        if self.link_style.underlines(state.hovered || state.focused)
-            || matches!(
-                self.system.capability,
-                crate::style::ColorCapability::Monochrome
-            )
-        {
-            style = style.add_modifier(Modifier::UNDERLINED);
-        }
         if state.focused {
             style = style.add_modifier(Modifier::BOLD);
         }
@@ -953,7 +880,6 @@ impl Widget for ActionLink<'_> {
 mod tests {
     use super::*;
     use crate::input::{KeyCode, KeyModifiers};
-    use crate::style::GlyphSet;
 
     #[test]
     fn external_always_shows_destination_or_cue() {
@@ -1077,64 +1003,21 @@ mod tests {
     }
 
     #[test]
-    fn ascii_external_cue() {
-        let system = DesignSystem::default().glyphs(GlyphSet::Ascii);
-        let link = Link::url("docs", "https://example.invalid", &system)
-            .destination_display(DestinationDisplay::Never);
-        let state = LinkState::new();
-        let d = link.decorated(&state);
-        assert!(d.contains('^'), "{d}");
-    }
-
-    #[test]
-    fn monochrome_links_underline_whatever_the_policy_says() {
-        // Without color there is nothing else that says "link", so the mono
-        // projection underlines even under the quiet default.
-        let mono = DesignSystem::default().capability(crate::style::ColorCapability::Monochrome);
-        let link = Link::url("x", "https://example.invalid", &mono);
-        let state = LinkState::new();
-        assert!(
-            link.style(&state)
-                .add_modifier
-                .contains(Modifier::UNDERLINED)
-        );
-    }
-
-    #[test]
-    fn link_underline_is_a_policy_not_a_focus_cue() {
+    fn the_underline_belongs_to_the_link_not_to_focus() {
+        // junie law: the rule is the link's identity at rest; focus speaks
+        // through weight, hover through the hover tone.
         let system = DesignSystem::default();
         let link = Link::url("x", "https://example.invalid", &system);
         let mut focused = LinkState::new();
         focused.set_focused(true);
 
-        // Default: color carries the link; focus adds weight, not a rule.
         let style = link.style(&focused);
-        assert!(!style.add_modifier.contains(Modifier::UNDERLINED));
+        assert!(style.add_modifier.contains(Modifier::UNDERLINED));
         assert!(style.add_modifier.contains(Modifier::BOLD));
 
-        let on_hover = Link::url("x", "https://example.invalid", &system)
-            .link_style(LinkStyle::UnderlineOnHover);
-        assert!(
-            !on_hover
-                .style(&LinkState::new())
-                .add_modifier
-                .contains(Modifier::UNDERLINED)
-        );
-        assert!(
-            on_hover
-                .style(&focused)
-                .add_modifier
-                .contains(Modifier::UNDERLINED)
-        );
-
-        let always = Link::url("x", "https://example.invalid", &system)
-            .link_style(LinkStyle::AlwaysUnderline);
-        assert!(
-            always
-                .style(&LinkState::new())
-                .add_modifier
-                .contains(Modifier::UNDERLINED)
-        );
+        let idle = link.style(&LinkState::new());
+        assert!(idle.add_modifier.contains(Modifier::UNDERLINED));
+        assert!(!idle.add_modifier.contains(Modifier::BOLD));
     }
 
     #[test]

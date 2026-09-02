@@ -17,7 +17,6 @@
 //!
 //! **v1 law (AD-1):** nested StatefulWidgets inside the viewport are out of
 //! scope. Host expands tools / opens overlays on [`MessageThreadOutcome::Activated`].
-
 use std::collections::BTreeSet;
 
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
@@ -425,7 +424,7 @@ fn project_message_thread_profile(
     search: Option<&str>,
     expanded_ids: &BTreeSet<String>,
     force_collapsed: &BTreeSet<String>,
-    ascii: bool,
+    _ascii: bool,
 ) -> (Vec<ProjectedEntryMeta>, Vec<Vec<String>>) {
     let q = search
         .map(|s| s.trim().to_ascii_lowercase())
@@ -443,11 +442,7 @@ fn project_message_thread_profile(
         // group header as synthetic status line when group changes
         if let Some(g) = e.group.as_deref() {
             if last_group != Some(g) {
-                let header = if ascii {
-                    format!("-- {g} --")
-                } else {
-                    format!("── {g} ──")
-                };
+                let header = format!("── {g} ──");
                 bufs.push(vec![header]);
                 meta.push(ProjectedEntryMeta {
                     id: format!("grp:{}:{}", e.id, g),
@@ -482,7 +477,7 @@ fn project_message_thread_profile(
             }
         };
 
-        let lines = project_entry_lines(e, zoom, folded, ascii);
+        let lines = project_entry_lines(e, zoom, folded, false);
         bufs.push(lines);
         meta.push(ProjectedEntryMeta {
             id: e.id.clone(),
@@ -501,7 +496,7 @@ fn project_entry_lines(
     e: &MessageEntry,
     zoom: MessageZoom,
     folded: bool,
-    ascii: bool,
+    _ascii: bool,
 ) -> Vec<String> {
     if folded {
         let mut s = String::new();
@@ -515,7 +510,7 @@ fn project_entry_lines(
         }
         if let Some(c) = e.status_letter {
             s.push('[');
-            s.push(if ascii && !c.is_ascii() { '*' } else { c });
+            s.push(if false && !c.is_ascii() { '*' } else { c });
             s.push(']');
             s.push(' ');
         }
@@ -523,10 +518,10 @@ fn project_entry_lines(
             .summary
             .as_deref()
             .or_else(|| e.lines.first().map(String::as_str))
-            .unwrap_or(if ascii { "..." } else { "…" });
+            .unwrap_or("…");
         s.push_str(body);
         if e.checkpoint {
-            s.push_str(if ascii { " *" } else { " ◆" });
+            s.push_str(" ◆");
         }
         return vec![s];
     }
@@ -539,7 +534,7 @@ fn project_entry_lines(
     }
     if let Some(t) = &e.timestamp {
         if !head.is_empty() {
-            head.push_str(if ascii { " - " } else { " · " });
+            head.push_str(" · ");
         }
         head.push_str(t);
     }
@@ -548,14 +543,14 @@ fn project_entry_lines(
             head.push(' ');
         }
         head.push('[');
-        head.push(if ascii && !c.is_ascii() { '*' } else { c });
+        head.push(if false && !c.is_ascii() { '*' } else { c });
         head.push(']');
     }
     if e.checkpoint {
         if !head.is_empty() {
             head.push(' ');
         }
-        head.push(if ascii { '*' } else { '◆' });
+        head.push('◆');
     }
     let had_head = !head.is_empty();
     if had_head {
@@ -572,19 +567,15 @@ fn project_entry_lines(
         out.push(line.clone());
     }
     if e.lines.len() > body_take {
-        let ellipsis = if ascii { "..." } else { "…" };
-        let separator = if ascii { " - " } else { " · " };
+        let ellipsis = "…";
+        let separator = " · ";
         out.push(format!(
             "{ellipsis} +{} lines{separator}open detail",
             e.lines.len() - body_take
         ));
     }
     if out.is_empty() {
-        out.push(
-            e.summary
-                .clone()
-                .unwrap_or_else(|| if ascii { "..." } else { "…" }.into()),
-        );
+        out.push(e.summary.clone().unwrap_or_else(|| "…".into()));
     }
     out
 }
@@ -661,7 +652,7 @@ impl ThreadProjection {
         search: Option<&str>,
         expanded_ids: &BTreeSet<String>,
         force_collapsed: &BTreeSet<String>,
-        ascii: bool,
+        _ascii: bool,
     ) -> Self {
         let (meta, bufs) = project_message_thread_profile(
             entries,
@@ -669,7 +660,7 @@ impl ThreadProjection {
             search,
             expanded_ids,
             force_collapsed,
-            ascii,
+            false,
         );
         Self { meta, bufs }
     }
@@ -910,14 +901,14 @@ impl MessageThreadState {
         )
     }
 
-    fn projection_profile(&self, entries: &[MessageEntry], ascii: bool) -> ThreadProjection {
+    fn projection_profile(&self, entries: &[MessageEntry], _ascii: bool) -> ThreadProjection {
         ThreadProjection::project_profile(
             entries,
             self.zoom,
             self.search.as_deref(),
             &self.expanded,
             &self.force_collapsed,
-            ascii,
+            false,
         )
     }
 
@@ -1065,7 +1056,6 @@ impl MessageThreadState {
 pub struct MessageThread<'a> {
     entries: &'a [MessageEntry],
     system: &'a DesignSystem,
-    ascii: bool,
     colorless: bool,
     focused: bool,
 }
@@ -1077,7 +1067,6 @@ impl<'a> MessageThread<'a> {
         Self {
             entries,
             system,
-            ascii: false,
             colorless: false,
             focused: true,
         }
@@ -1085,13 +1074,7 @@ impl<'a> MessageThread<'a> {
 
     /// ASCII prefixes.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Colorless.
-    #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self
@@ -1118,15 +1101,13 @@ impl<'a> MessageThread<'a> {
             body.height = area.height.saturating_sub(footer_h);
         }
 
-        let ascii = self.ascii || self.system.glyphs.is_ascii();
         let colorless = self.colorless || self.system.mono();
-        let proj = state.projection_profile(self.entries, ascii);
+        let proj = state.projection_profile(self.entries, false);
         let mut line_ptrs: Vec<Vec<&str>> = Vec::new();
         let blocks = proj.blocks(&mut line_ptrs);
 
         let transcript = Transcript::new(&blocks, self.system)
             .focused(self.focused)
-            .ascii(ascii)
             .colorless(colorless)
             .empty_label("No messages yet");
         StatefulWidget::render(&transcript, body, buffer, &mut state.transcript);
@@ -1143,19 +1124,11 @@ impl<'a> MessageThread<'a> {
                     String::new()
                 }
             } else if state.show_new_content() {
-                if ascii {
-                    format!(
-                        "v {} new  C-n jump - zoom:{}",
-                        state.unread_below,
-                        state.zoom.id()
-                    )
-                } else {
-                    format!(
-                        "↓ {} new  C-n jump · zoom:{}",
-                        state.unread_below,
-                        state.zoom.id()
-                    )
-                }
+                format!(
+                    "↓ {} new  C-n jump · zoom:{}",
+                    state.unread_below,
+                    state.zoom.id()
+                )
             } else {
                 String::new()
             };
@@ -1243,29 +1216,6 @@ mod tests {
         assert!(tool.folded);
         let user = meta.iter().find(|m| m.id == "u1").unwrap();
         assert!(!user.folded || user.kind == MessageKind::User);
-    }
-
-    #[test]
-    fn ascii_projection_builds_ascii_chrome_without_rewriting_host_copy() {
-        let entries = example_message_session();
-        let state = MessageThreadState::new();
-        let projection = state.projection_profile(&entries, true);
-        let lines_for = |id: &str| {
-            let meta = projection
-                .meta
-                .iter()
-                .find(|meta| meta.id == id)
-                .unwrap_or_else(|| panic!("missing projected entry {id}"));
-            &projection.bufs[meta.line_buf_index]
-        };
-
-        assert_eq!(lines_for("grp:u1:today")[0], "-- today --");
-        assert!(lines_for("u1")[0].ends_with('*'));
-        assert!(lines_for("t1")[0].starts_with("12:02 bash [*]"));
-        assert!(
-            lines_for("err1").iter().any(|line| line.contains('—')),
-            "host Unicode copy is data, not component chrome"
-        );
     }
 
     #[test]

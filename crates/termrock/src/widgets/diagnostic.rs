@@ -19,7 +19,6 @@
 //! output lists.
 //!
 //! Research: rustc diagnostics, miette, Rich tracebacks, IDE problems panels.
-
 use std::collections::BTreeSet;
 
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
@@ -95,25 +94,14 @@ impl DiagnosticSeverity {
 
     /// Glyph (ASCII uses letter).
     #[must_use]
-    pub const fn glyph(self, ascii: bool) -> &'static str {
-        if ascii {
-            match self {
-                Self::Error => "E",
-                Self::Warning => "W",
-                Self::Info => "I",
-                Self::Hint => "H",
-                Self::Note => "N",
-                Self::Help => "?",
-            }
-        } else {
-            match self {
-                Self::Error => "x",
-                Self::Warning => "!",
-                Self::Info => "i",
-                Self::Hint => "›",
-                Self::Note => "·",
-                Self::Help => "?",
-            }
+    pub const fn glyph(self, _ascii: bool) -> &'static str {
+        match self {
+            Self::Error => "x",
+            Self::Warning => "!",
+            Self::Info => "i",
+            Self::Hint => "›",
+            Self::Note => "·",
+            Self::Help => "?",
         }
     }
 
@@ -123,9 +111,9 @@ impl DiagnosticSeverity {
         match self {
             Self::Error => Role::Danger,
             Self::Warning => Role::Warning,
-            Self::Info => Role::Info,
+            Self::Info => Role::TextSecondary,
             // Hints assist; they do not compete with the current intent.
-            Self::Hint | Self::Help => Role::Info,
+            Self::Hint | Self::Help => Role::TextSecondary,
             Self::Note => Role::TextMuted,
         }
     }
@@ -166,8 +154,8 @@ impl SpanStyle {
 
     /// Underline glyph row (ASCII-safe).
     #[must_use]
-    pub const fn underline_char(self, ascii: bool) -> char {
-        match (self, ascii) {
+    pub const fn underline_char(self, _ascii: bool) -> char {
+        match (self, false) {
             (Self::Primary, true) | (Self::Primary, false) => '^',
             (Self::Secondary, true) => '-',
             (Self::Secondary, false) => '─',
@@ -627,7 +615,6 @@ pub struct CodeFrame<'a> {
     labels: &'a [SourceLabel<'a>],
     system: &'a DesignSystem,
     file: Option<&'a str>,
-    ascii: bool,
     colorless: bool,
     tab_stop: usize,
     /// When true, show `…` truncation markers if file context incomplete.
@@ -645,7 +632,6 @@ impl<'a> CodeFrame<'a> {
             labels: &[],
             system,
             file: None,
-            ascii: false,
             colorless: false,
             tab_stop: CODE_FRAME_TAB_STOP,
             truncated_above: false,
@@ -670,13 +656,7 @@ impl<'a> CodeFrame<'a> {
 
     /// ASCII underlines.
     #[must_use]
-    pub const fn ascii(mut self, ascii: bool) -> Self {
-        self.ascii = ascii;
-        self
-    }
-
     /// Colorless.
-    #[must_use]
     pub const fn colorless(mut self, colorless: bool) -> Self {
         self.colorless = colorless;
         self
@@ -705,10 +685,8 @@ impl<'a> CodeFrame<'a> {
 
     /// Paint. Returns rows used.
     pub fn render(&self, area: Rect, buffer: &mut Buffer) -> u16 {
-        if (!self.ascii && self.system.glyphs.is_ascii()) || (!self.colorless && self.system.mono())
-        {
+        if !self.colorless && self.system.mono() {
             let mut effective = self.clone();
-            effective.ascii |= self.system.glyphs.is_ascii();
             effective.colorless |= self.system.mono();
             return effective.render(area, buffer);
         }
@@ -737,7 +715,7 @@ impl<'a> CodeFrame<'a> {
         }
 
         if self.truncated_above && y < bottom {
-            let mark = if self.ascii { "..." } else { "…" };
+            let mark = { "…" };
             buffer.set_stringn(
                 area.x,
                 y,
@@ -763,7 +741,7 @@ impl<'a> CodeFrame<'a> {
             }
             let expanded = expand_tabs(line.text, self.tab_stop);
             let num = format!("{:>width$}", line.number, width = gutter_w as usize - 1);
-            let pipe = if self.ascii { "|" } else { "│" };
+            let pipe = { "│" };
             let prefix = format!("{num}{pipe} ");
             let pref_w = display_cols(&prefix) as u16;
             buffer.set_stringn(
@@ -804,7 +782,7 @@ impl<'a> CodeFrame<'a> {
                 let (sc, ec) = cols_on_line(lab.range, line.number, expanded.chars().count());
                 let start = sc.saturating_sub(1) as usize;
                 let end = (ec.saturating_sub(1) as usize).max(start + 1);
-                let ch = lab.style.underline_char(self.ascii);
+                let ch = lab.style.underline_char(false);
                 for i in start..end.min(row.len()) {
                     row[i] = ch;
                     if lab.style == SpanStyle::Primary {
@@ -867,7 +845,7 @@ impl<'a> CodeFrame<'a> {
         }
 
         if self.truncated_below && y < bottom {
-            let mark = if self.ascii { "..." } else { "…" };
+            let mark = { "…" };
             buffer.set_stringn(
                 area.x,
                 y,
@@ -995,8 +973,6 @@ pub struct DiagnosticState {
     pub recipe: DiagnosticRecipe,
     /// Regions.
     pub regions: Vec<DiagnosticRegion>,
-    /// Prefer ASCII severity/underline glyphs.
-    pub ascii: bool,
     /// Prefer no-color paint (letters still shown).
     pub colorless: bool,
 }
@@ -1021,7 +997,6 @@ impl DiagnosticState {
             fix_cursor: 0,
             recipe: DiagnosticRecipe::List,
             regions: Vec::new(),
-            ascii: false,
             colorless: false,
         }
     }
@@ -1314,7 +1289,6 @@ pub struct DiagnosticView<'a> {
     system: &'a DesignSystem,
     recipe: DiagnosticRecipe,
     focused: bool,
-    ascii: bool,
     colorless: bool,
     title: Option<&'a str>,
 }
@@ -1329,7 +1303,6 @@ impl<'a> DiagnosticView<'a> {
             system,
             recipe: DiagnosticRecipe::List,
             focused: true,
-            ascii: false,
             colorless: false,
             title: None,
         }
@@ -1365,13 +1338,7 @@ impl<'a> DiagnosticView<'a> {
 
     /// ASCII.
     #[must_use]
-    pub const fn ascii(mut self, ascii: bool) -> Self {
-        self.ascii = ascii;
-        self
-    }
-
     /// Colorless.
-    #[must_use]
     pub const fn colorless(mut self, colorless: bool) -> Self {
         self.colorless = colorless;
         self
@@ -1383,7 +1350,6 @@ impl<'a> DiagnosticView<'a> {
         if area.is_empty() {
             return;
         }
-        let ascii = self.ascii || state.ascii || self.system.glyphs.is_ascii();
         let colorless = self.colorless || state.colorless || self.system.mono();
         let recipe = match state.recipe {
             DiagnosticRecipe::List
@@ -1421,7 +1387,7 @@ impl<'a> DiagnosticView<'a> {
         }
 
         if self.items.is_empty() {
-            let mark = if ascii { "[ ] " } else { "∅ " };
+            let mark = "∅ ";
             buffer.set_stringn(
                 area.x,
                 y,
@@ -1437,7 +1403,7 @@ impl<'a> DiagnosticView<'a> {
             DiagnosticRecipe::Inline => {
                 // Single item or cursor item
                 let d = self.items.get(state.cursor).unwrap_or(&self.items[0]);
-                paint_inline(buffer, area, d, self.system, surface, ascii, colorless);
+                paint_inline(buffer, area, d, self.system, surface, false, colorless);
                 state.regions.push(DiagnosticRegion {
                     id: d.id.to_string(),
                     index: state.cursor.min(self.items.len() - 1),
@@ -1468,7 +1434,7 @@ impl<'a> DiagnosticView<'a> {
                         self.source_lines,
                         self.system,
                         surface,
-                        ascii,
+                        false,
                         colorless,
                         cursor,
                         expanded,
@@ -1492,10 +1458,10 @@ fn paint_inline(
     d: &Diagnostic<'_>,
     system: &DesignSystem,
     surface: bool,
-    ascii: bool,
+    _ascii: bool,
     colorless: bool,
 ) {
-    let g = d.severity.glyph(ascii);
+    let g = d.severity.glyph(false);
     let letter = d.severity.letter();
     let code = d.code.map(|c| format!("[{c}] ")).unwrap_or_default();
     let line = format!("{g}{letter} {code}{}", d.message);
@@ -1522,7 +1488,7 @@ fn paint_list_item(
     source_lines: &[CodeFrameLine<'_>],
     system: &DesignSystem,
     surface: bool,
-    ascii: bool,
+    _ascii: bool,
     colorless: bool,
     cursor: bool,
     expanded: bool,
@@ -1535,7 +1501,7 @@ fn paint_list_item(
     let mut y = area.y;
     // The cursor column is stamped by the shared row chrome.
     let gutter = " ";
-    let g = d.severity.glyph(ascii);
+    let g = d.severity.glyph(false);
     let letter = d.severity.letter();
     let code = d.code.map(|c| format!("[{c}] ")).unwrap_or_default();
     let loc = match (d.file, d.primary_range()) {
@@ -1600,7 +1566,6 @@ fn paint_list_item(
             let used = CodeFrame::new(source_lines, system)
                 .labels(d.labels)
                 .file(d.file.unwrap_or(""))
-                .ascii(ascii)
                 .colorless(colorless)
                 .truncated_above(true)
                 .truncated_below(true)
@@ -1617,7 +1582,7 @@ fn paint_list_item(
         if y >= area.bottom() {
             break;
         }
-        let ng = note.severity.glyph(ascii);
+        let ng = note.severity.glyph(false);
         let msg = format!("  {ng} {}: {}", note.severity.label(), note.message);
         buffer.set_stringn(
             area.x,
@@ -1664,11 +1629,7 @@ fn paint_list_item(
         if y >= area.bottom() {
             break;
         }
-        let mark = if i == fix_cursor {
-            if ascii { "*" } else { "★" }
-        } else {
-            " "
-        };
+        let mark = if i == fix_cursor { "★" } else { " " };
         let msg = format!("  {mark}fix: {}", fix.message);
         buffer.set_stringn(
             area.x,
@@ -1839,14 +1800,14 @@ pub fn diagnostics_to_highlights(items: &[Diagnostic<'_>]) -> Vec<CodeHighlight>
 
 /// Map diagnostics into gutter marks (severity glyph).
 #[must_use]
-pub fn diagnostics_to_gutter_marks(items: &[Diagnostic<'_>], ascii: bool) -> Vec<CodeGutterMark> {
+pub fn diagnostics_to_gutter_marks(items: &[Diagnostic<'_>], _ascii: bool) -> Vec<CodeGutterMark> {
     let mut out = Vec::new();
     let mut seen = BTreeSet::new();
     for d in items {
         if let Some(r) = d.primary_range() {
             let line = r.start_line.saturating_sub(1) as usize;
             if seen.insert(line) {
-                let g = d.severity.glyph(ascii).chars().next().unwrap_or('!');
+                let g = d.severity.glyph(false).chars().next().unwrap_or('!');
                 out.push(CodeGutterMark::new(line, g, d.severity.role()));
             }
         }

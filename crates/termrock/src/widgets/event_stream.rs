@@ -15,7 +15,6 @@
 //! EventStream optimizes sustained append rates and unread/backpressure.
 //!
 //! Research: observability event consoles, k8s events, agent activity streams.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::collections::BTreeSet;
 
@@ -98,25 +97,14 @@ impl EventSeverity {
 
     /// Glyph for structured chrome.
     #[must_use]
-    pub const fn glyph(self, ascii: bool) -> &'static str {
-        if ascii {
-            match self {
-                Self::Trace => "T",
-                Self::Debug => "D",
-                Self::Info => "I",
-                Self::Warn => "W",
-                Self::Error => "E",
-                Self::Critical => "!",
-            }
-        } else {
-            match self {
-                Self::Trace => ".",
-                Self::Debug => "·",
-                Self::Info => "i",
-                Self::Warn => "!",
-                Self::Error => "x",
-                Self::Critical => "◆",
-            }
+    pub const fn glyph(self, _ascii: bool) -> &'static str {
+        match self {
+            Self::Trace => ".",
+            Self::Debug => "·",
+            Self::Info => "i",
+            Self::Warn => "!",
+            Self::Error => "x",
+            Self::Critical => "◆",
         }
     }
 
@@ -379,8 +367,6 @@ pub struct EventStreamState<Id: Clone + PartialEq + Ord = ()> {
     event_count: u16,
     /// Hit regions from the last paint.
     pub regions: Vec<EventStreamRegion<Id>>,
-    /// Prefer ASCII severity / follow glyphs.
-    pub ascii: bool,
     /// Prefer non-chromatic severity emphasis.
     pub colorless: bool,
     /// Show inspector detail strip under selection when detail present.
@@ -416,7 +402,6 @@ impl<Id: Clone + PartialEq + Ord> EventStreamState<Id> {
             area_rows: 0,
             event_count: 0,
             regions: Vec::new(),
-            ascii: false,
             colorless: false,
             show_inline_detail: true,
         }
@@ -919,7 +904,6 @@ pub struct EventStream<'a, Id = ()> {
     events: &'a [StreamEvent<'a, Id>],
     system: &'a DesignSystem,
     focused: bool,
-    ascii: bool,
     colorless: bool,
 }
 
@@ -931,7 +915,6 @@ impl<'a> EventStream<'a, ()> {
             events,
             system,
             focused: true,
-            ascii: false,
             colorless: false,
         }
     }
@@ -945,7 +928,6 @@ impl<'a, Id: Clone + PartialEq + Ord> EventStream<'a, Id> {
             events,
             system,
             focused: true,
-            ascii: false,
             colorless: false,
         }
     }
@@ -959,13 +941,7 @@ impl<'a, Id: Clone + PartialEq + Ord> EventStream<'a, Id> {
 
     /// ASCII glyphs.
     #[must_use]
-    pub const fn ascii(mut self, ascii: bool) -> Self {
-        self.ascii = ascii;
-        self
-    }
-
     /// Colorless.
-    #[must_use]
     pub const fn colorless(mut self, colorless: bool) -> Self {
         self.colorless = colorless;
         self
@@ -979,8 +955,7 @@ impl<'a, Id: Clone + PartialEq + Ord> EventStream<'a, Id> {
             state.area_rows = 0;
             return;
         }
-        let ascii = self.ascii || state.ascii || self.system.glyphs.is_ascii();
-        let separator = if ascii { " - " } else { " · " };
+        let separator = " · ";
         let colorless = self.colorless || state.colorless || self.system.mono();
         state.origin = (area.x, area.y);
         state.area_rows = area.height;
@@ -1017,7 +992,7 @@ impl<'a, Id: Clone + PartialEq + Ord> EventStream<'a, Id> {
         let narrow = area.width < 40;
 
         if view.is_empty() {
-            let mark = if ascii { "[ ] " } else { "∅ " };
+            let mark = "∅ ";
             let msg = if tiny {
                 format!("{mark}empty")
             } else {
@@ -1043,7 +1018,7 @@ impl<'a, Id: Clone + PartialEq + Ord> EventStream<'a, Id> {
                 let cursor = i == state.cursor;
 
                 if matches!(event.kind, StreamRowKind::Group) {
-                    let mark = if ascii { "# " } else { "▸ " };
+                    let mark = "▸ ";
                     let line = format!("{mark}{}", event.event_type);
                     buffer.set_stringn(
                         area.x,
@@ -1097,9 +1072,9 @@ impl<'a, Id: Clone + PartialEq + Ord> EventStream<'a, Id> {
                 );
                 buffer.set_stringn(area.x.saturating_add(1), y, " ", 1, style);
 
-                let sev = event.severity.glyph(ascii);
+                let sev = event.severity.glyph(false);
                 let batch = if event.batch_count > 1 {
-                    format!("{}{}", if ascii { "x" } else { "×" }, event.batch_count)
+                    format!("{}{}", "×", event.batch_count)
                 } else {
                     String::new()
                 };
@@ -1185,7 +1160,7 @@ impl<'a, Id: Clone + PartialEq + Ord> EventStream<'a, Id> {
                     let detail = ev.detail.unwrap_or(ev.summary);
                     let line = format!(
                         "{}{}",
-                        if ascii { "  `- " } else { "  └ " },
+                        "  └ ",
                         take_display_cols(detail, usize::from(area.width.saturating_sub(4)))
                     );
                     buffer.set_stringn(
@@ -1203,17 +1178,9 @@ impl<'a, Id: Clone + PartialEq + Ord> EventStream<'a, Id> {
         if show_chip {
             let cy = area.bottom().saturating_sub(1);
             let mut chip = if following {
-                if ascii {
-                    "FOLLOW".into()
-                } else {
-                    "↓ live".into()
-                }
+                "↓ live".into()
             } else if unread > 0 {
-                if ascii {
-                    format!("v {unread} new")
-                } else {
-                    format!("↓ {unread} new")
-                }
+                format!("↓ {unread} new")
             } else {
                 "paused".into()
             };
@@ -1227,7 +1194,7 @@ impl<'a, Id: Clone + PartialEq + Ord> EventStream<'a, Id> {
                 chip.push_str(&format!("{separator}/{q}"));
             }
             if state.severity_floor > EventSeverity::Trace {
-                let comparison = if ascii { ">=" } else { "≥" };
+                let comparison = "≥";
                 chip.push_str(&format!(
                     "{separator}{comparison}{}",
                     state.severity_floor.letter()

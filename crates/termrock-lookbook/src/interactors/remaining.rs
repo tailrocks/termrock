@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Persistent demos for the remaining primary routes with public interaction APIs.
-
 use ratatui::{Frame, layout::Rect, widgets::Widget};
 use termrock::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent, MouseEventKind},

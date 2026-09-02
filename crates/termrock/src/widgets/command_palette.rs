@@ -14,7 +14,6 @@
 //! pages, loading/empty/no-result chrome, keymap/scene projection helpers.
 //!
 //! Research: VS Code palette, Textual, Posting, Zellij, television, agent TUIs.
-
 #![allow(unused_variables, unused_mut)] // unit-test fixtures
 use std::collections::VecDeque;
 
@@ -1202,7 +1201,6 @@ pub struct CommandPalette<'a, Id> {
     entries: &'a [CommandEntry<Id>],
     system: &'a DesignSystem,
     focused: bool,
-    ascii: bool,
     colorless: bool,
     footer_hint: Option<&'a str>,
     empty_message: &'a str,
@@ -1252,7 +1250,6 @@ impl<'a, Id> CommandPalette<'a, Id> {
             entries,
             system,
             focused: true,
-            ascii: false,
             colorless: false,
             footer_hint: None,
             empty_message: "Type to search commands",
@@ -1271,13 +1268,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
 
     /// ASCII glyphs.
     #[must_use]
-    pub const fn ascii(mut self, ascii: bool) -> Self {
-        self.ascii = ascii;
-        self
-    }
-
     /// Reduced color.
-    #[must_use]
     pub const fn colorless(mut self, colorless: bool) -> Self {
         self.colorless = colorless;
         self
@@ -1432,11 +1423,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
         let mut content = body;
         if let Some(pt) = state.current_page_title() {
             if content.height > 0 {
-                let crumb = if self.ascii {
-                    format!(".. / {pt}")
-                } else {
-                    format!("← {pt}")
-                };
+                let crumb = { format!("← {pt}") };
                 buffer.set_stringn(
                     content.x,
                     content.y,
@@ -1455,11 +1442,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
             buffer.set_style(field_area, self.system.style(Role::Sunken));
             match &state.phase {
                 CommandPalettePhase::Argument { prompt, .. } => {
-                    let prefix = if self.ascii {
-                        format!("{prompt}> ")
-                    } else {
-                        format!("{prompt} › ")
-                    };
+                    let prefix = { format!("{prompt} › ") };
                     let pw = display_cols(&prefix) as u16;
                     buffer.set_stringn(
                         field_area.x,
@@ -1501,11 +1484,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
 
         // Separator under query.
         if content.height > 0 && content.width > 0 {
-            let line = if self.ascii {
-                "-".repeat(usize::from(content.width))
-            } else {
-                "─".repeat(usize::from(content.width))
-            };
+            let line = { "─".repeat(usize::from(content.width)) };
             buffer.set_stringn(
                 content.x,
                 content.y,
@@ -1575,7 +1554,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
         }
 
         if state.loading && self.entries.is_empty() {
-            let msg = if self.ascii && self.loading_message == COMMAND_PALETTE_LOADING {
+            let msg = if false && self.loading_message == COMMAND_PALETTE_LOADING {
                 COMMAND_PALETTE_LOADING_ASCII
             } else {
                 self.loading_message
@@ -1594,13 +1573,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
 
         if self.entries.is_empty() {
             let (glyph, msg) = if state.query_text().is_empty() {
-                if self.ascii {
-                    ("[ ]", self.empty_message)
-                } else {
-                    ("∅", self.empty_message)
-                }
-            } else if self.ascii {
-                ("[x]", self.no_result_message)
+                ("∅", self.empty_message)
             } else {
                 ("∅", self.no_result_message)
             };
@@ -1618,14 +1591,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
                 buffer.set_stringn(
                     area.x,
                     area.y.saturating_add(1),
-                    &take_display_cols(
-                        if self.ascii {
-                            "Recent queries:"
-                        } else {
-                            "Recent queries"
-                        },
-                        usize::from(area.width),
-                    ),
+                    &take_display_cols("Recent queries", usize::from(area.width)),
                     usize::from(area.width),
                     self.system.style(Role::TextMuted),
                 );
@@ -1699,6 +1665,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
                 enabled: entry.enabled,
                 loading: false,
                 checked: false,
+                ..ListRowVisualState::default()
             });
             if recipe.use_fill {
                 buffer.set_style(row_rect, recipe.label);
@@ -1707,11 +1674,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
             }
 
             // Cursor gutter.
-            let gutter = if active {
-                if self.ascii { "> " } else { "› " }
-            } else {
-                "  "
-            };
+            let gutter = if active { "› " } else { "  " };
             let mut x = area.x;
             let gstyle = if active {
                 recipe.label
@@ -1724,16 +1687,16 @@ impl<'a, Id> CommandPalette<'a, Id> {
             // Leading badges: recent / contextual / disabled.
             let mut leading = String::new();
             if entry.recent {
-                leading.push_str(if self.ascii { "* " } else { "↻ " });
+                leading.push_str("↻ ");
             }
             if entry.contextual {
-                leading.push_str(if self.ascii { "@ " } else { "◎ " });
+                leading.push_str("◎ ");
             }
             if !entry.enabled {
-                leading.push_str(if self.ascii { "# " } else { "⊘ " });
+                leading.push_str("⊘ ");
             }
             if entry.opens_page.is_some() {
-                leading.push_str(if self.ascii { "> " } else { "▸ " });
+                leading.push_str("▸ ");
             }
             if !leading.is_empty() {
                 let lw = display_cols(&leading) as u16;
@@ -1773,9 +1736,11 @@ impl<'a, Id> CommandPalette<'a, Id> {
                         if !entry.enabled {
                             self.system.style(Role::TextMuted)
                         } else if active {
+                            // Bold carries the cursor row without colour and
+                            // without a reversal slab.
                             self.system
                                 .style(Role::TextStrong)
-                                .add_modifier(Modifier::REVERSED)
+                                .add_modifier(Modifier::BOLD)
                         } else {
                             self.system.style(Role::Text)
                         }

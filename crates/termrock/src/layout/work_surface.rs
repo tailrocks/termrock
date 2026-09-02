@@ -2,10 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Multi-region work surface layout (lazygit/k9s class shells).
-
 use ratatui_core::layout::Rect;
-
-use crate::style::Density;
 
 /// Named region identity for focus and hit registration.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -64,7 +61,6 @@ pub struct RegionLayout {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WorkSurface {
     axis: SurfaceAxis,
-    density: Density,
     regions: Vec<RegionSpec>,
 }
 
@@ -74,7 +70,6 @@ impl WorkSurface {
     pub const fn new() -> Self {
         Self {
             axis: SurfaceAxis::Vertical,
-            density: Density::Comfortable,
             regions: Vec::new(),
         }
     }
@@ -83,13 +78,6 @@ impl WorkSurface {
     #[must_use]
     pub const fn axis(mut self, axis: SurfaceAxis) -> Self {
         self.axis = axis;
-        self
-    }
-
-    /// Sets density (affects gaps between regions).
-    #[must_use]
-    pub const fn density(mut self, density: Density) -> Self {
-        self.density = density;
         self
     }
 
@@ -114,7 +102,7 @@ impl WorkSurface {
                 .collect();
         }
 
-        let gap = self.density.gap();
+        let gap = crate::style::SpacingScale::junie().gap;
         let primary = match self.axis {
             SurfaceAxis::Vertical => area.height,
             SurfaceAxis::Horizontal => area.width,
@@ -201,7 +189,7 @@ mod tests {
 
     #[test]
     fn vertical_fixed_and_weight_fill_height() {
-        let surface = WorkSurface::new().density(Density::Dashboard).regions([
+        let surface = WorkSurface::new().regions([
             RegionSpec {
                 id: RegionId::from_static("header"),
                 size: RegionSize::Fixed(2),
@@ -217,13 +205,13 @@ mod tests {
         ]);
         let layout = surface.layout(Rect::new(0, 0, 40, 20));
         assert_eq!(layout[0].area, Rect::new(0, 0, 40, 2));
-        assert_eq!(layout[1].area, Rect::new(0, 2, 40, 17));
+        assert_eq!(layout[1].area, Rect::new(0, 4, 40, 13));
         assert_eq!(layout[2].area, Rect::new(0, 19, 40, 1));
     }
 
     #[test]
     fn collapsed_region_is_zero_sized() {
-        let surface = WorkSurface::new().density(Density::Comfortable).regions([
+        let surface = WorkSurface::new().regions([
             RegionSpec {
                 id: RegionId::from_static("side"),
                 size: RegionSize::Collapsed,

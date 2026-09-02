@@ -30,7 +30,6 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
@@ -452,8 +451,6 @@ pub struct DatabaseWorkbenchState {
     pub tx_status: DatabaseTxStatus,
     /// Last error message (status / banner).
     pub last_error: Option<String>,
-    /// ASCII paint.
-    pub ascii: bool,
     /// Colorless paint.
     pub colorless: bool,
     /// History overlay open.
@@ -530,7 +527,6 @@ impl DatabaseWorkbenchState {
             conn_gate: gate,
             tx_status: DatabaseTxStatus::None,
             last_error: None,
-            ascii: false,
             colorless: false,
             history_open: false,
             connections_open: false,
@@ -1489,7 +1485,7 @@ pub fn render_database_workbench(
     if state.conn_gate.is_offline_like() {
         if let Some(c) = state.connections.current() {
             let rs = connection_to_reconnecting_state(c);
-            let line = rs.banner_line(state.ascii);
+            let line = rs.banner_line(false);
             // paint into top of query pane if present, else area top
             if let Some(qa) = pane_area(&panes, "query") {
                 if qa.height > 0 {
@@ -1516,7 +1512,6 @@ pub fn render_database_workbench(
         let inner = panel.inner(r);
         Widget::render(&panel, r, buffer);
         ConnectionManager::new(system)
-            .ascii(state.ascii)
             .colorless(state.colorless)
             .list_only(true)
             .paint(inner, buffer, &mut state.connections);
@@ -1524,10 +1519,9 @@ pub fn render_database_workbench(
 
     if let Some(r) = pane_area(&panes, "schema") {
         let focused = state.focus == "schema";
-        SchemaBrowser::new(schema_entries, system)
+        let _ = SchemaBrowser::new(schema_entries, system)
             .title("Schema")
             .focused(focused)
-            .ascii(state.ascii)
             .render(r, buffer, &mut state.schema);
     }
 
@@ -1570,20 +1564,18 @@ pub fn render_database_workbench(
                 .active_tab()
                 .map(|t| t.title.clone())
                 .unwrap_or_else(|| "Query".into());
-            QueryEditor::new(system)
+            let _ = QueryEditor::new(system)
                 .title(tab_title.as_str())
                 .focused(focused)
-                .ascii(state.ascii)
                 .render(editor_area, buffer, &mut state.query);
         }
     }
 
     if let Some(r) = pane_area(&panes, "results") {
         let focused = state.focus == "results";
-        ResultGrid::new(system, result_columns, result_rows)
+        let _ = ResultGrid::new(system, result_columns, result_rows)
             .title("Results")
             .focused(focused)
-            .ascii(state.ascii)
             .render(r, buffer, &mut state.results);
     }
 
@@ -1591,7 +1583,6 @@ pub fn render_database_workbench(
         let focused = state.focus == "inspector";
         ObjectInspector::new(inspect_fields, system)
             .focused(focused)
-            .ascii(state.ascii)
             .colorless(state.colorless)
             .render(r, buffer, &mut state.inspector);
     }
@@ -1609,15 +1600,11 @@ pub fn render_database_workbench(
     // Overlays
     if state.palette_open {
         let m = centered_modal(area);
-        CommandPalette::new("Commands", commands, system)
-            .ascii(state.ascii)
-            .paint(m, buffer, &mut state.palette);
+        CommandPalette::new("Commands", commands, system).paint(m, buffer, &mut state.palette);
     }
     if state.history_open {
         let m = centered_modal(area);
-        HistoryPicker::new(history, system)
-            .ascii(state.ascii)
-            .paint(m, buffer, &mut state.history);
+        HistoryPicker::new(history, system).paint(m, buffer, &mut state.history);
     }
 }
 

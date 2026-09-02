@@ -11,7 +11,6 @@
 //! **Distribution law:** the kernel crate stays shared; registry items may be
 //! copied into apps. Contracts describe **both** without forcing copy-paste of
 //! focus/Esc/Unicode engines.
-
 mod catalog;
 mod contract;
 mod inventory;

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Persistent demos for the public catalog's compact interactive primitives.
-
 use ratatui::{Frame, layout::Rect, widgets::StatefulWidget};
 use termrock::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent},

@@ -20,7 +20,6 @@
 //! LogPane for single local build/process buffer.
 //!
 //! Research: k9s, stern, Textual logs, btop, TermRock LogPane.
-
 use std::collections::BTreeSet;
 
 use ratatui_core::{
@@ -79,23 +78,13 @@ impl LogLevel {
 
     /// Level mark (`ascii` uses T/D/I/W/E).
     #[must_use]
-    pub const fn glyph(self, ascii: bool) -> &'static str {
-        if ascii {
-            match self {
-                Self::Trace => "T",
-                Self::Debug => "D",
-                Self::Info => "I",
-                Self::Warn => "W",
-                Self::Error => "E",
-            }
-        } else {
-            match self {
-                Self::Trace => ".",
-                Self::Debug => "·",
-                Self::Info => "i",
-                Self::Warn => "!",
-                Self::Error => "x",
-            }
+    pub const fn glyph(self, _ascii: bool) -> &'static str {
+        match self {
+            Self::Trace => ".",
+            Self::Debug => "·",
+            Self::Info => "i",
+            Self::Warn => "!",
+            Self::Error => "x",
         }
     }
 
@@ -321,8 +310,6 @@ pub struct LogStreamState {
     content_width: u16,
     /// Hit regions.
     pub regions: Vec<LogStreamRegion>,
-    /// Prefer ASCII glyphs for levels / chrome (or set on the widget).
-    pub ascii: bool,
     /// Prefer no-color paint (letter marks; or set on the widget).
     pub colorless: bool,
     /// Anchor line id for preserve-across-reproject.
@@ -361,7 +348,6 @@ impl LogStreamState {
             batched: 0,
             content_width: 0,
             regions: Vec::new(),
-            ascii: false,
             colorless: false,
             anchor_id: None,
         }
@@ -946,7 +932,6 @@ pub struct LogStream<'a> {
     lines: &'a [LogLine<'a>],
     system: &'a DesignSystem,
     focused: bool,
-    ascii: bool,
     colorless: bool,
     title: Option<&'a str>,
 }
@@ -959,7 +944,6 @@ impl<'a> LogStream<'a> {
             lines,
             system,
             focused: true,
-            ascii: false,
             colorless: false,
             title: None,
         }
@@ -981,13 +965,7 @@ impl<'a> LogStream<'a> {
 
     /// ASCII level / follow glyphs.
     #[must_use]
-    pub const fn ascii(mut self, ascii: bool) -> Self {
-        self.ascii = ascii;
-        self
-    }
-
     /// Reduced-color paint.
-    #[must_use]
     pub const fn colorless(mut self, colorless: bool) -> Self {
         self.colorless = colorless;
         self
@@ -1001,8 +979,7 @@ impl<'a> LogStream<'a> {
             state.area_rows = 0;
             return;
         }
-        let ascii = self.ascii || state.ascii || self.system.glyphs.is_ascii();
-        let separator = if ascii { " - " } else { " · " };
+        let separator = " · ";
         let colorless = self.colorless || state.colorless || self.system.mono();
         state.origin = (area.x, area.y);
         state.area_rows = area.height;
@@ -1100,7 +1077,7 @@ impl<'a> LogStream<'a> {
             .min(area.bottom().saturating_sub(u16::from(show_chip)));
 
         if view.is_empty() {
-            let mark = if ascii { "[ ] " } else { "∅ " };
+            let mark = "∅ ";
             let msg = if tiny {
                 format!("{mark}empty")
             } else {
@@ -1158,14 +1135,10 @@ impl<'a> LogStream<'a> {
                 );
                 let style = chrome.label_style(style);
 
-                let g = line.level.glyph(ascii);
-                let bm = if bookmarked {
-                    if ascii { "*" } else { "★" }
-                } else {
-                    " "
-                };
+                let g = line.level.glyph(false);
+                let bm = if bookmarked { "★" } else { " " };
                 let batch = if line.batch_count > 1 {
-                    format!("{}{}", if ascii { "x" } else { "×" }, line.batch_count)
+                    format!("{}{}", "×", line.batch_count)
                 } else {
                     String::new()
                 };
@@ -1307,19 +1280,9 @@ impl<'a> LogStream<'a> {
             let following = state.scroll.is_following();
             let indicator = state.scroll.new_content();
             let mut chip = if following {
-                if ascii {
-                    "v follow".to_string()
-                } else {
-                    "↓ follow".to_string()
-                }
+                "↓ follow".to_string()
             } else if indicator.visible {
-                if ascii {
-                    format!("v {} new  f=follow", indicator.unseen)
-                } else {
-                    format!("↓ {} new · f follow", indicator.unseen)
-                }
-            } else if ascii {
-                "^ pinned  f=follow".to_string()
+                format!("↓ {} new · f follow", indicator.unseen)
             } else {
                 "↑ pinned · f follow".to_string()
             };
@@ -1333,14 +1296,14 @@ impl<'a> LogStream<'a> {
                 chip.push_str(&format!("{separator}/{q}"));
             }
             if state.level_floor > LogLevel::Trace {
-                let comparison = if ascii { ">=" } else { "≥" };
+                let comparison = "≥";
                 chip.push_str(&format!(
                     "{separator}{comparison}{}",
                     state.level_floor.letter()
                 ));
             }
             if !state.bookmarks.is_empty() {
-                let bookmark = if ascii { "*" } else { "★" };
+                let bookmark = "★";
                 chip.push_str(&format!("{separator}{bookmark}{}", state.bookmarks.len()));
             }
             if matches!(state.recipe, LogLineRecipe::Compact) {

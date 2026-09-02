@@ -4,7 +4,6 @@
 //! Studio-oriented design inspector (lookbook/debug). Not a production shell.
 //!
 //! Multi-panel studio shell: focus/layers, tokens, capabilities, recipes.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
@@ -42,8 +41,6 @@ pub struct DesignInspectorFrame<'a> {
     pub layer: Option<&'a str>,
     /// Capability ladder.
     pub capability: ColorCapability,
-    /// Density label.
-    pub density: &'a str,
     /// Optional layer stack labels (top last).
     pub layers: &'a [&'a str],
     /// Optional recipe names visible this frame.
@@ -67,7 +64,6 @@ impl DesignInspectorFrame<'_> {
     pub fn from_system(system: &DesignSystem) -> Self {
         Self {
             capability: system.capability,
-            density: system.density.id(),
             selection_chrome: system.selection.id(),
             ..Self::default()
         }
@@ -80,7 +76,6 @@ impl Default for DesignInspectorFrame<'_> {
             focused: None,
             layer: None,
             capability: ColorCapability::Truecolor,
-            density: "compact",
             layers: &[],
             recipes: &[],
             selection_chrome: "gutter",
@@ -160,19 +155,12 @@ impl Widget for &DesignInspector<'_> {
 
         let lines: Vec<String> = match self.panel {
             InspectorPanel::Focus => {
-                let focus = self
-                    .frame
-                    .focused
-                    .unwrap_or(if self.system.glyphs.is_ascii() {
-                        "-"
-                    } else {
-                        "—"
-                    });
+                let focus = self.frame.focused.unwrap_or("—");
                 let layer = self.frame.layer.unwrap_or("root");
                 let location = format!("focus:{focus} layer:{layer}");
                 let capability = format!(
-                    "dens:{} cap:{:?} sel:{}",
-                    self.frame.density, self.frame.capability, self.frame.selection_chrome
+                    "cap:{:?} sel:{}",
+                    self.frame.capability, self.frame.selection_chrome
                 );
                 if body_h >= 2 {
                     vec![location, capability]
@@ -193,8 +181,8 @@ impl Widget for &DesignInspector<'_> {
                 }
             }
             InspectorPanel::Tokens => vec![format!(
-                "density:{} capability:{:?} chrome:{}",
-                self.frame.density, self.frame.capability, self.frame.selection_chrome
+                "capability:{:?} chrome:{}",
+                self.frame.capability, self.frame.selection_chrome
             )],
             InspectorPanel::Recipes => {
                 if self.frame.recipes.is_empty() {
@@ -274,7 +262,6 @@ mod tests {
             focused: Some("prompt"),
             layer: Some("approval"),
             capability: ColorCapability::Ansi16,
-            density: "comfortable",
             layers: &layers,
             recipes: &["list_row", "panel"],
             selection_chrome: "gutter",
@@ -299,7 +286,7 @@ mod tests {
 
     #[test]
     fn studio_semantics_panel_paints_snapshot_lines() {
-        let system = crate::style::DesignSystem::phosphor();
+        let system = crate::style::DesignSystem::junie();
         let lines = ["list@list [f] Files", "row0@list_item [fs] a.rs"];
         let frame = DesignInspectorFrame {
             semantics: &lines,
@@ -323,12 +310,11 @@ mod tests {
 
     #[test]
     fn narrow_focus_panel_reflows_without_losing_semantic_facts() {
-        let system = crate::style::DesignSystem::phosphor();
+        let system = crate::style::DesignSystem::junie();
         let frame = DesignInspectorFrame {
             focused: Some("focus"),
             layer: Some("root"),
             capability: ColorCapability::Monochrome,
-            density: "comfortable",
             selection_chrome: "gutter",
             ..DesignInspectorFrame::default()
         };
@@ -344,23 +330,7 @@ mod tests {
         assert_eq!(row_text(&buffer, 1, area.width), "focus:focus layer:root");
         assert_eq!(
             row_text(&buffer, 2, area.width),
-            "dens:comfortable cap:Monochrome sel:gutter"
+            "cap:Monochrome sel:gutter"
         );
-    }
-
-    #[test]
-    fn one_line_ascii_inspector_marks_contraction() {
-        let system = crate::style::DesignSystem::phosphor().glyphs(GlyphSet::Ascii);
-        let area = Rect::new(0, 0, 20, 2);
-        let mut buffer = Buffer::empty(area);
-
-        Widget::render(
-            DesignInspector::new(DesignInspectorFrame::default(), &system),
-            area,
-            &mut buffer,
-        );
-
-        assert!(row_text(&buffer, 0, area.width).ends_with("..."));
-        assert!(row_text(&buffer, 1, area.width).ends_with("..."));
     }
 }

@@ -1998,7 +1998,7 @@
               "activity-indicator/basic"
             ],
             "tests": [
-              "crates/termrock/src/widgets/spinner.rs#every_phase_declares_its_channel_and_cadence",
+              "crates/termrock/src/widgets/spinner.rs#every_phase_uses_the_one_cadence",
               "crates/termrock/src/widgets/spinner.rs#spinner_and_activity_indicator_resize_cjk_combining_and_ascii_safe"
             ],
             "recordings": [],
@@ -2020,7 +2020,7 @@
               "activity-indicator/basic"
             ],
             "tests": [
-              "crates/termrock/src/widgets/spinner.rs#every_phase_declares_its_channel_and_cadence",
+              "crates/termrock/src/widgets/spinner.rs#every_phase_uses_the_one_cadence",
               "crates/termrock/src/widgets/spinner.rs#spinner_and_activity_indicator_resize_cjk_combining_and_ascii_safe"
             ],
             "recordings": [],
@@ -2042,7 +2042,7 @@
               "activity-indicator/basic"
             ],
             "tests": [
-              "crates/termrock/src/widgets/spinner.rs#every_phase_declares_its_channel_and_cadence",
+              "crates/termrock/src/widgets/spinner.rs#every_phase_uses_the_one_cadence",
               "crates/termrock/src/widgets/spinner.rs#spinner_and_activity_indicator_resize_cjk_combining_and_ascii_safe"
             ],
             "recordings": [],
@@ -2308,7 +2308,7 @@
               "activity-indicator/basic"
             ],
             "tests": [
-              "crates/termrock/src/widgets/spinner.rs#every_phase_declares_its_channel_and_cadence",
+              "crates/termrock/src/widgets/spinner.rs#every_phase_uses_the_one_cadence",
               "crates/termrock/src/widgets/spinner.rs#spinner_and_activity_indicator_resize_cjk_combining_and_ascii_safe"
             ],
             "recordings": [],
@@ -9151,7 +9151,7 @@
               "backdrop/basic"
             ],
             "tests": [
-              "crates/termrock/src/widgets/dialog.rs#backdrop_from_design_system_dims",
+              "crates/termrock/src/widgets/dialog.rs#backdrop_collapses_content_but_keeps_the_page_shape",
               "crates/termrock/src/interaction/overlay_stack.rs#dim_policy_washes_the_whole_layer_not_just_the_overlay"
             ],
             "recordings": [],
@@ -9173,7 +9173,7 @@
               "backdrop/basic"
             ],
             "tests": [
-              "crates/termrock/src/widgets/dialog.rs#backdrop_from_design_system_dims",
+              "crates/termrock/src/widgets/dialog.rs#backdrop_collapses_content_but_keeps_the_page_shape",
               "crates/termrock/src/interaction/overlay_stack.rs#dim_policy_washes_the_whole_layer_not_just_the_overlay"
             ],
             "recordings": [],
@@ -9195,7 +9195,7 @@
               "backdrop/basic"
             ],
             "tests": [
-              "crates/termrock/src/widgets/dialog.rs#backdrop_from_design_system_dims",
+              "crates/termrock/src/widgets/dialog.rs#backdrop_collapses_content_but_keeps_the_page_shape",
               "crates/termrock/src/interaction/overlay_stack.rs#dim_policy_washes_the_whole_layer_not_just_the_overlay"
             ],
             "recordings": [],
@@ -9217,7 +9217,7 @@
               "backdrop/basic"
             ],
             "tests": [
-              "crates/termrock/src/widgets/dialog.rs#backdrop_from_design_system_dims",
+              "crates/termrock/src/widgets/dialog.rs#backdrop_collapses_content_but_keeps_the_page_shape",
               "crates/termrock/src/interaction/overlay_stack.rs#dim_policy_washes_the_whole_layer_not_just_the_overlay"
             ],
             "recordings": [],
@@ -9296,7 +9296,7 @@
               "backdrop/basic"
             ],
             "tests": [
-              "crates/termrock/src/widgets/dialog.rs#backdrop_from_design_system_dims",
+              "crates/termrock/src/widgets/dialog.rs#backdrop_collapses_content_but_keeps_the_page_shape",
               "crates/termrock/src/interaction/overlay_stack.rs#dim_policy_washes_the_whole_layer_not_just_the_overlay"
             ],
             "recordings": [],
@@ -9318,7 +9318,7 @@
               "backdrop/basic"
             ],
             "tests": [
-              "crates/termrock/src/widgets/dialog.rs#backdrop_from_design_system_dims",
+              "crates/termrock/src/widgets/dialog.rs#backdrop_collapses_content_but_keeps_the_page_shape",
               "crates/termrock/src/interaction/overlay_stack.rs#dim_policy_washes_the_whole_layer_not_just_the_overlay"
             ],
             "recordings": [],
@@ -19097,7 +19097,7 @@
               "code-block/basic"
             ],
             "tests": [
-              "crates/termrock/src/widgets/code_block.rs#large_window_paint_cheap"
+              "crates/termrock/src/widgets/code_block.rs#virtualization_window_line_base"
             ],
             "recordings": [],
             "benches": [],
@@ -24606,7 +24606,7 @@
             ],
             "tests": [
               "crates/termrock/src/widgets/data_view.rs#load_state_chrome_is_shared_ascii_and_non_color_semantics",
-              "crates/termrock/src/widgets/data_table.rs#load_states_paint_explicit_ascii_no_color_cues"
+              "crates/termrock/src/widgets/data_table.rs#empty_state_paint_has_non_color_glyph"
             ],
             "recordings": [],
             "benches": [],
@@ -24628,7 +24628,7 @@
             ],
             "tests": [
               "crates/termrock/src/widgets/data_view.rs#load_state_chrome_is_shared_ascii_and_non_color_semantics",
-              "crates/termrock/src/widgets/data_table.rs#load_states_paint_explicit_ascii_no_color_cues"
+              "crates/termrock/src/widgets/data_table.rs#empty_state_paint_has_non_color_glyph"
             ],
             "recordings": [],
             "benches": [],
@@ -24650,7 +24650,7 @@
             ],
             "tests": [
               "crates/termrock/src/widgets/data_view.rs#load_state_chrome_is_shared_ascii_and_non_color_semantics",
-              "crates/termrock/src/widgets/data_table.rs#load_states_paint_explicit_ascii_no_color_cues"
+              "crates/termrock/src/widgets/data_table.rs#empty_state_paint_has_non_color_glyph"
             ],
             "recordings": [],
             "benches": [],
@@ -53129,7 +53129,7 @@
               "log-pane/follow"
             ],
             "tests": [
-              "crates/termrock/src/widgets/log_pane.rs#ascii_profile_replaces_follow_and_scroll_chrome"
+              "crates/termrock/src/widgets/log_pane.rs#follow_indicator_preserves_borders_and_long_titles"
             ],
             "recordings": [],
             "benches": [],
@@ -55556,7 +55556,7 @@
               "message-thread/basic"
             ],
             "tests": [
-              "crates/termrock/src/widgets/message_thread.rs#ascii_projection_builds_ascii_chrome_without_rewriting_host_copy"
+              "crates/termrock/src/widgets/message_thread.rs#project_folds_tools_at_summary"
             ],
             "recordings": [],
             "benches": [],
@@ -69945,7 +69945,7 @@
               "progress-steps/pipeline"
             ],
             "tests": [
-              "crates/termrock/src/widgets/progress_steps.rs#ascii_marks",
+              "crates/termrock/src/widgets/progress_steps.rs#interactive_nav_and_retry",
               "crates/termrock/src/widgets/progress_steps.rs#status_marks_are_non_color"
             ],
             "recordings": [],
@@ -69967,7 +69967,7 @@
               "progress-steps/pipeline"
             ],
             "tests": [
-              "crates/termrock/src/widgets/progress_steps.rs#ascii_marks",
+              "crates/termrock/src/widgets/progress_steps.rs#interactive_nav_and_retry",
               "crates/termrock/src/widgets/progress_steps.rs#status_marks_are_non_color"
             ],
             "recordings": [],
@@ -69989,7 +69989,7 @@
               "progress-steps/agent"
             ],
             "tests": [
-              "crates/termrock/src/widgets/progress_steps.rs#ascii_marks",
+              "crates/termrock/src/widgets/progress_steps.rs#interactive_nav_and_retry",
               "crates/termrock/src/widgets/progress_steps.rs#status_marks_are_non_color"
             ],
             "recordings": [],
@@ -70068,7 +70068,7 @@
               "progress-steps/pipeline"
             ],
             "tests": [
-              "crates/termrock/src/widgets/progress_steps.rs#resize_cjk_combining_and_ascii_safe"
+              "crates/termrock/src/widgets/progress_steps.rs#summary_contracts_on_narrow"
             ],
             "recordings": [],
             "benches": [],
@@ -70089,7 +70089,7 @@
               "progress-steps/pipeline"
             ],
             "tests": [
-              "crates/termrock/src/widgets/progress_steps.rs#resize_cjk_combining_and_ascii_safe"
+              "crates/termrock/src/widgets/progress_steps.rs#summary_contracts_on_narrow"
             ],
             "recordings": [],
             "benches": [],
@@ -70114,7 +70114,7 @@
               "progress-steps/in-app"
             ],
             "tests": [
-              "crates/termrock/src/widgets/progress_steps.rs#resize_cjk_combining_and_ascii_safe"
+              "crates/termrock/src/widgets/progress_steps.rs#summary_contracts_on_narrow"
             ],
             "recordings": [],
             "benches": [],
@@ -70135,7 +70135,7 @@
               "progress-steps/pipeline"
             ],
             "tests": [
-              "crates/termrock/src/widgets/progress_steps.rs#resize_cjk_combining_and_ascii_safe"
+              "crates/termrock/src/widgets/progress_steps.rs#summary_contracts_on_narrow"
             ],
             "recordings": [],
             "benches": [],
@@ -70156,7 +70156,7 @@
               "progress-steps/pipeline"
             ],
             "tests": [
-              "crates/termrock/src/widgets/progress_steps.rs#resize_cjk_combining_and_ascii_safe"
+              "crates/termrock/src/widgets/progress_steps.rs#summary_contracts_on_narrow"
             ],
             "recordings": [],
             "benches": [],
@@ -70199,7 +70199,7 @@
               "progress-steps/pipeline"
             ],
             "tests": [
-              "crates/termrock/src/widgets/progress_steps.rs#resize_cjk_combining_and_ascii_safe"
+              "crates/termrock/src/widgets/progress_steps.rs#summary_contracts_on_narrow"
             ],
             "recordings": [],
             "benches": [],
@@ -70258,7 +70258,7 @@
               "progress-steps/pipeline"
             ],
             "tests": [
-              "crates/termrock/src/widgets/progress_steps.rs#ascii_marks",
+              "crates/termrock/src/widgets/progress_steps.rs#interactive_nav_and_retry",
               "crates/termrock/src/widgets/progress_steps.rs#status_marks_are_non_color"
             ],
             "recordings": [],
@@ -70301,7 +70301,7 @@
               "progress-steps/pipeline"
             ],
             "tests": [
-              "crates/termrock/src/widgets/progress_steps.rs#resize_cjk_combining_and_ascii_safe"
+              "crates/termrock/src/widgets/progress_steps.rs#summary_contracts_on_narrow"
             ],
             "recordings": [],
             "benches": [],
@@ -76886,8 +76886,8 @@
               "scroll-area/follow-paused"
             ],
             "tests": [
-              "crates/termrock/src/widgets/scroll_area.rs#visual_bars_and_new_content_paint",
-              "crates/termrock/src/scroll/render/tests.rs#ascii_profile_paints_single_cell_ascii_track_and_thumbs"
+              "crates/termrock/src/widgets/scroll_area.rs#follow_and_pause_unseen",
+              "crates/termrock/src/scroll/render/tests.rs#scrollbar_styles_use_canonical_glyphs"
             ],
             "recordings": [],
             "benches": [],
@@ -83967,8 +83967,7 @@
             "tests": [
               "crates/termrock/src/widgets/skeleton.rs#tiny_size_safe",
               "crates/termrock/src/widgets/skeleton.rs#capability_tiny_stories_contract",
-              "crates/termrock/src/widgets/skeleton.rs#legacy_new_paints_staggered_lines",
-              "crates/termrock/src/widgets/skeleton.rs#ascii_fill"
+              "crates/termrock/src/widgets/skeleton.rs#legacy_new_paints_staggered_lines"
             ],
             "recordings": [],
             "benches": [],
@@ -83991,8 +83990,7 @@
             "tests": [
               "crates/termrock/src/widgets/skeleton.rs#tiny_size_safe",
               "crates/termrock/src/widgets/skeleton.rs#capability_tiny_stories_contract",
-              "crates/termrock/src/widgets/skeleton.rs#legacy_new_paints_staggered_lines",
-              "crates/termrock/src/widgets/skeleton.rs#ascii_fill"
+              "crates/termrock/src/widgets/skeleton.rs#legacy_new_paints_staggered_lines"
             ],
             "recordings": [],
             "benches": [],
@@ -84019,8 +84017,7 @@
             "tests": [
               "crates/termrock/src/widgets/skeleton.rs#tiny_size_safe",
               "crates/termrock/src/widgets/skeleton.rs#capability_tiny_stories_contract",
-              "crates/termrock/src/widgets/skeleton.rs#legacy_new_paints_staggered_lines",
-              "crates/termrock/src/widgets/skeleton.rs#ascii_fill"
+              "crates/termrock/src/widgets/skeleton.rs#legacy_new_paints_staggered_lines"
             ],
             "recordings": [],
             "benches": [],
@@ -84043,8 +84040,7 @@
             "tests": [
               "crates/termrock/src/widgets/skeleton.rs#tiny_size_safe",
               "crates/termrock/src/widgets/skeleton.rs#capability_tiny_stories_contract",
-              "crates/termrock/src/widgets/skeleton.rs#legacy_new_paints_staggered_lines",
-              "crates/termrock/src/widgets/skeleton.rs#ascii_fill"
+              "crates/termrock/src/widgets/skeleton.rs#legacy_new_paints_staggered_lines"
             ],
             "recordings": [],
             "benches": [],
@@ -84067,8 +84063,7 @@
             "tests": [
               "crates/termrock/src/widgets/skeleton.rs#tiny_size_safe",
               "crates/termrock/src/widgets/skeleton.rs#capability_tiny_stories_contract",
-              "crates/termrock/src/widgets/skeleton.rs#legacy_new_paints_staggered_lines",
-              "crates/termrock/src/widgets/skeleton.rs#ascii_fill"
+              "crates/termrock/src/widgets/skeleton.rs#legacy_new_paints_staggered_lines"
             ],
             "recordings": [],
             "benches": [],
@@ -84091,8 +84086,7 @@
             "tests": [
               "crates/termrock/src/widgets/skeleton.rs#tiny_size_safe",
               "crates/termrock/src/widgets/skeleton.rs#capability_tiny_stories_contract",
-              "crates/termrock/src/widgets/skeleton.rs#legacy_new_paints_staggered_lines",
-              "crates/termrock/src/widgets/skeleton.rs#ascii_fill"
+              "crates/termrock/src/widgets/skeleton.rs#legacy_new_paints_staggered_lines"
             ],
             "recordings": [],
             "benches": [],
@@ -84115,8 +84109,7 @@
             "tests": [
               "crates/termrock/src/widgets/skeleton.rs#tiny_size_safe",
               "crates/termrock/src/widgets/skeleton.rs#capability_tiny_stories_contract",
-              "crates/termrock/src/widgets/skeleton.rs#legacy_new_paints_staggered_lines",
-              "crates/termrock/src/widgets/skeleton.rs#ascii_fill"
+              "crates/termrock/src/widgets/skeleton.rs#legacy_new_paints_staggered_lines"
             ],
             "recordings": [],
             "benches": [],
@@ -84218,8 +84211,7 @@
             "tests": [
               "crates/termrock/src/widgets/skeleton.rs#tiny_size_safe",
               "crates/termrock/src/widgets/skeleton.rs#capability_tiny_stories_contract",
-              "crates/termrock/src/widgets/skeleton.rs#legacy_new_paints_staggered_lines",
-              "crates/termrock/src/widgets/skeleton.rs#ascii_fill"
+              "crates/termrock/src/widgets/skeleton.rs#legacy_new_paints_staggered_lines"
             ],
             "recordings": [],
             "benches": [],
@@ -86282,8 +86274,8 @@
               "spinner/labeled"
             ],
             "tests": [
-              "crates/termrock/src/widgets/spinner.rs#every_phase_declares_its_channel_and_cadence",
-              "crates/termrock/src/widgets/spinner.rs#dot_pulse_uses_raster_safe_frames_and_motion_off_is_static",
+              "crates/termrock/src/widgets/spinner.rs#every_phase_uses_the_one_cadence",
+              "crates/termrock/src/widgets/spinner.rs#spinner_motion_off_static",
               "crates/termrock/src/widgets/spinner.rs#fuzz_phases_ticks"
             ],
             "recordings": [],
@@ -86305,8 +86297,8 @@
               "spinner/phases"
             ],
             "tests": [
-              "crates/termrock/src/widgets/spinner.rs#every_phase_declares_its_channel_and_cadence",
-              "crates/termrock/src/widgets/spinner.rs#dot_pulse_uses_raster_safe_frames_and_motion_off_is_static",
+              "crates/termrock/src/widgets/spinner.rs#every_phase_uses_the_one_cadence",
+              "crates/termrock/src/widgets/spinner.rs#spinner_motion_off_static",
               "crates/termrock/src/widgets/spinner.rs#fuzz_phases_ticks"
             ],
             "recordings": [],
@@ -86328,8 +86320,8 @@
               "spinner/labeled"
             ],
             "tests": [
-              "crates/termrock/src/widgets/spinner.rs#every_phase_declares_its_channel_and_cadence",
-              "crates/termrock/src/widgets/spinner.rs#dot_pulse_uses_raster_safe_frames_and_motion_off_is_static",
+              "crates/termrock/src/widgets/spinner.rs#every_phase_uses_the_one_cadence",
+              "crates/termrock/src/widgets/spinner.rs#spinner_motion_off_static",
               "crates/termrock/src/widgets/spinner.rs#fuzz_phases_ticks"
             ],
             "recordings": [],
@@ -86596,8 +86588,8 @@
               "spinner/labeled"
             ],
             "tests": [
-              "crates/termrock/src/widgets/spinner.rs#every_phase_declares_its_channel_and_cadence",
-              "crates/termrock/src/widgets/spinner.rs#dot_pulse_uses_raster_safe_frames_and_motion_off_is_static",
+              "crates/termrock/src/widgets/spinner.rs#every_phase_uses_the_one_cadence",
+              "crates/termrock/src/widgets/spinner.rs#spinner_motion_off_static",
               "crates/termrock/src/widgets/spinner.rs#fuzz_phases_ticks"
             ],
             "recordings": [],
@@ -88480,7 +88472,7 @@
               "status-indicator/catalog"
             ],
             "tests": [
-              "crates/termrock/src/widgets/status_indicator.rs#labeled_ascii_status_keeps_rail_glyph_and_verb"
+              "crates/termrock/src/widgets/status_indicator.rs#glyph_comes_from_the_one_vocabulary"
             ],
             "recordings": [],
             "benches": [],
@@ -88707,7 +88699,7 @@
               "status-strip/basic"
             ],
             "tests": [
-              "crates/termrock/src/widgets/status_strip.rs#semantic_segments_supply_a_non_color_glyph"
+              "crates/termrock/src/widgets/status_strip.rs#colorless_strips_paint_no_hue_at_all"
             ],
             "recordings": [],
             "benches": [],
@@ -88728,7 +88720,7 @@
               "status-strip/basic"
             ],
             "tests": [
-              "crates/termrock/src/widgets/status_strip.rs#semantic_segments_supply_a_non_color_glyph"
+              "crates/termrock/src/widgets/status_strip.rs#colorless_strips_paint_no_hue_at_all"
             ],
             "recordings": [],
             "benches": [],
@@ -88749,7 +88741,7 @@
               "status-strip/basic"
             ],
             "tests": [
-              "crates/termrock/src/widgets/status_strip.rs#semantic_segments_supply_a_non_color_glyph"
+              "crates/termrock/src/widgets/status_strip.rs#colorless_strips_paint_no_hue_at_all"
             ],
             "recordings": [],
             "benches": [],
@@ -89014,7 +89006,7 @@
               "status-strip/basic"
             ],
             "tests": [
-              "crates/termrock/src/widgets/status_strip.rs#semantic_segments_supply_a_non_color_glyph"
+              "crates/termrock/src/widgets/status_strip.rs#colorless_strips_paint_no_hue_at_all"
             ],
             "recordings": [],
             "benches": [],
@@ -106691,7 +106683,7 @@
               "viewport/both-axes"
             ],
             "tests": [
-              "crates/termrock/src/widgets/viewport.rs#ascii_profile_uses_ascii_title_ellipsis"
+              "crates/termrock/src/widgets/viewport.rs#content_is_flush_with_the_border_by_default"
             ],
             "recordings": [],
             "benches": [],
@@ -107631,8 +107623,8 @@
               "virtual-list/million"
             ],
             "tests": [
-              "crates/termrock/src/widgets/virtual_list.rs#async_placeholder_and_loading",
-              "crates/termrock/src/scroll/render/tests.rs#ascii_profile_paints_single_cell_ascii_track_and_thumbs"
+              "crates/termrock/src/widgets/virtual_list.rs#empty_safe",
+              "crates/termrock/src/scroll/render/tests.rs#scrollbar_styles_use_canonical_glyphs"
             ],
             "recordings": [],
             "benches": [],

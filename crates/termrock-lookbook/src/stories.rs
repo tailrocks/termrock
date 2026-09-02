@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Product-neutral stories rendered through TermRock's public widget API.
-
 #![allow(unused_imports, unused_mut)] // large story catalog
 use std::num::NonZeroU16;
 
@@ -30,7 +29,7 @@ use termrock::{
     },
     registry::{PatternId, PublicUiId, pattern_inventory},
     scroll::DialogScroll,
-    style::{ColorCapability, Density, DesignSystem, Role, RolePalette},
+    style::{ColorCapability, DesignSystem, Role, RolePalette},
     widgets::{
         Action, ActionBar, ActionBarState, ActionLink, ActionVariant, ActivityIndicator,
         ActivityPhase, Alert, AlertConfirmGates, AlertDialog, AlertDialogState, AlertKind,
@@ -921,7 +920,7 @@ pub fn stories() -> Vec<Story> {
             "design-system/presets",
             "DesignSystem presets",
             StoryIdentity::PublicUi(PublicUiId::DesignInspector),
-            "Phosphor · Slate · Paper · ANSI · High Contrast ladder.",
+            "Color-capability ladder: truecolor · 256 · 16 · mono.",
             72,
             18,
             design_system_presets_story,
@@ -930,7 +929,7 @@ pub fn stories() -> Vec<Story> {
             "design-system/no-color",
             "DesignSystem no-color",
             StoryIdentity::PublicUi(PublicUiId::DesignInspector),
-            "Monochrome + ASCII glyphs; roles still carry meaning.",
+            "No-color system: monochrome paint, roles still carry meaning.",
             48,
             8,
             design_system_no_color_story,
@@ -1497,7 +1496,7 @@ pub fn stories() -> Vec<Story> {
             "collapsible/ascii",
             "Collapsible ascii",
             StoryIdentity::PublicUi(PublicUiId::Collapsible),
-            "ASCII disclosure glyphs (v/>) without Unicode.",
+            "Open and closed disclosure in the one glyph vocabulary.",
             36,
             5,
             collapsible_ascii_story,
@@ -1686,7 +1685,7 @@ pub fn stories() -> Vec<Story> {
             "stepper/ascii",
             "Stepper ASCII",
             StoryIdentity::PublicUi(PublicUiId::Stepper),
-            "ASCII marks + colorless roles.",
+            "Colorless stepper with complete, skipped, and current steps.",
             56,
             2,
             stepper_ascii_story,
@@ -1740,7 +1739,7 @@ pub fn stories() -> Vec<Story> {
             "history-picker/ascii",
             "HistoryPicker ASCII",
             StoryIdentity::PublicUi(PublicUiId::HistoryPicker),
-            "ASCII chrome and colorless paint.",
+            "Colorless history picker over the full entry list.",
             48,
             12,
             history_picker_ascii,
@@ -1785,7 +1784,7 @@ pub fn stories() -> Vec<Story> {
             "keyboard-help/ascii",
             "KeyboardHelp ASCII",
             StoryIdentity::PublicUi(PublicUiId::KeyboardHelp),
-            "ASCII footer + colorless roles.",
+            "Colorless keyboard help sheet.",
             56,
             1,
             keyboard_help_ascii,
@@ -1821,7 +1820,7 @@ pub fn stories() -> Vec<Story> {
             "tooltip/ascii",
             "Tooltip ASCII",
             StoryIdentity::PublicUi(PublicUiId::Tooltip),
-            "ASCII / colorless tooltip paint.",
+            "Rich tooltip in colorless paint with the essential-elsewhere cue.",
             28,
             2,
             tooltip_ascii_story,
@@ -1929,7 +1928,7 @@ pub fn stories() -> Vec<Story> {
             "menu-bar/ascii",
             "MenuBar ASCII",
             StoryIdentity::PublicUi(PublicUiId::MenuBar),
-            "ASCII check/radio/mnemonic glyphs.",
+            "Open View menu: radio and checkbox item marks.",
             64,
             12,
             menu_bar_ascii_story,
@@ -1965,7 +1964,7 @@ pub fn stories() -> Vec<Story> {
             "breadcrumbs/status",
             "Breadcrumbs status",
             StoryIdentity::PublicUi(PublicUiId::Breadcrumbs),
-            "ASCII status marks on segments.",
+            "Warning and error status marks on breadcrumb segments.",
             40,
             1,
             breadcrumbs_status_story,
@@ -2118,7 +2117,7 @@ pub fn stories() -> Vec<Story> {
             "tree/ascii",
             "ASCII tree glyphs",
             StoryIdentity::PublicUi(PublicUiId::Tree),
-            "ASCII disclosure and selection gutter fallbacks.",
+            "Selection gutter chrome with multi-select marks.",
             36,
             6,
             tree_ascii,
@@ -2262,7 +2261,7 @@ pub fn stories() -> Vec<Story> {
             "progress-bar/narrow",
             "Narrow progress",
             StoryIdentity::PublicUi(PublicUiId::ProgressBar),
-            "Percentage elision and custom ASCII frames in fourteen columns.",
+            "Percentage elision and paused suffix in fourteen columns.",
             14,
             2,
             progress_narrow,
@@ -2433,7 +2432,7 @@ pub fn stories() -> Vec<Story> {
             "object-inspector/ascii",
             "Object inspector ASCII",
             StoryIdentity::PublicUi(PublicUiId::ObjectInspector),
-            "ASCII cursor and empty glyphs.",
+            "Colorless inspector rows.",
             40,
             5,
             object_inspector_ascii,
@@ -2532,7 +2531,7 @@ pub fn stories() -> Vec<Story> {
             "log-stream/ascii",
             "Log stream ASCII",
             StoryIdentity::PublicUi(PublicUiId::LogStream),
-            "ASCII level letters and follow chip.",
+            "Compact colorless rows with level letters.",
             40,
             6,
             log_stream_ascii,
@@ -2640,7 +2639,7 @@ pub fn stories() -> Vec<Story> {
             "diff-review/ascii",
             "Diff review ASCII",
             StoryIdentity::PublicUi(PublicUiId::DiffReview),
-            "ASCII decision glyphs and colorless paint.",
+            "Colorless diff review with a rejected hunk decision.",
             72,
             12,
             diff_review_ascii,
@@ -2703,7 +2702,7 @@ pub fn stories() -> Vec<Story> {
             "diagnostic/ascii",
             "Diagnostic ASCII",
             StoryIdentity::PublicUi(PublicUiId::DiagnosticView),
-            "ASCII severity letters and caret rows.",
+            "Severity letters and caret code frame in colorless paint.",
             64,
             12,
             diagnostic_ascii,
@@ -2793,7 +2792,7 @@ pub fn stories() -> Vec<Story> {
             "terminal-output/ascii",
             "TerminalOutput ASCII",
             StoryIdentity::PublicUi(PublicUiId::TerminalOutput),
-            "ASCII status/stream glyphs and plain paint.",
+            "Plain paint mode with colorless chrome.",
             64,
             10,
             terminal_output_ascii,
@@ -2856,7 +2855,7 @@ pub fn stories() -> Vec<Story> {
             "hex-viewer/ascii",
             "HexViewer ASCII",
             StoryIdentity::PublicUi(PublicUiId::HexViewer),
-            "ASCII chrome and colorless selection marks.",
+            "ASCII side column with colorless selection marks.",
             64,
             10,
             hex_viewer_ascii,
@@ -2919,7 +2918,7 @@ pub fn stories() -> Vec<Story> {
             "file-tree/ascii",
             "FileTree ASCII",
             StoryIdentity::PublicUi(PublicUiId::FileTree),
-            "ASCII kind glyphs.",
+            "Directory selection in a titled file tree.",
             36,
             10,
             file_tree_ascii,
@@ -2982,7 +2981,7 @@ pub fn stories() -> Vec<Story> {
             "process-table/ascii",
             "ProcessTable ASCII",
             StoryIdentity::PublicUi(PublicUiId::ProcessTable),
-            "ASCII selection and tree glyphs.",
+            "Tree view mode with a selected process row.",
             64,
             12,
             process_table_ascii,
@@ -3054,7 +3053,7 @@ pub fn stories() -> Vec<Story> {
             "query-editor/ascii",
             "QueryEditor ASCII",
             StoryIdentity::PublicUi(PublicUiId::QueryEditor),
-            "ASCII focus and status glyphs.",
+            "Query editor with a successful run status.",
             64,
             14,
             query_editor_ascii,
@@ -3126,7 +3125,7 @@ pub fn stories() -> Vec<Story> {
             "result-grid/ascii",
             "ResultGrid ASCII",
             StoryIdentity::PublicUi(PublicUiId::ResultGrid),
-            "ASCII null glyphs and safe redaction.",
+            "Safe redaction with a ready query status.",
             72,
             12,
             result_grid_ascii,
@@ -3198,7 +3197,7 @@ pub fn stories() -> Vec<Story> {
             "schema-browser/ascii",
             "SchemaBrowser ASCII",
             StoryIdentity::PublicUi(PublicUiId::SchemaBrowser),
-            "ASCII kind glyphs.",
+            "Selected schema entry in the connection tree.",
             36,
             12,
             schema_browser_ascii,
@@ -3270,7 +3269,7 @@ pub fn stories() -> Vec<Story> {
             "search-results/ascii",
             "SearchResults ASCII",
             StoryIdentity::PublicUi(PublicUiId::SearchResults),
-            "ASCII selection glyphs.",
+            "Grouped results with a ready status.",
             56,
             12,
             search_results_ascii,
@@ -3324,7 +3323,7 @@ pub fn stories() -> Vec<Story> {
             "metrics-dashboard/ascii",
             "MetricsDashboard ASCII",
             StoryIdentity::PublicUi(PublicUiId::MetricsDashboard),
-            "ASCII glyphs and borders.",
+            "Metric tiles and alerts in a titled panel.",
             72,
             16,
             metrics_dashboard_ascii,
@@ -3387,7 +3386,7 @@ pub fn stories() -> Vec<Story> {
             "trace-waterfall/ascii",
             "TraceWaterfall ASCII",
             StoryIdentity::PublicUi(PublicUiId::TraceWaterfall),
-            "ASCII bars and markers.",
+            "Trace spans with a selected root span.",
             72,
             12,
             trace_waterfall_ascii,
@@ -3396,7 +3395,7 @@ pub fn stories() -> Vec<Story> {
             "dependency-graph/basic",
             "DependencyGraph basic",
             StoryIdentity::PublicUi(PublicUiId::DependencyGraph),
-            "Layered package/service deps with ASCII connectors.",
+            "Layered package/service deps with box-drawing connectors.",
             72,
             16,
             dependency_graph_basic,
@@ -3441,7 +3440,7 @@ pub fn stories() -> Vec<Story> {
             "dependency-graph/ascii",
             "DependencyGraph ASCII",
             StoryIdentity::PublicUi(PublicUiId::DependencyGraph),
-            "ASCII connectors and glyphs.",
+            "Dependency graph in a titled panel.",
             64,
             14,
             dependency_graph_ascii,
@@ -3783,7 +3782,7 @@ pub fn stories() -> Vec<Story> {
             "status-indicator/ascii",
             "StatusIndicator ASCII",
             StoryIdentity::PublicUi(PublicUiId::StatusIndicator),
-            "ASCII capability profile glyphs (no Unicode dots).",
+            "Online, running, failed, and unknown status indicators.",
             36,
             4,
             status_indicator_ascii_story,
@@ -3943,9 +3942,9 @@ pub fn stories() -> Vec<Story> {
         ),
         Story::new(
             "capability/ascii-glyphs",
-            "Capability ASCII glyphs",
+            "Capability glyph fallback",
             StoryIdentity::PublicUi(PublicUiId::List),
-            "ASCII glyph set for disclosure/selection without Unicode.",
+            "List rows with selection, badge, and loading in the one vocabulary.",
             40,
             8,
             capability_ascii_glyphs_story,
@@ -3972,7 +3971,7 @@ pub fn stories() -> Vec<Story> {
             "motion/presence-spinner",
             "FrameClock presence + spinner",
             StoryIdentity::PublicUi(PublicUiId::ActivityIndicator),
-            "Full vs Off dot pulse with edge-faded presence copy.",
+            "Full vs Off presence: one 80 ms braille cadence vs a settled static mark.",
             48,
             10,
             motion_presence_story,
@@ -3999,7 +3998,7 @@ pub fn stories() -> Vec<Story> {
             "motion/presence",
             "MotionPolicy presence kit",
             StoryIdentity::PublicUi(PublicUiId::Spinner),
-            "Deterministic pulse, wave rail, edge fade, and dot-pulse tier.",
+            "MotionPolicy Full vs Off spinner, accent rail, and presence copy.",
             48,
             8,
             motion_presence_story,
@@ -4017,7 +4016,7 @@ pub fn stories() -> Vec<Story> {
             "spinner/ascii",
             "Spinner ASCII",
             StoryIdentity::PublicUi(PublicUiId::Spinner),
-            "ASCII |/-\\ frames with MotionPolicy::Off static glyph.",
+            "Labeled spinner on the single braille cadence.",
             24,
             2,
             spinner_ascii_story,
@@ -4422,7 +4421,7 @@ pub fn stories() -> Vec<Story> {
             "list/ascii",
             "ASCII list glyphs",
             StoryIdentity::PublicUi(PublicUiId::List),
-            "ASCII gutter and check fallbacks under GlyphSet::Ascii.",
+            "Gutter selection chrome with a multi-select mark.",
             36,
             5,
             list_ascii,
@@ -4773,7 +4772,7 @@ pub fn stories() -> Vec<Story> {
             "skeleton/ascii",
             "Skeleton ASCII",
             StoryIdentity::PublicUi(PublicUiId::Skeleton),
-            "ASCII # fill for no-Unicode terminals.",
+            "Row placeholders in the one skeleton fill glyph.",
             24,
             4,
             skeleton_ascii_story,
@@ -4809,7 +4808,7 @@ pub fn stories() -> Vec<Story> {
             "jump-overlay/ascii",
             "JumpOverlay ASCII",
             StoryIdentity::PublicUi(PublicUiId::JumpOverlay),
-            "ASCII badges + colorless paint.",
+            "Colorless jump badges.",
             40,
             8,
             jump_overlay_ascii,
@@ -4890,7 +4889,7 @@ pub fn stories() -> Vec<Story> {
             "command-palette/ascii",
             "Command palette ASCII",
             StoryIdentity::PublicUi(PublicUiId::CommandPalette),
-            "ASCII empty cue and normal surface chrome.",
+            "Empty command list cue in a colorless palette.",
             40,
             8,
             command_palette_ascii,
@@ -4953,7 +4952,7 @@ pub fn stories() -> Vec<Story> {
             "quick-open/ascii",
             "QuickOpen ASCII",
             StoryIdentity::PublicUi(PublicUiId::QuickOpen),
-            "ASCII glyphs and colorless roles.",
+            "Colorless quick-open file results.",
             56,
             14,
             quick_open_ascii,
@@ -5061,7 +5060,7 @@ pub fn stories() -> Vec<Story> {
             "chart/nocolor",
             "Chart no-color",
             StoryIdentity::PublicUi(PublicUiId::Chart),
-            "ASCII markers without color dependence.",
+            "No-color chart: series separated without hue.",
             40,
             8,
             chart_nocolor,
@@ -5196,7 +5195,7 @@ pub fn stories() -> Vec<Story> {
             "transcript/ascii-colorless",
             "Transcript ASCII colorless",
             StoryIdentity::PublicUi(PublicUiId::Transcript),
-            "ASCII prefixes and colorless kind roles.",
+            "Colorless transcript with user and thinking blocks.",
             48,
             8,
             transcript_ascii_colorless,
@@ -6285,7 +6284,7 @@ pub fn stories() -> Vec<Story> {
             "message-thread/ascii",
             "MessageThread ascii",
             StoryIdentity::PublicUi(PublicUiId::MessageThread),
-            "ASCII/colorless prefixes.",
+            "Colorless message thread with focused state.",
             48,
             12,
             message_thread_ascii_story,
@@ -6420,7 +6419,7 @@ pub fn stories() -> Vec<Story> {
             "tool-call-card/narrow",
             "ToolCallCard narrow",
             StoryIdentity::PublicUi(PublicUiId::ToolCallCard),
-            "Narrow ASCII tool card.",
+            "Compact tool call card presentation.",
             28,
             6,
             tool_call_card_narrow_story,
@@ -6465,7 +6464,7 @@ pub fn stories() -> Vec<Story> {
             "terminal-run-card/narrow",
             "TerminalRunCard narrow",
             StoryIdentity::PublicUi(PublicUiId::TerminalRunCard),
-            "Narrow ASCII terminal run card.",
+            "Compact terminal run card presentation.",
             28,
             10,
             terminal_run_card_narrow_story,
@@ -6861,7 +6860,7 @@ pub fn stories() -> Vec<Story> {
             "icon/ascii",
             "Icon ASCII fallback",
             StoryIdentity::PublicUi(PublicUiId::Icon),
-            "Same semantic names under GlyphSet::Ascii.",
+            "Sample icons with cell glyph, semantic id, and meaning.",
             48,
             10,
             icon_ascii_story,
@@ -6870,7 +6869,7 @@ pub fn stories() -> Vec<Story> {
             "icon/enhanced",
             "Icon enhanced",
             StoryIdentity::PublicUi(PublicUiId::Icon),
-            "Enhanced profile (richer file/status cells).",
+            "Labeled icons: disclosure, file, search, and warning.",
             48,
             6,
             icon_enhanced_story,
@@ -7005,7 +7004,7 @@ pub fn stories() -> Vec<Story> {
             "accent-rail/actors",
             "Accent rail actors",
             StoryIdentity::PublicUi(PublicUiId::AccentRail),
-            "Static, active-wave, tool, and collapsed semantic rails.",
+            "Semantic rails per actor: user, assistant, tool, collapsed.",
             52,
             12,
             accent_rail_actors_story,
@@ -7545,7 +7544,7 @@ pub fn stories() -> Vec<Story> {
             "agent-workbench/ascii",
             "Agent workbench ASCII",
             StoryIdentity::Pattern(PatternId::AgentWorkbench),
-            "ASCII glyph preference on elevated surfaces.",
+            "Agent workbench on the default glyph vocabulary.",
             100,
             28,
             agent_workbench_ascii,
@@ -11040,14 +11039,22 @@ fn ui_context_nested_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
 
 fn design_system_presets_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::layout::{FlexSize, Stack};
-    use termrock::style::{DesignSystem, Role};
+    use termrock::style::{ColorCapability, DesignSystem, Role};
     use termrock::widgets::Panel;
     let presets = [
-        ("phosphor", DesignSystem::phosphor()),
-        ("slate", DesignSystem::slate()),
-        ("paper", DesignSystem::paper()),
-        ("ansi", DesignSystem::ansi()),
-        ("hi-con", DesignSystem::high_contrast()),
+        ("truecolor", DesignSystem::junie()),
+        (
+            "256",
+            DesignSystem::junie().quantize(ColorCapability::Indexed256),
+        ),
+        (
+            "16",
+            DesignSystem::junie().quantize(ColorCapability::Ansi16),
+        ),
+        (
+            "mono",
+            DesignSystem::junie().quantize(ColorCapability::Monochrome),
+        ),
     ];
     let sizes: Vec<FlexSize> = presets.iter().map(|_| FlexSize::Weight(1)).collect();
     let layout = Stack::new().gap(0).layout(area, &sizes);
@@ -11073,11 +11080,15 @@ fn design_system_presets_story(frame: &mut Frame<'_>, area: Rect, system: &Desig
 fn design_system_no_color_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::style::{ButtonRecipeVariant, ControlState, DesignSystem, Role};
     use termrock::widgets::Panel;
-    let ds = DesignSystem::phosphor().no_color();
+    let ds = DesignSystem::junie().no_color();
     let body = Panel::new(&ds)
         .title("no-color")
         .paint(area, frame.buffer_mut(), None);
-    let recipe = ds.button_recipe(ButtonRecipeVariant::Primary, ControlState::Focused);
+    let recipe = ds.button_recipe(
+        ButtonRecipeVariant::Primary,
+        ControlState::Focused,
+        ds.junie_theme().surface,
+    );
     if body.width > 2 {
         frame.buffer_mut().set_stringn(
             body.x,
@@ -11091,7 +11102,7 @@ fn design_system_no_color_story(frame: &mut Frame<'_>, area: Rect, system: &Desi
         frame.buffer_mut().set_stringn(
             body.x,
             body.y.saturating_add(1),
-            "glyphs: ascii",
+            "no color: weight only",
             usize::from(body.width),
             ds.style(Role::TextMuted),
         );
@@ -11125,7 +11136,7 @@ fn design_system_button_recipes_story(frame: &mut Frame<'_>, area: Rect, system:
         if let Some(r) = layout.get(row) {
             let mut x = r.x;
             for &variant in &variants {
-                let recipe = system.button_recipe(variant, state);
+                let recipe = system.button_recipe(variant, state, system.junie_theme().surface);
                 let label = match variant {
                     ButtonRecipeVariant::Primary => "prim",
                     ButtonRecipeVariant::Secondary => "sec",
@@ -12136,7 +12147,6 @@ fn progress_steps_interactive_story(frame: &mut Frame<'_>, area: Rect, system: &
 }
 
 fn progress_narrow(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    const ASCII_FRAMES: [&str; 4] = ["|", "/", "-", "\\"];
     let [bar, spinner] =
         Layout::vertical([Constraint::Length(1), Constraint::Length(1)]).areas(area);
     frame.render_widget(
@@ -12144,9 +12154,7 @@ fn progress_narrow(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
         bar,
     );
     frame.render_widget(
-        ProgressBar::new(ProgressKind::Indeterminate { tick: 3 }, system)
-            .frames(&ASCII_FRAMES)
-            .label("Waiting"),
+        ProgressBar::new(ProgressKind::Indeterminate { tick: 3 }, system).label("Waiting"),
         spinner,
     );
 }
@@ -12351,21 +12359,19 @@ fn collapsible_disabled_story(frame: &mut Frame<'_>, area: Rect, system: &Design
 
 fn collapsible_ascii_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use ratatui::widgets::Widget as _;
-    use termrock::style::GlyphSet;
     use termrock::widgets::{Collapsible, CollapsibleState};
-    let ascii = system.clone().glyphs(GlyphSet::Ascii);
     let chunks = Layout::vertical([Constraint::Length(3), Constraint::Length(2)]).split(area);
     let mut open = CollapsibleState::new().initially_open(true);
     let body =
-        Collapsible::new("Open ascii", &ascii).paint(chunks[0], frame.buffer_mut(), &mut open);
+        Collapsible::new("Open ascii", &system).paint(chunks[0], frame.buffer_mut(), &mut open);
     if body.height > 0 {
         Paragraph::new("body")
-            .style(ascii.style(Role::TextMuted))
+            .style(system.style(Role::TextMuted))
             .render(body, frame.buffer_mut());
     }
     let mut closed = CollapsibleState::new();
     let _ =
-        Collapsible::new("Closed ascii", &ascii).paint(chunks[1], frame.buffer_mut(), &mut closed);
+        Collapsible::new("Closed ascii", &system).paint(chunks[1], frame.buffer_mut(), &mut closed);
 }
 
 fn collapsible_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -12821,7 +12827,7 @@ fn resizable_drawers_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
 }
 
 fn tree_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(termrock::style::Density::default());
+    let tokens = system.clone();
     let nodes: [TreeNode<'_, &str>; 0] = [];
     let mut state = TreeState::<&str>::default();
     frame.render_stateful_widget(
@@ -12834,7 +12840,6 @@ fn tree_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 fn tree_loading_error(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let tokens = system
         .clone()
-        .density(termrock::style::Density::default())
         .selection(termrock::style::SelectionChrome::Gutter);
     let nodes = [
         TreeNode::new("root", Line::from("Workspace"), 0)
@@ -12856,8 +12861,6 @@ fn tree_loading_error(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
 fn tree_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let tokens = system
         .clone()
-        .density(termrock::style::Density::default())
-        .glyphs(termrock::style::GlyphSet::Ascii)
         .selection(termrock::style::SelectionChrome::Gutter);
     let nodes = tree_nodes();
     let mut state = TreeState::new(Some("workspace"));
@@ -12869,7 +12872,7 @@ fn tree_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn tree_composed(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(termrock::style::Density::default());
+    let tokens = system.clone();
     let nodes = [
         TreeNode::new("pkg", Line::from("termrock"), 0)
             .branch()
@@ -12893,7 +12896,6 @@ fn tree_composed(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 fn tree_tiny(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let tokens = system
         .clone()
-        .density(termrock::style::Density::Compact)
         .selection(termrock::style::SelectionChrome::Gutter);
     let nodes = [
         TreeNode::new("r", Line::from("Root"), 0)
@@ -12910,7 +12912,6 @@ fn tree_tiny(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 fn tree_deep(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let tokens = system
         .clone()
-        .density(termrock::style::Density::Comfortable)
         .selection(termrock::style::SelectionChrome::Gutter);
     let nodes = [
         TreeNode::new("d0", Line::from("depth-0"), 0)
@@ -13023,7 +13024,7 @@ fn tree_tone_scroll_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
 }
 
 fn tree(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(termrock::style::Density::default());
+    let tokens = system.clone();
     let nodes = tree_nodes();
     let mut state = TreeState::new(Some("workspace"));
     state.enable_multi_select();
@@ -13036,7 +13037,6 @@ fn sidebar_database_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
     let mut state = SidebarState::new(Some("users"));
     state.set_focused(true);
     Sidebar::new(&items, system)
-        .ascii(true)
         .show_panel(true)
         .title("Database")
         .paint(area, frame.buffer_mut(), &mut state);
@@ -13047,7 +13047,6 @@ fn sidebar_agent_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
     let mut state = SidebarState::new(Some("plan"));
     state.set_focused(true);
     Sidebar::new(&items, system)
-        .ascii(true)
         .show_panel(true)
         .title("Workbench")
         .paint(area, frame.buffer_mut(), &mut state);
@@ -13057,34 +13056,26 @@ fn sidebar_rail_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
     let items = example_agent_workbench_nav();
     let mut state = SidebarState::new(Some("chat")).with_presentation(SidebarPresentation::Rail);
     state.set_focused(true);
-    Sidebar::new(&items, system)
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut state);
+    Sidebar::new(&items, system).paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn pagination_unknown_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut state = PaginationState::new(2, 50, PageTotal::Unknown);
     state.set_focused(true);
-    Pagination::new(system)
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut state);
+    Pagination::new(system).paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn pagination_loading_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut state = PaginationState::new(4, 10, PageTotal::AtLeast(100));
     state.set_focused(true);
     state.set_loading(true);
-    Pagination::new(system)
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut state);
+    Pagination::new(system).paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn pagination_minimal_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut state = PaginationState::new(1, 25, PageTotal::Known(500));
     state.set_focused(true);
-    Pagination::new(system)
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut state);
+    Pagination::new(system).paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn pagination_jump_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -13102,9 +13093,7 @@ fn pagination_jump_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
         termrock::input::KeyCode::Char('2'),
         termrock::input::KeyModifiers::NONE,
     ));
-    Pagination::new(system)
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut state);
+    Pagination::new(system).paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn stepper_vertical_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -13126,9 +13115,7 @@ fn stepper_error_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
     state.set_status(0, StepStatus::Complete);
     state.set_status(1, StepStatus::Error);
     state.set_current(1, items.len(), true);
-    Stepper::new(&items, system)
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut state);
+    Stepper::new(&items, system).paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn stepper_numeric_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -13137,9 +13124,7 @@ fn stepper_numeric_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
     state.set_focused(true);
     state.set_current(2, items.len(), false);
     state.set_presentation_override(Some(StepperPresentation::Numeric));
-    Stepper::new(&items, system)
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut state);
+    Stepper::new(&items, system).paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn stepper_menu_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -13155,9 +13140,7 @@ fn stepper_menu_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
         ),
         &items,
     );
-    Stepper::new(&items, system)
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut state);
+    Stepper::new(&items, system).paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn stepper_ascii_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -13168,7 +13151,6 @@ fn stepper_ascii_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
     state.set_status(1, StepStatus::Skipped);
     state.set_current(2, items.len(), true);
     Stepper::new(&items, system)
-        .ascii(true)
         .colorless(true)
         .paint(area, frame.buffer_mut(), &mut state);
 }
@@ -13190,9 +13172,7 @@ fn history_picker_redacted(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
     let _ = state.open(None);
     state.set_redaction(history_redaction_secret());
     state.reconcile(&visible);
-    HistoryPicker::new(&visible, system)
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut state);
+    HistoryPicker::new(&visible, system).paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn history_picker_draft(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -13216,10 +13196,11 @@ fn history_picker_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
     let mut state = HistoryPickerState::new();
     let _ = state.open(None);
     state.reconcile(&visible);
-    HistoryPicker::new(&visible, system)
-        .ascii(true)
-        .colorless(true)
-        .paint(area, frame.buffer_mut(), &mut state);
+    HistoryPicker::new(&visible, system).colorless(true).paint(
+        area,
+        frame.buffer_mut(),
+        &mut state,
+    );
 }
 
 fn keyboard_help_modal(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -13241,16 +13222,13 @@ fn keyboard_help_tiny(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
     let entries = example_help_entries(system);
     let mut state = KeyboardHelpState::new();
     state.set_presentation_override(Some(termrock::widgets::KeyboardHelpPresentation::Tiny));
-    KeyboardHelp::new(&entries, system)
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut state);
+    KeyboardHelp::new(&entries, system).paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn keyboard_help_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let entries = example_help_entries(system);
     let mut state = KeyboardHelpState::new();
     KeyboardHelp::new(&entries, system)
-        .ascii(true)
         .colorless(true)
         .paint(area, frame.buffer_mut(), &mut state);
 }
@@ -13310,7 +13288,6 @@ fn tooltip_ascii_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
         system,
     )
     .rich()
-    .ascii(true)
     .colorless(true)
     .paint(area, frame.buffer_mut(), &state);
 }
@@ -13369,9 +13346,7 @@ fn menu_bar_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
     state.set_focused(true);
     state.set_presentation_override(Some(termrock::widgets::MenuBarPresentation::CommandPalette));
     let bar = Rect::new(area.x, area.y, area.width, 1.min(area.height));
-    MenuBar::new(&menus, system)
-        .ascii(true)
-        .paint(bar, frame.buffer_mut(), &mut state);
+    MenuBar::new(&menus, system).paint(bar, frame.buffer_mut(), &mut state);
 }
 
 fn menu_bar_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -13401,9 +13376,7 @@ fn menu_bar_ascii_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
     state.set_focused(true);
     let _ = state.open_menu_at(&menus, 2); // View: radio + checkbox
     let bar = Rect::new(area.x, area.y, area.width, 1.min(area.height));
-    MenuBar::new(&menus, system)
-        .ascii(true)
-        .paint_all(bar, area, frame.buffer_mut(), &mut state);
+    MenuBar::new(&menus, system).paint_all(bar, area, frame.buffer_mut(), &mut state);
 }
 
 fn breadcrumbs_collapsed_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -13417,10 +13390,7 @@ fn breadcrumbs_collapsed_story(frame: &mut Frame<'_>, area: Rect, system: &Desig
     let mut state = BreadcrumbsState::new();
     state.set_focused(true);
     state.set_focus_ellipsis(true);
-    let _ =
-        Breadcrumbs::new(&items, system)
-            .ascii(true)
-            .paint(area, frame.buffer_mut(), &mut state);
+    let _ = Breadcrumbs::new(&items, system).paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn breadcrumbs_editable_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -13431,10 +13401,7 @@ fn breadcrumbs_editable_story(frame: &mut Frame<'_>, area: Rect, system: &Design
     let mut state = BreadcrumbsState::new().with_editable(true);
     state.set_focused(true);
     let _ = state.start_edit(&items);
-    let _ =
-        Breadcrumbs::new(&items, system)
-            .ascii(true)
-            .paint(area, frame.buffer_mut(), &mut state);
+    let _ = Breadcrumbs::new(&items, system).paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn breadcrumbs_status_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -13448,7 +13415,6 @@ fn breadcrumbs_status_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
     let mut state = BreadcrumbsState::new();
     state.set_focused(true);
     let _ = Breadcrumbs::new(&items, system)
-        .ascii(true)
         .separator(BreadcrumbSeparator::Chevron)
         .paint(area, frame.buffer_mut(), &mut state);
 }
@@ -13463,7 +13429,6 @@ fn breadcrumbs_schema_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
     let mut state = BreadcrumbsState::new();
     state.set_focused(true);
     let _ = Breadcrumbs::new(&items, system)
-        .ascii(false)
         .separator(BreadcrumbSeparator::Chevron)
         .paint(area, frame.buffer_mut(), &mut state);
 }
@@ -13474,9 +13439,7 @@ fn tree_navigation_schema_story(frame: &mut Frame<'_>, area: Rect, system: &Desi
     state.set_focused(true);
     state.reconcile_route(&nodes);
     state.focus_route(&nodes);
-    TreeNavigation::new(&nodes, system)
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut state);
+    TreeNavigation::new(&nodes, system).paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn tree_navigation_settings_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -13485,9 +13448,7 @@ fn tree_navigation_settings_story(frame: &mut Frame<'_>, area: Rect, system: &De
     state.set_focused(true);
     state.reconcile_route(&nodes);
     state.focus_route(&nodes);
-    TreeNavigation::new(&nodes, system)
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut state);
+    TreeNavigation::new(&nodes, system).paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn tree_navigation_docs_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -13496,9 +13457,7 @@ fn tree_navigation_docs_story(frame: &mut Frame<'_>, area: Rect, system: &Design
     state.set_focused(true);
     state.reconcile_route(&nodes);
     state.focus_route(&nodes);
-    TreeNavigation::new(&nodes, system)
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut state);
+    TreeNavigation::new(&nodes, system).paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn tree_navigation_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -13506,9 +13465,7 @@ fn tree_navigation_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &Desi
     let mut state = TreeNavigationState::new(Some("lib"));
     state.set_focused(true);
     state.reconcile_route(&nodes);
-    TreeNavigation::new(&nodes, system)
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut state);
+    TreeNavigation::new(&nodes, system).paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn tabs(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -13557,9 +13514,7 @@ fn tabs_overflow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
     ];
     let mut state = TabsState::new().with_selected("a");
     state.set_focused(true);
-    Tabs::new(&items, system)
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut state);
+    Tabs::new(&items, system).paint(area, frame.buffer_mut(), &mut state);
     let _ = state.presentation(); // exercise presentation for story
 }
 
@@ -13573,9 +13528,7 @@ fn tabs_vertical_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
         .with_selected("overview")
         .with_orientation(TabsOrientation::Vertical);
     state.set_focused(true);
-    Tabs::new(&items, system)
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut state);
+    Tabs::new(&items, system).paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn tabs_manual_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -13596,9 +13549,7 @@ fn tabs_manual_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
         ),
         &items,
     );
-    Tabs::new(&items, system)
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut state);
+    Tabs::new(&items, system).paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn tabs_closable_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -13614,7 +13565,6 @@ fn tabs_closable_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
     let mut state = TabsState::new().with_selected("main");
     state.set_focused(true);
     Tabs::new(&items, system)
-        .ascii(true)
         .show_close(true)
         .paint(area, frame.buffer_mut(), &mut state);
     let _ = TabsPresentation::Expanded;
@@ -13693,7 +13643,7 @@ fn hint_bar(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn list(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(termrock::style::Density::default());
+    let tokens = system.clone();
     let rows = list_rows();
     let mut state = ListState::new(Some("beta"));
     state.enable_multi_select();
@@ -13704,7 +13654,6 @@ fn list(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 fn list_multi(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let tokens = system
         .clone()
-        .density(termrock::style::Density::default())
         .selection(termrock::style::SelectionChrome::Gutter);
     let rows = list_rows();
     let mut state = ListState::new(Some("beta"));
@@ -13715,7 +13664,7 @@ fn list_multi(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn list_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(termrock::style::Density::default());
+    let tokens = system.clone();
     let rows: [ListRow<'_, &str>; 0] = [];
     let mut state = ListState::<&str>::default();
     let list = List::new(&rows, &tokens).empty_message(Line::from("No matching items"));
@@ -13723,7 +13672,7 @@ fn list_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn list_loading(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(termrock::style::Density::default());
+    let tokens = system.clone();
     let rows = [
         ListRow::item("ready", Line::from("Ready job")).badge(Line::from("ok")),
         ListRow::item("busy", Line::from("Fetching metrics")).loading(),
@@ -13736,7 +13685,7 @@ fn list_loading(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn list_disabled(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(termrock::style::Density::default());
+    let tokens = system.clone();
     let rows = [
         ListRow::item("live", Line::from("Live service")),
         ListRow::item("off", Line::from("Suspended")).disabled(),
@@ -13749,8 +13698,6 @@ fn list_disabled(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 fn list_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let tokens = system
         .clone()
-        .density(termrock::style::Density::default())
-        .glyphs(termrock::style::GlyphSet::Ascii)
         .selection(termrock::style::SelectionChrome::Gutter);
     let rows = list_rows();
     let mut state = ListState::new(Some("beta"));
@@ -13760,7 +13707,7 @@ fn list_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn list_composed(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(termrock::style::Density::default());
+    let tokens = system.clone();
     let rows = [
         ListRow::item("build", Line::from("Build"))
             .leading(Line::from("*"))
@@ -13781,7 +13728,7 @@ fn list_composed(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn list_tiny(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(termrock::style::Density::Compact);
+    let tokens = system.clone();
     let rows = [
         ListRow::item("id", Line::from("Identity"))
             .badge(Line::from("99"))
@@ -13803,7 +13750,7 @@ fn list_comfortable_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
             .status(Line::from("wait")),
     ];
     let mut state = ListState::new(Some("a"));
-    frame.render_stateful_widget(&List::new(&rows, system).comfortable(), area, &mut state);
+    frame.render_stateful_widget(&List::new(&rows, system), area, &mut state);
 }
 
 fn list_groups_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -13839,7 +13786,7 @@ fn list_search_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn list_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(termrock::style::Density::default());
+    let tokens = system.clone();
     let rows = [
         ListRow {
             id: "cjk",
@@ -13950,13 +13897,13 @@ pub(crate) fn list_rows() -> [ListRow<'static, &'static str>; 4] {
 }
 
 fn picker_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(termrock::style::Density::default());
+    let tokens = system.clone();
     let mut state = PickerState::<&str>::new(None);
     frame.render_stateful_widget(&Picker::new(&[], &tokens), area, &mut state);
 }
 
 fn picker_narrow_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(termrock::style::Density::default());
+    let tokens = system.clone();
     let rows = [
         ListRow {
             id: "tokyo",
@@ -14021,7 +13968,7 @@ pub(crate) fn picker_rows(query: &str) -> Vec<ListRow<'static, &'static str>> {
 }
 
 fn detail_table(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let _tokens = system.clone().density(termrock::style::Density::default());
+    let _tokens = system.clone();
     let rows = [
         DetailRow {
             id: "state",
@@ -14092,7 +14039,7 @@ fn detail_table(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn detail_table_unicode(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let _tokens = system.clone().density(termrock::style::Density::default());
+    let _tokens = system.clone();
     let rows = [
         DetailRow {
             id: "region",
@@ -14184,7 +14131,6 @@ fn object_inspector_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
     ];
     let mut state = ObjectInspectorState::new();
     ObjectInspector::new(&fields, system)
-        .ascii(true)
         .colorless(true)
         .render(area, frame.buffer_mut(), &mut state);
 }
@@ -14388,7 +14334,6 @@ fn log_stream_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     state.recipe = termrock::widgets::LogLineRecipe::Compact;
     state.on_append(lines.len() as u16, area.height.saturating_sub(1));
     LogStream::new(&lines, system)
-        .ascii(true)
         .colorless(true)
         .render(area, frame.buffer_mut(), &mut state);
 }
@@ -14644,7 +14589,6 @@ fn diff_review_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     DiffReview::new(&lines, system)
         .hunks(&hunks)
         .files(&files)
-        .ascii(true)
         .colorless(true)
         .render(area, frame.buffer_mut(), &mut state);
 }
@@ -14753,7 +14697,6 @@ fn diagnostic_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     DiagnosticView::new(&items, system)
         .recipe(DiagnosticRecipe::Full)
         .source_lines(&lines)
-        .ascii(true)
         .colorless(true)
         .render(area, frame.buffer_mut(), &mut state);
 }
@@ -14921,7 +14864,6 @@ fn terminal_output_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
     let mut state = TerminalOutputState::new();
     state.paint_mode = TerminalPaintMode::Plain;
     TerminalOutput::new(&meta, &lines, system)
-        .ascii(true)
         .colorless(true)
         .render(area, frame.buffer_mut(), &mut state);
 }
@@ -14999,7 +14941,6 @@ fn hex_viewer_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     state.sel_end = Some(5);
     state.ascii_mode = HexAsciiMode::Ascii;
     HexViewer::new(win, system)
-        .ascii(true)
         .colorless(true)
         .render(area, frame.buffer_mut(), &mut state);
 }
@@ -15081,7 +15022,6 @@ fn file_tree_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 fn file_tree_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let entries = file_tree_sample();
     let mut state = FileTreeState::with_selected(Some("src"));
-    state.ascii = true;
     FileTree::new(&entries, system)
         .title("ascii")
         .render(area, frame.buffer_mut(), &mut state);
@@ -15147,27 +15087,32 @@ fn process_table_sample() -> Vec<ProcessRow<'static>> {
 fn process_table_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let rows = process_table_sample();
     let mut state = ProcessTableState::with_selected(Some(ProcessKey::new(1902, 500)));
-    ProcessTable::new(&rows, system)
-        .title("procs")
-        .render(area, frame.buffer_mut(), &mut state);
+    let _ = ProcessTable::new(&rows, system).title("procs").render(
+        area,
+        frame.buffer_mut(),
+        &mut state,
+    );
 }
 
 fn process_table_tree(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let rows = process_table_sample();
     let mut state = ProcessTableState::with_selected(Some(ProcessKey::new(1888, 400)));
     state.view_mode = ProcessViewMode::Tree;
-    ProcessTable::new(&rows, system)
-        .title("tree")
-        .render(area, frame.buffer_mut(), &mut state);
+    let _ =
+        ProcessTable::new(&rows, system)
+            .title("tree")
+            .render(area, frame.buffer_mut(), &mut state);
 }
 
 fn process_table_filter(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let rows = process_table_sample();
     let mut state = ProcessTableState::new();
     state.filter = Some("cargo".into());
-    ProcessTable::new(&rows, system)
-        .title("filter")
-        .render(area, frame.buffer_mut(), &mut state);
+    let _ = ProcessTable::new(&rows, system).title("filter").render(
+        area,
+        frame.buffer_mut(),
+        &mut state,
+    );
 }
 
 fn process_table_confirm(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -15178,27 +15123,30 @@ fn process_table_confirm(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
         subject: "rustc (1902)".into(),
         targets: vec![ProcessKey::new(1902, 500)],
     });
-    ProcessTable::new(&rows, system)
-        .title("signal")
-        .render(area, frame.buffer_mut(), &mut state);
+    let _ = ProcessTable::new(&rows, system).title("signal").render(
+        area,
+        frame.buffer_mut(),
+        &mut state,
+    );
 }
 
 fn process_table_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut state = ProcessTableState::new();
-    ProcessTable::new(&[], system)
-        .title("empty")
-        .render(area, frame.buffer_mut(), &mut state);
+    let _ =
+        ProcessTable::new(&[], system)
+            .title("empty")
+            .render(area, frame.buffer_mut(), &mut state);
 }
 
 fn process_table_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let rows = process_table_sample();
     let mut state = ProcessTableState::with_selected(Some(ProcessKey::new(1888, 400)));
     state.view_mode = ProcessViewMode::Tree;
-    state.ascii = true;
-    ProcessTable::new(&rows, system)
-        .title("ascii")
-        .ascii(true)
-        .render(area, frame.buffer_mut(), &mut state);
+    let _ = ProcessTable::new(&rows, system).title("ascii").render(
+        area,
+        frame.buffer_mut(),
+        &mut state,
+    );
 }
 
 fn query_editor_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -15212,7 +15160,7 @@ fn query_editor_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
             .columns(2),
     );
     state.set_parameters(vec![QueryParameter::new("limit", "20").type_hint("int")]);
-    QueryEditor::new(system)
+    let _ = QueryEditor::new(system)
         .title("sql")
         .render(area, frame.buffer_mut(), &mut state);
 }
@@ -15222,7 +15170,7 @@ fn query_editor_running(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
     state.set_run(QueryRunStatus::Running {
         run_id: "run-42".into(),
     });
-    QueryEditor::new(system)
+    let _ = QueryEditor::new(system)
         .title("running")
         .render(area, frame.buffer_mut(), &mut state);
 }
@@ -15245,7 +15193,7 @@ fn query_editor_diagnostics(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
     ];
     let mut state = QueryEditorState::with_text("select\nfrom t");
     let _ = state.set_focus(QueryFocus::Diagnostics);
-    QueryEditor::new(system)
+    let _ = QueryEditor::new(system)
         .title("diag")
         .diagnostics(&diags)
         .render(area, frame.buffer_mut(), &mut state);
@@ -15258,7 +15206,7 @@ fn query_editor_parameters(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
         QueryParameter::new("token", "s3cr3t").secret(),
     ]);
     let _ = state.set_focus(QueryFocus::Parameters);
-    QueryEditor::new(system)
+    let _ = QueryEditor::new(system)
         .title("params")
         .render(area, frame.buffer_mut(), &mut state);
 }
@@ -15266,30 +15214,27 @@ fn query_editor_parameters(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
 fn query_editor_compact(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut state = QueryEditorState::with_text("select 1");
     state.mode = QueryEditorMode::Compact;
-    QueryEditor::new(system)
+    let _ = QueryEditor::new(system)
         .title("compact")
         .render(area, frame.buffer_mut(), &mut state);
 }
 
 fn query_editor_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut state = QueryEditorState::new();
-    QueryEditor::new(system)
+    let _ = QueryEditor::new(system)
         .title("empty")
         .render(area, frame.buffer_mut(), &mut state);
 }
 
 fn query_editor_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut state = QueryEditorState::with_text("select 1");
-    state.ascii = true;
     state.set_run(QueryRunStatus::Success {
         rows: Some(1),
         duration_ms: Some(3),
     });
-    QueryEditor::new(system).title("ascii").ascii(true).render(
-        area,
-        frame.buffer_mut(),
-        &mut state,
-    );
+    let _ = QueryEditor::new(system)
+        .title("ascii")
+        .render(area, frame.buffer_mut(), &mut state);
 }
 
 fn result_grid_schema() -> Vec<ResultColumn> {
@@ -15359,9 +15304,11 @@ fn result_grid_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
         },
         rows.len(),
     );
-    ResultGrid::new(system, &cols, &rows)
-        .title("q1")
-        .render(area, frame.buffer_mut(), &mut state);
+    let _ = ResultGrid::new(system, &cols, &rows).title("q1").render(
+        area,
+        frame.buffer_mut(),
+        &mut state,
+    );
 }
 
 fn result_grid_streaming(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -15375,7 +15322,7 @@ fn result_grid_streaming(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
         },
         rows.len(),
     );
-    ResultGrid::new(system, &cols, &rows)
+    let _ = ResultGrid::new(system, &cols, &rows)
         .title("stream")
         .render(area, frame.buffer_mut(), &mut state);
 }
@@ -15397,7 +15344,7 @@ fn result_grid_stats(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     st.min = Some("1".into());
     st.max = Some("3".into());
     state.stats = vec![st];
-    ResultGrid::new(system, &cols, &rows).title("stats").render(
+    let _ = ResultGrid::new(system, &cols, &rows).title("stats").render(
         area,
         frame.buffer_mut(),
         &mut state,
@@ -15441,7 +15388,7 @@ fn result_grid_wide(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
         },
         1,
     );
-    ResultGrid::new(system, &cols, &rows).title("wide").render(
+    let _ = ResultGrid::new(system, &cols, &rows).title("wide").render(
         area,
         frame.buffer_mut(),
         &mut state,
@@ -15452,9 +15399,11 @@ fn result_grid_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let cols = result_grid_schema();
     let mut state = ResultGridState::with_schema(cols.clone());
     state.set_status(ResultQueryStatus::Idle, 0);
-    ResultGrid::new(system, &cols, &[])
-        .title("empty")
-        .render(area, frame.buffer_mut(), &mut state);
+    let _ = ResultGrid::new(system, &cols, &[]).title("empty").render(
+        area,
+        frame.buffer_mut(),
+        &mut state,
+    );
 }
 
 fn result_grid_error(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -15466,16 +15415,17 @@ fn result_grid_error(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
         },
         0,
     );
-    ResultGrid::new(system, &cols, &[])
-        .title("err")
-        .render(area, frame.buffer_mut(), &mut state);
+    let _ = ResultGrid::new(system, &cols, &[]).title("err").render(
+        area,
+        frame.buffer_mut(),
+        &mut state,
+    );
 }
 
 fn result_grid_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let cols = result_grid_schema();
     let rows = result_grid_rows();
     let mut state = ResultGridState::with_schema(cols.clone());
-    state.ascii = true;
     state.redaction = ResultRedaction::Safe;
     state.set_status(
         ResultQueryStatus::Ready {
@@ -15484,10 +15434,11 @@ fn result_grid_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
         },
         rows.len(),
     );
-    ResultGrid::new(system, &cols, &rows)
-        .title("ascii")
-        .ascii(true)
-        .render(area, frame.buffer_mut(), &mut state);
+    let _ = ResultGrid::new(system, &cols, &rows).title("ascii").render(
+        area,
+        frame.buffer_mut(),
+        &mut state,
+    );
 }
 
 fn schema_browser_sample() -> Vec<SchemaBrowserEntry<'static, &'static str>> {
@@ -15536,7 +15487,7 @@ fn schema_browser_sample() -> Vec<SchemaBrowserEntry<'static, &'static str>> {
 fn schema_browser_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let entries = schema_browser_sample();
     let mut state = SchemaBrowserState::with_selected(Some("users"));
-    SchemaBrowser::new(&entries, system)
+    let _ = SchemaBrowser::new(&entries, system)
         .title("catalog")
         .render(area, frame.buffer_mut(), &mut state);
 }
@@ -15544,16 +15495,18 @@ fn schema_browser_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
 fn schema_browser_lazy(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let entries = schema_browser_sample();
     let mut state = SchemaBrowserState::with_selected(Some("orders"));
-    SchemaBrowser::new(&entries, system)
-        .title("lazy")
-        .render(area, frame.buffer_mut(), &mut state);
+    let _ = SchemaBrowser::new(&entries, system).title("lazy").render(
+        area,
+        frame.buffer_mut(),
+        &mut state,
+    );
 }
 
 fn schema_browser_filter(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let entries = schema_browser_sample();
     let mut state = SchemaBrowserState::new();
     state.filter = Some("email".into());
-    SchemaBrowser::new(&entries, system).title("filter").render(
+    let _ = SchemaBrowser::new(&entries, system).title("filter").render(
         area,
         frame.buffer_mut(),
         &mut state,
@@ -15568,7 +15521,7 @@ fn schema_browser_error(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
             .error_msg("permission denied"),
     );
     let mut state = SchemaBrowserState::with_selected(Some("bad"));
-    SchemaBrowser::new(&entries, system).title("error").render(
+    let _ = SchemaBrowser::new(&entries, system).title("error").render(
         area,
         frame.buffer_mut(),
         &mut state,
@@ -15580,7 +15533,7 @@ fn schema_browser_drawer(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
     let mut state = SchemaBrowserState::with_selected(Some("sch"));
     state.presentation = SchemaBrowserPresentation::Drawer;
     state.presentation_override = Some(SchemaBrowserPresentation::Drawer);
-    SchemaBrowser::new(&entries, system).title("drawer").render(
+    let _ = SchemaBrowser::new(&entries, system).title("drawer").render(
         area,
         frame.buffer_mut(),
         &mut state,
@@ -15589,19 +15542,20 @@ fn schema_browser_drawer(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
 
 fn schema_browser_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut state = SchemaBrowserState::<&str>::new();
-    SchemaBrowser::new(&[], system)
-        .title("empty")
-        .render(area, frame.buffer_mut(), &mut state);
+    let _ =
+        SchemaBrowser::new(&[], system)
+            .title("empty")
+            .render(area, frame.buffer_mut(), &mut state);
 }
 
 fn schema_browser_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let entries = schema_browser_sample();
     let mut state = SchemaBrowserState::with_selected(Some("users"));
-    state.ascii = true;
-    SchemaBrowser::new(&entries, system)
-        .title("ascii")
-        .ascii(true)
-        .render(area, frame.buffer_mut(), &mut state);
+    let _ = SchemaBrowser::new(&entries, system).title("ascii").render(
+        area,
+        frame.buffer_mut(),
+        &mut state,
+    );
 }
 
 fn search_results_sample() -> (Vec<SearchResultGroup>, Vec<SearchResultItem<'static>>) {
@@ -15715,11 +15669,9 @@ fn search_results_streaming(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
 fn search_results_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let (groups, items) = search_results_sample();
     let mut state = SearchResultsState::new();
-    state.ascii = true;
     state.apply_results(1, SearchResultsStatus::Ready { total: Some(4) }, 4);
     SearchResults::new(&groups, &items, system)
         .title("ascii")
-        .ascii(true)
         .render(area, frame.buffer_mut(), &mut state);
 }
 
@@ -15758,7 +15710,7 @@ fn metrics_dashboard_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
     let (tiles, alerts) = metrics_dashboard_tiles();
     let mut state = MetricsDashboardState::new();
     state.focus_tile = 1;
-    MetricsDashboard::new(&tiles, &alerts, system)
+    let _ = MetricsDashboard::new(&tiles, &alerts, system)
         .title("ops")
         .render(area, frame.buffer_mut(), &mut state);
 }
@@ -15771,7 +15723,7 @@ fn metrics_dashboard_partial(frame: &mut Frame<'_>, area: Rect, system: &DesignS
         MetricTile::new("net", "Net", "12MB/s").samples(S),
     ];
     let mut state = MetricsDashboardState::new();
-    MetricsDashboard::new(&tiles, &[], system)
+    let _ = MetricsDashboard::new(&tiles, &[], system)
         .title("partial")
         .render(area, frame.buffer_mut(), &mut state);
 }
@@ -15780,14 +15732,14 @@ fn metrics_dashboard_paused(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
     let (tiles, alerts) = metrics_dashboard_tiles();
     let mut state = MetricsDashboardState::new();
     state.paused = true;
-    MetricsDashboard::new(&tiles, &alerts, system)
+    let _ = MetricsDashboard::new(&tiles, &alerts, system)
         .title("paused")
         .render(area, frame.buffer_mut(), &mut state);
 }
 
 fn metrics_dashboard_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut state = MetricsDashboardState::new();
-    MetricsDashboard::new(&[], &[], system)
+    let _ = MetricsDashboard::new(&[], &[], system)
         .title("empty")
         .render(area, frame.buffer_mut(), &mut state);
 }
@@ -15795,10 +15747,8 @@ fn metrics_dashboard_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
 fn metrics_dashboard_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let (tiles, alerts) = metrics_dashboard_tiles();
     let mut state = MetricsDashboardState::new();
-    state.ascii = true;
-    MetricsDashboard::new(&tiles, &alerts, system)
+    let _ = MetricsDashboard::new(&tiles, &alerts, system)
         .title("ascii")
-        .ascii(true)
         .render(area, frame.buffer_mut(), &mut state);
 }
 
@@ -15844,26 +15794,32 @@ fn trace_waterfall_sample() -> Vec<TraceSpan<'static>> {
 fn trace_waterfall_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let spans = trace_waterfall_sample();
     let mut state = TraceWaterfallState::with_selected("db");
-    TraceWaterfall::new(&spans, system)
-        .title("req")
-        .render(area, frame.buffer_mut(), &mut state);
+    let _ = TraceWaterfall::new(&spans, system).title("req").render(
+        area,
+        frame.buffer_mut(),
+        &mut state,
+    );
 }
 
 fn trace_waterfall_error(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let spans = trace_waterfall_sample();
     let mut state = TraceWaterfallState::with_selected("tool");
-    TraceWaterfall::new(&spans, system)
-        .title("error")
-        .render(area, frame.buffer_mut(), &mut state);
+    let _ = TraceWaterfall::new(&spans, system).title("error").render(
+        area,
+        frame.buffer_mut(),
+        &mut state,
+    );
 }
 
 fn trace_waterfall_critical(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let spans = trace_waterfall_sample();
     let mut state = TraceWaterfallState::new();
     state.critical_only = true;
-    TraceWaterfall::new(&spans, system)
-        .title("crit")
-        .render(area, frame.buffer_mut(), &mut state);
+    let _ = TraceWaterfall::new(&spans, system).title("crit").render(
+        area,
+        frame.buffer_mut(),
+        &mut state,
+    );
 }
 
 fn trace_waterfall_zoomed(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -15872,27 +15828,31 @@ fn trace_waterfall_zoomed(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
     state.sync_total(&spans);
     state.time_start_ms = 40;
     state.time_duration_ms = 200;
-    TraceWaterfall::new(&spans, system)
-        .title("zoom")
-        .render(area, frame.buffer_mut(), &mut state);
+    let _ = TraceWaterfall::new(&spans, system).title("zoom").render(
+        area,
+        frame.buffer_mut(),
+        &mut state,
+    );
 }
 
 fn trace_waterfall_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut state = TraceWaterfallState::new();
     state.empty_message = Some("no spans".into());
-    TraceWaterfall::new(&[], system)
-        .title("empty")
-        .render(area, frame.buffer_mut(), &mut state);
+    let _ = TraceWaterfall::new(&[], system).title("empty").render(
+        area,
+        frame.buffer_mut(),
+        &mut state,
+    );
 }
 
 fn trace_waterfall_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let spans = trace_waterfall_sample();
     let mut state = TraceWaterfallState::with_selected("root");
-    state.ascii = true;
-    TraceWaterfall::new(&spans, system)
-        .title("ascii")
-        .ascii(true)
-        .render(area, frame.buffer_mut(), &mut state);
+    let _ = TraceWaterfall::new(&spans, system).title("ascii").render(
+        area,
+        frame.buffer_mut(),
+        &mut state,
+    );
 }
 
 fn dependency_graph_sample() -> (Vec<DepNode<'static>>, Vec<DepEdge<'static>>) {
@@ -15929,7 +15889,7 @@ fn dependency_graph_sample() -> (Vec<DepNode<'static>>, Vec<DepEdge<'static>>) {
 fn dependency_graph_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let (nodes, edges) = dependency_graph_sample();
     let mut state = DependencyGraphState::with_selected("termrock");
-    DependencyGraph::new(&nodes, &edges, system)
+    let _ = DependencyGraph::new(&nodes, &edges, system)
         .title("crates")
         .render(area, frame.buffer_mut(), &mut state);
 }
@@ -15938,7 +15898,7 @@ fn dependency_graph_tree(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
     let (nodes, edges) = dependency_graph_sample();
     let mut state = DependencyGraphState::with_selected("app");
     state.force_tree = true;
-    DependencyGraph::new(&nodes, &edges, system)
+    let _ = DependencyGraph::new(&nodes, &edges, system)
         .title("tree")
         .render(area, frame.buffer_mut(), &mut state);
 }
@@ -15947,7 +15907,7 @@ fn dependency_graph_list(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
     let (nodes, edges) = dependency_graph_sample();
     let mut state = DependencyGraphState::new();
     state.preferred_view = DependencyGraphView::List;
-    DependencyGraph::new(&nodes, &edges, system)
+    let _ = DependencyGraph::new(&nodes, &edges, system)
         .title("list")
         .render(area, frame.buffer_mut(), &mut state);
 }
@@ -15956,7 +15916,7 @@ fn dependency_graph_filter(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
     let (nodes, edges) = dependency_graph_sample();
     let mut state = DependencyGraphState::new();
     state.filter = Some("serde".into());
-    DependencyGraph::new(&nodes, &edges, system)
+    let _ = DependencyGraph::new(&nodes, &edges, system)
         .title("filter")
         .render(area, frame.buffer_mut(), &mut state);
 }
@@ -15964,10 +15924,8 @@ fn dependency_graph_filter(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
 fn dependency_graph_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let (nodes, edges) = dependency_graph_sample();
     let mut state = DependencyGraphState::with_selected("app");
-    state.ascii = true;
-    DependencyGraph::new(&nodes, &edges, system)
+    let _ = DependencyGraph::new(&nodes, &edges, system)
         .title("ascii")
-        .ascii(true)
         .render(area, frame.buffer_mut(), &mut state);
 }
 
@@ -15987,7 +15945,7 @@ enum TableVariant {
 }
 
 fn completion_menu_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let panel_tokens = system.clone().density(Density::default());
+    let panel_tokens = system.clone();
     frame.render_widget(Panel::new(&panel_tokens).title("Editor"), area);
     let candidates = [
         CompletionCandidate::new("select", "SELECT")
@@ -16071,7 +16029,7 @@ fn completion_menu_docs_story(frame: &mut Frame<'_>, area: Rect, system: &Design
 }
 
 fn completion_menu_edge(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let panel_tokens = system.clone().density(Density::default());
+    let panel_tokens = system.clone();
     frame.render_widget(Panel::new(&panel_tokens).title("Edge"), area);
     let candidates = [
         CompletionCandidate::new("alpha", "alpha-wide-label ✨"),
@@ -16198,7 +16156,7 @@ fn table_priority(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 
 fn render_table(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem, variant: TableVariant) {
     use termrock::widgets::{TableBodyState, TableRecipe};
-    let tokens = system.clone().density(termrock::style::Density::default());
+    let tokens = system.clone();
     let sorted = matches!(variant, TableVariant::Sorted);
     let columns = [
         Column::new("pid", "PID", ColumnWidth::Fixed(7))
@@ -16522,7 +16480,6 @@ fn status_indicator_ascii_story(frame: &mut Frame<'_>, area: Rect, system: &Desi
             break;
         }
         StatusIndicator::new(kind, system)
-            .ascii(true)
             .label(kind.default_label())
             .paint(Rect::new(area.x, y, area.width, 1), frame.buffer_mut());
         y = y.saturating_add(1);
@@ -17037,7 +16994,6 @@ fn design_inspector(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
         focused: Some("row0"),
         layer: Some("root"),
         capability: ColorCapability::Truecolor,
-        density: "comfortable",
         layers: &layers,
         recipes: &recipes,
         selection_chrome: "gutter",
@@ -17096,7 +17052,6 @@ fn semantic_scene_tree_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
         focused: Some("main.rs"),
         layer: Some("root"),
         capability: ColorCapability::Truecolor,
-        density: "compact",
         layers: &layers,
         recipes: &recipes,
         selection_chrome: "gutter",
@@ -17276,7 +17231,6 @@ fn capability_color_ladder_story(frame: &mut Frame<'_>, area: Rect, system: &Des
             focused: Some(label),
             layer: Some("root"),
             capability: *cap,
-            density: "compact",
             layers: &layers,
             recipes: &recipes,
             selection_chrome: "gutter",
@@ -17295,7 +17249,6 @@ fn capability_no_color_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
         focused: Some("focus"),
         layer: Some("root"),
         capability: ColorCapability::Monochrome,
-        density: "comfortable",
         layers: &layers,
         recipes: &recipes,
         selection_chrome: "gutter",
@@ -17306,10 +17259,7 @@ fn capability_no_color_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
 }
 
 fn capability_ascii_glyphs_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system
-        .clone()
-        .density(Density::Compact)
-        .glyphs(termrock::style::GlyphSet::Ascii);
+    let tokens = system.clone();
     let rows = [
         ListRow::item("a", Line::from("ASCII disclosure")),
         ListRow::item("b", Line::from("Selected row")).badge(Line::from("ok")),
@@ -17327,7 +17277,6 @@ fn capability_headless_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
         focused: None,
         layer: Some("headless"),
         capability: ColorCapability::Monochrome,
-        density: "compact",
         layers: &layers,
         recipes: &recipes,
         selection_chrome: "none",
@@ -17380,26 +17329,17 @@ fn registry_contracts_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
 
 fn motion_presence_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::style::MotionPolicy;
-    use termrock::widgets::{Spinner, SpinnerGlyphSet, SpinnerState};
+    use termrock::widgets::{Spinner, SpinnerState};
 
     let tick = 11;
-    let canvas = system
-        .style(Role::Canvas)
-        .bg
-        .unwrap_or(ratatui::style::Color::Black);
+    let _ = tick;
     let accent = system.style(Role::Accent);
     for row in 0..area.height.min(6) {
-        let alpha = termrock::style::wave_brightness(tick, row, 16, 0.5);
-        frame.buffer_mut().set_stringn(
-            area.x,
-            area.y.saturating_add(row),
-            "│",
-            1,
-            termrock::style::fade_style(accent, alpha, canvas),
-        );
+        frame
+            .buffer_mut()
+            .set_stringn(area.x, area.y.saturating_add(row), "│", 1, accent);
     }
     let mut spinner = SpinnerState::new();
-    spinner.set_glyph_set(SpinnerGlyphSet::DotPulse);
     let content_x = area.x.saturating_add(3);
     let content_width = area.right().saturating_sub(content_x);
     Spinner::labeled("Full motion", system).paint(
@@ -17420,13 +17360,12 @@ fn motion_presence_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
     let width = content_width.min(44);
     let fitted = termrock::text::truncate_cols(label, usize::from(width), system.glyphs.ellipsis());
     for (col, ch) in fitted.chars().enumerate() {
-        let alpha = termrock::style::edge_fade(col as u16, width, 5);
         frame.buffer_mut().set_stringn(
             content_x.saturating_add(col as u16),
             area.y.saturating_add(3),
             ch.to_string(),
             1,
-            termrock::style::fade_style(system.style(Role::Text), alpha, canvas),
+            system.style(Role::Text),
         );
     }
 }
@@ -17504,9 +17443,8 @@ fn spinner_ascii_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
     use termrock::runtime::Instant;
     use termrock::style::MotionPolicy;
     let mut state = SpinnerState::new();
-    state.set_ascii(true);
     let tick = crate::demo::demo_tick(160);
-    Spinner::labeled("Loading", system).ascii(true).paint(
+    Spinner::labeled("Loading", system).paint(
         area,
         frame.buffer_mut(),
         &state,
@@ -17561,7 +17499,7 @@ fn capability_profiles_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
             "{:<11} color={:?} ascii={} mouse={} alt={} kbd={}",
             p.id(),
             caps.set.color,
-            h.ascii as u8,
+            0,
             h.mouse as u8,
             caps.set.alternate_screen as u8,
             h.interactive as u8,
@@ -17679,7 +17617,7 @@ fn dismissable_gestures_story(frame: &mut Frame<'_>, area: Rect, system: &Design
 }
 
 fn overlay_nested(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
+    let tokens = system.clone();
     let mut stack = OverlayStack::<()>::new();
     let _ = stack.open(
         area,
@@ -17699,7 +17637,7 @@ fn overlay_nested(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn overlay_edges(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
+    let tokens = system.clone();
     let size = OverlaySize::menu(14, 3);
     let policy = OverlayPolicy::for_kind(OverlayKind::Menu);
     let anchors = [
@@ -17730,7 +17668,7 @@ fn overlay_edges(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn overlay_tiny(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::Compact);
+    let tokens = system.clone();
     let mut stack = OverlayStack::<()>::new();
     let _ = stack.open(
         area,
@@ -17761,7 +17699,7 @@ fn overlay_tiny(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 
 fn overlay_queued(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::interaction::OpenMode;
-    let tokens = system.clone().density(Density::default());
+    let tokens = system.clone();
     let mut stack = OverlayStack::<()>::new();
     let _ = stack.open_with(
         area,
@@ -17786,7 +17724,7 @@ fn overlay_queued(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn overlay_fullscreen_promote(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
+    let tokens = system.clone();
     let mut stack = OverlayStack::<()>::new();
     let _ = stack.open(
         area,
@@ -17840,7 +17778,7 @@ fn paint_stack_rects(
 }
 
 fn dialog(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(termrock::style::Density::default());
+    let tokens = system.clone();
     let dialog_area = termrock::layout::resolve_dialog(
         area,
         termrock::layout::DialogSpec {
@@ -17872,7 +17810,7 @@ fn dialog(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn dialog_destructive_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(termrock::style::Density::default());
+    let tokens = system.clone();
     let actions = [
         Action {
             id: "delete",
@@ -17907,7 +17845,7 @@ fn dialog_destructive_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
 }
 
 fn dialog_compact_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(termrock::style::Density::default());
+    let tokens = system.clone();
     frame.render_widget(
         Dialog::new("Saved", Line::from("OK").into(), &tokens)
             .recipe(DialogRecipe::Compact)
@@ -17998,7 +17936,7 @@ pub(crate) fn render_choice_dialog(
     state: &mut ChoiceDialogState<&'static str>,
     system: &DesignSystem,
 ) {
-    let tokens = system.clone().density(termrock::style::Density::default());
+    let tokens = system.clone();
     let actions = choice_actions();
     frame.render_stateful_widget(
         &ChoiceDialog::new(
@@ -18017,7 +17955,7 @@ pub(crate) fn render_choice_dialog(
 }
 
 fn message_dialog(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(termrock::style::Density::default());
+    let tokens = system.clone();
     let details = [
         DetailRow {
             id: "state",
@@ -18209,7 +18147,7 @@ fn toast_kinds_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     );
     let _ = q.push(tick, ToastSpec::message("u", "Deleted draft").undo("Undo"));
     let _ = ToastKind::Undo;
-    ToastStack::new(system).paint(area, frame.buffer_mut(), &mut q);
+    let _ = ToastStack::new(system).paint(area, frame.buffer_mut(), &mut q);
 }
 
 fn toast_stack_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -18233,7 +18171,7 @@ fn toast_stack_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
         tick,
         ToastSpec::message("3", "Background sync").priority(ToastPriority::Low),
     );
-    ToastStack::new(system).paint(area, frame.buffer_mut(), &mut q);
+    let _ = ToastStack::new(system).paint(area, frame.buffer_mut(), &mut q);
 }
 
 fn toast_persistent_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -18274,7 +18212,21 @@ fn notification_center_empty_story(frame: &mut Frame<'_>, area: Rect, system: &D
 }
 
 fn backdrop(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    // The shipped default: a solid recede from the theme, not a stipple.
+    // junie's dim is a per-cell collapse of what is already on the page, so
+    // the story puts a small page under it: a dim over nothing paints nothing.
+    let page = ["page row one", "page row two", "page row three"];
+    for (y, row) in page.iter().enumerate() {
+        if y as u16 >= area.height {
+            break;
+        }
+        frame.buffer_mut().set_stringn(
+            area.x,
+            area.y + y as u16,
+            row,
+            usize::from(area.width),
+            system.style(termrock::style::Role::Text),
+        );
+    }
     frame.render_widget(Backdrop::new(system), area);
 }
 
@@ -18317,7 +18269,6 @@ fn empty_state_inline_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
         .kind(EmptyKind::NoData)
         .explanation("Pick a story")
         .primary(EmptyAction::new("Browse"))
-        .density(Density::Compact)
         .paint(area, frame.buffer_mut());
 }
 
@@ -18560,20 +18511,16 @@ fn skeleton_table_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
 
 fn skeleton_tiny_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::Skeleton;
-    Skeleton::new(3, system)
-        .ascii(true)
-        .paint(area, frame.buffer_mut());
+    Skeleton::new(3, system).paint(area, frame.buffer_mut());
 }
 
 fn skeleton_ascii_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{Skeleton, SkeletonRecipe};
-    Skeleton::recipe(SkeletonRecipe::Rows, 4, system)
-        .ascii(true)
-        .paint(area, frame.buffer_mut());
+    Skeleton::recipe(SkeletonRecipe::Rows, 4, system).paint(area, frame.buffer_mut());
 }
 
 fn jump_overlay(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let panel_tokens = system.clone().density(Density::default());
+    let panel_tokens = system.clone();
     frame.render_widget(
         Panel::new(&panel_tokens)
             .title("Jump targets")
@@ -18592,7 +18539,7 @@ fn jump_overlay(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
             "m",
         ),
     ];
-    frame.render_widget(JumpOverlay::new(&targets, system).ascii(false), area);
+    frame.render_widget(JumpOverlay::new(&targets, system), area);
 }
 
 fn jump_overlay_role_filter(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -18639,12 +18586,7 @@ fn jump_overlay_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
             "b",
         ),
     ];
-    frame.render_widget(
-        JumpOverlay::new(&targets, system)
-            .ascii(true)
-            .colorless(true),
-        area,
-    );
+    frame.render_widget(JumpOverlay::new(&targets, system).colorless(true), area);
 }
 
 fn focus_lens_combined(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -18669,9 +18611,7 @@ fn focus_lens_combined(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
         area,
     );
     frame.render_widget(
-        FocusLens::new(&g, system)
-            .mode(FocusLensMode::Combined)
-            .ascii(false),
+        FocusLens::new(&g, system).mode(FocusLensMode::Combined),
         area,
     );
 }
@@ -18814,7 +18754,6 @@ fn command_palette_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
     state.set_focused(true);
     frame.render_stateful_widget(
         &CommandPalette::new("Commands", &[], system)
-            .ascii(true)
             .colorless(true)
             .focused(true),
         area,
@@ -18875,7 +18814,6 @@ fn quick_open_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     state.set_focused(true);
     let _ = state.apply_results(0, &items, true, None);
     QuickOpen::new(&providers, &items, system)
-        .ascii(true)
         .colorless(true)
         .paint(area, frame.buffer_mut(), &mut state);
 }
@@ -18950,7 +18888,6 @@ fn markdown_view(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::project_markdown;
     let src = "\
 # Plan
-
 Implement the **markdown** surface with [links](https://example.invalid).
 
 - [ ] tasks remain open
@@ -19042,19 +18979,11 @@ fn chart_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn chart_nocolor(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let system = system
-        .clone()
-        .glyphs(termrock::style::GlyphSet::Ascii)
-        .no_color();
+    let system = system.clone().no_color();
     let a = [1.0, 3.0, 2.0, 5.0, 4.0, 6.0, 3.0];
     let b = [5.0, 4.0, 4.0, 3.0, 2.0, 2.0, 1.0];
     let series = [ChartSeries::new("in", &a), ChartSeries::new("out", &b)];
-    frame.render_widget(
-        Chart::new(&series, &system)
-            .glyphs(VizGlyphSet::Ascii)
-            .title("io"),
-        area,
-    );
+    frame.render_widget(Chart::new(&series, &system).title("io"), area);
 }
 
 fn gauge_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -19141,7 +19070,7 @@ fn segmented_meter(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
         MeterSegment {
             label: "cache",
             weight: 1.0,
-            role: Role::Info,
+            role: Role::TextSecondary,
         },
         MeterSegment {
             label: "free",
@@ -19391,9 +19320,7 @@ fn checkpoint_timeline_unicode_story(frame: &mut Frame<'_>, area: Rect, system: 
 
 fn prompt_composer_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{ComposerChip, ContextEstimate, ModeIndicator, ModelIndicator};
-    let tokens = system
-        .clone()
-        .density(termrock::style::Density::Comfortable);
+    let tokens = system.clone();
     let mut state = PromptComposerState::new();
     state.set_placeholder("Ask anything…");
     state.set_text("Explain this module");
@@ -19414,7 +19341,7 @@ fn prompt_composer_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
 
 fn prompt_composer_busy(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{ModeIndicator, ModelIndicator};
-    let tokens = system.clone().density(termrock::style::Density::Compact);
+    let tokens = system.clone();
     let mut state = PromptComposerState::new();
     state.set_busy(true);
     state.set_text("follow-up while running");
@@ -19692,10 +19619,9 @@ fn prompt_queue_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &Design
 
 fn prompt_composer_compact(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::ComposerPresentation;
-    let tokens = system.clone().density(termrock::style::Density::Dashboard);
+    let tokens = system.clone();
     let mut state = PromptComposerState::new();
     state.set_presentation(ComposerPresentation::Compact);
-    state.set_ascii_fallback(true);
     state.set_placeholder("msg");
     state.set_text("compact draft");
     frame.render_stateful_widget(&PromptComposer::new(&tokens), area, &mut state);
@@ -19703,9 +19629,7 @@ fn prompt_composer_compact(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
 
 fn prompt_composer_paste_chip(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{ComposerChip, ContextEstimate, ModeIndicator};
-    let tokens = system
-        .clone()
-        .density(termrock::style::Density::Comfortable);
+    let tokens = system.clone();
     let mut state = PromptComposerState::new();
     state.set_placeholder("Message…");
     state.set_mode(Some(ModeIndicator {
@@ -19728,9 +19652,7 @@ fn prompt_composer_paste_chip(frame: &mut Frame<'_>, area: Rect, system: &Design
 
 fn prompt_composer_disconnected(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{ComposerConnection, ModeIndicator, ModelIndicator};
-    let tokens = system
-        .clone()
-        .density(termrock::style::Density::Comfortable);
+    let tokens = system.clone();
     let mut state = PromptComposerState::new();
     state.set_connection(ComposerConnection::Disconnected);
     state.set_text("cannot send while offline");
@@ -19751,9 +19673,7 @@ fn prompt_composer_disconnected(frame: &mut Frame<'_>, area: Rect, system: &Desi
 
 fn prompt_composer_fullscreen(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{ComposerPresentation, ModeIndicator, ModelIndicator};
-    let tokens = system
-        .clone()
-        .density(termrock::style::Density::Comfortable);
+    let tokens = system.clone();
     let mut state = PromptComposerState::new();
     state.set_presentation(ComposerPresentation::Fullscreen);
     state.set_placeholder("Long prompt…");
@@ -20008,7 +19928,7 @@ fn button_no_color_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
 }
 
 fn checkbox_switch_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
+    let tokens = system.clone();
     let mut cb = CheckboxState::new(true);
     cb.set_focused(true);
     let _ = Checkbox::new("enable", "Enable", &tokens).paint(
@@ -20377,7 +20297,7 @@ fn radio_group_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
 }
 
 fn data_table_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
+    let tokens = system.clone();
     let columns = termrock::widgets::ColumnModel::new(vec![
         termrock::widgets::DataColumn::new("id", "ID", termrock::widgets::DataColumnWidth::Min(4)),
         termrock::widgets::DataColumn::new(
@@ -20406,7 +20326,7 @@ fn data_table_project_window(
     offset: u64,
 ) {
     use termrock::widgets::{ColumnPin, DataColumnWidth, LoadState};
-    let tokens = system.clone().density(Density::Compact);
+    let tokens = system.clone();
     let mut columns = termrock::widgets::ColumnModel::new(vec![
         termrock::widgets::DataColumn::new("id", "ID", DataColumnWidth::Fixed(8))
             .priority(100)
@@ -20467,7 +20387,7 @@ fn data_table_rows_1m(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
 
 fn data_table_wide(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{ColumnPin, DataColumnWidth};
-    let tokens = system.clone().density(Density::Compact);
+    let tokens = system.clone();
     let mut cols = Vec::new();
     cols.push(
         termrock::widgets::DataColumn::new("id", "ID", DataColumnWidth::Fixed(4))
@@ -20494,7 +20414,7 @@ fn data_table_wide(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn data_table_combining(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
+    let tokens = system.clone();
     let columns = termrock::widgets::ColumnModel::new(vec![
         termrock::widgets::DataColumn::new("id", "ID", termrock::widgets::DataColumnWidth::Min(4)),
         termrock::widgets::DataColumn::new(
@@ -20520,7 +20440,7 @@ fn data_table_narrow_priority(frame: &mut Frame<'_>, area: Rect, system: &Design
 }
 
 fn data_table_loading(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
+    let tokens = system.clone();
     let columns = termrock::widgets::ColumnModel::new(vec![termrock::widgets::DataColumn::new(
         "id",
         "ID",
@@ -20535,7 +20455,7 @@ fn data_table_loading(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
 }
 
 fn data_table_error(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
+    let tokens = system.clone();
     let columns = termrock::widgets::ColumnModel::new(vec![termrock::widgets::DataColumn::new(
         "id",
         "ID",
@@ -20554,7 +20474,7 @@ fn data_table_visidata(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
     use termrock::widgets::{
         ColumnPin, DataColumn, DataColumnWidth, DataTableNavMode, LoadState, SortSpec,
     };
-    let tokens = system.clone().density(Density::Compact);
+    let tokens = system.clone();
     let columns = termrock::widgets::ColumnModel::new(vec![
         DataColumn::new("pid", "PID", DataColumnWidth::Fixed(6))
             .priority(100)
@@ -20596,7 +20516,7 @@ fn data_table_visidata(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
 
 fn data_table_range(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{CellCoord, DataColumn, DataColumnWidth, DataTableNavMode, LoadState};
-    let tokens = system.clone().density(Density::Compact);
+    let tokens = system.clone();
     let columns = termrock::widgets::ColumnModel::new(vec![
         DataColumn::new("a", "A", DataColumnWidth::Fixed(6)),
         DataColumn::new("b", "B", DataColumnWidth::Fixed(6)),
@@ -20621,7 +20541,7 @@ fn data_table_range(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 
 fn data_table_groups(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{DataColumn, DataColumnWidth, GroupHeader, LoadState};
-    let tokens = system.clone().density(Density::default());
+    let tokens = system.clone();
     let columns = termrock::widgets::ColumnModel::new(vec![
         DataColumn::new("name", "Name", DataColumnWidth::Min(12)),
         DataColumn::new("val", "Val", DataColumnWidth::Fixed(6)),
@@ -20646,7 +20566,7 @@ fn data_table_groups(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 
 fn data_table_edit(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{DataColumn, DataColumnWidth, LoadState};
-    let tokens = system.clone().density(Density::default());
+    let tokens = system.clone();
     let columns = termrock::widgets::ColumnModel::new(vec![
         DataColumn::new("id", "ID", DataColumnWidth::Fixed(4)),
         DataColumn::new("name", "Name", DataColumnWidth::Min(12)).editable(),
@@ -20806,11 +20726,9 @@ fn form_wizard_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
         WizardStep::new("confirm", "Confirm"),
     ]);
     state.set_focused(true);
-    FormWizard::new(system).title("Connect").ascii(true).paint(
-        area,
-        frame.buffer_mut(),
-        &mut state,
-    );
+    FormWizard::new(system)
+        .title("Connect")
+        .paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn form_wizard_review_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -20823,11 +20741,9 @@ fn form_wizard_review_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
     let _ = state.next();
     let _ = state.next();
     let _ = state.next(); // ReviewOpened
-    FormWizard::new(system).title("Connect").ascii(true).paint(
-        area,
-        frame.buffer_mut(),
-        &mut state,
-    );
+    FormWizard::new(system)
+        .title("Connect")
+        .paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn form_wizard_failure_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -20837,11 +20753,9 @@ fn form_wizard_failure_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
     ]);
     state.set_focused(true);
     let _ = state.fail("Could not reach API — retry when ready");
-    FormWizard::new(system).title("Connect").ascii(true).paint(
-        area,
-        frame.buffer_mut(),
-        &mut state,
-    );
+    FormWizard::new(system)
+        .title("Connect")
+        .paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn form_wizard_resume_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -20862,7 +20776,6 @@ fn form_wizard_resume_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
     let _ = resumed.restore_progress(&snap);
     FormWizard::new(system)
         .title("Resume setup")
-        .ascii(true)
         .paint(area, frame.buffer_mut(), &mut resumed);
 }
 
@@ -20931,9 +20844,7 @@ fn attachment_chip_broken_story(frame: &mut Frame<'_>, area: Rect, system: &Desi
         .validation("path not found");
     let mut state = AttachmentChipState::new();
     state.set_focused(true);
-    AttachmentChip::new(&item, system)
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut state);
+    AttachmentChip::new(&item, system).paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn attachment_chip_upload_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -20961,9 +20872,7 @@ fn paste_chip_binary_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
     let paste = PastePayload::binary("bin1", 12_288);
     let mut state = PasteChipState::new();
     state.set_focused(true);
-    PasteChip::new(&paste, system)
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut state);
+    PasteChip::new(&paste, system).paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn paste_chip_expanded_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -21022,9 +20931,7 @@ fn file_mention_basic_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
     sa.set_focused(true);
     let mut sb = InlineMentionState::new();
     InlineMention::file(&a, system).paint(chunks[0], frame.buffer_mut(), &mut sa);
-    InlineMention::file(&b, system)
-        .ascii(true)
-        .paint(chunks[1], frame.buffer_mut(), &mut sb);
+    InlineMention::file(&b, system).paint(chunks[1], frame.buffer_mut(), &mut sb);
 }
 
 fn file_mention_missing_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -21032,9 +20939,7 @@ fn file_mention_missing_story(frame: &mut Frame<'_>, area: Rect, system: &Design
     let m = FileMention::missing("m1", "gone.rs", "old/gone.rs");
     let mut st = InlineMentionState::new();
     st.set_focused(true);
-    InlineMention::file(&m, system)
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut st);
+    InlineMention::file(&m, system).paint(area, frame.buffer_mut(), &mut st);
 }
 
 fn file_mention_ambiguous_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -21066,9 +20971,7 @@ fn entity_mention_agent_tool_story(frame: &mut Frame<'_>, area: Rect, system: &D
     sa.set_focused(true);
     let mut st = InlineMentionState::new();
     InlineMention::entity(&agent, system).paint(chunks[0], frame.buffer_mut(), &mut sa);
-    InlineMention::entity(&tool, system)
-        .ascii(true)
-        .paint(chunks[1], frame.buffer_mut(), &mut st);
+    InlineMention::entity(&tool, system).paint(chunks[1], frame.buffer_mut(), &mut st);
 }
 
 fn entity_mention_stale_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -21202,9 +21105,7 @@ fn model_selector_empty_story(frame: &mut Frame<'_>, area: Rect, system: &Design
     let mut st = ModelSelectorState::new();
     st.presentation = ModelSelectorPresentation::Expanded;
     st.search = "zzzz-nope".into();
-    ModelSelector::new(&cat, system)
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut st);
+    ModelSelector::new(&cat, system).paint(area, frame.buffer_mut(), &mut st);
 }
 
 fn agent_mode_ribbon_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -21235,9 +21136,7 @@ fn agent_mode_compact_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
     let modes = default_agent_modes();
     let mut st = AgentModeSelectorState::with_selected("auto");
     st.policy = Some(ExecutionPolicyKind::Network);
-    AgentModeSelector::new(&modes, system)
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut st);
+    AgentModeSelector::new(&modes, system).paint(area, frame.buffer_mut(), &mut st);
 }
 
 fn composer_selectors_strip_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -21250,7 +21149,7 @@ fn composer_selectors_strip_story(frame: &mut Frame<'_>, area: Rect, system: &De
     let ms = ModelSelectorState::with_selected("smart");
     let mut as_ = AgentModeSelectorState::with_selected("plan");
     as_.policy = Some(termrock::widgets::ExecutionPolicyKind::WorkspaceWrite);
-    ComposerSelectors::new(&modes, &models, system).paint_compact(
+    let _ = ComposerSelectors::new(&modes, &models, system).paint_compact(
         area,
         frame.buffer_mut(),
         &as_,
@@ -21304,9 +21203,7 @@ fn message_thread_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &Desig
     let entries = example_message_session();
     let mut st = MessageThreadState::new();
     st.set_focused(true);
-    MessageThread::new(&entries, system)
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut st);
+    MessageThread::new(&entries, system).paint(area, frame.buffer_mut(), &mut st);
 }
 
 fn message_thread_ascii_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -21315,7 +21212,6 @@ fn message_thread_ascii_story(frame: &mut Frame<'_>, area: Rect, system: &Design
     let mut st = MessageThreadState::new();
     st.set_focused(true);
     MessageThread::new(&entries, system)
-        .ascii(true)
         .colorless(true)
         .paint(area, frame.buffer_mut(), &mut st);
 }
@@ -21360,9 +21256,7 @@ fn streaming_markdown_failed_story(frame: &mut Frame<'_>, area: Rect, system: &D
         st.apply_pending();
     }
     st.fail("stream interrupted");
-    StreamingMarkdown::new(system)
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut st);
+    StreamingMarkdown::new(system).paint(area, frame.buffer_mut(), &mut st);
 }
 
 fn streaming_markdown_citations_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -21388,9 +21282,7 @@ fn streaming_markdown_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &D
     );
     st.apply_pending();
     st.finish();
-    StreamingMarkdown::new(system)
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut st);
+    StreamingMarkdown::new(system).paint(area, frame.buffer_mut(), &mut st);
 }
 
 fn source_citation_inline_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -21408,9 +21300,7 @@ fn source_citation_inline_story(frame: &mut Frame<'_>, area: Rect, system: &Desi
     a.focused = true;
     let mut b = SourceCitationState::new();
     let mut c = SourceCitationState::new();
-    SourceCitation::new(&src[0], system)
-        .ascii(true)
-        .paint(chunks[0], frame.buffer_mut(), &mut a);
+    SourceCitation::new(&src[0], system).paint(chunks[0], frame.buffer_mut(), &mut a);
     SourceCitation::new(&src[1], system)
         .show_destination(DestinationDisplay::Always)
         .paint(chunks[1], frame.buffer_mut(), &mut b);
@@ -21455,9 +21345,7 @@ fn citation_list_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &Design
     let mut st = CitationListState::new();
     st.expand();
     st.no_hyperlink = true;
-    CitationList::new(&src, system)
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut st);
+    CitationList::new(&src, system).paint(area, frame.buffer_mut(), &mut st);
 }
 
 fn tool_call_card_running_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -21532,9 +21420,7 @@ fn tool_call_card_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &Desig
     let mut st = ToolCallCardState::new();
     st.focused = true;
     st.presentation = ToolCallPresentation::Compact;
-    ToolCallCard::new(call, system)
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut st);
+    ToolCallCard::new(call, system).paint(area, frame.buffer_mut(), &mut st);
 }
 
 fn terminal_run_card_permission_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -21588,9 +21474,7 @@ fn terminal_run_card_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &De
     let mut st = TerminalRunCardState::new();
     st.focused = true;
     st.presentation = TerminalRunPresentation::Compact;
-    TerminalRunCard::new(run, &lines, system)
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut st);
+    TerminalRunCard::new(run, &lines, system).paint(area, frame.buffer_mut(), &mut st);
 }
 
 fn activity_shelf_overflow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -21619,9 +21503,7 @@ fn activity_shelf_summary_story(frame: &mut Frame<'_>, area: Rect, system: &Desi
     let items = example_activities();
     let mut st = ActivityShelfState::new();
     st.force_presentation = Some(ActivityShelfPresentation::Summary);
-    ActivityShelf::new(&items, system)
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut st);
+    ActivityShelf::new(&items, system).paint(area, frame.buffer_mut(), &mut st);
 }
 
 fn activity_shelf_badge_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -21631,9 +21513,7 @@ fn activity_shelf_badge_story(frame: &mut Frame<'_>, area: Rect, system: &Design
     let items = example_activities();
     let mut st = ActivityShelfState::new();
     st.force_presentation = Some(ActivityShelfPresentation::Badge);
-    ActivityShelf::new(&items, system)
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut st);
+    ActivityShelf::new(&items, system).paint(area, frame.buffer_mut(), &mut st);
 }
 
 fn activity_shelf_statusbar_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -21785,7 +21665,7 @@ fn badge_count_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn callout_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
+    let tokens = system.clone();
     Widget::render(
         &Callout::new("Heads up", &tokens)
             .description("Non-color risk glyph present.")
@@ -21972,11 +21852,11 @@ fn semantic_zoom_badge_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
     ])
     .split(area);
     let mut z = SemanticZoomState::<&str>::new();
-    SemanticZoomBadge::new(system).paint(chunks[0], frame.buffer_mut(), &z);
+    let _ = SemanticZoomBadge::new(system).paint(chunks[0], frame.buffer_mut(), &z);
     let _ = z.promote(fv_source("row", &["list"]));
-    SemanticZoomBadge::new(system).paint(chunks[1], frame.buffer_mut(), &z);
+    let _ = SemanticZoomBadge::new(system).paint(chunks[1], frame.buffer_mut(), &z);
     let _ = z.enter_fullscreen(fv_source("row", &["list"]));
-    SemanticZoomBadge::new(system).paint(chunks[2], frame.buffer_mut(), &z);
+    let _ = SemanticZoomBadge::new(system).paint(chunks[2], frame.buffer_mut(), &z);
     let _ = z.level(); // Fullscreen
 }
 
@@ -21985,9 +21865,7 @@ fn fullscreen_viewer_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &De
     let mut state = FullscreenViewerState::new();
     state.zoom_mut().set_content_kind(ViewerContentKind::Object);
     let _ = state.enter_fullscreen(fv_source("obj", &["objs"]), "object");
-    FullscreenViewer::new(system, &actions)
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut state);
+    FullscreenViewer::new(system, &actions).paint(area, frame.buffer_mut(), &mut state);
     paint_viewer_body(frame, state.body_area(), system, "{ id: 1 }");
 }
 
@@ -22097,7 +21975,7 @@ fn text_spans_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
         [
             TextSpan::new("code").code(),
             TextSpan::new(" and "),
-            TextSpan::new("emphasis").italic(),
+            TextSpan::new("emphasis").strong(),
         ],
         system,
     )
@@ -22177,23 +22055,21 @@ fn heading_levels_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
 }
 
 fn heading_compact_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::style::GlyphSet;
-    let ascii = system.clone().glyphs(GlyphSet::Ascii);
     let chunks = Layout::vertical([
         Constraint::Length(1),
         Constraint::Length(1),
         Constraint::Length(1),
     ])
     .split(area);
-    let _ = Heading::new("Title", &ascii)
+    let _ = Heading::new("Title", &system)
         .h1()
         .compact()
         .paint(chunks[0], frame.buffer_mut());
-    let _ = Heading::new("Section", &ascii)
+    let _ = Heading::new("Section", &system)
         .h2()
         .compact()
         .paint(chunks[1], frame.buffer_mut());
-    let _ = Heading::new("Note", &ascii)
+    let _ = Heading::new("Note", &system)
         .h3()
         .compact()
         .paint(chunks[2], frame.buffer_mut());
@@ -22246,7 +22122,6 @@ fn icon_browser_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
 fn icon_ascii_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::style::{Glyph, GlyphSet, Role};
     use termrock::widgets::Icon;
-    let ascii = system.clone().glyphs(GlyphSet::Ascii);
     let samples = [
         Glyph::DisclosureClosed,
         Glyph::DisclosureOpen,
@@ -22262,16 +22137,16 @@ fn icon_ascii_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
         if y >= area.bottom() {
             break;
         }
-        let r = g.resolve(GlyphSet::Ascii);
+        let r = g.resolve();
         let line = format!("{} {} — {}", r.text, g.id(), g.meaning());
         frame.buffer_mut().set_stringn(
             area.x,
             y,
             &line,
             usize::from(area.width),
-            ascii.style(Role::Text),
+            system.style(Role::Text),
         );
-        let _ = Icon::new(g, &ascii);
+        let _ = Icon::new(g, &system);
         y = y.saturating_add(1);
     }
 }
@@ -22279,7 +22154,7 @@ fn icon_ascii_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 fn icon_enhanced_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::style::{Glyph, GlyphSet};
     use termrock::widgets::Icon;
-    let enhanced = system.clone().glyphs(GlyphSet::Enhanced);
+    let enhanced = system.clone();
     let chunks = Layout::vertical([
         Constraint::Length(1),
         Constraint::Length(1),
@@ -22287,13 +22162,13 @@ fn icon_enhanced_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
         Constraint::Length(1),
     ])
     .split(area);
-    let _ = Icon::new(Glyph::Folder, &enhanced)
+    let _ = Icon::new(Glyph::DisclosureClosed, &enhanced)
         .label("folder")
         .paint(chunks[0], frame.buffer_mut());
-    let _ = Icon::new(Glyph::File, &enhanced)
+    let _ = Icon::new(Glyph::ModeDot, &enhanced)
         .label("file")
         .paint(chunks[1], frame.buffer_mut());
-    let _ = Icon::new(Glyph::Search, &enhanced)
+    let _ = Icon::new(Glyph::Ellipsis, &enhanced)
         .label("search")
         .paint(chunks[2], frame.buffer_mut());
     let _ = Icon::new(Glyph::Warning, &enhanced)
@@ -22493,11 +22368,11 @@ fn icon_labeled_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
         .role(Role::Danger)
         .label("failed")
         .paint(chunks[1], frame.buffer_mut());
-    let _ = Icon::new(Glyph::Play, system)
+    let _ = Icon::new(Glyph::ArrowRight, system)
         .role(Role::Accent)
         .label("run")
         .paint(chunks[2], frame.buffer_mut());
-    let _ = Icon::new(Glyph::Settings, system)
+    let _ = Icon::new(Glyph::DiamondFilled, system)
         .label("settings")
         .paint(chunks[3], frame.buffer_mut());
 }
@@ -22523,7 +22398,6 @@ fn field_row_states_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
     FieldRow::new(system, labels[1], FieldRowValue::Masked { len: 8 })
         .label_cols(label_cols)
         .annotation("stored locally")
-        .annotation_italic(true)
         .paint(rows[1], frame.buffer_mut());
     FieldRow::new(system, labels[2], FieldRowValue::Unset { hint: "required" })
         .label_cols(label_cols)
@@ -22560,11 +22434,9 @@ fn accent_rail_actors_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
         (Role::ActorTool, false, false, "TOOL  Build complete"),
         (Role::TextMuted, false, true, "COLLAPSED  3 hidden events"),
     ];
-    for (index, (role, active, collapsed, label)) in cases.into_iter().enumerate() {
+    for (index, (role, _active, collapsed, label)) in cases.into_iter().enumerate() {
         let content = AccentRail::new(system, role)
-            .active(active)
             .collapsed(collapsed)
-            .tick(11)
             .paint(blocks[index], frame.buffer_mut());
         frame.buffer_mut().set_stringn(
             content.x,
@@ -22853,13 +22725,9 @@ fn kbd_platform_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
         ChordFormat {
             platform: Platform::Mac,
             modifiers: ModifierStyle::Symbols,
-            ascii: false,
         },
     );
-    let ascii = format_chord(
-        KeyChord::plain(KeyCode::Up),
-        ChordFormat::footer().ascii(true),
-    );
+    let ascii = format_chord(KeyChord::plain(KeyCode::Up), ChordFormat::footer());
     let _ = Kbd::new(emacs, system).paint(chunks[0], frame.buffer_mut());
     let _ = Kbd::new(spelled, system)
         .inline()
@@ -22971,7 +22839,7 @@ fn paragraph_reading_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
 }
 
 fn surface_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
+    let tokens = system.clone();
     let content = Surface::new(&tokens)
         .recipe(SurfaceRecipe::Raised)
         .paint(area, frame.buffer_mut());
@@ -23090,7 +22958,6 @@ fn separator_section_break_story(frame: &mut Frame<'_>, area: Rect, system: &Des
     use termrock::widgets::Separator;
     Separator::new(system)
         .section_break()
-        .with_density(system.density)
         .paint(area, frame.buffer_mut());
 }
 
@@ -23178,7 +23045,6 @@ fn popover_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
     Popover::new(system)
         .header(Some("More"))
         .footer(Some("esc"))
-        .ascii(true)
         .paint(area, frame.buffer_mut(), &mut state);
     let body = state.slots().body;
     if !body.is_empty() {
@@ -23276,7 +23142,7 @@ fn permission_prompt_egress(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
 }
 
 fn mode_ribbon_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
+    let tokens = system.clone();
     let modes = [
         WorkbenchMode {
             id: "plan",
@@ -23394,7 +23260,7 @@ fn agent_turn_status_parity_story(frame: &mut Frame<'_>, area: Rect, system: &De
     use termrock::{
         runtime::FrameTick,
         style::Glyph,
-        widgets::{Action, ActionBar, ActionBarState, Spinner, SpinnerGlyphSet, SpinnerState},
+        widgets::{Action, ActionBar, ActionBarState, Spinner, SpinnerState},
     };
     let tick = FrameTick::manual(
         Instant::now(),
@@ -23403,7 +23269,6 @@ fn agent_turn_status_parity_story(frame: &mut Frame<'_>, area: Rect, system: &De
     );
     let spinner_area = Rect::new(area.x, area.y, area.width.saturating_sub(22), 1);
     let mut spinner_state = SpinnerState::new();
-    spinner_state.set_glyph_set(SpinnerGlyphSet::DotPulse);
     Spinner::labeled("Building catalog", system).paint(
         spinner_area,
         frame.buffer_mut(),
@@ -23411,7 +23276,7 @@ fn agent_turn_status_parity_story(frame: &mut Frame<'_>, area: Rect, system: &De
         tick,
         system.motion,
     );
-    let token = Glyph::Token.resolve(system.glyphs).text;
+    let token = Glyph::DiamondFilled.resolve().text;
     let meta = format!("2.4s  {token} 12.8k");
     let meta_width = 14_u16.min(area.width);
     let meta_x = area.right().saturating_sub(meta_width.saturating_add(7));
@@ -23644,9 +23509,7 @@ fn task_rail_drawer_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &Des
     let items = example_activity_models();
     let mut st = TaskRailState::new();
     st.focused = true;
-    TaskRail::new(&items, system)
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut st);
+    TaskRail::new(&items, system).paint(area, frame.buffer_mut(), &mut st);
 }
 
 fn task_rail_statusbar_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -23694,9 +23557,7 @@ fn subagent_card_row_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
     let mut st = SubagentCardState::new();
     st.focused = true;
     st.presentation = SubagentPresentation::CompactRow;
-    SubagentCard::new(&runs[0], system)
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut st);
+    SubagentCard::new(&runs[0], system).paint(area, frame.buffer_mut(), &mut st);
 }
 
 fn subagent_card_result_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -23731,9 +23592,7 @@ fn background_tasks_rail_story(frame: &mut Frame<'_>, area: Rect, system: &Desig
     let mut st = BackgroundTaskPanelState::new();
     st.force_presentation = Some(BackgroundTaskPresentation::CompactRail);
     st.focused = true;
-    BackgroundTaskPanel::new(&tasks, system)
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut st);
+    BackgroundTaskPanel::new(&tasks, system).paint(area, frame.buffer_mut(), &mut st);
 }
 
 fn background_tasks_lost_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -23786,9 +23645,7 @@ fn context_meter_indeterminate_story(frame: &mut Frame<'_>, area: Rect, system: 
     let b = &example_context_budgets()[2];
     let mut st = ContextMeterState::new();
     st.presentation = ContextMeterPresentation::Expanded;
-    ContextMeter::new(b, system)
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut st);
+    ContextMeter::new(b, system).paint(area, frame.buffer_mut(), &mut st);
 }
 
 fn context_meter_approximate_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -23821,7 +23678,6 @@ fn context_meter_mono_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
     st.presentation = ContextMeterPresentation::Compact;
     ContextMeter::new(b, system)
         .mono(true)
-        .ascii(true)
         .paint(area, frame.buffer_mut(), &mut st);
 }
 
@@ -23838,7 +23694,7 @@ fn context_meter_bytes_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
 // ── State-axis story helpers ────────────────────────────────────────────────
 
 fn button_disabled_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
+    let tokens = system.clone();
     let mut state = ButtonState::new();
     state.activation.set_accepts_input(true);
     state.activation.set_enabled(false);
@@ -23850,7 +23706,7 @@ fn button_disabled_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
 }
 
 fn button_loading_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
+    let tokens = system.clone();
     let mut state = ButtonState::new();
     state.activation.set_accepts_input(true);
     state.activation.set_loading(true);
@@ -23858,7 +23714,7 @@ fn button_loading_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
 }
 
 fn button_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
+    let tokens = system.clone();
     let mut state = ButtonState::new();
     state.activation.set_accepts_input(true);
     frame.render_stateful_widget(
@@ -23869,14 +23725,14 @@ fn button_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
 }
 
 fn checkbox_disabled_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
+    let tokens = system.clone();
     let mut state = CheckboxState::new(true);
     state.set_enabled(false);
     let _ = Checkbox::new("enable", "Enable", &tokens).paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn checkbox_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
+    let tokens = system.clone();
     let mut cb = CheckboxState::new(true);
     cb.set_focused(true);
     let _ = Checkbox::new("jp", "Enable 🇯🇵", &tokens)
@@ -23895,7 +23751,7 @@ fn checkbox_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
 }
 
 fn data_table_empty_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
+    let tokens = system.clone();
     let columns = termrock::widgets::ColumnModel::new(vec![
         termrock::widgets::DataColumn::new("id", "ID", termrock::widgets::DataColumnWidth::Min(4)),
         termrock::widgets::DataColumn::new(
@@ -23919,7 +23775,7 @@ fn data_table_empty_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
 
 fn tree_table_schema(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{ColumnModel, DataColumn, DataColumnWidth, LoadState};
-    let tokens = system.clone().density(Density::default());
+    let tokens = system.clone();
     let columns = ColumnModel::new(vec![
         DataColumn::new("name", "Name", DataColumnWidth::Min(16)).priority(100),
         DataColumn::new("type", "Type", DataColumnWidth::Min(10))
@@ -23957,7 +23813,7 @@ fn tree_table_schema(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 
 fn tree_table_tasks(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{ColumnModel, DataColumn, DataColumnWidth, LoadState};
-    let tokens = system.clone().density(Density::default());
+    let tokens = system.clone();
     let columns = ColumnModel::new(vec![
         DataColumn::new("task", "Task", DataColumnWidth::Min(18)).priority(100),
         DataColumn::new("status", "Status", DataColumnWidth::Fixed(8))
@@ -23991,7 +23847,7 @@ fn tree_table_tasks(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 
 fn tree_table_deps(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{ColumnModel, DataColumn, DataColumnWidth, LoadState};
-    let tokens = system.clone().density(Density::Compact);
+    let tokens = system.clone();
     let columns = ColumnModel::new(vec![
         DataColumn::new("pkg", "Package", DataColumnWidth::Min(16)).priority(100),
         DataColumn::new("ver", "Version", DataColumnWidth::Fixed(10))
@@ -24022,7 +23878,7 @@ fn tree_table_deps(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 
 fn tree_table_narrow(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{ColumnModel, DataColumn, DataColumnWidth, LoadState};
-    let tokens = system.clone().density(Density::Compact);
+    let tokens = system.clone();
     let mut columns = ColumnModel::new(vec![
         DataColumn::new("name", "Name", DataColumnWidth::Min(10)).priority(100),
         DataColumn::new("meta", "Meta", DataColumnWidth::Min(8)).priority(20),
@@ -24047,7 +23903,7 @@ fn tree_table_narrow(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 
 fn tree_table_aggregate(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{ColumnModel, DataColumn, DataColumnWidth, LoadState};
-    let tokens = system.clone().density(Density::default());
+    let tokens = system.clone();
     let columns = ColumnModel::new(vec![
         DataColumn::new("name", "Name", DataColumnWidth::Min(12)).priority(100),
         DataColumn::new("n", "N", DataColumnWidth::Fixed(5))
@@ -24126,7 +23982,6 @@ fn key_value_table_process(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
     ];
     let mut state = KeyValueTableState::new().with_cursor("cmd");
     state.load = LoadState::Ready { count: 6 };
-    state.density = Density::Compact;
     KeyValueTable::new(&fields, system).render(area, frame.buffer_mut(), &mut state);
 }
 
@@ -24237,13 +24092,12 @@ fn key_value_table_narrow(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
     ];
     let mut state = KeyValueTableState::new().with_cursor("a");
     state.layout = KvLayout::Auto;
-    state.density = Density::Compact;
     state.load = LoadState::Ready { count: 3 };
     KeyValueTable::new(&fields, system).render(area, frame.buffer_mut(), &mut state);
 }
 
 fn data_table_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
+    let tokens = system.clone();
     let columns = termrock::widgets::ColumnModel::new(vec![
         termrock::widgets::DataColumn::new("id", "No.", termrock::widgets::DataColumnWidth::Min(4)),
         termrock::widgets::DataColumn::new(
@@ -24291,7 +24145,7 @@ fn action_bar_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
 }
 
 fn panel_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let panel_tokens = system.clone().density(Density::default());
+    let panel_tokens = system.clone();
     frame.render_widget(
         Panel::new(&panel_tokens)
             .title("Overview ✨")
@@ -24307,7 +24161,7 @@ fn panel_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
 }
 
 fn tree_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
+    let tokens = system.clone();
     let nodes = [
         TreeNode {
             id: "ws",
@@ -24387,7 +24241,7 @@ fn form_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
 }
 
 fn dialog_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
+    let tokens = system.clone();
     frame.render_widget(
         Panel::new(&tokens)
             .title("Confirm ❓")
@@ -24465,7 +24319,7 @@ fn log_pane_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
             area.y.saturating_add(1),
             "Info: connected 🌐",
             usize::from(area.width.saturating_sub(2)),
-            system.style(Role::Info),
+            system.style(Role::TextSecondary),
         );
     }
 }
@@ -24791,7 +24645,7 @@ fn image_surface_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &Desig
 }
 
 fn mode_ribbon_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
+    let tokens = system.clone();
     let modes = [
         WorkbenchMode {
             id: "plan",
@@ -24964,7 +24818,7 @@ fn separator_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
 }
 
 fn surface_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
+    let tokens = system.clone();
     let content = Surface::new(&tokens)
         .recipe(SurfaceRecipe::Raised)
         .paint(area, frame.buffer_mut());
@@ -24995,7 +24849,6 @@ fn form_wizard_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
     state.set_focused(true);
     FormWizard::new(system)
         .title("Wizard 🪄")
-        .ascii(false)
         .paint(area, frame.buffer_mut(), &mut state);
 }
 
@@ -25019,7 +24872,7 @@ fn paragraph_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
 }
 
 fn callout_unicode_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system.clone().density(Density::default());
+    let tokens = system.clone();
     Widget::render(
         &Callout::new("Note", &tokens)
             .description("Note with emoji ⚠️")
@@ -25044,7 +24897,6 @@ fn password_input_reveal_story(frame: &mut Frame<'_>, area: Rect, system: &Desig
     state.set_focused(true);
     let _ = state.set_revealed(true);
     let _ = PasswordInput::new("Password", system)
-        .ascii(true)
         .show_reveal(true)
         .paint(area, frame.buffer_mut(), &mut state);
 }
@@ -25055,7 +24907,6 @@ fn password_input_invalid_story(frame: &mut Frame<'_>, area: Rect, system: &Desi
     let _ = PasswordInput::new("Password", system)
         .validation(Validation::Invalid("too short"))
         .strength(PasswordStrengthHint::Weak)
-        .ascii(true)
         .paint(area, frame.buffer_mut(), &mut state);
 }
 
@@ -25065,7 +24916,6 @@ fn password_input_pending_story(frame: &mut Frame<'_>, area: Rect, system: &Desi
     state.set_pending(true);
     let _ = PasswordInput::new("Token", system)
         .strength(PasswordStrengthHint::Pending)
-        .ascii(true)
         .paint(area, frame.buffer_mut(), &mut state);
 }
 
@@ -25077,7 +24927,6 @@ fn number_input_decimal_story(frame: &mut Frame<'_>, area: Rect, system: &Design
     state.set_focused(true);
     let _ = NumberInput::new("Scale", system)
         .unit("x")
-        .ascii(true)
         .paint(area, frame.buffer_mut(), &mut state);
 }
 
@@ -25090,16 +24939,13 @@ fn number_input_invalid_story(frame: &mut Frame<'_>, area: Rect, system: &Design
     let _ = state.insert_str("99");
     let _ = NumberInput::new("Count", system)
         .validation(Validation::Invalid("out of range"))
-        .ascii(true)
         .paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn number_input_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut state = NumberInputState::new().with_value(7.0);
     state.set_focused(true);
-    let _ = NumberInput::new("N", system)
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut state);
+    let _ = NumberInput::new("N", system).paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn search_input_searching_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -25107,7 +24953,6 @@ fn search_input_searching_story(frame: &mut Frame<'_>, area: Rect, system: &Desi
     state.set_focused(true);
     let _ = SearchInput::new(system)
         .status(SearchStatus::Searching)
-        .ascii(true)
         .paint(area, frame.buffer_mut(), &mut state);
 }
 
@@ -25121,7 +24966,6 @@ fn search_input_filters_story(frame: &mut Frame<'_>, area: Rect, system: &Design
     let _ = SearchInput::new(system)
         .filters(&chips)
         .status(SearchStatus::Results { count: 4 })
-        .ascii(true)
         .paint(area, frame.buffer_mut(), &mut state);
 }
 
@@ -25130,7 +24974,6 @@ fn search_input_empty_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
     state.set_focused(true);
     let _ = SearchInput::new(system)
         .status(SearchStatus::NoResults)
-        .ascii(true)
         .paint(area, frame.buffer_mut(), &mut state);
 }
 
@@ -25141,11 +24984,9 @@ fn path_input_missing_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
         .with_path("/tmp/new-file.txt");
     state.set_focused(true);
     state.set_fs_status(PathFsStatus::Missing);
-    let _ = PathInput::new(system).label("Output").ascii(true).paint(
-        area,
-        frame.buffer_mut(),
-        &mut state,
-    );
+    let _ = PathInput::new(system)
+        .label("Output")
+        .paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn path_input_destructive_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -25155,11 +24996,9 @@ fn path_input_destructive_story(frame: &mut Frame<'_>, area: Rect, system: &Desi
     state.set_focused(true);
     state.set_fs_status(PathFsStatus::File);
     state.set_risk(PathRisk::Destructive);
-    let _ = PathInput::new(system).label("Overwrite").ascii(true).paint(
-        area,
-        frame.buffer_mut(),
-        &mut state,
-    );
+    let _ = PathInput::new(system)
+        .label("Overwrite")
+        .paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn path_input_relative_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -25172,7 +25011,6 @@ fn path_input_relative_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
     let _ = PathInput::new(system)
         .label("Source")
         .show_base(true)
-        .ascii(true)
         .paint(area, frame.buffer_mut(), &mut state);
 }
 
@@ -25182,11 +25020,9 @@ fn token_field_overflow_story(frame: &mut Frame<'_>, area: Rect, system: &Design
     for i in 0..8 {
         let _ = state.push_token(FieldToken::new(format!("{i}"), format!("tag{i}")));
     }
-    let _ = TokenField::new(system).label("Tags").ascii(true).paint(
-        area,
-        frame.buffer_mut(),
-        &mut state,
-    );
+    let _ = TokenField::new(system)
+        .label("Tags")
+        .paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn token_field_error_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -25197,7 +25033,6 @@ fn token_field_error_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
     let _ = TokenField::new(system)
         .label("To")
         .validation(Validation::Invalid("invalid address"))
-        .ascii(true)
         .paint(area, frame.buffer_mut(), &mut state);
 }
 
@@ -25207,11 +25042,9 @@ fn token_field_multiselect_story(frame: &mut Frame<'_>, area: Rect, system: &Des
     let _ = state.push_token(FieldToken::new("rs".into(), "rust").selected(true));
     let _ = state.push_token(FieldToken::new("go".into(), "go"));
     let _ = state.push_token(FieldToken::new("ts".into(), "typescript").selected(true));
-    let _ = TokenField::new(system).label("Filters").ascii(true).paint(
-        area,
-        frame.buffer_mut(),
-        &mut state,
-    );
+    let _ = TokenField::new(system)
+        .label("Filters")
+        .paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn select_demo_options() -> Vec<SelectOption<&'static str>> {
@@ -25240,7 +25073,6 @@ fn select_open_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     );
     Select::new(&opts, system)
         .label("Fruit")
-        .ascii(true)
         .paint_stacked(area, frame.buffer_mut(), &mut state);
 }
 
@@ -25259,9 +25091,7 @@ fn select_search_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
         &opts,
         area,
     );
-    Select::new(&opts, system)
-        .ascii(true)
-        .paint_stacked(area, frame.buffer_mut(), &mut state);
+    Select::new(&opts, system).paint_stacked(area, frame.buffer_mut(), &mut state);
 }
 
 fn select_compact_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -25270,7 +25100,7 @@ fn select_compact_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem
         .with_recipe(SelectRecipe::Compact)
         .with_value("banana");
     state.set_focused(true);
-    frame.render_stateful_widget(Select::new(&opts, system).ascii(true), area, &mut state);
+    frame.render_stateful_widget(Select::new(&opts, system), area, &mut state);
 }
 
 fn multi_select_demo_options() -> Vec<SelectOption<&'static str>> {
@@ -25298,7 +25128,6 @@ fn multi_select_open_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
     );
     MultiSelect::new(&opts, system)
         .label("Filters")
-        .ascii(true)
         .paint_stacked(area, frame.buffer_mut(), &mut state);
 }
 
@@ -25308,11 +25137,7 @@ fn multi_select_overflow_story(frame: &mut Frame<'_>, area: Rect, system: &Desig
         .with_selected(["rs", "go", "ts", "py"])
         .with_max_summary_chips(2);
     state.set_focused(true);
-    frame.render_stateful_widget(
-        MultiSelect::new(&opts, system).ascii(true),
-        area,
-        &mut state,
-    );
+    frame.render_stateful_widget(MultiSelect::new(&opts, system), area, &mut state);
 }
 
 fn multi_select_search_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -25328,9 +25153,7 @@ fn multi_select_search_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
         &opts,
         area,
     );
-    MultiSelect::new(&opts, system)
-        .ascii(true)
-        .paint_stacked(area, frame.buffer_mut(), &mut state);
+    MultiSelect::new(&opts, system).paint_stacked(area, frame.buffer_mut(), &mut state);
 }
 
 fn keybinding_recorder_recording_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -25345,9 +25168,7 @@ fn keybinding_recorder_recording_story(frame: &mut Frame<'_>, area: Rect, system
     state.set_focused(true);
     let _ = state.start_recording();
     let _ = state.capture_chord(KeyChord::ctrl(KeyCode::Char('x')));
-    KeybindingRecorder::new(system)
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut state);
+    let _ = KeybindingRecorder::new(system).paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn keybinding_recorder_conflict_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -25363,9 +25184,7 @@ fn keybinding_recorder_conflict_story(frame: &mut Frame<'_>, area: Rect, system:
     state.set_focused(true);
     let _ = state.start_recording();
     let _ = state.capture_chord(KeyChord::ctrl(KeyCode::Char('s')));
-    KeybindingRecorder::new(system)
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut state);
+    let _ = KeybindingRecorder::new(system).paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn keybinding_recorder_reserved_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -25378,9 +25197,7 @@ fn keybinding_recorder_reserved_story(frame: &mut Frame<'_>, area: Rect, system:
     state.set_focused(true);
     let _ = state.start_recording();
     let _ = state.capture_chord(KeyChord::ctrl(KeyCode::Char('c')));
-    KeybindingRecorder::new(system)
-        .ascii(true)
-        .paint(area, frame.buffer_mut(), &mut state);
+    let _ = KeybindingRecorder::new(system).paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn date_time_picker_time_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -25393,7 +25210,6 @@ fn date_time_picker_time_story(frame: &mut Frame<'_>, area: Rect, system: &Desig
     let _ = state.open(area);
     DateTimePicker::new(system)
         .label("Start time")
-        .ascii(true)
         .paint(area, frame.buffer_mut(), &mut state);
 }
 
@@ -25408,7 +25224,6 @@ fn date_time_picker_range_story(frame: &mut Frame<'_>, area: Rect, system: &Desi
     let _ = state.open(area);
     DateTimePicker::new(system)
         .label("Window")
-        .ascii(true)
         .paint(area, frame.buffer_mut(), &mut state);
 }
 
@@ -25418,11 +25233,9 @@ fn date_time_picker_narrow_story(frame: &mut Frame<'_>, area: Rect, system: &Des
     state.set_focused(true);
     state.set_today(CivilDate::new(2026, 8, 10).unwrap());
     let _ = state.open(area);
-    DateTimePicker::new(system).label("Day").ascii(true).paint(
-        area,
-        frame.buffer_mut(),
-        &mut state,
-    );
+    DateTimePicker::new(system)
+        .label("Day")
+        .paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn file_picker_seed(state: &mut FilePickerState, cwd: &str, entries: Vec<FileEntry>) {
@@ -25453,7 +25266,6 @@ fn file_picker_windows_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
     );
     FilePicker::new(system)
         .title("Browse")
-        .ascii(true)
         .paint(area, frame.buffer_mut(), &mut state);
 }
 
@@ -25488,7 +25300,6 @@ fn file_picker_ssh_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
     );
     FilePicker::new(system)
         .title("Remote path")
-        .ascii(true)
         .paint(area, frame.buffer_mut(), &mut state);
 }
 
@@ -25509,7 +25320,6 @@ fn file_picker_no_preview_story(frame: &mut Frame<'_>, area: Rect, system: &Desi
     FilePicker::new(system)
         .title("Pick logs")
         .show_preview(false)
-        .ascii(true)
         .paint(area, frame.buffer_mut(), &mut state);
 }
 
@@ -25528,10 +25338,12 @@ fn combobox_open_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
     let _ = state.insert_str("R");
     let g = state.suggestion_generation();
     let _ = state.apply_suggestions(g, &cands);
-    Combobox::new(system)
-        .label("Language")
-        .ascii(true)
-        .paint_with_menu(area, frame.buffer_mut(), &mut state, &cands);
+    Combobox::new(system).label("Language").paint_with_menu(
+        area,
+        frame.buffer_mut(),
+        &mut state,
+        &cands,
+    );
 }
 
 fn combobox_loading_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -25540,11 +25352,9 @@ fn combobox_loading_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyst
     let _ = state.insert_str("asyn");
     state.mark_loading();
     assert_eq!(state.suggestion_status(), SuggestionStatus::Loading);
-    let _ = Combobox::new(system).label("Search").ascii(true).paint(
-        area,
-        frame.buffer_mut(),
-        &mut state,
-    );
+    let _ = Combobox::new(system)
+        .label("Search")
+        .paint(area, frame.buffer_mut(), &mut state);
 }
 
 fn combobox_creatable_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -25557,7 +25367,6 @@ fn combobox_creatable_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
     Combobox::new(system)
         .label("Complete")
         .placeholder("Type freely…")
-        .ascii(true)
         .paint_with_menu(area, frame.buffer_mut(), &mut state, &cands);
 }
 
@@ -25760,11 +25569,9 @@ fn paint_agent_workbench_story(
             workbench.density = Some(WorkbenchDensity::Narrow);
         }
         AgentWorkbenchStoryKind::Tiny => {
-            workbench.density = Some(WorkbenchDensity::Tiny);
+            workbench.density = Some(WorkbenchDensity::Narrow);
         }
-        AgentWorkbenchStoryKind::Ascii => {
-            workbench.ascii = true;
-        }
+        AgentWorkbenchStoryKind::Ascii => {}
         AgentWorkbenchStoryKind::NoColor => {
             workbench.colorless = true;
         }
@@ -26584,7 +26391,7 @@ fn carousel_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{Carousel, CarouselState, example_carousel_slides};
     let slides = example_carousel_slides();
     let st = CarouselState::new();
-    Carousel::new(&slides, system).paint(area, frame.buffer_mut(), &st);
+    let _ = Carousel::new(&slides, system).paint(area, frame.buffer_mut(), &st);
 }
 
 fn input_group_basic(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -26687,7 +26494,7 @@ fn paint_settings_screen_story(
                 )
             }
             SettingsScreenStoryKind::Tiny => {
-                state.density = Some(SettingsDensity::Tiny);
+                state.density = Some(SettingsDensity::Narrow);
                 let _ = state.select_section("appearance");
                 (
                     vec![Fieldset::new("Appearance", &appearance)],
@@ -26953,7 +26760,6 @@ fn transcript_ascii_colorless(frame: &mut Frame<'_>, area: Rect, system: &Design
     let mut state = TranscriptState::new();
     frame.render_stateful_widget(
         &Transcript::new(&blocks, system)
-            .ascii(true)
             .colorless(true)
             .focused(true),
         area,

@@ -9,7 +9,6 @@
 //! Agent rule: classify every new surface before implementing —
 //! [`docs/design/building-block-vs-example-composite.md`](../../../docs/design/building-block-vs-example-composite.md)
 //! and repository `Agents.md`.
-
 pub use crate::ansi_text::{
     AnsiLine, AnsiParseOptions, AnsiSegment, AnsiStream, AnsiText, AnsiTextMode, AnsiTextState,
     is_paint_safe, line_from_ansi, lines_for_log, parse_lines, parse_to_line, strip_bytes,
@@ -330,8 +329,7 @@ pub use citation::{
 pub use code_block::{
     AnsiSyntax, CodeBlock, CodeBlockOutcome, CodeBlockParts, CodeBlockState, CodeGutterMark,
     CodeHighlight, CodeHighlightKind, CodeSourceMeta, CodeTokenKind, CodeWrap, ControlRender,
-    PlainSyntax, RoleTokenSyntax, SyntaxHighlighter, TokenSyntax, prepare_code_display,
-    syntax_role_style,
+    PlainSyntax, RoleTokenSyntax, SyntaxHighlighter, prepare_code_display, syntax_role_style,
 };
 pub use collapsible::{
     CollapsedContentPolicy, Collapsible, CollapsibleOutcome, CollapsibleParts, CollapsibleState,
@@ -536,7 +534,7 @@ pub use label::{
 };
 pub use link::{
     ActionLink, ActionLinkOutcome, DestinationDisplay, Link, LinkDestination, LinkOutcome,
-    LinkParts, LinkState, LinkStyle, LinkVariant,
+    LinkParts, LinkState, LinkVariant,
 };
 pub use list::{
     LIST_NARROW_DROP_ORDER, List, ListClickPolicy, ListRow, ListSelectionMode, ListState, RowRole,
@@ -661,9 +659,8 @@ pub use primitives::{
     IconButtonState, button_hit, toolbar_icon_action,
 };
 pub use progress::{
-    DEFAULT_PROGRESS_FRAMES, MIN_WIDTH_WITH_PERCENTAGE, PROGRESS_ASCII_FRAMES,
-    PROGRESS_DEFAULT_THROTTLE_MS, ProgressBar, ProgressBarState, ProgressKind, ProgressRecipe,
-    ProgressStatus, ProgressUnit,
+    DEFAULT_PROGRESS_FRAMES, MIN_WIDTH_WITH_PERCENTAGE, PROGRESS_DEFAULT_THROTTLE_MS, ProgressBar,
+    ProgressBarState, ProgressKind, ProgressRecipe, ProgressStatus, ProgressUnit,
 };
 pub use progress_steps::{
     PROGRESS_STEPS_COMPACT_MAX_WIDTH, PROGRESS_STEPS_HINTS, PROGRESS_STEPS_SUMMARY_MAX_WIDTH,
@@ -750,10 +747,8 @@ pub use slider::{
     SliderOrientation, SliderOutcome, SliderParts, SliderState,
 };
 pub use spinner::{
-    ActivityIndicator, ActivityPhase, SPINNER_ASCII_FRAMES, SPINNER_BRAILLE_FRAMES,
-    SPINNER_DEFAULT_PERIOD_MS, SPINNER_RECONNECT_UNICODE, SPINNER_STREAM_ASCII,
-    SPINNER_STREAM_UNICODE, SPINNER_WAITING_ASCII, SPINNER_WAITING_UNICODE, Spinner,
-    SpinnerGlyphSet, SpinnerState, SpinnerVariant,
+    ActivityIndicator, ActivityPhase, SPINNER_BRAILLE_FRAMES, SPINNER_DEFAULT_PERIOD_MS, Spinner,
+    SpinnerState, SpinnerVariant,
 };
 pub use split_pane::{
     SplitDirection, SplitPane, SplitPaneLayout, SplitPaneOutcome, SplitPaneState, SplitRatio,

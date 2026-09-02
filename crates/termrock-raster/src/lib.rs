@@ -14,6 +14,15 @@ mod render;
 pub use compare::{PixelDiff, compare_png_pixels};
 pub use render::{RenderError, render_pixmap, render_png};
 
+/// Whether the vendored face chain maps `character` to a real glyph.
+///
+/// False means the rasterizer paints an empty cell for `character`; true means
+/// it paints its own outline. `.notdef` tofu is never rendered either way.
+#[must_use]
+pub fn is_glyph_mapped(character: char) -> bool {
+    fonts::is_mapped(ratatui::style::Modifier::empty(), character)
+}
+
 /// Cell width in pixels (matches the frame/preview seam).
 pub const CELL_WIDTH_PX: u32 = 9;
 /// Cell height in pixels (matches the frame/preview seam).

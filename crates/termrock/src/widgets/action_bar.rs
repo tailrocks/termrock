@@ -72,7 +72,6 @@ pub struct ActionBar<'a, Id> {
     actions: &'a [Action<'a, Id>],
     gap: &'a str,
     system: &'a DesignSystem,
-    ascii: bool,
     colorless: bool,
     /// Stack one action per row (narrow dialogs).
     vertical: bool,
@@ -88,7 +87,6 @@ impl<'a, Id> ActionBar<'a, Id> {
             actions,
             gap: " ",
             system,
-            ascii: false,
             colorless: false,
             vertical: false,
             centered: false,
@@ -104,13 +102,7 @@ impl<'a, Id> ActionBar<'a, Id> {
 
     /// ASCII cursor brackets (`[label]`).
     #[must_use]
-    pub const fn ascii(mut self, ascii: bool) -> Self {
-        self.ascii = ascii;
-        self
-    }
-
     /// Reduced-color paint (strong text instead of ActionFocused).
-    #[must_use]
     pub const fn colorless(mut self, colorless: bool) -> Self {
         self.colorless = colorless;
         self
@@ -143,7 +135,6 @@ impl<'a, Id> ActionBar<'a, Id> {
     fn button_for(&self, action: &Action<'a, Id>, variant: ActionVariant) -> Button<'a> {
         Button::new(action.label, self.system)
             .variant(variant.button_variant())
-            .ascii(self.ascii)
             .colorless(self.colorless)
     }
 }

@@ -26,7 +26,6 @@
 //! | Typeahead | Jump focus to label prefix match |
 //!
 //! Research: VS Code trees, file explorers, Yazi, broot, DB navigators.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -875,7 +874,6 @@ impl<Id> TreeNavigationState<Id> {
 pub struct TreeNavigation<'a, Id> {
     nodes: &'a [TreeNavNode<Id>],
     system: &'a DesignSystem,
-    ascii: bool,
     empty_message: &'a str,
 }
 
@@ -886,20 +884,13 @@ impl<'a, Id> TreeNavigation<'a, Id> {
         Self {
             nodes,
             system,
-            ascii: false,
             empty_message: "Nothing here",
         }
     }
 
     /// ASCII glyphs.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Empty message.
-    #[must_use]
     pub const fn empty_message(mut self, msg: &'a str) -> Self {
         self.empty_message = msg;
         self
@@ -977,9 +968,7 @@ impl<'a, Id> TreeNavigation<'a, Id> {
                     .patch(self.system.style(Role::SelectionTint))
                     .add_modifier(Modifier::BOLD)
             } else if is_focus {
-                self.system
-                    .style(Role::Focus)
-                    .add_modifier(Modifier::REVERSED)
+                self.system.style(Role::Focus).add_modifier(Modifier::BOLD)
             } else if is_ancestor {
                 self.system
                     .style(Role::TextStrong)
@@ -997,22 +986,14 @@ impl<'a, Id> TreeNavigation<'a, Id> {
             let indent = " ".repeat(usize::from(indent_cols));
 
             let chev = if node.branch {
-                if node.expanded {
-                    if self.ascii { "v" } else { "▾" }
-                } else if self.ascii {
-                    ">"
-                } else {
-                    "▸"
-                }
-            } else if self.ascii {
-                " "
+                if node.expanded { "▾" } else { "▸" }
             } else {
                 "·"
             };
 
             let status = node
                 .status
-                .mark(self.ascii)
+                .mark(false)
                 .map(|m| format!("{m} "))
                 .unwrap_or_default();
             let icon = node
@@ -1026,7 +1007,7 @@ impl<'a, Id> TreeNavigation<'a, Id> {
                 .map(|b| format!(" [{b}]"))
                 .unwrap_or_default();
             let lazy = if node.lazy && !node.expanded {
-                if self.ascii { " ?" } else { " …" }
+                " …"
             } else {
                 ""
             };
@@ -1412,9 +1393,7 @@ mod tests {
         state.set_focused(true);
         let area = Rect::new(0, 0, 32, 12);
         let mut buf = Buffer::empty(area);
-        TreeNavigation::new(&nodes, &system)
-            .ascii(true)
-            .paint(area, &mut buf, &mut state);
+        TreeNavigation::new(&nodes, &system).paint(area, &mut buf, &mut state);
         assert!(!state.regions.is_empty());
         if let Some(hit) = state.regions.iter().find(|r| r.id == "events") {
             assert!(matches!(
@@ -1439,9 +1418,7 @@ mod tests {
         state.set_focused(true);
         let area = Rect::new(0, 0, 12, 10);
         let mut buf = Buffer::empty(area);
-        TreeNavigation::new(&nodes, &system)
-            .ascii(true)
-            .paint(area, &mut buf, &mut state);
+        TreeNavigation::new(&nodes, &system).paint(area, &mut buf, &mut state);
         assert!(state.narrow);
     }
 
@@ -1481,7 +1458,7 @@ mod tests {
         state.set_focused(true);
         let area = Rect::new(0, 0, 40, 14);
         let mut buf = Buffer::empty(area);
-        let w = TreeNavigation::new(&nodes, &system).ascii(true);
+        let w = TreeNavigation::new(&nodes, &system);
         for _ in 0..50 {
             w.paint(area, &mut buf, &mut state);
         }

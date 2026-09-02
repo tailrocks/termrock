@@ -20,7 +20,6 @@
 //!
 //! Research: Grok Build permissions, Amp plugin prompts, browser permissions,
 //! sudo, security review UIs.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -33,7 +32,7 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     interaction::{OverlayId, OverlayKind, OverlayOutcome, OverlaySize, OverlaySpec, OverlayStack},
-    style::{Density, DesignSystem, Role, RolePalette},
+    style::{DesignSystem, Role, RolePalette},
     text::{display_cols, take_display_cols},
     widgets::{Action, ActionBar, ActionBarState, ActionVariant, Panel, PanelChrome, PanelVariant},
 };
@@ -185,7 +184,7 @@ impl PermissionRisk {
     #[must_use]
     pub const fn role(self) -> Role {
         match self {
-            Self::Low => Role::Info,
+            Self::Low => Role::TextSecondary,
             Self::Medium => Role::Warning,
             Self::High | Self::Critical => Role::Danger,
         }
@@ -1392,8 +1391,6 @@ pub enum DangerChrome {
 #[derive(Debug, Clone, Copy)]
 pub struct PermissionPrompt<'a> {
     system: &'a DesignSystem,
-    /// Use ASCII risk markers.
-    ascii: bool,
     /// Reduced-color paint.
     colorless: bool,
     /// Scene/overlay surface focus chrome.
@@ -1408,7 +1405,6 @@ impl<'a> PermissionPrompt<'a> {
     pub const fn new(system: &'a DesignSystem) -> Self {
         Self {
             system,
-            ascii: false,
             colorless: false,
             focused: true,
             danger_chrome: DangerChrome::Quiet,
@@ -1426,13 +1422,7 @@ impl<'a> PermissionPrompt<'a> {
 
     /// Prefer ASCII risk markers.
     #[must_use]
-    pub const fn ascii(mut self, ascii: bool) -> Self {
-        self.ascii = ascii;
-        self
-    }
-
     /// Reduced-color paint (non-color risk still has glyphs).
-    #[must_use]
     pub const fn colorless(mut self, colorless: bool) -> Self {
         self.colorless = colorless;
         self
@@ -1454,7 +1444,7 @@ impl StatefulWidget for &PermissionPrompt<'_> {
         if area.is_empty() {
             return;
         }
-        let tokens = self.system.clone().density(Density::Compact);
+        let tokens = self.system.clone();
         let surface = self.focused && state.accepts_input();
         let Some(req) = state.queue.head() else {
             let panel = Panel::new(&tokens)
@@ -1469,7 +1459,7 @@ impl StatefulWidget for &PermissionPrompt<'_> {
             Widget::render(&panel, area, buffer);
             let inner = panel.inner(area);
             if !inner.is_empty() {
-                let mark = if self.ascii { "[ ] " } else { "∅ " };
+                let mark = { "∅ " };
                 let msg = format!("{mark}No pending permissions");
                 buffer.set_stringn(
                     inner.x,
@@ -1485,9 +1475,7 @@ impl StatefulWidget for &PermissionPrompt<'_> {
         let risk = req.risk;
         let title = format!(
             "{} {} · {}",
-            if self.ascii {
-                risk.glyph()
-            } else {
+            {
                 match risk {
                     PermissionRisk::Low => "ℹ",
                     PermissionRisk::Medium => "!",
@@ -1672,7 +1660,14 @@ impl StatefulWidget for &PermissionPrompt<'_> {
             && y < inner.bottom()
         {
             let p = format!("prior: {} ({})", prior.summary, prior.scope.label());
-            paint_line(buffer, inner.x, y, w, &p, self.system.style(Role::Info));
+            paint_line(
+                buffer,
+                inner.x,
+                y,
+                w,
+                &p,
+                self.system.style(Role::TextSecondary),
+            );
             y = y.saturating_add(1);
         }
 
@@ -1786,7 +1781,6 @@ impl StatefulWidget for &PermissionPrompt<'_> {
             let action_area = Rect::new(inner.x, start_y, inner.width, action_rows);
             StatefulWidget::render(
                 &ActionBar::new(&actions, self.system)
-                    .ascii(self.ascii)
                     .colorless(self.colorless)
                     .vertical(narrow),
                 action_area,

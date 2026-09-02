@@ -19,7 +19,6 @@
 //!
 //! **vs [`Select`](crate::widgets::Select).** Select is a form field. These
 //! selectors are composer/status chrome with metadata rows and consequence cues.
-
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
 
 use crate::{
@@ -1063,7 +1062,6 @@ fn cycle_reasoning(r: ReasoningEffort) -> ReasoningEffort {
 pub struct ModelSelector<'a> {
     options: &'a [ModelOption],
     system: &'a DesignSystem,
-    ascii: bool,
     /// Show reasoning effort in compact status.
     show_reasoning: bool,
 }
@@ -1075,20 +1073,13 @@ impl<'a> ModelSelector<'a> {
         Self {
             options,
             system,
-            ascii: false,
             show_reasoning: false,
         }
     }
 
     /// ASCII.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Include reasoning token in compact line.
-    #[must_use]
     pub const fn show_reasoning(mut self, on: bool) -> Self {
         self.show_reasoning = on;
         self
@@ -1100,14 +1091,10 @@ impl<'a> ModelSelector<'a> {
         let base = state
             .selected()
             .and_then(|id| self.options.iter().find(|o| o.id == id))
-            .map(|o| o.status_text(self.ascii))
+            .map(|o| o.status_text(false))
             .unwrap_or_else(|| "model?".into());
         if self.show_reasoning {
-            format!(
-                "{base}{}{}",
-                if self.ascii { " | " } else { " · " },
-                state.reasoning.short()
-            )
+            format!("{base}{}{}", { " · " }, state.reasoning.short())
         } else {
             base
         }
@@ -1126,11 +1113,7 @@ impl<'a> ModelSelector<'a> {
         }
         match state.presentation {
             ModelSelectorPresentation::Compact => {
-                let line = format!(
-                    "{} {}",
-                    if self.ascii { "M" } else { "⚙" },
-                    self.compact_status(state)
-                );
+                let line = format!("{} {}", { "⚙" }, self.compact_status(state));
                 let control_state = if !state.accepts_input {
                     ControlState::Disabled
                 } else if state.focused {
@@ -1138,9 +1121,11 @@ impl<'a> ModelSelector<'a> {
                 } else {
                     ControlState::Default
                 };
-                let recipe = self
-                    .system
-                    .button_recipe(ButtonRecipeVariant::Quiet, control_state);
+                let recipe = self.system.button_recipe(
+                    ButtonRecipeVariant::Quiet,
+                    control_state,
+                    self.system.junie_theme().surface,
+                );
                 buffer.set_style(area, recipe.fill);
                 buffer.set_stringn(
                     area.x,
@@ -1165,7 +1150,7 @@ impl<'a> ModelSelector<'a> {
                     let search_area = Rect::new(area.x, y, area.width, 1);
                     buffer.set_style(search_area, recipe.fill);
                     if area.width > 0 {
-                        let prompt = if self.ascii { ">" } else { "›" };
+                        let prompt = { "›" };
                         buffer.set_stringn(area.x, y, prompt, 1, recipe.cursor);
                     }
                     let value_x = area.x.saturating_add(1).min(area.right());
@@ -1208,22 +1193,14 @@ impl<'a> ModelSelector<'a> {
                         break;
                     }
                     let selected = state.highlight.as_deref() == Some(o.id.as_str());
-                    let mark = if selected {
-                        if self.ascii { "*" } else { "›" }
-                    } else {
-                        " "
-                    };
+                    let mark = if selected { "›" } else { " " };
                     let warn = if o.warning.is_some() || !o.availability.is_selectable() {
-                        if self.ascii { "!" } else { "⚠" }
+                        "⚠"
                     } else {
                         ""
                     };
                     let committed = state.selected.as_deref() == Some(o.id.as_str());
-                    let checked = if committed {
-                        if self.ascii { "*" } else { "✓" }
-                    } else {
-                        " "
-                    };
+                    let checked = if committed { "✓" } else { " " };
                     let line = format!(
                         "{mark}{checked} {} {}{}",
                         o.label,
@@ -1241,6 +1218,7 @@ impl<'a> ModelSelector<'a> {
                         enabled: o.availability.is_selectable(),
                         loading: false,
                         checked: committed,
+                        ..ListRowVisualState::default()
                     });
                     let rect = Rect::new(area.x, y, area.width, 1);
                     if recipe.use_fill {
@@ -1271,11 +1249,7 @@ impl<'a> ModelSelector<'a> {
                     ));
                     y = y.saturating_add(1);
                     // meta line if room
-                    let meta = if self.ascii {
-                        o.row_meta().replace(" · ", " | ")
-                    } else {
-                        o.row_meta()
-                    };
+                    let meta = { o.row_meta() };
                     if !meta.is_empty() && y < area.bottom() && area.height > 4 {
                         buffer.set_stringn(
                             area.x.saturating_add(2),
@@ -1597,29 +1571,18 @@ fn cycle_policy(p: ExecutionPolicyKind) -> ExecutionPolicyKind {
 pub struct AgentModeSelector<'a> {
     modes: &'a [AgentModeOption],
     system: &'a DesignSystem,
-    ascii: bool,
 }
 
 impl<'a> AgentModeSelector<'a> {
     /// Modes + system.
     #[must_use]
     pub const fn new(modes: &'a [AgentModeOption], system: &'a DesignSystem) -> Self {
-        Self {
-            modes,
-            system,
-            ascii: false,
-        }
+        Self { modes, system }
     }
 
     /// ASCII.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Compact status text.
-    #[must_use]
     pub fn compact_status(&self, state: &AgentModeSelectorState) -> String {
         let mode = state
             .selected()
@@ -1627,7 +1590,7 @@ impl<'a> AgentModeSelector<'a> {
             .map(|m| m.status_text())
             .unwrap_or_else(|| "MODE".into());
         if let Some(p) = state.policy {
-            format!("{mode}{}{}", if self.ascii { "/" } else { "·" }, p.short())
+            format!("{mode}{}{}", { "·" }, p.short())
         } else {
             mode
         }
@@ -1650,11 +1613,7 @@ impl<'a> AgentModeSelector<'a> {
                     .selected()
                     .and_then(|id| self.modes.iter().find(|m| m.id == id));
                 let warn = mode.is_some_and(|m| m.needs_warning_role());
-                let warning = if warn {
-                    if self.ascii { "!" } else { "⚠" }
-                } else {
-                    ""
-                };
+                let warning = if warn { "⚠" } else { "" };
                 let line = format!("[{}]{warning}", self.compact_status(state));
                 let control_state = if !state.accepts_input {
                     ControlState::Disabled
@@ -1663,9 +1622,11 @@ impl<'a> AgentModeSelector<'a> {
                 } else {
                     ControlState::Default
                 };
-                let recipe = self
-                    .system
-                    .button_recipe(ButtonRecipeVariant::Quiet, control_state);
+                let recipe = self.system.button_recipe(
+                    ButtonRecipeVariant::Quiet,
+                    control_state,
+                    self.system.junie_theme().surface,
+                );
                 buffer.set_style(area, recipe.fill);
                 let style = if warn {
                     recipe.label.patch(self.system.style(Role::Warning))
@@ -1702,14 +1663,16 @@ impl<'a> AgentModeSelector<'a> {
                     } else {
                         ControlState::Default
                     };
-                    let recipe = self
-                        .system
-                        .button_recipe(ButtonRecipeVariant::Quiet, control_state);
+                    let recipe = self.system.button_recipe(
+                        ButtonRecipeVariant::Quiet,
+                        control_state,
+                        self.system.junie_theme().surface,
+                    );
                     let rect = Rect::new(x, area.y, w, 1);
                     buffer.set_style(rect, recipe.fill);
                     let mut style = recipe.label;
                     if active {
-                        style = style.add_modifier(Modifier::REVERSED);
+                        style = style.add_modifier(Modifier::BOLD);
                     }
                     if m.needs_warning_role() {
                         style = style.patch(self.system.style(Role::Warning));
@@ -1740,11 +1703,7 @@ impl<'a> AgentModeSelector<'a> {
                         break;
                     }
                     let selected = state.highlight.as_deref() == Some(m.id.as_str());
-                    let mark = if selected {
-                        if self.ascii { "*" } else { "›" }
-                    } else {
-                        " "
-                    };
+                    let mark = if selected { "›" } else { " " };
                     let line = format!("{mark}{} {}", m.short_label, m.label);
                     let committed = state.selected.as_deref() == Some(m.id.as_str());
                     let recipe = self.system.resolve_list_row(ListRowVisualState {
@@ -1754,6 +1713,7 @@ impl<'a> AgentModeSelector<'a> {
                         enabled: m.enabled && state.accepts_input,
                         loading: false,
                         checked: committed,
+                        ..ListRowVisualState::default()
                     });
                     let rect = Rect::new(area.x, y, area.width, 1);
                     if recipe.use_fill {
@@ -1815,7 +1775,6 @@ pub struct ComposerSelectors<'a> {
     modes: &'a [AgentModeOption],
     models: &'a [ModelOption],
     system: &'a DesignSystem,
-    ascii: bool,
 }
 
 impl<'a> ComposerSelectors<'a> {
@@ -1830,17 +1789,11 @@ impl<'a> ComposerSelectors<'a> {
             modes,
             models,
             system,
-            ascii: false,
         }
     }
 
     /// ASCII.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Paint compact: `[MODE] · model/provider ctx`.
     pub fn paint_compact(
         &self,
@@ -1852,21 +1805,13 @@ impl<'a> ComposerSelectors<'a> {
         if area.is_empty() {
             return;
         }
-        let mode = AgentModeSelector::new(self.modes, self.system)
-            .ascii(self.ascii)
-            .compact_status(mode_state);
-        let model = ModelSelector::new(self.models, self.system)
-            .ascii(self.ascii)
-            .compact_status(model_state);
+        let mode = AgentModeSelector::new(self.modes, self.system).compact_status(mode_state);
+        let model = ModelSelector::new(self.models, self.system).compact_status(model_state);
         let warn = mode_state
             .selected()
             .and_then(|id| self.modes.iter().find(|m| m.id == id))
             .is_some_and(|m| m.needs_warning_role());
-        let line = format!(
-            "[{mode}]{}{}",
-            if self.ascii { " | " } else { " · " },
-            model
-        );
+        let line = format!("[{mode}]{}{}", { " · " }, model);
         let style = if warn {
             self.system.style(Role::Warning)
         } else {
@@ -2058,7 +2003,8 @@ mod tests {
         let mut as_ = AgentModeSelectorState::with_selected("full-auto");
         let area = Rect::new(0, 0, 48, 1);
         let mut buf = Buffer::empty(area);
-        ComposerSelectors::new(&modes, &models, &system).paint_compact(area, &mut buf, &as_, &ms);
+        let _ = ComposerSelectors::new(&modes, &models, &system)
+            .paint_compact(area, &mut buf, &as_, &ms);
         // expanded paints
         ms.open();
         as_.open_menu();
@@ -2080,7 +2026,7 @@ mod tests {
         let area = Rect::new(0, 0, 32, 1);
         let mut buffer = Buffer::empty(area);
 
-        ComposerSelectors::new(&modes, &models, &system).paint_compact(
+        let _ = ComposerSelectors::new(&modes, &models, &system).paint_compact(
             area,
             &mut buffer,
             &mode_state,

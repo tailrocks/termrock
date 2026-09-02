@@ -8,10 +8,9 @@
 //! header when the table owned focus, and each spelled the sort marker its own
 //! way. A header is a label for a column, not a state — it reads the same in
 //! all three, and focus is expressed by the container's border.
-
 use ratatui_core::style::Style;
 
-use crate::style::{DesignSystem, Glyph, Role};
+use crate::style::{DesignSystem, Role};
 
 /// Style for a column header label.
 ///
@@ -32,13 +31,8 @@ pub(crate) const fn column_gap() -> &'static str {
 }
 
 /// Sort direction marker, in the operator's glyph profile.
-pub(crate) fn sort_marker(system: &DesignSystem, ascending: bool) -> &'static str {
-    let glyph = if ascending {
-        Glyph::ArrowUp
-    } else {
-        Glyph::ArrowDown
-    };
-    system.glyphs.resolve(glyph).text
+pub(crate) fn sort_marker(ascending: bool) -> &'static str {
+    if ascending { "▴" } else { "▾" }
 }
 
 /// Marker a sortable-but-unsorted column wears.
@@ -47,12 +41,8 @@ pub(crate) fn sort_marker(system: &DesignSystem, ascending: bool) -> &'static st
 /// operator has to click and see what happens. The neutral marker states the
 /// capability faintly; the direction arrow replaces it once sorted
 /// (plans/021 Step 3).
-pub(crate) fn sortable_marker(system: &DesignSystem) -> &'static str {
-    if system.glyphs.is_ascii() {
-        "^v"
-    } else {
-        "⇅"
-    }
+pub(crate) fn sortable_marker(_system: &DesignSystem) -> &'static str {
+    "⇅"
 }
 
 /// Tone for the neutral sortable marker.
@@ -63,11 +53,10 @@ pub(crate) fn sortable_marker_style(system: &DesignSystem) -> Style {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::style::GlyphSet;
 
     #[test]
     fn headers_do_not_brighten_with_focus() {
-        let system = DesignSystem::phosphor();
+        let system = DesignSystem::junie();
         assert_eq!(header_style(&system), system.style(Role::TextMuted));
         assert_ne!(header_style(&system), system.style(Role::TextStrong));
         assert!(header_band(&system).bg.is_none());
@@ -75,12 +64,8 @@ mod tests {
     }
 
     #[test]
-    fn sort_markers_follow_the_glyph_profile() {
-        let unicode = DesignSystem::phosphor().glyphs(GlyphSet::Unicode);
-        let ascii = DesignSystem::phosphor().glyphs(GlyphSet::Ascii);
-        assert_eq!(sort_marker(&unicode, true), "↑");
-        assert_eq!(sort_marker(&unicode, false), "↓");
-        assert_eq!(sort_marker(&ascii, true), "^");
-        assert_eq!(sort_marker(&ascii, false), "v");
+    fn sort_markers_follow_the_junie_glyphs() {
+        assert_eq!(sort_marker(true), "▴");
+        assert_eq!(sort_marker(false), "▾");
     }
 }

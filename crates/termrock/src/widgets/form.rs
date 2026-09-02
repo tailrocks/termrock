@@ -16,7 +16,6 @@
 //!
 //! Research: shadcn form composition, React Hook Form concepts, Huh, Textual,
 //! desktop settings panels.
-
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -1360,9 +1359,7 @@ mod unit_tests {
         Form::new(&sections, &system)
             .stacked()
             .render(area, &mut buf, &mut state);
-        Form::new(&sections, &system)
-            .inline()
-            .render(area, &mut buf, &mut state);
+        Form::new(&sections, &system).render(area, &mut buf, &mut state);
         assert!(state.content_height() > 0);
     }
 

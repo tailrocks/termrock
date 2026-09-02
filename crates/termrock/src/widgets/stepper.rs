@@ -15,7 +15,6 @@
 //! [`StepperNavPolicy`].
 //!
 //! Research: shadcn-style steppers, installers, CI pipeline views.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -777,7 +776,6 @@ pub fn default_stepper_intent(key: KeyEvent, orientation: StepperOrientation) ->
 pub struct Stepper<'a> {
     items: &'a [StepItem],
     system: &'a DesignSystem,
-    ascii: bool,
     colorless: bool,
     show_descriptions: bool,
 }
@@ -792,7 +790,6 @@ impl<'a> Stepper<'a> {
             // Seeded from the system: a widget that defaults to false is
             // claiming the terminal has Unicode and colour before anyone
             // asked it. Builders below still force either way.
-            ascii: system.ascii_glyphs(),
             colorless: system.mono(),
             show_descriptions: true,
         }
@@ -800,13 +797,7 @@ impl<'a> Stepper<'a> {
 
     /// ASCII marks.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Reduced color.
-    #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self
@@ -882,6 +873,7 @@ impl<'a> Stepper<'a> {
             enabled: enabled && !matches!(status, StepStatus::Disabled),
             loading: false,
             checked: matches!(status, StepStatus::Complete),
+            ..ListRowVisualState::default()
         });
         if recipe.use_fill {
             buffer.set_style(rect, recipe.label);
@@ -903,15 +895,11 @@ impl<'a> Stepper<'a> {
                 break;
             }
             let status = state.statuses.get(i).copied().unwrap_or_default();
-            let mark = status.mark(self.ascii);
+            let mark = status.mark(false);
             let title = take_display_cols(&step.title, max_title);
-            let opt = if step.optional && !compact {
-                if self.ascii { "?" } else { "◦" }
-            } else {
-                ""
-            };
+            let opt = if step.optional && !compact { "◦" } else { "" };
             let sep = if i + 1 < self.items.len() {
-                if self.ascii { " > " } else { " → " }
+                " → "
             } else {
                 ""
             };
@@ -951,7 +939,7 @@ impl<'a> Stepper<'a> {
                 break;
             }
             let status = state.statuses.get(i).copied().unwrap_or_default();
-            let mark = status.mark(self.ascii);
+            let mark = status.mark(false);
             let title = take_display_cols(&step.title, usize::from(area.width.saturating_sub(6)));
             let line = format!("{mark} {title}");
             let rect = Rect::new(area.x, y, area.width, 1);
@@ -994,7 +982,7 @@ impl<'a> Stepper<'a> {
             }
             // connector
             if i + 1 < self.items.len() && !compact && y < area.bottom() {
-                let conn = if self.ascii { " |" } else { " │" };
+                let conn = { " │" };
                 buffer.set_stringn(area.x, y, conn, 2, self.system.style(Role::Border));
                 y = y.saturating_add(1);
             }
@@ -1009,7 +997,7 @@ impl<'a> Stepper<'a> {
             .get(state.current)
             .copied()
             .unwrap_or(StepStatus::Current);
-        let mark = status.mark(self.ascii);
+        let mark = status.mark(false);
         let title = self
             .items
             .get(state.current)
@@ -1028,6 +1016,7 @@ impl<'a> Stepper<'a> {
             } else {
                 ControlState::Default
             },
+            self.system.junie_theme().surface,
         );
         buffer.set_style(Rect::new(area.x, area.y, area.width, 1), recipe.fill);
         let style = self.status_style(status, recipe.label);
@@ -1056,14 +1045,8 @@ impl<'a> Stepper<'a> {
             .get(state.current)
             .copied()
             .unwrap_or(StepStatus::Current);
-        let mark = status.mark(self.ascii);
-        let chev = if state.menu_open {
-            if self.ascii { "v" } else { "▾" }
-        } else if self.ascii {
-            ">"
-        } else {
-            "▸"
-        };
+        let mark = status.mark(false);
+        let chev = if state.menu_open { "▾" } else { "▸" };
         let line = format!("{mark} {cur}/{n} {title} {chev}");
         let recipe = self.system.button_recipe(
             ButtonRecipeVariant::Quiet,
@@ -1074,6 +1057,7 @@ impl<'a> Stepper<'a> {
             } else {
                 ControlState::Default
             },
+            self.system.junie_theme().surface,
         );
         buffer.set_style(Rect::new(area.x, area.y, area.width, 1), recipe.fill);
         let style = self.status_style(status, recipe.label);
@@ -1095,7 +1079,7 @@ impl<'a> Stepper<'a> {
                     break;
                 }
                 let st = state.statuses.get(i).copied().unwrap_or_default();
-                let m = st.mark(self.ascii);
+                let m = st.mark(false);
                 let row = format!(
                     "{} {}",
                     m,
@@ -1321,9 +1305,7 @@ mod tests {
         s.set_current(1, items.len(), true);
         let area = Rect::new(0, 0, 72, 3);
         let mut buf = Buffer::empty(area);
-        Stepper::new(&items, &system)
-            .ascii(true)
-            .paint(area, &mut buf, &mut s);
+        Stepper::new(&items, &system).paint(area, &mut buf, &mut s);
         let text: String = buf
             .content()
             .iter()
@@ -1338,9 +1320,7 @@ mod tests {
         s2.set_orientation(StepperOrientation::Vertical);
         let area2 = Rect::new(0, 0, 24, 12);
         let mut buf2 = Buffer::empty(area2);
-        Stepper::new(&items, &system)
-            .ascii(true)
-            .paint(area2, &mut buf2, &mut s2);
+        Stepper::new(&items, &system).paint(area2, &mut buf2, &mut s2);
         let t2: String = buf2
             .content()
             .iter()
@@ -1384,7 +1364,6 @@ mod tests {
         let area = Rect::new(0, 0, 60, 2);
         let mut buf = Buffer::empty(area);
         Stepper::new(&items, &system)
-            .ascii(true)
             .colorless(true)
             .paint(area, &mut buf, &mut s);
         let text: String = buf

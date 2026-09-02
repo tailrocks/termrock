@@ -32,7 +32,6 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -590,8 +589,6 @@ pub struct QueryEditorState {
     pub diagnostic_cursor: usize,
     /// Soft wrap in editor.
     pub soft_wrap: bool,
-    /// ASCII chrome.
-    pub ascii: bool,
     /// Line numbers.
     pub line_numbers: bool,
     /// Title override.
@@ -630,7 +627,6 @@ impl QueryEditorState {
             completion_open: false,
             diagnostic_cursor: 0,
             soft_wrap: false,
-            ascii: false,
             line_numbers: true,
             title: None,
             placeholder: "Enter query…".into(),
@@ -1180,7 +1176,6 @@ pub struct QueryEditor<'a> {
     diagnostics: &'a [Diagnostic<'a>],
     focused: bool,
     title: Option<&'a str>,
-    ascii: bool,
 }
 
 impl<'a> QueryEditor<'a> {
@@ -1192,7 +1187,6 @@ impl<'a> QueryEditor<'a> {
             diagnostics: &[],
             focused: true,
             title: None,
-            ascii: false,
         }
     }
 
@@ -1219,17 +1213,11 @@ impl<'a> QueryEditor<'a> {
 
     /// ASCII.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Paint workbench; host paints result grid into [`QueryEditorSlots::results`].
     pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut QueryEditorState) {
         if area.is_empty() {
             return;
         }
-        let ascii = self.ascii || state.ascii;
         let mut slots = QueryEditorSlots {
             root: area,
             ..QueryEditorSlots::empty()
@@ -1247,9 +1235,8 @@ impl<'a> QueryEditor<'a> {
                 height: 1,
             };
             let title = self.title.or(state.title.as_deref()).unwrap_or("Query");
-            let status = StatusIndicator::new(state.run.semantic(), self.system)
-                .label(state.run.verb())
-                .ascii(ascii);
+            let status =
+                StatusIndicator::new(state.run.semantic(), self.system).label(state.run.verb());
             let status_width = status.measure_width(None).min(area.width);
             Widget::render(&status, Rect::new(area.x, y, status_width, 1), buffer);
             let metadata_x = area.x.saturating_add(status_width.saturating_add(1));
@@ -1350,7 +1337,6 @@ impl<'a> QueryEditor<'a> {
         TextArea::new(self.system)
             .placeholder(state.placeholder.as_str())
             .line_numbers(state.line_numbers)
-            .ascii(ascii)
             .render(slots.editor, buffer, &mut state.editor);
         // Focus border cue on first cell of editor row when focused
         if matches!(state.focus, QueryFocus::Editor) && self.focused {
@@ -1359,7 +1345,7 @@ impl<'a> QueryEditor<'a> {
                 self.system.paint_row(
                     buffer,
                     Rect::new(slots.editor.x, slots.editor.y, 1, 1),
-                    if ascii { ">" } else { "›" },
+                    "›",
                     self.system.style(Role::Accent),
                 );
             }
@@ -1379,15 +1365,7 @@ impl<'a> QueryEditor<'a> {
             self.system.paint_row(
                 buffer,
                 Rect::new(area.x, y, area.width, 1),
-                &format!(
-                    "{} {}",
-                    if focused_diag {
-                        if ascii { "*" } else { "●" }
-                    } else {
-                        " "
-                    },
-                    summary
-                ),
+                &format!("{} {}", if focused_diag { "●" } else { " " }, summary),
                 if focused_diag {
                     self.system.style(Role::Focus)
                 } else {
@@ -1508,7 +1486,6 @@ impl<'a> QueryEditor<'a> {
         let line_refs: Vec<CodeFrameLine<'_>> = lines;
         CodeFrame::new(&line_refs, self.system)
             .labels(labels)
-            .ascii(self.ascii || state.ascii)
             .render(area, buffer);
     }
 }
@@ -1699,7 +1676,7 @@ mod tests {
         let diags = [sample_diag()];
         let area = Rect::new(0, 0, 72, 20);
         let mut buf = Buffer::empty(area);
-        QueryEditor::new(&system)
+        let _ = QueryEditor::new(&system)
             .diagnostics(&diags)
             .title("SQL")
             .render(area, &mut buf, &mut state);
@@ -1723,7 +1700,7 @@ mod tests {
         state.mode = QueryEditorMode::Compact;
         let area = Rect::new(0, 0, 40, 10);
         let mut buf = Buffer::empty(area);
-        QueryEditor::new(&system).render(area, &mut buf, &mut state);
+        let _ = QueryEditor::new(&system).render(area, &mut buf, &mut state);
         assert!(state.slots.results.is_empty() || state.slots.results.height == 0);
     }
 
@@ -1775,7 +1752,7 @@ mod tests {
         let area = Rect::new(0, 0, 80, 24);
         let mut buf = Buffer::empty(area);
         for _ in 0..8 {
-            QueryEditor::new(&system).render(area, &mut buf, &mut state);
+            let _ = QueryEditor::new(&system).render(area, &mut buf, &mut state);
         }
         assert!(!state.slots.editor.is_empty());
     }

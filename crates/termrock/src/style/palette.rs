@@ -65,43 +65,5 @@ pub fn contrast_ratio(a: Rgb, b: Rgb) -> f32 {
     (high + 0.05) / (low + 0.05)
 }
 
-pub(crate) const PHOSPHOR_GREEN: Rgb = Rgb::new(0, 255, 65);
-pub(crate) const PHOSPHOR_DARK: Rgb = Rgb::new(0, 80, 18);
-pub(crate) const PREVIEW_CARD: Rgb = Rgb::new(28, 28, 28);
-
-/// Lifts a colour one step, for the "the pointer is here" answer on a surface
-/// that already owns its ground.
-///
-/// A hover wash needs an empty background to land on. A filled control has
-/// none, so its hover has to come from the fill itself: RGB colours lighten
-/// (or darken, when they are already near white), and the eight base ANSI
-/// colours swap to their bright twins. Anything else is returned unchanged —
-/// the caller then falls back to a non-colour cue.
-#[must_use]
-pub fn lift(color: ratatui_core::style::Color) -> ratatui_core::style::Color {
-    use ratatui_core::style::Color;
-
-    match color {
-        Color::Rgb(r, g, b) => {
-            let rgb = Rgb { r, g, b };
-            let lighten = relative_luminance(rgb) < 0.6;
-            let step = |channel: u8| -> u8 {
-                if lighten {
-                    channel.saturating_add(((255 - channel) as f32 * 0.22) as u8)
-                } else {
-                    channel.saturating_sub((channel as f32 * 0.18) as u8)
-                }
-            };
-            Color::Rgb(step(r), step(g), step(b))
-        }
-        Color::Black => Color::DarkGray,
-        Color::Red => Color::LightRed,
-        Color::Green => Color::LightGreen,
-        Color::Yellow => Color::LightYellow,
-        Color::Blue => Color::LightBlue,
-        Color::Magenta => Color::LightMagenta,
-        Color::Cyan => Color::LightCyan,
-        Color::Gray => Color::White,
-        other => other,
-    }
-}
+/// junie card plane: the preview surround sits on the elevated rung.
+pub(crate) const PREVIEW_CARD: Rgb = Rgb::new(0x18, 0x18, 0x1b);

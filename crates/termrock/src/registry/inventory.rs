@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Typed authority for the public widget inventory.
-
 use std::collections::BTreeSet;
 
 macro_rules! define_public_ui_ids {

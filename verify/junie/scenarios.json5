@@ -1,0 +1,345 @@
+// Scenario table for the junie-tui -> termrock fidelity harness.
+//
+// One entry per comparison. The reference side names an artifact that
+// bin/ref_capture.sh regenerates into reference/scenes/<scene>.{txt,ansi}; the
+// termrock side names a termrock-lookbook story rendered with
+// `cargo run -p termrock-lookbook -- frame --story <id>`.
+//
+//   status: "pending-termrock-scene"   no termrock story maps to this page yet.
+//                                      run.py reports SKIP and does not gate.
+//   status omitted                     active: compared on the text and color cell
+//                                      layers (bin/run.py explains the budget rules).
+//
+// Coordinates are cells. reference.crop is [x, y, w, h] inside the captured page.
+// termrock.crop defaults to the story inset by the one-cell story pad (STORY_PAD),
+// which is why an active scenario renders its story at (crop w - 2) x (crop h - 2).
+//
+// The 40 showcase entries are exactly the reference's own FNV baseline matrix
+// (20 NAV pages x 120x40 and 80x24), so this gate and that one are mutually
+// checkable. tablepro has no --page flag: its screens are reached with
+// --connect/--keys, and only the ones that survive a clean tmux capture are listed.
+{
+  scenarios: [
+  {
+    scene: "showcase_overview_120x40",
+    status: "pending-termrock-scene",
+    reference: { bin: "showcase", args: ["--page", "Overview"], cols: 120, rows: 40 },
+    termrock: { story: null, wanted: "app-shell/* + design-inspector/*" },
+    note: "token/principles board — no termrock app surface for it yet",
+  },
+  {
+    scene: "showcase_buttons_120x40",
+    reference: { bin: "showcase", args: ["--page", "Buttons"], cols: 120, rows: 40,
+                  crop: [27, 6, 46, 6] },
+    termrock: { story: "button-group/dialog" },
+    note: "junie paints 4 accent-barred buttons in one row; termrock groups 3 buttons",
+    // no tolerance block: the blessed ratchet in baselines/ gates this scene.
+    // Declare tolerance: { text_cells: 0, color_cells: 0 } to demand exact parity.
+  },
+  {
+    scene: "showcase_inputs_120x40",
+    status: "pending-termrock-scene",
+    reference: { bin: "showcase", args: ["--page", "Inputs"], cols: 120, rows: 40 },
+    termrock: { story: null, wanted: "input/* + form/*" },
+    note: "text fields, focus ring, validation — no termrock app surface for it yet",
+  },
+  {
+    scene: "showcase_textareas_120x40",
+    status: "pending-termrock-scene",
+    reference: { bin: "showcase", args: ["--page", "TextAreas"], cols: 120, rows: 40 },
+    termrock: { story: null, wanted: "textarea/* + editor/*" },
+    note: "multi-line editor with cursor — no termrock app surface for it yet",
+  },
+  {
+    scene: "showcase_forms_120x40",
+    status: "pending-termrock-scene",
+    reference: { bin: "showcase", args: ["--page", "Forms"], cols: 120, rows: 40 },
+    termrock: { story: null, wanted: "form/*" },
+    note: "labelled field stack — no termrock app surface for it yet",
+  },
+  {
+    scene: "showcase_lists_120x40",
+    reference: { bin: "showcase", args: ["--page", "Lists"], cols: 120, rows: 40,
+                  crop: [27, 6, 23, 15] },
+    termrock: { story: "list/selection" },
+    note: "junie: single-selection list with accent bar and divider column; termrock: list with markers and right-aligned values",
+    // no tolerance block: the blessed ratchet in baselines/ gates this scene.
+    // Declare tolerance: { text_cells: 0, color_cells: 0 } to demand exact parity.
+  },
+  {
+    scene: "showcase_trees_120x40",
+    status: "pending-termrock-scene",
+    reference: { bin: "showcase", args: ["--page", "Trees"], cols: 120, rows: 40 },
+    termrock: { story: null, wanted: "tree/*" },
+    note: "expandable tree — no termrock app surface for it yet",
+  },
+  {
+    scene: "showcase_tables_120x40",
+    reference: { bin: "showcase", args: ["--page", "Tables"], cols: 120, rows: 40,
+                  crop: [27, 4, 70, 10] },
+    termrock: { story: "table/sorted" },
+    note: "junie: sortable task table, one selected row; termrock: sorted table with sort glyphs and one selected row",
+    // no tolerance block: the blessed ratchet in baselines/ gates this scene.
+    // Declare tolerance: { text_cells: 0, color_cells: 0 } to demand exact parity.
+  },
+  {
+    scene: "showcase_editable_120x40",
+    status: "pending-termrock-scene",
+    reference: { bin: "showcase", args: ["--page", "Editable"], cols: 120, rows: 40 },
+    termrock: { story: null, wanted: "data-table/edit" },
+    note: "editable cells — no termrock app surface for it yet",
+  },
+  {
+    scene: "showcase_panels_120x40",
+    status: "pending-termrock-scene",
+    reference: { bin: "showcase", args: ["--page", "Panels"], cols: 120, rows: 40 },
+    termrock: { story: null, wanted: "panel/*" },
+    note: "panel variants and dividers — no termrock app surface for it yet",
+  },
+  {
+    scene: "showcase_sidebars_120x40",
+    status: "pending-termrock-scene",
+    reference: { bin: "showcase", args: ["--page", "Sidebars"], cols: 120, rows: 40 },
+    termrock: { story: null, wanted: "sidebar/* + app-shell/*" },
+    note: "nav sidebar — no termrock app surface for it yet",
+  },
+  {
+    scene: "showcase_dialogs_120x40",
+    status: "pending-termrock-scene",
+    reference: { bin: "showcase", args: ["--page", "Dialogs"], cols: 120, rows: 40 },
+    termrock: { story: null, wanted: "dialog/* + choice-dialog/*" },
+    note: "modal dialogs — no termrock app surface for it yet",
+  },
+  {
+    scene: "showcase_progress_120x40",
+    status: "pending-termrock-scene",
+    reference: { bin: "showcase", args: ["--page", "Progress"], cols: 120, rows: 40 },
+    termrock: { story: null, wanted: "progress/* + activity-indicator/*" },
+    note: "progress and activity — no termrock app surface for it yet",
+  },
+  {
+    scene: "showcase_scrolling_120x40",
+    status: "pending-termrock-scene",
+    reference: { bin: "showcase", args: ["--page", "Scrolling"], cols: 120, rows: 40 },
+    termrock: { story: null, wanted: "data-table/rows-10k" },
+    note: "scroll/overflow behaviour — no termrock app surface for it yet",
+  },
+  {
+    scene: "showcase_editor_120x40",
+    status: "pending-termrock-scene",
+    reference: { bin: "showcase", args: ["--page", "Editor"], cols: 120, rows: 40 },
+    termrock: { story: null, wanted: "code-block/* + editor/*" },
+    note: "code editor page — no termrock app surface for it yet",
+  },
+  {
+    scene: "showcase_grid_120x40",
+    status: "pending-termrock-scene",
+    reference: { bin: "showcase", args: ["--page", "Grid"], cols: 120, rows: 40 },
+    termrock: { story: null, wanted: "data-table/*" },
+    note: "data grid page — no termrock app surface for it yet",
+  },
+  {
+    scene: "showcase_chips_120x40",
+    status: "pending-termrock-scene",
+    reference: { bin: "showcase", args: ["--page", "Chips"], cols: 120, rows: 40 },
+    termrock: { story: null, wanted: "chip/* + select/*" },
+    note: "chips and selects — no termrock app surface for it yet",
+  },
+  {
+    scene: "showcase_pickers_120x40",
+    status: "pending-termrock-scene",
+    reference: { bin: "showcase", args: ["--page", "Pickers"], cols: 120, rows: 40 },
+    termrock: { story: null, wanted: "date-time-picker/* + file-picker/*" },
+    note: "pickers page — no termrock app surface for it yet",
+  },
+  {
+    scene: "showcase_settings_120x40",
+    status: "pending-termrock-scene",
+    reference: { bin: "showcase", args: ["--page", "Settings"], cols: 120, rows: 40 },
+    termrock: { story: null, wanted: "sidebar/settings + form/*" },
+    note: "settings screen — no termrock app surface for it yet",
+  },
+  {
+    scene: "showcase_taskrunner_120x40",
+    status: "pending-termrock-scene",
+    reference: { bin: "showcase", args: ["--page", "TaskRunner"], cols: 120, rows: 40 },
+    termrock: { story: null, wanted: "background-tasks/*" },
+    note: "task runner screen — no termrock app surface for it yet",
+  },
+  {
+    scene: "showcase_overview_80x24",
+    status: "pending-termrock-scene",
+    reference: { bin: "showcase", args: ["--page", "Overview"], cols: 80, rows: 24 },
+    termrock: { story: null, wanted: "app-shell/* + design-inspector/*" },
+    note: "token/principles board — no termrock app surface for it yet",
+  },
+  {
+    scene: "showcase_buttons_80x24",
+    status: "pending-termrock-scene",
+    reference: { bin: "showcase", args: ["--page", "Buttons"], cols: 80, rows: 24 },
+    termrock: { story: null, wanted: "button/* + button-group/*" },
+    note: "button playground, state matrix — no termrock app surface for it yet",
+  },
+  {
+    scene: "showcase_inputs_80x24",
+    status: "pending-termrock-scene",
+    reference: { bin: "showcase", args: ["--page", "Inputs"], cols: 80, rows: 24 },
+    termrock: { story: null, wanted: "input/* + form/*" },
+    note: "text fields, focus ring, validation — no termrock app surface for it yet",
+  },
+  {
+    scene: "showcase_textareas_80x24",
+    status: "pending-termrock-scene",
+    reference: { bin: "showcase", args: ["--page", "TextAreas"], cols: 80, rows: 24 },
+    termrock: { story: null, wanted: "textarea/* + editor/*" },
+    note: "multi-line editor with cursor — no termrock app surface for it yet",
+  },
+  {
+    scene: "showcase_forms_80x24",
+    status: "pending-termrock-scene",
+    reference: { bin: "showcase", args: ["--page", "Forms"], cols: 80, rows: 24 },
+    termrock: { story: null, wanted: "form/*" },
+    note: "labelled field stack — no termrock app surface for it yet",
+  },
+  {
+    scene: "showcase_lists_80x24",
+    status: "pending-termrock-scene",
+    reference: { bin: "showcase", args: ["--page", "Lists"], cols: 80, rows: 24 },
+    termrock: { story: null, wanted: "list/*" },
+    note: "single/multi selection lists — no termrock app surface for it yet",
+  },
+  {
+    scene: "showcase_trees_80x24",
+    status: "pending-termrock-scene",
+    reference: { bin: "showcase", args: ["--page", "Trees"], cols: 80, rows: 24 },
+    termrock: { story: null, wanted: "tree/*" },
+    note: "expandable tree — no termrock app surface for it yet",
+  },
+  {
+    scene: "showcase_tables_80x24",
+    status: "pending-termrock-scene",
+    reference: { bin: "showcase", args: ["--page", "Tables"], cols: 80, rows: 24 },
+    termrock: { story: null, wanted: "table/* + data-table/*" },
+    note: "sortable table with selection — no termrock app surface for it yet",
+  },
+  {
+    scene: "showcase_editable_80x24",
+    status: "pending-termrock-scene",
+    reference: { bin: "showcase", args: ["--page", "Editable"], cols: 80, rows: 24 },
+    termrock: { story: null, wanted: "data-table/edit" },
+    note: "editable cells — no termrock app surface for it yet",
+  },
+  {
+    scene: "showcase_panels_80x24",
+    status: "pending-termrock-scene",
+    reference: { bin: "showcase", args: ["--page", "Panels"], cols: 80, rows: 24 },
+    termrock: { story: null, wanted: "panel/*" },
+    note: "panel variants and dividers — no termrock app surface for it yet",
+  },
+  {
+    scene: "showcase_sidebars_80x24",
+    status: "pending-termrock-scene",
+    reference: { bin: "showcase", args: ["--page", "Sidebars"], cols: 80, rows: 24 },
+    termrock: { story: null, wanted: "sidebar/* + app-shell/*" },
+    note: "nav sidebar — no termrock app surface for it yet",
+  },
+  {
+    scene: "showcase_dialogs_80x24",
+    status: "pending-termrock-scene",
+    reference: { bin: "showcase", args: ["--page", "Dialogs"], cols: 80, rows: 24 },
+    termrock: { story: null, wanted: "dialog/* + choice-dialog/*" },
+    note: "modal dialogs — no termrock app surface for it yet",
+  },
+  {
+    scene: "showcase_progress_80x24",
+    status: "pending-termrock-scene",
+    reference: { bin: "showcase", args: ["--page", "Progress"], cols: 80, rows: 24 },
+    termrock: { story: null, wanted: "progress/* + activity-indicator/*" },
+    note: "progress and activity — no termrock app surface for it yet",
+  },
+  {
+    scene: "showcase_scrolling_80x24",
+    status: "pending-termrock-scene",
+    reference: { bin: "showcase", args: ["--page", "Scrolling"], cols: 80, rows: 24 },
+    termrock: { story: null, wanted: "data-table/rows-10k" },
+    note: "scroll/overflow behaviour — no termrock app surface for it yet",
+  },
+  {
+    scene: "showcase_editor_80x24",
+    status: "pending-termrock-scene",
+    reference: { bin: "showcase", args: ["--page", "Editor"], cols: 80, rows: 24 },
+    termrock: { story: null, wanted: "code-block/* + editor/*" },
+    note: "code editor page — no termrock app surface for it yet",
+  },
+  {
+    scene: "showcase_grid_80x24",
+    status: "pending-termrock-scene",
+    reference: { bin: "showcase", args: ["--page", "Grid"], cols: 80, rows: 24 },
+    termrock: { story: null, wanted: "data-table/*" },
+    note: "data grid page — no termrock app surface for it yet",
+  },
+  {
+    scene: "showcase_chips_80x24",
+    status: "pending-termrock-scene",
+    reference: { bin: "showcase", args: ["--page", "Chips"], cols: 80, rows: 24 },
+    termrock: { story: null, wanted: "chip/* + select/*" },
+    note: "chips and selects — no termrock app surface for it yet",
+  },
+  {
+    scene: "showcase_pickers_80x24",
+    status: "pending-termrock-scene",
+    reference: { bin: "showcase", args: ["--page", "Pickers"], cols: 80, rows: 24 },
+    termrock: { story: null, wanted: "date-time-picker/* + file-picker/*" },
+    note: "pickers page — no termrock app surface for it yet",
+  },
+  {
+    scene: "showcase_settings_80x24",
+    status: "pending-termrock-scene",
+    reference: { bin: "showcase", args: ["--page", "Settings"], cols: 80, rows: 24 },
+    termrock: { story: null, wanted: "sidebar/settings + form/*" },
+    note: "settings screen — no termrock app surface for it yet",
+  },
+  {
+    scene: "showcase_taskrunner_80x24",
+    status: "pending-termrock-scene",
+    reference: { bin: "showcase", args: ["--page", "TaskRunner"], cols: 80, rows: 24 },
+    termrock: { story: null, wanted: "background-tasks/*" },
+    note: "task runner screen — no termrock app surface for it yet",
+  },
+  {
+    scene: "tablepro_default_120x40",
+    status: "pending-termrock-scene",
+    reference: { bin: "tablepro", args: [], cols: 120, rows: 40 },
+    termrock: { story: null, wanted: "database-workbench/* + connection-manager/*" },
+    note: "default landing screen — termrock has no equivalent app surface yet (workstream 7)",
+  },
+  {
+    scene: "tablepro_default_80x24",
+    status: "pending-termrock-scene",
+    reference: { bin: "tablepro", args: [], cols: 80, rows: 24 },
+    termrock: { story: null, wanted: "database-workbench/*" },
+    note: "default landing screen, narrow — termrock has no equivalent app surface yet (workstream 7)",
+  },
+  {
+    scene: "tablepro_local_120x40",
+    status: "pending-termrock-scene",
+    reference: { bin: "tablepro", args: ["--connect", "Local PostgreSQL"], cols: 120, rows: 40 },
+    termrock: { story: null, wanted: "database-workbench/*" },
+    note: "connected workbench (fixture database) — termrock has no equivalent app surface yet (workstream 7)",
+  },
+  {
+    scene: "tablepro_production_120x40",
+    status: "pending-termrock-scene",
+    reference: { bin: "tablepro", args: ["--connect", "Production"], cols: 120, rows: 40 },
+    termrock: { story: null, wanted: "database-workbench/*" },
+    note: "connected workbench, production fixture — termrock has no equivalent app surface yet (workstream 7)",
+  },
+  {
+    scene: "tablepro_help_120x40",
+    status: "pending-termrock-scene",
+    reference: { bin: "tablepro", args: [], cols: 120, rows: 40, keys: ["?"] },
+    termrock: { story: null, wanted: "kbd/* + help overlay" },
+    note: "help overlay — termrock has no equivalent app surface yet (workstream 7)",
+  },
+  ],
+}

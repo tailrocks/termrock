@@ -18,7 +18,6 @@
 //! Does not steal focus while closed. High-volume ingest uses dedup keys.
 //!
 //! Research: desktop notification centers, CI dashboards, task histories.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::time::Duration;
 
@@ -531,7 +530,6 @@ pub struct NotificationCenterState {
     slots: NotificationCenterSlots,
     /// Filter chrome: cycling presets.
     filter_cycle: usize,
-    ascii: bool,
     /// When true, clear-all / dismiss only apply to filtered view.
     scope_to_filter: bool,
 }
@@ -560,7 +558,6 @@ impl NotificationCenterState {
             capacity: NOTIFICATION_CENTER_DEFAULT_CAPACITY,
             slots: NotificationCenterSlots::empty(),
             filter_cycle: 0,
-            ascii: false,
             scope_to_filter: true,
         }
     }
@@ -647,10 +644,6 @@ impl NotificationCenterState {
     }
 
     /// ASCII.
-    pub fn set_ascii(&mut self, on: bool) {
-        self.ascii = on;
-    }
-
     /// Open center.
     pub fn open(&mut self) -> NotificationCenterOutcome {
         if !self.enabled {
@@ -1147,7 +1140,6 @@ impl NotificationCenterState {
 #[derive(Debug, Clone, Copy)]
 pub struct NotificationCenter<'a> {
     system: &'a DesignSystem,
-    ascii: bool,
     colorless: bool,
 }
 
@@ -1157,20 +1149,13 @@ impl<'a> NotificationCenter<'a> {
     pub const fn new(system: &'a DesignSystem) -> Self {
         Self {
             system,
-            ascii: false,
             colorless: false,
         }
     }
 
     /// ASCII.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Colorless.
-    #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self
@@ -1183,7 +1168,6 @@ impl<'a> NotificationCenter<'a> {
             return;
         }
 
-        let ascii = self.ascii || state.ascii;
         let panel = match state.recipe {
             NotificationRecipe::FullPage => area,
             NotificationRecipe::Drawer => {
@@ -1306,7 +1290,6 @@ impl<'a> NotificationCenter<'a> {
 
         if indices.is_empty() {
             super::EmptyState::new("No notifications", self.system)
-                .inline()
                 .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
         } else {
             for (row, &item_idx) in indices.iter().skip(state.scroll).take(page).enumerate() {
@@ -1318,16 +1301,8 @@ impl<'a> NotificationCenter<'a> {
                     break;
                 }
                 let selected = state.cursor.as_ref() == Some(&item.id);
-                let glyph = if ascii {
-                    item.kind.glyph_ascii()
-                } else {
-                    item.kind.glyph_unicode()
-                };
-                let unread_mark = if item.unread {
-                    if ascii { "*" } else { "●" }
-                } else {
-                    " "
-                };
+                let glyph = { item.kind.glyph_unicode() };
+                let unread_mark = if item.unread { "●" } else { " " };
                 let coalesce = if item.coalesce_count > 1 {
                     format!(" ×{}", item.coalesce_count)
                 } else {

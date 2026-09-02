@@ -26,7 +26,6 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -1158,7 +1157,6 @@ impl SessionPickerState {
 #[derive(Debug, Clone, Copy)]
 pub struct SessionPicker<'a> {
     system: &'a DesignSystem,
-    ascii: bool,
     colorless: bool,
     show_preview: bool,
 }
@@ -1169,7 +1167,6 @@ impl<'a> SessionPicker<'a> {
     pub const fn new(system: &'a DesignSystem) -> Self {
         Self {
             system,
-            ascii: false,
             colorless: false,
             show_preview: true,
         }
@@ -1177,13 +1174,7 @@ impl<'a> SessionPicker<'a> {
 
     /// ASCII.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Colorless.
-    #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self
@@ -1247,8 +1238,8 @@ impl<'a> SessionPicker<'a> {
                     };
                     format!("/{}  ({count})", state.query)
                 }
-                SessionPickerPhase::Create => format!("new › {}▌", state.text_draft),
-                SessionPickerPhase::Rename => format!("rename › {}▌", state.text_draft),
+                SessionPickerPhase::Create => format!("new › {}▎", state.text_draft),
+                SessionPickerPhase::Rename => format!("rename › {}▎", state.text_draft),
                 SessionPickerPhase::ConfirmArchive | SessionPickerPhase::ConfirmDelete => {
                     "confirm…".into()
                 }
@@ -1279,7 +1270,6 @@ impl<'a> SessionPicker<'a> {
             };
             StatusIndicator::new(SemanticStatus::Running, self.system)
                 .label(m)
-                .ascii(self.ascii)
                 .colorless(self.colorless)
                 .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
             y = y.saturating_add(1);
@@ -1291,7 +1281,6 @@ impl<'a> SessionPicker<'a> {
                 .unwrap_or("load failed · r retry");
             StatusIndicator::new(SemanticStatus::Failed, self.system)
                 .label(msg)
-                .ascii(self.ascii)
                 .colorless(self.colorless)
                 .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
             y = y.saturating_add(1);
@@ -1403,11 +1392,7 @@ impl<'a> SessionPicker<'a> {
                 continue;
             };
             let selected = fi == state.cursor;
-            let pin = if s.pinned {
-                if self.ascii { "*" } else { "★" }
-            } else {
-                " "
-            };
+            let pin = if s.pinned { "★" } else { " " };
             let semantic = if s.action_required {
                 SemanticStatus::Waiting
             } else {
@@ -1420,7 +1405,6 @@ impl<'a> SessionPicker<'a> {
             };
             let indicator = StatusIndicator::new(semantic, self.system)
                 .label(status_label)
-                .ascii(self.ascii)
                 .colorless(self.colorless);
             let status_text = indicator.text(None);
             let unread = if s.unread > 0 {
@@ -1431,12 +1415,8 @@ impl<'a> SessionPicker<'a> {
                 String::new()
             };
             let dirty = if s.dirty { " ·" } else { "" };
-            let mark = if selected {
-                if self.ascii { ">" } else { "›" }
-            } else {
-                " "
-            };
-            let loc = s.location.glyph(self.ascii);
+            let mark = if selected { "›" } else { " " };
+            let loc = s.location.glyph(false);
             let text = format!("{mark}{pin}{status_text} {loc} {}{unread}{dirty}", s.title);
             // Status lives in its glyph cell, not across the whole row: a
             // list of five sessions used to paint five hues over its titles
@@ -1446,9 +1426,9 @@ impl<'a> SessionPicker<'a> {
             } else if selected && !self.colorless {
                 self.system.style(Role::Accent).add_modifier(Modifier::BOLD)
             } else if selected {
-                self.system
-                    .style(Role::TextStrong)
-                    .add_modifier(Modifier::BOLD | Modifier::REVERSED)
+                // Mono keeps the selected row visible by the explicit reversal
+                // pair, never by a modifier that re-swaps the cell (D5).
+                self.system.reversed()
             } else {
                 self.system.style(Role::Text)
             };
@@ -1526,7 +1506,6 @@ impl<'a> SessionPicker<'a> {
             }
             let status = StatusIndicator::new(s.status.semantic(), self.system)
                 .label(s.status.id())
-                .ascii(self.ascii)
                 .colorless(self.colorless);
             v.push((
                 format!("{} · {}", status.text(None), s.location.label()),
@@ -1568,7 +1547,6 @@ impl<'a> SessionPicker<'a> {
             }
             let status = StatusIndicator::new(s.status.semantic(), self.system)
                 .label(s.status.id())
-                .ascii(self.ascii)
                 .colorless(self.colorless);
             v.push((status.text(None), Role::Text, Some(s.status.semantic())));
             if let Some(sum) = s.summary.as_ref() {
@@ -1591,7 +1569,6 @@ impl<'a> SessionPicker<'a> {
             if let Some(semantic) = semantic {
                 StatusIndicator::new(semantic, self.system)
                     .label(s.status.id())
-                    .ascii(self.ascii)
                     .colorless(self.colorless)
                     .paint(Rect::new(area.x, y, area.width, 1), buffer);
             }
@@ -1991,7 +1968,6 @@ mod tests {
         st.phase = SessionPickerPhase::ConfirmDelete;
         st.confirm_action = Some(SessionConfirmAction::Delete);
         SessionPicker::new(&system)
-            .ascii(true)
             .colorless(true)
             .list_only(true)
             .paint(area, &mut buf, &mut st);

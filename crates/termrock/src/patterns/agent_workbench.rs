@@ -28,7 +28,6 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
@@ -213,8 +212,6 @@ pub struct AgentWorkbenchState {
     pub session: SessionPickerState,
     /// Density override (`None` = derive from width each paint).
     pub density: Option<WorkbenchDensity>,
-    /// ASCII paint preference for elevated surfaces.
-    pub ascii: bool,
     /// Colorless paint preference.
     pub colorless: bool,
     /// Overlay open flags (synced on paint).
@@ -249,7 +246,6 @@ impl AgentWorkbenchState {
             diff: DiffReviewState::default(),
             session: SessionPickerState::new(),
             density: None,
-            ascii: false,
             colorless: false,
             permission_open: false,
             question_open: false,
@@ -960,7 +956,6 @@ pub fn render_agent_workbench(
     // Draft preservation: accept input only when prompt focused and no overlay
     prompt_state.set_accepts_input(focused == Some("prompt") && !overlay);
 
-    let ascii = state.ascii;
     let colorless = state.colorless;
 
     for pane in &panes {
@@ -974,7 +969,6 @@ pub fn render_agent_workbench(
                     state.task_rail.focused = is_focused;
                     TaskRail::new(models, system)
                         .title("Tasks")
-                        .ascii(ascii)
                         .colorless(colorless)
                         .paint(pane.area, buffer, &mut state.task_rail);
                 } else {
@@ -1018,7 +1012,6 @@ pub fn render_agent_workbench(
                 if let Some(items) = activities {
                     state.activity.focused = focused == Some("activity") && !overlay;
                     ActivityShelf::new(items, system)
-                        .ascii(ascii)
                         .colorless(colorless)
                         .paint(pane.area, buffer, &mut state.activity);
                 }
@@ -1027,11 +1020,8 @@ pub fn render_agent_workbench(
                 if let Some(card) = working {
                     if state.working.work.is_some() {
                         state.working.focused = focused == Some("working") && !overlay;
-                        card.ascii(ascii).colorless(colorless).paint(
-                            pane.area,
-                            buffer,
-                            &mut state.working,
-                        );
+                        card.colorless(colorless)
+                            .paint(pane.area, buffer, &mut state.working);
                     }
                 }
             }
@@ -1453,7 +1443,6 @@ mod tests {
             &lines,
         )];
         let mut workbench = AgentWorkbenchState::new();
-        workbench.density = Some(WorkbenchDensity::Normal);
         let models = example_workbench_tasks();
         let activities = example_workbench_activities();
         let transcript = Transcript::new(&blocks, &system);
@@ -1642,9 +1631,7 @@ mod tests {
         let lines = ["x"];
         let blocks = [TranscriptBlock::new("b1", TranscriptKind::User, &lines)];
         let mut workbench = AgentWorkbenchState::new();
-        workbench.ascii = true;
         workbench.colorless = true;
-        workbench.density = Some(WorkbenchDensity::Normal);
         let models = example_workbench_tasks();
         let activities = example_workbench_activities();
         let transcript = Transcript::new(&blocks, &system);
@@ -1683,7 +1670,7 @@ mod tests {
             },
         );
         assert_eq!(pstate.text(), "keep");
-        assert!(workbench.ascii && workbench.colorless);
+        assert!(workbench.colorless);
     }
 
     #[test]

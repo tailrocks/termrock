@@ -1,5 +1,4 @@
 //! Shared single-line grapheme editing primitives.
-
 use std::{borrow::Cow, ops::Range};
 use unicode_segmentation::UnicodeSegmentation;
 

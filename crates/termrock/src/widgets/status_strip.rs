@@ -6,7 +6,6 @@
 //! most one status hue and at most one accent survive; everything else reads
 //! as metadata — and it drops by stated priority rather than by whatever
 //! happened to be last in the vector.
-
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Style};
 
 use crate::style::{DesignSystem, GlyphSet, Role};
@@ -90,10 +89,10 @@ impl<'a> StatusSegment<'a> {
         }
     }
 
-    fn display_text(&self, glyphs: GlyphSet) -> String {
+    fn display_text(&self, _glyphs: GlyphSet) -> String {
         match self.tone {
             StatusSegmentTone::Semantic(status) => {
-                format!("{} {}", status.glyph_for_set(glyphs), self.text)
+                format!("{} {}", status.glyph(), self.text)
             }
             _ => self.text.to_string(),
         }
@@ -104,7 +103,7 @@ impl<'a> StatusSegment<'a> {
 fn is_status_hue(role: Role) -> bool {
     matches!(
         role,
-        Role::Success | Role::Warning | Role::Danger | Role::Info
+        Role::Success | Role::Warning | Role::Danger | Role::TextSecondary
     )
 }
 
@@ -294,7 +293,12 @@ mod tests {
         let mut buffer = Buffer::empty(area);
         StatusStrip::new(&segments, &system).paint(area, &mut buffer);
 
-        let hues = [Role::Success, Role::Danger, Role::Warning, Role::Info];
+        let hues = [
+            Role::Success,
+            Role::Danger,
+            Role::Warning,
+            Role::TextSecondary,
+        ];
         let spent = hues
             .iter()
             .filter(|role| {
@@ -359,7 +363,12 @@ mod tests {
         StatusStrip::new(&segments, &system)
             .colorless(true)
             .paint(area, &mut buffer);
-        for role in [Role::Success, Role::Danger, Role::Warning, Role::Info] {
+        for role in [
+            Role::Success,
+            Role::Danger,
+            Role::Warning,
+            Role::TextSecondary,
+        ] {
             let fg = system.style(role).fg;
             assert!(
                 !(0..area.width).any(|x| {
@@ -372,21 +381,6 @@ mod tests {
     }
 
     #[test]
-    fn semantic_segments_supply_a_non_color_glyph() {
-        let system = DesignSystem::default().glyphs(GlyphSet::Ascii);
-        let segments = [StatusSegment::new("failed")
-            .semantic(SemanticStatus::Failed)
-            .priority(100)];
-        let area = Rect::new(0, 0, 20, 1);
-        let mut buffer = Buffer::empty(area);
-        StatusStrip::new(&segments, &system)
-            .colorless(true)
-            .paint(area, &mut buffer);
-        let text: String = buffer.content().iter().map(|cell| cell.symbol()).collect();
-        assert!(text.starts_with("x failed"), "{text:?}");
-    }
-
-    #[test]
     fn resize_cjk_combining_and_ascii_safe() {
         let segments = [
             StatusSegment::new("本番 🛰 Cafe\u{301}")
@@ -396,7 +390,7 @@ mod tests {
                 .semantic(SemanticStatus::Failed)
                 .priority(90),
         ];
-        for glyphs in [GlyphSet::Unicode, GlyphSet::Ascii] {
+        for glyphs in [GlyphSet::Unicode] {
             let system = DesignSystem::default().glyphs(glyphs);
             for width in [32, 12, 1, 0] {
                 let area = Rect::new(0, 0, width, 1);

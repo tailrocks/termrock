@@ -20,7 +20,6 @@
 //!
 //! Research: LSP completion UIs, prompt-toolkit, terminal editors, Grok Build
 //! prompt completion.
-
 #![allow(unused_variables, unused_mut)] // unit-test fixtures
 use ratatui_core::{
     buffer::Buffer,
@@ -52,11 +51,7 @@ pub const COMPLETION_FULLSCREEN_MAX_HEIGHT: u16 = 10;
 pub const COMPLETION_DOCS_DEFAULT_WIDTH: u16 = 28;
 
 /// Default "still fetching" copy, and its ASCII twin.
-///
-/// Two constants rather than one gated literal so a host-supplied message
-/// survives the ASCII profile: only the *default* is swapped.
 const LOADING_MESSAGE: &str = "Loading…";
-const LOADING_MESSAGE_ASCII: &str = "Loading...";
 
 // ── Model ───────────────────────────────────────────────────────────────────
 
@@ -952,7 +947,6 @@ pub struct CompletionMenu<'a, Id> {
     bounds: Rect,
     anchor: Rect,
     preferred: CompletionMenuSize,
-    ascii: bool,
     colorless: bool,
     focused: bool,
     /// When set, paint into this rect instead of re-placing (stack geometry).
@@ -979,7 +973,6 @@ impl<'a, Id> CompletionMenu<'a, Id> {
                 width: 32,
                 height: 8,
             },
-            ascii: false,
             colorless: false,
             force_area: None,
         }
@@ -1001,17 +994,11 @@ impl<'a, Id> CompletionMenu<'a, Id> {
 
     /// ASCII glyphs.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Whether the menu itself owns focus.
     ///
     /// Defaults to `false`: a completion menu floats under an editor that
     /// keeps the keyboard, and only the interaction owner wears the focused
     /// border.
-    #[must_use]
     pub const fn focused(mut self, focused: bool) -> Self {
         self.focused = focused;
         self
@@ -1182,7 +1169,7 @@ impl<'a, Id> CompletionMenu<'a, Id> {
 
         // Loading / empty full-body messages
         if matches!(state.status, CompletionStatus::Loading) && self.candidates.is_empty() {
-            let msg = loading_copy(self.ascii, state);
+            let msg = loading_copy(state);
             paint_centered_msg(buffer, list_body, msg, self.system.style(Role::TextMuted));
             paint_status_line(self, buffer, state);
             return;
@@ -1350,7 +1337,7 @@ impl<'a, Id> CompletionMenu<'a, Id> {
         // Docs panel
         if !docs_area.is_empty() {
             if docs_area.width >= 1 {
-                let sep = if self.ascii { "|" } else { "│" };
+                let sep = { "│" };
                 for yy in docs_area.y..docs_area.bottom() {
                     buffer.set_stringn(docs_area.x, yy, sep, 1, self.system.style(Role::Border));
                 }
@@ -1452,12 +1439,8 @@ impl<Id: Clone + PartialEq> StatefulWidget for CompletionMenu<'_, Id> {
 ///
 /// A host-supplied message is painted as written; only the default carries an
 /// ASCII twin, so overriding the copy never loses it on a degraded terminal.
-fn loading_copy<'a, Id>(ascii: bool, state: &'a CompletionMenuState<Id>) -> &'a str {
-    if ascii && state.loading_message == LOADING_MESSAGE {
-        LOADING_MESSAGE_ASCII
-    } else {
-        state.loading_message.as_str()
-    }
+fn loading_copy<'a, Id>(state: &'a CompletionMenuState<Id>) -> &'a str {
+    state.loading_message.as_str()
 }
 
 fn paint_status_line<Id>(
@@ -1470,7 +1453,7 @@ fn paint_status_line<Id>(
         return;
     }
     let msg = match state.status {
-        CompletionStatus::Loading => loading_copy(menu.ascii, state),
+        CompletionStatus::Loading => loading_copy(state),
         CompletionStatus::Stale => state.stale_message.as_str(),
         _ => return,
     };

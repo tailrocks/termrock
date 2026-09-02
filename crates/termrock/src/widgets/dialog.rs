@@ -20,7 +20,6 @@
 //! (delete/overwrite/terminate/egress) with typed gates and safe default focus.
 //!
 //! Research: Radix Dialog, Textual modals, Grok Build flows, desktop conventions.
-
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
@@ -37,7 +36,7 @@ use crate::{
         SemanticScene, SemanticState, UiIntent, place_overlay,
     },
     scroll::DialogScroll,
-    style::{Density, DesignSystem, Role, RolePalette},
+    style::{DesignSystem, Role, RolePalette},
 };
 
 #[cfg(test)]
@@ -69,40 +68,14 @@ pub struct DialogSize {
 
 impl Default for DialogSize {
     fn default() -> Self {
-        Self::for_density(Density::Comfortable)
+        Self {
+            width: 48,
+            height: 12,
+        }
     }
 }
 
 impl DialogSize {
-    /// Preferred size for a density mode (cells).
-    #[must_use]
-    pub const fn for_density(density: Density) -> Self {
-        match density {
-            Density::Comfortable => Self {
-                width: 48,
-                height: 12,
-            },
-            Density::Compact => Self {
-                width: 40,
-                height: 10,
-            },
-            Density::Dashboard => Self {
-                width: 36,
-                height: 8,
-            },
-        }
-    }
-
-    /// Minimum usable width before fullscreen promotion (policy elsewhere).
-    #[must_use]
-    pub const fn min_width(density: Density) -> u16 {
-        match density {
-            Density::Comfortable => 40,
-            Density::Compact => 36,
-            Density::Dashboard => 32,
-        }
-    }
-
     /// Size for a recipe (before bounds contraction).
     #[must_use]
     pub const fn for_recipe(recipe: DialogRecipe) -> Self {
@@ -536,34 +509,30 @@ impl<'a> Backdrop<'a> {
 
 impl Widget for &Backdrop<'_> {
     fn render(self, area: Rect, buffer: &mut Buffer) {
-        let (symbol, style) = match self.policy {
-            BackdropPolicy::None => return,
-            BackdropPolicy::Occlude => (' ', self.system.style(Role::Canvas)),
-            BackdropPolicy::Dim => {
-                let wash = self.system.style(Role::BackdropWash);
-                if wash
-                    .bg
-                    .is_some_and(|background| background != ratatui_core::style::Color::Reset)
-                {
-                    (' ', wash)
-                } else {
-                    let symbol = if matches!(self.system.glyphs, crate::style::GlyphSet::Ascii) {
-                        '.'
-                    } else {
-                        '░'
-                    };
-                    (
-                        symbol,
-                        self.system
-                            .style(Role::TextDisabled)
-                            .add_modifier(ratatui_core::style::Modifier::DIM),
-                    )
+        match self.policy {
+            BackdropPolicy::None => {}
+            BackdropPolicy::Occlude => {
+                let style = self.system.style(Role::Canvas);
+                for y in area.top()..area.bottom() {
+                    for x in area.left()..area.right() {
+                        buffer[(x, y)].set_char(' ').set_style(style);
+                    }
                 }
             }
-        };
-        for y in area.top()..area.bottom() {
-            for x in area.left()..area.right() {
-                buffer[(x, y)].set_char(symbol).set_style(style);
+            // junie's dim is a per-cell collapse, not a flat wash: surfaces
+            // keep their fill so the page keeps its shape, every foreground
+            // steps down the alpha ladder, and coloured fills land on the
+            // overlay plane. Symbols survive — a dim that erases the page is
+            // an occlude, not a dim.
+            BackdropPolicy::Dim => {
+                let theme = self.system.junie_theme();
+                for y in area.top()..area.bottom() {
+                    for x in area.left()..area.right() {
+                        let cell = &mut buffer[(x, y)];
+                        let next = theme.backdrop(cell.style());
+                        cell.set_style(next);
+                    }
+                }
             }
         }
     }
@@ -1106,7 +1075,6 @@ pub struct Dialog<'a> {
     footer_hint: Option<&'a str>,
     hints: &'a [super::Hint<'a>],
     loading: bool,
-    ascii: bool,
     colorless: bool,
 }
 
@@ -1125,7 +1093,6 @@ impl<'a> Dialog<'a> {
             footer_hint: None,
             hints: &[],
             loading: false,
-            ascii: false,
             colorless: false,
         }
     }
@@ -1198,13 +1165,7 @@ impl<'a> Dialog<'a> {
 
     /// ASCII glyphs.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Reduced color.
-    #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self
@@ -1228,11 +1189,7 @@ impl<'a> Dialog<'a> {
             title = format!("! {title}");
         }
         if self.loading {
-            let glyph = if self.ascii {
-                "..."
-            } else {
-                self.tokens.glyphs.loading()
-            };
+            let glyph = { self.tokens.glyphs.loading() };
             title = format!("{title} {glyph}");
         }
         title
@@ -1651,7 +1608,6 @@ pub struct ChoiceDialog<'a, Id> {
     dialog: Dialog<'a>,
     actions: &'a [Action<'a, Id>],
     gap: &'a str,
-    ascii: bool,
     colorless: bool,
 }
 
@@ -1663,7 +1619,6 @@ impl<'a, Id> ChoiceDialog<'a, Id> {
             dialog,
             actions,
             gap: " ",
-            ascii: false,
             colorless: false,
         }
     }
@@ -1677,13 +1632,7 @@ impl<'a, Id> ChoiceDialog<'a, Id> {
 
     /// ASCII action marks.
     #[must_use]
-    pub const fn ascii(mut self, ascii: bool) -> Self {
-        self.ascii = ascii;
-        self
-    }
-
     /// Reduced-color action paint.
-    #[must_use]
     pub const fn colorless(mut self, colorless: bool) -> Self {
         self.colorless = colorless;
         self
@@ -1701,7 +1650,6 @@ impl<Id: Clone + PartialEq> StatefulWidget for &ChoiceDialog<'_, Id> {
         }
         let action_bar = ActionBar::new(self.actions, self.dialog.tokens())
             .gap(self.gap)
-            .ascii(self.ascii)
             .colorless(self.colorless)
             .centered(true);
         let stack_actions =
@@ -1724,7 +1672,6 @@ impl<Id: Clone + PartialEq> StatefulWidget for &ChoiceDialog<'_, Id> {
 
         let mut chrome = self.dialog.clone();
         chrome.loading = state.dialog.loading;
-        chrome.ascii = self.ascii;
         chrome.colorless = self.colorless;
         chrome.paint(area, buffer, &mut state.dialog, action_rows);
 
@@ -1868,7 +1815,11 @@ impl<Id: Clone + PartialEq> StatefulWidget for MessageDialog<'_, Id> {
 #[cfg(test)]
 mod backdrop_tests {
     use super::*;
-    use ratatui_core::{layout::Position, widgets::StatefulWidget};
+    use ratatui_core::{
+        layout::Position,
+        style::{Color, Style},
+        widgets::StatefulWidget,
+    };
 
     use crate::{
         input::KeyModifiers,
@@ -1876,22 +1827,48 @@ mod backdrop_tests {
     };
 
     #[test]
-    fn backdrop_from_design_system_dims() {
+    fn backdrop_collapses_content_but_keeps_the_page_shape() {
+        // junie's dim is per cell: an empty cell sits on the canvas ground, a
+        // surface keeps its fill, and loud content steps down the ladder.
         let system = DesignSystem::default();
-        let area = Rect::new(0, 0, 8, 2);
+        let area = Rect::new(0, 0, 3, 1);
         let mut buffer = Buffer::empty(area);
+        buffer[(0, 0)].set_char('x').set_style(Style::new());
+        buffer[(1, 0)]
+            .set_char('y')
+            .set_style(Style::new().bg(system.style(Role::Surface).bg.unwrap()));
+        buffer[(2, 0)]
+            .set_char('z')
+            .set_style(Style::new().fg(system.style(Role::Accent).fg.unwrap()));
         Backdrop::new(&system).render(area, &mut buffer);
-        // A solid recede, not a sprinkle of glyphs over an unchanged terminal
-        // background: the covered layer must actually darken.
-        assert_eq!(buffer[(0, 0)].symbol(), " ");
+        let theme = system.junie_theme();
+        assert_eq!(buffer[(0, 0)].symbol(), "x", "a dim never erases the page");
         assert_eq!(
             buffer[(0, 0)].bg,
-            system.style(Role::BackdropWash).bg.unwrap()
+            theme.surface_overlay,
+            "terminal-default ground recedes to the overlay plane"
         );
-        assert_ne!(
-            Some(buffer[(0, 0)].bg),
-            system.style(Role::Canvas).bg,
-            "the wash has to sit below the canvas it covers"
+        // A terminal-default foreground is "hidden" content: the reference
+        // keeps it hidden by collapsing it onto the same plane as the ground.
+        assert_eq!(
+            buffer[(0, 0)].fg,
+            theme.surface_overlay,
+            "hidden stays hidden"
+        );
+        assert_eq!(
+            buffer[(1, 0)].bg,
+            system.style(Role::Surface).bg.expect("surface fill"),
+            "surfaces keep their fill so the page keeps its shape"
+        );
+        assert_eq!(
+            buffer[(2, 0)].fg,
+            theme.text_muted,
+            "accent content steps down to the muted tier"
+        );
+        assert_eq!(
+            buffer[(2, 0)].bg,
+            theme.surface_overlay,
+            "a coloured fill lands on the overlay plane"
         );
     }
 
@@ -2062,11 +2039,9 @@ mod backdrop_tests {
         let dialog = ChoiceDialog::new(
             Dialog::new("Choose", Text::from("?"), &system).emphasis(PanelChrome::Focused),
             &actions,
-        )
-        .ascii(true);
+        );
         let required = ActionBar::new(&actions, &system)
             .gap(" ")
-            .ascii(true)
             .required_horizontal_width();
         let horizontal_width = (1..80)
             .find(|width| dialog.dialog.content_rect(Rect::new(0, 0, *width, 8)).width >= required)
@@ -2245,7 +2220,7 @@ mod backdrop_tests {
 
     #[test]
     fn empty_body_uses_canonical_constructor() {
-        let system = DesignSystem::phosphor();
+        let system = DesignSystem::junie();
         let dialog = Dialog::new("Empty", Text::default(), &system).footer_hint("esc cancel");
         let area = Rect::new(0, 0, 28, 6);
         let mut buffer = Buffer::empty(area);
@@ -2256,26 +2231,35 @@ mod backdrop_tests {
     }
 
     #[test]
-    fn monochrome_backdrop_keeps_a_non_color_recede_cue() {
+    fn monochrome_backdrop_keeps_the_grey_hierarchy_without_dim() {
+        // Monochrome recedes through the grey buckets, never through DIM.
         let system = DesignSystem::default().no_color();
-        let area = Rect::new(0, 0, 4, 1);
+        let area = Rect::new(0, 0, 2, 1);
         let mut buffer = Buffer::empty(area);
+        buffer[(0, 0)]
+            .set_char('a')
+            .set_style(Style::new().fg(Color::White));
         Backdrop::new(&system).render(area, &mut buffer);
-        assert_ne!(buffer[(0, 0)].symbol(), " ");
+        let theme = system.junie_theme();
+        assert_eq!(
+            buffer[(0, 0)].fg,
+            theme
+                .backdrop(Style::new().fg(Color::White))
+                .fg
+                .expect("muted grey"),
+            "body content collapses to the muted grey tier"
+        );
         assert!(
-            buffer[(0, 0)]
+            !buffer[(0, 0)]
                 .modifier
-                .contains(ratatui_core::style::Modifier::DIM)
+                .contains(ratatui_core::style::Modifier::DIM),
+            "DIM is not part of the vocabulary"
         );
     }
 
     #[test]
     fn dialog_size_tracks_density() {
-        assert!(
-            DialogSize::for_density(Density::Comfortable).width
-                >= DialogSize::for_density(Density::Dashboard).width
-        );
-        assert!(DialogSize::min_width(Density::Comfortable) >= 32);
+        assert!(DialogSize::default().width >= 40);
     }
 
     #[test]

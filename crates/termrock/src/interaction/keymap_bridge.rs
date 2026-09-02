@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Bridge Keymap chord resolution to InteractionScene action availability.
-
 use crate::{
     input::{KeyEvent, KeyEventKind},
     interaction::{InteractionOutcome, InteractionScene},

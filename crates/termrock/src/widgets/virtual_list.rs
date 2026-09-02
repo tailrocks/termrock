@@ -15,7 +15,6 @@
 //! O(viewport) paint/semantics.
 //!
 //! Research: Textual virtual lists, VisiData, log tails, TermRock Virtualizer.
-
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -29,7 +28,7 @@ use crate::{
         HitRegion, NavigationMove, Outcome, PageMove, SemanticNode, SemanticRole, SemanticScene,
         SemanticState, UiIntent, default_list_intent,
     },
-    style::{Density, DesignSystem, Role},
+    style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
 };
 
@@ -562,7 +561,6 @@ fn projected_rows<'a, Id: Clone>(projected: &'a [VirtualListItem<'a, Id>]) -> Ve
 pub struct VirtualList<'a, Id> {
     projected: &'a [VirtualListItem<'a, Id>],
     system: &'a DesignSystem,
-    density: Density,
     empty_message: Option<&'a str>,
     show_diagnostics: bool,
     focused: bool,
@@ -575,18 +573,10 @@ impl<'a, Id> VirtualList<'a, Id> {
         Self {
             projected,
             system,
-            density: Density::Compact,
             empty_message: None,
             show_diagnostics: false,
             focused: true,
         }
-    }
-
-    /// Density.
-    #[must_use]
-    pub const fn density(mut self, d: Density) -> Self {
-        self.density = d;
-        self
     }
 
     /// Focused surface.
@@ -620,7 +610,6 @@ impl<'a, Id> VirtualList<'a, Id> {
         }
         state.regions.clear();
         state.pointer = state.list.hovered().and_then(|_| state.pointer);
-        let ascii = self.system.glyphs.is_ascii();
 
         let mut y = area.y;
         let mut h = area.height;
@@ -628,13 +617,13 @@ impl<'a, Id> VirtualList<'a, Id> {
         // Filter / page chrome
         if let Some(q) = state.filter_query.as_ref() {
             let n = state.filter_match_count.unwrap_or(state.virt.logical_len());
-            let line = format!("filter:{q}{}{n} matches", if ascii { " - " } else { " · " });
+            let line = format!("filter:{q}{}{n} matches", " · ");
             buffer.set_stringn(
                 area.x,
                 y,
                 &take_display_cols(&line, usize::from(area.width)),
                 usize::from(area.width),
-                self.system.style(Role::Info),
+                self.system.style(Role::TextSecondary),
             );
             y = y.saturating_add(1);
             h = h.saturating_sub(1);
@@ -644,13 +633,7 @@ impl<'a, Id> VirtualList<'a, Id> {
             VirtualPageStatus::Loading | VirtualPageStatus::Placeholder
         ) {
             let msg = match state.page_status {
-                VirtualPageStatus::Loading => {
-                    if ascii {
-                        "loading page..."
-                    } else {
-                        "loading page…"
-                    }
-                }
+                VirtualPageStatus::Loading => "loading page…",
                 VirtualPageStatus::Placeholder => "placeholders in window",
                 VirtualPageStatus::Ready => "",
             };
@@ -770,9 +753,7 @@ impl<'a, Id> VirtualList<'a, Id> {
                 .set_virtual_window(0, usize::try_from(body_total).unwrap_or(usize::MAX));
             // Keep list offset at 0 — Virtualizer owns scroll
             // Selection still works on projected ids
-            let list = List::new(&body_rows, self.system)
-                .focused(self.focused)
-                .density(self.density);
+            let list = List::new(&body_rows, self.system).focused(self.focused);
             StatefulWidget::render(&list, list_area, buffer, &mut state.list);
             // Capture hit regions (adjust? List uses list_area coords — already absolute)
             state.regions = state.list.regions().to_vec();
@@ -1066,32 +1047,6 @@ mod tests {
         let sem = state.virtualizer().semantic_count();
         assert!(sem < 50);
         assert!(sem * 10_000 < VIRTUAL_LIST_BENCH_ROWS); // much less than 1M
-    }
-
-    #[test]
-    fn async_placeholder_and_loading() {
-        let system = system().glyphs(crate::style::GlyphSet::Ascii);
-        let mut state = VirtualListState::<u64>::new();
-        state.set_logical_len(1000);
-        state.set_viewport_extent(8);
-        state.set_page_status(VirtualPageStatus::Loading);
-        let mut idx = Vec::new();
-        state.projection_indices(&mut idx);
-        let projected: Vec<_> = idx
-            .iter()
-            .map(|&i| VirtualListItem::placeholder(i, i))
-            .collect();
-        let area = Rect::new(0, 0, 40, 12);
-        let mut buf = Buffer::empty(area);
-        VirtualList::new(&projected, &system).paint(area, &mut buf, &mut state);
-        assert_eq!(state.page_status(), VirtualPageStatus::Loading);
-        let text = buf
-            .content()
-            .iter()
-            .map(|cell| cell.symbol())
-            .collect::<String>();
-        assert!(text.contains("loading page..."), "{text}");
-        assert!(text.chars().all(|ch| !matches!(ch, '…' | '·')));
     }
 
     #[test]

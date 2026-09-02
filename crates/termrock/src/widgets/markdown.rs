@@ -18,8 +18,7 @@
 //! **Streaming.** Incomplete fences/tables set [`MarkdownBlock::incomplete`];
 //! layout measures only closed content rows + a one-row streaming cue so
 //! appending does not thrash unrelated block geometry.
-
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
+use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::input::{KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{
@@ -878,7 +877,7 @@ impl<'a> MarkdownView<'a> {
             MarkdownBlockKind::Code => {
                 if body_sub == 0 {
                     let _ = Text::spans(
-                        [TextSpan::new(block.text).role(Role::Info).code()],
+                        [TextSpan::new(block.text).role(Role::TextSecondary).code()],
                         self.system,
                     )
                     .truncate()
@@ -1036,14 +1035,7 @@ impl<'a> MarkdownView<'a> {
         if has_header && body_sub == 0 {
             let lang = block.language.unwrap_or("code");
             let label = if block.incomplete {
-                format!(
-                    "{lang} {}",
-                    if self.system.glyphs.is_ascii() {
-                        "..."
-                    } else {
-                        "…"
-                    }
-                )
+                format!("{lang} {}", "…")
             } else {
                 lang.to_string()
             };
@@ -1083,19 +1075,13 @@ impl<'a> MarkdownView<'a> {
         }
         // After body: streaming cue
         if block.incomplete {
-            let cue = if self.system.glyphs.is_ascii() {
-                "..."
-            } else {
-                "…"
-            };
+            let cue = "…";
             buffer.set_stringn(
                 area.x,
                 area.y,
                 cue,
                 usize::from(area.width),
-                self.system
-                    .style(Role::TextMuted)
-                    .add_modifier(Modifier::DIM),
+                self.system.style(Role::TextFaint),
             );
         }
     }
@@ -1589,31 +1575,19 @@ fn wants_leading_gap(kind: MarkdownBlockKind, level: HeadingLevel) -> bool {
             && matches!(level, HeadingLevel::H1 | HeadingLevel::H2))
 }
 
-fn list_prefix(block: &MarkdownBlock<'_>, system: &DesignSystem) -> String {
+fn list_prefix(block: &MarkdownBlock<'_>, _system: &DesignSystem) -> String {
     match block.kind {
         MarkdownBlockKind::TaskItem => {
             if block.task_checked == Some(true) {
-                if system.glyphs.is_ascii() {
-                    "[x] ".into()
-                } else {
-                    "☑ ".into()
-                }
-            } else if system.glyphs.is_ascii() {
-                "[ ] ".into()
+                "[✓] ".into()
             } else {
-                "☐ ".into()
+                "[ ] ".into()
             }
         }
         MarkdownBlockKind::OrderedItem => {
             format!("{}. ", block.list_index.unwrap_or(1))
         }
-        MarkdownBlockKind::ListItem => {
-            if system.glyphs.is_ascii() {
-                "* ".into()
-            } else {
-                "• ".into()
-            }
-        }
+        MarkdownBlockKind::ListItem => "• ".into(),
         _ => String::new(),
     }
 }
@@ -1654,10 +1628,10 @@ fn spans_to_text<'a>(spans: &'a [MarkdownInline<'a>], _system: &DesignSystem) ->
             match sp.kind {
                 MarkdownInlineKind::Text => {}
                 MarkdownInlineKind::Strong => t = t.strong(),
-                MarkdownInlineKind::Emphasis => {
-                    t = t.emphasis(crate::widgets::TextEmphasis::Emphasis);
-                }
-                MarkdownInlineKind::Code => t = t.code().role(Role::Info),
+                // Weight is the one legal emphasis in the terminal (D5: ITALIC
+                // is the comment tier), so `*this*` reads as bold, too.
+                MarkdownInlineKind::Emphasis => t = t.strong(),
+                MarkdownInlineKind::Code => t = t.code().role(Role::TextSecondary),
                 MarkdownInlineKind::Link => t = t.role(Role::Link).underline(true),
             }
             t
@@ -1874,13 +1848,6 @@ fn paint_table_row(
 ) {
     let rows = table_display_rows(raw, area.width);
     if let Some(line) = rows.get(usize::from(body_sub)) {
-        let ascii_line;
-        let line = if system.glyphs.is_ascii() {
-            ascii_line = line.replace('│', "|").replace('─', "-").replace('┼', "+");
-            &ascii_line
-        } else {
-            line
-        };
         let role = if body_sub == 0 {
             Role::TextStrong
         } else if body_sub == 1 {

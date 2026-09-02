@@ -92,7 +92,7 @@ impl StatefulWidget for &Viewport<'_> {
 
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
         let pad_x = if self.padded_content {
-            self.system.spacing.pad_x
+            self.system.spacing.card_inset
         } else {
             0
         };
@@ -160,7 +160,6 @@ impl StatefulWidget for &Viewport<'_> {
             )
             .scroll((0, state.scroll_x))
             .render(content, buffer);
-        super::surface::normalize_content_band(self.system, buffer, content);
         // The fade belongs to the content, never to the chrome: a dimmed
         // border reads as a disabled pane, not as "there is more below".
         crate::scroll::paint_scrolled_region(
@@ -220,7 +219,7 @@ mod tests {
         let mut buffer = Buffer::empty(area);
         let mut scroll = DialogScroll::default();
         (&Viewport::new(&lines, &system).padded_content()).render(area, &mut buffer, &mut scroll);
-        let pad_x = system.spacing.pad_x;
+        let pad_x = crate::style::SpacingScale::junie().card_inset;
         assert_eq!(buffer[(1, 1)].symbol(), " ", "the pad column stays empty");
         assert_eq!(
             buffer[(1 + pad_x, 1)].symbol(),
@@ -232,27 +231,5 @@ mod tests {
             "b",
             "rows stay flush on Y — no rhythm row is inserted"
         );
-    }
-
-    #[test]
-    fn ascii_profile_uses_ascii_title_ellipsis() {
-        let lines = lines();
-        let system = DesignSystem::default().glyphs(crate::style::GlyphSet::Ascii);
-        let area = Rect::new(0, 0, 12, 4);
-        let mut buffer = Buffer::empty(area);
-        let mut scroll = DialogScroll::default();
-
-        (&Viewport::new(&lines, &system).title("A very long viewport title")).render(
-            area,
-            &mut buffer,
-            &mut scroll,
-        );
-        let text = buffer
-            .content()
-            .iter()
-            .map(|cell| cell.symbol())
-            .collect::<String>();
-        assert!(text.contains("..."), "{text}");
-        assert!(!text.contains('…'));
     }
 }

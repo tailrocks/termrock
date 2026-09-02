@@ -8,7 +8,6 @@
 //! `termrock::scroll` (scrollbar paint, `TailScroll`, dialog dual-axis) remain
 //! available; this module owns **policy**: follow/pause, anchors, chaining,
 //! visible ranges, and new-content indication.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
@@ -717,20 +716,6 @@ impl<'a> ScrollArea<'a> {
         let need_v = self.need_bar_v(state);
         let need_h = self.need_bar_h(state);
 
-        // Continuation belongs to the painted content, not the gutter. Keep
-        // this beside scrollbar painting so a new bar cannot silently omit the
-        // other half of the scroll contract.
-        if state.axis_y && state.overflows_y() {
-            crate::scroll::paint_scroll_edges(
-                buffer,
-                self.body_area(area, state),
-                self.tokens,
-                state.offset_y > 0,
-                usize::from(state.offset_y).saturating_add(usize::from(state.viewport_h))
-                    < usize::from(state.content_h),
-            );
-        }
-
         // One scrollbar language for every scroll surface: the canonical `·`
         // track with a `┃` / `━` thumb, and one owner for the thumb math
         // (plans/022 Step 5).
@@ -783,11 +768,7 @@ impl<'a> ScrollArea<'a> {
             return;
         }
         let style = self.tokens.style(Role::Warning);
-        let marker = if self.tokens.glyphs.is_ascii() {
-            "v"
-        } else {
-            "↓"
-        };
+        let marker = "↓";
         let label = format!("{marker} {} new", state.indicator.unseen);
         let y = area.bottom().saturating_sub(1);
         let text = take_display_cols(&label, usize::from(area.width));
@@ -952,36 +933,6 @@ mod tests {
             elapsed.as_millis() < 2_000,
             "huge scroll ops too slow: {elapsed:?}"
         );
-    }
-
-    #[test]
-    fn visual_bars_and_new_content_paint() {
-        use ratatui_core::buffer::Buffer;
-        let system = DesignSystem::default().glyphs(crate::style::GlyphSet::Ascii);
-        let mut s = ScrollAreaState::new();
-        s.set_content_size(20, 100);
-        s.set_viewport(10, 10);
-        s.set_offset_y(20);
-        s.set_content_size(20, 130); // pause + grow → indicator
-        assert!(s.new_content().visible);
-        let area = Rect::new(0, 0, 12, 12);
-        let mut buf = Buffer::empty(area);
-        let sa = ScrollArea::new(&system).bar(ScrollBarVisibility::Always);
-        sa.render_bars(area, &mut buf, &s);
-        sa.render_new_content(area, &mut buf, &s);
-        // Thumb / indicator used non-space glyphs somewhere in buffer.
-        let any_glyph = buf
-            .content()
-            .iter()
-            .any(|c| !c.symbol().trim().is_empty() && c.symbol() != " ");
-        assert!(any_glyph);
-        let text = buf
-            .content()
-            .iter()
-            .map(|cell| cell.symbol())
-            .collect::<String>();
-        assert!(text.contains("v 130 new"), "{text}");
-        assert!(text.chars().all(|ch| !matches!(ch, '↓' | '·' | '┃')));
     }
 
     #[test]

@@ -13,7 +13,6 @@
 //! emulator modes (cursor save, alternate screen, DECCKM, …).
 //!
 //! References: terminal emulators, ansi-to-tui, Rich, agent command panes.
-
 use std::collections::VecDeque;
 
 use anstyle_parse::{DefaultCharAccumulator, Params, Parser, Perform};
@@ -1068,9 +1067,9 @@ impl<'a> AnsiText<'a> {
                 style = self.system.style(Role::Text);
             }
             if seg.href.is_some() {
-                style = style
-                    .fg(self.system.style(Role::Link).fg.unwrap_or(Color::Blue))
-                    .add_modifier(Modifier::UNDERLINED);
+                // A link is an affordance: the ladder's secondary step plus the
+                // underline. Never a raw palette hue.
+                style = self.system.style(Role::Link);
             }
             // Embedded output is data, not a theme escape hatch. Preserve the
             // source hue as closely as the named terminal palette permits,
@@ -1079,7 +1078,7 @@ impl<'a> AnsiText<'a> {
             style = if matches!(self.mode, AnsiTextMode::NoColor)
                 || matches!(self.system.capability, ColorCapability::Monochrome)
             {
-                monochrome_style(style, seg.style)
+                monochrome_style(&self.system, style, seg.style)
             } else {
                 ansi16_style(style)
             };
@@ -1104,15 +1103,26 @@ fn ansi16_style(mut style: Style) -> Style {
     style
 }
 
-fn monochrome_style(mut style: Style, source: Style) -> Style {
+fn monochrome_style(system: &DesignSystem, mut style: Style, source: Style) -> Style {
     style.fg = None;
     style.bg = None;
     if source
         .bg
         .is_some_and(|background| background != Color::Reset)
     {
-        style = style.add_modifier(Modifier::REVERSED);
-    } else if source
+        // Monochrome cannot carry the source plane, so the cell states it with
+        // the explicit reversal pair — `fg(canvas).bg(text_primary)` — never a
+        // swap modifier that would re-invert whatever the cell already held
+        // (D5). The source underline is an affordance and survives it.
+        let underline = style.add_modifier.contains(Modifier::UNDERLINED);
+        let reversed = system.reversed();
+        return if underline {
+            reversed.add_modifier(Modifier::UNDERLINED)
+        } else {
+            reversed
+        };
+    }
+    if source
         .fg
         .is_some_and(|foreground| foreground != Color::Reset)
         && style.add_modifier == Modifier::empty()

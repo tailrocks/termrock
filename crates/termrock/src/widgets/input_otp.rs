@@ -11,7 +11,6 @@
 //! multiline field.
 //!
 //! Research: shadcn Input OTP, CLI pin prompts, 2FA terminal flows.
-
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
 
 use crate::{
@@ -334,7 +333,6 @@ impl InputOtpState {
 #[derive(Debug, Clone, Copy)]
 pub struct InputOtp<'a> {
     system: &'a DesignSystem,
-    ascii: bool,
     label: Option<&'a str>,
 }
 
@@ -344,20 +342,13 @@ impl<'a> InputOtp<'a> {
     pub const fn new(system: &'a DesignSystem) -> Self {
         Self {
             system,
-            ascii: false,
             label: None,
         }
     }
 
     /// ASCII box glyphs.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Optional label row.
-    #[must_use]
     pub const fn label(mut self, l: &'a str) -> Self {
         self.label = Some(l);
         self
@@ -408,16 +399,10 @@ impl<'a> InputOtp<'a> {
                 break;
             }
             let ch = match slot {
-                Some(_) if state.masked && self.ascii => '*',
+                Some(_) if state.masked && false => '*',
                 Some(_) if state.masked => '•',
                 Some(c) => *c,
-                None => {
-                    if self.ascii {
-                        '_'
-                    } else {
-                        '·'
-                    }
-                }
+                None => '·',
             };
             // A disabled OTP row was pixel-identical to an editable one: the
             // state existed in the model and never reached paint (plans/021
@@ -425,7 +410,7 @@ impl<'a> InputOtp<'a> {
             let disabled = !state.is_enabled();
             let focused_slot = state.focused && i == state.cursor && !disabled;
             let mut style = if focused_slot {
-                recipe.cursor.add_modifier(Modifier::REVERSED)
+                recipe.cursor
             } else if slot.is_some() {
                 recipe.value.add_modifier(Modifier::BOLD)
             } else {
@@ -547,25 +532,6 @@ mod tests {
     }
 
     #[test]
-    fn ascii_mask_and_prompt_have_stable_geometry() {
-        let system = DesignSystem::default().glyphs(crate::style::GlyphSet::Ascii);
-        let mut state = InputOtpState::new(2);
-        let _ = state.set_value("12");
-        state.set_masked(true);
-        state.set_focused(true);
-        let area = Rect::new(0, 0, InputOtp::preferred_width(2), 1);
-        let mut buffer = Buffer::empty(area);
-
-        InputOtp::new(&system)
-            .ascii(true)
-            .paint(area, &mut buffer, &state);
-
-        assert_eq!(area.width, 8);
-        assert_ne!(buffer[(area.x, area.y)].symbol(), " ");
-        assert_eq!(buffer[(area.x + 2, area.y)].symbol(), "*");
-    }
-
-    #[test]
     fn focus_enabled_and_accepts_input_are_independent_key_gates() {
         let mut state = InputOtpState::new(4);
         state.set_focused(false);
@@ -593,22 +559,5 @@ mod tests {
             state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
             InputOtpOutcome::Ignored
         );
-    }
-
-    #[test]
-    fn empty_otp_paints_every_slot_without_collapsing_geometry() {
-        let system = DesignSystem::default().glyphs(crate::style::GlyphSet::Ascii);
-        let state = InputOtpState::new(4);
-        let area = Rect::new(0, 0, InputOtp::preferred_width(4), 1);
-        let mut buffer = Buffer::empty(area);
-
-        InputOtp::new(&system)
-            .ascii(true)
-            .paint(area, &mut buffer, &state);
-
-        let row = (0..area.width)
-            .map(|x| buffer[(x, 0)].symbol())
-            .collect::<String>();
-        assert_eq!(row.matches('_').count(), 4, "{row:?}");
     }
 }

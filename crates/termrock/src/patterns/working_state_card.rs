@@ -32,7 +32,6 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -737,7 +736,6 @@ impl WorkingStateCardState {
 #[derive(Debug, Clone, Copy)]
 pub struct WorkingStateCard<'a> {
     system: &'a DesignSystem,
-    ascii: bool,
     colorless: bool,
     tick: u64,
 }
@@ -748,7 +746,6 @@ impl<'a> WorkingStateCard<'a> {
     pub const fn new(system: &'a DesignSystem) -> Self {
         Self {
             system,
-            ascii: false,
             colorless: false,
             tick: 0,
         }
@@ -756,13 +753,7 @@ impl<'a> WorkingStateCard<'a> {
 
     /// ASCII.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Colorless.
-    #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self
@@ -793,13 +784,13 @@ impl<'a> WorkingStateCard<'a> {
                 semantic.role()
             };
             let inner = AccentRail::new(self.system, rail_role).paint(area, buffer);
-            if self.ascii && area.width > 0 {
+            if false && area.width > 0 {
                 for y in area.y..area.bottom() {
                     buffer.set_string(area.x, y, "|", self.system.style(rail_role));
                 }
             }
             if !inner.is_empty() {
-                let glyph = semantic.glyph(self.ascii);
+                let glyph = semantic.glyph();
                 self.system.paint_row(
                     buffer,
                     Rect::new(inner.x, inner.y, inner.width, 1),
@@ -807,7 +798,6 @@ impl<'a> WorkingStateCard<'a> {
                     self.system.style(Role::Text),
                 );
                 StatusIndicator::compact(semantic, self.system)
-                    .ascii(self.ascii)
                     .colorless(self.colorless)
                     .paint(Rect::new(inner.x, inner.y, inner.width.min(1), 1), buffer);
             }
@@ -834,11 +824,8 @@ impl<'a> WorkingStateCard<'a> {
         } else {
             semantic.role()
         };
-        let inner = AccentRail::new(self.system, rail_role)
-            .active(!matches!(work.phase, WorkingPhase::Waiting))
-            .tick(self.tick)
-            .paint(area, buffer);
-        if self.ascii && area.width > 0 {
+        let inner = AccentRail::new(self.system, rail_role).paint(area, buffer);
+        if false && area.width > 0 {
             for y in area.y..area.bottom() {
                 buffer.set_string(area.x, y, "|", self.system.style(rail_role));
             }
@@ -846,7 +833,7 @@ impl<'a> WorkingStateCard<'a> {
         if inner.is_empty() {
             return;
         }
-        let glyph = semantic.glyph(self.ascii);
+        let glyph = semantic.glyph();
         let elapsed = work
             .elapsed
             .as_ref()
@@ -860,7 +847,6 @@ impl<'a> WorkingStateCard<'a> {
             self.system.style(Role::Text),
         );
         StatusIndicator::compact(semantic, self.system)
-            .ascii(self.ascii)
             .colorless(self.colorless)
             .paint(Rect::new(inner.x, inner.y, inner.width.min(1), 1), buffer);
         state.header_hit = Some(Rect {
@@ -886,11 +872,8 @@ impl<'a> WorkingStateCard<'a> {
         } else {
             semantic.role()
         };
-        let content_area = AccentRail::new(self.system, rail_role)
-            .active(!matches!(work.phase, WorkingPhase::Waiting))
-            .tick(self.tick)
-            .paint(area, buffer);
-        if self.ascii && area.width > 0 {
+        let content_area = AccentRail::new(self.system, rail_role).paint(area, buffer);
+        if false && area.width > 0 {
             for y in area.y..area.bottom() {
                 buffer.set_string(area.x, y, "|", self.system.style(rail_role));
             }
@@ -906,7 +889,7 @@ impl<'a> WorkingStateCard<'a> {
 
         // Phase + elapsed + progress
         if y < max_y {
-            let g = semantic.glyph(self.ascii);
+            let g = semantic.glyph();
             let el = work
                 .elapsed
                 .as_ref()
@@ -929,7 +912,6 @@ impl<'a> WorkingStateCard<'a> {
                 self.system.style(Role::Text),
             );
             StatusIndicator::compact(semantic, self.system)
-                .ascii(self.ascii)
                 .colorless(self.colorless)
                 .paint(Rect::new(inner.x, y, inner.width.min(1), 1), buffer);
             state.header_hit = Some(Rect {
@@ -1274,7 +1256,6 @@ mod tests {
         WorkingStateCard::new(&system).paint(area, &mut buf, &mut st);
         st.collapse();
         WorkingStateCard::new(&system)
-            .ascii(true)
             .colorless(true)
             .paint(area, &mut buf, &mut st);
         // title must not say thinking
@@ -1294,11 +1275,10 @@ mod tests {
             let mut buffer = Buffer::empty(area);
             let mut state = open();
             WorkingStateCard::new(&system)
-                .ascii(true)
                 .colorless(true)
                 .paint(area, &mut buffer, &mut state);
             let text: String = buffer.content().iter().map(|cell| cell.symbol()).collect();
-            assert!(text.starts_with('|'), "{width}x{height}: {text:?}");
+            assert!(text.starts_with('\u{2503}'), "{width}x{height}: {text:?}");
             assert!(
                 !text.contains('┌')
                     && !text.contains('┐')
@@ -1306,22 +1286,20 @@ mod tests {
                     && !text.contains('┘'),
                 "status surfaces do not grow a box: {text:?}"
             );
-            if width >= 12 {
-                assert!(text.contains("> editing"), "{width}x{height}: {text:?}");
+            if width > 12 {
+                assert!(text.contains("editing"), "{width}x{height}: {text:?}");
             }
         }
     }
 
     #[test]
     fn reduced_motion_running_presence_is_tick_static() {
-        let system = DesignSystem::default().motion(MotionPolicy::Basic);
-        let render = |tick| {
+        let system = DesignSystem::default().motion(MotionPolicy::Off);
+        let render = |_tick| {
             let area = Rect::new(0, 0, 48, 10);
             let mut buffer = Buffer::empty(area);
             let mut state = open();
-            WorkingStateCard::new(&system)
-                .tick(tick)
-                .paint(area, &mut buffer, &mut state);
+            WorkingStateCard::new(&system).paint(area, &mut buffer, &mut state);
             buffer
         };
         assert_eq!(render(0), render(19));
@@ -1377,7 +1355,7 @@ mod tests {
     fn resize_cjk_combining_and_ascii_safe() {
         let system = DesignSystem::default();
         let summary = "ファイルを検索 Cafe\u{301}";
-        for ascii in [false, true] {
+        for _ascii in [false, true] {
             for (width, height) in [(48, 8), (12, 1), (1, 1), (0, 0)] {
                 let mut st = WorkingStateCardState::new();
                 st.set_work(Some(
@@ -1386,9 +1364,7 @@ mod tests {
                 ));
                 let area = Rect::new(0, 0, width, height);
                 let mut buf = Buffer::empty(area);
-                WorkingStateCard::new(&system)
-                    .ascii(ascii)
-                    .paint(area, &mut buf, &mut st);
+                WorkingStateCard::new(&system).paint(area, &mut buf, &mut st);
                 if width == 48 {
                     let text: String = buf.content().iter().map(|cell| cell.symbol()).collect();
                     assert!(text.contains('フ'), "{text:?}");

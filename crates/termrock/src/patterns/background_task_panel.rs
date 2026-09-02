@@ -29,7 +29,6 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-
 use std::collections::VecDeque;
 
 use ratatui_core::{
@@ -155,19 +154,8 @@ impl BackgroundTaskStatus {
 
     /// Glyph.
     #[must_use]
-    pub const fn glyph(self, ascii: bool) -> &'static str {
-        if ascii {
-            match self {
-                Self::Pending => ".",
-                Self::Running => ">",
-                Self::Reconnecting => "~",
-                Self::Lost => "?",
-                Self::Succeeded => "+",
-                Self::Failed => "x",
-                Self::Stopped => "s",
-                Self::Detached => "d",
-            }
-        } else {
+    pub const fn glyph(self, _ascii: bool) -> &'static str {
+        {
             match self {
                 Self::Pending => "·",
                 Self::Running => "▶",
@@ -349,13 +337,11 @@ impl BackgroundOutputBuffer {
 
     /// Dropped-line indicator text.
     #[must_use]
-    pub fn dropped_banner(&self, ascii: bool) -> Option<String> {
+    pub fn dropped_banner(&self, _ascii: bool) -> Option<String> {
         if self.dropped == 0 {
             return None;
         }
-        Some(if ascii {
-            format!("[{} lines dropped]", self.dropped)
-        } else {
+        Some({
             format!(
                 "⚠ {} lines dropped (history cap {})",
                 self.dropped, self.max_lines
@@ -518,8 +504,8 @@ impl BackgroundTask {
 
     /// Header for rail row.
     #[must_use]
-    pub fn row_label(&self, ascii: bool) -> String {
-        let g = self.status.glyph(ascii);
+    pub fn row_label(&self, _ascii: bool) -> String {
+        let g = self.status.glyph(false);
         let mut s = format!(
             "| {g} {} · {} {}",
             self.status.id(),
@@ -807,7 +793,7 @@ impl BackgroundTaskPanelState {
             .collect()
     }
 
-    fn list_rows(&self, tasks: &[BackgroundTask], ascii: bool) -> Vec<ListRow<'static, String>> {
+    fn list_rows(&self, tasks: &[BackgroundTask], _ascii: bool) -> Vec<ListRow<'static, String>> {
         let vis = self.visible_tasks(tasks);
         vis.into_iter()
             .map(|t| {
@@ -815,7 +801,7 @@ impl BackgroundTaskPanelState {
                 let mut row = ListRow::item(t.id.clone(), Line::from(label));
                 row.status = Some(Line::from(format!(
                     "| {} {}",
-                    t.status.semantic().glyph(ascii),
+                    t.status.semantic().glyph(),
                     t.status.id()
                 )));
                 let meta = t.meta_line();
@@ -1070,7 +1056,6 @@ pub struct BackgroundTaskPanel<'a> {
     tasks: &'a [BackgroundTask],
     system: &'a DesignSystem,
     title: &'a str,
-    ascii: bool,
     colorless: bool,
 }
 
@@ -1082,7 +1067,6 @@ impl<'a> BackgroundTaskPanel<'a> {
             tasks,
             system,
             title: "Background",
-            ascii: false,
             colorless: false,
         }
     }
@@ -1096,13 +1080,7 @@ impl<'a> BackgroundTaskPanel<'a> {
 
     /// ASCII.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Colorless.
-    #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self
@@ -1120,11 +1098,10 @@ impl<'a> BackgroundTaskPanel<'a> {
         }
         // Glyph vocabulary and color capability are independent host choices.
         // A monochrome terminal may still render the Unicode status set.
-        let ascii = self.ascii;
 
         if matches!(state.presentation, BackgroundTaskPresentation::CompactRail) || area.height <= 3
         {
-            self.paint_rail(area, buffer, state, ascii);
+            self.paint_rail(area, buffer, state, false);
             return;
         }
 
@@ -1176,7 +1153,7 @@ impl<'a> BackgroundTaskPanel<'a> {
         };
         let foot_y = inner.bottom().saturating_sub(1);
 
-        let rows = state.list_rows(self.tasks, ascii);
+        let rows = state.list_rows(self.tasks, false);
         StatefulWidget::render(
             &List::new(&rows, self.system).focused(state.focused && state.accepts_input),
             list_area,
@@ -1190,7 +1167,7 @@ impl<'a> BackgroundTaskPanel<'a> {
                 .selected_id()
                 .and_then(|id| self.tasks.iter().find(|t| t.id == id))
             {
-                self.paint_detail(detail_area, buffer, state, task, ascii);
+                self.paint_detail(detail_area, buffer, state, task, false);
             } else {
                 EmptyState::new("Pick a task", self.system)
                     .kind(EmptyKind::NoData)
@@ -1212,9 +1189,9 @@ impl<'a> BackgroundTaskPanel<'a> {
         area: Rect,
         buffer: &mut Buffer,
         state: &mut BackgroundTaskPanelState,
-        ascii: bool,
+        _ascii: bool,
     ) {
-        let rows = state.list_rows(self.tasks, ascii);
+        let rows = state.list_rows(self.tasks, false);
         let emphasis = if state.focused {
             PanelChrome::Focused
         } else {
@@ -1240,14 +1217,13 @@ impl<'a> BackgroundTaskPanel<'a> {
         buffer: &mut Buffer,
         state: &mut BackgroundTaskPanelState,
         task: &BackgroundTask,
-        ascii: bool,
+        _ascii: bool,
     ) {
         let mut y = area.y;
         let max_y = area.bottom();
         // header meta
         let status = StatusIndicator::new(task.status.semantic(), self.system)
             .label(task.status.id())
-            .ascii(ascii)
             .colorless(self.colorless);
         let status_width = status.measure_width(None).min(area.width);
         status.paint(Rect::new(area.x, y, status_width, 1), buffer);
@@ -1295,11 +1271,10 @@ impl<'a> BackgroundTaskPanel<'a> {
             y = y.saturating_add(1);
         }
 
-        if let Some(banner) = task.output.dropped_banner(ascii) {
+        if let Some(banner) = task.output.dropped_banner(false) {
             if y < max_y {
                 StatusIndicator::new(SemanticStatus::Warning, self.system)
                     .label(&banner)
-                    .ascii(ascii)
                     .colorless(self.colorless)
                     .paint(Rect::new(area.x, y, area.width, 1), buffer);
                 y = y.saturating_add(1);
@@ -1320,7 +1295,6 @@ impl<'a> BackgroundTaskPanel<'a> {
             );
             StatusIndicator::new(task.status.semantic(), self.system)
                 .label(note)
-                .ascii(ascii)
                 .colorless(self.colorless)
                 .paint(Rect::new(area.x, y, area.width, 1), buffer);
             y = y.saturating_add(1);
@@ -1352,7 +1326,6 @@ impl<'a> BackgroundTaskPanel<'a> {
         if let Some(ms) = task.duration_ms {
             let _ = ms;
         }
-        state.output.ascii = ascii;
         state.output.colorless = self.colorless;
         if state.output.is_following() {
             state
@@ -1364,7 +1337,6 @@ impl<'a> BackgroundTaskPanel<'a> {
             // remains scrollable by pointer, but must not advertise a second
             // active focus target beside the selected task.
             .focused(false)
-            .ascii(ascii)
             .colorless(self.colorless)
             .show_chrome(false)
             .render(out_area, buffer, &mut state.output);
@@ -1568,11 +1540,7 @@ mod tests {
         let mut buf = Buffer::empty(area);
         BackgroundTaskPanel::new(&tasks, &system).paint(area, &mut buf, &mut st);
         st.force_presentation = Some(BackgroundTaskPresentation::CompactRail);
-        BackgroundTaskPanel::new(&tasks, &system).ascii(true).paint(
-            Rect::new(0, 0, 24, 12),
-            &mut buf,
-            &mut st,
-        );
+        BackgroundTaskPanel::new(&tasks, &system).paint(Rect::new(0, 0, 24, 12), &mut buf, &mut st);
 
         let compact = Rect::new(0, 0, 24, 12);
         let mut monochrome = Buffer::empty(compact);
@@ -1597,15 +1565,13 @@ mod tests {
         let tasks = [BackgroundTask::new("unicode", label)
             .status(BackgroundTaskStatus::Failed)
             .status_note("失敗 Cafe\u{301}")];
-        for ascii in [false, true] {
+        for _ in [false, true] {
             for (width, height) in [(64, 14), (24, 5), (1, 1), (0, 0)] {
                 let area = Rect::new(0, 0, width, height);
                 let mut buffer = Buffer::empty(area);
                 let mut state = BackgroundTaskPanelState::new();
                 state.list.select(Some("unicode".into()));
-                BackgroundTaskPanel::new(&tasks, &system)
-                    .ascii(ascii)
-                    .paint(area, &mut buffer, &mut state);
+                BackgroundTaskPanel::new(&tasks, &system).paint(area, &mut buffer, &mut state);
                 if width == 64 {
                     let text: String = buffer.content().iter().map(|cell| cell.symbol()).collect();
                     assert!(text.contains('監'), "{text:?}");
@@ -1618,7 +1584,7 @@ mod tests {
 
     #[test]
     fn selected_output_copy_stays_visible_without_claiming_second_focus() {
-        let system = DesignSystem::phosphor();
+        let system = DesignSystem::junie();
         let tasks = example_background_tasks();
         let mut state = BackgroundTaskPanelState::new();
         state.list.select(Some("b1".into()));
@@ -1645,15 +1611,18 @@ mod tests {
             })
             .expect("selected output copy has a stable start cell");
         let copy = &buffer[(copy_x, selected_output_y)];
+        // The tint rides the keyboard: the task list owns focus, so the
+        // parked output selection is marked, not tinted, and its copy reads
+        // as secondary metadata.
         assert_eq!(
             copy.fg,
-            system.style(Role::TextStrong).fg.unwrap(),
-            "selected neutral copy uses the contrast-safe row foreground"
+            system.style(Role::Text).fg.unwrap(),
+            "parked selection copy reads as ordinary body copy"
         );
-        assert_eq!(
+        assert_ne!(
             copy.bg,
             system.style(Role::SelectionTint).bg.unwrap(),
-            "selected output retains the canonical quiet tint"
+            "the parked row never wears the focused tint"
         );
 
         let title = "Background · 2 run · 1 lost";
@@ -1664,7 +1633,7 @@ mod tests {
         let detail_x = inner.x.saturating_add((inner.width / 3).clamp(12, 28));
         assert_eq!(
             buffer[(detail_x, selected_output_y)].fg,
-            system.style(Role::TextMuted).fg.unwrap(),
+            system.junie_theme().text_secondary,
             "parked output cursor is muted while the task list owns focus"
         );
     }

@@ -1,0 +1,855 @@
+{
+  "scenes": {
+    "showcase_overview_120x40": {
+      "bin": "showcase",
+      "args": [
+        "--page",
+        "Overview"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "tmux": "tmux 3.7c",
+      "captured_at": "2026-09-02T04:11:54Z",
+      "sha256": {
+        "txt": "41e6d45a52ce6e562b5c18657d5b7a17b2e1346c69a2b5d05e208bbbcdb1986d",
+        "ansi": "6d5ed2aa3f5cf68a9d26cd722759de67ab3d0449be61c61ab92eda4a410c3a11"
+      }
+    },
+    "showcase_buttons_120x40": {
+      "bin": "showcase",
+      "args": [
+        "--page",
+        "Buttons"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "tmux": "tmux 3.7c",
+      "captured_at": "2026-09-02T04:11:55Z",
+      "sha256": {
+        "txt": "e7fe30e04ea023a5ca35d104a53585122e24c02c03f0bb4622cf28328dac13de",
+        "ansi": "43be97ef5e5b89220bf4b438a1790c84012dbc9ea82e9d6eb7de780cc9002c49"
+      }
+    },
+    "showcase_inputs_120x40": {
+      "bin": "showcase",
+      "args": [
+        "--page",
+        "Inputs"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "tmux": "tmux 3.7c",
+      "captured_at": "2026-09-02T04:11:56Z",
+      "sha256": {
+        "txt": "0c91b3ad6318ed33c1bd3bfdeb393137b284969e54993143af2b35dfd5f3dcd4",
+        "ansi": "5d143704f150fea37151d72e4e5e2fa4d613b8fcc5ec3421107b7b23890b81ed"
+      }
+    },
+    "showcase_textareas_120x40": {
+      "bin": "showcase",
+      "args": [
+        "--page",
+        "TextAreas"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "tmux": "tmux 3.7c",
+      "captured_at": "2026-09-02T04:11:57Z",
+      "sha256": {
+        "txt": "d6dd12d8d5bc19298fef87b51b4297936888ae6127959ea435f2d9287617943e",
+        "ansi": "fd4ed2a19639188bf01a8438675b83a972540625d71f9bff5e8455e0b8f7b0b4"
+      }
+    },
+    "showcase_forms_120x40": {
+      "bin": "showcase",
+      "args": [
+        "--page",
+        "Forms"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "tmux": "tmux 3.7c",
+      "captured_at": "2026-09-02T04:11:58Z",
+      "sha256": {
+        "txt": "b6f6600fadf4a6c56f6971b5f376a906e00347cae24acf63eac41c24bcde491b",
+        "ansi": "2e8628949f35bd33a2ae2ce9f9c069a131dbff7cc9f4d0ffcfd683c86d8a1684"
+      }
+    },
+    "showcase_lists_120x40": {
+      "bin": "showcase",
+      "args": [
+        "--page",
+        "Lists"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "tmux": "tmux 3.7c",
+      "captured_at": "2026-09-02T04:11:59Z",
+      "sha256": {
+        "txt": "b84e557a1e9c7e8fd1764a79abcaf4b631a4100d67b287cf3d6381cd95580931",
+        "ansi": "1b9a891785d56d27f3a93d35932339c2721cb7f7ede81177572c4166cb3e7d97"
+      }
+    },
+    "showcase_trees_120x40": {
+      "bin": "showcase",
+      "args": [
+        "--page",
+        "Trees"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "tmux": "tmux 3.7c",
+      "captured_at": "2026-09-02T04:11:59Z",
+      "sha256": {
+        "txt": "6211ce208abd7656cf32f37206707e6688b4a5b91d7d34ff10f9c9328eb51f68",
+        "ansi": "1fceefed332a89de9cdec540ce809132a47919964ed1be5f58d21284756403c2"
+      }
+    },
+    "showcase_tables_120x40": {
+      "bin": "showcase",
+      "args": [
+        "--page",
+        "Tables"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "tmux": "tmux 3.7c",
+      "captured_at": "2026-09-02T04:12:00Z",
+      "sha256": {
+        "txt": "ea8856c983e998fb0f2ee95161cd529e7ce2738f9913c07d24bf1c74c195d3a5",
+        "ansi": "e4dbbae1f60448ab414082687b33152bb59ce246916dc5b580bad0aed01dde6f"
+      }
+    },
+    "showcase_editable_120x40": {
+      "bin": "showcase",
+      "args": [
+        "--page",
+        "Editable"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "tmux": "tmux 3.7c",
+      "captured_at": "2026-09-02T04:12:01Z",
+      "sha256": {
+        "txt": "230e71cf46470f5324e1fa293c66192e1f53171058af80ab97a3426be76e8a44",
+        "ansi": "230e71cf46470f5324e1fa293c66192e1f53171058af80ab97a3426be76e8a44"
+      }
+    },
+    "showcase_panels_120x40": {
+      "bin": "showcase",
+      "args": [
+        "--page",
+        "Panels"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "tmux": "tmux 3.7c",
+      "captured_at": "2026-09-02T04:12:02Z",
+      "sha256": {
+        "txt": "78adac7c9f96fa3c1c83b78d4f10c5ae338e0fb9b8fc710970ba09373f3c64ed",
+        "ansi": "0b88c5fb296bad636d0780212882e4acc98be54a5376793142920532a4650e50"
+      }
+    },
+    "showcase_sidebars_120x40": {
+      "bin": "showcase",
+      "args": [
+        "--page",
+        "Sidebars"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "tmux": "tmux 3.7c",
+      "captured_at": "2026-09-02T04:12:03Z",
+      "sha256": {
+        "txt": "a604a24b2a4e288f592ff2410f02fd1d910f8360c3cf388f4f15f8857366c962",
+        "ansi": "e084ac02a7631df4becfd8e0dabb640a6f1667f6e2ada52b38ad34f9d4435328"
+      }
+    },
+    "showcase_dialogs_120x40": {
+      "bin": "showcase",
+      "args": [
+        "--page",
+        "Dialogs"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "tmux": "tmux 3.7c",
+      "captured_at": "2026-09-02T04:12:04Z",
+      "sha256": {
+        "txt": "db0d134decd9313518ab66f6068661438deaeb093565d4d96fdf07423af05a8c",
+        "ansi": "fcd33ac53d676f395190c0b5707d36ab8614c32a84b1c4e6aeb3b433cc0635bf"
+      }
+    },
+    "showcase_progress_120x40": {
+      "bin": "showcase",
+      "args": [
+        "--page",
+        "Progress"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "tmux": "tmux 3.7c",
+      "captured_at": "2026-09-02T04:12:05Z",
+      "sha256": {
+        "txt": "4aa49881e2c840431352b123ed6a4ab0d08718c99dcac8c5994eca5f84d577d2",
+        "ansi": "25e014dd85d0c02ab6e7e2a43b342bbff5701e245db14f4fe16788c191b84af2"
+      }
+    },
+    "showcase_scrolling_120x40": {
+      "bin": "showcase",
+      "args": [
+        "--page",
+        "Scrolling"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "tmux": "tmux 3.7c",
+      "captured_at": "2026-09-02T04:12:06Z",
+      "sha256": {
+        "txt": "e662d8a2466759826cd5f9a1298914db3e0d72169b7d0dfda9729b674003a40d",
+        "ansi": "3da04170fc48336e9f585f674f98b70038ac7ccf4cca7d4a1678d4be1a13f1e4"
+      }
+    },
+    "showcase_editor_120x40": {
+      "bin": "showcase",
+      "args": [
+        "--page",
+        "Editor"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "tmux": "tmux 3.7c",
+      "captured_at": "2026-09-02T04:12:07Z",
+      "sha256": {
+        "txt": "230e71cf46470f5324e1fa293c66192e1f53171058af80ab97a3426be76e8a44",
+        "ansi": "230e71cf46470f5324e1fa293c66192e1f53171058af80ab97a3426be76e8a44"
+      }
+    },
+    "showcase_grid_120x40": {
+      "bin": "showcase",
+      "args": [
+        "--page",
+        "Grid"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "tmux": "tmux 3.7c",
+      "captured_at": "2026-09-02T04:12:08Z",
+      "sha256": {
+        "txt": "230e71cf46470f5324e1fa293c66192e1f53171058af80ab97a3426be76e8a44",
+        "ansi": "230e71cf46470f5324e1fa293c66192e1f53171058af80ab97a3426be76e8a44"
+      }
+    },
+    "showcase_chips_120x40": {
+      "bin": "showcase",
+      "args": [
+        "--page",
+        "Chips"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "tmux": "tmux 3.7c",
+      "captured_at": "2026-09-02T04:12:08Z",
+      "sha256": {
+        "txt": "230e71cf46470f5324e1fa293c66192e1f53171058af80ab97a3426be76e8a44",
+        "ansi": "230e71cf46470f5324e1fa293c66192e1f53171058af80ab97a3426be76e8a44"
+      }
+    },
+    "showcase_pickers_120x40": {
+      "bin": "showcase",
+      "args": [
+        "--page",
+        "Pickers"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "tmux": "tmux 3.7c",
+      "captured_at": "2026-09-02T04:12:09Z",
+      "sha256": {
+        "txt": "391fcd0d22751d8c40bd1494c2862705e915ed10baae89cc68af61ade2a20a7f",
+        "ansi": "f32818c1310889e3b8feb552ce731e68cba8ce5e3e79016a72cf3c755fa5289e"
+      }
+    },
+    "showcase_settings_120x40": {
+      "bin": "showcase",
+      "args": [
+        "--page",
+        "Settings"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "tmux": "tmux 3.7c",
+      "captured_at": "2026-09-02T04:12:10Z",
+      "sha256": {
+        "txt": "0263f2b5344a32ce781a9b9870ca2d2b501bac8e5eb9bce30da31328163f58c2",
+        "ansi": "118bdc926a9f55bc52ee1d0c7203246a38b47c561e7fceafbddce76cf5c240bb"
+      }
+    },
+    "showcase_taskrunner_120x40": {
+      "bin": "showcase",
+      "args": [
+        "--page",
+        "TaskRunner"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "tmux": "tmux 3.7c",
+      "captured_at": "2026-09-02T04:12:11Z",
+      "sha256": {
+        "txt": "cef23423d3abc84a8c9855ba80b366c6ba668dc7d01d1c055800ba31c988debd",
+        "ansi": "53793ca0b3e0308e24a5bb1dfc73a84865618a355c9ee46188c22dcfdafe40b3"
+      }
+    },
+    "showcase_overview_80x24": {
+      "bin": "showcase",
+      "args": [
+        "--page",
+        "Overview"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 80,
+      "rows": 24,
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "tmux": "tmux 3.7c",
+      "captured_at": "2026-09-02T04:12:12Z",
+      "sha256": {
+        "txt": "0d297ed4c91dd91a918a52d3481e010076b24ff71321a09c26380a1a70fcd6a7",
+        "ansi": "31508f456871b6e468ef87af6b532a19d4ce1b3d73184fa67ca39b0d6611d6be"
+      }
+    },
+    "showcase_buttons_80x24": {
+      "bin": "showcase",
+      "args": [
+        "--page",
+        "Buttons"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 80,
+      "rows": 24,
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "tmux": "tmux 3.7c",
+      "captured_at": "2026-09-02T04:12:13Z",
+      "sha256": {
+        "txt": "51ed06a93e5f35c176131976837975f6fbe97d02dc4d9e86a32086f5fa5d1322",
+        "ansi": "94eebd2d4659e57d66593f7951f9495fc7c2ab6ba411d27e5accb4eede5e0bb3"
+      }
+    },
+    "showcase_inputs_80x24": {
+      "bin": "showcase",
+      "args": [
+        "--page",
+        "Inputs"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 80,
+      "rows": 24,
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "tmux": "tmux 3.7c",
+      "captured_at": "2026-09-02T04:12:14Z",
+      "sha256": {
+        "txt": "a08797e7321395fa1e9bfb6dbcc5a13be1b18d0f854f0682bbb4f6953367c851",
+        "ansi": "0a4f6c9b47ede3dad5f771398e7ce6315448c049dc48c8bb502bb527e85fabb5"
+      }
+    },
+    "showcase_textareas_80x24": {
+      "bin": "showcase",
+      "args": [
+        "--page",
+        "TextAreas"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 80,
+      "rows": 24,
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "tmux": "tmux 3.7c",
+      "captured_at": "2026-09-02T04:12:15Z",
+      "sha256": {
+        "txt": "13450b5d07151a742c7f94e862e42cd3a3fbbf99e93fe8bbc0545888a8a434fc",
+        "ansi": "79fd6ad5c2f665b98be3a70e430e2362c1b2639a8223afb9e22a6217a2a77e2a"
+      }
+    },
+    "showcase_forms_80x24": {
+      "bin": "showcase",
+      "args": [
+        "--page",
+        "Forms"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 80,
+      "rows": 24,
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "tmux": "tmux 3.7c",
+      "captured_at": "2026-09-02T04:12:16Z",
+      "sha256": {
+        "txt": "425e7295c524c6488dccb2b118b96d292de1e22af1d28f39801f1ea7b30df9b6",
+        "ansi": "d6335bc5a7aed38de0e0fa006f4d6a84cb4913c222968d389347abf56382482d"
+      }
+    },
+    "showcase_lists_80x24": {
+      "bin": "showcase",
+      "args": [
+        "--page",
+        "Lists"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 80,
+      "rows": 24,
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "tmux": "tmux 3.7c",
+      "captured_at": "2026-09-02T04:12:17Z",
+      "sha256": {
+        "txt": "ab264a3068ff273f24c24934c8d1b20c3e80a17740aeca3448f09bdff6e5d610",
+        "ansi": "39052300b9831bb2b06fcfa89ff2e498b517712ea12c0d0018432afe8f834998"
+      }
+    },
+    "showcase_trees_80x24": {
+      "bin": "showcase",
+      "args": [
+        "--page",
+        "Trees"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 80,
+      "rows": 24,
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "tmux": "tmux 3.7c",
+      "captured_at": "2026-09-02T04:12:17Z",
+      "sha256": {
+        "txt": "189aeddbc3328382cf322c922a5d7f8af5456ea92cef5deec1a50b4716d1cf72",
+        "ansi": "f7b3b0afede8f96c015703b47dda6af8155430042b11ea4344839f9101742694"
+      }
+    },
+    "showcase_tables_80x24": {
+      "bin": "showcase",
+      "args": [
+        "--page",
+        "Tables"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 80,
+      "rows": 24,
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "tmux": "tmux 3.7c",
+      "captured_at": "2026-09-02T04:12:18Z",
+      "sha256": {
+        "txt": "5c34b7989ee0a114e66d3ba4c185bf577824f8b91298f9983898668a8b56ed0a",
+        "ansi": "123f50e0c46401e2c4e974a9267a2ebef55f55fcc987affc89bfabedf81ea81f"
+      }
+    },
+    "showcase_editable_80x24": {
+      "bin": "showcase",
+      "args": [
+        "--page",
+        "Editable"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 80,
+      "rows": 24,
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "tmux": "tmux 3.7c",
+      "captured_at": "2026-09-02T04:12:19Z",
+      "sha256": {
+        "txt": "49cb2d2ab1323ea968a401fbd24a20d2b51aa1879c735f4b16f487797c9fa81f",
+        "ansi": "49cb2d2ab1323ea968a401fbd24a20d2b51aa1879c735f4b16f487797c9fa81f"
+      }
+    },
+    "showcase_panels_80x24": {
+      "bin": "showcase",
+      "args": [
+        "--page",
+        "Panels"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 80,
+      "rows": 24,
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "tmux": "tmux 3.7c",
+      "captured_at": "2026-09-02T04:12:20Z",
+      "sha256": {
+        "txt": "0eec0336554b1865b3dfe606c6bef6a84bb75b03056094cc2a6d6322f8220e31",
+        "ansi": "66f030d4e07bebea3723ee7e3a6f6c64da858ed7871be311303d7047a246851b"
+      }
+    },
+    "showcase_sidebars_80x24": {
+      "bin": "showcase",
+      "args": [
+        "--page",
+        "Sidebars"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 80,
+      "rows": 24,
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "tmux": "tmux 3.7c",
+      "captured_at": "2026-09-02T04:12:21Z",
+      "sha256": {
+        "txt": "f356f543b8a25ee6234848064be5ac3857a8b61253bd04c180483a357324ceef",
+        "ansi": "001a224da8409fc48ea8bc2a87ae3f210cb64e77f50cc8182d0d6565ba8a1b00"
+      }
+    },
+    "showcase_dialogs_80x24": {
+      "bin": "showcase",
+      "args": [
+        "--page",
+        "Dialogs"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 80,
+      "rows": 24,
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "tmux": "tmux 3.7c",
+      "captured_at": "2026-09-02T04:12:22Z",
+      "sha256": {
+        "txt": "92321f192a2eb0c31158ddaeb08938ae69ded8448aa5ea4a3cfdc966c041960f",
+        "ansi": "08fe2dc05083dc3d5f88a6ddefae40cc98c404cfa25aac4ea9767da8e12760db"
+      }
+    },
+    "showcase_progress_80x24": {
+      "bin": "showcase",
+      "args": [
+        "--page",
+        "Progress"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 80,
+      "rows": 24,
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "tmux": "tmux 3.7c",
+      "captured_at": "2026-09-02T04:12:23Z",
+      "sha256": {
+        "txt": "c57cc47de0751151e19820ee4c57fca842763a6274af34f6dac85fafb43b2cf0",
+        "ansi": "66201c011afd32fae074dda06190ab6dd793e476d13bc4d4fe2f3bd437f158bc"
+      }
+    },
+    "showcase_scrolling_80x24": {
+      "bin": "showcase",
+      "args": [
+        "--page",
+        "Scrolling"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 80,
+      "rows": 24,
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "tmux": "tmux 3.7c",
+      "captured_at": "2026-09-02T04:12:24Z",
+      "sha256": {
+        "txt": "77ac00de061bb041b4dadd5f33b70acc1d858e7c4e31195ccbd020cf83fa2209",
+        "ansi": "a63906dbe7db114006c9020aec54950ec9905b9e4fe0db96cce828fb00bf5475"
+      }
+    },
+    "showcase_editor_80x24": {
+      "bin": "showcase",
+      "args": [
+        "--page",
+        "Editor"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 80,
+      "rows": 24,
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "tmux": "tmux 3.7c",
+      "captured_at": "2026-09-02T04:12:25Z",
+      "sha256": {
+        "txt": "49cb2d2ab1323ea968a401fbd24a20d2b51aa1879c735f4b16f487797c9fa81f",
+        "ansi": "49cb2d2ab1323ea968a401fbd24a20d2b51aa1879c735f4b16f487797c9fa81f"
+      }
+    },
+    "showcase_grid_80x24": {
+      "bin": "showcase",
+      "args": [
+        "--page",
+        "Grid"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 80,
+      "rows": 24,
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "tmux": "tmux 3.7c",
+      "captured_at": "2026-09-02T04:12:25Z",
+      "sha256": {
+        "txt": "49cb2d2ab1323ea968a401fbd24a20d2b51aa1879c735f4b16f487797c9fa81f",
+        "ansi": "49cb2d2ab1323ea968a401fbd24a20d2b51aa1879c735f4b16f487797c9fa81f"
+      }
+    },
+    "showcase_chips_80x24": {
+      "bin": "showcase",
+      "args": [
+        "--page",
+        "Chips"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 80,
+      "rows": 24,
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "tmux": "tmux 3.7c",
+      "captured_at": "2026-09-02T04:12:26Z",
+      "sha256": {
+        "txt": "49cb2d2ab1323ea968a401fbd24a20d2b51aa1879c735f4b16f487797c9fa81f",
+        "ansi": "49cb2d2ab1323ea968a401fbd24a20d2b51aa1879c735f4b16f487797c9fa81f"
+      }
+    },
+    "showcase_pickers_80x24": {
+      "bin": "showcase",
+      "args": [
+        "--page",
+        "Pickers"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 80,
+      "rows": 24,
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "tmux": "tmux 3.7c",
+      "captured_at": "2026-09-02T04:12:27Z",
+      "sha256": {
+        "txt": "05bb4eaeb7f94d030282933c4c4bd535dbd45ed019721cbc8937371c129c450e",
+        "ansi": "ee627b9e8805bd1cdd297f077e8f08efcd64226b80fb690f00f8e0fb2d6ea454"
+      }
+    },
+    "showcase_settings_80x24": {
+      "bin": "showcase",
+      "args": [
+        "--page",
+        "Settings"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 80,
+      "rows": 24,
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "tmux": "tmux 3.7c",
+      "captured_at": "2026-09-02T04:12:28Z",
+      "sha256": {
+        "txt": "2a3dabfdea879a50f110dd23d158bea0a9be95b1116d8fb0876a42d7c3fb489f",
+        "ansi": "6edd00f9335b2a3e46dec2e9a2834915bbaf498662400dc681ddfca5dc67eedb"
+      }
+    },
+    "showcase_taskrunner_80x24": {
+      "bin": "showcase",
+      "args": [
+        "--page",
+        "TaskRunner"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 80,
+      "rows": 24,
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "tmux": "tmux 3.7c",
+      "captured_at": "2026-09-02T04:12:29Z",
+      "sha256": {
+        "txt": "d678479f58aca3175c293c6a98c8d9e744374222f34a938a5da9d1b0d9b3937d",
+        "ansi": "33e6bab2a7c34643f5f9329e795f892b28fc954d14aadc0a13224c8033d35329"
+      }
+    },
+    "tablepro_default_120x40": {
+      "bin": "tablepro",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "tmux": "tmux 3.7c",
+      "captured_at": "2026-09-02T04:12:30Z",
+      "sha256": {
+        "txt": "98f82fab3a9bdd9827496044aeddfb1746872f78e8fd87b34009d86f67a495fd",
+        "ansi": "408911dbb871f614590af9fbc978c7c853cd81251a2cd80b1b095b0bd4fa3fec"
+      }
+    },
+    "tablepro_default_80x24": {
+      "bin": "tablepro",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 80,
+      "rows": 24,
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "tmux": "tmux 3.7c",
+      "captured_at": "2026-09-02T04:12:31Z",
+      "sha256": {
+        "txt": "7311400f3e7e3a3d254a2624793032698520fa4830349602bb7d334efd2e8d1f",
+        "ansi": "b40dbe409dcf0859f93f0cbcafddf60c73c8efd7713f1623aa7370f930bccd0e"
+      }
+    },
+    "tablepro_local_120x40": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Local PostgreSQL"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "tmux": "tmux 3.7c",
+      "captured_at": "2026-09-02T04:12:32Z",
+      "sha256": {
+        "txt": "6f176ba407485cb26736f4ffb66f51a26ce958c95e2e80e6c0150c7311f763a7",
+        "ansi": "909eec21f18ff6d27a80a21e3c1059606f1f767ad70a09464f6502b141593d8e"
+      }
+    },
+    "tablepro_production_120x40": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "tmux": "tmux 3.7c",
+      "captured_at": "2026-09-02T04:12:33Z",
+      "sha256": {
+        "txt": "a161d969921ceebf8409b984e1b3c0d0554ccb4425f8243357a3ebc3012b48b3",
+        "ansi": "3dcc047104ac88e6131aadb262b26ef19bc62302776b5dd3165b08ae8dbb10c2"
+      }
+    },
+    "tablepro_help_120x40": {
+      "bin": "tablepro",
+      "args": [],
+      "keys": [
+        "?"
+      ],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "tmux": "tmux 3.7c",
+      "captured_at": "2026-09-02T04:12:34Z",
+      "sha256": {
+        "txt": "79eb14112991c5d79368d3073b117c8ce83f90fa0e176145da89dd49bc1a717c",
+        "ansi": "5b18173f625c00952853d45b8ee926e9293632c51b1f676f4a9ed010405f3bdb"
+      }
+    }
+  },
+  "junie_commit": "e43cf67",
+  "tmux": "tmux 3.7c",
+  "updated_at": "2026-09-02T04:12:34Z"
+}

@@ -112,7 +112,7 @@ export const ownerEvidence: readonly OwnerEvidence[] = [
     crateRoot('context.rs', 'context_routes_overlay_pointer_gesture_and_one_escape_layer'),
   ], { keyboard: 'caller', disabled: 'caller' }),
   behavior('Backdrop', [
-    widget('dialog.rs', 'backdrop_from_design_system_dims'),
+    widget('dialog.rs', 'backdrop_collapses_content_but_keeps_the_page_shape'),
     interaction('overlay_stack.rs', 'dim_policy_washes_the_whole_layer_not_just_the_overlay'),
   ], { keyboard: 'na', mouse: 'na', focus: 'na', disabled: 'na', overlay: 'caller', escape: 'na' }),
   behavior('Callout', [widget('callout.rs', 'semantic_callout_and_alert')], {
@@ -478,21 +478,21 @@ export const ownerEvidence: readonly OwnerEvidence[] = [
   specific('Workspace', [crateRoot('layout/workspace.rs', 'rects_stay_inside_parent_on_tiny_area')], { unicode: 'na', cjk: 'na', combining: 'na', emoji: 'na' }),
   ...([
     ['FileTree', 'file_tree.rs', 'fuzz_kinds_git'],
-    ['LogPane', 'log_pane.rs', 'ascii_profile_replaces_follow_and_scroll_chrome'],
-    ['MessageThread', 'message_thread.rs', 'ascii_projection_builds_ascii_chrome_without_rewriting_host_copy'],
+    ['LogPane', 'log_pane.rs', 'follow_indicator_preserves_borders_and_long_titles'],
+    ['MessageThread', 'message_thread.rs', 'project_folds_tools_at_summary'],
     ['Transcript', 'transcript.rs', 'ascii_and_unicode_paint_kind_prefix'],
-    ['Viewport', 'viewport.rs', 'ascii_profile_uses_ascii_title_ellipsis'],
+    ['Viewport', 'viewport.rs', 'content_is_flush_with_the_border_by_default'],
   ] as const).map(([id, file, symbol]) => specific(id, [widget(file, symbol)], { ascii_fallback: 'r' })),
   specific('ScrollArea', [
-    widget('scroll_area.rs', 'visual_bars_and_new_content_paint'),
-    scroll('render/tests.rs', 'ascii_profile_paints_single_cell_ascii_track_and_thumbs'),
+    widget('scroll_area.rs', 'follow_and_pause_unseen'),
+    scroll('render/tests.rs', 'scrollbar_styles_use_canonical_glyphs'),
   ], { ascii_fallback: 'r' }),
   specific('VirtualList', [
-    widget('virtual_list.rs', 'async_placeholder_and_loading'),
-    scroll('render/tests.rs', 'ascii_profile_paints_single_cell_ascii_track_and_thumbs'),
+    widget('virtual_list.rs', 'empty_safe'),
+    scroll('render/tests.rs', 'scrollbar_styles_use_canonical_glyphs'),
   ], { ascii_fallback: 'r' }),
   ...([
-    ['CodeBlock', 'code_block.rs', 'large_window_paint_cheap'],
+    ['CodeBlock', 'code_block.rs', 'virtualization_window_line_base'],
     ['DiagnosticView', 'diagnostic.rs', 'sustained_list_paint'],
     ['DiffView', 'diff.rs', 'sustained_viewport_paint'],
     ['EventStream', 'event_stream.rs', 'sustained_append_viewport_bound'],
@@ -508,7 +508,7 @@ export const ownerEvidence: readonly OwnerEvidence[] = [
   ], { large_data: 'cp' }),
   specific('DetailTable', [widget('detail_table.rs', 'wrap_and_both_axis_scroll_are_bounded_and_unicode_safe')], { large_data: 'na' }),
   ...([
-    ['DataTable', 'data_table.rs', 'load_states_paint_explicit_ascii_no_color_cues'],
+    ['DataTable', 'data_table.rs', 'empty_state_paint_has_non_color_glyph'],
     ['TreeTable', 'tree_table.rs', 'non_ready_load_state_precedes_the_empty_projection_fallback'],
     ['ObjectInspector', 'object_inspector.rs', 'root_load_states_paint_before_the_empty_object_fallback'],
   ] as const).map(([id, file, symbol]) => specific(id, [
@@ -520,12 +520,12 @@ export const ownerEvidence: readonly OwnerEvidence[] = [
     widget('card.rs', 'card_empty_and_error_body_modes_paint_their_state_copy'),
   ], { loading: 'r', empty: 'r', error: 'r' }),
   specific('ActivityIndicator', [
-    widget('spinner.rs', 'every_phase_declares_its_channel_and_cadence'),
+    widget('spinner.rs', 'every_phase_uses_the_one_cadence'),
     widget('spinner.rs', 'spinner_and_activity_indicator_resize_cjk_combining_and_ascii_safe'),
   ], { loading: 'r', streaming: 'r', error: 'na', disabled: 'na' }),
   specific('Spinner', [
-    widget('spinner.rs', 'every_phase_declares_its_channel_and_cadence'),
-    widget('spinner.rs', 'dot_pulse_uses_raster_safe_frames_and_motion_off_is_static'),
+    widget('spinner.rs', 'every_phase_uses_the_one_cadence'),
+    widget('spinner.rs', 'spinner_motion_off_static'),
     widget('spinner.rs', 'fuzz_phases_ticks'),
   ], { loading: 'r', streaming: 'r', error: 'na', disabled: 'na' }),
   specific('ProgressBar', [
@@ -566,7 +566,7 @@ export const ownerEvidence: readonly OwnerEvidence[] = [
     widget('connectivity.rs', 'offline_surfaces_resize_cjk_combining_and_ascii_safe'),
   ], { loading: 'na', error: 'r', streaming: 'na', disabled: 'na' })),
   specific('ProgressSteps', [
-    widget('progress_steps.rs', 'ascii_marks'),
+    widget('progress_steps.rs', 'interactive_nav_and_retry'),
     widget('progress_steps.rs', 'status_marks_are_non_color'),
   ], { loading: 'na', error: 'r', streaming: 'na', disabled: 'na' }),
   specific('StatusBar', [widget('status_bar.rs', 'semantic_status_owns_glyph_over_custom_slot_glyph')], {
@@ -576,7 +576,7 @@ export const ownerEvidence: readonly OwnerEvidence[] = [
     widget('status_indicator.rs', 'all_kinds_have_glyph_label_role'),
     widget('status_indicator.rs', 'paint_includes_non_color_glyph'),
   ], { loading: 'na', error: 'r', streaming: 'na', disabled: 'na' }),
-  specific('StatusStrip', [widget('status_strip.rs', 'semantic_segments_supply_a_non_color_glyph')], {
+  specific('StatusStrip', [widget('status_strip.rs', 'colorless_strips_paint_no_hue_at_all')], {
     loading: 'na', error: 'r', streaming: 'na', disabled: 'na',
   }),
   specific('TaskRail', [pattern('task_rail.rs', 'paint_all_and_narrow')], {
@@ -588,7 +588,7 @@ export const ownerEvidence: readonly OwnerEvidence[] = [
     ['BackgroundTaskPanel', pattern('background_task_panel.rs', 'resize_cjk_combining_and_ascii_safe')],
     ['ConnectionManager', pattern('connection_manager.rs', 'resize_cjk_combining_and_ascii_safe')],
     ['IntegrationStatus', pattern('integration_status.rs', 'resize_cjk_combining_and_ascii_safe')],
-    ['ProgressSteps', widget('progress_steps.rs', 'resize_cjk_combining_and_ascii_safe')],
+    ['ProgressSteps', widget('progress_steps.rs', 'summary_contracts_on_narrow')],
     ['StatusBar', widget('status_bar.rs', 'resize_cjk_combining_and_ascii_safe')],
     ['StatusIndicator', widget('status_indicator.rs', 'resize_cjk_combining_and_ascii_safe')],
     ['StatusStrip', widget('status_strip.rs', 'resize_cjk_combining_and_ascii_safe')],
@@ -612,7 +612,7 @@ export const ownerEvidence: readonly OwnerEvidence[] = [
     widget('skeleton.rs', 'tiny_size_safe'),
     widget('skeleton.rs', 'capability_tiny_stories_contract'),
     widget('skeleton.rs', 'legacy_new_paints_staggered_lines'),
-    widget('skeleton.rs', 'ascii_fill'),
+    widget('skeleton.rs', 'capability_tiny_stories_contract'),
   ], { resize: 'r', responsive: 'r', tiny_terminal: 'r', unicode: 'r', cjk: 'na', combining: 'na', emoji: 'na', ascii_fallback: 'r' }),
   specific('StatusStrip', [widget('status_strip.rs', 'resize_cjk_combining_and_ascii_safe')], { emoji: 'r' }),
   ...([
@@ -651,7 +651,7 @@ export const ownerEvidence: readonly OwnerEvidence[] = [
     ['WorkingStateCard', pattern('working_state_card.rs', 'reference_minimum_and_below_minimum_keep_status_anatomy')],
     ['ActivityIndicator', widget('spinner.rs', 'activity_indicator_is_rail_glyph_and_verb_in_ascii_colorless_mode')],
   ] as const).map(([id, test]) => specific(id, [test], { no_color: 'r' })),
-  specific('StatusIndicator', [widget('status_indicator.rs', 'labeled_ascii_status_keeps_rail_glyph_and_verb')], { no_color: 'rp' }),
+  specific('StatusIndicator', [widget('status_indicator.rs', 'glyph_comes_from_the_one_vocabulary')], { no_color: 'rp' }),
   specific('ActivityShelf', [pattern('activity_shelf.rs', 'paint_presentations')], { no_color: 'rp', color_ladder: 'rp' }),
   ...(['OfflineBanner', 'OfflineChrome', 'OfflineSurface'] as const).map((id) => specific(id, [
     widget('connectivity.rs', 'offline_surfaces_resize_cjk_combining_and_ascii_safe'),

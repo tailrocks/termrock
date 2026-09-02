@@ -8,7 +8,6 @@
 //! [`CapabilityBoundary`] for widgets, and never read env vars in paint paths.
 //!
 //! See `docs/design/terminal-capability-architecture.md`.
-
 mod boundary;
 mod detect;
 mod doctor;

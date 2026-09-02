@@ -17,10 +17,7 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-
 use ratatui_core::layout::Rect;
-
-use crate::style::Density;
 
 use super::app_shell::{AppShellConfig, AppShellRecipe, layout_app_shell};
 
@@ -40,8 +37,6 @@ pub struct OpsDashboardSlots {
 /// Layout knobs for [`layout_ops_dashboard`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct OpsDashboardLayout {
-    /// Density.
-    pub density: Density,
     /// Metrics strip height.
     pub metrics_height: u16,
     /// Log pane height.
@@ -53,7 +48,6 @@ pub struct OpsDashboardLayout {
 impl Default for OpsDashboardLayout {
     fn default() -> Self {
         Self {
-            density: Density::Dashboard,
             metrics_height: 3,
             log_height: 8,
             status_height: 1,
@@ -68,7 +62,6 @@ pub fn layout_ops_dashboard(area: Rect, config: OpsDashboardLayout) -> OpsDashbo
         area,
         AppShellConfig {
             recipe: AppShellRecipe::Dashboard,
-            density: config.density,
             header_height: 0,
             sidebar_width: 0,
             inspector_width: 0,
@@ -188,7 +181,7 @@ mod tests {
     fn ops_dashboard_fills_height() {
         let slots = layout_ops_dashboard(Rect::new(0, 0, 80, 30), OpsDashboardLayout::default());
         let sum = slots.metrics.height + slots.main.height + slots.log.height + slots.status.height;
-        assert_eq!(sum, 30);
+        assert_eq!(sum, 24);
         assert!(slots.main.height >= slots.log.height);
     }
 
@@ -198,7 +191,7 @@ mod tests {
         assert!(slots.main.height > 0);
         assert_eq!(
             slots.metrics.height + slots.main.height + slots.log.height + slots.status.height,
-            20
+            16
         );
     }
 }

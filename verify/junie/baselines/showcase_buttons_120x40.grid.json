@@ -1,0 +1,13 @@
+{
+  "scene": "showcase_buttons_120x40",
+  "text_cells_budget": 75,
+  "color_cells_budget": 91,
+  "measured": {
+    "lines_differing": 4,
+    "background_only_differing": 14
+  },
+  "reference_ansi_sha256": "43be97ef5e5b89220bf4b438a1790c84012dbc9ea82e9d6eb7de780cc9002c49",
+  "termrock_commit": "f51d0ba8",
+  "blessed_at": "2026-09-02T04:16:57Z",
+  "note": "ratchet: re-bless only when the delta shrinks or the reference moves"
+}

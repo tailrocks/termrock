@@ -16,7 +16,6 @@
 //! dual-paint: pick one surface per control.
 //!
 //! Research: shadcn Input Group, browser URL bars, CLI flag+value pairs.
-
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
@@ -363,6 +362,7 @@ impl<'a> InputGroup<'a> {
                     } else {
                         ControlState::Disabled
                     },
+                    self.system.junie_theme().surface,
                 );
                 action.fill.patch(action.label)
             } else {

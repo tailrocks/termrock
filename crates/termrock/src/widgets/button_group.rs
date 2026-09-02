@@ -16,7 +16,6 @@
 //! command catalogs; ButtonGroup is a focused action cluster (OK/Cancel/Delete).
 //!
 //! Research: shadcn button groups, desktop dialog action bars, terminal prompt rows.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -641,7 +640,7 @@ impl<'a, Id: Clone + PartialEq> ButtonGroup<'a, Id> {
             }
             ButtonGroupOrientation::Horizontal => {
                 let gap = self.recipe.inter_cols();
-                let sep = self.recipe.separator_glyph(self.system.glyphs.is_ascii());
+                let sep = self.recipe.separator_glyph(false);
                 let mut x = area.x;
                 let mut first = true;
                 // Paint in source order among visible
@@ -710,13 +709,10 @@ impl<'a, Id: Clone + PartialEq> ButtonGroup<'a, Id> {
                             } else {
                                 ControlState::Default
                             },
+                            self.system.junie_theme().surface,
                         );
                         let mut style = recipe.fill.patch(recipe.label);
-                        style = style.add_modifier(if focused {
-                            Modifier::BOLD | Modifier::REVERSED
-                        } else {
-                            Modifier::BOLD
-                        });
+                        style = style.add_modifier(Modifier::BOLD);
                         let label = take_display_cols(self.overflow_label, usize::from(tw));
                         buffer.set_stringn(rect.x, rect.y, &label, usize::from(tw), style);
                         overflow_trigger = Some(rect);
@@ -1306,25 +1302,6 @@ mod tests {
             let _ = g.paint(area, &mut buf, &mut state);
         }
         assert!(state.parts.is_some());
-    }
-
-    #[test]
-    fn ascii_glyphs_paint_connected() {
-        // Visual / non-color path: ASCII glyph set still paints separators.
-        let system = DesignSystem::default().glyphs(crate::style::GlyphSet::Ascii);
-        let items = [
-            ButtonGroupItem::quiet("a", "A"),
-            ButtonGroupItem::quiet("b", "B"),
-        ];
-        let g = ButtonGroup::new(&items, &system).connected();
-        let mut state = ButtonGroupState::new();
-        let mut buf = Buffer::empty(Rect::new(0, 0, 20, 1));
-        let parts = g.paint(Rect::new(0, 0, 20, 1), &mut buf, &mut state);
-        assert_eq!(parts.items.iter().filter(|i| !i.overflowed).count(), 2);
-        // Separator cell between faces when both fit
-        let a = parts.items.iter().find(|i| i.id == "a").unwrap().area;
-        let b = parts.items.iter().find(|i| i.id == "b").unwrap().area;
-        assert!(b.x >= a.x + a.width);
     }
 
     #[test]

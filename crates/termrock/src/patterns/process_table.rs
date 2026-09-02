@@ -23,7 +23,6 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-
 use std::cmp::Ordering;
 use std::collections::BTreeSet;
 
@@ -685,8 +684,6 @@ pub struct ProcessTableState {
     pub generation: u64,
     /// Load chrome.
     pub load: LoadState,
-    /// ASCII glyphs.
-    pub ascii: bool,
     /// Host grants input.
     accepts_input: bool,
     /// Previous index for nearest-neighbor restore.
@@ -720,7 +717,6 @@ impl ProcessTableState {
             refresh_ms: 1000,
             generation: 0,
             load: LoadState::Ready { count: 0 },
-            ascii: false,
             accepts_input: true,
             previous_index: None,
             row_regions: Vec::new(),
@@ -1191,7 +1187,6 @@ pub struct ProcessTable<'a> {
     system: &'a DesignSystem,
     focused: bool,
     title: Option<&'a str>,
-    ascii: bool,
 }
 
 impl<'a> ProcessTable<'a> {
@@ -1203,7 +1198,6 @@ impl<'a> ProcessTable<'a> {
             system,
             focused: true,
             title: None,
-            ascii: false,
         }
     }
 
@@ -1223,17 +1217,11 @@ impl<'a> ProcessTable<'a> {
 
     /// ASCII.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Paint.
     pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut ProcessTableState) {
         if area.is_empty() {
             return;
         }
-        let ascii = self.ascii || state.ascii;
         let mut y = area.y;
         let mut h = area.height;
         state.row_regions.clear();
@@ -1318,26 +1306,19 @@ impl<'a> ProcessTable<'a> {
                     String::new()
                 };
                 let disc = if matches!(state.view_mode, ProcessViewMode::Tree) && p.branch {
-                    if p.expanded {
-                        if ascii { "v " } else { "▾ " }
-                    } else if ascii {
-                        "> "
-                    } else {
-                        "▸ "
-                    }
+                    if p.expanded { "▾ " } else { "▸ " }
                 } else {
                     "  "
                 };
                 let mark = if selected {
-                    if ascii { ">" } else { "›" }
+                    "›"
                 } else if checked {
-                    if ascii { "*" } else { "★" }
+                    "★"
                 } else {
                     " "
                 };
-                let indicator = StatusIndicator::new(p.status.semantic(), self.system)
-                    .label(p.status.id())
-                    .ascii(ascii);
+                let indicator =
+                    StatusIndicator::new(p.status.semantic(), self.system).label(p.status.id());
                 let status_text = indicator.text(None);
                 let line = format!(
                     "{mark}{status_text:<12} {:>7} {:>5} {:>7} {:<8} {:>8} {}{}{}",
@@ -1392,7 +1373,6 @@ impl<'a> ProcessTable<'a> {
             );
             StatusIndicator::new(SemanticStatus::Warning, self.system)
                 .label(&msg)
-                .ascii(ascii)
                 .paint(Rect::new(area.x, cy, area.width, 1), buffer);
         }
     }
@@ -1561,7 +1541,7 @@ mod tests {
         state.select(Some(ProcessKey::new(1888, 400)));
         let area = Rect::new(0, 0, 72, 12);
         let mut buf = Buffer::empty(area);
-        ProcessTable::new(&rows, &system)
+        let _ = ProcessTable::new(&rows, &system)
             .title("Procs")
             .render(area, &mut buf, &mut state);
         let text: String = buf
@@ -1575,7 +1555,7 @@ mod tests {
         );
 
         state.view_mode = ProcessViewMode::Tree;
-        ProcessTable::new(&rows, &system).render(area, &mut buf, &mut state);
+        let _ = ProcessTable::new(&rows, &system).render(area, &mut buf, &mut state);
     }
 
     #[test]
@@ -1647,7 +1627,7 @@ mod tests {
         let area = Rect::new(0, 0, 100, 30);
         let mut buf = Buffer::empty(area);
         for _ in 0..8 {
-            ProcessTable::new(&rows, &system).render(area, &mut buf, &mut state);
+            let _ = ProcessTable::new(&rows, &system).render(area, &mut buf, &mut state);
             let _ = state.handle_key(&rows, KeyEvent::new(KeyCode::Down, KeyModifiers::NONE));
         }
     }
@@ -1690,7 +1670,7 @@ mod tests {
         let mut state = ProcessTableState::new();
         let area = Rect::new(0, 0, 72, 12);
         let mut buf = Buffer::empty(area);
-        ProcessTable::new(&rows, &system).render(area, &mut buf, &mut state);
+        let _ = ProcessTable::new(&rows, &system).render(area, &mut buf, &mut state);
         let row_text = |y: u16| -> String {
             (0..area.width)
                 .map(|x| buf[(x, y)].symbol().to_string())

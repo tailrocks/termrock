@@ -20,7 +20,6 @@
 //! - Paint: [`AttachmentChip`] / [`PasteChip`] (compose [`Tag`])
 //! - Strip: [`attachment_token_items`] + [`TokenStrip`]
 //! - Bridges: convert to/from composer chips in `prompt_composer` (avoids cycle)
-
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
@@ -805,31 +804,20 @@ impl AttachmentChipState {
 pub struct AttachmentChip<'a> {
     item: &'a AttachmentItem,
     system: &'a DesignSystem,
-    ascii: bool,
 }
 
 impl<'a> AttachmentChip<'a> {
     /// Item + design system.
     #[must_use]
     pub const fn new(item: &'a AttachmentItem, system: &'a DesignSystem) -> Self {
-        Self {
-            item,
-            system,
-            ascii: false,
-        }
+        Self { item, system }
     }
 
     /// ASCII glyphs.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Natural width.
-    #[must_use]
     pub fn measure_width(&self) -> u16 {
-        let label = self.item.display_label(self.ascii);
+        let label = self.item.display_label(false);
         let tag = if self.item.removable {
             Tag::removable_tag(self.item.id.as_str(), label.as_str(), self.system)
         } else {
@@ -857,7 +845,7 @@ impl<'a> AttachmentChip<'a> {
         buffer: &mut Buffer,
         state: &mut AttachmentChipState,
     ) -> TokenParts {
-        let label = self.item.display_label(self.ascii);
+        let label = self.item.display_label(false);
         let tag = if self.item.removable {
             Tag::removable_tag(self.item.id.as_str(), label.as_str(), self.system)
         } else {
@@ -899,7 +887,7 @@ impl<'a> AttachmentChip<'a> {
                 id: self.item.id.clone(),
             };
         }
-        let label = self.item.display_label(self.ascii);
+        let label = self.item.display_label(false);
         let tag = if self.item.removable {
             Tag::removable_tag(self.item.id.as_str(), label.as_str(), self.system)
         } else {
@@ -920,7 +908,7 @@ impl<'a> AttachmentChip<'a> {
         state: &mut AttachmentChipState,
         event: MouseEvent,
     ) -> AttachmentChipOutcome {
-        let label = self.item.display_label(self.ascii);
+        let label = self.item.display_label(false);
         let tag = if self.item.removable {
             Tag::removable_tag(self.item.id.as_str(), label.as_str(), self.system)
         } else {
@@ -976,31 +964,20 @@ impl PasteChipState {
 pub struct PasteChip<'a> {
     paste: &'a PastePayload,
     system: &'a DesignSystem,
-    ascii: bool,
 }
 
 impl<'a> PasteChip<'a> {
     /// Paste + system.
     #[must_use]
     pub const fn new(paste: &'a PastePayload, system: &'a DesignSystem) -> Self {
-        Self {
-            paste,
-            system,
-            ascii: false,
-        }
+        Self { paste, system }
     }
 
     /// ASCII.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Measure width.
-    #[must_use]
     pub fn measure_width(&self, expanded: bool) -> u16 {
-        let label = self.paste.display_label(self.ascii, expanded);
+        let label = self.paste.display_label(false, expanded);
         let tag = if self.paste.removable {
             Tag::removable_tag(self.paste.id.as_str(), label.as_str(), self.system)
         } else {
@@ -1012,7 +989,7 @@ impl<'a> PasteChip<'a> {
 
     /// Paint chip chrome (expanded body is host popover or [`paint_expanded_preview`]).
     pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut PasteChipState) -> TokenParts {
-        let label = self.paste.display_label(self.ascii, state.expanded);
+        let label = self.paste.display_label(false, state.expanded);
         let tag = if self.paste.removable {
             Tag::removable_tag(self.paste.id.as_str(), label.as_str(), self.system)
         } else {
@@ -1090,7 +1067,7 @@ impl<'a> PasteChip<'a> {
                 id: self.paste.id.clone(),
             };
         }
-        let label = self.paste.display_label(self.ascii, state.expanded);
+        let label = self.paste.display_label(false, state.expanded);
         let tag = if self.paste.removable {
             Tag::removable_tag(self.paste.id.as_str(), label.as_str(), self.system)
         } else {
@@ -1116,7 +1093,7 @@ impl<'a> PasteChip<'a> {
 
     /// Mouse.
     pub fn handle_mouse(&self, state: &mut PasteChipState, event: MouseEvent) -> PasteChipOutcome {
-        let label = self.paste.display_label(self.ascii, state.expanded);
+        let label = self.paste.display_label(false, state.expanded);
         let tag = if self.paste.removable {
             Tag::removable_tag(self.paste.id.as_str(), label.as_str(), self.system)
         } else {
@@ -1496,9 +1473,7 @@ mod tests {
         st.set_focused(true);
         let area = Rect::new(0, 0, 48, 1);
         let mut buf = Buffer::empty(area);
-        AttachmentChip::new(&item, &system)
-            .ascii(true)
-            .paint(area, &mut buf, &mut st);
+        AttachmentChip::new(&item, &system).paint(area, &mut buf, &mut st);
 
         let paste = PastePayload::from_body("p", "line1\nline2\nline3");
         let mut ps = PasteChipState::new();

@@ -1,4 +1,4 @@
 status-bar/basic 66x3 (story 64x1)
                                                                   
- ● NOR◊ main                                       · ▮ 3/12? help 
+ ● NOR◆ main                                       · ▸ 3/12? help 
                                                                   

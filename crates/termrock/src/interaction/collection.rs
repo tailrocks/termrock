@@ -9,7 +9,6 @@
 //!
 //! Hierarchy is optional (`parent` on items). Flat collections leave it `None`.
 //! Active-descendant movement reuses [`super::RovingFocusGroup`].
-
 use crate::{
     input::KeyEvent,
     interaction::{

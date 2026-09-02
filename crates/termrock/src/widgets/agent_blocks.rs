@@ -4,7 +4,6 @@
 //! Product-neutral agent composition blocks: mode ribbon.
 //! QuestionFlow / PlanReview / TaskRail / SessionPicker elevated to dedicated modules.
 //! Domain wording and effects stay consumer-owned.
-
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{

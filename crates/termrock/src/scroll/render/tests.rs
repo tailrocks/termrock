@@ -17,49 +17,6 @@ fn scrollbar_styles_use_canonical_glyphs() {
 }
 
 #[test]
-fn ascii_profile_paints_single_cell_ascii_track_and_thumbs() {
-    let system = DesignSystem::default().glyphs(crate::style::GlyphSet::Ascii);
-    let render = |axis, style, area| {
-        let mut buffer = Buffer::empty(area);
-        render_scrollbar(
-            &mut buffer,
-            area,
-            ScrollbarSpec::new(axis, ScrollbarGeometry::new(10, 5, 0)).style(style),
-            &system,
-        );
-        buffer
-            .content()
-            .iter()
-            .map(|cell| cell.symbol().to_string())
-            .collect::<Vec<_>>()
-    };
-
-    let line = render(
-        scroll::ScrollAxis::Vertical,
-        ScrollbarStyle::Line,
-        Rect::new(0, 0, 1, 5),
-    );
-    let block = render(
-        scroll::ScrollAxis::Vertical,
-        ScrollbarStyle::Block,
-        Rect::new(0, 0, 1, 5),
-    );
-    let horizontal = render(
-        scroll::ScrollAxis::Horizontal,
-        ScrollbarStyle::Line,
-        Rect::new(0, 0, 5, 1),
-    );
-
-    assert!(line.iter().any(|symbol| symbol == "|"));
-    assert!(block.iter().any(|symbol| symbol == "#"));
-    assert!(horizontal.iter().any(|symbol| symbol == "="));
-    for symbol in line.iter().chain(&block).chain(&horizontal) {
-        assert!(symbol.is_ascii(), "{symbol:?}");
-        assert_eq!(crate::text::display_cols(symbol), 1);
-    }
-}
-
-#[test]
 fn vertical_thumb_moves_and_keeps_length() {
     let render = |offset| {
         let mut buffer = Buffer::empty(Rect::new(0, 0, 1, 10));
@@ -107,6 +64,7 @@ fn scrollbar_uses_semantic_theme_roles() {
         .with_role(Role::ScrollTrack, Style::new().fg(Color::Red))
         .with_role(Role::ScrollThumb, Style::new().fg(Color::Blue));
     let system = crate::style::DesignSystem::from_palette(theme.clone());
+    let theme = system.junie_theme();
     let mut buffer = Buffer::empty(Rect::new(0, 0, 1, 5));
     let area = buffer.area;
     render_scrollbar(
@@ -115,11 +73,18 @@ fn scrollbar_uses_semantic_theme_roles() {
         ScrollbarSpec::new(
             scroll::ScrollAxis::Vertical,
             ScrollbarGeometry::new(10, 5, 0),
-        ),
+        )
+        .focused(true)
+        .hovered(true),
         &system,
     );
-    assert_eq!(buffer[(0, 0)].fg, Color::Blue);
-    assert_eq!(buffer[(0, 4)].fg, Color::Red);
+    // The thumb states the surface's focus and hover through the one
+    // scrollbar resolver; the track stays the quiet rail.
+    assert_eq!(
+        buffer[(0, 0)].fg,
+        theme.scrollbar_thumb(true, true).fg.unwrap()
+    );
+    assert_eq!(buffer[(0, 4)].fg, theme.scrollbar_track().fg.unwrap());
 }
 
 #[test]
@@ -177,53 +142,4 @@ fn list_gutter_paints_the_canonical_language_only_when_scrollable() {
     let bottom = paint(16, 12);
     assert_eq!(bottom[0], SCROLLBAR_TRACK);
     assert_eq!(bottom[3], ScrollbarStyle::Line.vertical_thumb());
-}
-
-#[test]
-fn a_cut_edge_dims_and_a_finished_one_does_not() {
-    use crate::style::DesignSystem;
-
-    let system = DesignSystem::default();
-    let text = system.style(Role::Text).fg.expect("text carries a colour");
-    let area = Rect::new(0, 0, 6, 6);
-
-    let paint = |offset: usize, total: usize| {
-        let mut buffer = Buffer::empty(area);
-        for y in 0..area.height {
-            buffer.set_stringn(0, y, "row", 6, system.style(Role::Text));
-        }
-        paint_scrolled_region(
-            &mut buffer,
-            area,
-            Rect::new(5, 0, 1, 6),
-            total,
-            usize::from(area.height),
-            u16::try_from(offset).unwrap_or(u16::MAX),
-            &system,
-        );
-        buffer
-    };
-
-    // Content continues below only: the bottom edge dims, the top stays true.
-    let top_of_list = paint(0, 40);
-    assert_eq!(
-        top_of_list[(0, 0)].fg,
-        text,
-        "nothing is above the first row"
-    );
-    assert_ne!(
-        top_of_list[(0, 5)].fg,
-        text,
-        "the list continues past the last row"
-    );
-
-    // Scrolled into the middle: both edges are cuts.
-    let middle = paint(10, 40);
-    assert_ne!(middle[(0, 0)].fg, text);
-    assert_ne!(middle[(0, 5)].fg, text);
-
-    // A list that fits has no cuts at all.
-    let whole = paint(0, 6);
-    assert_eq!(whole[(0, 0)].fg, text);
-    assert_eq!(whole[(0, 5)].fg, text);
 }

@@ -12,7 +12,6 @@
 //! that can project into the same [`SliderBounds`](super::SliderBounds).
 //!
 //! Research: shadcn numeric inputs, Textual numeric fields, desktop form UX.
-
 use crate::{
     input::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
@@ -899,8 +898,8 @@ fn is_allowed_char(kind: NumberKind, c: char, draft: &str) -> bool {
 
 fn filter_numeric_paste(kind: NumberKind, text: &str) -> String {
     let mut out = String::with_capacity(text.len());
-    let mut saw_dot = false;
     let mut started = false;
+    let mut saw_dot = false;
     for c in text.chars() {
         if c == '\n' || c == '\r' || c.is_control() {
             break;
@@ -952,7 +951,6 @@ pub struct NumberInput<'a> {
     validation: Validation<'a>,
     system: &'a DesignSystem,
     show_steppers: bool,
-    ascii: bool,
 }
 
 impl<'a> NumberInput<'a> {
@@ -966,7 +964,6 @@ impl<'a> NumberInput<'a> {
             validation: Validation::Valid,
             system,
             show_steppers: true,
-            ascii: false,
         }
     }
 
@@ -1000,11 +997,6 @@ impl<'a> NumberInput<'a> {
 
     /// ASCII steppers `-` / `+`.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Paint.
     pub fn paint(
         &self,
@@ -1077,10 +1069,11 @@ impl<'a> NumberInput<'a> {
                 } else {
                     ControlState::Default
                 },
+                self.system.junie_theme().surface,
             );
             let step_style = step_recipe.fill.patch(step_recipe.label);
             dec = Some(Rect::new(x, row.y, 1, 1));
-            let dec_g = if self.ascii { "-" } else { "−" };
+            let dec_g = { "−" };
             buffer.set_stringn(x, row.y, dec_g, 1, step_style);
             x = x.saturating_add(2);
             right = right.saturating_sub(2);
@@ -1363,7 +1356,6 @@ mod tests {
         let mut buf = Buffer::empty(area);
         let parts = NumberInput::new("Opacity", &system)
             .unit("%")
-            .ascii(true)
             .paint(area, &mut buf, &mut state);
         assert!(parts.decrement.is_some());
         assert!(parts.increment.is_some());
@@ -1379,9 +1371,7 @@ mod tests {
         state.set_focused(true);
         let area = Rect::new(0, 0, 20, 2);
         let mut buf = Buffer::empty(area);
-        let parts = NumberInput::new("N", &system)
-            .ascii(true)
-            .paint(area, &mut buf, &mut state);
+        let parts = NumberInput::new("N", &system).paint(area, &mut buf, &mut state);
         let dec = parts.decrement.unwrap();
         assert_eq!(
             state.handle_mouse(MouseEvent {
@@ -1439,7 +1429,7 @@ mod tests {
         state.set_focused(true);
         let area = Rect::new(0, 0, 24, 2);
         let mut buf = Buffer::empty(area);
-        let w = NumberInput::new("N", &system).ascii(true);
+        let w = NumberInput::new("N", &system);
         for _ in 0..200 {
             let _ = w.paint(area, &mut buf, &mut state);
         }

@@ -30,7 +30,6 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -45,7 +44,7 @@ use crate::{
     },
     patterns::ActivityKind,
     patterns::task_rail::{ActivityModel, ActivityScope},
-    style::{DesignSystem, PanelChrome, Role},
+    style::{DesignSystem, ListRowVisualState, PanelChrome, Role},
     text::{display_cols, take_display_cols},
     widgets::NotificationItem,
     widgets::Panel,
@@ -924,7 +923,6 @@ impl ApprovalQueueState {
 #[derive(Debug, Clone, Copy)]
 pub struct ApprovalQueue<'a> {
     system: &'a DesignSystem,
-    ascii: bool,
     colorless: bool,
 }
 
@@ -934,20 +932,13 @@ impl<'a> ApprovalQueue<'a> {
     pub const fn new(system: &'a DesignSystem) -> Self {
         Self {
             system,
-            ascii: false,
             colorless: false,
         }
     }
 
     /// ASCII.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Colorless.
-    #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self
@@ -980,7 +971,6 @@ impl<'a> ApprovalQueue<'a> {
         let text = format!("{verb}: {label}");
         StatusIndicator::new(semantic, self.system)
             .label(&text)
-            .ascii(self.ascii)
             .colorless(self.colorless)
             .paint(Rect::new(area.x, area.y, area.width, 1), buffer);
     }
@@ -1050,19 +1040,9 @@ impl<'a> ApprovalQueue<'a> {
             };
             let selected = vi == state.cursor;
             let multi = state.multi.iter().any(|m| m == &item.id);
-            let mark = if selected {
-                if self.ascii { ">" } else { "›" }
-            } else {
-                " "
-            };
-            let boxm = if multi {
-                if self.ascii { "[x]" } else { "☑" }
-            } else if self.ascii {
-                "[ ]"
-            } else {
-                "☐"
-            };
-            let kg = item.kind.glyph(self.ascii);
+            let mark = if selected { "›" } else { " " };
+            let boxm = if multi { "[✓]" } else { "[ ]" };
+            let kg = item.kind.glyph(false);
             let risk = format!("{} {}", item.risk.glyph(), item.risk.label());
             let proto = if item.protocol_ordered { " fifo" } else { "" };
             let def = if item.deferred { " def" } else { "" };
@@ -1071,12 +1051,17 @@ impl<'a> ApprovalQueue<'a> {
                 item.kind.label(),
                 item.summary
             );
-            let style = if selected && !self.colorless {
-                self.system.style(Role::Accent).add_modifier(Modifier::BOLD)
-            } else if selected {
+            // Selection speaks through the shared row recipe (tint + weight via
+            // the cursor marker), never by painting the whole label accent.
+            let style = if selected {
                 self.system
-                    .style(Role::TextStrong)
-                    .add_modifier(Modifier::BOLD | Modifier::REVERSED)
+                    .resolve_list_row(ListRowVisualState {
+                        selected: true,
+                        focused: selected,
+                        enabled: true,
+                        ..ListRowVisualState::default()
+                    })
+                    .label
             } else {
                 self.system.style(Role::Text)
             };
@@ -1175,9 +1160,9 @@ impl<'a> ApprovalQueue<'a> {
             let style = if focused && !self.colorless {
                 self.system.style(Role::Accent).add_modifier(Modifier::BOLD)
             } else if focused {
-                self.system
-                    .style(Role::TextStrong)
-                    .add_modifier(Modifier::BOLD | Modifier::REVERSED)
+                // Mono focus is the explicit reversal pair (D5), not a swap
+                // modifier over the idle face.
+                self.system.reversed()
             } else if disabled_look {
                 self.system.style(Role::TextMuted)
             } else {
@@ -1566,7 +1551,6 @@ mod tests {
         ] {
             st.presentation = p;
             ApprovalQueue::new(&system)
-                .ascii(true)
                 .colorless(true)
                 .paint(area, &mut buf, &mut st);
         }

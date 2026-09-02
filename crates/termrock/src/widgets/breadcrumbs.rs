@@ -17,7 +17,6 @@
 //! collapses to `…` / overflow.
 //!
 //! Research: desktop breadcrumbs, terminal file managers, shadcn Breadcrumb.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -692,7 +691,6 @@ pub enum BreadcrumbHit<Id> {
 pub struct Breadcrumbs<'a, Id> {
     items: &'a [BreadcrumbItem<Id>],
     system: &'a DesignSystem,
-    ascii: bool,
     separator: BreadcrumbSeparator,
 }
 
@@ -703,20 +701,13 @@ impl<'a, Id: Clone + PartialEq> Breadcrumbs<'a, Id> {
         Self {
             items,
             system: system,
-            ascii: false,
             separator: BreadcrumbSeparator::Slash,
         }
     }
 
     /// ASCII separators / ellipsis.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Separator style.
-    #[must_use]
     pub const fn separator(mut self, sep: BreadcrumbSeparator) -> Self {
         self.separator = sep;
         self
@@ -763,14 +754,10 @@ impl<'a, Id: Clone + PartialEq> Breadcrumbs<'a, Id> {
             BreadcrumbsPresentation::Full
         };
 
-        let sep = self.separator.glyph(self.ascii);
+        let sep = self.separator.glyph(false);
         // One ellipsis in the library, resolved from the glyph catalog under
         // the profile this trail is painting in (plans/020).
-        let glyphs = if self.ascii {
-            crate::style::GlyphSet::Ascii
-        } else {
-            self.system.glyphs
-        };
+        let glyphs = { self.system.glyphs };
         let ellipsis = glyphs.ellipsis();
 
         // Build slots
@@ -831,7 +818,7 @@ impl<'a, Id: Clone + PartialEq> Breadcrumbs<'a, Id> {
                     let is_focus =
                         state.focused && !state.focus_on_ellipsis && state.focus_index == *index;
                     let mut label = item.label.clone();
-                    if let Some(m) = item.status.mark(self.ascii) {
+                    if let Some(m) = item.status.mark(false) {
                         label = format!("{m}{label}");
                     }
                     let max_w = if collapse { 12usize } else { 24 };
@@ -846,9 +833,9 @@ impl<'a, Id: Clone + PartialEq> Breadcrumbs<'a, Id> {
                     let style = if !item.enabled && !is_current {
                         self.system.style(Role::TextDisabled)
                     } else if is_focus {
-                        self.system
-                            .style(Role::Focus)
-                            .add_modifier(Modifier::REVERSED | Modifier::BOLD)
+                        // The keyboard says itself with the focus tone and
+                        // weight, not a reversed slab.
+                        self.system.style(Role::Focus).add_modifier(Modifier::BOLD)
                     } else if is_current {
                         self.system
                             .style(Role::TextStrong)
@@ -886,9 +873,7 @@ impl<'a, Id: Clone + PartialEq> Breadcrumbs<'a, Id> {
                     let rect = Rect::new(x, y, w, 1);
                     let is_focus = state.focused && state.focus_on_ellipsis;
                     let style = if is_focus {
-                        self.system
-                            .style(Role::Focus)
-                            .add_modifier(Modifier::REVERSED)
+                        self.system.style(Role::Focus).add_modifier(Modifier::BOLD)
                     } else {
                         self.system.style(Role::TextMuted)
                     };
@@ -1012,9 +997,7 @@ mod tests {
         state.set_focused(true);
         let area = Rect::new(0, 0, 28, 1); // < 40, len 4
         let mut buf = Buffer::empty(area);
-        let hits = Breadcrumbs::new(&items, &system)
-            .ascii(true)
-            .paint(area, &mut buf, &mut state);
+        let hits = Breadcrumbs::new(&items, &system).paint(area, &mut buf, &mut state);
         assert_eq!(state.presentation(), BreadcrumbsPresentation::Collapsed);
         // first and last present
         assert!(
@@ -1127,7 +1110,6 @@ mod tests {
         let area = Rect::new(0, 0, 40, 1);
         let mut buf = Buffer::empty(area);
         let _ = Breadcrumbs::new(&items, &system)
-            .ascii(true)
             .separator(BreadcrumbSeparator::Chevron)
             .paint(area, &mut buf, &mut state);
     }
@@ -1139,9 +1121,7 @@ mod tests {
         let mut state = BreadcrumbsState::new();
         let area = Rect::new(0, 0, 60, 1);
         let mut buf = Buffer::empty(area);
-        let hits = Breadcrumbs::new(&items, &system)
-            .ascii(true)
-            .paint(area, &mut buf, &mut state);
+        let hits = Breadcrumbs::new(&items, &system).paint(area, &mut buf, &mut state);
         let (hit, rect) = hits
             .iter()
             .find(|(h, _)| matches!(h, BreadcrumbHit::Item { index: 1, .. }))
@@ -1188,7 +1168,7 @@ mod tests {
         state.set_focused(true);
         let area = Rect::new(0, 0, 48, 1);
         let mut buf = Buffer::empty(area);
-        let w = Breadcrumbs::new(&items, &system).ascii(true);
+        let w = Breadcrumbs::new(&items, &system);
         for _ in 0..50 {
             let _ = w.paint(area, &mut buf, &mut state);
         }

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Semantic UI intents — widgets consume these instead of raw key matching.
-
 use crate::input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 
 /// Relative navigation step.

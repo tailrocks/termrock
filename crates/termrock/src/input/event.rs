@@ -1,5 +1,4 @@
 //! Backend-neutral key and mouse event vocabulary.
-
 use core::ops::{BitOr, BitOrAssign};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

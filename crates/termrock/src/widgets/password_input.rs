@@ -13,7 +13,6 @@
 //! [`PasswordInput`] for any real credential.
 //!
 //! Research: secure CLI prompts, password managers, desktop secret fields.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::fmt;
 
@@ -730,7 +729,6 @@ pub struct PasswordInput<'a> {
     mask: char,
     strength: PasswordStrengthHint,
     show_reveal: bool,
-    ascii: bool,
 }
 
 /// Hit geometry.
@@ -758,7 +756,6 @@ impl<'a> PasswordInput<'a> {
             mask: '*',
             strength: PasswordStrengthHint::None,
             show_reveal: true,
-            ascii: false,
         }
     }
 
@@ -799,14 +796,6 @@ impl<'a> PasswordInput<'a> {
 
     /// ASCII-safe mask.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        if on {
-            self.mask = '*';
-        }
-        self
-    }
-
     /// Paint (masked unless revealed).
     pub fn paint(
         &self,
@@ -815,7 +804,7 @@ impl<'a> PasswordInput<'a> {
         state: &mut PasswordInputState,
     ) -> PasswordInputParts {
         state.sync_editor_gates();
-        let mask = if self.ascii { '*' } else { self.mask };
+        let mask = { self.mask };
         let revealed = state.is_revealed();
 
         let show_reveal = self.show_reveal
@@ -859,6 +848,7 @@ impl<'a> PasswordInput<'a> {
                 } else {
                     ControlState::Default
                 },
+                self.system.junie_theme().surface,
             );
             buffer.set_stringn(
                 rx,
@@ -880,7 +870,7 @@ impl<'a> PasswordInput<'a> {
                 let meter = if state.pending {
                     String::new()
                 } else {
-                    self.strength.meter(self.system.glyphs.is_ascii())
+                    self.strength.meter(false)
                 };
                 let mut x = area.x;
                 if !meter.is_empty() {
@@ -1048,9 +1038,7 @@ mod tests {
         state.set_focused(true);
         let area = Rect::new(0, 0, 24, 2);
         let mut buf = Buffer::empty(area);
-        let _ = PasswordInput::new("Password", &system)
-            .ascii(true)
-            .paint(area, &mut buf, &mut state);
+        let _ = PasswordInput::new("Password", &system).paint(area, &mut buf, &mut state);
         let mut row = String::new();
         for x in 0..area.width {
             row.push_str(buf[(x, 1)].symbol());

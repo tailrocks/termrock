@@ -17,7 +17,6 @@
 //!
 //! Research: VisiData, Textual DataTable, DB clients, k9s, btop, spreadsheets.
 //! Display-only moderate tables use [`super::Table`]; this is the interactive kit.
-
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -30,7 +29,7 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     interaction::{NavigationMove, PageMove, UiIntent},
-    style::{Density, DesignSystem, Glyph, ListRowVisualState, Role},
+    style::{DesignSystem, Glyph, ListRowVisualState, Role},
     text::take_display_cols,
     widgets::data_view::{
         CellCoord, ColumnModel, ColumnPin, CopyPayload, ExpandState, FilterSpec, GroupHeader,
@@ -222,8 +221,6 @@ pub struct DataTableState<RowId: Clone + Ord, ColId: Clone + PartialEq> {
     pub nav_mode: DataTableNavMode,
     /// Load projection.
     pub load: LoadState,
-    /// Row chrome density.
-    pub density: Density,
     /// Expand detail rows.
     pub expand: ExpandState<RowId>,
     /// Active sort (chrome marker; consumer applies).
@@ -232,8 +229,6 @@ pub struct DataTableState<RowId: Clone + Ord, ColId: Clone + PartialEq> {
     pub filter: FilterSpec,
     /// Stripes.
     pub striped: bool,
-    /// ASCII sort markers / gutters.
-    pub ascii: bool,
     /// Suppress chromatic roles (Text / TextMuted / TextStrong only).
     pub colorless: bool,
     /// Host grants keyboard/pointer input to this surface (scene-focused).
@@ -282,12 +277,10 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
             cursor_col: 0,
             nav_mode: DataTableNavMode::Cell,
             load: LoadState::Ready { count: 0 },
-            density: Density::Comfortable,
             expand: ExpandState::default(),
             sort: None,
             filter: FilterSpec::default(),
             striped: true,
-            ascii: false,
             colorless: false,
             accepts_input: true,
             editing: false,
@@ -1122,7 +1115,6 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
         if area.is_empty() {
             return;
         }
-        let ascii = state.ascii || self.system.glyphs.is_ascii();
         let surface_focused = self.focused || state.accepts_input;
         let has_toolbar = self.toolbar.is_some();
         let has_footer = true;
@@ -1136,7 +1128,7 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
         if let Some(tb) = self.toolbar
             && y < area.bottom()
         {
-            let line = tb.actions.join(if ascii { " - " } else { " · " });
+            let line = tb.actions.join(" · ");
             let text = take_display_cols(&line, usize::from(area.width));
             buffer.set_stringn(
                 area.x,
@@ -1181,13 +1173,9 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
             y = y.saturating_add(1);
         }
 
-        if let Some(chrome) = super::data_view::data_load_chrome(
-            &state.load,
-            self.system,
-            ascii,
-            state.colorless,
-            "No rows",
-        ) {
+        if let Some(chrome) =
+            super::data_view::data_load_chrome(&state.load, self.system, state.colorless, "No rows")
+        {
             paint_status_line(
                 self,
                 area,
@@ -1250,7 +1238,7 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
             if state.editing {
                 parts.push(format!("edit:{}", state.edit_draft));
             }
-            let footer = parts.join(if ascii { " - " } else { " · " });
+            let footer = parts.join(" · ");
             if !footer.is_empty() {
                 let text = take_display_cols(&footer, usize::from(area.width));
                 buffer.set_stringn(
@@ -1293,16 +1281,9 @@ fn paint_group_band<RowId: Clone + Ord, ColId: Clone + PartialEq>(
     y: u16,
     buffer: &mut Buffer,
     group: &GroupHeader<RowId>,
-    state: &DataTableState<RowId, ColId>,
+    _state: &DataTableState<RowId, ColId>,
 ) {
-    let ascii = state.ascii || table.system.glyphs.is_ascii();
-    let mark = if group.expanded {
-        if ascii { "v " } else { "▾ " }
-    } else if ascii {
-        "> "
-    } else {
-        "▸ "
-    };
+    let mark = if group.expanded { "▾ " } else { "▸ " };
     let line = format!("{mark}{} ({})", group.label, group.count);
     let style = table
         .system
@@ -1383,10 +1364,7 @@ fn paint_header_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
         if let Some(sort) = &state.sort
             && sort.column == col.id
         {
-            title.push_str(super::table_chrome::sort_marker(
-                table.system,
-                sort.ascending,
-            ));
+            title.push_str(super::table_chrome::sort_marker(sort.ascending));
         }
         let text = take_display_cols(&title, usize::from(paint_w));
         buffer.set_stringn(paint_x, y, &text, usize::from(paint_w), style);
@@ -1463,7 +1441,6 @@ fn paint_data_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
     ColId: Clone,
     RowId: Clone,
 {
-    let ascii = state.ascii || table.system.glyphs.is_ascii();
     let cursor = state.cursor_row == row_index;
     let selected = state.selection.is_row_selected(id);
     let expanded = state.expand.expanded.contains(id);
@@ -1479,6 +1456,8 @@ fn paint_data_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
             enabled: true,
             loading: false,
             checked: selected,
+
+            ..ListRowVisualState::default()
         },
     )
     .colorless(state.colorless || table.system.mono());
@@ -1489,6 +1468,7 @@ fn paint_data_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
     };
     let style = chrome.label_style(base);
 
+    chrome.paint_wash(buffer, Rect::new(area.x, y, area.width, 1));
     buffer.set_stringn(area.x, y, " ", 1, style);
     buffer.set_stringn(area.x.saturating_add(1), y, " ", 1, style);
 
@@ -1540,8 +1520,8 @@ fn paint_data_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
             cell_style = cell_style.patch(table.system.style(Role::SelectionTint));
         }
         if cell_focused {
-            // A cell cursor is a cell: reverse it.
-            cell_style = cell_style.add_modifier(Modifier::REVERSED);
+            // A cell cursor is a cell: the explicit reversal pair.
+            cell_style = table.system.reversed();
         }
         if state.editing && cell_focused {
             let draft = take_display_cols(&state.edit_draft, usize::from(paint_w));
@@ -1570,12 +1550,12 @@ fn paint_data_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
             x_pin = paint_end.saturating_add(1);
         }
     }
-    chrome.paint(buffer, Rect::new(area.x, y, area.width, 1));
+    chrome.paint_gutter(buffer, Rect::new(area.x, y, area.width, 1));
     if area.width > 1 {
         let auxiliary = if selected {
             Some(table.system.glyphs.check_on())
         } else if expanded {
-            Some(if ascii { "v" } else { "▾" })
+            Some("▾")
         } else {
             None
         };
@@ -1593,11 +1573,6 @@ fn paint_data_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
             );
         }
     }
-    super::surface::normalize_content_band(
-        table.system,
-        buffer,
-        Rect::new(area.x, y, area.width, 1),
-    );
 }
 
 impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> StatefulWidget
@@ -1855,44 +1830,6 @@ mod tests {
             .map(|c| c.symbol().to_string())
             .collect();
         assert!(text.contains("no data") || text.contains("∅") || text.contains("empty"));
-    }
-
-    #[test]
-    fn load_states_paint_explicit_ascii_no_color_cues() {
-        let system = DesignSystem::phosphor().no_color();
-        let cols = ColumnModel::new(vec![DataColumn::new("c", "C", DataColumnWidth::Min(8))]);
-        let rows: [(u64, &[&str]); 0] = [];
-        let render = |load| {
-            let mut state = DataTableState::<u64, &str>::new();
-            state.load = load;
-            let area = Rect::new(0, 0, 32, 5);
-            let mut buffer = Buffer::empty(area);
-            DataTable::new(&system, &cols, &rows).render(area, &mut buffer, &mut state);
-            buffer
-                .content()
-                .iter()
-                .map(|cell| cell.symbol())
-                .collect::<String>()
-        };
-
-        let loading = render(LoadState::Loading { message: None });
-        let empty = render(LoadState::Empty {
-            message: Some("no data".into()),
-        });
-        let error = render(LoadState::Error {
-            message: "failed".into(),
-            retryable: true,
-        });
-
-        assert!(loading.contains("... Loading..."), "{loading}");
-        assert!(empty.contains("[ ] no data"), "{empty}");
-        assert!(error.contains("! failed"), "{error}");
-        for text in [&loading, &empty, &error] {
-            assert!(
-                text.chars().all(|ch| !matches!(ch, '…' | '∅' | '✗' | '·')),
-                "ASCII state copy contains a Unicode-only cue: {text}"
-            );
-        }
     }
 
     #[test]
@@ -2185,8 +2122,6 @@ mod tests {
 
     #[test]
     fn selected_row_copy_stays_visible_in_named_and_no_color_profiles() {
-        use ratatui_core::style::Color;
-
         let render = |system: &DesignSystem| {
             let cols = ColumnModel::new(vec![
                 DataColumn::new("name", "Name", DataColumnWidth::Fixed(8)),
@@ -2203,7 +2138,7 @@ mod tests {
             (buffer, state)
         };
 
-        let phosphor = DesignSystem::phosphor();
+        let phosphor = DesignSystem::junie();
         let (buffer, state) = render(&phosphor);
         let row_y = state.body_origin.1;
         let label_x = (0..buffer.area.width)
@@ -2214,23 +2149,31 @@ mod tests {
             .expect("selected numeric copy must remain painted");
         let label = &buffer[(label_x, row_y)];
         let number = &buffer[(number_x, row_y)];
-        for cell in [label, number] {
-            assert_eq!(cell.fg, phosphor.style(Role::TextStrong).fg.unwrap());
-            assert_eq!(cell.bg, phosphor.style(Role::SelectionTint).bg.unwrap());
-            assert_ne!(cell.fg, cell.bg);
-        }
+        // The keyboard's cell cursor is the explicit reversal pair; the rest
+        // of the selected row keeps the tint and its own copy tone.
+        assert_eq!(label.fg, phosphor.junie_theme().canvas);
+        assert_eq!(label.bg, phosphor.junie_theme().text_primary);
+        assert_eq!(number.bg, phosphor.style(Role::SelectionTint).bg.unwrap());
+        assert_ne!(number.fg, number.bg);
         assert!(label.modifier.contains(Modifier::BOLD));
         assert!(!number.modifier.contains(Modifier::BOLD));
 
-        let no_color = DesignSystem::phosphor().no_color();
+        let no_color = DesignSystem::junie().no_color();
         let (buffer, state) = render(&no_color);
         let row_y = state.body_origin.1;
         let label_x = (0..buffer.area.width)
             .find(|x| buffer[(*x, row_y)].symbol() == "l")
             .expect("ASCII/no-color selected label must remain painted");
         let label = &buffer[(label_x, row_y)];
-        assert_eq!((label.fg, label.bg), (Color::Reset, Color::Reset));
+        // A colourless terminal keeps the pair as named colours: the copy
+        // stays readable and the row never wears the tint.
         assert!(label.modifier.contains(Modifier::BOLD));
+        assert_ne!(label.fg, label.bg, "the copy stays readable");
+        assert_ne!(
+            label.bg,
+            no_color.style(Role::SelectionTint).bg.unwrap(),
+            "the cursor pair is not the tint"
+        );
         assert_eq!(
             buffer[(buffer.area.x, row_y)].symbol(),
             no_color.glyphs.selection_gutter()

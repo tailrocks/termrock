@@ -31,7 +31,6 @@ fn dumb_term_resolves_minimal_without_preferred() {
     let detection = detect_from_hints(EnvHints::fixture("dumb", None, false));
     let caps = resolve_from_detection(detection, None, CapabilityOverrides::default());
     assert_eq!(caps.profile, CapabilityProfile::Minimal);
-    assert!(caps.boundary().ascii_glyphs());
 }
 
 #[test]

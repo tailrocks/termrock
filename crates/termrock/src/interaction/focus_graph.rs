@@ -13,7 +13,6 @@
 //! - **Selection**: collection-local cursor (`ListState`, table cursor, …).
 //! - **Pointer**: [`Self::focus_at`] moves focus only; activation is a separate intent.
 //! - **Roving**: a collection is one external focus target; internal Move stays on the widget.
-
 use std::collections::VecDeque;
 
 use ratatui_core::layout::{Position, Rect};
@@ -773,7 +772,6 @@ pub struct FocusLens<'a, Id> {
     system: &'a DesignSystem,
     show_order: bool,
     mode: FocusLensMode,
-    ascii: bool,
     colorless: bool,
 }
 
@@ -786,7 +784,6 @@ impl<'a, Id> FocusLens<'a, Id> {
             system,
             show_order: true,
             mode: FocusLensMode::Combined,
-            ascii: false,
             colorless: false,
         }
     }
@@ -805,13 +802,6 @@ impl<'a, Id> FocusLens<'a, Id> {
         self
     }
 
-    /// ASCII-only marks (`*` instead of `◈`).
-    #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Reduced-color roles (strong/muted only).
     #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
@@ -825,9 +815,11 @@ impl<Id: Clone + PartialEq + std::fmt::Display> ratatui_core::widgets::Widget
 {
     fn render(self, _area: Rect, buffer: &mut ratatui_core::buffer::Buffer) {
         let accent = if self.colorless {
+            // Monochrome states the lens with weight; a reversal reads as a
+            // selection, and the lens is an overlay, not a selection.
             self.system
                 .style(Role::TextStrong)
-                .add_modifier(ratatui_core::style::Modifier::REVERSED)
+                .add_modifier(ratatui_core::style::Modifier::BOLD)
         } else {
             self.system.style(Role::BorderFocused)
         };
@@ -856,7 +848,7 @@ impl<Id: Clone + PartialEq + std::fmt::Display> ratatui_core::widgets::Widget
                 buffer.set_stringn(area.x, area.y, &label, usize::from(area.width), style);
             }
             if show_focus && focused {
-                let mark = if self.ascii { "*" } else { "◈" };
+                let mark = "◈";
                 // Prefer trailing corner when order digit already at origin.
                 let mx = if show_order && area.width > 1 {
                     area.x.saturating_add(area.width.saturating_sub(1))

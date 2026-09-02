@@ -9,7 +9,6 @@
 //! [`OverlayStack`] owns durable open-state and resolved geometry. Pair it with
 //! [`super::InteractionScene`] for per-frame element registration: call
 //! [`OverlayStack::sync_scene_layers`] then register controls on those layers.
-
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect, Size},
@@ -1032,7 +1031,7 @@ impl<FocusId> OverlayStack<FocusId> {
     /// # use ratatui_core::{buffer::Buffer, layout::Rect};
     /// # use termrock::{interaction::{OverlaySize, OverlayStack, OverlayId, OverlaySpec},
     /// #               style::DesignSystem};
-    /// # let system = DesignSystem::phosphor();
+    /// # let system = DesignSystem::junie();
     /// # let bounds = Rect::new(0, 0, 40, 12);
     /// # let mut buffer = Buffer::empty(bounds);
     /// # let mut stack = OverlayStack::<&'static str>::new();
@@ -1045,7 +1044,7 @@ impl<FocusId> OverlayStack<FocusId> {
     /// ```
     ///
     /// [`BackdropPolicy::None`] paints nothing; [`BackdropPolicy::Dim`] washes
-    /// the layer with `Role::BackdropWash`; [`BackdropPolicy::Occlude`] fills
+    /// the layer with `Role::Backdrop`; [`BackdropPolicy::Occlude`] fills
     /// it with `Role::Canvas` so nothing behind it shows through.
     pub fn paint_backdrop(
         &self,
@@ -1053,19 +1052,31 @@ impl<FocusId> OverlayStack<FocusId> {
         system: &crate::style::DesignSystem,
     ) {
         let policy = self.backdrop_policy();
-        let role = match policy {
-            BackdropPolicy::None => return,
-            BackdropPolicy::Dim => crate::style::Role::BackdropWash,
-            BackdropPolicy::Occlude => crate::style::Role::Canvas,
-        };
+        if matches!(policy, BackdropPolicy::None) {
+            return;
+        }
         let area = self.bounds.intersection(*buffer.area());
         if area.is_empty() {
             return;
         }
-        let style = system.style(role);
+        if matches!(policy, BackdropPolicy::Occlude) {
+            let style = system.style(crate::style::Role::Canvas);
+            for y in area.top()..area.bottom() {
+                for x in area.left()..area.right() {
+                    buffer[(x, y)].set_char(' ').set_style(style);
+                }
+            }
+            return;
+        }
+        // junie's dim is a per-cell collapse, not a flat wash: the covered
+        // layer keeps its shape and its surfaces, and every foreground steps
+        // down the alpha ladder ([`JunieTheme::backdrop`]).
+        let theme = system.junie_theme();
         for y in area.top()..area.bottom() {
             for x in area.left()..area.right() {
-                buffer[(x, y)].set_char(' ').set_style(style);
+                let cell = &mut buffer[(x, y)];
+                let next = theme.backdrop(cell.style());
+                cell.set_style(next);
             }
         }
     }
@@ -2839,7 +2850,7 @@ mod tests {
         use ratatui_core::buffer::Buffer;
 
         let bounds = Rect::new(0, 0, 40, 12);
-        let system = DesignSystem::phosphor();
+        let system = DesignSystem::junie();
         let mut stack = OverlayStack::<()>::new();
         stack.open(
             bounds,
@@ -2848,22 +2859,42 @@ mod tests {
         assert_eq!(stack.backdrop_policy(), BackdropPolicy::Dim);
 
         let mut buffer = Buffer::empty(bounds);
+        // Give the covered layer real content so the per-cell collapse has
+        // something to recede.
+        for y in 0..bounds.height {
+            for x in 0..bounds.width {
+                buffer[(x, y)]
+                    .set_char('#')
+                    .set_style(ratatui_core::style::Style::new());
+            }
+        }
         stack.paint_backdrop(&mut buffer, &system);
 
-        let wash = system
-            .style(Role::BackdropWash)
-            .bg
-            .expect("the wash carries a background");
+        let theme = system.junie_theme();
+        let collapsed = theme.backdrop(ratatui_core::style::Style::new());
         let dialog = stack.top().expect("one overlay is open").rect;
         assert_eq!(
             buffer[(0, 0)].bg,
-            wash,
-            "the layer outside the dialog recedes"
+            theme.surface_overlay,
+            "the layer outside the dialog recedes to the overlay plane"
         );
-        assert_eq!(buffer[(dialog.x, dialog.y)].bg, wash);
+        assert_eq!(
+            buffer[(0, 0)].symbol(),
+            "#",
+            "the dim keeps the covered layer's shape"
+        );
+        assert_eq!(
+            buffer[(dialog.x, dialog.y)].bg,
+            theme.surface_overlay,
+            "the dim covers the whole layer, not just the ring"
+        );
+        assert_eq!(
+            collapsed.fg,
+            Some(theme.text_ghost),
+            "unstyled content falls to the ghost tier"
+        );
         assert_ne!(
-            wash,
-            system.style(Role::Canvas).bg.expect("canvas carries a bg"),
+            theme.surface_overlay, theme.canvas,
             "a dim that equals the canvas dims nothing"
         );
     }
@@ -2874,7 +2905,7 @@ mod tests {
         use ratatui_core::buffer::Buffer;
 
         let bounds = Rect::new(0, 0, 20, 6);
-        let system = DesignSystem::phosphor();
+        let system = DesignSystem::junie();
         let stack = OverlayStack::<()>::new();
         assert_eq!(stack.backdrop_policy(), BackdropPolicy::None);
 

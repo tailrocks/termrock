@@ -14,7 +14,6 @@
 //!
 //! Behavioral references: desktop toolbars, Radix Toolbar (roving), adapted to
 //! terminal cells and [`UiIntent`].
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 #![allow(unused_variables, unused_mut)] // unit-test fixtures
 use ratatui_core::{
@@ -347,7 +346,6 @@ pub struct Toolbar<'a, Id> {
     variant: ToolbarVariant,
     /// Synthetic id for the overflow "More" chip (required for overflow UX).
     overflow_id: Option<Id>,
-    ascii: bool,
     colorless: bool,
 }
 
@@ -364,7 +362,6 @@ impl<'a, Id> Toolbar<'a, Id> {
             // Seeded from the system: a widget that defaults to false is
             // claiming the terminal has Unicode and colour before anyone
             // asked it. Builders below still force either way.
-            ascii: system.ascii_glyphs(),
             colorless: system.mono(),
         }
     }
@@ -406,13 +403,7 @@ impl<'a, Id> Toolbar<'a, Id> {
 
     /// ASCII cursor brackets.
     #[must_use]
-    pub const fn ascii(mut self, ascii: bool) -> Self {
-        self.ascii = ascii;
-        self
-    }
-
     /// No-color emphasis (strong text instead of ActionFocused bg).
-    #[must_use]
     pub const fn colorless(mut self, colorless: bool) -> Self {
         self.colorless = colorless;
         self
@@ -837,7 +828,6 @@ fn format_label<Id>(
     item: &ToolbarItem<'_, Id>,
     on_cursor: bool,
     surface_focused: bool,
-    ascii: bool,
     variant: ToolbarVariant,
     glyphs: GlyphSet,
 ) -> String {
@@ -877,15 +867,8 @@ fn format_label<Id>(
             s.push(')');
         }
     }
-    if on_cursor && surface_focused {
-        if ascii {
-            format!("[{s}]")
-        } else {
-            format!(" {s} ")
-        }
-    } else {
-        format!(" {s} ")
-    }
+    let _ = (on_cursor, surface_focused);
+    format!(" {s} ")
 }
 
 impl<Id: Clone + PartialEq> StatefulWidget for &Toolbar<'_, Id> {
@@ -1067,7 +1050,6 @@ fn paint_item<Id: Clone + PartialEq>(
         item,
         on_cursor,
         state.surface_focused,
-        bar.ascii,
         bar.variant,
         bar.system.glyphs,
     );
@@ -1089,9 +1071,11 @@ fn paint_item<Id: Clone + PartialEq>(
         } else {
             ControlState::Default
         };
-        let recipe = bar
-            .system
-            .button_recipe(ButtonRecipeVariant::Quiet, control_state);
+        let recipe = bar.system.button_recipe(
+            ButtonRecipeVariant::Quiet,
+            control_state,
+            bar.system.junie_theme().surface,
+        );
         let mut style = recipe.fill.patch(recipe.label);
         if matches!(item.kind, ToolbarItemKind::Toggle { pressed: true }) {
             style = style.add_modifier(ratatui_core::style::Modifier::BOLD);
@@ -1120,7 +1104,7 @@ fn paint_overflow_chip<Id: Clone + PartialEq>(
     }
     let g = bar.system.glyphs.ellipsis();
     let on = state.roving.active() == Some(id);
-    let label = if on && state.surface_focused && bar.ascii {
+    let label = if on && state.surface_focused {
         format!("[{g}]")
     } else {
         format!(" {g} ")
@@ -1139,13 +1123,10 @@ fn paint_overflow_chip<Id: Clone + PartialEq>(
         } else {
             ControlState::Default
         },
+        bar.system.junie_theme().surface,
     );
     let mut style = recipe.fill.patch(recipe.label);
-    if on && state.surface_focused {
-        style = style.add_modifier(ratatui_core::style::Modifier::REVERSED);
-    } else {
-        style = style.add_modifier(ratatui_core::style::Modifier::BOLD);
-    }
+    style = style.add_modifier(ratatui_core::style::Modifier::BOLD);
     buffer.set_stringn(
         rect.x,
         rect.y,

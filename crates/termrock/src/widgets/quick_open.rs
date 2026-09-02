@@ -22,7 +22,6 @@
 //! - JumpMode: [`QuickOpenOutcome::JumpModeRequested`] + [`quick_open_jump_targets`].
 //!
 //! Research: fzf, television, VS Code Quick Open, Yazi, launchers.
-
 use std::collections::HashMap;
 
 use ratatui_core::{
@@ -1293,7 +1292,6 @@ pub struct QuickOpen<'a, Id> {
     items: &'a [QuickOpenItem<Id>],
     system: &'a DesignSystem,
     focused: bool,
-    ascii: bool,
     colorless: bool,
     footer_hint: Option<&'a str>,
     empty_message: &'a str,
@@ -1318,7 +1316,6 @@ impl<'a, Id> QuickOpen<'a, Id> {
             // Seeded from the system: a widget that defaults to false is
             // claiming the terminal has Unicode and colour before anyone
             // asked it. Builders below still force either way.
-            ascii: system.ascii_glyphs(),
             colorless: system.mono(),
             footer_hint: Some("↑↓ open · enter · @provider · C-n/C-p switch · C-j jump · esc"),
             empty_message: "Type to search resources",
@@ -1344,13 +1341,7 @@ impl<'a, Id> QuickOpen<'a, Id> {
 
     /// ASCII.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Colorless.
-    #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self
@@ -1464,11 +1455,7 @@ impl<'a, Id> QuickOpen<'a, Id> {
 
         // Separator
         if y < bottom {
-            let line = if self.ascii {
-                "-".repeat(usize::from(inner.width))
-            } else {
-                "─".repeat(usize::from(inner.width))
-            };
+            let line = { "─".repeat(usize::from(inner.width)) };
             buffer.set_stringn(
                 inner.x,
                 y,
@@ -1504,13 +1491,7 @@ impl<'a, Id> QuickOpen<'a, Id> {
         if let Some(pa) = preview_area {
             let vx = pa.x.saturating_sub(1);
             for row in y..bottom {
-                buffer.set_stringn(
-                    vx,
-                    row,
-                    if self.ascii { "|" } else { "│" },
-                    1,
-                    self.system.style(Role::Border),
-                );
+                buffer.set_stringn(vx, row, "│", 1, self.system.style(Role::Border));
             }
             self.paint_preview(pa, buffer, state);
         }
@@ -1608,7 +1589,7 @@ impl<'a, Id> QuickOpen<'a, Id> {
         }
 
         if state.loading && self.items.is_empty() {
-            let msg = if self.ascii && self.loading_message == QUICK_OPEN_SEARCHING {
+            let msg = if false && self.loading_message == QUICK_OPEN_SEARCHING {
                 QUICK_OPEN_SEARCHING_ASCII
             } else {
                 self.loading_message
@@ -1626,9 +1607,9 @@ impl<'a, Id> QuickOpen<'a, Id> {
 
         if self.items.is_empty() {
             let (glyph, msg) = if state.query_text().is_empty() {
-                (if self.ascii { "[ ]" } else { "∅" }, self.empty_message)
+                ({ "∅" }, self.empty_message)
             } else {
-                (if self.ascii { "[x]" } else { "∅" }, self.no_result_message)
+                ({ "∅" }, self.no_result_message)
             };
             let line = format!("{glyph} {msg}");
             buffer.set_stringn(
@@ -1667,6 +1648,7 @@ impl<'a, Id> QuickOpen<'a, Id> {
                 enabled: true,
                 loading: false,
                 checked: false,
+                ..ListRowVisualState::default()
             });
             if recipe.use_fill {
                 buffer.set_style(row, recipe.label);
@@ -1674,17 +1656,13 @@ impl<'a, Id> QuickOpen<'a, Id> {
                 buffer.set_style(row, recipe.tint);
             }
 
-            let gutter = if active {
-                if self.ascii { "> " } else { "› " }
-            } else {
-                "  "
-            };
+            let gutter = if active { "› " } else { "  " };
             let mut x = area.x;
             let base = if self.colorless {
                 if active {
                     self.system
                         .style(Role::TextStrong)
-                        .add_modifier(Modifier::REVERSED)
+                        .add_modifier(Modifier::BOLD)
                 } else {
                     self.system.style(Role::Text)
                 }
@@ -1697,16 +1675,12 @@ impl<'a, Id> QuickOpen<'a, Id> {
             x = x.saturating_add(2);
 
             if item.recent {
-                let mark = if self.ascii { "* " } else { "↻ " };
+                let mark = { "↻ " };
                 buffer.set_stringn(x, y, mark, 2, self.system.style(Role::TextMuted));
                 x = x.saturating_add(2);
             }
             if let Some(k) = &item.kind {
-                let badge = if self.ascii {
-                    format!("[{k}] ")
-                } else {
-                    format!("{k} ")
-                };
+                let badge = { format!("{k} ") };
                 let bw = display_cols(&badge) as u16;
                 buffer.set_stringn(
                     x,
@@ -1783,7 +1757,7 @@ impl<'a, Id> QuickOpen<'a, Id> {
             return;
         }
         let item = self.items.get(state.cursor_index());
-        let header = if self.ascii { "Preview" } else { "Preview" };
+        let header = { "Preview" };
         buffer.set_stringn(
             area.x,
             area.y,
@@ -1824,11 +1798,7 @@ impl<'a, Id> QuickOpen<'a, Id> {
             }
             Some(QuickOpenPreview::HostManaged) => {
                 if y < area.bottom() {
-                    let msg = if self.ascii {
-                        "(host preview)"
-                    } else {
-                        "⋯ host preview"
-                    };
+                    let msg = { "⋯ host preview" };
                     buffer.set_stringn(
                         area.x,
                         y,

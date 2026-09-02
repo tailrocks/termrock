@@ -12,7 +12,7 @@
 //! - **Text editing** — [`TextAreaState`] + undo/redo/history/selection.
 //! - **Token model** — [`ComposerChip`] attachments / paste payloads / mentions.
 //! - **Completion** — [`CompletionQuery`] only; host owns candidate rows + menu.
-//! - **Presentation** — compact / normal / expanded / fullscreen + density/ascii.
+//! - **Presentation** — compact / normal / expanded / fullscreen.
 //! - **Submission policy** — [`SubmitPolicy`], busy, connection; outcomes only.
 //!
 //! Draft is never cleared when host gates input — only
@@ -20,7 +20,6 @@
 //!
 //! Research: Grok Build prompt widget, Amp, OpenCode, Claude Code,
 //! prompt-toolkit, terminal editors.
-
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
@@ -36,7 +35,7 @@ use crate::{
         OverlayId, OverlayKind, OverlayOutcome, OverlaySize, OverlaySpec, OverlayStack,
         place_overlay,
     },
-    style::{ControlState, Density, DesignSystem, Role},
+    style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
     widgets::{
         HelpEntry, Panel, PanelChrome, PanelVariant, TextArea, TextAreaOutcome, TextAreaState,
@@ -496,8 +495,6 @@ pub struct PromptComposerState {
     mode: Option<ModeIndicator>,
     model: Option<ModelIndicator>,
     context: ContextEstimate,
-    density: Density,
-    ascii_fallback: bool,
     /// Force word/glyph status (no emoji); pair with monochrome Theme for no-color.
     colorless: bool,
     placeholder: String,
@@ -541,8 +538,6 @@ impl PromptComposerState {
             mode: None,
             model: None,
             context: ContextEstimate::default(),
-            density: Density::Comfortable,
-            ascii_fallback: false,
             colorless: false,
             placeholder: "Message".into(),
             policy: SubmitPolicy::default(),
@@ -642,23 +637,10 @@ impl PromptComposerState {
         self.context = context;
     }
 
-    /// Density for chrome spacing.
-    pub fn set_density(&mut self, density: Density) {
-        self.density = density;
-    }
-
-    /// ASCII glyph fallback for badges.
-    pub fn set_ascii_fallback(&mut self, ascii: bool) {
-        self.ascii_fallback = ascii;
-    }
-
     /// No-color / monochrome-friendly chrome (forces ASCII marks; host should also
     /// pass a monochrome-quantized [`DesignSystem`]).
     pub fn set_colorless(&mut self, colorless: bool) {
         self.colorless = colorless;
-        if colorless {
-            self.ascii_fallback = true;
-        }
     }
 
     /// Whether colorless chrome is active.
@@ -902,13 +884,7 @@ impl PromptComposerState {
         };
         if rank(target) < rank(self.presentation) {
             self.presentation = target;
-            if width < 48 {
-                self.ascii_fallback = true;
-            }
             return PromptComposerOutcome::PresentationChanged(target);
-        }
-        if width < 48 {
-            self.ascii_fallback = true;
         }
         PromptComposerOutcome::Ignored
     }
@@ -1933,7 +1909,6 @@ impl StatefulWidget for &PromptComposer<'_> {
         }
 
         // Chips — AttachmentChip / PasteChip (Tag chrome underneath).
-        let ascii = state.ascii_fallback || state.colorless;
         for (i, (id, rect)) in layout.chip_hits.iter().enumerate() {
             if let Some(chip) = state.chips.iter().find(|c| c.id == *id) {
                 let focused = state.chip_cursor == Some(i);
@@ -1942,9 +1917,7 @@ impl StatefulWidget for &PromptComposer<'_> {
                         use crate::widgets::{PasteChip, PasteChipState};
                         let mut ps = PasteChipState::new();
                         ps.set_focused(focused);
-                        let _ = PasteChip::new(&paste, self.system)
-                            .ascii(ascii)
-                            .paint(*rect, buffer, &mut ps);
+                        let _ = PasteChip::new(&paste, self.system).paint(*rect, buffer, &mut ps);
                         continue;
                     }
                 }
@@ -1952,9 +1925,7 @@ impl StatefulWidget for &PromptComposer<'_> {
                     use crate::widgets::{AttachmentChip, AttachmentChipState};
                     let mut st = AttachmentChipState::new();
                     st.set_focused(focused);
-                    let _ = AttachmentChip::new(&item, self.system)
-                        .ascii(ascii)
-                        .paint(*rect, buffer, &mut st);
+                    let _ = AttachmentChip::new(&item, self.system).paint(*rect, buffer, &mut st);
                 } else {
                     // Fallback Tag for unexpected kinds
                     use crate::widgets::{Tag, TagState};
@@ -1977,18 +1948,14 @@ impl StatefulWidget for &PromptComposer<'_> {
             );
             // Selection highlight (after TextArea paint)
             if state.has_selection() {
-                let sel = self
-                    .system
-                    .input_recipe(ControlState::Focused, false)
-                    .cursor
-                    .add_modifier(ratatui_core::style::Modifier::REVERSED);
+                // D8: the selection is one explicit pair, applied whole.
+                let sel = self.system.selected_text();
                 paint_editor_selection(buffer, state.editor.body_area(), state, sel);
             }
         }
 
         // Status row: mode · model · context · queue · busy
         if !layout.status.is_empty() {
-            let ascii = state.ascii_fallback || state.colorless;
             let mut parts: Vec<String> = Vec::new();
             if let Some(mode) = &state.mode {
                 parts.push(mode.label.clone());
@@ -1997,28 +1964,20 @@ impl StatefulWidget for &PromptComposer<'_> {
                 parts.push(model.label.clone());
             }
             if state.busy {
-                parts.push(if ascii {
-                    "BUSY ^C soft ^U stop".into()
-                } else {
-                    "● busy  ^C interrupt  ^U stop".into()
-                });
+                parts.push("busy  ^C interrupt  ^U stop".into());
             }
             if !state.queue.is_empty() {
                 parts.push(format!("queue:{}", state.queue.len()));
             }
             if state.presentation == ComposerPresentation::Fullscreen {
-                parts.push(if ascii {
-                    "FULL".into()
-                } else {
-                    "fullscreen".into()
-                });
+                parts.push("fullscreen".into());
             }
             match state.connection {
                 ComposerConnection::Disconnected => parts.push("offline".into()),
                 ComposerConnection::Disabled => parts.push("disabled".into()),
                 ComposerConnection::Ready => {}
             }
-            let left = parts.join(if ascii { " | " } else { " · " });
+            let left = parts.join(" · ");
             let style = if state.mode.as_ref().is_some_and(|m| m.warning) {
                 self.system.style(Role::Warning)
             } else {
@@ -2073,7 +2032,7 @@ impl StatefulWidget for PromptComposer<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{input::KeyModifiers, style::Glyph};
+    use crate::input::KeyModifiers;
 
     fn press(code: KeyCode) -> KeyEvent {
         KeyEvent::new(code, KeyModifiers::NONE)
@@ -2370,7 +2329,6 @@ mod tests {
             out,
             PromptComposerOutcome::PresentationChanged(ComposerPresentation::Compact)
         ));
-        assert!(state.ascii_fallback);
     }
 
     #[test]
@@ -2439,12 +2397,11 @@ mod tests {
     }
 
     #[test]
-    fn colorless_forces_ascii() {
+    fn colorless_flag_sticks() {
         let mut state = PromptComposerState::new();
         state.set_accepts_input(true);
         state.set_colorless(true);
         assert!(state.is_colorless());
-        assert!(state.ascii_fallback);
     }
 
     #[test]
@@ -2486,8 +2443,13 @@ mod tests {
         let mut buf = Buffer::empty(Rect::new(0, 0, 40, 8));
         PromptComposer::new(&system).render(Rect::new(0, 0, 40, 8), &mut buf, &mut state);
         let body = state.editor.body_area();
+        // D8: the selection is one explicit pair, applied whole — no
+        // reversal modifier anywhere in it.
+        let theme = system.junie_theme();
+        assert_eq!(buf[(body.x, body.y)].fg, theme.text_primary);
+        assert_eq!(buf[(body.x, body.y)].bg, theme.popover);
         assert!(
-            buf[(body.x, body.y)]
+            !buf[(body.x, body.y)]
                 .modifier
                 .contains(ratatui_core::style::Modifier::REVERSED)
         );
@@ -2505,10 +2467,17 @@ mod tests {
         let prompt_x = body.x.saturating_sub(1);
         assert_eq!(
             buffer[(prompt_x, body.y)].symbol(),
-            Glyph::Prompt.resolve(system.glyphs).text
+            system.glyphs.selection_gutter(),
+            "the prompt owns the gutter bar"
         );
+        // The cell cursor is the explicit reversal (canvas on body white);
+        // the well behind it stays the field plane.
         assert_eq!(
             buffer[(body.x, body.y)].bg,
+            system.style(Role::Text).fg.unwrap()
+        );
+        assert_eq!(
+            buffer[(body.x.saturating_add(1), body.y)].bg,
             system.style(Role::Sunken).bg.unwrap()
         );
     }

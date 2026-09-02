@@ -355,7 +355,6 @@ pub struct Picker<'a, Id> {
     placeholder: &'a str,
     empty_message: &'a str,
     focused: bool,
-    ascii: bool,
     colorless: bool,
 }
 
@@ -373,7 +372,6 @@ impl<'a, Id> Picker<'a, Id> {
             // Seeded from the system: a widget that defaults to false is
             // claiming the terminal has Unicode and colour before anyone
             // asked it. Builders below still force either way.
-            ascii: system.ascii_glyphs(),
             colorless: system.mono(),
         }
     }
@@ -408,13 +406,7 @@ impl<'a, Id> Picker<'a, Id> {
 
     /// ASCII empty / list recipes.
     #[must_use]
-    pub const fn ascii(mut self, ascii: bool) -> Self {
-        self.ascii = ascii;
-        self
-    }
-
     /// Reduced-color paint.
-    #[must_use]
     pub const fn colorless(mut self, colorless: bool) -> Self {
         self.colorless = colorless;
         self
@@ -456,7 +448,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
             return;
         }
         if self.rows.is_empty() {
-            let mark = if self.ascii { "[ ] " } else { "∅ " };
+            let mark = { "∅ " };
             let msg = if list_area.width < 12 {
                 format!("{mark}empty")
             } else {
@@ -480,7 +472,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
         } else {
             let list = List::new(self.rows, self.system);
             // List focused chrome is selection-based; surface focus is host.
-            let _ = (self.focused, self.ascii, self.colorless);
+            let _ = (self.focused, false, self.colorless);
             StatefulWidget::render(&list, list_area, buffer, &mut state.list);
         }
     }

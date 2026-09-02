@@ -15,7 +15,6 @@
 //!   contained in `area` (may be zero-sized when outer is empty).
 //! - Tiny terminals: preferred size is clamped to available space after margins.
 //! - Optional one-cell safe margin through [`Center::dialog`].
-
 use ratatui_core::layout::Rect;
 
 /// Which axes to center on.

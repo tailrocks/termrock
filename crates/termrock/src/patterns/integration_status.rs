@@ -28,7 +28,6 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -1023,7 +1022,6 @@ impl IntegrationStatusState {
 #[derive(Debug, Clone, Copy)]
 pub struct IntegrationStatus<'a> {
     system: &'a DesignSystem,
-    ascii: bool,
     colorless: bool,
 }
 
@@ -1046,20 +1044,13 @@ impl<'a> IntegrationStatus<'a> {
     pub const fn new(system: &'a DesignSystem) -> Self {
         Self {
             system,
-            ascii: false,
             colorless: false,
         }
     }
 
     /// ASCII.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Colorless.
-    #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self
@@ -1090,7 +1081,6 @@ impl<'a> IntegrationStatus<'a> {
         };
         StatusIndicator::new(semantic, self.system)
             .label(&text)
-            .ascii(self.ascii)
             .colorless(self.colorless)
             .paint(Rect::new(area.x, area.y, area.width, 1), buffer);
     }
@@ -1134,22 +1124,17 @@ impl<'a> IntegrationStatus<'a> {
                 break;
             }
             let selected = i == state.cursor;
-            let mark = if selected {
-                if self.ascii { ">" } else { "›" }
-            } else {
-                " "
-            };
-            let kg = e.kind.glyph(self.ascii);
+            let mark = if selected { "›" } else { " " };
+            let kg = e.kind.glyph(false);
             let indicator = StatusIndicator::new(e.health.semantic(), self.system)
                 .label(e.health.label())
-                .ascii(self.ascii)
                 .colorless(self.colorless);
             let status_text = indicator.text(None);
             let party = if e.provenance.third_party { "3p" } else { "1p" };
             // Egress is a fact worth a glyph, and the glyph has to survive an
             // ASCII terminal (plans/013 Step 2).
             let egress = if e.may_egress() {
-                format!(" {}", self.system.glyphs.resolve(Glyph::ArrowUp).text)
+                format!(" ↑")
             } else {
                 String::new()
             };
@@ -1157,9 +1142,8 @@ impl<'a> IntegrationStatus<'a> {
             let style = if selected && !self.colorless {
                 self.system.style(Role::Accent).add_modifier(Modifier::BOLD)
             } else if selected {
-                self.system
-                    .style(Role::TextStrong)
-                    .add_modifier(Modifier::BOLD | Modifier::REVERSED)
+                // Mono selection is the explicit reversal pair (D5).
+                self.system.reversed()
             } else {
                 self.system.style(Role::Text)
             };
@@ -1268,7 +1252,6 @@ impl<'a> IntegrationStatus<'a> {
                 let warning = format!("warning: {eg}");
                 StatusIndicator::new(SemanticStatus::Warning, self.system)
                     .label(&warning)
-                    .ascii(self.ascii)
                     .colorless(self.colorless)
                     .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
                 y = y.saturating_add(1);
@@ -1281,7 +1264,6 @@ impl<'a> IntegrationStatus<'a> {
                 if y < content_bottom {
                     StatusIndicator::new(e.health.semantic(), self.system)
                         .label(e.health.label())
-                        .ascii(self.ascii)
                         .colorless(self.colorless)
                         .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
                     y = y.saturating_add(1);
@@ -1313,7 +1295,6 @@ impl<'a> IntegrationStatus<'a> {
                     let failure = format!("last error: {err}");
                     StatusIndicator::new(SemanticStatus::Failed, self.system)
                         .label(&failure)
-                        .ascii(self.ascii)
                         .colorless(self.colorless)
                         .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
                 }
@@ -1435,14 +1416,10 @@ impl<'a> IntegrationStatus<'a> {
         if row.y >= bottom {
             return;
         }
-        self.system.paint_row(
-            buffer,
-            row,
-            &note,
-            self.system
-                .style(Role::TextMuted)
-                .add_modifier(Modifier::DIM),
-        );
+        // The note is metadata: the muted tone alone. A held-back count is
+        // de-emphasised by the ladder, never by a dim modifier (D5).
+        self.system
+            .paint_row(buffer, row, &note, self.system.style(Role::TextMuted));
     }
 
     fn paint_actions(
@@ -1759,7 +1736,6 @@ mod tests {
             for tab in IntegrationDetailTab::cycle() {
                 st.tab = *tab;
                 IntegrationStatus::new(&system)
-                    .ascii(true)
                     .colorless(true)
                     .paint(area, &mut buf, &mut st);
             }
@@ -1829,7 +1805,7 @@ mod tests {
     #[test]
     fn resize_cjk_combining_and_ascii_safe() {
         let system = DesignSystem::default();
-        for ascii in [false, true] {
+        for _ascii in [false, true] {
             for (width, height) in [(40, 10), (20, 4), (1, 1), (0, 0)] {
                 let mut st = IntegrationStatusState::new();
                 st.set_entries(vec![
@@ -1843,9 +1819,7 @@ mod tests {
                 ]);
                 let area = Rect::new(0, 0, width, height);
                 let mut buf = Buffer::empty(area);
-                IntegrationStatus::new(&system)
-                    .ascii(ascii)
-                    .paint(area, &mut buf, &mut st);
+                IntegrationStatus::new(&system).paint(area, &mut buf, &mut st);
                 if width == 40 {
                     let text: String = buf.content().iter().map(|cell| cell.symbol()).collect();
                     assert!(text.contains('検'), "{text:?}");

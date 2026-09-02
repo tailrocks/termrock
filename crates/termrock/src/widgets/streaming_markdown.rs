@@ -21,7 +21,6 @@
 //! **Composition.** Projects into [`MarkdownView`](crate::widgets::MarkdownView)
 //! / plain lines for [`MessageThread`](crate::widgets::MessageThread). Host
 //! owns network; TermRock owns buffer split, provisional parse, paint.
-
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
@@ -507,13 +506,13 @@ impl StreamingMarkdownState {
                         lines.push(l.to_string());
                     }
                     if b.incomplete && matches!(self.phase, StreamPhase::Streaming) {
-                        lines.push("▌".into());
+                        lines.push("▎".into());
                     }
                 }
             }
         }
         if lines.is_empty() && matches!(self.phase, StreamPhase::Streaming) {
-            lines.push("▌".into());
+            lines.push("▎".into());
         }
         lines
     }
@@ -746,7 +745,6 @@ pub enum StreamingMarkdownOutcome {
 #[derive(Debug, Clone, Copy)]
 pub struct StreamingMarkdown<'a> {
     system: &'a DesignSystem,
-    ascii: bool,
     colorless: bool,
 }
 
@@ -756,20 +754,13 @@ impl<'a> StreamingMarkdown<'a> {
     pub const fn new(system: &'a DesignSystem) -> Self {
         Self {
             system,
-            ascii: false,
             colorless: false,
         }
     }
 
     /// ASCII.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Colorless.
-    #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self
@@ -847,12 +838,8 @@ impl<'a> StreamingMarkdown<'a> {
             blocks.push(b);
         }
 
-        let mut view = MarkdownView::new(&blocks, self.system);
-        let ascii = self.ascii || self.system.glyphs.is_ascii();
+        let view = MarkdownView::new(&blocks, self.system);
         let colorless = self.colorless || self.system.mono();
-        if ascii {
-            view = view.compact_headings(true);
-        }
 
         // follow stream scroll
         if state.follow_stream && matches!(state.phase, StreamPhase::Streaming) {
@@ -864,8 +851,8 @@ impl<'a> StreamingMarkdown<'a> {
 
         // caret / failed strip
         if state.show_caret && matches!(state.phase, StreamPhase::Streaming) && area.height > 0 {
-            // Not `▌`: that bar means "this row is selected".
-            let cue = if ascii { "|" } else { "▍" };
+            // Not `▎`: that bar means "this row is selected".
+            let cue = "▍";
             let y = area.bottom().saturating_sub(1);
             buffer.set_stringn(
                 area.x.saturating_add(area.width.saturating_sub(2)),
@@ -1018,7 +1005,7 @@ mod tests {
             lines.iter().any(|l| l.contains("println")
                 || l.contains("```")
                 || l.contains("…")
-                || l.contains("▌")),
+                || l.contains("▎")),
             "{lines:?}"
         );
         st.push_delta(fixtures::mid_fence_close());

@@ -30,7 +30,6 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-
 use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::StatefulWidget};
 
 use crate::{
@@ -553,8 +552,6 @@ pub struct FileManagerState {
     pub entry_count: u64,
     /// Selected path chrome.
     pub selected_path: Option<String>,
-    /// ASCII.
-    pub ascii: bool,
     /// Colorless.
     pub colorless: bool,
     /// Last panes.
@@ -605,7 +602,6 @@ impl FileManagerState {
             drawer_open: false,
             entry_count: 0,
             selected_path: None,
-            ascii: false,
             colorless: false,
             last_panes: Vec::new(),
             last_area_width: None,
@@ -1541,7 +1537,6 @@ pub fn render_file_manager(buffer: &mut Buffer, area: Rect, surfaces: FileManage
     state.clamp_focus_to_density(density);
     state.apply_focus_gates();
     state.entry_count = entries.len() as u64;
-    state.tree.ascii = state.ascii;
 
     // Breadcrumbs
     if let Some(r) = pane_area(&panes, "breadcrumbs") {

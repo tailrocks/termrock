@@ -22,7 +22,6 @@
 //!
 //! Research: Grok Build fullscreen overlays, file previews, IDE inspectors,
 //! terminal pagers.
-
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
@@ -33,7 +32,7 @@ use crate::{
         HitRegion, OverlayId, OverlayOutcome, OverlayStack, SemanticNode, SemanticRole,
         SemanticScene, SemanticState, UiIntent,
     },
-    style::{DesignSystem, GlyphSet, Role},
+    style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
 };
 
@@ -613,7 +612,6 @@ pub struct FullscreenViewerState<Id> {
     action_regions: Vec<HitRegion<Id>>,
     /// Nested child count hint from host (stack is authority).
     nested_child_hint: bool,
-    ascii: bool,
 }
 
 impl<Id> Default for FullscreenViewerState<Id> {
@@ -640,7 +638,6 @@ impl<Id> FullscreenViewerState<Id> {
             slots: FullscreenViewerSlots::empty(),
             action_regions: Vec::new(),
             nested_child_hint: false,
-            ascii: false,
         }
     }
 
@@ -713,10 +710,6 @@ impl<Id> FullscreenViewerState<Id> {
     }
 
     /// ASCII chrome.
-    pub fn set_ascii(&mut self, on: bool) {
-        self.ascii = on;
-    }
-
     /// Host reports nested child overlay presence (or use stack query).
     pub fn set_nested_child_hint(&mut self, on: bool) {
         self.nested_child_hint = on;
@@ -1136,7 +1129,6 @@ impl<Id: Clone + PartialEq> FullscreenViewerState<Id> {
 pub struct FullscreenViewer<'a, Id> {
     system: &'a DesignSystem,
     actions: &'a [Action<'a, Id>],
-    ascii: bool,
     colorless: bool,
 }
 
@@ -1147,20 +1139,13 @@ impl<'a, Id> FullscreenViewer<'a, Id> {
         Self {
             system,
             actions,
-            ascii: false,
             colorless: false,
         }
     }
 
     /// ASCII chrome.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Colorless.
-    #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self
@@ -1183,13 +1168,8 @@ impl<'a, Id> FullscreenViewer<'a, Id> {
         } else {
             SurfaceRecipe::Overlay
         };
-        let ascii = self.ascii || state.ascii;
-        let adapted_system = (ascii || self.colorless).then(|| {
-            let system = if ascii {
-                self.system.clone().glyphs(GlyphSet::Ascii)
-            } else {
-                self.system.clone()
-            };
+        let adapted_system = (false || self.colorless).then(|| {
+            let system = { self.system.clone() };
             if self.colorless {
                 system.capability(crate::style::ColorCapability::Monochrome)
             } else {
@@ -1235,13 +1215,12 @@ impl<'a, Id> FullscreenViewer<'a, Id> {
         } else {
             format!("[disabled] {base_title}")
         };
-        let close = if self.ascii { " [x]" } else { " ×" };
+        let close = { " ×" };
         let title_style = if !state.enabled {
             self.system.style(Role::TextDisabled)
         } else if matches!(state.chrome_focus, ViewerChromeFocus::Title) {
-            self.system
-                .style(Role::TextStrong)
-                .add_modifier(Modifier::BOLD | Modifier::REVERSED)
+            // The keyboard says itself with the focus tone and weight.
+            self.system.style(Role::Focus).add_modifier(Modifier::BOLD)
         } else {
             self.system
                 .style(Role::TextStrong)
@@ -1266,7 +1245,7 @@ impl<'a, Id> FullscreenViewer<'a, Id> {
         if has_crumbs {
             state.slots.breadcrumbs = Rect::new(inner.x, y, inner.width, 1);
             if let Some(src) = state.zoom.source() {
-                let sep = if self.ascii { " > " } else { " › " };
+                let sep = { " › " };
                 let path = src.path_labels.join(sep);
                 let style = if !state.enabled {
                     self.system.style(Role::TextDisabled)
@@ -1334,7 +1313,7 @@ impl<'a, Id> FullscreenViewer<'a, Id> {
         // Search
         if has_search {
             state.slots.search = Rect::new(inner.x, y, inner.width, 1);
-            let prefix = if self.ascii { "/ " } else { "⌕ " };
+            let prefix = { "⌕ " };
             let q = format!("{prefix}{}", state.search_query);
             let style = if !state.enabled {
                 self.system.style(Role::TextDisabled)
@@ -1443,53 +1422,26 @@ impl<Id: Clone + PartialEq> StatefulWidget for &FullscreenViewer<'_, Id> {
 #[derive(Debug, Clone, Copy)]
 pub struct SemanticZoomBadge<'a> {
     system: &'a DesignSystem,
-    ascii: bool,
 }
 
 impl<'a> SemanticZoomBadge<'a> {
     /// Badge painter.
     #[must_use]
     pub const fn new(system: &'a DesignSystem) -> Self {
-        Self {
-            system,
-            ascii: false,
-        }
+        Self { system }
     }
 
     /// ASCII.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Paint level label into a one-line area.
     pub fn paint<Id>(&self, area: Rect, buffer: &mut Buffer, zoom: &SemanticZoomState<Id>) {
         if area.is_empty() {
             return;
         }
         let label = match zoom.level() {
-            ZoomLevel::Compact => {
-                if self.ascii {
-                    "zoom:row"
-                } else {
-                    "zoom·row"
-                }
-            }
-            ZoomLevel::Detail => {
-                if self.ascii {
-                    "zoom:detail"
-                } else {
-                    "zoom·detail"
-                }
-            }
-            ZoomLevel::Fullscreen => {
-                if self.ascii {
-                    "zoom:full"
-                } else {
-                    "zoom·full"
-                }
-            }
+            ZoomLevel::Compact => "zoom·row",
+            ZoomLevel::Detail => "zoom·detail",
+            ZoomLevel::Fullscreen => "zoom·full",
         };
         buffer.set_stringn(
             area.x,
@@ -1845,9 +1797,9 @@ mod tests {
         let mut z = SemanticZoomState::<&str>::new();
         let area = Rect::new(0, 0, 20, 1);
         let mut buf = Buffer::empty(area);
-        SemanticZoomBadge::new(&system).paint(area, &mut buf, &z);
+        let _ = SemanticZoomBadge::new(&system).paint(area, &mut buf, &z);
         let _ = z.promote(ctx("a"));
-        SemanticZoomBadge::new(&system).paint(area, &mut buf, &z);
+        let _ = SemanticZoomBadge::new(&system).paint(area, &mut buf, &z);
     }
 
     #[test]

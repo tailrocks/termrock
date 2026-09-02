@@ -10,7 +10,6 @@
 //!
 //! [`data_view::VirtualWindow`] remains the fixed unit-slot facade used by
 //! DataTable; it is equivalent to `Virtualizer::fixed(1)`.
-
 use std::collections::BTreeMap;
 
 use crate::perf::{ScrollAnchor, ScrollAnchorKind};

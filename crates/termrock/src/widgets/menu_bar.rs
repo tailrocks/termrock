@@ -18,7 +18,6 @@
 //!
 //! Research: desktop menu bars, Textual, terminal editors (Helix/Kakoune chrome),
 //! Radix Menubar / DropdownMenu (roving + nested dismiss).
-
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -1294,7 +1293,6 @@ pub fn dismiss_menu_bar_overlays<FocusId: Clone>(
 pub struct MenuBar<'a, Id> {
     menus: &'a [MenuBarMenu<Id>],
     system: &'a DesignSystem,
-    ascii: bool,
     colorless: bool,
 }
 
@@ -1305,20 +1303,13 @@ impl<'a, Id> MenuBar<'a, Id> {
         Self {
             menus,
             system,
-            ascii: false,
             colorless: false,
         }
     }
 
     /// ASCII glyphs.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Reduced-color roles.
-    #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self
@@ -1353,15 +1344,13 @@ impl<'a, Id> MenuBar<'a, Id> {
 
         match presentation {
             MenuBarPresentation::CommandPalette => {
-                let label = if self.ascii { "Menu..." } else { "Menu…" };
+                let label = { "Menu…" };
                 let armed = state.mnemonic_mode || state.focused;
                 let style = if self.colorless {
                     self.system
                         .style(if armed { Role::TextStrong } else { Role::Text })
                 } else if armed {
-                    self.system
-                        .style(Role::Focus)
-                        .add_modifier(Modifier::REVERSED)
+                    self.system.style(Role::Focus).add_modifier(Modifier::BOLD)
                 } else {
                     self.system.style(Role::Text)
                 };
@@ -1388,7 +1377,7 @@ impl<'a, Id> MenuBar<'a, Id> {
                     } else {
                         menu.label.clone()
                     };
-                    let painted = format_mnemonic_label(&label, menu.mnemonic, self.ascii);
+                    let painted = format_mnemonic_label(&label, menu.mnemonic, false);
                     let pad = format!(" {painted} ");
                     let w = (display_cols(&pad) as u16).min(area.right().saturating_sub(x));
                     if w == 0 {
@@ -1460,7 +1449,7 @@ impl<'a, Id> MenuBar<'a, Id> {
         let mut anchor = root_anchor;
 
         for depth in 0..state.cascade.len() {
-            let size = measure_panel(items, self.ascii);
+            let size = measure_panel(items, false);
             let rect = place_menu_bar_panel(bounds, anchor, size);
             self.paint_panel_at(rect, buffer, state, items, depth);
             // Next anchor: selected row rect if any.
@@ -1542,11 +1531,7 @@ impl<'a, Id> MenuBar<'a, Id> {
                 break;
             }
             if matches!(item.kind, MenuRowKind::Separator) {
-                let line = if self.ascii {
-                    "-".repeat(usize::from(inner.width))
-                } else {
-                    "─".repeat(usize::from(inner.width))
-                };
+                let line = { "─".repeat(usize::from(inner.width)) };
                 buffer.set_stringn(
                     inner.x,
                     y,
@@ -1576,7 +1561,7 @@ impl<'a, Id> MenuBar<'a, Id> {
                 continue;
             }
             if matches!(item.kind, MenuRowKind::Loading) {
-                let prefix = if self.ascii { "... " } else { "… " };
+                let prefix = { "… " };
                 let text =
                     take_display_cols(&format!("{prefix}{}", item.label), usize::from(inner.width));
                 buffer.set_stringn(
@@ -1621,6 +1606,7 @@ impl<'a, Id> MenuBar<'a, Id> {
                     MenuRowKind::Checkbox { checked: true }
                         | MenuRowKind::Radio { selected: true, .. }
                 ),
+                ..ListRowVisualState::default()
             });
             let row = Rect::new(inner.x, y, inner.width, 1);
             if recipe.use_fill {
@@ -1647,27 +1633,27 @@ impl<'a, Id> MenuBar<'a, Id> {
             };
 
             let mark = match &item.kind {
-                MenuRowKind::Checkbox { checked: true } if self.ascii => "[x] ",
+                MenuRowKind::Checkbox { checked: true } if false => "[x] ",
                 MenuRowKind::Checkbox { checked: true } => "✓ ",
-                MenuRowKind::Checkbox { checked: false } if self.ascii => "[ ] ",
+                MenuRowKind::Checkbox { checked: false } if false => "[ ] ",
                 MenuRowKind::Checkbox { checked: false } => "  ",
-                MenuRowKind::Radio { selected: true, .. } if self.ascii => "(*) ",
+                MenuRowKind::Radio { selected: true, .. } if false => "(*) ",
                 MenuRowKind::Radio { selected: true, .. } => "● ",
                 MenuRowKind::Radio {
                     selected: false, ..
-                } if self.ascii => "( ) ",
+                } if false => "( ) ",
                 MenuRowKind::Radio {
                     selected: false, ..
                 } => "○ ",
-                _ if active && self.ascii => "> ",
+                _ if active && false => "> ",
                 _ if active => "› ",
                 _ => "  ",
             };
-            let label = format_mnemonic_label(&item.label, item.mnemonic, self.ascii);
+            let label = format_mnemonic_label(&item.label, item.mnemonic, false);
             let mut line = format!("{mark}{label}");
             if matches!(item.kind, MenuRowKind::Submenu) {
-                line.push(if self.ascii { ' ' } else { ' ' });
-                line.push(if self.ascii { '>' } else { '›' });
+                line.push(' ');
+                line.push('›');
             }
             if let Some(sc) = &item.shortcut {
                 let used = display_cols(&line);
@@ -2159,12 +2145,7 @@ mod tests {
             .draw(|f| {
                 let area = f.area();
                 let bar = Rect::new(area.x, area.y, area.width, 1);
-                MenuBar::new(&menus, &system).ascii(true).paint_all(
-                    bar,
-                    area,
-                    f.buffer_mut(),
-                    &mut s,
-                );
+                MenuBar::new(&menus, &system).paint_all(bar, area, f.buffer_mut(), &mut s);
             })
             .unwrap();
         let text: String = terminal

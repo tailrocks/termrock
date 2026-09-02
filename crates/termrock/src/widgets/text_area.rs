@@ -9,7 +9,6 @@
 //! that embeds TextArea and may own additional undo/selection layers.
 //!
 //! Research: tui-textarea, prompt-toolkit, terminal editors, agent composers.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -24,7 +23,7 @@ use crate::{
         MouseEventKind,
     },
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
-    style::{ControlState, Density, DesignSystem, Role, RolePalette},
+    style::{ControlState, DesignSystem, Role, RolePalette},
     text::{display_cols, display_cols_slice_into, take_display_cols},
 };
 
@@ -1393,7 +1392,6 @@ pub struct TextArea<'a> {
     system: &'a DesignSystem,
     title: Option<&'a str>,
     placeholder: Option<&'a str>,
-    ascii: bool,
     colorless: bool,
     line_numbers: bool,
     wrap: TextWrap,
@@ -1411,7 +1409,6 @@ impl<'a> TextArea<'a> {
             // Seeded from the system: a widget that defaults to false is
             // claiming the terminal has Unicode and colour before anyone
             // asked it. Builders below still force either way.
-            ascii: system.ascii_glyphs(),
             colorless: system.mono(),
             line_numbers: false,
             wrap: TextWrap::None,
@@ -1433,13 +1430,7 @@ impl<'a> TextArea<'a> {
 
     /// ASCII scrollbar / empty cues.
     #[must_use]
-    pub const fn ascii(mut self, ascii: bool) -> Self {
-        self.ascii = ascii;
-        self
-    }
-
     /// Reduced-color caret/chrome.
-    #[must_use]
     pub const fn colorless(mut self, colorless: bool) -> Self {
         self.colorless = colorless;
         self
@@ -1621,12 +1612,7 @@ impl StatefulWidget for &TextArea<'_> {
         // away, and the ground says the field is not accepting typing. A
         // read-only area used to be pixel-identical to an editable one
         // (plans/021 Step 4).
-        let text_style = if matches!(self.variant, TextAreaVariant::Review) || state.is_read_only()
-        {
-            input_recipe.value.add_modifier(Modifier::DIM)
-        } else {
-            input_recipe.value
-        };
+        let text_style = input_recipe.value;
 
         match state.wrap {
             TextWrap::None => {
@@ -1679,7 +1665,7 @@ impl StatefulWidget for &TextArea<'_> {
                             usize::from(state.scroll.offset_x()),
                             state.viewport_width,
                             y,
-                            input_recipe.cursor,
+                            self.system.selected_text(),
                         );
                     }
                 }
@@ -1691,8 +1677,9 @@ impl StatefulWidget for &TextArea<'_> {
                         .saturating_add(u16::try_from(col).unwrap_or(u16::MAX))
                         .min(body.right().saturating_sub(1));
                     let y = body.y + u16::try_from(state.cursor.line - first).unwrap_or(u16::MAX);
-                    let caret = input_recipe.cursor.add_modifier(Modifier::REVERSED);
-                    buffer.set_style(Rect::new(x, y, 1, 1), caret);
+                    // B3: the caret recipe is already the explicit pair;
+                    // stacking REVERSED swapped it back into invisibility.
+                    buffer.set_style(Rect::new(x, y, 1, 1), input_recipe.cursor);
                 }
             }
             TextWrap::Soft => {
@@ -1737,7 +1724,7 @@ impl StatefulWidget for &TextArea<'_> {
                             if line_idx >= a.line && line_idx <= b.line {
                                 buffer.set_style(
                                     Rect::new(body.x, y, body.width.min(w as u16), 1),
-                                    input_recipe.cursor.add_modifier(Modifier::REVERSED),
+                                    self.system.selected_text(),
                                 );
                             }
                         }
@@ -1760,10 +1747,7 @@ impl StatefulWidget for &TextArea<'_> {
                             .x
                             .saturating_add(u16::try_from(x_off).unwrap_or(0))
                             .min(body.right().saturating_sub(1));
-                        buffer.set_style(
-                            Rect::new(x, y, 1, 1),
-                            input_recipe.cursor.add_modifier(Modifier::REVERSED),
-                        );
+                        buffer.set_style(Rect::new(x, y, 1, 1), input_recipe.cursor);
                     }
                 }
             }
@@ -1817,10 +1801,9 @@ fn paint_selection_line(
         .saturating_add(u16::try_from(end_col.min(viewport_width)).unwrap_or(0))
         .min(body.right());
     if ex > sx {
-        buffer.set_style(
-            Rect::new(sx, y, ex.saturating_sub(sx), 1),
-            cursor_style.add_modifier(Modifier::REVERSED),
-        );
+        // D8: selected text is one explicit pair, applied as a whole —
+        // never a reversal of whatever the cell already carried.
+        buffer.set_style(Rect::new(sx, y, ex.saturating_sub(sx), 1), cursor_style);
     }
 }
 
@@ -2271,8 +2254,8 @@ mod tests {
         let area = Rect::new(2, 2, 14, 8);
         let mut buffer = Buffer::empty(Rect::new(0, 0, 20, 12));
         (&TextArea::new(&system).title("Edit")).render(area, &mut buffer, &mut state);
-        assert_eq!(buffer[(area.right() - 1, area.y)].symbol(), "┐");
-        assert_eq!(buffer[(area.x, area.bottom() - 1)].symbol(), "└");
+        assert_eq!(buffer[(area.right() - 1, area.y)].symbol(), "\u{256e}");
+        assert_eq!(buffer[(area.x, area.bottom() - 1)].symbol(), "\u{2570}");
         let vertical = state.vertical_scrollbar.unwrap();
         let outcome = state.handle_event(Event::Mouse(crate::input::MouseEvent {
             kind: MouseEventKind::Down(MouseButton::Left),

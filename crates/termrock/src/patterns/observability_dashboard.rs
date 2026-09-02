@@ -30,7 +30,6 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 #![allow(unused_variables, unused_mut)] // unit-test fixtures
 use ratatui_core::{
@@ -331,8 +330,6 @@ pub struct ObservabilityDashboardState {
     pub event_count: u64,
     /// Host-projected alert count (status chrome).
     pub alert_count: u64,
-    /// ASCII.
-    pub ascii: bool,
     /// Colorless.
     pub colorless: bool,
     /// Last panes.
@@ -372,7 +369,6 @@ impl ObservabilityDashboardState {
             log_count: 0,
             event_count: 0,
             alert_count: 0,
-            ascii: false,
             colorless: false,
             last_panes: Vec::new(),
             last_area_width: None,
@@ -1177,12 +1173,11 @@ pub fn render_observability_dashboard(
     if let Some(r) = pane_area(&panes, "metrics") {
         let focused = state.focus == "metrics";
         let shown_alerts: &[MetricAlert<'_>] = if state.open_panes.alerts { alerts } else { &[] };
-        MetricsDashboard::new(tiles, shown_alerts, system)
+        let _ = MetricsDashboard::new(tiles, shown_alerts, system)
             .title("Metrics")
             .focused(focused)
             // The shell's status bar is the frame's one hint row.
             .hints(false)
-            .ascii(state.ascii)
             .render(r, buffer, &mut state.metrics);
     }
 
@@ -1191,7 +1186,6 @@ pub fn render_observability_dashboard(
         LogStream::new(logs, system)
             .title("Logs")
             .focused(focused)
-            .ascii(state.ascii)
             .colorless(state.colorless)
             .render(r, buffer, &mut state.logs);
     }
@@ -1200,7 +1194,6 @@ pub fn render_observability_dashboard(
         let focused = state.focus == "events";
         EventStream::with_events(events, system)
             .focused(focused)
-            .ascii(state.ascii)
             .colorless(state.colorless)
             .render(r, buffer, &mut state.events);
     }
@@ -1229,7 +1222,6 @@ pub fn render_observability_dashboard(
         } else {
             ObjectInspector::new(inspect_fields, system)
                 .focused(focused)
-                .ascii(state.ascii)
                 .colorless(state.colorless)
                 .render(inner, buffer, &mut state.inspector);
         }

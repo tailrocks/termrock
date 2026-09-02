@@ -15,7 +15,6 @@
 //! empty draft removes the previous token.
 //!
 //! Research: email recipient fields, token inputs, agent attachment/mention chips.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 use unicode_segmentation::UnicodeSegmentation;
@@ -922,7 +921,6 @@ pub struct TokenField<'a> {
     placeholder: &'a str,
     system: &'a DesignSystem,
     validation: Validation<'a>,
-    ascii: bool,
     gap: u16,
 }
 
@@ -935,7 +933,6 @@ impl<'a> TokenField<'a> {
             placeholder: "Add",
             system,
             validation: Validation::Valid,
-            ascii: false,
             gap: 1,
         }
     }
@@ -963,13 +960,7 @@ impl<'a> TokenField<'a> {
 
     /// ASCII chrome.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Gap between tokens.
-    #[must_use]
     pub const fn gap(mut self, gap: u16) -> Self {
         self.gap = gap;
         self
@@ -1389,7 +1380,6 @@ mod tests {
         let mut buf = Buffer::empty(area);
         let parts = TokenField::new(&system)
             .label("To")
-            .ascii(true)
             .paint(area, &mut buf, &mut state);
         assert!(!parts.token_rects.is_empty());
         assert!(!parts.draft.is_empty());

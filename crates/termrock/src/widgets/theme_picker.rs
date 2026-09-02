@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Live theme picker: select a named preset; caller re-renders with that theme.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -13,7 +12,7 @@ use ratatui_core::{
 use crate::{
     input::{KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind},
     interaction::{EventResult, NavigationMove, OverlayRequest, UiIntent, default_list_intent},
-    style::{Density, DesignSystem, ListRowVisualState, Role, RolePalette},
+    style::{DesignSystem, ListRowVisualState, Role, RolePalette},
     text::take_display_cols,
     widgets::{Panel, PanelChrome, PanelVariant},
 };
@@ -21,7 +20,7 @@ use crate::{
 /// One selectable theme preset.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ThemePreset {
-    /// Stable key (`phosphor`, `slate`, …).
+    /// Stable key (`junie`).
     pub id: &'static str,
     /// Human label.
     pub label: &'static str,
@@ -29,66 +28,26 @@ pub struct ThemePreset {
     pub requires_truecolor: bool,
 }
 
-/// Built-in TermRock presets.
-pub const BUILTIN_THEME_PRESETS: &[ThemePreset] = &[
-    ThemePreset {
-        id: "phosphor",
-        label: "Phosphor Obsidian",
-        requires_truecolor: false,
-    },
-    ThemePreset {
-        id: "slate",
-        label: "Slate",
-        requires_truecolor: true,
-    },
-    ThemePreset {
-        id: "paper",
-        label: "Paper",
-        requires_truecolor: true,
-    },
-    ThemePreset {
-        id: "ansi",
-        label: "ANSI 16",
-        requires_truecolor: false,
-    },
-    ThemePreset {
-        id: "high-contrast",
-        label: "High Contrast",
-        requires_truecolor: false,
-    },
-    ThemePreset {
-        id: "adaptive",
-        label: "Terminal Adaptive",
-        requires_truecolor: false,
-    },
-];
+/// The one built-in TermRock theme. There are no alternates to swap to.
+pub const BUILTIN_THEME_PRESETS: &[ThemePreset] = &[ThemePreset {
+    id: "junie",
+    label: "Junie",
+    requires_truecolor: true,
+}];
 
-/// Resolves a built-in theme by preset id.
+/// Resolves a built-in theme by preset id. There are no aliases: only the
+/// canonical id `junie` resolves; anything else returns `None`.
 #[must_use]
 pub fn theme_from_preset_id(id: &str) -> Option<RolePalette> {
-    match id {
-        "phosphor" | "tailrocks_phosphor" | "obsidian" | "dark" => {
-            Some(RolePalette::tailrocks_phosphor())
-        }
-        "slate" => Some(RolePalette::slate()),
-        "paper" | "light" => Some(RolePalette::paper()),
-        "ansi" | "ansi16" => Some(RolePalette::ansi()),
-        "high-contrast" | "hc" | "high_contrast" => Some(RolePalette::high_contrast()),
-        "adaptive" => Some(DesignSystem::adaptive().palette),
-        _ => None,
-    }
+    system_from_preset_id(id).map(|system| system.palette)
 }
 
-/// Resolves a full [`DesignSystem`] for a preset id.
+/// Resolves a full [`DesignSystem`] for a preset id. There are no aliases:
+/// only the canonical id `junie` resolves; anything else returns `None`.
 #[must_use]
 pub fn system_from_preset_id(id: &str) -> Option<DesignSystem> {
     match id {
-        "phosphor" | "tailrocks_phosphor" | "obsidian" | "dark" => Some(DesignSystem::phosphor()),
-        "slate" => Some(DesignSystem::slate()),
-        "paper" | "light" => Some(DesignSystem::paper()),
-        "ansi" | "ansi16" => Some(DesignSystem::ansi()),
-        "high-contrast" | "hc" | "high_contrast" => Some(DesignSystem::high_contrast()),
-        "adaptive" => Some(DesignSystem::adaptive()),
+        "junie" => Some(DesignSystem::junie()),
         _ => None,
     }
 }
@@ -318,16 +277,12 @@ impl StatefulWidget for &ThemePicker<'_> {
                 focused: state.focused && selected,
                 hovered: false,
                 enabled: state.enabled,
-                loading: false,
                 checked: false,
+                ..ListRowVisualState::default()
             });
             let marker = recipe.gutter.map_or(" ", |(glyph, _)| glyph);
             let tc = if preset.requires_truecolor {
-                if tokens.glyphs.is_ascii() {
-                    " | truecolor"
-                } else {
-                    " · truecolor"
-                }
+                " · truecolor"
             } else {
                 ""
             };
@@ -366,11 +321,14 @@ mod tests {
 
     #[test]
     fn navigation_and_confirm_index() {
+        // junie ships one theme; the picker still navigates whatever list the
+        // host hands it, so drive it with a two-entry projection.
+        let presets = [BUILTIN_THEME_PRESETS[0], BUILTIN_THEME_PRESETS[0]];
         let mut state = ThemePickerState::new(0);
         assert_eq!(
             state.handle_key(
                 KeyEvent::new(KeyCode::Down, KeyModifiers::NONE),
-                BUILTIN_THEME_PRESETS.len()
+                presets.len()
             ),
             ThemePickerOutcome::SelectionChanged
         );
@@ -378,11 +336,10 @@ mod tests {
         assert_eq!(
             state.handle_key(
                 KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
-                BUILTIN_THEME_PRESETS.len()
+                presets.len()
             ),
             ThemePickerOutcome::ConfirmIndex(1)
         );
-        assert_eq!(theme_from_preset_id("slate"), Some(RolePalette::slate()));
     }
 
     #[test]
@@ -400,7 +357,8 @@ mod tests {
     #[test]
     fn mouse_confirms_painted_row_and_disabled_blocks_all_activation() {
         let system = DesignSystem::default();
-        let picker = ThemePicker::new(BUILTIN_THEME_PRESETS, &system);
+        let presets = [BUILTIN_THEME_PRESETS[0], BUILTIN_THEME_PRESETS[0]];
+        let picker = ThemePicker::new(&presets, &system);
         let area = Rect::new(0, 0, 32, 8);
         let mut buffer = Buffer::empty(area);
         let mut state = ThemePickerState::new(0);
@@ -413,7 +371,7 @@ mod tests {
         };
 
         assert_eq!(
-            state.handle_mouse(click, BUILTIN_THEME_PRESETS.len()),
+            state.handle_mouse(click, presets.len()),
             ThemePickerOutcome::ConfirmIndex(1)
         );
         assert_eq!(state.selected(), 1);
@@ -422,13 +380,13 @@ mod tests {
         assert!(!state.is_enabled());
         StatefulWidget::render(&picker, area, &mut buffer, &mut state);
         assert_eq!(
-            state.handle_mouse(click, BUILTIN_THEME_PRESETS.len()),
+            state.handle_mouse(click, presets.len()),
             ThemePickerOutcome::Ignored
         );
         assert_eq!(
             state.handle_key(
                 KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
-                BUILTIN_THEME_PRESETS.len(),
+                presets.len(),
             ),
             ThemePickerOutcome::Ignored
         );

@@ -26,7 +26,6 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
@@ -113,11 +112,11 @@ impl ResultCellKind {
     pub const fn role(self) -> Role {
         match self {
             Self::Null => Role::TextDisabled,
-            Self::Bool => Role::InfoDim,
+            Self::Bool => Role::TextMuted,
             Self::Integer | Self::Float => Role::Text,
             Self::Text | Self::Timestamp | Self::Uuid | Self::Other => Role::Text,
             Self::Binary => Role::TextMuted,
-            Self::Json => Role::Info,
+            Self::Json => Role::TextSecondary,
             // Redaction is a value kind, not a warning state. Its literal
             // label carries the distinction without spending warning color.
             Self::Secret => Role::TextMuted,
@@ -624,7 +623,7 @@ pub const RESULT_TRUNC_MARK: &str = "…";
 pub fn format_result_cell(
     cell: &ResultCell<'_>,
     redaction: ResultRedaction,
-    ascii: bool,
+    _ascii: bool,
 ) -> String {
     if cell.secret || matches!(cell.kind, ResultCellKind::Secret) {
         if matches!(redaction, ResultRedaction::RevealSecrets) {
@@ -633,13 +632,7 @@ pub fn format_result_cell(
         return RESULT_SECRET_MASK.into();
     }
     match cell.kind {
-        ResultCellKind::Null => {
-            if ascii {
-                RESULT_NULL_ASCII.into()
-            } else {
-                RESULT_NULL_GLYPH.into()
-            }
-        }
+        ResultCellKind::Null => RESULT_NULL_GLYPH.into(),
         ResultCellKind::Binary => {
             let len = cell.binary_len.unwrap_or(0);
             match redaction {
@@ -722,7 +715,7 @@ pub fn project_result_rows(
     rows: &[ResultRow<'_>],
     columns: &[ResultColumn],
     redaction: ResultRedaction,
-    ascii: bool,
+    _ascii: bool,
     row_numbers: bool,
 ) -> Vec<(u64, Vec<String>)> {
     rows.iter()
@@ -740,7 +733,7 @@ pub fn project_result_rows(
                 if col.binary && matches!(c.kind, ResultCellKind::Text | ResultCellKind::Other) {
                     c.kind = ResultCellKind::Binary;
                 }
-                let formatted = format_result_cell(&c, redaction, ascii);
+                let formatted = format_result_cell(&c, redaction, false);
                 cells.push(clamp_cell_display(&formatted, RESULT_CELL_MAX_DISPLAY));
             }
             (r.id, cells)
@@ -754,25 +747,21 @@ pub fn result_row_to_inspector_fields<'a>(
     columns: &'a [ResultColumn],
     row: &ResultRow<'a>,
     redaction: ResultRedaction,
-    ascii: bool,
+    _ascii: bool,
 ) -> Vec<InspectorField<'a>> {
     columns
         .iter()
         .enumerate()
         .map(|(i, col)| {
             let cell = row.cells.get(i).copied().unwrap_or(ResultCell::null());
-            let display = format_result_cell(&cell, redaction, ascii);
+            let display = format_result_cell(&cell, redaction, false);
             // InspectorField needs &'a str for value — we only have owned display.
             // Host should prefer raw cell.text when not redacted; we expose key/path only
             // when text is already borrowed.
             let value = if cell.secret && !matches!(redaction, ResultRedaction::RevealSecrets) {
                 RESULT_SECRET_MASK
             } else if matches!(cell.kind, ResultCellKind::Null) {
-                if ascii {
-                    RESULT_NULL_ASCII
-                } else {
-                    RESULT_NULL_GLYPH
-                }
+                RESULT_NULL_GLYPH
             } else if matches!(cell.kind, ResultCellKind::Binary) {
                 // static-ish — use empty and type_label
                 ""
@@ -802,7 +791,7 @@ pub fn export_result_window_tsv(
     columns: &[ResultColumn],
     rows: &[ResultRow<'_>],
     redaction: ResultRedaction,
-    ascii: bool,
+    _ascii: bool,
     include_header: bool,
 ) -> String {
     let mut out = String::new();
@@ -824,7 +813,7 @@ pub fn export_result_window_tsv(
             if col.secret {
                 cell.secret = true;
             }
-            let s = format_result_cell(&cell, redaction, ascii);
+            let s = format_result_cell(&cell, redaction, false);
             // Escape tabs/newlines lightly
             out.push_str(&s.replace(['\t', '\n', '\r'], " "));
         }
@@ -961,8 +950,6 @@ pub struct ResultGridState {
     pub stats: Vec<ResultColumnStats>,
     /// Focused stats column index.
     pub stats_cursor: usize,
-    /// ASCII glyphs.
-    pub ascii: bool,
     /// Colorless.
     pub colorless: bool,
     /// Title.
@@ -995,7 +982,6 @@ impl ResultGridState {
             show_stats: false,
             stats: Vec::new(),
             stats_cursor: 0,
-            ascii: false,
             colorless: false,
             title: None,
             schema: Vec::new(),
@@ -1258,7 +1244,6 @@ pub struct ResultGrid<'a> {
     rows: &'a [ResultRow<'a>],
     focused: bool,
     title: Option<&'a str>,
-    ascii: bool,
 }
 
 impl<'a> ResultGrid<'a> {
@@ -1275,7 +1260,6 @@ impl<'a> ResultGrid<'a> {
             rows,
             focused: true,
             title: None,
-            ascii: false,
         }
     }
 
@@ -1295,11 +1279,6 @@ impl<'a> ResultGrid<'a> {
 
     /// ASCII.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Paint status + optional stats + DataTable body.
     pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut ResultGridState) {
         if area.is_empty() {
@@ -1310,8 +1289,6 @@ impl<'a> ResultGrid<'a> {
             state.schema = self.columns.to_vec();
         }
 
-        let ascii = self.ascii || state.ascii;
-        state.table.ascii = ascii;
         state.table.colorless = state.colorless;
         state
             .table
@@ -1331,8 +1308,7 @@ impl<'a> ResultGrid<'a> {
             );
             state.last_status_line = line.clone();
             let status = StatusIndicator::new(state.status.semantic(), self.system)
-                .label(state.status.verb())
-                .ascii(ascii);
+                .label(state.status.verb());
             let status_width = status.measure_width(None).min(area.width);
             Widget::render(&status, Rect::new(area.x, y, status_width, 1), buffer);
             let metadata_x = area.x.saturating_add(status_width.saturating_add(1));
@@ -1383,7 +1359,7 @@ impl<'a> ResultGrid<'a> {
             self.rows,
             self.columns,
             state.redaction,
-            ascii,
+            false,
             state.row_numbers,
         );
         // Build col model
@@ -1509,8 +1485,9 @@ mod tests {
 
     #[test]
     fn format_null_secret_binary() {
-        assert!(
-            format_result_cell(&ResultCell::null(), ResultRedaction::Safe, true).contains("NULL")
+        assert_eq!(
+            format_result_cell(&ResultCell::null(), ResultRedaction::Safe, false),
+            RESULT_NULL_GLYPH
         );
         assert_eq!(
             format_result_cell(&ResultCell::secret_value("x"), ResultRedaction::Safe, false),
@@ -1587,7 +1564,7 @@ mod tests {
         );
         let area = Rect::new(0, 0, 80, 14);
         let mut buf = Buffer::empty(area);
-        ResultGrid::new(&system, &cols, &rows)
+        let _ = ResultGrid::new(&system, &cols, &rows)
             .title("q1")
             .render(area, &mut buf, &mut state);
         let text: String = buf
@@ -1726,7 +1703,7 @@ mod tests {
         let area = Rect::new(0, 0, 100, 30);
         let mut buf = Buffer::empty(area);
         for _ in 0..6 {
-            ResultGrid::new(&system, &cols, &rows).render(area, &mut buf, &mut state);
+            let _ = ResultGrid::new(&system, &cols, &rows).render(area, &mut buf, &mut state);
         }
     }
 

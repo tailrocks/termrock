@@ -7,7 +7,6 @@
 //! Hosts apply redraw, focus, and overlay requests; domain `M` stays product-owned.
 //!
 //! Not an Elm/Bubble Tea runtime: no global command executor, no forced app loop.
-
 use crate::interaction::{OverlayId, OverlayKind};
 
 /// Whether the frame should be painted again.

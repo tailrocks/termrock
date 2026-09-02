@@ -13,14 +13,12 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-
 use ratatui_core::layout::Rect;
 
 use crate::layout::{
     AdaptiveAnatomy, RegionId, RegionSize, RegionSpec, ResponsiveSurface, SurfaceAxis,
     ViewportClass, WorkSurface,
 };
-use crate::style::Density;
 
 /// Named shell recipe (composition topology).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -105,8 +103,6 @@ pub enum AppShellLifecycle {
 pub struct AppShellConfig {
     /// Recipe topology.
     pub recipe: AppShellRecipe,
-    /// Density / gaps.
-    pub density: Density,
     /// Header height; `0` hides.
     pub header_height: u16,
     /// Sidebar width; `0` hides (or responsive collapse).
@@ -140,7 +136,6 @@ impl AppShellConfig {
     pub const fn workbench() -> Self {
         Self {
             recipe: AppShellRecipe::Workbench,
-            density: Density::Comfortable,
             header_height: 1,
             sidebar_width: 24,
             inspector_width: 28,
@@ -158,7 +153,6 @@ impl AppShellConfig {
     pub const fn dashboard() -> Self {
         Self {
             recipe: AppShellRecipe::Dashboard,
-            density: Density::Dashboard,
             header_height: 1,
             sidebar_width: 0,
             inspector_width: 0,
@@ -176,7 +170,6 @@ impl AppShellConfig {
     pub const fn master_detail() -> Self {
         Self {
             recipe: AppShellRecipe::MasterDetail,
-            density: Density::Compact,
             header_height: 1,
             sidebar_width: 28,
             inspector_width: 0,
@@ -194,7 +187,6 @@ impl AppShellConfig {
     pub const fn minimal() -> Self {
         Self {
             recipe: AppShellRecipe::Minimal,
-            density: Density::Compact,
             header_height: 0,
             sidebar_width: 0,
             inspector_width: 0,
@@ -314,16 +306,6 @@ pub fn layout_app_shell(area: Rect, mut config: AppShellConfig) -> AppShellSlots
         }
     }
 
-    // Offline/disconnected: prefer compact density.
-    if matches!(
-        lifecycle,
-        AppShellLifecycle::Offline
-            | AppShellLifecycle::Disconnected
-            | AppShellLifecycle::Connecting
-    ) {
-        config.density = Density::Compact;
-    }
-
     match config.recipe {
         AppShellRecipe::Minimal => layout_minimal(area, config, anatomy, lifecycle, drawer_zones),
         AppShellRecipe::Dashboard => {
@@ -348,7 +330,7 @@ fn empty_opt() -> Option<Rect> {
     None
 }
 
-fn split_vertical(area: Rect, density: Density, parts: &[(RegionId, RegionSize)]) -> Vec<Rect> {
+fn split_vertical(area: Rect, parts: &[(RegionId, RegionSize)]) -> Vec<Rect> {
     let regions: Vec<RegionSpec> = parts
         .iter()
         .map(|(id, size)| RegionSpec {
@@ -358,7 +340,6 @@ fn split_vertical(area: Rect, density: Density, parts: &[(RegionId, RegionSize)]
         .collect();
     WorkSurface::new()
         .axis(SurfaceAxis::Vertical)
-        .density(density)
         .regions(regions)
         .layout(area)
         .into_iter()
@@ -366,7 +347,7 @@ fn split_vertical(area: Rect, density: Density, parts: &[(RegionId, RegionSize)]
         .collect()
 }
 
-fn split_horizontal(area: Rect, density: Density, parts: &[(RegionId, RegionSize)]) -> Vec<Rect> {
+fn split_horizontal(area: Rect, parts: &[(RegionId, RegionSize)]) -> Vec<Rect> {
     let regions: Vec<RegionSpec> = parts
         .iter()
         .map(|(id, size)| RegionSpec {
@@ -376,7 +357,6 @@ fn split_horizontal(area: Rect, density: Density, parts: &[(RegionId, RegionSize
         .collect();
     WorkSurface::new()
         .axis(SurfaceAxis::Horizontal)
-        .density(density)
         .regions(regions)
         .layout(area)
         .into_iter()
@@ -400,7 +380,7 @@ fn layout_minimal(
     } else {
         vec![(RegionId::from_static("main"), RegionSize::Weight(1))]
     };
-    let rows = split_vertical(area, config.density, &parts);
+    let rows = split_vertical(area, &parts);
     let main = rows[0];
     let footer = if footer_h > 0 { Some(rows[1]) } else { None };
     let mut focus_order = vec![AppShellZone::Main];
@@ -468,7 +448,7 @@ fn layout_dashboard(
     }
     parts.push((RegionId::from_static("footer"), RegionSize::Fixed(footer_h)));
 
-    let rows = split_vertical(area, config.density, &parts);
+    let rows = split_vertical(area, &parts);
     let mut i = 0;
     let header = if header_h > 0 {
         let r = Some(rows[i]);
@@ -549,7 +529,7 @@ fn layout_master_detail(
     if footer_h > 0 {
         vparts.push((RegionId::from_static("footer"), RegionSize::Fixed(footer_h)));
     }
-    let vrows = split_vertical(area, config.density, &vparts);
+    let vrows = split_vertical(area, &vparts);
     let mut vi = 0;
     let header = if header_h > 0 {
         let r = Some(vrows[vi]);
@@ -573,7 +553,7 @@ fn layout_master_detail(
             ),
             (RegionId::from_static("main"), RegionSize::Weight(1)),
         ];
-        let cols = split_horizontal(body, config.density, &hparts);
+        let cols = split_horizontal(body, &hparts);
         (Some(cols[0]), cols[1])
     } else {
         (None, body)
@@ -644,7 +624,7 @@ fn layout_workbench(
     if footer_h > 0 {
         vparts.push((RegionId::from_static("footer"), RegionSize::Fixed(footer_h)));
     }
-    let vrows = split_vertical(area, config.density, &vparts);
+    let vrows = split_vertical(area, &vparts);
     let mut vi = 0;
     let header = if header_h > 0 {
         let r = Some(vrows[vi]);
@@ -694,7 +674,7 @@ fn layout_workbench(
             RegionSize::Fixed(config.inspector_width),
         ));
     }
-    let cols = split_horizontal(body, config.density, &hparts);
+    let cols = split_horizontal(body, &hparts);
     let mut ci = 0;
     let sidebar = if place_sidebar {
         let r = Some(cols[ci]);
@@ -807,7 +787,8 @@ mod tests {
             + slots.main.height
             + slots.log.map(|r| r.height).unwrap_or(0)
             + slots.footer.map(|r| r.height).unwrap_or(0);
-        assert_eq!(sum, 30);
+        // junie inserts a 2-row gap between zones, so the rows sum below the area.
+        assert_eq!(sum, 22);
     }
 
     #[test]
@@ -891,7 +872,7 @@ mod tests {
         let slots = layout_app_shell(Rect::new(0, 0, 40, 12), AppShellConfig::minimal());
         assert!(slots.header.is_none());
         assert!(slots.sidebar.is_none());
-        assert_eq!(slots.main.height + slots.footer.unwrap().height, 12);
+        assert_eq!(slots.main.height + slots.footer.unwrap().height, 10);
         assert_eq!(
             slots.focus_order,
             vec![AppShellZone::Main, AppShellZone::Footer]

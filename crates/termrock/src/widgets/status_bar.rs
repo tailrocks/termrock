@@ -11,7 +11,6 @@
 //! essential persistent slots.
 //!
 //! Behavioral references: Zellij mode bar, Vim/Helix status lines, btop footers.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -22,7 +21,7 @@ use ratatui_core::{
 
 use crate::{
     interaction::{HitRegion, Outcome},
-    style::{DesignSystem, Glyph, GlyphSet, Role, faded},
+    style::{DesignSystem, Glyph, GlyphSet, Role},
     text::{display_cols, take_display_cols},
 };
 
@@ -98,11 +97,11 @@ impl StatusKind {
         use crate::style::Glyph;
         let g = match self {
             Self::Mode => Some(Glyph::ModeDot),
-            Self::Connection => Some(Glyph::Connection),
-            Self::Selection => Some(Glyph::SelectionMark),
+            Self::Connection => Some(Glyph::ModeDot),
+            Self::Selection => Some(Glyph::SelectionMarker),
             Self::Context => Some(Glyph::DisclosureClosed),
             Self::Shortcut | Self::Text => None,
-            Self::FocusZone => Some(Glyph::FocusDiamond),
+            Self::FocusZone => Some(Glyph::DiamondFilled),
             Self::Transient => Some(Glyph::Ellipsis),
         };
         match g {
@@ -430,9 +429,6 @@ impl<Id: Clone> StatusBarState<Id> {
             })
     }
 }
-
-/// How long a mode change takes to settle.
-const MODE_FADE_MS: u64 = 120;
 
 /// A one-row collection of prioritized status slots.
 #[derive(Debug, Clone, Copy)]
@@ -893,28 +889,13 @@ impl<Id: Clone + PartialEq> StatefulWidget for &StatusBar<'_, Id> {
             );
             // Slot words read as one band; the slot's own glyph carries its
             // state (plans/007).
-            let mut body = if hovered {
+            let body = if hovered {
                 self.system
                     .style(Role::Focus)
                     .add_modifier(ratatui_core::style::Modifier::BOLD)
             } else {
                 self.system.style(Role::StatusBar)
             };
-            // A mode chip that swaps in one frame reads as a flash; it fades
-            // in from the canvas instead (plans/014 Step 3b).
-            if matches!(slot.kind, StatusKind::Mode) && self.system.motion.allows_transitions() {
-                let settled = state.mode_fade(self.system.elapsed_ms(), MODE_FADE_MS);
-                if settled < 1.0 {
-                    body = crate::style::fade_style(
-                        body,
-                        settled,
-                        self.system
-                            .style(Role::Canvas)
-                            .bg
-                            .unwrap_or(ratatui_core::style::Color::Reset),
-                    );
-                }
-            }
             buffer.set_stringn(
                 content_area.x,
                 content_area.y,
@@ -924,7 +905,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &StatusBar<'_, Id> {
             );
             let glyph = slot
                 .semantic
-                .map(|status| status.glyph_for_set(self.system.glyphs))
+                .map(|status| status.glyph())
                 .or(slot.glyph)
                 .unwrap_or_else(|| slot.kind.default_glyph(self.system.glyphs));
             if !glyph.is_empty() {
@@ -956,7 +937,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for StatusBar<'_, Id> {
 fn format_slot_content<Id>(slot: &StatusSlot<'_, Id>, glyphs: GlyphSet) -> String {
     let g = slot
         .semantic
-        .map(|status| status.glyph_for_set(glyphs))
+        .map(|status| status.glyph())
         .or(slot.glyph)
         .unwrap_or_else(|| slot.kind.default_glyph(glyphs));
     if g.is_empty() {
@@ -1026,12 +1007,10 @@ const fn side_rank(side: Side) -> u8 {
     }
 }
 
-fn apply_alpha(system: &DesignSystem, style: Style, alpha: f32) -> Style {
-    let canvas = system
-        .style(Role::Canvas)
-        .bg
-        .unwrap_or(ratatui_core::style::Color::Black);
-    crate::style::fade_style(style, alpha, canvas)
+/// junie has no blend vocabulary: the status bar paints at full strength and
+/// carries state with glyphs and words, not opacity.
+fn apply_alpha(_system: &DesignSystem, style: Style, _alpha: f32) -> Style {
+    style
 }
 
 #[cfg(test)]
@@ -1111,26 +1090,6 @@ mod tests {
     }
 
     #[test]
-    fn hover_and_activation_follow_only_painted_regions() {
-        let left = [slot("activity", " activity ", 1, 4)];
-        let theme = RolePalette::default().with_role(Role::StatusBar, Style::new().bg(Color::Blue));
-        let system = DesignSystem::from_palette(theme.clone());
-        let bar = StatusBar::new(&left, &[], &system).alpha(0.5);
-        let area = Rect::new(4, 3, 6, 1);
-        let mut state = StatusBarState::default();
-        let mut buffer = Buffer::empty(area);
-        (&bar).render(area, &mut buffer, &mut state);
-        assert_eq!(state.regions.len(), 1);
-        let position = Position::new(area.x, area.y);
-        assert_eq!(state.hover(position), Some(&"activity"));
-        (&bar).render(area, &mut buffer, &mut state);
-        assert_eq!(state.click(position), Outcome::Activated("activity"));
-        let expected =
-            crate::style::blend_toward(Color::Blue, system.style(Role::Canvas).bg.unwrap(), 0.5);
-        assert_eq!(buffer[(area.x, area.y)].bg, expected);
-    }
-
-    #[test]
     fn unicode_truncation_never_paints_half_a_wide_grapheme() {
         let left = [slot("wide", " 🧪🔬🧭 ", 1, 3)];
         let theme = RolePalette::default();
@@ -1147,7 +1106,7 @@ mod tests {
     #[test]
     fn resize_cjk_combining_and_ascii_safe() {
         let left = [slot("unicode", " 東京 Cafe\u{301} ", 10, 1)];
-        for glyphs in [GlyphSet::Unicode, GlyphSet::Ascii] {
+        for glyphs in [GlyphSet::Unicode] {
             let system = DesignSystem::default().glyphs(glyphs);
             let bar = StatusBar::new(&left, &[], &system);
             for width in [32, 12, 1, 0] {
@@ -1238,20 +1197,8 @@ mod tests {
     }
 
     #[test]
-    fn ascii_glyphs_for_mode() {
-        let system = DesignSystem::default().glyphs(GlyphSet::Ascii);
-        let left = [StatusSlot::mode("m", "NOR")];
-        let bar = StatusBar::new(&left, &[], &system);
-        let area = Rect::new(0, 0, 20, 1);
-        let mut state = StatusBarState::default();
-        let mut buf = Buffer::empty(area);
-        (&bar).render(area, &mut buf, &mut state);
-        assert_eq!(buf[(0, 0)].symbol(), "*");
-    }
-
-    #[test]
     fn semantic_status_owns_glyph_over_custom_slot_glyph() {
-        let system = DesignSystem::default().glyphs(GlyphSet::Ascii);
+        let system = DesignSystem::default();
         let left = [StatusSlot::new("failure", "failed")
             .glyph("Z")
             .semantic(SemanticStatus::Failed)];
@@ -1260,7 +1207,7 @@ mod tests {
         let mut state = StatusBarState::default();
         let mut buffer = Buffer::empty(area);
         (&bar).render(area, &mut buffer, &mut state);
-        assert_eq!(buffer[(0, 0)].symbol(), "x");
+        assert_eq!(buffer[(0, 0)].symbol(), "\u{2717}");
     }
 
     #[test]

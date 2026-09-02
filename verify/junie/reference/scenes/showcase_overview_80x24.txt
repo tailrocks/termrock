@@ -1,0 +1,24 @@
+ ▪ Junie Design system / Foundations / Overview           i Inspector   ? Help
+
+▎› Overview          Overview  Tokens and principles behind every component
+▎  Buttons
+▎  Inputs              Tokens
+▎  Text areas
+▎  Forms                   ▏ canvas                   ▏ text.muted
+▎  Lists                   ▏ surface                  ▏ text.faint
+▎  Trees                   ▏ surface.elevated         ▏ accent
+▎  Tables                  ▏ surface.overlay          ▏ accent.hover
+▎  Editable tables         ▏ field                    ▏ accent.pressed
+▎  Panels                  ▏ popover                  ▏ accent.bg
+▎  Sidebars
+▎  Dialogs
+▎  Progress            State language
+▎  Scrolling
+▎  Code editor         ▎  focus
+▎  Data grid           ░  hover lifts the surface
+▎  Chips & selects     ›  current / chosen
+▎  Pickers             ✓  checked
+▎  Settings            !  error
+▎  Task runner
+
+ ↑ ↓ Move  Enter Open  Tab Into page  q Quit

@@ -17,7 +17,6 @@
 //! semantic label (`remove {name}`) for inspection / help.
 //!
 //! References: token inputs, Grok paste/file chips, desktop filter chips.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
 
@@ -519,7 +518,7 @@ impl TokenPaint<'_> {
         if area.is_empty() {
             return TokenParts::default();
         }
-        let (open, close) = self.bracket.pair(self.system.glyphs.is_ascii());
+        let (open, close) = self.bracket.pair(false);
         let remove = if self.removable {
             remove_glyph(self.system)
         } else {
@@ -553,9 +552,8 @@ impl TokenPaint<'_> {
             self.selected,
             self.disabled,
         );
-        let emphasis = self.system.focus_emphasis(SurfaceFamily::Token);
-        if self.focused && matches!(emphasis, FocusEmphasis::Reversed) {
-            style = style.add_modifier(Modifier::REVERSED);
+        if self.focused {
+            style = style.add_modifier(Modifier::BOLD);
         }
         buffer.set_stringn(area.x, area.y, &clipped, usize::from(area.width), style);
 
@@ -589,6 +587,7 @@ impl TokenPaint<'_> {
             Rect::default()
         };
 
+        let emphasis = self.system.focus_emphasis(SurfaceFamily::Token);
         if self.focused && matches!(emphasis, FocusEmphasis::PillGlyph) && used > 0 {
             // The bracket carries focus so the mark keeps stating membership
             // (audit D18): only the two bracket cells brighten.
@@ -609,15 +608,14 @@ impl TokenPaint<'_> {
         if self.focused && matches!(self.part, TokenPart::Remove) && remove_rect.width > 0 {
             // The remove affordance is one or two cells: reverse them so the
             // focus lands on the `×` itself.
-            let recipe = self
-                .system
-                .button_recipe(ButtonRecipeVariant::Destructive, ControlState::Focused);
+            let recipe = self.system.button_recipe(
+                ButtonRecipeVariant::Destructive,
+                ControlState::Focused,
+                self.system.junie_theme().surface,
+            );
             buffer.set_style(
                 remove_rect,
-                recipe
-                    .fill
-                    .patch(recipe.label)
-                    .add_modifier(Modifier::BOLD | Modifier::REVERSED),
+                recipe.fill.patch(recipe.label).add_modifier(Modifier::BOLD),
             );
         }
 
@@ -661,6 +659,7 @@ fn token_style(
         } else {
             ControlState::Default
         },
+        system.junie_theme().surface,
     );
     // Status and membership are different facts and compose: an errored chip
     // that is also selected used to lose its selection entirely, because the
@@ -673,8 +672,9 @@ fn token_style(
         style = style.patch(system.list_row_recipe(true, focused, !disabled).label);
     }
     if !selected {
-        if let Some(bg) = system.style(Role::Raised).bg {
-            style = style.bg(bg);
+        // junie: the chip body is one surface plane above the chrome.
+        if let Some(bg) = system.style(Role::Surface).bg {
+            style = style.bg(system.lift(bg));
         }
     }
     if focused {
@@ -1721,18 +1721,6 @@ mod tests {
             ),
             TokenStripOutcome::Selected("strip")
         ));
-    }
-
-    #[test]
-    fn chip_ascii_radio() {
-        let system = DesignSystem::default().glyphs(GlyphSet::Ascii);
-        let chip = Chip::new("f", "x", &system);
-        let mut state = ChipState::new(true);
-        let mut buf = Buffer::empty(Rect::new(0, 0, 16, 1));
-        let _ = chip.paint(Rect::new(0, 0, 16, 1), &mut buf, &mut state);
-        // ascii radio on is (*)
-        let row: String = (0..16).map(|x| buf[(x, 0)].symbol().to_owned()).collect();
-        assert!(row.contains('*') || row.contains('('));
     }
 
     #[test]

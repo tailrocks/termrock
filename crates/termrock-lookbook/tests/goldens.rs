@@ -69,7 +69,7 @@ fn render_golden(frame: &TerminalFrame) -> String {
 
 fn frame_for(story_id: &str) -> Option<TerminalFrame> {
     let story = story_by_id(story_id)?;
-    let system = lookbook_system(RolePalette::tailrocks_phosphor());
+    let system = lookbook_system(RolePalette::junie());
     Some(paint_story_frame(story, &system, None, None))
 }
 

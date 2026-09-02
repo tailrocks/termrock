@@ -19,11 +19,10 @@
 //! **MotionPolicy.** A drawer does not slide *geometrically* — a terminal has
 //! no sub-cell motion, and a cell-by-cell slide reads as a stutter — but it
 //! does fade: the panel arrives by opacity, not by travel. [`MotionPolicy::Off`]
-//! / [`MotionPolicy::Basic`] selects static chrome (ASCII handles, no spinner)
+//! [`MotionPolicy::Off`] selects static chrome (ASCII handles, no spinner)
 //! as the no-motion fallback.
 //!
 //! Research: shadcn Sheet, mobile drawers, Zellij floating panes, agent task sidebars.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -845,7 +844,6 @@ pub struct Drawer<'a> {
     system: &'a DesignSystem,
     title: Option<&'a str>,
     footer: Option<&'a str>,
-    ascii: bool,
     colorless: bool,
 }
 
@@ -857,7 +855,6 @@ impl<'a> Drawer<'a> {
             system,
             title: None,
             footer: None,
-            ascii: false,
             colorless: false,
         }
     }
@@ -878,13 +875,7 @@ impl<'a> Drawer<'a> {
 
     /// ASCII / no-motion handle glyphs.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Colorless roles.
-    #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self
@@ -917,9 +908,6 @@ impl<'a> Drawer<'a> {
             .surface_recipe(recipe)
             .border
             .unwrap_or_else(|| self.system.style(Role::Border));
-        // The tier rides the design system into every widget; a private copy
-        // on the state could disagree with it, and did.
-        let no_motion = !self.system.motion.allows_ambient() || self.ascii;
         // The docked edge butts against the pane the drawer slid out of, and
         // the handle column is already the rule at that seam. Drawing a border
         // there too stacked three vertical lines on one boundary
@@ -955,9 +943,7 @@ impl<'a> Drawer<'a> {
             ),
         };
         state.slots.handle = handle;
-        let handle_glyph = if no_motion {
-            if state.edge.is_horizontal() { "|" } else { "=" }
-        } else if state.edge.is_horizontal() {
+        let handle_glyph = if state.edge.is_horizontal() {
             "│"
         } else {
             "─"
@@ -1422,7 +1408,6 @@ mod tests {
         let mut buf = Buffer::empty(area);
         Drawer::new(&system)
             .title(Some("Rail"))
-            .ascii(true)
             .paint(area, &mut buf, &mut state);
         let text: String = buf
             .content()

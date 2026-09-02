@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Persistent interactions for scrollable, selectable, and inspectable views.
-
 use ratatui::{Frame, layout::Rect, widgets::StatefulWidget};
 use termrock::{
     input::{KeyCode, KeyEvent, MouseEvent},

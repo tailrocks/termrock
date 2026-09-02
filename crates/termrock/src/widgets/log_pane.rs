@@ -10,7 +10,6 @@
 //! LogPane when a single local process/build buffer must own append+evict.
 //! Project owned lines with [`super::log_stream::log_lines_from_plain`] or map
 //! each frame into [`super::LogLine`] when severity/source are known.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::fmt::Write as _;
 
@@ -316,16 +315,8 @@ impl StatefulWidget for &LogPane<'_> {
         (&viewport).render(area, buffer, &mut scroll);
 
         if area.height > 0 {
-            let ascii_indicator;
             let indicator = if state.follow {
-                if self.system.glyphs.is_ascii() {
-                    " v following "
-                } else {
-                    " ⇣ following "
-                }
-            } else if self.system.glyphs.is_ascii() {
-                ascii_indicator = format!(" ^ +{} ", state.tail.offset());
-                &ascii_indicator
+                " ⇣ following "
             } else {
                 &state.scroll_indicator
             };
@@ -479,26 +470,6 @@ mod tests {
     }
 
     #[test]
-    fn ascii_profile_replaces_follow_and_scroll_chrome() {
-        let system = crate::style::DesignSystem::default().glyphs(crate::style::GlyphSet::Ascii);
-        let pane = LogPane::new(&system).title("Build");
-        let area = Rect::new(0, 0, 32, 4);
-        let mut state = LogPaneState::new();
-        for line in ["one", "two", "three", "four"] {
-            state.append(line);
-        }
-        let mut buffer = Buffer::empty(area);
-
-        (&pane).render(area, &mut buffer, &mut state);
-        assert!(rendered(&buffer).contains("v following"));
-        assert!(state.scroll_by(-1));
-        (&pane).render(area, &mut buffer, &mut state);
-        let text = rendered(&buffer);
-        assert!(text.contains("^ +1"), "{text}");
-        assert!(text.chars().all(|ch| !matches!(ch, '⇣' | '⇡')));
-    }
-
-    #[test]
     fn follow_indicator_preserves_borders_and_long_titles() {
         let theme = RolePalette::default();
         let system = crate::style::DesignSystem::from_palette(theme.clone());
@@ -506,8 +477,8 @@ mod tests {
         let exact_area = Rect::new(0, 0, 14, 3);
         let mut exact = Buffer::empty(exact_area);
         (&LogPane::new(&system)).render(exact_area, &mut exact, &mut state);
-        assert_eq!(exact[(0, 0)].symbol(), "\u{250c}");
-        assert_eq!(exact[(13, 0)].symbol(), "┐");
+        assert_eq!(exact[(0, 0)].symbol(), "\u{256d}");
+        assert_eq!(exact[(13, 0)].symbol(), "╮");
         assert!(!rendered(&exact).contains("following"));
 
         let titled_area = Rect::new(0, 0, 28, 3);
@@ -518,7 +489,7 @@ mod tests {
             &mut state,
         );
         assert!(!rendered(&titled).contains("following"));
-        assert_eq!(titled[(27, 0)].symbol(), "┐");
+        assert_eq!(titled[(27, 0)].symbol(), "\u{256e}");
     }
 
     #[test]

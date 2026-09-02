@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Typed authority for canonical application-pattern documentation.
-
 use std::collections::BTreeSet;
 
 use super::inventory::{DocumentationKind, PublicUiId, public_ui_by_id, public_ui_inventory};

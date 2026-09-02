@@ -18,7 +18,7 @@ use termrock::{
     interaction::Outcome,
     keymap::{KeyBinding, KeyChord, Keymap, Visibility},
     layout::bottom_rows,
-    style::{Density, DesignSystem, Role, RolePalette},
+    style::{ColorCapability, DesignSystem, Role, RolePalette},
     widgets::{
         List, ListRow, ListState, Panel, PanelChrome, Severity, StatusBar, StatusBarState,
         StatusKind, StatusRegion, StatusSlot, Tab, Tabs, TabsState, Toast, render_hint_bar,
@@ -90,16 +90,16 @@ fn main() -> io::Result<()> {
     let mut list_state = ListState::new(Some("list"));
     let mut tabs_state = TabsState::new().with_selected("components");
     let mut status_state = StatusBarState::default();
-    let mut phosphor = true;
+    let mut truecolor = true;
     let mut activated = false;
 
     let result = loop {
-        let theme = if phosphor {
-            RolePalette::default()
+        let theme = if truecolor {
+            RolePalette::junie()
         } else {
-            RolePalette::slate()
+            RolePalette::junie().quantized(ColorCapability::Ansi16)
         };
-        let tokens = DesignSystem::new(theme.clone(), Density::default());
+        let tokens = DesignSystem::new(theme.clone());
         terminal.draw(|frame| {
             let area = frame.area();
             let tabs_area = Rect::new(area.x, area.y, area.width, area.height.min(2));
@@ -120,7 +120,7 @@ fn main() -> io::Result<()> {
             frame.render_stateful_widget(List::new(&rows, &tokens), list_area, &mut list_state);
 
             render_hint_bar(frame, hints_area, &keymap.hint_spans(), &tokens);
-            render_status(frame, status_area, &tokens, phosphor, &mut status_state);
+            render_status(frame, status_area, &tokens, truecolor, &mut status_state);
             if activated {
                 frame.render_widget(
                     Toast::new(&tokens, "Activated selected component", Severity::Success),
@@ -140,7 +140,7 @@ fn main() -> io::Result<()> {
                 };
                 match action {
                     Action::Quit => break Ok(()),
-                    Action::ToggleTheme => phosphor = !phosphor,
+                    Action::ToggleTheme => truecolor = !truecolor,
                     Action::Up | Action::Down => {
                         let _ = list_state.handle_key(&rows, key);
                     }
@@ -195,14 +195,14 @@ fn render_status(
     frame: &mut ratatui_core::terminal::Frame<'_>,
     area: Rect,
     system: &DesignSystem,
-    phosphor: bool,
+    truecolor: bool,
     state: &mut StatusBarState<&'static str>,
 ) {
     let left = [StatusSlot::new("state", " ready ")
         .priority(10)
         .kind(StatusKind::Connection)];
     let right = [
-        StatusSlot::new("theme", if phosphor { " phosphor " } else { " slate " })
+        StatusSlot::new("theme", if truecolor { " truecolor " } else { " ansi16 " })
             .priority(10)
             .region(StatusRegion::Right),
     ];

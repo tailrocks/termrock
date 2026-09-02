@@ -2,27 +2,26 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Design-system tokens beyond role colors: spacing, glyphs, recipes, packages.
-
-use super::{ColorCapability, Density, Glyph, MotionPolicy, Role, RolePalette};
+use super::{
+    BadgeKind, ButtonKind, ColorCapability, Glyph, JunieTheme, MotionPolicy, Role, RolePalette,
+    VisualState,
+};
 use crate::runtime::FrameTick;
-use ratatui_core::style::{Modifier, Style};
+use ratatui_core::style::{Color, Modifier, Style};
 
-/// Glyph encoding profile for borders, disclosure, and status markers.
+/// Glyph vocabulary marker.
 ///
-/// Prefer semantic [`crate::style::Glyph`] names via [`GlyphSet::resolve`] over
-/// scattering Unicode literals. [`GlyphSet::Enhanced`] may use wider emoji /
-/// richer cells; always keep [`crate::style::Glyph::meaning`] as the accessible
-/// name so glyphs are never the only representation of critical meaning.
+/// junie has exactly one vocabulary, so there is no profile to choose: this
+/// type survives as the single-variant marker a [`DesignSystem`] carries and
+/// the accessor surface (`selection_gutter()`, `rule()`, …) widgets already
+/// call. State must survive monochrome through glyphs and modifiers, which
+/// this one vocabulary guarantees.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
 pub enum GlyphSet {
-    /// Unicode box-drawing and status glyphs (default).
+    /// The junie vocabulary (the only one).
     #[default]
     Unicode,
-    /// ASCII-safe substitutes.
-    Ascii,
-    /// Richer / emoji-enhanced cells where helpful (file types, some status).
-    Enhanced,
 }
 
 impl GlyphSet {
@@ -30,100 +29,86 @@ impl GlyphSet {
     #[must_use]
     pub const fn id(self) -> &'static str {
         match self {
-            Self::Unicode => "unicode",
-            Self::Ascii => "ascii",
-            Self::Enhanced => "enhanced",
+            Self::Unicode => "junie",
         }
     }
 
-    /// True for ASCII profile.
-    #[must_use]
-    pub const fn is_ascii(self) -> bool {
-        matches!(self, Self::Ascii)
-    }
-
-    /// Resolve a semantic glyph under this profile.
+    /// Resolve a semantic glyph in the one vocabulary.
     #[must_use]
     pub const fn resolve(self, glyph: super::glyph::Glyph) -> super::glyph::GlyphResolved {
-        glyph.resolve(self)
+        glyph.resolve()
     }
 
     /// Expansion / disclosure open marker.
     #[must_use]
     pub const fn disclosure_open(self) -> &'static str {
-        self.resolve(super::glyph::Glyph::DisclosureOpen).text
+        super::glyph::Glyph::DisclosureOpen.resolve().text
     }
 
     /// Expansion / disclosure closed marker.
     #[must_use]
     pub const fn disclosure_closed(self) -> &'static str {
-        self.resolve(super::glyph::Glyph::DisclosureClosed).text
+        super::glyph::Glyph::DisclosureClosed.resolve().text
     }
 
     /// Selected-row gutter marker (non-color cue).
     #[must_use]
     pub const fn selection_gutter(self) -> &'static str {
-        self.resolve(super::glyph::Glyph::SelectionGutter).text
+        super::glyph::Glyph::SelectionGutter.resolve().text
     }
 
     /// Selected-row marker triangle (classic `▸` cursor; `SelectionChrome::Marker`).
     #[must_use]
     pub const fn selection_marker(self) -> &'static str {
-        self.resolve(super::glyph::Glyph::SelectionMarker).text
+        super::glyph::Glyph::SelectionMarker.resolve().text
     }
 
     /// Horizontal rule unit.
     #[must_use]
     pub const fn rule(self) -> &'static str {
-        self.resolve(super::glyph::Glyph::RuleH).text
+        super::glyph::Glyph::RuleH.resolve().text
     }
 
     /// Strong horizontal rule (H1 underlines, focus zones).
     #[must_use]
     pub const fn rule_strong(self) -> &'static str {
-        self.resolve(super::glyph::Glyph::RuleHStrong).text
+        super::glyph::Glyph::RuleHStrong.resolve().text
     }
 
     /// Vertical rule unit.
     #[must_use]
     pub const fn rule_v(self) -> &'static str {
-        self.resolve(super::glyph::Glyph::RuleV).text
+        super::glyph::Glyph::RuleV.resolve().text
     }
 
     /// Multi-select checked marker (without trailing space).
     #[must_use]
     pub const fn check_on(self) -> &'static str {
-        self.resolve(super::glyph::Glyph::CheckOn).text
+        super::glyph::Glyph::CheckOn.resolve().text
     }
 
     /// Multi-select unchecked marker (without trailing space).
     #[must_use]
     pub const fn check_off(self) -> &'static str {
-        self.resolve(super::glyph::Glyph::CheckOff).text
-    }
-
-    /// Mixed / indeterminate checkbox marker.
-    #[must_use]
-    pub const fn check_mixed(self) -> &'static str {
-        self.resolve(super::glyph::Glyph::CheckMixed).text
+        super::glyph::Glyph::CheckOff.resolve().text
     }
 
     /// Loading / busy glyph for composed leading slots.
     #[must_use]
     pub const fn loading(self) -> &'static str {
-        self.resolve(super::glyph::Glyph::Loading).text
+        super::glyph::Glyph::Loading.resolve().text
     }
 
     /// Overflow / more ellipsis.
     #[must_use]
     pub const fn ellipsis(self) -> &'static str {
-        self.resolve(super::glyph::Glyph::Ellipsis).text
+        super::glyph::Glyph::Ellipsis.resolve().text
     }
 
     /// Bullet for lists.
     #[must_use]
     pub const fn bullet(self) -> &'static str {
-        self.resolve(super::glyph::Glyph::Bullet).text
+        super::glyph::Glyph::Bullet.resolve().text
     }
 
     /// Inline separator between adjacent facts on one row.
@@ -132,7 +117,7 @@ impl GlyphSet {
     /// inside a row, while [`Self::bullet`] introduces a row of its own.
     #[must_use]
     pub const fn meta_separator(self) -> &'static str {
-        self.resolve(super::glyph::Glyph::MetaSeparator).text
+        super::glyph::Glyph::MetaSeparator.resolve().text
     }
 
     /// [`Self::meta_separator`] with its surrounding breathing space.
@@ -141,41 +126,31 @@ impl GlyphSet {
     /// string, so the rhythm between facts is identical wherever they appear.
     #[must_use]
     pub const fn meta_join(self) -> &'static str {
-        match self {
-            Self::Ascii => " | ",
-            Self::Unicode | Self::Enhanced => " · ",
-        }
+        " · "
     }
 
     /// Disabled mark (label suffix).
     #[must_use]
     pub const fn disabled_mark(self) -> &'static str {
-        self.resolve(super::glyph::Glyph::DisabledMark).text
+        // junie states "disabled" through the faint text tier; the glyph is
+        // kept for callers that need a non-color mark.
+        super::glyph::Glyph::Remove.resolve().text
     }
 }
 
 /// How list/menu selection is painted.
+///
+/// junie has exactly one selection vocabulary — a leading gutter glyph plus the
+/// tint law — so the only question left is whether the marker glyph or the
+/// tint carries membership on a parked row.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
 pub enum SelectionChrome {
-    /// Full-row fill using `Role::Selection`.
-    ///
-    /// Opt-in only; never a default. A saturated row fill outshouts every
-    /// other cue on the screen, so a theme has to ask for it explicitly.
-    Fill,
-    /// Leading gutter glyph only (quieter).
+    /// Leading gutter glyph; the tint still applies while the row owns focus.
     #[default]
     Gutter,
-    /// Tint via `Role::SelectionTint` without full fill.
+    /// Tint only: the slot stays empty and membership is stated by the tint.
     Tint,
-    /// Full-row fill plus a leading `▸` marker (classic loud cursor).
-    ///
-    /// Opt-in only; never a default. Hosts whose selection vocabulary is the
-    /// traditional "triangle cursor on a filled row" (pre-gutter jackin❯,
-    /// prompt-toolkit-style menus) state it here instead of re-painting the
-    /// gutter cell by hand. Widgets without a marker slot paint it as
-    /// [`Self::Fill`].
-    Marker,
 }
 
 /// How a family of surfaces says "the keyboard is here".
@@ -433,60 +408,94 @@ impl SelectionChrome {
     #[must_use]
     pub const fn id(self) -> &'static str {
         match self {
-            Self::Fill => "fill",
             Self::Gutter => "gutter",
             Self::Tint => "tint",
-            Self::Marker => "marker",
         }
     }
 }
 
-/// Corner-glyph family for single-line borders.
+/// Single-line border corner family.
+///
+/// junie draws rounded corners `╭╮╰╯` everywhere; there is no second shape to
+/// choose. The type survives as the explicit marker [`DesignSystem`] carries.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
 pub enum BorderShape {
-    /// Square corners `┌┐└┘` (phosphor identity default).
+    /// Rounded corners `╭╮╰╯` (the junie shape).
     #[default]
-    Square,
-    /// Rounded corners `╭╮╰╯` for alternate product themes.
     Rounded,
 }
 
-/// Cell-scale spacing resolved from density (and optional overrides).
+/// junie's named spacing tokens, in cells.
+///
+/// Every value is a const of the reference layout scale; there is no density
+/// to tune. `gutter`/`inline` are the one-cell seams, `gap`/`column_gap` the
+/// two-cell section seams, `form_gap` the four-cell form section break, and
+/// the insets place content inside cards, frames, and dialogs.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct SpacingScale {
-    /// Horizontal padding inside chrome.
-    pub pad_x: u16,
-    /// Vertical padding inside chrome.
-    pub pad_y: u16,
-    /// Gap between sibling regions.
+    /// Leading focus/selection seam (the `▎` column and its air).
+    pub gutter: u16,
+    /// One-cell inline pad inside a chip or control.
+    pub inline: u16,
+    /// Two-cell seam between sibling sections.
     pub gap: u16,
-    /// Minimum interactive row height in cells.
-    pub min_row_height: u16,
+    /// Two-cell seam between table/grid columns.
+    pub column_gap: u16,
+    /// Four-cell seam between form sections.
+    pub form_gap: u16,
+    /// Inset inside a card / borderless filled surface.
+    pub card_inset: u16,
+    /// Inset inside a bordered frame (border + 2).
+    pub frame_inset: u16,
+    /// Horizontal inset inside a dialog.
+    pub dialog_inset: u16,
+    /// Cells of indent per hierarchy depth for tree rows.
+    pub tree_indent: u16,
+    /// Preferred input field height in rows.
+    pub field_height: u16,
+    /// Preferred tab strip height in rows.
+    pub tabs_height: u16,
+    /// Smallest usable viewport width.
+    pub min_width: u16,
+    /// Smallest usable viewport height.
+    pub min_height: u16,
 }
 
 impl SpacingScale {
-    /// Resolves spacing from a density preset.
+    /// The junie scale.
     #[must_use]
-    pub const fn from_density(density: Density) -> Self {
+    pub const fn junie() -> Self {
         Self {
-            pad_x: density.padding_x(),
-            pad_y: density.padding_y(),
-            gap: density.gap(),
-            min_row_height: match density {
-                Density::Comfortable => 1,
-                Density::Compact | Density::Dashboard => 1,
-            },
+            gutter: 1,
+            inline: 1,
+            gap: 2,
+            column_gap: 2,
+            form_gap: 4,
+            card_inset: 2,
+            frame_inset: 3,
+            dialog_inset: 3,
+            tree_indent: 2,
+            field_height: 3,
+            tabs_height: 2,
+            min_width: 72,
+            min_height: 20,
         }
     }
 
-    /// Blank rows that separate two content sections at this density.
+    /// Blank rows that separate two content sections.
     ///
-    /// The band is the first thing surrendered under height pressure — see
-    /// [`SpacerBand::resolve`].
+    /// junie's section break is one blank row: the first thing surrendered
+    /// under height pressure — see [`SpacerBand::resolve`].
     #[must_use]
     pub const fn band(self) -> SpacerBand {
-        SpacerBand { rows: self.gap }
+        SpacerBand { rows: 1 }
+    }
+}
+
+impl Default for SpacingScale {
+    fn default() -> Self {
+        Self::junie()
     }
 }
 
@@ -581,6 +590,10 @@ pub struct ListRowVisualState {
     pub hovered: bool,
     /// Row accepts interaction.
     pub enabled: bool,
+    /// Row states a failure (the label steps into the error colour).
+    pub error: bool,
+    /// Pointer is holding the row down (the explicit reversal).
+    pub pressed: bool,
     /// Row is loading (leading spinner/ellipsis).
     pub loading: bool,
     /// Multi-select membership.
@@ -660,15 +673,17 @@ pub enum Elevation {
 
 impl Elevation {
     /// Maps elevation onto a semantic role.
+    ///
+    /// junie owns exactly one elevated plane: cards, dialogs, and popovers all
+    /// sit on `#18181b`. `Overlay` therefore shares the rung with [`Self::Raised`]
+    /// — an overlay is told apart by its frame and its backdrop, not by a
+    /// lighter fill.
     #[must_use]
     pub const fn role(self) -> Role {
         match self {
             Self::Canvas => Role::Canvas,
             Self::Surface => Role::Surface,
-            // Raised is an in-flow step; Elevated is reserved for overlays, so
-            // a card on a panel and a dialog over it never share a fill.
-            Self::Raised => Role::Raised,
-            Self::Overlay => Role::Elevated,
+            Self::Raised | Self::Overlay => Role::Elevated,
         }
     }
 
@@ -759,6 +774,11 @@ pub struct ButtonRecipe {
     pub bordered: bool,
     /// Leading/trailing pad cells.
     pub pad_x: u16,
+    /// Leading busy prefix and its style while the control is loading.
+    ///
+    /// junie says activity with an accent spinner cell, not by re-tinting the
+    /// label; `None` when the control is not busy.
+    pub busy_glyph: Option<(&'static str, Style)>,
 }
 
 /// Resolved text-input paint plan.
@@ -807,21 +827,10 @@ impl ThemePackage {
         }
     }
 
-    /// Built-in packages shipped by TermRock.
+    /// The single canonical package TermRock ships.
     #[must_use]
     pub fn builtins() -> Vec<Self> {
-        vec![
-            Self::new("phosphor", "Phosphor Obsidian", DesignSystem::phosphor()),
-            Self::new("slate", "Slate", DesignSystem::slate()),
-            Self::new("paper", "Paper", DesignSystem::paper()),
-            Self::new("ansi", "ANSI 16", DesignSystem::ansi()),
-            Self::new(
-                "high-contrast",
-                "High Contrast",
-                DesignSystem::high_contrast(),
-            ),
-            Self::new("adaptive", "Terminal Adaptive", DesignSystem::adaptive()),
-        ]
+        vec![Self::new("junie", "Junie", DesignSystem::junie())]
     }
 }
 
@@ -833,8 +842,6 @@ impl ThemePackage {
 pub struct DesignSystem {
     /// Role → Style map.
     pub palette: RolePalette,
-    /// Layout density.
-    pub density: Density,
     /// Motion tier for animated chrome.
     pub motion: MotionPolicy,
     /// Glyph policy.
@@ -843,8 +850,6 @@ pub struct DesignSystem {
     pub spacing: SpacingScale,
     /// Default list/menu selection chrome.
     pub selection: SelectionChrome,
-    /// Single-line border corner family.
-    pub border_shape: BorderShape,
     /// Color depth used for quantize-at-edge.
     pub capability: ColorCapability,
     /// Width breakpoints for contraction hosts.
@@ -869,77 +874,128 @@ pub struct DesignSystem {
 
 impl Default for DesignSystem {
     fn default() -> Self {
-        Self::phosphor()
+        Self::junie()
     }
 }
 
 impl DesignSystem {
-    /// Default phosphor Obsidian system (quiet gutter selection).
+    /// The canonical junie system.
     #[must_use]
-    pub fn phosphor() -> Self {
-        Self::from_palette(RolePalette::tailrocks_phosphor())
-            .capability(ColorCapability::Ansi16)
+    pub fn junie() -> Self {
+        Self::from_palette(RolePalette::junie())
+            .capability(ColorCapability::Truecolor)
             .selection(SelectionChrome::Gutter)
     }
 
-    /// Terminal-default background variant of the phosphor system.
-    #[must_use]
-    pub fn terminal_native() -> Self {
-        Self::from_palette(RolePalette::terminal_native())
-            .capability(ColorCapability::Ansi16)
-            .selection(SelectionChrome::Gutter)
-    }
-
-    /// Cool-gray slate system.
-    #[must_use]
-    pub fn slate() -> Self {
-        Self::from_palette(RolePalette::slate()).selection(SelectionChrome::Gutter)
-    }
-
-    /// Light paper system.
-    #[must_use]
-    pub fn paper() -> Self {
-        Self::from_palette(RolePalette::paper()).selection(SelectionChrome::Tint)
-    }
-
-    /// ANSI 16-color native system (no truecolor dependency).
-    #[must_use]
-    pub fn ansi() -> Self {
-        Self::from_palette(RolePalette::ansi())
-            .capability(ColorCapability::Ansi16)
-            .selection(SelectionChrome::Gutter)
-    }
-
-    /// High-contrast accessibility system.
-    #[must_use]
-    pub fn high_contrast() -> Self {
-        Self::from_palette(RolePalette::high_contrast())
-            .selection(SelectionChrome::Tint)
-            .glyphs(GlyphSet::Unicode)
-    }
-
-    /// Adaptive: phosphor base quantized to env capability; mono → ASCII glyphs.
+    /// The canonical system resolved for the operator's terminal capability.
     #[must_use]
     pub fn adaptive() -> Self {
-        let cap = ColorCapability::detect_from_env();
-        let mut system = Self::phosphor().quantize(cap);
-        if matches!(cap, ColorCapability::Monochrome) {
-            system = system.glyphs(GlyphSet::Ascii).no_color();
-        }
-        system
+        Self::junie().quantize(ColorCapability::detect_from_env())
     }
 
-    /// Builds from palette + density-derived spacing.
+    /// The junie theme resolved for this system's colour capability.
+    ///
+    /// Widgets that need a resolver (`lift`, `backdrop`, `button`, …) call the
+    /// reference implementation here instead of re-deriving hover or pressed
+    /// planes from roles.
     #[must_use]
-    pub fn new(palette: RolePalette, density: Density) -> Self {
+    pub fn junie_theme(&self) -> JunieTheme {
+        JunieTheme::for_level(self.capability)
+    }
+
+    /// junie hover ladder: exactly one plane above the container ground.
+    ///
+    /// canvas → elevated, surface/elevated → popover, field → field hover,
+    /// anything else → popover.
+    #[must_use]
+    pub fn lift(&self, bg: Color) -> Color {
+        self.junie_theme().lift(bg)
+    }
+
+    /// The explicit reversal — a cell cursor, a pressed row, a pressed quiet
+    /// control. [`Modifier::REVERSED`] is banned; see [`JunieTheme::reversed`].
+    #[must_use]
+    pub fn reversed(&self) -> Style {
+        self.junie_theme().reversed()
+    }
+
+    /// Selected text or range: body text on the popover plane.
+    #[must_use]
+    pub fn selected_text(&self) -> Style {
+        self.junie_theme().selection()
+    }
+
+    /// Row-like control paint (nav item, list item, table row, tree node).
+    ///
+    /// The one row resolver: widgets that paint a row reach it here instead of
+    /// re-deriving tint, hover, weight, and reversal per widget.
+    #[must_use]
+    pub fn row(&self, state: VisualState, bg: Color) -> Style {
+        self.junie_theme().row(state, bg)
+    }
+
+    /// Focus-gutter glyph style for the control that owns the keyboard.
+    #[must_use]
+    pub fn gutter(&self, state: VisualState, bg: Color, on_accent: bool) -> Style {
+        self.junie_theme().gutter(state, bg, on_accent)
+    }
+
+    /// Unoccupied scrollbar track.
+    #[must_use]
+    pub fn scrollbar_track(&self) -> Style {
+        self.junie_theme().scrollbar_track()
+    }
+
+    /// Scrollbar thumb; the interaction owner's thumb is the brightest.
+    #[must_use]
+    pub fn scrollbar_thumb(&self, focused: bool, hovered: bool) -> Style {
+        self.junie_theme().scrollbar_thumb(focused, hovered)
+    }
+
+    /// Key chord in an interaction hint.
+    #[must_use]
+    pub fn key_hint_key(&self) -> Style {
+        self.junie_theme().key_hint_key()
+    }
+
+    /// Action label paired with a hint key.
+    #[must_use]
+    pub fn key_hint_action(&self) -> Style {
+        self.junie_theme().key_hint_action()
+    }
+
+    /// Badge paint. [`BadgeKind::Edit`] is the only badge in the system.
+    #[must_use]
+    pub fn badge(&self, kind: BadgeKind) -> Style {
+        self.junie_theme().badge(kind)
+    }
+
+    /// One step down the junie text ladder.
+    ///
+    /// [`Role::Text`] → [`Role::TextSecondary`] → [`Role::TextMuted`] →
+    /// [`Role::TextFaint`] → [`Role::TextGhost`]. Any role off the ladder —
+    /// semantic colours, surfaces — returns itself: de-emphasis never invents
+    /// a new tone, and it never reaches for a DIM modifier.
+    #[must_use]
+    pub const fn lower_text(role: Role) -> Role {
+        match role {
+            Role::Text => Role::TextSecondary,
+            Role::TextSecondary => Role::TextMuted,
+            Role::TextMuted => Role::TextFaint,
+            Role::TextFaint | Role::TextGhost => Role::TextGhost,
+            other => other,
+        }
+    }
+
+    /// Builds from a palette with the junie spacing, glyphs, and motion.
+    #[must_use]
+    pub fn new(palette: RolePalette) -> Self {
         Self {
             palette,
-            density,
             motion: MotionPolicy::default(),
             glyphs: GlyphSet::default(),
-            spacing: SpacingScale::from_density(density),
+            spacing: SpacingScale::junie(),
             selection: SelectionChrome::default(),
-            border_shape: BorderShape::default(),
             capability: ColorCapability::default(),
             breakpoints: BreakpointScale::default(),
             kv_separator: KvSeparator::default(),
@@ -955,10 +1011,10 @@ impl DesignSystem {
         }
     }
 
-    /// Builds from a palette with default density.
+    /// Alias of [`Self::new`] (the density argument is gone).
     #[must_use]
     pub fn from_palette(palette: RolePalette) -> Self {
-        Self::new(palette, Density::default())
+        Self::new(palette)
     }
 
     /// The focus cue this system gives a surface family.
@@ -1069,14 +1125,6 @@ impl DesignSystem {
         self
     }
 
-    /// Overrides density and recomputes spacing from density.
-    #[must_use]
-    pub fn density(mut self, density: Density) -> Self {
-        self.density = density;
-        self.spacing = SpacingScale::from_density(density);
-        self
-    }
-
     /// Supplies this frame's time to every widget painted with this system.
     ///
     /// Call once per frame in the host's render function:
@@ -1098,10 +1146,8 @@ impl DesignSystem {
 
     /// Milliseconds since the runner started, or `0` when no tick was supplied.
     ///
-    /// The phase source for ambient loops ([`MotionChannel::phase`]), which
-    /// must ride wall clock rather than frame count.
-    ///
-    /// [`MotionChannel::phase`]: super::MotionChannel::phase
+    /// The phase source for ambient loops, which must ride wall clock rather
+    /// than frame count.
     #[must_use]
     pub fn elapsed_ms(&self) -> u64 {
         self.tick.map_or(0, FrameTick::elapsed_ms)
@@ -1121,12 +1167,6 @@ impl DesignSystem {
         self
     }
 
-    /// ASCII glyph set only.
-    #[must_use]
-    pub const fn ascii(self) -> Self {
-        self.glyphs(GlyphSet::Ascii)
-    }
-
     /// Overrides selection chrome recipe.
     #[must_use]
     pub const fn selection(mut self, selection: SelectionChrome) -> Self {
@@ -1134,33 +1174,10 @@ impl DesignSystem {
         self
     }
 
-    /// Overrides the single-line border corner family.
-    #[must_use]
-    pub const fn border_shape(mut self, shape: BorderShape) -> Self {
-        self.border_shape = shape;
-        self
-    }
-
-    /// Resolves the border symbols for shape and glyph capability.
+    /// Resolves the border symbols: junie's rounded corners everywhere.
     #[must_use]
     pub const fn border_set(&self) -> ratatui_core::symbols::border::Set<'static> {
-        use ratatui_core::symbols::border::{PLAIN, ROUNDED, Set};
-        if matches!(self.glyphs, GlyphSet::Ascii) {
-            Set {
-                top_left: "+",
-                top_right: "+",
-                bottom_left: "+",
-                bottom_right: "+",
-                vertical_left: "|",
-                vertical_right: "|",
-                horizontal_top: "-",
-                horizontal_bottom: "-",
-            }
-        } else if matches!(self.border_shape, BorderShape::Rounded) {
-            ROUNDED
-        } else {
-            PLAIN
-        }
+        ratatui_core::symbols::border::ROUNDED
     }
 
     /// Cells that separate chrome from the content inside it.
@@ -1172,15 +1189,11 @@ impl DesignSystem {
     #[must_use]
     pub const fn content_inset(&self, bordered: bool) -> ContentInset {
         if bordered {
-            let x = self.spacing.pad_x.saturating_sub(1);
-            ContentInset {
-                x: if x == 0 { 1 } else { x },
-                y: 0,
-            }
+            ContentInset { x: 1, y: 0 }
         } else {
             ContentInset {
-                x: self.spacing.pad_x,
-                y: self.spacing.pad_y,
+                x: self.spacing.card_inset,
+                y: 1,
             }
         }
     }
@@ -1207,19 +1220,11 @@ impl DesignSystem {
 
     /// Whether this system must carry meaning without color.
     ///
-    /// True on a monochrome projection *or* an ASCII glyph profile — both mean
-    /// the paint has to say what it means through weight, reverse, and glyph.
-    /// Widgets used to each decide this for themselves, so a terminal could be
-    /// colorless to a checkbox and full-color to the field beside it.
+    /// True on a monochrome projection: the paint has to say what it means
+    /// through weight, reverse, and glyph.
     #[must_use]
     pub const fn mono(&self) -> bool {
-        self.glyphs.is_ascii() || matches!(self.capability, ColorCapability::Monochrome)
-    }
-
-    /// Whether glyphs resolve to the ASCII profile.
-    #[must_use]
-    pub const fn ascii_glyphs(&self) -> bool {
-        self.glyphs.is_ascii()
+        matches!(self.capability, ColorCapability::Monochrome)
     }
 
     /// Breakpoint scale.
@@ -1233,7 +1238,6 @@ impl DesignSystem {
     #[must_use]
     pub fn no_color(self) -> Self {
         self.quantize(ColorCapability::Monochrome)
-            .glyphs(GlyphSet::Ascii)
     }
 
     /// Override one role style (partial theme package).
@@ -1287,273 +1291,181 @@ impl DesignSystem {
         &self.palette
     }
 
-    /// Quantizes palette colors to this system's capability (or an override).
+    /// Resolves this system onto a colour capability (or an override).
     #[must_use]
-    pub fn quantize(self, capability: ColorCapability) -> Self {
-        let mut out = self;
-        out.capability = capability;
-        out.palette = super::quantize_palette(&out.palette, capability);
-        out
+    pub fn quantize(mut self, capability: ColorCapability) -> Self {
+        self.capability = capability;
+        self.palette = self.palette.quantized(capability);
+        self
     }
 
     /// Panel chrome recipe for single-line borders and title hierarchy.
     ///
     /// `elevation` selects the fill rung, so an overlay panel recesses the
     /// content behind it instead of repainting the same ordinary surface.
+    /// Focus snaps: junie has no cross-fade, the frame simply states owner.
     #[must_use]
     pub fn panel_recipe(&self, emphasis: PanelChrome, elevation: Elevation) -> PanelRecipe {
-        self.panel_recipe_at(emphasis, elevation, 1.0)
-    }
-
-    /// Panel recipe part-way through a focus change.
-    ///
-    /// `settled` is how far the transition has run: `0.0` is the previous
-    /// border, `1.0` the new one. Focus that snaps on a bright accent border
-    /// reads as a flash; blending the two roles is the whole of the
-    /// cross-fade, and it lives here so all sixteen panel consumers inherit
-    /// it (plans/014 Step 3b).
-    #[must_use]
-    pub fn panel_recipe_at(
-        &self,
-        emphasis: PanelChrome,
-        elevation: Elevation,
-        settled: f32,
-    ) -> PanelRecipe {
-        let family = if matches!(elevation, Elevation::Overlay) {
-            RecipeFamily::Overlay
-        } else {
-            RecipeFamily::Layout
+        let theme = self.junie_theme();
+        let focused = matches!(emphasis, PanelChrome::Focused);
+        // junie framed-panel law: the frame is `border(focused)` — the strong
+        // hairline when the panel owns focus, the subtle one otherwise — and
+        // the title is `title()` when focused, `secondary()` when not. Danger
+        // keeps the body text and states the risk through the frame and the
+        // `!` mark, the only red chrome junie allows a container.
+        let mut border = match emphasis {
+            PanelChrome::Normal => theme.border(false),
+            PanelChrome::Focused => theme.border(true),
+            PanelChrome::Danger => Style::new().fg(theme.error),
         };
-        let contract = self.family_recipe(family);
-        let (border_role, title_role) = match emphasis {
-            PanelChrome::Normal => (contract.border, Role::TextStrong),
-            PanelChrome::Focused => (Role::BorderFocused, Role::TextStrong),
-            PanelChrome::Danger => (Role::Danger, Role::TextStrong),
-        };
-        let mut border = if contract.motion.animates(self.motion) && settled < 1.0 {
-            let from = match emphasis {
-                PanelChrome::Focused => contract.border,
-                PanelChrome::Normal | PanelChrome::Danger => Role::BorderFocused,
-            };
-            self.blend_role(from, border_role, settled)
-        } else {
-            self.style(border_role)
-        };
-        if matches!(emphasis, PanelChrome::Focused) {
+        if focused {
             border = border.add_modifier(Modifier::BOLD);
         }
         PanelRecipe {
             border,
-            title: self.style(title_role),
-            pad_x: self.spacing.pad_x,
-            pad_y: self.spacing.pad_y,
+            title: if focused {
+                theme.title()
+            } else {
+                theme.secondary()
+            },
+            pad_x: self.spacing.card_inset,
+            pad_y: 1,
             surface: self.style(elevation.role()),
             title_prefix: match emphasis {
-                PanelChrome::Danger => Some(self.glyphs.resolve(Glyph::Warning).text),
-                PanelChrome::Focused => Some(self.glyphs.resolve(Glyph::FocusDiamond).text),
-                PanelChrome::Normal => None,
+                PanelChrome::Danger => Some(self.glyphs.resolve(Glyph::Error).text),
+                PanelChrome::Focused | PanelChrome::Normal => None,
             },
         }
     }
 
-    /// Blends one role's foreground toward another's.
+    /// Button part×state recipe — literal port of the junie `button` resolver.
     ///
-    /// The transition vocabulary: a settled surface asks for a role, a
-    /// transitioning one asks for the point between two.
+    /// The public variants collapse onto junie's kinds: `Primary`, `Secondary`
+    /// (also `Outline` — junie has no border-only action), `Quiet` → `Subtle`,
+    /// `Destructive` → `Danger`. `Link` is the one derived form: junie has no
+    /// link button, so it wears the link law instead (secondary text plus the
+    /// underline affordance, never a fill).
+    ///
+    /// junie buttons carry no box border: a button is the `▎` gutter, its
+    /// label, and its fill. Focus is the gutter plus weight, pressed is the
+    /// explicit reversal `fg(canvas).bg(text_primary)`, and busy keeps the
+    /// idle fill while the label loses its weight and drops one text tier —
+    /// [`ButtonRecipe::busy_glyph`] carries the accent spinner prefix.
     #[must_use]
-    pub fn blend_role(&self, from: Role, to: Role, t: f32) -> Style {
-        let target = self.style(to);
-        let (Some(from_fg), Some(to_fg)) = (self.style(from).fg, target.fg) else {
-            return target;
+    pub fn button_recipe(
+        &self,
+        variant: ButtonRecipeVariant,
+        state: ControlState,
+        container: Color,
+    ) -> ButtonRecipe {
+        let theme = self.junie_theme();
+        // The container supplies the plane the button sits on: a dialog is not
+        // the chrome surface, and only `Subtle` reads the ground directly.
+        let ground = container;
+        let kind = match variant {
+            ButtonRecipeVariant::Primary => ButtonKind::Primary,
+            ButtonRecipeVariant::Destructive => ButtonKind::Danger,
+            ButtonRecipeVariant::Quiet => ButtonKind::Subtle,
+            ButtonRecipeVariant::Secondary | ButtonRecipeVariant::Outline => ButtonKind::Secondary,
+            ButtonRecipeVariant::Link => ButtonKind::Subtle,
         };
-        target.fg(super::motion::blend_toward(
-            from_fg,
-            to_fg,
-            t.clamp(0.0, 1.0),
-        ))
-    }
-
-    /// Button part×state recipe (no hard-coded RGB).
-    #[must_use]
-    pub fn button_recipe(&self, variant: ButtonRecipeVariant, state: ControlState) -> ButtonRecipe {
-        let contract = self.family_recipe(RecipeFamily::Action);
-        let base_role = match variant {
-            ButtonRecipeVariant::Primary => Role::ActionFocused,
-            ButtonRecipeVariant::Destructive => Role::Danger,
-            ButtonRecipeVariant::Link => Role::Link,
-            ButtonRecipeVariant::Secondary
-            | ButtonRecipeVariant::Quiet
-            | ButtonRecipeVariant::Outline => contract.primary,
+        let visual = VisualState {
+            hovered: matches!(state, ControlState::Hovered),
+            focused: matches!(state, ControlState::Focused),
+            pressed: matches!(state, ControlState::Pressed),
+            disabled: matches!(state, ControlState::Disabled),
+            busy: matches!(state, ControlState::Loading),
+            ..VisualState::default()
         };
-        let mut label = self.style(base_role);
-        let mut fill = Style::new();
-        let mut border = self.style(contract.border);
-        let mut bordered = matches!(
-            variant,
-            ButtonRecipeVariant::Outline
-                | ButtonRecipeVariant::Primary
-                | ButtonRecipeVariant::Destructive
-        );
-
-        if matches!(variant, ButtonRecipeVariant::Primary) {
-            fill = self.style(Role::ActionFocused);
-            label = self.style(Role::ActionFocused);
-            border = self.style(Role::BorderFocused);
-        }
-        if matches!(variant, ButtonRecipeVariant::Destructive) {
-            // `Role::Danger` is a foreground role: assigning it as a fill left
-            // the button with no background at all while claiming to have one.
-            // Destructive reads through its label and border instead, and the
-            // press is what turns the button solid.
-            border = self.style(Role::Danger);
-        }
-        if matches!(
-            variant,
-            ButtonRecipeVariant::Quiet | ButtonRecipeVariant::Link
-        ) {
-            bordered = false;
-        }
-        match state {
-            ControlState::Focused => {
-                // Some semantic defaults already carry bold weight (primary,
-                // danger, and high-contrast roles). Re-applying bold would
-                // make focus structurally invisible once hue is removed, so
-                // every pre-weighted label advances to reverse video. A
-                // monochrome filled action is already reversed, so its focus
-                // toggles reverse off instead of collapsing into the idle fill.
-                let label_was_bold = label.add_modifier.contains(Modifier::BOLD)
-                    && !label.sub_modifier.contains(Modifier::BOLD);
-                let label_was_reversed = label.add_modifier.contains(Modifier::REVERSED)
-                    && !label.sub_modifier.contains(Modifier::REVERSED);
-                border = self.style(Role::BorderFocused).add_modifier(Modifier::BOLD);
-                if !matches!(
-                    variant,
-                    ButtonRecipeVariant::Quiet | ButtonRecipeVariant::Link
-                ) {
-                    bordered = true;
-                }
-                label = label.add_modifier(Modifier::BOLD);
-                if label_was_bold {
-                    label = if label_was_reversed {
-                        label.remove_modifier(Modifier::REVERSED)
-                    } else {
-                        label.add_modifier(Modifier::REVERSED)
-                    };
-                }
-            }
-            ControlState::Hovered => {
-                // Only a link repaints its label on hover. A filled button that
-                // swapped its label to the link hue put cyan on green — 1.02:1,
-                // an invisible label. Everything else washes its ground instead.
-                if matches!(variant, ButtonRecipeVariant::Link) {
-                    label = self.style(Role::LinkHover);
-                } else if fill.bg.is_none() {
-                    fill = self.style(Role::HoverTint);
-                } else if let Some(bg) = fill.bg {
-                    // A filled button already owns its ground, so a hover wash
-                    // lands on nothing: the fill itself lifts one step. The
-                    // label carries the same ground, so it lifts with it —
-                    // otherwise it repaints the resting colour straight back
-                    // over the lift (plans/021 Step 1).
-                    let lifted = super::palette::lift(bg);
-                    fill = fill.bg(lifted);
-                    if label.bg == Some(bg) {
-                        label = label.bg(lifted);
-                    }
-                    border = self.style(Role::BorderFocused);
-                    bordered = true;
-                }
-            }
-            ControlState::Pressed => {
-                // Pressed is a distinct fact, not "hover but bolder": the
-                // control sinks into the press for the frame it is held
-                // (plans/021 Step 2).
-                fill = self.style(Role::SelectionTint);
-                label = self.style(Role::TextStrong).add_modifier(Modifier::BOLD);
-                if let Some(bg) = fill.bg {
-                    label = label.bg(bg);
-                }
-                if matches!(variant, ButtonRecipeVariant::Destructive) {
-                    border = self.style(Role::Danger);
-                }
-            }
-            ControlState::Disabled => {
-                label = self.style(Role::ActionDisabled);
-                fill = Style::new();
-                border = self.style(contract.border);
-            }
-            ControlState::Loading => {
-                // Loading is not disabled: the button keeps its identity and
-                // dims, so a spinner beside a still-recognizable action does
-                // not read as "this control is gone".
-                label = label.add_modifier(Modifier::DIM);
-                border = self.style(contract.border);
-            }
-            ControlState::Default => {}
-        }
-        if matches!(state, ControlState::Disabled) {
-            label = self.style(Role::ActionDisabled);
-        }
+        let (label, fill) = if matches!(variant, ButtonRecipeVariant::Link) {
+            // Link law: the underline is the affordance, hover brightens the
+            // text one tier, focus adds weight. No fill, no reversal.
+            let label = match state {
+                ControlState::Hovered | ControlState::Pressed => self.style(Role::LinkHover),
+                ControlState::Focused => self.style(Role::Link).add_modifier(Modifier::BOLD),
+                ControlState::Loading => Style::new().fg(theme.text_secondary),
+                _ => self.style(Role::Link),
+            };
+            (label, Style::new())
+        } else if matches!(state, ControlState::Loading) {
+            // Busy: the accent spinner prefix says the control is working and
+            // the label loses its weight. The fill stays the idle one —
+            // activity is not a second surface — so the label keeps the
+            // fill's own contrast pair and only steps down off the accent
+            // fill, where `text_secondary` would read at 1.2:1.
+            let idle = theme.button(kind, VisualState::default(), ground);
+            let label = Style::new().fg(if kind == ButtonKind::Primary {
+                theme.text_on_accent
+            } else {
+                theme.text_secondary
+            });
+            let fill = Style::new().bg(idle.bg.unwrap_or(ground));
+            (label, fill)
+        } else {
+            let painted = theme.button(kind, visual, ground);
+            let label = Style::new()
+                .fg(painted.fg.unwrap_or(theme.text_primary))
+                .add_modifier(painted.add_modifier);
+            let fill = Style::new().bg(painted.bg.unwrap_or(ground));
+            (label, fill)
+        };
         ButtonRecipe {
             label,
             fill,
-            border,
-            bordered,
-            pad_x: self.spacing.pad_x.max(1),
+            border: Style::new(),
+            bordered: false,
+            pad_x: self.spacing.inline.max(1),
+            busy_glyph: matches!(state, ControlState::Loading)
+                .then(|| (self.glyphs.loading(), Style::new().fg(theme.accent))),
         }
     }
 
     /// Text input part×state recipe.
     #[must_use]
     pub fn input_recipe(&self, state: ControlState, invalid: bool) -> InputRecipe {
-        self.input_recipe_at(state, invalid, 1.0)
-    }
-
-    /// Input recipe part-way through a focus change.
-    ///
-    /// Same contract as [`Self::panel_recipe_at`]: `0.0` is the border the
-    /// field is leaving, `1.0` the one it is arriving at.
-    #[must_use]
-    pub fn input_recipe_at(&self, state: ControlState, invalid: bool, settled: f32) -> InputRecipe {
-        let contract = self.family_recipe(RecipeFamily::Input);
-        let mut border = self.style(contract.border);
-        // The value is text; the well is the fill. Reading both from
-        // `Role::Input` made the value inherit the well's background and
-        // nothing else.
-        let mut value = self.style(contract.primary);
-        let placeholder = self.style(contract.secondary);
-        let mut fill = self.style(contract.surface);
-        let cursor = self.style(Role::Focus);
-        if invalid {
-            border = self.style(Role::InputInvalid);
-            value = value.patch(self.style(Role::InputInvalid));
-        }
-        match state {
-            ControlState::Focused => {
-                border = if contract.motion.animates(self.motion) && settled < 1.0 {
-                    self.blend_role(contract.border, Role::BorderFocused, settled)
-                } else {
-                    self.style(Role::BorderFocused)
-                }
-                .add_modifier(Modifier::BOLD);
-            }
-            ControlState::Disabled => {
-                value = self.style(Role::TextDisabled);
-                border = self.style(contract.border);
-            }
-            ControlState::Hovered => {
-                // Hover lifts the well; only focus is allowed to brighten the
-                // border, or a pointer passing by looks like keyboard focus.
-                fill = fill.patch(self.style(Role::HoverTint));
-            }
-            _ => {}
-        }
-        let prompt = matches!(state, ControlState::Focused).then(|| {
-            (
-                self.glyphs.resolve(super::glyph::Glyph::Prompt).text,
-                self.style(Role::BorderFocused),
-            )
+        let theme = self.junie_theme();
+        let editing = matches!(state, ControlState::Focused);
+        let visual = VisualState {
+            hovered: matches!(state, ControlState::Hovered) && !editing,
+            disabled: matches!(state, ControlState::Disabled),
+            editing,
+            ..VisualState::default()
+        };
+        // junie field law: the well is `field`, hover lifts to `field_hover`
+        // while the field is not being edited, and the value is always body
+        // text. Disabled keeps the well and steps the text to the disabled
+        // tier. An invalid value keeps its tone: the underline says "error",
+        // repainting the whole value would say nothing.
+        let field = theme.field_style(visual);
+        let value = Style::new().fg(if matches!(state, ControlState::Disabled) {
+            theme.disabled
+        } else {
+            field.fg.unwrap_or(theme.text_primary)
         });
+        let fill = Style::new().bg(field.bg.unwrap_or(theme.field));
+        let placeholder = Style::new().fg(theme.placeholder(visual).fg.unwrap_or(theme.text_muted));
+        // A field has no frame; the border slot carries the underline
+        // affordance. Editing underlines in accent and an invalid value moves
+        // that underline to the error colour — the 3-colour underline law.
+        // Resting is the subtle hairline. Focus snaps; there is no cross-fade.
+        let border = if invalid {
+            Style::new()
+                .add_modifier(Modifier::UNDERLINED)
+                .underline_color(theme.error)
+        } else if editing {
+            Style::new()
+                .add_modifier(Modifier::UNDERLINED)
+                .underline_color(theme.accent)
+        } else {
+            theme.border(false)
+        };
+        // junie edits with the hardware cursor; the recipe paints the cell it
+        // occupies as the explicit reversal so a cell cursor reads as a cell.
+        let cursor = Style::new().fg(theme.canvas).bg(theme.text_primary);
+        // The focus gutter is the `▎` bar; it exists only while the field owns
+        // the keyboard, and the column stays reserved either way.
+        let prompt =
+            editing.then(|| (self.glyphs.selection_gutter(), Style::new().fg(theme.focus)));
         InputRecipe {
             value,
             placeholder,
@@ -1561,7 +1473,7 @@ impl DesignSystem {
             fill,
             cursor,
             prompt,
-            pad_x: self.spacing.pad_x,
+            pad_x: self.spacing.inline,
         }
     }
 
@@ -1573,92 +1485,89 @@ impl DesignSystem {
             focused,
             hovered: false,
             enabled,
-            loading: false,
-            checked: false,
+            ..ListRowVisualState::default()
         })
     }
 
-    /// Full part×state list row recipe (quiet canvas, bright intent).
+    /// Full part×state list row recipe — literal port of the junie `row`
+    /// resolver on the chrome-plane ground.
+    ///
+    /// Selection law (junie, one vocabulary): the tint is painted only where
+    /// the keyboard is (`selected && focused`), a parked selection is carried
+    /// by the marker glyph alone, hover always wins with exactly one plane
+    /// up, and focus adds weight. There is no full-row fill anywhere in the
+    /// system. Membership is `selected` alone — focus only decides whether
+    /// the tint rides along.
+    ///
+    /// Modifier order is the reference's: disabled, tint, hover, error, busy,
+    /// focus weight, pressed replacement. Busy therefore lands *before* the
+    /// focus weight, so a busy row keeps its weight instead of losing it.
     #[must_use]
     pub fn resolve_list_row(&self, state: ListRowVisualState) -> ListRowRecipe {
-        let contract = self.family_recipe(RecipeFamily::Collection);
-        let selection = contract
-            .selection
-            .expect("collection family always defines selection chrome");
+        let theme = self.junie_theme();
+        let ground = theme.surface;
         let disabled = !state.enabled;
-        let label = if disabled {
-            self.style(Role::TextDisabled)
-        } else if state.selected
-            && matches!(selection, SelectionChrome::Fill | SelectionChrome::Marker)
-        {
-            self.style(Role::Selection)
-        } else if state.selected && matches!(selection, SelectionChrome::Tint) {
-            self.style(Role::TextStrong)
-                .patch(self.style(Role::SelectionTint))
-        } else if state.selected {
-            self.style(Role::TextStrong)
-        } else if state.loading {
-            self.style(Role::TextMuted)
-        } else {
-            self.style(contract.primary)
+        let hovered = state.hovered && !disabled;
+        let visual = VisualState {
+            focused: state.focused,
+            hovered,
+            pressed: state.pressed,
+            selected: state.selected,
+            disabled,
+            error: state.error,
+            busy: state.loading,
+            ..VisualState::default()
         };
-        let secondary = self.style(if disabled {
-            Role::TextDisabled
+        // The reference `row` resolver owns the whole ladder; the recipe only
+        // re-states its output in the part vocabulary the widgets paint with.
+        let painted = self.row(visual, ground);
+        let label = painted;
+        let secondary = Style::new().fg(if disabled {
+            theme.disabled
         } else {
-            contract.secondary
+            theme.text_muted
         });
         let shortcut = secondary;
-        // The gutter says "selected"; its color says whether this collection
-        // owns the keyboard. Accent while focused, muted while parked.
-        // Marker chrome paints `▸` into a full-row fill, so the marker must
-        // speak the fill's own foreground (label style) or it disappears.
-        let gutter = if state.selected {
-            if matches!(selection, SelectionChrome::Marker) {
-                Some((self.glyphs.selection_marker(), label))
+        // The leading slot carries the focus bar while the row owns the
+        // keyboard and the membership marker while it does not — the same
+        // cell, so a row reserves exactly one column. `Tint` chrome states
+        // membership with the tint instead and leaves the slot empty.
+        let gutter = if matches!(self.selection, SelectionChrome::Gutter)
+            && (state.selected || state.focused)
+            && !disabled
+        {
+            let (glyph, tone) = if state.focused {
+                (self.glyphs.selection_gutter(), theme.focus)
             } else {
-                let tone = if state.focused {
-                    Role::Accent
-                } else {
-                    Role::TextMuted
-                };
-                Some((self.glyphs.selection_gutter(), self.style(tone)))
-            }
+                (self.glyphs.selection_marker(), theme.text_secondary)
+            };
+            Some((glyph, Style::new().fg(tone)))
         } else {
             None
         };
-        let use_fill =
-            state.selected && matches!(selection, SelectionChrome::Fill | SelectionChrome::Marker);
-        let use_tint = state.selected && matches!(selection, SelectionChrome::Tint);
-        let hover_fill = state.hovered && !state.selected && !disabled;
         ListRowRecipe {
             label,
             secondary,
             shortcut,
             trailing: secondary,
             gutter,
-            pad_x: self.spacing.pad_x,
-            use_fill,
-            use_tint,
-            hover_fill,
-            focus: self.style(Role::Focus),
-            hover: self.style(Role::TextStrong),
-            hover_wash: self.style(Role::HoverTint),
-            tint: self.style(Role::SelectionTint),
+            pad_x: self.spacing.inline,
+            use_fill: false,
+            use_tint: state.selected && state.focused && !hovered,
+            hover_fill: hovered,
+            focus: Style::new().fg(theme.focus),
+            hover: Style::new().fg(theme.text_primary),
+            hover_wash: Style::new().bg(theme.lift(ground)),
+            tint: Style::new().bg(theme.accent_bg),
             check_on: self.glyphs.check_on(),
             check_off: self.glyphs.check_off(),
             loading_glyph: self.glyphs.loading(),
-            show_gutter_slot: matches!(
-                selection,
-                SelectionChrome::Gutter
-                    | SelectionChrome::Tint
-                    | SelectionChrome::Fill
-                    | SelectionChrome::Marker
-            ),
+            show_gutter_slot: true,
             checked: state.checked,
             loading: state.loading,
             // Law P6: a row's actions appear when the row is the one you are
             // on. Idle rows keep a faint marker so the affordance is still
-            // discoverable (plans/021 Step 3).
+            // discoverable.
             show_actions: state.revealed(),
         }
     }
@@ -1718,66 +1627,97 @@ mod tests {
     use super::*;
 
     #[test]
-    fn spacing_differs_across_density() {
-        let comfortable = SpacingScale::from_density(Density::Comfortable);
-        let dashboard = SpacingScale::from_density(Density::Dashboard);
-        assert!(comfortable.pad_x > dashboard.pad_x);
-        assert!(comfortable.gap >= dashboard.gap);
+    fn spacing_is_the_junie_scale() {
+        // The tokens are consts: exactly one scale, no density to tune.
+        let spacing = SpacingScale::junie();
+        assert_eq!((spacing.gutter, spacing.inline), (1, 1));
+        assert_eq!((spacing.gap, spacing.column_gap), (2, 2));
+        assert_eq!(spacing.form_gap, 4);
+        assert_eq!(
+            (
+                spacing.card_inset,
+                spacing.frame_inset,
+                spacing.dialog_inset
+            ),
+            (2, 3, 3)
+        );
+        assert_eq!(spacing.tree_indent, 2);
+        assert_eq!((spacing.field_height, spacing.tabs_height), (3, 2));
+        assert_eq!((spacing.min_width, spacing.min_height), (72, 20));
+        assert_eq!(spacing, SpacingScale::default());
     }
 
     #[test]
     fn list_row_recipe_changes_with_selection_chrome() {
-        let fill = DesignSystem::new(RolePalette::default(), Density::Compact)
-            .selection(SelectionChrome::Fill)
+        let tint = DesignSystem::junie()
+            .selection(SelectionChrome::Tint)
             .list_row_recipe(true, true, true);
-        let gutter = DesignSystem::new(RolePalette::default(), Density::Compact)
+        let gutter = DesignSystem::junie()
             .selection(SelectionChrome::Gutter)
             .list_row_recipe(true, true, true);
-        assert!(fill.use_fill);
-        assert!(!gutter.use_fill);
+        // The tint law is shared; the chrome choice only decides whether the
+        // gutter slot carries the marker glyph.
+        assert!(tint.use_tint);
+        assert!(gutter.use_tint);
+        assert_eq!(tint.tint, gutter.tint);
+        assert!(tint.gutter.is_none(), "tint chrome leaves the slot empty");
         assert!(gutter.gutter.is_some());
-        assert_ne!(fill.label, gutter.label);
+        assert_eq!(tint.label, gutter.label, "one label grammar");
     }
 
     #[test]
-    fn marker_recipe_fills_and_leads_with_triangle() {
-        let system = DesignSystem::new(RolePalette::default(), Density::Compact)
-            .selection(SelectionChrome::Marker);
-        let recipe = system.list_row_recipe(true, true, true);
-        assert!(recipe.use_fill);
-        assert!(recipe.show_gutter_slot);
-        assert_eq!(recipe.label, system.style(Role::Selection));
-        let (glyph, glyph_style) = recipe.gutter.expect("marker chrome carries a glyph");
-        assert_eq!(glyph, system.glyphs.selection_marker());
-        assert_eq!(
-            glyph_style, recipe.label,
-            "the marker speaks the fill's own foreground"
-        );
-    }
-
-    #[test]
-    fn tint_recipe_keeps_wash_when_label_repaints_cells() {
-        let system = DesignSystem::phosphor().selection(SelectionChrome::Tint);
-        let state = ListRowVisualState {
+    fn focused_row_tints_and_parked_row_only_marks() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let owned = system.resolve_list_row(ListRowVisualState {
             selected: true,
             focused: true,
             enabled: true,
             ..Default::default()
-        };
-        let recipe = system.resolve_list_row(state);
-        assert!(recipe.use_tint);
-        assert_eq!(recipe.label.bg, system.style(Role::SelectionTint).bg);
+        });
+        let parked = system.resolve_list_row(ListRowVisualState {
+            selected: true,
+            focused: false,
+            enabled: true,
+            ..Default::default()
+        });
+        assert_eq!(owned.label.bg, Some(theme.accent_bg), "tint needs focus");
+        assert!(owned.use_tint);
+        assert_eq!(
+            parked.label.bg,
+            Some(theme.surface),
+            "a parked selection carries no tint: the row ground only"
+        );
+        assert!(!parked.use_tint);
+        assert!(parked.gutter.is_some(), "the marker glyph carries it");
+        assert!(!owned.label.add_modifier.contains(Modifier::REVERSED));
+    }
 
-        // The shipped default is quieter: gutter + strong label, no wash.
-        let quiet = DesignSystem::phosphor().resolve_list_row(state);
-        assert!(!quiet.use_tint && !quiet.use_fill);
-        assert_eq!(quiet.label.bg, None);
-        assert!(quiet.gutter.is_some());
+    #[test]
+    fn hover_replaces_the_selection_tint_with_one_plane_up() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let hovered = system.resolve_list_row(ListRowVisualState {
+            selected: true,
+            focused: true,
+            hovered: true,
+            enabled: true,
+            ..Default::default()
+        });
+        assert!(hovered.hover_fill);
+        assert!(!hovered.use_tint, "hover wins over the tint");
+        assert_eq!(hovered.label.bg, Some(theme.lift(theme.surface)));
+        assert_eq!(
+            hovered.hover_wash.bg,
+            Some(theme.surface_overlay),
+            "hover is exactly one plane above the chrome plane"
+        );
     }
 
     #[test]
     fn selection_gutter_tone_tracks_collection_focus() {
-        let system = DesignSystem::phosphor();
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
         let focused = system.resolve_list_row(ListRowVisualState {
             selected: true,
             focused: true,
@@ -1791,44 +1731,34 @@ mod tests {
             ..Default::default()
         });
         assert_eq!(
-            focused.gutter.expect("selected rows carry a gutter").1,
-            system.style(Role::Accent)
+            focused.gutter.expect("selected rows carry a gutter").1.fg,
+            Some(theme.focus)
         );
         assert_eq!(
-            parked.gutter.expect("selected rows carry a gutter").1,
-            system.style(Role::TextMuted)
-        );
-    }
-
-    #[test]
-    fn ascii_glyphs_differ_from_unicode() {
-        assert_ne!(
-            GlyphSet::Unicode.disclosure_closed(),
-            GlyphSet::Ascii.disclosure_closed()
+            parked.gutter.expect("selected rows carry a gutter").1.fg,
+            Some(theme.text_secondary)
         );
     }
 
     #[test]
     fn reduced_motion_is_distinct() {
         let full = DesignSystem::default();
-        let reduced = DesignSystem::default().motion(MotionPolicy::Basic);
         assert!(full.motion.animate_spinners());
         assert!(!MotionPolicy::Off.animate_spinners());
-        assert_ne!(full.motion, reduced.motion);
+        assert_ne!(full.motion, MotionPolicy::Off);
     }
 
     #[test]
     fn presets_are_distinct() {
-        let phosphor = DesignSystem::phosphor();
-        let slate = DesignSystem::slate();
-        let paper = DesignSystem::paper();
-        let ansi = DesignSystem::ansi();
-        let hc = DesignSystem::high_contrast();
-        assert_ne!(phosphor.style(Role::Accent), slate.style(Role::Accent));
-        assert_ne!(paper.style(Role::Text).fg, phosphor.style(Role::Text).fg);
+        // junie is the only palette TermRock ships: distinctness is now a
+        // capability question, not a palette question.
+        let truecolor = DesignSystem::junie();
+        let ansi = DesignSystem::junie().quantize(ColorCapability::Ansi16);
+        assert_ne!(truecolor.style(Role::Accent), ansi.style(Role::Accent));
         assert_eq!(ansi.capability, ColorCapability::Ansi16);
         assert!(
-            hc.style(Role::TextStrong)
+            truecolor
+                .style(Role::TextStrong)
                 .add_modifier
                 .contains(Modifier::BOLD)
         );
@@ -1836,7 +1766,7 @@ mod tests {
 
     #[test]
     fn with_role_and_merge_partial_package() {
-        let base = DesignSystem::phosphor();
+        let base = DesignSystem::junie();
         let patched = base.clone().with_role(
             Role::Accent,
             Style::new().fg(ratatui_core::style::Color::Cyan),
@@ -1846,7 +1776,7 @@ mod tests {
         let merged = base.merge(&package);
         assert_eq!(
             merged.style(Role::Text),
-            DesignSystem::phosphor().style(Role::Text)
+            DesignSystem::junie().style(Role::Text)
         );
     }
 
@@ -1872,115 +1802,277 @@ mod tests {
     }
 
     #[test]
-    fn no_color_forces_mono_and_ascii() {
-        let system = DesignSystem::phosphor().no_color();
+    fn no_color_forces_mono() {
+        let system = DesignSystem::junie().no_color();
         assert_eq!(system.capability, ColorCapability::Monochrome);
-        assert_eq!(system.glyphs, GlyphSet::Ascii);
     }
 
     #[test]
-    fn button_recipe_focus_uses_border_focused() {
-        let system = DesignSystem::phosphor();
-        let focused = system.button_recipe(ButtonRecipeVariant::Secondary, ControlState::Focused);
-        let idle = system.button_recipe(ButtonRecipeVariant::Secondary, ControlState::Default);
-        assert_ne!(focused.border, idle.border);
-        assert!(focused.bordered);
-    }
+    fn button_recipe_follows_the_junie_button_table() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        // Primary is the accent fill with on-accent text.
+        let primary = system.button_recipe(
+            ButtonRecipeVariant::Primary,
+            ControlState::Default,
+            theme.surface,
+        );
+        assert_eq!(primary.fill.bg, Some(theme.accent));
+        assert_eq!(primary.label.fg, Some(theme.text_on_accent));
+        assert!(primary.label.add_modifier.contains(Modifier::BOLD));
+        assert_eq!(
+            system
+                .button_recipe(
+                    ButtonRecipeVariant::Primary,
+                    ControlState::Hovered,
+                    theme.surface
+                )
+                .fill
+                .bg,
+            Some(theme.accent_hover)
+        );
+        assert_eq!(
+            system
+                .button_recipe(
+                    ButtonRecipeVariant::Primary,
+                    ControlState::Pressed,
+                    theme.surface
+                )
+                .fill
+                .bg,
+            Some(theme.accent_pressed)
+        );
 
-    #[test]
-    fn no_color_focus_has_structure_for_every_button_variant() {
-        let system = DesignSystem::phosphor().no_color();
+        // Secondary rests on the overlay plane, hovers to popover, and presses
+        // into the explicit reversal — never Modifier::REVERSED.
+        let secondary = system.button_recipe(
+            ButtonRecipeVariant::Secondary,
+            ControlState::Default,
+            theme.surface,
+        );
+        assert_eq!(secondary.fill.bg, Some(theme.surface_overlay));
+        assert_eq!(secondary.label.fg, Some(theme.text_primary));
+        assert_eq!(
+            system
+                .button_recipe(
+                    ButtonRecipeVariant::Secondary,
+                    ControlState::Hovered,
+                    theme.surface
+                )
+                .fill
+                .bg,
+            Some(theme.popover)
+        );
+        let pressed = system.button_recipe(
+            ButtonRecipeVariant::Secondary,
+            ControlState::Pressed,
+            theme.surface,
+        );
+        assert_eq!(pressed.fill.bg, Some(theme.text_primary));
+        assert_eq!(pressed.label.fg, Some(theme.canvas));
+        assert!(!pressed.label.add_modifier.contains(Modifier::REVERSED));
+
+        // Quiet rests on the container, hovers one plane up, brightens text.
+        let quiet = system.button_recipe(
+            ButtonRecipeVariant::Quiet,
+            ControlState::Default,
+            theme.surface,
+        );
+        assert_eq!(quiet.fill.bg, Some(theme.surface));
+        assert_eq!(quiet.label.fg, Some(theme.text_secondary));
+        let quiet_hover = system.button_recipe(
+            ButtonRecipeVariant::Quiet,
+            ControlState::Hovered,
+            theme.surface,
+        );
+        assert_eq!(quiet_hover.fill.bg, Some(theme.surface_overlay));
+        assert_eq!(quiet_hover.label.fg, Some(theme.text_primary));
+
+        // Danger labels in error colour and presses solid.
+        let danger = system.button_recipe(
+            ButtonRecipeVariant::Destructive,
+            ControlState::Default,
+            theme.surface,
+        );
+        assert_eq!(danger.label.fg, Some(theme.error));
+        assert_eq!(danger.fill.bg, Some(theme.surface_overlay));
+        let danger_press = system.button_recipe(
+            ButtonRecipeVariant::Destructive,
+            ControlState::Pressed,
+            theme.surface,
+        );
+        assert_eq!(danger_press.fill.bg, Some(theme.error));
+        assert_eq!(danger_press.label.fg, Some(theme.text_primary));
+
+        // Focus is weight, never a border and never a fill swap.
+        let focused = system.button_recipe(
+            ButtonRecipeVariant::Secondary,
+            ControlState::Focused,
+            theme.surface,
+        );
+        assert!(focused.label.add_modifier.contains(Modifier::BOLD));
+        assert_eq!(focused.fill.bg, Some(theme.surface_overlay));
+        assert!(!focused.bordered);
+
+        // Busy is the idle pair verbatim: the spinner owns "working".
+        let busy = system.button_recipe(
+            ButtonRecipeVariant::Primary,
+            ControlState::Loading,
+            theme.surface,
+        );
+        assert_eq!(busy.fill.bg, Some(theme.accent));
+        assert_eq!(busy.label.fg, Some(theme.text_on_accent));
+        let disabled = system.button_recipe(
+            ButtonRecipeVariant::Primary,
+            ControlState::Disabled,
+            theme.surface,
+        );
+        assert_eq!(disabled.label.fg, Some(theme.disabled));
+        assert_eq!(
+            system
+                .button_recipe(
+                    ButtonRecipeVariant::Primary,
+                    ControlState::Disabled,
+                    theme.surface
+                )
+                .fill
+                .bg,
+            system
+                .button_recipe(
+                    ButtonRecipeVariant::Primary,
+                    ControlState::Disabled,
+                    theme.surface
+                )
+                .fill
+                .bg,
+            "disabled state is computed from kind alone"
+        );
+
+        // junie buttons have no box border in any variant.
         for variant in [
             ButtonRecipeVariant::Primary,
             ButtonRecipeVariant::Secondary,
-            ButtonRecipeVariant::Destructive,
             ButtonRecipeVariant::Quiet,
-            ButtonRecipeVariant::Outline,
-            ButtonRecipeVariant::Link,
+            ButtonRecipeVariant::Destructive,
         ] {
-            let idle = system.button_recipe(variant, ControlState::Default);
-            let focused = system.button_recipe(variant, ControlState::Focused);
-            assert_ne!(focused, idle, "{variant:?} focus collapsed in no-color");
             assert!(
-                focused.label.add_modifier != idle.label.add_modifier
-                    || focused.border.add_modifier != idle.border.add_modifier
-                    || focused.bordered != idle.bordered,
-                "{variant:?} focus has no structural delta"
+                !system
+                    .button_recipe(variant, ControlState::Focused, theme.surface)
+                    .bordered,
+                "{variant:?} grew a border"
             );
-            if idle.label.add_modifier.contains(Modifier::BOLD)
-                && !idle.label.sub_modifier.contains(Modifier::BOLD)
-            {
-                if idle.label.add_modifier.contains(Modifier::REVERSED)
-                    && !idle.label.sub_modifier.contains(Modifier::REVERSED)
-                {
-                    assert!(
-                        focused.label.sub_modifier.contains(Modifier::REVERSED),
-                        "{variant:?} was already reversed and must toggle that cue"
-                    );
-                } else {
-                    assert!(
-                        focused.label.add_modifier.contains(Modifier::REVERSED),
-                        "{variant:?} was pre-emphasized and needs another focus cue"
-                    );
-                }
-            }
         }
     }
 
     #[test]
-    fn input_recipe_invalid_uses_input_invalid() {
-        let system = DesignSystem::slate();
+    fn link_recipe_is_the_underline_affordance() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let idle = system.button_recipe(
+            ButtonRecipeVariant::Link,
+            ControlState::Default,
+            theme.surface,
+        );
+        assert_eq!(idle.label.fg, Some(theme.text_secondary));
+        assert!(idle.label.add_modifier.contains(Modifier::UNDERLINED));
+        assert_eq!(idle.fill.bg, None, "a link never fills");
+        let hovered = system.button_recipe(
+            ButtonRecipeVariant::Link,
+            ControlState::Hovered,
+            theme.surface,
+        );
+        assert_eq!(hovered.label.fg, Some(theme.text_primary));
+    }
+
+    #[test]
+    fn input_recipe_follows_the_junie_field() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let idle = system.input_recipe(ControlState::Default, false);
+        assert_eq!(idle.fill.bg, Some(theme.field));
+        assert_eq!(idle.value.fg, Some(theme.text_primary));
+        assert_eq!(idle.placeholder.fg, Some(theme.text_muted));
+        assert_eq!(idle.border.fg, Some(theme.border_subtle));
+        assert!(idle.prompt.is_none(), "the gutter exists only in focus");
+
+        let focused = system.input_recipe(ControlState::Focused, false);
+        assert!(
+            focused.border.add_modifier.contains(Modifier::UNDERLINED),
+            "editing underlines"
+        );
+        assert_eq!(
+            focused.border.underline_color,
+            Some(theme.accent),
+            "the editing underline is the accent, not a brighter border"
+        );
+        assert_eq!(
+            focused
+                .prompt
+                .expect("focused field carries the gutter")
+                .1
+                .fg,
+            Some(theme.focus)
+        );
+
+        let hovered = system.input_recipe(ControlState::Hovered, false);
+        assert_eq!(hovered.fill.bg, Some(theme.field_hover));
+
         let bad = system.input_recipe(ControlState::Default, true);
-        let ok = system.input_recipe(ControlState::Default, false);
-        assert_ne!(bad.border, ok.border);
+        assert!(
+            bad.border.add_modifier.contains(Modifier::UNDERLINED),
+            "an invalid field underlines"
+        );
+        assert_eq!(
+            bad.border.underline_color,
+            Some(theme.error),
+            "invalid states underline in error"
+        );
+        assert_ne!(bad.border, idle.border);
     }
 
     #[test]
     fn elevation_maps_roles() {
-        let system = DesignSystem::slate();
+        let system = DesignSystem::junie();
         assert_eq!(
             system.elevation(Elevation::Raised),
-            system.style(Role::Raised)
-        );
-        assert_eq!(
-            system.elevation(Elevation::Overlay),
             system.style(Role::Elevated)
         );
-        assert_ne!(
-            system.elevation(Elevation::Raised),
+        // junie has one elevated plane; overlays share it and are told apart
+        // by frame and backdrop, not by a lighter fill.
+        assert_eq!(
             system.elevation(Elevation::Overlay),
-            "an in-flow card and an overlay must not share a rung"
+            system.elevation(Elevation::Raised)
         );
         assert_eq!(Elevation::Canvas.role(), Role::Canvas);
+        assert_ne!(
+            system.elevation(Elevation::Surface),
+            system.elevation(Elevation::Raised)
+        );
     }
 
     #[test]
-    fn theme_package_builtins_cover_presets() {
+    fn theme_package_builtins_is_the_single_junie_package() {
         let packs = ThemePackage::builtins();
-        assert!(packs.iter().any(|p| p.id == "phosphor"));
-        assert!(packs.iter().any(|p| p.id == "paper"));
-        assert!(packs.iter().any(|p| p.id == "adaptive"));
-        assert_eq!(packs.len(), 6);
+        assert_eq!(packs.len(), 1, "junie is the only shipped package");
+        assert_eq!(packs[0].id, "junie");
+        assert_eq!(packs[0].system, DesignSystem::junie());
     }
 
     #[test]
     fn quantize_ansi_preserves_structure() {
-        let system = DesignSystem::paper().quantize(ColorCapability::Ansi16);
+        let system = DesignSystem::junie().quantize(ColorCapability::Ansi16);
         let _ = system.style(Role::Accent);
         assert_eq!(system.capability, ColorCapability::Ansi16);
     }
 
     #[test]
-    fn bordered_chrome_always_reserves_a_column_at_every_density() {
-        for density in [Density::Comfortable, Density::Compact, Density::Dashboard] {
-            let system = DesignSystem::phosphor().density(density);
-            let bordered = system.content_inset(true);
-            assert!(bordered.x >= 1, "{density:?} bordered inset collapsed");
-            assert_eq!(bordered.y, 0, "{density:?} border owns vertical rhythm");
-            let plain = system.content_inset(false);
-            assert_eq!(plain.x, system.spacing.pad_x);
-            assert_eq!(plain.y, system.spacing.pad_y);
-        }
+    fn bordered_chrome_always_reserves_a_column() {
+        let system = DesignSystem::junie();
+        let bordered = system.content_inset(true);
+        assert!(bordered.x >= 1, "bordered inset collapsed");
+        assert_eq!(bordered.y, 0, "the border owns vertical rhythm");
+        let plain = system.content_inset(false);
+        assert_eq!(plain.x, system.spacing.card_inset);
     }
 
     #[test]
@@ -1996,63 +2088,43 @@ mod tests {
 
     #[test]
     fn rhythm_band_is_surrendered_before_content_rows() {
-        let band = DesignSystem::phosphor().spacing.band();
+        let band = DesignSystem::junie().spacing.band();
+        // junie's section break is one blank row, at every height.
         assert_eq!(band.rows, 1);
         assert_eq!(band.resolve(10, 4), 1);
         assert_eq!(band.resolve(5, 5), 0);
         assert_eq!(SpacerBand { rows: 2 }.resolve(6, 4), 2);
-        assert_eq!(
-            DesignSystem::phosphor()
-                .density(Density::Dashboard)
-                .spacing
-                .band()
-                .rows,
-            0
-        );
     }
 
     #[test]
-    fn focus_borders_cross_fade_and_settle() {
+    fn focus_borders_snap_with_no_cross_fade() {
+        // junie has no transition vocabulary left: the focused frame is the
+        // strong hairline at every moment, not the end of a blend.
         let system = DesignSystem::default();
         let settled = system.panel_recipe(PanelChrome::Focused, Elevation::Surface);
-        let mid = system.panel_recipe_at(PanelChrome::Focused, Elevation::Surface, 0.5);
-        let start = system.panel_recipe_at(PanelChrome::Focused, Elevation::Surface, 0.0);
-        assert_ne!(mid.border.fg, settled.border.fg, "mid-transition differs");
         assert_eq!(
-            start.border.fg,
-            system.style(Role::Border).fg,
-            "a fade starts from the border it is leaving"
+            settled.border.fg,
+            Some(system.junie_theme().border_strong),
+            "focus is the strong hairline"
         );
+        let unfocused = system.panel_recipe(PanelChrome::Normal, Elevation::Surface);
         assert_eq!(
-            system
-                .panel_recipe_at(PanelChrome::Focused, Elevation::Surface, 1.0)
+            unfocused.border.fg,
+            Some(system.junie_theme().border_subtle)
+        );
+        // `Off` paints exactly the settled frame.
+        let off = DesignSystem::default().motion(MotionPolicy::Off);
+        assert_eq!(
+            off.panel_recipe(PanelChrome::Focused, Elevation::Surface)
                 .border
                 .fg,
             settled.border.fg
-        );
-
-        // `Basic` still crosses over — capped, not cancelled (motion law §5).
-        let basic = DesignSystem::default().motion(MotionPolicy::Basic);
-        assert_ne!(
-            basic
-                .panel_recipe_at(PanelChrome::Focused, Elevation::Surface, 0.5)
-                .border
-                .fg,
-            basic.style(Role::BorderFocused).fg
-        );
-        // `Off` never blends: it paints the settled frame.
-        let off = DesignSystem::default().motion(MotionPolicy::Off);
-        assert_eq!(
-            off.panel_recipe_at(PanelChrome::Focused, Elevation::Surface, 0.5)
-                .border
-                .fg,
-            off.style(Role::BorderFocused).fg
         );
     }
 
     #[test]
     fn key_value_surfaces_share_one_separator_token() {
-        let system = DesignSystem::phosphor();
+        let system = DesignSystem::junie();
         assert_eq!(system.kv_separator(), KvSeparator::Gutter);
         assert_eq!(system.kv_separator().text(), "  ");
         let colon = system.with_kv_separator(KvSeparator::Colon);

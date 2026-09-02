@@ -4,7 +4,6 @@
 //! Callers own data fetching, editing, sort/filter policy, and page models.
 //! The grid never allocates the full data set; render cost is bounded by the
 //! painted viewport.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -999,9 +998,8 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> StatefulWidget for &VirtualGrid<'_, R
         // reversing but keeps its gutter marker, so the position is never
         // invisible — losing focus must not lose your place.
         let cursor_style = if self.focused {
-            self.system
-                .style(Role::TextStrong)
-                .add_modifier(Modifier::REVERSED)
+            // The cursor cell is the explicit reversal pair.
+            self.system.reversed()
         } else {
             self.system.style(Role::TextStrong)
         };
@@ -1116,15 +1114,7 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> StatefulWidget for &VirtualGrid<'_, R
                 } else {
                     cell.style.unwrap_or(cell_style)
                 };
-                let text = if cell.pending {
-                    if self.system.glyphs.is_ascii() {
-                        "..."
-                    } else {
-                        "…"
-                    }
-                } else {
-                    cell.text
-                };
+                let text = if cell.pending { "…" } else { cell.text };
                 let label = take_display_cols(text, usize::from(width));
                 // Clear then paint (avoids leftover glyphs on narrow columns).
                 for dx in 0..width {
@@ -1144,11 +1134,6 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> StatefulWidget for &VirtualGrid<'_, R
                 });
                 x = x.saturating_add(width);
             }
-            super::surface::normalize_content_band(
-                self.system,
-                buffer,
-                Rect::new(area.x, y, area.width, 1),
-            );
         }
     }
 }

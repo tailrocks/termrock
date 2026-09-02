@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Persistent demos for multi-step and trust-sensitive workflows.
-
 use ratatui::{Frame, layout::Rect};
 use termrock::{
     input::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent},
@@ -150,11 +149,7 @@ impl KeybindingRecorderInteractor {
 impl StoryInteraction for KeybindingRecorderInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
         let system = self.system.clone();
-        KeybindingRecorder::new(&system).ascii(true).paint(
-            area,
-            frame.buffer_mut(),
-            &mut self.state,
-        );
+        let _ = KeybindingRecorder::new(&system).paint(area, frame.buffer_mut(), &mut self.state);
     }
     fn handle_key(&mut self, key: KeyEvent) -> bool {
         let outcome = self.state.handle_key(key);
@@ -293,7 +288,6 @@ impl StoryInteraction for TokenFieldInteractor {
         let _ = TokenField::new(&system)
             .label("To")
             .placeholder("Add recipient…")
-            .ascii(true)
             .paint(area, frame.buffer_mut(), &mut self.state);
     }
     fn handle_key(&mut self, key: KeyEvent) -> bool {

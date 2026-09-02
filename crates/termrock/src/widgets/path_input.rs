@@ -13,7 +13,6 @@
 //! embeds and the setup-form control for single-path entry.
 //!
 //! Research: shell completion, file pickers, Yazi, CLI setup tools.
-
 use std::collections::VecDeque;
 
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
@@ -891,7 +890,6 @@ pub struct PathInput<'a> {
     show_browse: bool,
     show_clear: bool,
     show_base: bool,
-    ascii: bool,
     validation: Validation<'a>,
 }
 
@@ -907,7 +905,6 @@ impl<'a> PathInput<'a> {
             show_browse: true,
             show_clear: true,
             show_base: true,
-            ascii: false,
             validation: Validation::Valid,
         }
     }
@@ -956,13 +953,7 @@ impl<'a> PathInput<'a> {
 
     /// ASCII glyphs.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Validation projection.
-    #[must_use]
     pub const fn validation(mut self, validation: Validation<'a>) -> Self {
         self.validation = validation;
         self
@@ -1022,7 +1013,7 @@ impl<'a> PathInput<'a> {
                 style = style.add_modifier(Modifier::BOLD);
             }
             let label = if destructive {
-                format!("{} {}", if self.ascii { "!" } else { "⚠" }, self.label)
+                format!("{} {}", { "⚠" }, self.label)
             } else {
                 self.label.to_owned()
             };
@@ -1070,56 +1061,15 @@ impl<'a> PathInput<'a> {
         // Leading path kind glyph
         if row.width > 6 {
             let g = match state.fs_status {
-                PathFsStatus::Directory => {
-                    if self.ascii {
-                        "d"
-                    } else {
-                        self.system.glyphs.resolve(Glyph::Folder).text
-                    }
-                }
-                PathFsStatus::File => {
-                    if self.ascii {
-                        "f"
-                    } else {
-                        self.system.glyphs.resolve(Glyph::File).text
-                    }
-                }
-                PathFsStatus::Missing => {
-                    if self.ascii {
-                        "?"
-                    } else {
-                        "∅"
-                    }
-                }
+                PathFsStatus::Directory => "▸",
+                PathFsStatus::File => " ",
+                PathFsStatus::Missing => "∅",
                 PathFsStatus::Pending => "…",
-                PathFsStatus::Inaccessible | PathFsStatus::Error => {
-                    if self.ascii {
-                        "!"
-                    } else {
-                        "⚠"
-                    }
-                }
-                PathFsStatus::Unknown => {
-                    if self.ascii {
-                        "/"
-                    } else {
-                        "·"
-                    }
-                }
+                PathFsStatus::Inaccessible | PathFsStatus::Error => "⚠",
+                PathFsStatus::Unknown => "·",
             };
             // Force single-cell ascii for layout stability in ascii mode
-            let g = if self.ascii {
-                match state.fs_status {
-                    PathFsStatus::Directory => "d",
-                    PathFsStatus::File => "f",
-                    PathFsStatus::Missing => "?",
-                    PathFsStatus::Pending => ".",
-                    PathFsStatus::Inaccessible | PathFsStatus::Error => "!",
-                    PathFsStatus::Unknown => "/",
-                }
-            } else {
-                g
-            };
+            let g = { g };
             let style = if destructive {
                 field_recipe
                     .placeholder
@@ -1176,11 +1126,12 @@ impl<'a> PathInput<'a> {
                 } else {
                     ControlState::Disabled
                 },
+                self.system.junie_theme().surface,
             );
             buffer.set_stringn(
                 right.saturating_add(1),
                 row.y,
-                if self.ascii { "." } else { "…" },
+                "…",
                 1,
                 action.fill.patch(action.label),
             );
@@ -1192,9 +1143,11 @@ impl<'a> PathInput<'a> {
             right = right.saturating_sub(2);
             if show_clear {
                 clear_rect = Some(Rect::new(right.saturating_add(1), row.y, 1, 1));
-                let action = self
-                    .system
-                    .button_recipe(ButtonRecipeVariant::Quiet, ControlState::Default);
+                let action = self.system.button_recipe(
+                    ButtonRecipeVariant::Quiet,
+                    ControlState::Default,
+                    self.system.junie_theme().surface,
+                );
                 buffer.set_stringn(
                     right.saturating_add(1),
                     row.y,
@@ -1476,7 +1429,6 @@ mod tests {
         let mut buf = Buffer::empty(area);
         let parts = PathInput::new(&system)
             .label("Target")
-            .ascii(true)
             .paint(area, &mut buf, &mut state);
         assert!(!parts.field.is_empty());
         let mut row0 = String::new();
@@ -1499,9 +1451,7 @@ mod tests {
         state.set_focused(true);
         let area = Rect::new(0, 0, 40, 2);
         let mut buf = Buffer::empty(area);
-        let parts = PathInput::new(&system)
-            .ascii(true)
-            .paint(area, &mut buf, &mut state);
+        let parts = PathInput::new(&system).paint(area, &mut buf, &mut state);
         let browse = parts.browse.expect("browse");
         assert_eq!(
             state.handle_mouse(MouseEvent {
@@ -1549,7 +1499,7 @@ mod tests {
         state.set_fs_status(PathFsStatus::Directory);
         let area = Rect::new(0, 0, 50, 2);
         let mut buf = Buffer::empty(area);
-        let w = PathInput::new(&system).ascii(true);
+        let w = PathInput::new(&system);
         for _ in 0..200 {
             let _ = w.paint(area, &mut buf, &mut state);
         }

@@ -765,10 +765,16 @@ mod tests {
     }
 
     fn tempfile_dir() -> PathBuf {
+        /// Process-local monotonic counter: two tests in the same process can
+        /// read the wall clock in the same tick, so time alone cannot make the
+        /// directory names unique.
+        static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+        let seq = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         let mut d = std::env::temp_dir();
         d.push(format!(
-            "termrock-cli-test-{}-{}",
+            "termrock-cli-test-{}-{}-{}",
             std::process::id(),
+            seq,
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap()

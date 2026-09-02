@@ -379,8 +379,7 @@ impl StatefulWidget for &SplitPane<'_> {
             });
             return;
         }
-        let ascii = self.system.glyphs.is_ascii();
-        let (glyph, role) = match (self.direction, state.collapsed, state.focused, ascii) {
+        let (glyph, role) = match (self.direction, state.collapsed, state.focused, false) {
             (SplitDirection::Horizontal, Some(SplitSide::First), _, true) => (">", Role::Accent),
             (SplitDirection::Horizontal, Some(SplitSide::Second), _, true) => ("<", Role::Accent),
             (SplitDirection::Vertical, Some(SplitSide::First), _, true) => ("v", Role::Accent),
@@ -521,17 +520,5 @@ mod tests {
         StatefulWidget::render(&split, area, &mut buffer, &mut state);
         assert_eq!(buffer[(x, 1)].symbol(), system.glyphs.rule_v());
         assert!(buffer[(x, 1)].modifier.contains(Modifier::BOLD));
-    }
-
-    #[test]
-    fn collapsed_handle_obeys_ascii_profile() {
-        let system = DesignSystem::default().glyphs(GlyphSet::Ascii);
-        let split = SplitPane::new(SplitDirection::Horizontal, 1, 1, &system);
-        let area = Rect::new(0, 0, 9, 2);
-        let mut state = SplitPaneState::default();
-        state.collapse(SplitSide::First);
-        let mut buffer = Buffer::empty(area);
-        StatefulWidget::render(&split, area, &mut buffer, &mut state);
-        assert_eq!(buffer[(state.layout().divider.x, 0)].symbol(), ">");
     }
 }

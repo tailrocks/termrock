@@ -13,7 +13,6 @@
 //! popover/fullscreen list chrome (host places overlays).
 //!
 //! Research: modern multi-selects, Huh, terminal fuzzy pickers.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -778,7 +777,6 @@ pub struct MultiSelect<'a, Id> {
     placeholder: &'a str,
     label: &'a str,
     validation: Validation<'a>,
-    ascii: bool,
     show_clear: bool,
 }
 
@@ -792,7 +790,6 @@ impl<'a, Id> MultiSelect<'a, Id> {
             placeholder: "Select",
             label: "",
             validation: Validation::Valid,
-            ascii: false,
             show_clear: true,
         }
     }
@@ -820,13 +817,7 @@ impl<'a, Id> MultiSelect<'a, Id> {
 
     /// ASCII glyphs.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Clear affordance on trigger.
-    #[must_use]
     pub const fn show_clear(mut self, on: bool) -> Self {
         self.show_clear = on;
         self
@@ -952,9 +943,11 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
             right = right.saturating_sub(2);
             if show_clear {
                 state.clear_region = Some(Rect::new(right.saturating_add(1), trigger.y, 1, 1));
-                let clear_recipe = self
-                    .system
-                    .button_recipe(ButtonRecipeVariant::Quiet, ControlState::Default);
+                let clear_recipe = self.system.button_recipe(
+                    ButtonRecipeVariant::Quiet,
+                    ControlState::Default,
+                    self.system.junie_theme().surface,
+                );
                 buffer.set_stringn(
                     right.saturating_add(1),
                     trigger.y,
@@ -965,13 +958,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
             }
         }
 
-        let chev = if self.ascii {
-            if state.is_open() { "^" } else { "v" }
-        } else if state.is_open() {
-            "▴"
-        } else {
-            "▾"
-        };
+        let chev = if state.is_open() { "▴" } else { "▾" };
         if right > x {
             right = right.saturating_sub(1);
             buffer.set_stringn(right, trigger.y, chev, 1, recipe.placeholder);
@@ -1009,7 +996,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
                 trigger.y,
                 &take_display_cols(&chip, usize::from(w)),
                 usize::from(w),
-                recipe.cursor.add_modifier(Modifier::REVERSED),
+                recipe.cursor,
             );
             x = x.saturating_add(w).saturating_add(1);
         }
@@ -1043,11 +1030,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
         let mut list_top = inner.y;
         // toolbar: select all / clear hints
         if inner.height >= 2 {
-            let hint = if self.ascii {
-                "Space toggle  ^A all  ^D clear  Enter done"
-            } else {
-                "Space toggle · ^A all · ^D clear · Enter done"
-            };
+            let hint = { "Space toggle · ^A all · ^D clear · Enter done" };
             buffer.set_stringn(
                 inner.x,
                 list_top,
@@ -1163,27 +1146,18 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
                         enabled: !opt.disabled,
                         loading: false,
                         checked: is_on,
+                        ..ListRowVisualState::default()
                     });
                     if recipe.use_fill {
                         buffer.set_style(rect, recipe.label);
                     } else if recipe.use_tint {
                         buffer.set_style(rect, recipe.tint);
                     }
-                    let mark = if self.ascii {
-                        if is_on { "[x]" } else { "[ ]" }
-                    } else if is_on {
-                        "[✓]"
-                    } else {
-                        "[ ]"
-                    };
+                    let mark = if is_on { "[✓]" } else { "[ ]" };
                     // Highlight = reverse focus; checked mark independent
                     let style = recipe.label;
                     let label = if let Some(desc) = &opt.description {
-                        format!(
-                            "{mark} {} {} {desc}",
-                            opt.label,
-                            if self.ascii { "-" } else { "—" }
-                        )
+                        format!("{mark} {} {} {desc}", opt.label, { "—" })
                     } else {
                         format!("{mark} {}", opt.label)
                     };
@@ -1432,7 +1406,6 @@ mod tests {
         let mut buf = Buffer::empty(area);
         MultiSelect::new(&options, &system)
             .label("Filters")
-            .ascii(true)
             .paint_stacked(area, &mut buf, &mut state);
         assert!(!state.trigger.is_empty());
         let mut row = String::new();
@@ -1512,7 +1485,7 @@ mod tests {
         let area = Rect::new(0, 0, 50, 14);
         let mut buf = Buffer::empty(area);
         let _ = state.open(area, &options);
-        let w = MultiSelect::new(&options, &system).ascii(true);
+        let w = MultiSelect::new(&options, &system);
         for _ in 0..80 {
             w.paint_stacked(area, &mut buf, &mut state);
         }

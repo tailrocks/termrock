@@ -1,43 +1,47 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-//! **ProgressBar** — determinate and indeterminate progress with numeric and
-//! textual context.
+//! **ProgressBar** — the junie progress bar and its task/transfer model.
 //!
-//! **Mission.** Rich Progress / indicatif-class bars for builds, downloads, and
-//! transfers: percentage, units, rate, ETA, phases, buffering, paused,
-//! cancelled, complete, failed. Compact / detailed / multi-line recipes; tiny
-//! widths and ASCII/no-color; host-throttled updates; task/transfer projection.
+//! Paint is a one-to-one port of the reference `src/widgets/progress.rs`
+//! (reference-spec §4.14):
+//!
+//! - determinate bar: `label ━━━━━───── 64% ` — fill `━`, track `─` in
+//!   `border_subtle`, percentage right-aligned in `text_secondary`, and a
+//!   fixed 2-cell lifecycle column (` ✓` done, ` !` error, ` ‖` paused).
+//! - **green is reserved for completion; a running bar is white 70 %**
+//!   (`text_secondary`), a paused one drops another step (`text_muted`).
+//! - indeterminate: a short accent `━` segment sweeping a `─` track.
+//! - the activity glyph is the one 10-frame braille vocabulary at 80 ms; there
+//!   is no block ramp, no ASCII twin, no partial cell, and no second cadence.
+//!
+//! The host-facing model (`ProgressBarState`) keeps units/rate/ETA so builds,
+//! downloads, and transfers can project onto the same bar.
 //!
 //! **vs Spinner.** Spinner is glyph + verb activity without completion.
-//! ProgressBar shows completion track (or indeterminate track motion).
 //! **vs TokenMeter.** Token usage domain meter; this is generic progress.
-//!
-//! Research: Rich Progress, indicatif, btop bars, download/build TUIs.
-
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::time::Duration;
 use web_time::Instant;
 
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
+use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
-    runtime::{AnimationDemand, FrameTick, spinner_demand, spinner_step},
-    style::{DesignSystem, MotionPolicy, Role, RolePalette},
+    runtime::{AnimationDemand, FrameTick, spinner_demand},
+    style::{DesignSystem, MotionPolicy, Role, SPINNER_BRAILLE_FRAMES},
     text::{display_cols, take_display_cols},
 };
 
-use super::{SemanticStatus, StatusIndicator};
-
-/// Default indeterminate braille frames (preserved).
-pub const DEFAULT_PROGRESS_FRAMES: [&str; 8] = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧"];
-/// ASCII indeterminate frames.
-pub const PROGRESS_ASCII_FRAMES: [&str; 4] = ["|", "/", "-", "\\"];
-/// Min track cells when percentage is shown or reserved.
-const MIN_TRACK_WIDTH: u16 = 2;
-/// Width at or above which percentage is painted (preserved contract).
-pub const MIN_WIDTH_WITH_PERCENTAGE: u16 = 16;
+/// The one activity frame vocabulary (D6) — re-exported under the progress
+/// name so an indeterminate bar and a spinner can never drift apart.
+pub use crate::style::SPINNER_BRAILLE_FRAMES as DEFAULT_PROGRESS_FRAMES;
+/// Fixed trailing lifecycle glyph column: `" ✓"` done, `" !"` error,
+/// `" ‖"` paused, `"  "` running (reference `progress.rs:48-53`).
+const SUFFIX_WIDTH: u16 = 2;
+/// Width of the right-aligned percentage: `" {pct}"` where `pct` is `{:>4}`.
+const PERCENTAGE_WIDTH: u16 = 5;
+/// A track narrower than this carries no bar: percentage only (reference).
+const MIN_TRACK_WIDTH: u16 = 6;
 /// Default throttle for state-driven updates (ms).
 pub const PROGRESS_DEFAULT_THROTTLE_MS: u64 = 50;
 
@@ -60,10 +64,13 @@ pub enum ProgressKind {
 }
 
 impl ProgressKind {
-    /// Indeterminate frame from [`FrameTick`] + [`MotionPolicy`] (deterministic).
+    /// Indeterminate frame index from [`FrameTick`] + [`MotionPolicy`].
+    ///
+    /// `Off` parks on the first frame: the frozen frame is the deterministic
+    /// answer of a reduced-motion terminal (D7).
     #[must_use]
     pub fn indeterminate_from(tick: FrameTick, motion: MotionPolicy) -> Self {
-        let step = tick.spinner_step(DEFAULT_PROGRESS_FRAMES.len(), 80, motion) as u64;
+        let step = tick.spinner_step(SPINNER_BRAILLE_FRAMES.len(), 80, motion) as u64;
         Self::Indeterminate { tick: step }
     }
 
@@ -78,6 +85,10 @@ impl ProgressKind {
 }
 
 /// Lifecycle / outcome of a progress operation.
+///
+/// The reference knows four states (Active, Done, Error, Paused); TermRock
+/// splits two of them for host bookkeeping and maps both back onto the
+/// reference paint: `Buffering` is still *active*, `Cancelled` is *halted*.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
 pub enum ProgressStatus {
@@ -86,9 +97,9 @@ pub enum ProgressStatus {
     Running,
     /// Host paused (ETA frozen).
     Paused,
-    /// Buffering / stalled wait without cancel.
+    /// Buffering / stalled wait without cancel — paints as running.
     Buffering,
-    /// User or host cancelled.
+    /// User or host cancelled — paints as halted.
     Cancelled,
     /// Finished successfully (fraction → 1).
     Complete,
@@ -110,10 +121,36 @@ impl ProgressStatus {
         }
     }
 
-    /// Whether indeterminate animation should advance.
+    /// Whether the sweep should advance (the reference `Active` state).
     #[must_use]
     pub const fn animates(self) -> bool {
         matches!(self, Self::Running | Self::Buffering)
+    }
+
+    /// Fixed 2-cell lifecycle column (reference `progress.rs:48-53`).
+    ///
+    /// ` ✓` done, ` !` error, ` ‖` paused, `  ` running. `Cancelled` derives
+    /// `×` — the close glyph — because a cancelled bar is one that stopped.
+    #[must_use]
+    pub const fn suffix(self) -> &'static str {
+        match self {
+            Self::Complete => " \u{2713}",
+            Self::Failed => " !",
+            Self::Paused => " \u{2016}",
+            Self::Cancelled => " ×",
+            Self::Running | Self::Buffering => "  ",
+        }
+    }
+
+    /// Fill tone (reference: green is reserved for completion).
+    #[must_use]
+    pub const fn fill_role(self) -> Role {
+        match self {
+            Self::Complete => Role::Success,
+            Self::Failed => Role::Danger,
+            Self::Running | Self::Buffering => Role::TextSecondary,
+            Self::Paused | Self::Cancelled => Role::TextMuted,
+        }
     }
 
     /// Shared lifecycle projection used by status recipes.
@@ -193,17 +230,10 @@ impl ProgressUnit {
 
 // ── State ───────────────────────────────────────────────────────────────────
 
-/// Below this the painted fraction has arrived.
-const SETTLE_EPSILON: f64 = 0.001;
-/// Fraction of the remaining distance covered each frame.
-const SPRING_RATE: f64 = 0.28;
-
 /// Host-driven progress model (task / transfer projection).
 #[derive(Debug, Clone, PartialEq)]
 pub struct ProgressBarState {
-    /// Completed amount (bytes, items, or unitless 0..=total).
     value: f64,
-    /// Total amount (`0` → indeterminate when status running).
     total: f64,
     unit: ProgressUnit,
     unit_label: String,
@@ -217,7 +247,6 @@ pub struct ProgressBarState {
     /// ETA seconds remaining (host-supplied or derived).
     eta_secs: Option<u64>,
     recipe: ProgressRecipe,
-    ascii: bool,
     /// Throttle: min interval between accepted value updates.
     throttle: Duration,
     last_update: Option<Instant>,
@@ -227,12 +256,6 @@ pub struct ProgressBarState {
     /// Active for indeterminate redraw demand.
     active: bool,
     visible: bool,
-    /// The fraction actually painted, which trails `value`.
-    ///
-    /// A determinate bar that jumps 0 → 60% in one frame reads as a glitch,
-    /// and a host that reports every byte makes the bar strobe. The painted
-    /// fraction is sprung toward the reported one (plans/014 Step 3b).
-    displayed: f64,
 }
 
 impl Default for ProgressBarState {
@@ -247,7 +270,6 @@ impl ProgressBarState {
     pub fn new() -> Self {
         Self {
             value: 0.0,
-            displayed: 0.0,
             total: 0.0,
             unit: ProgressUnit::None,
             unit_label: String::new(),
@@ -257,7 +279,6 @@ impl ProgressBarState {
             rate: None,
             eta_secs: None,
             recipe: ProgressRecipe::Compact,
-            ascii: false,
             throttle: Duration::from_millis(PROGRESS_DEFAULT_THROTTLE_MS),
             last_update: None,
             generation: 0,
@@ -312,12 +333,13 @@ impl ProgressBarState {
 
     /// Kind projection for the paint path.
     ///
-    /// Determinate bars report the *painted* fraction, which springs toward
-    /// the reported one; `Off` and `Basic` motion settle it immediately.
+    /// The bar paints the reported fraction directly: a progress bar has no
+    /// easing, no spring, no trailing value (D7 — motion is {Full, Off} and
+    /// neither of them interpolates a number).
     pub fn kind(&mut self, tick: FrameTick, motion: MotionPolicy) -> ProgressKind {
         if self.is_determinate() {
             ProgressKind::Determinate {
-                fraction: self.displayed_fraction(motion),
+                fraction: self.fraction(),
             }
         } else {
             ProgressKind::indeterminate_from(tick, motion)
@@ -355,39 +377,11 @@ impl ProgressBarState {
 
     /// Active for animation demand.
     ///
-    /// Determinate bars count too while the painted fraction is still
-    /// catching up: excluding them is why a determinate bar could only ever
-    /// snap (plans/014 Step 3b).
+    /// Only an indeterminate bar asks for frames: a determinate fraction is a
+    /// number, and numbers do not tick.
     #[must_use]
     pub fn is_active(&self) -> bool {
-        if !self.active || !self.visible || !self.status.animates() {
-            return false;
-        }
-        if Self::is_determinate_raw(self.total) {
-            return (self.fraction() - self.displayed).abs() > SETTLE_EPSILON;
-        }
-        true
-    }
-
-    /// The fraction to paint this frame, advancing the spring toward `value`.
-    ///
-    /// `motion` decides whether the bar springs at all: `Off` and `Basic`
-    /// paint the settled fraction, which is the honest reduced-motion answer.
-    pub fn displayed_fraction(&mut self, motion: MotionPolicy) -> f64 {
-        let target = self.fraction();
-        if !motion.allows_transitions() {
-            self.displayed = target;
-            return target;
-        }
-        let delta = target - self.displayed;
-        if delta.abs() <= SETTLE_EPSILON {
-            self.displayed = target;
-        } else {
-            // Critically damped: approach without overshoot, which is the one
-            // easing a progress bar may use (motion law §5).
-            self.displayed += delta * SPRING_RATE;
-        }
-        self.displayed
+        self.active && self.visible && self.status.animates() && !Self::is_determinate_raw(self.total)
     }
 
     /// Animation demand (indeterminate only).
@@ -498,18 +492,6 @@ impl ProgressBarState {
         }
     }
 
-    /// Recipe.
-    pub fn set_recipe(&mut self, recipe: ProgressRecipe) {
-        self.recipe = recipe;
-        self.bump();
-    }
-
-    /// ASCII track glyphs.
-    pub fn set_ascii(&mut self, on: bool) {
-        self.ascii = on;
-        self.bump();
-    }
-
     /// Throttle interval.
     pub fn set_throttle(&mut self, d: Duration) {
         self.throttle = d;
@@ -549,10 +531,10 @@ impl ProgressBarState {
         &self.phase
     }
 
-    /// Format percentage string.
+    /// Format percentage string — the reference `{:>4}` column.
     #[must_use]
     pub fn percentage_text(&self) -> String {
-        format!("{:>3}%", (self.fraction() * 100.0).round() as u8)
+        percentage_text(self.fraction())
     }
 
     /// Format units current/total.
@@ -633,6 +615,11 @@ fn clamp_fraction(fraction: f64) -> f64 {
     }
 }
 
+/// Reference percentage column: `pct = format!("{:>4}", "{n}%")`.
+fn percentage_text(fraction: f64) -> String {
+    format!("{:>4}", format!("{}%", (fraction * 100.0).round() as u32))
+}
+
 fn format_bytes(n: u64) -> String {
     const K: f64 = 1024.0;
     let n = n as f64;
@@ -659,18 +646,12 @@ fn format_eta(secs: u64) -> String {
 
 // ── Widget ──────────────────────────────────────────────────────────────────
 
-/// Progress bar with optional label (legacy constructor + rich state paint).
-///
-/// Determinate progress shows its percentage at widths of 16 columns or more.
-/// Narrower bars prioritize the label and filled/empty glyph cue instead,
-/// reserving two track cells whenever the available geometry permits.
+/// Progress bar with optional label (junie `render_bar` + rich state paint).
 #[derive(Debug, Clone, Copy)]
 pub struct ProgressBar<'a> {
     kind: ProgressKind,
     label: Option<&'a str>,
-    frames: &'a [&'a str],
     system: &'a DesignSystem,
-    ascii: bool,
     recipe: ProgressRecipe,
     status: ProgressStatus,
     phase: Option<&'a str>,
@@ -684,9 +665,7 @@ impl<'a> ProgressBar<'a> {
         Self {
             kind,
             label: None,
-            frames: &DEFAULT_PROGRESS_FRAMES,
             system,
-            ascii: false,
             recipe: ProgressRecipe::Compact,
             status: ProgressStatus::Running,
             phase: None,
@@ -695,6 +674,10 @@ impl<'a> ProgressBar<'a> {
     }
 
     /// From state + tick (preferred for task/transfer).
+    ///
+    /// Strings owned by the state cannot be borrowed here; use
+    /// [`Self::paint_state`] when the bar must carry its label, phase, and
+    /// meta line.
     #[must_use]
     pub fn from_state(
         state: &mut ProgressBarState,
@@ -702,25 +685,10 @@ impl<'a> ProgressBar<'a> {
         tick: FrameTick,
         motion: MotionPolicy,
     ) -> Self {
-        let kind = state.kind(tick, motion);
-        let meta = state.meta_line();
-        // meta is temporary — paint_state path used instead for owned meta
-        let _ = meta;
         Self {
-            kind,
-            label: if state.label.is_empty() {
-                None
-            } else {
-                // Can't borrow state.label as 'a from temporary — use paint_state
-                None
-            },
-            frames: if state.ascii {
-                &PROGRESS_ASCII_FRAMES
-            } else {
-                &DEFAULT_PROGRESS_FRAMES
-            },
+            kind: state.kind(tick, motion),
+            label: None,
             system,
-            ascii: state.ascii,
             recipe: state.recipe,
             status: state.status,
             phase: None,
@@ -735,20 +703,6 @@ impl<'a> ProgressBar<'a> {
         self
     }
 
-    /// Overrides indeterminate animation frames.
-    #[must_use]
-    pub const fn frames(mut self, frames: &'a [&'a str]) -> Self {
-        self.frames = frames;
-        self
-    }
-
-    /// ASCII track / frames.
-    #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Recipe.
     #[must_use]
     pub const fn recipe(mut self, recipe: ProgressRecipe) -> Self {
@@ -756,7 +710,7 @@ impl<'a> ProgressBar<'a> {
         self
     }
 
-    /// Status (affects fill role).
+    /// Status (affects fill tone and the lifecycle column).
     #[must_use]
     pub const fn status(mut self, status: ProgressStatus) -> Self {
         self.status = status;
@@ -809,13 +763,7 @@ impl<'a> ProgressBar<'a> {
         let bar = ProgressBar {
             kind,
             label,
-            frames: if state.ascii {
-                &PROGRESS_ASCII_FRAMES
-            } else {
-                &DEFAULT_PROGRESS_FRAMES
-            },
             system,
-            ascii: state.ascii,
             recipe: state.recipe,
             status: state.status,
             phase,
@@ -830,18 +778,10 @@ impl<'a> ProgressBar<'a> {
         if area.is_empty() {
             return;
         }
-        if matches!(self.kind, ProgressKind::Indeterminate { .. }) && self.frames.is_empty() {
-            return;
-        }
-
         match self.recipe {
             ProgressRecipe::MultiLine => self.paint_multiline(area, buffer),
             ProgressRecipe::Compact | ProgressRecipe::Detailed => {
-                self.paint_row(
-                    area,
-                    buffer,
-                    matches!(self.recipe, ProgressRecipe::Detailed),
-                );
+                self.paint_row(area, buffer, matches!(self.recipe, ProgressRecipe::Detailed));
             }
         }
     }
@@ -859,9 +799,7 @@ impl<'a> ProgressBar<'a> {
                 area.y,
                 &take_display_cols(title, usize::from(area.width)),
                 usize::from(area.width),
-                self.system
-                    .style(Role::TextStrong)
-                    .add_modifier(Modifier::BOLD),
+                self.system.style(Role::TextStrong),
             );
         }
         // Track row
@@ -883,37 +821,23 @@ impl<'a> ProgressBar<'a> {
     }
 
     fn paint_row(&self, area: Rect, buffer: &mut Buffer, detailed: bool) {
-        // Soft mute background of row (legacy)
-        buffer.set_style(area, self.system.style(Role::TextMuted));
         self.paint_kind(area, buffer, self.label, detailed);
     }
 
     fn paint_kind(&self, area: Rect, buffer: &mut Buffer, label: Option<&str>, detailed: bool) {
         match self.kind {
-            ProgressKind::Determinate { fraction } => {
-                render_determinate(
-                    area,
-                    buffer,
-                    label,
-                    fraction,
-                    self.system,
-                    self.ascii,
-                    self.status,
-                    detailed,
-                    self.meta,
-                );
-            }
+            ProgressKind::Determinate { fraction } => render_determinate(
+                area,
+                buffer,
+                label,
+                fraction,
+                self.system,
+                self.status,
+                detailed,
+                self.meta,
+            ),
             ProgressKind::Indeterminate { tick } => {
-                render_indeterminate(
-                    area,
-                    buffer,
-                    label,
-                    tick,
-                    self.frames,
-                    self.system,
-                    self.ascii,
-                    self.status,
-                );
+                render_indeterminate(area, buffer, label, tick, self.system);
             }
         }
     }
@@ -971,247 +895,170 @@ impl Widget for ProgressBar<'_> {
     }
 }
 
-// ── Render helpers ──────────────────────────────────────────────────────────
+// ── Render helpers (reference `render_bar` / `render_indeterminate`) ────────
 
-fn fill_glyph(ascii: bool) -> &'static str {
-    if ascii { "#" } else { "█" }
-}
-
-fn empty_glyph(ascii: bool) -> &'static str {
-    if ascii { "-" } else { "░" }
-}
-
-fn reserve_lifecycle_status(
-    area: Rect,
-    buffer: &mut Buffer,
-    system: &DesignSystem,
-    ascii: bool,
-    status: ProgressStatus,
-) -> Rect {
-    if matches!(status, ProgressStatus::Running) || area.is_empty() {
-        return area;
-    }
-    let indicator = StatusIndicator::new(status.semantic(), system)
-        .label(status.id())
-        .ascii(ascii);
-    let status_width = indicator.measure_width(None).min(area.width);
-    indicator.paint(Rect::new(area.x, area.y, status_width, 1), buffer);
-    let gap = u16::from(status_width < area.width);
-    let x = area.x.saturating_add(status_width).saturating_add(gap);
-    Rect::new(x, area.y, area.right().saturating_sub(x), area.height)
-}
-
+/// Determinate bar: `label ━━━━━───── 64% `.
+///
+/// Reference geometry: percentage column `{:>4}` plus one leading cell, a
+/// fixed 2-cell lifecycle column, and a track that takes what is left. A
+/// track narrower than [`MIN_TRACK_WIDTH`] carries percentage only, and a
+/// label is painted only when the row is wide enough to keep the bar useful.
 fn render_determinate(
     area: Rect,
     buffer: &mut Buffer,
     label: Option<&str>,
     fraction: f64,
     system: &DesignSystem,
-    ascii: bool,
     status: ProgressStatus,
     detailed: bool,
     meta: Option<&str>,
 ) {
-    let area = reserve_lifecycle_status(area, buffer, system, ascii, status);
-    if area.is_empty() {
+    let fraction = clamp_fraction(fraction);
+    let pct = percentage_text(fraction);
+    let mut x = area.x;
+    if let Some(label) = label {
+        let label_w = u16::try_from(display_cols(label)).unwrap_or(u16::MAX);
+        if label_w > 0 && area.width > label_w.saturating_add(8) {
+            buffer.set_stringn(
+                x,
+                area.y,
+                label,
+                usize::from(label_w),
+                system.style(Role::Text),
+            );
+            x = x.saturating_add(label_w + 2);
+        }
+    }
+
+    // Detailed recipes spend the right-hand meta before the percentage column.
+    let mut right = area.right();
+    if detailed
+        && let Some(m) = meta
+        && !m.is_empty()
+    {
+        let room = right.saturating_sub(x).saturating_sub(PERCENTAGE_WIDTH + 2);
+        let mw = u16::try_from(display_cols(m))
+            .unwrap_or(u16::MAX)
+            .min(area.width / 3)
+            .min(room);
+        if mw > 0 {
+            let mx = right.saturating_sub(mw);
+            buffer.set_stringn(
+                mx,
+                area.y,
+                &take_display_cols(m, usize::from(mw)),
+                usize::from(mw),
+                system.style(Role::TextMuted),
+            );
+            right = mx;
+        }
+    }
+
+    let suffix = status.suffix();
+    let suffix_w = if suffix.trim().is_empty() {
+        0
+    } else {
+        SUFFIX_WIDTH
+    };
+    let track_w = right
+        .saturating_sub(x)
+        .saturating_sub(PERCENTAGE_WIDTH + suffix_w);
+    if track_w < MIN_TRACK_WIDTH {
+        // Too narrow for a meaningful bar: percentage only (reference).
+        buffer.set_stringn(
+            x,
+            area.y,
+            pct.trim_start(),
+            usize::from(right.saturating_sub(x).min(area.right().saturating_sub(x))),
+            system.style(Role::TextSecondary),
+        );
         return;
     }
-    let fraction = clamp_fraction(fraction);
-    let percentage = format!("{:>3}%", (fraction * 100.0).round() as u8);
-    let show_pct = area.width >= MIN_WIDTH_WITH_PERCENTAGE;
-    let percentage_width = if show_pct {
-        u16::try_from(display_cols(&percentage))
-            .unwrap_or(u16::MAX)
-            .min(area.width)
-    } else {
-        0
-    };
-    let percentage_x = area.right().saturating_sub(percentage_width);
-    if percentage_width > 0 {
-        buffer.set_stringn(
-            percentage_x,
-            area.y,
-            &percentage,
-            usize::from(percentage_width),
-            system.style(Role::Text),
-        );
-    }
 
-    let mut track_x = area.x;
-    let mut right_limit = percentage_x;
-
-    // Detailed: optionally reserve meta on the right before %
-    if detailed {
-        if let Some(m) = meta {
-            if !m.is_empty() && area.width >= 28 {
-                let mw = u16::try_from(display_cols(m))
-                    .unwrap_or(u16::MAX)
-                    .min(area.width / 3)
-                    .min(
-                        right_limit
-                            .saturating_sub(area.x)
-                            .saturating_sub(MIN_TRACK_WIDTH + 4),
-                    );
-                if mw > 0 {
-                    let mx = right_limit.saturating_sub(mw);
-                    buffer.set_stringn(
-                        mx,
-                        area.y,
-                        &take_display_cols(m, usize::from(mw)),
-                        usize::from(mw),
-                        system.style(Role::TextMuted),
-                    );
-                    right_limit = mx.saturating_sub(1);
-                }
-            }
-        }
-    }
-
-    if let Some(label) = label {
-        let available = right_limit.saturating_sub(area.x);
-        let reserved = MIN_TRACK_WIDTH.saturating_add(2);
-        let label_width = u16::try_from(display_cols(label))
-            .unwrap_or(u16::MAX)
-            .min(available.saturating_sub(reserved));
-        buffer.set_stringn(
-            area.x,
-            area.y,
-            label,
-            usize::from(label_width),
-            system.style(Role::TextMuted),
-        );
-        track_x = area.x.saturating_add(label_width);
-        if label_width > 0 && track_x < right_limit {
-            track_x = track_x.saturating_add(1);
-        }
-    }
-
-    // Always reserve one trailing cell (gap before % or end) — preserves
-    // legacy track geometry (width 9 → 8 track cells).
-    let track_width = right_limit.saturating_sub(track_x).saturating_sub(1);
-
-    let scaled = f64::from(track_width) * fraction;
-    let filled = (scaled.floor() as u16).min(track_width);
-    let partial = ((scaled.fract() * 8.0).floor() as usize).min(7);
-    let partial_glyph = crate::style::BLOCK_RAMP[partial].to_string();
-    let fill = fill_glyph(ascii);
-    let empty = empty_glyph(ascii);
-    let fill_role = status.semantic().role();
-    for column in 0..track_width {
+    let filled = ((track_w as f64) * fraction).round() as u16;
+    let fill_style = system.style(status.fill_role());
+    let track_style = system.style(Role::Border);
+    for i in 0..track_w {
         buffer.set_string(
-            track_x.saturating_add(column),
+            x.saturating_add(i),
             area.y,
-            if column < filled {
-                fill
-            } else if !ascii && column == filled && partial > 0 {
-                partial_glyph.as_str()
+            if i < filled { "\u{2501}" } else { "\u{2500}" },
+            if i < filled {
+                fill_style
             } else {
-                empty
+                track_style
             },
-            system.style(if column <= filled && (column < filled || partial > 0) {
-                fill_role
-            } else {
-                Role::Sunken
-            }),
+        );
+    }
+    x = x.saturating_add(track_w);
+    buffer.set_stringn(
+        x,
+        area.y,
+        format!(" {pct}"),
+        usize::from(PERCENTAGE_WIDTH),
+        system.style(Role::TextSecondary),
+    );
+    if suffix_w > 0 {
+        buffer.set_stringn(
+            x.saturating_add(PERCENTAGE_WIDTH),
+            area.y,
+            suffix,
+            usize::from(SUFFIX_WIDTH),
+            fill_style,
         );
     }
 }
 
+/// Indeterminate bar: a short accent segment sweeping a quiet track.
+///
+/// The sweep *is* the animation; the caller owns the tick through
+/// [`ProgressKind::indeterminate_from`], whose `Off` answer parks the segment.
 fn render_indeterminate(
     area: Rect,
     buffer: &mut Buffer,
     label: Option<&str>,
     tick: u64,
-    frames: &[&str],
     system: &DesignSystem,
-    ascii: bool,
-    status: ProgressStatus,
 ) {
-    let area = reserve_lifecycle_status(area, buffer, system, ascii, status);
-    if area.is_empty() || !matches!(status, ProgressStatus::Running) {
-        if let Some(label) = label
-            && !area.is_empty()
-        {
+    let mut x = area.x;
+    if let Some(label) = label {
+        let label_w = u16::try_from(display_cols(label)).unwrap_or(u16::MAX);
+        if label_w > 0 && area.width > label_w.saturating_add(8) {
             buffer.set_stringn(
-                area.x,
+                x,
                 area.y,
-                take_display_cols(label, usize::from(area.width)),
-                usize::from(area.width),
-                system.style(Role::TextMuted),
+                label,
+                usize::from(label_w),
+                system.style(Role::Text),
             );
+            x = x.saturating_add(label_w + 2);
         }
+    }
+    let track_w = area.right().saturating_sub(x);
+    if track_w == 0 {
         return;
     }
-    if frames.is_empty() {
-        return;
-    }
-    let frames = if ascii {
-        // Prefer ASCII spinner when host asked for ASCII paint.
-        if frames.len() == DEFAULT_PROGRESS_FRAMES.len() || frames.is_empty() {
-            &PROGRESS_ASCII_FRAMES[..]
-        } else {
-            frames
-        }
-    } else {
-        frames
-    };
-    let frame_count = u64::try_from(frames.len()).unwrap_or(u64::MAX);
-    let frame_index = usize::try_from(tick % frame_count).unwrap_or(0);
-    let glyph = frames[frame_index];
-    let glyph_width = u16::try_from(display_cols(glyph))
-        .unwrap_or(u16::MAX)
-        .min(area.width);
-    buffer.set_stringn(
-        area.x,
-        area.y,
-        glyph,
-        usize::from(glyph_width),
-        system.style(status.semantic().role()),
-    );
-    // Pulse track remainder for wider areas
-    if area.width > glyph_width.saturating_add(4) && status.animates() {
-        let track_x = area.x.saturating_add(glyph_width).saturating_add(1);
-        let track_w = area.right().saturating_sub(track_x);
-        if track_w >= MIN_TRACK_WIDTH {
-            let pos = (tick as u16) % track_w.max(1);
-            let fill = fill_glyph(ascii);
-            let empty = empty_glyph(ascii);
-            for c in 0..track_w {
-                let on = c == pos || c == pos.saturating_add(1).min(track_w.saturating_sub(1));
-                buffer.set_string(
-                    track_x.saturating_add(c),
-                    area.y,
-                    if on { fill } else { empty },
-                    system.style(if on {
-                        status.semantic().role()
-                    } else {
-                        Role::Sunken
-                    }),
-                );
-            }
-            // label after? put label at end if fits - skip if track used
-            return;
-        }
-    }
-    if let Some(label) = label
-        && glyph_width < area.width
-    {
-        let label_x = area.x.saturating_add(glyph_width).saturating_add(1);
-        let label_width = area.right().saturating_sub(label_x);
-        buffer.set_stringn(
-            label_x,
+    let track = i64::from(track_w);
+    // Segment length is a fraction of the track, clamped so it stays readable
+    // at both extremes; the sweep period wraps the segment past the far edge.
+    let seg = i64::from((track_w / 5).clamp(2, 8));
+    let period = track + seg;
+    let pos = i64::try_from(tick % period as u64).unwrap_or(0) - seg;
+    let fill_style = system.style(Role::Accent);
+    let track_style = system.style(Role::Border);
+    for i in 0..track {
+        let in_seg = i >= pos && i < pos + seg;
+        buffer.set_string(
+            x.saturating_add(i as u16),
             area.y,
-            label,
-            usize::from(label_width),
-            system.style(Role::TextMuted),
+            if in_seg { "\u{2501}" } else { "\u{2500}" },
+            if in_seg {
+                fill_style
+            } else {
+                track_style
+            },
         );
     }
-}
-
-// silence unused import warning for spinner_step if only used via FrameTick
-#[allow(dead_code)]
-fn _use_spinner_step(tick: FrameTick, motion: MotionPolicy) -> usize {
-    spinner_step(tick, 8, 80, motion)
 }
 
 // ── Tests ───────────────────────────────────────────────────────────────────
@@ -1220,191 +1067,319 @@ fn _use_spinner_step(tick: FrameTick, motion: MotionPolicy) -> usize {
 mod tests {
     use super::*;
 
+    fn system() -> DesignSystem {
+        DesignSystem::junie()
+    }
+
     fn rendered(buffer: &Buffer) -> String {
         buffer.content().iter().map(|cell| cell.symbol()).collect()
     }
 
-    #[test]
-    fn determinate_progress_clamps_and_keeps_percentage_non_color_cue() {
-        let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
-        let area = Rect::new(2, 1, 18, 1);
-        let mut buffer = Buffer::empty(Rect::new(0, 0, 22, 3));
-        (&ProgressBar::new(ProgressKind::Determinate { fraction: 1.5 }, &system).label("Index"))
-            .render(area, &mut buffer);
-
-        let row = rendered(&buffer);
-        assert!(row.contains("Index"));
-        assert!(row.contains("100%"));
-        assert!(row.contains('█'));
-    }
-
-    #[test]
-    fn indeterminate_tick_is_deterministic_and_tiny_areas_are_safe() {
-        let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
-        let area = Rect::new(0, 0, 8, 1);
-        let mut first = Buffer::empty(area);
-        let mut second = Buffer::empty(area);
-        let progress =
-            ProgressBar::new(ProgressKind::Indeterminate { tick: 3 }, &system).label("Load");
-        (&progress).render(area, &mut first);
-        (&progress).render(area, &mut second);
-
-        assert_eq!(first, second);
-        assert_eq!(first[(0, 0)].symbol(), "⠸");
-        (&progress).render(Rect::new(0, 0, 0, 0), &mut first);
-    }
-
     fn determinate(fraction: f64, width: u16) -> Buffer {
-        let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
         let area = Rect::new(0, 0, width, 1);
         let mut buffer = Buffer::empty(area);
-        (&ProgressBar::new(ProgressKind::Determinate { fraction }, &system))
-            .render(area, &mut buffer);
+        (&ProgressBar::new(
+            ProgressKind::Determinate { fraction },
+            &system(),
+        ))
+        .render(area, &mut buffer);
         buffer
     }
 
     #[test]
-    fn zero_fraction_renders_all_empty_glyphs() {
-        let buffer = determinate(0.0, 9);
-        assert!((0..8).all(|x| buffer[(x, 0)].symbol() == "░"));
+    fn track_is_rule_glyphs_not_blocks() {
+        let buffer = determinate(0.5, 30);
+        let row = rendered(&buffer);
+        assert!(row.contains('\u{2501}'), "fill is ━: {row:?}");
+        assert!(row.contains('\u{2500}'), "track is ─: {row:?}");
+        assert!(!row.contains('█'), "no block fill: {row:?}");
+        assert!(!row.contains('░'), "no shade track: {row:?}");
+        assert!(!row.contains('▄'), "no partial ramp cell: {row:?}");
     }
 
     #[test]
-    fn determinate_boundary_uses_ramp() {
-        let buffer = determinate(9.0 / 16.0, 9);
-        assert_eq!(buffer[(4, 0)].symbol(), "▄");
-    }
+    fn percentage_column_and_status_suffix() {
+        let area = Rect::new(0, 0, 40, 1);
+        let mut buffer = Buffer::empty(area);
+        (&ProgressBar::new(
+            ProgressKind::Determinate { fraction: 0.643 },
+            &system(),
+        ))
+        .render(area, &mut buffer);
+        let row = rendered(&buffer);
+        assert!(row.contains(" 64%"), "percentage is the {:>4} column: {row:?}");
 
-    #[test]
-    fn half_fraction_splits_cells_exactly() {
-        let buffer = determinate(0.5, 9);
-        assert_eq!(buffer[(0, 0)].symbol(), "█");
-        assert_eq!(buffer[(3, 0)].symbol(), "█");
-        assert_eq!(buffer[(4, 0)].symbol(), "░");
-        assert_eq!(buffer[(7, 0)].symbol(), "░");
-    }
-
-    #[test]
-    fn full_fraction_renders_all_filled_glyphs() {
-        let buffer = determinate(1.0, 9);
-        assert!((0..8).all(|x| buffer[(x, 0)].symbol() == "█"));
-    }
-
-    #[test]
-    fn nan_and_infinite_clamp_to_zero() {
-        for fraction in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
-            let buffer = determinate(fraction, 20);
-            assert!((0..15).all(|x| buffer[(x, 0)].symbol() == "░"));
-            assert!(rendered(&buffer).contains("0%"));
+        for (status, suffix) in [
+            (ProgressStatus::Complete, " \u{2713}"),
+            (ProgressStatus::Failed, " !"),
+            (ProgressStatus::Paused, " \u{2016}"),
+            (ProgressStatus::Running, "  "),
+        ] {
+            let mut buffer = Buffer::empty(area);
+            (&ProgressBar::new(
+                ProgressKind::Determinate { fraction: 0.5 },
+                &system(),
+            )
+            .status(status))
+            .render(area, &mut buffer);
+            assert!(
+                rendered(&buffer).contains(suffix),
+                "{status:?} must paint {suffix:?}: {row:?}"
+            );
         }
     }
 
     #[test]
-    fn width_zero_and_one_do_not_panic() {
-        let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
-        let mut buffer = Buffer::empty(Rect::new(0, 0, 1, 1));
-        let progress = ProgressBar::new(ProgressKind::Determinate { fraction: 0.5 }, &system);
-        (&progress).render(Rect::new(0, 0, 0, 0), &mut buffer);
-        (&progress).render(Rect::new(0, 0, 1, 1), &mut buffer);
+    fn running_bar_is_never_green_and_complete_is() {
+        let system = system();
+        let green = system.style(Role::Accent).fg.expect("accent");
+        let area = Rect::new(0, 0, 40, 1);
+        let is_green = |buffer: &Buffer| {
+            buffer
+                .content()
+                .iter()
+                .any(|cell| cell.fg == green || cell.bg == green)
+        };
+        let mut running = Buffer::empty(area);
+        (&ProgressBar::new(
+            ProgressKind::Determinate { fraction: 0.5 },
+            &system,
+        ))
+        .render(area, &mut running);
+        assert!(!is_green(&running), "a running bar is white 70%");
+        assert_eq!(
+            running[(0, 0)].fg,
+            system.style(Role::TextSecondary).fg,
+            "running fill is text_secondary"
+        );
+
+        let mut complete = Buffer::empty(area);
+        (&ProgressBar::new(
+            ProgressKind::Determinate { fraction: 1.0 },
+            &system,
+        ))
+        .render(area, &mut complete);
+        assert!(is_green(&complete), "completion spends the one green");
+        assert_eq!(
+            complete[(0, 0)].fg,
+            system.style(Role::Success).fg,
+            "completed fill is success"
+        );
     }
 
     #[test]
-    fn filled_and_empty_zones_differ_by_glyph() {
-        let buffer = determinate(0.5, 9);
-        assert_ne!(buffer[(0, 0)].symbol(), buffer[(7, 0)].symbol());
+    fn track_is_border_subtle() {
+        let system = system();
+        let buffer = determinate(0.0, 40);
+        let track = system.style(Role::Border).fg.expect("border");
+        assert!(
+            (0..30).all(|x| buffer[(x, 0)].fg == track),
+            "empty track is border_subtle"
+        );
     }
 
     #[test]
-    fn cjk_and_combining_labels_resize_on_grapheme_boundaries() {
-        let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
-        let area = Rect::new(0, 0, 8, 1);
+    fn zero_and_one_boundaries() {
+        let empty = determinate(0.0, 40);
+        assert_eq!((empty[(0, 0)]).symbol(), "\u{2500}");
+        let full = determinate(1.0, 40);
+        assert_eq!((full[(0, 0)]).symbol(), "\u{2501}");
+        assert_eq!((full[(28, 0)]).symbol(), "\u{2501}");
+    }
+
+    #[test]
+    fn clamps_out_of_range_fractions() {
+        for fraction in [1.5, 42.0, f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+            let buffer = determinate(fraction, 40);
+            assert!(
+                rendered(&buffer).contains("100%"),
+                "{fraction} must clamp to 100%"
+            );
+        }
+        for fraction in [-0.25, -7.0] {
+            let buffer = determinate(fraction, 40);
+            assert!(
+                rendered(&buffer).contains("  0%"),
+                "{fraction} must clamp to 0%"
+            );
+            assert_eq!(buffer[(0, 0)].symbol(), "\u{2500}", "clamped empty");
+        }
+    }
+
+    #[test]
+    fn label_drops_when_it_would_starve_the_track() {
+        let system = system();
+        let area = Rect::new(0, 0, 20, 1);
         let mut buffer = Buffer::empty(area);
-        (&ProgressBar::new(ProgressKind::Determinate { fraction: 0.5 }, &system).label("東京🪨"))
-            .render(area, &mut buffer);
-        assert_eq!(buffer[(0, 0)].symbol(), "東");
-        assert_eq!(buffer[(2, 0)].symbol(), "京");
-        assert!(!rendered(&buffer).contains('🪨'));
+        (&ProgressBar::new(
+            ProgressKind::Determinate { fraction: 0.5 },
+            &system,
+        )
+        .label("An extremely long build label"))
+        .render(area, &mut buffer);
+        let row = rendered(&buffer);
+        assert!(!row.contains("extremely"), "label must drop, not clip: {row:?}");
+        assert!(row.contains('\u{2501}'), "the bar survives: {row:?}");
+        assert!(row.contains('%'));
 
-        for ascii in [false, true] {
-            for width in [20, 12, 1, 0] {
-                let area = Rect::new(0, 0, width, 1);
-                let mut buffer = Buffer::empty(area);
-                ProgressBar::new(ProgressKind::Determinate { fraction: 0.5 }, &system)
-                    .label("Cafe\u{301}")
-                    .ascii(ascii)
-                    .paint(area, &mut buffer);
-                if width == 20 {
-                    assert!(rendered(&buffer).contains("Cafe\u{301}"));
+        let mut wide = Buffer::empty(Rect::new(0, 0, 60, 1));
+        (&ProgressBar::new(
+            ProgressKind::Determinate { fraction: 0.5 },
+            &system,
+        )
+        .label("Build"))
+        .render(Rect::new(0, 0, 60, 1), &mut wide);
+        let row = rendered(&wide);
+        assert!(row.contains("Build"), "a fitting label is painted: {row:?}");
+        assert_eq!(
+            wide[(0, 0)].fg,
+            system.style(Role::Text).fg,
+            "label is text_primary"
+        );
+    }
+
+    #[test]
+    fn indeterminate_is_an_accent_sweep_on_a_quiet_track() {
+        let system = system();
+        let accent = system.style(Role::Accent).fg.expect("accent");
+        let border = system.style(Role::Border).fg.expect("border");
+        let area = Rect::new(0, 0, 20, 1);
+        let mut ever_fill = false;
+        let mut ever_track = false;
+        for tick in 0..40u64 {
+            let mut buffer = Buffer::empty(area);
+            (&ProgressBar::new(
+                ProgressKind::Indeterminate { tick },
+                &system,
+            ))
+            .render(area, &mut buffer);
+            for x in 0..area.width {
+                match buffer[(x, 0)].fg {
+                    c if c == accent => ever_fill = true,
+                    c if c == border => ever_track = true,
+                    _ => {}
                 }
             }
         }
+        assert!(ever_fill, "sweep never painted an accent cell");
+        assert!(ever_track, "sweep never painted a track cell");
     }
 
     #[test]
-    fn custom_frames_cycle_and_wrap() {
-        let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
-        let frames = ["A", "B"];
-        for (tick, expected) in [(0, "A"), (1, "B"), (2, "A")] {
-            let area = Rect::new(0, 0, 3, 1);
+    fn indeterminate_tick_is_deterministic_and_off_parks_the_segment() {
+        let system = system();
+        let area = Rect::new(0, 0, 20, 1);
+        // Same tick, same picture.
+        let bar = ProgressBar::new(ProgressKind::Indeterminate { tick: 3 }, &system);
+        let mut first = Buffer::empty(area);
+        let mut second = Buffer::empty(area);
+        (&bar).render(area, &mut first);
+        (&bar).render(area, &mut second);
+        assert_eq!(first, second);
+
+        // Off parks on the first frame, so however far apart two ticks are the
+        // segment sits in the same place.
+        let start = web_time::Instant::now();
+        let at = |ms: u64| {
+            FrameTick::manual(
+                start + Duration::from_millis(ms),
+                Duration::from_millis(ms),
+                Duration::from_millis(16),
+            )
+        };
+        let parked = ProgressBar::new(ProgressKind::indeterminate_from(at(9_600), MotionPolicy::Off), &system);
+        let moved = ProgressBar::new(ProgressKind::indeterminate_from(at(9_600), MotionPolicy::Full), &system);
+        let mut a = Buffer::empty(area);
+        let mut b = Buffer::empty(area);
+        (&parked).render(area, &mut a);
+        (&moved).render(area, &mut b);
+        assert_eq!(
+            ProgressKind::indeterminate_from(at(0), MotionPolicy::Off),
+            ProgressKind::Indeterminate { tick: 0 },
+            "Off freezes the cadence on frame zero"
+        );
+        assert_ne!(a, b, "Full must actually sweep");
+    }
+
+    #[test]
+    fn tiny_widths_are_safe() {
+        let system = system();
+        for width in [0u16, 1, 4, 9] {
+            let area = Rect::new(0, 0, width, 1);
             let mut buffer = Buffer::empty(area);
-            (&ProgressBar::new(ProgressKind::Indeterminate { tick }, &system).frames(&frames))
-                .render(area, &mut buffer);
-            assert_eq!(buffer[(0, 0)].symbol(), expected);
+            (&ProgressBar::new(
+                ProgressKind::Determinate { fraction: 0.5 },
+                &system,
+            ))
+            .render(area, &mut buffer);
+            let mut sweep = Buffer::empty(area);
+            (&ProgressBar::new(
+                ProgressKind::Indeterminate { tick: 2 },
+                &system,
+            ))
+            .render(area, &mut sweep);
         }
     }
 
     #[test]
-    fn empty_frames_render_nothing() {
-        let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
+    fn narrow_row_paints_percentage_only() {
+        let system = system();
         let area = Rect::new(0, 0, 8, 1);
         let mut buffer = Buffer::empty(area);
-        let before = buffer.clone();
-        (&ProgressBar::new(ProgressKind::Indeterminate { tick: 3 }, &system)
-            .frames(&[])
-            .label("hidden"))
-            .render(area, &mut buffer);
-        assert_eq!(buffer, before);
-    }
-
-    #[test]
-    fn narrow_width_elides_percentage_but_keeps_glyph_cue() {
-        let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
-        let area = Rect::new(0, 0, 14, 1);
-        let mut buffer = Buffer::empty(area);
-        (&ProgressBar::new(ProgressKind::Determinate { fraction: 0.62 }, &system).label("Build"))
-            .render(area, &mut buffer);
+        (&ProgressBar::new(
+            ProgressKind::Determinate { fraction: 0.62 },
+            &system,
+        ))
+        .render(area, &mut buffer);
         let row = rendered(&buffer);
-        assert!(!row.contains('%'));
-        assert!(row.contains('█'));
-        assert!(row.contains('░'));
+        assert!(row.contains("62%"), "percentage survives the squeeze: {row:?}");
+        assert!(!row.contains('\u{2501}'), "no track fits: {row:?}");
     }
 
     #[test]
-    fn narrow_long_label_reserves_filled_and_empty_track_cells() {
-        let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
-        let area = Rect::new(0, 0, 14, 1);
+    fn detailed_recipe_carries_muted_meta() {
+        let system = system();
+        let mut state = ProgressBarState::transfer(512, 1024);
+        state.set_label("Download");
+        state.set_recipe(ProgressRecipe::Detailed);
+        let area = Rect::new(0, 0, 60, 1);
         let mut buffer = Buffer::empty(area);
-        (&ProgressBar::new(ProgressKind::Determinate { fraction: 0.5 }, &system)
-            .label("An extremely long build label"))
-            .render(area, &mut buffer);
+        ProgressBar::paint_state(
+            &system,
+            area,
+            &mut buffer,
+            &mut state,
+            FrameTick::manual(Instant::now(), Duration::ZERO, Duration::ZERO),
+            MotionPolicy::Off,
+        );
         let row = rendered(&buffer);
-        assert!(row.contains('█'));
-        assert!(row.contains('░'));
+        assert!(row.contains("Download"), "{row:?}");
+        assert!(row.contains("512B/1.0K"), "units meta survives: {row:?}");
+        assert_eq!(
+            buffer[(area.right() - 1, 0)].fg,
+            system.style(Role::TextMuted).fg,
+            "meta is metadata"
+        );
     }
 
-    // ── New ProgressBar tests ─────────────────────────────────────────────
+    #[test]
+    fn multiline_recipe_paints_title_track_meta() {
+        let system = system();
+        let area = Rect::new(0, 0, 40, 3);
+        let mut buffer = Buffer::empty(area);
+        ProgressBar::new(ProgressKind::Determinate { fraction: 0.4 }, &system)
+            .label("Download")
+            .recipe(ProgressRecipe::MultiLine)
+            .meta("12M/30M · 2.1M/s · ETA 9s")
+            .paint(area, &mut buffer);
+        let row = rendered(&buffer);
+        assert!(row.contains("Download"), "{row:?}");
+        assert!(row.contains("ETA 9s"), "{row:?}");
+        assert_eq!(buffer[(0, 1)].symbol(), "\u{2500}", "track row is quiet");
+    }
 
     #[test]
-    fn state_transfer_and_eta() {
+    fn state_transfer_units_and_eta() {
         let mut s = ProgressBarState::transfer(512, 1024);
         s.set_rate(Some(256.0));
         s.recompute_eta();
@@ -1412,6 +1387,7 @@ mod tests {
         assert!(s.units_text().unwrap().contains('K') || s.units_text().unwrap().contains('B'));
         assert!(s.eta_secs.is_some());
         assert!(s.eta_text().is_some());
+        assert_eq!(s.percentage_text(), " 50%");
     }
 
     #[test]
@@ -1428,79 +1404,19 @@ mod tests {
     }
 
     #[test]
-    fn status_complete_and_failed_paint() {
-        let system = DesignSystem::default();
-        let mut s = ProgressBarState::task(3, 10);
-        s.set_label("Build");
-        s.set_status(ProgressStatus::Failed);
-        s.set_ascii(true);
-        let area = Rect::new(0, 0, 40, 1);
-        let mut buf = Buffer::empty(area);
-        ProgressBar::paint_state(
-            &system,
-            area,
-            &mut buf,
-            &mut s,
-            FrameTick::manual(Instant::now(), Duration::ZERO, Duration::ZERO),
-            MotionPolicy::Off,
-        );
-        assert!(!s.needs_paint());
-        assert!(rendered(&buf).starts_with("| x failed"));
-    }
-
-    #[test]
-    fn multiline_recipe_height() {
-        let system = DesignSystem::default();
-        let area = Rect::new(0, 0, 40, 3);
-        let mut buf = Buffer::empty(area);
-        ProgressBar::new(ProgressKind::Determinate { fraction: 0.4 }, &system)
-            .label("Download")
-            .recipe(ProgressRecipe::MultiLine)
-            .meta("12M/30M · 2.1M/s · ETA 9s")
-            .status(ProgressStatus::Running)
-            .paint(area, &mut buf);
-        let text: String = rendered(&buf);
-        assert!(
-            text.contains("Download") || text.contains("12M") || text.contains('%'),
-            "{text}"
-        );
-    }
-
-    #[test]
-    fn ascii_track_glyphs() {
-        let system = DesignSystem::default();
-        let area = Rect::new(0, 0, 20, 1);
-        let mut buf = Buffer::empty(area);
-        ProgressBar::new(ProgressKind::Determinate { fraction: 0.5 }, &system)
-            .ascii(true)
-            .paint(area, &mut buf);
-        let text = rendered(&buf);
-        assert!(text.contains('#'), "{text}");
-        assert!(text.contains('-'), "{text}");
-    }
-
-    #[test]
-    fn idle_redraw_when_determinate() {
-        // A determinate bar asks for frames only while its painted fraction
-        // is still catching up to the reported one (plans/014 Step 3b).
+    fn only_indeterminate_asks_for_frames() {
         let mut s = ProgressBarState::task(1, 2);
         let tick = FrameTick::manual(Instant::now(), Duration::from_millis(100), Duration::ZERO);
-        assert!(s.animation_demand(tick, MotionPolicy::Full).needs_redraw);
-        for _ in 0..64 {
-            let _ = s.displayed_fraction(MotionPolicy::Full);
-        }
         assert!(!s.animation_demand(tick, MotionPolicy::Full).needs_redraw);
-        // Reduced motion settles at once.
-        let mut basic = ProgressBarState::task(1, 2);
-        let _ = basic.displayed_fraction(MotionPolicy::Basic);
-        assert!(
-            !basic
-                .animation_demand(tick, MotionPolicy::Basic)
-                .needs_redraw
-        );
-        let mut ind = ProgressBarState::new(); // total 0
-        ind.set_active(true);
+
+        let mut ind = ProgressBarState::new(); // total 0 → indeterminate
         assert!(ind.animation_demand(tick, MotionPolicy::Full).needs_redraw);
+        assert!(
+            !ind
+                .animation_demand(tick, MotionPolicy::Off)
+                .needs_redraw,
+            "reduced motion never asks for frames"
+        );
         ind.set_active(false);
         assert!(!ind.animation_demand(tick, MotionPolicy::Full).needs_redraw);
     }
@@ -1517,6 +1433,12 @@ mod tests {
         }
         assert!(!ProgressStatus::Paused.animates());
         assert!(ProgressStatus::Buffering.animates());
+        assert_eq!(ProgressStatus::Cancelled.suffix(), " ×");
+        assert_eq!(
+            ProgressStatus::Buffering.fill_role(),
+            Role::TextSecondary,
+            "buffering still paints as running"
+        );
     }
 
     #[test]
@@ -1551,11 +1473,10 @@ mod tests {
         for _ in 0..80 {
             seed = seed.wrapping_mul(1103515245).wrapping_add(12345);
             let w = (seed % 40) as u16 + 1;
-            let f = (seed % 1001) as f64 / 1000.0;
+            let f = (seed % 2001) as f64 / 1000.0 - 0.5;
             let area = Rect::new(0, 0, w, 1);
             let mut buf = Buffer::empty(area);
             ProgressBar::new(ProgressKind::Determinate { fraction: f }, &system)
-                .ascii(seed % 2 == 0)
                 .label("T")
                 .paint(area, &mut buf);
         }

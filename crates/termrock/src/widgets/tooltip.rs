@@ -14,7 +14,6 @@
 //! (skipped under reduced motion).
 //!
 //! Research: Radix Tooltip, desktop tooltips, terminal-adapted hover semantics.
-
 use std::time::Duration;
 use web_time::Instant;
 
@@ -425,7 +424,7 @@ impl TooltipState {
 
     fn effective_delay(&self, motion: MotionPolicy) -> Duration {
         match motion {
-            MotionPolicy::Off | MotionPolicy::Basic => Duration::ZERO,
+            MotionPolicy::Off => Duration::ZERO,
             MotionPolicy::Full => self.delay,
         }
     }
@@ -474,7 +473,7 @@ impl TooltipState {
 
     /// FrameTick-driven advance (canonical).
     ///
-    /// Under [`MotionPolicy::Basic`] / [`MotionPolicy::Off`], show delay is zero.
+    /// Under [`MotionPolicy::Off`], show delay is zero.
     pub fn advance(&mut self, tick: FrameTick, motion: MotionPolicy) -> TooltipOutcome {
         if self.disabled {
             self.force_hide();
@@ -497,7 +496,7 @@ impl TooltipState {
         }
         let _ = self.presence.advance(tick, motion);
         // Reduced motion: if still pending after request, force zero-delay show.
-        if matches!(motion, MotionPolicy::Basic | MotionPolicy::Off) && !self.is_visible() {
+        if matches!(motion, MotionPolicy::Off) && !self.is_visible() {
             self.presence = Presence::tooltip(Duration::ZERO);
             self.presence.request_show(tick);
             self.show_requested = true;
@@ -565,7 +564,6 @@ pub struct Tooltip<'a> {
     content: TooltipContent<'a>,
     system: &'a DesignSystem,
     variant: TooltipVariant,
-    ascii: bool,
     colorless: bool,
     max_width: u16,
 }
@@ -578,7 +576,6 @@ impl<'a> Tooltip<'a> {
             content,
             system,
             variant: TooltipVariant::Plain,
-            ascii: false,
             colorless: false,
             max_width: TOOLTIP_DEFAULT_MAX_WIDTH,
         }
@@ -607,13 +604,7 @@ impl<'a> Tooltip<'a> {
 
     /// ASCII border glyphs.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Colorless roles.
-    #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self
@@ -823,7 +814,7 @@ mod tests {
         let mut state = TooltipState::with_delay(Duration::from_millis(500));
         state.set_pointer_over(true);
         let tick = FrameTick::manual(Instant::now(), Duration::ZERO, Duration::ZERO);
-        let _ = state.advance(tick, MotionPolicy::Basic);
+        let _ = state.advance(tick, MotionPolicy::Off);
         assert!(state.is_visible());
     }
 
@@ -978,7 +969,7 @@ mod tests {
                 Duration::from_millis(30),
             );
             let motion = if seed % 5 == 0 {
-                MotionPolicy::Basic
+                MotionPolicy::Off
             } else {
                 MotionPolicy::Full
             };
@@ -1002,7 +993,6 @@ mod tests {
             &system,
         )
         .rich()
-        .ascii(true)
         .colorless(true)
         .paint(area, &mut buf, &state);
     }

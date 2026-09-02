@@ -31,7 +31,6 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -547,8 +546,6 @@ pub struct HelpCenterState {
     /// Live this frame: diagnostics pane is laid out (findings or component ids).
     /// Synced from doctor/component surfaces in handle_key and render.
     pub diagnostics_live: bool,
-    /// ASCII.
-    pub ascii: bool,
     /// Colorless.
     pub colorless: bool,
     last_panes: Vec<PaneGeom>,
@@ -592,7 +589,6 @@ impl HelpCenterState {
             context_label: None,
             show_diagnostics: true,
             diagnostics_live: false,
-            ascii: false,
             colorless: false,
             last_panes: Vec::new(),
             last_area_width: None,
@@ -1472,7 +1468,6 @@ pub fn render_help_center(buffer: &mut Buffer, area: Rect, surfaces: HelpCenterS
         state.keyboard.set_accepts_input(focused);
         KeyboardHelp::new(&filtered_help, system)
             .title("Keyboard")
-            .ascii(state.ascii)
             .colorless(state.colorless)
             .paint(r, buffer, &mut state.keyboard);
     }

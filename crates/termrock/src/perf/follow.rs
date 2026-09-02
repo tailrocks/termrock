@@ -4,7 +4,6 @@
 //! Follow-tail, scroll anchors, and new-content indicators.
 //!
 //! Used by transcripts, logs, process output, and agent threads.
-
 use crate::widgets::VirtualWindow;
 
 /// Whether the viewport sticks to the end as content grows.

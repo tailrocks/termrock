@@ -9,7 +9,6 @@
 //! Canonical coordination for new hosts is [`termrock::context::UiHost`] /
 //! [`termrock::context::UiContext`]. This lookbook shell mirrors the same
 //! authorities for gallery chrome while the mounted demo owns its overlays.
-
 use ratatui::layout::Rect;
 use termrock::{
     interaction::{

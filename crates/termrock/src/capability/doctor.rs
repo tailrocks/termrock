@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Structured report for `termrock doctor` (CLI or embed).
-
 use super::detect::DetectionReport;
 use super::profile::{
     CapabilityOverrides, CapabilityProfile, TerminalCapabilities, resolve_from_detection,
@@ -101,15 +100,6 @@ pub fn build_doctor_report_from_detection(
             effective.set.color, effective.color_source
         ),
     });
-    findings.push(DoctorFinding {
-        severity: DoctorSeverity::Info,
-        code: "glyphs".into(),
-        message: format!(
-            "glyphs={:?} source={:?}",
-            effective.set.glyphs, effective.glyph_source
-        ),
-    });
-
     if effective.set.ssh && effective.set.clipboard {
         findings.push(DoctorFinding {
             severity: DoctorSeverity::Warning,
@@ -152,12 +142,10 @@ pub fn build_doctor_report_from_detection(
     }
     recommended_env.push("# TERMROCK_PROFILE=modern|compatible|minimal|inline|headless".into());
     recommended_env.push("# TERMROCK_COLOR=truecolor|256|16|mono".into());
-    recommended_env.push("# TERMROCK_GLYPHS=unicode|ascii".into());
 
     let sample_hint = format!(
-        "sample: color={:?} glyphs={:?} mouse={} alt_screen={} paste={}",
+        "sample: color={:?} mouse={} alt_screen={} paste={}",
         effective.set.color,
-        effective.set.glyphs,
         effective.set.mouse,
         effective.set.alternate_screen,
         effective.set.bracketed_paste

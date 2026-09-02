@@ -17,7 +17,6 @@
 //!
 //! Research: editor keybinding settings, terminal protocol limits (no F-keys in
 //! neutral vocabulary, CSI ambiguity, Ctrl+C SIGINT).
-
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
@@ -794,7 +793,6 @@ pub struct KeybindingRecorder<'a> {
     system: &'a DesignSystem,
     show_limits: bool,
     show_hints: bool,
-    ascii: bool,
 }
 
 impl<'a> KeybindingRecorder<'a> {
@@ -805,7 +803,6 @@ impl<'a> KeybindingRecorder<'a> {
             system,
             show_limits: true,
             show_hints: true,
-            ascii: false,
         }
     }
 
@@ -825,11 +822,6 @@ impl<'a> KeybindingRecorder<'a> {
 
     /// ASCII-only marks.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Paint.
     pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut KeybindingRecorderState) {
         state.root = area;
@@ -846,11 +838,7 @@ impl<'a> KeybindingRecorder<'a> {
             });
         let inner = panel.inner(area);
         let title = if state.is_recording() {
-            if self.ascii {
-                "Recording - Esc cancel | Enter accept"
-            } else {
-                "Recording — Esc cancel · Enter accept"
-            }
+            "Recording — Esc cancel · Enter accept"
         } else {
             state.action_label.as_str()
         };
@@ -891,16 +879,12 @@ impl<'a> KeybindingRecorder<'a> {
                 invalid,
             );
             let live = state.display_live();
-            let rec_mark = if state.is_recording() {
-                if self.ascii { "[REC] " } else { "● " }
-            } else {
-                ""
-            };
+            let rec_mark = if state.is_recording() { "● " } else { "" };
             let line = format!("{rec_mark}{live}");
             let mut style = if state.is_recording() {
-                recipe
-                    .cursor
-                    .add_modifier(Modifier::BOLD | Modifier::REVERSED)
+                // The caret recipe is already the explicit pair; stacking a
+                // reversal on top swapped it back to invisible.
+                recipe.cursor
             } else {
                 recipe.value.add_modifier(Modifier::BOLD)
             };
@@ -985,11 +969,7 @@ impl<'a> KeybindingRecorder<'a> {
 
         // Protocol notes (compact, one line)
         if self.show_limits && y < inner.bottom() && state.is_recording() {
-            let note = if self.ascii {
-                "protocol: no F-keys in neutral map | Esc cancels"
-            } else {
-                "protocol: no F-keys in neutral map · Esc cancels"
-            };
+            let note = { "protocol: no F-keys in neutral map · Esc cancels" };
             buffer.set_stringn(
                 inner.x,
                 y,
@@ -1002,11 +982,7 @@ impl<'a> KeybindingRecorder<'a> {
 
         // Hints
         if self.show_hints && y < inner.bottom() && !state.is_recording() {
-            let hints = if self.ascii {
-                "Enter/Space record  r restore  Del clear  Esc blur"
-            } else {
-                "Enter/Space record · r restore · Del clear · Esc blur"
-            };
+            let hints = { "Enter/Space record · r restore · Del clear · Esc blur" };
             buffer.set_stringn(
                 inner.x,
                 y,
@@ -1065,7 +1041,7 @@ impl StatefulWidget for &KeybindingRecorder<'_> {
     type State = KeybindingRecorderState;
 
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        self.paint(area, buffer, state);
+        let _ = self.paint(area, buffer, state);
     }
 }
 
@@ -1296,13 +1272,9 @@ mod tests {
         state.set_focused(true);
         let area = Rect::new(0, 0, 48, 8);
         let mut buf = Buffer::empty(area);
-        KeybindingRecorder::new(&system)
-            .ascii(true)
-            .paint(area, &mut buf, &mut state);
+        let _ = KeybindingRecorder::new(&system).paint(area, &mut buf, &mut state);
         let _ = state.start_recording();
-        KeybindingRecorder::new(&system)
-            .ascii(true)
-            .paint(area, &mut buf, &mut state);
+        let _ = KeybindingRecorder::new(&system).paint(area, &mut buf, &mut state);
     }
 
     #[test]
@@ -1332,9 +1304,9 @@ mod tests {
         state.set_focused(true);
         let area = Rect::new(0, 0, 40, 6);
         let mut buf = Buffer::empty(area);
-        let w = KeybindingRecorder::new(&system).ascii(true);
+        let w = KeybindingRecorder::new(&system);
         for _ in 0..50 {
-            w.paint(area, &mut buf, &mut state);
+            let _ = w.paint(area, &mut buf, &mut state);
         }
     }
 

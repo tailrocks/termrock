@@ -8,7 +8,6 @@
 //! nothing on a monochrome terminal, and a message that moves between widgets
 //! makes the reader hunt for it. The message sits directly under the field, in
 //! every widget, and leads with the glyph that names its kind.
-
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Style};
 
 use crate::style::{DesignSystem, Glyph, Role};
@@ -62,7 +61,6 @@ pub(crate) fn paint_field_message(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::style::GlyphSet;
 
     fn render(kind: DescriptionKind, system: &DesignSystem) -> String {
         let row = Rect::new(0, 0, 20, 1);
@@ -74,27 +72,15 @@ mod tests {
     }
 
     #[test]
-    fn errors_lead_with_a_glyph_so_they_survive_no_color() {
-        let system = DesignSystem::phosphor().glyphs(GlyphSet::Ascii);
-        let line = render(DescriptionKind::Error, &system);
-        let mark = system.glyphs.resolve(Glyph::Error).text;
-        assert!(
-            line.starts_with(mark),
-            "an error must be readable without colour, got {line:?}"
-        );
-        assert!(line.contains("too short"));
-    }
-
-    #[test]
     fn help_is_quiet_and_unmarked() {
-        let system = DesignSystem::phosphor();
+        let system = DesignSystem::junie();
         let line = render(DescriptionKind::Help, &system);
         assert!(line.starts_with("too short"), "help carries no event glyph");
     }
 
     #[test]
     fn each_kind_speaks_in_its_own_tone() {
-        let system = DesignSystem::phosphor();
+        let system = DesignSystem::junie();
         assert_eq!(
             kind_style(DescriptionKind::Error, &system),
             system.style(Role::Danger)

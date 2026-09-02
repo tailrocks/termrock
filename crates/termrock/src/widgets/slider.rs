@@ -15,7 +15,6 @@
 //! numeric display automatically.
 //!
 //! Research: Radix Slider, TUI volume controls, btop, Textual sliders.
-
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -375,7 +374,7 @@ pub(crate) struct SliderChrome {
 
 pub(crate) fn slider_chrome(
     system: &DesignSystem,
-    colorless: bool,
+    _colorless: bool,
     enabled: bool,
     active: bool,
 ) -> SliderChrome {
@@ -389,10 +388,7 @@ pub(crate) fn slider_chrome(
         },
         false,
     );
-    let mut thumb = if active { recipe.cursor } else { recipe.value }.add_modifier(Modifier::BOLD);
-    if mono(system, colorless) {
-        thumb = thumb.add_modifier(Modifier::REVERSED);
-    }
+    let thumb = if active { recipe.cursor } else { recipe.value }.add_modifier(Modifier::BOLD);
     SliderChrome {
         track: recipe.border,
         fill: if enabled {
@@ -1773,29 +1769,6 @@ mod tests {
             SliderOutcome::EditCancelled
         ));
         assert_eq!(state.value, 75.0);
-    }
-
-    #[test]
-    fn slider_paint_handle_ascii() {
-        let system = DesignSystem::default().glyphs(crate::style::GlyphSet::Ascii);
-        let s = Slider::new(SliderBounds::percent(), &system)
-            .colorless(true)
-            .label("Vol");
-        let mut state = SliderState::new(50.0);
-        state.set_focused(true);
-        let mut buf = Buffer::empty(Rect::new(0, 0, 40, 2));
-        let parts = s.paint(Rect::new(0, 0, 40, 2), &mut buf, &mut state);
-        assert!(!parts.numeric_only);
-        assert!(parts.track.is_some());
-        assert!(parts.handle.is_some());
-        // Handle glyph *
-        let h = parts.handle.unwrap();
-        assert_eq!(
-            buf.cell((h.x, h.y))
-                .map(|c| c.symbol().to_string())
-                .as_deref(),
-            Some("*")
-        );
     }
 
     #[test]

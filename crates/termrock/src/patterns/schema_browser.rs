@@ -25,7 +25,6 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-
 use std::collections::BTreeSet;
 
 use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::StatefulWidget};
@@ -109,23 +108,8 @@ impl SchemaNodeKind {
 
     /// Leading glyph.
     #[must_use]
-    pub const fn glyph(self, ascii: bool) -> &'static str {
-        if ascii {
-            match self {
-                Self::Connection => "@",
-                Self::Database => "D",
-                Self::Schema => "S",
-                Self::Table => "T",
-                Self::View => "V",
-                Self::Column => "c",
-                Self::Index => "i",
-                Self::Constraint => "k",
-                Self::Routine => "f",
-                Self::Sequence => "q",
-                Self::Group => "+",
-                Self::Other => "?",
-            }
-        } else {
+    pub const fn glyph(self, _ascii: bool) -> &'static str {
+        {
             match self {
                 Self::Connection => "⬡",
                 Self::Database => "▣",
@@ -148,7 +132,7 @@ impl SchemaNodeKind {
     pub const fn role(self) -> Role {
         match self {
             Self::Connection => Role::TextStrong,
-            Self::Database | Self::Schema => Role::Info,
+            Self::Database | Self::Schema => Role::TextSecondary,
             Self::Table => Role::TextStrong,
             Self::View => Role::Text,
             Self::Column => Role::TextMuted,
@@ -516,7 +500,7 @@ pub fn filter_schema_entries<'a, Id: Clone + PartialEq>(
 #[must_use]
 pub fn schema_entries_to_tree_nodes<'a, Id: Clone>(
     entries: &[&'a SchemaBrowserEntry<'a, Id>],
-    ascii: bool,
+    _ascii: bool,
 ) -> Vec<TreeNode<'a, Id>> {
     entries
         .iter()
@@ -537,7 +521,7 @@ pub fn schema_entries_to_tree_nodes<'a, Id: Clone>(
             } else if !e.enabled {
                 node = node.disabled();
             }
-            let lead = e.kind.glyph(ascii);
+            let lead = e.kind.glyph(false);
             node = node.leading(Line::from(lead));
             // Badge: key or connection letter
             if let Some(kb) = e.key_badge {
@@ -558,7 +542,7 @@ pub fn schema_entries_to_tree_nodes<'a, Id: Clone>(
             } else if matches!(e.kind, SchemaNodeKind::Connection) {
                 node = node.secondary(Line::from(format!(
                     "| {} {}",
-                    e.conn.semantic().glyph(ascii),
+                    e.conn.semantic().glyph(),
                     e.conn.id()
                 )));
             }
@@ -723,8 +707,6 @@ pub struct SchemaBrowserState<Id: Clone + Ord> {
     pub presentation_override: Option<SchemaBrowserPresentation>,
     /// Preserved expanded branch ids across refresh/reconnect.
     pub expanded: BTreeSet<Id>,
-    /// ASCII glyphs.
-    pub ascii: bool,
     /// Title.
     pub title: Option<String>,
     accepts_input: bool,
@@ -746,7 +728,6 @@ impl<Id: Clone + Ord + PartialEq> SchemaBrowserState<Id> {
             presentation: SchemaBrowserPresentation::SidePane,
             presentation_override: None,
             expanded: BTreeSet::new(),
-            ascii: false,
             title: None,
             accepts_input: true,
         }
@@ -947,7 +928,7 @@ impl<Id: Clone + Ord + PartialEq> SchemaBrowserState<Id> {
 
         // Project to tree for nav
         let visible = self.visible_entries(entries);
-        let nodes = schema_entries_to_tree_nodes(&visible, self.ascii);
+        let nodes = schema_entries_to_tree_nodes(&visible, false);
         let out = self.tree.handle_key(&nodes, key);
         map_tree_outcome(out, entries, &mut self.expanded)
     }
@@ -1039,7 +1020,6 @@ pub struct SchemaBrowser<'a, Id> {
     system: &'a DesignSystem,
     focused: bool,
     title: Option<&'a str>,
-    ascii: bool,
 }
 
 impl<'a, Id: Clone + PartialEq + Ord> SchemaBrowser<'a, Id> {
@@ -1051,7 +1031,6 @@ impl<'a, Id: Clone + PartialEq + Ord> SchemaBrowser<'a, Id> {
             system,
             focused: true,
             title: None,
-            ascii: false,
         }
     }
 
@@ -1071,11 +1050,6 @@ impl<'a, Id: Clone + PartialEq + Ord> SchemaBrowser<'a, Id> {
 
     /// ASCII.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Paint.
     pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut SchemaBrowserState<Id>)
     where
@@ -1084,7 +1058,6 @@ impl<'a, Id: Clone + PartialEq + Ord> SchemaBrowser<'a, Id> {
         if area.is_empty() {
             return;
         }
-        let ascii = self.ascii || state.ascii;
         let pres = state.effective_presentation(area);
         // auto-sync presentation chrome without outcome
         if state.presentation_override.is_none() {
@@ -1146,7 +1119,7 @@ impl<'a, Id: Clone + PartialEq + Ord> SchemaBrowser<'a, Id> {
             return;
         }
 
-        let nodes = schema_entries_to_tree_nodes(&visible, ascii);
+        let nodes = schema_entries_to_tree_nodes(&visible, false);
         Tree::new(&nodes, self.system)
             .focused(self.focused && state.accepts_input)
             .render(body, buffer, &mut state.tree);
@@ -1334,7 +1307,7 @@ mod tests {
         let mut state = SchemaBrowserState::with_selected(Some("users"));
         let area = Rect::new(0, 0, 40, 16);
         let mut buf = Buffer::empty(area);
-        SchemaBrowser::new(&entries, &system)
+        let _ = SchemaBrowser::new(&entries, &system)
             .title("Catalog")
             .render(area, &mut buf, &mut state);
         let text: String = buf
@@ -1402,7 +1375,7 @@ mod tests {
         assert!(!vis.is_empty());
         let area = Rect::new(0, 0, 48, 24);
         let mut buf = Buffer::empty(area);
-        SchemaBrowser::new(&entries, &system).render(area, &mut buf, &mut state);
+        let _ = SchemaBrowser::new(&entries, &system).render(area, &mut buf, &mut state);
     }
 
     #[test]

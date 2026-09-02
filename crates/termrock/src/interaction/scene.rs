@@ -5,7 +5,6 @@
 //!
 //! Immediate-mode registration each frame. Stable focus and open layers persist
 //! across frames. No callbacks, effects, or domain policy.
-
 use ratatui_core::layout::{Position, Rect};
 
 use crate::input::{

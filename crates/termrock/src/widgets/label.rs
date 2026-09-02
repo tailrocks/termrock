@@ -11,7 +11,6 @@
 //! tight ([`DROP_DESCRIPTION_WIDTH`]). Compact layout prefers a single row.
 //!
 //! References: Radix/shadcn Label, accessible form labeling, terminal settings.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
@@ -948,7 +947,7 @@ mod tests {
         let l = Label::<()>::new("Name", &system).required().disabled();
         let d = l.decorated(40);
         assert!(d.contains('*'));
-        assert!(d.contains('⊘') || d.contains('x'));
+        assert!(d.contains('⊘') || d.contains('\u{2212}'));
     }
 
     #[test]
@@ -1005,13 +1004,6 @@ mod tests {
         assert_eq!(buf[(0, 0)].symbol(), "N");
         assert!(parts.description.height > 0);
         assert_eq!(buf[(0, 1)].symbol(), "d");
-    }
-
-    #[test]
-    fn ascii_disabled_mark() {
-        let system = DesignSystem::default().glyphs(GlyphSet::Ascii);
-        let l = Label::<()>::new("X", &system).disabled();
-        assert!(l.decorated(40).contains('~'));
     }
 
     #[test]

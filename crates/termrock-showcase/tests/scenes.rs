@@ -73,9 +73,7 @@ fn is_border_glyph(symbol: &str) -> bool {
 
 #[test]
 fn every_scene_spends_the_accent_on_few_rows() {
-    let system = termrock::style::DesignSystem::from_palette(
-        termrock::style::RolePalette::tailrocks_phosphor(),
-    );
+    let system = termrock::style::DesignSystem::from_palette(termrock::style::RolePalette::junie());
     let accent = system.style(Role::Accent).fg;
     let area = Rect::new(0, 0, 120, 32);
     for scenario in Scenario::ALL {
@@ -105,9 +103,7 @@ fn every_scene_spends_the_accent_on_few_rows() {
 
 #[test]
 fn every_scene_has_at_most_one_focused_border() {
-    let system = termrock::style::DesignSystem::from_palette(
-        termrock::style::RolePalette::tailrocks_phosphor(),
-    );
+    let system = termrock::style::DesignSystem::from_palette(termrock::style::RolePalette::junie());
     let focused = system.style(Role::BorderFocused).fg;
     let area = Rect::new(0, 0, 120, 32);
     for scenario in Scenario::ALL {

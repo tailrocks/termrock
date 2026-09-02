@@ -17,7 +17,7 @@ use termrock::{
     interaction::Outcome,
     keymap::{KeyBinding, KeyChord, Keymap, Visibility},
     osc::{PointerShape, Request, encode},
-    style::{Density, DesignSystem, Role, RolePalette},
+    style::{DesignSystem, Role, RolePalette},
     widgets::{
         Action, ActionBar, ActionBarState, ActionVariant, ActivationOutcome, Anchor, Button,
         ButtonState, CellAlignment, ChoiceDialog, ChoiceDialogState, Column, ColumnWidth,
@@ -179,7 +179,7 @@ fn handbook_command_palette_example() {
 fn handbook_prompt_composer_example() {
     let theme = RolePalette::default();
     let system = DesignSystem::from_palette(theme.clone());
-    let tokens = DesignSystem::new(theme.clone(), Density::Comfortable);
+    let tokens = DesignSystem::new(theme.clone());
     let mut state = PromptComposerState::new();
     state.set_placeholder("Ask anything…");
     state.set_mode(Some(ModeIndicator {

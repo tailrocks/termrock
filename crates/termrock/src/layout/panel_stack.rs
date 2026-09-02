@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Content-measured vertical panel allocation.
-
 use ratatui_core::layout::Rect;
 
 /// Measured height request for one panel-like block.

@@ -29,7 +29,6 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -606,8 +605,6 @@ pub struct ProjectLauncherState {
     pub project_count: u64,
     /// Stale/missing count chrome.
     pub problem_count: u64,
-    /// ASCII.
-    pub ascii: bool,
     /// Colorless.
     pub colorless: bool,
     /// Last panes.
@@ -654,7 +651,6 @@ impl ProjectLauncherState {
             selected_id: None,
             project_count: 0,
             problem_count: 0,
-            ascii: false,
             colorless: false,
             last_panes: Vec::new(),
             last_area_width: None,
@@ -1430,7 +1426,6 @@ pub fn render_project_launcher(
         state.sessions.set_accepts_input(focused);
         state.sessions.set_focused(focused);
         SessionPicker::new(system)
-            .ascii(state.ascii)
             .colorless(state.colorless)
             .list_only(true)
             .paint(r, buffer, &mut state.sessions);

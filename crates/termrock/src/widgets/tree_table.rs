@@ -19,7 +19,6 @@
 //!
 //! Research: process trees, file trees with metadata, IDE outlines, DB schema browsers.
 //! Single-column hierarchy → [`super::Tree`]. Flat multi-column → [`super::DataTable`].
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -33,7 +32,7 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     interaction::{NavigationMove, PageMove, UiIntent},
-    style::{Density, DesignSystem, ListRowVisualState, Role},
+    style::{DesignSystem, ListRowVisualState, Role},
     text::take_display_cols,
     widgets::{
         data_view::{
@@ -291,14 +290,10 @@ pub struct TreeTableState<Id: Clone + Ord, ColId: Clone + PartialEq> {
     pub nav_mode: TreeTableNavMode,
     /// Load chrome.
     pub load: LoadState,
-    /// Density.
-    pub density: Density,
     /// Active sort (data columns).
     pub sort: Option<SortSpec<ColId>>,
     /// Striped body.
     pub striped: bool,
-    /// ASCII glyphs.
-    pub ascii: bool,
     /// Host grants input.
     pub accepts_input: bool,
     /// Header regions.
@@ -329,10 +324,8 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
             h_offset: 0,
             nav_mode: TreeTableNavMode::Hierarchy,
             load: LoadState::Ready { count: 0 },
-            density: Density::Comfortable,
             sort: None,
             striped: false,
-            ascii: false,
             accepts_input: true,
             header_regions: Vec::new(),
             row_regions: Vec::new(),
@@ -1005,7 +998,6 @@ impl<'a, Id: Clone + Ord, ColId: Clone + PartialEq> TreeTable<'a, Id, ColId> {
         if area.is_empty() {
             return;
         }
-        let ascii = state.ascii || self.system.glyphs.is_ascii();
         let surface_focused = self.focused || state.accepts_input;
         let header_h = u16::from(self.sticky_header);
         let footer_h = 1u16;
@@ -1034,13 +1026,9 @@ impl<'a, Id: Clone + Ord, ColId: Clone + PartialEq> TreeTable<'a, Id, ColId> {
             y = y.saturating_add(1);
         }
 
-        if let Some(chrome) = super::data_view::data_load_chrome(
-            &state.load,
-            self.system,
-            ascii,
-            false,
-            self.empty_message,
-        ) {
+        if let Some(chrome) =
+            super::data_view::data_load_chrome(&state.load, self.system, false, self.empty_message)
+        {
             paint_msg(
                 self,
                 area,
@@ -1117,7 +1105,7 @@ impl<'a, Id: Clone + Ord, ColId: Clone + PartialEq> TreeTable<'a, Id, ColId> {
             }
         }
         parts.push(format!("nav:{}", state.nav_mode.id()));
-        let footer = parts.join(if ascii { " - " } else { " · " });
+        let footer = parts.join(" · ");
         if !footer.is_empty() && fy >= area.y {
             buffer.set_stringn(
                 area.x,
@@ -1196,10 +1184,7 @@ fn paint_header<Id: Clone + Ord, ColId: Clone + PartialEq>(
         if let Some(sort) = &state.sort
             && sort.column == col.id
         {
-            title.push_str(super::table_chrome::sort_marker(
-                table.system,
-                sort.ascending,
-            ));
+            title.push_str(super::table_chrome::sort_marker(sort.ascending));
         }
         buffer.set_stringn(
             paint_x,
@@ -1241,7 +1226,6 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
     ColId: Clone,
     Id: Clone,
 {
-    let ascii = state.ascii || table.system.glyphs.is_ascii();
     let selected = state.selected.as_ref() == Some(&row.id);
     let checked = state.multi && state.selection.is_row_selected(&row.id);
     let cursor = state.cursor_row == row_index;
@@ -1257,6 +1241,8 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
             enabled: row.enabled,
             loading,
             checked,
+
+            ..ListRowVisualState::default()
         },
     );
 
@@ -1286,6 +1272,7 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
     let quiet_style = chrome.secondary_style(base_style);
 
     let row_area = Rect::new(area.x, y, area.width, 1);
+    chrome.paint_wash(buffer, row_area);
     buffer.set_stringn(area.x, y, " ", 1, base_style);
     buffer.set_stringn(area.x.saturating_add(1), y, " ", 1, base_style);
 
@@ -1295,13 +1282,7 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
     let mut logical = 0i32;
     let mut disclosure_rect = None;
     if matches!(row.kind, TreeTableRowKind::Group) {
-        let mark = if row.expanded {
-            if ascii { "v " } else { "▾ " }
-        } else if ascii {
-            "> "
-        } else {
-            "▸ "
-        };
+        let mark = if row.expanded { "▾ " } else { "▸ " };
         let label = row.cells.first().copied().unwrap_or("");
         let line = format!("{mark}{label}");
         buffer.set_stringn(
@@ -1317,9 +1298,8 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
             area: row_area,
             disclosure: Some(Rect::new(origin, y, 2, 1)),
         });
-        chrome.paint(buffer, row_area);
+        chrome.paint_gutter(buffer, row_area);
         paint_checked_marker(table.system, buffer, row_area, checked);
-        super::surface::normalize_content_band(table.system, buffer, row_area);
         return;
     }
 
@@ -1350,8 +1330,9 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
             col.kind.cell_style(base_style, quiet_style)
         };
         if cursor && surface_focused && state.cursor_col == ord {
-            // A cell cursor is a cell: reverse it.
-            cell_style = cell_style.add_modifier(Modifier::REVERSED);
+            // A cell cursor is a cell: it states itself with the explicit
+            // reversal pair, not a modifier over the row's own colours.
+            cell_style = table.system.reversed();
         }
 
         if ord == 0 {
@@ -1365,13 +1346,7 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
             }
             let glyph = if row.branch {
                 if row.expanded {
-                    if ascii {
-                        "v"
-                    } else {
-                        table.system.glyphs.disclosure_open()
-                    }
-                } else if ascii {
-                    ">"
+                    table.system.glyphs.disclosure_open()
                 } else {
                     table.system.glyphs.disclosure_closed()
                 }
@@ -1429,9 +1404,8 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
             disclosure: disclosure_rect,
         });
     }
-    chrome.paint(buffer, row_area);
+    chrome.paint_gutter(buffer, row_area);
     paint_checked_marker(table.system, buffer, row_area, checked);
-    super::surface::normalize_content_band(table.system, buffer, row_area);
 }
 
 fn paint_checked_marker(system: &DesignSystem, buffer: &mut Buffer, row: Rect, checked: bool) {
@@ -1648,12 +1622,11 @@ mod tests {
 
     #[test]
     fn non_ready_load_state_precedes_the_empty_projection_fallback() {
-        let system = DesignSystem::phosphor().no_color();
+        let system = DesignSystem::junie().no_color();
         let columns = cols();
         let rows: [TreeTableRow<'_, u64>; 0] = [];
         let render = |load| {
             let mut state = TreeTableState::<u64, &str>::new(None);
-            state.ascii = true;
             state.load = load;
             let area = Rect::new(0, 0, 32, 5);
             let mut buffer = Buffer::empty(area);
@@ -1665,13 +1638,13 @@ mod tests {
                 .collect::<String>()
         };
 
-        assert!(render(LoadState::Loading { message: None }).contains("... Loading..."));
+        assert!(render(LoadState::Loading { message: None }).contains("… Loading…"));
         assert!(
             render(LoadState::Error {
                 message: "failed".into(),
                 retryable: false,
             })
-            .contains("! failed")
+            .contains("✗ failed")
         );
     }
 

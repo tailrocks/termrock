@@ -7,12 +7,11 @@
 //! a grid of twelve tiles scans instead of shouting.
 //!
 //! The host owns the samples and the formatting; the tile owns the chrome.
-
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::style::{DesignSystem, Role};
 use crate::text::{display_cols, take_display_cols};
-use crate::widgets::charts::{Gauge, ScaleMode, Sparkline, VizGlyphSet};
+use crate::widgets::charts::{Gauge, ScaleMode, Sparkline};
 use crate::widgets::tiered_row::TieredRow;
 use crate::widgets::{SemanticStatus, StatusIndicator};
 
@@ -228,7 +227,6 @@ impl<'a> MetricTile<'a> {
             system,
             presentation: MetricTilePresentation::Card,
             focused: false,
-            ascii: false,
         }
     }
 }
@@ -251,7 +249,6 @@ pub struct MetricTileView<'a> {
     system: &'a DesignSystem,
     presentation: MetricTilePresentation,
     focused: bool,
-    ascii: bool,
 }
 
 impl<'a> MetricTileView<'a> {
@@ -271,26 +268,15 @@ impl<'a> MetricTileView<'a> {
 
     /// Forces the ASCII glyph profile.
     #[must_use]
-    pub const fn ascii(mut self, ascii: bool) -> Self {
-        self.ascii = ascii;
-        self
-    }
-
     /// The health letter under the active glyph profile.
-    #[must_use]
     pub fn health_letter(&self) -> char {
-        if self.ascii || self.system.glyphs.is_ascii() {
-            self.tile.health.letter_ascii()
-        } else {
-            self.tile.health.letter()
-        }
+        self.tile.health.letter()
     }
 
     /// The delta's direction glyph, so a delta reads without color.
     #[must_use]
     pub fn delta_glyph(&self) -> &'static str {
-        let ascii = self.ascii || self.system.glyphs.is_ascii();
-        match (self.tile.delta_bad, ascii) {
+        match (self.tile.delta_bad, false) {
             (true, true) => "v",
             (true, false) => "▼",
             (false, true) => "^",
@@ -318,9 +304,8 @@ impl<'a> MetricTileView<'a> {
         };
         let mut row = TieredRow::with_separator(" ");
         row.push_joined(mark, self.focused.then(|| self.system.style(Role::Accent)));
-        let status = StatusIndicator::new(tile.health.semantic(), self.system)
-            .label(tile.health.id())
-            .ascii(self.ascii);
+        let status =
+            StatusIndicator::new(tile.health.semantic(), self.system).label(tile.health.id());
         row.push_plain(&status.text(None));
         row.push_plain(tile.title);
         if let Some(err) = tile.error {
@@ -366,7 +351,6 @@ impl<'a> MetricTileView<'a> {
     fn paint_card(&self, area: Rect, buffer: &mut Buffer) {
         let tile = self.tile;
         let system = self.system;
-        let ascii = self.ascii || system.glyphs.is_ascii();
         let border = if self.focused {
             system.style(Role::BorderFocused)
         } else {
@@ -383,9 +367,7 @@ impl<'a> MetricTileView<'a> {
         }
 
         let mut title = TieredRow::with_separator(" ");
-        let status = StatusIndicator::new(tile.health.semantic(), system)
-            .label(tile.health.id())
-            .ascii(ascii);
+        let status = StatusIndicator::new(tile.health.semantic(), system).label(tile.health.id());
         title.push_plain(&status.text(None));
         title.push_plain(tile.title);
         let title_line = title.text().to_string();
@@ -485,9 +467,7 @@ impl<'a> MetricTileView<'a> {
                 if let Some(&threshold) = tile.thresholds.first().filter(|_| self.focused) {
                     spark = spark.threshold(threshold);
                 }
-                if ascii {
-                    spark = spark.glyphs(VizGlyphSet::Ascii);
-                }
+
                 Widget::render(&spark, body, buffer);
             }
             MetricViz::Gauge => {
@@ -497,9 +477,7 @@ impl<'a> MetricTileView<'a> {
                     .label(tile.title)
                     .thresholds(thresholds)
                     .role(tile.health.semantic().role());
-                if ascii {
-                    gauge = gauge.glyphs(VizGlyphSet::Ascii);
-                }
+
                 if value > 100.0 {
                     let max = tile
                         .samples
@@ -512,9 +490,6 @@ impl<'a> MetricTileView<'a> {
                         .scale(ScaleMode::Fixed { min: 0.0, max })
                         .thresholds(thresholds)
                         .role(tile.health.semantic().role());
-                    if ascii {
-                        gauge = gauge.glyphs(VizGlyphSet::Ascii);
-                    }
                 }
                 Widget::render(&gauge, body, buffer);
             }

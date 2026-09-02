@@ -76,7 +76,7 @@ impl App {
             "TermRock showcase — every surface here is a public widget.",
         ));
         Self {
-            system: DesignSystem::from_palette(RolePalette::tailrocks_phosphor()),
+            system: DesignSystem::from_palette(RolePalette::junie()),
             workbench: AgentWorkbenchState::new(),
             session,
             demo: DemoRuntime::new(),

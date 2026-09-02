@@ -14,7 +14,6 @@
 //! embeds it for paint and maps [`WizardStepStatus`] = [`StepStatus`].
 //!
 //! Research: Huh forms, installers, cloud CLIs, onboarding wizards.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -891,7 +890,6 @@ impl FormWizardState {
 pub struct FormWizard<'a> {
     system: &'a DesignSystem,
     title: &'a str,
-    ascii: bool,
     show_stepper: bool,
     show_nav: bool,
 }
@@ -903,7 +901,6 @@ impl<'a> FormWizard<'a> {
         Self {
             system,
             title: "Setup",
-            ascii: false,
             show_stepper: true,
             show_nav: true,
         }
@@ -915,7 +912,6 @@ impl<'a> FormWizard<'a> {
         Self {
             system,
             title: label,
-            ascii: false,
             show_stepper: true,
             show_nav: true,
         }
@@ -930,13 +926,7 @@ impl<'a> FormWizard<'a> {
 
     /// ASCII marks.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Show stepper row.
-    #[must_use]
     pub const fn show_stepper(mut self, on: bool) -> Self {
         self.show_stepper = on;
         self
@@ -1036,14 +1026,7 @@ impl<'a> FormWizard<'a> {
                             .unwrap_or("Fix errors to continue"),
                         Role::Danger,
                     )),
-                    WizardGate::Pending => Some((
-                        if self.ascii {
-                            "Checking..."
-                        } else {
-                            "Checking…"
-                        },
-                        Role::TextMuted,
-                    )),
+                    WizardGate::Pending => Some(({ "Checking…" }, Role::TextMuted)),
                     WizardGate::Valid => state
                         .current_step()
                         .and_then(|s| s.description.as_deref())
@@ -1088,11 +1071,7 @@ impl<'a> FormWizard<'a> {
                 body.x,
                 body.y,
                 take_display_cols(
-                    if self.ascii {
-                        "Press Enter or r to retry | Esc cancel"
-                    } else {
-                        "Press Enter or r to retry · Esc cancel"
-                    },
+                    "Press Enter or r to retry · Esc cancel",
                     usize::from(body.width),
                 ),
                 usize::from(body.width),
@@ -1129,9 +1108,7 @@ impl<'a> FormWizard<'a> {
         };
         st.set_presentation_override(override_pres);
         let area = Rect::new(inner.x, y, inner.width, 1);
-        Stepper::new(&state.steps, self.system)
-            .ascii(self.ascii)
-            .paint(area, buffer, &mut st);
+        Stepper::new(&state.steps, self.system).paint(area, buffer, &mut st);
         state.stepper_hits = st.hits().to_vec();
         y.saturating_add(1)
     }
@@ -1153,13 +1130,7 @@ impl<'a> FormWizard<'a> {
                 break;
             }
             let st = state.statuses.get(i).copied().unwrap_or_default();
-            let line = format!(
-                "{} {} {} {}",
-                st.mark(self.ascii),
-                step.title,
-                if self.ascii { "-" } else { "—" },
-                st.id()
-            );
+            let line = format!("{} {} {} {}", st.mark(false), step.title, { "—" }, st.id());
             buffer.set_stringn(
                 area.x,
                 y,
@@ -1189,7 +1160,7 @@ impl<'a> FormWizard<'a> {
         }
         let mut x = area.x;
         // Back
-        let back = if self.ascii { "< Back" } else { "← Back" };
+        let back = { "← Back" };
         let bw = display_cols(back) as u16 + 1;
         let back_enabled = match state.phase {
             WizardPhase::Step => state.index > 0,
@@ -1203,6 +1174,7 @@ impl<'a> FormWizard<'a> {
             } else {
                 ControlState::Disabled
             },
+            self.system.junie_theme().surface,
         );
         buffer.set_style(br, back_recipe.fill);
         buffer.set_stringn(br.x, br.y, back, usize::from(br.width), back_recipe.label);
@@ -1220,9 +1192,11 @@ impl<'a> FormWizard<'a> {
             let sw = display_cols(skip) as u16 + 1;
             let sr = Rect::new(x, area.y, sw.min(area.right().saturating_sub(x)), 1);
             if can_skip {
-                let recipe = self
-                    .system
-                    .button_recipe(ButtonRecipeVariant::Quiet, ControlState::Default);
+                let recipe = self.system.button_recipe(
+                    ButtonRecipeVariant::Quiet,
+                    ControlState::Default,
+                    self.system.junie_theme().surface,
+                );
                 buffer.set_style(sr, recipe.fill);
                 buffer.set_stringn(sr.x, sr.y, skip, usize::from(sr.width), recipe.label);
                 state.nav_skip = sr;
@@ -1234,42 +1208,15 @@ impl<'a> FormWizard<'a> {
 
         // Cancel far left-ish already have back; cancel on far right start
         // Next / Finish / Retry on right
-        let next_label =
-            match state.phase {
-                WizardPhase::Failed => {
-                    if self.ascii {
-                        "Retry"
-                    } else {
-                        "Retry ↵"
-                    }
-                }
-                WizardPhase::Review => {
-                    if self.ascii {
-                        "Finish"
-                    } else {
-                        "Finish ↵"
-                    }
-                }
-                WizardPhase::Step
-                    if state.index + 1 >= state.steps.len() && !state.review_enabled =>
-                {
-                    if self.ascii { "Finish" } else { "Finish ↵" }
-                }
-                WizardPhase::Step if state.index + 1 >= state.steps.len() => {
-                    if self.ascii {
-                        "Review"
-                    } else {
-                        "Review →"
-                    }
-                }
-                WizardPhase::Step => {
-                    if self.ascii {
-                        "Next"
-                    } else {
-                        "Next →"
-                    }
-                }
-            };
+        let next_label = match state.phase {
+            WizardPhase::Failed => "Retry ↵",
+            WizardPhase::Review => "Finish ↵",
+            WizardPhase::Step if state.index + 1 >= state.steps.len() && !state.review_enabled => {
+                "Finish ↵"
+            }
+            WizardPhase::Step if state.index + 1 >= state.steps.len() => "Review →",
+            WizardPhase::Step => "Next →",
+        };
         let nw = (display_cols(next_label) as u16).max(10);
         let nx = area.right().saturating_sub(nw).saturating_sub(1);
         let nr = Rect::new(
@@ -1289,6 +1236,7 @@ impl<'a> FormWizard<'a> {
             } else {
                 ControlState::Disabled
             },
+            self.system.junie_theme().surface,
         );
         buffer.set_style(nr, next_recipe.fill);
         buffer.set_stringn(
@@ -1307,9 +1255,11 @@ impl<'a> FormWizard<'a> {
             let cancel = "Esc";
             let cw = 3u16;
             let cr = Rect::new(x, area.y, cw, 1);
-            let recipe = self
-                .system
-                .button_recipe(ButtonRecipeVariant::Quiet, ControlState::Default);
+            let recipe = self.system.button_recipe(
+                ButtonRecipeVariant::Quiet,
+                ControlState::Default,
+                self.system.junie_theme().surface,
+            );
             buffer.set_style(cr, recipe.fill);
             buffer.set_stringn(cr.x, cr.y, cancel, usize::from(cr.width), recipe.label);
             state.nav_cancel = cr;
@@ -1567,7 +1517,6 @@ mod tests {
         let mut buf = Buffer::empty(area);
         FormWizard::new(&system)
             .title("Connect")
-            .ascii(true)
             .paint(area, &mut buf, &mut state);
         assert!(!state.body_area.is_empty());
         assert!(!state.stepper_hits.is_empty());
@@ -1618,7 +1567,7 @@ mod tests {
         state.set_focused(true);
         let area = Rect::new(0, 0, 56, 12);
         let mut buf = Buffer::empty(area);
-        let w = FormWizard::new(&system).ascii(true);
+        let w = FormWizard::new(&system);
         for _ in 0..50 {
             w.paint(area, &mut buf, &mut state);
         }

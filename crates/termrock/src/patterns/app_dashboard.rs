@@ -26,13 +26,12 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
-    style::{Density, DesignSystem, PanelChrome, Role},
+    style::{DesignSystem, PanelChrome, Role},
     text::take_display_cols,
     widgets::{
         NavItem, Panel, PanelVariant, Sidebar, SidebarOutcome, SidebarPresentation, SidebarState,
@@ -264,7 +263,6 @@ pub struct AppDashboardSlots {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct AppDashboardLayout {
     /// Density.
-    pub density: Density,
     /// Sidebar width.
     pub sidebar_width: u16,
     /// Metrics height (`0` hides).
@@ -278,7 +276,6 @@ pub struct AppDashboardLayout {
 impl Default for AppDashboardLayout {
     fn default() -> Self {
         Self {
-            density: Density::Dashboard,
             sidebar_width: 24,
             metrics_height: 3,
             header_height: 1,
@@ -294,7 +291,6 @@ pub fn layout_app_dashboard(area: Rect, config: AppDashboardLayout) -> AppDashbo
         area,
         AppShellConfig {
             recipe: AppShellRecipe::Workbench,
-            density: config.density,
             header_height: config.header_height,
             sidebar_width: config.sidebar_width.max(4),
             inspector_width: 0,
@@ -401,7 +397,6 @@ pub fn render_app_dashboard<Id: Clone + PartialEq>(
     let system = surfaces.system;
     let state = surfaces.state;
     // The glyph profile is the design system's answer, not a hardcoded true.
-    let ascii = system.glyphs.is_ascii();
     let layout = AppDashboardLayout {
         sidebar_width: state.sidebar_width,
         metrics_height: if state.show_metrics { 3 } else { 0 },
@@ -440,7 +435,6 @@ pub fn render_app_dashboard<Id: Clone + PartialEq>(
         let _ = rail;
         Sidebar::new(surfaces.nav, system)
             .focused(state.pane == AppDashboardPane::Sidebar)
-            .ascii(ascii)
             .show_panel(false)
             .paint(nav_area, buffer, &mut state.sidebar);
     }

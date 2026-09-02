@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Composed label/value rows for forms and detail surfaces.
-
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, text::Line, widgets::Widget};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Style, text::Line, widgets::Widget};
 
 use crate::{
     style::{ControlState, DesignSystem, ListRowVisualState, Role},
@@ -66,7 +65,6 @@ pub struct FieldRow<'a> {
     value: FieldRowValue<'a>,
     marker: Option<&'a str>,
     annotation: Option<&'a str>,
-    annotation_italic: bool,
     label_cols: u16,
     required: bool,
     selected: bool,
@@ -85,7 +83,6 @@ impl<'a> FieldRow<'a> {
             value,
             marker: None,
             annotation: None,
-            annotation_italic: false,
             label_cols: 8,
             required: false,
             selected: false,
@@ -125,13 +122,6 @@ impl<'a> FieldRow<'a> {
     #[must_use]
     pub const fn annotation(mut self, annotation: &'a str) -> Self {
         self.annotation = Some(annotation);
-        self
-    }
-
-    /// Renders annotation text in italic when supported.
-    #[must_use]
-    pub const fn annotation_italic(mut self, italic: bool) -> Self {
-        self.annotation_italic = italic;
         self
     }
 
@@ -182,6 +172,7 @@ impl<'a> FieldRow<'a> {
             enabled: self.enabled,
             loading: false,
             checked: false,
+            ..ListRowVisualState::default()
         });
         let input_recipe = self.system.input_recipe(
             if !self.enabled {
@@ -243,11 +234,7 @@ impl<'a> FieldRow<'a> {
                 buffer.set_stringn(x, area.y, &text, value_width, value_style);
             }
             FieldRowValue::Masked { len } => {
-                let glyph = if self.system.glyphs.is_ascii() {
-                    "*"
-                } else {
-                    "●"
-                };
+                let glyph = "●";
                 let text = glyph.repeat((*len).min(value_width));
                 buffer.set_stringn(x, area.y, &text, value_width, value_style);
             }
@@ -272,6 +259,26 @@ impl<'a> FieldRow<'a> {
             }
         }
 
+        // A one-line row's border slot is the underline under the value:
+        // editing underlines in accent, an invalid value in error. The
+        // underline is not a second text colour, so the value keeps the tone
+        // `input_recipe` gave it.
+        let mut underline = Style::new().add_modifier(input_recipe.border.add_modifier);
+        if let Some(color) = input_recipe.border.underline_color {
+            underline = underline.underline_color(color);
+        }
+        buffer.set_style(
+            Rect::new(
+                x,
+                area.y,
+                u16::try_from(value_width)
+                    .unwrap_or(u16::MAX)
+                    .min(area.right().saturating_sub(x)),
+                1,
+            ),
+            underline,
+        );
+
         if let Some(annotation) = self.annotation {
             let used = match &self.value {
                 FieldRowValue::Plain(value) => display_cols(value),
@@ -284,10 +291,9 @@ impl<'a> FieldRow<'a> {
                 .saturating_add(u16::try_from(used).unwrap_or(u16::MAX))
                 .saturating_add(self.system.spacing.gap);
             if annotation_x < area.right() {
-                let mut style = input_recipe.placeholder;
-                if self.annotation_italic {
-                    style = style.add_modifier(Modifier::ITALIC);
-                }
+                // An annotation is supporting text: the placeholder tone is its
+                // whole cue, and ITALIC stays the comment tier's (D5).
+                let style = input_recipe.placeholder;
                 buffer.set_stringn(
                     annotation_x,
                     area.y,
@@ -314,7 +320,7 @@ mod tests {
 
     #[test]
     fn masked_value_has_requested_display_width() {
-        let system = DesignSystem::phosphor();
+        let system = DesignSystem::junie();
         let area = Rect::new(0, 0, 24, 1);
         let mut buffer = Buffer::empty(area);
         FieldRow::new(&system, "Token", FieldRowValue::Masked { len: 5 }).paint(area, &mut buffer);
@@ -328,7 +334,7 @@ mod tests {
 
     #[test]
     fn required_unset_uses_danger_role() {
-        let system = DesignSystem::phosphor();
+        let system = DesignSystem::junie();
         let area = Rect::new(0, 0, 24, 1);
         let mut buffer = Buffer::empty(area);
         FieldRow::new(&system, "Token", FieldRowValue::Unset { hint: "required" })
@@ -344,19 +350,36 @@ mod tests {
     }
 
     #[test]
-    fn invalid_value_uses_input_invalid_role() {
-        let system = DesignSystem::phosphor();
+    fn invalid_value_underlines_in_error_and_keeps_its_tone() {
+        // M6: an invalid field says so in its underline (`underline_color`
+        // error), never by recolouring the value text.
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
         let area = Rect::new(0, 0, 24, 1);
         let mut buffer = Buffer::empty(area);
         FieldRow::new(&system, "Email", FieldRowValue::Plain("bad"))
             .invalid(true)
             .paint(area, &mut buffer);
-        let expected = system.style(Role::InputInvalid);
         assert!(
             buffer
                 .content()
                 .iter()
-                .any(|cell| cell.fg == expected.fg.unwrap())
+                .any(|cell| cell.style().underline_color == Some(theme.error)
+                    && cell
+                        .style()
+                        .add_modifier
+                        .contains(ratatui_core::style::Modifier::UNDERLINED)),
+            "the invalid field underlines in error"
+        );
+        let value_cell = buffer
+            .content()
+            .iter()
+            .find(|cell| cell.symbol() == "b")
+            .expect("the value is painted");
+        assert_ne!(
+            Some(value_cell.fg),
+            system.style(Role::Danger).fg,
+            "the value text is not the error colour"
         );
     }
 }

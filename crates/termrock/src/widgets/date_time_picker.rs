@@ -16,7 +16,6 @@
 //! pick ranges, or choose from a stepped time list.
 //!
 //! Research: shadcn Calendar/DatePicker, Textual DateTimeInput patterns.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -1866,7 +1865,6 @@ fn month_name(m: u8) -> &'static str {
 pub struct DateTimePicker<'a> {
     system: &'a DesignSystem,
     label: &'a str,
-    ascii: bool,
     show_timezone: bool,
 }
 
@@ -1877,7 +1875,6 @@ impl<'a> DateTimePicker<'a> {
         Self {
             system,
             label: "",
-            ascii: false,
             show_timezone: true,
         }
     }
@@ -1891,13 +1888,7 @@ impl<'a> DateTimePicker<'a> {
 
     /// ASCII glyphs for states.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Show timezone label when present.
-    #[must_use]
     pub const fn show_timezone(mut self, on: bool) -> Self {
         self.show_timezone = on;
         self
@@ -1967,13 +1958,7 @@ impl<'a> DateTimePicker<'a> {
                 .paint(field, buffer, &mut state.draft);
             // open marker
             if area.width > 4 {
-                let mark = if state.open {
-                    if self.ascii { "^" } else { "▴" }
-                } else if self.ascii {
-                    "v"
-                } else {
-                    "▾"
-                };
+                let mark = if state.open { "▴" } else { "▾" };
                 buffer.set_stringn(
                     area.right().saturating_sub(2),
                     y,
@@ -1999,7 +1984,7 @@ impl<'a> DateTimePicker<'a> {
             ) {
                 parts.push(state.validity.id().to_owned());
             }
-            let cap = parts.join(if self.ascii { " | " } else { " · " });
+            let cap = parts.join(" · ");
             if invalid {
                 super::field_message::paint_field_message(
                     buffer,
@@ -2141,11 +2126,7 @@ impl<'a> DateTimePicker<'a> {
                 } else if in_month {
                     format!(" {} ", num.trim())
                 } else {
-                    if self.ascii {
-                        format!(".{}.", num.trim())
-                    } else {
-                        format!("·{}·", num.trim())
-                    }
+                    format!("·{}·", num.trim())
                 };
 
                 let recipe = self.system.resolve_list_row(ListRowVisualState {
@@ -2155,6 +2136,7 @@ impl<'a> DateTimePicker<'a> {
                     enabled: available,
                     loading: false,
                     checked: is_selected,
+                    ..ListRowVisualState::default()
                 });
                 let mut style = recipe.label;
                 if is_today && !is_focus && !is_selected {
@@ -2186,11 +2168,7 @@ impl<'a> DateTimePicker<'a> {
 
         // legend
         if area.height >= 9 {
-            let legend = if self.ascii {
-                "[sel] *today* >focus< .unavail."
-            } else {
-                "[sel] *today* >focus< .unavail."
-            };
+            let legend = { "[sel] *today* >focus< .unavail." };
             buffer.set_stringn(
                 area.x,
                 area.bottom().saturating_sub(1),
@@ -2248,6 +2226,7 @@ impl<'a> DateTimePicker<'a> {
                 enabled: true,
                 loading: false,
                 checked: is_sel,
+                ..ListRowVisualState::default()
             });
             if recipe.use_fill {
                 buffer.set_style(rect, recipe.label);
@@ -2311,6 +2290,7 @@ impl<'a> DateTimePicker<'a> {
                 enabled: true,
                 loading: false,
                 checked: is_sel,
+                ..ListRowVisualState::default()
             });
             if recipe.use_fill {
                 buffer.set_style(rect, recipe.label);
@@ -2559,7 +2539,6 @@ mod tests {
         let mut buf = Buffer::empty(area);
         DateTimePicker::new(&system)
             .label("Due")
-            .ascii(true)
             .paint(area, &mut buf, &mut state);
         assert!(!state.cell_hits.is_empty());
         // selected day hit present
@@ -2613,7 +2592,7 @@ mod tests {
         let _ = state.open(Rect::new(0, 0, 40, 16));
         let area = Rect::new(0, 0, 40, 16);
         let mut buf = Buffer::empty(area);
-        let w = DateTimePicker::new(&system).ascii(true);
+        let w = DateTimePicker::new(&system);
         for _ in 0..50 {
             w.paint(area, &mut buf, &mut state);
         }
@@ -2660,9 +2639,7 @@ mod tests {
         let area = Rect::new(0, 0, 48, 18);
         let _ = state.open(area);
         let mut buf = Buffer::empty(area);
-        DateTimePicker::new(&system)
-            .ascii(true)
-            .paint(area, &mut buf, &mut state);
+        DateTimePicker::new(&system).paint(area, &mut buf, &mut state);
         let (d, rect) = state
             .cell_hits
             .iter()

@@ -21,7 +21,6 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
 
@@ -238,9 +237,9 @@ impl ActivityItem {
 
     /// Chip label for current density.
     #[must_use]
-    pub fn chip_label(&self, ascii: bool, icons_only: bool, max_cols: usize) -> String {
+    pub fn chip_label(&self, _ascii: bool, icons_only: bool, max_cols: usize) -> String {
         let semantic = activity_item_semantic(self);
-        let g = semantic.glyph(ascii);
+        let g = semantic.glyph();
         let verb = activity_item_verb(self);
         if icons_only {
             return format!("| {g} {verb}");
@@ -352,20 +351,14 @@ pub fn activity_counts(items: &[ActivityItem]) -> ActivityCounts {
 
 /// One-line summary for narrow StatusBar / shelf.
 #[must_use]
-pub fn activity_status_summary(items: &[ActivityItem], ascii: bool) -> String {
+pub fn activity_status_summary(items: &[ActivityItem], _ascii: bool) -> String {
     let c = activity_counts(items);
     if c.total == 0 {
-        return if ascii {
-            "idle".into()
-        } else {
-            "∅ idle".into()
-        };
+        return "∅ idle".into();
     }
     let text = activity_status_text(items);
     let g = if c.action_required > 0 || c.blocked > 0 {
-        if ascii { "!" } else { "⚠" }
-    } else if ascii {
-        ">"
+        "⚠"
     } else {
         "◉"
     };
@@ -420,15 +413,13 @@ const fn activity_semantic(counts: ActivityCounts) -> SemanticStatus {
 
 /// Tiny badge text (`!3` / `●3`).
 #[must_use]
-pub fn activity_badge_label(items: &[ActivityItem], ascii: bool) -> String {
+pub fn activity_badge_label(items: &[ActivityItem], _ascii: bool) -> String {
     let c = activity_counts(items);
     if c.total == 0 {
-        return if ascii { ".".into() } else { "·".into() };
+        return "·".into();
     }
     let g = if c.action_required > 0 || c.blocked > 0 {
-        if ascii { "!" } else { "!" }
-    } else if ascii {
-        "*"
+        "!"
     } else {
         "●"
     };
@@ -518,7 +509,7 @@ pub fn plan_activity_shelf(
     sorted: &[&ActivityItem],
     width: u16,
     presentation: ActivityShelfPresentation,
-    ascii: bool,
+    _ascii: bool,
 ) -> ActivityShelfPlan {
     match presentation {
         ActivityShelfPresentation::Badge | ActivityShelfPresentation::Summary => {
@@ -538,7 +529,7 @@ pub fn plan_activity_shelf(
             let budget = width.saturating_sub(overflow_reserve);
             for (i, item) in sorted.iter().enumerate().take(ACTIVITY_SHELF_CHIP_CAP) {
                 let max_c = if icons { 4 } else { 18 };
-                let label = item.chip_label(ascii, icons, max_c);
+                let label = item.chip_label(false, icons, max_c);
                 let w = (display_cols(&label) as u16).saturating_add(2); // padding
                 let next = used
                     .saturating_add(if visible.is_empty() { 0 } else { gap })
@@ -593,7 +584,7 @@ pub struct ActivityStatusProjection {
 #[must_use]
 pub fn project_activities_for_status_bar(
     items: &[ActivityItem],
-    ascii: bool,
+    _ascii: bool,
 ) -> ActivityStatusProjection {
     let c = activity_counts(items);
     let priority = if c.action_required > 0 {
@@ -606,9 +597,9 @@ pub fn project_activities_for_status_bar(
         55
     };
     ActivityStatusProjection {
-        summary: activity_status_summary(items, ascii),
+        summary: activity_status_summary(items, false),
         summary_text: activity_status_text(items),
-        badge: activity_badge_label(items, ascii),
+        badge: activity_badge_label(items, false),
         badge_text: c.total.to_string(),
         priority,
         region: StatusRegion::Right,
@@ -890,7 +881,6 @@ impl ActivityShelfState {
 pub struct ActivityShelf<'a> {
     items: &'a [ActivityItem],
     system: &'a DesignSystem,
-    ascii: bool,
     colorless: bool,
 }
 
@@ -901,20 +891,13 @@ impl<'a> ActivityShelf<'a> {
         Self {
             items,
             system,
-            ascii: false,
             colorless: false,
         }
     }
 
     /// ASCII glyphs.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Colorless.
-    #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self
@@ -928,14 +911,13 @@ impl<'a> ActivityShelf<'a> {
             state.last_plan = None;
             return;
         }
-        let ascii = self.ascii;
         let sorted = sort_activity_items(self.items);
         state.clamp_selected(sorted.len());
 
         let presentation = state
             .force_presentation
             .unwrap_or_else(|| ActivityShelfPresentation::for_width(area.width));
-        let plan = plan_activity_shelf(&sorted, area.width, presentation, ascii);
+        let plan = plan_activity_shelf(&sorted, area.width, presentation, false);
         state.last_plan = Some(plan.clone());
 
         // fill muted bar background line
@@ -956,7 +938,6 @@ impl<'a> ActivityShelf<'a> {
                 };
                 StatusIndicator::new(activity_semantic(counts), self.system)
                     .label(&label)
-                    .ascii(ascii)
                     .colorless(self.colorless)
                     .strong(state.focused)
                     .paint(Rect::new(area.x, area.y, area.width, 1), buffer);
@@ -966,13 +947,12 @@ impl<'a> ActivityShelf<'a> {
                 let label = activity_status_text(self.items);
                 StatusIndicator::new(activity_semantic(counts), self.system)
                     .label(&label)
-                    .ascii(ascii)
                     .colorless(self.colorless)
                     .strong(state.focused)
                     .paint(Rect::new(area.x, area.y, area.width, 1), buffer);
             }
             ActivityShelfPresentation::Chips | ActivityShelfPresentation::IconsOnly => {
-                self.paint_chips(area, buffer, state, &sorted, &plan, ascii);
+                self.paint_chips(area, buffer, state, &sorted, &plan, false);
             }
         }
     }
@@ -984,7 +964,7 @@ impl<'a> ActivityShelf<'a> {
         state: &mut ActivityShelfState,
         sorted: &[&ActivityItem],
         plan: &ActivityShelfPlan,
-        ascii: bool,
+        _ascii: bool,
     ) {
         let icons = matches!(plan.presentation, ActivityShelfPresentation::IconsOnly);
         let vertical = matches!(state.orientation, ActivityShelfOrientation::Vertical);
@@ -996,7 +976,7 @@ impl<'a> ActivityShelf<'a> {
             let Some(item) = sorted.get(vi).copied() else {
                 continue;
             };
-            let label = item.chip_label(ascii, icons, max_c);
+            let label = item.chip_label(false, icons, max_c);
             let w = (display_cols(&label) as u16)
                 .saturating_add(2)
                 .max(ACTIVITY_SHELF_CHIP_MIN_COLS);
@@ -1020,7 +1000,6 @@ impl<'a> ActivityShelf<'a> {
                 );
                 StatusIndicator::new(activity_item_semantic(item), self.system)
                     .label(activity_item_verb(item))
-                    .ascii(ascii)
                     .colorless(self.colorless)
                     .paint(rect, buffer);
                 state.hits.push((item.id.clone(), rect));
@@ -1047,7 +1026,6 @@ impl<'a> ActivityShelf<'a> {
                 if rect.width > 1 {
                     StatusIndicator::new(activity_item_semantic(item), self.system)
                         .label(activity_item_verb(item))
-                        .ascii(ascii)
                         .colorless(self.colorless)
                         .paint(
                             Rect::new(
@@ -1120,11 +1098,12 @@ fn chip_style(
     selected: bool,
 ) -> ratatui_core::style::Style {
     if colorless {
-        let mut s = system.style(Role::Text);
         if selected {
-            s = s.add_modifier(Modifier::REVERSED);
+            // Mono selection is the explicit reversal pair (D5), not a swap
+            // modifier over the idle face.
+            return system.reversed();
         }
-        return s;
+        return system.style(Role::Text);
     }
     let mut s = system.style(Role::Text);
     if selected {
@@ -1304,9 +1283,7 @@ mod tests {
         // narrow auto
         let narrow = Rect::new(0, 0, 16, 1);
         let mut st = ActivityShelfState::new();
-        ActivityShelf::new(&items, &system)
-            .ascii(true)
-            .paint(narrow, &mut buf, &mut st);
+        ActivityShelf::new(&items, &system).paint(narrow, &mut buf, &mut st);
         assert_eq!(
             st.last_plan.as_ref().map(|p| p.presentation),
             Some(ActivityShelfPresentation::Badge)
@@ -1318,7 +1295,7 @@ mod tests {
         let system = DesignSystem::default();
         let label = "e\u{301} 本";
         let items = [ActivityItem::new("unicode", label).status(SemanticStatus::Running)];
-        for ascii in [false, true] {
+        for _ in [false, true] {
             for width in [72, 30, 12, 1, 0] {
                 let area = Rect::new(0, 0, width, 1);
                 let mut buffer = Buffer::empty(area);
@@ -1326,11 +1303,7 @@ mod tests {
                 if width == 72 {
                     state.force_presentation = Some(ActivityShelfPresentation::Chips);
                 }
-                ActivityShelf::new(&items, &system).ascii(ascii).paint(
-                    area,
-                    &mut buffer,
-                    &mut state,
-                );
+                ActivityShelf::new(&items, &system).paint(area, &mut buffer, &mut state);
                 if width == 72 {
                     let text: String = buffer.content().iter().map(|cell| cell.symbol()).collect();
                     assert!(text.contains("e\u{301}"), "{text:?}");

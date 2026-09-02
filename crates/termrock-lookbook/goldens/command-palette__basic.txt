@@ -1,7 +1,7 @@
 command-palette/basic 50x16 (story 48x14)
                                                   
- ┌─Commands─────────────────────────────────────┐ 
- │ ❯Type a command                              │ 
+ ╭─Commands─────────────────────────────────────╮ 
+ │ ▎Type a command                              │ 
  │ ──────────────────────────────────────────── │ 
  │ Appearance                                   │ 
  │ › ↻ Toggle status bar                        │ 
@@ -13,5 +13,5 @@ command-palette/basic 50x16 (story 48x14)
  │   ▸ Keyboard shortcuts                       │ 
  │                                              │ 
  │ ↑↓ move · enter run · C-p history            │ 
- └──────────────────────────────────────────────┘ 
+ ╰──────────────────────────────────────────────╯ 
                                                   

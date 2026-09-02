@@ -12,7 +12,6 @@
 //! Integrates with [`super::QuickOpen`] and [`super::Breadcrumbs`].
 //!
 //! Research: Yazi, ranger, lf, broot, VS Code, lazygit file lists.
-
 use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::StatefulWidget};
 
 use crate::{
@@ -169,7 +168,7 @@ impl FileGitStatus {
             Self::Modified | Self::Renamed => Role::Warning,
             Self::Added => Role::Success,
             Self::Deleted | Self::Conflict => Role::Danger,
-            Self::Untracked => Role::Info,
+            Self::Untracked => Role::TextSecondary,
             Self::Ignored => Role::TextDisabled,
         }
     }
@@ -657,8 +656,6 @@ pub struct FileTreeState<Id: Clone + PartialEq> {
     pub draft: Option<FileTreeDraft<Id>>,
     /// Pending destructive confirm.
     pub pending_confirm: Option<FileTreeDestructiveConfirm<Id>>,
-    /// ASCII glyphs preference.
-    pub ascii: bool,
     accepts_input: bool,
 }
 
@@ -679,7 +676,6 @@ impl<Id: Clone + PartialEq> FileTreeState<Id> {
             filter: None,
             draft: None,
             pending_confirm: None,
-            ascii: false,
             accepts_input: true,
         }
     }
@@ -901,7 +897,7 @@ impl<Id: Clone + PartialEq> FileTreeState<Id> {
             }
         }
 
-        let nodes = file_entries_to_tree_nodes(&view, self.ascii);
+        let nodes = file_entries_to_tree_nodes(&view, false);
         let out = self.tree.handle_key(&nodes, key);
         map_tree_outcome(out, &view)
     }
@@ -1125,7 +1121,7 @@ impl<'a, Id> FileTree<'a, Id> {
             state.show_hidden,
             state.show_ignored,
         );
-        let nodes = file_entries_to_tree_nodes(&view, state.ascii);
+        let nodes = file_entries_to_tree_nodes(&view, false);
 
         if nodes.is_empty() {
             let msg = if state.filter.is_some() {

@@ -6,7 +6,6 @@
 //! shadcn-style anatomy without nested box soup:
 //! `root` · `header` · `title` · `description` · `body` · `footer`.
 //! Tool/dashboard cards build on this primitive; domain policy stays outside.
-
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::style::{DesignSystem, PanelChrome, Role};

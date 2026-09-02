@@ -19,7 +19,6 @@
 //!
 //! Research: Grok Build rewind, IDE local history, Git reflog, notebook
 //! checkpoints. Uses Timeline substrate for list paint projection.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::collections::BTreeMap;
 
@@ -1062,7 +1061,6 @@ impl CheckpointTimelineState {
 #[derive(Debug, Clone, Copy)]
 pub struct CheckpointTimeline<'a> {
     system: &'a DesignSystem,
-    ascii: bool,
     colorless: bool,
     show_detail: bool,
 }
@@ -1073,7 +1071,6 @@ impl<'a> CheckpointTimeline<'a> {
     pub const fn new(system: &'a DesignSystem) -> Self {
         Self {
             system,
-            ascii: false,
             colorless: false,
             show_detail: true,
         }
@@ -1081,13 +1078,7 @@ impl<'a> CheckpointTimeline<'a> {
 
     /// ASCII.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Colorless.
-    #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self
@@ -1102,10 +1093,8 @@ impl<'a> CheckpointTimeline<'a> {
 
     /// Paint.
     pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut CheckpointTimelineState) {
-        if (!self.ascii && self.system.glyphs.is_ascii()) || (!self.colorless && self.system.mono())
-        {
+        if (!false && false) || (!self.colorless && self.system.mono()) {
             let effective = Self {
-                ascii: self.ascii || self.system.glyphs.is_ascii(),
                 colorless: self.colorless || self.system.mono(),
                 ..*self
             };
@@ -1122,7 +1111,7 @@ impl<'a> CheckpointTimeline<'a> {
             CheckpointTimelineMode::Preview => "preview",
             CheckpointTimelineMode::Confirm => "confirm",
         };
-        let separator = if self.ascii { " - " } else { " · " };
+        let separator = { " · " };
         let title = format!("Checkpoints{separator}{mode_tag}");
         let emphasis = if state.focused {
             PanelChrome::Focused
@@ -1141,7 +1130,6 @@ impl<'a> CheckpointTimeline<'a> {
 
         if state.checkpoints.is_empty() {
             super::EmptyState::new("No checkpoints yet", self.system)
-                .inline()
                 .paint(Rect::new(inner.x, inner.y, inner.width, 1), buffer);
             return;
         }
@@ -1190,8 +1178,8 @@ impl<'a> CheckpointTimeline<'a> {
         // Draft preservation banner (viewing ≠ mutating)
         if y < max_y {
             let banner = match state.mode {
-                CheckpointTimelineMode::Browse if self.ascii => "viewing history - draft preserved",
-                CheckpointTimelineMode::Preview if self.ascii => {
+                CheckpointTimelineMode::Browse if false => "viewing history - draft preserved",
+                CheckpointTimelineMode::Preview if false => {
                     "preview - draft preserved - no mutation"
                 }
                 CheckpointTimelineMode::Browse => "viewing history · draft preserved",
@@ -1230,11 +1218,11 @@ impl<'a> CheckpointTimeline<'a> {
             }
             let selected = i == state.cursor;
             let mark = if cp.is_head {
-                if self.ascii { "*" } else { "●" }
+                "●"
             } else {
-                cp.kind.glyph(self.ascii)
+                cp.kind.glyph(false)
             };
-            let bound = cp.boundary.glyph(self.ascii);
+            let bound = cp.boundary.glyph(false);
             let head = if cp.is_head { " HEAD" } else { "" };
             let branch = cp
                 .branch_id
@@ -1249,7 +1237,7 @@ impl<'a> CheckpointTimeline<'a> {
             tiers.push_joined(
                 mark,
                 cp.is_head
-                    .then(|| self.system.style(Role::Info))
+                    .then(|| self.system.style(Role::TextSecondary))
                     .filter(|_| !self.colorless),
             );
             tiers.push_joined(
@@ -1263,7 +1251,7 @@ impl<'a> CheckpointTimeline<'a> {
             tiers.push_joined(&cp.when, tone(Role::TextFaint));
             tiers.push_joined(" ", None);
             tiers.push_joined(&cp.label, None);
-            tiers.push_joined(head, tone(Role::Info));
+            tiers.push_joined(head, tone(Role::TextSecondary));
             tiers.push_joined(&branch, tone(Role::TextMuted));
             let text = tiers.text().to_string();
             // Selection is chrome — the gutter and weight mark it; the row
@@ -1308,7 +1296,7 @@ impl<'a> CheckpointTimeline<'a> {
 
         let lines: Vec<(String, Role)> = {
             let mut v = Vec::new();
-            let separator = if self.ascii { " - " } else { " · " };
+            let separator = { " · " };
             v.push((
                 format!("{}{separator}{}", cp.kind.id(), cp.label),
                 Role::TextStrong,
@@ -1329,9 +1317,9 @@ impl<'a> CheckpointTimeline<'a> {
                 let p = cp
                     .parent_id
                     .as_ref()
-                    .map(|x| format!(" {} {x}", if self.ascii { "<-" } else { "←" }))
+                    .map(|x| format!(" {} {x}", { "←" }))
                     .unwrap_or_default();
-                v.push((format!("branch {b}{p}"), Role::Info));
+                v.push((format!("branch {b}{p}"), Role::TextSecondary));
             }
             if !cp.changed_files.is_empty() {
                 v.push((
@@ -1350,18 +1338,11 @@ impl<'a> CheckpointTimeline<'a> {
             if !cp.tool_calls.is_empty() {
                 v.push((format!("tools ({})", cp.tool_calls.len()), Role::TextMuted));
                 for t in cp.tool_calls.iter().take(6) {
-                    v.push((
-                        format!("  {} {t}", if self.ascii { "-" } else { "·" }),
-                        Role::Text,
-                    ));
+                    v.push((format!("  {} {t}", { "·" }), Role::Text));
                 }
             }
             v.push((
-                if self.ascii {
-                    "keys: enter preview - r restore - w rewind - c compare - esc".into()
-                } else {
-                    "keys: enter preview · r restore · w rewind · c compare · esc".into()
-                },
+                { "keys: enter preview · r restore · w rewind · c compare · esc".into() },
                 Role::TextMuted,
             ));
             v
@@ -1457,14 +1438,12 @@ impl<'a> CheckpointTimeline<'a> {
         state: &mut CheckpointTimelineState,
         events: &[TimelineEvent<'_, String>],
     ) {
-        state.timeline.ascii = self.ascii;
         state.timeline.colorless = self.colorless;
         state.timeline.set_checkpoint_mode(true);
         state.timeline.cursor = state.cursor.min(events.len().saturating_sub(1));
         let t = Timeline::with_events(events, self.system)
             .recipe(state.recipe.to_timeline())
             .focused(state.focused)
-            .ascii(self.ascii)
             .colorless(self.colorless);
         t.render_stateful(area, buffer, &mut state.timeline);
         // Map TimelineOutcome-style selection back if needed
@@ -1844,7 +1823,6 @@ mod tests {
             assert!(!st.checkpoints.is_empty());
         }
         CheckpointTimeline::new(&system)
-            .ascii(true)
             .colorless(true)
             .list_only(true)
             .paint(area, &mut buf, &mut st);

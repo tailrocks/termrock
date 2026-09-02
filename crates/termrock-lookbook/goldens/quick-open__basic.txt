@@ -1,9 +1,9 @@
 quick-open/basic 74x20 (story 72x18)
                                                                           
- ┌ ◊ Quick Open ────────────────────────────────────────────────────────┐ 
+ ╭ Quick Open ──────────────────────────────────────────────────────────╮ 
  │                                                                      │ 
  │  [Files] Symbols  Sessions  Tables                                   │ 
- │  ❯Search resources  (@files query)                                   │ 
+ │  ▎Search resources  (@files query)                                   │ 
  │  ──────────────────────────────────────────────────────────────────  │ 
  │  › ↻ rs main.rs                 src/main.rs │Preview                 │ 
  │    rs lib.rs                     src/lib.rs │fn main() {             │ 
@@ -17,5 +17,5 @@ quick-open/basic 74x20 (story 72x18)
  │                                             │                        │ 
  │  ↑↓ open · enter · @provider · C-n/C-p switch · C-j jump · esc  ·    │ 
  │                                                                      │ 
- └──────────────────────────────────────────────────────────────────────┘ 
+ ╰──────────────────────────────────────────────────────────────────────╯ 
                                                                           

@@ -11,7 +11,6 @@
 //! own z-order and geometry; this module owns **policy evaluation**, nested
 //! capture/bubble, pointer gesture safety, and single-event double-dismiss
 //! prevention.
-
 use ratatui_core::layout::{Position, Rect};
 
 use super::scene::LayerDismissPolicy;

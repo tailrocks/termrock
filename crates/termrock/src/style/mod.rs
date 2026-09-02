@@ -5,42 +5,32 @@
 //!
 use ratatui_core::style::{Color, Modifier, Style};
 
-mod appearance;
 #[cfg(test)]
 mod contrast_floor;
-mod density;
 mod glyph;
+mod junie;
 mod motion;
 mod palette;
 mod preview_host;
 mod quantize;
 mod tokens;
 
-pub use appearance::{Appearance, AppearanceThemeMap, palette_for_appearance};
-pub use density::Density;
 pub use glyph::{
     BLOCK_RAMP, BRAILLE_RAMP, GLYPH_CONTEXTS, Glyph, GlyphGroup, GlyphResolved, LEFT_BLOCK_RAMP,
-    MASK_CELLS, SHADE_RAMP, SPINNER_BRAILLE_FRAMES, SPINNER_DOT_PULSE_FRAMES, glyph_by_id,
+    MASK_CELLS, SHADE_RAMP, SPINNER_BRAILLE_FRAMES, glyph_by_id,
 };
-pub use motion::{
-    ACTION_FLASH_MS, AMBIENT_PEAK, ActionFlash, BASIC_TRANSITION_CAP, Easing, HEARTBEAT_PERIOD_MS,
-    MotionChannel, MotionPolicy, blend_toward, breathe_over, channel_brightness, coalesce_cells,
-    edge_fade, effective_alpha, fade_style, pulse_brightness, shimmer_at, shimmer_cells,
-    smoothstep, wave_brightness,
+pub use junie::{
+    BadgeKind, ButtonKind, JunieTheme, SyntaxTone, Tone, VisualState, downgrade, nearest_16,
+    nearest_256,
 };
-use palette::{
-    PHOSPHOR_DARK as PHOSPHOR_DARK_RGB, PHOSPHOR_GREEN as PHOSPHOR_GREEN_RGB,
-    PREVIEW_CARD as PREVIEW_CARD_RGB,
-};
+pub use motion::{ACTION_FLASH_MS, ActionFlash, MotionPolicy};
+use palette::PREVIEW_CARD as PREVIEW_CARD_RGB;
 pub use palette::{Rgb, contrast_ratio, relative_luminance};
 pub use preview_host::{
     CapabilityPreviewHost, MediaSessionCommand, PreviewPresentation, PreviewSurface,
     PreviewSurfaceKind,
 };
-pub(crate) use quantize::degrade_chrome as degrade_projection_chrome;
-pub use quantize::{
-    Ansi16Color, ColorCapability, quantize_color, quantize_palette, rgb_to_xterm256,
-};
+pub use quantize::{Ansi16Color, ColorCapability, quantize_color};
 pub use tokens::{
     AccentUsage, BorderShape, BreakpointScale, ButtonRecipe, ButtonRecipeVariant, ContentInset,
     ControlState, DesignSystem, Elevation, FamilyRecipe, FocusEmphasis, GlyphSet, InputRecipe,
@@ -57,41 +47,9 @@ pub const fn color(rgb: Rgb) -> Color {
 
 /// Truecolor phosphor swatch for web/SVG export; runtime TUI recipes use
 /// [`Ansi16Color`] names.
-pub const PHOSPHOR_GREEN: Color = color(PHOSPHOR_GREEN_RGB);
-/// Truecolor dark phosphor swatch for web/SVG export; never runtime TUI authority.
-pub const PHOSPHOR_DARK: Color = color(PHOSPHOR_DARK_RGB);
-/// Truecolor preview-card swatch for web/SVG export; never runtime TUI authority.
+/// Truecolor preview-card swatch (the junie elevated plane) for web/SVG
+/// export; never a runtime TUI authority.
 pub const PREVIEW_CARD: Color = color(PREVIEW_CARD_RGB);
-
-#[must_use]
-/// Blends this color toward the canvas for subdued content.
-pub fn faded(color: Color, alpha: f32) -> Color {
-    let black = if matches!(
-        color,
-        Color::Reset
-            | Color::Black
-            | Color::Red
-            | Color::Green
-            | Color::Yellow
-            | Color::Blue
-            | Color::Magenta
-            | Color::Cyan
-            | Color::Gray
-            | Color::DarkGray
-            | Color::LightRed
-            | Color::LightGreen
-            | Color::LightYellow
-            | Color::LightBlue
-            | Color::LightMagenta
-            | Color::LightCyan
-            | Color::White
-    ) {
-        Color::Black
-    } else {
-        Color::Rgb(0, 0, 0)
-    };
-    blend_toward(color, black, 1.0 - alpha.clamp(0.0, 1.0))
-}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
@@ -101,28 +59,38 @@ pub enum Role {
     Canvas,
     /// Ordinary component surface above the canvas.
     Surface,
-    /// Hover or section surface between ordinary and elevated surfaces.
-    Raised,
-    /// Raised surface such as a dialog or preview card.
+    /// Card / dialog / popup surface.
     Elevated,
     /// Recessed well surface used by inputs and inset content.
     Sunken,
+    /// Popover / dialog chrome surface.
+    Popover,
     /// Occluding layer behind modal content.
     Backdrop,
     /// Ordinary body text (default weight).
     Text,
     /// Strong or heading text (bold).
     TextStrong,
-    /// Secondary explanatory text.
+    /// Secondary explanatory text (70% white).
+    TextSecondary,
+    /// Metadata text (50% white).
     TextMuted,
+    /// Faint meta text (30% white).
+    TextFaint,
+    /// One step below faint: dimmed backdrops only.
+    TextGhost,
     /// Unavailable or non-interactive text.
     TextDisabled,
+    /// Text painted on an accent fill.
+    TextOnAccent,
     /// Inactive component border.
     Border,
     /// Border of the component that owns focus.
     BorderFocused,
-    /// Active row or item selection.
+    /// Selected text or range.
     Selection,
+    /// Selection tint behind the focused cursor row.
+    SelectionTint,
     /// Non-border focus indicator.
     Focus,
     /// Brand-neutral visual accent.
@@ -133,8 +101,6 @@ pub enum Role {
     Warning,
     /// Error, failure, or destructive state.
     Danger,
-    /// Informational status or annotation.
-    Info,
     /// Inactive hyperlink text.
     Link,
     /// Hyperlink text under the pointer.
@@ -151,10 +117,6 @@ pub enum Role {
     TabActive,
     /// Unselected tab label and fill.
     TabInactive,
-    /// Selected tab while hovered.
-    TabActiveHovered,
-    /// Unselected tab while hovered.
-    TabInactiveHovered,
     /// Key chord in an interaction hint.
     HintKey,
     /// Action label paired with a hint key.
@@ -183,18 +145,6 @@ pub enum Role {
     SyntaxNumber,
     /// Syntax: function / method name.
     SyntaxFunction,
-    /// Quiet selected-row background wash.
-    SelectionTint,
-    /// Pointer-hover row background wash.
-    HoverTint,
-    /// Creation or additive action-row accent.
-    ActionConstructive,
-    /// Expand/collapse group-header accent.
-    DisclosureHeader,
-    /// Strong live-status information accent.
-    InfoStrong,
-    /// Dim live-status information accent.
-    InfoDim,
     /// User actor accent for agent surfaces.
     ActorUser,
     /// Assistant actor accent for agent surfaces.
@@ -219,38 +169,37 @@ pub enum Role {
     ChartAxis,
     /// Chart grid / guide lines.
     ChartGrid,
-    /// Faint meta text (timestamps, counts) — below TextMuted.
-    TextFaint,
-    /// Bg-carrying overlay dim: the canvas blended ~60%, painted under every
-    /// modal layer so the content behind a dialog recedes without going black.
-    BackdropWash,
 }
 
 /// Number of [`Role`] variants (stable for palette array sizing).
-pub const ROLE_COUNT: usize = 63;
+pub const ROLE_COUNT: usize = 57;
 
 macro_rules! every_role {
     ($macro:ident) => {
         $macro! {
             Canvas,
             Surface,
-            Raised,
             Elevated,
             Sunken,
+            Popover,
             Backdrop,
             Text,
             TextStrong,
+            TextSecondary,
             TextMuted,
+            TextFaint,
+            TextGhost,
             TextDisabled,
+            TextOnAccent,
             Border,
             BorderFocused,
             Selection,
+            SelectionTint,
             Focus,
             Accent,
             Success,
             Warning,
             Danger,
-            Info,
             Link,
             LinkHover,
             Input,
@@ -259,8 +208,6 @@ macro_rules! every_role {
             ScrollThumb,
             TabActive,
             TabInactive,
-            TabActiveHovered,
-            TabInactiveHovered,
             HintKey,
             HintText,
             HintDim,
@@ -275,12 +222,6 @@ macro_rules! every_role {
             SyntaxComment,
             SyntaxNumber,
             SyntaxFunction,
-            SelectionTint,
-            HoverTint,
-            ActionConstructive,
-            DisclosureHeader,
-            InfoStrong,
-            InfoDim,
             ActorUser,
             ActorAssistant,
             ActorThinking,
@@ -292,9 +233,7 @@ macro_rules! every_role {
             ChartSeries3,
             ChartSeries4,
             ChartAxis,
-            ChartGrid,
-            TextFaint,
-            BackdropWash
+            ChartGrid
         }
     };
 }
@@ -336,434 +275,102 @@ pub struct RolePalette {
 }
 
 impl RolePalette {
-    #[must_use]
-    /// Builds the default restrained phosphor-on-black semantic theme.
+    /// Builds the canonical junie palette at truecolor.
     ///
-    /// The runtime TUI baseline uses named ANSI-16 colors only. Their actual
-    /// luminance belongs to the operator's terminal; TermRock controls
-    /// hierarchy through roles, weight, reverse, borders, and glyphs.
-    pub fn tailrocks_phosphor() -> Self {
-        use Ansi16Color as A;
-
-        Self::from_fn(|role| match role {
-            Role::Canvas => Style::new().bg(Color::Reset),
-            Role::Surface | Role::Raised | Role::Sunken => Style::new().bg(A::Black.color()),
-            // Overlay elevation is structural (frame + title marker); Reset
-            // gives it a terminal-native ground distinct from the black deck.
-            Role::Elevated => Style::new().bg(Color::Reset),
-            Role::Backdrop => Style::new().fg(A::DarkGray.color()),
-            Role::Text => Style::new().fg(A::Gray.color()),
-            Role::TextStrong => Style::new().fg(A::White.color()).bold(),
-            Role::TextMuted => Style::new().fg(A::DarkGray.color()).dim(),
-            Role::TextDisabled => Style::new()
-                .fg(A::White.color())
-                .add_modifier(Modifier::DIM | Modifier::CROSSED_OUT),
-            Role::Border => Style::new().fg(A::DarkGray.color()),
-            Role::BorderFocused => Style::new().fg(A::LightGreen.color()),
-            Role::Selection => Style::new().bg(A::Green.color()).fg(A::Black.color()),
-            Role::Focus => Style::new().fg(A::LightGreen.color()),
-            Role::Accent => Style::new().fg(A::Green.color()),
-            Role::Success => Style::new().fg(A::LightGreen.color()),
-            Role::Warning => Style::new().fg(A::Yellow.color()),
-            Role::Danger => Style::new().fg(A::Red.color()).bold(),
-            Role::Info => Style::new().fg(A::Cyan.color()),
-            Role::Link => Style::new().fg(A::Cyan.color()),
-            Role::LinkHover => Style::new().fg(A::LightCyan.color()),
-            Role::Input => Style::new().fg(A::Gray.color()).bg(A::Black.color()),
-            Role::InputInvalid => Style::new().fg(A::Red.color()).bg(A::Black.color()),
-            Role::ScrollTrack => Style::new().fg(A::Black.color()),
-            Role::ScrollThumb => Style::new().fg(A::DarkGray.color()),
-            Role::TabActive => Style::new().fg(A::White.color()).bold(),
-            Role::TabInactive => Style::new().fg(A::Gray.color()),
-            Role::TabActiveHovered => Style::new().fg(A::White.color()).bold(),
-            Role::TabInactiveHovered => Style::new().fg(A::Gray.color()),
-            Role::HintKey => Style::new().fg(A::White.color()).bold(),
-            Role::HintText => Style::new().fg(A::Gray.color()),
-            Role::HintDim => Style::new().fg(A::DarkGray.color()).dim(),
-            Role::HintSeparator => Style::new().fg(A::DarkGray.color()),
-            Role::ActionFocused => Style::new()
-                .fg(A::Black.color())
-                .bg(A::Green.color())
-                .add_modifier(Modifier::BOLD),
-            Role::ActionDisabled => Style::new().fg(A::DarkGray.color()).dim(),
-            Role::StatusBar => Style::new().fg(A::Gray.color()).bg(A::Black.color()),
-            Role::DiffAdded => Style::new().fg(A::LightGreen.color()),
-            Role::DiffRemoved => Style::new().fg(A::Red.color()),
-            Role::SyntaxKeyword => Style::new().fg(A::Magenta.color()),
-            Role::SyntaxString => Style::new().fg(A::LightGreen.color()),
-            Role::SyntaxComment => Style::new().fg(A::DarkGray.color()),
-            Role::SyntaxNumber => Style::new().fg(A::Yellow.color()),
-            Role::SyntaxFunction => Style::new().fg(A::Cyan.color()),
-            Role::SelectionTint => Style::new().bg(A::DarkGray.color()),
-            Role::HoverTint => Style::new().bg(A::Black.color()),
-            Role::ActionConstructive => Style::new().fg(A::LightGreen.color()).bold(),
-            Role::DisclosureHeader => Style::new().fg(A::Yellow.color()).bold(),
-            Role::InfoStrong => Style::new().fg(A::Cyan.color()).bold(),
-            Role::InfoDim => Style::new().fg(A::DarkGray.color()),
-            Role::ActorUser => Style::new().fg(A::Gray.color()),
-            Role::ActorAssistant => Style::new().fg(A::Magenta.color()),
-            Role::ActorThinking => Style::new().fg(A::LightMagenta.color()),
-            Role::ActorTool => Style::new().fg(A::DarkGray.color()),
-            Role::ActorPlan => Style::new().fg(A::Yellow.color()),
-            Role::ActorSystem => Style::new().fg(A::Cyan.color()),
-            Role::ChartSeries1 => Style::new().fg(A::LightGreen.color()),
-            Role::ChartSeries2 => Style::new().fg(A::Cyan.color()),
-            Role::ChartSeries3 => Style::new().fg(A::Yellow.color()),
-            Role::ChartSeries4 => Style::new().fg(A::Magenta.color()),
-            Role::ChartAxis => Style::new().fg(A::Gray.color()),
-            Role::ChartGrid => Style::new().fg(A::DarkGray.color()),
-            Role::TextFaint => Style::new().fg(A::DarkGray.color()).italic(),
-            Role::BackdropWash => Style::new().bg(A::Black.color()),
-        })
-    }
-
-    /// Builds the phosphor palette while inheriting terminal-default surfaces.
+    /// This is the only palette TermRock ships. Every role is either a direct
+    /// junie token or a documented derivation (charts, actors, diff, link,
+    /// syntax — see `research/junie-campaign/phase3-decision.md` D2/D3).
     ///
-    /// This preserves the pre-surface-ladder background behavior for hosts
-    /// that must follow the operator's terminal theme.
+    /// Roles the resolvers own (hover, pressed, thumb focus) carry their
+    /// resting value here; widgets call [`JunieTheme`] resolvers for the
+    /// interactive forms instead of inventing a hover role.
     #[must_use]
-    pub fn terminal_native() -> Self {
-        let mut palette = Self::tailrocks_phosphor();
-        for role in [
-            Role::Canvas,
-            Role::Surface,
-            Role::Raised,
-            Role::Elevated,
-            Role::Sunken,
-        ] {
-            palette.roles[role as usize] = Style::new();
-        }
-        palette.roles[Role::StatusBar as usize] = Style::new().fg(Ansi16Color::Gray.color());
-        palette
+    pub fn junie() -> Self {
+        Self::junie_for(ColorCapability::Truecolor)
     }
 
-    /// Cool-gray neutrality proof and rebranding reference.
+    /// Builds the canonical junie palette resolved for a colour capability.
     ///
-    /// Consumers can copy this preset into their application and adjust its
-    /// role mappings without depending on TermRock's default design language.
+    /// Every token is downgraded by [`JunieTheme::for_level`]; nothing else in
+    /// the crate quantizes colours after the fact.
     #[must_use]
-    pub fn slate() -> Self {
-        let canvas = Color::Rgb(15, 23, 42);
-        let surface = Color::Rgb(30, 41, 59);
-        let elevated = Color::Rgb(51, 65, 85);
-        let text = Color::Rgb(226, 232, 240);
-        let muted = Color::Rgb(148, 163, 184);
-        let disabled = Color::Rgb(100, 116, 139);
-        let border = Color::Rgb(71, 85, 105);
-        let accent = Color::Rgb(96, 165, 250);
-        let selection = Color::Rgb(30, 64, 175);
-        let success = Color::Rgb(74, 222, 128);
-        let warning = Color::Rgb(251, 191, 36);
-        let danger = Color::Rgb(248, 113, 113);
-        let info = Color::Rgb(56, 189, 248);
-
-        Self::from_fn(|role| match role {
-            Role::Canvas => Style::new().bg(canvas),
-            Role::Surface => Style::new().bg(surface),
-            Role::Raised => Style::new().bg(Color::Rgb(40, 52, 72)),
-            Role::Elevated => Style::new().bg(elevated),
-            Role::Sunken => Style::new().bg(Color::Rgb(17, 28, 48)),
-            Role::Backdrop => Style::new().bg(Color::Rgb(2, 6, 23)),
-            Role::Text => Style::new().fg(text),
-            Role::TextStrong => Style::new().fg(text).bold(),
-            Role::TextMuted => Style::new().fg(muted),
-            Role::TextDisabled => Style::new().fg(disabled).dim(),
-            Role::Border => Style::new().fg(border),
-            Role::BorderFocused => Style::new().fg(accent),
-            Role::Selection => Style::new().fg(text).bg(selection),
-            Role::Focus => Style::new().fg(accent),
-            Role::Accent => Style::new().fg(accent),
-            Role::Success => Style::new().fg(success),
-            Role::Warning => Style::new().fg(warning),
-            Role::Danger => Style::new().fg(danger).bold(),
-            Role::Info => Style::new().fg(info),
-            Role::Link => Style::new().fg(Color::Rgb(125, 211, 252)),
-            Role::LinkHover => Style::new().fg(Color::Rgb(186, 230, 253)).underlined(),
-            Role::Input => Style::new().bg(surface),
-            Role::InputInvalid => Style::new().fg(danger).bg(Color::Rgb(69, 10, 10)),
-            Role::ScrollTrack => Style::new().fg(elevated),
-            Role::ScrollThumb => Style::new().fg(accent),
-            Role::TabActive => Style::new().fg(text).bold(),
-            Role::TabInactive => Style::new().fg(muted),
-            Role::TabActiveHovered => Style::new().fg(text).bold().bg(Color::Rgb(36, 52, 68)),
-            Role::TabInactiveHovered => Style::new().fg(muted).bg(Color::Rgb(36, 52, 68)),
-            Role::HintKey => Style::new().fg(text).bold(),
-            Role::HintText => Style::new().fg(accent),
-            Role::HintDim => Style::new().fg(muted),
-            Role::HintSeparator => Style::new().fg(border),
-            Role::ActionFocused => Style::new().fg(canvas).bg(accent).bold(),
-            Role::ActionDisabled => Style::new().fg(disabled),
-            Role::StatusBar => Style::new().fg(text).bg(surface),
-            Role::DiffAdded => Style::new()
-                .fg(Color::Rgb(134, 239, 172))
-                .bg(Color::Rgb(20, 83, 45)),
-            Role::DiffRemoved => Style::new()
-                .fg(Color::Rgb(252, 165, 165))
-                .bg(Color::Rgb(127, 29, 29)),
-            Role::SyntaxKeyword => Style::new().fg(Color::Rgb(192, 132, 252)),
-            Role::SyntaxString => Style::new().fg(Color::Rgb(134, 239, 172)),
-            Role::SyntaxComment => Style::new().fg(muted),
-            Role::SyntaxNumber => Style::new().fg(Color::Rgb(253, 186, 116)),
-            Role::SyntaxFunction => Style::new().fg(Color::Rgb(125, 211, 252)),
-            Role::SelectionTint => Style::new().bg(Color::Rgb(20, 55, 80)),
-            Role::HoverTint => Style::new().bg(Color::Rgb(36, 52, 68)),
-            Role::ActionConstructive => Style::new().fg(Color::Rgb(167, 243, 208)),
-            Role::DisclosureHeader => Style::new().fg(Color::Rgb(252, 211, 77)),
-            Role::InfoStrong => Style::new().fg(info),
-            Role::InfoDim => Style::new().fg(Color::Rgb(14, 116, 144)),
-            Role::ActorUser => Style::new().fg(Color::Rgb(203, 213, 225)),
-            Role::ActorAssistant => Style::new().fg(Color::Rgb(216, 180, 254)),
-            Role::ActorThinking => Style::new().fg(Color::Rgb(167, 139, 250)),
-            Role::ActorTool => Style::new().fg(Color::Rgb(148, 163, 184)),
-            Role::ActorPlan => Style::new().fg(Color::Rgb(253, 230, 138)),
-            Role::ActorSystem => Style::new().fg(Color::Rgb(147, 197, 253)),
-            Role::ChartSeries1 => Style::new().fg(accent),
-            Role::ChartSeries2 => Style::new().fg(info),
-            Role::ChartSeries3 => Style::new().fg(warning),
-            Role::ChartSeries4 => Style::new().fg(Color::Rgb(192, 132, 252)),
-            Role::ChartAxis => Style::new().fg(muted),
-            Role::ChartGrid => Style::new().fg(border),
-            Role::TextFaint => Style::new().fg(Color::Rgb(118, 133, 156)).dim(),
-            Role::BackdropWash => Style::new().bg(blend_toward(canvas, Color::Rgb(0, 0, 0), 0.4)),
-        })
-    }
-
-    /// Light paper / daylight system (dark ink on warm canvas).
-    #[must_use]
-    pub fn paper() -> Self {
-        let canvas = Color::Rgb(250, 248, 245);
-        let surface = Color::Rgb(255, 255, 255);
-        let elevated = Color::Rgb(244, 241, 236);
-        let text = Color::Rgb(28, 25, 23);
-        let muted = Color::Rgb(87, 83, 78);
-        let disabled = Color::Rgb(161, 154, 150);
-        let faint = Color::Rgb(133, 126, 122);
-        let border = Color::Rgb(214, 211, 209);
-        let accent = Color::Rgb(37, 99, 235);
-        let selection = Color::Rgb(219, 234, 254);
-        let success = Color::Rgb(17, 129, 59);
-        let warning = Color::Rgb(152, 104, 3);
-        let danger = Color::Rgb(202, 33, 33);
-        let info = Color::Rgb(2, 120, 181);
-        Self::from_fn(|role| match role {
-            Role::Canvas => Style::new().bg(canvas),
-            Role::Surface => Style::new().bg(surface),
-            Role::Raised => Style::new().bg(Color::Rgb(247, 245, 242)),
-            Role::Elevated => Style::new().bg(elevated),
-            Role::Sunken => Style::new().bg(Color::Rgb(238, 235, 230)),
-            Role::Backdrop => Style::new().bg(Color::Rgb(231, 229, 228)),
-            Role::Text => Style::new().fg(text),
-            Role::TextStrong => Style::new().fg(text).bold(),
-            Role::TextMuted => Style::new().fg(muted),
-            Role::TextDisabled => Style::new().fg(disabled),
-            Role::Border => Style::new().fg(border),
-            Role::BorderFocused => Style::new().fg(accent),
-            Role::Selection => Style::new().fg(text).bg(selection),
-            Role::Focus => Style::new().fg(accent),
-            Role::Accent => Style::new().fg(accent),
-            Role::Success => Style::new().fg(success),
-            Role::Warning => Style::new().fg(warning),
-            Role::Danger => Style::new().fg(danger).bold(),
-            Role::Info => Style::new().fg(info),
-            Role::Link => Style::new().fg(accent),
-            Role::LinkHover => Style::new().fg(accent).underlined(),
-            Role::Input => Style::new().fg(text).bg(Color::Rgb(238, 235, 230)),
-            Role::InputInvalid => Style::new().fg(danger).bg(Color::Rgb(254, 226, 226)),
-            Role::ScrollTrack => Style::new().fg(border),
-            Role::ScrollThumb => Style::new().fg(accent),
-            Role::TabActive => Style::new().fg(text).bg(elevated),
-            Role::TabInactive => Style::new().fg(muted).bg(surface),
-            Role::TabActiveHovered => Style::new().fg(text).bg(Color::Rgb(226, 232, 240)),
-            Role::TabInactiveHovered => Style::new().fg(text).bg(elevated),
-            Role::HintKey => Style::new().fg(text).bold(),
-            Role::HintText => Style::new().fg(accent),
-            Role::HintDim => Style::new().fg(muted),
-            Role::HintSeparator => Style::new().fg(border),
-            Role::ActionFocused => Style::new().fg(Color::Rgb(255, 255, 255)).bg(accent).bold(),
-            Role::ActionDisabled => Style::new().fg(disabled),
-            Role::StatusBar => Style::new().fg(text).bg(surface),
-            Role::DiffAdded => Style::new().fg(success).bg(Color::Rgb(220, 252, 231)),
-            Role::DiffRemoved => Style::new().fg(danger).bg(Color::Rgb(254, 226, 226)),
-            Role::SyntaxKeyword => Style::new().fg(Color::Rgb(126, 34, 206)),
-            Role::SyntaxString => Style::new().fg(success),
-            Role::SyntaxComment => Style::new().fg(muted),
-            Role::SyntaxNumber => Style::new().fg(warning),
-            Role::SyntaxFunction => Style::new().fg(info),
-            Role::SelectionTint => Style::new().bg(Color::Rgb(219, 234, 254)),
-            Role::HoverTint => Style::new().bg(Color::Rgb(241, 239, 236)),
-            Role::ActionConstructive => Style::new().fg(Color::Rgb(5, 150, 105)),
-            Role::DisclosureHeader => Style::new().fg(Color::Rgb(180, 83, 9)),
-            Role::InfoStrong => Style::new().fg(info),
-            Role::InfoDim => Style::new().fg(Color::Rgb(14, 116, 144)),
-            Role::ActorUser => Style::new().fg(Color::Rgb(68, 64, 60)),
-            Role::ActorAssistant => Style::new().fg(Color::Rgb(126, 34, 206)),
-            Role::ActorThinking => Style::new().fg(Color::Rgb(107, 33, 168)),
-            Role::ActorTool => Style::new().fg(Color::Rgb(87, 83, 78)),
-            Role::ActorPlan => Style::new().fg(Color::Rgb(161, 98, 7)),
-            Role::ActorSystem => Style::new().fg(Color::Rgb(29, 78, 216)),
-            Role::ChartSeries1 => Style::new().fg(accent),
-            Role::ChartSeries2 => Style::new().fg(info),
-            Role::ChartSeries3 => Style::new().fg(warning),
-            Role::ChartSeries4 => Style::new().fg(Color::Rgb(147, 51, 234)),
-            Role::ChartAxis => Style::new().fg(muted),
-            Role::ChartGrid => Style::new().fg(border),
-            Role::TextFaint => Style::new().fg(faint).dim(),
-            Role::BackdropWash => Style::new().bg(blend_toward(canvas, Color::Rgb(0, 0, 0), 0.4)),
-        })
-    }
-
-    /// ANSI 16-color native palette (no RGB truecolor dependency).
-    #[must_use]
-    pub fn ansi() -> Self {
-        use Ansi16Color as A;
-
-        Self::from_fn(|role| match role {
-            Role::Canvas => Style::new().bg(A::Black.color()),
-            Role::Surface => Style::new().bg(A::Black.color()),
-            Role::Raised => Style::new().bg(A::DarkGray.color()),
-            Role::Elevated => Style::new().bg(A::Gray.color()),
-            Role::Sunken => Style::new().bg(A::Black.color()),
-            Role::Backdrop => Style::new().fg(A::DarkGray.color()),
-            Role::Text => Style::new().fg(A::White.color()),
-            Role::TextStrong => Style::new().fg(A::White.color()).bold(),
-            Role::TextMuted => Style::new().fg(A::Gray.color()).dim(),
-            Role::TextDisabled => Style::new().fg(A::DarkGray.color()),
-            Role::Border => Style::new().fg(A::DarkGray.color()),
-            Role::BorderFocused => Style::new().fg(A::Green.color()),
-            Role::Selection => Style::new().fg(A::Black.color()).bg(A::Green.color()),
-            Role::Focus => Style::new().fg(A::Green.color()),
-            Role::Accent => Style::new().fg(A::Green.color()),
-            Role::Success => Style::new().fg(A::Green.color()),
-            Role::Warning => Style::new().fg(A::Yellow.color()),
-            Role::Danger => Style::new().fg(A::Red.color()).bold(),
-            Role::Info => Style::new().fg(A::Cyan.color()),
-            Role::Link => Style::new().fg(A::Blue.color()),
-            Role::LinkHover => Style::new().fg(A::Blue.color()).underlined(),
-            Role::Input => Style::new().fg(A::White.color()).bg(A::Black.color()),
-            Role::InputInvalid => Style::new().fg(A::Red.color()),
-            Role::ScrollTrack => Style::new().fg(A::DarkGray.color()),
-            Role::ScrollThumb => Style::new().fg(A::White.color()),
-            Role::TabActive => Style::new().fg(A::Black.color()).bg(A::White.color()),
-            Role::TabInactive => Style::new().fg(A::White.color()).bg(A::DarkGray.color()),
-            Role::TabActiveHovered => Style::new().fg(A::Black.color()).bg(A::Gray.color()),
-            Role::TabInactiveHovered => Style::new().fg(A::White.color()).bg(A::DarkGray.color()),
-            Role::HintKey => Style::new().fg(A::White.color()).bold(),
-            Role::HintText => Style::new().fg(A::Green.color()),
-            Role::HintDim => Style::new().fg(A::Gray.color()).dim(),
-            Role::HintSeparator => Style::new().fg(A::DarkGray.color()),
-            Role::ActionFocused => Style::new()
-                .fg(A::Black.color())
-                .bg(A::Green.color())
-                .bold(),
-            Role::ActionDisabled => Style::new().fg(A::DarkGray.color()),
-            Role::StatusBar => Style::new().fg(A::White.color()).bg(A::Black.color()),
-            Role::DiffAdded => Style::new().fg(A::Green.color()),
-            Role::DiffRemoved => Style::new().fg(A::Red.color()),
-            Role::SyntaxKeyword => Style::new().fg(A::Magenta.color()),
-            Role::SyntaxString => Style::new().fg(A::Green.color()),
-            Role::SyntaxComment => Style::new().fg(A::Gray.color()).dim(),
-            Role::SyntaxNumber => Style::new().fg(A::Yellow.color()),
-            Role::SyntaxFunction => Style::new().fg(A::Cyan.color()),
-            Role::SelectionTint => Style::new().bg(A::DarkGray.color()),
-            Role::HoverTint => Style::new().bg(A::Black.color()),
-            Role::ActionConstructive => Style::new().fg(A::Green.color()),
-            Role::DisclosureHeader => Style::new().fg(A::Yellow.color()),
-            Role::InfoStrong => Style::new().fg(A::Cyan.color()),
-            Role::InfoDim => Style::new().fg(A::DarkGray.color()),
-            Role::ActorUser => Style::new().fg(A::Gray.color()),
-            Role::ActorAssistant => Style::new().fg(A::Magenta.color()),
-            Role::ActorThinking => Style::new().fg(A::LightMagenta.color()),
-            Role::ActorTool => Style::new().fg(A::DarkGray.color()),
-            Role::ActorPlan => Style::new().fg(A::Yellow.color()),
-            Role::ActorSystem => Style::new().fg(A::Blue.color()),
-            Role::ChartSeries1 => Style::new().fg(A::Green.color()),
-            Role::ChartSeries2 => Style::new().fg(A::Cyan.color()),
-            Role::ChartSeries3 => Style::new().fg(A::Yellow.color()),
-            Role::ChartSeries4 => Style::new().fg(A::Magenta.color()),
-            Role::ChartAxis => Style::new().fg(A::Gray.color()),
-            Role::ChartGrid => Style::new().fg(A::DarkGray.color()),
-            Role::TextFaint => Style::new().fg(A::DarkGray.color()).dim(),
-            Role::BackdropWash => Style::new().bg(A::Black.color()),
-        })
-    }
-
-    /// High-contrast accessibility palette (strong fg/bg pairs, bold cues).
-    #[must_use]
-    pub fn high_contrast() -> Self {
-        let ink = Color::Rgb(255, 255, 255);
-        let body = Color::Rgb(230, 230, 230);
-        let muted = Color::Rgb(192, 192, 192);
-        let faint = Color::Rgb(166, 166, 166);
-        let disabled = Color::Rgb(150, 150, 150);
-        let paper = Color::Rgb(0, 0, 0);
-        let accent = Color::Rgb(0, 255, 255);
-        let danger = Color::Rgb(255, 64, 64);
-        let warn = Color::Rgb(255, 255, 0);
-        let ok = Color::Rgb(0, 255, 0);
-        Self::from_fn(|role| match role {
-            Role::Canvas => Style::new().bg(paper),
-            Role::Surface => Style::new().bg(paper),
-            Role::Raised => Style::new().bg(Color::Rgb(10, 10, 10)),
-            Role::Elevated => Style::new().bg(Color::Rgb(20, 20, 20)),
-            Role::Sunken => Style::new().bg(Color::Rgb(10, 10, 10)),
-            Role::Backdrop => Style::new().bg(Color::Rgb(30, 30, 30)),
-            Role::Text => Style::new().fg(body),
-            Role::TextStrong => Style::new().fg(ink).bold(),
-            Role::TextMuted => Style::new().fg(muted),
-            Role::TextDisabled => Style::new().fg(disabled),
-            Role::Border => Style::new().fg(ink),
-            Role::BorderFocused => Style::new().fg(accent).bold(),
-            Role::Selection => Style::new().fg(ink).bg(Color::Rgb(0, 80, 80)).bold(),
-            Role::Focus => Style::new().fg(accent).bold(),
-            Role::Accent => Style::new().fg(accent).bold(),
-            Role::Success => Style::new().fg(ok).bold(),
-            Role::Warning => Style::new().fg(warn).bold(),
-            Role::Danger => Style::new().fg(danger).bold(),
-            Role::Info => Style::new().fg(accent).bold(),
-            Role::Link => Style::new().fg(accent).underlined(),
-            Role::LinkHover => Style::new().fg(accent).underlined().bold(),
-            Role::Input => Style::new().fg(ink).bg(paper),
-            Role::InputInvalid => Style::new().fg(danger).bg(paper).bold(),
-            Role::ScrollTrack => Style::new().fg(ink),
-            Role::ScrollThumb => Style::new().fg(ink).bold(),
-            Role::TabActive => Style::new().fg(paper).bg(ink).bold(),
-            Role::TabInactive => Style::new().fg(ink).bg(paper),
-            Role::TabActiveHovered => Style::new().fg(paper).bg(accent).bold(),
-            Role::TabInactiveHovered => Style::new().fg(ink).bg(paper),
-            Role::HintKey => Style::new().fg(ink).bold(),
-            Role::HintText => Style::new().fg(accent).bold(),
-            Role::HintDim => Style::new().fg(ink),
-            Role::HintSeparator => Style::new().fg(ink),
-            Role::ActionFocused => Style::new().fg(paper).bg(accent).bold(),
-            Role::ActionDisabled => Style::new().fg(disabled),
-            Role::StatusBar => Style::new().fg(ink).bg(paper),
-            Role::DiffAdded => Style::new().fg(ok).bg(paper).bold(),
-            Role::DiffRemoved => Style::new().fg(danger).bg(paper).bold(),
-            Role::SyntaxKeyword => Style::new().fg(Color::Rgb(255, 128, 255)).bold(),
-            Role::SyntaxString => Style::new().fg(ok).bold(),
-            Role::SyntaxComment => Style::new().fg(muted),
-            Role::SyntaxNumber => Style::new().fg(warn).bold(),
-            Role::SyntaxFunction => Style::new().fg(accent).bold(),
-            Role::SelectionTint => Style::new().bg(Color::Rgb(0, 80, 80)),
-            Role::HoverTint => Style::new().bg(Color::Rgb(30, 30, 30)),
-            Role::ActionConstructive => Style::new().fg(ok).bold(),
-            Role::DisclosureHeader => Style::new().fg(warn).bold(),
-            Role::InfoStrong => Style::new().fg(accent).bold(),
-            Role::InfoDim => Style::new().fg(Color::Rgb(0, 180, 180)),
-            Role::ActorUser => Style::new().fg(ink),
-            Role::ActorAssistant => Style::new().fg(Color::Rgb(255, 128, 255)).bold(),
-            Role::ActorThinking => Style::new().fg(Color::Rgb(220, 160, 255)).bold(),
-            Role::ActorTool => Style::new().fg(muted),
-            Role::ActorPlan => Style::new().fg(warn).bold(),
-            Role::ActorSystem => Style::new().fg(accent).bold(),
-            Role::ChartSeries1 => Style::new().fg(ok).bold(),
-            Role::ChartSeries2 => Style::new().fg(accent).bold(),
-            Role::ChartSeries3 => Style::new().fg(warn).bold(),
-            Role::ChartSeries4 => Style::new().fg(Color::Rgb(255, 128, 255)).bold(),
-            Role::ChartAxis => Style::new().fg(ink),
-            Role::ChartGrid => Style::new().fg(Color::Rgb(120, 120, 120)),
-            Role::TextFaint => Style::new().fg(faint).dim(),
-            Role::BackdropWash => Style::new().bg(paper),
+    pub fn junie_for(level: ColorCapability) -> Self {
+        let t = JunieTheme::for_level(level);
+        Self::from_fn(move |role| match role {
+            Role::Canvas => Style::new().bg(t.canvas),
+            Role::Surface => Style::new().bg(t.surface),
+            Role::Elevated => Style::new().bg(t.surface_elevated),
+            // Recessed wells and fields share the junie field plane.
+            Role::Sunken => Style::new().bg(t.field),
+            Role::Popover => Style::new().bg(t.popover),
+            // The dimmed page: the base run through `backdrop()`, so the role
+            // can never drift from the resolver (D2).
+            Role::Backdrop => t.backdrop(t.base()),
+            Role::Text => Style::new().fg(t.text_primary),
+            Role::TextStrong => Style::new().fg(t.text_primary).add_modifier(Modifier::BOLD),
+            Role::TextSecondary => Style::new().fg(t.text_secondary),
+            Role::TextMuted => Style::new().fg(t.text_muted),
+            Role::TextFaint => Style::new().fg(t.text_faint),
+            Role::TextGhost => Style::new().fg(t.text_ghost),
+            Role::TextDisabled => Style::new().fg(t.disabled),
+            Role::TextOnAccent => Style::new().fg(t.text_on_accent),
+            Role::Border => Style::new().fg(t.border_subtle),
+            Role::BorderFocused => Style::new().fg(t.border_strong),
+            Role::Selection => Style::new().fg(t.text_primary).bg(t.popover),
+            Role::SelectionTint => Style::new().bg(t.accent_bg),
+            Role::Focus => Style::new().fg(t.focus),
+            Role::Accent => Style::new().fg(t.accent),
+            Role::Success => Style::new().fg(t.success),
+            Role::Warning => Style::new().fg(t.warning),
+            // Danger carries no weight; the glyph carries the alarm.
+            Role::Danger => Style::new().fg(t.error),
+            Role::Link => Style::new()
+                .fg(t.text_secondary)
+                .add_modifier(Modifier::UNDERLINED),
+            // Hover is a plane, not a colour; the underline affordance stays.
+            Role::LinkHover => Style::new()
+                .fg(t.text_primary)
+                .add_modifier(Modifier::UNDERLINED),
+            Role::Input => Style::new().fg(t.text_primary).bg(t.field),
+            Role::InputInvalid => Style::new().fg(t.error).bg(t.field),
+            Role::ScrollTrack => Style::new().fg(t.border_subtle),
+            Role::ScrollThumb => Style::new().fg(t.text_muted),
+            // Active tab: weight plus the accent `━` underline the tabs widget
+            // paints; the role itself carries no underline.
+            Role::TabActive => Style::new().fg(t.text_primary).add_modifier(Modifier::BOLD),
+            Role::TabInactive => Style::new().fg(t.text_secondary),
+            Role::HintKey => Style::new().fg(t.text_primary).add_modifier(Modifier::BOLD),
+            Role::HintText => Style::new().fg(t.text_muted),
+            Role::HintDim => Style::new().fg(t.text_faint),
+            Role::HintSeparator => Style::new().fg(t.text_ghost),
+            // Focus is the `▎` gutter glyph, never a background fill.
+            Role::ActionFocused => Style::new().fg(t.focus).add_modifier(Modifier::BOLD),
+            // No DIM anywhere in the system.
+            Role::ActionDisabled => Style::new().fg(t.disabled),
+            Role::StatusBar => Style::new().fg(t.text_secondary).bg(t.canvas),
+            // D3: diff/change semantics copied from the reference grid — the
+            // ladder plus a change glyph, never green/red.
+            Role::DiffAdded => Style::new().fg(t.text_secondary),
+            Role::DiffRemoved => Style::new().fg(t.text_muted),
+            Role::SyntaxKeyword => Style::new().fg(t.text_primary).add_modifier(Modifier::BOLD),
+            Role::SyntaxString => Style::new().fg(t.text_secondary),
+            Role::SyntaxComment => Style::new().fg(t.text_faint).add_modifier(Modifier::ITALIC),
+            Role::SyntaxNumber => Style::new().fg(t.text_secondary),
+            Role::SyntaxFunction => Style::new().fg(t.text_primary),
+            // D3: actors are ladder + glyphs + labels, never hue.
+            Role::ActorUser => Style::new().fg(t.text_primary),
+            Role::ActorAssistant => Style::new().fg(t.text_primary),
+            Role::ActorThinking => Style::new().fg(t.text_muted),
+            Role::ActorTool => Style::new().fg(t.text_primary),
+            Role::ActorPlan => Style::new().fg(t.text_primary),
+            Role::ActorSystem => Style::new().fg(t.text_muted),
+            // D3: charts are achromatic; series walk the ladder.
+            Role::ChartSeries1 => Style::new().fg(t.text_primary),
+            Role::ChartSeries2 => Style::new().fg(t.text_secondary),
+            Role::ChartSeries3 => Style::new().fg(t.text_muted),
+            Role::ChartSeries4 => Style::new().fg(t.text_faint),
+            Role::ChartAxis => Style::new().fg(t.text_muted),
+            Role::ChartGrid => Style::new().fg(t.text_ghost),
         })
     }
 
@@ -813,19 +420,20 @@ impl RolePalette {
 
 impl Default for RolePalette {
     fn default() -> Self {
-        Self::tailrocks_phosphor()
+        Self::junie()
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use junie::palette as jp;
 
     #[test]
     fn roles_cover_the_positional_theme_array() {
         let roles = RolePalette::roles();
         assert_eq!(roles.len(), ROLE_COUNT);
-        assert_eq!(Role::BackdropWash as usize, roles.len() - 1);
+        assert_eq!(Role::ChartGrid as usize, roles.len() - 1);
         for (index, role) in roles.into_iter().enumerate() {
             role_is_declared(role);
             assert_eq!(role as usize, index);
@@ -845,12 +453,12 @@ mod tests {
     }
 
     #[test]
-    fn default_is_the_phosphor_preset() {
-        assert_eq!(RolePalette::default(), RolePalette::tailrocks_phosphor());
+    fn default_is_the_junie_palette() {
+        assert_eq!(RolePalette::default(), RolePalette::junie());
     }
 
     #[test]
-    fn default_separates_ordinary_and_strong_text() {
+    fn default_carries_the_junie_text_ladder() {
         let theme = RolePalette::default();
         assert!(
             !theme
@@ -864,321 +472,214 @@ mod tests {
                 .add_modifier
                 .contains(Modifier::BOLD)
         );
-        // ANSI-16 has only four neutrals. Tone establishes the main ladder;
-        // modifiers keep the lowest tiers distinct without inventing RGB.
-        let tones = [
-            Role::TextStrong,
-            Role::Text,
-            Role::TextMuted,
-            Role::TextFaint,
+        // Junie's alpha ladder: strictly dimming neutral tiers. Text is white;
+        // each step down is a lower white alpha over black.
+        let ladder = [
+            (Role::Text, jp::WHITE),
+            (Role::TextSecondary, jp::WHITE_70),
+            (Role::TextMuted, jp::WHITE_50),
+            (Role::TextFaint, jp::WHITE_30),
+            (Role::TextGhost, jp::WHITE_15),
         ];
-        for (index, role) in tones.into_iter().enumerate() {
-            for other in tones.into_iter().skip(index + 1) {
+        for (index, (role, expected)) in ladder.into_iter().enumerate() {
+            assert_eq!(theme.style(role).fg, Some(expected), "{role:?} tier");
+            for (other_role, _) in ladder.into_iter().skip(index + 1) {
                 assert_ne!(
                     theme.style(role),
-                    theme.style(other),
-                    "{role:?} and {other:?} share a complete style"
+                    theme.style(other_role),
+                    "{role:?} and {other_role:?} share a complete style"
                 );
             }
         }
-        // Disabled and faint share the dimmest value; the modifier is what
-        // tells "unavailable" apart from "meta".
-        assert_ne!(
-            theme.style(Role::TextDisabled),
-            theme.style(Role::TextFaint),
-            "disabled and faint text must not resolve to the same style"
-        );
+        // Disabled IS the faint tier in junie (`WHITE_30`); weight and the
+        // absence of a marker tell "unavailable" apart from "meta".
+        assert_eq!(theme.style(Role::TextDisabled).fg, Some(jp::WHITE_30));
     }
 
     #[test]
-    fn default_borders_use_gray_inactive_and_green_focused() {
+    fn default_borders_use_subtle_then_strong_not_accent() {
         let theme = RolePalette::default();
-        assert_eq!(
-            theme.style(Role::Border).fg,
-            Some(Ansi16Color::DarkGray.color())
-        );
-        assert_eq!(
+        // Focus moves the border up the neutral ladder; it never borrows the
+        // accent, which is reserved for the focus gutter glyph.
+        assert_eq!(theme.style(Role::Border).fg, Some(jp::WHITE_15));
+        assert_eq!(theme.style(Role::BorderFocused).fg, Some(jp::WHITE_30));
+        assert_ne!(
             theme.style(Role::BorderFocused).fg,
-            Some(Ansi16Color::LightGreen.color())
+            theme.style(Role::Accent).fg
         );
     }
 
     #[test]
-    fn phosphor_baseline_uses_named_ansi_only() {
-        let palette = RolePalette::tailrocks_phosphor();
-        for role in RolePalette::roles() {
-            let style = palette.style(role);
-            for color in [style.fg, style.bg].into_iter().flatten() {
-                assert!(
-                    !matches!(color, Color::Rgb(..) | Color::Indexed(..)),
-                    "{role:?} escaped the named ANSI baseline: {color:?}"
-                );
-            }
-        }
-    }
-
-    #[test]
-    fn faded_named_ansi_stays_in_named_terminal_space() {
-        for color in [Color::Green, Color::LightGreen, Color::Gray, Color::Reset] {
-            for alpha in [0.0, 0.25, 0.5, 0.75, 1.0] {
-                assert!(
-                    !matches!(faded(color, alpha), Color::Rgb(..) | Color::Indexed(..)),
-                    "fading {color:?} at {alpha} emitted a non-ANSI color"
-                );
-            }
-        }
-    }
-
-    #[test]
-    fn accents_are_distinct() {
-        let palette = RolePalette::tailrocks_phosphor();
-        let accent = palette.style(Role::Accent).fg;
-
-        // Base green is the restrained brand mark. Focus and semantic success
-        // use the bright ANSI slot so they do not impersonate ambient brand.
-        assert_eq!(accent, Some(Ansi16Color::Green.color()));
+    fn junie_green_is_reserved_for_intent() {
+        let palette = RolePalette::default();
+        let green = palette.style(Role::Accent).fg;
+        // Green is the one accent: focus, success, and the accent itself.
+        assert_eq!(palette.style(Role::Focus).fg, green);
+        assert_eq!(palette.style(Role::Success).fg, green);
+        // Nothing else may spend it — charts, diff, links, hints, borders, and
+        // the text ladder are all neutral.
         for role in [
-            Role::Focus,
-            Role::Success,
+            Role::Warning,
+            Role::Danger,
+            Role::Link,
             Role::ScrollThumb,
             Role::ScrollTrack,
             Role::ChartSeries1,
+            Role::ChartAxis,
             Role::DiffAdded,
+            Role::DiffRemoved,
             Role::HintText,
             Role::TabActive,
+            Role::TabInactive,
             Role::Border,
+            Role::BorderFocused,
+            Role::Text,
+            Role::TextSecondary,
         ] {
             assert_ne!(
                 palette.style(role).fg,
-                accent,
+                green,
                 "{role:?} still paints the brand accent"
             );
         }
     }
 
     #[test]
-    fn hc_and_paper_have_text_ladders() {
-        for palette in [RolePalette::paper(), RolePalette::high_contrast()] {
-            assert_ne!(
-                palette.style(Role::Text),
-                palette.style(Role::TextStrong),
-                "body and strong text must differ"
-            );
-            assert_ne!(
-                palette.style(Role::TextMuted).fg,
-                palette.style(Role::Text).fg,
-                "muted text must differ from body"
-            );
-            assert_ne!(
-                palette.style(Role::TextFaint).fg,
-                palette.style(Role::TextMuted).fg,
-                "faint text must differ from muted"
+    fn every_role_is_populated() {
+        let palette = RolePalette::default();
+        for role in RolePalette::roles() {
+            let style = palette.style(role);
+            assert!(
+                style.fg.is_some() || style.bg.is_some(),
+                "{role:?} must be populated"
             );
         }
     }
 
     #[test]
-    fn every_preset_fills_new_roles() {
-        let new_roles = [
-            Role::Raised,
-            Role::Sunken,
-            Role::SelectionTint,
-            Role::HoverTint,
-            Role::ActionConstructive,
-            Role::DisclosureHeader,
-            Role::InfoStrong,
-            Role::InfoDim,
-            Role::ActorUser,
-            Role::ActorAssistant,
-            Role::ActorThinking,
-            Role::ActorTool,
-            Role::ActorPlan,
-            Role::ActorSystem,
-        ];
-        for palette in [
-            RolePalette::tailrocks_phosphor(),
-            RolePalette::slate(),
-            RolePalette::paper(),
-            RolePalette::ansi(),
-            RolePalette::high_contrast(),
-        ] {
-            for role in new_roles {
-                let style = palette.style(role);
-                assert!(
-                    style.fg.is_some() || style.bg.is_some(),
-                    "{role:?} must be populated"
-                );
-            }
-        }
-    }
-
-    #[test]
-    fn tint_roles_carry_bg() {
-        for palette in [
-            RolePalette::tailrocks_phosphor(),
-            RolePalette::slate(),
-            RolePalette::paper(),
-            RolePalette::high_contrast(),
-        ] {
-            assert!(palette.style(Role::SelectionTint).bg.is_some());
-            assert!(palette.style(Role::HoverTint).bg.is_some());
-        }
-    }
-
-    #[test]
-    fn terminal_native_inherits_terminal_background() {
-        let palette = RolePalette::terminal_native();
-        for role in [
-            Role::Canvas,
-            Role::Surface,
-            Role::Raised,
-            Role::Elevated,
-            Role::Sunken,
-        ] {
-            assert_eq!(palette.style(role), Style::new());
-        }
-        assert_eq!(palette.style(Role::StatusBar).bg, None);
+    fn selection_tint_carries_the_keyboard_ground() {
+        let palette = RolePalette::default();
+        assert_eq!(palette.style(Role::SelectionTint).bg, Some(jp::GREEN_20));
+        // Hover is not a role: it is `lift()`, resolved per container ground.
         assert_eq!(
-            crate::style::DesignSystem::terminal_native().palette,
-            palette
+            JunieTheme::junie().lift(jp::CHROME),
+            jp::OVERLAY,
+            "hover lifts one plane, it never borrows a tint role"
         );
     }
 
     #[test]
-    fn action_focused_and_disabled_use_distinct_rgb() {
-        let theme = RolePalette::tailrocks_phosphor();
-        let focused = theme.style(Role::ActionFocused);
-        let disabled = theme.style(Role::ActionDisabled);
-        assert_ne!(focused.fg, disabled.fg);
-        assert!(
-            focused.bg.is_some(),
-            "ActionFocused needs explicit bg for SVG"
-        );
-        assert!(
-            disabled.fg.is_some(),
-            "ActionDisabled needs explicit fg for SVG"
-        );
-        // Not modifier-only styles.
-        assert_ne!(focused, Style::new().reversed());
-        assert_ne!(disabled, Style::new().dim());
-    }
-
-    #[test]
-    fn slate_visibly_diverges_from_phosphor() {
-        let slate = RolePalette::slate();
-        let phosphor = RolePalette::tailrocks_phosphor();
-        for role in [
-            Role::Accent,
-            Role::Selection,
-            Role::BorderFocused,
-            Role::TabActive,
-            Role::HintText,
-            Role::DiffAdded,
-            Role::DiffRemoved,
-        ] {
-            assert_ne!(slate.style(role), phosphor.style(role), "{role:?}");
-        }
-    }
-
-    #[test]
-    fn phosphor_preset_pins_load_bearing_role_values() {
-        let theme = RolePalette::tailrocks_phosphor();
-        use Ansi16Color as A;
+    fn junie_surfaces_carry_the_canonical_ladder() {
+        let palette = RolePalette::default();
         let expected = [
-            (Role::Text, Style::new().fg(A::Gray.color())),
+            (Role::Canvas, jp::BLACK),
+            (Role::Surface, jp::CHROME),
+            (Role::Elevated, jp::CARD),
+            (Role::Sunken, jp::INPUT),
+            (Role::Popover, jp::POPOVER),
+        ];
+        for (role, fill) in expected {
+            assert_eq!(palette.style(role).bg, Some(fill), "{role:?} fill");
+        }
+        // The status bar rests on the canvas, never on its own plane.
+        assert_eq!(palette.style(Role::StatusBar).bg, Some(jp::BLACK));
+    }
+
+    #[test]
+    fn action_states_speak_through_weight_and_the_gutter() {
+        let palette = RolePalette::default();
+        let focused = palette.style(Role::ActionFocused);
+        let disabled = palette.style(Role::ActionDisabled);
+        // Focus is the accent gutter plus weight; it is not a background fill.
+        assert_eq!(focused.fg, Some(jp::GREEN));
+        assert!(focused.add_modifier.contains(Modifier::BOLD));
+        assert_eq!(focused.bg, None);
+        // Disabled is the faint tier, and it never dims.
+        assert_eq!(disabled.fg, Some(jp::WHITE_30));
+        assert!(!disabled.add_modifier.contains(Modifier::DIM));
+        assert!(!focused.add_modifier.contains(Modifier::REVERSED));
+    }
+
+    #[test]
+    fn derived_buckets_walk_the_ladder_instead_of_inventing_hue() {
+        let palette = RolePalette::default();
+        // Charts: series descend the text ladder, axis and grid are meta.
+        let expected = [
+            (Role::ChartSeries1, jp::WHITE),
+            (Role::ChartSeries2, jp::WHITE_70),
+            (Role::ChartSeries3, jp::WHITE_50),
+            (Role::ChartSeries4, jp::WHITE_30),
+            (Role::ChartAxis, jp::WHITE_50),
+            (Role::ChartGrid, jp::WHITE_15),
+            // Actors: identity is the glyph and the label, never a hue.
+            (Role::ActorUser, jp::WHITE),
+            (Role::ActorAssistant, jp::WHITE),
+            (Role::ActorTool, jp::WHITE),
+            (Role::ActorPlan, jp::WHITE),
+            (Role::ActorThinking, jp::WHITE_50),
+            (Role::ActorSystem, jp::WHITE_50),
+            // Diff/change semantics copied from the reference grid.
+            (Role::DiffAdded, jp::WHITE_70),
+            (Role::DiffRemoved, jp::WHITE_50),
+            // Links are affordances: secondary text plus the underline.
+            (Role::Link, jp::WHITE_70),
+            (Role::LinkHover, jp::WHITE),
+        ];
+        for (role, fg) in expected {
+            assert_eq!(palette.style(role).fg, Some(fg), "{role:?}");
+        }
+        assert!(
+            palette
+                .style(Role::Link)
+                .add_modifier
+                .contains(Modifier::UNDERLINED)
+        );
+    }
+
+    #[test]
+    fn junie_palette_pins_load_bearing_role_values() {
+        let palette = RolePalette::default();
+        let expected = [
+            (Role::Text, Style::new().fg(jp::WHITE)),
             (
                 Role::TextStrong,
-                Style::new()
-                    .fg(A::White.color())
-                    .add_modifier(Modifier::BOLD),
+                Style::new().fg(jp::WHITE).add_modifier(Modifier::BOLD),
             ),
-            (Role::TextMuted, Style::new().fg(A::DarkGray.color()).dim()),
-            (
-                Role::TextDisabled,
-                Style::new()
-                    .fg(A::White.color())
-                    .add_modifier(Modifier::DIM | Modifier::CROSSED_OUT),
-            ),
-            (
-                Role::TextFaint,
-                Style::new().fg(A::DarkGray.color()).italic(),
-            ),
-            (Role::Border, Style::new().fg(A::DarkGray.color())),
-            (Role::BorderFocused, Style::new().fg(A::LightGreen.color())),
-            (Role::Focus, Style::new().fg(A::LightGreen.color())),
-            (
-                Role::Selection,
-                Style::new().bg(A::Green.color()).fg(A::Black.color()),
-            ),
-            (Role::Success, Style::new().fg(A::LightGreen.color())),
-            (Role::Warning, Style::new().fg(A::Yellow.color())),
-            (
-                Role::Danger,
-                Style::new().fg(A::Red.color()).add_modifier(Modifier::BOLD),
-            ),
-            (Role::Link, Style::new().fg(A::Cyan.color())),
-            (
-                Role::Input,
-                Style::new().fg(A::Gray.color()).bg(A::Black.color()),
-            ),
-            (Role::ScrollThumb, Style::new().fg(A::DarkGray.color())),
-            (Role::ScrollTrack, Style::new().fg(A::Black.color())),
-        ];
-        for (role, expected) in expected {
-            assert_eq!(theme.style(role), expected, "{role:?}");
-        }
-    }
-
-    #[test]
-    fn slate_preset_pins_load_bearing_role_values() {
-        let theme = RolePalette::slate();
-        let expected = [
-            (Role::Text, Style::new().fg(Color::Rgb(226, 232, 240))),
-            (Role::Border, Style::new().fg(Color::Rgb(71, 85, 105))),
-            (
-                Role::BorderFocused,
-                Style::new().fg(Color::Rgb(96, 165, 250)),
-            ),
-            (
-                Role::Selection,
-                Style::new()
-                    .fg(Color::Rgb(226, 232, 240))
-                    .bg(Color::Rgb(30, 64, 175)),
-            ),
-            (Role::Success, Style::new().fg(Color::Rgb(74, 222, 128))),
-            (Role::Warning, Style::new().fg(Color::Rgb(251, 191, 36))),
-            (
-                Role::Danger,
-                Style::new().fg(Color::Rgb(248, 113, 113)).bold(),
-            ),
-            (Role::Link, Style::new().fg(Color::Rgb(125, 211, 252))),
-            (Role::Input, Style::new().bg(Color::Rgb(30, 41, 59))),
-            (Role::ScrollThumb, Style::new().fg(Color::Rgb(96, 165, 250))),
-            (
-                Role::TabActive,
-                Style::new()
-                    .fg(Color::Rgb(226, 232, 240))
-                    .add_modifier(Modifier::BOLD),
-            ),
+            (Role::TextSecondary, Style::new().fg(jp::WHITE_70)),
+            (Role::TextMuted, Style::new().fg(jp::WHITE_50)),
+            (Role::TextFaint, Style::new().fg(jp::WHITE_30)),
+            (Role::TextDisabled, Style::new().fg(jp::WHITE_30)),
+            (Role::TextOnAccent, Style::new().fg(jp::ON_GREEN)),
+            (Role::Border, Style::new().fg(jp::WHITE_15)),
+            (Role::BorderFocused, Style::new().fg(jp::WHITE_30)),
+            (Role::Focus, Style::new().fg(jp::GREEN)),
+            (Role::Accent, Style::new().fg(jp::GREEN)),
+            (Role::Success, Style::new().fg(jp::GREEN)),
+            (Role::Warning, Style::new().fg(jp::AMBER)),
+            (Role::Danger, Style::new().fg(jp::RED)),
+            (Role::Selection, Style::new().fg(jp::WHITE).bg(jp::POPOVER)),
+            (Role::SelectionTint, Style::new().bg(jp::GREEN_20)),
+            (Role::Input, Style::new().fg(jp::WHITE).bg(jp::INPUT)),
+            (Role::InputInvalid, Style::new().fg(jp::RED).bg(jp::INPUT)),
+            (Role::ScrollThumb, Style::new().fg(jp::WHITE_50)),
+            (Role::ScrollTrack, Style::new().fg(jp::WHITE_15)),
             (
                 Role::HintKey,
-                Style::new().fg(Color::Rgb(226, 232, 240)).bold(),
+                Style::new().fg(jp::WHITE).add_modifier(Modifier::BOLD),
+            ),
+            (Role::HintText, Style::new().fg(jp::WHITE_50)),
+            (
+                Role::SyntaxComment,
+                Style::new().fg(jp::WHITE_30).add_modifier(Modifier::ITALIC),
             ),
             (
-                Role::DiffAdded,
-                Style::new()
-                    .fg(Color::Rgb(134, 239, 172))
-                    .bg(Color::Rgb(20, 83, 45)),
+                Role::SyntaxKeyword,
+                Style::new().fg(jp::WHITE).add_modifier(Modifier::BOLD),
             ),
-            (
-                Role::DiffRemoved,
-                Style::new()
-                    .fg(Color::Rgb(252, 165, 165))
-                    .bg(Color::Rgb(127, 29, 29)),
-            ),
+            (Role::SyntaxString, Style::new().fg(jp::WHITE_70)),
         ];
         for (role, expected) in expected {
-            assert_eq!(theme.style(role), expected, "{role:?}");
+            assert_eq!(palette.style(role), expected, "{role:?}");
         }
     }
 }

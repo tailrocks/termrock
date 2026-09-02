@@ -4,7 +4,6 @@
 //! List multi-select membership — thin facade over [`crate::interaction::SelectionModel`].
 //!
 //! Prefer `interaction::SelectionModel` for new code (single/multi/range + deltas).
-
 use crate::interaction::{SelectionDelta, SelectionKind, SelectionModel as Model};
 
 /// An ordered set of checked stable identities (list multi-select).

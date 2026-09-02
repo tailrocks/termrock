@@ -1,0 +1,24 @@
+ ▪ Junie Design system / Components / Pickers             i Inspector   ? Help
+
+▎  Overview          Pickers  One modal list for files, tabs and levels: searc…
+▎  Buttons
+▎  Inputs              Open a picker
+▎  Text areas
+▎  Forms               ▎Open quickly   ▎Switch tab   ▎Choose a level
+▎  Lists
+▎  Trees               Quick: fuzzy over files and tasks, Tab cycles the scop…
+▎  Tables
+▎  Editable tables
+▎  Panels
+▎  Sidebars            Result
+▎  Dialogs
+▎  Progress            Chosen          nothing yet
+▎  Scrolling           Detail          —
+▎  Code editor         Level           Safe Mode
+▎  Data grid           Open tabs       Query 1 · orders · order_items · Histo…
+▎  Chips & selects     Pickers opened  0
+▎› Pickers
+▎  Settings
+▎  Task runner
+
+ ↑ ↓ Move  Enter Open  Tab Into page  q Quit

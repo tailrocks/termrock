@@ -10,14 +10,12 @@
 //!
 //! `TailScroll` + the `is_scrollable` / `max_line_width` / `max_offset`
 //! helpers are reimplemented from the donor compatibility layer and owned here.
-
 mod render;
 
 pub use render::{
-    SCROLL_EDGE_FADE_ROWS, SCROLLBAR_HORIZONTAL_THUMB, SCROLLBAR_TRACK, ScrollbarGeometry,
-    ScrollbarSpec, ScrollbarStyle, apply_scroll_delta, apply_scroll_delta_unclamped,
-    apply_term_width_scroll_delta, clamp_scroll_offset, horizontal_scrollbar_area,
-    paint_list_scrollbar, paint_scroll_edges, paint_scrolled_region,
+    SCROLLBAR_HORIZONTAL_THUMB, SCROLLBAR_TRACK, ScrollbarGeometry, ScrollbarSpec, ScrollbarStyle,
+    apply_scroll_delta, apply_scroll_delta_unclamped, apply_term_width_scroll_delta,
+    clamp_scroll_offset, horizontal_scrollbar_area, paint_list_scrollbar, paint_scrolled_region,
     render_line_with_fixed_prefix_scroll, render_lines_with_offset_in_area, render_scrollbar,
     scrollbar_offset_for_track_position, vertical_scrollbar_area, viewport_height, viewport_width,
 };

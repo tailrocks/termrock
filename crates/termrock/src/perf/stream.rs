@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Batched streaming updates, dirty flags, coalescing, and backpressure.
-
 use std::time::Duration;
 
 use crate::runtime::FrameTick;

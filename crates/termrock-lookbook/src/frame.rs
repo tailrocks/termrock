@@ -6,7 +6,6 @@
 //! Ratatui [`Buffer`] cells encode to JSON for a Ghostty-class web host;
 //! browser key chords decode back into TermRock [`KeyEvent`]s so stories
 //! paint through the same interactor path as the TUI lookbook.
-
 use ratatui::{
     Terminal,
     backend::TestBackend,
@@ -511,25 +510,14 @@ mod tests {
 
     #[test]
     fn full_non_default_design_system_reaches_shared_frame_path() {
-        use termrock::style::GlyphSet;
-
         let story = story_by_id("list/selection").expect("mounted list story");
         let unicode = crate::design::lookbook_system(RolePalette::default());
-        let ascii = unicode.clone().glyphs(GlyphSet::Ascii);
         let unicode_frame = paint_story_buffer(story, &unicode, None, None);
-        let ascii_frame = paint_story_buffer(story, &ascii, None, None);
-        assert_ne!(unicode_frame, ascii_frame);
         assert!(
             unicode_frame
                 .content()
                 .iter()
                 .any(|cell| cell.symbol() == unicode.glyphs.selection_gutter())
-        );
-        assert!(
-            ascii_frame
-                .content()
-                .iter()
-                .any(|cell| cell.symbol() == ascii.glyphs.selection_gutter())
         );
     }
 
@@ -564,7 +552,7 @@ mod tests {
         use termrock::style::SelectionChrome;
 
         let system =
-            crate::design::lookbook_system(RolePalette::slate()).selection(SelectionChrome::Marker);
+            crate::design::lookbook_system(RolePalette::junie()).selection(SelectionChrome::Tint);
         let key = PreviewKey {
             key: "ArrowDown".into(),
             ctrl: false,
@@ -582,7 +570,7 @@ mod tests {
             let _ = session.dispatch_event(Event::Key(event));
             assert_eq!(direct, session.frame());
             assert_eq!(direct.interactive, interactive);
-            assert_eq!(direct.theme, "slate");
+            assert_eq!(direct.theme, "junie");
         }
     }
 

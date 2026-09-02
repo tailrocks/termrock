@@ -1,7 +1,7 @@
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use crate::{
-    style::{DesignSystem, Role, RolePalette},
-    text::{CellAlignment, LinePlacement, paint_line_overflow},
+    style::{BadgeKind, DesignSystem, Role, RolePalette},
+    text::{CellAlignment, LinePlacement, display_cols, paint_line_overflow, truncate_cols},
 };
 use ratatui_core::{
     buffer::Buffer,
@@ -152,9 +152,9 @@ impl<'a> HintBar<'a> {
                 ));
                 row_width = row_width.saturating_add(separator_width);
             }
-            spans.push(Span::styled(hint.chord, self.system.style(Role::HintKey)));
-            spans.push(Span::styled(" ", self.system.style(Role::HintText)));
-            spans.push(Span::styled(hint.label, self.system.style(Role::HintText)));
+            spans.push(Span::styled(hint.chord, self.system.key_hint_key()));
+            spans.push(Span::styled(" ", self.system.key_hint_action()));
+            spans.push(Span::styled(hint.label, self.system.key_hint_action()));
             row_width = row_width.saturating_add(hint_width);
         }
         if !spans.is_empty() {
@@ -174,7 +174,7 @@ impl Widget for &HintBar<'_> {
             for x in area.left()..area.right() {
                 buffer[(x, area.top())]
                     .set_symbol(" ")
-                    .set_style(self.system.style(Role::HintText));
+                    .set_style(self.system.key_hint_action());
             }
         }
         let body = Rect::new(
@@ -216,7 +216,7 @@ fn paint_hint_lines(
             buffer,
             row,
             line,
-            system.style(Role::HintText),
+            system.key_hint_action(),
             placement,
             &mut scratch,
         );
@@ -256,8 +256,8 @@ pub fn styled_hint_spans(
     system: &DesignSystem,
     remap: impl Fn(Color) -> Color,
 ) -> Vec<Span<'static>> {
-    let key = remap_style(system.style(Role::HintKey), &remap);
-    let text = remap_style(system.style(Role::HintText), &remap);
+    let key = remap_style(system.key_hint_key(), &remap);
+    let text = remap_style(system.key_hint_action(), &remap);
     let dim = remap_style(system.style(Role::HintDim), &remap);
     let sep = remap_style(system.style(Role::HintSeparator), &remap);
     let mut out = Vec::with_capacity(spans.len());

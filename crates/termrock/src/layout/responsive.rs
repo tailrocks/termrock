@@ -20,9 +20,6 @@
 //!
 //! Pair with [`crate::style::Density`] for spacing tokens and with
 //! [`crate::layout::Workspace`] for multi-pane collapse.
-
-use crate::style::Density;
-
 /// Canonical width samples for responsive test matrices (cells).
 pub const WIDTH_LADDER: [u16; 7] = [160, 120, 100, 80, 60, 40, 20];
 
@@ -112,20 +109,6 @@ impl ContractionStage {
             101..=120 => Self::ShortenSecondary,
             121..=159 => Self::CompactSpacing,
             _ => Self::Full,
-        }
-    }
-
-    /// Suggested design density for this stage.
-    #[must_use]
-    pub const fn suggested_density(self) -> Density {
-        match self {
-            Self::Full => Density::Comfortable,
-            Self::CompactSpacing | Self::ShortenSecondary => Density::Compact,
-            Self::HideOptionalMeta
-            | Self::CollapseSecondaryActions
-            | Self::SinglePane
-            | Self::DrawerOrOverlay
-            | Self::LineMode => Density::Dashboard,
         }
     }
 
@@ -250,8 +233,6 @@ pub struct AdaptiveAnatomy {
     pub use_drawer: bool,
     /// Tiny-terminal single-line / essential-only mode.
     pub line_mode: bool,
-    /// Suggested density for spacing tokens.
-    pub density: Density,
     /// Default overflow for clipped essential labels.
     pub overflow: OverflowBehavior,
 }
@@ -270,7 +251,6 @@ impl AdaptiveAnatomy {
                 multi_pane: true,
                 use_drawer: false,
                 line_mode: false,
-                density: Density::Comfortable,
                 overflow: OverflowBehavior::Ellipsis,
             },
             ContractionStage::CompactSpacing => Self {
@@ -282,7 +262,6 @@ impl AdaptiveAnatomy {
                 multi_pane: true,
                 use_drawer: false,
                 line_mode: false,
-                density: Density::Compact,
                 overflow: OverflowBehavior::Ellipsis,
             },
             ContractionStage::ShortenSecondary => Self {
@@ -294,7 +273,6 @@ impl AdaptiveAnatomy {
                 multi_pane: true,
                 use_drawer: false,
                 line_mode: false,
-                density: Density::Compact,
                 overflow: OverflowBehavior::Ellipsis,
             },
             ContractionStage::HideOptionalMeta => Self {
@@ -306,7 +284,6 @@ impl AdaptiveAnatomy {
                 multi_pane: true,
                 use_drawer: false,
                 line_mode: false,
-                density: Density::Dashboard,
                 overflow: OverflowBehavior::Ellipsis,
             },
             ContractionStage::CollapseSecondaryActions => Self {
@@ -318,7 +295,6 @@ impl AdaptiveAnatomy {
                 multi_pane: true,
                 use_drawer: false,
                 line_mode: false,
-                density: Density::Dashboard,
                 overflow: OverflowBehavior::Ellipsis,
             },
             ContractionStage::SinglePane => Self {
@@ -330,7 +306,6 @@ impl AdaptiveAnatomy {
                 multi_pane: false,
                 use_drawer: false,
                 line_mode: false,
-                density: Density::Dashboard,
                 overflow: OverflowBehavior::Ellipsis,
             },
             ContractionStage::DrawerOrOverlay => Self {
@@ -342,7 +317,6 @@ impl AdaptiveAnatomy {
                 multi_pane: false,
                 use_drawer: true,
                 line_mode: false,
-                density: Density::Dashboard,
                 overflow: OverflowBehavior::Ellipsis,
             },
             ContractionStage::LineMode => Self {
@@ -354,7 +328,6 @@ impl AdaptiveAnatomy {
                 multi_pane: false,
                 use_drawer: false,
                 line_mode: true,
-                density: Density::Dashboard,
                 overflow: OverflowBehavior::Ellipsis,
             },
         }
@@ -1392,7 +1365,6 @@ impl ResponsiveSnapshot {
                 self.class.anatomy.use_drawer as u8,
                 self.class.anatomy.line_mode as u8,
             ),
-            format!("density={:?}", self.class.anatomy.density),
             format!(
                 "reference={}x{} minimum={}x{} below-minimum={}",
                 self.class.reference_width,

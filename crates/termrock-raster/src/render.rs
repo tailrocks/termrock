@@ -128,17 +128,20 @@ pub fn render_pixmap(
             fill_rect(&mut pixmap, left, top, span_width, CELL_HEIGHT_PX, bg);
 
             if !symbol.is_empty() && !symbol.chars().all(char::is_whitespace) {
-                let font = fonts::face(cell.modifier);
-                let mut scaler = scale_context
-                    .builder(font)
-                    .size(FONT_SIZE_PX)
-                    .hint(true)
-                    .build();
                 for character in symbol.chars() {
-                    let glyph = font.charmap().map(character);
+                    // Unmapped characters resolve to None and paint nothing:
+                    // `.notdef` tofu is never rasterized.
+                    let Some(resolved) = fonts::resolve(cell.modifier, character) else {
+                        continue;
+                    };
+                    let mut scaler = scale_context
+                        .builder(resolved.face)
+                        .size(FONT_SIZE_PX)
+                        .hint(true)
+                        .build();
                     if let Some(image) = Render::new(&[Source::Outline])
                         .format(Format::Alpha)
-                        .render(&mut scaler, glyph)
+                        .render(&mut scaler, resolved.glyph)
                     {
                         composite_glyph(
                             &mut pixmap,

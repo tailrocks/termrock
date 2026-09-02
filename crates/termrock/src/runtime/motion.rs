@@ -6,7 +6,6 @@
 //! Law: never redraw idle screens solely for decorative animation. Hosts
 //! poll [`AnimationDemand`] / [`Presence::next_deadline`] and only wake when
 //! something timed is active and [`crate::style::MotionPolicy`] allows motion.
-
 use std::time::Duration;
 
 use super::Instant;
@@ -78,29 +77,9 @@ pub fn spinner_step(
     if !motion.animate_spinners() {
         return 0;
     }
-    let period = period_ms
-        .max(1)
-        .saturating_mul(motion.spinner_divisor().max(1));
+    let period = period_ms.max(1);
     let step = tick.elapsed().as_millis() as u64 / period;
     (step as usize) % frame_count
-}
-
-/// Soft pulse 0.0..1.0 for reduced-friendly indeterminate bars (static when Off).
-#[must_use]
-pub fn pulse_fraction(tick: FrameTick, period_ms: u64, motion: MotionPolicy) -> f64 {
-    match motion {
-        MotionPolicy::Off => 0.5,
-        MotionPolicy::Basic | MotionPolicy::Full => {
-            let period = period_ms.max(1) as f64
-                * if matches!(motion, MotionPolicy::Basic) {
-                    2.0
-                } else {
-                    1.0
-                };
-            let t = tick.elapsed().as_secs_f64() * (std::f64::consts::TAU / period);
-            0.5 + 0.5 * t.sin()
-        }
-    }
 }
 
 /// Demand for an active spinner while work is in progress.
@@ -109,8 +88,8 @@ pub fn spinner_demand(tick: FrameTick, motion: MotionPolicy, active: bool) -> An
     if !active || !motion.animate_spinners() {
         return AnimationDemand::idle();
     }
-    // Wake about once per frame period (~80ms default).
-    let period = Duration::from_millis(80 * motion.spinner_divisor().max(1));
+    // Wake about once per frame period (junie spinner cadence).
+    let period = Duration::from_millis(80);
     AnimationDemand {
         needs_redraw: true,
         next_deadline: Some(tick.now() + period),
@@ -386,12 +365,6 @@ impl FrameTick {
     pub fn spinner_step(self, frame_count: usize, period_ms: u64, motion: MotionPolicy) -> usize {
         spinner_step(self, frame_count, period_ms, motion)
     }
-
-    /// Pulse fraction 0..1.
-    #[must_use]
-    pub fn pulse_fraction(self, period_ms: u64, motion: MotionPolicy) -> f64 {
-        pulse_fraction(self, period_ms, motion)
-    }
 }
 
 #[cfg(test)]
@@ -479,16 +452,10 @@ mod tests {
         let mut clock = FrameClock::from_start(start);
         let build = || Presence::immediate().with_exit(Duration::from_millis(120));
 
-        // `Basic` keeps transitions: it must still fade.
-        let mut basic = build();
-        basic.request_show(tick_at(&mut clock, start, 0));
-        basic.request_hide(tick_at(&mut clock, start, 1), MotionPolicy::Basic);
-        assert!(matches!(basic.phase(), PresencePhase::Exiting { .. }));
-
-        // `Off` hides instantly.
+        // `Off` hides instantly: the tier owns the exit, not the spinner.
         let mut off = build();
-        off.request_show(tick_at(&mut clock, start, 2));
-        off.request_hide(tick_at(&mut clock, start, 3), MotionPolicy::Off);
+        off.request_show(tick_at(&mut clock, start, 0));
+        off.request_hide(tick_at(&mut clock, start, 1), MotionPolicy::Off);
         assert_eq!(off.phase(), PresencePhase::Hidden);
     }
 

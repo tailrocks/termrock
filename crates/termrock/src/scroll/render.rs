@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Scrollbar painting and the fixed-prefix line primitive.
-
 use ratatui_core::{buffer::Buffer, layout::Rect, terminal::Frame, text::Line, widgets::Widget};
 use ratatui_widgets::paragraph::Paragraph;
 
@@ -11,11 +10,6 @@ use crate::{
     style::{DesignSystem, Role},
     text::{display_cols, fixed_prefix_scroll_segments},
 };
-
-/// Rows at each edge that dim when the content keeps going past them.
-///
-/// Two rows: one is a hard line, three eats a screenful on a short pane.
-pub const SCROLL_EDGE_FADE_ROWS: u16 = 2;
 
 /// Fades the rows a scrolled region is cut at, so the cut reads as "more".
 ///
@@ -27,74 +21,10 @@ pub const SCROLL_EDGE_FADE_ROWS: u16 = 2;
 /// `above` and `below` say whether content continues past that edge. Reduced
 /// motion is not consulted: this is a static gradient, not a transition, and a
 /// tier that forbids animation still wants to know the list continues.
-pub fn paint_scroll_edges(
-    buffer: &mut Buffer,
-    area: Rect,
-    system: &DesignSystem,
-    above: bool,
-    below: bool,
-) {
-    if area.is_empty() || (!above && !below) {
-        return;
-    }
-    let canvas = system
-        .style(Role::Canvas)
-        .bg
-        .unwrap_or(ratatui_core::style::Color::Reset);
-    let rows = SCROLL_EDGE_FADE_ROWS.min(area.height / 2).max(1);
-    for step in 0..rows {
-        // The outermost row fades hardest; `edge_fade` gives the ramp its
-        // shape so every fading edge in the library agrees on the curve.
-        let alpha = crate::style::edge_fade(step, rows.saturating_mul(2), rows);
-        if above {
-            fade_row(buffer, area, area.y.saturating_add(step), alpha, canvas);
-        }
-        if below {
-            let y = area.bottom().saturating_sub(1).saturating_sub(step);
-            fade_row(buffer, area, y, alpha, canvas);
-        }
-    }
-}
-
-/// Blends one painted row toward the canvas.
-fn fade_row(
-    buffer: &mut Buffer,
-    area: Rect,
-    y: u16,
-    alpha: f32,
-    canvas: ratatui_core::style::Color,
-) {
-    if y < area.y || y >= area.bottom() {
-        return;
-    }
-    for x in area.x..area.right() {
-        let cell = &mut buffer[(x, y)];
-        let faded = crate::style::fade_style(
-            ratatui_core::style::Style::default()
-                .fg(cell.fg)
-                .bg(cell.bg)
-                .add_modifier(cell.modifier),
-            alpha,
-            canvas,
-        );
-        if let Some(fg) = faded.fg {
-            cell.set_fg(fg);
-        }
-        if let Some(bg) = faded.bg {
-            cell.set_bg(bg);
-        }
-    }
-}
-
 /// Unicode-profile dim track glyph shared by every scrollbar.
 pub const SCROLLBAR_TRACK: &str = "·";
 /// Unicode-profile heavy horizontal scrollbar thumb glyph.
 pub const SCROLLBAR_HORIZONTAL_THUMB: &str = "━";
-
-const SCROLLBAR_TRACK_ASCII: &str = ".";
-const SCROLLBAR_HORIZONTAL_THUMB_ASCII: &str = "=";
-const SCROLLBAR_VERTICAL_THUMB_ASCII: &str = "|";
-const SCROLLBAR_VERTICAL_BLOCK_ASCII: &str = "#";
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 /// Visual weight of the vertical scrollbar thumb.
@@ -116,15 +46,8 @@ impl ScrollbarStyle {
         }
     }
 
-    const fn vertical_thumb_for(self, ascii: bool) -> &'static str {
-        if ascii {
-            match self {
-                Self::Line => SCROLLBAR_VERTICAL_THUMB_ASCII,
-                Self::Block => SCROLLBAR_VERTICAL_BLOCK_ASCII,
-            }
-        } else {
-            self.vertical_thumb()
-        }
+    const fn vertical_thumb_for(self, _ascii: bool) -> &'static str {
+        self.vertical_thumb()
     }
 }
 
@@ -272,6 +195,8 @@ pub struct ScrollbarSpec {
     axis: scroll::ScrollAxis,
     geometry: ScrollbarGeometry,
     style: ScrollbarStyle,
+    focused: bool,
+    hovered: bool,
 }
 
 impl ScrollbarSpec {
@@ -282,6 +207,8 @@ impl ScrollbarSpec {
             axis,
             geometry,
             style: ScrollbarStyle::Line,
+            focused: false,
+            hovered: false,
         }
     }
 
@@ -289,6 +216,20 @@ impl ScrollbarSpec {
     #[must_use]
     pub const fn style(mut self, style: ScrollbarStyle) -> Self {
         self.style = style;
+        self
+    }
+
+    /// Whether the scrolled surface owns the keyboard (the thumb brightens).
+    #[must_use]
+    pub const fn focused(mut self, focused: bool) -> Self {
+        self.focused = focused;
+        self
+    }
+
+    /// Whether the pointer is over the track (the thumb lifts one plane).
+    #[must_use]
+    pub const fn hovered(mut self, hovered: bool) -> Self {
+        self.hovered = hovered;
         self
     }
 }
@@ -337,34 +278,8 @@ pub fn paint_scrolled_region(
     offset: u16,
     system: &DesignSystem,
 ) {
-    if scroll::is_scrollable(total, viewport) {
-        let offset = usize::from(offset);
-        paint_scroll_edges(
-            buffer,
-            content_without_gutter(content, gutter),
-            system,
-            offset > 0,
-            offset.saturating_add(viewport) < total,
-        );
-    }
+    let _ = (content, system);
     paint_list_scrollbar(buffer, gutter, total, viewport, offset, system);
-}
-
-/// The content columns, with the scroll gutter taken back out.
-///
-/// Callers hand in the rectangle they painted rows into, and for most widgets
-/// that rectangle already contains the gutter column. Fading it would dim the
-/// scrollbar's own thumb at exactly the edge the thumb is reporting.
-fn content_without_gutter(content: Rect, gutter: Rect) -> Rect {
-    if gutter.width == 0 || gutter.right() < content.right() || gutter.x <= content.x {
-        return content;
-    }
-    Rect::new(
-        content.x,
-        content.y,
-        content.width.saturating_sub(gutter.width),
-        content.height,
-    )
 }
 
 /// Paints a themed full-cell scrollbar into an explicit track rectangle.
@@ -442,39 +357,32 @@ impl Widget for Scrollbar<'_> {
             return;
         };
         let thumb_range = usize::from(thumb.start)..usize::from(thumb.start + thumb.len);
-        let ascii = self.system.glyphs.is_ascii();
-        let track_symbol = if ascii {
-            SCROLLBAR_TRACK_ASCII
-        } else {
-            SCROLLBAR_TRACK
-        };
+        let track_symbol = SCROLLBAR_TRACK;
         for index in 0..track_len {
             let (x, y, thumb_symbol) = match self.spec.axis {
-                scroll::ScrollAxis::Horizontal => (
-                    area.x + index as u16,
-                    area.y,
-                    if ascii {
-                        SCROLLBAR_HORIZONTAL_THUMB_ASCII
-                    } else {
-                        SCROLLBAR_HORIZONTAL_THUMB
-                    },
-                ),
+                scroll::ScrollAxis::Horizontal => {
+                    (area.x + index as u16, area.y, SCROLLBAR_HORIZONTAL_THUMB)
+                }
                 scroll::ScrollAxis::Vertical => (
                     area.x,
                     area.y + index as u16,
-                    self.spec.style.vertical_thumb_for(ascii),
+                    self.spec.style.vertical_thumb_for(false),
                 ),
             };
             let in_thumb = thumb_range.contains(&index);
+            // M12: the thumb states the surface's focus and hover through the
+            // one scrollbar resolver; the track stays the quiet rail.
+            let style = if in_thumb {
+                self.system
+                    .scrollbar_thumb(self.spec.focused, self.spec.hovered)
+            } else {
+                self.system.scrollbar_track()
+            };
             buffer.set_string(
                 x,
                 y,
                 if in_thumb { thumb_symbol } else { track_symbol },
-                if in_thumb {
-                    self.system.style(Role::ScrollThumb)
-                } else {
-                    self.system.style(Role::ScrollTrack)
-                },
+                style,
             );
         }
     }

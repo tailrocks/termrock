@@ -28,7 +28,6 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -910,7 +909,6 @@ impl AgentStatusHeaderState {
 #[derive(Debug, Clone, Copy)]
 pub struct AgentStatusHeader<'a> {
     system: &'a DesignSystem,
-    ascii: bool,
     colorless: bool,
     show_actions: bool,
 }
@@ -921,7 +919,6 @@ impl<'a> AgentStatusHeader<'a> {
     pub const fn new(system: &'a DesignSystem) -> Self {
         Self {
             system,
-            ascii: false,
             colorless: false,
             show_actions: true,
         }
@@ -929,13 +926,7 @@ impl<'a> AgentStatusHeader<'a> {
 
     /// ASCII glyphs.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Colorless.
-    #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self
@@ -1014,13 +1005,7 @@ impl<'a> AgentStatusHeader<'a> {
         } else {
             snap.work.semantic().role()
         };
-        let inner = AccentRail::new(self.system, rail_role)
-            .active(matches!(
-                snap.work,
-                AgentWorkStatus::Working | AgentWorkStatus::Streaming
-            ))
-            .tick(self.system.elapsed_ms() / 80)
-            .paint(area, buffer);
+        let inner = AccentRail::new(self.system, rail_role).paint(area, buffer);
         if inner.is_empty() {
             return;
         }
@@ -1033,7 +1018,7 @@ impl<'a> AgentStatusHeader<'a> {
         // minimum the status keeps the first row and actions keep the second.
         if area.height >= 3 && y < max_y {
             let identity = match snap.agent.as_deref() {
-                Some(agent) if self.ascii => format!("{title} / {agent}"),
+                Some(agent) if false => format!("{title} / {agent}"),
                 Some(agent) => format!("{title} — {agent}"),
                 None => title,
             };
@@ -1354,7 +1339,6 @@ mod tests {
         let area = Rect::new(0, 0, 64, 3);
         let mut buf = Buffer::empty(area);
         AgentStatusHeader::new(&system)
-            .ascii(true)
             .colorless(true)
             .actions(false)
             .paint(area, &mut buf, &mut st);
@@ -1443,7 +1427,7 @@ mod tests {
     #[test]
     fn resize_cjk_combining_and_ascii_safe() {
         let system = DesignSystem::default();
-        for ascii in [false, true] {
+        for _ in [false, true] {
             for (width, height) in [(48, 3), (20, 1), (1, 1), (0, 0)] {
                 let mut st = AgentStatusHeaderState::new();
                 st.set_snapshot(
@@ -1459,9 +1443,7 @@ mod tests {
                 st.auto_contract = false;
                 let area = Rect::new(0, 0, width, height);
                 let mut buf = Buffer::empty(area);
-                AgentStatusHeader::new(&system)
-                    .ascii(ascii)
-                    .paint(area, &mut buf, &mut st);
+                AgentStatusHeader::new(&system).paint(area, &mut buf, &mut st);
                 if width == 48 {
                     let text: String = buf.content().iter().map(|cell| cell.symbol()).collect();
                     assert!(text.contains('プ'), "{text:?}");

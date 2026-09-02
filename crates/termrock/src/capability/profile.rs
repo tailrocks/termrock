@@ -2,10 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Named profiles and capability resolution.
-
 use super::detect::{CapabilitySource, DetectionReport, detect_environment};
 use super::set::CapabilitySet;
-use crate::style::{ColorCapability, GlyphSet};
+use crate::style::ColorCapability;
 
 /// Named capability profile.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -68,7 +67,6 @@ impl CapabilityProfile {
         match self {
             Self::Modern => CapabilitySet {
                 color: ColorCapability::Truecolor,
-                glyphs: GlyphSet::Unicode,
                 mouse: true,
                 bracketed_paste: true,
                 hyperlinks: true,
@@ -86,7 +84,6 @@ impl CapabilityProfile {
             },
             Self::Compatible => CapabilitySet {
                 color: ColorCapability::Indexed256,
-                glyphs: GlyphSet::Unicode,
                 mouse: true,
                 bracketed_paste: true,
                 hyperlinks: false,
@@ -104,7 +101,6 @@ impl CapabilityProfile {
             },
             Self::Minimal => CapabilitySet {
                 color: ColorCapability::Monochrome,
-                glyphs: GlyphSet::Ascii,
                 mouse: false,
                 bracketed_paste: false,
                 hyperlinks: false,
@@ -122,7 +118,6 @@ impl CapabilityProfile {
             },
             Self::Inline => CapabilitySet {
                 color: ColorCapability::Indexed256,
-                glyphs: GlyphSet::Unicode,
                 mouse: false,
                 bracketed_paste: true,
                 hyperlinks: false,
@@ -140,7 +135,6 @@ impl CapabilityProfile {
             },
             Self::Headless => CapabilitySet {
                 color: ColorCapability::Truecolor, // buffer still has styles
-                glyphs: GlyphSet::Unicode,
                 mouse: false,
                 bracketed_paste: false,
                 hyperlinks: false,
@@ -165,8 +159,6 @@ impl CapabilityProfile {
 pub struct CapabilityOverrides {
     /// Force color ladder.
     pub color: Option<ColorCapability>,
-    /// Force glyphs.
-    pub glyphs: Option<GlyphSet>,
     /// Force mouse on/off.
     pub mouse: Option<bool>,
     /// Force bracketed paste.
@@ -190,7 +182,7 @@ pub struct CapabilityOverrides {
 impl CapabilityOverrides {
     /// Parse common env overrides into this struct (does not run full detect).
     #[must_use]
-    pub fn from_env_keys(color: Option<&str>, glyphs: Option<&str>, profile: Option<&str>) -> Self {
+    pub fn from_env_keys(color: Option<&str>, profile: Option<&str>) -> Self {
         let mut o = Self::default();
         if let Some(p) = profile {
             o.profile = CapabilityProfile::parse(p);
@@ -201,13 +193,6 @@ impl CapabilityOverrides {
                 "256" | "256color" => Some(ColorCapability::Indexed256),
                 "16" | "ansi" | "ansi16" => Some(ColorCapability::Ansi16),
                 "mono" | "monochrome" | "none" | "0" => Some(ColorCapability::Monochrome),
-                _ => None,
-            };
-        }
-        if let Some(g) = glyphs {
-            o.glyphs = match g.to_ascii_lowercase().as_str() {
-                "unicode" | "utf8" | "utf-8" => Some(GlyphSet::Unicode),
-                "ascii" | "plain" => Some(GlyphSet::Ascii),
                 _ => None,
             };
         }
@@ -231,8 +216,6 @@ pub struct TerminalCapabilities {
     pub overrides: CapabilityOverrides,
     /// Color source.
     pub color_source: CapabilitySource,
-    /// Glyph source.
-    pub glyph_source: CapabilitySource,
     /// Profile source.
     pub profile_source: CapabilitySource,
 }
@@ -307,28 +290,15 @@ pub fn resolve_from_detection(
         color_source = CapabilitySource::Environment;
     }
 
-    let mut glyph_source = CapabilitySource::Profile;
-
     // Apply overrides
     if let Some(c) = overrides.color {
         set.color = c;
         color_source = CapabilitySource::Override;
     } else if let Some(raw) = detection.env.color_override.as_deref() {
-        let env_o = CapabilityOverrides::from_env_keys(Some(raw), None, None);
+        let env_o = CapabilityOverrides::from_env_keys(Some(raw), None);
         if let Some(c) = env_o.color {
             set.color = c;
             color_source = CapabilitySource::Environment;
-        }
-    }
-
-    if let Some(g) = overrides.glyphs {
-        set.glyphs = g;
-        glyph_source = CapabilitySource::Override;
-    } else if let Some(raw) = detection.env.glyphs_override.as_deref() {
-        let env_o = CapabilityOverrides::from_env_keys(None, Some(raw), None);
-        if let Some(g) = env_o.glyphs {
-            set.glyphs = g;
-            glyph_source = CapabilitySource::Environment;
         }
     }
 
@@ -376,7 +346,6 @@ pub fn resolve_from_detection(
         detection,
         overrides,
         color_source,
-        glyph_source,
         profile_source,
     }
 }
@@ -504,10 +473,9 @@ mod tests {
     }
 
     #[test]
-    fn minimal_is_mono_ascii() {
+    fn minimal_is_mono() {
         let b = CapabilityProfile::Minimal.baseline();
         assert!(matches!(b.color, ColorCapability::Monochrome));
-        assert!(matches!(b.glyphs, GlyphSet::Ascii));
         assert!(!b.mouse);
     }
 
@@ -588,12 +556,5 @@ mod tests {
             assert_eq!(caps.profile, p);
             let _ = caps.boundary().session_flags();
         }
-    }
-
-    #[test]
-    fn ascii_override_via_env_keys() {
-        let o = CapabilityOverrides::from_env_keys(None, Some("ascii"), Some("modern"));
-        assert_eq!(o.glyphs, Some(GlyphSet::Ascii));
-        assert_eq!(o.profile, Some(CapabilityProfile::Modern));
     }
 }

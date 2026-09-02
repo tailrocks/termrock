@@ -8,7 +8,7 @@ use ratatui_core::{
 };
 use termrock::{
     input::{KeyCode, KeyEvent, KeyModifiers},
-    style::{Density, DesignSystem, Role, RolePalette, SelectionChrome},
+    style::{DesignSystem, Role, RolePalette, SelectionChrome},
     widgets::{Tree, TreeNode, TreeNodeStatus, TreeOutcome, TreeState},
 };
 
@@ -141,10 +141,9 @@ fn empty_and_zero_sized_trees_are_safe() {
 
 #[test]
 fn painted_disclosure_and_selected_row_have_distinct_mouse_outcomes() {
-    // Fill selection (not the gutter default) so disclosure column geometry
+    // Tint selection (not the gutter default) so disclosure column geometry
     // matches the historical hit-test expectations for this regression.
-    let tokens = DesignSystem::new(RolePalette::default(), Density::default())
-        .selection(SelectionChrome::Fill);
+    let tokens = DesignSystem::new(RolePalette::default()).selection(SelectionChrome::Tint);
     let rows = nodes();
     let tree = Tree::new(&rows, &tokens);
     let mut state = TreeState::new(Some("leaf"));
@@ -289,29 +288,39 @@ fn host_focus_chrome_preserves_non_color_selection_cues() {
     Tree::new(&rows, &tokens)
         .focused(false)
         .render(area, &mut buffer, &mut state);
-    let gutter = tokens.glyphs.selection_gutter();
+    // D8: a parked selection carries the marker glyph alone — never a fill
+    // and never the focus weight.
     assert_eq!(
         buffer[(0, 0)].symbol(),
-        gutter,
-        "unfocused selection remains visible without color"
+        tokens.glyphs.selection_marker(),
+        "unfocused selection carries the membership marker"
+    );
+    assert!(
+        !buffer[(4, 0)]
+            .modifier
+            .contains(ratatui_core::style::Modifier::BOLD),
+        "parked selection never takes the focus weight"
     );
     state.hover(Position::new(4, 2));
     Tree::new(&rows, &tokens)
         .focused(true)
         .render(area, &mut buffer, &mut state);
-    assert_eq!(buffer[(0, 0)].symbol(), gutter);
+    assert_eq!(
+        buffer[(0, 0)].symbol(),
+        tokens.glyphs.selection_gutter(),
+        "the row owning the keyboard takes the focus bar"
+    );
     assert!(
-        buffer[(3, 0)]
+        buffer[(4, 0)]
             .modifier
             .contains(ratatui_core::style::Modifier::BOLD),
         "focused selection remains visible without color"
     );
+    // junie hover is a plane, not a role: exactly one lift above the ground.
+    let theme = tokens.junie_theme();
     assert_eq!(
         buffer[(4, 2)].bg,
-        tokens
-            .style(Role::HoverTint)
-            .bg
-            .expect("hover wash carries a background"),
+        theme.lift(theme.surface),
         "hover lifts the row instead of underlining it"
     );
 }
@@ -347,7 +356,9 @@ fn disabled_loading_and_error_rows_have_explicit_semantic_styles() {
             depth: 0,
             branch: false,
             expanded: false,
-            enabled: false,
+            // Busy law observes the busy tone only on an enabled row; a
+            // disabled row takes TextDisabled regardless of status.
+            enabled: true,
             status: TreeNodeStatus::Loading,
             tone: termrock::widgets::ToneTier::Primary,
             actions: None,
@@ -387,7 +398,8 @@ fn disabled_loading_and_error_rows_have_explicit_semantic_styles() {
         rendered.contains("error") || rendered.contains("failed"),
         "{rendered:?}"
     );
-    // Semantic styles: disabled dim, loading muted, error danger — scan primary label cells.
+    // Semantic styles: disabled faint, busy secondary, error danger — scan
+    // primary label cells (junie `row()` busy law).
     let find_fg = |needle: &str| -> Option<ratatui_core::style::Color> {
         for y in 0..3 {
             let row: String = (0..20)
@@ -400,7 +412,7 @@ fn disabled_loading_and_error_rows_have_explicit_semantic_styles() {
         None
     };
     assert_eq!(find_fg("disabled"), theme.style(Role::TextDisabled).fg);
-    assert_eq!(find_fg("loading"), theme.style(Role::TextMuted).fg);
+    assert_eq!(find_fg("loading"), theme.style(Role::TextSecondary).fg);
     assert_eq!(find_fg("failed"), theme.style(Role::Danger).fg);
 }
 
@@ -657,7 +669,7 @@ fn multi_select_toggles_by_space_and_painted_checkbox() {
 
 #[test]
 fn tone_tiers_map_to_semantic_roles() {
-    let tokens = DesignSystem::phosphor();
+    let tokens = DesignSystem::junie();
     let rows = [
         TreeNode::new("live", Line::from("streaming"), 0).tone(termrock::widgets::ToneTier::Live),
         TreeNode::new("dim", Line::from("waiting"), 0).tone(termrock::widgets::ToneTier::LiveDim),
@@ -667,14 +679,14 @@ fn tone_tiers_map_to_semantic_roles() {
     Tree::new(&rows, &tokens).render(area, &mut buffer, &mut TreeState::default());
     assert_eq!(
         buffer[(2, 0)].fg,
-        tokens.style(Role::InfoStrong).fg.unwrap()
+        tokens.style(Role::TextStrong).fg.unwrap()
     );
-    assert_eq!(buffer[(2, 1)].fg, tokens.style(Role::InfoDim).fg.unwrap());
+    assert_eq!(buffer[(2, 1)].fg, tokens.style(Role::TextMuted).fg.unwrap());
 }
 
 #[test]
 fn horizontal_scroll_keeps_hierarchy_prefix_pinned() {
-    let tokens = DesignSystem::phosphor();
+    let tokens = DesignSystem::junie();
     let rows = [TreeNode::new("root", Line::from("abcdefghijklmnopqrstuvwxyz"), 0).branch()];
     let area = Rect::new(0, 0, 12, 1);
     let mut state = TreeState::default();

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Stateful demo interactors implemented only through public TermRock APIs.
-
 mod applications;
 mod catalog;
 mod composites;
@@ -1481,7 +1480,6 @@ impl StoryInteraction for DesignInspectorInteractor {
             focused: Some("preview"),
             layer: Some("root"),
             capability: ColorCapability::Truecolor,
-            density: "comfortable",
             layers: &layers,
             recipes: &recipes,
             selection_chrome: "gutter",
@@ -3428,10 +3426,11 @@ impl NumberInputInteractor {
 impl StoryInteraction for NumberInputInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
         let system = self.system.clone();
-        let _ = NumberInput::new("Opacity", &system)
-            .unit("%")
-            .ascii(true)
-            .paint(area, frame.buffer_mut(), &mut self.state);
+        let _ = NumberInput::new("Opacity", &system).unit("%").paint(
+            area,
+            frame.buffer_mut(),
+            &mut self.state,
+        );
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
@@ -3538,10 +3537,11 @@ impl StoryInteraction for SelectInteractor {
         self.bounds = area;
         let system = self.system.clone();
         let options = Self::options();
-        Select::new(&options, &system)
-            .label("Fruit")
-            .ascii(true)
-            .paint_stacked(area, frame.buffer_mut(), &mut self.state);
+        Select::new(&options, &system).label("Fruit").paint_stacked(
+            area,
+            frame.buffer_mut(),
+            &mut self.state,
+        );
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
@@ -3659,7 +3659,6 @@ impl StoryInteraction for MultiSelectInteractor {
         let options = Self::options();
         MultiSelect::new(&options, &system)
             .label("Filters")
-            .ascii(true)
             .paint_stacked(area, frame.buffer_mut(), &mut self.state);
     }
 
@@ -3745,9 +3744,7 @@ impl PaginationInteractor {
 impl StoryInteraction for PaginationInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
         let system = self.system.clone();
-        Pagination::new(&system)
-            .ascii(true)
-            .paint(area, frame.buffer_mut(), &mut self.state);
+        Pagination::new(&system).paint(area, frame.buffer_mut(), &mut self.state);
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {

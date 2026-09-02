@@ -2,13 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Persistent demos for richer public widgets.
-
 use std::fmt::Debug;
 
 use ratatui::{Frame, layout::Rect, widgets::StatefulWidget};
 use termrock::{
     input::{Event, KeyEvent, MouseEvent},
-    style::{Density, DesignSystem, RolePalette},
+    style::{DesignSystem, RolePalette},
     widgets::{
         CivilDate, ColumnModel, Combobox, ComboboxOutcome, ComboboxState, CompletionCandidate,
         CompletionMenu, CompletionMenuOutcome, CompletionMenuSize, CompletionMenuState, DataColumn,
@@ -78,7 +77,6 @@ impl StoryInteraction for SearchInputInteractor {
         let _ = SearchInput::new(&system)
             .placeholder("Search…")
             .status(SearchStatus::Results { count: 12 })
-            .ascii(true)
             .paint(area, frame.buffer_mut(), &mut self.state);
     }
 
@@ -151,10 +149,11 @@ impl PathInputInteractor {
 impl StoryInteraction for PathInputInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
         let system = self.system.clone();
-        let _ = PathInput::new(&system)
-            .label("Install dir")
-            .ascii(true)
-            .paint(area, frame.buffer_mut(), &mut self.state);
+        let _ = PathInput::new(&system).label("Install dir").paint(
+            area,
+            frame.buffer_mut(),
+            &mut self.state,
+        );
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
@@ -233,10 +232,12 @@ impl StoryInteraction for ComboboxInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
         let system = self.system.clone();
         let values = candidates();
-        Combobox::new(&system)
-            .label("Language")
-            .ascii(true)
-            .paint_with_menu(area, frame.buffer_mut(), &mut self.state, &values);
+        Combobox::new(&system).label("Language").paint_with_menu(
+            area,
+            frame.buffer_mut(),
+            &mut self.state,
+            &values,
+        );
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> bool {
@@ -382,7 +383,7 @@ impl DataTableInteractor {
 
 impl StoryInteraction for DataTableInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let system = self.system.clone().density(Density::default());
+        let system = self.system.clone();
         let cells = [
             ["1", "alpha", "ready"],
             ["2", "beta", "running"],
@@ -459,10 +460,11 @@ impl DateTimePickerInteractor {
 impl StoryInteraction for DateTimePickerInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
         let system = self.system.clone();
-        DateTimePicker::new(&system)
-            .label("Due date")
-            .ascii(true)
-            .paint(area, frame.buffer_mut(), &mut self.state);
+        DateTimePicker::new(&system).label("Due date").paint(
+            area,
+            frame.buffer_mut(),
+            &mut self.state,
+        );
     }
     fn handle_key(&mut self, key: KeyEvent) -> bool {
         let outcome = self.state.handle_key(key);
@@ -541,10 +543,11 @@ impl FilePickerInteractor {
 impl StoryInteraction for FilePickerInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
         let system = self.system.clone();
-        FilePicker::new(&system)
-            .title("Open file")
-            .ascii(true)
-            .paint(area, frame.buffer_mut(), &mut self.state);
+        FilePicker::new(&system).title("Open file").paint(
+            area,
+            frame.buffer_mut(),
+            &mut self.state,
+        );
     }
     fn handle_key(&mut self, key: KeyEvent) -> bool {
         let outcome = self.state.handle_key(key);
@@ -748,11 +751,7 @@ impl TreeNavigationInteractor {
 impl StoryInteraction for TreeNavigationInteractor {
     fn render(&mut self, frame: &mut Frame<'_>, area: Rect) {
         let system = self.system.clone();
-        TreeNavigation::new(&self.nodes, &system).ascii(true).paint(
-            area,
-            frame.buffer_mut(),
-            &mut self.state,
-        );
+        TreeNavigation::new(&self.nodes, &system).paint(area, frame.buffer_mut(), &mut self.state);
     }
     fn handle_key(&mut self, key: KeyEvent) -> bool {
         let outcome = self.state.handle_key(key, &self.nodes);

@@ -19,7 +19,6 @@
 //!
 //! Research: shadcn/Sonner, desktop notifications, Textual notifications, agent
 //! task updates.
-
 use std::collections::VecDeque;
 use std::time::Duration;
 use web_time::Instant;
@@ -84,7 +83,7 @@ impl Severity {
     #[must_use]
     pub const fn role(self) -> Role {
         match self {
-            Self::Info => Role::Info,
+            Self::Info => Role::TextSecondary,
             Self::Success => Role::Success,
             Self::Warning => Role::Warning,
             Self::Error => Role::Danger,
@@ -217,7 +216,7 @@ impl ToastKind {
     #[must_use]
     pub const fn role(self) -> Role {
         match self {
-            Self::Info | Self::Progress => Role::Info,
+            Self::Info | Self::Progress => Role::TextSecondary,
             Self::Success | Self::Undo => Role::Success,
             Self::Warning => Role::Warning,
             Self::Error => Role::Danger,
@@ -336,8 +335,6 @@ pub enum ToastOutcome {
 ///
 /// Entrance fade window (motion SoT §6: overlays fade in, ≤ 120 ms).
 pub const TOAST_ENTER_MS: u64 = 120;
-/// Single acknowledging pulse after a success toast arrives, then static.
-pub const TOAST_SUCCESS_PULSE_MS: u64 = 400;
 /// Exit fade window: the stack reflows once the leaving toast has faded.
 ///
 /// A toast that vanishes between two frames moves every toast under it in the
@@ -455,21 +452,10 @@ impl ToastState {
             return 1.0;
         };
         let age = tick.now().saturating_duration_since(since).as_millis() as u64;
-        let enter = policy.clamp_duration(Duration::from_millis(TOAST_ENTER_MS));
+        let enter = Duration::from_millis(TOAST_ENTER_MS);
         let enter_ms = enter.as_millis() as u64;
         if enter_ms > 0 && age < enter_ms {
             return (age as f32 / enter_ms as f32).clamp(0.0, 1.0);
-        }
-        if matches!(kind, ToastKind::Success) && policy.allows_ambient() {
-            let pulse_age = age.saturating_sub(enter_ms);
-            if pulse_age < TOAST_SUCCESS_PULSE_MS {
-                // One dip and back to full: it starts and ends at 1.0, so the
-                // pulse cannot snap when it stops. A breathe would end at its
-                // trough and jump.
-                let phase = pulse_age as f32 / TOAST_SUCCESS_PULSE_MS as f32;
-                let dip = (std::f32::consts::PI * phase).sin().powi(2);
-                return 1.0 - crate::style::AMBIENT_PEAK * dip;
-            }
         }
         1.0
     }
@@ -1232,7 +1218,7 @@ fn paint_one_toast(
                 y,
                 &format!("{pct:3}% "),
                 5.min(usize::from(content.width)),
-                system.style(Role::Info),
+                system.style(Role::TextSecondary),
             );
             let scaled = f64::from(pct) * bar_w as f64 / 100.0;
             let filled = scaled.floor() as usize;
@@ -1240,7 +1226,7 @@ fn paint_one_toast(
             let partial_glyph = crate::style::BLOCK_RAMP[partial].to_string();
             let track_x = content.x.saturating_add(5);
             for column in 0..bar_w {
-                let on = column < filled || (!ascii && column == filled && partial > 0);
+                let _on = column < filled || (!ascii && column == filled && partial > 0);
                 let symbol = if column < filled {
                     if ascii { "#" } else { "█" }
                 } else if !ascii && column == filled && partial > 0 {
@@ -1255,7 +1241,7 @@ fn paint_one_toast(
                     y,
                     symbol,
                     1,
-                    system.style(if on { Role::Info } else { Role::Sunken }),
+                    system.style(Role::Sunken),
                 );
             }
         }
@@ -1285,7 +1271,7 @@ fn paint_one_toast(
 /// use termrock::style::DesignSystem;
 /// use termrock::widgets::{Anchor, Severity, Toast};
 ///
-/// let system = DesignSystem::phosphor();
+/// let system = DesignSystem::junie();
 /// let toast = Toast::new(&system, "Saved", Severity::Success)
 ///     .anchor(Anchor::BottomRight)
 ///     .margins(1, 1);
@@ -1303,7 +1289,6 @@ pub struct Toast<'a> {
     system: &'a DesignSystem,
     progress: Option<u8>,
     undo_label: Option<&'a str>,
-    ascii: bool,
 }
 
 impl<'a> Toast<'a> {
@@ -1321,7 +1306,6 @@ impl<'a> Toast<'a> {
             system,
             progress: None,
             undo_label: None,
-            ascii: false,
         }
     }
 
@@ -1372,11 +1356,6 @@ impl<'a> Toast<'a> {
 
     /// ASCII chrome.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     fn resolved_kind(&self) -> ToastKind {
         self.kind
             .unwrap_or_else(|| ToastKind::from_severity(self.severity))
@@ -1433,7 +1412,7 @@ impl<'a> Toast<'a> {
             self.message,
             self.progress,
             self.undo_label,
-            self.ascii,
+            false,
             None,
         );
     }
@@ -1461,26 +1440,17 @@ impl Widget for Toast<'_> {
 #[derive(Debug, Clone, Copy)]
 pub struct ToastStack<'a> {
     system: &'a DesignSystem,
-    ascii: bool,
 }
 
 impl<'a> ToastStack<'a> {
     /// System.
     #[must_use]
     pub const fn new(system: &'a DesignSystem) -> Self {
-        Self {
-            system,
-            ascii: false,
-        }
+        Self { system }
     }
 
     /// ASCII.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Paint queue; updates entry regions for hit-testing.
     pub fn paint(&self, outer: Rect, buffer: &mut Buffer, queue: &mut ToastQueue) {
         if outer.is_empty() {
@@ -1517,21 +1487,7 @@ impl<'a> ToastStack<'a> {
                 entry.region = None;
                 continue;
             }
-            // The tick rides the design system (migration 0299), so the stack
-            // fades without a new paint parameter.
-            let alpha = self.system.tick().map_or(1.0, |tick| {
-                entry
-                    .state
-                    .paint_alpha(tick, entry.kind, self.system.motion)
-            });
-            let faded = (alpha < 1.0).then(|| {
-                let canvas = self
-                    .system
-                    .style(Role::Canvas)
-                    .bg
-                    .unwrap_or(ratatui_core::style::Color::Reset);
-                crate::style::fade_style(self.system.style(Role::Text), alpha, canvas)
-            });
+            let faded = None;
             paint_one_toast(
                 area,
                 buffer,
@@ -1541,7 +1497,7 @@ impl<'a> ToastStack<'a> {
                 &entry.message,
                 entry.progress,
                 entry.undo_label.as_deref(),
-                self.ascii,
+                false,
                 faded,
             );
             entry.region = Some(area);
@@ -1594,33 +1550,7 @@ mod state_tests {
     }
 
     #[test]
-    fn success_pulses_once_and_then_goes_still() {
-        let start = Instant::now();
-        let mut state = ToastState::new(ToastLifetime::Persistent);
-        state.show(tick(start, Duration::ZERO));
-        let alpha = |ms: u64| {
-            state.paint_alpha(
-                tick(start, Duration::from_millis(ms)),
-                ToastKind::Success,
-                MotionPolicy::Full,
-            )
-        };
-        assert_eq!(alpha(TOAST_ENTER_MS), 1.0, "the pulse starts at full");
-        let deepest = alpha(TOAST_ENTER_MS + TOAST_SUCCESS_PULSE_MS / 2);
-        assert!(deepest < 1.0, "success should acknowledge with one dip");
-        assert!(
-            deepest >= 1.0 - crate::style::AMBIENT_PEAK,
-            "the dip must whisper, not flash: {deepest}"
-        );
-        assert_eq!(
-            alpha(TOAST_ENTER_MS + TOAST_SUCCESS_PULSE_MS + 1),
-            1.0,
-            "one pulse, not a loop — a finished thing must not keep moving"
-        );
-    }
-
-    #[test]
-    fn off_lands_every_toast_instantly_and_basic_keeps_only_the_entrance() {
+    fn off_lands_every_toast_instantly() {
         let start = Instant::now();
         let mut state = ToastState::new(ToastLifetime::Persistent);
         state.show(tick(start, Duration::ZERO));
@@ -1636,24 +1566,6 @@ mod state_tests {
             assert_eq!(a, 1.0);
             assert_eq!(b, 1.0, "{kind:?} moved under Off");
         }
-
-        // `Basic` is "transitions ≤ 120 ms only" (SoT §3), so the entrance
-        // survives — but the ambient success pulse does not.
-        let entrance = state.paint_alpha(
-            tick(start, Duration::from_millis(60)),
-            ToastKind::Info,
-            MotionPolicy::Basic,
-        );
-        assert!(entrance < 1.0, "Basic should keep a short entrance fade");
-        assert_eq!(
-            state.paint_alpha(
-                tick(start, Duration::from_millis(TOAST_ENTER_MS + 200)),
-                ToastKind::Success,
-                MotionPolicy::Basic
-            ),
-            1.0,
-            "Basic must not run the ambient success pulse"
-        );
     }
     use super::*;
 
@@ -1930,7 +1842,7 @@ mod tests {
         assert_eq!(q.latest_announcement(), Some("Saved to disk"));
         let area = Rect::new(0, 0, 40, 12);
         let mut buf = Buffer::empty(area);
-        ToastStack::new(&system).paint(area, &mut buf, &mut q);
+        let _ = ToastStack::new(&system).paint(area, &mut buf, &mut q);
         assert!(q.live_ids().next().is_some());
         let text: String = buf
             .content()
@@ -2069,7 +1981,7 @@ mod tests {
         for _ in 0..150 {
             terminal
                 .draw(|f| {
-                    ToastStack::new(&system).paint(f.area(), f.buffer_mut(), &mut q);
+                    let _ = ToastStack::new(&system).paint(f.area(), f.buffer_mut(), &mut q);
                 })
                 .unwrap();
         }

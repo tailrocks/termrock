@@ -13,7 +13,6 @@
 //! with ASCII and narrow contraction.
 //!
 //! References: shadcn Kbd, editor shortcut UIs, Textual bindings, Zellij help.
-
 #![allow(unused_variables, unused_mut)] // unit-test fixtures
 use std::borrow::Cow;
 
@@ -150,8 +149,6 @@ pub struct ChordFormat {
     pub platform: Platform,
     /// Modifier naming.
     pub modifiers: ModifierStyle,
-    /// Force ASCII arrows / names.
-    pub ascii: bool,
 }
 
 impl Default for ChordFormat {
@@ -159,7 +156,6 @@ impl Default for ChordFormat {
         Self {
             platform: Platform::Auto,
             modifiers: ModifierStyle::Emacs,
-            ascii: false,
         }
     }
 }
@@ -171,7 +167,6 @@ impl ChordFormat {
         Self {
             platform: Platform::Auto,
             modifiers: ModifierStyle::Emacs,
-            ascii: false,
         }
     }
 
@@ -181,7 +176,6 @@ impl ChordFormat {
         Self {
             platform: Platform::Auto,
             modifiers: ModifierStyle::Spelled,
-            ascii: false,
         }
     }
 
@@ -190,24 +184,13 @@ impl ChordFormat {
     pub const fn from_glyphs(glyphs: GlyphSet) -> Self {
         Self {
             platform: Platform::Auto,
-            modifiers: if glyphs.is_ascii() {
-                ModifierStyle::Emacs
-            } else {
-                ModifierStyle::Emacs
-            },
-            ascii: glyphs.is_ascii(),
+            modifiers: ModifierStyle::Emacs,
         }
     }
 
     /// ASCII forced.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Modifier style.
-    #[must_use]
     pub const fn modifiers(mut self, style: ModifierStyle) -> Self {
         self.modifiers = style;
         self
@@ -227,7 +210,7 @@ pub fn format_chord(chord: KeyChord, fmt: ChordFormat) -> String {
     let platform = fmt.platform.resolve();
     let mut out = String::new();
     let mods = chord.mods;
-    let style = if fmt.ascii && matches!(fmt.modifiers, ModifierStyle::Symbols) {
+    let style = if matches!(fmt.modifiers, ModifierStyle::Symbols) {
         ModifierStyle::Emacs
     } else {
         fmt.modifiers
@@ -291,71 +274,23 @@ pub fn format_chord(chord: KeyChord, fmt: ChordFormat) -> String {
         }
     }
 
-    out.push_str(&format_key(chord.key, fmt.ascii));
+    out.push_str(&format_key(chord.key));
     out
 }
 
-fn format_key(key: KeyCode, ascii: bool) -> String {
+fn format_key(key: KeyCode) -> String {
     match key {
         KeyCode::Char(c) => c.to_ascii_uppercase().to_string(),
-        KeyCode::Enter => {
-            if ascii {
-                "Enter".into()
-            } else {
-                "↵".into()
-            }
-        }
+        KeyCode::Enter => "↵".into(),
         KeyCode::Esc => "Esc".into(),
-        KeyCode::Tab => {
-            if ascii {
-                "Tab".into()
-            } else {
-                "⇥".into()
-            }
-        }
-        KeyCode::BackTab => {
-            if ascii {
-                "S-Tab".into()
-            } else {
-                "⇤".into()
-            }
-        }
-        KeyCode::Backspace => {
-            if ascii {
-                "BS".into()
-            } else {
-                "⌫".into()
-            }
-        }
+        KeyCode::Tab => "⇥".into(),
+        KeyCode::BackTab => "⇤".into(),
+        KeyCode::Backspace => "⌫".into(),
         KeyCode::Delete => "Del".into(),
-        KeyCode::Up => {
-            if ascii {
-                "Up".into()
-            } else {
-                "↑".into()
-            }
-        }
-        KeyCode::Down => {
-            if ascii {
-                "Down".into()
-            } else {
-                "↓".into()
-            }
-        }
-        KeyCode::Left => {
-            if ascii {
-                "Left".into()
-            } else {
-                "←".into()
-            }
-        }
-        KeyCode::Right => {
-            if ascii {
-                "Right".into()
-            } else {
-                "→".into()
-            }
-        }
+        KeyCode::Up => "↑".into(),
+        KeyCode::Down => "↓".into(),
+        KeyCode::Left => "←".into(),
+        KeyCode::Right => "→".into(),
         KeyCode::Home => "Home".into(),
         KeyCode::End => "End".into(),
         KeyCode::PageUp => "PgUp".into(),
@@ -565,14 +500,15 @@ impl<'a> Kbd<'a> {
             KbdVariant::Compact | KbdVariant::Inline => self.decorated(),
         };
         let clipped = take_display_cols(&text, usize::from(area.width));
-        let mut style = self.system.style(Role::HintKey);
+        let mut style = self.system.key_hint_key();
         if matches!(self.variant, KbdVariant::Keycap) {
             style = style.add_modifier(Modifier::BOLD);
         }
-        if matches!(self.variant, KbdVariant::Keycap)
-            && let Some(bg) = self.system.style(Role::Raised).bg
-        {
-            style = style.bg(bg);
+        if matches!(self.variant, KbdVariant::Keycap) {
+            // junie: a keycap is one surface plane above the chrome.
+            if let Some(bg) = self.system.style(Role::Surface).bg {
+                style = style.bg(self.system.lift(bg));
+            }
         }
         buffer.set_stringn(area.x, area.y, &clipped, usize::from(area.width), style);
     }
@@ -759,8 +695,8 @@ impl<'a> ShortcutHint<'a> {
             return;
         }
         let show_cmd = self.shows_command(area.width);
-        let key_style = self.system.style(Role::HintKey);
-        let text_style = self.system.style(Role::HintText);
+        let key_style = self.system.key_hint_key();
+        let text_style = self.system.key_hint_action();
         let sep_style = self.system.style(Role::HintSeparator);
 
         match self.form {
@@ -866,16 +802,9 @@ mod tests {
         let fmt = ChordFormat {
             platform: Platform::Mac,
             modifiers: ModifierStyle::Symbols,
-            ascii: false,
         };
         let s = format_chord(KeyChord::ctrl(KeyCode::Char('c')), fmt);
         assert!(s.contains('⌃') || s.contains('C'));
-    }
-
-    #[test]
-    fn ascii_arrows() {
-        let fmt = ChordFormat::footer().ascii(true);
-        assert_eq!(format_chord(KeyChord::plain(KeyCode::Up), fmt), "Up");
     }
 
     #[test]

@@ -17,7 +17,6 @@
 //! values into a draft.
 //!
 //! Research: shell history search, prompt histories, session pickers, palettes.
-
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -34,7 +33,7 @@ use crate::{
         OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, PageMove, RovingOrientation,
         SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, place_overlay,
     },
-    style::{DesignSystem, Glyph, GlyphSet, ListRowVisualState, MASK_CELLS, Role},
+    style::{DesignSystem, Glyph, ListRowVisualState, MASK_CELLS, Role},
     text::{display_cols, take_display_cols},
     widgets::{
         HighlightVisual, HighlightedText, Hint, HintBar, MatchRanges, MatchTruncate, Panel,
@@ -257,10 +256,7 @@ pub fn redact_history_text(text: &str, policy: HistoryRedaction) -> String {
             if text.is_empty() {
                 String::new()
             } else {
-                Glyph::Mask
-                    .resolve(GlyphSet::Unicode)
-                    .text
-                    .repeat(MASK_CELLS)
+                Glyph::Mask.resolve().text.repeat(MASK_CELLS)
             }
         }
         HistoryRedaction::MaskMiddle {
@@ -277,13 +273,10 @@ pub fn redact_history_text(text: &str, policy: HistoryRedaction) -> String {
                 return String::new();
             }
             if keep_start + keep_end >= n {
-                return Glyph::Mask
-                    .resolve(GlyphSet::Unicode)
-                    .text
-                    .repeat(n.min(MASK_CELLS).max(1));
+                return Glyph::Mask.resolve().text.repeat(n.min(MASK_CELLS).max(1));
             }
             let mut out: String = clusters[..keep_start].concat();
-            out.push_str(Glyph::Ellipsis.resolve(GlyphSet::Unicode).text);
+            out.push_str(Glyph::Ellipsis.resolve().text);
             out.push_str(&clusters[n - keep_end..].concat());
             out
         }
@@ -984,7 +977,6 @@ pub struct HistoryPicker<'a, Id> {
     entries: &'a [HistoryEntry<Id>],
     system: &'a DesignSystem,
     title: &'a str,
-    ascii: bool,
     colorless: bool,
     footer_hint: Option<&'a str>,
     empty_message: &'a str,
@@ -1035,7 +1027,6 @@ impl<'a, Id> HistoryPicker<'a, Id> {
             entries,
             system,
             title: "History",
-            ascii: false,
             colorless: false,
             footer_hint: None,
             empty_message: "No history yet",
@@ -1051,13 +1042,7 @@ impl<'a, Id> HistoryPicker<'a, Id> {
 
     /// ASCII.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Colorless.
-    #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self
@@ -1129,11 +1114,7 @@ impl<'a, Id> HistoryPicker<'a, Id> {
 
         // Draft indicator
         if state.draft.is_some() && y < bottom {
-            let msg = if self.ascii {
-                "[draft preserved — esc restores]"
-            } else {
-                "⊙ draft preserved · esc restores"
-            };
+            let msg = { "⊙ draft preserved · esc restores" };
             buffer.set_stringn(
                 inner.x,
                 y,
@@ -1162,11 +1143,7 @@ impl<'a, Id> HistoryPicker<'a, Id> {
         }
 
         if y < bottom {
-            let line = if self.ascii {
-                "-".repeat(usize::from(inner.width))
-            } else {
-                "─".repeat(usize::from(inner.width))
-            };
+            let line = { "─".repeat(usize::from(inner.width)) };
             buffer.set_stringn(
                 inner.x,
                 y,
@@ -1201,13 +1178,7 @@ impl<'a, Id> HistoryPicker<'a, Id> {
         if let Some(pa) = preview_area {
             let vx = pa.x.saturating_sub(1);
             for row in y..bottom {
-                buffer.set_stringn(
-                    vx,
-                    row,
-                    if self.ascii { "|" } else { "│" },
-                    1,
-                    self.system.style(Role::Border),
-                );
+                buffer.set_stringn(vx, row, "│", 1, self.system.style(Role::Border));
             }
             self.paint_preview(pa, buffer, state);
         }
@@ -1246,14 +1217,7 @@ impl<'a, Id> HistoryPicker<'a, Id> {
             buffer.set_stringn(
                 area.x,
                 area.y,
-                &take_display_cols(
-                    if self.ascii {
-                        "[ ] no history"
-                    } else {
-                        self.empty_message
-                    },
-                    usize::from(area.width),
-                ),
+                &take_display_cols(self.empty_message, usize::from(area.width)),
                 usize::from(area.width),
                 self.system.style(Role::TextMuted),
             );
@@ -1306,6 +1270,7 @@ impl<'a, Id> HistoryPicker<'a, Id> {
                 enabled: true,
                 loading: false,
                 checked: entry.pinned,
+                ..ListRowVisualState::default()
             });
             if recipe.use_fill {
                 buffer.set_style(rect, recipe.label);
@@ -1324,26 +1289,18 @@ impl<'a, Id> HistoryPicker<'a, Id> {
                 entry.display.clone()
             };
 
-            let gutter = if active {
-                if self.ascii { "> " } else { "› " }
-            } else {
-                "  "
-            };
+            let gutter = if active { "› " } else { "  " };
             // The pin slot is reserved on every row: a column that only exists
             // when a row is pinned shifts every other column beside it, so a
             // pinned list read as a ragged one (plans/009 Step 6).
-            let pin = if entry.pinned {
-                if self.ascii { "* " } else { "★ " }
-            } else {
-                "  "
-            };
-            let kind = entry.kind.badge(self.ascii);
+            let pin = if entry.pinned { "★ " } else { "  " };
+            let kind = entry.kind.badge(false);
             let mut x = area.x;
             let base = if self.colorless {
                 if active {
                     self.system
                         .style(Role::TextStrong)
-                        .add_modifier(Modifier::REVERSED)
+                        .add_modifier(Modifier::BOLD)
                 } else {
                     self.system.style(Role::Text)
                 }
@@ -1705,9 +1662,7 @@ mod tests {
         let vis = filter_history_entries(&entries, "");
         let area = Rect::new(0, 0, 60, 14);
         let mut buf = Buffer::empty(area);
-        HistoryPicker::new(&vis, &system)
-            .ascii(true)
-            .paint(area, &mut buf, &mut s);
+        HistoryPicker::new(&vis, &system).paint(area, &mut buf, &mut s);
         let text: String = buf
             .content()
             .iter()

@@ -17,7 +17,6 @@
 //! **Ownership.** Host opens URLs / files and owns provider provenance. TermRock
 //! paints chrome and emits typed outcomes — never writes OSC to the PTY
 //! (compose with [`Link`](crate::widgets::Link) for OSC regions when online).
-
 use std::collections::BTreeMap;
 
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
@@ -29,7 +28,7 @@ use crate::{
     style::{DesignSystem, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
     widgets::{
-        link::{DestinationDisplay, Link, LinkStyle},
+        link::{DestinationDisplay, Link},
         markdown::SourceAnchor,
         streaming_markdown::StreamCitation,
     },
@@ -92,28 +91,16 @@ impl CitationSourceType {
 
     /// Glyph.
     #[must_use]
-    pub const fn glyph(self, ascii: bool) -> &'static str {
-        if ascii {
-            match self {
-                Self::File => "F",
-                Self::Url => "U",
-                Self::Docs => "D",
-                Self::Issue => "I",
-                Self::Paper => "P",
-                Self::Message => "M",
-                Self::Other => "?",
-            }
-        } else {
-            match self {
-                // One column each (plans/013).
-                Self::File => "▤",
-                Self::Url => "↗",
-                Self::Docs => "▤",
-                Self::Issue => "◉",
-                Self::Paper => "§",
-                Self::Message => "❝",
-                Self::Other => "·",
-            }
+    pub const fn glyph(self, _ascii: bool) -> &'static str {
+        match self {
+            // One column each (plans/013).
+            Self::File => "▤",
+            Self::Url => "↗",
+            Self::Docs => "▤",
+            Self::Issue => "◉",
+            Self::Paper => "§",
+            Self::Message => "❝",
+            Self::Other => "·",
         }
     }
 
@@ -376,9 +363,9 @@ impl CitationSource {
 
     /// Compact meta line (type · range · conf · offline).
     #[must_use]
-    pub fn meta_line(&self, ascii: bool) -> String {
+    pub fn meta_line(&self, _ascii: bool) -> String {
         let mut parts = Vec::new();
-        parts.push(self.kind.glyph(ascii).to_string());
+        parts.push(self.kind.glyph(false).to_string());
         if let Some(r) = self.range {
             if r.line_start == r.line_end {
                 parts.push(format!("L{}", r.line_start));
@@ -395,7 +382,7 @@ impl CitationSource {
         if !matches!(self.availability, CitationAvailability::Available) {
             parts.push(self.availability.id().into());
         }
-        parts.join(if ascii { " - " } else { " · " })
+        parts.join(" · ")
     }
 
     /// Destination for display (never empty for external).
@@ -519,10 +506,8 @@ pub fn citation_link<'a>(
     } else {
         Link::app_route(label, destination, system)
     };
-    // A citation is a link and says so the classic way.
-    link = link
-        .link_style(LinkStyle::AlwaysUnderline)
-        .hyperlinks(hyperlinks);
+    // A citation is a link: the link role already carries the rule.
+    link = link.hyperlinks(hyperlinks);
     if !hyperlinks {
         link = link.always_show_destination();
     }
@@ -643,7 +628,6 @@ impl SourceCitationState {
 pub struct SourceCitation<'a> {
     source: &'a CitationSource,
     system: &'a DesignSystem,
-    ascii: bool,
     /// Force show raw destination after label.
     show_destination: DestinationDisplay,
     /// Disable OSC 8 (no-hyperlink terminal / offline).
@@ -659,7 +643,6 @@ impl<'a> SourceCitation<'a> {
         Self {
             source,
             system,
-            ascii: false,
             show_destination: DestinationDisplay::Auto,
             no_hyperlink: false,
             offline: false,
@@ -668,13 +651,7 @@ impl<'a> SourceCitation<'a> {
 
     /// ASCII glyphs.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Destination display policy.
-    #[must_use]
     pub const fn show_destination(mut self, d: DestinationDisplay) -> Self {
         self.show_destination = d;
         self
@@ -697,10 +674,7 @@ impl<'a> SourceCitation<'a> {
     /// Decorated string for measure/paint.
     #[must_use]
     pub fn decorated(&self) -> String {
-        let g = self
-            .source
-            .kind
-            .glyph(self.ascii || self.system.glyphs.is_ascii());
+        let g = self.source.kind.glyph(false);
         let mut s = format!("{}{}", g, self.source.inline_label(false));
         let show_dest = match self.show_destination {
             DestinationDisplay::Always => true,
@@ -780,16 +754,7 @@ impl<'a> SourceCitation<'a> {
                 .text;
             let width = u16::try_from(display_cols(mark)).unwrap_or(1);
             if area.width > width {
-                let mut mark_style = self.system.style(Role::Success);
-                let alpha = state.copied.alpha(self.system.motion, elapsed);
-                if alpha < 1.0 {
-                    let canvas = self
-                        .system
-                        .style(Role::Canvas)
-                        .bg
-                        .unwrap_or(ratatui_core::style::Color::Reset);
-                    mark_style = crate::style::fade_style(mark_style, alpha, canvas);
-                }
+                let mark_style = self.system.style(Role::Success);
                 buffer.set_stringn(
                     area.right().saturating_sub(width),
                     area.y,
@@ -1107,7 +1072,6 @@ impl CitationListState {
 pub struct CitationList<'a> {
     sources: &'a [CitationSource],
     system: &'a DesignSystem,
-    ascii: bool,
     title: Option<&'a str>,
 }
 
@@ -1118,20 +1082,13 @@ impl<'a> CitationList<'a> {
         Self {
             sources,
             system,
-            ascii: false,
             title: None,
         }
     }
 
     /// ASCII.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Title.
-    #[must_use]
     pub const fn title(mut self, t: &'a str) -> Self {
         self.title = Some(t);
         self
@@ -1142,14 +1099,7 @@ impl<'a> CitationList<'a> {
     pub fn summary_text(&self, state: &CitationListState) -> String {
         let n = self.sources.len();
         let groups = group_citations(self.sources);
-        let ascii = self.ascii || self.system.glyphs.is_ascii();
-        let mark = if state.expanded {
-            if ascii { "v" } else { "▾" }
-        } else if ascii {
-            ">"
-        } else {
-            "▸"
-        };
+        let mark = if state.expanded { "▾" } else { "▸" };
         let title = self.title.unwrap_or("Sources");
         if groups.len() < n {
             format!("{mark} {title} ({n}, {} unique)", groups.len())
@@ -1164,7 +1114,6 @@ impl<'a> CitationList<'a> {
         if area.is_empty() {
             return;
         }
-        let ascii = self.ascii || self.system.glyphs.is_ascii();
         let mut y = area.y;
         // summary
         let summary = self.summary_text(state);
@@ -1195,7 +1144,7 @@ impl<'a> CitationList<'a> {
             };
             let selected = state.focused && i == state.cursor;
             let mark = " ";
-            let g = src.kind.glyph(ascii);
+            let g = src.kind.glyph(false);
             let mut line = format!("{mark}{} {} {}", src.inline_label(false), g, src.title);
             // always show dest for external / no_hyperlink / sensitive
             let show_dest = src.external
@@ -1211,9 +1160,9 @@ impl<'a> CitationList<'a> {
                     self.system.glyphs.ellipsis(),
                 ));
             }
-            let meta = src.meta_line(ascii);
+            let meta = src.meta_line(false);
             if !meta.is_empty() && area.width > 40 {
-                line.push_str(if ascii { " - " } else { " · " });
+                line.push_str(" · ");
                 line.push_str(&meta);
             }
             let avail = effective_availability(src, state.offline);
@@ -1423,11 +1372,7 @@ mod tests {
         assert!(!list.row_hits.is_empty());
         let mut ist = SourceCitationState::new();
         ist.focused = true;
-        SourceCitation::new(&src[0], &system).ascii(true).paint(
-            Rect::new(0, 0, 20, 1),
-            &mut buf,
-            &mut ist,
-        );
+        SourceCitation::new(&src[0], &system).paint(Rect::new(0, 0, 20, 1), &mut buf, &mut ist);
     }
 
     #[test]

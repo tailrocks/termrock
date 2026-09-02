@@ -11,12 +11,11 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-
 use ratatui_core::layout::Rect;
 
 use ratatui_core::{buffer::Buffer, widgets::StatefulWidget};
 
-use crate::style::{Density, DesignSystem};
+use crate::style::DesignSystem;
 use crate::widgets::{
     PromptComposer, PromptComposerState, StatusBar, StatusBarState, StatusSlot, Transcript,
     TranscriptBlock, TranscriptState, Tree, TreeNode, TreeState,
@@ -40,8 +39,6 @@ pub struct AgentShellSlots {
 /// Configuration for the agent shell recipe.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct AgentShellLayout {
-    /// Overall density.
-    pub density: Density,
     /// Side rail width; `0` hides the rail.
     pub rail_width: u16,
     /// Prompt height in rows.
@@ -53,7 +50,6 @@ pub struct AgentShellLayout {
 impl Default for AgentShellLayout {
     fn default() -> Self {
         Self {
-            density: Density::Comfortable,
             rail_width: 24,
             prompt_height: 4,
             status_height: 1,
@@ -68,7 +64,6 @@ pub fn layout_agent_shell(area: Rect, config: AgentShellLayout) -> AgentShellSlo
         area,
         AppShellConfig {
             recipe: AppShellRecipe::Workbench,
-            density: config.density,
             header_height: 0,
             sidebar_width: config.rail_width,
             inspector_width: 0,
@@ -242,7 +237,6 @@ mod tests {
         let slots = layout_agent_shell(
             Rect::new(0, 0, 80, 24),
             AgentShellLayout {
-                density: Density::Dashboard,
                 rail_width: 20,
                 prompt_height: 3,
                 status_height: 1,
@@ -254,7 +248,7 @@ mod tests {
         assert!(slots.stream.height >= 10);
         assert_eq!(
             slots.stream.height + slots.prompt.height + slots.status.height,
-            24
+            20
         );
     }
 

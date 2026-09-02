@@ -21,7 +21,6 @@
 //! **Narrow.** Scrolling window → overflow `…` menu → Select-like trigger.
 //!
 //! Research: Radix Tabs, terminal editors, Zellij, Posting, browser tab overflow.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -834,7 +833,7 @@ impl<Id> TabsState<Id> {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
 pub enum TabsActiveCue {
-    /// Selection wash behind a bold label.
+    /// A bold label with no rule of its own, for hosts that draw the rule.
     AccentPill,
     /// The active tab sits on the body's own ground, joined to the pane below.
     Connected,
@@ -861,16 +860,12 @@ impl TabsActiveCue {
     }
 }
 
-/// How long the active fill takes to arrive.
-const TAB_FILL_BLEND_MS: u64 = 100;
-
 /// Keyboard- and pointer-navigable tab strip.
 #[derive(Debug, Clone, Copy)]
 pub struct Tabs<'a, Id> {
     tabs: &'a [Tab<'a, Id>],
     gap: u16,
     system: &'a DesignSystem,
-    ascii: bool,
     show_close: bool,
     active_cue: TabsActiveCue,
 }
@@ -894,7 +889,6 @@ impl<'a, Id> Tabs<'a, Id> {
             // Seeded from the system: a widget that defaults to false is
             // claiming the terminal has Unicode and colour before anyone
             // asked it. Builders below still force either way.
-            ascii: system.ascii_glyphs(),
             show_close: true,
         }
     }
@@ -908,13 +902,7 @@ impl<'a, Id> Tabs<'a, Id> {
 
     /// ASCII status / close marks.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Paint close affordances for closable tabs.
-    #[must_use]
     pub const fn show_close(mut self, on: bool) -> Self {
         self.show_close = on;
         self
@@ -1006,7 +994,7 @@ impl<'a, Id> Tabs<'a, Id> {
         if show_status {
             if tab.glyph.is_some() {
                 cols = cols.saturating_add(2);
-            } else if tab.status.mark(self.ascii).is_some() {
+            } else if tab.status.mark(false).is_some() {
                 cols = cols.saturating_add(2);
             }
         }
@@ -1031,8 +1019,10 @@ impl<'a, Id> Tabs<'a, Id> {
             .and_then(|id| self.tabs.iter().find(|t| &t.id == id))
             .map(|t| t.label)
             .unwrap_or("Tabs");
-        let mark = if self.ascii { "v" } else { "▾" };
+        let mark = { "▾" };
         let text = format!(" {label} {mark} ");
+        // The collapsed trigger is a control, not a selection slab: focus
+        // reads through weight and the active tone, never a reversal.
         let style = self
             .system
             .style(if state.focused {
@@ -1041,7 +1031,7 @@ impl<'a, Id> Tabs<'a, Id> {
                 Role::TabInactive
             })
             .add_modifier(if state.focused {
-                Modifier::BOLD | Modifier::REVERSED
+                Modifier::BOLD
             } else {
                 Modifier::empty()
             });
@@ -1107,9 +1097,7 @@ impl<'a, Id> Tabs<'a, Id> {
                 // Catalog-resolved and padded to the same budget in both
                 // profiles, so the overflow trigger does not shift by a cell
                 // between Unicode and ASCII.
-                &Glyph::Ellipsis
-                    .resolve(self.system.glyphs)
-                    .aligned(ellipsis_w),
+                &Glyph::Ellipsis.resolve().aligned(ellipsis_w),
                 usize::from(tr.width),
                 self.system.style(Role::TabInactive),
             );
@@ -1150,13 +1138,7 @@ impl<'a, Id> Tabs<'a, Id> {
             // scroll cues as overflow trigger for remaining
             if i < self.tabs.len() {
                 let tr = Rect::new(area.right().saturating_sub(2), area.y, 2.min(area.width), 1);
-                buffer.set_stringn(
-                    tr.x,
-                    tr.y,
-                    if self.ascii { ">" } else { "›" },
-                    1,
-                    self.system.style(Role::TextMuted),
-                );
+                buffer.set_stringn(tr.x, tr.y, "›", 1, self.system.style(Role::TextMuted));
                 state.overflow_trigger = Some(tr);
             }
         }
@@ -1250,40 +1232,19 @@ impl<'a, Id> Tabs<'a, Id> {
         let focused_tab = state.collection.active() == Some(&tab.id) && state.focused;
         let hovered = state.hovered.as_ref() == Some(&tab.id);
         let role = match (selected, hovered) {
-            (true, true) => Role::TabActiveHovered,
+            (true, true) => Role::TabActive,
             (true, false) => Role::TabActive,
-            (false, true) => Role::TabInactiveHovered,
+            (false, true) => Role::TabInactive,
             (false, false) => Role::TabInactive,
         };
         let mut style = self.system.style(role);
         let mut marker = "";
         if selected {
-            // The active cue is named, not improvised (plans/015 Step 3). A
-            // themed `TabActive` background always wins, so consumers keep
-            // full control of the strip's fill.
+            // The active cue is named, not improvised (plans/015 Step 3), and
+            // it is the accent rule — never a wash: the selection tint is a
+            // selection plane, and the active tab spends its green on the
+            // `━` rule alone (D2 TabActive, D9 green budget).
             style = style.add_modifier(Modifier::BOLD);
-            if matches!(
-                self.active_cue,
-                TabsActiveCue::AccentPill | TabsActiveCue::Rule
-            ) && style.bg.is_none()
-                && let Some(bg) = self.system.style(Role::SelectionTint).bg
-            {
-                // The fill arrives rather than snapping: a strip that jumps
-                // reads as two unrelated strips (plans/014). Rule keeps the
-                // same wash and adds its focus-aware line below.
-                let settled = state.blend_fraction(self.system.elapsed_ms(), TAB_FILL_BLEND_MS);
-                let bg = if self.system.motion.allows_transitions() && settled < 1.0 {
-                    let canvas = self
-                        .system
-                        .style(Role::Canvas)
-                        .bg
-                        .unwrap_or(ratatui_core::style::Color::Reset);
-                    crate::style::blend_toward(canvas, bg, settled)
-                } else {
-                    bg
-                };
-                style = style.bg(bg);
-            }
             match self.active_cue {
                 TabsActiveCue::AccentPill | TabsActiveCue::Rule => {}
                 TabsActiveCue::Connected => {
@@ -1294,9 +1255,7 @@ impl<'a, Id> Tabs<'a, Id> {
                     }
                 }
                 TabsActiveCue::Marker => {
-                    marker = if self.ascii || self.system.glyphs.is_ascii() {
-                        ">"
-                    } else {
+                    marker = {
                         self.system
                             .glyphs
                             .resolve(crate::style::Glyph::ChevronRight)
@@ -1315,8 +1274,11 @@ impl<'a, Id> Tabs<'a, Id> {
                 .add_modifier(Modifier::BOLD);
         } else if focused_tab && selected {
             style = style.add_modifier(Modifier::BOLD);
-        } else if hovered && let Some(bg) = self.system.style(Role::HoverTint).bg {
-            style = style.bg(bg);
+        } else if hovered {
+            // junie: hover is one surface plane up, never a colour.
+            if let Some(bg) = self.system.style(Role::Surface).bg {
+                style = style.bg(self.system.lift(bg));
+            }
         }
         if !tab.enabled {
             // Disabled is a different fact from "inactive": muting both meant a
@@ -1333,7 +1295,7 @@ impl<'a, Id> Tabs<'a, Id> {
             if let Some(g) = &tab.glyph {
                 parts.push_str(g.content.as_ref());
                 parts.push(' ');
-            } else if let Some(m) = tab.status.mark(self.ascii) {
+            } else if let Some(m) = tab.status.mark(false) {
                 parts.push_str(m);
                 parts.push(' ');
             }
@@ -1344,7 +1306,7 @@ impl<'a, Id> Tabs<'a, Id> {
             parts.push_str(b);
         }
         if self.show_close && tab.closable {
-            parts.push_str(if self.ascii { " x" } else { " ×" });
+            parts.push_str(" ×");
         }
         parts.push(' ');
 
@@ -1359,19 +1321,17 @@ impl<'a, Id> Tabs<'a, Id> {
         );
 
         if selected && matches!(self.active_cue, TabsActiveCue::Rule) && rect.height > 1 {
-            let rule = self.system.glyphs.rule();
+            // N3: an active tab states itself with the strong rule in the
+            // accent, whenever it is active; an inactive tab draws no line at
+            // all — a faint rule under every tab is noise, not a cue.
+            let rule = self.system.glyphs.rule_strong();
             let line: String = std::iter::repeat_n(rule, usize::from(rect.width)).collect();
-            let rule_role = if focused_tab {
-                Role::Accent
-            } else {
-                Role::Border
-            };
             buffer.set_stringn(
                 rect.x,
                 rect.y.saturating_add(1),
                 &line,
                 usize::from(rect.width),
-                self.system.style(rule_role),
+                self.system.style(Role::Accent),
             );
         }
 
@@ -1511,18 +1471,19 @@ mod tests {
         (&Tabs::new(&tabs, &system).gap(1)).render(area, &mut buffer, &mut state);
 
         assert!(buffer[(3, 4)].modifier.contains(Modifier::BOLD));
-        assert_eq!(
-            buffer[(3, 4)].bg,
-            theme.style(Role::SelectionTint).bg.unwrap()
-        );
-        assert_eq!(buffer[(3, 5)].symbol(), system.glyphs.rule());
+        // No wash behind the active tab: the cue is the accent rule (D2/D9).
+        assert_eq!(buffer[(3, 4)].bg, Color::Reset);
+        assert_eq!(buffer[(3, 5)].symbol(), system.glyphs.rule_strong());
         assert_eq!(buffer[(3, 5)].fg, theme.style(Role::Accent).fg.unwrap());
         assert_eq!(state.regions.len(), 1);
         assert!(state.regions[0].area.contains(Position::new(3, 5)));
     }
 
     #[test]
-    fn default_rule_uses_unfocused_border_role() {
+    fn active_rule_is_always_the_accent() {
+        // N3: an active tab states itself with the strong rule in the accent
+        // whenever it is active — focus never gates the cue, and an inactive
+        // tab draws no rule at all.
         let tabs = [Tab::new("overview", "Overview")];
         let area = Rect::new(0, 0, 16, 2);
         let mut buffer = Buffer::empty(area);
@@ -1532,16 +1493,14 @@ mod tests {
 
         Tabs::new(&tabs, &system).render(area, &mut buffer, &mut state);
 
-        assert_eq!(buffer[(0, 1)].symbol(), system.glyphs.rule());
-        assert_eq!(buffer[(0, 1)].fg, theme.style(Role::Border).fg.unwrap());
-        assert_eq!(
-            buffer[(0, 0)].bg,
-            theme.style(Role::SelectionTint).bg.unwrap()
-        );
+        assert_eq!(buffer[(0, 1)].symbol(), system.glyphs.rule_strong());
+        assert_eq!(buffer[(0, 1)].fg, theme.style(Role::Accent).fg.unwrap());
+        // The active label sits on the strip's own ground, not on the tint.
+        assert_eq!(buffer[(0, 0)].bg, Color::Reset);
     }
 
     #[test]
-    fn glyph_span_style_overrides_the_tab_foreground_without_losing_its_fill() {
+    fn glyph_span_style_overrides_the_tab_foreground_without_a_wash() {
         let tabs = [Tab {
             id: "running",
             label: "Build",
@@ -1564,13 +1523,8 @@ mod tests {
 
         assert_eq!(buffer[(1, 0)].symbol(), "●");
         assert_eq!(buffer[(1, 0)].fg, Color::Yellow);
-        assert_eq!(
-            buffer[(1, 0)].bg,
-            theme
-                .style(Role::SelectionTint)
-                .bg
-                .expect("the active tab wash carries a background")
-        );
+        // The glyph rides the label ground; the active tab carries no wash.
+        assert_eq!(buffer[(1, 0)].bg, Color::Reset);
     }
 
     #[test]
@@ -1648,9 +1602,7 @@ mod tests {
         state.set_focused(true);
         let area = Rect::new(0, 0, 14, 2);
         let mut buf = Buffer::empty(area);
-        Tabs::new(&tabs, &system)
-            .ascii(true)
-            .paint(area, &mut buf, &mut state);
+        Tabs::new(&tabs, &system).paint(area, &mut buf, &mut state);
         assert_eq!(state.presentation(), TabsPresentation::Select);
         assert!(state.overflow_trigger.is_some());
     }
@@ -1679,9 +1631,7 @@ mod tests {
         let mut state = TabsState::new().with_selected("a");
         let area = Rect::new(0, 0, 30, 2);
         let mut buf = Buffer::empty(area);
-        Tabs::new(&many, &system)
-            .ascii(true)
-            .paint(area, &mut buf, &mut state);
+        Tabs::new(&many, &system).paint(area, &mut buf, &mut state);
         assert!(matches!(
             state.presentation(),
             TabsPresentation::Overflow | TabsPresentation::Scrolling | TabsPresentation::Select
@@ -1721,9 +1671,7 @@ mod tests {
         state.set_focused(true);
         let area = Rect::new(0, 0, 16, 6);
         let mut buf = Buffer::empty(area);
-        Tabs::new(&tabs, &system)
-            .ascii(true)
-            .paint(area, &mut buf, &mut state);
+        Tabs::new(&tabs, &system).paint(area, &mut buf, &mut state);
         assert!(state.regions.len() >= 2);
         assert!(matches!(
             state.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE), &tabs),
@@ -1810,7 +1758,7 @@ mod tests {
         let mut state = TabsState::new().with_selected("overview");
         let area = Rect::new(0, 0, 48, 2);
         let mut buf = Buffer::empty(area);
-        let w = Tabs::new(&tabs, &system).ascii(true);
+        let w = Tabs::new(&tabs, &system);
         for _ in 0..50 {
             w.paint(area, &mut buf, &mut state);
         }
@@ -1863,8 +1811,8 @@ mod tests {
         let mut state = TabsState::new().with_selected("a");
         let mut buffer = Buffer::empty(area);
         Tabs::new(&tabs, &system).render(area, &mut buffer, &mut state);
-        assert_eq!(buffer[(0, 1)].symbol(), system.glyphs.rule());
-        assert_eq!(buffer[(0, 1)].fg, system.style(Role::Border).fg.unwrap());
+        assert_eq!(buffer[(0, 1)].symbol(), system.glyphs.rule_strong());
+        assert_eq!(buffer[(0, 1)].fg, system.style(Role::Accent).fg.unwrap());
     }
 
     #[test]

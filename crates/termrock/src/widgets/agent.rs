@@ -6,7 +6,6 @@
 //!
 //! Conversation stream: [`crate::widgets::Transcript`] only (StreamView deleted).
 //! Trust / prompt: [`crate::widgets::PermissionPrompt`] / [`crate::widgets::PromptComposer`].
-
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{
@@ -167,10 +166,7 @@ impl Widget for &ThinkingBlock<'_> {
         }
         use crate::layout::{FlexSize, Stack};
 
-        let content = AccentRail::new(self.system, Role::ActorAssistant)
-            .active(true)
-            .tick(self.system.elapsed_ms() / 80)
-            .paint(area, buffer);
+        let content = AccentRail::new(self.system, Role::ActorAssistant).paint(area, buffer);
         if content.is_empty() {
             return;
         }
@@ -188,7 +184,7 @@ impl Widget for &ThinkingBlock<'_> {
         let frame = if self.system.motion.animate_spinners() && !self.frame.is_empty() {
             self.frame
         } else {
-            SemanticStatus::Running.glyph_for_set(self.system.glyphs)
+            SemanticStatus::Running.glyph()
         };
         let header = format!("{marker} {frame} {}", self.summary);
         if let Some(header_r) = layout.get(0) {
@@ -417,7 +413,7 @@ impl Widget for &ToolCard<'_> {
         let kind = self.status.semantic();
         let card = Card::new(self.system)
             .title(self.name)
-            .leading(kind.glyph_for_set(self.system.glyphs))
+            .leading(kind.glyph())
             .badge(status_label)
             .subtitle(self.summary)
             .emphasis(match self.status {

@@ -13,7 +13,6 @@
 //! [`TextSpan::highlight`] marks are host-defined (search hits, diagnostics).
 //!
 //! References: Rich Text, Textual Static, Glow typography, Ratatui Line/Span.
-
 use std::borrow::Cow;
 
 use ratatui_core::{
@@ -124,8 +123,6 @@ pub enum TextEmphasis {
     Normal,
     /// Bold weight.
     Strong,
-    /// Italic emphasis.
-    Emphasis,
     /// Dim / secondary (modifier + optional muted role).
     Dim,
     /// Inline code cue (no filled background — preserves terminal default bg).
@@ -139,7 +136,6 @@ impl TextEmphasis {
         match self {
             Self::Normal => "normal",
             Self::Strong => "strong",
-            Self::Emphasis => "emphasis",
             Self::Dim => "dim",
             Self::Code => "code",
         }
@@ -216,13 +212,6 @@ impl<'a> TextSpan<'a> {
     #[must_use]
     pub const fn dim(mut self) -> Self {
         self.emphasis = TextEmphasis::Dim;
-        self
-    }
-
-    /// Emphasis (italic/underline).
-    #[must_use]
-    pub const fn italic(mut self) -> Self {
-        self.emphasis = TextEmphasis::Emphasis;
         self
     }
 
@@ -538,23 +527,22 @@ impl<'a> Text<'a> {
             TextEmphasis::Strong => {
                 style = style.add_modifier(Modifier::BOLD);
             }
-            TextEmphasis::Emphasis => {
-                style = style.add_modifier(Modifier::ITALIC);
-            }
             TextEmphasis::Dim => {
-                style = style.add_modifier(Modifier::DIM);
+                // "Quieter" is a ladder step, not a dimmed copy of the tone.
+                style = style.patch(self.system.style(Role::TextMuted));
             }
             TextEmphasis::Code => {
                 // Inline code reads through the syntax tone, keeping the
                 // "no filled background" promise this widget makes.
-                style = style.patch(self.system.style(Role::Info));
+                style = style.patch(self.system.style(Role::TextSecondary));
             }
         }
         if span.underline {
             style = style.add_modifier(Modifier::UNDERLINED);
         }
         if span.reverse {
-            style = style.add_modifier(Modifier::REVERSED);
+            // Reversal is the explicit pair, applied whole.
+            style = self.system.reversed();
         }
         if span.highlight {
             // Non-bg highlight: accent foreground plus weight.
@@ -1025,17 +1013,5 @@ mod tests {
         assert_eq!(TextOverflow::Wrap.id(), "wrap");
         assert_eq!(TextAlign::Center.id(), "center");
         assert_eq!(TextEmphasis::Code.id(), "code");
-    }
-
-    #[test]
-    fn ascii_ellipsis_truncate() {
-        // The ASCII ellipsis comes from the glyph catalog under the ASCII
-        // profile, not from a second helper beside it (plans/020).
-        let system = DesignSystem::default().ascii();
-        let t = Text::new("abcdefghij", &system)
-            .truncate()
-            .ellipsis(system.glyphs.ellipsis());
-        let layout = t.layout(6, 1);
-        assert!(layout.lines[0].plain().contains('.'));
     }
 }

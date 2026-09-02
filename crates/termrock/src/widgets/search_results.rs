@@ -14,7 +14,6 @@
 //! TermRock owns paint, navigation, group chrome, and typed outcomes.
 //!
 //! Research: ripgrep UIs, IDE search, fzf previews, documentation search.
-
 use std::collections::BTreeSet;
 
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
@@ -73,18 +72,8 @@ impl SearchResultKind {
 
     /// Short glyph.
     #[must_use]
-    pub const fn glyph(self, ascii: bool) -> &'static str {
-        if ascii {
-            match self {
-                Self::File => "f",
-                Self::Log => "l",
-                Self::Object => "o",
-                Self::Command => "c",
-                Self::Doc => "d",
-                Self::Symbol => "s",
-                Self::Other => "?",
-            }
-        } else {
+    pub const fn glyph(self, _ascii: bool) -> &'static str {
+        {
             match self {
                 Self::File => "·",
                 Self::Log => "☰",
@@ -102,8 +91,8 @@ impl SearchResultKind {
     pub const fn role(self) -> Role {
         match self {
             Self::File => Role::Text,
-            Self::Log => Role::Info,
-            Self::Object => Role::Info,
+            Self::Log => Role::TextSecondary,
+            Self::Object => Role::TextSecondary,
             Self::Command => Role::Warning,
             Self::Doc => Role::Link,
             Self::Symbol => Role::Success,
@@ -614,8 +603,6 @@ pub struct SearchResultsState {
     pub match_walk: usize,
     /// Load mirror.
     pub load: LoadState,
-    /// ASCII.
-    pub ascii: bool,
     /// Title.
     pub title: Option<String>,
     /// Row hit regions from last paint.
@@ -650,7 +637,6 @@ impl SearchResultsState {
             multi: false,
             match_walk: 0,
             load: LoadState::Idle,
-            ascii: false,
             title: None,
             row_regions: Vec::new(),
             accepts_input: true,
@@ -1087,7 +1073,6 @@ pub struct SearchResults<'a> {
     system: &'a DesignSystem,
     focused: bool,
     title: Option<&'a str>,
-    ascii: bool,
     /// Show two-line items (title + snippet).
     dense: bool,
 }
@@ -1106,7 +1091,6 @@ impl<'a> SearchResults<'a> {
             system,
             focused: true,
             title: None,
-            ascii: false,
             dense: true,
         }
     }
@@ -1127,13 +1111,7 @@ impl<'a> SearchResults<'a> {
 
     /// ASCII.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Single-line density.
-    #[must_use]
     pub const fn compact(mut self) -> Self {
         self.dense = false;
         self
@@ -1144,7 +1122,6 @@ impl<'a> SearchResults<'a> {
         if area.is_empty() {
             return;
         }
-        let ascii = self.ascii || state.ascii;
         state.row_regions.clear();
 
         let mut y = area.y;
@@ -1222,13 +1199,7 @@ impl<'a> SearchResults<'a> {
             match &flat[i] {
                 SearchFlatRow::Group { group, .. } => {
                     let collapsed = group.collapsed || state.collapsed.contains(&group.id);
-                    let disc = if collapsed {
-                        if ascii { ">" } else { "▸" }
-                    } else if ascii {
-                        "v"
-                    } else {
-                        "▾"
-                    };
+                    let disc = if collapsed { "▸" } else { "▾" };
                     let mark = if selected {
                         self.system.glyphs.selection_gutter()
                     } else {
@@ -1262,11 +1233,11 @@ impl<'a> SearchResults<'a> {
                     let mark = if selected {
                         self.system.glyphs.selection_gutter()
                     } else if state.multi && state.checked.iter().any(|c| c == item.id) {
-                        if ascii { "*" } else { "★" }
+                        "★"
                     } else {
                         " "
                     };
-                    let glyph = item.kind.glyph(ascii);
+                    let glyph = item.kind.glyph(false);
                     let line_no = item.line.map(|n| format!(":{n}")).unwrap_or_default();
                     let title_budget = usize::from(area.width).saturating_sub(4);
                     // Focused match walk: mark first range focused when this is walk target

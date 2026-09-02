@@ -1,5 +1,4 @@
 //! Story-owned deterministic controls rendered by the gallery.
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// Host-editable value for one deterministic demo control.
 pub enum KnobValue {

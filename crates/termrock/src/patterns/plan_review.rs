@@ -27,7 +27,6 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::collections::BTreeMap;
 
@@ -1536,7 +1535,6 @@ enum TextTarget {
 #[derive(Debug, Clone, Copy)]
 pub struct PlanReview<'a> {
     system: &'a DesignSystem,
-    ascii: bool,
     colorless: bool,
 }
 
@@ -1569,20 +1567,13 @@ impl<'a> PlanReview<'a> {
     pub const fn new(system: &'a DesignSystem) -> Self {
         Self {
             system,
-            ascii: false,
             colorless: false,
         }
     }
 
     /// ASCII glyphs.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Colorless.
-    #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self
@@ -1606,11 +1597,7 @@ impl<'a> PlanReview<'a> {
             use ratatui_core::widgets::Widget;
             Widget::render(&panel, area, buffer);
             if !inner.is_empty() {
-                let m = if self.ascii {
-                    "[ ] no plan"
-                } else {
-                    "∅ no plan"
-                };
+                let m = "∅ no plan";
                 self.system.paint_row(
                     buffer,
                     Rect::new(inner.x, inner.y, inner.width, 1),
@@ -1694,7 +1681,7 @@ impl<'a> PlanReview<'a> {
                 PlanReviewPhase::Comment => state.draft_comment.as_str(),
                 PlanReviewPhase::Review => "",
             };
-            let line = format!("{label}{draft}▌");
+            let line = format!("{label}{draft}▎");
             self.system.paint_row(
                 buffer,
                 Rect::new(inner.x, y, inner.width, 1),
@@ -1818,9 +1805,9 @@ impl<'a> PlanReview<'a> {
                 _ => false,
             });
             let mark = if selected {
-                if self.ascii { ">" } else { "›" }
+                "›"
             } else if has_comment {
-                if self.ascii { "*" } else { "·" }
+                "·"
             } else {
                 " "
             };
@@ -1883,16 +1870,7 @@ impl<'a> PlanReview<'a> {
                 break;
             }
             let selected = i == state.selected_task;
-            let g = if self.ascii {
-                match task.status {
-                    PlanTaskStatus::Done => "[x]",
-                    PlanTaskStatus::Blocked => "[!]",
-                    PlanTaskStatus::InProgress => "[>]",
-                    PlanTaskStatus::Pending => "[ ]",
-                }
-            } else {
-                task.status.glyph()
-            };
+            let g = task.status.glyph();
             let label = format!("Step {}", i.saturating_add(1));
             let mut row = FieldRow::new(
                 self.system,
@@ -1902,7 +1880,7 @@ impl<'a> PlanReview<'a> {
             .marker(g)
             .selected(selected);
             if let Some(detail) = task.detail.as_deref() {
-                row = row.annotation(detail).annotation_italic(true);
+                row = row.annotation(detail);
             }
             row.paint(Rect::new(area.x, y, area.width, 1), buffer);
             y = y.saturating_add(1);
@@ -1982,7 +1960,7 @@ impl<'a> PlanReview<'a> {
                 buffer,
                 Rect::new(area.x, y, area.width, 1),
                 "Sources",
-                self.system.style(Role::Info),
+                self.system.style(Role::TextSecondary),
             );
             y = y.saturating_add(1);
             for s in &plan.source_refs {
@@ -2122,7 +2100,7 @@ impl<'a> PlanReview<'a> {
                 buffer,
                 Rect::new(area.x, y, area.width, 1),
                 &hdr,
-                self.system.style(Role::Info),
+                self.system.style(Role::TextSecondary),
             );
             y = y.saturating_add(1);
         }
@@ -2233,9 +2211,7 @@ impl<'a> PlanReview<'a> {
             cursor: Some(state.action_cursor),
             regions: Vec::new(),
         };
-        let bar = ActionBar::new(&items, self.system)
-            .ascii(self.ascii)
-            .colorless(self.colorless);
+        let bar = ActionBar::new(&items, self.system).colorless(self.colorless);
         StatefulWidget::render(
             &bar,
             Rect::new(x, y, u16::try_from(w).unwrap_or(u16::MAX), 1),
@@ -2273,7 +2249,6 @@ impl StatefulWidget for PlanReview<'_> {
 pub fn example_plan_document() -> PlanDocument {
     let body = "\
 # Migrate auth module
-
 ## Steps
 1. Extract token validation
 2. Add session store
@@ -2644,7 +2619,6 @@ mod tests {
             assert!(st.is_open(), "paint restores plan after pane {:?}", pane);
         }
         PlanReview::new(&system)
-            .ascii(true)
             .colorless(true)
             .paint(area, &mut buf, &mut st);
         assert!(st.is_open());

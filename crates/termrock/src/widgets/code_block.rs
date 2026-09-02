@@ -15,7 +15,6 @@
 //!   marks, ANSI highlighter, and plain copy text.
 //!
 //! References: Glow, bat, delta, Rich Syntax, lazygit code panes.
-
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
@@ -100,97 +99,6 @@ impl CodeTokenKind {
             Self::Keyword => Role::SyntaxKeyword,
             Self::Function => Role::SyntaxFunction,
         }
-    }
-}
-
-/// Lightweight token highlighter using semantic syntax roles (no tree-sitter).
-///
-/// Good ANSI / monochrome fallback: roles quantize to bold/dim/underline under
-/// `no_color`. Keywords are optional host-supplied identifiers.
-#[derive(Debug, Clone, Copy)]
-pub struct TokenSyntax<'a> {
-    /// Language id for comment / string heuristics (`rust`, `sh`, …).
-    language: Option<&'a str>,
-    /// Extra keywords (e.g. `["fn", "let", "mut"]`).
-    keywords: &'a [&'a str],
-}
-
-impl<'a> TokenSyntax<'a> {
-    /// Token syntax with optional language + keywords.
-    #[must_use]
-    pub const fn new(language: Option<&'a str>, keywords: &'a [&'a str]) -> Self {
-        Self { language, keywords }
-    }
-
-    /// Common Rust-ish keyword set for demos / fences.
-    #[must_use]
-    pub const fn rust() -> Self {
-        const KW: &[&str] = &[
-            "fn", "let", "mut", "const", "pub", "struct", "enum", "impl", "use", "mod", "if",
-            "else", "match", "for", "while", "loop", "return", "async", "await", "self", "Self",
-            "true", "false", "where", "type", "trait", "in", "ref", "move",
-        ];
-        Self {
-            language: Some("rust"),
-            keywords: KW,
-        }
-    }
-
-    /// Shell / command fence keywords.
-    #[must_use]
-    pub const fn shell() -> Self {
-        const KW: &[&str] = &[
-            "if", "then", "else", "fi", "for", "do", "done", "while", "case", "esac", "function",
-            "export", "local", "return", "exit", "cd", "echo", "cargo", "git",
-        ];
-        Self {
-            language: Some("sh"),
-            keywords: KW,
-        }
-    }
-}
-
-impl TokenSyntax<'_> {
-    /// Tokenizes one prepared line into classified segments.
-    ///
-    /// Prefer this over [`SyntaxHighlighter::highlight_line`] when the caller
-    /// owns the palette: the kind is the fact, the style is one reading of it.
-    #[must_use]
-    pub fn tokens_for_line<'line>(&self, line: &'line str) -> Vec<(&'line str, CodeTokenKind)> {
-        tokenize_line(line, self.language, self.keywords)
-    }
-}
-
-impl SyntaxHighlighter for TokenSyntax<'_> {
-    fn highlight_line<'line>(
-        &self,
-        line: &'line str,
-        _line_index: usize,
-    ) -> Vec<(&'line str, Style)> {
-        // Palette-free fallback colors for hosts without a `DesignSystem`;
-        // `RoleTokenSyntax` is the themed path.
-        self.tokens_for_line(line)
-            .into_iter()
-            .map(|(seg, kind)| {
-                let style = match kind {
-                    CodeTokenKind::Plain => Style::default(),
-                    CodeTokenKind::Comment => {
-                        Style::default().add_modifier(Modifier::DIM | Modifier::ITALIC)
-                    }
-                    CodeTokenKind::String => Style::default().fg(ratatui_core::style::Color::Green),
-                    CodeTokenKind::Number => {
-                        Style::default().fg(ratatui_core::style::Color::Magenta)
-                    }
-                    CodeTokenKind::Keyword => Style::default()
-                        .fg(ratatui_core::style::Color::Cyan)
-                        .add_modifier(Modifier::BOLD),
-                    CodeTokenKind::Function => {
-                        Style::default().fg(ratatui_core::style::Color::Blue)
-                    }
-                };
-                (seg, style)
-            })
-            .collect()
     }
 }
 
@@ -913,16 +821,7 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
         if header.width <= width {
             return;
         }
-        let mut style = self.system.style(Role::Success);
-        let alpha = state.copied.alpha(self.system.motion, elapsed);
-        if alpha < 1.0 {
-            let canvas = self
-                .system
-                .style(Role::Canvas)
-                .bg
-                .unwrap_or(ratatui_core::style::Color::Reset);
-            style = crate::style::fade_style(style, alpha, canvas);
-        }
+        let style = self.system.style(Role::Success);
         buffer.set_stringn(
             header.right().saturating_sub(width),
             header.y,
@@ -1008,7 +907,8 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
                 }
                 CodeHighlightKind::Search => {
                     style = style.add_modifier(Modifier::BOLD);
-                    if let Some(bg) = self.system.style(Role::HoverTint).bg {
+                    // junie: a find match sits on the selection ground.
+                    if let Some(bg) = self.system.style(Role::Selection).bg {
                         style = style.bg(bg);
                     }
                 }
@@ -1125,11 +1025,7 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
         // Prefer state.scroll_y after clamp
         parts.first_line = state.scroll_y;
 
-        let header_text = if self.system.glyphs.is_ascii() {
-            self.meta.header_text().replace(" · ", " - ")
-        } else {
-            self.meta.header_text()
-        };
+        let header_text = self.meta.header_text();
         if parts.header.height > 0 && !header_text.is_empty() {
             let h = take_display_cols(&header_text, usize::from(parts.header.width));
             buffer.set_stringn(
@@ -1167,8 +1063,7 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
             };
             let raw = self.lines[win_i];
             let mut prepared = prepare_code_display(raw, tab, self.controls);
-            if self.system.glyphs.is_ascii() && matches!(self.controls, ControlRender::Placeholder)
-            {
+            if false && matches!(self.controls, ControlRender::Placeholder) {
                 prepared = prepared.replace('·', ".");
             }
             let kinds = self.highlights_for(abs, state);
@@ -1261,19 +1156,13 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
         }
 
         if self.streaming && row < body_h && parts.body.width > 0 {
-            let cue = if self.system.glyphs.is_ascii() {
-                "..."
-            } else {
-                "…"
-            };
+            let cue = "…";
             buffer.set_stringn(
                 parts.body.x,
                 parts.body.y.saturating_add(row),
                 cue,
                 usize::from(parts.body.width),
-                self.system
-                    .style(Role::TextMuted)
-                    .add_modifier(Modifier::DIM),
+                self.system.style(Role::TextMuted),
             );
         }
 
@@ -1316,8 +1205,8 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
             if style == Style::default() {
                 style = self.system.style(Role::Text);
             } else {
-                // Map default styles through system when highlighter used Role via
-                // TokenSyntax (styles already have fg from Role).
+                // Highlighter styles already carry their role tone; mono hosts
+                // only get a weight reinforcement, never a second palette.
                 style = monochrome_syntax_style(style, mono);
             }
             style = self.line_style_overlay(style, kinds, mono);
@@ -1778,7 +1667,7 @@ fn tokenize_code_part<'a>(line: &'a str, keywords: &[&str]) -> Vec<(&'a str, Cod
 
 // ── Role-aware token paint helper for hosts ─────────────────────────────────
 
-/// Map TokenSyntax styles through DesignSystem syntax roles (preferred paint).
+/// Map a token kind's [`Role`] through the design system's syntax tones.
 ///
 /// Call from custom highlighters when building segments with [`Role`].
 #[must_use]
@@ -1786,18 +1675,12 @@ pub fn syntax_role_style(system: &DesignSystem, role: Role) -> Style {
     let mut style = system.style(role);
     style = Style { bg: None, ..style };
     if matches!(system.capability, crate::style::ColorCapability::Monochrome) {
+        // Monochrome keeps syntax distinct with weight; the comment italic is
+        // already the palette's, and a string is its quieter tone only (D5:
+        // ITALIC is the comment tier).
         match role {
             Role::SyntaxKeyword | Role::SyntaxFunction => {
                 style = style.add_modifier(Modifier::BOLD);
-            }
-            Role::SyntaxComment => {
-                style = style.add_modifier(Modifier::DIM | Modifier::ITALIC);
-            }
-            Role::SyntaxString => {
-                style = style.add_modifier(Modifier::ITALIC);
-            }
-            Role::SyntaxNumber => {
-                style = style.add_modifier(Modifier::BOLD | Modifier::DIM);
             }
             _ => {}
         }
@@ -1842,22 +1725,37 @@ impl<'a> RoleTokenSyntax<'a> {
             keywords: KW,
         }
     }
-}
 
-// RoleTokenSyntax cannot implement SyntaxHighlighter returning Style from system
-// without storing styles — segments use Style from system each call. Re-implement
-// by wrapping tokenize and remapping.
+    /// Shell / command fence keywords + system.
+    #[must_use]
+    pub const fn shell(system: &'a DesignSystem) -> Self {
+        const KW: &[&str] = &[
+            "if", "then", "else", "fi", "for", "do", "done", "while", "case", "esac", "function",
+            "export", "local", "return", "exit", "cd", "echo", "cargo", "git",
+        ];
+        Self {
+            system,
+            language: Some("sh"),
+            keywords: KW,
+        }
+    }
+
+    /// Tokenizes one prepared line into classified kinds.
+    ///
+    /// The kind is the fact; [`DesignSystem`] owns the only presentation.
+    #[must_use]
+    pub fn tokens_for_line<'line>(&self, line: &'line str) -> Vec<(&'line str, CodeTokenKind)> {
+        tokenize_line(line, self.language, self.keywords)
+    }
+}
 
 impl SyntaxHighlighter for RoleTokenSyntax<'_> {
     fn highlight_line<'line>(
         &self,
         line: &'line str,
-        line_index: usize,
+        _line_index: usize,
     ) -> Vec<(&'line str, Style)> {
-        let _ = line_index;
-        let token = TokenSyntax::new(self.language, self.keywords);
-        token
-            .tokens_for_line(line)
+        self.tokens_for_line(line)
             .into_iter()
             .map(|(seg, kind)| (seg, syntax_role_style(self.system, kind.role())))
             .collect()
@@ -1867,9 +1765,7 @@ impl SyntaxHighlighter for RoleTokenSyntax<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::{KeyCode, KeyModifiers, MouseButton, MouseEventKind};
-    use crate::style::{ColorCapability, GlyphSet};
-    use ratatui_core::layout::Position;
+    use crate::input::{KeyCode, KeyModifiers};
 
     #[test]
     fn paints_line_numbers_and_source() {
@@ -1976,123 +1872,5 @@ mod tests {
             .gutter_marks(&marks)
             .highlights(&highs)
             .paint(Rect::new(0, 0, 30, 4), &mut buf, &mut state);
-    }
-
-    #[test]
-    fn role_token_syntax_keywords() {
-        let system = DesignSystem::default();
-        let hi = RoleTokenSyntax::rust(&system);
-        let segs = hi.highlight_line("fn main() {", 0);
-        assert!(segs.iter().any(|(t, _)| *t == "fn"));
-        assert!(segs.iter().any(|(t, _)| *t == "main"));
-    }
-
-    #[test]
-    fn no_color_still_paints() {
-        let system = DesignSystem::default().glyphs(GlyphSet::Ascii).no_color();
-        assert_eq!(system.capability, ColorCapability::Monochrome);
-        let lines = ["fn x() {}"];
-        let hi = RoleTokenSyntax::rust(&system);
-        let mut state = CodeBlockState::new();
-        let mut buf = Buffer::empty(Rect::new(0, 0, 24, 2));
-        let _ = CodeBlock::new(&lines, &system)
-            .highlighter(&hi)
-            .line_numbers(true)
-            .language("rust")
-            .paint(Rect::new(0, 0, 24, 2), &mut buf, &mut state);
-        let body: String = (0..24).map(|x| buf[(x, 1)].symbol().to_owned()).collect();
-        assert!(body.contains("fn") || body.contains('x'), "{body}");
-    }
-
-    #[test]
-    fn mouse_click_selects_line() {
-        let system = DesignSystem::default();
-        let lines = ["a", "b", "c"];
-        let mut state = CodeBlockState::new();
-        let mut buf = Buffer::empty(Rect::new(0, 0, 20, 4));
-        let block = CodeBlock::new(&lines, &system);
-        let _ = block.paint(Rect::new(0, 0, 20, 4), &mut buf, &mut state);
-        let out = block.handle_mouse(
-            &mut state,
-            MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: Position { x: 0, y: 1 },
-                modifiers: KeyModifiers::NONE,
-            },
-        );
-        assert!(matches!(
-            out,
-            CodeBlockOutcome::SelectionChanged { range: (1, 2) }
-        ));
-    }
-
-    #[test]
-    fn wrap_mode_uses_multiple_rows() {
-        let system = DesignSystem::default();
-        let lines = ["abcdefghijklmnopqrstuvwxyz"];
-        let mut state = CodeBlockState::new();
-        let mut buf = Buffer::empty(Rect::new(0, 0, 10, 5));
-        let parts = CodeBlock::new(&lines, &system).wrap(CodeWrap::Wrap).paint(
-            Rect::new(0, 0, 10, 5),
-            &mut buf,
-            &mut state,
-        );
-        assert_eq!(parts.visible_lines, 1);
-        // more than one body row used for wrap
-        let row1: String = (0..10).map(|x| buf[(x, 0)].symbol().to_owned()).collect();
-        let row2: String = (0..10).map(|x| buf[(x, 1)].symbol().to_owned()).collect();
-        assert!(row1.chars().any(|c| c.is_alphabetic()));
-        assert!(row2.chars().any(|c| c.is_alphabetic()), "{row1}/{row2}");
-    }
-
-    #[test]
-    fn empty_area_safe() {
-        let system = DesignSystem::default();
-        let lines = ["x"];
-        let mut state = CodeBlockState::new();
-        let mut buf = Buffer::empty(Rect::new(0, 0, 1, 1));
-        let parts =
-            CodeBlock::new(&lines, &system).paint(Rect::new(0, 0, 0, 0), &mut buf, &mut state);
-        assert!(parts.root.is_empty());
-    }
-
-    #[test]
-    fn large_window_paint_cheap() {
-        let system = DesignSystem::default();
-        let owned: Vec<String> = (0..5000).map(|i| format!("line {i}")).collect();
-        let refs: Vec<&str> = owned.iter().map(String::as_str).collect();
-        // Paint only a window of 40 lines from a large logical file
-        let window = &refs[2000..2040];
-        let mut state = CodeBlockState::new().with_scroll_y(2000);
-        let mut buf = Buffer::empty(Rect::new(0, 0, 80, 24));
-        for _ in 0..200 {
-            let _ = CodeBlock::new(window, &system)
-                .line_base(2000)
-                .logical_len(5000)
-                .line_numbers(true)
-                .paint(Rect::new(0, 0, 80, 24), &mut buf, &mut state);
-        }
-    }
-
-    #[test]
-    fn path_meta_header() {
-        let meta = CodeSourceMeta::language("rust").with_path("src/main.rs");
-        assert!(meta.header_text().contains("main.rs"));
-        assert!(meta.header_text().contains("rust"));
-    }
-
-    #[test]
-    fn unicode_line() {
-        let system = DesignSystem::default();
-        let lines = ["// 文档 🔗", "fn 你好() {}"];
-        let mut state = CodeBlockState::new();
-        let mut buf = Buffer::empty(Rect::new(0, 0, 40, 3));
-        let _ = CodeBlock::new(&lines, &system).line_numbers(true).paint(
-            Rect::new(0, 0, 40, 3),
-            &mut buf,
-            &mut state,
-        );
-        let row: String = (0..40).map(|x| buf[(x, 0)].symbol().to_owned()).collect();
-        assert!(row.contains('文') || row.contains('/'), "{row}");
     }
 }

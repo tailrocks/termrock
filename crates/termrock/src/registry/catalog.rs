@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Official kernel inventory contracts (embedded catalog).
-
 use super::contract::{
     AnatomyPartRef, CONTRACT_SCHEMA, CapabilityRequirements, ComponentContract,
     ContractDependencies, ContractFile, ContractFileRole, KernelRequirement, OutcomeRef,
@@ -315,9 +314,9 @@ pub fn official_kernel_contracts() -> Vec<ComponentContract> {
         },
         ComponentContract {
             schema: CONTRACT_SCHEMA,
-            id: "phosphor-theme".into(),
-            title: "Phosphor theme".into(),
-            description: "Default phosphor design language (RolePalette).".into(),
+            id: "junie-theme".into(),
+            title: "Junie theme".into(),
+            description: "Canonical junie design system (RolePalette).".into(),
             kind: RegistryItemKind::Theme,
             license: "Apache-2.0".into(),
             module: Some("termrock::style::RolePalette".into()),
@@ -334,8 +333,8 @@ pub fn official_kernel_contracts() -> Vec<ComponentContract> {
                 id: "Role::*".into(),
             }],
             variants: vec![VariantRef {
-                id: "tailrocks_phosphor".into(),
-                description: "Default brand palette".into(),
+                id: "junie".into(),
+                description: "Canonical junie palette".into(),
             }],
             outcomes: vec![],
             stories: vec!["capability/color-ladder".into()],
@@ -456,7 +455,7 @@ pub fn official_kernel_contracts() -> Vec<ComponentContract> {
             schema: CONTRACT_SCHEMA,
             id: "DesignSystem".into(),
             title: "DesignSystem".into(),
-            description: "Complete terminal design system: roles, recipes, presets, packages, capability ladders.".into(),
+            description: "Complete terminal design system: roles, recipes, one theme package, capability ladders.".into(),
             kind: RegistryItemKind::Theme,
             license: "Apache-2.0".into(),
             module: Some("termrock::style::DesignSystem".into()),
@@ -484,39 +483,17 @@ pub fn official_kernel_contracts() -> Vec<ComponentContract> {
                     label: "Component recipes".into(),
                 },
                 AnatomyPartRef {
-                    id: "presets".into(),
-                    label: "Theme presets".into(),
+                    id: "package".into(),
+                    label: "Theme package".into(),
                 },
             ],
             semantic_roles: vec![SemanticRoleRef {
                 id: "Role::*".into(),
             }],
-            variants: vec![
-                VariantRef {
-                    id: "phosphor".into(),
-                    description: "Phosphor Obsidian default".into(),
-                },
-                VariantRef {
-                    id: "slate".into(),
-                    description: "Cool gray".into(),
-                },
-                VariantRef {
-                    id: "paper".into(),
-                    description: "Light paper".into(),
-                },
-                VariantRef {
-                    id: "ansi".into(),
-                    description: "ANSI 16".into(),
-                },
-                VariantRef {
-                    id: "high-contrast".into(),
-                    description: "A11y high contrast".into(),
-                },
-                VariantRef {
-                    id: "adaptive".into(),
-                    description: "Env capability ladder".into(),
-                },
-            ],
+            variants: vec![VariantRef {
+                id: "junie".into(),
+                description: "Canonical junie system".into(),
+            }],
             outcomes: vec![],
             stories: vec![
                 "design-system/presets".into(),

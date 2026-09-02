@@ -1,5 +1,4 @@
 //! Product-neutral terminal text measurement, sanitization, and windows.
-
 pub use crate::ansi_text::{
     AnsiLine, AnsiParseOptions, AnsiSegment, AnsiStream, AnsiText, AnsiTextMode, AnsiTextState,
     is_paint_safe, line_from_ansi, lines_for_log, parse_lines, parse_to_line, strip_bytes,

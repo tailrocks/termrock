@@ -23,11 +23,10 @@
 //!
 //! Optional spatial neighbor helpers for hosts that wire keyboard Move intents.
 //! The grid itself is not interactive.
-
 use ratatui_core::layout::Rect;
 
 use crate::interaction::NavigationMove;
-use crate::style::{Density, DesignSystem};
+use crate::style::DesignSystem;
 
 use super::stack::OverflowPolicy;
 
@@ -217,8 +216,8 @@ impl GridSpec {
         Self {
             column_gap: system.spacing.gap,
             row_gap: system.spacing.gap,
-            pad_x: system.spacing.pad_x,
-            pad_y: system.spacing.pad_y,
+            pad_x: system.spacing.card_inset,
+            pad_y: 1,
             ..Self::default()
         }
     }
@@ -231,14 +230,6 @@ impl GridSpec {
             columns: (0..n).map(|_| TrackSize::fr(1)).collect(),
             ..Self::default()
         }
-    }
-
-    /// Density-driven gaps (no pad by default).
-    #[must_use]
-    pub fn with_density(mut self, density: Density) -> Self {
-        self.column_gap = density.gap();
-        self.row_gap = density.gap();
-        self
     }
 
     /// Explicit gaps.
@@ -436,13 +427,6 @@ impl Grid {
     #[must_use]
     pub fn from_spec(spec: GridSpec) -> Self {
         Self { spec }
-    }
-
-    /// Density gaps.
-    #[must_use]
-    pub fn with_density(mut self, density: Density) -> Self {
-        self.spec = self.spec.with_density(density);
-        self
     }
 
     /// Gaps.

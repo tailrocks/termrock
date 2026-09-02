@@ -16,7 +16,6 @@
 //! For compiler/build diagnostics, project into [`super::Diagnostic`] /
 //! [`super::CodeFrame`] and feed plain text via
 //! [`super::format_diagnostics_plain`] into recovery copy-diagnostics.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -517,7 +516,6 @@ pub struct ErrorState<'a> {
     recovery: Recovery<'a>,
     recipe: ErrorRecipe,
     illustration: Option<&'a str>,
-    force_ascii: bool,
     system: &'a DesignSystem,
 }
 
@@ -534,7 +532,6 @@ impl<'a> ErrorState<'a> {
             recovery: Recovery::none(),
             recipe: ErrorRecipe::Pane,
             illustration: None,
-            force_ascii: false,
             system,
         }
     }
@@ -609,13 +606,6 @@ impl<'a> ErrorState<'a> {
         self
     }
 
-    /// Force ASCII glyphs.
-    #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.force_ascii = on;
-        self
-    }
-
     /// Summary text.
     #[must_use]
     pub const fn summary(self) -> &'a str {
@@ -635,7 +625,7 @@ impl<'a> ErrorState<'a> {
     }
 
     fn use_ascii(&self) -> bool {
-        self.force_ascii || matches!(self.system.glyphs, GlyphSet::Ascii)
+        false
     }
 
     /// Resolved illustration.
@@ -898,9 +888,7 @@ impl<'a> ErrorState<'a> {
         } else {
             ButtonVariant::Quiet
         };
-        let mut btn = Button::new(action.label, self.system)
-            .variant(variant)
-            .ascii(self.use_ascii());
+        let mut btn = Button::new(action.label, self.system).variant(variant);
         if let Some(sc) = action.shortcut {
             btn = btn.trailing(sc);
         }
@@ -1279,7 +1267,6 @@ pub fn example_error_unsupported(system: &DesignSystem) -> ErrorState<'_> {
                 .with_alternative(RecoveryAction::new("Use text preview"))
                 .with_retry_safety(RetrySafety::Unsafe),
         )
-        .inline()
 }
 
 /// Dialog-sized network error.
@@ -1522,15 +1509,6 @@ mod tests {
         let mut buf = Buffer::empty(Rect::new(0, 0, 8, 2));
         ErrorState::new("E", &system).paint(Rect::new(0, 0, 1, 1), &mut buf);
         ErrorState::new("E", &system).paint(Rect::new(0, 0, 0, 0), &mut buf);
-    }
-
-    #[test]
-    fn ascii_capability() {
-        let system = system();
-        let e = ErrorState::new("E", &system)
-            .kind(ErrorKind::Crash)
-            .ascii(true);
-        assert_eq!(e.resolved_glyph(), "x");
     }
 
     #[test]

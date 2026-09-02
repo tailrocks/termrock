@@ -15,7 +15,6 @@
 //! - [`CopyPayload`] — cell/range copy requests (consumer writes clipboard)
 //!
 //! See `docs/design/data-presentation.md` for the full component redesign.
-
 use std::collections::BTreeSet;
 
 use ratatui_core::style::Style;
@@ -94,25 +93,22 @@ pub(crate) struct DataLoadChrome {
 pub(crate) fn data_load_chrome(
     load: &LoadState,
     system: &DesignSystem,
-    ascii: bool,
     colorless: bool,
     empty_message: &str,
 ) -> Option<DataLoadChrome> {
     match load {
         LoadState::Loading { message } => Some(DataLoadChrome {
-            prefix: if ascii { "... " } else { "… " },
-            message: message
-                .clone()
-                .unwrap_or_else(|| if ascii { "Loading..." } else { "Loading…" }.into()),
+            prefix: "… ",
+            message: message.clone().unwrap_or_else(|| "Loading…".into()),
             role: Role::TextMuted,
         }),
         LoadState::Empty { message } => Some(DataLoadChrome {
-            prefix: if ascii { "[ ] " } else { "∅ " },
+            prefix: "∅ ",
             message: message.clone().unwrap_or_else(|| empty_message.into()),
             role: Role::TextMuted,
         }),
         LoadState::Error { message, retryable } => Some(DataLoadChrome {
-            prefix: if ascii { "! " } else { "✗ " },
+            prefix: "✗ ",
             message: if *retryable {
                 format!("{message}  (r retry)")
             } else {
@@ -1055,11 +1051,10 @@ mod tests {
 
     #[test]
     fn load_state_chrome_is_shared_ascii_and_non_color_semantics() {
-        let system = DesignSystem::phosphor().no_color();
+        let system = DesignSystem::junie().no_color();
         let loading = data_load_chrome(
             &LoadState::Loading { message: None },
             &system,
-            true,
             true,
             "No rows",
         )
@@ -1067,7 +1062,6 @@ mod tests {
         let empty = data_load_chrome(
             &LoadState::Empty { message: None },
             &system,
-            true,
             true,
             "No rows",
         )
@@ -1079,17 +1073,16 @@ mod tests {
             },
             &system,
             true,
-            true,
             "No rows",
         )
         .unwrap();
 
         assert_eq!(
             (loading.prefix, loading.message.as_str()),
-            ("... ", "Loading...")
+            ("… ", "Loading…")
         );
-        assert_eq!((empty.prefix, empty.message.as_str()), ("[ ] ", "No rows"));
-        assert_eq!((error.prefix, error.message.as_str()), ("! ", "failed"));
+        assert_eq!((empty.prefix, empty.message.as_str()), ("∅ ", "No rows"));
+        assert_eq!((error.prefix, error.message.as_str()), ("✗ ", "failed"));
         assert_eq!(error.role, Role::TextStrong);
     }
 

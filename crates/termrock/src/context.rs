@@ -22,7 +22,6 @@
 //! - Not a widget tree or React-style context provider.
 //! - Not a replacement for `Frame` / `Buffer`.
 //! - Not domain state (messages stay in the app).
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::fmt;
 use std::hash::Hash;
@@ -580,7 +579,7 @@ mod tests {
 
     #[test]
     fn design_and_tick_accessible() {
-        let design = DesignSystem::slate();
+        let design = DesignSystem::junie();
         let mut host = UiHost::<Fid, Lid>::test_with_design(design.clone());
         let tick = FrameTick::manual(
             Instant::now(),

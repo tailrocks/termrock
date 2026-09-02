@@ -8,7 +8,6 @@
 //! controls — arrows always keyboard-reachable.
 //!
 //! Research: shadcn Carousel, terminal wizards, slide decks in TUI.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
 
@@ -291,27 +290,17 @@ impl CarouselState {
 pub struct Carousel<'a> {
     slides: &'a [CarouselSlide],
     system: &'a DesignSystem,
-    ascii: bool,
 }
 
 impl<'a> Carousel<'a> {
     /// Slides + system.
     #[must_use]
     pub const fn new(slides: &'a [CarouselSlide], system: &'a DesignSystem) -> Self {
-        Self {
-            slides,
-            system,
-            ascii: false,
-        }
+        Self { slides, system }
     }
 
     /// ASCII indicators.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Paint.
     pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &CarouselState) {
         if area.is_empty() {
@@ -320,9 +309,7 @@ impl<'a> Carousel<'a> {
         if self.slides.is_empty() {
             // Empty bodies speak one language: glyph + sentence, through the
             // widget that owns it (plans/009 Step 2).
-            super::EmptyState::new("No slides", self.system)
-                .inline()
-                .paint(area, buffer);
+            super::EmptyState::new("No slides", self.system).paint(area, buffer);
             return;
         }
         let i = state.index.min(self.slides.len() - 1);
@@ -366,9 +353,7 @@ impl<'a> Carousel<'a> {
         if y < max_y {
             let mut dots = String::new();
             for (j, _) in self.slides.iter().enumerate() {
-                if self.ascii {
-                    dots.push(if j == i { '*' } else { '.' });
-                } else {
+                {
                     dots.push(if j == i { '●' } else { '○' });
                 }
                 if j + 1 < self.slides.len() {
@@ -458,7 +443,7 @@ mod tests {
         let st = CarouselState::new();
         let area = Rect::new(0, 0, 40, 8);
         let mut buf = Buffer::empty(area);
-        Carousel::new(&slides, &system).paint(area, &mut buf, &st);
+        let _ = Carousel::new(&slides, &system).paint(area, &mut buf, &st);
     }
 
     #[test]

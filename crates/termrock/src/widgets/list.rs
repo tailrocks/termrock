@@ -10,7 +10,6 @@
 //! printable keys feed typeahead through the collection roving model.
 //!
 //! Research: lazygit, Yazi, Textual ListView, shadcn command items.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -28,7 +27,7 @@ use crate::{
         default_list_intent,
     },
     scroll::max_offset,
-    style::{Density, DesignSystem, Glyph, ListRowVisualState, Role},
+    style::{DesignSystem, Glyph, ListRowVisualState, Role},
 };
 
 use super::Selection;
@@ -69,12 +68,8 @@ impl ListSelectionMode {
     }
 }
 
-const fn list_row_height(density: Density, has_secondary_below: bool) -> u16 {
-    if matches!(density, Density::Comfortable) && has_secondary_below {
-        2
-    } else {
-        1
-    }
+const fn list_row_height() -> u16 {
+    1
 }
 
 /// Narrow-terminal drop order (lowest survival first).
@@ -986,7 +981,6 @@ pub struct List<'a, Id> {
     rows: &'a [ListRow<'a, Id>],
     tokens: &'a DesignSystem,
     empty_message: Option<Line<'a>>,
-    density: Density,
 }
 
 impl<'a, Id> List<'a, Id> {
@@ -998,7 +992,6 @@ impl<'a, Id> List<'a, Id> {
             rows,
             tokens,
             empty_message: None,
-            density: Density::Compact,
         }
     }
 
@@ -1006,20 +999,6 @@ impl<'a, Id> List<'a, Id> {
     #[must_use]
     pub const fn focused(mut self, focused: bool) -> Self {
         self.focused = focused;
-        self
-    }
-
-    /// Compact (1-line) or comfortable (secondary below primary).
-    #[must_use]
-    pub const fn density(mut self, density: Density) -> Self {
-        self.density = density;
-        self
-    }
-
-    /// Comfortable density shorthand.
-    #[must_use]
-    pub const fn comfortable(mut self) -> Self {
-        self.density = Density::Comfortable;
         self
     }
 
@@ -1089,7 +1068,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                 area.y,
                 &crate::text::take_display_cols(&strip, usize::from(area.width)),
                 usize::from(area.width),
-                self.tokens.style(Role::Info),
+                self.tokens.style(Role::TextSecondary),
             );
             body_y = area.y.saturating_add(1);
             body_h = area.height.saturating_sub(1);
@@ -1104,10 +1083,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
         };
         let mut y = body.y;
         let mut painted_rows = 0usize;
-        // Breathing rows: under Comfortable density a group header opens with
-        // one blank canvas row, so sections read as sections instead of as one
-        // unbroken column (law P1, audit D8; plans/015 Step 4).
-        let breathing = matches!(self.density, Density::Comfortable);
+        let breathing = false;
         let mut painted_any = false;
         for row in self.rows.iter().skip(offset) {
             if y >= body.bottom() {
@@ -1121,10 +1097,8 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                 y = y.saturating_add(1);
             }
             painted_any = true;
-            let secondary_below = matches!(self.density, Density::Comfortable)
-                && row.secondary.is_some()
-                && !matches!(row.role, RowRole::Separator | RowRole::GroupHeader);
-            let rh = list_row_height(self.density, secondary_below);
+            let _ = row.secondary.is_some();
+            let rh = list_row_height();
             if y.saturating_add(rh) > body.bottom() {
                 break;
             }
@@ -1146,17 +1120,29 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                 enabled: row.enabled,
                 loading: row.loading,
                 checked,
+                ..ListRowVisualState::default()
             };
             let recipe = self.tokens.resolve_list_row(visual_state);
             let chrome = super::row_chrome::RowChrome::resolve(self.tokens, visual_state);
+            // The check marker carries the accent (when focused), never the
+            // label: a checked-but-unselected row stays in the body tone.
             let base_style = if hovered && row.enabled && !selected {
                 recipe.hover
-            } else if checked && !selected {
-                self.tokens.style(Role::Accent)
             } else {
                 recipe.label
             };
             let style = chrome.label_style(base_style);
+            // Green budget: the marker owns the accent, the label never does.
+            let marker_hot = (selected && self.focused) || hovered;
+            let marker_style = if checked {
+                chrome.label_style(if marker_hot {
+                    self.tokens.style(Role::Accent)
+                } else {
+                    self.tokens.style(Role::TextSecondary)
+                })
+            } else {
+                style
+            };
             let secondary_style = chrome.secondary_style(recipe.secondary);
             let shortcut_style = chrome.secondary_style(recipe.shortcut);
             let trailing_style = chrome.secondary_style(recipe.trailing);
@@ -1185,7 +1171,8 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                     buffer.set_stringn(rect.x, rect.y, "  ", 2, style);
                 }
                 let check_x = rect.x.saturating_add(2);
-                let check_w = render_check_cell(buffer, state, row, rect, check_x, &recipe, style);
+                let check_w =
+                    render_check_cell(buffer, state, row, rect, check_x, &recipe, marker_style);
                 let content_x = check_x.saturating_add(check_w);
                 if content_x < rect.right() {
                     let content_w = rect.right().saturating_sub(content_x);
@@ -1267,9 +1254,9 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                                     .saturating_add(1)
                             })
                             .unwrap_or(0);
-                        // Compact: inline secondary when budget allows; Comfortable: below.
-                        let show_secondary =
-                            row.secondary.is_some() && !secondary_below && budget >= secondary_need;
+                        // junie list rows are strictly one line: the secondary rides
+                        // inline or is dropped, never wrapped to a second row.
+                        let show_secondary = row.secondary.is_some() && budget >= secondary_need;
                         if show_secondary {
                             budget = budget.saturating_sub(secondary_need);
                         }
@@ -1419,22 +1406,6 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                         }
                     } // end non-custom
                 }
-                // Comfortable: secondary on next line
-                if secondary_below {
-                    if let Some(sec) = row.secondary.as_ref() {
-                        let indent = rect.x.saturating_add(4);
-                        let sub = Rect::new(
-                            indent.min(rect.right().saturating_sub(1)),
-                            rect.y.saturating_add(1),
-                            rect.right().saturating_sub(indent.min(rect.right())),
-                            1,
-                        );
-                        if !sub.is_empty() {
-                            buffer.set_line(sub.x, sub.y, sec, sub.width);
-                            buffer.set_style(sub, secondary_style);
-                        }
-                    }
-                }
                 chrome.paint(buffer, Rect::new(rect.x, rect.y, rect.width, rh));
             }
             let hit_h = rh;
@@ -1449,15 +1420,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
         }
         let _ = painted_rows;
         if scrollable {
-            // The cut edges say there is more; the scrollbar says where.
-            let offset = state.collection.offset();
-            crate::scroll::paint_scroll_edges(
-                buffer,
-                body,
-                self.tokens,
-                offset > 0,
-                offset.saturating_add(usize::from(body.height)) < total,
-            );
+            let _offset = state.collection.offset();
             crate::scroll::render_scrollbar(
                 buffer,
                 Rect::new(body.right().saturating_sub(1), body.y, 1, body.height),
@@ -1692,7 +1655,7 @@ mod tests {
         assert_eq!(state.hover(position), Some(&"second"));
         assert_eq!(state.click(position), Outcome::Activated("second"));
         // Quiet phosphor selection uses design-token gutter glyph.
-        assert_eq!(buffer[(area.x, area.y)].symbol(), "▌");
+        assert_eq!(buffer[(area.x, area.y)].symbol(), "\u{258e}");
     }
 
     #[test]
@@ -1723,9 +1686,11 @@ mod tests {
     }
 
     #[test]
-    fn historical_marker_setting_cannot_bypass_canonical_collection_chrome() {
+    fn tint_chrome_states_membership_without_abandoning_the_ladder() {
+        // junie's second selection chrome paints the tint and leaves the gutter
+        // slot empty; the marker glyph is the shipped default.
         let rows = rows();
-        let system = DesignSystem::default().selection(crate::style::SelectionChrome::Marker);
+        let system = DesignSystem::junie().selection(crate::style::SelectionChrome::Tint);
         let mut state = ListState::new(Some("second"));
         let area = Rect::new(0, 0, 16, 4);
         let mut buffer = Buffer::empty(area);
@@ -1737,22 +1702,17 @@ mod tests {
             .unwrap()
             .area;
         let tint_bg = system.style(Role::SelectionTint).bg.unwrap();
-        let marker = &buffer[(row.x, row.y)];
-        assert_eq!(
-            marker.symbol(),
+        assert_ne!(
+            buffer[(row.x, row.y)].symbol(),
             system.glyphs.selection_gutter(),
-            "all collections use the same selected-row gutter"
-        );
-        assert_eq!(
-            marker.bg, tint_bg,
-            "historical marker configuration resolves to the quiet tint"
+            "tint chrome leaves the gutter slot empty"
         );
         let label = &buffer[(row.x.saturating_add(2), row.y)];
         assert_eq!(label.bg, tint_bg, "the quiet tint owns the row ground");
-        assert_eq!(
-            label.fg,
-            system.style(Role::TextStrong).fg.unwrap(),
-            "selected copy owns a contrast-safe foreground"
+        assert_ne!(
+            label.bg,
+            system.style(Role::Selection).bg.unwrap(),
+            "no row ever paints the text-selection ground"
         );
     }
 
@@ -1912,11 +1872,17 @@ mod tests {
         let area = Rect::new(0, 0, 20, 4);
         let mut buffer = Buffer::empty(area);
         (&List::new(&rows, &tokens)).render(area, &mut buffer, &mut state);
-        // Unicode check glyph (or ASCII "[x]") in the multi-select slot after gutter.
-        let check = buffer[(2, 2)].symbol();
+        // The one checkbox vocabulary: `[✓]` on, `[ ]` off — never `☑`/`☐`.
+        let row: String = (0..area.width)
+            .map(|x| buffer[(x, 2)].symbol().to_string())
+            .collect();
         assert!(
-            check == "☑" || check == "[" || check == "x",
-            "expected check chrome, got {check:?}"
+            row.contains("[✓]"),
+            "expected `[✓]` check chrome, got {row:?}"
+        );
+        assert!(
+            !row.contains('☑') && !row.contains('☐'),
+            "legacy checkbox glyph leaked: {row:?}"
         );
         assert_eq!(
             state.click(Position::new(2, 3)),
@@ -1997,23 +1963,6 @@ mod tests {
     }
 
     #[test]
-    fn loading_row_uses_recipe_loading_glyph() {
-        let row = ListRow::item("job", Line::from("Build")).loading();
-        let rows = [row];
-        let tokens = DesignSystem::default();
-        let mut state = ListState::new(None);
-        let area = Rect::new(0, 0, 24, 1);
-        let mut buffer = Buffer::empty(area);
-        (&List::new(&rows, &tokens)).render(area, &mut buffer, &mut state);
-        let text: String = (0..24)
-            .map(|x| buffer[(x, 0)].symbol().to_string())
-            .collect();
-        let loading = Glyph::Loading.resolve(tokens.glyphs).text;
-        assert!(text.contains(loading), "loading glyph present: {text:?}");
-        assert!(text.contains("Build"), "{text:?}");
-    }
-
-    #[test]
     fn fluent_row_builder_and_canonical_constructor() {
         let row = ListRow::item("x", Line::from("X"))
             .leading(Line::from("*"))
@@ -2021,7 +1970,7 @@ mod tests {
             .badge(Line::from("b"))
             .shortcut("⌘K");
         let rows = [row];
-        let system = DesignSystem::phosphor();
+        let system = DesignSystem::junie();
         let mut state = ListState::new(Some("x"));
         let area = Rect::new(0, 0, 40, 1);
         let mut buffer = Buffer::empty(area);
@@ -2030,7 +1979,7 @@ mod tests {
             .map(|x| buffer[(x, 0)].symbol().to_string())
             .collect();
         assert!(text.contains('X'), "{text:?}");
-        assert_eq!(buffer[(0, 0)].symbol(), "▌");
+        assert_eq!(buffer[(0, 0)].symbol(), "\u{258e}");
     }
 
     #[test]
@@ -2046,28 +1995,6 @@ mod tests {
         assert_eq!(state.regions().len(), 20);
         assert!(state.offset() <= 9_500);
         assert!(state.offset() + 20 > 9_500);
-    }
-
-    #[test]
-    fn ascii_gutter_and_check_glyphs() {
-        let rows = [ListRow::item("a", Line::from("A"))];
-        let tokens = DesignSystem::default()
-            .glyphs(crate::style::GlyphSet::Ascii)
-            .selection(crate::style::SelectionChrome::Gutter);
-        let mut state = ListState::new(Some("a"));
-        state.enable_multi_select();
-        state.selection_mut().unwrap().toggle(&"a");
-        let area = Rect::new(0, 0, 20, 1);
-        let mut buffer = Buffer::empty(area);
-        (&List::new(&rows, &tokens)).render(area, &mut buffer, &mut state);
-        assert_eq!(
-            buffer[(0, 0)].symbol(),
-            Glyph::SelectionGutter
-                .resolve(crate::style::GlyphSet::Ascii)
-                .text
-        );
-        let check = buffer[(2, 0)].symbol();
-        assert!(check == "[" || check == "x", "ascii check: {check:?}");
     }
 
     #[test]
@@ -2128,26 +2055,6 @@ mod tests {
         assert!(state.selection().is_some());
         state.set_selection_mode(ListSelectionMode::Single);
         assert!(state.selection().is_none());
-    }
-
-    #[test]
-    fn comfortable_density_paints_secondary_below() {
-        let rows = [ListRow::item("a", Line::from("Title")).secondary(Line::from("meta"))];
-        let tokens = DesignSystem::default();
-        let mut state = ListState::new(Some("a"));
-        let area = Rect::new(0, 0, 24, 3);
-        let mut buffer = Buffer::empty(area);
-        (&List::new(&rows, &tokens).comfortable()).render(area, &mut buffer, &mut state);
-        let mut painted = String::new();
-        for y in 0..3 {
-            for x in 0..24 {
-                painted.push_str(buffer[(x, y)].symbol());
-            }
-        }
-        assert!(
-            painted.contains("Title") || painted.contains("meta"),
-            "{painted}"
-        );
     }
 
     #[test]

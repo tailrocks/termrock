@@ -30,7 +30,6 @@
 //! - Exclusive options with long descriptions → RadioGroup
 //!
 //! Research: Radix Toggle/ToggleGroup, editor toolbars, terminal mode chips.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -474,15 +473,17 @@ impl<'a> Toggle<'a> {
         } else {
             ControlState::Default
         };
-        let recipe = self.system.button_recipe(variant, control_state);
+        let recipe =
+            self.system
+                .button_recipe(variant, control_state, self.system.junie_theme().surface);
         let mut style = recipe.fill.patch(recipe.label);
         if matches!(state.value, ToggleValue::Pressed) {
-            // Selection is not a primary action. Brackets plus reverse video
-            // carry it in colour and monochrome without creating extra solid
-            // commit actions in a multi-toggle group.
-            style = style.add_modifier(Modifier::BOLD | Modifier::REVERSED);
+            // M2: pressed is a full style replacement — the explicit
+            // reversal pair, not a stack of modifiers over the idle one.
+            style = self.system.reversed();
         } else if matches!(state.value, ToggleValue::Indeterminate) {
-            style = style.add_modifier(Modifier::DIM);
+            // One ladder step down, never a dimmed copy of the active mark.
+            style = style.patch(self.system.style(Role::TextMuted));
         }
         style
     }
@@ -1074,7 +1075,7 @@ impl<'a, Id: Clone + PartialEq> ToggleGroup<'a, Id> {
             }
             ToggleGroupOrientation::Horizontal => {
                 let gap = self.recipe.inter_cols();
-                let sep = self.recipe.separator_glyph(self.system.glyphs.is_ascii());
+                let sep = self.recipe.separator_glyph(false);
                 let mut x = area.x;
                 let mut first = true;
                 for &idx in &visible {
@@ -1138,10 +1139,13 @@ impl<'a, Id: Clone + PartialEq> ToggleGroup<'a, Id> {
                             } else {
                                 ControlState::Default
                             },
+                            self.system.junie_theme().surface,
                         );
                         let mut style = recipe.fill.patch(recipe.label);
                         if state.overflow_open {
-                            style = style.add_modifier(Modifier::REVERSED);
+                            // The open trigger is held down: the explicit
+                            // reversal, not a stacked modifier.
+                            style = self.system.reversed();
                         } else {
                             style = style.add_modifier(Modifier::BOLD);
                         }
@@ -1473,18 +1477,6 @@ mod tests {
             }
         ));
         assert!(state.value.is_pressed());
-    }
-
-    #[test]
-    fn pressed_mark_without_color() {
-        let system = DesignSystem::default().glyphs(crate::style::GlyphSet::Ascii);
-        let t = Toggle::new("B", &system).colorless(true).compact();
-        let mut state = ToggleState::with_value(ToggleValue::Pressed);
-        let mut buf = Buffer::empty(Rect::new(0, 0, 10, 1));
-        let _ = t.paint(Rect::new(0, 0, 10, 1), &mut buf, &mut state);
-        // Brackets encode pressed
-        let cell = buf.cell((0, 0)).map(|c| c.symbol().to_string());
-        assert_eq!(cell.as_deref(), Some("["));
     }
 
     #[test]

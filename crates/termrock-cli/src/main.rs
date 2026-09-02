@@ -118,7 +118,6 @@ fn run_doctor(args: &[String]) -> ExitCode {
     // Merge env overrides (TERMROCK_*, NO_COLOR) with optional profile preference.
     let mut overrides = CapabilityOverrides::from_env_keys(
         env::var("TERMROCK_COLOR").ok().as_deref(),
-        env::var("TERMROCK_GLYPHS").ok().as_deref(),
         env::var("TERMROCK_PROFILE").ok().as_deref(),
     );
     if preferred.is_some() {

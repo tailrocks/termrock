@@ -29,7 +29,6 @@
 //! the control collapses to a Select-like trigger (host paints the option menu).
 //!
 //! Research: desktop segmented controls, shadcn patterns, IDE mode selectors.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -365,11 +364,7 @@ impl<'a, Id> SegmentedControl<'a, Id> {
     }
 
     fn sep_glyph(&self) -> &'static str {
-        if self.system.glyphs.is_ascii() || self.mono() {
-            "|"
-        } else {
-            "│"
-        }
+        if self.mono() { "|" } else { "│" }
     }
 
     /// Plan visible indices, overflow indices, and presentation.
@@ -519,15 +514,14 @@ impl<'a, Id: Clone + PartialEq> SegmentedControl<'a, Id> {
         } else {
             ControlState::Default
         };
-        let recipe = self
-            .system
-            .button_recipe(ButtonRecipeVariant::Secondary, control_state);
+        let recipe = self.system.button_recipe(
+            ButtonRecipeVariant::Secondary,
+            control_state,
+            self.system.junie_theme().surface,
+        );
         let mut style = recipe.fill.patch(recipe.label);
         if selected {
             style = style.add_modifier(Modifier::BOLD);
-            if self.mono() {
-                style = style.add_modifier(Modifier::REVERSED);
-            }
         }
         style
     }
@@ -596,11 +590,7 @@ impl<'a, Id: Clone + PartialEq> SegmentedControl<'a, Id> {
                 // Select-like face: [Selected ▾] or selected label + chevron
                 let sel_idx = visible.first().copied().unwrap_or(0);
                 let item = &self.items[sel_idx];
-                let chev = if self.system.glyphs.is_ascii() || self.mono() {
-                    "v"
-                } else {
-                    "▾"
-                };
+                let chev = if self.mono() { "v" } else { "▾" };
                 let open = if state.menu_open { "^" } else { chev };
                 let inner = item.face_inner();
                 let face = format!("[{inner} {open}]");
@@ -688,10 +678,13 @@ impl<'a, Id: Clone + PartialEq> SegmentedControl<'a, Id> {
                             } else {
                                 ControlState::Default
                             },
+                            self.system.junie_theme().surface,
                         );
                         let mut style = recipe.fill.patch(recipe.label);
                         if state.menu_open {
-                            style = style.add_modifier(Modifier::REVERSED);
+                            // The open segment is held down: the explicit
+                            // reversal pair, not a stacked modifier.
+                            style = self.system.reversed();
                         } else {
                             style = style.add_modifier(Modifier::BOLD);
                         }
@@ -1234,20 +1227,6 @@ mod tests {
             KeyEvent::new(KeyCode::Right, KeyModifiers::NONE),
         );
         assert!(matches!(out, SegmentedControlOutcome::Selected { id: "c" }));
-    }
-
-    #[test]
-    fn selected_mark_brackets_no_neon_only() {
-        let system = DesignSystem::default().glyphs(crate::style::GlyphSet::Ascii);
-        let items = [SegmentedItem::new("a", "A"), SegmentedItem::new("b", "B")];
-        let g = SegmentedControl::new(&items, &system).colorless(true);
-        let mut state = SegmentedControlState::new(Some("a"));
-        let mut buf = Buffer::empty(Rect::new(0, 0, 30, 1));
-        let _ = g.paint(Rect::new(0, 0, 30, 1), &mut buf, &mut state);
-        assert_eq!(
-            buf.cell((0, 0)).map(|c| c.symbol().to_string()).as_deref(),
-            Some("[")
-        );
     }
 
     #[test]

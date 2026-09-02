@@ -14,10 +14,9 @@
 //! **vs [`super::PermissionPrompt`].** Trust gate, not interview.
 //!
 //! Research: Grok Build question view, form wizards, conversational agent prompts.
-
 use std::collections::BTreeSet;
 
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
+use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
 
 use crate::{
     input::{
@@ -1070,7 +1069,6 @@ impl QuestionFlowState {
 #[derive(Debug, Clone, Copy)]
 pub struct QuestionFlow<'a> {
     system: &'a DesignSystem,
-    ascii: bool,
     colorless: bool,
 }
 
@@ -1114,20 +1112,13 @@ impl<'a> QuestionFlow<'a> {
     pub const fn new(system: &'a DesignSystem) -> Self {
         Self {
             system,
-            ascii: false,
             colorless: false,
         }
     }
 
     /// ASCII.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Colorless.
-    #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self
@@ -1149,7 +1140,7 @@ impl<'a> QuestionFlow<'a> {
             use ratatui_core::widgets::Widget;
             Widget::render(&panel, area, buffer);
             if !inner.is_empty() {
-                let m = if self.ascii { "[ ] idle" } else { "∅ idle" };
+                let m = { "∅ idle" };
                 buffer.set_stringn(
                     inner.x,
                     inner.y,
@@ -1219,11 +1210,9 @@ impl<'a> QuestionFlow<'a> {
                         s.push(' ');
                     }
                     let mark = if i == state.step_index {
-                        if self.ascii { "*" } else { "●" }
+                        "●"
                     } else if state.answers.get(&q.id).is_some() {
-                        if self.ascii { "+" } else { "✓" }
-                    } else if self.ascii {
-                        "o"
+                        "✓"
                     } else {
                         "○"
                     };
@@ -1310,10 +1299,7 @@ impl<'a> QuestionFlow<'a> {
                         let caret_x = value_x
                             .saturating_add(u16::try_from(display_cols(&st.text)).unwrap_or(0))
                             .min(row.right().saturating_sub(1));
-                        buffer.set_style(
-                            Rect::new(caret_x, y, 1, 1),
-                            recipe.cursor.add_modifier(Modifier::REVERSED),
-                        );
+                        buffer.set_style(Rect::new(caret_x, y, 1, 1), recipe.cursor);
                     }
                 }
             }
@@ -1330,23 +1316,13 @@ impl<'a> QuestionFlow<'a> {
                     let checked = matches!(q.kind, QuestionKind::MultiChoice)
                         && st.multi_selected.contains(&opt.id);
                     let mark = if matches!(q.kind, QuestionKind::MultiChoice) {
-                        if checked {
-                            if self.ascii { "[x]" } else { "[✓]" }
-                        } else if self.ascii {
-                            "[ ]"
-                        } else {
-                            "[ ]"
-                        }
+                        if checked { "[✓]" } else { "[ ]" }
                     } else if on {
-                        if self.ascii { ">" } else { "›" }
+                        "›"
                     } else {
                         " "
                     };
-                    let other = if opt.is_other {
-                        if self.ascii { "..." } else { "…" }
-                    } else {
-                        ""
-                    };
+                    let other = if opt.is_other { "…" } else { "" };
                     let line = format!("{mark} {}{other}", opt.label);
                     let row = Rect::new(inner.x, y, inner.width, 1);
                     let recipe = self.system.resolve_list_row(ListRowVisualState {
@@ -1356,6 +1332,7 @@ impl<'a> QuestionFlow<'a> {
                         enabled: state.enabled,
                         loading: false,
                         checked,
+                        ..ListRowVisualState::default()
                     });
                     if recipe.use_fill {
                         buffer.set_style(row, recipe.label);
@@ -1417,11 +1394,7 @@ impl<'a> QuestionFlow<'a> {
     fn paint_review(&self, area: Rect, buffer: &mut Buffer, state: &QuestionFlowState) {
         let mut y = area.y;
         let w = usize::from(area.width);
-        let review_hint = if self.ascii {
-            "Review answers | Enter submit | Esc edit"
-        } else {
-            "Review answers · Enter submit · Esc edit"
-        };
+        let review_hint = { "Review answers · Enter submit · Esc edit" };
         buffer.set_stringn(
             area.x,
             y,
@@ -1452,13 +1425,13 @@ impl<'a> QuestionFlow<'a> {
                     QuestionAnswer::FreeText { text } => text.clone(),
                     QuestionAnswer::Skipped => "(skipped)".into(),
                 })
-                .unwrap_or_else(|| if self.ascii { "-".into() } else { "—".into() });
+                .unwrap_or_else(|| "—".into());
             let mark = if i == state.step_index { ">" } else { " " };
             let line = format!(
                 "{mark}{}. {} {} {}",
                 i + 1,
                 take_display_cols(&q.prompt, 20),
-                if self.ascii { "->" } else { "→" },
+                { "→" },
                 ans
             );
             buffer.set_stringn(

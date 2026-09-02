@@ -8,7 +8,6 @@
 //! [`HintSpan`] sequences from the same table. Divergence between handled keys and
 //! advertised keys is therefore structurally impossible for [`Visibility::Shown`] and
 //! [`Visibility::HiddenAlias`] bindings.
-
 use std::borrow::Cow;
 
 use crate::input::{KeyCode, KeyModifiers};

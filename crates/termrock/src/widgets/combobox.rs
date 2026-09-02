@@ -19,7 +19,6 @@
 //! the field + policy and embeds menu state.
 //!
 //! Research: Radix Combobox, prompt-toolkit completion, editor menus, palettes.
-
 use std::collections::VecDeque;
 
 use ratatui_core::{
@@ -881,7 +880,6 @@ pub struct Combobox<'a> {
     placeholder: &'a str,
     system: &'a DesignSystem,
     validation: Validation<'a>,
-    ascii: bool,
 }
 
 impl<'a> Combobox<'a> {
@@ -893,7 +891,6 @@ impl<'a> Combobox<'a> {
             placeholder: "Type",
             system,
             validation: Validation::Valid,
-            ascii: false,
         }
     }
 
@@ -920,11 +917,6 @@ impl<'a> Combobox<'a> {
 
     /// ASCII.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Paint field only; host paints [`CompletionMenu`] in placed rect.
     pub fn paint<Id: Clone + PartialEq>(
         &self,
@@ -969,13 +961,7 @@ impl<'a> Combobox<'a> {
         let mut right = area.right();
         // status cue
         let status = match state.status {
-            SuggestionStatus::Loading => {
-                if self.ascii {
-                    "..."
-                } else {
-                    "…"
-                }
-            }
+            SuggestionStatus::Loading => "…",
             SuggestionStatus::Error => "!",
             SuggestionStatus::Empty if state.menu.is_open() => "0",
             _ => "",
@@ -1328,7 +1314,6 @@ mod tests {
         let mut buf = Buffer::empty(area);
         Combobox::new(&system)
             .label("Lang")
-            .ascii(true)
             .paint_with_menu(area, &mut buf, &mut state, &c);
         assert!(!state.field.is_empty());
     }
@@ -1414,7 +1399,7 @@ mod tests {
         let _ = state.apply_suggestions(1, &c);
         let area = Rect::new(0, 0, 36, 8);
         let mut buf = Buffer::empty(area);
-        let w = Combobox::new(&system).ascii(true);
+        let w = Combobox::new(&system);
         for _ in 0..100 {
             w.paint_with_menu(area, &mut buf, &mut state, &c);
         }

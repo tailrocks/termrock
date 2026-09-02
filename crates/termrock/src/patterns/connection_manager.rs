@@ -35,7 +35,6 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::fmt;
 
@@ -1717,7 +1716,6 @@ pub fn filter_connections<'a>(
 #[derive(Debug, Clone, Copy)]
 pub struct ConnectionManager<'a> {
     system: &'a DesignSystem,
-    ascii: bool,
     colorless: bool,
     show_detail: bool,
 }
@@ -1728,7 +1726,6 @@ impl<'a> ConnectionManager<'a> {
     pub const fn new(system: &'a DesignSystem) -> Self {
         Self {
             system,
-            ascii: false,
             colorless: false,
             show_detail: true,
         }
@@ -1736,13 +1733,7 @@ impl<'a> ConnectionManager<'a> {
 
     /// ASCII glyphs.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Colorless roles.
-    #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self
@@ -1795,7 +1786,6 @@ impl<'a> ConnectionManager<'a> {
                 let line = offline.status_bar_content();
                 StatusIndicator::new(c.status.semantic(), self.system)
                     .label(&line)
-                    .ascii(self.ascii)
                     .colorless(self.colorless)
                     .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
                 y = y.saturating_add(1);
@@ -1852,7 +1842,7 @@ impl<'a> ConnectionManager<'a> {
                         buffer,
                         Rect::new(content.x, content.y, inner.width, 1),
                         "testing connection… host owns protocol I/O",
-                        self.system.style(self.role(Role::Info)),
+                        self.system.style(self.role(Role::TextSecondary)),
                     );
                 }
             }
@@ -1965,14 +1955,9 @@ impl<'a> ConnectionManager<'a> {
             let selected = row_i == state.cursor;
             let indicator = StatusIndicator::new(c.status.semantic(), self.system)
                 .label(c.status.label())
-                .ascii(self.ascii)
                 .colorless(self.colorless);
             let status_text = indicator.text(None);
-            let fav = if c.favorite {
-                if self.ascii { "*" } else { "★" }
-            } else {
-                " "
-            };
+            let fav = if c.favorite { "★" } else { " " };
             let line = if tiny {
                 format!(
                     "{}{} {}",
@@ -2014,7 +1999,9 @@ impl<'a> ConnectionManager<'a> {
                     ..Default::default()
                 });
                 style = if self.colorless {
-                    style.add_modifier(Modifier::REVERSED | Modifier::BOLD)
+                    // Mono selection survives as the explicit reversal pair
+                    // (D5); weight alone would not mark the row.
+                    self.system.reversed()
                 } else {
                     style.patch(recipe.tint).add_modifier(Modifier::BOLD)
                 };
@@ -2064,7 +2051,6 @@ impl<'a> ConnectionManager<'a> {
         let lines: Vec<(String, Role, Option<(SemanticStatus, String)>)> = {
             let status = StatusIndicator::new(c.status.semantic(), self.system)
                 .label(c.status.label())
-                .ascii(self.ascii)
                 .colorless(self.colorless);
             let mut v = vec![
                 (c.name.clone(), Role::TextStrong, None),
@@ -2101,7 +2087,6 @@ impl<'a> ConnectionManager<'a> {
                 let error = format!("error: {err}");
                 let status = StatusIndicator::new(SemanticStatus::Failed, self.system)
                     .label(&error)
-                    .ascii(self.ascii)
                     .colorless(self.colorless);
                 v.push((
                     status.text(None),
@@ -2132,7 +2117,6 @@ impl<'a> ConnectionManager<'a> {
             if let Some((semantic, label)) = semantic {
                 StatusIndicator::new(semantic, self.system)
                     .label(&label)
-                    .ascii(self.ascii)
                     .colorless(self.colorless)
                     .paint(Rect::new(area.x, y, area.width, 1), buffer);
             }
@@ -2178,7 +2162,7 @@ impl<'a> ConnectionManager<'a> {
             }
             let focus = state.form_field == field;
             let marker = if focus { ">" } else { " " };
-            let caret = if focus { "▌" } else { "" };
+            let caret = if focus { "▎" } else { "" };
             let line = format!("{marker}{label:8} {value}{caret}");
             let style = if focus {
                 self.system
@@ -2220,10 +2204,11 @@ impl<'a> ConnectionManager<'a> {
                     height: 1,
                 };
                 state.secret.set_focused(focus);
-                PasswordInput::new("", self.system)
-                    .ascii(self.ascii)
-                    .mask(if self.ascii { '*' } else { '•' })
-                    .paint(secret_area, buffer, &mut state.secret);
+                let _ = PasswordInput::new("", self.system).mask('•').paint(
+                    secret_area,
+                    buffer,
+                    &mut state.secret,
+                );
             }
             y = y.saturating_add(1);
         }
@@ -2251,7 +2236,6 @@ impl<'a> ConnectionManager<'a> {
         let warning = format!("confirm delete “{name}” — irreversible");
         StatusIndicator::new(SemanticStatus::Warning, self.system)
             .label(&warning)
-            .ascii(self.ascii)
             .colorless(self.colorless)
             .paint(Rect::new(area.x, y, area.width, 1), buffer);
         let bar_y = area.bottom().saturating_sub(1);
@@ -2793,7 +2777,6 @@ mod tests {
         }
         st.phase = ConnectionManagerPhase::ConfirmDelete;
         ConnectionManager::new(&system)
-            .ascii(true)
             .colorless(true)
             .list_only(true)
             .paint(area, &mut buf, &mut st);
@@ -2967,7 +2950,7 @@ mod tests {
     #[test]
     fn resize_cjk_combining_and_ascii_safe() {
         let system = DesignSystem::default();
-        for ascii in [false, true] {
+        for _ascii in [false, true] {
             for (width, height) in [(48, 14), (20, 5), (1, 1), (0, 0)] {
                 let mut st = ConnectionManagerState::new();
                 st.set_connections(vec![
@@ -2987,9 +2970,7 @@ mod tests {
                 ]);
                 let area = Rect::new(0, 0, width, height);
                 let mut buf = Buffer::empty(area);
-                ConnectionManager::new(&system)
-                    .ascii(ascii)
-                    .paint(area, &mut buf, &mut st);
+                ConnectionManager::new(&system).paint(area, &mut buf, &mut st);
                 if width == 48 {
                     let text: String = buf.content().iter().map(|cell| cell.symbol()).collect();
                     assert!(text.contains('本'), "{text:?}");

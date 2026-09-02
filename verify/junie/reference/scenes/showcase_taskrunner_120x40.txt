@@ -1,0 +1,40 @@
+ ▪ Junie Design system / Screens / Task runner                               truecolor · 120×40   i Inspector   ? Help
+
+   Foundations            Task runner  Composed: tree, live progress, following log, busy states
+▎  Overview
+                            Targets                         Pipeline                                       0 of 6 done
+   Components
+▎  Buttons                  ▎▾ payments-gateway             compile       queued
+▎  Inputs                   ▎  ▾ build                      lint          queued
+▎  Text areas               ▎      compile                  typecheck     queued
+▎  Forms                    ▎      lint                     unit          queued
+▎  Lists                    ▎      typecheck                integration   queued
+▎  Trees                    ▎  ▾ test                       e2e           queued
+▎  Tables                   ▎      unit
+▎  Editable tables          ▎      integration              ▎Run pipeline   ▎Cancel
+▎  Panels                   ▎      e2e
+▎  Sidebars                 ▎  ▾ deploy
+▎  Dialogs                  ▎      staging                  Log                                            · following
+▎  Progress                 ▎      production
+▎  Scrolling                ▎▾ shared-libs                  Ready. Press r or Run to start the pipeline.
+▎  Code editor              ▎    compile
+▎  Data grid                ▎    publish
+▎  Chips & selects
+▎  Pickers
+
+   Screens
+▎  Settings
+▎› Task runner
+
+
+
+
+
+
+
+
+
+
+
+
+ ↑ ↓ Move  Enter Open  Tab Into page  q Quit

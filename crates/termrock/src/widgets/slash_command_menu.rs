@@ -19,7 +19,6 @@
 //! **vs [`CommandPalette`](crate::widgets::CommandPalette).** Palette is a global
 //! centered command surface. SlashCommandMenu is **caret-anchored**, draft-aware,
 //! and `/`-token scoped for PromptComposer.
-
 #![allow(unused_variables, unused_mut)] // unit-test fixtures
 use ratatui_core::{buffer::Buffer, layout::Rect};
 

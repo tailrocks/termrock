@@ -10,7 +10,6 @@
 //! [`ButtonVariant::Destructive`] chip, and danger stays on that chip rather
 //! than washing the whole surface (decision D1 in
 //! `docs/design/termrock-component-audit-2026-08.md`, plans/009).
-
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::style::{DesignSystem, Glyph, Role};

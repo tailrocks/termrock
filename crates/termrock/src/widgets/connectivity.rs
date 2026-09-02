@@ -11,7 +11,6 @@
 //! [`StatusBar`](super::StatusBar) and [`NotificationCenter`](super::NotificationCenter).
 //!
 //! Research: remote IDEs, database clients, SSH tools, collaborative agents.
-
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
@@ -91,7 +90,7 @@ impl ConnectivityPhase {
             Self::Disconnected => "○",
             Self::Reconnecting => "◌",
             Self::AuthRequired => "⚿",
-            Self::ServerUnavailable => "✕",
+            Self::ServerUnavailable => "×",
         }
     }
 
@@ -306,7 +305,6 @@ pub struct ReconnectingState {
     auth_btn: ButtonState,
     offline_btn: ButtonState,
     queue_btn: ButtonState,
-    force_ascii: bool,
 }
 
 impl Default for ReconnectingState {
@@ -339,7 +337,6 @@ impl ReconnectingState {
             auth_btn: ButtonState::new(),
             offline_btn: ButtonState::new(),
             queue_btn: ButtonState::new(),
-            force_ascii: false,
         }
     }
 
@@ -502,10 +499,6 @@ impl ReconnectingState {
     }
 
     /// Force ASCII glyphs.
-    pub fn set_ascii(&mut self, on: bool) {
-        self.force_ascii = on;
-    }
-
     /// Banner dismissed?
     #[must_use]
     pub const fn banner_dismissed(&self) -> bool {
@@ -521,10 +514,6 @@ impl ReconnectingState {
     /// Set keyboard focus target for recovery actions.
     pub fn set_focus(&mut self, f: ConnectivityFocus) {
         self.focus = f;
-    }
-
-    fn use_ascii(&self, system: &DesignSystem) -> bool {
-        self.force_ascii || matches!(system.glyphs, GlyphSet::Ascii)
     }
 
     // ── Formatters (StatusBar / NotificationCenter) ─────────────────────────
@@ -813,11 +802,9 @@ impl<'a> OfflineBanner<'a> {
         if area.is_empty() || !self.state.should_show_banner() {
             return;
         }
-        let ascii = self.state.use_ascii(self.system);
-        let (_, head, meta) = self.state.banner_parts(ascii);
+        let (_, head, meta) = self.state.banner_parts(false);
         let status = StatusIndicator::new(self.state.phase.semantic_status(), self.system)
             .label(&head)
-            .ascii(ascii)
             .strong(true);
         let line = format!("{}{meta}", status.text(None));
         let clipped = take_display_cols(&line, usize::from(area.width));
@@ -903,11 +890,9 @@ impl<'a> OfflineSurface<'a> {
             return;
         }
         // Allow painting full even if presentation is Banner when host forces Full paint
-        let ascii = state.use_ascii(self.system);
         let status_label = format!("{} · {}", state.phase.verb(), state.target);
         let status = StatusIndicator::new(state.phase.semantic_status(), self.system)
             .label(&status_label)
-            .ascii(ascii)
             .strong(true);
         let mut rows: Vec<(String, Role, bool)> = Vec::new();
         rows.push((status.text(None), Role::Text, false));
@@ -925,7 +910,7 @@ impl<'a> OfflineSurface<'a> {
             if state.auto_retry {
                 retry.push_str(" · auto");
             }
-            rows.push((retry, Role::Info, false));
+            rows.push((retry, Role::TextSecondary, false));
         }
         if !state.queued.is_empty() {
             rows.push((
@@ -1027,7 +1012,7 @@ impl<'a> OfflineSurface<'a> {
                 } else {
                     &mut state.retry_btn
                 },
-                ascii,
+                false,
             );
         }
         idx += 1;
@@ -1049,7 +1034,7 @@ impl<'a> OfflineSurface<'a> {
                     ConnectivityFocus::WorkOffline | ConnectivityFocus::ViewQueue
                 ),
                 &mut state.offline_btn,
-                ascii,
+                false,
             );
         }
         let _ = idx;
@@ -1116,7 +1101,7 @@ fn paint_action(
     primary: bool,
     focused: bool,
     btn_state: &mut ButtonState,
-    ascii: bool,
+    _ascii: bool,
 ) {
     if area.is_empty() {
         return;
@@ -1126,7 +1111,7 @@ fn paint_action(
     } else {
         ButtonVariant::Quiet
     };
-    let mut btn = Button::new(label, system).variant(variant).ascii(ascii);
+    let mut btn = Button::new(label, system).variant(variant);
     if let Some(sc) = shortcut {
         btn = btn.trailing(sc);
     }
@@ -1426,10 +1411,9 @@ mod tests {
     fn offline_surfaces_resize_cjk_combining_and_ascii_safe() {
         let system = system();
         let target = "東京 🛰 Cafe\u{301}";
-        for ascii in [false, true] {
+        for _ in [false, true] {
             let mut state = ReconnectingState::new(target);
             state.mark_server_unavailable();
-            state.set_ascii(ascii);
             for (width, height) in [(48, 12), (12, 2), (1, 1), (0, 0)] {
                 let area = Rect::new(0, 0, width, height);
 

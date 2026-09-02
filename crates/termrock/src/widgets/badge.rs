@@ -12,7 +12,6 @@
 //! rare emphasis surfaces.
 //!
 //! References: shadcn Badge, issue labels, btop indicators, agent task status.
-
 #![allow(unused_variables, unused_mut)] // unit-test fixtures
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
 
@@ -63,7 +62,7 @@ impl BadgeVariant {
     fn role(self) -> Role {
         match self {
             Self::Neutral | Self::Count => Role::TextMuted,
-            Self::Info => Role::Info,
+            Self::Info => Role::TextSecondary,
             Self::Success => Role::TextStrong,
             Self::Warning => Role::Warning,
             Self::Destructive => Role::Danger,
@@ -413,13 +412,9 @@ impl<'a> Badge<'a> {
             inner.push('*');
         }
         if matches!(self.variant, BadgeVariant::Outline) {
-            return if self.system.glyphs.is_ascii() {
-                format!("[{inner}]")
-            } else {
-                format!("⟨{inner}⟩")
-            };
+            return format!("⟨{inner}⟩");
         }
-        if matches!(self.fill, BadgeFill::Soft) && !self.system.glyphs.is_ascii() {
+        if matches!(self.fill, BadgeFill::Soft) {
             return format!(" {inner} ");
         }
         // Transparent/ASCII badges retain explicit structural delimiters.
@@ -683,7 +678,6 @@ impl Widget for Badge<'_> {
 mod tests {
     use super::*;
     use crate::input::KeyModifiers;
-    use crate::style::GlyphSet;
 
     #[test]
     fn variants_paint_soft_chip() {
@@ -719,14 +713,6 @@ mod tests {
         let d = b.decorated(None);
         assert!(d.contains('✓') || d.contains('+'));
         assert!(b.plain().contains("success"));
-    }
-
-    #[test]
-    fn ascii_glyph_fallback() {
-        let system = DesignSystem::default().glyphs(GlyphSet::Ascii);
-        let b = Badge::new("ok", &system).success();
-        let d = b.decorated(None);
-        assert!(d.contains('+'));
     }
 
     #[test]

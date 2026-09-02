@@ -7,7 +7,6 @@
 //! on steady paint, and O(viewport) work — not micro-opts on cold paths.
 //!
 //! See `docs/design/streaming-performance.md`.
-
 mod budget;
 mod follow;
 mod stream;

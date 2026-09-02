@@ -5,7 +5,6 @@
 //!
 //! Every returned rectangle is contained by the input area. Under pressure the
 //! solver shrinks gaps, then collapses lower-priority leaves.
-
 use ratatui_core::layout::Rect;
 
 /// Stable workspace pane identity.

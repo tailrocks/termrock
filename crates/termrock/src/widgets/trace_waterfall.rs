@@ -14,7 +14,6 @@
 //! virtualized paint, zoom/scroll chrome, and typed outcomes.
 //!
 //! Research: trace viewers, Chrome DevTools waterfall, agent activity timelines.
-
 use std::collections::BTreeSet;
 
 use ratatui_core::{buffer::Buffer, layout::Rect};
@@ -524,8 +523,6 @@ pub struct TraceWaterfallState {
     pub expanded: BTreeSet<String>,
     /// Name column width.
     pub name_col: u16,
-    /// ASCII bars.
-    pub ascii: bool,
     /// Load / empty chrome.
     pub empty_message: Option<String>,
     /// Hit regions (row id → rect).
@@ -557,7 +554,6 @@ impl TraceWaterfallState {
             critical_only: false,
             expanded: BTreeSet::new(),
             name_col: TRACE_NAME_COL_DEFAULT,
-            ascii: false,
             empty_message: None,
             row_regions: Vec::new(),
             bar_regions: Vec::new(),
@@ -971,7 +967,6 @@ pub struct TraceWaterfall<'a> {
     system: &'a DesignSystem,
     focused: bool,
     title: Option<&'a str>,
-    ascii: bool,
 }
 
 impl<'a> TraceWaterfall<'a> {
@@ -983,7 +978,6 @@ impl<'a> TraceWaterfall<'a> {
             system,
             focused: true,
             title: None,
-            ascii: false,
         }
     }
 
@@ -1003,17 +997,11 @@ impl<'a> TraceWaterfall<'a> {
 
     /// ASCII.
     #[must_use]
-    pub const fn ascii(mut self, on: bool) -> Self {
-        self.ascii = on;
-        self
-    }
-
     /// Paint.
     pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut TraceWaterfallState) {
         if area.is_empty() {
             return;
         }
-        let ascii = self.ascii || state.ascii || self.system.glyphs.is_ascii();
         state.row_regions.clear();
         state.bar_regions.clear();
         state.sync_total(self.spans);
@@ -1083,7 +1071,7 @@ impl<'a> TraceWaterfall<'a> {
                 self.system,
                 state.time_start_ms,
                 state.time_duration_ms,
-                ascii,
+                false,
             );
             y = y.saturating_add(1);
             h = h.saturating_sub(1);
@@ -1101,7 +1089,6 @@ impl<'a> TraceWaterfall<'a> {
         if visible.is_empty() {
             let msg = state.empty_message.as_deref().unwrap_or("No spans");
             super::EmptyState::new(msg, self.system)
-                .inline()
                 .paint(Rect::new(area.x, y, area.width, 1), buffer);
             return;
         }
@@ -1130,27 +1117,13 @@ impl<'a> TraceWaterfall<'a> {
             let selected = Some(span.id) == state.selected.as_deref();
             let mark = " ";
             let disc = if span.branch {
-                if span.expanded {
-                    if ascii { "v" } else { "▾" }
-                } else if ascii {
-                    ">"
-                } else {
-                    "▸"
-                }
+                if span.expanded { "▾" } else { "▸" }
             } else {
                 " "
             };
             let indent = "  ".repeat(usize::from(span.depth));
-            let letter = if ascii {
-                span.status.letter_ascii()
-            } else {
-                span.status.letter()
-            };
-            let crit = if span.critical {
-                if ascii { "*" } else { "◆" }
-            } else {
-                " "
-            };
+            let letter = span.status.letter();
+            let crit = if span.critical { "◆" } else { " " };
             // The status is the letter's, not the whole name's: a column of
             // trace rows reads as one column of state instead of as five
             // colored sentences (plans/012 Step 3).
@@ -1225,15 +1198,7 @@ impl<'a> TraceWaterfall<'a> {
                     state.time_duration_ms.max(1),
                     bar_w,
                 ) {
-                    let fill = if ascii {
-                        if span.critical {
-                            "#"
-                        } else if matches!(span.status, TraceSpanStatus::Error) {
-                            "x"
-                        } else {
-                            "="
-                        }
-                    } else if span.critical {
+                    let fill = if span.critical {
                         "█"
                     } else if matches!(span.status, TraceSpanStatus::Error) {
                         "▓"
@@ -1277,7 +1242,7 @@ fn paint_time_ruler(
     system: &DesignSystem,
     start_ms: u64,
     dur_ms: u64,
-    ascii: bool,
+    _ascii: bool,
 ) {
     if area.is_empty() || dur_ms == 0 {
         return;
@@ -1291,7 +1256,7 @@ fn paint_time_ruler(
             (area.width as u64 * u64::from(i) / u64::from(ticks.max(1))) as u16
         };
         let label = format_trace_offset_ms(t);
-        let mark = if ascii { "|" } else { "┆" };
+        let mark = "┆";
         buffer.set_stringn(
             area.x.saturating_add(col),
             area.y,
@@ -1460,7 +1425,7 @@ mod tests {
         let mut state = TraceWaterfallState::with_selected("db");
         let area = Rect::new(0, 0, 72, 14);
         let mut buf = Buffer::empty(area);
-        TraceWaterfall::new(&spans, &system)
+        let _ = TraceWaterfall::new(&spans, &system)
             .title("Request")
             .render(area, &mut buf, &mut state);
         let text: String = buf
@@ -1513,7 +1478,7 @@ mod tests {
         let area = Rect::new(0, 0, 100, 30);
         let mut buf = Buffer::empty(area);
         for _ in 0..6 {
-            TraceWaterfall::new(&spans, &system).render(area, &mut buf, &mut state);
+            let _ = TraceWaterfall::new(&spans, &system).render(area, &mut buf, &mut state);
             let _ = state.handle_key(&spans, KeyEvent::new(KeyCode::Down, KeyModifiers::NONE));
         }
     }

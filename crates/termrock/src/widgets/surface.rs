@@ -18,7 +18,6 @@
 //!
 //! [`SurfaceParts::hit`] is the mouse/hit-test region. Interactive recipes use
 //! the full outer rect (including border); passive fills use the content rect.
-
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
@@ -27,7 +26,7 @@ use ratatui_core::{
 };
 use ratatui_widgets::block::Block;
 
-use crate::style::{ColorCapability, DesignSystem, RecipeFamily, Role, quantize_color};
+use crate::style::{ColorCapability, DesignSystem, RecipeFamily, Role};
 
 /// Surface visual recipe (elevation + interactive/state chrome).
 ///
@@ -445,26 +444,6 @@ fn fill_rect(buffer: &mut Buffer, area: Rect, style: Style) {
     }
 }
 
-/// Projects caller-owned content styles onto the terminal capability contract.
-pub(crate) fn normalize_content_band(system: &DesignSystem, buffer: &mut Buffer, area: Rect) {
-    for y in area.top()..area.bottom() {
-        for x in area.left()..area.right() {
-            let cell = &mut buffer[(x, y)];
-            if system.mono() {
-                let had_color = cell.fg != Color::Reset || cell.bg != Color::Reset;
-                cell.fg = Color::Reset;
-                cell.bg = Color::Reset;
-                if had_color && cell.modifier.is_empty() {
-                    cell.modifier.insert(Modifier::BOLD);
-                }
-            } else {
-                cell.fg = quantize_color(cell.fg, ColorCapability::Ansi16);
-                cell.bg = quantize_color(cell.bg, ColorCapability::Ansi16);
-            }
-        }
-    }
-}
-
 /// Skip empty styles so phosphor terminal-default surfaces do not force Reset soup.
 fn nonempty_fill(style: Style) -> Option<Style> {
     if style.bg.is_some() || style.fg.is_some() || style.add_modifier != Modifier::empty() {
@@ -487,7 +466,7 @@ impl DesignSystem {
             SurfaceRecipe::Sunken => (Some(Role::Sunken), None, false),
             // The ladder only reads as a ladder if each rung has its own role:
             // in-flow cards sit on `Raised`, overlays keep `Elevated`.
-            SurfaceRecipe::Raised => (Some(Role::Raised), Some(contract.border), true),
+            SurfaceRecipe::Raised => (Some(Role::Elevated), Some(contract.border), true),
             SurfaceRecipe::Overlay => (Some(contract.surface), Some(contract.border), true),
             SurfaceRecipe::OverlayFocused => {
                 (Some(contract.surface), Some(Role::BorderFocused), true)
@@ -526,8 +505,8 @@ impl DesignSystem {
         SurfacePaintPlan {
             fill,
             border,
-            pad_x: self.spacing.pad_x,
-            pad_y: self.spacing.pad_y,
+            pad_x: self.spacing.card_inset,
+            pad_y: 1,
             recipe,
             family,
         }
@@ -537,7 +516,7 @@ impl DesignSystem {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::style::{ColorCapability, DesignSystem, RolePalette};
+    use crate::style::{ColorCapability, DesignSystem};
 
     #[test]
     fn canvas_uses_terminal_default_fill() {
@@ -545,28 +524,6 @@ mod tests {
         let plan = Surface::new(&system).recipe(SurfaceRecipe::Canvas).plan();
         assert_eq!(plan.fill, Some(Style::default().bg(Color::Reset)));
         assert!(plan.border.is_none());
-    }
-
-    #[test]
-    fn caller_content_is_ansi16_or_structural_monochrome() {
-        let area = Rect::new(0, 0, 1, 1);
-        let mut ansi = Buffer::empty(area);
-        ansi[(0, 0)].set_style(Style::new().fg(Color::Rgb(250, 10, 10)));
-        normalize_content_band(&DesignSystem::phosphor(), &mut ansi, area);
-        assert!(!matches!(
-            ansi[(0, 0)].fg,
-            Color::Rgb(..) | Color::Indexed(_)
-        ));
-
-        let mono_system = DesignSystem::from_palette(RolePalette::default())
-            .capability(ColorCapability::Monochrome);
-        let mut mono = Buffer::empty(area);
-        mono[(0, 0)].set_style(Style::new().bg(Color::Blue));
-        normalize_content_band(&mono_system, &mut mono, area);
-        assert_eq!(mono[(0, 0)].fg, Color::Reset);
-        assert_eq!(mono[(0, 0)].bg, Color::Reset);
-        assert!(mono[(0, 0)].modifier.contains(Modifier::BOLD));
-        assert!(!mono[(0, 0)].modifier.contains(Modifier::REVERSED));
     }
 
     #[test]
@@ -617,7 +574,7 @@ mod tests {
 
     #[test]
     fn layout_content_inside_border_and_pad() {
-        let system = DesignSystem::default().density(crate::style::Density::Comfortable);
+        let system = DesignSystem::default();
         let s = Surface::new(&system)
             .recipe(SurfaceRecipe::Raised)
             .padding(1, 1);
@@ -713,40 +670,39 @@ mod tests {
 
     #[test]
     fn paint_with_explicit_fill_sets_bg() {
-        let system = DesignSystem::from_palette(crate::style::RolePalette::slate());
+        let system = DesignSystem::from_palette(crate::style::RolePalette::junie());
         let mut buf = Buffer::empty(Rect::new(0, 0, 8, 4));
         Surface::new(&system)
             .recipe(SurfaceRecipe::Raised)
             .bordered(false)
             .padding(0, 0)
             .paint(Rect::new(0, 0, 8, 4), &mut buf);
-        let raised = system.style(Role::Raised);
-        assert!(raised.bg.is_some(), "slate Raised must carry bg");
+        let raised = system.style(Role::Elevated);
+        assert!(raised.bg.is_some(), "junie elevated must carry bg");
         assert_eq!(buf[(3, 1)].style().bg, raised.bg);
     }
 
     #[test]
-    fn phosphor_surface_ladder_is_populated() {
+    fn junie_surface_ladder_is_populated() {
         let system = DesignSystem::default();
         for role in [
             Role::Canvas,
             Role::Surface,
-            Role::Raised,
             Role::Elevated,
             Role::Sunken,
+            Role::Popover,
             Role::StatusBar,
             Role::SelectionTint,
-            Role::HoverTint,
         ] {
             assert!(system.style(role).bg.is_some(), "{role:?} must carry bg");
         }
     }
 
     #[test]
-    fn phosphor_surfaces_keep_semantic_elevation() {
+    fn junie_surfaces_keep_semantic_elevation() {
         let system = DesignSystem::default();
         let plan = system.surface_recipe(SurfaceRecipe::Raised);
-        assert_eq!(plan.fill, Some(system.style(Role::Raised)));
+        assert_eq!(plan.fill, Some(system.style(Role::Elevated)));
         assert!(plan.border.is_some());
 
         // Overlays own the top rung, and a focused overlay keeps it.
