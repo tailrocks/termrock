@@ -1176,33 +1176,36 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
             let prepared = prepare_code_display(raw, tab, self.controls);
             let kinds = self.highlights_for(abs, state);
 
-            // Goldens keep `▎` on every body row (txt). Source CODE paints it
-            // only on the cursor line; the capture overwrites off-cursor bars.
+            // Junie paints `▎` only on the cursor line (`code.rs` `li == cur.line`).
+            // Showcase crops keep space on off-cursor rows. Catalog s_editor
+            // goldens that want a bar on every row belong in the capture.
             if parts.gutter.width > 0 {
                 let y = parts.body.y.saturating_add(row);
                 let gx = parts.gutter.x;
-                let line_gutter = self.system.gutter(
-                    VisualState {
-                        focused: state.focused,
-                        ..visual
-                    },
-                    field_bg,
-                    false,
-                );
-                buffer.set_stringn(gx, y, self.system.glyphs.selection_gutter(), 1, line_gutter);
-                // Idle goldens pack numbers at gx+2 (`▎› 1  //`). Diagnostic
-                // goldens leave gx+2 as field fill (`▎   1 //`).
-                let bang = self.gutter_marks.iter().any(|m| m.glyph == '!');
+                if state.cursor_line == Some(abs) {
+                    let line_gutter = self.system.gutter(
+                        VisualState {
+                            focused: state.focused,
+                            ..visual
+                        },
+                        field_bg,
+                        false,
+                    );
+                    buffer.set_stringn(
+                        gx,
+                        y,
+                        self.system.glyphs.selection_gutter(),
+                        1,
+                        line_gutter,
+                    );
+                }
+                // junie: numbers at `area.x + 3` via `fit_right`.
                 let num_w = if self.show_line_numbers && parts.gutter.width > 3 {
                     parts.gutter.width.saturating_sub(4)
                 } else {
                     0
                 };
-                let num_x = if bang {
-                    gx.saturating_add(3)
-                } else {
-                    gx.saturating_add(2)
-                };
+                let num_x = gx.saturating_add(3);
                 let spinner = self
                     .gutter_marks
                     .iter()
@@ -2323,16 +2326,16 @@ mod tests {
         };
         assert_eq!(
             row(0),
-            "▎› 1  // Retry a request with exponential backoff.",
-            "cursor line: bar, marker, idle numbers at gx+2"
+            "▎›  1 // Retry a request with exponential backoff.",
+            "cursor line: bar, marker, fit_right number, no footer"
         );
         assert_eq!(
             row(1),
-            "▎  2  pub async fn fetch(url: &str) -> Result<Body",
-            "off-cursor line keeps the bar; both body rows; no 1–N footer"
+            "    2 pub async fn fetch(url: &str) -> Result<Body",
+            "off-cursor line keeps both body rows; no ▎, no 1–N footer"
         );
         assert_eq!(
-            buf[(3, 1)].fg,
+            buf[(4, 1)].fg,
             system.junie_theme().text_secondary,
             "line 2 is inside the function block, so the number is secondary not muted"
         );

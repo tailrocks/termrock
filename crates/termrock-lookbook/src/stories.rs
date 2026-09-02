@@ -16675,37 +16675,90 @@ fn junie_task_table_columns() -> [Column<'static, &'static str>; 4] {
     ]
 }
 
+fn junie_page_task_table_columns() -> [Column<'static, &'static str>; 7] {
+    [
+        Column::new("id", "ID", ColumnWidth::Fixed(5)).priority(100),
+        Column::new("task", "Task", ColumnWidth::Min(24)).priority(90),
+        Column::new("owner", "Owner", ColumnWidth::Fixed(7)).priority(80),
+        Column::new("status", "Status", ColumnWidth::Fixed(9)).priority(70),
+        Column::new("branch", "Branch", ColumnWidth::Fixed(20)).priority(60),
+        Column::new("changes", "Changes", ColumnWidth::Fixed(9)).priority(50),
+        Column::new("duration", "Duration", ColumnWidth::Fixed(9)).priority(40),
+    ]
+}
+
 fn table_tasks_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     fill_junie_surface(frame, area, system);
     let muted = system.style(Role::TextMuted);
-    let columns = junie_task_table_columns();
+    let columns = junie_page_task_table_columns();
     let data = [
         (
             "#1040",
             "Add rate limiting to auth endpoints",
             "mira",
             "Done",
+            "feat/rate-limit",
+            "14",
+            "6m 52s",
         ),
         (
             "#1041",
             "Migrate sessions table to UUID keys",
             "jonas",
             "▸ Running",
+            "chore/uuid-sessions",
+            "31",
+            "1m 36s",
         ),
         (
             "#1042",
             "Fix flaky checkout integration test",
             "ana",
             "Failed",
+            "fix/checkout-flake",
+            "3",
+            "58s",
         ),
-        ("#1043", "Write release notes for 3.2", "mira", "Queued"),
-        ("#1044", "Replace deprecated Vue mixins", "kai", "Done"),
-        ("#1045", "Upgrade Postgres driver to 0.9", "jonas", "Paused"),
-        ("#1046", "Extract billing service module", "sofia", "Done"),
+        (
+            "#1043",
+            "Write release notes for 3.2",
+            "mira",
+            "Queued",
+            "docs/release-3.2",
+            "0",
+            "0s",
+        ),
+        (
+            "#1044",
+            "Replace deprecated Vue mixins",
+            "kai",
+            "Done",
+            "refactor/mixins",
+            "87",
+            "22m 10s",
+        ),
+        (
+            "#1045",
+            "Upgrade Postgres driver to 0.9",
+            "jonas",
+            "Paused",
+            "chore/pg-driver",
+            "5",
+            "12s",
+        ),
+        (
+            "#1046",
+            "Extract billing service module",
+            "sofia",
+            "Done",
+            "feat/billing-svc",
+            "22",
+            "4m 01s",
+        ),
     ];
-    let cells: Vec<[Line<'_>; 4]> = data
+    let cells: Vec<[Line<'_>; 7]> = data
         .into_iter()
-        .map(|(id, task, owner, status)| {
+        .map(|(id, task, owner, status, branch, changes, duration)| {
             [
                 Line::from(Span::styled(id, muted)),
                 Line::from(task),
@@ -16714,6 +16767,9 @@ fn table_tasks_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
                     status,
                     junie_task_status_style(system, status),
                 )),
+                Line::from(Span::styled(branch, muted)),
+                Line::from(changes),
+                Line::from(duration),
             ]
         })
         .collect();
