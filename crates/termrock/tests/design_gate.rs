@@ -1714,10 +1714,6 @@ fn interaction_underline_is_three_color() {
             "accent = editing here; idle invalid is bold ! not underline",
         ),
         (
-            "form.rs",
-            "accent = editing here; idle invalid is bold ! not underline",
-        ),
-        (
             "field_row.rs",
             "accent = editing here; idle invalid is bold ! not underline",
         ),

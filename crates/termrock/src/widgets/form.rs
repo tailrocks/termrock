@@ -1207,12 +1207,6 @@ fn paint_field<Id: Clone>(
             }
         }
         if invalid {
-            buffer.set_style(
-                inner,
-                Style::new()
-                    .add_modifier(Modifier::UNDERLINED)
-                    .underline_color(theme.error),
-            );
             let bang_x = row.right().saturating_sub(2);
             if bang_x >= row.x {
                 buffer.set_stringn(

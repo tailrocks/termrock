@@ -37,8 +37,11 @@ Shipped contracts that the lookbook must consume (no page-local forks):
 
 - Table reverse cell cursor is `TableState::cell_nav`. `focused_column` without that flag is not a cursor; Left/Right stay row-select. `cell_nav` with no column seeds the first visible column on paint (junie `cursor_col` starts at 0).
 - Line overflow thumbs (`Panel`, `Picker`, `List`, `Tree`, `TextArea`, `Select`) use `scroll::overflow_thumb` / `paint_overflow_scrollbar`: `len = (viewport * track) / content`.
-- Canvas fill is `Role::Canvas` `#000000`. `SurfaceRecipe::Canvas` never paints `Color::Reset`.
+- Canvas fill is `Role::Canvas` `#000000`. `SurfaceRecipe::Canvas` never paints `Color::Reset`. Monochrome `Inset`/`Sunken` also fill canvas, not terminal Reset.
 - Picker search footer paints junie's spelled `Alt+Enter`, not Emacs `A-↵`. Searchable pickers type `j`/`k`/Space into the query; Tab is `PickerOutcome::NextScope`; Alt+Enter is `PickerOutcome::ActivatedAlt`.
+- Field underline is the insert session only (`editing && focused`), always accent. Junie `input.rs` does not error-underline idle invalid values; those trail a bold `!` plus the helper message. `TextInputState::new` starts `editing: false`. Live hosts call `with_editing()` / `begin_edit()` / Enter.
+- Table reverse requires `cell_nav`. DataTable default nav is Row. Tabs `h`/`l` move like arrows. Radio ignores Tab. Closed Select Down/Right cycles without opening.
+- Standalone Toggle copies the junie switch `▎──●` / `○──`. ToggleGroup pressed face is reverse + label, not `[inner]` wells. Badge default is padded inner + status Glyph, not `[{inner}]`. Checkbox `[✓]`/`[ ]` stays on Checkbox and markdown task items (`Glyph::CheckOn`/`CheckOff`). Progress/stepper marks are catalog `✓ › ! − …`.
 
 The YAML token block and prose that follow are the Junie specification TermRock implements.
 

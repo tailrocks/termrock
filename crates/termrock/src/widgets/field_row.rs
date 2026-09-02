@@ -267,9 +267,7 @@ impl<'a> FieldRow<'a> {
             }
         }
 
-        let underline_color = if self.invalid {
-            Some(theme.error)
-        } else if visual.editing {
+        let underline_color = if visual.editing {
             Some(theme.accent)
         } else {
             None
@@ -380,7 +378,7 @@ mod tests {
     }
 
     #[test]
-    fn invalid_value_underlines_in_error_and_keeps_its_tone() {
+    fn invalid_value_trails_bang_and_is_not_underlined() {
         let system = DesignSystem::junie();
         let theme = system.junie_theme();
         let area = Rect::new(0, 0, 32, 1);
@@ -388,17 +386,6 @@ mod tests {
         FieldRow::new(&system, "Email", FieldRowValue::Plain("bad"))
             .invalid(true)
             .paint(area, &mut buffer);
-        assert!(
-            buffer
-                .content()
-                .iter()
-                .any(|cell| cell.style().underline_color == Some(theme.error)
-                    && cell
-                        .style()
-                        .add_modifier
-                        .contains(ratatui_core::style::Modifier::UNDERLINED)),
-            "the invalid field underlines in error"
-        );
         let value_cell = buffer
             .content()
             .iter()
@@ -408,6 +395,13 @@ mod tests {
             Some(value_cell.fg),
             Some(theme.error),
             "the value text is not the error colour"
+        );
+        assert!(
+            !value_cell
+                .style()
+                .add_modifier
+                .contains(ratatui_core::style::Modifier::UNDERLINED),
+            "idle invalid value is not underlined"
         );
         let row: String = (0..area.width)
             .map(|x| buffer[(x, 0)].symbol().to_string())
