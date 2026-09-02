@@ -238,11 +238,10 @@ impl ScrollbarSpec {
 
 /// Paints the list-family scrollbar into a reserved gutter column.
 ///
-/// This is the one sanctioned entry point for scroll indication: menus,
-/// pickers, viewports, and text areas all reach the canonical `│` track /
-/// `┃` thumb language through it instead of re-deriving thumb math. Nothing
-/// is painted when the content already fits, so a reserved gutter stays blank
-/// rather than showing a full-height thumb.
+/// Subcell-rounded list-family scrollbar (`│` track, `┃` thumb). Line widgets
+/// that must match junie `ScrollState::thumb` use [`paint_overflow_scrollbar`]
+/// instead. Nothing is painted when the content already fits, so a reserved
+/// gutter stays blank rather than showing a full-height thumb.
 pub fn paint_list_scrollbar(
     buffer: &mut Buffer,
     gutter: Rect,
@@ -263,6 +262,44 @@ pub fn paint_list_scrollbar(
         ),
         system,
     );
+}
+
+/// Paints the junie line-cell overflow scrollbar (`│` track, `┃` thumb).
+///
+/// Geometry is [`scroll::overflow_thumb`], not [`scroll::full_cell_thumb`].
+/// Nothing is painted when content already fits.
+pub fn paint_overflow_scrollbar(
+    buffer: &mut Buffer,
+    gutter: Rect,
+    total: usize,
+    viewport: usize,
+    offset: u16,
+    focused: bool,
+    system: &DesignSystem,
+) {
+    if gutter.is_empty() {
+        return;
+    }
+    let track = usize::from(gutter.height);
+    let Some((start, len)) =
+        scroll::overflow_thumb(total, viewport, track, usize::from(offset))
+    else {
+        return;
+    };
+    let thumb = ScrollbarStyle::Line.vertical_thumb();
+    for index in 0..track {
+        let on_thumb = index >= start && index < start + len;
+        buffer.set_string(
+            gutter.x,
+            gutter.y + index as u16,
+            if on_thumb { thumb } else { SCROLLBAR_TRACK },
+            if on_thumb {
+                system.scrollbar_thumb(focused, false)
+            } else {
+                system.scrollbar_track()
+            },
+        );
+    }
 }
 
 /// Paints one scrolled region: faded cut edges plus the gutter scrollbar.
