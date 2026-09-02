@@ -20,14 +20,14 @@ use termrock::input::{
 };
 use termrock::interaction::{InteractionLayer, InteractionScene, LayerDismissPolicy, LayerKind};
 use termrock::runtime::FrameTick;
-use termrock::style::{ColorCapability, DesignSystem, JunieTheme};
+use termrock::style::{ColorCapability, DesignSystem, JunieTheme, Role};
 use termrock::widgets::{
-    ButtonState, ButtonVariant, List, ListRow, ListState, StatusSegment, StatusStrip, TextInput,
-    TextInputState,
+    ButtonState, ButtonVariant, LineSegment, List, ListRow, ListState, TextInput, TextInputState,
+    paint_line_segments,
 };
 
 use super::connections::{ConnEvent, ConnectionsScreen};
-use super::db::{Catalog, Environment, connections};
+use super::db::{Catalog, Environment, SafeMode, connections};
 use super::model::{History, SwitchItem, SwitchTarget, SwitcherIndex};
 use super::paint;
 use super::sql::{self, Decision};
@@ -161,7 +161,7 @@ impl App {
         wb.new_query("");
         self.workbench = Some(wb);
         self.screen = Screen::Workbench;
-        self.host.focus = Some(EXPLORER);
+        self.host.focus = Some(super::tabs::EDITOR);
         self.set_status(format!(
             "Connected to {}",
             self.workbench.as_ref().unwrap().connection.name
@@ -222,6 +222,12 @@ impl App {
         }
         let t = ctx.theme;
         fill(buf, area, t.base());
+        if area.width.saturating_sub(2) < 100 && self.host.focus == Some(EXPLORER) {
+            if let Some(id) = self.workbench.as_ref().and_then(Workbench::primary_focus) {
+                self.host.focus = Some(id);
+                ctx.interaction.focus = Some(id);
+            }
+        }
         if area.width < MIN_WIDTH || area.height < MIN_HEIGHT {
             let msg = format!("Need {MIN_WIDTH}×{MIN_HEIGHT}");
             buf.set_string(area.x, area.y, "TablePro", t.title());
@@ -235,10 +241,10 @@ impl App {
         let strip = Rect::new(area.x, area.y, area.width, 1);
         self.draw_strip(strip, buf, ctx);
         let body = Rect::new(
-            area.x,
-            area.y + 2,
-            area.width,
-            area.height.saturating_sub(3),
+            area.x.saturating_add(1),
+            area.y.saturating_add(2),
+            area.width.saturating_sub(2),
+            area.height.saturating_sub(4),
         );
         match self.screen {
             Screen::Connections => self.connections.render(body, buf, ctx),
@@ -259,54 +265,121 @@ impl App {
     }
 
     fn draw_strip(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx<'_>) {
-        let mut left = vec![
-            StatusSegment::new("▪").priority(9),
-            StatusSegment::new("TablePro").strong().priority(9),
-        ];
-        let mut right_store: Vec<String> = Vec::new();
+        let bg = ctx.theme.canvas;
+        let cap = format!(
+            "{} · {}×{}",
+            self.theme.level.id(),
+            self.size.0,
+            self.size.1
+        );
+        let n_saved = format!("{} saved", self.connections.connections.len());
+        let mut conn_name = String::new();
+        let mut env_s = String::new();
+        let mut scope = String::new();
+        let mut level_s = String::new();
+        let mut running_s = String::new();
+        let mut pending_s = String::new();
+        let mut env_role = Role::Text;
+        let mut env_bold = false;
+        let mut level_role = Role::Text;
+        let mut level_bold = false;
         match self.screen {
-            Screen::Connections => {
-                left.push(StatusSegment::new("Connections").priority(8));
-                right_store.push(format!("{} saved", self.connections.connections.len()));
-            }
+            Screen::Connections => {}
             Screen::Workbench => {
                 if let Some(w) = &self.workbench {
                     let c = &w.connection;
-                    right_store.push(truncate_middle(&c.name, 18));
-                    right_store.push(match c.environment {
-                        Environment::Production => "◆ production".into(),
-                        Environment::Staging => "◇ staging".into(),
-                        Environment::Development => "development".into(),
-                        Environment::Local => "local".into(),
-                    });
-                    right_store.push(format!("{} › {}", w.catalog.database, w.schema));
-                    right_store.push(c.safe_mode.token().to_owned());
+                    conn_name = truncate_middle(&c.name, 18);
+                    match c.environment {
+                        Environment::Production => {
+                            env_s = "◆ production".into();
+                            env_role = Role::Text;
+                            env_bold = true;
+                        }
+                        Environment::Staging => {
+                            env_s = "◇ staging".into();
+                            env_role = Role::TextSecondary;
+                        }
+                        Environment::Development => {
+                            env_s = "development".into();
+                            env_role = Role::TextMuted;
+                        }
+                        Environment::Local => {
+                            env_s = "local".into();
+                            env_role = Role::TextFaint;
+                        }
+                    }
+                    scope = format!("{} › {}", w.catalog.database, w.schema);
+                    level_s = c.safe_mode.token().to_owned();
+                    let (tone, bold) = match c.safe_mode {
+                        SafeMode::Silent if c.environment == Environment::Production => {
+                            (Role::Warning, true)
+                        }
+                        SafeMode::Silent => (Role::TextFaint, false),
+                        SafeMode::Alert | SafeMode::AlertFull => (Role::TextSecondary, false),
+                        _ => (Role::Text, true),
+                    };
+                    level_role = tone;
+                    level_bold = bold;
                     if w.running().is_some() {
-                        right_store.push("running".into());
+                        let frames = termrock::style::SPINNER_BRAILLE_FRAMES;
+                        let frame = frames[(self.tick as usize) % frames.len()];
+                        running_s = format!("{frame} running");
                     }
                     let pending = w.pending_total();
                     if pending > 0 {
-                        right_store.push(format!("• {pending} pending"));
+                        pending_s = format!("• {pending} pending");
                     }
                 }
             }
         }
-        right_store.push(format!("{}×{}", self.size.0, self.size.1));
-        right_store.push("? help".into());
-        let right: Vec<StatusSegment> = right_store
-            .iter()
-            .enumerate()
-            .map(|(i, s)| {
-                let mut seg = StatusSegment::new(s);
-                if i + 1 == right_store.len() {
-                    seg = seg.priority(4);
+        let mut left = vec![
+            LineSegment::new("▪").tone(Role::Success).priority(9),
+            LineSegment::new("TablePro").bold().priority(9),
+        ];
+        let mut right = Vec::new();
+        match self.screen {
+            Screen::Connections => {
+                left.push(
+                    LineSegment::new("Connections")
+                        .tone(Role::TextSecondary)
+                        .priority(8),
+                );
+                left.push(LineSegment::new(&n_saved).tone(Role::TextMuted).priority(3));
+            }
+            Screen::Workbench => {
+                if !conn_name.is_empty() {
+                    left.push(LineSegment::new(&conn_name).bold().priority(9));
+                    let mut env = LineSegment::new(&env_s).tone(env_role).priority(8);
+                    if env_bold {
+                        env = env.bold();
+                    }
+                    left.push(env);
+                    left.push(
+                        LineSegment::new(&scope)
+                            .tone(Role::TextSecondary)
+                            .priority(7),
+                    );
+                    let mut lvl = LineSegment::new(&level_s).tone(level_role).priority(8);
+                    if level_bold {
+                        lvl = lvl.bold();
+                    }
+                    left.push(lvl);
+                    if !running_s.is_empty() {
+                        right.push(
+                            LineSegment::new(&running_s)
+                                .tone(Role::TextSecondary)
+                                .priority(9),
+                        );
+                    }
+                    if !pending_s.is_empty() {
+                        right.push(LineSegment::new(&pending_s).tone(Role::Warning).priority(8));
+                    }
                 }
-                seg
-            })
-            .collect();
-        let mut segs = left;
-        segs.extend(right);
-        StatusStrip::new(&segs, ctx.system).paint(area, buf);
+            }
+        }
+        right.push(LineSegment::new(&cap).tone(Role::TextFaint).priority(1));
+        right.push(LineSegment::new("? help").tone(Role::TextMuted).priority(4));
+        paint_line_segments(area, buf, ctx.system, &left, &right, bg);
         ctx.clickable(
             STRIP_HELP,
             Rect::new(area.right().saturating_sub(8), area.y, 8, 1),
@@ -799,14 +872,18 @@ impl App {
         if !matches!(self.overlay, Overlay::None) {
             return vec![("Esc", "Close"), ("Enter", "Confirm")];
         }
-        match self.screen {
+        let mut hints = match self.screen {
             Screen::Connections => self.connections.hints(focus),
             Screen::Workbench => self
                 .workbench
                 .as_ref()
                 .map(|w| w.hints(focus))
                 .unwrap_or_default(),
+        };
+        if !self.editing() {
+            hints.push(("Tab", "Next"));
         }
+        hints
     }
 
     #[must_use]
@@ -865,6 +942,20 @@ impl App {
         self.host.scene = scene;
         self.host.scroll_hits = scroll_hits;
         self.host.scene.reconcile();
+        let order: Vec<WidgetId> = self.host.scene.focus_order().into_iter().copied().collect();
+        if self
+            .host
+            .focus
+            .as_ref()
+            .is_none_or(|id| !order.contains(id))
+        {
+            self.host.focus = self
+                .workbench
+                .as_ref()
+                .and_then(Workbench::primary_focus)
+                .filter(|id| order.contains(id))
+                .or_else(|| order.first().copied());
+        }
         if let Some(id) = self.host.focus {
             let _ = self.host.scene.focus(id);
         }
@@ -883,16 +974,8 @@ impl App {
         let t = ctx.theme;
         fill(buf, footer, t.base());
         let hints = self.hints(ctx.interaction.focus);
-        let mut x = footer.x + 1;
-        for (i, (k, v)) in hints.iter().enumerate() {
-            if i > 0 {
-                buf.set_string(x, footer.y, " · ", t.faint());
-                x += 3;
-            }
-            let s = format!("{k} {v}");
-            buf.set_string(x, footer.y, &s, t.muted());
-            x += crate::text::width(&s) as u16 + 1;
-        }
+        let mut x = footer.x.saturating_add(1);
+        let mut right_w = 0u16;
         if let Some((s, _)) = &self.status {
             let w = crate::text::width(s) as u16;
             if footer.width > w + 2 {
@@ -902,7 +985,26 @@ impl App {
                     s,
                     t.secondary(),
                 );
+                right_w = w.saturating_add(3);
             }
+        }
+        for (k, v) in &hints {
+            let kw = crate::text::width(k) as u16;
+            let w = kw
+                .saturating_add(1)
+                .saturating_add(crate::text::width(v) as u16)
+                .saturating_add(2);
+            if x.saturating_add(w).saturating_add(right_w) > footer.right() {
+                break;
+            }
+            buf.set_string(x, footer.y, k, t.key_hint_key());
+            buf.set_string(
+                x.saturating_add(kw).saturating_add(1),
+                footer.y,
+                v,
+                t.key_hint_action(),
+            );
+            x = x.saturating_add(w);
         }
     }
 

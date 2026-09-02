@@ -11,12 +11,13 @@ use std::ops::Range;
 
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
-use ratatui::text::Line;
+use ratatui::text::{Line, Span};
 use ratatui::widgets::StatefulWidget;
 use termrock::input::{KeyCode, KeyEventKind};
+use termrock::style::PanelChrome;
 use termrock::widgets::{
-    Tab, Tabs, TabsOutcome, TabsState, TextInput, TextInputState, Tree, TreeNode, TreeOutcome,
-    TreeState,
+    Panel, PanelVariant, Tab, Tabs, TabsOutcome, TabsState, TextInput, TextInputState, Tree,
+    TreeNode, TreeOutcome, TreeState,
 };
 
 use super::db::{Catalog, Connection, ObjectKind};
@@ -78,6 +79,7 @@ pub struct Workbench {
     pub explorer: TreeState<String>,
     pub explorer_filter: TextInputState,
     pub explorer_visible: bool,
+    pub maximized: bool,
     pub expanded: HashSet<String>,
     pub strip: TabsState<usize>,
     pub tabs: Vec<WorkTab>,
@@ -112,6 +114,7 @@ impl Workbench {
             explorer: TreeState::new(None),
             explorer_filter: filter,
             explorer_visible: true,
+            maximized: false,
             expanded,
             strip: TabsState::new(),
             tabs: vec![],
@@ -269,53 +272,113 @@ impl Workbench {
         changed
     }
 
+    pub fn primary_focus(&self) -> Option<WidgetId> {
+        match self.tabs.get(self.active)? {
+            WorkTab::Table(_) => Some(super::tabs::TABLE_GRID),
+            WorkTab::Query(_) => Some(super::tabs::EDITOR),
+            WorkTab::History(_) => Some(super::tabs::HIST_LIST),
+        }
+    }
+
     pub fn render(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx<'_>) {
         let t = ctx.theme;
-        let explorer_w = if self.explorer_visible && area.width >= 90 {
-            28
-        } else if self.explorer_visible {
-            22
-        } else {
-            0
-        };
-        let body_x = if explorer_w > 0 {
-            area.x + explorer_w + 1
-        } else {
-            area.x
-        };
-        let body = Rect::new(
-            body_x,
-            area.y,
-            area.width
-                .saturating_sub(if explorer_w > 0 { explorer_w + 1 } else { 0 }),
-            area.height,
+        // Tab strip is full width; explorer sits in the remaining body.
+        let strip = Rect::new(area.x, area.y, area.width, 2);
+        let pane = Rect::new(
+            area.x,
+            area.y.saturating_add(2),
+            area.width,
+            area.height.saturating_sub(2),
         );
-        if explorer_w > 0 {
-            self.render_explorer(Rect::new(area.x, area.y, explorer_w, area.height), buf, ctx);
+        let narrow = area.width < 100;
+        let explorer_focused = ctx.interaction.focused(EXPLORER) || ctx.interaction.focused(FILTER);
+        let show_explorer =
+            self.explorer_visible && !self.maximized && (!narrow || explorer_focused);
+        let explorer_w = (pane.width / 4).clamp(28, 40);
+        let (ex, main) = if show_explorer && narrow {
+            (pane, Rect::ZERO)
+        } else if show_explorer {
+            (
+                Rect::new(pane.x, pane.y, explorer_w, pane.height),
+                Rect::new(
+                    pane.x.saturating_add(explorer_w).saturating_add(1),
+                    pane.y,
+                    pane.width.saturating_sub(explorer_w.saturating_add(1)),
+                    pane.height,
+                ),
+            )
+        } else {
+            (Rect::ZERO, pane)
+        };
+        if !ex.is_empty() {
+            self.render_explorer(ex, buf, ctx);
         }
         let labels: Vec<String> = self.tabs.iter().map(WorkTab::label).collect();
-        let tab_defs: Vec<Tab<usize>> = labels
+        let tab_defs: Vec<Tab<usize>> = self
+            .tabs
             .iter()
+            .zip(labels.iter())
             .enumerate()
-            .map(|(i, l)| Tab::new(i, l.as_str()).closable(true))
+            .map(|(i, (tab, label))| {
+                let glyph = match tab {
+                    WorkTab::Table(_) => "T",
+                    WorkTab::Query(_) => "≡",
+                    WorkTab::History(_) => "H",
+                };
+                Tab::new(i, label.as_str())
+                    .closable(true)
+                    .glyph(Span::raw(glyph))
+            })
             .collect();
         self.strip.set_focused(ctx.interaction.focused(TABSTRIP));
         self.strip.set_selected(Some(self.active));
-        let strip = Rect::new(body.x, body.y, body.width, 2);
         if tab_defs.is_empty() {
             buf.set_string(strip.x, strip.y, "No tabs — Ctrl+T new query", t.muted());
         } else {
             Tabs::new(&tab_defs, ctx.system)
                 .show_close(true)
                 .paint(strip, buf, &mut self.strip);
+            let plus = Rect::new(strip.right().saturating_sub(4), strip.y, 3, 1);
+            buf.set_string(plus.x, plus.y, " + ", t.muted().bg(t.canvas));
+            ctx.clickable(TABSTRIP.sub("new"), plus);
         }
         ctx.control(TABSTRIP, strip, false);
-        let pane = Rect::new(
-            body.x,
-            body.y + 3,
-            body.width,
-            body.height.saturating_sub(3),
-        );
+        if main.is_empty() {
+            return;
+        }
+        let title = match self.tabs.get(self.active) {
+            Some(WorkTab::Table(tt)) => format!("{} › {}", tt.schema, tt.name),
+            Some(WorkTab::Query(q)) => q.name.clone(),
+            Some(WorkTab::History(_)) => "Query history".into(),
+            None => String::new(),
+        };
+        let meta = match self.tabs.get(self.active) {
+            Some(WorkTab::Query(q)) => q.last_duration.map(super::tabs::duration_label),
+            Some(WorkTab::Table(tt)) => Some(format!("{} cols", tt.grid.columns.len())),
+            Some(WorkTab::History(_)) => Some(format!("{} entries", 0)),
+            None => None,
+        };
+        let focus_in_tab = ctx
+            .interaction
+            .focus
+            .is_some_and(|f| f != EXPLORER && f != FILTER && f != TABSTRIP);
+        let mut panel = Panel::new(ctx.system)
+            .variant(PanelVariant::Bordered)
+            .emphasis(if focus_in_tab {
+                PanelChrome::Focused
+            } else {
+                PanelChrome::Normal
+            });
+        if !title.is_empty() {
+            panel = panel.title(&title);
+        }
+        if let Some(m) = meta.as_deref().filter(|s| !s.is_empty()) {
+            panel = panel.trailing(m);
+        }
+        panel.paint(main, buf, None);
+        let pane = Panel::new(ctx.system)
+            .variant(PanelVariant::Bordered)
+            .inner(main);
         match self.tabs.get_mut(self.active) {
             Some(WorkTab::Query(q)) => render_query(q, pane, buf, ctx),
             Some(WorkTab::Table(tt)) => {
@@ -574,8 +637,14 @@ impl Workbench {
 
     #[must_use]
     pub fn hints(&self, focus: Option<WidgetId>) -> Vec<Hint> {
-        if focus == Some(EXPLORER) {
-            return vec![("↑ ↓", "Move"), ("Enter", "Open"), ("← →", "Fold")];
+        if focus == Some(EXPLORER) || focus == Some(FILTER) {
+            return vec![
+                ("↑ ↓", "Move"),
+                ("Enter", "Open"),
+                ("→", "Expand"),
+                ("/", "Filter"),
+                ("Ctrl+O", "Quick open"),
+            ];
         }
         match self.tabs.get(self.active) {
             Some(WorkTab::Query(q)) => query_hints(q),

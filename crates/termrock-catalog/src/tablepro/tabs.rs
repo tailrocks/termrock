@@ -29,12 +29,12 @@ use crate::outcome::Route;
 use crate::page::{Hint, PageCtx, PageEvent};
 use crate::text as ttext;
 
-const EDITOR: WidgetId = WidgetId::of("workbench.editor");
+pub(crate) const EDITOR: WidgetId = WidgetId::of("workbench.editor");
 const RESULTS: WidgetId = WidgetId::of("workbench.results");
-const TABLE_GRID: WidgetId = WidgetId::of("workbench.table");
+pub(crate) const TABLE_GRID: WidgetId = WidgetId::of("workbench.table");
 const TABLE_MODE: WidgetId = WidgetId::of("workbench.table-mode");
 const HIST_SEARCH: WidgetId = WidgetId::of("workbench.history-search");
-const HIST_LIST: WidgetId = WidgetId::of("workbench.history-list");
+pub(crate) const HIST_LIST: WidgetId = WidgetId::of("workbench.history-list");
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FilterOp {
@@ -94,6 +94,7 @@ pub struct QueryTab {
     pub active_result: usize,
     running: Option<(Vec<(String, Range<usize>)>, u32, Option<bool>)>,
     pub split: u16,
+    pub last_duration: Option<u32>,
 }
 
 impl QueryTab {
@@ -109,6 +110,7 @@ impl QueryTab {
             active_result: 0,
             running: None,
             split: 12,
+            last_duration: None,
         }
     }
 
@@ -170,7 +172,19 @@ impl QueryTab {
             self.results.push(rs);
         }
         self.active_result = self.results.len().saturating_sub(1);
+        self.last_duration = Some(self.results.iter().map(|r| r.duration_ms).sum());
         true
+    }
+}
+
+/// Source `duration_label` for panel meta and history.
+#[must_use]
+pub fn duration_label(ms: u32) -> String {
+    match ms {
+        0 => "<1 ms".into(),
+        ms if ms < 1000 => format!("{ms} ms"),
+        ms if ms < 60_000 => format!("{:.2} s", ms as f64 / 1000.0),
+        ms => format!("{}m {}s", ms / 60_000, (ms % 60_000) / 1000),
     }
 }
 
@@ -415,8 +429,7 @@ pub fn render_query(tab: &mut QueryTab, area: Rect, buf: &mut Buffer, ctx: &mut 
         .set_accepts_input(ctx.interaction.focused(EDITOR));
     StatefulWidget::render(
         &TextArea::new(ctx.system)
-            .title(&tab.name)
-            .placeholder("SELECT …"),
+            .placeholder("Type SQL. Ctrl+R runs the statement under the cursor."),
         rows[0],
         buf,
         &mut tab.editor,
@@ -798,12 +811,19 @@ pub fn handle_history(tab: &mut HistoryTab, ev: &PageEvent, cx: &mut PageCtx<'_>
 
 pub fn query_hints(tab: &QueryTab) -> Vec<Hint> {
     if tab.is_editing() {
-        vec![("Esc", "Leave edit"), ("Ctrl+R", "Run")]
+        vec![
+            ("Ctrl+R", "Run"),
+            ("Alt+R", "Run all"),
+            ("Ctrl+Space", "Complete"),
+            ("Esc", "Done"),
+        ]
     } else {
         vec![
             ("Enter", "Edit"),
             ("Ctrl+R", "Run"),
-            ("Ctrl+T", "New query"),
+            ("Alt+R", "Run all"),
+            ("Ctrl+X", "Explain"),
+            ("/", "Find"),
         ]
     }
 }
