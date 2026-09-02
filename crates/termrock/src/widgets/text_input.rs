@@ -1344,14 +1344,12 @@ impl<'a> TextInput<'a> {
         } else {
             Style::new().fg(theme.text_primary).bg(field_bg)
         };
+        // junie `input.rs`: underline ONLY while editing, always accent.
+        // Idle invalid is the trailing bold `!` plus helper, not a red line.
         if visual.editing {
             text_style = text_style
                 .add_modifier(Modifier::UNDERLINED)
-                .underline_color(if invalid { theme.error } else { theme.accent });
-        } else if invalid {
-            text_style = text_style
-                .add_modifier(Modifier::UNDERLINED)
-                .underline_color(theme.error);
+                .underline_color(theme.accent);
         }
         buffer.set_stringn(field.x, field.y, &painted, field_w, text_style);
 
@@ -1729,7 +1727,11 @@ mod tests {
             .find(|cell| cell.symbol() == "x")
             .expect("value");
         assert_eq!(value.fg, theme.text_primary);
-        assert_eq!(value.style().underline_color, Some(theme.error));
+        assert!(
+            !value.style().add_modifier.contains(Modifier::UNDERLINED),
+            "idle invalid value is not underlined"
+        );
+        assert_ne!(value.style().underline_color, Some(theme.error));
         let msg: String = (0..area.width)
             .map(|x| buffer[(x, 2)].symbol().to_string())
             .collect();
@@ -1738,6 +1740,40 @@ mod tests {
             !msg.contains('•'),
             "error copy must not use the pending bullet"
         );
+    }
+
+    #[test]
+    fn an_invalid_editing_field_underlines_in_accent_and_trails_a_bang() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let area = Rect::new(0, 0, 28, 3);
+        let mut buffer = Buffer::empty(area);
+        let mut state = TextInputState::new("x");
+        state.set_focused(true);
+        state.set_editing(true);
+        TextInput::new("Email", &system)
+            .validation(Validation::Invalid("not an address"))
+            .paint(area, &mut buffer, &mut state);
+
+        let field_row: String = (0..area.width)
+            .map(|x| buffer[(x, 1)].symbol().to_string())
+            .collect();
+        assert!(
+            field_row.contains('!'),
+            "invalid fields trail a bold `!`, got {field_row:?}"
+        );
+        let bang = &buffer[(area.width - 2, 1)];
+        assert_eq!(bang.symbol(), "!");
+        assert_eq!(bang.fg, theme.error);
+        assert!(bang.style().add_modifier.contains(Modifier::BOLD));
+        let value = buffer
+            .content()
+            .iter()
+            .find(|cell| cell.symbol() == "x")
+            .expect("value");
+        assert_eq!(value.fg, theme.text_primary);
+        assert!(value.style().add_modifier.contains(Modifier::UNDERLINED));
+        assert_eq!(value.style().underline_color, Some(theme.accent));
     }
 
     fn row_text(buffer: &Buffer, y: u16, width: u16) -> String {

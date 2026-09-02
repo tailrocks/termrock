@@ -1711,15 +1711,15 @@ fn interaction_underline_is_three_color() {
         ("code_block.rs", "diagnostic range (squiggle substitute)"),
         (
             "text_input.rs",
-            "accent = editing here; error underline = invalid contract",
+            "accent = editing here; idle invalid is bold ! not underline",
         ),
         (
             "form.rs",
-            "accent = editing here; error underline = invalid contract",
+            "accent = editing here; idle invalid is bold ! not underline",
         ),
         (
             "field_row.rs",
-            "accent = editing here; error underline = invalid contract",
+            "accent = editing here; idle invalid is bold ! not underline",
         ),
         (
             "picker.rs",
@@ -1775,9 +1775,10 @@ fn interaction_underline_is_three_color() {
         assert_eq!(style.fg, Some(fg), "{role:?} stays on the ladder");
     }
 
-    // The field side: editing and a failed contract underline, resting does
-    // not. The diagnostic rides the underline colour — the text itself keeps
-    // its tier, because repainting the value would say nothing.
+    // The field side: underline is the insert session (accent). Idle invalid
+    // is a trailing bold `!` (widget paint), not a red underline — junie
+    // `input.rs`. Nav-focus and resting do not underline. Editing wins even
+    // when the value is invalid.
     let nav = system.input_recipe(ControlState::Focused, false, false);
     assert!(
         !nav.border.add_modifier.contains(Modifier::UNDERLINED),
@@ -1786,15 +1787,21 @@ fn interaction_underline_is_three_color() {
     let editing = system.input_recipe(ControlState::Focused, false, true);
     assert!(editing.border.add_modifier.contains(Modifier::UNDERLINED));
     let invalid = system.input_recipe(ControlState::Focused, true, false);
-    assert!(invalid.border.add_modifier.contains(Modifier::UNDERLINED));
-    assert_eq!(
-        invalid.border.underline_color,
-        Some(RED),
-        "a failed contract is a diagnostic"
+    assert!(
+        !invalid.border.add_modifier.contains(Modifier::UNDERLINED),
+        "input_recipe(Focused, true, false) must not be UNDERLINED"
     );
-    assert_ne!(
-        invalid.border.underline_color, editing.border.underline_color,
-        "editing and invalid are two different underline colours"
+    let editing_invalid = system.input_recipe(ControlState::Focused, true, true);
+    assert!(
+        editing_invalid
+            .border
+            .add_modifier
+            .contains(Modifier::UNDERLINED),
+        "input_recipe(Focused, true, true) is underlined: editing wins"
+    );
+    assert_eq!(
+        editing_invalid.border.underline_color, editing.border.underline_color,
+        "editing invalid stays accent, not error"
     );
     assert!(
         !system

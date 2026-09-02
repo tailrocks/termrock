@@ -25,7 +25,7 @@ use crate::interaction::{
     EventResult, NavigationMove, PageMove, SemanticNode, SemanticRole, SemanticScene,
     SemanticState, UiIntent, default_list_intent,
 };
-use crate::style::{DesignSystem, Role};
+use crate::style::{DesignSystem, Glyph, Role};
 use crate::text::{display_cols, take_display_cols, wrap_display_cols};
 use crate::widgets::{
     CodeBlock, CodeBlockState, CodeWrap, Heading, HeadingLevel, Paragraph, RoleTokenSyntax, Text,
@@ -1575,14 +1575,15 @@ fn wants_leading_gap(kind: MarkdownBlockKind, level: HeadingLevel) -> bool {
             && matches!(level, HeadingLevel::H1 | HeadingLevel::H2))
 }
 
-fn list_prefix(block: &MarkdownBlock<'_>, _system: &DesignSystem) -> String {
+fn list_prefix(block: &MarkdownBlock<'_>, system: &DesignSystem) -> String {
     match block.kind {
         MarkdownBlockKind::TaskItem => {
-            if block.task_checked == Some(true) {
-                "[✓] ".into()
+            let mark = if block.task_checked == Some(true) {
+                system.glyphs.resolve(Glyph::CheckOn).text
             } else {
-                "[ ] ".into()
-            }
+                system.glyphs.resolve(Glyph::CheckOff).text
+            };
+            format!("{mark} ")
         }
         MarkdownBlockKind::OrderedItem => {
             format!("{}. ", block.list_index.unwrap_or(1))
@@ -2116,5 +2117,29 @@ fn x() {}
         assert!(!d.contains("**"));
         assert_eq!(links.len(), 1);
         assert_eq!(links[0].0, "x");
+    }
+
+    #[test]
+    fn paints_task_checkboxes_from_glyph_catalog() {
+        let system = DesignSystem::junie();
+        let src = "- [ ] todo\n- [x] done\n";
+        let blocks = project_markdown(src);
+        let mut state = MarkdownViewState::new();
+        let area = Rect::new(0, 0, 24, 4);
+        let mut buf = Buffer::empty(area);
+        let _ = MarkdownView::new(&blocks, &system).paint(area, &mut buf, &mut state);
+        let mut text = String::new();
+        for y in 0..area.height {
+            for x in 0..area.width {
+                text.push_str(buf[(x, y)].symbol());
+            }
+        }
+        let on = format!("{} ", system.glyphs.resolve(Glyph::CheckOn).text);
+        let off = format!("{} ", system.glyphs.resolve(Glyph::CheckOff).text);
+        assert_eq!(on, "[✓] ");
+        assert_eq!(off, "[ ] ");
+        assert!(text.contains("[✓]"), "checked task missing: {text:?}");
+        assert!(text.contains("[ ]"), "unchecked task missing: {text:?}");
+        assert!(text.contains("todo") && text.contains("done"), "{text:?}");
     }
 }

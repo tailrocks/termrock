@@ -10,7 +10,7 @@
 //!
 //! **vs [`Checkbox`](crate::widgets::Checkbox).** Checkbox is a form field with
 //! label association and checked semantics (`[x]` / `[ ]`). Toggle is a toolbar
-//! affordance (`[B]` pressed vs ` B ` unpressed).
+//! affordance (pressed reverse + label vs padded idle label). No `[inner]` wells.
 //!
 //! **vs [`Switch`](crate::widgets::Switch).** Switch is an immediate On/Off
 //! setting (`[ON ]` / `[OFF]`). Toggle does not imply a persistent preference.
@@ -113,10 +113,10 @@ impl ToggleValue {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
 pub enum ToggleSize {
-    /// Default padding (` B ` / `[B]`).
+    /// Default padding (` B `).
     #[default]
     Default,
-    /// Toolbar density (`B` / `[B]`).
+    /// Toolbar density (`B`).
     Compact,
 }
 
@@ -430,27 +430,21 @@ impl<'a> Toggle<'a> {
     pub fn preferred_width(&self, value: ToggleValue) -> u16 {
         let inner = self.face_inner();
         let cols = display_cols(&inner).max(1);
-        let chrome = match (self.recipe, value, self.size) {
-            (ToggleRecipe::Quiet, ToggleValue::Unpressed, ToggleSize::Compact) => 0,
-            (ToggleRecipe::Quiet, ToggleValue::Unpressed, ToggleSize::Default) => 2,
-            (_, ToggleValue::Indeterminate, _) => 4, // [~x]
-            (_, ToggleValue::Pressed, _) => 2,       // [x]
-            (_, ToggleValue::Unpressed, ToggleSize::Compact) => 0,
-            (_, ToggleValue::Unpressed, ToggleSize::Default) => 2,
+        let chrome = match self.size {
+            ToggleSize::Compact => 0,
+            ToggleSize::Default => 2,
         };
+        let _ = (self.recipe, value);
         u16::try_from(cols.saturating_add(chrome).max(1)).unwrap_or(1)
     }
 
     fn format_face(&self, value: ToggleValue) -> String {
+        let _ = value;
         let inner = self.face_inner();
         let inner = if inner.is_empty() { "·".into() } else { inner };
-        match (self.recipe, value, self.size) {
-            (_, ToggleValue::Indeterminate, _) => format!("[~{inner}]"),
-            (_, ToggleValue::Pressed, _) => format!("[{inner}]"),
-            (ToggleRecipe::Quiet, ToggleValue::Unpressed, ToggleSize::Compact) => inner,
-            (ToggleRecipe::Quiet, ToggleValue::Unpressed, _) => format!(" {inner} "),
-            (_, ToggleValue::Unpressed, ToggleSize::Compact) => format!(" {inner}"),
-            (_, ToggleValue::Unpressed, _) => format!(" {inner} "),
+        match self.size {
+            ToggleSize::Compact => inner,
+            ToggleSize::Default => format!(" {inner} "),
         }
     }
 
@@ -1257,8 +1251,8 @@ impl<'a, Id: Clone + PartialEq> ToggleGroup<'a, Id> {
         ts.enabled = item.enabled;
         ts.focused = state.surface_focused && state.cursor.as_ref() == Some(&item.id);
         ts.hovered = state.hovered.as_ref() == Some(&item.id);
-        // Toolbar group keeps the compact `[B]` face; the form switch lives
-        // on standalone [`Toggle::paint`].
+        // Toolbar group is reverse+label (no `[inner]` wells). Form switch
+        // lives on standalone [`Toggle::paint`].
         let face = t.format_face(item.value);
         let text = take_display_cols(&face, usize::from(area.width));
         let style = t.face_style(&ts);
@@ -1898,5 +1892,63 @@ mod tests {
             buf[(0, 0)].bg,
             "disabled gutter is reserved, fg=bg"
         );
+    }
+
+    #[test]
+    fn format_face_is_padded_inner_without_wells() {
+        let system = DesignSystem::junie();
+        let t = Toggle::new("B", &system);
+        for value in [
+            ToggleValue::Unpressed,
+            ToggleValue::Pressed,
+            ToggleValue::Indeterminate,
+        ] {
+            let face = t.format_face(value);
+            assert!(!face.contains('['), "well leaked: {face:?}");
+            assert!(!face.contains(']'), "well leaked: {face:?}");
+            assert!(face.contains('B'), "{face:?}");
+        }
+        let compact = Toggle::new("B", &system).size(ToggleSize::Compact);
+        assert_eq!(compact.format_face(ToggleValue::Pressed), "B");
+    }
+
+    #[test]
+    fn group_paint_has_no_wells() {
+        let system = DesignSystem::junie();
+        let items = [
+            ToggleGroupItem::new("b", "B").pressed(true),
+            ToggleGroupItem::new("i", "I"),
+        ];
+        let g = ToggleGroup::new(&items, &system).multiple();
+        let mut state = ToggleGroupState::new();
+        let area = Rect::new(0, 0, 30, 1);
+        let mut buf = Buffer::empty(area);
+        let _ = g.paint(area, &mut buf, &mut state);
+        let text: String = (0..area.width)
+            .map(|x| buf[(x, 0)].symbol().to_string())
+            .collect();
+        assert!(!text.contains('['), "well leaked: {text:?}");
+        assert!(!text.contains(']'), "well leaked: {text:?}");
+        assert!(text.contains('B') && text.contains('I'), "{text:?}");
+    }
+
+    #[test]
+    fn group_pressed_is_reversed_not_bracket() {
+        let system = DesignSystem::junie();
+        let items = [ToggleGroupItem::new("b", "B").pressed(true)];
+        let g = ToggleGroup::new(&items, &system);
+        let mut state = ToggleGroupState::new();
+        let area = Rect::new(0, 0, 12, 1);
+        let mut buf = Buffer::empty(area);
+        let _ = g.paint(area, &mut buf, &mut state);
+        let reversed = system.reversed();
+        let b = (0..area.width)
+            .map(|x| &buf[(x, 0)])
+            .find(|cell| cell.symbol() == "B")
+            .expect("pressed label");
+        assert_eq!(Some(b.fg), reversed.fg);
+        assert_eq!(Some(b.bg), reversed.bg);
+        assert!(b.style().add_modifier.contains(Modifier::BOLD));
+        assert!(!b.style().add_modifier.contains(Modifier::REVERSED));
     }
 }

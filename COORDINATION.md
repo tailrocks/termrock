@@ -11,9 +11,14 @@ Two agents. One tree. Claim before write. Never revert the other agent's files.
 
 ## Core claimed (this commit)
 
+- `crates/termrock/src/widgets/toggle.rs` — drop `[inner]` / `[B]` / `[~x]` wells; ToggleGroup pressed face is reverse+label (junie glyph catalog), not brackets; standalone Toggle stays `▎──●`/`○──`
+- `crates/termrock/src/widgets/badge.rs` — drop default `[{inner}]` wells; status uses Glyph catalog + label; Count stays `(n)`
+- `crates/termrock/src/style/tokens.rs` + `widgets/text_input.rs` + `tests/design_gate.rs` — underline only while editing (accent); idle invalid is bold `!` + message, not error underline (junie `input.rs`)
+- `crates/termrock/src/widgets/markdown.rs` — task items paint `Glyph::CheckOn`/`CheckOff` (`[✓]`/`[ ]`)
 - `crates/termrock/src/widgets/{combobox,token_field,search_input,path_input,password_input,date_time_picker,input_group,number_input}.rs` — `new()` idle (`editing: false`); Enter/`begin_edit`/`with_editing()` start the insert session; underline is `draft.is_editing()`, not focus; NumberInput no longer `begin_edit` on focus
 - `crates/termrock/src/widgets/token_field.rs` — `input_recipe` third arg is `draft.is_editing()` in Draft zone
 - `crates/termrock/src/widgets/surface.rs` — monochrome Inset/Sunken fill `Role::Canvas`, never `Color::Reset`
+- `crates/termrock-lookbook/baselines/png/text-input-invalid.png` — idle invalid is `!` not error underline (intended junie `input.rs`)
 - `crates/termrock-lookbook/src/interactors.rs` + `interactors/{extended,workflows}.rs` — live field interactors call `with_editing()`
 - `crates/termrock/src/widgets/progress_steps.rs` — status marks from Glyph catalog (`✓ › ! − …`), not `[›]` wells
 
