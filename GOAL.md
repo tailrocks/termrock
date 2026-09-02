@@ -36,7 +36,7 @@ The target is one-to-one visual and behavioral fidelity.
 
 Use subagents for everything.
 
-Use `gpt-5.6-sol` with `xhigh` reasoning for every subagent and every task where model selection is available.
+Use `Grok 4.6` with `xhigh` reasoning for every subagent and every task where model selection is available.
 
 The primary agent is an orchestrator, coordinator, integrator, and final verifier.
 
