@@ -1871,6 +1871,23 @@ mod tests {
     }
 
     #[test]
+    fn unselected_chip_sits_on_overlay() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let chip = Chip::new("f", "status = 'pending'", &system).removable(true);
+        let mut state = ChipState::new(false);
+        let area = Rect::new(0, 0, 24, 1);
+        let mut buffer = Buffer::empty(area);
+        let _ = chip.paint(area, &mut buffer, &mut state);
+        assert_eq!(
+            buffer[(1, 0)].bg,
+            theme.surface_overlay,
+            "unselected chip uses Toggle/Secondary overlay, not surface"
+        );
+        assert_eq!(buffer[(0, 0)].symbol(), system.glyphs.selection_gutter());
+    }
+
+    #[test]
     fn chip_toggle_space() {
         let system = DesignSystem::default();
         let chip = Chip::new("f1", "rust", &system);

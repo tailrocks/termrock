@@ -1620,7 +1620,12 @@ mod tests {
         let area = Rect::new(0, 0, 16, 4);
         let mut buffer = Buffer::empty(area);
         (&List::new(&rows, &system).focused(true)).render(area, &mut buffer, &mut state);
-        let first = state.regions().iter().find(|r| r.id == "first").unwrap().area;
+        let first = state
+            .regions()
+            .iter()
+            .find(|r| r.id == "first")
+            .unwrap()
+            .area;
         let second = state
             .regions()
             .iter()

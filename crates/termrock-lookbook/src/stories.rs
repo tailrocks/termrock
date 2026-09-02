@@ -16532,11 +16532,7 @@ fn table_tasks_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 fn table_grid_rows_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{ColumnModel, DataColumn, LoadState};
     fill_junie_surface(frame, area, system);
-    let columns = ColumnModel::new(vec![DataColumn::new(
-        "id",
-        "id",
-        DataColumnWidth::Fixed(4),
-    )]);
+    let columns = ColumnModel::new(vec![DataColumn::new("id", "id", DataColumnWidth::Fixed(4))]);
     let c0: &[&str] = &["1001"];
     let c1: &[&str] = &["1002"];
     let c2: &[&str] = &["1003"];

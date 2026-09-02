@@ -2375,7 +2375,7 @@ mod tests {
             let mut state = TextAreaState::new(case.text);
             state.set_accepts_input(true);
             state.set_editing(true);
-        state.set_editing(true);
+            state.set_editing(true);
             assert!(state.set_cursor(case.cursor), "{} cursor", case.name);
             let outcome = state.handle_key(KeyEvent::new(case.key, KeyModifiers::NONE));
             assert_eq!(
@@ -2782,7 +2782,7 @@ mod tests {
             let mut state = TextAreaState::new(seed);
             state.set_accepts_input(true);
             state.set_editing(true);
-        state.set_editing(true);
+            state.set_editing(true);
             state.viewport_width = 12;
             state.viewport_height = 4;
             for (i, key) in keys.iter().cycle().take(48).enumerate() {
