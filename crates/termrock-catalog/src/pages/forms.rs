@@ -4,7 +4,7 @@
 // Adapted from junie-tui src/bin/showcase/pages/forms.rs (MIT).
 // Composes public widgets (TextInput, TextArea, RadioGroup, Checkbox, Switch,
 // Button) the way the source page composes its live fields. Form is field-chrome
-// only and is not a host for those widgets — see COORDINATION.md gaps.
+// only and is not a host for those widgets.
 
 //! Sections, required fields, validation, submission.
 
