@@ -176,22 +176,27 @@ pub const fn overflow_thumb(
     if !is_scrollable(content_len, viewport_len) || track_len == 0 {
         return None;
     }
-    let len = viewport_len
+    let len = match viewport_len
         .saturating_mul(track_len)
         .checked_div(content_len)
-        .unwrap_or(1)
-        .max(1);
+    {
+        Some(value) if value > 0 => value,
+        _ => 1,
+    };
     let len = if len > track_len { track_len } else { len };
     let max_off = content_len - viewport_len;
     let travel = track_len - len;
     let start = if max_off == 0 {
         0
     } else {
-        offset
+        match offset
             .saturating_mul(travel)
             .saturating_add(max_off / 2)
             .checked_div(max_off)
-            .unwrap_or(0)
+        {
+            Some(value) => value,
+            None => 0,
+        }
     };
     let max_start = track_len - len;
     let start = if start > max_start { max_start } else { start };

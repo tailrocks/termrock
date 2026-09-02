@@ -206,6 +206,8 @@ pub struct PanelParts {
     pub disclosure: Option<Rect>,
     /// Header-actions band (right of title); host paints labels into action hits on state.
     pub actions: Option<Rect>,
+    /// Right-edge overflow track when [`Panel::vertical_scroll`] is set.
+    pub scrollbar: Option<Rect>,
     /// Mouse hit region for panel-level interaction.
     pub hit: Rect,
     /// Clip contract (= body for children).
@@ -495,6 +497,10 @@ pub struct Panel<'a> {
     /// Header actions (dropped under narrow width before badge).
     header_actions: &'a [PanelAction<'a>],
     title_spec: Option<PanelTitleSpec<'a>>,
+    /// Wrapped line count for framed overflow chrome; `None` is no track.
+    vertical_scroll: Option<usize>,
+    /// Viewport offset in wrapped lines (top-relative).
+    scroll_offset: u16,
     tokens: &'a DesignSystem,
 }
 
@@ -521,6 +527,8 @@ impl<'a> Panel<'a> {
             overlay: false,
             header_actions: &[],
             title_spec: None,
+            vertical_scroll: None,
+            scroll_offset: 0,
             tokens,
         }
     }
@@ -660,6 +668,39 @@ impl<'a> Panel<'a> {
     pub const fn overlay(mut self, overlay: bool) -> Self {
         self.overlay = overlay;
         self
+    }
+
+    /// Enables framed vertical overflow chrome.
+    ///
+    /// `content_len` is the host's wrapped line count. The title row keeps two
+    /// blank cells before `─╮` (junie empty `meta` `"  "`). The body gutter
+    /// paints `│`/`┃` with [`crate::scroll::overflow_thumb`] when content
+    /// overflows. Hosts wrap body copy at [`Self::scrolled_content_area`].
+    #[must_use]
+    pub const fn vertical_scroll(mut self, content_len: usize) -> Self {
+        self.vertical_scroll = Some(content_len);
+        self
+    }
+
+    /// Top-relative wrapped-line offset for [`Self::vertical_scroll`].
+    #[must_use]
+    pub const fn scroll_offset(mut self, offset: u16) -> Self {
+        self.scroll_offset = offset;
+        self
+    }
+
+    /// Columns the host may write when [`Self::vertical_scroll`] is set.
+    ///
+    /// Junie `ScrollPanel` wraps at `inner.width - 2`: one column before the
+    /// track, then the track itself.
+    #[must_use]
+    pub const fn scrolled_content_area(body: Rect) -> Rect {
+        Rect {
+            x: body.x,
+            y: body.y,
+            width: body.width.saturating_sub(2),
+            height: body.height,
+        }
     }
 
     /// Whether this panel claims panel-level keyboard focus.
@@ -1020,6 +1061,17 @@ impl<'a> Panel<'a> {
             body
         };
 
+        let scrollbar = if self.vertical_scroll.is_some() && body.width > 0 && body.height > 0 {
+            Some(Rect {
+                x: body.right().saturating_sub(1),
+                y: body.y,
+                width: 1,
+                height: body.height,
+            })
+        } else {
+            None
+        };
+
         PanelParts {
             root: area,
             header,
@@ -1027,6 +1079,7 @@ impl<'a> Panel<'a> {
             footer,
             disclosure,
             actions,
+            scrollbar,
             hit,
             clip: body,
         }
@@ -1134,15 +1187,26 @@ impl<'a> Panel<'a> {
                 let theme = self.tokens.junie_theme();
                 let text = format!(" {meta} ");
                 let tw = display_cols(&text) as u16;
+                // junie framed meta sits at `title_row_right - tw`, leaving `─╮`.
                 if area.width > tw + 4 {
                     buffer.set_stringn(
-                        area.right().saturating_sub(tw).saturating_sub(1),
+                        area.right().saturating_sub(2).saturating_sub(tw),
                         area.y,
                         &text,
                         usize::from(tw),
-                        theme.faint(),
+                        theme.faint().bg(theme.canvas),
                     );
                 }
+            } else if self.vertical_scroll.is_some() && area.width > 4 {
+                // junie `.meta("")` still paints `"  "` faint before `─╮`.
+                let theme = self.tokens.junie_theme();
+                buffer.set_stringn(
+                    area.right().saturating_sub(4),
+                    area.y,
+                    "  ",
+                    2,
+                    theme.faint().bg(theme.canvas),
+                );
             }
             if let Some(footer) = slots.footer {
                 let line = Line::from(Span::styled(format!(" {footer} "), recipe.title));
@@ -1259,6 +1323,18 @@ impl<'a> Panel<'a> {
                     break;
                 }
             }
+        }
+
+        if let (Some(content_len), Some(gutter)) = (self.vertical_scroll, parts.scrollbar) {
+            crate::scroll::paint_overflow_scrollbar(
+                buffer,
+                gutter,
+                content_len,
+                usize::from(gutter.height),
+                self.scroll_offset,
+                focused_chrome,
+                self.tokens,
+            );
         }
 
         if let Some(state) = state {
@@ -1923,6 +1999,64 @@ mod tests {
         assert_eq!(inner.x, 3);
         assert_eq!(inner.y, 1);
         assert_eq!(inner.width, 15);
+    }
+
+    #[test]
+    fn framed_vertical_scroll_reserves_title_and_uses_junie_thumb() {
+        let system = DesignSystem::default();
+        let area = Rect::new(0, 0, 46, 17);
+        let mut buffer = Buffer::empty(area);
+        Panel::new(&system)
+            .variant(PanelVariant::Bordered)
+            .title("Framed · split pane")
+            .vertical_scroll(24)
+            .paint(area, &mut buffer, None);
+        assert_eq!(buffer[(42, 0)].symbol(), " ");
+        assert_eq!(buffer[(43, 0)].symbol(), " ");
+        assert_eq!(buffer[(44, 0)].symbol(), "─");
+        assert_eq!(buffer[(45, 0)].symbol(), "╮");
+        let thumbs: Vec<u16> = (1..16)
+            .filter(|y| buffer[(43, *y)].symbol() == "┃")
+            .collect();
+        assert_eq!(thumbs, (1..10).collect::<Vec<_>>());
+        assert_eq!(buffer[(43, 10)].symbol(), crate::scroll::SCROLLBAR_TRACK);
+        assert_eq!(
+            Panel::scrolled_content_area(Panel::new(&system).inner(area)).width,
+            39
+        );
+    }
+
+    #[test]
+    fn framed_vertical_scroll_short_pane_thumb_is_one_cell() {
+        let system = DesignSystem::default();
+        let area = Rect::new(0, 0, 29, 9);
+        let mut buffer = Buffer::empty(area);
+        Panel::new(&system)
+            .variant(PanelVariant::Bordered)
+            .title("Framed · split pane")
+            .vertical_scroll(49)
+            .paint(area, &mut buffer, None);
+        assert_eq!(buffer[(25, 0)].symbol(), " ");
+        assert_eq!(buffer[(26, 0)].symbol(), " ");
+        assert_eq!(buffer[(27, 0)].symbol(), "─");
+        assert_eq!(buffer[(28, 0)].symbol(), "╮");
+        assert_eq!(buffer[(26, 1)].symbol(), "┃");
+        assert_eq!(buffer[(26, 2)].symbol(), crate::scroll::SCROLLBAR_TRACK);
+    }
+
+    #[test]
+    fn framed_without_scroll_keeps_dashes_before_corner() {
+        let system = DesignSystem::default();
+        let area = Rect::new(0, 0, 29, 3);
+        let mut buffer = Buffer::empty(area);
+        Panel::new(&system)
+            .variant(PanelVariant::Bordered)
+            .title("Framed · split pane")
+            .paint(area, &mut buffer, None);
+        assert_eq!(buffer[(25, 0)].symbol(), "─");
+        assert_eq!(buffer[(26, 0)].symbol(), "─");
+        assert_eq!(buffer[(27, 0)].symbol(), "─");
+        assert_eq!(buffer[(28, 0)].symbol(), "╮");
     }
 
     #[test]
