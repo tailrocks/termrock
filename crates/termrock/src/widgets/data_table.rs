@@ -50,46 +50,8 @@ fn grid_chrome_width(row_count: usize, row_numbers: bool) -> u16 {
     3 + num_w + u16::from(row_numbers)
 }
 
-/// Junie `layout_columns` still paints the next column clipped when the
-/// remainder after the last fully-fitted column (and its gap) is ≥ 6.
-const MIN_CLIPPED_COLUMN: u16 = 6;
-
 /// Column separator, from the glyph catalog rather than a file-local literal.
 const RESIZE_HIT: u16 = 1;
-
-/// Append the next unfitted column at the leftover width (junie grid.rs).
-fn append_clipped_column<ColId>(
-    columns: &ColumnModel<ColId>,
-    budget: u16,
-    gap: u16,
-    out: &mut Vec<(usize, u16)>,
-) {
-    if out.is_empty() {
-        return;
-    }
-    let used = out
-        .iter()
-        .map(|(_, width)| *width)
-        .fold(0u16, u16::saturating_add)
-        .saturating_add(
-            gap.saturating_mul(u16::try_from(out.len().saturating_sub(1)).unwrap_or(0)),
-        );
-    let rest = budget.saturating_sub(used).saturating_sub(gap);
-    if rest < MIN_CLIPPED_COLUMN {
-        return;
-    }
-    let Some(next) = columns
-        .columns
-        .iter()
-        .enumerate()
-        .filter(|(_, column)| column.visible)
-        .map(|(index, _)| index)
-        .find(|index| !out.iter().any(|(have, _)| have == index))
-    else {
-        return;
-    };
-    out.push((next, rest));
-}
 
 /// Keyboard navigation mode (VisiData-like layers).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -1229,24 +1191,26 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
             y = y.saturating_add(1);
         }
 
-        // Source DataGrid cols_area: `width - gutter_w - 4 - scrollbar`.
-        // Crop-sized default paints omit that +4: it drops the customer
-        // column the 42-wide slice still shows. Clip-append then paints the
-        // next column when remainder ≥ 6 (junie `layout_columns`).
+        // Source DataGrid: `width - gutter_w - 4 - scrollbar`.
+        // Source DataTable: `width - 5 - scrollbar` (gutter 3 + 2-cell `…`).
+        // Row-number grids (lookbook grid-ids 42-wide) keep chrome only:
+        // extra trailing drops the customer column the crop still shows.
         let total = usize::try_from(state.window.logical_len.max(self.rows.len() as u64))
             .unwrap_or(self.rows.len())
             .max(self.rows.len());
         let has_sb = crate::scroll::is_scrollable(total, usize::from(state.window.viewport.max(1)));
-        let col_budget = if self.datagrid {
-            area.width
-                .saturating_sub(self.chrome_width())
-                .saturating_sub(4)
-                .saturating_sub(u16::from(has_sb))
+        let trailing = if self.datagrid {
+            4
+        } else if self.row_numbers {
+            0
         } else {
-            area.width
-                .saturating_sub(self.chrome_width())
-                .saturating_sub(u16::from(has_sb))
+            2
         };
+        let col_budget = area
+            .width
+            .saturating_sub(self.chrome_width())
+            .saturating_sub(trailing)
+            .saturating_sub(u16::from(has_sb));
         state.viewport_width = col_budget;
         let layout_budget = col_budget.saturating_add(state.h_offset);
         self.columns.resolve_paint_widths_with_gap(
@@ -1254,14 +1218,6 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
             self.system.spacing.column_gap,
             &mut state.paint_widths,
         );
-        if !self.datagrid {
-            append_clipped_column(
-                self.columns,
-                layout_budget,
-                self.system.spacing.column_gap,
-                &mut state.paint_widths,
-            );
-        }
         // Pin bookkeeping
         let mut pin_start = 0usize;
         let mut pin_end = 0usize;

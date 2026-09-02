@@ -349,7 +349,7 @@ impl GridPage {
             DataColumn::new("mrr", "mrr", DataColumnWidth::Fixed(7))
                 .kind(ColumnKind::Numeric)
                 .sortable(),
-            DataColumn::new("active", "active", DataColumnWidth::Fixed(5)).editable(),
+            DataColumn::new("active", "active", DataColumnWidth::Fixed(6)).editable(),
             DataColumn::new("renewed_at", "renewed_at", DataColumnWidth::Fixed(12)).editable(),
             DataColumn::new("notes", "notes", DataColumnWidth::Fixed(27)).editable(),
         ]);
@@ -989,15 +989,8 @@ impl Page for GridPage {
         let focused = ctx.interaction.focused(GRID) || bar_focus;
         let h = area.height.min(30);
         let pending = !self.pending.is_empty();
-        // Card pad 2 + title 1; table header 1. Source DataGrid `bar_h` is 2
-        // when pending (one blank + the action row).
-        let body_h = h
-            .saturating_sub(3)
-            .saturating_sub(if pending { 2 } else { 0 });
-        let seeded = body_h.saturating_sub(1);
-        if seeded > 0 {
-            self.label_view = seeded;
-        }
+        // Junie computes the card meta before DataGrid sets the scroll
+        // viewport, so the first TestBackend frame is `rows 1–0 of 40`.
         let meta = self.position_label();
         let (inner, bg) = layout::card(
             Rect::new(area.x, area.y, area.width, h),
@@ -1117,26 +1110,6 @@ impl Page for GridPage {
             }
         }
 
-        let hy = area.y.saturating_add(h).saturating_add(1);
-        if hy < area.bottom() {
-            let help = if pending {
-                format!(
-                    "Enter edits · Space selects · s sorts · + inserts · - deletes · p previews SQL · Ctrl+S saves · seats over 500 are rejected on save · saved so far: {}",
-                    self.saved
-                )
-            } else {
-                format!(
-                    "p previews SQL · Ctrl+S saves · seats over 500 are rejected on save · saved so far: {}",
-                    self.saved
-                )
-            };
-            buf.set_string(
-                area.x.saturating_add(2),
-                hy,
-                &text::truncate(&help, usize::from(area.width.saturating_sub(2))),
-                t.muted(),
-            );
-        }
         ctx.inert = saved_inert;
         if overlay {
             self.dialog.set_open(true);
