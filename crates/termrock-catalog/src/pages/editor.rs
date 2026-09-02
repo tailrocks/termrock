@@ -412,7 +412,9 @@ impl Page for EditorPage {
         self.editor
             .set_accepts_input(focused && self.editor.is_editing());
         self.code.focused = focused;
+        self.code.set_editing(self.editor.is_editing());
         self.code.set_cursor_line(Some(self.editor.cursor().line));
+        self.code.set_cursor_col(self.editor.cursor().byte);
         let src = self.editor.text();
         let all = blocks(&src);
         let meta = if self.run_ticks > 0 {
@@ -597,8 +599,11 @@ impl Page for EditorPage {
                         .kind_glyph(g)
                 })
                 .collect();
+            // Source completion anchors at `cursor_cell.x - replace_len`.
+            let replace = u16::try_from(self.replace_len).unwrap_or(0);
+            let col = u16::try_from(pos.byte.min(usize::from(u16::MAX))).unwrap_or(0);
             let anchor = Rect::new(
-                parts.body.x,
+                parts.body.x.saturating_add(col.saturating_sub(replace)),
                 parts.body.y.saturating_add(
                     u16::try_from(pos.line.saturating_sub(self.code.scroll_y)).unwrap_or(0),
                 ),
@@ -629,6 +634,9 @@ impl Page for EditorPage {
                 if *cx.focus != Some(ID.sub("code")) {
                     return Route::Ignored;
                 }
+                // `set_editing` is a no-op unless the host already granted
+                // `accepts_input`. Render later keeps the gate as focused∧editing.
+                self.editor.set_accepts_input(true);
                 if self.complete_open {
                     let cands: Vec<CompletionCandidate<'_, usize>> = self
                         .complete_items

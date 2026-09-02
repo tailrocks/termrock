@@ -446,10 +446,14 @@ pub struct CodeBlockState {
     pub scroll_x: u16,
     /// Focused keyboard cursor line (absolute).
     pub cursor_line: Option<usize>,
+    /// Cursor column in display cells (0-based), for the `ln · col` footer.
+    pub cursor_col: usize,
     /// Inclusive start / exclusive end absolute line selection.
     pub selection: Option<(usize, usize)>,
     /// Keyboard focus owner.
     pub focused: bool,
+    /// Document is being edited (cursor line wears the field underline).
+    pub editing: bool,
     /// Hovered absolute line.
     pub hovered_line: Option<usize>,
     /// Last painted geometry.
@@ -476,8 +480,10 @@ impl CodeBlockState {
             scroll_y: 0,
             scroll_x: 0,
             cursor_line: None,
+            cursor_col: 0,
             selection: None,
             focused: false,
+            editing: false,
             hovered_line: None,
             parts: None,
             copied: crate::style::ActionFlash::new(),
@@ -498,9 +504,19 @@ impl CodeBlockState {
         self.focused = on;
     }
 
+    /// Editing flag (cursor-line underline).
+    pub const fn set_editing(&mut self, on: bool) {
+        self.editing = on;
+    }
+
     /// Cursor line.
     pub const fn set_cursor_line(&mut self, line: Option<usize>) {
         self.cursor_line = line;
+    }
+
+    /// Cursor column (0-based display cells).
+    pub const fn set_cursor_col(&mut self, col: usize) {
+        self.cursor_col = col;
     }
 
     /// Select exclusive-end line range.
@@ -1249,6 +1265,18 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
                     display_cols(&prepared).saturating_sub(usize::from(state.scroll_x))
                         > usize::from(body_w),
                 );
+                if wrap_i == 0 && state.editing && state.cursor_line == Some(abs) {
+                    let y = parts.body.y.saturating_add(row);
+                    for x in parts.body.x..parts.body.right() {
+                        if let Some(cell) = buffer.cell_mut((x, y)) {
+                            cell.set_style(
+                                cell.style()
+                                    .add_modifier(Modifier::UNDERLINED | Modifier::DIM)
+                                    .underline_color(theme.border_strong),
+                            );
+                        }
+                    }
+                }
                 row = row.saturating_add(1);
             }
             visible = visible.saturating_add(1);
@@ -1275,7 +1303,8 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
             let doc = self.document_len();
             let pos = if state.focused {
                 let line = state.cursor_line.unwrap_or(0).saturating_add(1);
-                format!("ln {line}/{doc} · col 1")
+                let col = state.cursor_col.saturating_add(1);
+                format!("ln {line}/{doc} · col {col}")
             } else if crate::scroll::is_scrollable(doc, usize::from(body_h).max(1)) {
                 let first = state.scroll_y.saturating_add(1);
                 let last = (state.scroll_y.saturating_add(usize::from(body_h))).min(doc);

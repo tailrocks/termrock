@@ -25,8 +25,9 @@ use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
     style::{Modifier, Style},
-    widgets::StatefulWidget,
+    widgets::{StatefulWidget, Widget},
 };
+use ratatui_widgets::{block::Block, borders::Borders};
 
 use crate::{
     input::{
@@ -1065,19 +1066,24 @@ impl<'a, Id> CompletionMenu<'a, Id> {
             preferred.height = items.saturating_add(2);
         }
 
-        let content_width = self
+        // Source Completion: `(label_w + detail_w + 8).clamp(24, 48)`.
+        let label_w = self
             .candidates
             .iter()
-            .map(|c| {
-                let glyph = c.kind_glyph.map(display_cols).unwrap_or(1);
-                let detail = c.detail.map(display_cols).unwrap_or(0);
-                display_cols(c.label)
-                    .saturating_add(glyph)
-                    .saturating_add(8)
-                    .saturating_add(if detail == 0 { 0 } else { detail + 2 })
-            })
+            .map(|c| display_cols(c.label))
             .max()
-            .unwrap_or(display_cols(self.empty_message).saturating_add(8));
+            .unwrap_or(4);
+        let detail_w = self
+            .candidates
+            .iter()
+            .map(|c| c.detail.map(display_cols).unwrap_or(0))
+            .max()
+            .unwrap_or(0);
+        let content_width = if self.candidates.is_empty() {
+            display_cols(self.empty_message).saturating_add(8)
+        } else {
+            label_w.saturating_add(detail_w).saturating_add(8)
+        };
         preferred.width = u16::try_from(content_width)
             .unwrap_or(48)
             .clamp(24, 48)
@@ -1140,29 +1146,22 @@ impl<'a, Id> CompletionMenu<'a, Id> {
         state.viewport_height = usize::from(list_body.height.max(1));
         state.reconcile(self.candidates);
 
-        // The menu declares itself non-focusable — the editor keeps focus — so
-        // it must not wear the focused border. A host that gives the menu its
-        // own focus says so with `focused(true)` (plans/009 Step 4).
-        let recipe = if self.focused {
-            super::SurfaceRecipe::OverlayFocused
-        } else {
-            super::SurfaceRecipe::Overlay
-        };
-        let colorless_system;
-        let surface_system = if self.colorless {
-            colorless_system = self
-                .system
-                .clone()
-                .capability(crate::style::ColorCapability::Monochrome);
-            &colorless_system
-        } else {
-            self.system
-        };
-        super::Surface::new(surface_system)
-            .recipe(recipe)
-            .bordered(true)
+        // Source `popup::surface()`: elevated fill, focused colour, no bold.
+        let theme = self.system.junie_theme();
+        super::Surface::new(self.system)
+            .recipe(super::SurfaceRecipe::Overlay)
+            .bordered(false)
             .padding(0, 0)
             .paint(menu, buffer);
+        Block::default()
+            .borders(Borders::ALL)
+            .border_style(
+                self.system
+                    .style(Role::BorderFocused)
+                    .bg(theme.surface_elevated),
+            )
+            .border_set(self.system.border_set())
+            .render(menu, buffer);
 
         // Loading / empty full-body messages
         if matches!(state.status, CompletionStatus::Loading) && self.candidates.is_empty() {
@@ -1283,19 +1282,19 @@ impl<'a, Id> CompletionMenu<'a, Id> {
 
             let detail_cols = candidate.detail.map(display_cols).unwrap_or(0);
             let kind_cols = candidate.kind.map(display_cols).unwrap_or(0);
-            let right = row_rect.right().saturating_sub(1);
             let label_x = row_rect.x.saturating_add(3);
+            // Source: `avail = row.width - 3`, show detail when
+            // `avail > label + detail + 2`.
+            let avail = usize::from(row_rect.width.saturating_sub(3));
             let show_detail = candidate.detail.is_some()
-                && usize::from(right.saturating_sub(label_x))
-                    > display_cols(candidate.label) + detail_cols + 2;
+                && avail > display_cols(candidate.label) + detail_cols + 2;
             let right_reserve = if show_detail { detail_cols + 2 } else { 0 }
                 + if kind_cols == 0 || candidate.kind_glyph.is_some() {
                     0
                 } else {
                     kind_cols + 1
                 };
-            let label_budget =
-                usize::from(right.saturating_sub(label_x)).saturating_sub(right_reserve);
+            let label_budget = avail.saturating_sub(right_reserve);
             let shown = take_display_cols(candidate.label, label_budget).to_string();
             paint_matched_label(
                 buffer,
@@ -1320,7 +1319,7 @@ impl<'a, Id> CompletionMenu<'a, Id> {
                 if candidate.kind_glyph.is_none() {
                     let kind_text = take_display_cols(kind, kind_cols.min(12));
                     let kw = display_cols(&kind_text) as u16;
-                    let kx = right.saturating_sub(kw);
+                    let kx = row_rect.right().saturating_sub(1).saturating_sub(kw);
                     if kx >= label_x {
                         buffer.set_stringn(kx, y, &kind_text, usize::from(kw), detail_style);
                     }

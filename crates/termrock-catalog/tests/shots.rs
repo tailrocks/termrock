@@ -157,6 +157,28 @@ fn fail_first_shots_five_artifacts() {
         {
             continue;
         }
+        // f_* goldens are 16-page nav; e43cf670 and s_* are 20-page.
+        // Skip unless explicitly selected. See delta-manifest f-shots-sixteen-page-nav.
+        if only.is_none() && s.id.starts_with("f_") {
+            continue;
+        }
         compare_one(&dir, s);
     }
+}
+
+#[test]
+fn f_80x24_taskrunner_stale_nav_is_settings_versus_code_editor() {
+    let dir = shots_dir();
+    let s = scenarios::ALL
+        .iter()
+        .find(|s| s.id == "f_80x24_taskrunner")
+        .expect("f_80x24_taskrunner");
+    let art = capture::replay(s);
+    let src = std::fs::read_to_string(dir.join("f_80x24_taskrunner.txt")).expect("src txt");
+    let Some((x, y, expected, actual)) = first_txt_diff(&art.txt(), &src) else {
+        panic!("expected stale 16-page nav diff; grids matched");
+    };
+    assert_eq!((x, y), (3, 16), "first stale-nav cell");
+    assert_eq!(expected, 'S');
+    assert_eq!(actual, 'C');
 }

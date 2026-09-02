@@ -82,8 +82,25 @@ impl Grid {
                         x,
                         y,
                         format!(
-                            "expected ch={:?} fg={:?} bg={:?} bold={} got ch={:?} fg={:?} bg={:?} bold={}",
-                            a.ch, a.fg, a.bg, a.bold, b.ch, b.fg, b.bg, b.bold
+                            "expected ch={:?} fg={:?} bg={:?} bold={} dim={} italic={} ul={} rev={} strike={} got ch={:?} fg={:?} bg={:?} bold={} dim={} italic={} ul={} rev={} strike={}",
+                            a.ch,
+                            a.fg,
+                            a.bg,
+                            a.bold,
+                            a.dim,
+                            a.italic,
+                            a.underline,
+                            a.reverse,
+                            a.strike,
+                            b.ch,
+                            b.fg,
+                            b.bg,
+                            b.bold,
+                            b.dim,
+                            b.italic,
+                            b.underline,
+                            b.reverse,
+                            b.strike
                         ),
                     ));
                 }

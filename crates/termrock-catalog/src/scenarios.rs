@@ -169,14 +169,15 @@ pub static ALL: &[Scenario] = &[
         PageId::EDITOR,
         120,
         40,
-        // Golden: newline between the comment and `pub async`, 4-space indent,
-        // then `cl` with the completion popup. Inventory `Tab Enter Down type cl`
-        // is short of that (s_editor_complete.txt is 27 lines, `    cl` on ln 2).
+        // Golden: `    cl` between the comment and `pub async` in the same
+        // block. Enter at the start of `pub async` leaves a blank line above
+        // the cursor; Up then type fills that line.
         &[
             Step::Tab,
             Step::Enter,
             Step::Down,
             Step::Enter,
+            Step::Up,
             Step::Type("    cl"),
         ],
     ),

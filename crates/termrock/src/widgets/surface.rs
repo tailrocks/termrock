@@ -439,6 +439,10 @@ fn fill_rect(buffer: &mut Buffer, area: Rect, style: Style) {
     for y in area.y..area.bottom() {
         for x in area.x..area.right() {
             if let Some(cell) = buffer.cell_mut((x, y)) {
+                // Source `fill` writes a space and replaces the cell. Style-only
+                // patches leave glyphs and modifiers from the surface below.
+                cell.reset();
+                cell.set_symbol(" ");
                 cell.set_style(style);
             }
         }
