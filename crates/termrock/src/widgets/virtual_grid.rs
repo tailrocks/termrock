@@ -400,6 +400,29 @@ impl<RowId, ColId> VirtualGridState<RowId, ColId> {
         }
         widths
     }
+
+    fn fill_visible_columns(
+        &self,
+        content_width: u16,
+        gap_width: u16,
+        out: &mut Vec<(usize, u16)>,
+    ) {
+        out.clear();
+        let mut used = 0u16;
+        for (index, width) in self.column_widths.iter().enumerate().skip(self.first_col()) {
+            let gap = if out.is_empty() { 0 } else { gap_width };
+            if used.saturating_add(gap) >= content_width {
+                break;
+            }
+            used = used.saturating_add(gap);
+            if used >= content_width {
+                break;
+            }
+            let take = (*width).min(content_width.saturating_sub(used)).max(1);
+            out.push((index, take));
+            used = used.saturating_add(take);
+        }
+    }
 }
 
 /// Resolves a resident row by absolute index.
@@ -945,59 +968,14 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> StatefulWidget for &VirtualGrid<'_, R
 
         // Visible column window from virtualizer first_col.
         let mut visible: Vec<(usize, u16)> = Vec::new();
-        let mut used = 0u16;
-        for (index, width) in state
-            .column_widths
-            .iter()
-            .enumerate()
-            .skip(state.first_col())
-        {
-            let gap = if visible.is_empty() {
-                0
-            } else {
-                self.system.spacing.column_gap
-            };
-            if used.saturating_add(gap) >= content_width {
-                break;
-            }
-            used = used.saturating_add(gap);
-            if used >= content_width {
-                break;
-            }
-            let take = (*width).min(content_width.saturating_sub(used)).max(1);
-            visible.push((index, take));
-            used = used.saturating_add(take);
-        }
+        state.fill_visible_columns(content_width, self.system.spacing.column_gap, &mut visible);
         state.body_cols_visible = visible.len();
         state.sync_virt_bounds();
         state.clamp_cursor();
         state.ensure_cursor_visible();
 
         // Recompute visible after clamp may have changed first_col.
-        visible.clear();
-        used = 0;
-        for (index, width) in state
-            .column_widths
-            .iter()
-            .enumerate()
-            .skip(state.first_col())
-        {
-            let gap = if visible.is_empty() {
-                0
-            } else {
-                self.system.spacing.column_gap
-            };
-            if used.saturating_add(gap) >= content_width {
-                break;
-            }
-            used = used.saturating_add(gap);
-            if used >= content_width {
-                break;
-            }
-            let take = (*width).min(content_width.saturating_sub(used)).max(1);
-            visible.push((index, take));
-            used = used.saturating_add(take);
-        }
+        state.fill_visible_columns(content_width, self.system.spacing.column_gap, &mut visible);
         state.body_cols_visible = visible.len();
 
         let header_style = super::table_chrome::header_style(self.system);
