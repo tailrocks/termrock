@@ -636,7 +636,9 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            query: TextInputState::new("").with_allow_empty(true),
+            query: TextInputState::new("")
+                .with_allow_empty(true)
+                .with_editing(),
             collection: CollectionState::new().orientation(RovingOrientation::Vertical),
             generation: 0,
             applied_generation: 0,
@@ -807,11 +809,15 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
 
     fn restore_memory(&mut self, provider_id: &str) {
         if let Some(mem) = self.memory.get(provider_id).cloned() {
-            self.query = TextInputState::new(&mem.query).with_allow_empty(true);
+            self.query = TextInputState::new(&mem.query)
+                .with_allow_empty(true)
+                .with_editing();
             self.scroll = mem.scroll;
             self.collection.set_active(Some(mem.cursor));
         } else {
-            self.query = TextInputState::new("").with_allow_empty(true);
+            self.query = TextInputState::new("")
+                .with_allow_empty(true)
+                .with_editing();
             self.scroll = 0;
             self.collection.set_active(Some(0));
         }
@@ -1008,7 +1014,9 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
         // Esc cancel
         if key.code == KeyCode::Esc {
             if !self.query_text().is_empty() {
-                self.query = TextInputState::new("").with_allow_empty(true);
+                self.query = TextInputState::new("")
+                    .with_allow_empty(true)
+                    .with_editing();
                 return self.request_search(providers);
             }
             // Cancel in-flight
@@ -1178,7 +1186,9 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
             }
             UiIntent::Cancel | UiIntent::Close => {
                 if !self.query_text().is_empty() {
-                    self.query = TextInputState::new("").with_allow_empty(true);
+                    self.query = TextInputState::new("")
+                        .with_allow_empty(true)
+                        .with_editing();
                     self.request_search(providers)
                 } else {
                     QuickOpenOutcome::Cancelled
@@ -2063,7 +2073,9 @@ mod tests {
     fn provider_switch_preserves_query() {
         let mut s = focused();
         let p = providers();
-        *s.query_mut() = TextInputState::new("main").with_allow_empty(true);
+        *s.query_mut() = TextInputState::new("main")
+            .with_allow_empty(true)
+            .with_editing();
         let items = filter_quick_open_items(&example_quick_open_files(), "main");
         let _ = s.apply_results(s.generation(), &items, true, None);
         // switch to symbols
@@ -2079,7 +2091,9 @@ mod tests {
         // symbols memory empty → query cleared
         assert_eq!(s.query_text(), "");
         // type on symbols
-        *s.query_mut() = TextInputState::new("paint").with_allow_empty(true);
+        *s.query_mut() = TextInputState::new("paint")
+            .with_allow_empty(true)
+            .with_editing();
         let sym = filter_quick_open_items(&example_quick_open_symbols(), "paint");
         let _ = s.apply_results(s.generation(), &sym, true, None);
         // back to files — restores "main"

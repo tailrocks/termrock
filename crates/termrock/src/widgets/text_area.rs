@@ -1893,13 +1893,13 @@ impl StatefulWidget for &TextArea<'_> {
         };
         let sb = Rect::new(field.right().saturating_sub(1), field.y, 1, rows);
         state.vertical_scrollbar = Some(sb);
-        crate::scroll::paint_scrolled_region(
+        crate::scroll::paint_overflow_scrollbar(
             buffer,
-            text,
             sb,
             content_h,
             state.viewport_height,
             state.scroll.offset_y(),
+            focused,
             self.system,
         );
 
@@ -2910,5 +2910,47 @@ mod tests {
             TextAreaOutcome::Changed
         );
         assert_eq!(state.text(), "a\nb");
+    }
+
+    #[test]
+    fn overflowing_text_area_uses_overflow_thumb() {
+        let system = DesignSystem::default();
+        let body: String = (0..24)
+            .map(|i| format!("line-{i:02}"))
+            .collect::<Vec<_>>()
+            .join("\n");
+        let mut state = TextAreaState::new(body);
+        state.set_accepts_input(true);
+        let area = Rect::new(0, 0, 28, 12);
+        let mut buffer = Buffer::empty(area);
+        (&TextArea::new(&system).rows(8)).render(area, &mut buffer, &mut state);
+        let thumb = crate::scroll::ScrollbarStyle::Line.vertical_thumb();
+        let mut sb_x = None;
+        let mut track_ys = Vec::new();
+        for y in 0..area.height {
+            for x in 0..area.width {
+                if buffer[(x, y)].symbol() == thumb {
+                    sb_x = Some(x);
+                }
+            }
+        }
+        let sb_x = sb_x.expect("overflowing text area paints a thumb");
+        let track = crate::scroll::SCROLLBAR_TRACK;
+        for y in 0..area.height {
+            let symbol = buffer[(sb_x, y)].symbol();
+            if symbol == thumb || symbol == track {
+                track_ys.push(y);
+            }
+        }
+        let viewport = track_ys.len();
+        let (start, len) = crate::scroll::overflow_thumb(24, viewport, viewport, 0)
+            .expect("24 lines overflow the field viewport");
+        let thumbs: Vec<u16> = track_ys
+            .iter()
+            .copied()
+            .filter(|y| buffer[(sb_x, *y)].symbol() == thumb)
+            .collect();
+        assert_eq!(thumbs.len(), len);
+        assert_eq!(thumbs[0], track_ys[start]);
     }
 }

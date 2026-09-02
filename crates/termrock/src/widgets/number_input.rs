@@ -289,7 +289,9 @@ impl NumberInputState {
     /// Empty integer field, empty allowed.
     #[must_use]
     pub fn new() -> Self {
-        let mut draft = TextInputState::new("").with_allow_empty(true);
+        let mut draft = TextInputState::new("")
+            .with_allow_empty(true)
+            .with_editing();
         draft.set_focused(false);
         Self {
             kind: NumberKind::Integer,
@@ -453,7 +455,9 @@ impl NumberInputState {
             None => String::new(),
             Some(v) => format_number(self.kind, v),
         };
-        let mut draft = TextInputState::new(text).with_allow_empty(true);
+        let mut draft = TextInputState::new(text)
+            .with_allow_empty(true)
+            .with_editing();
         draft.set_enabled(self.enabled);
         draft.set_read_only(self.read_only);
         draft.set_focused(self.focused);
@@ -1250,7 +1254,9 @@ mod tests {
     fn commit_and_submit() {
         let mut state = NumberInputState::new().with_value(1.0);
         state.set_focused(true);
-        state.draft = TextInputState::new("42").with_allow_empty(true);
+        state.draft = TextInputState::new("42")
+            .with_allow_empty(true)
+            .with_editing();
         state.editing = true;
         assert_eq!(
             state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),

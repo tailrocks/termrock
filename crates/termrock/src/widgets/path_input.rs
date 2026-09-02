@@ -396,7 +396,9 @@ impl PathInputState {
     /// Empty path field.
     #[must_use]
     pub fn new() -> Self {
-        let mut path = TextInputState::new("").with_allow_empty(true);
+        let mut path = TextInputState::new("")
+            .with_allow_empty(true)
+            .with_editing();
         path.set_focused(false);
         Self {
             path,
@@ -559,7 +561,9 @@ impl PathInputState {
 
     /// Replace path text.
     pub fn set_path(&mut self, path: impl Into<String>) {
-        let mut p = TextInputState::new(path).with_allow_empty(true);
+        let mut p = TextInputState::new(path)
+            .with_allow_empty(true)
+            .with_editing();
         p.set_focused(self.focused);
         p.set_enabled(self.enabled);
         p.set_read_only(self.read_only);

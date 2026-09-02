@@ -266,7 +266,7 @@ fn action_and_status_regions_match_painted_geometry() {
 }
 
 #[test]
-fn viewport_clamps_scroll_and_paints_a_full_cell_thumb() {
+fn viewport_clamps_scroll_and_paints_an_overflow_thumb() {
     let lines = [
         Line::from("zero"),
         Line::from("one"),
@@ -288,6 +288,8 @@ fn viewport_clamps_scroll_and_paints_a_full_cell_thumb() {
 
     assert_eq!(state.scroll_y, 1);
     assert_eq!(buffer[(1, 1)].symbol(), "o");
+    let (start, len) = crate::scroll::overflow_thumb(4, 2, 2, 1).expect("4 lines overflow 2");
+    assert_eq!((start, len), (1, 1));
     assert_eq!(buffer[(11, 1)].symbol(), "│");
     assert_eq!(buffer[(11, 2)].symbol(), "┃");
     assert_eq!(buffer[(0, 0)].fg, theme.style(Role::Border).fg.unwrap());

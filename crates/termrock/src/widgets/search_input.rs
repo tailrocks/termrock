@@ -225,7 +225,9 @@ impl SearchInputState {
     /// Empty search field.
     #[must_use]
     pub fn new() -> Self {
-        let mut query = TextInputState::new("").with_allow_empty(true);
+        let mut query = TextInputState::new("")
+            .with_allow_empty(true)
+            .with_editing();
         query.set_focused(false);
         Self {
             query,
@@ -246,7 +248,9 @@ impl SearchInputState {
     /// Seed query.
     #[must_use]
     pub fn with_query(mut self, query: impl Into<String>) -> Self {
-        let mut q = TextInputState::new(query).with_allow_empty(true);
+        let mut q = TextInputState::new(query)
+            .with_allow_empty(true)
+            .with_editing();
         q.set_focused(false);
         self.query = q;
         self
@@ -343,7 +347,9 @@ impl SearchInputState {
     /// Replace query without history side effects.
     pub fn set_query(&mut self, text: impl Into<String>) {
         let text = text.into();
-        let mut q = TextInputState::new(text).with_allow_empty(true);
+        let mut q = TextInputState::new(text)
+            .with_allow_empty(true)
+            .with_editing();
         q.set_focused(self.focused);
         q.set_enabled(self.enabled);
         self.query = q;
@@ -477,7 +483,9 @@ impl SearchInputState {
     }
 
     fn apply_recalled(&mut self, text: &str) {
-        let mut q = TextInputState::new(text.to_owned()).with_allow_empty(true);
+        let mut q = TextInputState::new(text.to_owned())
+            .with_allow_empty(true)
+            .with_editing();
         q.set_focused(self.focused);
         q.set_enabled(self.enabled);
         self.query = q;

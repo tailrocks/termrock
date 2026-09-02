@@ -647,12 +647,28 @@ impl<Id> TabsState<Id> {
             return TabsOutcome::Ignored;
         }
 
-        // Enter activates in manual mode (and always if focus differs)
-        if key.code == KeyCode::Enter && key.modifiers.is_empty() {
+        // Enter/Space activate (junie tabs.rs). Manual mode needs this;
+        // Automatic already selected on move.
+        if matches!(key.code, KeyCode::Enter | KeyCode::Char(' ')) && key.modifiers.is_empty() {
             if let Some(id) = self.collection.active().cloned() {
                 return self.activate(id, tabs);
             }
             return TabsOutcome::Ignored;
+        }
+
+        // h/l are arrows, not typeahead (junie Char('h')/'l').
+        if key.modifiers.is_empty() {
+            match key.code {
+                KeyCode::Char('h' | 'H') => {
+                    let out = self.collection.move_previous(&items);
+                    return self.after_focus_move(out, tabs);
+                }
+                KeyCode::Char('l' | 'L') => {
+                    let out = self.collection.move_next(&items);
+                    return self.after_focus_move(out, tabs);
+                }
+                _ => {}
+            }
         }
 
         // Home/End
@@ -1670,6 +1686,40 @@ mod tests {
             TabsOutcome::FocusChanged { .. } | TabsOutcome::SelectionChanged { .. }
         ));
         assert_eq!(state.selected(), Some(&"details"));
+    }
+
+    #[test]
+    fn tabs_hl_move_like_arrows() {
+        let tabs = sample_tabs();
+        let mut state = TabsState::new()
+            .with_selected("overview")
+            .with_activation(TabsActivation::Automatic);
+        state.set_focused(true);
+        assert!(matches!(
+            state.handle_key(KeyEvent::new(KeyCode::Char('l'), KeyModifiers::NONE), &tabs),
+            TabsOutcome::FocusChanged { .. } | TabsOutcome::SelectionChanged { .. }
+        ));
+        assert_eq!(state.selected(), Some(&"details"));
+        assert!(matches!(
+            state.handle_key(KeyEvent::new(KeyCode::Char('h'), KeyModifiers::NONE), &tabs),
+            TabsOutcome::FocusChanged { .. } | TabsOutcome::SelectionChanged { .. }
+        ));
+        assert_eq!(state.selected(), Some(&"overview"));
+    }
+
+    #[test]
+    fn tabs_space_activates() {
+        let tabs = sample_tabs();
+        let mut state = TabsState::new()
+            .with_selected("overview")
+            .with_activation(TabsActivation::Manual);
+        state.set_focused(true);
+        let _ = state.handle_key(KeyEvent::new(KeyCode::Right, KeyModifiers::NONE), &tabs);
+        assert_eq!(state.selected(), Some(&"overview"));
+        assert!(matches!(
+            state.handle_key(KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE), &tabs),
+            TabsOutcome::SelectionChanged { id: "details" }
+        ));
     }
 
     #[test]

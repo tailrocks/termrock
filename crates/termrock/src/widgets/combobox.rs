@@ -207,7 +207,9 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
     /// Empty combobox (constrained defaults: not creatable, exact preferred).
     #[must_use]
     pub fn new() -> Self {
-        let mut draft = TextInputState::new("").with_allow_empty(true);
+        let mut draft = TextInputState::new("")
+            .with_allow_empty(true)
+            .with_editing();
         draft.set_focused(false);
         Self {
             mode: ComboMode::Combobox,
@@ -396,7 +398,9 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
     /// Controlled draft (does not bump generation unless `notify`).
     pub fn set_draft(&mut self, text: impl Into<String>) {
         let text = text.into();
-        let mut d = TextInputState::new(text).with_allow_empty(true);
+        let mut d = TextInputState::new(text)
+            .with_allow_empty(true)
+            .with_editing();
         d.set_focused(self.focused);
         d.set_enabled(self.enabled);
         d.set_read_only(self.read_only);

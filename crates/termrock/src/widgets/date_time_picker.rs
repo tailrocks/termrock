@@ -780,7 +780,9 @@ impl DateTimePickerState {
     /// New picker of `kind`.
     #[must_use]
     pub fn new(kind: DateTimePickerKind) -> Self {
-        let mut draft = TextInputState::new("").with_allow_empty(true);
+        let mut draft = TextInputState::new("")
+            .with_allow_empty(true)
+            .with_editing();
         draft.set_focused(false);
         let today = CivilDate::new(2026, 8, 10); // neutral seed; host should set_today
         Self {
@@ -969,7 +971,9 @@ impl DateTimePickerState {
     }
 
     fn set_draft_text(&mut self, text: impl Into<String>) {
-        let mut draft = TextInputState::new(text).with_allow_empty(true);
+        let mut draft = TextInputState::new(text)
+            .with_allow_empty(true)
+            .with_editing();
         draft.set_enabled(self.enabled);
         draft.set_focused(self.focused && matches!(self.view, DateTimePickerView::Field));
         self.draft = draft;

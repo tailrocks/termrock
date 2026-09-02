@@ -233,7 +233,8 @@ impl Default for TextInputState {
 }
 
 impl TextInputState {
-    /// Creates text-input state with the cursor at the end of the value.
+    /// Creates idle (not editing) text-input state with the cursor at the end
+    /// of the value. Junie `TextInput::new` starts `editing: false`.
     #[must_use]
     pub fn new(value: impl Into<String>) -> Self {
         let value = value.into();
@@ -253,7 +254,7 @@ impl TextInputState {
             redo: Vec::new(),
             parts: None,
             focused: false,
-            editing: true,
+            editing: false,
             hovered: false,
             snapshot: None,
             selecting_with_mouse: false,
@@ -278,6 +279,15 @@ impl TextInputState {
     #[must_use]
     pub const fn with_allow_empty(mut self, allow_empty: bool) -> Self {
         self.allow_empty = allow_empty;
+        self
+    }
+
+    /// Live query, search, or draft surfaces that type immediately.
+    ///
+    /// Idle fields stay on [`Self::new`] (`editing: false`).
+    #[must_use]
+    pub fn with_editing(mut self) -> Self {
+        self.set_editing(true);
         self
     }
 
@@ -1880,6 +1890,23 @@ mod tests {
     }
 
     #[test]
+    fn new_focused_field_is_nav_not_editing() {
+        let mut state = TextInputState::new("abc");
+        state.set_focused(true);
+        assert!(!state.is_editing());
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE)),
+            TextInputOutcome::Ignored
+        );
+        assert_eq!(state.value(), "abc");
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
+            TextInputOutcome::Changed
+        );
+        assert!(state.is_editing());
+    }
+
+    #[test]
     fn first_click_focuses_second_click_edits() {
         let system = DesignSystem::junie();
         let mut state = TextInputState::new("abc");
@@ -1993,6 +2020,8 @@ mod tests {
         assert_eq!(state.value(), "");
         assert_eq!(state.cursor_byte(), 0);
         assert!(state.is_valid());
+        assert!(!state.is_editing());
+        state.set_editing(true);
         for character in "abcd".chars() {
             let _ = state.handle_key(KeyEvent::new(KeyCode::Char(character), KeyModifiers::NONE));
         }
@@ -2037,6 +2066,7 @@ mod tests {
     #[test]
     fn clipboard_outcomes() {
         let mut state = TextInputState::new("hello");
+        state.set_editing(true);
         state.set_cursor_byte(0);
         let _ = state.apply(EditAction::End { select: true });
         let out = state.handle_key(KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL));

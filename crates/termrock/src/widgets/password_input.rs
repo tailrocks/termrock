@@ -267,7 +267,9 @@ impl PasswordInputState {
     /// Empty secret field (empty allowed for progressive typing).
     #[must_use]
     pub fn new() -> Self {
-        let mut editor = TextInputState::new("").with_allow_empty(true);
+        let mut editor = TextInputState::new("")
+            .with_allow_empty(true)
+            .with_editing();
         editor.set_enabled(true);
         editor.set_focused(false);
         Self {
@@ -287,7 +289,9 @@ impl PasswordInputState {
     #[must_use]
     pub fn with_secret(secret: impl Into<String>) -> Self {
         let mut state = Self::new();
-        let mut editor = TextInputState::new(secret).with_allow_empty(true);
+        let mut editor = TextInputState::new(secret)
+            .with_allow_empty(true)
+            .with_editing();
         editor.set_enabled(true);
         editor.set_focused(false);
         state.editor = editor;
@@ -299,7 +303,9 @@ impl PasswordInputState {
     pub fn with_max_graphemes(mut self, max: usize) -> Self {
         self.editor = std::mem::replace(
             &mut self.editor,
-            TextInputState::new("").with_allow_empty(true),
+            TextInputState::new("")
+                .with_allow_empty(true)
+                .with_editing(),
         )
         .with_max_graphemes(max);
         self

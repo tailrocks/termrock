@@ -36,7 +36,7 @@ Current gate: 40 equivalent showcase crops PASS at `text_cells: 0` / `color_cell
 Shipped contracts that the lookbook must consume (no page-local forks):
 
 - Table reverse cell cursor is `TableState::cell_nav`. `focused_column` without that flag is not a cursor; Left/Right stay row-select. `cell_nav` with no column seeds the first visible column on paint (junie `cursor_col` starts at 0).
-- Line overflow thumbs (`Panel`, `Picker`, `List`) use `scroll::overflow_thumb` / `paint_overflow_scrollbar`: `len = (viewport * track) / content`.
+- Line overflow thumbs (`Panel`, `Picker`, `List`, `Tree`, `TextArea`, `Select`) use `scroll::overflow_thumb` / `paint_overflow_scrollbar`: `len = (viewport * track) / content`.
 - Picker search footer paints junie's spelled `Alt+Enter`, not Emacs `A-↵`. Searchable pickers type `j`/`k`/Space into the query; Tab is `PickerOutcome::NextScope`; Alt+Enter is `PickerOutcome::ActivatedAlt`.
 
 The YAML token block and prose that follow are the Junie specification TermRock implements.

@@ -475,6 +475,41 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
         }
     }
 
+    /// Cycle the committed value while closed (junie Up/Left Down/Right).
+    fn cycle_closed_value(&mut self, options: &[SelectOption<Id>], delta: i16) -> SelectOutcome<Id>
+    where
+        Id: Clone + PartialEq,
+    {
+        if !self.enabled {
+            return SelectOutcome::Ignored;
+        }
+        let enabled: Vec<Id> = options
+            .iter()
+            .filter(|option| option.is_option() && !option.disabled)
+            .map(|option| option.id.clone())
+            .collect();
+        if enabled.is_empty() {
+            return SelectOutcome::Ignored;
+        }
+        let current = self
+            .value
+            .as_ref()
+            .and_then(|id| enabled.iter().position(|candidate| candidate == id));
+        let next = match current {
+            Some(index) if delta < 0 => index.saturating_sub(1),
+            Some(index) => (index + 1).min(enabled.len() - 1),
+            None if delta < 0 => enabled.len() - 1,
+            None => 0,
+        };
+        let id = enabled[next].clone();
+        if self.value.as_ref() == Some(&id) {
+            return SelectOutcome::Ignored;
+        }
+        self.value = Some(id.clone());
+        self.collection.set_active(Some(id.clone()));
+        SelectOutcome::ValueChanged { id }
+    }
+
     /// Open list.
     pub fn open(&mut self, bounds: Rect, options: &[SelectOption<Id>]) -> SelectOutcome<Id> {
         if !self.enabled {
@@ -493,6 +528,7 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
         if self.searchable {
             self.search.set_focused(true);
             self.search.set_enabled(true);
+            self.search.set_editing(true);
         }
         self.focused = true;
         SelectOutcome::Opened { presentation }
@@ -505,6 +541,7 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
         }
         self.presentation = SelectPresentation::Closed;
         self.search.set_focused(false);
+        self.search.set_editing(false);
         let _ = self.search.clear();
         // Restore collection active to value for next open
         self.collection.set_active(self.value.clone());
@@ -519,6 +556,7 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
         self.value = Some(id.clone());
         self.presentation = SelectPresentation::Closed;
         self.search.set_focused(false);
+        self.search.set_editing(false);
         let _ = self.search.clear();
         SelectOutcome::ValueChanged { id }
     }
@@ -570,7 +608,12 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
             {
                 self.open(bounds, options)
             }
-            KeyCode::Down if key.modifiers.is_empty() => self.open(bounds, options),
+            KeyCode::Down | KeyCode::Right if key.modifiers.is_empty() => {
+                self.cycle_closed_value(options, 1)
+            }
+            KeyCode::Up | KeyCode::Left if key.modifiers.is_empty() => {
+                self.cycle_closed_value(options, -1)
+            }
             KeyCode::Esc => SelectOutcome::Ignored,
             // typeahead open + first char
             KeyCode::Char(c)
@@ -1130,13 +1173,13 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
             }
         }
 
-        crate::scroll::paint_scrolled_region(
+        crate::scroll::paint_overflow_scrollbar(
             buffer,
-            list_area,
             gutter,
             coll_items.len(),
             vp,
             u16::try_from(state.collection.offset()).unwrap_or(u16::MAX),
+            state.focused,
             self.system,
         );
     }
@@ -1580,6 +1623,76 @@ mod tests {
                 .contains(Modifier::UNDERLINED),
             "closed focused select is not editing"
         );
+    }
+
+    #[test]
+    fn closed_select_down_cycles_value_without_opening() {
+        let opts = sample_options();
+        let mut state = SelectState::new().with_value("apple");
+        state.set_focused(true);
+        let bounds = Rect::new(0, 0, 80, 24);
+        assert_eq!(
+            state.handle_key(
+                KeyEvent::new(KeyCode::Down, KeyModifiers::NONE),
+                &opts,
+                bounds
+            ),
+            SelectOutcome::ValueChanged { id: "banana" }
+        );
+        assert!(!state.is_open());
+        assert_eq!(state.value(), Some(&"banana"));
+        assert_eq!(
+            state.handle_key(
+                KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
+                &opts,
+                bounds
+            ),
+            SelectOutcome::Opened {
+                presentation: SelectPresentation::Popover
+            }
+        );
+        assert!(state.is_open());
+    }
+
+    #[test]
+    fn overflowing_select_uses_overflow_thumb() {
+        let system = DesignSystem::default();
+        let opts: Vec<SelectOption<usize>> = (0..24)
+            .map(|i| SelectOption::option(i, format!("opt-{i:02}")))
+            .collect();
+        let mut state = SelectState::new().with_value(0);
+        state.set_focused(true);
+        let area = Rect::new(0, 0, 32, 14);
+        let _ = state.open(area, &opts);
+        let mut buffer = Buffer::empty(area);
+        Select::new(&opts, &system).paint_stacked(area, &mut buffer, &mut state);
+        let thumb = crate::scroll::ScrollbarStyle::Line.vertical_thumb();
+        let mut sb_x = None;
+        for y in 1..area.height.saturating_sub(1) {
+            for x in 1..area.width.saturating_sub(1) {
+                if buffer[(x, y)].symbol() == thumb {
+                    sb_x = Some(x);
+                }
+            }
+        }
+        let sb_x = sb_x.expect("overflowing select paints a thumb");
+        let track = crate::scroll::SCROLLBAR_TRACK;
+        let track_ys: Vec<u16> = (1..area.height.saturating_sub(1))
+            .filter(|y| {
+                let symbol = buffer[(sb_x, *y)].symbol();
+                symbol == thumb || symbol == track
+            })
+            .collect();
+        let viewport = track_ys.len();
+        let (start, len) = crate::scroll::overflow_thumb(24, viewport, viewport, 0)
+            .expect("24 options overflow the list viewport");
+        let thumbs: Vec<u16> = track_ys
+            .iter()
+            .copied()
+            .filter(|y| buffer[(sb_x, *y)].symbol() == thumb)
+            .collect();
+        assert_eq!(thumbs.len(), len);
+        assert_eq!(thumbs[0], track_ys[start]);
     }
 
     #[test]

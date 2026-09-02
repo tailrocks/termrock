@@ -11,6 +11,10 @@ Two agents. One tree. Claim before write. Never revert the other agent's files.
 
 ## Core claimed (this commit)
 
+- `crates/termrock/src/widgets/{tree,text_area,select}.rs` — overflow gutter uses `paint_overflow_scrollbar` / `overflow_thumb`
+- `crates/termrock/src/widgets/{tabs,controls,text_input,data_table,picker}.rs` — junie keymap/state defaults
+
+
 Landed reusable APIs (catalog/preview must use these; no page-local forks):
 
 - `crates/termrock/src/widgets/table.rs` — `TableState::cell_nav`; `ColumnWidth::Min` grows leftover (junie `Constraint::Min`)
@@ -33,13 +37,19 @@ Landed reusable APIs (catalog/preview must use these; no page-local forks):
 - **Table columns:** `ColumnWidth::Min(n)` now absorbs leftover after Fixed (junie Min). Drop Status via `.priority(20)` and render the **same** story at 52×6: Task grows 24→33. Do not mint a second Fixed-33 story.
 - **DataTable gap:** `resolve_paint_widths_with_gap(budget, system.spacing.column_gap, out)`. Id cells fill the column with `TextSecondary` (padding included).
 - **Grid header `⚷`:** `DataColumn::primary()`. Header origin is faint `⚷` (junie overdraw of `"▪ "`). Body Id cells stay `TextSecondary`. Catalog can crop the header.
-- **Framed pane scroll:** `Panel::vertical_scroll(content_len)` + optional `.scroll_offset(n)`. Title row paints two faint blanks before `─╮` (junie empty `meta` `"  "`). Body gutter uses `scroll::paint_overflow_scrollbar` / `overflow_thumb` (`len = (viewport * track) / content`). Host wraps copy at `Panel::scrolled_content_area(body)` (`width - 2`). `full_cell_thumb` stays the subcell `tui-scrollbar` rounding; line widgets (panel, picker, list) must not use it for junie thumbs.
+- **Framed pane scroll:** `Panel::vertical_scroll(content_len)` + optional `.scroll_offset(n)`. Title row paints two faint blanks before `─╮` (junie empty `meta` `"  "`). Body gutter uses `scroll::paint_overflow_scrollbar` / `overflow_thumb` (`len = (viewport * track) / content`). Host wraps copy at `Panel::scrolled_content_area(body)` (`width - 2`). `full_cell_thumb` stays the subcell `tui-scrollbar` rounding for `ScrollArea`/dialog/`paint_scrolled_region`. Line widgets (panel, picker, list, tree, text area, select) use `overflow_thumb`.
+- **Tabs keys:** `h`/`l` move like arrows. Space activates (same as Enter).
+- **Radio Tab:** ignored; scene owns Tab. Arrows/`j`/`k` still move.
+- **Closed Select:** Down/Right and Up/Left cycle the value without opening. Enter/Space open.
+- **TextInput:** `new` starts `editing: false`. Enter begins edit. Picker query and open Select search call `set_editing(true)`.
+- **DataTable:** default `DataTableNavMode::Row` (junie `cell_nav: false`). Reverse cell requires Cell/Range **and** `DataTable::focused(true)`.
 
 ## Handoff / do not duplicate
 
 - Table/grid/editable lookbook stories + `verify/junie` crops in this commit are **API consumers** of `cell_nav` / Min leftover / DataTable gap-2. Presentation owns the unified catalog and may relocate those stories; do not reimplement the widgets.
 - PNG bless (`dialog/confirm-run`, `panel/framed-pane` missing from Jackin subset) is presentation. List overflow now uses `overflow_thumb`; `list/scroll-rows` PNG rewrite is the intended junie thumb (verify 0/0).
 - Workspace `png_baselines` red is presentation (subset stories without baselines / intended Junie paint drift). Core will not run `mise run bless-pngs`.
+- `TextInputState::new` is idle (`editing: false`). Lookbook `text-input/*` PNG and toast knob tests still type as if `new()` were editing — presentation consume (`set_editing(true)` on live knobs, bless idle field paint).
 - Pre-existing panel ellipsis tests are core defects; this agent fixes the painter.
 
 ## Presentation claimed (this slice)

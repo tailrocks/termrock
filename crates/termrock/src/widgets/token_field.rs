@@ -279,7 +279,9 @@ impl<Id> TokenFieldState<Id> {
     /// Empty field.
     #[must_use]
     pub fn new() -> Self {
-        let mut draft = TextInputState::new("").with_allow_empty(true);
+        let mut draft = TextInputState::new("")
+            .with_allow_empty(true)
+            .with_editing();
         draft.set_focused(false);
         Self {
             tokens: Vec::new(),

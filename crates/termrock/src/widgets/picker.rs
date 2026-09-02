@@ -156,7 +156,11 @@ impl<Id: Clone + PartialEq> PickerState<Id> {
     #[must_use]
     pub fn new(selected: Option<Id>) -> Self {
         Self {
-            query: TextInputState::new("").with_allow_empty(true),
+            query: {
+                let mut query = TextInputState::new("").with_allow_empty(true);
+                query.set_editing(true);
+                query
+            },
             list: ListState::new(selected),
             previous_visible: Vec::new(),
             accepts_input: true,

@@ -259,7 +259,9 @@ impl AuthEntryState {
     }
 
     fn blank(mode: AuthEntryMode) -> Self {
-        let mut identity = TextInputState::new("").with_allow_empty(true);
+        let mut identity = TextInputState::new("")
+            .with_allow_empty(true)
+            .with_editing();
         identity.set_focused(true);
         let mut secrets = PasswordConfirmState::new();
         secrets.password.set_focused(false);

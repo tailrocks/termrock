@@ -130,7 +130,7 @@ impl InputGroupState {
     /// Fresh.
     #[must_use]
     pub fn new() -> Self {
-        let mut field = TextInputState::new("");
+        let mut field = TextInputState::new("").with_editing();
         field.set_focused(false);
         Self {
             field,
