@@ -3380,12 +3380,13 @@ fn a_scrolled_region_says_it_continues() {
             .to_string_lossy()
             .to_string();
         let paints_bar = source.lines.iter().any(|(_, line)| {
-            line.contains("paint_list_scrollbar(") || line.contains("render_scrollbar(")
+            line.contains("paint_list_scrollbar(")
+                || line.contains("paint_overflow_scrollbar(")
+                || line.contains("render_scrollbar(")
         });
-        let goes_through_the_authority = source
-            .lines
-            .iter()
-            .any(|(_, line)| line.contains("paint_scrolled_region("));
+        let goes_through_the_authority = source.lines.iter().any(|(_, line)| {
+            line.contains("paint_scrolled_region(") || line.contains("paint_overflow_scrollbar(")
+        });
         if paints_bar
             && !goes_through_the_authority
             && name != "scroll_area.rs"

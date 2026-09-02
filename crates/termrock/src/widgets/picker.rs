@@ -12,7 +12,6 @@ use crate::{
         Outcome, OverlayId, OverlayOutcome, OverlaySize, OverlaySpec, OverlayStack, place_overlay,
     },
     keymap::KeyChord,
-    scroll::SCROLLBAR_TRACK,
     style::{DesignSystem, Role, VisualState},
     text::{display_cols, take_display_cols},
 };
@@ -819,32 +818,20 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
         }
 
         if overflow {
-            // junie `ScrollState::thumb`: len = (viewport * track) / content
-            let track = viewport.max(1);
-            let content = self.rows.len().max(1);
-            let thumb_len = ((viewport * track) / content).max(1).min(track);
-            let max_off = content.saturating_sub(viewport);
-            let thumb_start = if max_off == 0 {
-                0
-            } else {
-                (offset * (track - thumb_len) + max_off / 2) / max_off
-            };
-            let x = list_area.right().saturating_sub(1);
-            for i in 0..track {
-                let y = list_area.y.saturating_add(i as u16);
-                let on_thumb = i >= thumb_start && i < thumb_start + thumb_len;
-                buffer.set_stringn(
-                    x,
-                    y,
-                    if on_thumb { "┃" } else { SCROLLBAR_TRACK },
-                    1,
-                    if on_thumb {
-                        self.system.scrollbar_thumb(self.focused, false)
-                    } else {
-                        self.system.scrollbar_track()
-                    },
-                );
-            }
+            crate::scroll::paint_overflow_scrollbar(
+                buffer,
+                Rect {
+                    x: list_area.right().saturating_sub(1),
+                    y: list_area.y,
+                    width: 1,
+                    height: list_area.height,
+                },
+                self.rows.len(),
+                viewport,
+                u16::try_from(offset).unwrap_or(u16::MAX),
+                self.focused,
+                self.system,
+            );
         }
 
         if show_hints {
@@ -1202,6 +1189,53 @@ mod tests {
         assert_eq!(
             buffer[(selected.area.x, selected.area.y)].symbol(),
             tokens.glyphs.selection_gutter()
+        );
+    }
+
+    #[test]
+    fn overflowing_picker_uses_overflow_thumb() {
+        let system = DesignSystem::default();
+        let ids = [
+            "r00", "r01", "r02", "r03", "r04", "r05", "r06", "r07", "r08", "r09", "r10", "r11",
+            "r12", "r13", "r14", "r15", "r16", "r17", "r18", "r19", "r20", "r21", "r22", "r23",
+        ];
+        let visible = rows(&ids);
+        let mut state = PickerState::new(Some("r00"));
+        let area = Rect::new(0, 0, 28, 14);
+        let mut buffer = Buffer::empty(area);
+        Picker::new(&visible, &system).render(area, &mut buffer, &mut state);
+        let thumb = crate::scroll::ScrollbarStyle::Line.vertical_thumb();
+        let track = crate::scroll::SCROLLBAR_TRACK;
+        // Box borders also use `│`; the overflow gutter is inside the frame.
+        let mut sb_x = None;
+        for y in 1..area.height.saturating_sub(1) {
+            for x in 1..area.width.saturating_sub(1) {
+                if buffer[(x, y)].symbol() == thumb {
+                    sb_x = Some(x);
+                }
+            }
+        }
+        let sb_x = sb_x.expect("overflowing picker paints a thumb");
+        let track_ys: Vec<u16> = (1..area.height.saturating_sub(1))
+            .filter(|y| {
+                let symbol = buffer[(sb_x, *y)].symbol();
+                symbol == thumb || symbol == track
+            })
+            .collect();
+        let viewport = track_ys.len();
+        let (start, len) = crate::scroll::overflow_thumb(24, viewport, viewport, 0)
+            .expect("24 rows overflow the list viewport");
+        let thumbs: Vec<u16> = track_ys
+            .iter()
+            .copied()
+            .filter(|y| buffer[(sb_x, *y)].symbol() == thumb)
+            .collect();
+        assert_eq!(thumbs.len(), len);
+        assert_eq!(thumbs[0], track_ys[start]);
+        assert_eq!(
+            buffer[(sb_x, track_ys[len])].symbol(),
+            track,
+            "cells after the thumb stay track"
         );
     }
 

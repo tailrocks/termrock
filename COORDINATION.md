@@ -18,7 +18,7 @@ Landed reusable APIs (catalog/preview must use these; no page-local forks):
 - `crates/termrock/src/widgets/virtual_grid.rs` — same gap 2 (was 1)
 - `crates/termrock/src/widgets/panel.rs` — border title/footer ellipsis (was Clip); `Panel::vertical_scroll` + title-track reserve + overflow gutter
 - `crates/termrock/src/scroll/mod.rs` — `overflow_thumb` (junie `ScrollState::thumb`); `paint_overflow_scrollbar`
-- `crates/termrock/src/widgets/picker.rs` — query underline is editing D5; hint chord `A-↵` not `Alt+Enter`
+- `crates/termrock/src/widgets/picker.rs` — query underline is editing D5; hint chord `A-↵` not `Alt+Enter`; overflow gutter uses `paint_overflow_scrollbar`
 - `crates/termrock/src/style/junie.rs` — `gutter()` colour-only; BOLD from row fill merge
 - `crates/termrock/tests/text_area_hot_path.rs` — insert test enters editing first
 - `crates/termrock/tests/design_gate.rs` — picker underline class
@@ -30,7 +30,7 @@ Landed reusable APIs (catalog/preview must use these; no page-local forks):
 - **Table columns:** `ColumnWidth::Min(n)` now absorbs leftover after Fixed (junie Min). Drop Status via `.priority(20)` and render the **same** story at 52×6: Task grows 24→33. Do not mint a second Fixed-33 story.
 - **DataTable gap:** `resolve_paint_widths_with_gap(budget, system.spacing.column_gap, out)`. Id cells fill the column with `TextSecondary` (padding included).
 - **Grid header `⚷`:** `DataColumn::primary()`. Header origin is faint `⚷` (junie overdraw of `"▪ "`). Body Id cells stay `TextSecondary`. Catalog can crop the header.
-- **Framed pane scroll:** `Panel::vertical_scroll(content_len)` + optional `.scroll_offset(n)`. Title row paints two faint blanks before `─╮` (junie empty `meta` `"  "`). Body gutter uses `scroll::paint_overflow_scrollbar` / `overflow_thumb` (`len = (viewport * track) / content`). Host wraps copy at `Panel::scrolled_content_area(body)` (`width - 2`). `full_cell_thumb` stays the subcell `tui-scrollbar` rounding; line widgets must not use it for junie thumbs.
+- **Framed pane scroll:** `Panel::vertical_scroll(content_len)` + optional `.scroll_offset(n)`. Title row paints two faint blanks before `─╮` (junie empty `meta` `"  "`). Body gutter uses `scroll::paint_overflow_scrollbar` / `overflow_thumb` (`len = (viewport * track) / content`). Host wraps copy at `Panel::scrolled_content_area(body)` (`width - 2`). `full_cell_thumb` stays the subcell `tui-scrollbar` rounding; line widgets (panel, picker) must not use it for junie thumbs.
 
 ## Handoff / do not duplicate
 
