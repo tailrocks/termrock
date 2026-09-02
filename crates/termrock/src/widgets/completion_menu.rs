@@ -1236,11 +1236,14 @@ impl<'a, Id> CompletionMenu<'a, Id> {
             let hit = Rect::new(list_area.x, y, list_area.width.max(1), 1);
             state.hits.push((candidate.id.clone(), hit));
 
-            let selected = state.selected.as_ref() == Some(&candidate.id);
+            let cursor = state.selected.as_ref() == Some(&candidate.id);
             let hovered = state.hovered.as_ref() == Some(&candidate.id);
+            // Source completion sets `state.focused` on the cursor row only.
+            // `selected && focused` would wash accent_bg; junie uses the gutter
+            // bar, not a membership tint.
             let visual = ListRowVisualState {
-                selected,
-                focused: selected,
+                selected: false,
+                focused: cursor,
                 hovered,
                 enabled: candidate.enabled,
                 ..ListRowVisualState::default()
@@ -1251,9 +1254,9 @@ impl<'a, Id> CompletionMenu<'a, Id> {
             let row_bg = theme.surface_elevated;
             let mut style = self.system.row(
                 VisualState {
-                    focused: selected,
+                    focused: cursor,
                     hovered,
-                    selected,
+                    selected: false,
                     disabled: !candidate.enabled,
                     ..VisualState::default()
                 },
@@ -1261,7 +1264,20 @@ impl<'a, Id> CompletionMenu<'a, Id> {
             );
             style = chrome.label_style(style);
             buffer.set_style(row_rect, style);
-            chrome.paint_gutter(buffer, row_rect);
+            let vis = VisualState {
+                focused: cursor,
+                hovered,
+                selected: false,
+                disabled: !candidate.enabled,
+                ..VisualState::default()
+            };
+            buffer.set_stringn(
+                row_rect.x,
+                y,
+                self.system.glyphs.selection_gutter(),
+                1,
+                self.system.gutter(vis, row_bg, false),
+            );
 
             // List anatomy: `▎ kind label … detail`
             let glyph = candidate.kind_glyph.unwrap_or(" ");
@@ -1272,7 +1288,7 @@ impl<'a, Id> CompletionMenu<'a, Id> {
                 &g,
                 1,
                 style
-                    .fg(if selected {
+                    .fg(if cursor {
                         theme.text_primary
                     } else {
                         theme.text_muted
@@ -1304,7 +1320,7 @@ impl<'a, Id> CompletionMenu<'a, Id> {
                 candidate.label,
                 candidate.match_ranges.unwrap_or(&[]),
                 style,
-                selected,
+                cursor,
             );
 
             let detail_style = style.fg(theme.text_muted).remove_modifier(Modifier::BOLD);

@@ -11,10 +11,10 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::{Position, Rect};
 use ratatui::style::Style;
 use termrock::input::{KeyCode, KeyEventKind, KeyModifiers};
-use termrock::style::{DesignSystem, SyntaxTone};
+use termrock::style::{DesignSystem, Role, SyntaxTone};
 use termrock::widgets::{
-    CodeBlock, CodeBlockState, CodeHighlight, CodeHighlightKind, CompletionCandidate,
-    CompletionMenu, CompletionMenuOutcome, CompletionMenuState, EmptyKind, EmptyState,
+    CodeBlock, CodeBlockState, CodeGutterMark, CodeHighlight, CompletionCandidate, CompletionMenu,
+    CompletionMenuOutcome, CompletionMenuState, EmptyKind, EmptyState, MatchRanges,
     SyntaxHighlighter, TextAreaOutcome, TextAreaState, TextCursor, fuzzy_match_label,
 };
 
@@ -239,7 +239,7 @@ pub struct EditorPage {
     code: CodeBlockState,
     completion: CompletionMenuState<usize>,
     complete_open: bool,
-    complete_items: Vec<(String, String, &'static str)>,
+    complete_items: Vec<(String, String, &'static str, MatchRanges)>,
     run_ticks: u8,
     runs: u32,
     last_ms: Option<u32>,
@@ -308,7 +308,10 @@ impl EditorPage {
             .into_iter()
             .map(|(_, i)| {
                 let (l, d, g) = CANDIDATES[i];
-                (l.to_owned(), d.to_owned(), g)
+                let ranges = fuzzy_match_label(&word, l)
+                    .map(|(_, r)| r)
+                    .unwrap_or_default();
+                (l.to_owned(), d.to_owned(), g, ranges)
             })
             .collect();
         self.replace_len = word.len();
@@ -433,14 +436,7 @@ impl Page for EditorPage {
         let lines: Vec<&str> = self.editor.lines().collect();
         let cur = self.cursor_offset();
         let current = all.iter().find(|b| b.start <= cur && cur <= b.end);
-        let mut highlights: Vec<CodeHighlight> = Vec::new();
-        if let Some(run) = &self.running {
-            let a = line_of(&src, run.start);
-            let b = line_of(&src, run.end);
-            for ln in a..=b {
-                highlights.push(CodeHighlight::line(ln, CodeHighlightKind::Emphasis));
-            }
-        }
+        let highlights: Vec<CodeHighlight> = Vec::new();
         let hi = SampleSyntax { system: ctx.system };
         let mut block = CodeBlock::new(&lines, ctx.system)
             .highlighter(&hi)
@@ -450,6 +446,30 @@ impl Page for EditorPage {
         }
         if !highlights.is_empty() {
             block = block.highlights(&highlights);
+        }
+        let mut marks: Vec<CodeGutterMark> = self
+            .diagnostics
+            .iter()
+            .map(|d| {
+                CodeGutterMark::new(
+                    line_of(&src, d.range.start),
+                    '!',
+                    if d.error { Role::Danger } else { Role::Warning },
+                )
+            })
+            .collect();
+        if let Some(run) = &self.running {
+            let frames = termrock::style::SPINNER_BRAILLE_FRAMES;
+            let frame = frames[ctx.interaction.tick as usize % frames.len()];
+            if let Some(ch) = frame.chars().next() {
+                marks.insert(
+                    0,
+                    CodeGutterMark::new(line_of(&src, run.start), ch, Role::Accent),
+                );
+            }
+        }
+        if !marks.is_empty() {
+            block = block.gutter_marks(&marks);
         }
         let parts = block.paint(inner, buf, &mut self.code);
         ctx.control(ID.sub("code"), inner, false);
@@ -593,10 +613,11 @@ impl Page for EditorPage {
                 .complete_items
                 .iter()
                 .enumerate()
-                .map(|(i, (l, d, g))| {
+                .map(|(i, (l, d, g, ranges))| {
                     CompletionCandidate::new(i, l.as_str())
                         .detail(d.as_str())
                         .kind_glyph(g)
+                        .matches(ranges.as_slice())
                 })
                 .collect();
             // Source completion anchors at `cursor_cell.x - replace_len`.
@@ -642,7 +663,7 @@ impl Page for EditorPage {
                         .complete_items
                         .iter()
                         .enumerate()
-                        .map(|(i, (l, _, _))| CompletionCandidate::new(i, l.as_str()))
+                        .map(|(i, (l, _, _, _))| CompletionCandidate::new(i, l.as_str()))
                         .collect();
                     match self.completion.handle_key(*key, &cands) {
                         CompletionMenuOutcome::Committed(i) => {
@@ -767,7 +788,7 @@ impl Page for EditorPage {
                         .complete_items
                         .iter()
                         .enumerate()
-                        .map(|(i, (l, _, _))| CompletionCandidate::new(i, l.as_str()))
+                        .map(|(i, (l, _, _, _))| CompletionCandidate::new(i, l.as_str()))
                         .collect();
                     match self.completion.handle_mouse(
                         termrock::input::MouseEvent {

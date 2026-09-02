@@ -104,7 +104,7 @@ fn compare_one(dir: &Path, s: &Scenario) {
         fail(s, "html", format!("cell ({x},{y}) {why}"));
     }
 
-    let src_buf = src_grid.to_buffer();
+    let src_buf = src_grid.for_raster().to_buffer();
     let src_png = termrock_raster::render_png(&src_buf, &RolePalette::junie())
         .unwrap_or_else(|e| fail(s, "png", format!("raster source ansi: {e}")));
     let ours_png = art

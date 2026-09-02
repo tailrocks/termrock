@@ -1178,15 +1178,12 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
                 );
                 buffer.set_stringn(gx, y, self.system.glyphs.selection_gutter(), 1, line_gutter);
                 if let Some(m) = self.mark_for(abs) {
-                    // A diagnostic owns the marker slot (`!`).
-                    buffer.set_stringn(
-                        gx.saturating_add(1),
-                        y,
-                        m.glyph.to_string(),
-                        1,
-                        fs.patch(self.system.style(m.role))
-                            .add_modifier(Modifier::BOLD),
-                    );
+                    // Diagnostic `!` is bold; running spinner is accent only.
+                    let mut mark_style = fs.patch(self.system.style(m.role));
+                    if m.glyph == '!' {
+                        mark_style = mark_style.add_modifier(Modifier::BOLD);
+                    }
+                    buffer.set_stringn(gx.saturating_add(1), y, m.glyph.to_string(), 1, mark_style);
                 } else if let Some((start, end)) = block
                     && abs == start
                     && abs < end
@@ -1271,7 +1268,7 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
                         if let Some(cell) = buffer.cell_mut((x, y)) {
                             cell.set_style(
                                 cell.style()
-                                    .add_modifier(Modifier::UNDERLINED | Modifier::DIM)
+                                    .add_modifier(Modifier::UNDERLINED)
                                     .underline_color(theme.border_strong),
                             );
                         }

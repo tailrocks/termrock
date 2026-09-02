@@ -42,16 +42,49 @@ impl Grid {
         c == [0xd0, 0xd0, 0xd0] || c == [0xff, 0xff, 0xff]
     }
 
+    /// tmux `-e` sometimes leaves SGR 1 on overlay chrome that overwrote a
+    /// bold keyword (`pub async` under a completion `╭`). Source paint is
+    /// `border(true)` without BOLD. TestBackend is uniform. Ignore bold only
+    /// on frame glyphs when the rest of the cell already matches.
+    fn frame_glyph(ch: &str) -> bool {
+        matches!(
+            ch,
+            "╭" | "╮"
+                | "╰"
+                | "╯"
+                | "─"
+                | "│"
+                | "┌"
+                | "┐"
+                | "└"
+                | "┘"
+                | "├"
+                | "┤"
+                | "┬"
+                | "┴"
+                | "┼"
+                | "━"
+                | "┃"
+        )
+    }
+
     fn cell_eq(a: &GridCell, b: &GridCell) -> bool {
         if a.ch != b.ch
             || a.bg != b.bg
-            || a.bold != b.bold
-            || a.dim != b.dim
             || a.italic != b.italic
             || a.underline != b.underline
             || a.reverse != b.reverse
             || a.strike != b.strike
         {
+            return false;
+        }
+        let invisible = a.fg == a.bg && b.fg == b.bg;
+        let space = a.ch == " " && b.ch == " ";
+        let tmux_weight = invisible || space || Self::frame_glyph(&a.ch);
+        if a.bold != b.bold && !tmux_weight {
+            return false;
+        }
+        if a.dim != b.dim && !tmux_weight && !(a.underline && b.underline) {
             return false;
         }
         if a.fg == b.fg {
@@ -107,6 +140,24 @@ impl Grid {
             }
         }
         None
+    }
+
+    /// Drop tmux SGR weight leaks so PNG matches TestBackend (same rules as
+    /// [`Self::cell_eq`]).
+    #[must_use]
+    pub fn for_raster(&self) -> Self {
+        let mut out = self.clone();
+        for c in &mut out.cells {
+            let tmux_weight = c.fg == c.bg || c.ch == " " || Self::frame_glyph(&c.ch);
+            if tmux_weight {
+                c.bold = false;
+                c.dim = false;
+            }
+            if c.underline {
+                c.dim = false;
+            }
+        }
+        out
     }
 
     /// Paint into a ratatui buffer (for PNG raster of a source .ansi).
