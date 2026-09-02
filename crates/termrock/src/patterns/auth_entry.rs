@@ -264,6 +264,10 @@ impl AuthEntryState {
             .with_editing();
         identity.set_focused(true);
         let mut secrets = PasswordConfirmState::new();
+        // AuthEntry is a live composite input, so its secret fields must opt
+        // into editing explicitly now that PasswordConfirmState::new() is idle.
+        secrets.password.begin_edit();
+        secrets.confirm.begin_edit();
         secrets.password.set_focused(false);
         secrets.confirm.set_focused(false);
         let mut terms = CheckboxState::new(false);
