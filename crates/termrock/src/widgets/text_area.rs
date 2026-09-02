@@ -621,7 +621,15 @@ impl TextAreaState {
             return TextAreaOutcome::Ignored;
         }
         match intent {
-            UiIntent::Cancel | UiIntent::Close => TextAreaOutcome::Cancelled,
+            UiIntent::Cancel | UiIntent::Close => {
+                if self.editing {
+                    self.editing = false;
+                    self.select_anchor = None;
+                    TextAreaOutcome::Changed
+                } else {
+                    TextAreaOutcome::Cancelled
+                }
+            }
             UiIntent::Move(NavigationMove::Previous) => {
                 if self.left() {
                     self.reveal();
@@ -687,7 +695,7 @@ impl TextAreaState {
         let plain = key.modifiers.is_empty();
         if !self.editing || self.read_only {
             return match key.code {
-                KeyCode::Enter | KeyCode::F(2) if plain && !self.read_only => {
+                KeyCode::Enter if plain && !self.read_only => {
                     self.editing = true;
                     TextAreaOutcome::Changed
                 }
@@ -2798,6 +2806,37 @@ mod tests {
     }
 
     #[test]
+    fn idle_jk_scrolls_without_moving_caret() {
+        let system = crate::style::DesignSystem::junie();
+        let mut state = TextAreaState::new("a\nb\nc\nd\ne\nf\ng\nh");
+        state.set_accepts_input(true);
+        let area = Rect::new(0, 0, 24, 5);
+        let mut buffer = Buffer::empty(area);
+        (&TextArea::new(&system).rows(2)).render(area, &mut buffer, &mut state);
+        let caret = state.cursor();
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Char('j'), KeyModifiers::NONE)),
+            TextAreaOutcome::Changed
+        );
+        assert_eq!(state.cursor(), caret, "idle j must not move the caret");
+        assert!(!state.is_editing());
+    }
+
+    #[test]
+    fn handle_intent_esc_commits_edit() {
+        use crate::interaction::UiIntent;
+        let mut state = TextAreaState::new("ab");
+        state.set_accepts_input(true);
+        state.set_editing(true);
+        assert_eq!(
+            state.handle_intent(UiIntent::Cancel),
+            TextAreaOutcome::Changed
+        );
+        assert!(!state.is_editing());
+        assert_eq!(state.text(), "ab");
+    }
+
+    #[test]
     fn enter_begins_edit_when_idle_without_inserting() {
         let mut state = TextAreaState::new("ab");
         state.set_accepts_input(true);
@@ -2812,7 +2851,7 @@ mod tests {
             state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
             TextAreaOutcome::Changed
         );
-        assert_eq!(state.text(), "\nab");
+        assert_eq!(state.text(), "ab\n");
     }
 
     #[test]

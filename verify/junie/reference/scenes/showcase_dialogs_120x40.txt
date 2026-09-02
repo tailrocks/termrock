@@ -13,17 +13,17 @@
 ▎  Tables
 ▎  Editable tables
 ▎  Panels                   Results
-▎  Sidebars
-▎› Dialogs                  Nothing yet
-▎  Progress
-▎  Scrolling
-▎  Code editor
-▎  Data grid
-▎  Chips & selects
-▎  Pickers
-
-   Screens
-▎  Settings
+▎  Sidebars                      ╭────────────────────────────────────────────────────╮
+▎› Dialogs                  Nothi│                                                    │
+▎  Progress                      │  Run task now?                                     │
+▎  Scrolling                     │                                                    │
+▎  Code editor                   │  Junie will check out chore/uuid-sessions, apply   │
+▎  Data grid                     │  the plan and run the test suite. You can pause    │
+▎  Chips & selects               │  at any step.                                      │
+▎  Pickers                       │                                                    │
+                                 │                                    ▎Cancel  ▎Run   │
+   Screens                       │                                                    │
+▎  Settings                      ╰────────────────────────────────────────────────────╯
 ▎  Task runner
 
 
@@ -37,4 +37,4 @@
 
 
 
- ↑ ↓ Move  Enter Open  Tab Into page  q Quit
+ ← → Choose  Enter Confirm  Esc Cancel  y / n Quick answer

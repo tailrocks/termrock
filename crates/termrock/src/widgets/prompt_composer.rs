@@ -523,6 +523,7 @@ impl PromptComposerState {
     pub fn new() -> Self {
         let mut editor = TextAreaState::default();
         editor.set_accepts_input(true);
+        editor.set_editing(true);
         Self {
             editor,
             undo: Vec::new(),
@@ -576,6 +577,7 @@ impl PromptComposerState {
         self.accepts_input = accepts;
         // Embedded editor must accept keys when the composer does (parent already gates).
         self.editor.set_accepts_input(accepts);
+        self.editor.set_editing(accepts);
     }
 
     /// Agent busy flag.

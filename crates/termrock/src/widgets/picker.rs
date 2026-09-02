@@ -1,22 +1,22 @@
 use ratatui_core::{
     buffer::Buffer,
-    layout::{Position, Rect},
-    widgets::StatefulWidget,
+    layout::{Margin, Position, Rect},
+    style::{Modifier, Style},
+    widgets::{StatefulWidget, Widget},
 };
+use ratatui_widgets::{block::Block, borders::Borders};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind},
     interaction::{
         Outcome, OverlayId, OverlayOutcome, OverlaySize, OverlaySpec, OverlayStack, place_overlay,
     },
-    style::{DesignSystem, Role},
-    text::take_display_cols,
+    scroll::SCROLLBAR_TRACK,
+    style::{DesignSystem, Role, VisualState},
+    text::{display_cols, take_display_cols},
 };
 
-use super::{
-    Hint, HintBar, List, ListRow, ListState, RowRole, Surface, SurfaceRecipe, TextInput,
-    TextInputOutcome, TextInputState,
-};
+use super::{List, ListRow, ListState, RowRole, TextInput, TextInputOutcome, TextInputState};
 
 /// Default overlay id for a select/picker popup on an [`OverlayStack`].
 pub const PICKER_OVERLAY_ID: &str = "termrock.picker";
@@ -386,6 +386,9 @@ pub struct Picker<'a, Id> {
     focused: bool,
     colorless: bool,
     title: &'a str,
+    scope: Option<&'a str>,
+    searchable: bool,
+    hints: Option<&'a str>,
 }
 
 impl<'a, Id> Picker<'a, Id> {
@@ -404,13 +407,37 @@ impl<'a, Id> Picker<'a, Id> {
             // asked it. Builders below still force either way.
             colorless: system.mono(),
             title: "Picker",
+            scope: None,
+            searchable: true,
+            hints: None,
         }
     }
 
-    /// Overlay title painted above the query field.
+    /// Overlay title painted on the first inner row (not on the border).
     #[must_use]
     pub const fn title(mut self, title: &'a str) -> Self {
         self.title = title;
+        self
+    }
+
+    /// Right-aligned scope label on the title row (`All · Tab scope`).
+    #[must_use]
+    pub const fn scope(mut self, scope: &'a str) -> Self {
+        self.scope = Some(scope);
+        self
+    }
+
+    /// Hide the query field (fixed-choice pickers: levels, enums).
+    #[must_use]
+    pub const fn searchable(mut self, on: bool) -> Self {
+        self.searchable = on;
+        self
+    }
+
+    /// Footer hint row. Default matches junie quick-open / choice copy.
+    #[must_use]
+    pub const fn hints(mut self, hints: &'a str) -> Self {
+        self.hints = Some(hints);
         self
     }
 
@@ -466,115 +493,381 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
             return;
         }
         let chrome = area.height >= 6 && area.width >= 16;
-        let inner = if chrome {
-            let recipe = if self.focused {
-                SurfaceRecipe::OverlayFocused
-            } else {
-                SurfaceRecipe::Overlay
-            };
-            let inner = Surface::new(self.system)
-                .recipe(recipe)
-                .bordered(true)
-                .content_inset()
-                .paint(area, buffer);
-            if area.width > 4 {
-                buffer.set_stringn(
-                    area.x.saturating_add(2),
-                    area.y,
-                    take_display_cols(self.title, usize::from(area.width.saturating_sub(4))),
-                    usize::from(area.width.saturating_sub(4)),
-                    self.system.style(Role::TextStrong),
+        if !chrome {
+            let query_area = Rect::new(area.x, area.y, area.width, 1.min(area.height));
+            if query_area.height > 0 {
+                StatefulWidget::render(
+                    &TextInput::new(self.label, self.system).placeholder(self.placeholder),
+                    query_area,
+                    buffer,
+                    &mut state.query,
                 );
             }
-            inner
-        } else {
-            area
-        };
+            if area.height < 2 {
+                return;
+            }
+            let list_area = Rect::new(
+                area.x,
+                area.y.saturating_add(1),
+                area.width,
+                area.height.saturating_sub(1),
+            );
+            if self.rows.is_empty() {
+                let mark = "∅ ";
+                let msg = if list_area.width < 12 {
+                    format!("{mark}empty")
+                } else {
+                    format!("{mark}{}", self.empty_message)
+                };
+                buffer.set_stringn(
+                    list_area.x,
+                    list_area.y,
+                    &take_display_cols(&msg, usize::from(list_area.width)),
+                    usize::from(list_area.width),
+                    self.system.style(Role::TextMuted),
+                );
+                StatefulWidget::render(
+                    &List::new(&[], self.system),
+                    list_area,
+                    buffer,
+                    &mut state.list,
+                );
+            } else {
+                StatefulWidget::render(
+                    &List::new(self.rows, self.system),
+                    list_area,
+                    buffer,
+                    &mut state.list,
+                );
+            }
+            return;
+        }
+
+        let theme = self.system.junie_theme();
+        let bg = theme.surface_elevated;
+        let fill = Style::new().fg(theme.text_muted).bg(bg);
+        for y in area.top()..area.bottom() {
+            for x in area.left()..area.right() {
+                buffer[(x, y)].set_char(' ').set_style(fill);
+            }
+        }
+        Block::default()
+            .borders(Borders::ALL)
+            .border_set(self.system.border_set())
+            .border_style(theme.border(self.focused).bg(bg))
+            .render(area, buffer);
+
+        // junie picker: Margin::new(2, 1)
+        let inner = area.inner(Margin::new(2, 1));
         if inner.is_empty() {
             return;
         }
-        let show_hints = chrome && inner.height >= 4;
-        let query_area = Rect::new(inner.x, inner.y, inner.width, 1);
-        StatefulWidget::render(
-            &TextInput::new(self.label, self.system).placeholder(self.placeholder),
-            query_area,
-            buffer,
-            &mut state.query,
+
+        let mut y = inner.y;
+        buffer.set_stringn(
+            inner.x,
+            y,
+            &take_display_cols(self.title, usize::from(inner.width)),
+            usize::from(inner.width),
+            theme.title().bg(bg),
         );
-        if inner.height < 2 {
-            return;
+        if let Some(scope) = self.scope {
+            let sw = display_cols(scope) as u16;
+            if sw > 0 && sw <= inner.width {
+                buffer.set_stringn(
+                    inner.right().saturating_sub(sw),
+                    y,
+                    scope,
+                    usize::from(sw),
+                    theme.muted().bg(bg),
+                );
+            }
         }
+        y = y.saturating_add(1);
+
+        if self.searchable && y < inner.bottom() {
+            let field = Rect::new(inner.x, y, inner.width, 1);
+            let visual = VisualState {
+                focused: true,
+                editing: true,
+                ..VisualState::default()
+            };
+            let fs = theme.field_style(visual);
+            buffer.set_style(field, fs);
+            buffer.set_stringn(
+                field.x,
+                y,
+                self.system.glyphs.selection_gutter(),
+                1,
+                Style::new()
+                    .fg(theme.focus)
+                    .bg(fs.bg.unwrap_or(bg))
+                    .remove_modifier(Modifier::BOLD),
+            );
+            let query = state.query.value();
+            let text_x = field.x.saturating_add(2);
+            let text_w = field.width.saturating_sub(3);
+            if text_w > 0 {
+                if query.is_empty() {
+                    buffer.set_stringn(
+                        text_x,
+                        y,
+                        &take_display_cols(self.placeholder, usize::from(text_w)),
+                        usize::from(text_w),
+                        theme.placeholder(visual),
+                    );
+                } else {
+                    buffer.set_stringn(
+                        text_x,
+                        y,
+                        &take_display_cols(query, usize::from(text_w)),
+                        usize::from(text_w),
+                        fs.add_modifier(Modifier::UNDERLINED)
+                            .underline_color(theme.accent),
+                    );
+                }
+            }
+            let _ = self.label;
+            y = y.saturating_add(2);
+        }
+
+        let show_hints = inner.height >= 4;
         let list_bottom = if show_hints {
             inner.bottom().saturating_sub(1)
         } else {
             inner.bottom()
         };
-        let list_area = Rect::new(
-            inner.x,
-            inner.y.saturating_add(1),
-            inner.width,
-            list_bottom.saturating_sub(inner.y.saturating_add(1)),
-        );
+        let list_area = Rect::new(inner.x, y, inner.width, list_bottom.saturating_sub(y));
         if list_area.is_empty() {
             return;
         }
+
+        let viewport = usize::from(list_area.height);
+        let overflow = self.rows.len() > viewport && list_area.width > 1;
+        let row_w = list_area.width.saturating_sub(u16::from(overflow));
+
+        // Paint list first so hit regions exist; junie row anatomy overwrites cells.
+        StatefulWidget::render(
+            &List::new(self.rows, self.system).focused(false),
+            list_area,
+            buffer,
+            &mut state.list,
+        );
+        let offset = state.list().offset();
+        let list_fill = Style::new().fg(theme.text_muted).bg(bg);
+        for y in list_area.top()..list_area.bottom() {
+            for x in list_area.left()..list_area.right() {
+                buffer[(x, y)].set_char(' ').set_style(list_fill);
+            }
+        }
+
         if self.rows.is_empty() {
-            let mark = { "∅ " };
             let msg = if list_area.width < 12 {
-                format!("{mark}empty")
+                "No matches".to_string()
             } else {
-                format!("{mark}{}", self.empty_message)
+                self.empty_message.to_string()
             };
-            let style = self.system.style(Role::TextMuted);
             buffer.set_stringn(
                 list_area.x,
                 list_area.y,
-                take_display_cols(&msg, usize::from(list_area.width)),
+                &take_display_cols(&msg, usize::from(list_area.width)),
                 usize::from(list_area.width),
-                style,
-            );
-            // Keep list geometry empty for clicks.
-            StatefulWidget::render(
-                &List::new(&[], self.system),
-                list_area,
-                buffer,
-                &mut state.list,
+                theme.muted().bg(bg),
             );
         } else {
-            let list = List::new(self.rows, self.system);
-            let _ = (self.focused, false, self.colorless);
-            StatefulWidget::render(&list, list_area, buffer, &mut state.list);
+            let label_col = self
+                .rows
+                .iter()
+                .map(|row| display_cols(&row.plain_label()) as u16)
+                .max()
+                .unwrap_or(6)
+                .clamp(6, (row_w * 45 / 100).max(6));
+            let tag_col = self
+                .rows
+                .iter()
+                .filter_map(|row| row.status.as_ref())
+                .map(|line| line.width() as u16)
+                .max()
+                .unwrap_or(0);
+            let group_col = self
+                .rows
+                .iter()
+                .filter_map(|row| row.badge.as_ref())
+                .map(|line| line.width() as u16)
+                .max()
+                .unwrap_or(0);
+
+            let mut last_group = String::new();
+            let visible = self.rows.iter().skip(offset).take(viewport).enumerate();
+            for (k, row) in visible {
+                let ry = list_area.y.saturating_add(k as u16);
+                if ry >= list_area.bottom() {
+                    break;
+                }
+                let focused = state.list().selected() == Some(&row.id);
+                let visual = VisualState {
+                    focused: focused && row.enabled,
+                    disabled: !row.enabled,
+                    ..VisualState::default()
+                };
+                let st = self.system.row(visual, bg);
+                let row_rect = Rect::new(list_area.x, ry, row_w, 1);
+                buffer.set_style(row_rect, st);
+                let mut gutter = self.system.gutter(visual, st.bg.unwrap_or(bg), false);
+                if visual.focused {
+                    // junie Cell::set_style merges the row's BOLD onto ▎.
+                    gutter = gutter.add_modifier(Modifier::BOLD);
+                }
+                buffer.set_stringn(
+                    row_rect.x,
+                    ry,
+                    self.system.glyphs.selection_gutter(),
+                    1,
+                    gutter,
+                );
+                if row_rect.width > 1 {
+                    let glyph = row
+                        .leading
+                        .as_ref()
+                        .and_then(|line| line.spans.first())
+                        .map(|span| span.content.as_ref())
+                        .unwrap_or(" ");
+                    let glyph_style = st
+                        .fg(if visual.focused {
+                            theme.text_primary
+                        } else {
+                            theme.text_muted
+                        })
+                        .remove_modifier(Modifier::BOLD);
+                    buffer.set_stringn(row_rect.x.saturating_add(1), ry, glyph, 1, glyph_style);
+                }
+                let x = row_rect.x.saturating_add(3);
+                let label = take_display_cols(&row.plain_label(), usize::from(label_col));
+                if x < row_rect.right() {
+                    let lw = label_col.min(row_rect.right().saturating_sub(x));
+                    let mut cs = st;
+                    if !visual.focused {
+                        cs = cs.remove_modifier(Modifier::BOLD);
+                    }
+                    buffer.set_stringn(x, ry, &label, usize::from(lw), cs);
+                }
+                let mut rx = row_rect.right();
+                if group_col > 0 {
+                    rx = rx.saturating_sub(group_col.saturating_add(1));
+                    let group = row
+                        .badge
+                        .as_ref()
+                        .map(|line| {
+                            line.spans
+                                .iter()
+                                .map(|span| span.content.as_ref())
+                                .collect::<String>()
+                        })
+                        .unwrap_or_default();
+                    let show_group = !group.is_empty() && group != last_group;
+                    if show_group && rx < row_rect.right() {
+                        buffer.set_stringn(
+                            rx,
+                            ry,
+                            &take_display_cols(&group, usize::from(group_col)),
+                            usize::from(group_col),
+                            st.fg(theme.text_faint).remove_modifier(Modifier::BOLD),
+                        );
+                    }
+                    last_group = group;
+                }
+                if tag_col > 0 {
+                    rx = rx.saturating_sub(tag_col.saturating_add(2));
+                    if let Some(tag) = row.status.as_ref()
+                        && rx < row_rect.right()
+                    {
+                        let tag_s: String =
+                            tag.spans.iter().map(|span| span.content.as_ref()).collect();
+                        buffer.set_stringn(
+                            rx,
+                            ry,
+                            &take_display_cols(&tag_s, usize::from(tag_col)),
+                            usize::from(tag_col),
+                            st.fg(theme.text_secondary).remove_modifier(Modifier::BOLD),
+                        );
+                    }
+                }
+                if let Some(detail) = row.secondary.as_ref() {
+                    let dx = row_rect
+                        .x
+                        .saturating_add(3)
+                        .saturating_add(label_col)
+                        .saturating_add(2);
+                    let room = rx.saturating_sub(dx.saturating_add(1));
+                    if room >= 4 && dx < row_rect.right() {
+                        let detail_s: String = detail
+                            .spans
+                            .iter()
+                            .map(|span| span.content.as_ref())
+                            .collect();
+                        buffer.set_stringn(
+                            dx,
+                            ry,
+                            &take_display_cols(&detail_s, usize::from(room)),
+                            usize::from(room),
+                            st.fg(theme.text_muted).remove_modifier(Modifier::BOLD),
+                        );
+                    }
+                }
+            }
         }
+
+        if overflow {
+            // junie `ScrollState::thumb`: len = (viewport * track) / content
+            let track = viewport.max(1);
+            let content = self.rows.len().max(1);
+            let thumb_len = ((viewport * track) / content).max(1).min(track);
+            let max_off = content.saturating_sub(viewport);
+            let thumb_start = if max_off == 0 {
+                0
+            } else {
+                (offset * (track - thumb_len) + max_off / 2) / max_off
+            };
+            let x = list_area.right().saturating_sub(1);
+            for i in 0..track {
+                let y = list_area.y.saturating_add(i as u16);
+                let on_thumb = i >= thumb_start && i < thumb_start + thumb_len;
+                buffer.set_stringn(
+                    x,
+                    y,
+                    if on_thumb { "┃" } else { SCROLLBAR_TRACK },
+                    1,
+                    if on_thumb {
+                        self.system.scrollbar_thumb(self.focused, false)
+                    } else {
+                        self.system.scrollbar_track()
+                    },
+                );
+            }
+        }
+
         if show_hints {
-            ratatui_core::widgets::Widget::render(
-                &HintBar::new(PICKER_HINTS, self.system),
-                Rect::new(inner.x, inner.bottom().saturating_sub(1), inner.width, 1),
-                buffer,
+            let hints = self.hints.unwrap_or(if self.searchable {
+                PICKER_SEARCH_HINTS
+            } else {
+                PICKER_CHOICE_HINTS
+            });
+            buffer.set_stringn(
+                inner.x,
+                inner.bottom().saturating_sub(1),
+                &take_display_cols(hints, usize::from(inner.width)),
+                usize::from(inner.width),
+                theme.faint().bg(bg),
             );
         }
+
+        let _ = self.colorless;
     }
 }
 
-const PICKER_HINTS: &[Hint<'static>] = &[
-    Hint {
-        chord: "↑↓",
-        label: "move",
-        priority: 10,
-        visible: true,
-    },
-    Hint {
-        chord: "enter",
-        label: "choose",
-        priority: 20,
-        visible: true,
-    },
-    Hint {
-        chord: "esc",
-        label: "close",
-        priority: 50,
-        visible: true,
-    },
-];
+const PICKER_SEARCH_HINTS: &str =
+    "↑↓ Move · Enter Open · Alt+Enter New tab · Tab Scope · Esc Clear / Close";
+const PICKER_CHOICE_HINTS: &str = "↑↓ Move · Enter Set level · Esc Keep";
 
 impl<Id: Clone + PartialEq> StatefulWidget for Picker<'_, Id> {
     type State = PickerState<Id>;
@@ -819,6 +1112,45 @@ mod tests {
     }
 
     #[test]
+    fn junie_modal_is_bar_glyph_label_not_chevron() {
+        let system = DesignSystem::junie();
+        let rows = [
+            ListRow::item("cargo", Line::from("Cargo.toml"))
+                .leading(Line::from("F"))
+                .secondary(Line::from("Cargo.toml"))
+                .badge(Line::from("Files")),
+            ListRow::item("readme", Line::from("README.md"))
+                .leading(Line::from("F"))
+                .secondary(Line::from("README.md")),
+        ];
+        let mut state = PickerState::new(Some("cargo"));
+        let area = Rect::new(0, 0, 64, 12);
+        let mut buffer = Buffer::empty(area);
+        Picker::new(&rows, &system)
+            .title("Open quickly")
+            .placeholder("Files and tasks…")
+            .scope("All · Tab scope")
+            .render(area, &mut buffer, &mut state);
+        let row = |y: u16| -> String {
+            (0..area.width)
+                .map(|x| buffer[(x, y)].symbol().to_string())
+                .collect()
+        };
+        let title = row(1);
+        assert!(title.contains("Open quickly"), "{title:?}");
+        assert!(title.contains("All · Tab scope"), "{title:?}");
+        let query = row(2);
+        assert!(query.contains("Files and tasks"), "{query:?}");
+        let first = row(4);
+        assert!(first.contains("Cargo.toml"), "{first:?}");
+        assert_eq!(buffer[(2, 4)].symbol(), "▎", "gutter: {first:?}");
+        assert_eq!(buffer[(3, 4)].symbol(), "F", "glyph: {first:?}");
+        assert_ne!(buffer[(3, 4)].symbol(), "›");
+        let second = row(5);
+        assert!(!second.contains('›'), "no chosen marker: {second:?}");
+    }
+
+    #[test]
     fn modal_picker_sits_in_the_upper_third() {
         let bounds = Rect::new(0, 0, 120, 40);
         let placed = place_picker_modal(bounds, PickerSize::default());
@@ -846,7 +1178,12 @@ mod tests {
         }
         assert!(text.contains("alpha"));
         assert!(
-            text.contains("move") || text.contains("enter") || text.contains("choose"),
+            text.contains("Move")
+                || text.contains("Enter")
+                || text.contains("Open")
+                || text.contains("move")
+                || text.contains("enter")
+                || text.contains("choose"),
             "own hint row: {text:?}"
         );
         let selected = state

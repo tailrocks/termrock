@@ -357,6 +357,7 @@ impl TextAreaInteractor {
     pub(crate) fn new() -> Self {
         let mut state = TextAreaState::new("First line\nSecond line");
         state.set_accepts_input(true);
+        state.set_editing(true);
         Self {
             state,
             system: crate::design::lookbook_system(RolePalette::default()),

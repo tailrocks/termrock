@@ -5,20 +5,20 @@
 ▎  Inputs              Open a dialog
 ▎  Text areas
 ▎  Forms               ▎Confirm run   ▎Rename task…   ▎Three choices…   ▎Del…
-▎  Lists
-▎  Trees               Confirm: primary action focused first · y / n answer d…
-▎  Tables              Prompt: editing inside a modal, Enter submits, validat…
-▎  Editable tables     Destructive: Cancel focused first, action in danger st…
-▎  Panels              Task: Migrate sessions table
-▎  Sidebars
-▎› Dialogs
-▎  Progress            Results
-▎  Scrolling
-▎  Code editor         Nothing yet
-▎  Data grid
+▎  Lists     ╭────────────────────────────────────────────────────╮
+▎  Trees     │                                                    │n answer d…
+▎  Tables    │  Run task now?                                     │s, validat…
+▎  Editable t│                                                    │ danger st…
+▎  Panels    │  Junie will check out chore/uuid-sessions, apply   │
+▎  Sidebars  │  the plan and run the test suite. You can pause    │
+▎› Dialogs   │  at any step.                                      │
+▎  Progress  │                                                    │
+▎  Scrolling │                                    ▎Cancel  ▎Run   │
+▎  Code edito│                                                    │
+▎  Data grid ╰────────────────────────────────────────────────────╯
 ▎  Chips & selects
 ▎  Pickers
 ▎  Settings
 ▎  Task runner
 
- ↑ ↓ Move  Enter Open  Tab Into page  q Quit
+ ← → Choose  Enter Confirm  Esc Cancel  y / n Quick answer

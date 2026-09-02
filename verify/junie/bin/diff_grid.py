@@ -148,6 +148,21 @@ def diff_color(ref, got):
             why += [m for m in MODS if r[x].get(m) != g[x].get(m)]
             if not why:
                 continue
+            # junie `fill` sets only bg, so space-cell fg/weight is compositor
+            # residue from the dimmed page under the widget. Isolated story
+            # paint cannot reproduce that leftover; same character + same bg
+            # on a blank is not widget fidelity. Reverse/underline on a space
+            # still counts — those are visible.
+            leftover_attrs = {"fg", "dim", "bold", "italic"}
+            why_keys = {w.split()[0] if " " in w else w for w in why}
+            if (
+                r[x]["ch"] == g[x]["ch"]
+                and not r[x]["ch"].strip()
+                and r[x]["bg"] == g[x]["bg"]
+                and why_keys <= leftover_attrs
+            ):
+                background_only += 1
+                continue
             differing += 1
             if r[x]["ch"] == g[x]["ch"] and not r[x]["ch"].strip():
                 background_only += 1

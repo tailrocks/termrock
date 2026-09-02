@@ -1185,13 +1185,10 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
                     let display_n = self.meta.start_line_number.saturating_add(abs);
                     let number =
                         format!("{:>width$}", display_n, width = usize::from(num_w.max(1)));
-                    let in_block = block.is_some_and(|(s, e)| abs >= s && abs < e);
                     let nstyle = if state.cursor_line == Some(abs) && state.focused {
                         fs.fg(theme.text_primary).add_modifier(Modifier::BOLD)
-                    } else if in_block {
-                        fs.fg(theme.text_secondary)
                     } else {
-                        fs.fg(theme.text_muted)
+                        fs.fg(theme.text_secondary)
                     };
                     buffer.set_stringn(
                         gx.saturating_add(3),
@@ -2096,8 +2093,13 @@ mod tests {
         assert_eq!(buf[(0, 1)].symbol(), "▎", "focus bar on cursor line");
         assert_eq!(buf[(1, 1)].symbol(), "›", "block marker, not a second bar");
         assert_ne!(buf[(1, 1)].symbol(), "▎");
+        assert_ne!(
+            buf[(0, 2)].symbol(),
+            "▎",
+            "non-cursor body row has no focus bar"
+        );
         // line numbers are muted off the current block
-        assert_eq!(buf[(3, 2)].fg, system.junie_theme().text_muted);
+        assert_eq!(buf[(3, 2)].fg, system.junie_theme().text_secondary);
     }
 
     #[test]

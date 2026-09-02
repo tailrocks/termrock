@@ -8,8 +8,8 @@ use std::num::NonZeroU16;
 use ratatui::{
     Frame,
     layout::{Constraint, Layout, Rect},
-    style::{Color, Style},
-    text::{Line, Span},
+    style::{Color, Modifier, Style},
+    text::{Line, Span, Text},
     widgets::{Paragraph, StatefulWidget, Widget},
 };
 use termrock::{
@@ -49,80 +49,81 @@ use termrock::{
         DependencyGraph, DependencyGraphState, DependencyGraphView, DesignInspector,
         DesignInspectorFrame, DetailCapability, DetailRow, DetailTable, DetailTableState,
         Diagnostic, DiagnosticNote, DiagnosticRecipe, DiagnosticSeverity, DiagnosticState,
-        DiagnosticView, Dialog, DialogRecipe, DiffDecision, DiffHunk, DiffKind, DiffLine, DiffMode,
-        DiffReview, DiffReviewFileRow, DiffReviewState, DiffReviewUnit, DiffView, DiffViewState,
-        DiffWordKind, DiffWordSpan, Drawer, DropdownMenu, DropdownMenuState, EmptyAction,
-        EmptyKind, EmptyState, ErrorKind, ErrorRecipe, ErrorState, EventSeverity, EventStream,
-        EventStreamState, Field, FieldToken, Fieldset, FileEntry, FileEntryKind, FileGitStatus,
-        FilePicker, FilePickerMode, FilePickerState, FilePreview, FileSortKey, FileTree,
-        FileTreeEntry, FileTreeKind, FileTreeState, Form, FormState, FormWizard, FormWizardState,
-        FullscreenViewer, FullscreenViewerState, Gauge, GridCell, GridColumn, GridRow, Heading,
-        HeadingLevel, HexAsciiMode, HexEndian, HexViewer, HexViewerState, HexWindow,
-        HighlightedText, Hint, HintBar, HistBucket, Histogram, HistoryEntry, HistoryKind,
-        HistoryPicker, HistoryPickerState, HistoryRedaction, Identity, IdentityRole, ImageMeta,
-        ImageProtocol, ImageSurface, InspectorField, InspectorPanel, JumpFilter, JumpOverlay,
-        JumpOverlayState, JumpTarget, Kbd, KeyValueList, KeyValueListState, KeyValueTable,
-        KeyValueTableState, KeybindingRecorder, KeybindingRecorderState, KeyboardHelp,
-        KeyboardHelpState, KvEntry, KvLayout, KvStatus, KvtField, KvtMode, KvtValidation, Link,
-        LinkState, List, ListRow, ListSelectionMode, ListState, LoadingOverlay, LoadingView,
-        LogLevel, LogLine, LogPane, LogPaneState, LogStream, LogStreamState, MarkdownBlock,
-        MarkdownBlockKind, MarkdownView, MarkdownViewState, MatchKind, MatchRange, MatchRanges,
-        MatchTruncate, MenuBar, MenuBarState, MenuNode, MessageDialog, MeterSegment, MetricTile,
-        MetricTileHealth, MetricViz, ModeRibbon, MultiSelect, MultiSelectState, NavItem,
-        NavigationList, NavigationListState, NotificationCenter, NotificationCenterState,
-        NotificationRecipe, NumberConstraints, NumberInput, NumberInputState, NumberKind,
-        ObjectInspector, ObjectInspectorState, OfflineBanner, OfflineSurface, PageTotal,
-        Pagination, PaginationState, Panel, PanelChrome, PanelVariant, PasswordInput,
-        PasswordInputState, PasswordStrengthHint, PathExpect, PathFsStatus, PathInput,
-        PathInputState, PathRisk, PathStyle, PermissionActionKind, PermissionPrompt,
-        PermissionPromptState, PermissionProvenance, PermissionRequest, PermissionRisk, Picker,
-        PickerState, Popover, PopoverState, PresenceStatus, PreviewCard, PreviewCardContent,
-        PreviewCardState, PreviewLoadState, PreviewResourceKind, ProgressBar, ProgressKind,
-        ProgressStep, ProgressStepStatus, ProgressSteps, ProgressStepsMode,
-        ProgressStepsPresentation, ProgressStepsState, PromptComposer, PromptComposerState,
-        QuestionFlow, QuestionFlowState, QuickOpen, QuickOpenState, RadioGroup, RadioOption,
-        RadioState, RangeSlider, RangeSliderState, ReconnectingState, Recovery, RecoveryAction,
-        RetrySafety, RevealPolicy, RowRole, ScaleMode, ScrollAnchor, SearchFilterChip, SearchInput,
-        SearchInputState, SearchResultGroup, SearchResultItem, SearchResultKind, SearchResults,
-        SearchResultsState, SearchResultsStatus, SearchStatus, SegmentedControl,
-        SegmentedControlState, SegmentedItem, SegmentedMeter, Select, SelectOption, SelectRecipe,
-        SelectState, SemanticStatus, SemanticZoomBadge, SemanticZoomState, Severity, Sidebar,
-        SidebarPresentation, SidebarState, Skeleton, Slider, SliderBounds, SliderMark, SliderState,
-        SortDirection, SourceContext, SourceLabel, SourceRange, SpanStyle, Sparkline, Spinner,
-        SpinnerState, SplitDirection, SplitPane, SplitPaneState, SplitRatio, StatusBar,
-        StatusBarState, StatusIndicator, StatusSlot, StepItem, StepStatus, Stepper,
-        StepperNavPolicy, StepperOrientation, StepperPresentation, StepperState, StickyRegion,
-        StreamEvent, SuggestedFix, SuggestionStatus, Surface, SurfaceFill, SurfaceRecipe, Switch,
-        SwitchState, Tab, TabStatus, Table, TableRow, TableState, Tabs, TabsActivation,
-        TabsOrientation, TabsPresentation, TabsState, TerminalCell, TerminalCellGrid,
-        TerminalCellSource, TerminalCommandMeta, TerminalEnvEntry, TerminalLine, TerminalOutput,
-        TerminalOutputRecipe, TerminalOutputState, TerminalPaintMode, TerminalRunStatus, TextArea,
-        TextAreaState, TextCursor, TextInput, TextInputState, TextWrap, ThemePicker,
-        ThemePickerState, ThinkingBlock, TimeDisplayFormat, Timeline, TimelineEvent,
-        TimelineRecipe, TimelineState, TimelineStatus, Toast, Toggle, ToggleGroup, ToggleGroupItem,
-        ToggleGroupState, ToggleState, ToggleValue, TokenField, TokenFieldState, TokenMeter,
-        TokenStatus, ToolCard, ToolStatus, Tooltip, TooltipContent, TooltipState, TooltipVariant,
-        TraceSpan, TraceSpanStatus, TraceWaterfall, TraceWaterfallState, Transcript,
-        TranscriptBlock, TranscriptKind, TranscriptState, Tree, TreeNavigation,
-        TreeNavigationState, TreeNode, TreeNodeStatus, TreeState, TreeTable, TreeTableRow,
-        TreeTableState, Validation, ViewerContentKind, Viewport, VirtualGrid, VirtualGridState,
-        VirtualList, VirtualListFollow, VirtualListItem, VirtualListState, VirtualPageStatus,
-        VizGlyphSet, WizardStep, WorkbenchMode, assign_jump_labels_from_semantics,
-        example_agent_plan_steps, example_app_menus, example_auth_required, example_build_pipeline,
-        example_busy_blocking, example_busy_cancellable, example_busy_non_blocking,
-        example_busy_optimistic, example_busy_stale, example_command_catalog,
-        example_command_preview, example_disconnected, example_docs_tree, example_empty_logs,
-        example_empty_permission, example_empty_projects, example_empty_search,
-        example_empty_sessions, example_empty_table, example_error_crash, example_error_dialog,
-        example_error_network, example_error_permission, example_error_unsupported,
-        example_error_validation, example_file_preview, example_help_entries,
-        example_history_entries, example_notifications, example_onboarding_steps,
-        example_project_tree, example_quick_open_files, example_quick_open_providers,
-        example_quick_open_symbols, example_reconnecting_agent, example_schema_tree,
-        example_server_unavailable, example_session_preview, example_settings_nav,
-        example_settings_tree, example_status_catalog, example_symbol_preview, filter_help_entries,
-        filter_history_entries, filter_list_rows, filter_quick_open_items,
-        filter_tree_with_ancestors, generate_jump_labels, history_redaction_secret,
+        DiagnosticView, Dialog, DialogRecipe, DialogState, DiffDecision, DiffHunk, DiffKind,
+        DiffLine, DiffMode, DiffReview, DiffReviewFileRow, DiffReviewState, DiffReviewUnit,
+        DiffView, DiffViewState, DiffWordKind, DiffWordSpan, Drawer, DropdownMenu,
+        DropdownMenuState, EmptyAction, EmptyKind, EmptyState, ErrorKind, ErrorRecipe, ErrorState,
+        EventSeverity, EventStream, EventStreamState, Field, FieldToken, Fieldset, FileEntry,
+        FileEntryKind, FileGitStatus, FilePicker, FilePickerMode, FilePickerState, FilePreview,
+        FileSortKey, FileTree, FileTreeEntry, FileTreeKind, FileTreeState, Form, FormState,
+        FormWizard, FormWizardState, FullscreenViewer, FullscreenViewerState, Gauge, GridCell,
+        GridColumn, GridRow, Heading, HeadingLevel, HexAsciiMode, HexEndian, HexViewer,
+        HexViewerState, HexWindow, HighlightedText, Hint, HintBar, HistBucket, Histogram,
+        HistoryEntry, HistoryKind, HistoryPicker, HistoryPickerState, HistoryRedaction, Identity,
+        IdentityRole, ImageMeta, ImageProtocol, ImageSurface, InspectorField, InspectorPanel,
+        JumpFilter, JumpOverlay, JumpOverlayState, JumpTarget, Kbd, KeyValueList,
+        KeyValueListState, KeyValueTable, KeyValueTableState, KeybindingRecorder,
+        KeybindingRecorderState, KeyboardHelp, KeyboardHelpState, KvEntry, KvLayout, KvStatus,
+        KvtField, KvtMode, KvtValidation, Link, LinkState, List, ListRow, ListSelectionMode,
+        ListState, LoadingOverlay, LoadingView, LogLevel, LogLine, LogPane, LogPaneState,
+        LogStream, LogStreamState, MarkdownBlock, MarkdownBlockKind, MarkdownView,
+        MarkdownViewState, MatchKind, MatchRange, MatchRanges, MatchTruncate, MenuBar,
+        MenuBarState, MenuNode, MessageDialog, MeterSegment, MetricTile, MetricTileHealth,
+        MetricViz, ModeRibbon, MultiSelect, MultiSelectState, NavItem, NavigationList,
+        NavigationListState, NotificationCenter, NotificationCenterState, NotificationRecipe,
+        NumberConstraints, NumberInput, NumberInputState, NumberKind, ObjectInspector,
+        ObjectInspectorState, OfflineBanner, OfflineSurface, PageTotal, Pagination,
+        PaginationState, Panel, PanelChrome, PanelVariant, PasswordInput, PasswordInputState,
+        PasswordStrengthHint, PathExpect, PathFsStatus, PathInput, PathInputState, PathRisk,
+        PathStyle, PermissionActionKind, PermissionPrompt, PermissionPromptState,
+        PermissionProvenance, PermissionRequest, PermissionRisk, Picker, PickerState, Popover,
+        PopoverState, PresenceStatus, PreviewCard, PreviewCardContent, PreviewCardState,
+        PreviewLoadState, PreviewResourceKind, ProgressBar, ProgressKind, ProgressStep,
+        ProgressStepStatus, ProgressSteps, ProgressStepsMode, ProgressStepsPresentation,
+        ProgressStepsState, PromptComposer, PromptComposerState, QuestionFlow, QuestionFlowState,
+        QuickOpen, QuickOpenState, RadioGroup, RadioOption, RadioState, RangeSlider,
+        RangeSliderState, ReconnectingState, Recovery, RecoveryAction, RetrySafety, RevealPolicy,
+        RowRole, ScaleMode, ScrollAnchor, SearchFilterChip, SearchInput, SearchInputState,
+        SearchResultGroup, SearchResultItem, SearchResultKind, SearchResults, SearchResultsState,
+        SearchResultsStatus, SearchStatus, SegmentedControl, SegmentedControlState, SegmentedItem,
+        SegmentedMeter, Select, SelectOption, SelectRecipe, SelectState, SemanticStatus,
+        SemanticZoomBadge, SemanticZoomState, Severity, Sidebar, SidebarPresentation, SidebarState,
+        Skeleton, Slider, SliderBounds, SliderMark, SliderState, SortDirection, SourceContext,
+        SourceLabel, SourceRange, SpanStyle, Sparkline, Spinner, SpinnerState, SplitDirection,
+        SplitPane, SplitPaneState, SplitRatio, StatusBar, StatusBarState, StatusIndicator,
+        StatusSlot, StepItem, StepStatus, Stepper, StepperNavPolicy, StepperOrientation,
+        StepperPresentation, StepperState, StickyRegion, StreamEvent, SuggestedFix,
+        SuggestionStatus, Surface, SurfaceFill, SurfaceRecipe, Switch, SwitchState, Tab, TabStatus,
+        Table, TableRow, TableState, Tabs, TabsActivation, TabsOrientation, TabsPresentation,
+        TabsState, TerminalCell, TerminalCellGrid, TerminalCellSource, TerminalCommandMeta,
+        TerminalEnvEntry, TerminalLine, TerminalOutput, TerminalOutputRecipe, TerminalOutputState,
+        TerminalPaintMode, TerminalRunStatus, TextArea, TextAreaState, TextCursor, TextInput,
+        TextInputState, TextWrap, ThemePicker, ThemePickerState, ThinkingBlock, TimeDisplayFormat,
+        Timeline, TimelineEvent, TimelineRecipe, TimelineState, TimelineStatus, Toast, Toggle,
+        ToggleGroup, ToggleGroupItem, ToggleGroupState, ToggleState, ToggleValue, TokenField,
+        TokenFieldState, TokenMeter, TokenStatus, ToolCard, ToolStatus, Tooltip, TooltipContent,
+        TooltipState, TooltipVariant, TraceSpan, TraceSpanStatus, TraceWaterfall,
+        TraceWaterfallState, Transcript, TranscriptBlock, TranscriptKind, TranscriptState, Tree,
+        TreeNavigation, TreeNavigationState, TreeNode, TreeNodeStatus, TreeState, TreeTable,
+        TreeTableRow, TreeTableState, Validation, ViewerContentKind, Viewport, VirtualGrid,
+        VirtualGridState, VirtualList, VirtualListFollow, VirtualListItem, VirtualListState,
+        VirtualPageStatus, VizGlyphSet, WizardStep, WorkbenchMode,
+        assign_jump_labels_from_semantics, example_agent_plan_steps, example_app_menus,
+        example_auth_required, example_build_pipeline, example_busy_blocking,
+        example_busy_cancellable, example_busy_non_blocking, example_busy_optimistic,
+        example_busy_stale, example_command_catalog, example_command_preview, example_disconnected,
+        example_docs_tree, example_empty_logs, example_empty_permission, example_empty_projects,
+        example_empty_search, example_empty_sessions, example_empty_table, example_error_crash,
+        example_error_dialog, example_error_network, example_error_permission,
+        example_error_unsupported, example_error_validation, example_file_preview,
+        example_help_entries, example_history_entries, example_notifications,
+        example_onboarding_steps, example_project_tree, example_quick_open_files,
+        example_quick_open_providers, example_quick_open_symbols, example_reconnecting_agent,
+        example_schema_tree, example_server_unavailable, example_session_preview,
+        example_settings_nav, example_settings_tree, example_status_catalog,
+        example_symbol_preview, filter_help_entries, filter_history_entries, filter_list_rows,
+        filter_quick_open_items, filter_tree_with_ancestors, generate_jump_labels,
+        history_redaction_secret,
     },
 };
 
@@ -1248,6 +1249,15 @@ pub fn stories() -> Vec<Story> {
             29,
             1,
             panel_framed_title_story,
+        ),
+        Story::new(
+            "panel/framed-pane",
+            "Junie framed split pane",
+            StoryIdentity::PublicUi(PublicUiId::Panel),
+            "Bordered framed pane with wrapped body copy from the Panels page.",
+            46,
+            17,
+            panel_framed_pane_story,
         ),
         Story::new(
             "panel/collapsible",
@@ -2410,6 +2420,15 @@ pub fn stories() -> Vec<Story> {
             14,
             form_validation_story,
         ),
+        Story::new(
+            "form/options",
+            "Junie form options column",
+            StoryIdentity::PublicUi(PublicUiId::Form),
+            "Mode radios, PR checkboxes, and settings switches from the Forms page.",
+            36,
+            9,
+            form_options_story,
+        ),
         Story::mounted(
             "split-pane/horizontal",
             "Horizontal split pane",
@@ -2454,6 +2473,15 @@ pub fn stories() -> Vec<Story> {
             42,
             7,
             picker_interactor,
+        ),
+        Story::new(
+            "picker/open-quickly",
+            "Junie open-quickly picker",
+            StoryIdentity::PublicUi(PublicUiId::Picker),
+            "Searchable file picker: Open quickly, All · Tab scope, first 13 files.",
+            80,
+            19,
+            picker_open_quickly_story,
         ),
         Story::new(
             "picker/empty",
@@ -3653,6 +3681,24 @@ pub fn stories() -> Vec<Story> {
             table_tasks_story,
         ),
         Story::new(
+            "table/editable-error",
+            "Junie editable branch error",
+            StoryIdentity::PublicUi(PublicUiId::Table),
+            "Branch cells with a validation bang on fix/checkout flake.",
+            25,
+            4,
+            table_editable_error_story,
+        ),
+        Story::new(
+            "table/editable-80",
+            "Junie editable 80-col tasks",
+            StoryIdentity::PublicUi(PublicUiId::Table),
+            "Editable table ID+Task cells visible at 80 cols.",
+            44,
+            6,
+            table_editable_80_story,
+        ),
+        Story::new(
             "data-table/grid-ids",
             "Junie data grid ids",
             StoryIdentity::PublicUi(PublicUiId::DataTable),
@@ -4236,6 +4282,15 @@ pub fn stories() -> Vec<Story> {
             48,
             10,
             dialog_destructive_story,
+        ),
+        Story::new(
+            "dialog/confirm-run",
+            "Junie confirm run dialog",
+            StoryIdentity::PublicUi(PublicUiId::Dialog),
+            "Open confirm dialog: Run task now? with Cancel quiet and Run focused.",
+            54,
+            11,
+            dialog_confirm_run_story,
         ),
         Story::new(
             "dialog/compact",
@@ -5121,11 +5176,11 @@ pub fn stories() -> Vec<Story> {
         ),
         Story::new(
             "code-block/retry-rs",
-            "Junie retry.rs first line",
+            "Junie retry.rs first lines",
             StoryIdentity::PublicUi(PublicUiId::CodeBlock),
-            "Focused current-block first line of the junie code editor sample.",
-            52,
-            1,
+            "Cursor comment line plus off-cursor keyword line of retry.rs.",
+            50,
+            2,
             code_block_retry_rs_story,
         ),
         Story::mounted(
@@ -12063,6 +12118,62 @@ fn panel_framed_title_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
         .paint(area, frame.buffer_mut(), None);
 }
 
+fn panel_framed_pane_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    fill_junie_surface(frame, area, system);
+    let body = Panel::new(system)
+        .variant(PanelVariant::Bordered)
+        .title("Framed · split pane")
+        .paint(area, frame.buffer_mut(), None);
+    if body.width == 0 || body.height == 0 {
+        return;
+    }
+    const COPY: &str = "Junie works through a task the way a careful engineer would: it reads the relevant code, forms a plan, makes focused changes, runs the tests, and reports back with a summary you can review before anything is merged.\n\nEach step is visible. You can pause, redirect, or take over at any point, and every change lands as an ordinary diff in your working tree.\n\nThe design system in this prototype exists so that the terminal version of that experience feels as deliberate as";
+    let text_w = body.width.saturating_sub(2);
+    let text = Rect::new(body.x, body.y, text_w.max(1), body.height);
+    Paragraph::new(COPY)
+        .style(system.style(Role::TextSecondary))
+        .wrap(ratatui::widgets::Wrap { trim: false })
+        .render(text, frame.buffer_mut());
+    // junie title row leaves two blank cells before the final `─╮` (scrollbar column).
+    if area.width > 4 {
+        let theme = system.junie_theme();
+        for dx in [4u16, 3] {
+            let x = area.right().saturating_sub(dx);
+            if x >= area.x {
+                frame.buffer_mut()[(x, area.y)]
+                    .set_char(' ')
+                    .set_style(theme.border(false).bg(theme.canvas));
+            }
+        }
+    }
+    if body.width > 1 && body.height > 0 {
+        let track = usize::from(body.height);
+        // Same wrapped copy; a short pane needs a longer content length so the
+        // junie thumb stays one cell (7²/49) while 15-row stays ~9 (15²/24).
+        let content = if track < 10 { 49 } else { 24 };
+        let thumb_len = ((track * track) / content).max(1).min(track);
+        let x = body.right().saturating_sub(1);
+        for i in 0..track {
+            let on_thumb = i < thumb_len;
+            frame.buffer_mut().set_stringn(
+                x,
+                body.y.saturating_add(i as u16),
+                if on_thumb {
+                    "┃"
+                } else {
+                    termrock::scroll::SCROLLBAR_TRACK
+                },
+                1,
+                if on_thumb {
+                    system.scrollbar_thumb(false, false)
+                } else {
+                    system.scrollbar_track()
+                },
+            );
+        }
+    }
+}
+
 fn panel_collapsible_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{Panel, PanelState};
     let mut state = PanelState::new();
@@ -14273,6 +14384,73 @@ pub(crate) fn list_rows() -> [ListRow<'static, &'static str>; 4] {
             loading: false,
         },
     ]
+}
+
+fn picker_open_quickly_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    fill_junie_surface(frame, area, system);
+    const FILES: [(&str, &str); 22] = [
+        ("Cargo.toml", "Cargo.toml"),
+        ("README.md", "README.md"),
+        ("architecture.md", "docs/architecture.md"),
+        ("auth.rs", "src/api/auth.rs"),
+        ("auth_flow.rs", "tests/auth_flow.rs"),
+        ("billing.rs", "src/api/billing.rs"),
+        ("checkout.rs", "tests/checkout.rs"),
+        ("config.rs", "src/config.rs"),
+        ("dispatch.rs", "src/api/webhooks/dispatch.rs"),
+        ("lib.rs", "src/lib.rs"),
+        ("mailer.rs", "src/workers/mailer.rs"),
+        ("main.rs", "src/main.rs"),
+        ("migrations.rs", "src/db/migrations.rs"),
+        ("mod.rs", "src/api/mod.rs"),
+        ("mod-webhooks.rs", "src/api/webhooks/mod.rs"),
+        ("orders.json", "tests/fixtures/orders.json"),
+        ("pool.rs", "src/db/pool.rs"),
+        ("retry.rs", "src/api/webhooks/retry.rs"),
+        ("scheduler.rs", "src/workers/scheduler.rs"),
+        ("schema.rs", "src/db/schema.rs"),
+        ("users.json", "tests/fixtures/users.json"),
+        ("webhooks.md", "docs/webhooks.md"),
+    ];
+    const TASKS: [(&str, &str); 12] = [
+        ("Add rate limiting to auth endpoints", "#1040 · mira"),
+        ("Migrate sessions table to UUID keys", "#1041 · jonas"),
+        ("Fix flaky checkout integration test", "#1042 · ana"),
+        ("Write release notes for 3.2", "#1043 · mira"),
+        ("Replace deprecated Vue mixins", "#1044 · kai"),
+        ("Upgrade Postgres driver to 0.9", "#1045 · jonas"),
+        ("Extract billing service module", "#1046 · sofia"),
+        ("Add OpenTelemetry tracing spans", "#1047 · kai"),
+        ("Remove legacy feature flags", "#1048 · ana"),
+        ("Generate API client from OpenAPI", "#1049 · sofia"),
+        ("Harden CSP headers", "#1050 · mira"),
+        ("Speed up cold start of worker", "#1051 · jonas"),
+    ];
+    let mut rows: Vec<ListRow<'_, &str>> = FILES
+        .iter()
+        .map(|(label, path)| {
+            ListRow::item(*label, Line::from(*label))
+                .leading(Line::from("F"))
+                .secondary(Line::from(*path))
+                .badge(Line::from("Files"))
+        })
+        .collect();
+    rows.extend(TASKS.iter().map(|(label, detail)| {
+        ListRow::item(*label, Line::from(*label))
+            .leading(Line::from("T"))
+            .secondary(Line::from(*detail))
+            .badge(Line::from("Tasks"))
+    }));
+    let mut state = PickerState::new(Some("Cargo.toml"));
+    frame.render_stateful_widget(
+        &Picker::new(&rows, system)
+            .title("Open quickly")
+            .placeholder("Files and tasks…")
+            .scope("All · Tab scope")
+            .searchable(true),
+        area,
+        &mut state,
+    );
 }
 
 fn picker_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -16529,10 +16707,83 @@ fn table_tasks_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     );
 }
 
+fn table_editable_80_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    fill_junie_surface(frame, area, system);
+    let muted = system.style(Role::TextMuted);
+    let columns = [
+        Column::new("id", "ID", ColumnWidth::Fixed(5)),
+        Column::new("task", "Task", ColumnWidth::Fixed(32)),
+    ];
+    let cells = [
+        [
+            Line::from(Span::styled("#1040", muted)),
+            Line::from("Add rate limiting to auth endpo…"),
+        ],
+        [
+            Line::from(Span::styled("#1041", muted)),
+            Line::from("Migrate sessions table to UUID …"),
+        ],
+        [
+            Line::from(Span::styled("#1042", muted)),
+            Line::from("Fix flaky checkout integration …"),
+        ],
+        [
+            Line::from(Span::styled("#1043", muted)),
+            Line::from("Write release notes for 3.2"),
+        ],
+        [
+            Line::from(Span::styled("#1044", muted)),
+            Line::from("Replace deprecated Vue mixins"),
+        ],
+    ];
+    let rows: Vec<TableRow<'_, usize>> = cells
+        .iter()
+        .enumerate()
+        .map(|(index, cells)| TableRow::new(index, cells))
+        .collect();
+    let mut state = TableState::<usize, &str>::new(None);
+    frame.render_stateful_widget(
+        &Table::new(&columns, &rows, system).focused(false),
+        area,
+        &mut state,
+    );
+}
+
+fn table_editable_error_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    fill_junie_surface(frame, area, system);
+    let danger = system.style(Role::Danger);
+    let muted = system.style(Role::TextMuted);
+    let bang = danger.add_modifier(Modifier::BOLD);
+    let columns = [Column::new("branch", "Branch", ColumnWidth::Fixed(22))];
+    let error_cell = Line::from(vec![
+        Span::styled("fix/checkout flake   ", danger),
+        Span::styled("!", bang),
+    ]);
+    let cells = [
+        [error_cell.clone()],
+        [Line::from(Span::styled("docs/release-3.2", muted))],
+        [Line::from(Span::styled("refactor/mixins", muted))],
+    ];
+    let rows: Vec<TableRow<'_, usize>> = cells
+        .iter()
+        .enumerate()
+        .map(|(index, cells)| TableRow::new(index, cells))
+        .collect();
+    let mut state = TableState::<usize, &str>::new(None);
+    frame.render_stateful_widget(
+        &Table::new(&columns, &rows, system).focused(false),
+        area,
+        &mut state,
+    );
+}
+
 fn table_grid_rows_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::{ColumnModel, DataColumn, LoadState};
     fill_junie_surface(frame, area, system);
-    let columns = ColumnModel::new(vec![DataColumn::new("id", "id", DataColumnWidth::Fixed(4))]);
+    let columns = ColumnModel::new(vec![
+        DataColumn::new("id", "id", DataColumnWidth::Fixed(4))
+            .kind(termrock::widgets::ColumnKind::Id),
+    ]);
     let c0: &[&str] = &["1001"];
     let c1: &[&str] = &["1002"];
     let c2: &[&str] = &["1003"];
@@ -16551,6 +16802,8 @@ fn table_grid_rows_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
     ];
     let mut state = DataTableState::<u64, &str>::new();
     state.load = LoadState::Ready { count: 7 };
+    state.accepts_input = false;
+    state.striped = false;
     DataTable::new(system, &columns, &rows)
         .focused(false)
         .row_numbers(true)
@@ -18259,6 +18512,33 @@ fn dialog(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     );
 }
 
+fn dialog_confirm_run_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    let body = Text::from(
+        "Junie will check out chore/uuid-sessions, apply the plan and run the test suite. You can pause at any step.",
+    );
+    let actions = [
+        Action {
+            id: "cancel",
+            label: "Cancel",
+            enabled: true,
+            variant: ActionVariant::Secondary,
+        },
+        Action {
+            id: "ok",
+            label: "Run",
+            enabled: true,
+            variant: ActionVariant::Primary,
+        },
+    ];
+    let mut state = ChoiceDialogState::new(Some("ok"));
+    *state.dialog_mut() = DialogState::confirm("ok", "cancel");
+    frame.render_stateful_widget(
+        &ChoiceDialog::new(Dialog::confirm("Run task now?", body, system), &actions),
+        area,
+        &mut state,
+    );
+}
+
 fn dialog_destructive_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let tokens = system.clone();
     let actions = [
@@ -19317,7 +19597,10 @@ fn code_block_wrap_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
 fn code_block_retry_rs_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::widgets::RoleTokenSyntax;
     fill_junie_surface(frame, area, system);
-    let lines = ["// Retry a request with exponential backoff."];
+    let lines = [
+        "// Retry a request with exponential backoff.",
+        "pub async fn fetch(url: &str) -> Result<Body, Error> {",
+    ];
     let hi = RoleTokenSyntax::rust(system);
     let mut state = CodeBlockState::new();
     state.set_focused(false);
@@ -20681,6 +20964,59 @@ fn checkbox_list_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
             frame.buffer_mut(),
             &mut st,
         );
+    }
+}
+
+fn form_options_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    fill_junie_surface(frame, area, system);
+    let options = [
+        RadioOption::new("fast", "Fast"),
+        RadioOption::new("balanced", "Balanced"),
+        RadioOption::new("thorough", "Thorough"),
+    ];
+    let mut radios = RadioState::new(Some("balanced"));
+    radios.set_surface_focused(false);
+    let _ = RadioGroup::new(&options, system).paint(
+        Rect::new(area.x, area.y, area.width, 3.min(area.height)),
+        frame.buffer_mut(),
+        &mut radios,
+    );
+    if area.height > 4 {
+        let mut tests = CheckboxState::new(true);
+        let _ = Checkbox::new("tests", "Run tests before opening a PR", system).paint(
+            Rect::new(area.x, area.y.saturating_add(4), area.width, 1),
+            frame.buffer_mut(),
+            &mut tests,
+        );
+    }
+    if area.height > 5 {
+        let mut pr = CheckboxState::new(false);
+        let _ = Checkbox::new("pr", "Open a pull request when done", system).paint(
+            Rect::new(area.x, area.y.saturating_add(5), area.width, 1),
+            frame.buffer_mut(),
+            &mut pr,
+        );
+    }
+    if area.height > 7 {
+        let mut auto = SwitchState::new(false);
+        let _ = Switch::new("auto", "Auto-approve changes", system)
+            .compact()
+            .paint(
+                Rect::new(area.x, area.y.saturating_add(7), area.width, 1),
+                frame.buffer_mut(),
+                &mut auto,
+            );
+    }
+    if area.height > 8 {
+        let mut notify = SwitchState::new(true);
+        notify.set_enabled(false);
+        let _ = Switch::new("notify", "Notify on completion", system)
+            .compact()
+            .paint(
+                Rect::new(area.x, area.y.saturating_add(8), area.width, 1),
+                frame.buffer_mut(),
+                &mut notify,
+            );
     }
 }
 

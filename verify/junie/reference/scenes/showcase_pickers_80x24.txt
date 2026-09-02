@@ -1,24 +1,24 @@
  ▪ Junie Design system / Components / Pickers             i Inspector   ? Help
-
-▎  Overview          Pickers  One modal list for files, tabs and levels: searc…
-▎  Buttons
-▎  Inputs              Open a picker
-▎  Text areas
-▎  Forms               ▎Open quickly   ▎Switch tab   ▎Choose a level
-▎  Lists
-▎  Trees               Quick: fuzzy over files and tasks, Tab cycles the scop…
-▎  Tables
-▎  Editable tables
-▎  Panels
-▎  Sidebars            Result
-▎  Dialogs
-▎  Progress            Chosen          nothing yet
-▎  Scrolling           Detail          —
-▎  Code editor         Level           Safe Mode
-▎  Data grid           Open tabs       Query 1 · orders · order_items · Histo…
-▎  Chips & selects     Pickers opened  0
-▎› Pickers
+  ╭──────────────────────────────────────────────────────────────────────────╮
+▎ │ Open quickly                                             All · Tab scope │…
+▎ │ ▎ Files and tasks…                                                       │
+▎ │                                                                          │
+▎ │ ▎F Cargo.toml                       Cargo.toml                   Files ┃ │
+▎ │ ▎F README.md                        README.md                          ┃ │
+▎ │ ▎F architecture.md                  docs/architecture.md               ┃ │
+▎ │ ▎F auth.rs                          src/api/auth.rs                    ┃ │
+▎ │ ▎F auth_flow.rs                     tests/auth_flow.rs                 │ │
+▎ │ ▎F billing.rs                       src/api/billing.rs                 │ │
+▎ │ ▎F checkout.rs                      tests/checkout.rs                  │ │
+▎ │ ▎F config.rs                        src/config.rs                      │ │
+▎ │ ▎F dispatch.rs                      src/api/webhooks/dispatch.rs       │ │
+▎ │ ▎F lib.rs                           src/lib.rs                         │ │
+▎ │ ▎F mailer.rs                        src/workers/mailer.rs              │ │
+▎ │ ▎F main.rs                          src/main.rs                        │ │
+▎ │ ▎F migrations.rs                    src/db/migrations.rs               │ │
+▎ │ ↑↓ Move · Enter Open · Alt+Enter New tab · Tab Scope · Esc Clear / Close │
+▎›╰──────────────────────────────────────────────────────────────────────────╯
 ▎  Settings
 ▎  Task runner
 
- ↑ ↓ Move  Enter Open  Tab Into page  q Quit
+ Esc Close  Tab Next

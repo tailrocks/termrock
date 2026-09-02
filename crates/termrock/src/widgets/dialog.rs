@@ -614,7 +614,9 @@ fn dialog_inner(area: Rect, inset_x: u16) -> Rect {
 fn paint_dialog_frame(area: Rect, buffer: &mut Buffer, system: &DesignSystem, focused: bool) {
     let theme = system.junie_theme();
     let bg = theme.surface_elevated;
-    let fill = Style::new().bg(bg);
+    // junie `fill` only sets bg, so space cells keep the dimmed-page fg (muted).
+    // A fresh buffer has white leftover; pin muted so empty cells match the capture.
+    let fill = Style::new().fg(theme.text_muted).bg(bg);
     for y in area.top()..area.bottom() {
         for x in area.left()..area.right() {
             buffer[(x, y)].set_char(' ').set_style(fill);
@@ -1818,6 +1820,7 @@ impl<'a> Dialog<'a> {
         if !state.slots.body.is_empty() {
             Paragraph::new(self.body.clone())
                 .style(theme.secondary().bg(bg))
+                .wrap(ratatui_widgets::paragraph::Wrap { trim: false })
                 .scroll((state.scroll.scroll_y, state.scroll.scroll_x))
                 .render(state.slots.body, buffer);
             if let Some(token) = state.ack_token.as_deref() {

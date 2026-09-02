@@ -1,6 +1,6 @@
 sidebar/settings 30x16 (story 28x14)
                               
- ╭ Settings ────────────────╮ 
+ ╭─ Settings ───────────────╮ 
  │     Workspace            │ 
  │  ▎› ⚙ General            │ 
  │  ▎  ◐ Appearance         │ 

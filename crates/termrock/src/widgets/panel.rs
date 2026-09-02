@@ -1429,12 +1429,13 @@ fn paint_border_label(
         .iter()
         .map(|span| display_cols(span.content.as_ref()))
         .sum::<usize>()
-        .min(usize::from(area.width.saturating_sub(2)));
+        .min(usize::from(area.width.saturating_sub(4)));
     if width == 0 {
         return;
     }
+    // junie title_row sits at x+2 so the `─` after `╭` survives: `╭─ Title ─`.
     let rect = Rect::new(
-        area.x.saturating_add(1),
+        area.x.saturating_add(2),
         if top {
             area.y
         } else {

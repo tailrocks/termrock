@@ -32,8 +32,8 @@ use crate::{
     style::{DesignSystem, Glyph, ListRowVisualState, Role},
     text::take_display_cols,
     widgets::data_view::{
-        CellCoord, ColumnModel, ColumnPin, CopyPayload, ExpandState, FilterSpec, GroupHeader,
-        LoadState, SelectionMode, SelectionModel, SortSpec, VirtualWindow,
+        CellCoord, ColumnKind, ColumnModel, ColumnPin, CopyPayload, ExpandState, FilterSpec,
+        GroupHeader, LoadState, SelectionMode, SelectionModel, SortSpec, VirtualWindow,
     },
 };
 
@@ -1471,14 +1471,12 @@ fn paint_data_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
 {
     let cursor = state.cursor_row == row_index;
     let selected = state.selection.is_row_selected(id);
-    let expanded = state.expand.expanded.contains(id);
     let logical_row = state.window.offset.saturating_add(row_index as u64);
 
-    let indicated = selected || (cursor && surface_focused);
     let chrome = super::row_chrome::RowChrome::resolve(
         table.system,
         ListRowVisualState {
-            selected: indicated,
+            selected,
             focused: cursor && surface_focused,
             hovered: state.hovered_row.as_ref() == Some(id),
             enabled: true,
@@ -1591,6 +1589,8 @@ fn paint_data_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
         });
         let quiet = if state.colorless || table.system.mono() {
             style
+        } else if matches!(col.kind, ColumnKind::Id) {
+            table.system.style(Role::TextSecondary)
         } else {
             chrome.secondary_style(style)
         };
@@ -1627,29 +1627,6 @@ fn paint_data_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
         }
         if skip_scroll {
             x_pin = paint_end.saturating_add(1);
-        }
-    }
-    chrome.paint_gutter(buffer, Rect::new(area.x, y, area.width, 1));
-    if area.width > 1 {
-        let auxiliary = if selected {
-            Some(table.system.glyphs.check_on())
-        } else if expanded {
-            Some("▾")
-        } else {
-            None
-        };
-        if let Some(glyph) = auxiliary {
-            buffer.set_stringn(
-                area.x.saturating_add(1),
-                y,
-                glyph,
-                1,
-                if selected {
-                    table.system.style(Role::Accent)
-                } else {
-                    table.system.style(Role::TextMuted)
-                },
-            );
         }
     }
 }
@@ -2060,6 +2037,40 @@ mod tests {
     }
 
     #[test]
+    fn junie_row_chrome_is_bar_check_and_numbers() {
+        let system = DesignSystem::junie();
+        let cols = ColumnModel::new(vec![
+            DataColumn::new("id", "id", DataColumnWidth::Fixed(4)).kind(ColumnKind::Id),
+        ]);
+        let c0: &[&str] = &["1001"];
+        let c1: &[&str] = &["1002"];
+        let rows = [(0u64, c0), (1u64, c1)];
+        let mut state = DataTableState::<u64, &str>::new();
+        state.accepts_input = false;
+        state.striped = false;
+        let area = Rect::new(0, 0, 20, 6);
+        let mut buffer = Buffer::empty(area);
+        DataTable::new(&system, &cols, &rows)
+            .focused(false)
+            .row_numbers(true)
+            .render(area, &mut buffer, &mut state);
+        let text: String = (0..area.height)
+            .map(|y| {
+                (0..area.width)
+                    .map(|x| buffer[(x, y)].symbol().to_string())
+                    .collect::<String>()
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+        assert!(
+            text.contains(system.glyphs.selection_gutter()),
+            "col0 ▎\n{text}"
+        );
+        assert!(text.contains("1001"), "{text}");
+        assert!(text.contains('1'), "row numbers\n{text}");
+    }
+
+    #[test]
     fn paint_columnar_with_pins_and_cells() {
         let system = DesignSystem::default();
         let cols = ColumnModel::new(vec![
@@ -2193,10 +2204,10 @@ mod tests {
         };
         assert_ne!(
             at('d'),
-            at('1'),
+            at('2'),
             "a count must not read as loudly as the identity beside it"
         );
-        assert_eq!(at('1'), system.style(Role::TextMuted).fg);
+        assert_eq!(at('2'), system.style(Role::TextMuted).fg);
     }
 
     #[test]
@@ -2210,10 +2221,15 @@ mod tests {
             let cells: &[&str] = &["alpha", "42"];
             let rows = [(1u64, cells)];
             let mut state = DataTableState::<u64, &str>::new();
+            state.selection.select_row(1);
             let area = Rect::new(0, 0, 20, 4);
             let mut buffer = Buffer::empty(area);
 
-            DataTable::new(system, &cols, &rows).render(area, &mut buffer, &mut state);
+            DataTable::new(system, &cols, &rows).focused(true).render(
+                area,
+                &mut buffer,
+                &mut state,
+            );
             (buffer, state)
         };
 

@@ -5,25 +5,25 @@
                             Open a picker
    Components
 ▎  Buttons                  ▎Open quickly   ▎Switch tab   ▎Choose a level
-▎  Inputs
-▎  Text areas               Quick: fuzzy over files and tasks, Tab cycles the scope, Alt+Enter is the alternate actio…
-▎  Forms
-▎  Lists
-▎  Trees
-▎  Tables                   Result
-▎  Editable tables
-▎  Panels                   Chosen          nothing yet
-▎  Sidebars                 Detail          —
-▎  Dialogs                  Level           Safe Mode
-▎  Progress                 Open tabs       Query 1 · orders · order_items · History
-▎  Scrolling                Pickers opened  0
-▎  Code editor
-▎  Data grid
-▎  Chips & selects
-▎› Pickers
-
-   Screens
-▎  Settings
+▎  Inputs           ╭──────────────────────────────────────────────────────────────────────────────╮
+▎  Text areas       │ Open quickly                                                 All · Tab scope │e alternate actio…
+▎  Forms            │ ▎ Files and tasks…                                                           │
+▎  Lists            │                                                                              │
+▎  Trees            │ ▎F Cargo.toml                         Cargo.toml                     Files ┃ │
+▎  Tables           │ ▎F README.md                          README.md                            ┃ │
+▎  Editable tables  │ ▎F architecture.md                    docs/architecture.md                 ┃ │
+▎  Panels           │ ▎F auth.rs                            src/api/auth.rs                      ┃ │
+▎  Sidebars         │ ▎F auth_flow.rs                       tests/auth_flow.rs                   │ │
+▎  Dialogs          │ ▎F billing.rs                         src/api/billing.rs                   │ │
+▎  Progress         │ ▎F checkout.rs                        tests/checkout.rs                    │ │
+▎  Scrolling        │ ▎F config.rs                          src/config.rs                        │ │
+▎  Code editor      │ ▎F dispatch.rs                        src/api/webhooks/dispatch.rs         │ │
+▎  Data grid        │ ▎F lib.rs                             src/lib.rs                           │ │
+▎  Chips & selects  │ ▎F mailer.rs                          src/workers/mailer.rs                │ │
+▎› Pickers          │ ▎F main.rs                            src/main.rs                          │ │
+                    │ ▎F migrations.rs                      src/db/migrations.rs                 │ │
+   Screens          │ ↑↓ Move · Enter Open · Alt+Enter New tab · Tab Scope · Esc Clear / Close     │
+▎  Settings         ╰──────────────────────────────────────────────────────────────────────────────╯
 ▎  Task runner
 
 
@@ -37,4 +37,4 @@
 
 
 
- ↑ ↓ Move  Enter Open  Tab Into page  q Quit
+ Esc Close  Tab Next

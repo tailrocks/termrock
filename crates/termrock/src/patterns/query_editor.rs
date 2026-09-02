@@ -613,6 +613,7 @@ impl QueryEditorState {
     pub fn new() -> Self {
         let mut editor = TextAreaState::new("");
         editor.set_accepts_input(true);
+        editor.set_editing(true);
         Self {
             editor,
             language: QueryLanguage::sql(),
@@ -660,6 +661,7 @@ impl QueryEditorState {
         let on =
             self.accepts_input && matches!(self.focus, QueryFocus::Editor) && !self.completion_open;
         self.editor.set_accepts_input(on);
+        self.editor.set_editing(on);
     }
 
     /// Draft text.

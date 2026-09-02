@@ -278,6 +278,8 @@ pub enum ColumnKind {
     /// column, contracts to its first grapheme instead of ellipsizing — a
     /// one-cell status column shows the letter, not an ellipsis.
     Status,
+    /// Keys / surrogates: secondary text, not the muted count tier.
+    Id,
 }
 
 impl ColumnKind {
@@ -289,7 +291,7 @@ impl ColumnKind {
     pub const fn cell_style(self, base: Style, quiet: Style) -> Style {
         match self {
             Self::Text | Self::Status => base,
-            Self::Numeric => quiet,
+            Self::Numeric | Self::Id => quiet,
         }
     }
 

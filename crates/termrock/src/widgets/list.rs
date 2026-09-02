@@ -851,7 +851,10 @@ impl<Id: Clone + PartialEq> ListState<Id> {
         self.collection.set_active(Some(region.id.clone()));
         // Shift+click range when multi-select is on (pointer path; host passes modifiers via click_range).
         match self.click_policy {
-            ListClickPolicy::Activate => Outcome::Activated(region.id.clone()),
+            ListClickPolicy::Activate => {
+                self.chosen = Some(region.id.clone());
+                Outcome::Activated(region.id.clone())
+            }
             ListClickPolicy::Select => Outcome::Changed,
         }
     }
@@ -1647,6 +1650,39 @@ mod tests {
             Outcome::Activated("second")
         );
         assert_eq!(state.chosen(), Some(&"second"));
+    }
+
+    #[test]
+    fn click_writes_chosen() {
+        let rows = rows();
+        let system = DesignSystem::junie();
+        let mut state = ListState::new(Some("first"));
+        let area = Rect::new(0, 0, 16, 4);
+        let mut buffer = Buffer::empty(area);
+        (&List::new(&rows, &system).focused(true)).render(area, &mut buffer, &mut state);
+        let second = state
+            .regions()
+            .iter()
+            .find(|r| r.id == "second")
+            .unwrap()
+            .area;
+        assert_eq!(
+            state.click(Position::new(second.x, second.y)),
+            Outcome::Activated("second")
+        );
+        assert_eq!(state.chosen(), Some(&"second"));
+        let mut buffer = Buffer::empty(area);
+        (&List::new(&rows, &system).focused(true)).render(area, &mut buffer, &mut state);
+        let second = state
+            .regions()
+            .iter()
+            .find(|r| r.id == "second")
+            .unwrap()
+            .area;
+        assert_eq!(
+            buffer[(second.x.saturating_add(1), second.y)].symbol(),
+            system.glyphs.selection_marker()
+        );
     }
 
     fn rows() -> [ListRow<'static, &'static str>; 4] {

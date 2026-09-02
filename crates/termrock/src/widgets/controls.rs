@@ -2080,7 +2080,12 @@ impl<'a, Id> Switch<'a, Id> {
                 if lx < area.right() && !self.label.is_empty() {
                     let lw = area.right().saturating_sub(lx);
                     let text = take_display_cols(self.label, usize::from(lw));
-                    buffer.set_stringn(lx, area.y, &text, usize::from(lw), label_style);
+                    let compact_label = if state.enabled {
+                        row_style.fg(theme.text_primary)
+                    } else {
+                        label_style
+                    };
+                    buffer.set_stringn(lx, area.y, &text, usize::from(lw), compact_label);
                     let used = display_cols(&text).min(usize::from(lw)) as u16;
                     label_area = Some(Rect::new(lx, area.y, used, 1));
                     let word = if state.on { "on" } else { "off" };
