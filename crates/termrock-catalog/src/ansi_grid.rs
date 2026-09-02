@@ -69,18 +69,21 @@ impl Grid {
     }
 
     fn cell_eq(a: &GridCell, b: &GridCell) -> bool {
-        if a.ch != b.ch
-            || a.bg != b.bg
-            || a.italic != b.italic
-            || a.underline != b.underline
-            || a.reverse != b.reverse
-        {
+        if a.ch != b.ch || a.bg != b.bg || a.italic != b.italic || a.reverse != b.reverse {
             return false;
         }
         let invisible = a.fg == a.bg && b.fg == b.bg;
         let space = a.ch == " " && b.ch == " ";
         let tmux_weight = invisible || space || Self::frame_glyph(&a.ch);
         let colored_underline = a.underline && b.underline;
+        let tmux_underline_color = |c: &GridCell| c.underline && c.dim && c.strike;
+        if a.underline != b.underline
+            && !space
+            && !tmux_underline_color(a)
+            && !tmux_underline_color(b)
+        {
+            return false;
+        }
         if a.bold != b.bold && !tmux_weight {
             return false;
         }
@@ -88,7 +91,7 @@ impl Grid {
             return false;
         }
         // tmux `-e` encodes underline-color as SGR 9 (strike) + 2 (dim).
-        if a.strike != b.strike && !colored_underline {
+        if a.strike != b.strike && !colored_underline && !space {
             return false;
         }
         if a.fg == b.fg {

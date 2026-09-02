@@ -518,11 +518,21 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
             }
             KeyCode::Backspace => {
                 self.edit_draft.pop();
-                DataTableOutcome::Ignored
+                let col = self.cursor_column_id(columns);
+                DataTableOutcome::EditStarted {
+                    row: visible_rows[self.cursor_row.min(visible_rows.len().saturating_sub(1))]
+                        .clone(),
+                    column: col,
+                }
             }
             KeyCode::Char(ch) if !key.modifiers.contains(KeyModifiers::CONTROL) => {
                 self.edit_draft.push(ch);
-                DataTableOutcome::Ignored
+                let col = self.cursor_column_id(columns);
+                DataTableOutcome::EditStarted {
+                    row: visible_rows[self.cursor_row.min(visible_rows.len().saturating_sub(1))]
+                        .clone(),
+                    column: col,
+                }
             }
             _ => DataTableOutcome::Ignored,
         }
@@ -1067,6 +1077,8 @@ pub struct DataTable<'a, RowId, ColId> {
     row_numbers: bool,
     /// Status footer (`N rows · nav:cell`). Junie showcase tables have none.
     show_footer: bool,
+    /// Source DataGrid cell tones (row fill, not quiet numbers).
+    datagrid: bool,
 }
 
 impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColId> {
@@ -1087,6 +1099,7 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
             fullscreen_hint: false,
             row_numbers: true,
             show_footer: false,
+            datagrid: false,
         }
     }
 
@@ -1122,6 +1135,13 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
     #[must_use]
     pub const fn row_numbers(mut self, on: bool) -> Self {
         self.row_numbers = on;
+        self
+    }
+
+    /// Paint as source DataGrid: cells inherit the row, numbers stay loud.
+    #[must_use]
+    pub const fn datagrid(mut self, on: bool) -> Self {
+        self.datagrid = on;
         self
     }
 
@@ -1171,11 +1191,22 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
             y = y.saturating_add(1);
         }
 
-        // junie `cols_area` is `width - 5 - scrollbar` with a 3-cell gutter.
-        let col_budget = area
-            .width
-            .saturating_sub(self.chrome_width())
-            .saturating_sub(2);
+        // Source DataGrid cols_area: `width - gutter_w - 4 - scrollbar`.
+        // Default tables keep the tighter `- 2` leftover used by column tests.
+        let total = usize::try_from(state.window.logical_len.max(self.rows.len() as u64))
+            .unwrap_or(self.rows.len())
+            .max(self.rows.len());
+        let has_sb = crate::scroll::is_scrollable(total, usize::from(state.window.viewport.max(1)));
+        let col_budget = if self.datagrid {
+            area.width
+                .saturating_sub(self.chrome_width())
+                .saturating_sub(4)
+                .saturating_sub(u16::from(has_sb))
+        } else {
+            area.width
+                .saturating_sub(self.chrome_width())
+                .saturating_sub(2)
+        };
         state.viewport_width = col_budget;
         self.columns.resolve_paint_widths_with_gap(
             col_budget.saturating_add(state.h_offset),
@@ -1324,17 +1355,16 @@ fn paint_plain_cell(
     } else {
         truncate_cols(text, w, ellipsis).into_owned()
     };
-    let shown = if kind.right_aligned() {
-        let pad = w.saturating_sub(display_cols(&shown));
-        if pad == 0 {
-            shown
-        } else {
-            format!("{}{shown}", " ".repeat(pad))
-        }
+    let shown_w = display_cols(&shown);
+    if shown_w == 0 {
+        return;
+    }
+    let paint_x = if kind.right_aligned() {
+        x.saturating_add(width.saturating_sub(u16::try_from(shown_w).unwrap_or(width)))
     } else {
-        shown
+        x
     };
-    buffer.set_stringn(x, y, &shown, w, style);
+    buffer.set_stringn(paint_x, y, &shown, shown_w, style);
 }
 
 fn paint_status_line<RowId: Clone + Ord, ColId: Clone + PartialEq>(
@@ -1388,11 +1418,10 @@ fn paint_header_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
     y: u16,
     buffer: &mut Buffer,
     state: &mut DataTableState<RowId, ColId>,
-    _surface_focused: bool,
+    surface_focused: bool,
 ) where
     ColId: Clone,
 {
-    let style = super::table_chrome::header_style(table.system);
     buffer.set_style(
         Rect::new(area.x, y, area.width, 1),
         super::table_chrome::header_band(table.system),
@@ -1403,7 +1432,7 @@ fn paint_header_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
         y,
         &" ".repeat(usize::from(chrome)),
         usize::from(chrome),
-        style,
+        super::table_chrome::header_band(table.system),
     );
     let origin = area.x.saturating_add(chrome);
     let clip_right = origin
@@ -1427,7 +1456,7 @@ fn paint_header_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
     let gap = i32::from(table.system.spacing.column_gap);
     let mut logical = 0i32;
     let h_off = i32::from(state.h_offset);
-    for (_paint_ord, &(col_idx, width)) in widths.iter().enumerate() {
+    for (paint_ord, &(col_idx, width)) in widths.iter().enumerate() {
         let col = &table.columns.columns[col_idx];
         let pinned_start = col.pin == ColumnPin::Start;
         let pinned_end = col.pin == ColumnPin::End;
@@ -1455,24 +1484,39 @@ fn paint_header_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
             continue;
         }
         let mut title = col.title.clone();
-        if let Some(sort) = &state.sort
-            && sort.column == col.id
-        {
-            title.push_str(super::table_chrome::sort_marker(sort.ascending));
+        let sorted = state.sort.as_ref().is_some_and(|s| s.column == col.id);
+        if sorted {
+            title.push_str(super::table_chrome::sort_marker(
+                state.sort.as_ref().is_some_and(|s| s.ascending),
+            ));
         }
+        let on_cursor = surface_focused && paint_ord == state.cursor_col;
+        let col_style = super::table_chrome::header_label_style(
+            table.system,
+            sorted || on_cursor,
+            false,
+            col.sortable,
+        );
         let cell = Rect::new(paint_x, y, paint_w, 1);
-        buffer.set_style(cell, style);
+        buffer.set_style(
+            cell,
+            if on_cursor {
+                col_style
+            } else {
+                super::table_chrome::header_style(table.system)
+            },
+        );
         if col.primary {
             // junie: title prefix `"▪ "` then overdraw `⚷` at the origin.
             let marked = format!("{} {title}", super::table_chrome::primary_key_mark());
             let text = take_display_cols(&marked, usize::from(paint_w));
-            buffer.set_stringn(paint_x, y, &text, usize::from(paint_w), style);
+            buffer.set_stringn(paint_x, y, &text, usize::from(paint_w), col_style);
             buffer.set_stringn(
                 paint_x,
                 y,
                 super::table_chrome::primary_key_mark(),
                 1,
-                style.fg(table.system.junie_theme().text_faint),
+                col_style.fg(table.system.junie_theme().text_faint),
             );
         } else {
             paint_plain_cell(
@@ -1481,7 +1525,7 @@ fn paint_header_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
                 y,
                 paint_w,
                 &title,
-                style,
+                col_style,
                 col.kind,
                 table.system.glyphs.ellipsis(),
             );
@@ -1576,6 +1620,14 @@ fn paint_data_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
     let style = chrome.label_style(base);
 
     chrome.paint_wash(buffer, Rect::new(area.x, y, area.width, 1));
+    if table.datagrid && cursor && surface_focused {
+        // Source `t.row` fills the focused row primary+BOLD; pads/gaps inherit.
+        for x in area.x..area.right() {
+            if let Some(cell) = buffer.cell_mut((x, y)) {
+                cell.set_style(style);
+            }
+        }
+    }
     let theme = table.system.junie_theme();
     let visual = crate::style::VisualState {
         focused: cursor && surface_focused,
@@ -1585,12 +1637,17 @@ fn paint_data_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
     };
     let bg = style.bg.unwrap_or(theme.surface);
     let gutter_w = table.chrome_width();
+    let mut gutter_style = table.system.gutter(visual, bg, false);
+    if visual.focused {
+        // Source `t.row` puts BOLD on the fill; the bar inherits it.
+        gutter_style = gutter_style.add_modifier(Modifier::BOLD);
+    }
     buffer.set_stringn(
         area.x,
         y,
         table.system.glyphs.selection_gutter(),
         1,
-        table.system.gutter(visual, bg, false),
+        gutter_style,
     );
     if gutter_w > 1 {
         let mark = if selected {
@@ -1616,11 +1673,13 @@ fn paint_data_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
         let num_w = gutter_w.saturating_sub(4).max(2);
         let n = logical_row.saturating_add(1);
         let label = format!("{n:>width$}", width = usize::from(num_w));
-        let nstyle = style.fg(if cursor && surface_focused {
-            theme.text_secondary
-        } else {
-            theme.text_faint
-        });
+        let nstyle = style
+            .fg(if cursor && surface_focused {
+                theme.text_secondary
+            } else {
+                theme.text_faint
+            })
+            .remove_modifier(Modifier::BOLD);
         buffer.set_stringn(
             area.x.saturating_add(3),
             y,
@@ -1673,14 +1732,22 @@ fn paint_data_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
             row: logical_row,
             col: paint_ord,
         });
-        let quiet = if state.colorless || table.system.mono() {
-            style
-        } else if matches!(col.kind, ColumnKind::Id) {
-            table.system.style(Role::TextSecondary)
+        let mut cell_style = if table.datagrid {
+            if col.primary && !(cursor && surface_focused) {
+                style.fg(theme.text_secondary)
+            } else {
+                style
+            }
         } else {
-            chrome.secondary_style(style)
+            let quiet = if state.colorless || table.system.mono() {
+                style
+            } else if matches!(col.kind, ColumnKind::Id) {
+                table.system.style(Role::TextSecondary)
+            } else {
+                chrome.secondary_style(style)
+            };
+            col.kind.cell_style(style, quiet)
         };
-        let mut cell_style = col.kind.cell_style(style, quiet);
         if cell_selected {
             cell_style = cell_style.patch(table.system.style(Role::SelectionTint));
         }
@@ -1689,7 +1756,13 @@ fn paint_data_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
             cell_style = table.system.reversed();
         }
         let cell = Rect::new(paint_x, y, paint_w, 1);
-        buffer.set_style(cell, cell_style);
+        if cell_focused
+            || cell_selected
+            || (!table.datagrid && matches!(col.kind, ColumnKind::Id))
+            || (table.datagrid && col.primary && !(cursor && surface_focused))
+        {
+            buffer.set_style(cell, cell_style);
+        }
         if state.editing && cell_focused {
             paint_plain_cell(
                 buffer,

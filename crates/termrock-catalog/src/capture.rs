@@ -142,6 +142,10 @@ fn apply_step(
         Step::Right => drive.send(key(KeyCode::Right, KeyModifiers::NONE), tick_at(*elapsed)),
         Step::Home => drive.send(key(KeyCode::Home, KeyModifiers::NONE), tick_at(*elapsed)),
         Step::End => drive.send(key(KeyCode::End, KeyModifiers::NONE), tick_at(*elapsed)),
+        Step::Backspace => drive.send(
+            key(KeyCode::Backspace, KeyModifiers::NONE),
+            tick_at(*elapsed),
+        ),
         Step::Char(c) => drive.send(key(KeyCode::Char(c), KeyModifiers::NONE), tick_at(*elapsed)),
         Step::Ctrl(c) => drive.send(
             key(KeyCode::Char(c), KeyModifiers::CONTROL),

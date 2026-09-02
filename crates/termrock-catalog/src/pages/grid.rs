@@ -9,6 +9,7 @@ use std::collections::{BTreeSet, HashMap};
 
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
+use ratatui::style::{Modifier, Style};
 use ratatui::text::Text;
 use ratatui::widgets::StatefulWidget;
 use termrock::input::{
@@ -326,7 +327,7 @@ impl GridPage {
             DataColumn::new("mrr", "mrr", DataColumnWidth::Fixed(7))
                 .kind(ColumnKind::Numeric)
                 .sortable(),
-            DataColumn::new("active", "active", DataColumnWidth::Fixed(8)).editable(),
+            DataColumn::new("active", "active", DataColumnWidth::Fixed(5)).editable(),
             DataColumn::new("renewed_at", "renewed_at", DataColumnWidth::Fixed(12)).editable(),
             DataColumn::new("notes", "notes", DataColumnWidth::Fixed(27)).editable(),
         ]);
@@ -746,6 +747,22 @@ impl GridPage {
         format!("rows {}–{} of {total}", thousands(a), thousands(b))
     }
 
+    fn cols_label(&self) -> Option<String> {
+        let n = self.columns.columns.len();
+        let vis = self.table.header_regions.len();
+        if vis == 0 || vis >= n {
+            return None;
+        }
+        Some(format!("cols 1–{vis} of {n}"))
+    }
+
+    fn position_label(&self) -> String {
+        match self.cols_label() {
+            Some(c) => format!("{} · {c}", self.rows_label()),
+            None => self.rows_label(),
+        }
+    }
+
     fn on_table(
         &mut self,
         ev: DataTableOutcome<usize, &'static str>,
@@ -754,7 +771,9 @@ impl GridPage {
         match ev {
             DataTableOutcome::Ignored => Route::Ignored,
             DataTableOutcome::EditStarted { .. } => {
-                if self.table.edit_draft.is_empty() {
+                // `e` sets `editing` before this outcome; Activate already
+                // called `begin_edit`. Do not refill after Backspace-to-empty.
+                if !self.table.editing {
                     self.begin_edit();
                 }
                 Route::Changed
@@ -859,6 +878,64 @@ impl GridPage {
             _ => Route::Changed,
         }
     }
+
+    fn paint_change_marks(
+        &self,
+        body: Rect,
+        buf: &mut Buffer,
+        t: &termrock::style::JunieTheme,
+        bg: ratatui::style::Color,
+    ) {
+        let off = usize::try_from(self.table.window.offset).unwrap_or(0);
+        let vp = usize::from(self.table.window.viewport.max(1));
+        for vis in 0..vp {
+            let idx = off.saturating_add(vis);
+            let Some(&src) = self.order.get(idx) else {
+                break;
+            };
+            let y = body
+                .y
+                .saturating_add(1)
+                .saturating_add(u16::try_from(vis).unwrap_or(u16::MAX));
+            if y >= body.bottom() {
+                break;
+            }
+            let (glyph, style) = if self.row_error.as_ref().is_some_and(|(r, _)| *r == src) {
+                (
+                    "!",
+                    Style::new().fg(t.error).add_modifier(Modifier::BOLD).bg(bg),
+                )
+            } else if self.pending.deleted.contains(&src) {
+                ("−", t.muted().bg(bg))
+            } else if self.pending.inserted.contains(&src) {
+                ("+", t.secondary().bg(bg))
+            } else if self.pending.cells.keys().any(|(r, _)| *r == src) {
+                ("•", t.primary().fg(t.warning).bg(bg))
+            } else {
+                continue;
+            };
+            buf.set_string(body.x.saturating_add(2), y, glyph, style);
+        }
+    }
+
+    fn paint_dirty_underlines(&self, buf: &mut Buffer) {
+        for region in &self.table.cell_regions {
+            let Some(c) = COLS.iter().position(|n| *n == region.column) else {
+                continue;
+            };
+            if !self.pending.cells.contains_key(&(region.row, c)) {
+                continue;
+            }
+            if self.pending.inserted.contains(&region.row) {
+                continue;
+            }
+            for x in region.area.x..region.area.right() {
+                if let Some(cell) = buf.cell_mut((x, region.area.y)) {
+                    cell.set_style(cell.style().add_modifier(Modifier::UNDERLINED));
+                }
+            }
+        }
+    }
 }
 
 impl Page for GridPage {
@@ -885,8 +962,18 @@ impl Page for GridPage {
             || ctx.interaction.focused(DISCARD)
             || ctx.interaction.focused(SAVE);
         let focused = ctx.interaction.focused(GRID) || bar_focus;
-        let meta = self.rows_label();
         let h = area.height.min(30);
+        let pending = !self.pending.is_empty();
+        // Card pad 2 + title 1; table header 1. Source DataGrid `bar_h` is 2
+        // when pending (one blank + the action row).
+        let body_h = h
+            .saturating_sub(3)
+            .saturating_sub(if pending { 2 } else { 0 });
+        let seeded = body_h.saturating_sub(1);
+        if seeded > 0 {
+            self.label_view = seeded;
+        }
+        let meta = self.position_label();
         let (inner, bg) = layout::card(
             Rect::new(area.x, area.y, area.width, h),
             buf,
@@ -895,13 +982,12 @@ impl Page for GridPage {
             Some(&meta),
             focused && !overlay,
         );
-        let pending = !self.pending.is_empty();
         let body = if pending {
             Rect::new(
                 inner.x,
                 inner.y,
                 inner.width,
-                inner.height.saturating_sub(1),
+                inner.height.saturating_sub(2),
             )
         } else {
             inner
@@ -925,7 +1011,8 @@ impl Page for GridPage {
         StatefulWidget::render(
             &DataTable::new(ctx.system, &self.columns, &projected)
                 .focused(ctx.interaction.focused(GRID) && !overlay)
-                .row_numbers(true),
+                .row_numbers(true)
+                .datagrid(true),
             body,
             buf,
             &mut self.table,
@@ -950,6 +1037,8 @@ impl Page for GridPage {
         ctx.control(GRID, body, overlay);
         ctx.scrollable(GRID, body);
         self.label_view = self.table.window.viewport;
+        self.paint_change_marks(body, buf, t, bg);
+        self.paint_dirty_underlines(buf);
 
         if pending {
             let by = inner.bottom().saturating_sub(1);
@@ -958,11 +1047,7 @@ impl Page for GridPage {
             buf.set_string(inner.x + 1, by, &text_s, t.primary().fg(t.warning).bg(bg));
             let detail = match &self.row_error {
                 Some((r, msg)) if Some(*r) == self.cursor_src() => format!("· {msg}"),
-                _ => self
-                    .pending
-                    .label()
-                    .map(|d| format!("· {d}"))
-                    .unwrap_or_default(),
+                _ => self.pending.label().unwrap_or_default(),
             };
             let ds = if self
                 .row_error
@@ -1007,6 +1092,26 @@ impl Page for GridPage {
             }
         }
 
+        let hy = area.y.saturating_add(h).saturating_add(1);
+        if hy < area.bottom() {
+            let help = if pending {
+                format!(
+                    "Enter edits · Space selects · s sorts · + inserts · - deletes · p previews SQL · Ctrl+S saves · seats over 500 are rejected on save · saved so far: {}",
+                    self.saved
+                )
+            } else {
+                format!(
+                    "p previews SQL · Ctrl+S saves · seats over 500 are rejected on save · saved so far: {}",
+                    self.saved
+                )
+            };
+            buf.set_string(
+                area.x.saturating_add(2),
+                hy,
+                &text::truncate(&help, usize::from(area.width.saturating_sub(2))),
+                t.muted(),
+            );
+        }
         ctx.inert = saved_inert;
         if overlay {
             self.dialog.set_open(true);
@@ -1021,7 +1126,6 @@ impl Page for GridPage {
             );
             ctx.control(ID.sub("modal"), area, false);
         }
-        let _ = self.saved;
     }
 
     fn handle(&mut self, ev: &PageEvent, cx: &mut PageCtx<'_>) -> Route {

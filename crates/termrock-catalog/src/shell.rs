@@ -938,7 +938,7 @@ impl App {
         let right_reserved = self
             .status
             .as_ref()
-            .map(|(s, _)| text::width(s) as u16 + 3)
+            .map(|(s, _)| text::width(s) as u16)
             .unwrap_or(14);
         for (k, v) in &hints {
             let kw = text::width(k) as u16;
