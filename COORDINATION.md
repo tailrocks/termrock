@@ -29,6 +29,7 @@ Landed reusable APIs (catalog/preview must use these; no page-local forks):
 - **Table columns:** `ColumnWidth::Min(n)` now absorbs leftover after Fixed (junie Min). Drop Status via `.priority(20)` and render the **same** story at 52×6: Task grows 24→33. Do not mint a second Fixed-33 story.
 - **DataTable gap:** `resolve_paint_widths_with_gap(budget, system.spacing.column_gap, out)`. Id cells fill the column with `TextSecondary` (padding included).
 - **Grid header `⚷`:** `DataColumn::primary()`. Header origin is faint `⚷` (junie overdraw of `"▪ "`). Body Id cells stay `TextSecondary`. Catalog can crop the header.
+- **CORE API GAP (panel scrollbar):** `Panel` has no title-row scrollbar reserve (two blank cells before `─╮`) and no body thumb/track chrome. `panel/framed-pane` still overdraws `termrock::scroll` glyphs after `Panel::paint`. Need a public Panel scrollbar / title-track-reserve API. Catalog will not add further story-local paint forks.
 
 ## Handoff / do not duplicate
 
@@ -37,8 +38,35 @@ Landed reusable APIs (catalog/preview must use these; no page-local forks):
 - Workspace `png_baselines` red is presentation (subset stories without baselines / intended Junie paint drift). Core will not run `mise run bless-pngs`.
 - Pre-existing panel ellipsis tests are core defects; this agent fixes the painter.
 
+## Presentation claimed (spawned)
+
+- `crates/termrock-lookbook/baselines/png/` — bless Jackin subset including `dialog-confirm-run.png` and `panel-framed-pane.png`
+- Unified catalog: consume `TableState::cell_nav`, `ColumnWidth::Min` leftover, `DataColumn::primary`; do not fork table paint
+- `verify/junie` remaining SKIP are product shells (overview/settings/taskrunner/tablepro) unless catalog adds equivalent public-API demos
+
 ## Protocol
 
 1. Edit only claimed paths. Add a claim line before touching a new file.
 2. API gap: write it under **Public API for presentation**; core implements in the library, never a showcase-local workaround.
 3. Integrate `git pull --rebase` before push. Never `git reset --hard` the other's commits.
+
+## Presentation status
+
+PNG bless: PASS. `TERMROCK_BLESS_PNGS=1 cargo nextest run -p termrock-lookbook --all-features --test png_baselines --no-capture --locked` then confirm without bless: PASS. Render-twice determinism held (no raster bug).
+
+- New baselines: `dialog-confirm-run.png`, `panel-framed-pane.png`.
+- Rewrote 14 subset goldens to HEAD Junie paint (same geometry). Notable: `collection-state-headless` dropped a stray light footer band.
+
+API consume (no Table/DataTable paint forks):
+- `table/tasks` — `ColumnWidth::Min(24)` + Status `.priority(20)` (54 cols keeps Status; 52×6 drops Status, Task 24→33).
+- `table/editable-cursor` — recast off Fixed(33) onto the same columns + `set_cell_nav(true)` at 52×2; junie crop `[11, 2, 33, 1]`.
+- `data-table/grid-ids` — `DataColumn::primary()`.
+- `table/editable-80` — still ID Fixed(5)+Task Fixed(32) for the 44-col 80×24 crop (leftover-growth lives on `table/tasks` @ 52×6).
+
+Remaining SKIP (`verify/junie`, 11 product shells):
+- showcase overview / settings / taskrunner — 120×40 and 80×24
+- tablepro default 120×40 and 80×24, local 120×40, production 120×40, help 120×40
+
+CORE API GAP: Panel scrollbar / title-track-reserve (see Public API). Did not add a new paint fork.
+
+Lookbook+showcase merge: not started; not done in this slice. No commit (orchestrator).

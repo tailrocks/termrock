@@ -88,7 +88,7 @@
     reference: { bin: "showcase", args: ["--page", "Editable tables"], cols: 120, rows: 40,
                   keys: ["Tab"],
                   crop: [38, 7, 33, 1] },
-    termrock: { story: "table/editable-cursor", cols: 36, rows: 2, crop: [4, 2, 33, 1] },
+    termrock: { story: "table/editable-cursor", cols: 52, rows: 2, crop: [11, 2, 33, 1] },
     tolerance: { text_cells: 0, color_cells: 0 },
     note: "editable reverse Task cell of #1040 (cell cursor, not editing underline)",
   },

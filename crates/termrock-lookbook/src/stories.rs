@@ -3685,7 +3685,7 @@ pub fn stories() -> Vec<Story> {
             "Junie editable reverse cell",
             StoryIdentity::PublicUi(PublicUiId::Table),
             "Focused Task cell of #1040: canvas on primary, bold (navigation cursor).",
-            36,
+            52,
             2,
             table_editable_cursor_story,
         ),
@@ -16700,15 +16700,19 @@ fn junie_task_status_style(system: &DesignSystem, status: &str) -> Style {
     }
 }
 
-fn table_tasks_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    fill_junie_surface(frame, area, system);
-    let muted = system.style(Role::TextMuted);
-    let columns = [
+fn junie_task_table_columns() -> [Column<'static, &'static str>; 4] {
+    [
         Column::new("id", "ID", ColumnWidth::Fixed(5)).priority(100),
         Column::new("task", "Task", ColumnWidth::Min(24)).priority(90),
         Column::new("owner", "Owner", ColumnWidth::Fixed(7)).priority(80),
         Column::new("status", "Status", ColumnWidth::Fixed(9)).priority(20),
-    ];
+    ]
+}
+
+fn table_tasks_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    fill_junie_surface(frame, area, system);
+    let muted = system.style(Role::TextMuted);
+    let columns = junie_task_table_columns();
     let data = [
         (
             "#1040",
@@ -16764,8 +16768,14 @@ fn table_tasks_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 
 fn table_editable_cursor_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     fill_junie_surface(frame, area, system);
-    let columns = [Column::new("task", "Task", ColumnWidth::Fixed(33))];
-    let cells = [[Line::from("Add rate limiting to auth endpoints")]];
+    let muted = system.style(Role::TextMuted);
+    let columns = junie_task_table_columns();
+    let cells = [[
+        Line::from(Span::styled("#1040", muted)),
+        Line::from("Add rate limiting to auth endpoints"),
+        Line::from("mira"),
+        Line::from(Span::styled("Done", junie_task_status_style(system, "Done"))),
+    ]];
     let rows = [TableRow::new(0usize, &cells[0])];
     let mut state = TableState::<usize, &str>::new(Some(0));
     state.set_cell_nav(true);
