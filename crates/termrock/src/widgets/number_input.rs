@@ -415,9 +415,7 @@ impl NumberInputState {
     pub fn set_focused(&mut self, on: bool) {
         self.focused = on;
         self.sync_draft_gates();
-        if on {
-            self.begin_edit();
-        } else {
+        if !on {
             let _ = self.commit_draft();
         }
     }
@@ -453,17 +451,17 @@ impl NumberInputState {
             None => String::new(),
             Some(v) => format_number(self.kind, v),
         };
-        let mut draft = TextInputState::new(text).with_allow_empty(true);
-        draft.set_enabled(self.enabled);
-        draft.set_read_only(self.read_only);
-        draft.set_focused(self.focused);
-        self.draft = draft;
+        self.draft.set_enabled(self.enabled);
+        self.draft.set_read_only(self.read_only);
+        self.draft.set_focused(self.focused);
+        self.draft = self.draft.reseed(text);
+        self.draft.set_editing(self.editing);
     }
 
     fn begin_edit(&mut self) {
         if !self.editing {
-            self.sync_draft_from_value();
             self.editing = true;
+            self.sync_draft_from_value();
         }
         self.sync_draft_gates();
     }
@@ -1250,7 +1248,9 @@ mod tests {
     fn commit_and_submit() {
         let mut state = NumberInputState::new().with_value(1.0);
         state.set_focused(true);
-        state.draft = TextInputState::new("42").with_allow_empty(true);
+        state.draft = TextInputState::new("42")
+            .with_allow_empty(true)
+            .with_editing();
         state.editing = true;
         assert_eq!(
             state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),

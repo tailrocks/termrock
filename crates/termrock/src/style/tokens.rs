@@ -861,7 +861,7 @@ impl DesignSystem {
 
     /// junie hover ladder: exactly one plane above the container ground.
     ///
-    /// canvas → elevated, surface/elevated → popover, field → field hover,
+    /// canvas → elevated, surface/elevated → overlay, field → field hover,
     /// anything else → popover.
     #[must_use]
     pub fn lift(&self, bg: Color) -> Color {
@@ -1332,6 +1332,8 @@ impl DesignSystem {
     ///
     /// Keyboard focus is the gutter. `editing` is the insert session: accent
     /// underline. A focused-but-not-editing field is the well plus `▎` only.
+    /// `invalid` does not change the recipe — idle invalid is a trailing bold
+    /// `!` (widget paint), not a red underline (junie `input.rs`).
     #[must_use]
     pub fn input_recipe(&self, state: ControlState, invalid: bool, editing: bool) -> InputRecipe {
         let theme = self.junie_theme();
@@ -1348,8 +1350,7 @@ impl DesignSystem {
         // junie field law: the well is `field`, hover lifts to `field_hover`
         // while the field is not being edited, and the value is always body
         // text. Disabled keeps the well and steps the text to the disabled
-        // tier. An invalid value keeps its tone: the underline says "error",
-        // repainting the whole value would say nothing.
+        // tier. An invalid value keeps its tone; the trailing `!` says error.
         let field = theme.field_style(visual);
         let value = Style::new().fg(if matches!(state, ControlState::Disabled) {
             theme.disabled
@@ -1363,15 +1364,12 @@ impl DesignSystem {
             .bg(field.bg.unwrap_or(theme.field));
         let placeholder = Style::new().fg(theme.placeholder(visual).fg.unwrap_or(theme.text_muted));
         // A field has no frame; the border slot carries the underline
-        // affordance. Editing underlines in accent and an invalid value moves
-        // that underline to the error colour — the 3-colour underline law.
+        // affordance. Underline ONLY while editing, always accent. Invalid
+        // does not set UNDERLINED — idle invalid border matches resting/nav.
         // Resting is the subtle hairline. Nav-focus is the gutter, not an
         // underline. Focus snaps; there is no cross-fade.
-        let border = if invalid {
-            Style::new()
-                .add_modifier(Modifier::UNDERLINED)
-                .underline_color(theme.error)
-        } else if visual_editing {
+        let _ = invalid;
+        let border = if visual_editing {
             Style::new()
                 .add_modifier(Modifier::UNDERLINED)
                 .underline_color(theme.accent)
@@ -1999,15 +1997,37 @@ mod tests {
 
         let bad = system.input_recipe(ControlState::Default, true, false);
         assert!(
-            bad.border.add_modifier.contains(Modifier::UNDERLINED),
-            "an invalid field underlines"
+            !bad.border.add_modifier.contains(Modifier::UNDERLINED),
+            "idle invalid does not underline"
         );
         assert_eq!(
-            bad.border.underline_color,
-            Some(theme.error),
-            "invalid states underline in error"
+            bad.border, idle.border,
+            "idle invalid border matches resting"
         );
-        assert_ne!(bad.border, idle.border);
+
+        let nav_bad = system.input_recipe(ControlState::Focused, true, false);
+        assert!(
+            !nav_bad.border.add_modifier.contains(Modifier::UNDERLINED),
+            "input_recipe(Focused, true, false) must not be UNDERLINED"
+        );
+        assert_eq!(
+            nav_bad.border, nav.border,
+            "idle invalid border matches nav"
+        );
+
+        let editing_bad = system.input_recipe(ControlState::Focused, true, true);
+        assert!(
+            editing_bad
+                .border
+                .add_modifier
+                .contains(Modifier::UNDERLINED),
+            "input_recipe(Focused, true, true) is underlined: editing wins"
+        );
+        assert_eq!(
+            editing_bad.border.underline_color,
+            Some(theme.accent),
+            "editing invalid stays accent, not error"
+        );
     }
 
     #[test]

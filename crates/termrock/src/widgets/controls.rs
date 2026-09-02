@@ -1317,13 +1317,13 @@ impl<'a, Id: Clone + PartialEq> RadioGroup<'a, Id> {
         if is_press && key.modifiers.is_empty() {
             let before = state.collection.active().cloned();
             match key.code {
-                KeyCode::Down | KeyCode::Right | KeyCode::Tab | KeyCode::Char('j' | 'J') => {
+                KeyCode::Down | KeyCode::Right | KeyCode::Char('j' | 'J') => {
                     let _ = state.collection.move_next(&items);
                     if state.collection.active() != before.as_ref() {
                         return self.after_cursor_move(state, before);
                     }
                 }
-                KeyCode::Up | KeyCode::Left | KeyCode::BackTab | KeyCode::Char('k' | 'K') => {
+                KeyCode::Up | KeyCode::Left | KeyCode::Char('k' | 'K') => {
                     let _ = state.collection.move_previous(&items);
                     if state.collection.active() != before.as_ref() {
                         return self.after_cursor_move(state, before);
@@ -2922,6 +2922,10 @@ mod tests {
             KeyEvent::new(KeyCode::Char('k'), KeyModifiers::NONE),
         );
         assert_eq!(out, RadioOutcome::Selected("a"));
+
+        let out = g.handle_key(&mut state, KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE));
+        assert_eq!(out, RadioOutcome::Ignored);
+        assert_eq!(state.selected(), Some(&"a"));
 
         state.set_enabled(false);
         let mut buf = Buffer::empty(area);

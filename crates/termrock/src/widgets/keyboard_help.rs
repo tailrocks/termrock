@@ -610,7 +610,9 @@ impl KeyboardHelpState {
         Self {
             mode: KeyboardHelpMode::Footer,
             open: false,
-            query: TextInputState::new("").with_allow_empty(true),
+            query: TextInputState::new("")
+                .with_allow_empty(true)
+                .with_editing(),
             collection: CollectionState::new().orientation(RovingOrientation::Vertical),
             focused: true,
             accepts_input: true,
@@ -636,14 +638,18 @@ impl KeyboardHelpState {
     pub fn open_modal(&mut self) -> KeyboardHelpOutcome {
         self.mode = KeyboardHelpMode::Modal;
         self.open = true;
-        self.query = TextInputState::new("").with_allow_empty(true);
+        self.query = TextInputState::new("")
+            .with_allow_empty(true)
+            .with_editing();
         KeyboardHelpOutcome::Opened
     }
 
     /// Close modal (footer may still paint).
     pub fn close_modal(&mut self) -> KeyboardHelpOutcome {
         self.open = false;
-        self.query = TextInputState::new("").with_allow_empty(true);
+        self.query = TextInputState::new("")
+            .with_allow_empty(true)
+            .with_editing();
         KeyboardHelpOutcome::Closed
     }
 

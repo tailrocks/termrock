@@ -233,7 +233,8 @@ impl Default for TextInputState {
 }
 
 impl TextInputState {
-    /// Creates text-input state with the cursor at the end of the value.
+    /// Creates idle (not editing) text-input state with the cursor at the end
+    /// of the value. Junie `TextInput::new` starts `editing: false`.
     #[must_use]
     pub fn new(value: impl Into<String>) -> Self {
         let value = value.into();
@@ -253,7 +254,7 @@ impl TextInputState {
             redo: Vec::new(),
             parts: None,
             focused: false,
-            editing: true,
+            editing: false,
             hovered: false,
             snapshot: None,
             selecting_with_mouse: false,
@@ -279,6 +280,35 @@ impl TextInputState {
     pub const fn with_allow_empty(mut self, allow_empty: bool) -> Self {
         self.allow_empty = allow_empty;
         self
+    }
+
+    /// Live query, search, or draft surfaces that type immediately.
+    ///
+    /// Idle fields stay on [`Self::new`] (`editing: false`).
+    #[must_use]
+    pub fn with_editing(mut self) -> Self {
+        self.set_editing(true);
+        self
+    }
+
+    /// New value, keep editing/focus/enabled/read_only/allow_empty.
+    #[must_use]
+    pub(crate) fn reseed(&self, text: impl Into<String>) -> Self {
+        let mut next = Self::new(text).with_allow_empty(self.allow_empty);
+        if let Some(max) = self.max_graphemes {
+            next = next.with_max_graphemes(max);
+        }
+        if !self.forbidden.is_empty() {
+            next = next.with_forbidden(self.forbidden.clone());
+        }
+        if self.editing {
+            next.set_editing(true);
+        }
+        next.set_focused(self.focused);
+        next.set_enabled(self.enabled);
+        next.set_read_only(self.read_only);
+        next.set_loading(self.loading);
+        next
     }
 
     /// Enabled.
@@ -1314,14 +1344,12 @@ impl<'a> TextInput<'a> {
         } else {
             Style::new().fg(theme.text_primary).bg(field_bg)
         };
+        // junie `input.rs`: underline ONLY while editing, always accent.
+        // Idle invalid is the trailing bold `!` plus helper, not a red line.
         if visual.editing {
             text_style = text_style
                 .add_modifier(Modifier::UNDERLINED)
-                .underline_color(if invalid { theme.error } else { theme.accent });
-        } else if invalid {
-            text_style = text_style
-                .add_modifier(Modifier::UNDERLINED)
-                .underline_color(theme.error);
+                .underline_color(theme.accent);
         }
         buffer.set_stringn(field.x, field.y, &painted, field_w, text_style);
 
@@ -1699,7 +1727,11 @@ mod tests {
             .find(|cell| cell.symbol() == "x")
             .expect("value");
         assert_eq!(value.fg, theme.text_primary);
-        assert_eq!(value.style().underline_color, Some(theme.error));
+        assert!(
+            !value.style().add_modifier.contains(Modifier::UNDERLINED),
+            "idle invalid value is not underlined"
+        );
+        assert_ne!(value.style().underline_color, Some(theme.error));
         let msg: String = (0..area.width)
             .map(|x| buffer[(x, 2)].symbol().to_string())
             .collect();
@@ -1708,6 +1740,40 @@ mod tests {
             !msg.contains('•'),
             "error copy must not use the pending bullet"
         );
+    }
+
+    #[test]
+    fn an_invalid_editing_field_underlines_in_accent_and_trails_a_bang() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let area = Rect::new(0, 0, 28, 3);
+        let mut buffer = Buffer::empty(area);
+        let mut state = TextInputState::new("x");
+        state.set_focused(true);
+        state.set_editing(true);
+        TextInput::new("Email", &system)
+            .validation(Validation::Invalid("not an address"))
+            .paint(area, &mut buffer, &mut state);
+
+        let field_row: String = (0..area.width)
+            .map(|x| buffer[(x, 1)].symbol().to_string())
+            .collect();
+        assert!(
+            field_row.contains('!'),
+            "invalid fields trail a bold `!`, got {field_row:?}"
+        );
+        let bang = &buffer[(area.width - 2, 1)];
+        assert_eq!(bang.symbol(), "!");
+        assert_eq!(bang.fg, theme.error);
+        assert!(bang.style().add_modifier.contains(Modifier::BOLD));
+        let value = buffer
+            .content()
+            .iter()
+            .find(|cell| cell.symbol() == "x")
+            .expect("value");
+        assert_eq!(value.fg, theme.text_primary);
+        assert!(value.style().add_modifier.contains(Modifier::UNDERLINED));
+        assert_eq!(value.style().underline_color, Some(theme.accent));
     }
 
     fn row_text(buffer: &Buffer, y: u16, width: u16) -> String {
@@ -1880,6 +1946,23 @@ mod tests {
     }
 
     #[test]
+    fn new_focused_field_is_nav_not_editing() {
+        let mut state = TextInputState::new("abc");
+        state.set_focused(true);
+        assert!(!state.is_editing());
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE)),
+            TextInputOutcome::Ignored
+        );
+        assert_eq!(state.value(), "abc");
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
+            TextInputOutcome::Changed
+        );
+        assert!(state.is_editing());
+    }
+
+    #[test]
     fn first_click_focuses_second_click_edits() {
         let system = DesignSystem::junie();
         let mut state = TextInputState::new("abc");
@@ -2013,6 +2096,8 @@ mod tests {
         assert_eq!(state.value(), "");
         assert_eq!(state.cursor_byte(), 0);
         assert!(state.is_valid());
+        assert!(!state.is_editing());
+        state.set_editing(true);
         for character in "abcd".chars() {
             let _ = state.handle_key(KeyEvent::new(KeyCode::Char(character), KeyModifiers::NONE));
         }
@@ -2057,6 +2142,7 @@ mod tests {
     #[test]
     fn clipboard_outcomes() {
         let mut state = TextInputState::new("hello");
+        state.set_editing(true);
         state.set_cursor_byte(0);
         let _ = state.apply(EditAction::End { select: true });
         let out = state.handle_key(KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL));

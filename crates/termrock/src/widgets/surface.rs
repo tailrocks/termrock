@@ -21,7 +21,7 @@
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
-    style::{Color, Modifier, Style},
+    style::{Modifier, Style},
     widgets::Widget,
 };
 use ratatui_widgets::block::Block;
@@ -35,7 +35,7 @@ use crate::style::{ColorCapability, DesignSystem, RecipeFamily, Role};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
 pub enum SurfaceRecipe {
-    /// Terminal underlay. Prefers terminal-default background (`Color::Reset`).
+    /// Terminal underlay. Junie canvas `#000000`, never `Color::Reset`.
     Canvas,
     /// Recessed / ordinary component surface (default).
     #[default]
@@ -135,7 +135,7 @@ pub enum SurfaceFill {
     /// Recipe + capability driven (default).
     #[default]
     Auto,
-    /// Always use terminal default background (`Color::Reset`).
+    /// Junie canvas ground (`Role::Canvas` / `#000000`).
     TerminalDefault,
     /// Never paint background (transparent over existing buffer cells).
     Transparent,
@@ -301,7 +301,7 @@ impl<'a> Surface<'a> {
         }
         plan.fill = match self.fill {
             SurfaceFill::Auto => plan.fill,
-            SurfaceFill::TerminalDefault => Some(Style::default().bg(Color::Reset)),
+            SurfaceFill::TerminalDefault => Some(self.system.style(Role::Canvas)),
             SurfaceFill::Transparent => None,
         };
         let bordered = self.bordered.unwrap_or(self.recipe.default_bordered());
@@ -315,8 +315,9 @@ impl<'a> Surface<'a> {
             && matches!(self.fill, SurfaceFill::Auto)
         {
             plan.fill = match self.recipe {
-                SurfaceRecipe::Canvas | SurfaceRecipe::Inset | SurfaceRecipe::Sunken => {
-                    Some(Style::default().bg(Color::Reset))
+                SurfaceRecipe::Canvas => Some(self.system.style(Role::Canvas)),
+                SurfaceRecipe::Inset | SurfaceRecipe::Sunken => {
+                    Some(self.system.style(Role::Canvas))
                 }
                 // Keep modifier cues on border; skip solid fill soup.
                 _ => None,
@@ -444,7 +445,7 @@ fn fill_rect(buffer: &mut Buffer, area: Rect, style: Style) {
     }
 }
 
-/// Skip empty styles so phosphor terminal-default surfaces do not force Reset soup.
+/// Skip empty styles so an unfilled recipe does not stamp Reset soup.
 fn nonempty_fill(style: Style) -> Option<Style> {
     if style.bg.is_some() || style.fg.is_some() || style.add_modifier != Modifier::empty() {
         Some(style)
@@ -461,7 +462,7 @@ impl DesignSystem {
         let family = recipe.family();
         let contract = self.family_recipe(family);
         let (fill_role, border_role, bordered) = match recipe {
-            SurfaceRecipe::Canvas => (None, None, false),
+            SurfaceRecipe::Canvas => (Some(Role::Canvas), None, false),
             SurfaceRecipe::Inset => (Some(Role::Surface), None, false),
             SurfaceRecipe::Sunken => (Some(Role::Sunken), None, false),
             // The ladder only reads as a ladder if each rung has its own role:
@@ -480,10 +481,7 @@ impl DesignSystem {
             SurfaceRecipe::Warning => (Some(Role::Surface), Some(Role::Warning), true),
             SurfaceRecipe::Destructive => (Some(Role::Surface), Some(Role::Danger), true),
         };
-        let fill = match recipe {
-            SurfaceRecipe::Canvas => Some(Style::default().bg(Color::Reset)),
-            _ => fill_role.map(|r| self.style(r)).and_then(nonempty_fill),
-        };
+        let fill = fill_role.map(|r| self.style(r)).and_then(nonempty_fill);
         let mut border = if bordered {
             border_role.map(|r| self.style(r))
         } else {
@@ -516,13 +514,15 @@ impl DesignSystem {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::style::{ColorCapability, DesignSystem};
+    use crate::style::{ColorCapability, DesignSystem, Role};
+    use ratatui_core::style::Color;
 
     #[test]
-    fn canvas_uses_terminal_default_fill() {
-        let system = DesignSystem::default();
+    fn canvas_uses_junie_canvas_fill() {
+        let system = DesignSystem::junie();
         let plan = Surface::new(&system).recipe(SurfaceRecipe::Canvas).plan();
-        assert_eq!(plan.fill, Some(Style::default().bg(Color::Reset)));
+        assert_eq!(plan.fill, Some(system.style(Role::Canvas)));
+        assert_eq!(plan.fill.and_then(|s| s.bg), Some(Color::Rgb(0, 0, 0)));
         assert!(plan.border.is_none());
     }
 
@@ -617,6 +617,16 @@ mod tests {
         let plan = Surface::new(&system).recipe(SurfaceRecipe::Raised).plan();
         assert!(plan.fill.is_none());
         assert!(plan.border.is_some());
+    }
+
+    #[test]
+    fn monochrome_inset_sunken_use_canvas_not_reset() {
+        let system = DesignSystem::default().capability(ColorCapability::Monochrome);
+        for recipe in [SurfaceRecipe::Inset, SurfaceRecipe::Sunken] {
+            let plan = Surface::new(&system).recipe(recipe).plan();
+            assert_eq!(plan.fill, Some(system.style(Role::Canvas)));
+            assert_ne!(plan.fill.and_then(|style| style.bg), Some(Color::Reset));
+        }
     }
 
     #[test]

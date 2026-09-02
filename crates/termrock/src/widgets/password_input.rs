@@ -287,21 +287,29 @@ impl PasswordInputState {
     #[must_use]
     pub fn with_secret(secret: impl Into<String>) -> Self {
         let mut state = Self::new();
-        let mut editor = TextInputState::new(secret).with_allow_empty(true);
-        editor.set_enabled(true);
-        editor.set_focused(false);
-        state.editor = editor;
+        state.editor.set_enabled(true);
+        state.editor.set_focused(false);
+        state.editor = state.editor.reseed(secret);
         state
+    }
+
+    /// Live typing. [`Self::new`] stays idle (`editing: false`).
+    #[must_use]
+    pub fn with_editing(mut self) -> Self {
+        self.editor.begin_edit();
+        self
+    }
+
+    /// Start the insert session (Junie Enter on an idle field).
+    pub fn begin_edit(&mut self) {
+        self.editor.begin_edit();
     }
 
     /// Max graphemes.
     #[must_use]
     pub fn with_max_graphemes(mut self, max: usize) -> Self {
-        self.editor = std::mem::replace(
-            &mut self.editor,
-            TextInputState::new("").with_allow_empty(true),
-        )
-        .with_max_graphemes(max);
+        let editor = std::mem::replace(&mut self.editor, TextInputState::new(""));
+        self.editor = editor.with_max_graphemes(max);
         self
     }
 
@@ -508,6 +516,7 @@ impl PasswordInputState {
         if matches!(self.clipboard, ClipboardPolicy::DenyAll) {
             return PasswordInputOutcome::ClipboardDenied;
         }
+        self.editor.begin_edit();
         match self.editor.insert_str(text) {
             TextInputOutcome::Changed => PasswordInputOutcome::Changed,
             _ => PasswordInputOutcome::Ignored,
@@ -591,10 +600,21 @@ impl PasswordInputState {
             }
         }
 
+        if key.code == KeyCode::Esc && key.modifiers.is_empty() {
+            if self.editor.is_editing() {
+                let _ = self.editor.handle_key(key);
+            }
+            return PasswordInputOutcome::Cancelled;
+        }
+
         // Submit without embedding secret
         if matches!(key.code, KeyCode::Enter)
             || (ctrl && matches!(key.code, KeyCode::Char('m' | 'M')))
         {
+            if !self.editor.is_editing() {
+                self.editor.begin_edit();
+                return PasswordInputOutcome::Changed;
+            }
             if !self.editor.is_valid() {
                 return PasswordInputOutcome::Ignored;
             }
@@ -624,7 +644,10 @@ impl PasswordInputState {
         }
         match intent {
             UiIntent::Submit | UiIntent::Activate => {
-                if self.editor.is_valid() {
+                if !self.editor.is_editing() {
+                    self.editor.begin_edit();
+                    PasswordInputOutcome::Changed
+                } else if self.editor.is_valid() {
                     PasswordInputOutcome::Submitted
                 } else {
                     PasswordInputOutcome::Ignored
@@ -695,8 +718,8 @@ impl PasswordConfirmState {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            password: PasswordInputState::new(),
-            confirm: PasswordInputState::new(),
+            password: PasswordInputState::new().with_editing(),
+            confirm: PasswordInputState::new().with_editing(),
         }
     }
 
@@ -983,6 +1006,7 @@ mod tests {
     fn outcome_submitted_has_no_secret_payload() {
         let mut state = PasswordInputState::with_secret("abc");
         state.set_focused(true);
+        state.begin_edit();
         let out = state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
         assert_eq!(out, PasswordInputOutcome::Submitted);
         let s = format!("{out:?}");
@@ -1186,6 +1210,7 @@ mod tests {
     fn read_only_allows_nav_not_insert() {
         let mut state = PasswordInputState::with_secret("ab");
         state.set_focused(true);
+        state.begin_edit();
         state.set_read_only(true);
         assert_eq!(
             state.handle_key(KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE)),
@@ -1222,6 +1247,7 @@ mod tests {
     fn unicode_fuzz_keeps_boundary() {
         let mut state = PasswordInputState::with_secret("e\u{301}東京");
         state.set_focused(true);
+        state.begin_edit();
         let keys = [
             KeyEvent::new(KeyCode::Char('a'), KeyModifiers::NONE),
             KeyEvent::new(KeyCode::Left, KeyModifiers::NONE),

@@ -7,11 +7,11 @@ use ratatui_core::{
 use ratatui_widgets::{block::Block, borders::Borders};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind},
+    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
     interaction::{
-        Outcome, OverlayId, OverlayOutcome, OverlaySize, OverlaySpec, OverlayStack, place_overlay,
+        NavigationMove, Outcome, OverlayId, OverlayOutcome, OverlaySize, OverlaySpec, OverlayStack,
+        PageMove, UiIntent, place_overlay,
     },
-    keymap::KeyChord,
     style::{DesignSystem, Role, VisualState},
     text::{display_cols, take_display_cols},
 };
@@ -127,6 +127,10 @@ pub enum PickerOutcome<Id> {
     CursorMoved,
     /// The selected visible identity was activated.
     Activated(Id),
+    /// Alt+Enter: open the selected identity in a new tab (junie `ChosenAlt`).
+    ActivatedAlt(Id),
+    /// Tab: host should cycle the picker scope (junie `NextScope`).
+    NextScope,
     /// Escape was pressed while the query was already empty.
     Cancelled,
 }
@@ -144,6 +148,7 @@ pub struct PickerState<Id> {
     list: ListState<Id>,
     previous_visible: Vec<Id>,
     accepts_input: bool,
+    searchable: bool,
 }
 
 impl<Id: Clone + PartialEq> PickerState<Id> {
@@ -151,10 +156,15 @@ impl<Id: Clone + PartialEq> PickerState<Id> {
     #[must_use]
     pub fn new(selected: Option<Id>) -> Self {
         Self {
-            query: TextInputState::new("").with_allow_empty(true),
+            query: {
+                let mut query = TextInputState::new("").with_allow_empty(true);
+                query.set_editing(true);
+                query
+            },
             list: ListState::new(selected),
             previous_visible: Vec::new(),
             accepts_input: true,
+            searchable: true,
         }
     }
 
@@ -167,6 +177,20 @@ impl<Id: Clone + PartialEq> PickerState<Id> {
     #[must_use]
     pub const fn accepts_input(&self) -> bool {
         self.accepts_input
+    }
+
+    /// Whether printable keys edit the query (junie `searchable`; default true).
+    ///
+    /// When false, `j`/`k` move the list. [`Picker::searchable`] copies this
+    /// flag at render so paint and keys stay one value.
+    pub const fn set_searchable(&mut self, on: bool) {
+        self.searchable = on;
+    }
+
+    /// Whether the query field is live.
+    #[must_use]
+    pub const fn searchable(&self) -> bool {
+        self.searchable
     }
 
     /// Returns the query used by the caller-owned projection.
@@ -257,21 +281,66 @@ impl<Id: Clone + PartialEq> PickerState<Id> {
             .select(Some(self.previous_visible[fallback].clone()));
     }
 
-    /// Routes navigation/activation through list intents; printable keys edit
-    /// the query. Esc clears query first, then cancels.
+    /// Routes keys like junie `Picker::on_key`.
+    ///
+    /// Searchable (default): printable including `j`/`k`/Space edit the query;
+    /// arrows / Ctrl+n/p/j/k move the list; Tab is [`PickerOutcome::NextScope`];
+    /// Alt+Enter is [`PickerOutcome::ActivatedAlt`]. Choice pickers
+    /// (`searchable: false`) use `j`/`k` as list motion.
     pub fn handle_key(&mut self, visible: &[ListRow<'_, Id>], key: KeyEvent) -> PickerOutcome<Id> {
         if !self.accepts_input || key.kind == KeyEventKind::Release {
             return PickerOutcome::Ignored;
         }
-        if !key.modifiers.is_empty() && !matches!(key.code, KeyCode::Char(_)) {
-            return PickerOutcome::Ignored;
+        let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
+        let alt = key.modifiers.contains(KeyModifiers::ALT);
+        match key.code {
+            KeyCode::Esc => self.handle_intent(visible, UiIntent::Cancel),
+            KeyCode::Enter if alt => self.activate(visible, true),
+            KeyCode::Enter => self.activate(visible, false),
+            KeyCode::Down if !ctrl && !alt => {
+                self.handle_intent(visible, UiIntent::Move(NavigationMove::Next))
+            }
+            KeyCode::Up if !ctrl && !alt => {
+                self.handle_intent(visible, UiIntent::Move(NavigationMove::Previous))
+            }
+            KeyCode::PageDown => self.handle_intent(visible, UiIntent::Page(PageMove::Forward)),
+            KeyCode::PageUp => self.handle_intent(visible, UiIntent::Page(PageMove::Backward)),
+            KeyCode::Tab => PickerOutcome::NextScope,
+            KeyCode::Backspace if self.searchable && !ctrl && !alt => self.route_query(key),
+            KeyCode::Char('n' | 'j') if ctrl => {
+                self.handle_intent(visible, UiIntent::Move(NavigationMove::Next))
+            }
+            KeyCode::Char('p' | 'k') if ctrl => {
+                self.handle_intent(visible, UiIntent::Move(NavigationMove::Previous))
+            }
+            KeyCode::Char('u') if ctrl && self.searchable => {
+                if self.query.value().is_empty() {
+                    PickerOutcome::Ignored
+                } else {
+                    self.query.clear();
+                    PickerOutcome::QueryChanged
+                }
+            }
+            KeyCode::Char('j' | 'J') if !self.searchable && !ctrl && !alt => {
+                self.handle_intent(visible, UiIntent::Move(NavigationMove::Next))
+            }
+            KeyCode::Char('k' | 'K') if !self.searchable && !ctrl && !alt => {
+                self.handle_intent(visible, UiIntent::Move(NavigationMove::Previous))
+            }
+            KeyCode::Char(_) if self.searchable && !ctrl && !alt => self.route_query(key),
+            _ => PickerOutcome::Ignored,
         }
-        // Collection intents target the results list when unshifted navigation.
-        if key.modifiers.is_empty()
-            && let Some(intent) = crate::interaction::default_list_intent(key)
-        {
-            return self.handle_intent(visible, intent);
+    }
+
+    fn activate(&mut self, visible: &[ListRow<'_, Id>], alt: bool) -> PickerOutcome<Id> {
+        match self.list.handle_intent(visible, UiIntent::Activate) {
+            Outcome::Activated(id) if alt => PickerOutcome::ActivatedAlt(id),
+            Outcome::Activated(id) => PickerOutcome::Activated(id),
+            _ => PickerOutcome::Ignored,
         }
+    }
+
+    fn route_query(&mut self, key: KeyEvent) -> PickerOutcome<Id> {
         match self.query.handle_key(key) {
             TextInputOutcome::Changed | TextInputOutcome::Cleared => PickerOutcome::QueryChanged,
             TextInputOutcome::Cancelled => PickerOutcome::Cancelled,
@@ -302,12 +371,7 @@ impl<Id: Clone + PartialEq> PickerState<Id> {
                     PickerOutcome::Cancelled
                 }
             }
-            UiIntent::Activate | UiIntent::Open | UiIntent::Submit => {
-                match self.list.handle_intent(visible, UiIntent::Activate) {
-                    Outcome::Activated(id) => PickerOutcome::Activated(id),
-                    _ => PickerOutcome::Ignored,
-                }
-            }
+            UiIntent::Activate | UiIntent::Open | UiIntent::Submit => self.activate(visible, false),
             UiIntent::Move(_) | UiIntent::Page(_) | UiIntent::Toggle => {
                 match self.list.handle_intent(visible, intent) {
                     Outcome::Changed | Outcome::CheckToggled(_) => PickerOutcome::CursorMoved,
@@ -482,6 +546,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
     type State = PickerState<Id>;
 
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
+        state.searchable = self.searchable;
         state.reconcile(self.rows);
         if area.is_empty() {
             StatefulWidget::render(
@@ -835,9 +900,8 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
         }
 
         if show_hints {
-            let search_hints = picker_search_hints();
             let hints = self.hints.unwrap_or(if self.searchable {
-                search_hints.as_str()
+                picker_search_hints()
             } else {
                 PICKER_CHOICE_HINTS
             });
@@ -854,11 +918,9 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
     }
 }
 
-fn picker_search_hints() -> String {
-    format!(
-        "↑↓ Move · Enter Open · {} New tab · Tab Scope · Esc Clear / Close",
-        super::format_chord(KeyChord::alt(KeyCode::Enter), super::ChordFormat::footer())
-    )
+fn picker_search_hints() -> &'static str {
+    // junie pickers.rs / tablepro paint this spelled form, not Emacs `A-↵`.
+    "↑↓ Move · Enter Open · Alt+Enter New tab · Tab Scope · Esc Clear / Close"
 }
 
 const PICKER_CHOICE_HINTS: &str = "↑↓ Move · Enter Set level · Esc Keep";
@@ -1154,6 +1216,94 @@ mod tests {
             bounds.width.saturating_sub(placed.width) / 2,
             "horizontally centered"
         );
+    }
+
+    #[test]
+    fn search_footer_paints_junie_alt_enter_not_emacs_chord() {
+        let system = DesignSystem::junie();
+        let visible = rows(&["alpha"]);
+        let mut state = PickerState::new(Some("alpha"));
+        let area = Rect::new(0, 0, 80, 12);
+        let mut buffer = Buffer::empty(area);
+        Picker::new(&visible, &system)
+            .title("Open quickly")
+            .render(area, &mut buffer, &mut state);
+        let mut text = String::new();
+        for y in 0..area.height {
+            for x in 0..area.width {
+                text.push_str(buffer[(x, y)].symbol());
+            }
+        }
+        assert!(
+            text.contains("Alt+Enter"),
+            "junie picker footer spells Alt+Enter: {text:?}"
+        );
+        assert!(
+            !text.contains("A-↵"),
+            "Emacs footer chord is not the junie paint: {text:?}"
+        );
+    }
+
+    #[test]
+    fn searchable_picker_j_and_space_edit_query_not_list() {
+        let visible = rows(&["alpha", "beta"]);
+        let mut state = PickerState::new(Some("alpha"));
+        assert_eq!(
+            state.handle_key(
+                &visible,
+                KeyEvent::new(KeyCode::Char('j'), KeyModifiers::NONE)
+            ),
+            PickerOutcome::QueryChanged
+        );
+        assert_eq!(state.query_text(), "j");
+        assert_eq!(state.list().selected(), Some(&"alpha"));
+        assert_eq!(
+            state.handle_key(
+                &visible,
+                KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE)
+            ),
+            PickerOutcome::QueryChanged
+        );
+        assert_eq!(state.query_text(), "j ");
+        assert_eq!(state.list().selected(), Some(&"alpha"));
+    }
+
+    #[test]
+    fn picker_tab_is_next_scope_and_ctrl_n_steps_results() {
+        let visible = rows(&["alpha", "beta"]);
+        let mut state = PickerState::new(Some("alpha"));
+        assert_eq!(
+            state.handle_key(&visible, KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE)),
+            PickerOutcome::NextScope
+        );
+        assert_eq!(
+            state.handle_key(
+                &visible,
+                KeyEvent::new(KeyCode::Char('n'), KeyModifiers::CONTROL)
+            ),
+            PickerOutcome::CursorMoved
+        );
+        assert_eq!(state.list().selected(), Some(&"beta"));
+        assert_eq!(
+            state.handle_key(&visible, KeyEvent::new(KeyCode::Enter, KeyModifiers::ALT)),
+            PickerOutcome::ActivatedAlt("beta")
+        );
+    }
+
+    #[test]
+    fn choice_picker_j_moves_list() {
+        let visible = rows(&["alpha", "beta"]);
+        let mut state = PickerState::new(Some("alpha"));
+        state.set_searchable(false);
+        assert_eq!(
+            state.handle_key(
+                &visible,
+                KeyEvent::new(KeyCode::Char('j'), KeyModifiers::NONE)
+            ),
+            PickerOutcome::CursorMoved
+        );
+        assert_eq!(state.list().selected(), Some(&"beta"));
+        assert_eq!(state.query_text(), "");
     }
 
     #[test]

@@ -142,7 +142,9 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
     /// Empty multi-select.
     #[must_use]
     pub fn new() -> Self {
-        let mut search = TextInputState::new("").with_allow_empty(true);
+        let mut search = TextInputState::new("")
+            .with_allow_empty(true)
+            .with_editing();
         search.set_focused(false);
         Self {
             selection: Selection::new(),

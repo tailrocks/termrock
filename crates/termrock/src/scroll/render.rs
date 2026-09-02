@@ -303,10 +303,10 @@ pub fn paint_overflow_scrollbar(
 
 /// Paints one scrolled region: faded cut edges plus the gutter scrollbar.
 ///
-/// Every scrolled surface in the library goes through here, so "there is more
-/// above" and "there is more below" are stated the same way everywhere instead
-/// of each widget deciding whether to say it at all (plans/014 Step 3b,
-/// plans/022 Step 5).
+/// Subcell `tui-scrollbar` rounding ([`crate::scroll::full_cell_thumb`]).
+/// Line widgets that must match junie `ScrollState::thumb` call
+/// [`paint_overflow_scrollbar`] instead (list, picker, panel, tree, text area,
+/// select).
 pub fn paint_scrolled_region(
     buffer: &mut Buffer,
     content: Rect,

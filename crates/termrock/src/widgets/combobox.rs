@@ -24,7 +24,7 @@ use std::collections::VecDeque;
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
-    style::{Modifier, Style},
+    style::Modifier,
     widgets::StatefulWidget,
 };
 
@@ -277,6 +277,18 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
         self
     }
 
+    /// Live typing. [`Self::new`] stays idle (`editing: false`).
+    #[must_use]
+    pub fn with_editing(mut self) -> Self {
+        self.draft.begin_edit();
+        self
+    }
+
+    /// Start the insert session (Junie Enter on an idle field).
+    pub fn begin_edit(&mut self) {
+        self.draft.begin_edit();
+    }
+
     /// Draft text.
     #[must_use]
     pub fn draft(&self) -> &str {
@@ -396,11 +408,10 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
     /// Controlled draft (does not bump generation unless `notify`).
     pub fn set_draft(&mut self, text: impl Into<String>) {
         let text = text.into();
-        let mut d = TextInputState::new(text).with_allow_empty(true);
-        d.set_focused(self.focused);
-        d.set_enabled(self.enabled);
-        d.set_read_only(self.read_only);
-        self.draft = d;
+        self.draft.set_focused(self.focused);
+        self.draft.set_enabled(self.enabled);
+        self.draft.set_read_only(self.read_only);
+        self.draft = self.draft.reseed(text);
     }
 
     /// Set committed value without changing draft.
@@ -642,6 +653,13 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
 
         // Enter
         if key.code == KeyCode::Enter && key.modifiers.is_empty() {
+            if !self.draft.is_editing() {
+                self.draft.begin_edit();
+                return ComboboxOutcome::DraftChanged {
+                    text: self.draft.value().to_owned(),
+                    generation: self.generation,
+                };
+            }
             if self.menu.is_open() && self.menu.selected().is_some() && !candidates.is_empty() {
                 return self.commit_active(candidates);
             }
@@ -711,7 +729,13 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
         }
         match intent {
             UiIntent::Activate | UiIntent::Submit => {
-                if self.menu.is_open() && self.menu.selected().is_some() {
+                if !self.draft.is_editing() {
+                    self.draft.begin_edit();
+                    ComboboxOutcome::DraftChanged {
+                        text: self.draft.value().to_owned(),
+                        generation: self.generation,
+                    }
+                } else if self.menu.is_open() && self.menu.selected().is_some() {
                     self.commit_active(candidates)
                 } else if self.creatable {
                     self.commit_created()
@@ -765,6 +789,7 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
         if !self.enabled || self.read_only {
             return ComboboxOutcome::Ignored;
         }
+        self.draft.begin_edit();
         match self.draft.insert_str(text) {
             TextInputOutcome::Changed => {
                 let request_gen = self.bump_generation();
@@ -941,7 +966,7 @@ impl<'a> Combobox<'a> {
                 crate::style::ControlState::Default
             },
             invalid,
-            state.focused && state.enabled,
+            state.draft.is_editing(),
         );
         let mut y = area.y;
         if area.height >= 2 && !self.label.is_empty() {
@@ -1011,7 +1036,6 @@ impl<'a> Combobox<'a> {
             .placeholder(self.placeholder)
             .validation(validation);
         let _ = input.paint(field, buffer, &mut state.draft);
-        apply_field_underline(buffer, field, &recipe);
 
         // The chevron says whether the menu is open; it goes in the cell the
         // status did not take.
@@ -1144,17 +1168,6 @@ impl<'a> Combobox<'a> {
 const _: fn(u16, u16) -> Position = Position::new;
 const _: &str = COMPLETION_OVERLAY_ID;
 
-fn apply_field_underline(buffer: &mut Buffer, field: Rect, recipe: &crate::style::InputRecipe) {
-    if field.is_empty() {
-        return;
-    }
-    let mut underline = Style::new().add_modifier(recipe.border.add_modifier);
-    if let Some(color) = recipe.border.underline_color {
-        underline = underline.underline_color(color);
-    }
-    buffer.set_style(field, underline);
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1169,11 +1182,47 @@ mod tests {
     }
 
     #[test]
+    fn focused_without_editing_is_not_underlined() {
+        let system = DesignSystem::junie();
+        let mut state: ComboboxState<&'static str> = ComboboxState::new();
+        state.set_focused(true);
+        assert!(
+            !state.draft.is_editing(),
+            "ComboboxState::new is idle like TextInput"
+        );
+        let area = Rect::new(0, 0, 24, 3);
+        let mut buffer = Buffer::empty(area);
+        let _ = Combobox::new(&system)
+            .label("Lang")
+            .paint(area, &mut buffer, &mut state);
+        let field_y = area.y.saturating_add(1);
+        let underlined = |buffer: &Buffer| {
+            (0..area.width).any(|x| {
+                buffer[(x, field_y)]
+                    .style()
+                    .add_modifier
+                    .contains(Modifier::UNDERLINED)
+            })
+        };
+        assert!(
+            !underlined(&buffer),
+            "nav-focus combobox is gutter, not an editing underline"
+        );
+        state.draft.set_editing(true);
+        let mut buffer = Buffer::empty(area);
+        let _ = Combobox::new(&system)
+            .label("Lang")
+            .paint(area, &mut buffer, &mut state);
+        assert!(underlined(&buffer), "editing combobox underlines the field");
+    }
+
+    #[test]
     fn draft_active_value_separate() {
         let mut state: ComboboxState<&'static str> = ComboboxState::new()
             .with_creatable(true)
             .with_exact_required(false);
         state.set_focused(true);
+        state.begin_edit();
         let c = cands();
         let out = state.handle_key(KeyEvent::new(KeyCode::Char('R'), KeyModifiers::NONE), &c);
         match out {
@@ -1201,6 +1250,7 @@ mod tests {
     fn stale_generation_ignored() {
         let mut state: ComboboxState<&'static str> = ComboboxState::new();
         state.set_focused(true);
+        state.begin_edit();
         let c = cands();
         let _ = state.handle_key(KeyEvent::new(KeyCode::Char('a'), KeyModifiers::NONE), &[]);
         assert_eq!(state.suggestion_generation(), 1);
@@ -1362,6 +1412,7 @@ mod tests {
     fn race_sequence_out_of_order() {
         let mut state: ComboboxState<&'static str> = ComboboxState::new();
         state.set_focused(true);
+        state.begin_edit();
         // type a
         let _ = state.handle_key(KeyEvent::new(KeyCode::Char('a'), KeyModifiers::NONE), &[]);
         let g1 = state.suggestion_generation();
@@ -1384,6 +1435,7 @@ mod tests {
     fn fuzz_keys() {
         let mut state: ComboboxState<&'static str> = ComboboxState::autocomplete();
         state.set_focused(true);
+        state.begin_edit();
         let c = cands();
         let keys = [
             KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE),

@@ -1280,7 +1280,7 @@ impl<'a> QuestionFlow<'a> {
                             ControlState::Default
                         },
                         state.last_error.is_some(),
-                        state.focused,
+                        false,
                     );
                     let row = Rect::new(inner.x, y, inner.width, 1);
                     buffer.set_style(row, recipe.fill);
@@ -1362,7 +1362,7 @@ impl<'a> QuestionFlow<'a> {
                             ControlState::Default
                         },
                         state.last_error.is_some(),
-                        state.focused,
+                        true,
                     );
                     let row = Rect::new(inner.x, y, inner.width, 1);
                     buffer.set_style(row, recipe.fill);

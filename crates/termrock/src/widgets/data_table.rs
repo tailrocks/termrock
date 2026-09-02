@@ -57,10 +57,10 @@ const RESIZE_HIT: u16 = 1;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
 pub enum DataTableNavMode {
-    /// Arrow keys move row cursor; Left/Right move column or h-scroll.
-    #[default]
+    /// Arrow keys move the cell cursor (junie `cell_nav: true`).
     Cell,
-    /// Primary axis is rows; horizontal keys page columns only.
+    /// Primary axis is rows; Left/Right h-scroll (junie `cell_nav: false`).
+    #[default]
     Row,
     /// Shift-extend builds a rectangular cell range from the anchor.
     Range,
@@ -273,7 +273,7 @@ pub struct DataTableState<RowId: Clone + Ord, ColId: Clone + PartialEq> {
 }
 
 impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> {
-    /// Fresh multi-select table in cell navigation mode.
+    /// Fresh multi-select table in row navigation (junie `cell_nav: false`).
     #[must_use]
     pub fn new() -> Self {
         Self {
@@ -282,7 +282,7 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
             h_offset: 0,
             cursor_row: 0,
             cursor_col: 0,
-            nav_mode: DataTableNavMode::Cell,
+            nav_mode: DataTableNavMode::Row,
             load: LoadState::Ready { count: 0 },
             expand: ExpandState::default(),
             sort: None,
@@ -1664,7 +1664,11 @@ fn paint_data_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
             continue;
         }
         let cell_text = cells.get(paint_ord).copied().unwrap_or("");
-        let cell_focused = cursor && surface_focused && state.cursor_col == paint_ord;
+        let cell_nav = matches!(
+            state.nav_mode,
+            DataTableNavMode::Cell | DataTableNavMode::Range
+        );
+        let cell_focused = cell_nav && cursor && table.focused && state.cursor_col == paint_ord;
         let cell_selected = state.selection.is_cell_selected(CellCoord {
             row: logical_row,
             col: paint_ord,
@@ -2013,7 +2017,7 @@ mod tests {
         );
         assert!(matches!(
             out,
-            DataTableOutcome::NavModeChanged(DataTableNavMode::Row)
+            DataTableOutcome::NavModeChanged(DataTableNavMode::Range)
         ));
         state.set_nav_mode(DataTableNavMode::Range);
         let out = state.handle_key(
@@ -2022,6 +2026,44 @@ mod tests {
             &cols,
         );
         assert!(matches!(out, DataTableOutcome::SelectionChanged));
+    }
+
+    #[test]
+    fn row_nav_mode_does_not_reverse_cursor_cell() {
+        use ratatui_core::buffer::Buffer;
+        use ratatui_core::layout::Rect;
+        let tokens = crate::style::DesignSystem::junie();
+        let reversed = tokens.reversed();
+        let columns = ColumnModel::new(vec![
+            DataColumn::new("id", "id", DataColumnWidth::Fixed(9)),
+            DataColumn::new("name", "name", DataColumnWidth::Fixed(16)),
+        ]);
+        let c0: &[&str] = &["1001", "Northwind"];
+        let rows = [(0u64, c0)];
+        let mut state = DataTableState::<u64, &str>::new();
+        state.load = LoadState::Ready { count: 1 };
+        assert!(matches!(state.nav_mode, DataTableNavMode::Row));
+        let area = Rect::new(0, 0, 42, 6);
+        let mut buffer = Buffer::empty(area);
+        DataTable::new(&tokens, &columns, &rows)
+            .focused(true)
+            .row_numbers(false)
+            .render(area, &mut buffer, &mut state);
+        let reversed_bg = reversed.bg.unwrap();
+        assert!(
+            buffer.content().iter().all(|cell| cell.bg != reversed_bg),
+            "row nav must not reverse a cell"
+        );
+        state.set_nav_mode(DataTableNavMode::Cell);
+        let mut buffer = Buffer::empty(area);
+        DataTable::new(&tokens, &columns, &rows)
+            .focused(true)
+            .row_numbers(false)
+            .render(area, &mut buffer, &mut state);
+        assert!(
+            buffer.content().iter().any(|cell| cell.bg == reversed_bg),
+            "cell nav reverses the cursor cell"
+        );
     }
 
     #[test]
@@ -2421,6 +2463,7 @@ mod tests {
             let cells: &[&str] = &["alpha", "42"];
             let rows = [(1u64, cells)];
             let mut state = DataTableState::<u64, &str>::new();
+            state.set_nav_mode(DataTableNavMode::Cell);
             state.selection.select_row(1);
             let area = Rect::new(0, 0, 24, 4);
             let mut buffer = Buffer::empty(area);

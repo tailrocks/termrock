@@ -141,6 +141,18 @@ impl InputGroupState {
         }
     }
 
+    /// Live typing. [`Self::new`] stays idle (`editing: false`).
+    #[must_use]
+    pub fn with_editing(mut self) -> Self {
+        self.field.begin_edit();
+        self
+    }
+
+    /// Start the insert session (Junie Enter on an idle field).
+    pub fn begin_edit(&mut self) {
+        self.field.begin_edit();
+    }
+
     /// Focus.
     pub fn set_focused(&mut self, on: bool) {
         self.focused = on && self.enabled;
@@ -298,7 +310,7 @@ impl<'a> InputGroup<'a> {
                 ControlState::Default
             },
             false,
-            state.focused,
+            state.field.is_editing(),
         );
         buffer.set_style(area, input_recipe.fill);
         let prefixes: Vec<&InputAddon> = self
@@ -410,6 +422,7 @@ mod tests {
     fn field_typing_and_addon_action() {
         let mut st = InputGroupState::new();
         st.set_focused(true);
+        st.begin_edit();
         let addons = example_url_input_addons();
         let out = st.handle_key(press('a'), &addons);
         assert!(

@@ -1504,13 +1504,13 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
             } else {
                 self.nodes.len()
             };
-            crate::scroll::paint_scrolled_region(
+            crate::scroll::paint_overflow_scrollbar(
                 buffer,
-                body,
                 scrollbar,
                 thumb_total,
                 usize::from(body.height),
                 u16::try_from(state.offset).unwrap_or(u16::MAX),
+                self.focused,
                 self.tokens,
             );
         }
@@ -1850,5 +1850,29 @@ mod tests {
             ),
             TreeOutcome::Toggle("dir")
         );
+    }
+
+    #[test]
+    fn overflowing_tree_uses_overflow_thumb() {
+        let system = DesignSystem::default();
+        let nodes: Vec<TreeNode<'_, usize>> = (0..24)
+            .map(|i| TreeNode::new(i, Line::from(format!("n{i:02}")), 0))
+            .collect();
+        let mut state = TreeState::new(Some(0));
+        let area = Rect::new(0, 0, 20, 8);
+        let mut buffer = Buffer::empty(area);
+        Tree::new(&nodes, &system).render(area, &mut buffer, &mut state);
+        let thumb = crate::scroll::ScrollbarStyle::Line.vertical_thumb();
+        let track = crate::scroll::SCROLLBAR_TRACK;
+        let x = area.right().saturating_sub(1);
+        let viewport = usize::from(area.height);
+        let (start, len) = crate::scroll::overflow_thumb(24, viewport, viewport, 0)
+            .expect("24 nodes overflow an 8-row viewport");
+        let thumbs: Vec<u16> = (0..area.height)
+            .filter(|y| buffer[(x, *y)].symbol() == thumb)
+            .collect();
+        assert_eq!(thumbs.len(), len);
+        assert_eq!(thumbs[0], start as u16);
+        assert_eq!(buffer[(x, len as u16)].symbol(), track);
     }
 }

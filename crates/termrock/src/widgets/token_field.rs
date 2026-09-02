@@ -325,6 +325,18 @@ impl<Id> TokenFieldState<Id> {
         self
     }
 
+    /// Live typing. [`Self::new`] stays idle (`editing: false`).
+    #[must_use]
+    pub fn with_editing(mut self) -> Self {
+        self.draft.begin_edit();
+        self
+    }
+
+    /// Start the insert session (Junie Enter on an idle field).
+    pub fn begin_edit(&mut self) {
+        self.draft.begin_edit();
+    }
+
     /// Tokens.
     #[must_use]
     pub fn tokens(&self) -> &[FieldToken<Id>] {
@@ -711,6 +723,10 @@ impl TokenFieldState<String> {
         // Enter / separator commit
         if !self.read_only {
             if matches!(key.code, KeyCode::Enter) && !ctrl {
+                if !self.draft.is_editing() {
+                    self.draft.begin_edit();
+                    return TokenFieldOutcome::DraftChanged;
+                }
                 if self.draft.value().trim().is_empty() {
                     return TokenFieldOutcome::Submitted;
                 }
@@ -998,7 +1014,7 @@ impl<'a> TokenField<'a> {
                 ControlState::Default
             },
             invalid,
-            state.focused && matches!(state.zone, TokenFieldZone::Draft),
+            state.draft.is_editing() && matches!(state.zone, TokenFieldZone::Draft),
         );
 
         let mut y = area.y;
@@ -1489,5 +1505,36 @@ mod tests {
         let mut state: TokenFieldState<String> = TokenFieldState::new();
         assert!(state.push_token(FieldToken::new("1".into(), "東京🧪")));
         assert_eq!(state.tokens()[0].label.graphemes(true).count(), 3);
+    }
+
+    #[test]
+    fn focused_without_editing_is_not_underlined() {
+        let system = DesignSystem::junie();
+        let mut state = TokenFieldState::new();
+        state.set_focused(true);
+        assert!(!state.draft.is_editing(), "TokenFieldState::new is idle");
+        let area = Rect::new(0, 0, 32, 3);
+        let mut buffer = Buffer::empty(area);
+        let _ = TokenField::new(&system)
+            .label("To")
+            .paint(area, &mut buffer, &mut state);
+        let underlined = buffer
+            .content()
+            .iter()
+            .any(|cell| cell.style().add_modifier.contains(Modifier::UNDERLINED));
+        assert!(
+            !underlined,
+            "nav-focus token field is not an editing underline"
+        );
+        state.begin_edit();
+        let mut buffer = Buffer::empty(area);
+        let _ = TokenField::new(&system)
+            .label("To")
+            .paint(area, &mut buffer, &mut state);
+        let underlined = buffer
+            .content()
+            .iter()
+            .any(|cell| cell.style().add_modifier.contains(Modifier::UNDERLINED));
+        assert!(underlined, "editing token field underlines the draft");
     }
 }

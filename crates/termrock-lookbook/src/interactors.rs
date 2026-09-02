@@ -1054,7 +1054,9 @@ impl ToastInteractor {
                     choices: &[],
                 },
             ],
-            message: TextInputState::new("Updated").with_max_graphemes(48),
+            message: TextInputState::new("Updated")
+                .with_max_graphemes(48)
+                .with_editing(),
             trigger,
             visible: false,
             shown_at_ms: 0,
@@ -2004,7 +2006,7 @@ pub(crate) struct TextInputInteractor {
 
 impl TextInputInteractor {
     pub(crate) fn new() -> Self {
-        let mut state = TextInputState::new("filter term");
+        let mut state = TextInputState::new("filter term").with_editing();
         state.set_focused(true);
         Self {
             state,
@@ -2236,7 +2238,8 @@ pub(crate) struct PasswordInputInteractor {
 impl PasswordInputInteractor {
     pub(crate) fn new() -> Self {
         let mut state = PasswordInputState::with_secret("correct horse")
-            .with_reveal_policy(termrock::widgets::RevealPolicy::Explicit);
+            .with_reveal_policy(termrock::widgets::RevealPolicy::Explicit)
+            .with_editing();
         state.set_focused(true);
         Self {
             state,

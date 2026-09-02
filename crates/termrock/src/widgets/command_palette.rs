@@ -610,8 +610,12 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
     #[must_use]
     pub fn new(_selected: Option<Id>) -> Self {
         Self {
-            query: TextInputState::new("").with_allow_empty(true),
-            argument: TextInputState::new("").with_allow_empty(true),
+            query: TextInputState::new("")
+                .with_allow_empty(true)
+                .with_editing(),
+            argument: TextInputState::new("")
+                .with_allow_empty(true)
+                .with_editing(),
             collection: CollectionState::new().orientation(RovingOrientation::Vertical),
             generation: 0,
             applied_generation: 0,
@@ -822,7 +826,9 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
         let page_id = page_id.into();
         let title = title.into();
         self.page_stack.push((page_id.clone(), title));
-        self.query = TextInputState::new("").with_allow_empty(true);
+        self.query = TextInputState::new("")
+            .with_allow_empty(true)
+            .with_editing();
         let generation = self.bump_generation();
         let _ = generation;
         CommandPaletteOutcome::PageOpened { page_id }
@@ -831,7 +837,9 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
     /// Close one page (or ignored at root).
     pub fn close_page(&mut self) -> CommandPaletteOutcome<Id> {
         if self.page_stack.pop().is_some() {
-            self.query = TextInputState::new("").with_allow_empty(true);
+            self.query = TextInputState::new("")
+                .with_allow_empty(true)
+                .with_editing();
             let _ = self.bump_generation();
             CommandPaletteOutcome::PageClosed
         } else {
@@ -855,7 +863,9 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
         if let Some(prompt) = &entry.argument_prompt {
             self.pending_id = Some(entry.id.clone());
             self.pending_command = entry.command.clone();
-            self.argument = TextInputState::new("").with_allow_empty(true);
+            self.argument = TextInputState::new("")
+                .with_allow_empty(true)
+                .with_editing();
             self.phase = CommandPalettePhase::Argument {
                 entry_key: format!("{:?}", ()), // placeholder overwritten below
                 prompt: prompt.clone(),
@@ -889,7 +899,9 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
         let command = self.pending_command.take();
         let argument = self.argument.value().to_string();
         self.phase = CommandPalettePhase::Browse;
-        self.argument = TextInputState::new("").with_allow_empty(true);
+        self.argument = TextInputState::new("")
+            .with_allow_empty(true)
+            .with_editing();
         let q = self.query_text().to_string();
         self.push_history(q);
         CommandPaletteOutcome::Activated {
@@ -929,7 +941,9 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
         // Esc: clear query → close page → cancel.
         if key.code == KeyCode::Esc {
             if !self.query_text().is_empty() {
-                self.query = TextInputState::new("").with_allow_empty(true);
+                self.query = TextInputState::new("")
+                    .with_allow_empty(true)
+                    .with_editing();
                 let generation = self.bump_generation();
                 return CommandPaletteOutcome::QueryChanged {
                     query: String::new(),
@@ -1007,7 +1021,9 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
             self.phase = CommandPalettePhase::Browse;
             self.pending_id = None;
             self.pending_command = None;
-            self.argument = TextInputState::new("").with_allow_empty(true);
+            self.argument = TextInputState::new("")
+                .with_allow_empty(true)
+                .with_editing();
             return CommandPaletteOutcome::ArgumentCancelled;
         }
         if key.code == KeyCode::Enter {
@@ -1036,7 +1052,9 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
         };
         self.history_cursor = Some(idx);
         let q = self.history[idx].clone();
-        self.query = TextInputState::new(&q).with_allow_empty(true);
+        self.query = TextInputState::new(&q)
+            .with_allow_empty(true)
+            .with_editing();
         let generation = self.bump_generation();
         let _ = generation;
         CommandPaletteOutcome::HistoryApplied { query: q }
@@ -1057,7 +1075,9 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
                     self.phase = CommandPalettePhase::Browse;
                     self.pending_id = None;
                     self.pending_command = None;
-                    self.argument = TextInputState::new("").with_allow_empty(true);
+                    self.argument = TextInputState::new("")
+                        .with_allow_empty(true)
+                        .with_editing();
                     CommandPaletteOutcome::ArgumentCancelled
                 }
                 UiIntent::Activate | UiIntent::Submit => self.submit_argument(),
@@ -1102,7 +1122,9 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
             }
             UiIntent::Cancel | UiIntent::Close => {
                 if !self.query_text().is_empty() {
-                    self.query = TextInputState::new("").with_allow_empty(true);
+                    self.query = TextInputState::new("")
+                        .with_allow_empty(true)
+                        .with_editing();
                     let generation = self.bump_generation();
                     CommandPaletteOutcome::QueryChanged {
                         query: String::new(),
@@ -2074,7 +2096,9 @@ mod tests {
         s.set_loading(false);
         let mut buf2 = Buffer::empty(area);
         // no results with query
-        s.query = TextInputState::new("zzz").with_allow_empty(true);
+        s.query = TextInputState::new("zzz")
+            .with_allow_empty(true)
+            .with_editing();
         CommandPalette::new("Commands", &[], &system).paint(area, &mut buf2, &mut s);
         let t2: String = buf2
             .content()

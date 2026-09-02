@@ -10927,6 +10927,7 @@ pub fn stories() -> Vec<Story> {
             toast_stack_story,
         ),
     ];
+    catalog.extend(crate::junie_screens::stories());
     catalog.extend(in_app_stories(&catalog));
     catalog
 }
@@ -25752,6 +25753,7 @@ fn text_input_task_name_story(frame: &mut Frame<'_>, area: Rect, system: &Design
 fn text_input_secret_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut state = TextInputState::new("hunter2");
     state.set_focused(true);
+    state.set_editing(false);
     let _ = TextInput::new("Password", system)
         .secret(true)
         .show_clear(true)
@@ -26240,6 +26242,7 @@ fn combobox_creatable_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
 fn text_input_invalid_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut state = TextInputState::new("taken");
     state.set_focused(true);
+    state.set_editing(false);
     let _ = TextInput::new("Username", system)
         .validation(Validation::Invalid("already taken"))
         .paint(area, frame.buffer_mut(), &mut state);
@@ -26248,6 +26251,7 @@ fn text_input_invalid_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
 fn text_input_prefix_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let mut state = TextInputState::new("termrock");
     state.set_focused(true);
+    state.set_editing(false);
     let _ = TextInput::new("URL", system)
         .prefix("https://")
         .suffix(".dev")
@@ -27655,10 +27659,12 @@ fn text_input_focused_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
     ])
     .areas(area);
     let mut blurred_state = TextInputState::new("resting value");
+    blurred_state.set_editing(false);
     let _ =
         TextInput::new("Blurred", system).paint(blurred, frame.buffer_mut(), &mut blurred_state);
     let mut focused_state = TextInputState::new("editing value");
     focused_state.set_focused(true);
+    focused_state.set_editing(false);
     let _ =
         TextInput::new("Focused", system).paint(focused, frame.buffer_mut(), &mut focused_state);
 }

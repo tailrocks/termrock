@@ -31,6 +31,14 @@ TermRock mapping:
 
 Colour-capability fallbacks: `--color truecolor|256|16|none` and `NO_COLOR`.
 Visual verification: `verify/junie` cell-grid compare against fresh `junie-tui` captures.
+Current gate: 40 equivalent showcase crops PASS at `text_cells: 0` / `color_cells: 0`; 5 TablePro product-shell scenes SKIP (campaign non-goal, not a widget gap).
+
+Shipped contracts that the lookbook must consume (no page-local forks):
+
+- Table reverse cell cursor is `TableState::cell_nav`. `focused_column` without that flag is not a cursor; Left/Right stay row-select. `cell_nav` with no column seeds the first visible column on paint (junie `cursor_col` starts at 0).
+- Line overflow thumbs (`Panel`, `Picker`, `List`, `Tree`, `TextArea`, `Select`) use `scroll::overflow_thumb` / `paint_overflow_scrollbar`: `len = (viewport * track) / content`.
+- Canvas fill is `Role::Canvas` `#000000`. `SurfaceRecipe::Canvas` never paints `Color::Reset`.
+- Picker search footer paints junie's spelled `Alt+Enter`, not Emacs `A-↵`. Searchable pickers type `j`/`k`/Space into the query; Tab is `PickerOutcome::NextScope`; Alt+Enter is `PickerOutcome::ActivatedAlt`.
 
 The YAML token block and prose that follow are the Junie specification TermRock implements.
 
@@ -348,9 +356,11 @@ language carries the state alone.
 
 ### Declared but dormant
 
-`accent_bg_subtle`, `error_bg` and `info` (`#8787ff`) exist in the theme
-struct but no resolver uses them. They are not part of the system; do not
-introduce them into new screens.
+Junie's `Theme` struct still carries `accent_bg_subtle`, `error_bg` and
+`info` (`#8787ff`); no resolver uses them. TermRock `JunieTheme` omits those
+fields. They are not part of the system; do not introduce them into new
+screens. The Overview Tokens page copies the reference swatch list, including
+the dormant `info` hex, as page content — not as a `Role`.
 
 ## Typography
 

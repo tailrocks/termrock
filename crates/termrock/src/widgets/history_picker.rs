@@ -601,7 +601,9 @@ impl<Id: Clone + PartialEq> HistoryPickerState<Id> {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            query: TextInputState::new("").with_allow_empty(true),
+            query: TextInputState::new("")
+                .with_allow_empty(true)
+                .with_editing(),
             collection: CollectionState::new().orientation(RovingOrientation::Vertical),
             draft: None,
             open: false,
@@ -624,7 +626,9 @@ impl<Id: Clone + PartialEq> HistoryPickerState<Id> {
         self.open = true;
         self.focused = true;
         self.accepts_input = true;
-        self.query = TextInputState::new("").with_allow_empty(true);
+        self.query = TextInputState::new("")
+            .with_allow_empty(true)
+            .with_editing();
         let draft_stashed = current_draft.is_some();
         self.draft = current_draft;
         HistoryPickerOutcome::Opened { draft_stashed }
@@ -633,7 +637,9 @@ impl<Id: Clone + PartialEq> HistoryPickerState<Id> {
     /// Close without consuming draft (host may still take_draft).
     pub fn close(&mut self) {
         self.open = false;
-        self.query = TextInputState::new("").with_allow_empty(true);
+        self.query = TextInputState::new("")
+            .with_allow_empty(true)
+            .with_editing();
     }
 
     /// Whether open.
