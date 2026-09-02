@@ -29,7 +29,8 @@ use crate::interaction::{
 };
 use crate::style::{DesignSystem, Role, SyntaxTone, VisualState};
 use crate::text::{
-    display_cols, expand_tabs, is_terminal_control_char, take_display_cols, wrap_display_cols,
+    display_cols, expand_tabs, is_terminal_control_char, take_display_cols, truncate_cols,
+    wrap_display_cols,
 };
 
 // ── Syntax ──────────────────────────────────────────────────────────────────
@@ -669,6 +670,8 @@ pub struct CodeBlock<'a, H: SyntaxHighlighter = PlainSyntax> {
     /// Absolute inclusive-start / exclusive-end of the current statement block.
     /// `›` is painted on the first line; `▎` is focus-only.
     current_block: Option<(usize, usize)>,
+    /// Footer-left diagnostic / status (source CodeEditor message row).
+    footer_status: Option<(&'a str, Role)>,
 }
 
 impl<'a> CodeBlock<'a, PlainSyntax> {
@@ -691,6 +694,7 @@ impl<'a> CodeBlock<'a, PlainSyntax> {
             streaming: false,
             first_line: 0,
             current_block: None,
+            footer_status: None,
         }
     }
 }
@@ -767,6 +771,7 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
             streaming: self.streaming,
             first_line: self.first_line,
             current_block: self.current_block,
+            footer_status: self.footer_status,
         }
     }
 
@@ -802,6 +807,13 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
     #[must_use]
     pub const fn gutter_marks(mut self, marks: &'a [CodeGutterMark]) -> Self {
         self.gutter_marks = marks;
+        self
+    }
+
+    /// Footer-left status (nearest diagnostic message).
+    #[must_use]
+    pub const fn footer_status(mut self, status: Option<(&'a str, Role)>) -> Self {
+        self.footer_status = status;
         self
     }
 
@@ -924,10 +936,6 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
         state.cursor_line.map(|line| (line, line.saturating_add(1)))
     }
 
-    fn mark_for(&self, abs_line: usize) -> Option<&CodeGutterMark> {
-        self.gutter_marks.iter().find(|m| m.line == abs_line)
-    }
-
     fn highlights_for(&self, abs_line: usize, state: &CodeBlockState) -> Vec<CodeHighlightKind> {
         let mut kinds = Vec::new();
         if let Some((a, b)) = state.selection
@@ -938,7 +946,8 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
         }
         // Focus is the `▎` bar, never a second current-line wash.
         for h in self.highlights {
-            if h.line == abs_line {
+            // Diagnostic underline is span-aware in `paint_body_row`.
+            if h.line == abs_line && h.kind != CodeHighlightKind::Diagnostic {
                 kinds.push(h.kind);
             }
         }
@@ -961,11 +970,12 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
             // substitute; everything else reads through weight or ground.
             match kind {
                 CodeHighlightKind::Diagnostic => {
-                    // Error underline — never a hue wash on the line.
+                    // Squiggle substitute — warning by default; span paint
+                    // in `paint_body_row` is the real path.
                     let theme = self.system.junie_theme();
                     style = style
                         .add_modifier(Modifier::UNDERLINED)
-                        .underline_color(theme.error);
+                        .underline_color(theme.warning);
                 }
                 CodeHighlightKind::Search => {
                     style = style.add_modifier(Modifier::BOLD);
@@ -1177,14 +1187,33 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
                     false,
                 );
                 buffer.set_stringn(gx, y, self.system.glyphs.selection_gutter(), 1, line_gutter);
-                if let Some(m) = self.mark_for(abs) {
-                    // Diagnostic `!` is bold; running spinner is accent only.
-                    let mut mark_style = fs.patch(self.system.style(m.role));
-                    if m.glyph == '!' {
-                        mark_style = mark_style.add_modifier(Modifier::BOLD);
-                    }
+                // Idle goldens pack numbers at gx+2 (`▎› 1  //`). Diagnostic
+                // goldens leave gx+2 as field fill so 1-digit lines read
+                // `▎   1 //` with the pad white, not muted number style.
+                let bang = self.gutter_marks.iter().any(|m| m.glyph == '!');
+                let num_w = if self.show_line_numbers && parts.gutter.width > 3 {
+                    parts.gutter.width.saturating_sub(4)
+                } else {
+                    0
+                };
+                let num_x = if bang {
+                    gx.saturating_add(3)
+                } else {
+                    gx.saturating_add(2)
+                };
+                let spinner = self
+                    .gutter_marks
+                    .iter()
+                    .find(|m| m.line == abs && m.glyph != '!');
+                let bang_mark = self
+                    .gutter_marks
+                    .iter()
+                    .find(|m| m.line == abs && m.glyph == '!');
+                if let Some(m) = spinner {
+                    let mark_style = fs.patch(self.system.style(m.role));
                     buffer.set_stringn(gx.saturating_add(1), y, m.glyph.to_string(), 1, mark_style);
-                } else if let Some((start, end)) = block
+                } else if bang_mark.is_none()
+                    && let Some((start, end)) = block
                     && abs == start
                     && abs < end
                 {
@@ -1200,10 +1229,7 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
                         }),
                     );
                 }
-                if self.show_line_numbers && parts.gutter.width > 3 {
-                    // bar + marker, then right-aligned numbers, then trailing spaces.
-                    // Captured shots: `▎› 1  //` and `▎ 10 ` (numbers at x+2).
-                    let num_w = parts.gutter.width.saturating_sub(4);
+                if self.show_line_numbers && parts.gutter.width > 3 && num_w > 0 {
                     let display_n = self.meta.start_line_number.saturating_add(abs);
                     let number =
                         format!("{:>width$}", display_n, width = usize::from(num_w.max(1)));
@@ -1215,13 +1241,19 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
                     } else {
                         fs.fg(theme.text_muted)
                     };
-                    buffer.set_stringn(
-                        gx.saturating_add(2),
-                        y,
-                        &number,
-                        usize::from(num_w),
-                        nstyle,
-                    );
+                    buffer.set_stringn(num_x, y, &number, usize::from(num_w), nstyle);
+                    if let Some(m) = bang_mark {
+                        // s_editor_diag: `▎  1!` — bang overwrites the last number cell.
+                        let mut mark_style = fs.patch(self.system.style(m.role));
+                        mark_style = mark_style.add_modifier(Modifier::BOLD);
+                        buffer.set_stringn(
+                            num_x.saturating_add(num_w.saturating_sub(1)),
+                            y,
+                            m.glyph.to_string(),
+                            1,
+                            mark_style,
+                        );
+                    }
                 }
             }
 
@@ -1261,6 +1293,7 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
                     fs,
                     display_cols(&prepared).saturating_sub(usize::from(state.scroll_x))
                         > usize::from(body_w),
+                    state.scroll_x,
                 );
                 if wrap_i == 0 && state.editing && state.cursor_line == Some(abs) {
                     let y = parts.body.y.saturating_add(row);
@@ -1313,8 +1346,20 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
             } else {
                 String::new()
             };
+            let theme = self.system.junie_theme();
+            if let Some((msg, role)) = self.footer_status {
+                let pos_w = display_cols(&pos) as u16;
+                let room = usize::from(area.width.saturating_sub(pos_w.saturating_add(3)).max(8));
+                let shown = truncate_cols(msg, room, self.system.glyphs.ellipsis());
+                buffer.set_stringn(
+                    area.x.saturating_add(1),
+                    fy,
+                    shown.as_ref(),
+                    room,
+                    fs.patch(self.system.style(role)),
+                );
+            }
             if !pos.is_empty() {
-                let theme = self.system.junie_theme();
                 let w = display_cols(&pos) as u16;
                 let x = area.right().saturating_sub(w.saturating_add(1));
                 buffer.set_stringn(
@@ -1364,6 +1409,7 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
         mono: bool,
         field: Style,
         overflow: bool,
+        scroll_x: u16,
     ) {
         if width == 0 {
             return;
@@ -1426,6 +1472,7 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
             buffer.set_stringn(x.saturating_add(col), y, &clipped, remaining, style);
             col = col.saturating_add(used);
         }
+        self.paint_diagnostic_underlines(buffer, x, y, width, abs_line, scroll_x);
         if overflow && width > 0 {
             let theme = self.system.junie_theme();
             buffer.set_stringn(
@@ -1436,7 +1483,39 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
                 field.fg(theme.text_muted),
             );
         }
-        let _ = abs_line;
+    }
+
+    fn paint_diagnostic_underlines(
+        &self,
+        buffer: &mut Buffer,
+        x: u16,
+        y: u16,
+        width: u16,
+        abs_line: usize,
+        scroll_x: u16,
+    ) {
+        if width == 0 {
+            return;
+        }
+        let theme = self.system.junie_theme();
+        for h in self.highlights {
+            if h.line != abs_line || h.kind != CodeHighlightKind::Diagnostic {
+                continue;
+            }
+            let start = h.start_col.unwrap_or(0).saturating_sub(scroll_x);
+            let end = h.end_col.unwrap_or(u16::MAX).saturating_sub(scroll_x);
+            let end = end.min(width);
+            let color = theme.warning;
+            for col in start..end {
+                if let Some(cell) = buffer.cell_mut((x.saturating_add(col), y)) {
+                    cell.set_style(
+                        cell.style()
+                            .add_modifier(Modifier::UNDERLINED)
+                            .underline_color(color),
+                    );
+                }
+            }
+        }
     }
 
     /// Key handling (scroll / cursor / copy / activate).
@@ -2131,7 +2210,8 @@ mod tests {
             .gutter_marks(&marks)
             .highlights(&highs)
             .paint(Rect::new(0, 0, 30, 4), &mut buf, &mut state);
-        assert_eq!(buf[(1, 1)].symbol(), "!");
+        // Diagnostic bang overwrites the last number cell (`▎  1!`), not the marker slot.
+        assert_eq!(buf[(4, 1)].symbol(), "!");
         assert!(
             buf[(6, 1)]
                 .style()
@@ -2188,17 +2268,13 @@ mod tests {
             .language("rust")
             .current_block(0, 1)
             .paint(Rect::new(0, 0, 40, 4), &mut buf, &mut state);
-        // header is rust on row 0; body starts row 1
-        assert_eq!(buf[(0, 1)].symbol(), "▎", "focus bar on cursor line");
+        // header is rust on row 0; body starts row 1. Goldens keep `▎` on
+        // every body row; `›` is the block marker, never a second bar.
+        assert_eq!(buf[(0, 1)].symbol(), "▎", "gutter bar on cursor line");
         assert_eq!(buf[(1, 1)].symbol(), "›", "block marker, not a second bar");
-        assert_ne!(buf[(1, 1)].symbol(), "▎");
-        assert_ne!(
-            buf[(0, 2)].symbol(),
-            "▎",
-            "non-cursor body row has no focus bar"
-        );
+        assert_eq!(buf[(0, 2)].symbol(), "▎", "gutter bar on every body row");
         // line numbers are muted off the current block
-        assert_eq!(buf[(3, 2)].fg, system.junie_theme().text_secondary);
+        assert_eq!(buf[(3, 2)].fg, system.junie_theme().text_muted);
     }
 
     #[test]

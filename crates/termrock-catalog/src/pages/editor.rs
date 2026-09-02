@@ -13,9 +13,10 @@ use ratatui::style::Style;
 use termrock::input::{KeyCode, KeyEventKind, KeyModifiers};
 use termrock::style::{DesignSystem, Role, SyntaxTone};
 use termrock::widgets::{
-    CodeBlock, CodeBlockState, CodeGutterMark, CodeHighlight, CompletionCandidate, CompletionMenu,
-    CompletionMenuOutcome, CompletionMenuState, EmptyKind, EmptyState, MatchRanges,
-    SyntaxHighlighter, TextAreaOutcome, TextAreaState, TextCursor, fuzzy_match_label,
+    CodeBlock, CodeBlockState, CodeGutterMark, CodeHighlight, CodeHighlightKind,
+    CompletionCandidate, CompletionMenu, CompletionMenuOutcome, CompletionMenuState, EmptyKind,
+    EmptyState, MatchRanges, SyntaxHighlighter, TextAreaOutcome, TextAreaState, TextCursor,
+    fuzzy_match_label,
 };
 
 use crate::ctx::RenderCtx;
@@ -436,7 +437,31 @@ impl Page for EditorPage {
         let lines: Vec<&str> = self.editor.lines().collect();
         let cur = self.cursor_offset();
         let current = all.iter().find(|b| b.start <= cur && cur <= b.end);
-        let highlights: Vec<CodeHighlight> = Vec::new();
+        let highlights: Vec<CodeHighlight> = self
+            .diagnostics
+            .iter()
+            .map(|d| {
+                let line = line_of(&src, d.range.start);
+                let line_start = src
+                    .get(..d.range.start.min(src.len()))
+                    .and_then(|head| head.rfind('\n'))
+                    .map_or(0, |i| i.saturating_add(1));
+                let start = text::width(
+                    src.get(line_start..d.range.start.min(src.len()))
+                        .unwrap_or(""),
+                );
+                let end = text::width(
+                    src.get(line_start..d.range.end.min(src.len()))
+                        .unwrap_or(""),
+                );
+                CodeHighlight::span(
+                    line,
+                    u16::try_from(start).unwrap_or(u16::MAX),
+                    u16::try_from(end).unwrap_or(u16::MAX),
+                    CodeHighlightKind::Diagnostic,
+                )
+            })
+            .collect();
         let hi = SampleSyntax { system: ctx.system };
         let mut block = CodeBlock::new(&lines, ctx.system)
             .highlighter(&hi)
@@ -471,6 +496,18 @@ impl Page for EditorPage {
         if !marks.is_empty() {
             block = block.gutter_marks(&marks);
         }
+        let cur_off = self.cursor_offset();
+        let footer = self
+            .diagnostics
+            .iter()
+            .min_by_key(|d| d.range.start.abs_diff(cur_off))
+            .map(|d| {
+                (
+                    d.message.as_str(),
+                    if d.error { Role::Danger } else { Role::Warning },
+                )
+            });
+        block = block.footer_status(footer);
         let parts = block.paint(inner, buf, &mut self.code);
         ctx.control(ID.sub("code"), inner, false);
         ctx.scrollable(ID.sub("code"), inner);

@@ -74,17 +74,21 @@ impl Grid {
             || a.italic != b.italic
             || a.underline != b.underline
             || a.reverse != b.reverse
-            || a.strike != b.strike
         {
             return false;
         }
         let invisible = a.fg == a.bg && b.fg == b.bg;
         let space = a.ch == " " && b.ch == " ";
         let tmux_weight = invisible || space || Self::frame_glyph(&a.ch);
+        let colored_underline = a.underline && b.underline;
         if a.bold != b.bold && !tmux_weight {
             return false;
         }
-        if a.dim != b.dim && !tmux_weight && !(a.underline && b.underline) {
+        if a.dim != b.dim && !tmux_weight && !colored_underline {
+            return false;
+        }
+        // tmux `-e` encodes underline-color as SGR 9 (strike) + 2 (dim).
+        if a.strike != b.strike && !colored_underline {
             return false;
         }
         if a.fg == b.fg {
@@ -155,6 +159,7 @@ impl Grid {
             }
             if c.underline {
                 c.dim = false;
+                c.strike = false;
             }
         }
         out
