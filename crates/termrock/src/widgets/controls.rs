@@ -401,7 +401,8 @@ impl<'a, Id> Checkbox<'a, Id> {
         match value {
             CheckboxValue::Checked => self.system.glyphs.check_on(),
             CheckboxValue::Unchecked => self.system.glyphs.check_off(),
-            CheckboxValue::Indeterminate => "[–]",
+            // Junie has no mixed checkbox. Three-cell slot, catalog minus, no well.
+            CheckboxValue::Indeterminate => " \u{2212} ",
         }
     }
 
@@ -2309,6 +2310,25 @@ mod tests {
             state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &1),
             CheckboxOutcome::Ignored
         ));
+    }
+
+    #[test]
+    fn checkbox_indeterminate_paint_is_catalog_minus_not_a_well() {
+        let system = DesignSystem::junie();
+        let cb = Checkbox::new("mix", "Mixed", &system);
+        let mut state = CheckboxState::with_value(CheckboxValue::Indeterminate);
+        let area = Rect::new(0, 0, 16, 1);
+        let mut buf = Buffer::empty(area);
+        let _ = cb.paint(area, &mut buf, &mut state);
+        let row: String = (0..16).map(|x| buf[(x, 0)].symbol().to_string()).collect();
+        assert!(
+            !row.contains('['),
+            "indeterminate is catalog minus, not [–]: {row:?}"
+        );
+        assert!(
+            row.contains('\u{2212}'),
+            "indeterminate uses Glyph::Remove: {row:?}"
+        );
     }
 
     #[test]

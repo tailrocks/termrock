@@ -411,7 +411,7 @@ impl NumberInputState {
         self.sync_draft_gates();
     }
 
-    /// Focus; starts draft edit session.
+    /// Focus flag. Does not begin the draft edit session.
     pub fn set_focused(&mut self, on: bool) {
         self.focused = on;
         self.sync_draft_gates();

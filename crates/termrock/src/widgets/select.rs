@@ -1837,12 +1837,14 @@ mod tests {
         state.set_focused(true);
         let area = Rect::new(0, 0, 32, 14);
         let _ = state.open(area, &opts);
+        // Source popover has no scroll gutter. Thumb lives on fullscreen lists.
+        state.set_presentation(SelectPresentation::Fullscreen);
         let mut buffer = Buffer::empty(area);
         Select::new(&opts, &system).paint_stacked(area, &mut buffer, &mut state);
         let thumb = crate::scroll::ScrollbarStyle::Line.vertical_thumb();
         let mut sb_x = None;
-        for y in 1..area.height.saturating_sub(1) {
-            for x in 1..area.width.saturating_sub(1) {
+        for y in 0..area.height {
+            for x in 0..area.width {
                 if buffer[(x, y)].symbol() == thumb {
                     sb_x = Some(x);
                 }

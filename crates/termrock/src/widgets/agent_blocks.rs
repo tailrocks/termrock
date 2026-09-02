@@ -149,13 +149,7 @@ impl<Id: Clone + PartialEq> Widget for &ModeRibbon<'_, Id> {
         let labels: Vec<String> = self
             .modes
             .iter()
-            .map(|mode| {
-                if mode.active {
-                    format!("[{}]", mode.label)
-                } else {
-                    format!(" {} ", mode.label)
-                }
-            })
+            .map(|mode| format!(" {} ", mode.label))
             .collect();
         let sizes: Vec<FlexSize> = labels
             .iter()
@@ -175,8 +169,8 @@ impl<Id: Clone + PartialEq> Widget for &ModeRibbon<'_, Id> {
             if rect.width == 0 || rect.height == 0 {
                 continue;
             }
-            // The active mode already wears its brackets; a permanent ribbon
-            // is ambient chrome and does not spend the accent (plans/007).
+            // Active is weight, not `[inner]` wells. Ambient ribbon does not
+            // spend the accent (plans/007).
             let style = if !mode.enabled {
                 self.tokens.style(Role::TextDisabled)
             } else if mode.active {

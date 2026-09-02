@@ -73,13 +73,13 @@ impl GlyphSet {
         super::glyph::Glyph::RuleV.resolve().text
     }
 
-    /// Multi-select checked marker (without trailing space).
+    /// Checkbox well (`[✓]`). List membership is [`Glyph::Success`], not this.
     #[must_use]
     pub const fn check_on(self) -> &'static str {
         super::glyph::Glyph::CheckOn.resolve().text
     }
 
-    /// Multi-select unchecked marker (without trailing space).
+    /// Checkbox well (`[ ]`). List membership unchecked is a space, not this.
     #[must_use]
     pub const fn check_off(self) -> &'static str {
         super::glyph::Glyph::CheckOff.resolve().text

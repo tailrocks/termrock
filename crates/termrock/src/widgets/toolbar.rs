@@ -1112,11 +1112,7 @@ fn paint_overflow_chip<Id: Clone + PartialEq>(
     }
     let g = bar.system.glyphs.ellipsis();
     let on = state.roving.active() == Some(id);
-    let label = if on && state.surface_focused {
-        format!("[{g}]")
-    } else {
-        format!(" {g} ")
-    };
+    let label = format!(" {g} ");
     let need = (display_cols(&label) as u16).min(slot.width).max(1);
     let rect = Rect {
         x: slot.x,

@@ -1612,7 +1612,7 @@ impl<'a> AgentModeSelector<'a> {
                     .and_then(|id| self.modes.iter().find(|m| m.id == id));
                 let warn = mode.is_some_and(|m| m.needs_warning_role());
                 let warning = if warn { "⚠" } else { "" };
-                let line = format!("[{}]{warning}", self.compact_status(state));
+                let line = format!(" {} {warning}", self.compact_status(state));
                 let control_state = if !state.accepts_input {
                     ControlState::Disabled
                 } else if state.focused {
@@ -1646,11 +1646,7 @@ impl<'a> AgentModeSelector<'a> {
                         break;
                     }
                     let active = state.selected.as_deref() == Some(m.id.as_str());
-                    let label = if active {
-                        format!("[{}]", m.short_label)
-                    } else {
-                        format!(" {} ", m.short_label)
-                    };
+                    let label = format!(" {} ", m.short_label);
                     let w = (display_cols(&label) as u16)
                         .min(area.right().saturating_sub(x))
                         .max(1);
@@ -1807,7 +1803,7 @@ impl<'a> ComposerSelectors<'a> {
             .selected()
             .and_then(|id| self.modes.iter().find(|m| m.id == id))
             .is_some_and(|m| m.needs_warning_role());
-        let line = format!("[{mode}]{}{}", { " · " }, model);
+        let line = format!("{mode}{}{}", { " · " }, model);
         let style = if warn {
             self.system.style(Role::Warning)
         } else {

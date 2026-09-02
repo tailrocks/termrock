@@ -31,7 +31,7 @@ TermRock mapping:
 
 Colour-capability fallbacks: `--color truecolor|256|16|none` and `NO_COLOR`.
 Visual verification: `verify/junie` cell-grid compare against fresh `junie-tui` captures.
-Current gate: 40 equivalent showcase crops PASS at `text_cells: 0` / `color_cells: 0`; 5 TablePro product-shell scenes SKIP (campaign non-goal, not a widget gap).
+Current gate: 40 equivalent showcase crops PASS at `text_cells: 0` / `color_cells: 0` after wiping `verify/junie/out/frames`; 5 TablePro product-shell scenes SKIP (campaign non-goal, not a widget gap). Lookbook `frame --story` remains on the catalog binary.
 
 Shipped contracts that the lookbook must consume (no page-local forks):
 
@@ -39,9 +39,11 @@ Shipped contracts that the lookbook must consume (no page-local forks):
 - Line overflow thumbs (`Panel`, `Picker`, `List`, `Tree`, `TextArea`, `Select`) use `scroll::overflow_thumb` / `paint_overflow_scrollbar`: `len = (viewport * track) / content`.
 - Canvas fill is `Role::Canvas` `#000000`. `SurfaceRecipe::Canvas` never paints `Color::Reset`. Monochrome `Inset`/`Sunken` also fill canvas, not terminal Reset.
 - Picker search footer paints junie's spelled `Alt+Enter`, not Emacs `A-↵`. Searchable pickers type `j`/`k`/Space into the query; Tab is `PickerOutcome::NextScope`; Alt+Enter is `PickerOutcome::ActivatedAlt`.
-- Field underline is the insert session only (`editing && focused`), always accent. Junie `input.rs` does not error-underline idle invalid values; those trail a bold `!` plus the helper message. `TextInputState::new` starts `editing: false`. Live hosts call `with_editing()` / `begin_edit()` / Enter.
-- Table reverse requires `cell_nav`. DataTable default nav is Row. Tabs `h`/`l` move like arrows. Radio ignores Tab. Closed Select Down/Right cycles without opening.
-- Standalone Toggle copies the junie switch `▎──●` / `○──`. ToggleGroup pressed face is reverse + label, not `[inner]` wells. Badge default is padded inner + status Glyph, not `[{inner}]`. Checkbox `[✓]`/`[ ]` stays on Checkbox and markdown task items (`Glyph::CheckOn`/`CheckOff`). Progress/stepper marks are catalog `✓ › ! − …`.
+- Field underline is the insert session only (`editing && focused`), always accent. Junie `input.rs` does not error-underline idle invalid values; those trail a bold `!` plus the helper message. `TextInputState::new` and `PasswordConfirmState::new` start `editing: false`. Live hosts call `with_editing()` / `begin_edit()` / Enter.
+- Table reverse requires `cell_nav`. DataTable default nav is Row. Tabs `h`/`l` move like arrows. Radio ignores Tab. Closed Select Down/Right cycles without opening. Open Select popover has no scroll gutter; fullscreen/searchable lists use `overflow_thumb`.
+- Standalone Toggle copies the junie switch `▎──●` / `○──`. ToggleGroup / ModeRibbon / AgentMode ribbon / toolbar overflow / search filter chips use padded inner, not `[inner]` wells. Badge default is padded inner + status Glyph. Checkbox `[✓]`/`[ ]` stays on Checkbox and markdown task items (`Glyph::CheckOn`/`CheckOff`). Mixed checkbox is catalog minus ` − `, not `[–]`. Progress/stepper marks are catalog `✓ › ! − …`.
+- CodeBlock gutter copies junie `code.rs`: `▎` only on the cursor line; numbers `fit_right` at `x+3`. Exact-fit documents do not steal a footer row.
+- DataTable default `cols_area` is `width - chrome - scrollbar` and clip-appends the next column when remainder ≥ 6. Catalog DataGrid calls `.datagrid(true)` for source `width - gutter - 4 - scrollbar` (no clip-append).
 
 The YAML token block and prose that follow are the Junie specification TermRock implements.
 

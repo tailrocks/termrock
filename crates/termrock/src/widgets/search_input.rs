@@ -857,7 +857,7 @@ impl<'a> SearchInput<'a> {
             if x.saturating_add(3) >= right {
                 break;
             }
-            let label = format!("[{}]", take_display_cols(chip.label, 8));
+            let label = format!(" {} ", take_display_cols(chip.label, 8));
             let w = display_cols(&label).min(10) as u16;
             if x.saturating_add(w.saturating_add(1)) >= right {
                 break;
