@@ -49,8 +49,15 @@ Landed reusable APIs (catalog/preview must use these; no page-local forks):
 - Table/grid/editable lookbook stories + `verify/junie` crops in this commit are **API consumers** of `cell_nav` / Min leftover / DataTable gap-2. Presentation owns the unified catalog and may relocate those stories; do not reimplement the widgets.
 - PNG bless (`dialog/confirm-run`, `panel/framed-pane` missing from Jackin subset) is presentation. List overflow now uses `overflow_thumb`; `list/scroll-rows` PNG rewrite is the intended junie thumb (verify 0/0).
 - Workspace `png_baselines` red is presentation (subset stories without baselines / intended Junie paint drift). Core will not run `mise run bless-pngs`.
-- `TextInputState::new` is idle (`editing: false`). Lookbook `text-input/*` PNG and toast knob tests still type as if `new()` were editing — presentation consume (`set_editing(true)` on live knobs, bless idle field paint).
+- `TextInputState::new` is idle (`editing: false`). Lookbook toast message knob and `text-input/basic` interactor use `with_editing()` for live typing. Paint-only `text-input/{focused,prefix,secret}` stay idle; PNG bless is that field-plane paint.
 - Pre-existing panel ellipsis tests are core defects; this agent fixes the painter.
+
+## Core claimed (lookbook consume, this commit)
+
+- `crates/termrock-lookbook/src/interactors.rs` — toast message knob `with_editing()` (live typing)
+- `crates/termrock-lookbook/src/app.rs` — toast control test Enter/`with_editing` live type
+- `crates/termrock-lookbook/src/stories.rs` — text-input stories idle vs focused (no implicit edit)
+- `crates/termrock-lookbook/baselines/png/` — bless idle-field text-input PNGs (intended junie `editing: false`)
 
 ## Presentation claimed (this slice)
 
