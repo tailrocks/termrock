@@ -787,12 +787,14 @@ fn paint_facts_body(
         if row >= body.bottom() {
             break;
         }
-        let shown = if i == max.saturating_sub(1) && code.len() > max {
-            format!(
-                "{} … {} more",
-                truncate_cols(line, usize::from(body.width.saturating_sub(12)), "…"),
-                code.len() - max
-            )
+        let shown = if i == max.saturating_sub(1) {
+            if let Some(note) = crate::text::more_note(code.len().saturating_sub(max)) {
+                let note_width = display_cols(&note);
+                let line_width = usize::from(body.width).saturating_sub(note_width + 1);
+                format!("{} {note}", truncate_cols(line, line_width, "…"))
+            } else {
+                truncate_cols(line, usize::from(body.width), "…").into_owned()
+            }
         } else {
             truncate_cols(line, usize::from(body.width), "…").into_owned()
         };
