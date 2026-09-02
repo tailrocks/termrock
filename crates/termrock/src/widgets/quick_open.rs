@@ -38,7 +38,8 @@ use crate::{
     interaction::{
         CollectionItem, CollectionState, NavigationMove, OverlayId, OverlayKind, OverlayOutcome,
         OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, PageMove, RovingOrientation,
-        SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, place_overlay,
+        SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, default_palette_intent,
+        place_overlay,
     },
     style::{DesignSystem, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
@@ -1051,7 +1052,7 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
         {
             // Ctrl+J reserved for jump when alone — already handled.
             if !(ctrl && matches!(key.code, KeyCode::Char('j' | 'J'))) {
-                if let Some(intent) = default_quick_open_intent(key) {
+                if let Some(intent) = default_palette_intent(key) {
                     let out = self.handle_intent(intent, providers, visible);
                     if !matches!(out, QuickOpenOutcome::Ignored) {
                         return out;
@@ -1082,7 +1083,7 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
                 }
             }
             TextInputOutcome::Ignored => {
-                if let Some(intent) = default_quick_open_intent(key) {
+                if let Some(intent) = default_palette_intent(key) {
                     self.handle_intent(intent, providers, visible)
                 } else {
                     QuickOpenOutcome::Ignored
@@ -1268,29 +1269,6 @@ fn rect_contains(rect: Rect, pos: Position) -> bool {
         && pos.y >= rect.y
         && pos.x < rect.x.saturating_add(rect.width)
         && pos.y < rect.y.saturating_add(rect.height)
-}
-
-/// Default intents for result list.
-#[must_use]
-pub fn default_quick_open_intent(key: KeyEvent) -> Option<UiIntent> {
-    if key.kind == KeyEventKind::Release {
-        return None;
-    }
-    let is_press = key.kind == KeyEventKind::Press;
-    let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
-    match key.code {
-        KeyCode::Down => Some(UiIntent::Move(NavigationMove::Next)),
-        KeyCode::Up => Some(UiIntent::Move(NavigationMove::Previous)),
-        KeyCode::Char('j' | 'J') if ctrl => Some(UiIntent::Move(NavigationMove::Next)),
-        KeyCode::Char('k' | 'K') if ctrl => Some(UiIntent::Move(NavigationMove::Previous)),
-        KeyCode::PageDown => Some(UiIntent::Page(PageMove::Forward)),
-        KeyCode::PageUp => Some(UiIntent::Page(PageMove::Backward)),
-        KeyCode::Home if ctrl => Some(UiIntent::Move(NavigationMove::First)),
-        KeyCode::End if ctrl => Some(UiIntent::Move(NavigationMove::Last)),
-        KeyCode::Enter if is_press => Some(UiIntent::Activate),
-        KeyCode::Esc if is_press => Some(UiIntent::Cancel),
-        _ => None,
-    }
 }
 
 /// Build [`JumpTarget`]s from last painted result hits (JumpMode integration).

@@ -274,6 +274,35 @@ pub fn default_menu_intent(key: KeyEvent) -> Option<UiIntent> {
     }
 }
 
+/// Default intent map for readline-style result overlays
+/// ([`crate::widgets::CommandPalette`], [`crate::widgets::HistoryPicker`],
+/// [`crate::widgets::QuickOpen`]).
+///
+/// Plain ↑/↓ and Ctrl+J/K move the result cursor, PageUp/PageDown page,
+/// Ctrl+Home/End jump; Enter (Activate) and Esc (Cancel) fire on press only so
+/// a held key cannot close and reopen the overlay.
+#[must_use]
+pub fn default_palette_intent(key: KeyEvent) -> Option<UiIntent> {
+    if key.kind == KeyEventKind::Release {
+        return None;
+    }
+    let is_press = key.kind == KeyEventKind::Press;
+    let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
+    match key.code {
+        KeyCode::Down => Some(UiIntent::Move(NavigationMove::Next)),
+        KeyCode::Up => Some(UiIntent::Move(NavigationMove::Previous)),
+        KeyCode::Char('j' | 'J') if ctrl => Some(UiIntent::Move(NavigationMove::Next)),
+        KeyCode::Char('k' | 'K') if ctrl => Some(UiIntent::Move(NavigationMove::Previous)),
+        KeyCode::PageDown => Some(UiIntent::Page(PageMove::Forward)),
+        KeyCode::PageUp => Some(UiIntent::Page(PageMove::Backward)),
+        KeyCode::Home if ctrl => Some(UiIntent::Move(NavigationMove::First)),
+        KeyCode::End if ctrl => Some(UiIntent::Move(NavigationMove::Last)),
+        KeyCode::Enter if is_press => Some(UiIntent::Activate),
+        KeyCode::Esc if is_press => Some(UiIntent::Cancel),
+        _ => None,
+    }
+}
+
 /// Default intent map for [`crate::widgets::DataTable`] navigation.
 ///
 /// Product chords (sort `s`, filter `/`, expand Shift+arrow, copy, edit) stay on
@@ -572,6 +601,38 @@ mod tests {
             default_list_intent(KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE)),
             None
         );
+    }
+
+    #[test]
+    fn default_palette_intent_moves_pages_and_press_gates() {
+        assert_eq!(
+            default_palette_intent(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE)),
+            Some(UiIntent::Move(NavigationMove::Next))
+        );
+        assert_eq!(
+            default_palette_intent(KeyEvent::new(KeyCode::Char('k'), KeyModifiers::CONTROL)),
+            Some(UiIntent::Move(NavigationMove::Previous))
+        );
+        assert_eq!(
+            default_palette_intent(KeyEvent::new(KeyCode::PageUp, KeyModifiers::NONE)),
+            Some(UiIntent::Page(PageMove::Backward))
+        );
+        assert_eq!(
+            default_palette_intent(KeyEvent::new(KeyCode::Home, KeyModifiers::CONTROL)),
+            Some(UiIntent::Move(NavigationMove::First))
+        );
+        // Home without Ctrl is not a palette chord.
+        assert_eq!(
+            default_palette_intent(KeyEvent::new(KeyCode::Home, KeyModifiers::NONE)),
+            None
+        );
+        // Enter/Esc fire on press only; a held key cannot re-cancel the overlay.
+        let mut repeat = KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE);
+        repeat.kind = KeyEventKind::Repeat;
+        assert_eq!(default_palette_intent(repeat), None);
+        let mut release = KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE);
+        release.kind = KeyEventKind::Release;
+        assert_eq!(default_palette_intent(release), None);
     }
 
     #[test]
