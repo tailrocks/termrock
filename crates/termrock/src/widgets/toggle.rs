@@ -9,11 +9,11 @@
 //! ToggleGroup applies single- or multi-select semantics with roving focus.
 //!
 //! **vs [`Checkbox`](crate::widgets::Checkbox).** Checkbox is a form field with
-//! label association and checked semantics (`[x]` / `[ ]`). Toggle is a toolbar
+//! label association and checked semantics (`[✓]` / `[ ]`). Toggle is a toolbar
 //! affordance (pressed reverse + label vs padded idle label). No `[inner]` wells.
 //!
 //! **vs [`Switch`](crate::widgets::Switch).** Switch is an immediate On/Off
-//! setting (`[ON ]` / `[OFF]`). Toggle does not imply a persistent preference.
+//! setting (`▎──●` / `○──`). Toggle does not imply a persistent preference.
 //!
 //! **vs Tabs / ModeRibbon.** Tabs select content panels; ModeRibbon selects agent
 //! modes. ToggleGroup is for tool state (bold/italic, align L|C|R), not navigation.

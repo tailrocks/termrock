@@ -718,8 +718,8 @@ impl PasswordConfirmState {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            password: PasswordInputState::new().with_editing(),
-            confirm: PasswordInputState::new().with_editing(),
+            password: PasswordInputState::new(),
+            confirm: PasswordInputState::new(),
         }
     }
 
