@@ -763,6 +763,9 @@ impl Button<'_> {
             };
             let gutter = theme_t.gutter(visual, fill_bg, on_accent);
             let cell = &mut buffer[(area.x, area.y)];
+            // junie `set_string("▎", gutter)` replaces the cell; a prior
+            // bold label fill must not leak onto the bar.
+            cell.reset();
             cell.set_symbol(theme.glyphs.selection_gutter());
             cell.set_style(gutter);
         }

@@ -160,6 +160,9 @@ impl Grid {
             if tmux_weight {
                 c.bold = false;
                 c.dim = false;
+                // Drop strike with dim/bold. Clearing dim first would skip the
+                // dim+strike branch and leave a strikethrough on spaces.
+                c.strike = false;
             }
             if c.underline {
                 c.dim = false;

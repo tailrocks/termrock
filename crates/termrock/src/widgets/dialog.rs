@@ -36,12 +36,13 @@ use crate::{
     },
     scroll::DialogScroll,
     style::{DesignSystem, Role, RolePalette},
-    text::take_display_cols,
+    text::{display_cols, take_display_cols, truncate_cols},
 };
 
 use super::primitives::{Button, ButtonState, ButtonVariant};
 use super::{
     Action, ActionVariant, DetailRow, DetailTable, DetailTableState, Hint, HintBar, PanelChrome,
+    Prop,
 };
 
 /// Vertical inset from the outer frame to content (junie `Margin::new(3, 2)`).
@@ -762,6 +763,47 @@ fn dialog_action_button<'a, Id: PartialEq>(
         .variant(dialog_button_variant(action, cancel_id, cancel_quiet))
         .colorless(colorless)
         .container(ground)
+}
+
+fn paint_facts_body(
+    body: Rect,
+    buffer: &mut Buffer,
+    theme: &crate::style::JunieTheme,
+    facts: &[Prop],
+    code: &[String],
+    bg: ratatui_core::style::Color,
+) {
+    if body.is_empty() {
+        return;
+    }
+    let used = super::props::render(body, buffer, theme, facts, bg);
+    if code.is_empty() {
+        return;
+    }
+    let y = body.y.saturating_add(used).saturating_add(1);
+    let max = code.len().min(6);
+    for (i, line) in code.iter().take(max).enumerate() {
+        let row = y.saturating_add(i as u16);
+        if row >= body.bottom() {
+            break;
+        }
+        let shown = if i == max.saturating_sub(1) && code.len() > max {
+            format!(
+                "{} … {} more",
+                truncate_cols(line, usize::from(body.width.saturating_sub(12)), "…"),
+                code.len() - max
+            )
+        } else {
+            truncate_cols(line, usize::from(body.width), "…").into_owned()
+        };
+        buffer.set_stringn(
+            body.x,
+            row,
+            &shown,
+            display_cols(&shown).min(usize::from(body.width)),
+            theme.secondary().bg(bg),
+        );
+    }
 }
 
 fn paint_ack_field(
@@ -1554,6 +1596,10 @@ pub struct Dialog<'a> {
     preferred_size: Option<DialogSize>,
     /// Facts-style body uses muted, not secondary.
     muted_body: bool,
+    /// Label/value rows (junie `DialogBody::Facts`). Empty keeps [`Text`] body.
+    facts: &'a [Prop],
+    /// Preformatted block under the facts (SQL).
+    code: &'a [String],
 }
 
 impl<'a> Dialog<'a> {
@@ -1575,6 +1621,8 @@ impl<'a> Dialog<'a> {
             cancel_quiet: false,
             preferred_size: None,
             muted_body: false,
+            facts: &[],
+            code: &[],
         }
     }
 
@@ -1659,6 +1707,15 @@ impl<'a> Dialog<'a> {
     #[must_use]
     pub const fn muted_body(mut self, on: bool) -> Self {
         self.muted_body = on;
+        self
+    }
+
+    /// Label/value facts plus an optional preformatted block. Gap cells between
+    /// label and value stay unpainted (junie `props::render`).
+    #[must_use]
+    pub const fn facts(mut self, facts: &'a [Prop], code: &'a [String]) -> Self {
+        self.facts = facts;
+        self.code = code;
         self
     }
 
@@ -1837,27 +1894,49 @@ impl<'a> Dialog<'a> {
         };
         state.slots.body = Rect::new(inner.x, y, inner.width, body_h);
 
-        state.body_line_count = self.body.lines.len();
+        state.body_line_count = if self.facts.is_empty() && self.code.is_empty() {
+            self.body.lines.len()
+        } else {
+            self.facts.len()
+                + usize::from(!self.code.is_empty())
+                + self.code.len().min(6)
+                + usize::from(state.ack_token.is_some()) * 2
+        };
         if !state.slots.body.is_empty() {
-            Paragraph::new(self.body.clone())
-                .style(if self.muted_body {
-                    theme.muted().bg(bg)
-                } else {
-                    theme.secondary().bg(bg)
-                })
-                .wrap(ratatui_widgets::paragraph::Wrap { trim: false })
-                .scroll((state.scroll.scroll_y, state.scroll.scroll_x))
-                .render(state.slots.body, buffer);
-            if let Some(token) = state.ack_token.as_deref() {
-                paint_ack_field(
-                    buffer,
-                    state.slots.body,
-                    token,
-                    &state.typed_ack,
-                    state.is_armed(),
-                    self.tokens,
-                    bg,
-                );
+            if self.facts.is_empty() && self.code.is_empty() {
+                Paragraph::new(self.body.clone())
+                    .style(if self.muted_body {
+                        theme.muted().bg(bg)
+                    } else {
+                        theme.secondary().bg(bg)
+                    })
+                    .wrap(ratatui_widgets::paragraph::Wrap { trim: false })
+                    .scroll((state.scroll.scroll_y, state.scroll.scroll_x))
+                    .render(state.slots.body, buffer);
+                if let Some(token) = state.ack_token.as_deref() {
+                    paint_ack_field(
+                        buffer,
+                        state.slots.body,
+                        token,
+                        &state.typed_ack,
+                        state.is_armed(),
+                        self.tokens,
+                        bg,
+                    );
+                }
+            } else {
+                paint_facts_body(state.slots.body, buffer, &theme, self.facts, self.code, bg);
+                if let Some(token) = state.ack_token.as_deref() {
+                    paint_ack_field(
+                        buffer,
+                        state.slots.body,
+                        token,
+                        &state.typed_ack,
+                        state.is_armed(),
+                        self.tokens,
+                        bg,
+                    );
+                }
             }
         }
 

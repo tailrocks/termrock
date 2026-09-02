@@ -111,6 +111,7 @@ mod progress;
 mod progress_steps;
 mod prompt_composer;
 mod prompt_queue_model;
+mod props;
 mod question_flow;
 mod quick_open;
 mod resizable_panel_group;
@@ -682,6 +683,7 @@ pub use prompt_composer::{
 /// Composer bridge name for a queued prompt entry ([`PromptQueueItem`]).
 pub use prompt_queue_model::PromptQueueItem as QueuedPrompt;
 pub use prompt_queue_model::{AgentBusyState, PromptQueueItem, PromptQueueRef, PromptQueueStatus};
+pub use props::{Prop, render as render_props};
 pub use quick_open::{
     ParsedQuickOpenQuery, QUICK_OPEN_DEFAULT_LIMIT, QUICK_OPEN_FULLSCREEN_MAX_HEIGHT,
     QUICK_OPEN_FULLSCREEN_MAX_WIDTH, QUICK_OPEN_OVERLAY_ID, QUICK_OPEN_PROVIDER_STRIP_COMPACT_MAX,

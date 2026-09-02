@@ -18,7 +18,8 @@ use termrock::input::{
 use termrock::widgets::{
     Action, ActionVariant, ActivationOutcome, ButtonState, ButtonVariant, ColumnKind, ColumnModel,
     DataColumn, DataColumnWidth, DataTable, DataTableNavMode, DataTableOutcome, DataTableState,
-    Dialog, DialogOutcome, DialogSize, DialogState, Hint as KeyHint, LoadState, SortSpec,
+    Dialog, DialogOutcome, DialogSize, DialogState, Hint as KeyHint, LoadState, PanelChrome, Prop,
+    SortSpec,
 };
 
 use crate::ctx::RenderCtx;
@@ -315,7 +316,8 @@ pub struct GridPage {
     commit_ticks: u8,
     saved: u32,
     preview: bool,
-    preview_body: String,
+    preview_facts: Vec<Prop>,
+    preview_code: Vec<String>,
     dialog: DialogState<&'static str>,
     save: ButtonState,
     label_view: u16,
@@ -373,7 +375,8 @@ impl GridPage {
             commit_ticks: 0,
             saved: 0,
             preview: false,
-            preview_body: String::new(),
+            preview_facts: Vec::new(),
+            preview_code: Vec::new(),
             dialog: DialogState::confirm("copy", "cancel"),
             save: ButtonState::new(),
             label_view: 0,
@@ -665,15 +668,15 @@ impl GridPage {
     fn open_preview(&mut self) {
         let code = self.statements();
         let (changed, inserted, deleted) = self.pending.counts();
-        let mut body = format!(
-            "Statements  {}\nRows        {changed} changed · {inserted} inserted · {deleted} deleted\nTarget      customers\n",
-            code.len()
-        );
-        if !code.is_empty() {
-            body.push('\n');
-            body.push_str(&code.join("\n"));
-        }
-        self.preview_body = body;
+        self.preview_facts = vec![
+            Prop::new("Statements", code.len().to_string()),
+            Prop::new(
+                "Rows",
+                format!("{changed} changed · {inserted} inserted · {deleted} deleted"),
+            ),
+            Prop::new("Target", "customers"),
+        ];
+        self.preview_code = code;
         self.dialog = DialogState::destructive("close", "cancel");
         self.preview = true;
     }
@@ -1109,7 +1112,7 @@ impl Page for GridPage {
                     break;
                 }
                 paint::button(
-                    labels[i], vars[i], ids[i], rects[i], buf, ctx, states[i], overlay, bg,
+                    labels[i], vars[i], ids[i], rects[i], buf, ctx, states[i], false, bg,
                 );
             }
         }
@@ -1139,13 +1142,13 @@ impl Page for GridPage {
             self.dialog.set_open(true);
             self.dialog.set_accepts_input(true);
             let actions = Self::preview_actions();
-            let body = self.preview_body.clone();
-            Dialog::confirm("Pending changes", Text::from(body), ctx.system)
+            Dialog::new("Pending changes", Text::default(), ctx.system)
+                .emphasis(PanelChrome::Focused)
                 .preferred_size(DialogSize {
                     width: 66,
                     height: 14,
                 })
-                .muted_body(true)
+                .facts(&self.preview_facts, &self.preview_code)
                 .hints(PREVIEW_HINTS)
                 .paint_modal(*buf.area(), buf, &mut self.dialog, &actions);
             ctx.control(ID.sub("modal"), *buf.area(), false);

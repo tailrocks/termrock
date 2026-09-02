@@ -13,7 +13,7 @@ use crate::{
         PageMove, UiIntent, place_overlay,
     },
     style::{DesignSystem, Role, VisualState},
-    text::{display_cols, take_display_cols},
+    text::{display_cols, take_display_cols, truncate_cols},
 };
 
 use super::{List, ListRow, ListState, RowRole, TextInput, TextInputOutcome, TextInputState};
@@ -610,10 +610,13 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
 
         let theme = self.system.junie_theme();
         let bg = theme.surface_elevated;
-        let fill = Style::new().fg(theme.text_muted).bg(bg);
+        // junie `fill` only sets bg, so inset/gap cells keep dimmed-page fg.
         for y in area.top()..area.bottom() {
             for x in area.left()..area.right() {
-                buffer[(x, y)].set_char(' ').set_style(fill);
+                let fg = buffer[(x, y)].fg;
+                buffer[(x, y)]
+                    .set_char(' ')
+                    .set_style(Style::new().fg(fg).bg(bg));
             }
         }
         Block::default()
@@ -719,10 +722,12 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
             &mut state.list,
         );
         let offset = state.list().offset();
-        let list_fill = Style::new().fg(theme.text_muted).bg(bg);
         for y in list_area.top()..list_area.bottom() {
             for x in list_area.left()..list_area.right() {
-                buffer[(x, y)].set_char(' ').set_style(list_fill);
+                let fg = buffer[(x, y)].fg;
+                buffer[(x, y)]
+                    .set_char(' ')
+                    .set_style(Style::new().fg(fg).bg(bg));
             }
         }
 
@@ -740,6 +745,19 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
                 theme.muted().bg(bg),
             );
         } else {
+            let line_plain = |line: &ratatui_core::text::Line<'_>| -> String {
+                line.spans
+                    .iter()
+                    .map(|span| span.content.as_ref())
+                    .collect()
+            };
+            let fixed_columns = self.rows.iter().all(|row| {
+                row.badge
+                    .as_ref()
+                    .map(line_plain)
+                    .unwrap_or_default()
+                    .is_empty()
+            });
             let label_col = self
                 .rows
                 .iter()
@@ -754,14 +772,6 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
                 .map(|line| line.width() as u16)
                 .max()
                 .unwrap_or(0);
-            let group_col = self
-                .rows
-                .iter()
-                .filter_map(|row| row.badge.as_ref())
-                .map(|line| line.width() as u16)
-                .max()
-                .unwrap_or(0);
-
             let mut last_group = String::new();
             let visible = self.rows.iter().skip(offset).take(viewport).enumerate();
             for (k, row) in visible {
@@ -806,77 +816,131 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
                         .remove_modifier(Modifier::BOLD);
                     buffer.set_stringn(row_rect.x.saturating_add(1), ry, glyph, 1, glyph_style);
                 }
-                let x = row_rect.x.saturating_add(3);
-                let label = take_display_cols(&row.plain_label(), usize::from(label_col));
-                if x < row_rect.right() {
-                    let lw = label_col.min(row_rect.right().saturating_sub(x));
+                let group = row.badge.as_ref().map(line_plain).unwrap_or_default();
+                let show_group = !group.is_empty() && group != last_group;
+                last_group.clone_from(&group);
+                let detail = row.secondary.as_ref().map(line_plain).unwrap_or_default();
+                let tag = row.status.as_ref().map(line_plain).unwrap_or_default();
+                let detail_w = display_cols(&detail);
+                let tag_w = display_cols(&tag);
+                let group_w = display_cols(&group);
+                let label_plain = row.plain_label();
+                let avail = if fixed_columns {
+                    usize::from(label_col)
+                } else {
+                    let reserve = (if detail_w > 0 { detail_w + 2 } else { 0 })
+                        + (if tag_w > 0 { tag_w + 2 } else { 0 })
+                        + (if show_group { group_w + 2 } else { 0 });
+                    (usize::from(row_w).saturating_sub(3 + reserve))
+                        .max(display_cols(&label_plain).min(usize::from(row_w) * 45 / 100))
+                        .max(6)
+                };
+                let label = truncate_cols(&label_plain, avail, "…");
+                let matched = super::fuzzy_match_label(state.query.value(), &label_plain)
+                    .map(|(_, ranges)| ranges)
+                    .unwrap_or_default();
+                let mut x = row_rect.x.saturating_add(3);
+                let mut byte = 0usize;
+                for ch in label.chars() {
+                    if x >= row_rect.right() {
+                        break;
+                    }
                     let mut cs = st;
-                    if !visual.focused {
+                    let hit = matched
+                        .as_slice()
+                        .iter()
+                        .any(|range| byte >= range.start && byte < range.end);
+                    if hit {
+                        cs = cs.add_modifier(Modifier::BOLD);
+                    } else if !visual.focused {
                         cs = cs.remove_modifier(Modifier::BOLD);
                     }
-                    buffer.set_stringn(x, ry, &label, usize::from(lw), cs);
+                    let g = ch.to_string();
+                    let gw = display_cols(&g) as u16;
+                    buffer.set_stringn(x, ry, &g, usize::from(gw.max(1)), cs);
+                    x = x.saturating_add(gw.max(1));
+                    byte = byte.saturating_add(ch.len_utf8());
                 }
                 let mut rx = row_rect.right();
-                if group_col > 0 {
-                    rx = rx.saturating_sub(group_col.saturating_add(1));
-                    let group = row
-                        .badge
-                        .as_ref()
-                        .map(|line| {
-                            line.spans
-                                .iter()
-                                .map(|span| span.content.as_ref())
-                                .collect::<String>()
-                        })
-                        .unwrap_or_default();
-                    let show_group = !group.is_empty() && group != last_group;
-                    if show_group && rx < row_rect.right() {
-                        buffer.set_stringn(
-                            rx,
-                            ry,
-                            &take_display_cols(&group, usize::from(group_col)),
-                            usize::from(group_col),
-                            st.fg(theme.text_faint).remove_modifier(Modifier::BOLD),
-                        );
+                if fixed_columns {
+                    if tag_col > 0 {
+                        rx = rx.saturating_sub(tag_col.saturating_add(2));
+                        if tag_w > 0 && rx < row_rect.right() {
+                            buffer.set_stringn(
+                                rx,
+                                ry,
+                                &tag,
+                                tag_w,
+                                st.fg(theme.text_secondary).remove_modifier(Modifier::BOLD),
+                            );
+                        }
                     }
-                    last_group = group;
-                }
-                if tag_col > 0 {
-                    rx = rx.saturating_sub(tag_col.saturating_add(2));
-                    if let Some(tag) = row.status.as_ref()
-                        && rx < row_rect.right()
-                    {
-                        let tag_s: String =
-                            tag.spans.iter().map(|span| span.content.as_ref()).collect();
-                        buffer.set_stringn(
-                            rx,
-                            ry,
-                            &take_display_cols(&tag_s, usize::from(tag_col)),
-                            usize::from(tag_col),
-                            st.fg(theme.text_secondary).remove_modifier(Modifier::BOLD),
-                        );
+                    if detail_w > 0 {
+                        let dx = row_rect
+                            .x
+                            .saturating_add(3)
+                            .saturating_add(label_col)
+                            .saturating_add(2);
+                        let room = rx.saturating_sub(dx.saturating_add(1));
+                        if room >= 4 && dx < row_rect.right() {
+                            let shown = truncate_cols(&detail, usize::from(room), "…");
+                            buffer.set_stringn(
+                                dx,
+                                ry,
+                                shown.as_ref(),
+                                display_cols(shown.as_ref()),
+                                st.fg(theme.text_muted).remove_modifier(Modifier::BOLD),
+                            );
+                        }
                     }
-                }
-                if let Some(detail) = row.secondary.as_ref() {
-                    let dx = row_rect
-                        .x
-                        .saturating_add(3)
-                        .saturating_add(label_col)
-                        .saturating_add(2);
-                    let room = rx.saturating_sub(dx.saturating_add(1));
-                    if room >= 4 && dx < row_rect.right() {
-                        let detail_s: String = detail
-                            .spans
-                            .iter()
-                            .map(|span| span.content.as_ref())
-                            .collect();
-                        buffer.set_stringn(
-                            dx,
-                            ry,
-                            &take_display_cols(&detail_s, usize::from(room)),
-                            usize::from(room),
-                            st.fg(theme.text_muted).remove_modifier(Modifier::BOLD),
-                        );
+                } else {
+                    if show_group {
+                        rx = rx.saturating_sub((group_w as u16).saturating_add(1));
+                        if rx < row_rect.right() {
+                            buffer.set_stringn(
+                                rx,
+                                ry,
+                                &group,
+                                group_w,
+                                st.fg(theme.text_faint).remove_modifier(Modifier::BOLD),
+                            );
+                        }
+                    }
+                    if tag_w > 0 {
+                        rx = rx.saturating_sub((tag_w as u16).saturating_add(2));
+                        if rx < row_rect.right() {
+                            buffer.set_stringn(
+                                rx,
+                                ry,
+                                &tag,
+                                tag_w,
+                                st.fg(theme.text_secondary).remove_modifier(Modifier::BOLD),
+                            );
+                        }
+                    }
+                    if detail_w > 0 {
+                        let dx = (x.saturating_add(2)).max(rx.saturating_sub(detail_w as u16 + 2));
+                        if dx.saturating_add(detail_w as u16) <= rx {
+                            buffer.set_stringn(
+                                dx,
+                                ry,
+                                &detail,
+                                detail_w,
+                                st.fg(theme.text_muted).remove_modifier(Modifier::BOLD),
+                            );
+                        } else {
+                            let room = rx.saturating_sub(x.saturating_add(3));
+                            if room > 6 && x.saturating_add(2) < row_rect.right() {
+                                let shown = truncate_cols(&detail, usize::from(room), "…");
+                                buffer.set_stringn(
+                                    x.saturating_add(2),
+                                    ry,
+                                    shown.as_ref(),
+                                    display_cols(shown.as_ref()),
+                                    st.fg(theme.text_muted).remove_modifier(Modifier::BOLD),
+                                );
+                            }
+                        }
                     }
                 }
             }
@@ -908,7 +972,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
             buffer.set_stringn(
                 inner.x,
                 inner.bottom().saturating_sub(1),
-                &take_display_cols(hints, usize::from(inner.width)),
+                truncate_cols(hints, usize::from(inner.width), "…").as_ref(),
                 usize::from(inner.width),
                 theme.faint().bg(bg),
             );

@@ -6,13 +6,13 @@
 //! One modal list for files, tabs and levels: search, scope, tag, alternate action.
 
 use ratatui::buffer::Buffer;
-use ratatui::layout::Rect;
+use ratatui::layout::{Margin, Position, Rect};
 use ratatui::text::Line;
-use ratatui::widgets::StatefulWidget;
+use ratatui::widgets::{StatefulWidget, Widget};
 use termrock::input::{KeyCode, KeyEventKind, KeyModifiers};
 use termrock::widgets::{
-    Button, ButtonState, ButtonVariant, ListRow, Picker, PickerOutcome, PickerSize, PickerState,
-    fuzzy_match_label, place_picker_modal,
+    Backdrop, Button, ButtonState, ButtonVariant, ListRow, Picker, PickerOutcome, PickerSize,
+    PickerState, fuzzy_match_label, place_picker_modal,
 };
 
 use crate::ctx::RenderCtx;
@@ -364,14 +364,7 @@ impl PickersPage {
                     .into_iter()
                     .map(|(_, i)| {
                         let e = &self.entries[i];
-                        (
-                            i,
-                            e.label.clone(),
-                            e.detail.clone(),
-                            e.glyph,
-                            Some(e.group),
-                            e.group,
-                        )
+                        (i, e.label.clone(), e.detail.clone(), e.glyph, None, e.group)
                     })
                     .collect()
             }
@@ -438,9 +431,10 @@ fn paint_btn(
     ctx: &mut RenderCtx<'_>,
     state: &mut ButtonState,
     bg: ratatui::style::Color,
+    allow_focus: bool,
 ) {
-    state.focused = ctx.interaction.focused(id);
-    state.hovered = ctx.interaction.hovered(id);
+    state.focused = allow_focus && ctx.interaction.focused(id);
+    state.hovered = allow_focus && ctx.interaction.hovered(id);
     state.activation.set_accepts_input(true);
     state.activation.set_enabled(true);
     let _ = Button::new(label, ctx.system)
@@ -470,6 +464,7 @@ impl Page for PickersPage {
         ];
         let ids = [ID.sub("quick"), ID.sub("tabs"), ID.sub("level")];
         let mut x = inner.x;
+        let allow_focus = self.picker.is_none();
         let states = [&mut self.quick, &mut self.tabs_btn, &mut self.level_btn];
         for i in 0..3 {
             let w = btn_width(labels[i]).min(inner.right().saturating_sub(x));
@@ -482,6 +477,7 @@ impl Page for PickersPage {
                 ctx,
                 states[i],
                 bg,
+                allow_focus,
             );
             x = x.saturating_add(w).saturating_add(2);
         }
@@ -548,12 +544,15 @@ impl Page for PickersPage {
             };
             let ranked = self.ranked_items(kind, &query);
             let mut rows: Vec<ListRow<'_, usize>> = Vec::new();
-            for (id, label, detail, glyph, tag, _group) in &ranked {
+            for (id, label, detail, glyph, tag, group) in &ranked {
                 let mut row = ListRow::item(*id, Line::from(label.as_str()))
                     .leading(Line::from(*glyph))
                     .secondary(Line::from(detail.as_str()));
                 if let Some(tag) = tag {
-                    row = row.badge(Line::from(*tag));
+                    row = row.status(Line::from(*tag));
+                }
+                if !group.is_empty() {
+                    row = row.badge(Line::from(*group));
                 }
                 rows.push(row);
             }
@@ -584,12 +583,28 @@ impl Page for PickersPage {
             if let Some(s) = scope {
                 picker = picker.scope(s);
             }
+            let dim = Rect::new(
+                screen.x,
+                screen.y,
+                screen.width,
+                screen.height.saturating_sub(1),
+            );
+            Widget::render(Backdrop::new(ctx.system), dim, buf);
             StatefulWidget::render(
                 &picker,
                 placed,
                 buf,
                 &mut self.picker.as_mut().expect("picker").state,
             );
+            if searchable {
+                let inner = placed.inner(Margin::new(2, 1));
+                let qlen = text::width(&query) as u16;
+                let cap = inner.width.saturating_sub(3);
+                ctx.set_cursor(Position::new(
+                    inner.x.saturating_add(2).saturating_add(qlen.min(cap)),
+                    inner.y.saturating_add(1),
+                ));
+            }
             ctx.control(ID.sub("picker"), placed, false);
         }
     }
