@@ -637,7 +637,7 @@ impl TerminalOutputState {
         if let Some(aid) = self.anchor_id.as_ref() {
             if let Some(i) = view.iter().position(|l| l.id == aid) {
                 self.cursor = i;
-                self.ensure_cursor_visible(view.len());
+                self.scroll.reveal_row(self.cursor);
             }
         }
     }
@@ -647,22 +647,6 @@ impl TerminalOutputState {
         self.body_rows = viewport;
         self.scroll.set_content_size(1, total);
         self.scroll.set_viewport(1, viewport);
-        self.scroll.clamp();
-    }
-
-    fn ensure_cursor_visible(&mut self, len: usize) {
-        if len == 0 || self.body_rows == 0 {
-            return;
-        }
-        let vh = usize::from(self.body_rows);
-        let start = usize::from(self.scroll.offset_y());
-        let end = start.saturating_add(vh);
-        if self.cursor < start {
-            self.scroll.set_offset_y_quiet(self.cursor as u16);
-        } else if self.cursor >= end {
-            let next = self.cursor.saturating_add(1).saturating_sub(vh);
-            self.scroll.set_offset_y_quiet(next as u16);
-        }
         self.scroll.clamp();
     }
 
@@ -794,7 +778,7 @@ impl TerminalOutputState {
                     } else {
                         self.scroll.pause_follow();
                     }
-                    self.ensure_cursor_visible(len);
+                    self.scroll.reveal_row(self.cursor);
                     if was && !self.is_following() {
                         return TerminalOutputOutcome::Detach;
                     }
@@ -818,7 +802,7 @@ impl TerminalOutputState {
                 if len > 0 && self.cursor > 0 {
                     self.cursor -= 1;
                     self.scroll.pause_follow();
-                    self.ensure_cursor_visible(len);
+                    self.scroll.reveal_row(self.cursor);
                     if was {
                         return TerminalOutputOutcome::Detach;
                     }

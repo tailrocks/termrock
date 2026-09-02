@@ -1047,22 +1047,6 @@ impl DiagnosticState {
         self.scroll.clamp();
     }
 
-    fn ensure_cursor_visible(&mut self, len: usize) {
-        if len == 0 || self.body_rows == 0 {
-            return;
-        }
-        let vh = usize::from(self.body_rows);
-        let start = usize::from(self.scroll.offset_y());
-        let end = start.saturating_add(vh);
-        if self.cursor < start {
-            self.scroll.set_offset_y_quiet(self.cursor as u16);
-        } else if self.cursor >= end {
-            let next = self.cursor.saturating_add(1).saturating_sub(vh);
-            self.scroll.set_offset_y_quiet(next as u16);
-        }
-        self.scroll.clamp();
-    }
-
     /// Keys.
     pub fn handle_key(&mut self, key: KeyEvent, items: &[Diagnostic<'_>]) -> DiagnosticOutcome {
         if !self.accepts_input || key.kind == KeyEventKind::Release {
@@ -1171,7 +1155,7 @@ impl DiagnosticState {
                 if self.cursor + 1 < len {
                     self.cursor += 1;
                     self.fix_cursor = 0;
-                    self.ensure_cursor_visible(len);
+                    self.scroll.reveal_row(self.cursor);
                     return DiagnosticOutcome::CursorMoved { index: self.cursor };
                 }
                 if self.scroll.scroll_by(1, 0).is_scrolled() {
@@ -1185,7 +1169,7 @@ impl DiagnosticState {
                 if self.cursor > 0 {
                     self.cursor -= 1;
                     self.fix_cursor = 0;
-                    self.ensure_cursor_visible(len);
+                    self.scroll.reveal_row(self.cursor);
                     return DiagnosticOutcome::CursorMoved { index: self.cursor };
                 }
                 if self.scroll.scroll_by(-1, 0).is_scrolled() {
@@ -1202,7 +1186,7 @@ impl DiagnosticState {
             }
             UiIntent::Move(NavigationMove::Last) => {
                 self.cursor = len - 1;
-                self.ensure_cursor_visible(len);
+                self.scroll.reveal_row(self.cursor);
                 DiagnosticOutcome::CursorMoved { index: self.cursor }
             }
             UiIntent::Page(PageMove::Forward) => {

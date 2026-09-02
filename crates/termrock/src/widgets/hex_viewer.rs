@@ -673,23 +673,11 @@ impl HexViewerState {
     }
 
     fn ensure_cursor_row_visible(&mut self) {
-        if self.body_rows == 0 || self.effective_bpr == 0 {
+        if self.effective_bpr == 0 {
             return;
         }
-        let row = row_for_offset(self.cursor, self.effective_bpr);
-        let start = u64::from(self.scroll.offset_y());
-        let end = start.saturating_add(u64::from(self.body_rows));
-        if row < start {
-            self.scroll
-                .set_offset_y_quiet(row.min(u64::from(u16::MAX)) as u16);
-        } else if row >= end {
-            let next = row
-                .saturating_add(1)
-                .saturating_sub(u64::from(self.body_rows));
-            self.scroll
-                .set_offset_y_quiet(next.min(u64::from(u16::MAX)) as u16);
-        }
-        self.scroll.clamp();
+        self.scroll
+            .reveal_row(row_for_offset(self.cursor, self.effective_bpr) as usize);
     }
 
     fn move_cursor(&mut self, next: u64, extend: bool) -> HexViewerOutcome {
