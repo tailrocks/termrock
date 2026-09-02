@@ -31,7 +31,7 @@ TermRock mapping:
 
 Colour-capability fallbacks: `--color truecolor|256|16|none` and `NO_COLOR`.
 Visual verification: `verify/junie` cell-grid compare against fresh `junie-tui` captures.
-Current gate: 40 equivalent showcase crops PASS at `text_cells: 0` / `color_cells: 0` after wiping `verify/junie/out/frames`; 5 TablePro product-shell scenes SKIP (campaign non-goal, not a widget gap). Lookbook `frame --story` remains on the catalog binary.
+Current gate: 40 equivalent showcase crops PASS at `text_cells: 0` / `color_cells: 0` after wiping `verify/junie/out/frames`; 5 TablePro product-shell scenes SKIP (campaign non-goal, not a widget gap). `cargo run -p termrock-lookbook -- frame --story` is the lookbook binary; bare lookbook argv still launches the catalog TUI.
 
 Shipped contracts that the lookbook must consume (no page-local forks):
 
@@ -43,7 +43,7 @@ Shipped contracts that the lookbook must consume (no page-local forks):
 - Table reverse requires `cell_nav`. DataTable default nav is Row. Tabs `h`/`l` move like arrows. Radio ignores Tab. Closed Select Down/Right cycles without opening. Open Select popover has no scroll gutter; fullscreen/searchable lists use `overflow_thumb`.
 - Standalone Toggle copies the junie switch `▎──●` / `○──`. ToggleGroup / ModeRibbon / AgentMode ribbon / toolbar overflow / search filter chips use padded inner, not `[inner]` wells. Badge default is padded inner + status Glyph. Checkbox `[✓]`/`[ ]` stays on Checkbox and markdown task items (`Glyph::CheckOn`/`CheckOff`). Mixed checkbox is catalog minus ` − `, not `[–]`. Progress/stepper marks are catalog `✓ › ! − …`.
 - CodeBlock gutter copies junie `code.rs`: `▎` only on the cursor line; numbers `fit_right` at `x+3`. Exact-fit documents do not steal a footer row.
-- DataTable default `cols_area` is `width - chrome - scrollbar` and clip-appends the next column when remainder ≥ 6. Catalog DataGrid calls `.datagrid(true)` for source `width - gutter - 4 - scrollbar` (no clip-append).
+- DataTable default `cols_area` is `width - chrome - trailing - scrollbar` (trailing 2; 0 with row numbers; 4 with `.datagrid(true)`). Paint does not clip-append the next column when remainder ≥ 6; leftover grows Min/Fill. Junie `grid.rs` `layout_columns` clip-append is not HEAD DataTable.
 
 The YAML token block and prose that follow are the Junie specification TermRock implements.
 
@@ -902,8 +902,9 @@ Tab still reaches them.
   tag · group` computed over all items so scrolling never shifts alignment,
   a faint hint row at the bottom.
 - **Keys**: typing filters; `Esc` clears the query, then cancels; `Enter`
-  chooses, `Alt+Enter` the alternate action; `Tab` cycles scope; `Delete` the
-  secondary action; `Ctrl+N/P`, `Ctrl+J/K`, page keys move.
+  chooses, `Alt+Enter` the alternate action; `Tab` cycles scope;
+  `Ctrl+N/P`, `Ctrl+J/K`, page keys move. Junie also maps `Delete` to a
+  secondary action; TermRock does not.
 - **Rule**: the owner ranks and supplies rows on every query change.
 
 #### Dialog
