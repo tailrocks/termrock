@@ -437,9 +437,24 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> TableState<RowId, ColumnId> {
     ///
     /// Off (default): Left/Right h-scroll; selected+focused paints `›` + tint.
     /// On: Left/Right move `focused_column`; the cursor cell reverses; the
-    /// row does not take `›` or the accent-tint wash.
+    /// row does not take `›` or the accent-tint wash. The first paint seeds
+    /// `focused_column` to the first visible column when it is still `None`
+    /// (junie `cursor_col` starts at 0).
     pub const fn set_cell_nav(&mut self, on: bool) {
         self.cell_nav = on;
+    }
+
+    fn seed_cell_cursor(&mut self, columns: &[Column<'_, ColumnId>]) {
+        if !self.cell_nav || self.focused_column.is_some() || columns.is_empty() {
+            return;
+        }
+        let idx = self
+            .visible_columns
+            .first()
+            .copied()
+            .filter(|&i| i < columns.len())
+            .unwrap_or(0);
+        self.focused_column = Some(columns[idx].id.clone());
     }
 
     /// Returns the first visible body-row offset.
@@ -591,9 +606,9 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> TableState<RowId, ColumnId> {
         rows: &[TableRow<'_, RowId>],
         delta: i16,
     ) -> TableOutcome<RowId, ColumnId> {
-        // Prefer cell focus when already active or when columns are available and
-        // the host has selected a row; otherwise H-scroll.
-        let can_cell = (self.cell_nav || self.focused_column.is_some())
+        // Cell navigation is an explicit mode. A set `focused_column` without
+        // `cell_nav` is not a cursor: Left/Right stay row-select / H-scroll.
+        let can_cell = self.cell_nav
             && self.selected.is_some()
             && !self.header_regions.is_empty()
             && rows
@@ -993,6 +1008,7 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
         state.content_width = content_width(&state.visible_columns, &state.resolved_widths, gap);
         let max_h = state.content_width.saturating_sub(column_budget);
         state.h_offset = state.h_offset.min(max_h);
+        state.seed_cell_cursor(self.columns);
 
         debug_assert!(
             self.columns
@@ -1436,6 +1452,7 @@ fn paint_data_cells<RowId: Clone + Eq, ColumnId: Clone + Eq>(
                 let rect = Rect::new(paint_x, y, paint_w, 1);
                 let cell_focused = selected
                     && table.focused
+                    && state.cell_nav
                     && state
                         .focused_column
                         .as_ref()
@@ -2533,6 +2550,56 @@ mod tests {
         assert!(!state.cell_nav());
         assert_eq!(buffer[(1, 1)].symbol(), "›");
         assert_eq!(buffer[(5, 1)].bg, theme.accent_bg);
+    }
+
+    #[test]
+    fn focused_column_without_cell_nav_is_not_a_cell_cursor() {
+        let tokens = DesignSystem::junie();
+        let theme = tokens.junie_theme();
+        let columns = [
+            Column::new("id", Line::from("ID"), ColumnWidth::Fixed(5)),
+            Column::new("task", Line::from("Task"), ColumnWidth::Fixed(24)),
+        ];
+        let cells = [[Line::from("#1040"), Line::from("Add rate limiting")]];
+        let rows = [TableRow::new(0usize, &cells[0])];
+        let mut state = TableState::new(Some(0));
+        state.set_focused_column(Some("task"));
+        let area = Rect::new(0, 0, 40, 3);
+        let mut buffer = Buffer::empty(area);
+        let table = Table::new(&columns, &rows, &tokens).focused(true);
+        (&table).render(area, &mut buffer, &mut state);
+        assert_eq!(buffer[(1, 1)].symbol(), "›");
+        assert_eq!(buffer[(3, 1)].bg, theme.accent_bg);
+        assert_ne!(buffer[(10, 1)].bg, tokens.reversed().bg.unwrap());
+        let _ = state.handle_key(&rows, KeyEvent::new(KeyCode::Right, KeyModifiers::NONE));
+        assert!(!state.cell_nav());
+        assert_eq!(state.focused_column(), Some(&"task"));
+        let mut buffer = Buffer::empty(area);
+        (&table).render(area, &mut buffer, &mut state);
+        assert_eq!(buffer[(1, 1)].symbol(), "›");
+        assert_ne!(buffer[(10, 1)].bg, tokens.reversed().bg.unwrap());
+    }
+
+    #[test]
+    fn cell_nav_without_focused_column_reverses_first_data_cell() {
+        let tokens = DesignSystem::junie();
+        let reversed = tokens.reversed();
+        let columns = [
+            Column::new("id", Line::from("ID"), ColumnWidth::Fixed(5)),
+            Column::new("task", Line::from("Task"), ColumnWidth::Fixed(24)),
+        ];
+        let cells = [[Line::from("#1040"), Line::from("Add rate limiting")]];
+        let rows = [TableRow::new(0usize, &cells[0])];
+        let mut state = TableState::new(Some(0));
+        state.set_cell_nav(true);
+        let area = Rect::new(0, 0, 40, 3);
+        let mut buffer = Buffer::empty(area);
+        let table = Table::new(&columns, &rows, &tokens).focused(true);
+        (&table).render(area, &mut buffer, &mut state);
+        assert_eq!(state.focused_column(), Some(&"id"));
+        assert_eq!(buffer[(1, 1)].symbol(), " ");
+        assert_eq!(buffer[(3, 1)].bg, reversed.bg.unwrap());
+        assert_ne!(buffer[(10, 1)].bg, reversed.bg.unwrap());
     }
 
     #[test]

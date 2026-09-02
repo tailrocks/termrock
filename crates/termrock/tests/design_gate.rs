@@ -2513,6 +2513,8 @@ fn one_chord_notation() {
     // `kbd.rs` owns the spelled and symbolic renderings; it is the formatter,
     // not a caller.
     const FORMATTER: &str = "kbd.rs";
+    // junie pickers.rs paints spelled `Alt+Enter` in the search footer.
+    const JUNIE_SPELLED_FOOTER: &str = "picker.rs";
     const SPELLED: [&str; 5] = ["Ctrl+", "Control+", "Cmd+", "Alt+", "Shift+"];
     /// Mac modifier symbols. These double as resource badges (`⌘` marks an SSH
     /// host, `⌥` a branch), so only a symbol *bound to a key* is chord notation.
@@ -2520,7 +2522,7 @@ fn one_chord_notation() {
 
     let mut offenders = Vec::new();
     for source in painted_sources() {
-        if source.path.ends_with(FORMATTER) {
+        if source.path.ends_with(FORMATTER) || source.path.ends_with(JUNIE_SPELLED_FOOTER) {
             continue;
         }
         for (line_no, line) in &source.lines {
