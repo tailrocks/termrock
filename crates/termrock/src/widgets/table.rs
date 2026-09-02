@@ -28,8 +28,8 @@ pub use crate::text::{CellAlignment, CellOverflow};
 
 /// junie row anatomy: col0 `▎`, col1 `›` or space, col2 blank, content at col 3.
 const MARKER_WIDTH: u16 = 3;
-/// With [`MARKER_WIDTH`], this is junie's `area.width - 5` before the
-/// optional overflow gutter: two cells for the header `…` indicator.
+/// Extra cells in junie `cols_area = width - 5 - scrollbar` beyond the
+/// gutter: header `…` at `cols_area.right() + 1` and the body overflow slot.
 const JUNIE_TRAILING: u16 = 2;
 
 /// Presentation recipe (visual chrome without domain noise).
@@ -997,31 +997,18 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
             .priorities
             .extend(self.columns.iter().map(|column| column.priority));
         let v_scroll = crate::scroll::is_scrollable(self.rows.len(), state.viewport_rows.max(1));
-        let mut column_budget = area
-            .width
-            .saturating_sub(MARKER_WIDTH)
-            .saturating_sub(JUNIE_TRAILING)
-            .saturating_sub(u16::from(v_scroll));
-        if column_budget == 0 {
-            // Keep one content cell so a 4-wide grapheme clip test still
-            // has a place to paint. Junie tables are never this tight.
-            column_budget = area
-                .width
-                .saturating_sub(MARKER_WIDTH)
-                .saturating_sub(u16::from(v_scroll))
-                .max(1);
-        }
-        state.viewport_width = column_budget;
-        resolve_layout_into(
+        let column_budget = column_budget_for(
+            area.width,
+            v_scroll,
             &state.policies,
             &state.priorities,
-            column_budget,
             gap,
             &mut state.resolved_widths,
             &mut state.visible_columns,
             &mut state.scratch_widths,
             &mut state.scratch_policies,
         );
+        state.viewport_width = column_budget;
         state.content_width = content_width(&state.visible_columns, &state.resolved_widths, gap);
         let max_h = state.content_width.saturating_sub(column_budget);
         state.h_offset = state.h_offset.min(max_h);
@@ -1653,6 +1640,85 @@ fn shrink(columns: &[ColumnWidth], widths: &mut [u16], deficit: &mut u64, fixed:
     }
 }
 
+/// Junie `cols_area` is `width - 5 - scrollbar` (gutter 3 + 2-cell `…`
+/// chrome + overflow gutter). That chrome is subtracted only when it does
+/// not drop a column that still fits in the gutter budget — otherwise Task
+/// Min leftover on a crop-sized paint eats Owner / Status.
+fn column_budget_for(
+    area_width: u16,
+    has_scrollbar: bool,
+    policies: &[ColumnWidth],
+    priorities: &[u8],
+    gap: u16,
+    widths: &mut Vec<u16>,
+    visible: &mut Vec<usize>,
+    scratch: &mut Vec<u16>,
+    scratch_policies: &mut Vec<ColumnWidth>,
+) -> u16 {
+    let inner = area_width
+        .saturating_sub(MARKER_WIDTH)
+        .saturating_sub(u16::from(has_scrollbar))
+        .max(1);
+    let chrome = inner.saturating_sub(JUNIE_TRAILING);
+    resolve_layout_into(
+        policies,
+        priorities,
+        inner,
+        gap,
+        widths,
+        visible,
+        scratch,
+        scratch_policies,
+    );
+    if chrome == 0 || chrome == inner {
+        return inner;
+    }
+    let vis_inner = visible.len();
+    let leftover = inner.saturating_sub(min_content_width(policies, visible, gap));
+    resolve_layout_into(
+        policies,
+        priorities,
+        chrome,
+        gap,
+        widths,
+        visible,
+        scratch,
+        scratch_policies,
+    );
+    let steal_column = visible.len() < vis_inner;
+    let only_ellipsis_slack = leftover > 0 && leftover <= JUNIE_TRAILING;
+    if steal_column || !only_ellipsis_slack {
+        resolve_layout_into(
+            policies,
+            priorities,
+            inner,
+            gap,
+            widths,
+            visible,
+            scratch,
+            scratch_policies,
+        );
+        inner
+    } else {
+        chrome
+    }
+}
+
+fn min_content_width(policies: &[ColumnWidth], visible: &[usize], gap: u16) -> u16 {
+    if visible.is_empty() {
+        return 0;
+    }
+    let cols = visible
+        .iter()
+        .map(|&index| match policies.get(index) {
+            Some(ColumnWidth::Fixed(width) | ColumnWidth::Min(width)) => *width,
+            _ => 0,
+        })
+        .fold(0u16, u16::saturating_add);
+    let gaps = gap.saturating_mul(u16::try_from(visible.len().saturating_sub(1)).unwrap_or(0));
+    cols.saturating_add(gaps)
+}
+
 fn resolve_layout_into(
     columns: &[ColumnWidth],
     priorities: &[u8],
@@ -2010,6 +2076,179 @@ mod tests {
         assert!(
             (1..area.height).any(|y| buffer[(x, y)].symbol() == thumb),
             "body overflow must paint a line thumb"
+        );
+        let header_overflow = buffer[(area.right().saturating_sub(2), 0)].symbol();
+        assert_eq!(
+            header_overflow,
+            system.glyphs.ellipsis(),
+            "header `…` sits in the overflow slot, not under Task, got {header:?}"
+        );
+        assert_eq!(
+            &header[36..41],
+            "Owner",
+            "Task Min leftover must not eat Owner at 90-wide junie geometry, got {header:?}"
+        );
+    }
+
+    fn row_cells(buffer: &Buffer, y: u16, width: u16) -> Vec<String> {
+        (0..width)
+            .map(|x| buffer[(x, y)].symbol().to_string())
+            .collect()
+    }
+
+    fn row_symbols(buffer: &Buffer, y: u16, width: u16) -> String {
+        row_cells(buffer, y, width).concat()
+    }
+
+    fn cells_join(cells: &[String]) -> String {
+        cells.concat()
+    }
+
+    fn junie_task_columns() -> [Column<'static, &'static str>; 4] {
+        [
+            Column::new("id", "ID", ColumnWidth::Fixed(5)).priority(100),
+            Column::new("task", "Task", ColumnWidth::Min(24)).priority(90),
+            Column::new("owner", "Owner", ColumnWidth::Fixed(7)).priority(80),
+            Column::new("status", "Status", ColumnWidth::Fixed(9)).priority(20),
+        ]
+    }
+
+    fn junie_task_cells() -> [[&'static str; 4]; 7] {
+        [
+            [
+                "#1040",
+                "Add rate limiting to auth endpoints",
+                "mira",
+                "Done",
+            ],
+            [
+                "#1041",
+                "Migrate sessions table to UUID keys",
+                "jonas",
+                "▸ Running",
+            ],
+            [
+                "#1042",
+                "Fix flaky checkout integration test",
+                "ana",
+                "Failed",
+            ],
+            ["#1043", "Write release notes for 3.2", "mira", "Queued"],
+            ["#1044", "Replace deprecated Vue mixins", "kai", "Done"],
+            ["#1045", "Upgrade Postgres driver to 0.9", "jonas", "Paused"],
+            ["#1046", "Extract billing service module", "sofia", "Done"],
+        ]
+    }
+
+    fn paint_junie_tasks(area: Rect, focused: bool, cell_nav: bool, n_rows: usize) -> Buffer {
+        let system = DesignSystem::junie();
+        let columns = junie_task_columns();
+        let all = junie_task_cells();
+        let data = &all[..n_rows];
+        let cells: Vec<[Line<'static>; 4]> = data
+            .iter()
+            .map(|row| {
+                [
+                    Line::from(row[0]),
+                    Line::from(row[1]),
+                    Line::from(row[2]),
+                    Line::from(row[3]),
+                ]
+            })
+            .collect();
+        let rows: Vec<TableRow<'_, usize>> = cells
+            .iter()
+            .enumerate()
+            .map(|(index, cells)| TableRow::new(index, cells))
+            .collect();
+        let mut state = TableState::<usize, &str>::new(if cell_nav { Some(0) } else { None });
+        if cell_nav {
+            state.set_cell_nav(true);
+            state.set_focused_column(Some("task"));
+        }
+        let mut buffer = Buffer::empty(area);
+        (&Table::new(&columns, &rows, &system)
+            .focused(focused)
+            .overflow(CellOverflow::Ellipsis))
+            .render(area, &mut buffer, &mut state);
+        buffer
+    }
+
+    #[test]
+    fn crop_54x8_header_body_keep_owner_status_out_of_overflow() {
+        let area = Rect::new(0, 0, 54, 8);
+        let buffer = paint_junie_tasks(area, false, false, 7);
+        let header = row_cells(&buffer, 0, 54);
+        let body = row_cells(&buffer, 1, 54);
+        let header_s = cells_join(&header);
+        let body_s = cells_join(&body);
+        assert_eq!(
+            cells_join(&header[36..41]),
+            "Owner",
+            "Task must not eat Owner at table/tasks 54x8, got {header_s:?}"
+        );
+        assert_eq!(
+            cells_join(&header[45..51]),
+            "Status",
+            "Status stays in the 54-wide crop, got {header_s:?}"
+        );
+        assert_ne!(
+            header[53].as_str(),
+            DesignSystem::junie().glyphs.ellipsis(),
+            "header `…` must not steal Status's last cell, got {header_s:?}"
+        );
+        assert_eq!(
+            cells_join(&body[36..40]),
+            "mira",
+            "body Owner column at 36, got {body_s:?}"
+        );
+        assert!(
+            body[53] == " " || body[53] == "e",
+            "body must not paint Task into the last cell, got {:?} row {body_s:?}",
+            body[53]
+        );
+    }
+
+    #[test]
+    fn crop_52x6_overflow_column_is_not_task() {
+        let area = Rect::new(0, 0, 52, 6);
+        let buffer = paint_junie_tasks(area, false, false, 7);
+        let header = row_cells(&buffer, 0, 52);
+        let body = row_cells(&buffer, 1, 52);
+        let header_s = cells_join(&header);
+        let body_s = cells_join(&body);
+        assert!(
+            header_s.contains("Owner"),
+            "Owner remains at 52x6, got {header_s:?}"
+        );
+        let last = body[51].as_str();
+        let thumb = crate::scroll::ScrollbarStyle::Line.vertical_thumb();
+        let track = crate::scroll::SCROLLBAR_TRACK;
+        assert!(
+            last == " "
+                || last == thumb
+                || last == track
+                || last == DesignSystem::junie().glyphs.ellipsis(),
+            "overflow gutter is chrome not Task, got {last:?} row {body_s:?}"
+        );
+        assert!(
+            !body_s.contains("endpoints"),
+            "Task must ellipsize before the overflow column, got {body_s:?}"
+        );
+    }
+
+    #[test]
+    fn crop_52x2_editable_task_cell_is_33() {
+        let area = Rect::new(0, 0, 52, 2);
+        let buffer = paint_junie_tasks(area, true, true, 1);
+        let task: String = (10..43)
+            .map(|x| buffer[(x, 1)].symbol().to_string())
+            .collect();
+        assert_eq!(
+            task,
+            "Add rate limiting to auth endpoi…",
+            "table/editable-cursor 33x1 Task cell, got {task:?} row {}",
+            row_symbols(&buffer, 1, 52)
         );
     }
 
