@@ -52,6 +52,8 @@ fn warmed_large_document_render_is_allocation_free() {
 fn ordinary_inline_insert_reuses_existing_line_capacity() {
     let mut state = TextAreaState::new("");
     state.set_accepts_input(true);
+    // Idle Backspace is ignored; Enter begins edit (junie).
+    let _ = state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
     let reserve = "x".repeat(256);
     let _ = state.insert_text(&reserve);
     for _ in 0..256 {

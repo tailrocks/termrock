@@ -1704,6 +1704,10 @@ fn interaction_underline_is_three_color() {
             "field_row.rs",
             "accent = editing here; error underline = invalid contract",
         ),
+        (
+            "picker.rs",
+            "accent = editing here (query field while filtering)",
+        ),
     ];
 
     let widgets = Path::new(env!("CARGO_MANIFEST_DIR")).join("src/widgets");

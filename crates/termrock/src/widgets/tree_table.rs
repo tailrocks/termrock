@@ -1007,16 +1007,20 @@ impl<'a, Id: Clone + Ord, ColId: Clone + PartialEq> TreeTable<'a, Id, ColId> {
         let mut y = area.y;
         let col_budget = area.width.saturating_sub(GUTTER_W);
         state.viewport_width = col_budget;
-        self.columns.resolve_paint_widths(
+        self.columns.resolve_paint_widths_with_gap(
             col_budget.saturating_add(state.h_offset),
+            self.system.spacing.column_gap,
             &mut state.paint_widths,
         );
+        let gap = self.system.spacing.column_gap;
         state.content_width = state
             .paint_widths
             .iter()
             .map(|(_, w)| *w)
             .fold(0u16, u16::saturating_add)
-            .saturating_add(u16::try_from(state.paint_widths.len().saturating_sub(1)).unwrap_or(0));
+            .saturating_add(gap.saturating_mul(
+                u16::try_from(state.paint_widths.len().saturating_sub(1)).unwrap_or(0),
+            ));
         state.h_offset = state
             .h_offset
             .min(state.content_width.saturating_sub(col_budget));
@@ -1161,6 +1165,7 @@ fn paint_header<Id: Clone + Ord, ColId: Clone + PartialEq>(
     let clip_right = area.right();
     let mut logical = 0i32;
     let h_off = i32::from(state.h_offset);
+    let gap = i32::from(table.system.spacing.column_gap);
     for (ord, &(col_idx, width)) in state.paint_widths.iter().enumerate() {
         let col = &table.columns.columns[col_idx];
         let pinned = col.pin != ColumnPin::None;
@@ -1170,7 +1175,7 @@ fn paint_header<Id: Clone + Ord, ColId: Clone + PartialEq>(
             i32::from(origin) + logical - h_off
         };
         let col_right = col_left + i32::from(width);
-        logical += i32::from(width) + 1;
+        logical += i32::from(width) + gap;
         if col_right <= i32::from(origin) || col_left >= i32::from(clip_right) {
             continue;
         }
@@ -1186,6 +1191,7 @@ fn paint_header<Id: Clone + Ord, ColId: Clone + PartialEq>(
         {
             title.push_str(super::table_chrome::sort_marker(sort.ascending));
         }
+        buffer.set_style(Rect::new(paint_x, y, paint_w, 1), style);
         buffer.set_stringn(
             paint_x,
             y,
@@ -1200,15 +1206,6 @@ fn paint_header<Id: Clone + Ord, ColId: Clone + PartialEq>(
             area: Rect::new(paint_x, y, paint_w, 1),
             sortable,
         });
-        if paint_end < clip_right && ord + 1 < state.paint_widths.len() {
-            buffer.set_stringn(
-                paint_end.min(clip_right.saturating_sub(1)),
-                y,
-                super::table_chrome::column_gap(),
-                1,
-                table.system.style(Role::Border),
-            );
-        }
     }
 }
 
@@ -1279,6 +1276,7 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
     let origin = area.x.saturating_add(GUTTER_W);
     let clip_right = area.right();
     let h_off = i32::from(state.h_offset);
+    let gap = i32::from(table.system.spacing.column_gap);
     let mut logical = 0i32;
     let mut disclosure_rect = None;
     if matches!(row.kind, TreeTableRowKind::Group) {
@@ -1312,7 +1310,7 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
             i32::from(origin) + logical - h_off
         };
         let col_right = col_left + i32::from(width);
-        logical += i32::from(width) + 1;
+        logical += i32::from(width) + gap;
         if col_right <= i32::from(origin) || col_left >= i32::from(clip_right) {
             continue;
         }
@@ -1334,6 +1332,7 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
             // reversal pair, not a modifier over the row's own colours.
             cell_style = table.system.reversed();
         }
+        buffer.set_style(Rect::new(paint_x, y, paint_w, 1), cell_style);
 
         if ord == 0 {
             // Hierarchy column: indent + disclosure + label
@@ -1382,16 +1381,6 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
                 &take_display_cols(text, usize::from(paint_w)),
                 usize::from(paint_w),
                 cell_style,
-            );
-        }
-
-        if paint_end < clip_right && ord + 1 < state.paint_widths.len() {
-            buffer.set_stringn(
-                paint_end.min(clip_right.saturating_sub(1)),
-                y,
-                super::table_chrome::column_gap(),
-                1,
-                table.system.style(Role::Border),
             );
         }
     }

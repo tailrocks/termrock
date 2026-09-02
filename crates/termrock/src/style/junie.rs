@@ -388,10 +388,16 @@ impl JunieTheme {
         } else {
             self.focus
         };
-        // Cell::set_style merges add_modifier. Primary fill is bold; the
-        // gutter is never weight — strip BOLD so idle `▎` on accent matches
-        // junie (colour only).
-        Style::new().fg(fg).bg(bg).remove_modifier(Modifier::BOLD)
+        // Colour-only, matching junie `theme.rs` `gutter()`. Weight arrives
+        // from the row/control fill merging `add_modifier` into the cell.
+        // Primary fill (`on_accent`) strips BOLD so idle `▎` on accent is
+        // colour only.
+        let st = Style::new().fg(fg).bg(bg);
+        if on_accent {
+            st.remove_modifier(Modifier::BOLD)
+        } else {
+            st
+        }
     }
 
     /// Commit-control paint by kind and interaction state.
@@ -1088,6 +1094,10 @@ mod tests {
             false,
         );
         assert_eq!(owned.fg, Some(t.focus));
+        assert!(
+            !owned.add_modifier.contains(Modifier::BOLD),
+            "gutter is colour-only; weight comes from the row fill"
+        );
         let on_accent = t.gutter(
             VisualState {
                 focused: true,

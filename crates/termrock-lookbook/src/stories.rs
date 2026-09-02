@@ -37,12 +37,12 @@ use termrock::{
         AvatarFace, AvatarGlyph, AvatarSize, BUILTIN_THEME_PRESETS, Backdrop, Badge, Banner,
         BarDatum, BarSeries, BreadcrumbItem, BreadcrumbSeparator, BreadcrumbStatus, Breadcrumbs,
         BreadcrumbsState, BusyBoundary, BusyBoundaryState, BusyMode, Button, ButtonGroup,
-        ButtonGroupItem, ButtonGroupState, ButtonState, Callout, CalloutTone, CellAlignment, Chart,
-        ChartSeries, Checkbox, CheckboxState, CheckboxValue, CheckpointTimeline,
-        CheckpointTimelineState, ChoiceDialog, ChoiceDialogState, CivilDate, CivilDateRange,
-        CivilTime, CodeBlock, CodeBlockState, CodeFrame, CodeFrameLine, CodeHighlight,
-        CodeHighlightKind, CodeWrap, Column, ColumnWidth, Combobox, ComboboxState, CommandEntry,
-        CommandPalette, CommandPaletteState, CompletionCandidate, CompletionMenu,
+        ButtonGroupItem, ButtonGroupState, ButtonState, Callout, CalloutTone, CellAlignment,
+        CellOverflow, Chart, ChartSeries, Checkbox, CheckboxState, CheckboxValue,
+        CheckpointTimeline, CheckpointTimelineState, ChoiceDialog, ChoiceDialogState, CivilDate,
+        CivilDateRange, CivilTime, CodeBlock, CodeBlockState, CodeFrame, CodeFrameLine,
+        CodeHighlight, CodeHighlightKind, CodeWrap, Column, ColumnWidth, Combobox, ComboboxState,
+        CommandEntry, CommandPalette, CommandPaletteState, CompletionCandidate, CompletionMenu,
         CompletionMenuSize, CompletionMenuState, ConnectivityPresentation, DataColumnWidth,
         DataTable, DataTableState, DataTableToolbar, DateTimePicker, DateTimePickerKind,
         DateTimePickerState, DepEdge, DepEdgeKind, DepNode, DepNodeKind, DepNodeStatus,
@@ -3673,12 +3673,21 @@ pub fn stories() -> Vec<Story> {
         ),
         Story::new(
             "table/tasks",
-            "Junie task ids",
+            "Junie task table",
             StoryIdentity::PublicUi(PublicUiId::Table),
-            "Junie showcase task table ID column: #1040–#1046.",
-            8,
+            "Junie showcase tasks: gutter, ID, Task, Owner, Status.",
+            54,
             8,
             table_tasks_story,
+        ),
+        Story::new(
+            "table/editable-cursor",
+            "Junie editable reverse cell",
+            StoryIdentity::PublicUi(PublicUiId::Table),
+            "Focused Task cell of #1040: canvas on primary, bold (navigation cursor).",
+            36,
+            2,
+            table_editable_cursor_story,
         ),
         Story::new(
             "table/editable-error",
@@ -3700,11 +3709,11 @@ pub fn stories() -> Vec<Story> {
         ),
         Story::new(
             "data-table/grid-ids",
-            "Junie data grid ids",
+            "Junie data grid rows",
             StoryIdentity::PublicUi(PublicUiId::DataTable),
-            "Junie grid chrome plus id cells 1001–1007.",
-            12,
-            10,
+            "Junie grid chrome, id, and customer cells 1001–1007.",
+            42,
+            9,
             table_grid_rows_story,
         ),
         Story::new(
@@ -16681,19 +16690,63 @@ fn table_sorted(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     render_table(frame, area, system, TableVariant::Sorted);
 }
 
+fn junie_task_status_style(system: &DesignSystem, status: &str) -> Style {
+    match status {
+        "▸ Running" => system.style(Role::Text),
+        "Failed" => system.style(Role::Danger),
+        "Paused" => system.style(Role::Warning),
+        "Queued" => system.style(Role::TextMuted),
+        _ => system.style(Role::TextSecondary),
+    }
+}
+
 fn table_tasks_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     fill_junie_surface(frame, area, system);
     let muted = system.style(Role::TextMuted);
-    let columns = [Column::new("id", "ID", ColumnWidth::Fixed(5))];
-    let cells = [
-        [Line::from(Span::styled("#1040", muted))],
-        [Line::from(Span::styled("#1041", muted))],
-        [Line::from(Span::styled("#1042", muted))],
-        [Line::from(Span::styled("#1043", muted))],
-        [Line::from(Span::styled("#1044", muted))],
-        [Line::from(Span::styled("#1045", muted))],
-        [Line::from(Span::styled("#1046", muted))],
+    let columns = [
+        Column::new("id", "ID", ColumnWidth::Fixed(5)).priority(100),
+        Column::new("task", "Task", ColumnWidth::Min(24)).priority(90),
+        Column::new("owner", "Owner", ColumnWidth::Fixed(7)).priority(80),
+        Column::new("status", "Status", ColumnWidth::Fixed(9)).priority(20),
     ];
+    let data = [
+        (
+            "#1040",
+            "Add rate limiting to auth endpoints",
+            "mira",
+            "Done",
+        ),
+        (
+            "#1041",
+            "Migrate sessions table to UUID keys",
+            "jonas",
+            "▸ Running",
+        ),
+        (
+            "#1042",
+            "Fix flaky checkout integration test",
+            "ana",
+            "Failed",
+        ),
+        ("#1043", "Write release notes for 3.2", "mira", "Queued"),
+        ("#1044", "Replace deprecated Vue mixins", "kai", "Done"),
+        ("#1045", "Upgrade Postgres driver to 0.9", "jonas", "Paused"),
+        ("#1046", "Extract billing service module", "sofia", "Done"),
+    ];
+    let cells: Vec<[Line<'_>; 4]> = data
+        .into_iter()
+        .map(|(id, task, owner, status)| {
+            [
+                Line::from(Span::styled(id, muted)),
+                Line::from(task),
+                Line::from(owner),
+                Line::from(Span::styled(
+                    status,
+                    junie_task_status_style(system, status),
+                )),
+            ]
+        })
+        .collect();
     let rows: Vec<TableRow<'_, usize>> = cells
         .iter()
         .enumerate()
@@ -16701,7 +16754,26 @@ fn table_tasks_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
         .collect();
     let mut state = TableState::<usize, &str>::new(None);
     frame.render_stateful_widget(
-        &Table::new(&columns, &rows, system).focused(false),
+        &Table::new(&columns, &rows, system)
+            .focused(false)
+            .overflow(CellOverflow::Ellipsis),
+        area,
+        &mut state,
+    );
+}
+
+fn table_editable_cursor_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
+    fill_junie_surface(frame, area, system);
+    let columns = [Column::new("task", "Task", ColumnWidth::Fixed(33))];
+    let cells = [[Line::from("Add rate limiting to auth endpoints")]];
+    let rows = [TableRow::new(0usize, &cells[0])];
+    let mut state = TableState::<usize, &str>::new(Some(0));
+    state.set_cell_nav(true);
+    state.set_focused_column(Some("task"));
+    frame.render_stateful_widget(
+        &Table::new(&columns, &rows, system)
+            .focused(true)
+            .overflow(CellOverflow::Ellipsis),
         area,
         &mut state,
     );
@@ -16714,36 +16786,29 @@ fn table_editable_80_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSys
         Column::new("id", "ID", ColumnWidth::Fixed(5)),
         Column::new("task", "Task", ColumnWidth::Fixed(32)),
     ];
-    let cells = [
-        [
-            Line::from(Span::styled("#1040", muted)),
-            Line::from("Add rate limiting to auth endpo…"),
-        ],
-        [
-            Line::from(Span::styled("#1041", muted)),
-            Line::from("Migrate sessions table to UUID …"),
-        ],
-        [
-            Line::from(Span::styled("#1042", muted)),
-            Line::from("Fix flaky checkout integration …"),
-        ],
-        [
-            Line::from(Span::styled("#1043", muted)),
-            Line::from("Write release notes for 3.2"),
-        ],
-        [
-            Line::from(Span::styled("#1044", muted)),
-            Line::from("Replace deprecated Vue mixins"),
-        ],
+    let data = [
+        ("#1040", "Add rate limiting to auth endpoints"),
+        ("#1041", "Migrate sessions table to UUID keys"),
+        ("#1042", "Fix flaky checkout integration test"),
+        ("#1043", "Write release notes for 3.2"),
+        ("#1044", "Replace deprecated Vue mixins"),
     ];
+    let cells: Vec<[Line<'_>; 2]> = data
+        .into_iter()
+        .map(|(id, task)| [Line::from(Span::styled(id, muted)), Line::from(task)])
+        .collect();
     let rows: Vec<TableRow<'_, usize>> = cells
         .iter()
         .enumerate()
         .map(|(index, cells)| TableRow::new(index, cells))
         .collect();
-    let mut state = TableState::<usize, &str>::new(None);
+    let mut state = TableState::<usize, &str>::new(Some(0));
+    state.set_cell_nav(true);
+    state.set_focused_column(Some("task"));
     frame.render_stateful_widget(
-        &Table::new(&columns, &rows, system).focused(false),
+        &Table::new(&columns, &rows, system)
+            .focused(true)
+            .overflow(CellOverflow::Ellipsis),
         area,
         &mut state,
     );
@@ -16778,19 +16843,21 @@ fn table_editable_error_story(frame: &mut Frame<'_>, area: Rect, system: &Design
 }
 
 fn table_grid_rows_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    use termrock::widgets::{ColumnModel, DataColumn, LoadState};
+    use termrock::widgets::{ColumnKind, ColumnModel, DataColumn, LoadState};
     fill_junie_surface(frame, area, system);
     let columns = ColumnModel::new(vec![
-        DataColumn::new("id", "id", DataColumnWidth::Fixed(4))
-            .kind(termrock::widgets::ColumnKind::Id),
+        DataColumn::new("id", "id", DataColumnWidth::Fixed(9))
+            .kind(ColumnKind::Id)
+            .primary(),
+        DataColumn::new("customer", "customer", DataColumnWidth::Fixed(25)),
     ]);
-    let c0: &[&str] = &["1001"];
-    let c1: &[&str] = &["1002"];
-    let c2: &[&str] = &["1003"];
-    let c3: &[&str] = &["1004"];
-    let c4: &[&str] = &["1005"];
-    let c5: &[&str] = &["1006"];
-    let c6: &[&str] = &["1007"];
+    let c0: &[&str] = &["1001", "Northwind Traders"];
+    let c1: &[&str] = &["1002", "Blue Yonder Airlines"];
+    let c2: &[&str] = &["1003", "Contoso Pharmaceuticals"];
+    let c3: &[&str] = &["1004", "Fabrikam Robotics"];
+    let c4: &[&str] = &["1005", "Litware Analytics"];
+    let c5: &[&str] = &["1006", "Tailspin Toys"];
+    let c6: &[&str] = &["1007", "Wide World Importers"];
     let rows = [
         (0u64, c0),
         (1, c1),

@@ -2,7 +2,7 @@
 
    Foundations            Editable tables  Navigation is reversed cell; editing is a cursor. They never look alike.
 ▎  Overview
-                            Tasks                                                                              0 edits
+                           ▎Tasks                                                                              0 edits
    Components
 ▎  Buttons                     ID     Task                               Owner     Status     Branch                 …
 ▎  Inputs                   ▎  #1040  Add rate limiting to auth endpoi…  mira      Done       feat/rate-limit
@@ -37,4 +37,4 @@
 
 
 
- ↑ ↓ Move  Enter Open  Tab Into page  q Quit
+ ↑ ↓ ← → Cell  Enter Edit  s Sort  click twice Edit  Tab Next

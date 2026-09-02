@@ -324,6 +324,8 @@ pub struct DataColumn<Id> {
     pub editable: bool,
     /// What the column holds, which decides its tone.
     pub kind: ColumnKind,
+    /// Primary key: header paints junie `⚷` over the title origin.
+    pub primary: bool,
 }
 
 impl<Id> DataColumn<Id> {
@@ -340,6 +342,7 @@ impl<Id> DataColumn<Id> {
             sortable: false,
             editable: false,
             kind: ColumnKind::Text,
+            primary: false,
         }
     }
 
@@ -382,6 +385,13 @@ impl<Id> DataColumn<Id> {
     #[must_use]
     pub const fn editable(mut self) -> Self {
         self.editable = true;
+        self
+    }
+
+    /// Marks a primary-key column. Header origin is `⚷` (faint), not `▪`.
+    #[must_use]
+    pub const fn primary(mut self) -> Self {
+        self.primary = true;
         self
     }
 }
@@ -520,13 +530,24 @@ impl<Id: PartialEq> ColumnModel<Id> {
 
     /// Resolve paint widths for visible columns into `out` (declaration index, width).
     /// Fills share remaining budget after fixed/min/overrides.
+    ///
+    /// Uses a two-cell gap (junie `gap = 2` / [`crate::style::SpacingScale::column_gap`]).
     pub fn resolve_paint_widths(&self, budget: u16, out: &mut Vec<(usize, u16)>) {
+        self.resolve_paint_widths_with_gap(budget, 2, out);
+    }
+
+    /// [`Self::resolve_paint_widths`] with an explicit inter-column gap.
+    pub fn resolve_paint_widths_with_gap(
+        &self,
+        budget: u16,
+        gap: u16,
+        out: &mut Vec<(usize, u16)>,
+    ) {
         out.clear();
         let visible: Vec<usize> = self.visible().map(|(i, _)| i).collect();
         if visible.is_empty() || budget == 0 {
             return;
         }
-        let gap = 1u16;
         let gaps = gap.saturating_mul(u16::try_from(visible.len().saturating_sub(1)).unwrap_or(0));
         let mut remaining = budget.saturating_sub(gaps);
         // (index, assigned_or_weight, is_fill)

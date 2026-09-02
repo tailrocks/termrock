@@ -1163,8 +1163,9 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
 
         let col_budget = area.width.saturating_sub(self.chrome_width());
         state.viewport_width = col_budget;
-        self.columns.resolve_paint_widths(
+        self.columns.resolve_paint_widths_with_gap(
             col_budget.saturating_add(state.h_offset),
+            self.system.spacing.column_gap,
             &mut state.paint_widths,
         );
         // Pin bookkeeping
@@ -1179,12 +1180,15 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
         }
         state.pin_start_count = pin_start;
         state.pin_end_count = pin_end;
+        let gap = self.system.spacing.column_gap;
         state.content_width = state
             .paint_widths
             .iter()
             .map(|(_, w)| *w)
             .fold(0u16, u16::saturating_add)
-            .saturating_add(u16::try_from(state.paint_widths.len().saturating_sub(1)).unwrap_or(0));
+            .saturating_add(gap.saturating_mul(
+                u16::try_from(state.paint_widths.len().saturating_sub(1)).unwrap_or(0),
+            ));
         let max_h = state.content_width.saturating_sub(col_budget);
         state.h_offset = state.h_offset.min(max_h);
 
@@ -1359,9 +1363,10 @@ fn paint_header_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
         ));
     let _ = pin_start_w;
 
+    let gap = i32::from(table.system.spacing.column_gap);
     let mut logical = 0i32;
     let h_off = i32::from(state.h_offset);
-    for (paint_ord, &(col_idx, width)) in widths.iter().enumerate() {
+    for (_paint_ord, &(col_idx, width)) in widths.iter().enumerate() {
         let col = &table.columns.columns[col_idx];
         let pinned_start = col.pin == ColumnPin::Start;
         let pinned_end = col.pin == ColumnPin::End;
@@ -1374,7 +1379,7 @@ fn paint_header_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
         };
         let col_right = col_left + i32::from(width);
         if !skip_scroll {
-            logical += i32::from(width) + 1;
+            logical += i32::from(width) + gap;
         }
         if col_right <= i32::from(origin) || col_left >= i32::from(clip_right) {
             if skip_scroll {
@@ -1394,8 +1399,24 @@ fn paint_header_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
         {
             title.push_str(super::table_chrome::sort_marker(sort.ascending));
         }
-        let text = take_display_cols(&title, usize::from(paint_w));
-        buffer.set_stringn(paint_x, y, &text, usize::from(paint_w), style);
+        let cell = Rect::new(paint_x, y, paint_w, 1);
+        buffer.set_style(cell, style);
+        if col.primary {
+            // junie: title prefix `"▪ "` then overdraw `⚷` at the origin.
+            let marked = format!("{} {title}", super::table_chrome::primary_key_mark());
+            let text = take_display_cols(&marked, usize::from(paint_w));
+            buffer.set_stringn(paint_x, y, &text, usize::from(paint_w), style);
+            buffer.set_stringn(
+                paint_x,
+                y,
+                super::table_chrome::primary_key_mark(),
+                1,
+                style.fg(table.system.junie_theme().text_faint),
+            );
+        } else {
+            let text = take_display_cols(&title, usize::from(paint_w));
+            buffer.set_stringn(paint_x, y, &text, usize::from(paint_w), style);
+        }
         let handle_x = paint_end.saturating_sub(RESIZE_HIT);
         state.header_regions.push(DataTableHeaderRegion {
             id: col.id.clone(),
@@ -1406,18 +1427,8 @@ fn paint_header_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
             // never asked for (plans/021 Step 3).
             sortable: col.sortable,
         });
-        // Separator
-        if paint_end < clip_right && paint_ord + 1 < widths.len() {
-            buffer.set_stringn(
-                paint_end.min(clip_right.saturating_sub(1)),
-                y,
-                super::table_chrome::column_gap(),
-                1,
-                table.system.style(Role::Border),
-            );
-        }
         if skip_scroll {
-            x = paint_end.saturating_add(1);
+            x = paint_end.saturating_add(table.system.spacing.column_gap);
         }
     }
 
@@ -1443,10 +1454,11 @@ fn paint_clip_chevrons<RowId: Clone + Ord, ColId: Clone + PartialEq>(
             buffer.set_stringn(x, y, glyphs.resolve(Glyph::ChevronLeft).text, 1, style);
         }
     }
+    let gap = table.system.spacing.column_gap;
     let total: u16 = state
         .paint_widths
         .iter()
-        .map(|(_, w)| w.saturating_add(1))
+        .map(|(_, w)| w.saturating_add(gap))
         .sum();
     let visible = area.width.saturating_sub(table.chrome_width());
     if total.saturating_sub(state.h_offset) > visible {
@@ -1552,6 +1564,7 @@ fn paint_data_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
     let origin = area.x.saturating_add(gutter_w);
     let clip_right = area.right();
     let h_off = i32::from(state.h_offset);
+    let gap = i32::from(table.system.spacing.column_gap);
     let mut logical = 0i32;
     let mut x_pin = origin;
 
@@ -1567,7 +1580,7 @@ fn paint_data_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
         };
         let col_right = col_left + i32::from(width);
         if !skip_scroll {
-            logical += i32::from(width) + 1;
+            logical += i32::from(width) + gap;
         }
         if col_right <= i32::from(origin) || col_left >= i32::from(clip_right) {
             if skip_scroll {
@@ -1602,6 +1615,8 @@ fn paint_data_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
             // A cell cursor is a cell: the explicit reversal pair.
             cell_style = table.system.reversed();
         }
+        let cell = Rect::new(paint_x, y, paint_w, 1);
+        buffer.set_style(cell, cell_style);
         if state.editing && cell_focused {
             let draft = take_display_cols(&state.edit_draft, usize::from(paint_w));
             buffer.set_stringn(paint_x, y, &draft, usize::from(paint_w), cell_style);
@@ -1616,17 +1631,8 @@ fn paint_data_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
             col_index: paint_ord,
             area: Rect::new(paint_x, y, paint_w, 1),
         });
-        if paint_end < clip_right && paint_ord + 1 < state.paint_widths.len() {
-            buffer.set_stringn(
-                paint_end.min(clip_right.saturating_sub(1)),
-                y,
-                super::table_chrome::column_gap(),
-                1,
-                table.system.style(Role::Border),
-            );
-        }
         if skip_scroll {
-            x_pin = paint_end.saturating_add(1);
+            x_pin = paint_end.saturating_add(table.system.spacing.column_gap);
         }
     }
 }
@@ -2068,6 +2074,63 @@ mod tests {
         );
         assert!(text.contains("1001"), "{text}");
         assert!(text.contains('1'), "row numbers\n{text}");
+    }
+
+    #[test]
+    fn junie_columns_are_two_cells_apart_and_id_padding_is_quiet() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let cols = ColumnModel::new(vec![
+            DataColumn::new("id", "id", DataColumnWidth::Fixed(9)).kind(ColumnKind::Id),
+            DataColumn::new("customer", "customer", DataColumnWidth::Fixed(25)),
+        ]);
+        let c0: &[&str] = &["1001", "Northwind Traders"];
+        let rows = [(0u64, c0)];
+        let mut state = DataTableState::<u64, &str>::new();
+        state.load = LoadState::Ready { count: 1 };
+        state.accepts_input = false;
+        state.striped = false;
+        let area = Rect::new(0, 0, 50, 4);
+        let mut buffer = Buffer::empty(area);
+        DataTable::new(&system, &cols, &rows)
+            .focused(false)
+            .row_numbers(true)
+            .render(area, &mut buffer, &mut state);
+        let chrome = 3 + 2 + 1; // gutter + num_w + pad for 1 row
+        let y = 1; // header then body
+        assert_eq!(buffer[(chrome, y)].symbol(), "1");
+        assert_eq!(buffer[(chrome, y)].fg, theme.text_secondary);
+        // padding inside the id column stays quiet, not leftover canvas
+        assert_eq!(buffer[(chrome + 4, y)].symbol(), " ");
+        assert_eq!(buffer[(chrome + 4, y)].fg, theme.text_secondary);
+        let customer_x = chrome + 9 + system.spacing.column_gap;
+        assert_eq!(buffer[(customer_x, y)].symbol(), "N");
+        assert_eq!(buffer[(customer_x, y)].fg, theme.text_primary);
+    }
+
+    #[test]
+    fn primary_key_header_overdraws_the_key_mark() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let cols = ColumnModel::new(vec![
+            DataColumn::new("id", "id", DataColumnWidth::Fixed(9))
+                .kind(ColumnKind::Id)
+                .primary(),
+        ]);
+        let c0: &[&str] = &["1001"];
+        let rows = [(0u64, c0)];
+        let mut state = DataTableState::<u64, &str>::new();
+        state.accepts_input = false;
+        let area = Rect::new(0, 0, 20, 4);
+        let mut buffer = Buffer::empty(area);
+        DataTable::new(&system, &cols, &rows)
+            .focused(false)
+            .row_numbers(true)
+            .render(area, &mut buffer, &mut state);
+        let chrome = 3 + 2 + 1;
+        assert_eq!(buffer[(chrome, 0)].symbol(), "⚷");
+        assert_eq!(buffer[(chrome, 0)].fg, theme.text_faint);
+        assert_eq!(buffer[(chrome + 2, 0)].symbol(), "i");
     }
 
     #[test]

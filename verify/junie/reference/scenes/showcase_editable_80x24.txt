@@ -2,7 +2,7 @@
 
 ▎  Overview          Editable tables  Navigation is reversed cell; editing is …
 ▎  Buttons
-▎  Inputs              Tasks                                           0 edits
+▎  Inputs             ▎Tasks                              0 edits · 1–10 of 14
 ▎  Text areas
 ▎  Forms                  ID     Task                              Owner    …
 ▎  Lists               ▎  #1040  Add rate limiting to auth endpo…  mira      ┃
@@ -21,4 +21,4 @@
 ▎  Settings          ▁         editing cursor + accent underline
 ▎  Task runner       !         validation error
 
- ↑ ↓ Move  Enter Open  Tab Into page  q Quit
+ ↑ ↓ ← → Cell  Enter Edit  s Sort  click twice Edit  Tab Next

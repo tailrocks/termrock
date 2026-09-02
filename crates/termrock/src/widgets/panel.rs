@@ -793,7 +793,7 @@ impl<'a> Panel<'a> {
         &self,
         spec: PanelTitleSpec<'a>,
         collapsed: Option<bool>,
-        budget: u16,
+        _budget: u16,
         title_style: Style,
     ) -> Line<'static> {
         let live_glyph = self
@@ -816,19 +816,8 @@ impl<'a> Panel<'a> {
             prefix.push(warning.to_string());
         }
         let prefix = prefix.join(" ");
-        let mut plain = spec.text(live_glyph);
-        if !prefix.is_empty() {
-            plain = format!("{prefix} {plain}");
-        }
-        // Contraction is one rule for every panel title, spec or not: when the
-        // segments cannot fit, the whole line contracts as text rather than
-        // dropping a segment silently.
-        if crate::text::display_cols(&plain) > usize::from(budget.max(1)) {
-            return Line::from(Span::styled(
-                format!(" {} ", self.chrome_label(&plain, budget)),
-                title_style,
-            ));
-        }
+        // Overflow is one rule: `paint_border_label` ellipsizes the full
+        // multi-span line. Pre-truncating here ate the ellipsis (pad + Clip).
         let mut spans = vec![Span::raw(" ")];
         if !prefix.is_empty() {
             spans.push(Span::styled(format!("{prefix} "), title_style));
@@ -1134,11 +1123,7 @@ impl<'a> Panel<'a> {
             let title = if let Some(spec) = self.title_spec {
                 Some(self.title_spec_line(spec, Some(collapsed), budget, recipe.title))
             } else if let Some(title) = self.title_line(title_slots, Some(collapsed)) {
-                let clipped = self.chrome_label(&title, budget);
-                Some(Line::from(Span::styled(
-                    format!(" {clipped} "),
-                    recipe.title,
-                )))
+                Some(Line::from(Span::styled(format!(" {title} "), recipe.title)))
             } else {
                 None
             };
@@ -1160,8 +1145,7 @@ impl<'a> Panel<'a> {
                 }
             }
             if let Some(footer) = slots.footer {
-                let clipped = self.chrome_label(footer, area.width.saturating_sub(4));
-                let line = Line::from(Span::styled(format!(" {clipped} "), recipe.title));
+                let line = Line::from(Span::styled(format!(" {footer} "), recipe.title));
                 paint_border_label(area, false, &line, recipe.title, buffer, self.tokens);
             }
         } else if matches!(self.variant, PanelVariant::DividerOnly) {
@@ -1424,15 +1408,18 @@ fn paint_border_label(
     if area.width <= 2 || area.height == 0 {
         return;
     }
-    let width = line
+    let line_w = line
         .spans
         .iter()
         .map(|span| display_cols(span.content.as_ref()))
-        .sum::<usize>()
-        .min(usize::from(area.width.saturating_sub(4)));
-    if width == 0 {
+        .sum::<usize>();
+    let budget = usize::from(area.width.saturating_sub(4));
+    if budget == 0 || line_w == 0 {
         return;
     }
+    // Occupy only the contracted label so trailing `─` survive (`╭─ Title ─╮`).
+    // Ellipsis marks contraction; Clip used to swallow the glyph after pad.
+    let width = line_w.min(budget);
     // junie title_row sits at x+2 so the `─` after `╭` survives: `╭─ Title ─`.
     let rect = Rect::new(
         area.x.saturating_add(2),
@@ -1452,7 +1439,7 @@ fn paint_border_label(
         style,
         crate::text::LinePlacement {
             alignment: crate::text::CellAlignment::Left,
-            overflow: crate::text::CellOverflow::Clip,
+            overflow: crate::text::CellOverflow::Ellipsis,
             ellipsis: system.glyphs.ellipsis(),
         },
         &mut scratch,

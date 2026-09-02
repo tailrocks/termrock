@@ -325,6 +325,9 @@ pub struct TableState<RowId, ColumnId> {
     hovered_column: Option<ColumnId>,
     /// Focused cell column within the selected row (optional cell navigation).
     focused_column: Option<ColumnId>,
+    /// When true, Left/Right move the cell cursor and paint is cell-nav
+    /// (reverse cursor cell, no ›, no row tint). Default false is row-select.
+    cell_nav: bool,
     pointer: Option<Position>,
     offset: usize,
     /// Horizontal content offset in display columns (sticky header stays put).
@@ -360,6 +363,7 @@ impl<RowId, ColumnId> Default for TableState<RowId, ColumnId> {
             hovered: None,
             hovered_column: None,
             focused_column: None,
+            cell_nav: false,
             pointer: None,
             offset: 0,
             h_offset: 0,
@@ -421,6 +425,21 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> TableState<RowId, ColumnId> {
     /// Sets the focused cell column (row selection stays independent).
     pub fn set_focused_column(&mut self, column: Option<ColumnId>) {
         self.focused_column = column;
+    }
+
+    /// Whether this table uses cell navigation (junie `cell_nav`).
+    #[must_use]
+    pub const fn cell_nav(&self) -> bool {
+        self.cell_nav
+    }
+
+    /// Enables or disables cell navigation.
+    ///
+    /// Off (default): Left/Right h-scroll; selected+focused paints `›` + tint.
+    /// On: Left/Right move `focused_column`; the cursor cell reverses; the
+    /// row does not take `›` or the accent-tint wash.
+    pub const fn set_cell_nav(&mut self, on: bool) {
+        self.cell_nav = on;
     }
 
     /// Returns the first visible body-row offset.
@@ -574,12 +593,17 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> TableState<RowId, ColumnId> {
     ) -> TableOutcome<RowId, ColumnId> {
         // Prefer cell focus when already active or when columns are available and
         // the host has selected a row; otherwise H-scroll.
-        let can_cell = self.selected.is_some()
+        let can_cell = (self.cell_nav || self.focused_column.is_some())
+            && self.selected.is_some()
             && !self.header_regions.is_empty()
             && rows
                 .iter()
                 .any(|row| row.enabled && self.selected.as_ref().is_some_and(|id| &row.id == id));
-        if can_cell && (self.focused_column.is_some() || self.content_width <= self.viewport_width)
+        // Auto-enter cell focus on a fitting table only in cell-nav mode.
+        // A row-select table must not lose › and tint on Left/Right.
+        if can_cell
+            && (self.focused_column.is_some()
+                || (self.cell_nav && self.content_width <= self.viewport_width))
         {
             return self.move_cell_focus(delta);
         }
@@ -1068,10 +1092,14 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
                     .pointer
                     .is_some_and(|position| row_area.contains(position));
             let striped = matches!(self.recipe, TableRecipe::Striped) && painted % 2 == 1;
+            // Cell navigation is an explicit mode (junie `cell_nav`), not
+            // "a column happens to be focused" — Left/Right on a row-select
+            // table must not drop › and tint.
+            let cell_nav = state.cell_nav;
             let chrome = super::row_chrome::RowChrome::resolve(
                 self.tokens,
                 ListRowVisualState {
-                    selected,
+                    selected: selected && !cell_nav,
                     focused: selected && self.focused,
                     hovered,
                     enabled: row.enabled,
@@ -1087,14 +1115,17 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
             } else {
                 chrome.secondary_style(style)
             };
-            // The wash goes down before the cells, so a cell that states
-            // itself with an explicit pair (the cursor) keeps its ground.
-            chrome.paint_wash(buffer, row_area);
+            // Fill first so colour-only gutter inherits BOLD from the row
+            // style (junie fill-then-stamp). Cell-nav skips the accent wash.
+            buffer.set_style(row_area, style);
+            if !cell_nav {
+                chrome.paint_wash(buffer, row_area);
+            }
             paint_row_anatomy(
                 buffer,
                 row_area,
                 self.tokens,
-                selected,
+                selected && !cell_nav,
                 selected && self.focused,
                 hovered,
                 row.enabled,
@@ -1496,7 +1527,31 @@ fn resolve_widths_into(columns: &[ColumnWidth], available: u16, widths: &mut Vec
             _ => 0,
         })
         .sum::<u64>();
-    if remainder == 0 || total_weight == 0 {
+    if remainder == 0 {
+        return;
+    }
+    if total_weight == 0 {
+        // junie `Constraint::Min` grows into leftover; Fixed does not.
+        let mins: Vec<usize> = columns
+            .iter()
+            .enumerate()
+            .filter(|(_, column)| matches!(column, ColumnWidth::Min(_)))
+            .map(|(index, _)| index)
+            .collect();
+        if mins.is_empty() {
+            return;
+        }
+        let n = u64::try_from(mins.len()).unwrap_or(1);
+        let mut left = remainder;
+        for (k, &index) in mins.iter().enumerate() {
+            let extra = if k + 1 == mins.len() {
+                left
+            } else {
+                remainder / n
+            };
+            widths[index] = widths[index].saturating_add(u16::try_from(extra).unwrap_or(u16::MAX));
+            left = left.saturating_sub(extra);
+        }
         return;
     }
     let mut distributed = 0;
@@ -1732,6 +1787,7 @@ mod tests {
             (&[fill(1), fill(1)], 5, &[3, 2]),
             (&[fill(1), fill(2)], 9, &[3, 6]),
             (&[ColumnWidth::Fixed(4), ColumnWidth::Min(3)], 7, &[4, 3]),
+            (&[ColumnWidth::Fixed(4), ColumnWidth::Min(3)], 10, &[4, 6]),
             (
                 &[ColumnWidth::Fixed(4), fill(1), ColumnWidth::Min(3)],
                 12,
@@ -1803,6 +1859,46 @@ mod tests {
         );
         assert_eq!(resolved, [2, 0]);
         assert_eq!(visible, [0]);
+    }
+
+    #[test]
+    fn min_grows_leftover_after_low_priority_column_drops() {
+        let columns = [
+            ColumnWidth::Fixed(5),
+            ColumnWidth::Min(24),
+            ColumnWidth::Fixed(7),
+            ColumnWidth::Fixed(9),
+        ];
+        let priorities = [100u8, 90, 80, 20];
+        let mut resolved = Vec::new();
+        let mut visible = Vec::new();
+        let mut policies = Vec::new();
+        let mut scratch = Vec::new();
+        resolve_layout_into(
+            &columns,
+            &priorities,
+            51,
+            2,
+            &mut resolved,
+            &mut visible,
+            &mut policies,
+            &mut scratch,
+        );
+        assert_eq!(visible.len(), 4, "{visible:?}");
+        assert_eq!(resolved[1], 24);
+
+        resolve_layout_into(
+            &columns,
+            &priorities,
+            49,
+            2,
+            &mut resolved,
+            &mut visible,
+            &mut policies,
+            &mut scratch,
+        );
+        assert!(!visible.contains(&3), "status drops under 49: {visible:?}");
+        assert_eq!(resolved[1], 33, "task Min absorbs leftover");
     }
 
     #[test]
@@ -2378,6 +2474,65 @@ mod tests {
             system.style(Role::SelectionTint).bg.unwrap(),
             "the focused row still wears the tint"
         );
+    }
+
+    #[test]
+    fn cell_cursor_is_reversed_pair_without_row_tint_or_marker() {
+        let tokens = DesignSystem::junie();
+        let theme = tokens.junie_theme();
+        let reversed = tokens.reversed();
+        let columns = [
+            Column::new("id", Line::from("ID"), ColumnWidth::Fixed(5)),
+            Column::new("task", Line::from("Task"), ColumnWidth::Fixed(24)),
+        ];
+        let cells = [[
+            Line::from("#1040"),
+            Line::from("Add rate limiting to auth endpoints"),
+        ]];
+        let rows = [TableRow::new(0usize, &cells[0])];
+        let mut state = TableState::new(Some(0));
+        state.set_cell_nav(true);
+        state.set_focused_column(Some("task"));
+        let area = Rect::new(0, 0, 40, 3);
+        let mut buffer = Buffer::empty(area);
+        (&Table::new(&columns, &rows, &tokens)
+            .focused(true)
+            .overflow(CellOverflow::Ellipsis))
+            .render(area, &mut buffer, &mut state);
+
+        assert_eq!(buffer[(0, 1)].symbol(), tokens.glyphs.selection_gutter());
+        assert_eq!(buffer[(0, 1)].fg, theme.accent);
+        assert!(buffer[(0, 1)].modifier.contains(Modifier::BOLD));
+        assert_eq!(buffer[(1, 1)].symbol(), " ");
+        assert_ne!(buffer[(3, 1)].bg, theme.accent_bg);
+        // gutter 3 + ID 5 + gap 2
+        assert_eq!(buffer[(10, 1)].fg, reversed.fg.unwrap());
+        assert_eq!(buffer[(10, 1)].bg, reversed.bg.unwrap());
+        assert!(buffer[(10, 1)].modifier.contains(Modifier::BOLD));
+        assert_eq!(state.selected(), Some(&0));
+    }
+
+    #[test]
+    fn row_select_left_right_does_not_drop_marker_or_tint() {
+        let tokens = DesignSystem::junie();
+        let theme = tokens.junie_theme();
+        let columns = columns();
+        let cells = cells();
+        let rows = rows(&cells);
+        let area = Rect::new(0, 0, 36, 5);
+        let mut state = TableState::new(Some(1));
+        let mut buffer = Buffer::empty(area);
+        let table = Table::new(&columns, &rows, &tokens).focused(true);
+        (&table).render(area, &mut buffer, &mut state);
+        assert_eq!(buffer[(1, 1)].symbol(), "›");
+        assert_eq!(buffer[(5, 1)].bg, theme.accent_bg);
+        let _ = state.handle_key(&rows, KeyEvent::new(KeyCode::Right, KeyModifiers::NONE));
+        let mut buffer = Buffer::empty(area);
+        (&table).render(area, &mut buffer, &mut state);
+        assert!(state.focused_column().is_none());
+        assert!(!state.cell_nav());
+        assert_eq!(buffer[(1, 1)].symbol(), "›");
+        assert_eq!(buffer[(5, 1)].bg, theme.accent_bg);
     }
 
     #[test]

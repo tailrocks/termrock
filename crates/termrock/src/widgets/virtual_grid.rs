@@ -952,7 +952,11 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> StatefulWidget for &VirtualGrid<'_, R
             .enumerate()
             .skip(state.first_col())
         {
-            let gap = u16::from(!visible.is_empty());
+            let gap = if visible.is_empty() {
+                0
+            } else {
+                self.system.spacing.column_gap
+            };
             if used.saturating_add(gap) >= content_width {
                 break;
             }
@@ -978,7 +982,11 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> StatefulWidget for &VirtualGrid<'_, R
             .enumerate()
             .skip(state.first_col())
         {
-            let gap = u16::from(!visible.is_empty());
+            let gap = if visible.is_empty() {
+                0
+            } else {
+                self.system.spacing.column_gap
+            };
             if used.saturating_add(gap) >= content_width {
                 break;
             }
@@ -1008,16 +1016,10 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> StatefulWidget for &VirtualGrid<'_, R
 
         if self.show_header && area.height > 0 {
             let mut x = content_x;
+            let gap = self.system.spacing.column_gap;
             for (visible_index, &(col_index, width)) in visible.iter().enumerate() {
                 if visible_index > 0 {
-                    buffer.set_stringn(
-                        x,
-                        area.y,
-                        super::table_chrome::column_gap(),
-                        1,
-                        Style::new(),
-                    );
-                    x = x.saturating_add(1);
+                    x = x.saturating_add(gap);
                 }
                 let column = &self.columns[col_index];
                 let region = Rect {
@@ -1084,10 +1086,10 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> StatefulWidget for &VirtualGrid<'_, R
                 }
             }
             let mut x = content_x;
+            let gap = self.system.spacing.column_gap;
             for (visible_index, &(col_index, width)) in visible.iter().enumerate() {
                 if visible_index > 0 {
-                    buffer.set_stringn(x, y, super::table_chrome::column_gap(), 1, Style::new());
-                    x = x.saturating_add(1);
+                    x = x.saturating_add(gap);
                 }
                 let region = Rect {
                     x,
@@ -1344,11 +1346,12 @@ mod tests {
 
         let first = &state.cell_regions[0];
         let second = &state.cell_regions[1];
-        assert_eq!(second.area.x, first.area.right().saturating_add(1));
+        let gap = system.spacing.column_gap;
+        assert_eq!(second.area.x, first.area.right().saturating_add(gap));
         assert_eq!(buffer[(first.area.right(), 1)].symbol(), " ");
         assert_eq!(
             state.header_regions[1].area.x,
-            state.header_regions[0].area.right().saturating_add(1)
+            state.header_regions[0].area.right().saturating_add(gap)
         );
     }
 

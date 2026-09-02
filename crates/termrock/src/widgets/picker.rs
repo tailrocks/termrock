@@ -11,6 +11,7 @@ use crate::{
     interaction::{
         Outcome, OverlayId, OverlayOutcome, OverlaySize, OverlaySpec, OverlayStack, place_overlay,
     },
+    keymap::KeyChord,
     scroll::SCROLLBAR_TRACK,
     style::{DesignSystem, Role, VisualState},
     text::{display_cols, take_display_cols},
@@ -847,8 +848,9 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
         }
 
         if show_hints {
+            let search_hints = picker_search_hints();
             let hints = self.hints.unwrap_or(if self.searchable {
-                PICKER_SEARCH_HINTS
+                search_hints.as_str()
             } else {
                 PICKER_CHOICE_HINTS
             });
@@ -865,8 +867,13 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
     }
 }
 
-const PICKER_SEARCH_HINTS: &str =
-    "↑↓ Move · Enter Open · Alt+Enter New tab · Tab Scope · Esc Clear / Close";
+fn picker_search_hints() -> String {
+    format!(
+        "↑↓ Move · Enter Open · {} New tab · Tab Scope · Esc Clear / Close",
+        super::format_chord(KeyChord::alt(KeyCode::Enter), super::ChordFormat::footer())
+    )
+}
+
 const PICKER_CHOICE_HINTS: &str = "↑↓ Move · Enter Set level · Esc Keep";
 
 impl<Id: Clone + PartialEq> StatefulWidget for Picker<'_, Id> {

@@ -47,8 +47,16 @@ pub(crate) const fn header_band(_system: &DesignSystem) -> Style {
 }
 
 /// Two blank cells between adjacent columns (junie column-gap 2).
+///
+/// Painters leave this seam unpainted (page fill), matching junie `gap = 2`.
+#[cfg(test)]
 pub(crate) const fn column_gap() -> &'static str {
     "  "
+}
+
+/// Primary-key header mark. Junie writes `"▪ "` then overdraws this glyph.
+pub(crate) const fn primary_key_mark() -> &'static str {
+    "⚷"
 }
 
 /// Sort direction marker, in the operator's glyph profile.
@@ -75,6 +83,7 @@ mod tests {
         assert_eq!(column_gap(), "  ");
         assert_eq!(column_gap().chars().count(), 2);
         assert_eq!(filter_marker(), "∇");
+        assert_eq!(primary_key_mark(), "⚷");
     }
 
     #[test]
