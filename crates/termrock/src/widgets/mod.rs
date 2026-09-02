@@ -344,9 +344,9 @@ pub use command_palette::{
     COMMAND_PALETTE_FULLSCREEN_MAX_HEIGHT, COMMAND_PALETTE_FULLSCREEN_MAX_WIDTH,
     COMMAND_PALETTE_HISTORY_CAP, COMMAND_PALETTE_OVERLAY_ID, CommandEntry, CommandPalette,
     CommandPaletteOutcome, CommandPalettePhase, CommandPalettePresentation, CommandPaletteSize,
-    CommandPaletteState, command_palette_presentation_for_bounds, default_command_palette_intent,
-    dismiss_command_palette_overlay, entries_from_keymap, example_command_catalog,
-    filter_command_entries, fuzzy_match_label, open_command_palette_overlay, place_command_palette,
+    CommandPaletteState, command_palette_presentation_for_bounds, dismiss_command_palette_overlay,
+    entries_from_keymap, example_command_catalog, filter_command_entries, fuzzy_match_label,
+    open_command_palette_overlay, place_command_palette,
 };
 pub use completion_menu::{
     COMPLETION_DOCS_DEFAULT_WIDTH, COMPLETION_FULLSCREEN_MAX_HEIGHT,
@@ -476,8 +476,8 @@ pub use history_picker::{
     HISTORY_PICKER_FULLSCREEN_MAX_HEIGHT, HISTORY_PICKER_FULLSCREEN_MAX_WIDTH,
     HISTORY_PICKER_OVERLAY_ID, HistoryEntry, HistoryKind, HistoryPicker, HistoryPickerOutcome,
     HistoryPickerPresentation, HistoryPickerSize, HistoryPickerState, HistoryRedaction,
-    default_history_picker_intent, dismiss_history_picker_overlay, example_history_entries,
-    filter_history_entries, history_picker_presentation_for_bounds, history_redaction_secret,
+    dismiss_history_picker_overlay, example_history_entries, filter_history_entries,
+    history_picker_presentation_for_bounds, history_redaction_secret,
     open_history_picker_fullscreen, open_history_picker_overlay,
     open_history_picker_popover_overlay, place_history_picker, place_history_picker_popover,
     redact_history_text,
@@ -689,10 +689,10 @@ pub use quick_open::{
     QUICK_OPEN_FULLSCREEN_MAX_WIDTH, QUICK_OPEN_OVERLAY_ID, QUICK_OPEN_PROVIDER_STRIP_COMPACT_MAX,
     QuickOpen, QuickOpenItem, QuickOpenOutcome, QuickOpenPresentation, QuickOpenPreview,
     QuickOpenProvider, QuickOpenSearchRequest, QuickOpenSize, QuickOpenState,
-    default_quick_open_intent, dismiss_quick_open_overlay, example_quick_open_files,
-    example_quick_open_providers, example_quick_open_symbols, filter_quick_open_items,
-    open_quick_open_fullscreen, open_quick_open_overlay, parse_quick_open_query, place_quick_open,
-    quick_open_jump_targets, quick_open_presentation_for_bounds,
+    dismiss_quick_open_overlay, example_quick_open_files, example_quick_open_providers,
+    example_quick_open_symbols, filter_quick_open_items, open_quick_open_fullscreen,
+    open_quick_open_overlay, parse_quick_open_query, place_quick_open, quick_open_jump_targets,
+    quick_open_presentation_for_bounds,
 };
 pub use resizable_panel_group::{
     PanelDock, PanelGroupRecipe, PanelId, PanelLayoutPreset, PanelRect, ResizablePanelGroup,
