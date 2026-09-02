@@ -266,7 +266,7 @@ pub fn paint_list_scrollbar(
 
 /// Paints the junie line-cell overflow scrollbar (`│` track, `┃` thumb).
 ///
-/// Geometry is [`scroll::overflow_thumb`], not [`scroll::full_cell_thumb`].
+/// Geometry is [`crate::scroll::overflow_thumb`], not [`crate::scroll::full_cell_thumb`].
 /// Nothing is painted when content already fits.
 pub fn paint_overflow_scrollbar(
     buffer: &mut Buffer,
@@ -281,8 +281,7 @@ pub fn paint_overflow_scrollbar(
         return;
     }
     let track = usize::from(gutter.height);
-    let Some((start, len)) =
-        scroll::overflow_thumb(total, viewport, track, usize::from(offset))
+    let Some((start, len)) = scroll::overflow_thumb(total, viewport, track, usize::from(offset))
     else {
         return;
     };

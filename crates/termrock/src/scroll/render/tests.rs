@@ -121,6 +121,19 @@ fn delta_helpers_clamp_or_preserve_overshoot_as_named() {
 }
 
 #[test]
+fn overflow_gutter_uses_junie_thumb_length() {
+    let system = crate::style::DesignSystem::default();
+    let gutter = Rect::new(0, 0, 1, 15);
+    let mut buffer = Buffer::empty(gutter);
+    paint_overflow_scrollbar(&mut buffer, gutter, 24, 15, 0, false, &system);
+    let thumbs: Vec<u16> = (0..15)
+        .filter(|y| buffer[(0, *y)].symbol() == ScrollbarStyle::Line.vertical_thumb())
+        .collect();
+    assert_eq!(thumbs, (0..9).collect::<Vec<_>>());
+    assert_eq!(buffer[(0, 9)].symbol(), SCROLLBAR_TRACK);
+}
+
+#[test]
 fn list_gutter_paints_the_canonical_language_only_when_scrollable() {
     let system = DesignSystem::default();
     let gutter = Rect::new(0, 0, 1, 4);

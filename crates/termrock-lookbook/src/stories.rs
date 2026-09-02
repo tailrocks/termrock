@@ -12129,58 +12129,23 @@ fn panel_framed_title_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
 
 fn panel_framed_pane_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     fill_junie_surface(frame, area, system);
+    // Host owns wrapped length of the Panels-page prose. 46-col pane wraps to
+    // 24 lines; 29-col capture uses 49 so the 7-row thumb stays one cell.
+    let track = area.height.saturating_sub(2);
+    let content_len = if track < 10 { 49 } else { 24 };
     let body = Panel::new(system)
         .variant(PanelVariant::Bordered)
         .title("Framed · split pane")
+        .vertical_scroll(content_len)
         .paint(area, frame.buffer_mut(), None);
     if body.width == 0 || body.height == 0 {
         return;
     }
     const COPY: &str = "Junie works through a task the way a careful engineer would: it reads the relevant code, forms a plan, makes focused changes, runs the tests, and reports back with a summary you can review before anything is merged.\n\nEach step is visible. You can pause, redirect, or take over at any point, and every change lands as an ordinary diff in your working tree.\n\nThe design system in this prototype exists so that the terminal version of that experience feels as deliberate as";
-    let text_w = body.width.saturating_sub(2);
-    let text = Rect::new(body.x, body.y, text_w.max(1), body.height);
     Paragraph::new(COPY)
         .style(system.style(Role::TextSecondary))
         .wrap(ratatui::widgets::Wrap { trim: false })
-        .render(text, frame.buffer_mut());
-    // junie title row leaves two blank cells before the final `─╮` (scrollbar column).
-    if area.width > 4 {
-        let theme = system.junie_theme();
-        for dx in [4u16, 3] {
-            let x = area.right().saturating_sub(dx);
-            if x >= area.x {
-                frame.buffer_mut()[(x, area.y)]
-                    .set_char(' ')
-                    .set_style(theme.border(false).bg(theme.canvas));
-            }
-        }
-    }
-    if body.width > 1 && body.height > 0 {
-        let track = usize::from(body.height);
-        // Same wrapped copy; a short pane needs a longer content length so the
-        // junie thumb stays one cell (7²/49) while 15-row stays ~9 (15²/24).
-        let content = if track < 10 { 49 } else { 24 };
-        let thumb_len = ((track * track) / content).max(1).min(track);
-        let x = body.right().saturating_sub(1);
-        for i in 0..track {
-            let on_thumb = i < thumb_len;
-            frame.buffer_mut().set_stringn(
-                x,
-                body.y.saturating_add(i as u16),
-                if on_thumb {
-                    "┃"
-                } else {
-                    termrock::scroll::SCROLLBAR_TRACK
-                },
-                1,
-                if on_thumb {
-                    system.scrollbar_thumb(false, false)
-                } else {
-                    system.scrollbar_track()
-                },
-            );
-        }
-    }
+        .render(Panel::scrolled_content_area(body), frame.buffer_mut());
 }
 
 fn panel_collapsible_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
@@ -16774,7 +16739,10 @@ fn table_editable_cursor_story(frame: &mut Frame<'_>, area: Rect, system: &Desig
         Line::from(Span::styled("#1040", muted)),
         Line::from("Add rate limiting to auth endpoints"),
         Line::from("mira"),
-        Line::from(Span::styled("Done", junie_task_status_style(system, "Done"))),
+        Line::from(Span::styled(
+            "Done",
+            junie_task_status_style(system, "Done"),
+        )),
     ]];
     let rows = [TableRow::new(0usize, &cells[0])];
     let mut state = TableState::<usize, &str>::new(Some(0));

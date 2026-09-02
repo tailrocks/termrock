@@ -16,7 +16,8 @@ Landed reusable APIs (catalog/preview must use these; no page-local forks):
 - `crates/termrock/src/widgets/table.rs` — `TableState::cell_nav`; `ColumnWidth::Min` grows leftover (junie `Constraint::Min`)
 - `crates/termrock/src/widgets/data_table.rs` / `data_view.rs` / `tree_table.rs` — column gap = `spacing.column_gap` (2)
 - `crates/termrock/src/widgets/virtual_grid.rs` — same gap 2 (was 1)
-- `crates/termrock/src/widgets/panel.rs` — border title/footer ellipsis (was Clip)
+- `crates/termrock/src/widgets/panel.rs` — border title/footer ellipsis (was Clip); `Panel::vertical_scroll` + title-track reserve + overflow gutter
+- `crates/termrock/src/scroll/mod.rs` — `overflow_thumb` (junie `ScrollState::thumb`); `paint_overflow_scrollbar`
 - `crates/termrock/src/widgets/picker.rs` — query underline is editing D5; hint chord `A-↵` not `Alt+Enter`
 - `crates/termrock/src/style/junie.rs` — `gutter()` colour-only; BOLD from row fill merge
 - `crates/termrock/tests/text_area_hot_path.rs` — insert test enters editing first
@@ -29,7 +30,7 @@ Landed reusable APIs (catalog/preview must use these; no page-local forks):
 - **Table columns:** `ColumnWidth::Min(n)` now absorbs leftover after Fixed (junie Min). Drop Status via `.priority(20)` and render the **same** story at 52×6: Task grows 24→33. Do not mint a second Fixed-33 story.
 - **DataTable gap:** `resolve_paint_widths_with_gap(budget, system.spacing.column_gap, out)`. Id cells fill the column with `TextSecondary` (padding included).
 - **Grid header `⚷`:** `DataColumn::primary()`. Header origin is faint `⚷` (junie overdraw of `"▪ "`). Body Id cells stay `TextSecondary`. Catalog can crop the header.
-- **CORE API GAP (panel scrollbar):** `Panel` has no title-row scrollbar reserve (two blank cells before `─╮`) and no body thumb/track chrome. `panel/framed-pane` still overdraws `termrock::scroll` glyphs after `Panel::paint`. Need a public Panel scrollbar / title-track-reserve API. Catalog will not add further story-local paint forks.
+- **Framed pane scroll:** `Panel::vertical_scroll(content_len)` + optional `.scroll_offset(n)`. Title row paints two faint blanks before `─╮` (junie empty `meta` `"  "`). Body gutter uses `scroll::paint_overflow_scrollbar` / `overflow_thumb` (`len = (viewport * track) / content`). Host wraps copy at `Panel::scrolled_content_area(body)` (`width - 2`). `full_cell_thumb` stays the subcell `tui-scrollbar` rounding; line widgets must not use it for junie thumbs.
 
 ## Handoff / do not duplicate
 
@@ -67,6 +68,6 @@ Remaining SKIP (`verify/junie`, 11 product shells):
 - showcase overview / settings / taskrunner — 120×40 and 80×24
 - tablepro default 120×40 and 80×24, local 120×40, production 120×40, help 120×40
 
-CORE API GAP: Panel scrollbar / title-track-reserve (see Public API). Did not add a new paint fork.
+Panel scrollbar API landed (`vertical_scroll` / `scrolled_content_area` / `overflow_thumb`). `panel/framed-pane` consumes it; no story-local thumb/title overdraw.
 
 Lookbook+showcase merge: not started; not done in this slice. No commit (orchestrator).
