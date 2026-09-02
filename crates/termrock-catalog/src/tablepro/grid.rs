@@ -9,7 +9,8 @@
 
 use std::collections::HashMap;
 
-use super::db::{ColType, Value};
+use super::db::{ColType, Table, Value};
+use crate::text as ttext;
 
 /// Cell stored in a result grid (source `CellValue`).
 #[derive(Debug, Clone, PartialEq)]
@@ -118,6 +119,10 @@ pub struct ResultGrid {
     pub offset: usize,
     pub sort: Option<(usize, bool)>,
     pub editable: bool,
+    /// Per-column primary-key flag (source `ColumnSpec::primary`).
+    pub primary: Vec<bool>,
+    /// Per-column FK flag (source paints `→` on the last cell).
+    pub references: Vec<bool>,
 }
 
 impl ResultGrid {
@@ -132,6 +137,7 @@ impl ResultGrid {
             .into_iter()
             .map(|r| r.iter().map(to_cell).collect())
             .collect();
+        let n = columns.len();
         Self {
             columns,
             rows,
@@ -143,7 +149,60 @@ impl ResultGrid {
             offset: 0,
             sort: None,
             editable,
+            primary: vec![false; n],
+            references: vec![false; n],
         }
+    }
+
+    /// Copy PK / FK flags from the live table (source `column_specs`).
+    pub fn annotate(&mut self, table: &Table) {
+        for (i, (name, _)) in self.columns.iter().enumerate() {
+            let Some(col) = table.column(name) else {
+                continue;
+            };
+            if let Some(slot) = self.primary.get_mut(i) {
+                *slot = col.primary;
+            }
+            if let Some(slot) = self.references.get_mut(i) {
+                *slot = col.references.is_some();
+            }
+        }
+    }
+
+    /// Source `CellKind::default_width`.
+    #[must_use]
+    pub fn kind_bounds(ty: ColType) -> (u16, u16) {
+        match ty {
+            ColType::Uuid => (9, 36),
+            ColType::Text => (6, 40),
+            ColType::Int | ColType::Numeric => (4, 22),
+            ColType::Bool => (5, 5),
+            ColType::Timestamp | ColType::Date => (10, 29),
+            ColType::Json => (8, 40),
+            ColType::Enum => (6, 16),
+        }
+    }
+
+    /// Source `DataGrid::sample_widths` for one column.
+    #[must_use]
+    pub fn sampled_width(&self, col: usize) -> u16 {
+        let Some((name, ty)) = self.columns.get(col) else {
+            return 8;
+        };
+        let (min_width, max_width) = Self::kind_bounds(*ty);
+        let primary = self.primary.get(col).copied().unwrap_or(false);
+        let mut ws: Vec<usize> = self
+            .rows
+            .iter()
+            .take(200)
+            .map(|r| ttext::width(&r.get(col).map(CellValue::display).unwrap_or_default()))
+            .collect();
+        ws.sort_unstable();
+        let p95 = u16::try_from(ws.get(ws.len() * 95 / 100).copied().unwrap_or(0)).unwrap_or(0);
+        let header =
+            u16::try_from(ttext::width(name)).unwrap_or(0) + if primary { 2 } else { 0 } + 2;
+        let max = max_width.max(header.min(24));
+        p95.max(header).clamp(min_width.min(max), max)
     }
 
     #[must_use]

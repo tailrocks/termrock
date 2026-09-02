@@ -269,6 +269,8 @@ pub struct LineSegment<'a> {
     bold: bool,
     /// Higher survives longer when the line is short.
     priority: u8,
+    /// Source clickable: paint ` {text} ` one cell into the neighbouring gap.
+    clickable: bool,
 }
 
 impl<'a> LineSegment<'a> {
@@ -280,6 +282,7 @@ impl<'a> LineSegment<'a> {
             role: Role::Text,
             bold: false,
             priority: 5,
+            clickable: false,
         }
     }
 
@@ -301,6 +304,13 @@ impl<'a> LineSegment<'a> {
     #[must_use]
     pub const fn priority(mut self, priority: u8) -> Self {
         self.priority = priority;
+        self
+    }
+
+    /// Pad ` {text} ` into the two-cell gap (source `Segment::clickable`).
+    #[must_use]
+    pub const fn clickable(mut self) -> Self {
+        self.clickable = true;
         self
     }
 }
@@ -356,17 +366,28 @@ pub fn paint_line_segments(
             None => break,
         }
     }
-    let mut x = area.x.saturating_add(1);
-    for (s, k) in left.iter().zip(&keep_l) {
-        if !*k {
-            continue;
-        }
+    let paint = |buffer: &mut Buffer, x: u16, s: &LineSegment<'_>| {
         let mut st = system.style(s.role);
         st.bg = Some(bg);
         if s.bold {
             st = st.add_modifier(Modifier::BOLD);
         }
-        buffer.set_stringn(x, area.y, s.text, display_cols(s.text), st);
+        let owned;
+        let text = if s.clickable {
+            owned = format!(" {} ", s.text);
+            owned.as_str()
+        } else {
+            s.text
+        };
+        buffer.set_stringn(x, area.y, text, display_cols(text), st);
+    };
+    let mut x = area.x.saturating_add(1);
+    for (s, k) in left.iter().zip(&keep_l) {
+        if !*k {
+            continue;
+        }
+        let start = if s.clickable { x.saturating_sub(1) } else { x };
+        paint(buffer, start, s);
         x = x.saturating_add(width_of(s)).saturating_add(SEGMENT_GAP);
     }
     let mut rx = area.right().saturating_sub(1);
@@ -376,12 +397,12 @@ pub fn paint_line_segments(
         }
         let sw = width_of(s);
         rx = rx.saturating_sub(sw);
-        let mut st = system.style(s.role);
-        st.bg = Some(bg);
-        if s.bold {
-            st = st.add_modifier(Modifier::BOLD);
-        }
-        buffer.set_stringn(rx, area.y, s.text, display_cols(s.text), st);
+        let start = if s.clickable {
+            rx.saturating_sub(1)
+        } else {
+            rx
+        };
+        paint(buffer, start, s);
         rx = rx.saturating_sub(SEGMENT_GAP);
     }
 }

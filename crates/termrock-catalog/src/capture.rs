@@ -243,6 +243,9 @@ fn replay_tablepro(scenario: &Scenario, connect: Option<&str>) -> Artifacts {
     if let Some(name) = connect {
         let _ = app.connect_named(name);
     }
+    if let Some(sql) = scenario.seed_sql {
+        app.seed_active_query(sql);
+    }
     let mut cols = scenario.cols;
     let mut rows = scenario.rows;
     let mut term = Terminal::new(TestBackend::new(cols, rows)).expect("test backend");

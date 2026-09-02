@@ -1194,7 +1194,10 @@ impl<'a> Panel<'a> {
                         area.y,
                         &text,
                         usize::from(tw),
-                        theme.faint().bg(theme.canvas),
+                        theme
+                            .faint()
+                            .bg(theme.canvas)
+                            .remove_modifier(ratatui_core::style::Modifier::BOLD),
                     );
                 }
             } else if self.vertical_scroll.is_some() && area.width > 4 {

@@ -168,6 +168,17 @@ impl App {
         ));
     }
 
+    /// Replace the active query document (capture reconstruction of a live tab).
+    pub fn seed_active_query(&mut self, sql: &str) {
+        if let Some(q) = self
+            .workbench
+            .as_mut()
+            .and_then(Workbench::active_query_mut)
+        {
+            q.set_sql(sql);
+        }
+    }
+
     /// Case-insensitive connect by saved name. `Production` skips the list.
     pub fn connect_named(&mut self, name: &str) -> Result<(), String> {
         let i = self
@@ -348,7 +359,7 @@ impl App {
             }
             Screen::Workbench => {
                 if !conn_name.is_empty() {
-                    left.push(LineSegment::new(&conn_name).bold().priority(9));
+                    left.push(LineSegment::new(&conn_name).bold().clickable().priority(9));
                     let mut env = LineSegment::new(&env_s).tone(env_role).priority(8);
                     if env_bold {
                         env = env.bold();
@@ -357,9 +368,13 @@ impl App {
                     left.push(
                         LineSegment::new(&scope)
                             .tone(Role::TextSecondary)
+                            .clickable()
                             .priority(7),
                     );
-                    let mut lvl = LineSegment::new(&level_s).tone(level_role).priority(8);
+                    let mut lvl = LineSegment::new(&level_s)
+                        .tone(level_role)
+                        .clickable()
+                        .priority(8);
                     if level_bold {
                         lvl = lvl.bold();
                     }
@@ -378,7 +393,12 @@ impl App {
             }
         }
         right.push(LineSegment::new(&cap).tone(Role::TextFaint).priority(1));
-        right.push(LineSegment::new("? help").tone(Role::TextMuted).priority(4));
+        right.push(
+            LineSegment::new("? help")
+                .tone(Role::TextMuted)
+                .clickable()
+                .priority(4),
+        );
         paint_line_segments(area, buf, ctx.system, &left, &right, bg);
         ctx.clickable(
             STRIP_HELP,

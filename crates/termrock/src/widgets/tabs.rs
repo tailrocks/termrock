@@ -1396,11 +1396,25 @@ impl<'a, Id> Tabs<'a, Id> {
         }
         if show_status && cx < label_rect.right() {
             if let Some(g) = &tab.glyph {
-                let mut g = g.clone();
-                g.style = g.style.bg(style.bg.unwrap_or(bg));
-                buffer.set_span(cx, label_rect.y, &g, label_rect.right().saturating_sub(cx));
+                let prefix = g.content.as_ref();
+                // Bare span (TablePro `≡`/`T`): source prefix, muted, never bold.
+                // Styled span keeps its fg (status stories).
+                let gs = if g.style.fg.is_some() {
+                    let mut gs = g.style;
+                    gs.bg = style.bg;
+                    gs
+                } else {
+                    style.fg(theme.text_muted).remove_modifier(Modifier::BOLD)
+                };
+                buffer.set_stringn(
+                    cx,
+                    label_rect.y,
+                    prefix,
+                    UnicodeWidthStr::width(prefix).max(1),
+                    gs,
+                );
                 cx = cx
-                    .saturating_add(UnicodeWidthStr::width(g.content.as_ref()) as u16)
+                    .saturating_add(UnicodeWidthStr::width(prefix) as u16)
                     .saturating_add(1);
             } else if let Some(m) = tab.status.mark(false) {
                 let mark_style = match tab.status {

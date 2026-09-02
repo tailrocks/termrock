@@ -56,6 +56,8 @@ pub struct Scenario {
     pub rows: u16,
     pub host: Host,
     pub steps: &'static [Step],
+    /// TablePro: document loaded into the active query tab before the first draw.
+    pub seed_sql: Option<&'static str>,
 }
 
 const fn cat(
@@ -71,6 +73,7 @@ const fn cat(
         rows,
         host: Host::Catalog(page),
         steps,
+        seed_sql: None,
     }
 }
 
@@ -87,6 +90,25 @@ const fn tp(
         rows,
         host: Host::TablePro { connect },
         steps,
+        seed_sql: None,
+    }
+}
+
+const fn tp_sql(
+    id: &'static str,
+    cols: u16,
+    rows: u16,
+    connect: Option<&'static str>,
+    sql: &'static str,
+    steps: &'static [Step],
+) -> Scenario {
+    Scenario {
+        id,
+        cols,
+        rows,
+        host: Host::TablePro { connect },
+        steps,
+        seed_sql: Some(sql),
     }
 }
 
@@ -298,7 +320,14 @@ pub static ALL: &[Scenario] = &[
         40,
         &[Step::Tab, Step::Tab, Step::Enter],
     ),
-    tp("t_100", 100, 30, Some("Production"), &[]),
+    tp_sql(
+        "t_100",
+        100,
+        30,
+        Some("Production"),
+        "SELECT * FROM customers LIMIT 20",
+        &[Step::Ctrl('r'), Step::Ticks(4)],
+    ),
     tp(
         "t_100_table",
         100,

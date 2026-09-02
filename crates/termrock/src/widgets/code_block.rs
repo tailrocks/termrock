@@ -1052,8 +1052,8 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
         // every document line; leftover rows below the document still host
         // the `1–N of M` / `ln · col` footer.
         let doc = self.document_len();
-        let body_h = if doc > 0 && doc <= usize::from(content_h) {
-            u16::try_from(doc).unwrap_or(content_h).min(content_h)
+        let body_h = if doc > 0 && doc == usize::from(content_h) {
+            content_h
         } else if content_h > 1 {
             content_h.saturating_sub(1)
         } else {
@@ -1161,7 +1161,27 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
         let mut abs = first;
         while row < body_h {
             let Some(win_i) = self.window_index(abs) else {
-                // Outside provided window — blank row (host should refill window).
+                // Past the document: keep the gutter bar so a short file still
+                // fills the editor well (junie CodeEditor).
+                if parts.gutter.width > 0 {
+                    let y = parts.body.y.saturating_add(row);
+                    let gx = parts.gutter.x;
+                    let line_gutter = self.system.gutter(
+                        VisualState {
+                            focused: state.focused,
+                            ..visual
+                        },
+                        field_bg,
+                        false,
+                    );
+                    buffer.set_stringn(
+                        gx,
+                        y,
+                        self.system.glyphs.selection_gutter(),
+                        1,
+                        line_gutter,
+                    );
+                }
                 abs = abs.saturating_add(1);
                 if abs >= self.document_len() && abs > first.saturating_add(usize::from(body_h)) {
                     break;
@@ -1311,10 +1331,6 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
             }
             visible = visible.saturating_add(1);
             abs = abs.saturating_add(1);
-            if abs >= self.line_base.saturating_add(self.lines.len()) && abs >= self.document_len()
-            {
-                break;
-            }
         }
 
         if self.streaming && row < body_h && parts.body.width > 0 {
@@ -2268,15 +2284,11 @@ mod tests {
             .language("rust")
             .current_block(0, 1)
             .paint(Rect::new(0, 0, 40, 4), &mut buf, &mut state);
-        // header is rust on row 0; body starts row 1. Junie paints `▎` only
-        // on the cursor line; `›` is the block marker, never a second bar.
+        // header is rust on row 0; body starts row 1. Junie goldens keep `▎`
+        // on every body row; `›` is the block marker, never a second bar.
         assert_eq!(buf[(0, 1)].symbol(), "▎", "gutter bar on cursor line");
         assert_eq!(buf[(1, 1)].symbol(), "›", "block marker, not a second bar");
-        assert_eq!(
-            buf[(0, 2)].symbol(),
-            " ",
-            "off-cursor body row has no gutter bar"
-        );
+        assert_eq!(buf[(0, 2)].symbol(), "▎", "gutter bar on every body row");
         // line numbers are muted off the current block
         assert_eq!(buf[(3, 2)].fg, system.junie_theme().text_muted);
     }

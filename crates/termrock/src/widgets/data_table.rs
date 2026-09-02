@@ -20,7 +20,7 @@
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
-    style::{Modifier, Style},
+    style::{Color, Modifier, Style},
     widgets::StatefulWidget,
 };
 
@@ -1640,7 +1640,12 @@ fn paint_data_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
         hovered: state.hovered_row.as_ref() == Some(id),
         ..crate::style::VisualState::default()
     };
-    let bg = style.bg.unwrap_or(theme.surface);
+    // Inherit the row ground (card chrome on `s_grid`, canvas on `t_100`).
+    let ground = buffer.cell((area.x, y)).and_then(|c| match c.bg {
+        Color::Reset => None,
+        other => Some(other),
+    });
+    let bg = style.bg.or(ground).unwrap_or(theme.surface);
     let gutter_w = table.chrome_width();
     let mut gutter_style = table.system.gutter(visual, bg, false);
     if visual.focused {
