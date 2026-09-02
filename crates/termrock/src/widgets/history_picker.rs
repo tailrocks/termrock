@@ -116,17 +116,35 @@ pub fn history_picker_presentation_for_bounds(bounds: Rect) -> HistoryPickerPres
     }
 }
 
-/// Place as centered palette-class overlay.
+/// Place as centered palette-class overlay (upper third).
 #[must_use]
 pub fn place_history_picker(bounds: Rect, preferred: HistoryPickerSize) -> Rect {
     if bounds.is_empty() {
         return Rect::default();
     }
-    place_overlay(
-        bounds,
-        None,
-        OverlaySize::from(preferred),
-        OverlayPolicy::for_kind(OverlayKind::CommandPalette),
+    if bounds.width <= HISTORY_PICKER_FULLSCREEN_MAX_WIDTH
+        || bounds.height <= HISTORY_PICKER_FULLSCREEN_MAX_HEIGHT
+    {
+        return place_overlay(
+            bounds,
+            None,
+            OverlaySize::from(preferred),
+            OverlayPolicy::for_kind(OverlayKind::CommandPalette),
+        );
+    }
+    let width = preferred.width.min(bounds.width.saturating_sub(4)).max(24);
+    let height = preferred.height.min(bounds.height.saturating_sub(2)).max(6);
+    let x = bounds
+        .x
+        .saturating_add(bounds.width.saturating_sub(width) / 2);
+    let y = bounds
+        .y
+        .saturating_add((bounds.height.saturating_sub(height) / 3).max(1));
+    Rect::new(
+        x,
+        y.min(bounds.bottom().saturating_sub(height)),
+        width,
+        height,
     )
 }
 
@@ -1272,9 +1290,7 @@ impl<'a, Id> HistoryPicker<'a, Id> {
                 checked: entry.pinned,
                 ..ListRowVisualState::default()
             });
-            if recipe.use_fill {
-                buffer.set_style(rect, recipe.label);
-            } else if recipe.use_tint {
+            if recipe.use_tint {
                 buffer.set_style(rect, recipe.tint);
             }
 
@@ -1289,7 +1305,6 @@ impl<'a, Id> HistoryPicker<'a, Id> {
                 entry.display.clone()
             };
 
-            let gutter = if active { "› " } else { "  " };
             // The pin slot is reserved on every row: a column that only exists
             // when a row is pinned shifts every other column beside it, so a
             // pinned list read as a ragged one (plans/009 Step 6).
@@ -1310,8 +1325,20 @@ impl<'a, Id> HistoryPicker<'a, Id> {
                 self.system.style(Role::Text)
             };
 
-            buffer.set_stringn(x, y, gutter, 2, base);
-            x = x.saturating_add(2);
+            let chrome = super::row_chrome::RowChrome::resolve(
+                self.system,
+                ListRowVisualState {
+                    selected: active,
+                    focused: active,
+                    hovered: state.hovered == Some(i),
+                    enabled: true,
+                    loading: false,
+                    checked: entry.pinned,
+                    ..ListRowVisualState::default()
+                },
+            );
+            chrome.paint(buffer, rect);
+            x = x.saturating_add(3);
             let pw = display_cols(pin) as u16;
             buffer.set_stringn(
                 x,

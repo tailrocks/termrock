@@ -1,21 +1,21 @@
 quick-open/basic 74x20 (story 72x18)
                                                                           
  ╭ Quick Open ──────────────────────────────────────────────────────────╮ 
- │                                                                      │ 
  │  [Files] Symbols  Sessions  Tables                                   │ 
- │  ▎Search resources  (@files query)                                   │ 
- │  ──────────────────────────────────────────────────────────────────  │ 
- │  › ↻ rs main.rs                 src/main.rs │Preview                 │ 
- │    rs lib.rs                     src/lib.rs │fn main() {             │ 
- │    rs quick_open.rs      …/quick_open.rs    │    println!("hi");     │ 
- │    md README.md                   README.md │}                       │ 
- │    toml Cargo.toml               Cargo.toml │                        │ 
- │                                             │                        │ 
- │                                             │                        │ 
- │                                             │                        │ 
- │                                             │                        │ 
- │                                             │                        │ 
- │  ↑↓ open · enter · @provider · C-n/C-p switch · C-j jump · esc  ·    │ 
- │                                                                      │ 
+ │  ▎ Search resources  (@files query)                                  │ 
+ │  ─────────────────────────────────────────────────────────────────── │ 
+ │  ▎› ↻ rs main.rs                 src/main.rs │Preview                │ 
+ │  ▎  rs lib.rs                     src/lib.rs │fn main() {            │ 
+ │  ▎  rs quick_open.rs      …/quick_open.rs    │    println!("hi");    │ 
+ │  ▎  md README.md                   README.md │}                      │ 
+ │  ▎  toml Cargo.toml               Cargo.toml │                       │ 
+ │                                              │                       │ 
+ │                                              │                       │ 
+ │                                              │                       │ 
+ │                                              │                       │ 
+ │                                              │                       │ 
+ │                                              │                       │ 
+ │                                              │                       │ 
+ │  ↑↓ open · enter · @provider · C-n/C-p switch · C-j jump · esc  ·  5 │ 
  ╰──────────────────────────────────────────────────────────────────────╯ 
                                                                           

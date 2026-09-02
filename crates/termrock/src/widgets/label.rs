@@ -325,7 +325,18 @@ impl<'a, Id> Label<'a, Id> {
         true
     }
 
-    /// Decorated display string (marks + disabled glyph).
+    /// Whether the whole `optional` suffix fits after the name.
+    #[must_use]
+    pub fn show_optional_suffix(&self, width: u16) -> bool {
+        if !self.show_mark(width) || !matches!(self.mark, LabelMark::Optional) {
+            return false;
+        }
+        let name_w = crate::text::display_cols(self.text);
+        // two-space gap + "optional" (8). A clipped suffix reads worse than none.
+        name_w.saturating_add(2).saturating_add(8) <= usize::from(width)
+    }
+
+    /// Decorated display string (marks only; disabled is a tone, not a glyph).
     #[must_use]
     pub fn decorated(&self, width: u16) -> String {
         let mut out = self.text.to_string();
@@ -334,16 +345,11 @@ impl<'a, Id> Label<'a, Id> {
                 LabelMark::None => {}
                 LabelMark::Required => out.push_str(" *"),
                 LabelMark::Optional => {
-                    if width >= 22 {
-                        out.push_str(" (opt)");
+                    if self.show_optional_suffix(width) {
+                        out.push_str("  optional");
                     }
                 }
             }
-        }
-        if matches!(self.tone, LabelTone::Disabled) {
-            let mark = self.system.glyphs.disabled_mark();
-            out.push(' ');
-            out.push_str(mark);
         }
         out
     }
@@ -377,12 +383,14 @@ impl<'a, Id> Label<'a, Id> {
         }
     }
 
-    fn resolve_role(&self) -> Role {
+    fn label_style(&self) -> ratatui_core::style::Style {
+        let theme = self.system.junie_theme();
         match self.tone {
-            LabelTone::Default | LabelTone::Focused => Role::Text,
-            LabelTone::Disabled => Role::TextDisabled,
-            LabelTone::Invalid => Role::Danger,
-            LabelTone::Warning => Role::Warning,
+            LabelTone::Focused => theme.label(true),
+            LabelTone::Default => theme.label(false),
+            LabelTone::Disabled => theme.faint(),
+            LabelTone::Invalid => theme.error_fg(),
+            LabelTone::Warning => self.system.style(Role::Warning),
         }
     }
 
@@ -412,17 +420,39 @@ impl<'a, Id> Label<'a, Id> {
         if parts.label.is_empty() {
             return parts;
         }
-        let decorated = self.decorated(parts.label.width);
-        let mut span = TextSpan::new(decorated).role(self.resolve_role());
-        if matches!(self.tone, LabelTone::Focused) {
-            span = span.strong();
+        let theme = self.system.junie_theme();
+        let width = parts.label.width;
+        let name = crate::text::take_display_cols(self.text, usize::from(width));
+        buffer.set_stringn(
+            parts.label.x,
+            parts.label.y,
+            &name,
+            usize::from(width),
+            self.label_style(),
+        );
+        if self.show_mark(width) {
+            let name_w = crate::text::display_cols(&name) as u16;
+            match self.mark {
+                LabelMark::Required => {
+                    let star_x = parts.label.x.saturating_add(name_w).saturating_add(1);
+                    if star_x < parts.label.right() {
+                        let star = if matches!(self.tone, LabelTone::Disabled) {
+                            theme.faint()
+                        } else {
+                            theme.accent_fg()
+                        };
+                        buffer.set_stringn(star_x, parts.label.y, "*", 1, star);
+                    }
+                }
+                LabelMark::Optional if self.show_optional_suffix(width) => {
+                    let opt_x = parts.label.x.saturating_add(name_w).saturating_add(2);
+                    if opt_x.saturating_add(8) <= parts.label.right() {
+                        buffer.set_stringn(opt_x, parts.label.y, "optional", 8, theme.faint());
+                    }
+                }
+                _ => {}
+            }
         }
-        if matches!(self.tone, LabelTone::Disabled) {
-            span = span.dim();
-        }
-        let _ = Text::spans([span], self.system)
-            .truncate()
-            .paint(parts.label, buffer);
         parts
     }
 
@@ -940,14 +970,87 @@ pub fn line_plain(line: &ratatui_core::text::Line<'_>) -> String {
 mod tests {
     use super::*;
     use crate::style::GlyphSet;
+    use ratatui_core::buffer::Buffer;
 
     #[test]
-    fn required_mark_and_disabled_glyph() {
-        let system = DesignSystem::default();
+    fn required_mark_and_disabled_is_tone_not_glyph() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
         let l = Label::<()>::new("Name", &system).required().disabled();
         let d = l.decorated(40);
         assert!(d.contains('*'));
-        assert!(d.contains('⊘') || d.contains('\u{2212}'));
+        assert!(!d.contains('⊘'));
+        let area = Rect::new(0, 0, 24, 1);
+        let mut buf = Buffer::empty(area);
+        l.paint(area, &mut buf);
+        let star = &buf[(5, 0)];
+        assert_eq!(star.symbol(), "*");
+        assert_eq!(star.fg, theme.text_faint);
+        let name = &buf[(0, 0)];
+        assert_eq!(name.fg, theme.text_faint);
+    }
+
+    #[test]
+    fn focused_label_is_primary_bold_unfocused_is_secondary() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let area = Rect::new(0, 0, 16, 1);
+        let mut focused_buf = Buffer::empty(area);
+        Label::<()>::new("Email", &system)
+            .focused()
+            .paint(area, &mut focused_buf);
+        assert_eq!(focused_buf[(0, 0)].fg, theme.text_primary);
+        assert!(
+            focused_buf[(0, 0)]
+                .style()
+                .add_modifier
+                .contains(ratatui_core::style::Modifier::BOLD)
+        );
+        let mut idle_buf = Buffer::empty(area);
+        Label::<()>::new("Email", &system).paint(area, &mut idle_buf);
+        assert_eq!(idle_buf[(0, 0)].fg, theme.text_secondary);
+        assert!(
+            !idle_buf[(0, 0)]
+                .style()
+                .add_modifier
+                .contains(ratatui_core::style::Modifier::BOLD)
+        );
+    }
+
+    #[test]
+    fn required_star_is_accent_optional_suffix_fits_whole() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let area = Rect::new(0, 0, 24, 1);
+        let mut buf = Buffer::empty(area);
+        Label::<()>::new("Name", &system)
+            .required()
+            .paint(area, &mut buf);
+        assert_eq!(buf[(5, 0)].symbol(), "*");
+        assert_eq!(buf[(5, 0)].fg, theme.accent);
+
+        let mut opt = Buffer::empty(area);
+        Label::<()>::new("Branch", &system)
+            .optional()
+            .paint(area, &mut opt);
+        let row: String = (0..area.width)
+            .map(|x| opt[(x, 0)].symbol().to_string())
+            .collect();
+        assert!(row.contains("optional"), "{row:?}");
+        assert_eq!(opt[(8, 0)].fg, theme.text_faint);
+
+        let tiny = Rect::new(0, 0, 10, 1);
+        let mut tiny_buf = Buffer::empty(tiny);
+        Label::<()>::new("Branch", &system)
+            .optional()
+            .paint(tiny, &mut tiny_buf);
+        let tiny_row: String = (0..tiny.width)
+            .map(|x| tiny_buf[(x, 0)].symbol().to_string())
+            .collect();
+        assert!(
+            !tiny_row.contains("optional"),
+            "clipped optional suffix must drop, got {tiny_row:?}"
+        );
     }
 
     #[test]

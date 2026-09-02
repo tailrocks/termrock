@@ -34,21 +34,24 @@ let mut state = ListState::new(Some("inbox"));
 
 ## Theming
 
-The default is the phosphor design language. `Theme::slate()` is a complete
-rebranding reference with a deliberately different cool-gray palette. Override
-individual semantic roles from either preset:
+The default is the Junie design language (`DesignSystem::junie()`): near-black
+canvas, one green accent, five-step white ladder. Runtime progressive
+enhancement is `ColorCapability` (including `NO_COLOR` → monochrome) and
+`MotionPolicy` reduction. One glyph vocabulary (junie Unicode); there is no
+Ascii profile. Override individual semantic roles:
 
 ```rust
 use ratatui_core::style::Style;
 use termrock::{Theme, style::Role};
 
-let theme = Theme::slate().with_role(Role::Accent, Style::new().underlined());
+let theme = termrock::style::RolePalette::junie()
+    .with_role(Role::Accent, Style::new().underlined());
 ```
 
 Panel geometry remains plain and single-line in every theme. Focus is semantic:
 `Role::BorderFocused` marks the active interaction owner and `Role::Border`
 marks inactive/background containers. The default theme renders those roles in
-phosphor green and neutral gray.
+Junie primary green (`#48e054`) and the white ladder.
 
 Run the interactive showcase with
 `cargo run -p termrock --example showcase --features crossterm`.

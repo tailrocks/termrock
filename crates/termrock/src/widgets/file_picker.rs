@@ -1613,16 +1613,18 @@ impl<'a> FilePicker<'a> {
                 checked: is_sel,
                 ..ListRowVisualState::default()
             });
-            if recipe.use_fill {
-                buffer.set_style(rect, recipe.label);
-            } else if recipe.use_tint {
+            if recipe.use_tint {
                 buffer.set_style(rect, recipe.tint);
             }
             let kind_mark = if entry.kind.is_dir() { "/" } else { " " };
             let check = if state.multi {
-                if is_sel { "[✓]" } else { "[ ]" }
+                if is_sel {
+                    crate::style::Glyph::Success.resolve().text
+                } else {
+                    " "
+                }
             } else if is_sel {
-                "*"
+                crate::style::Glyph::SelectionMarker.resolve().text
             } else {
                 " "
             };
@@ -2253,7 +2255,7 @@ mod tests {
 
     #[test]
     fn paint_unix_story_shape() {
-        let system = DesignSystem::from_palette(RolePalette::default());
+        let system = DesignSystem::new(RolePalette::default());
         let mut state = FilePickerState::new("/home/u")
             .with_mode(FilePickerMode::OpenFile)
             .with_preview(true);

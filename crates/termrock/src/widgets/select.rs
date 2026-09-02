@@ -21,7 +21,7 @@
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
-    style::Modifier,
+    style::{Modifier, Style},
     widgets::StatefulWidget,
 };
 
@@ -33,13 +33,11 @@ use crate::{
         CollectionItem, CollectionOutcome, CollectionState, SemanticNode, SemanticRole,
         SemanticScene, SemanticState, UiIntent,
     },
-    style::{DesignSystem, ListRowVisualState, Role},
+    style::{ControlState, DesignSystem, Glyph, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
 };
 
-use super::{
-    Panel, PanelChrome, PanelVariant, TextInput, TextInputOutcome, TextInputState, Validation,
-};
+use super::{Surface, SurfaceRecipe, TextInput, TextInputOutcome, TextInputState, Validation};
 
 /// Width under which open list prefers fullscreen.
 pub const SELECT_FULLSCREEN_MAX_WIDTH: u16 = 28;
@@ -831,15 +829,16 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
         }
 
         let mut y = area.y;
-        let formish = matches!(state.recipe, SelectRecipe::Form) || !self.label.is_empty();
+        let formish = !matches!(state.recipe, SelectRecipe::Compact)
+            && (matches!(state.recipe, SelectRecipe::Form) || !self.label.is_empty());
         if formish && area.height >= 2 && !self.label.is_empty() {
             let label_recipe = self.system.input_recipe(
                 if !state.enabled {
-                    crate::style::ControlState::Disabled
+                    ControlState::Disabled
                 } else if state.focused || state.is_open() {
-                    crate::style::ControlState::Focused
+                    ControlState::Focused
                 } else {
-                    crate::style::ControlState::Default
+                    ControlState::Default
                 },
                 matches!(self.validation, Validation::Invalid(_)),
             );
@@ -857,16 +856,11 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
             y = y.saturating_add(1);
         }
 
-        let trigger_h = if matches!(state.recipe, SelectRecipe::Compact) {
-            1
-        } else {
-            1
-        };
         let trigger = Rect::new(
             area.x,
             y.min(area.bottom().saturating_sub(1)),
             area.width,
-            trigger_h.min(area.height.saturating_sub(y.saturating_sub(area.y))),
+            1.min(area.height.saturating_sub(y.saturating_sub(area.y))),
         );
         state.trigger = trigger;
         self.paint_trigger(trigger, buffer, state);
@@ -899,12 +893,8 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
             self.paint(area, Rect::default(), buffer, state);
             return;
         }
-        let base_trigger_h: u16 = if !self.label.is_empty() && area.height >= 3 {
-            2
-        } else {
-            1
-        };
-        let trigger_h = base_trigger_h.saturating_add(1).min(area.height);
+        // Closed select is three rows (label, field, help) unless compact.
+        let trigger_h = closed_select_height(state.recipe, !self.label.is_empty(), area.height);
         let trigger_area = Rect::new(area.x, area.y, area.width, trigger_h.min(area.height));
         let list = Rect::new(
             area.x,
@@ -925,14 +915,16 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
         // it — the box stopped looking like something you type into at the one
         // moment it mattered.
         let control_state = if !state.enabled {
-            crate::style::ControlState::Disabled
+            ControlState::Disabled
         } else if state.focused || state.is_open() {
-            crate::style::ControlState::Focused
+            ControlState::Focused
         } else {
-            crate::style::ControlState::Default
+            ControlState::Default
         };
         let recipe = self.system.input_recipe(control_state, invalid);
         buffer.set_style(area, recipe.fill);
+        // Prompt column is reserved in every state so the value does not shift
+        // when focus arrives. The ▎ bar itself is only visible while editing.
         if let Some((glyph, style)) = recipe.prompt
             && area.width > 0
         {
@@ -950,9 +942,17 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
             })
             .unwrap_or(self.placeholder);
 
-        let chev = if state.is_open() { "▴" } else { "▾" };
+        let chev = self
+            .system
+            .glyphs
+            .resolve(if state.is_open() {
+                Glyph::ChevronUp
+            } else {
+                Glyph::ChevronDown
+            })
+            .text;
         let text_x = area.x.saturating_add(1).min(area.right());
-        let text_w = area.width.saturating_sub(2);
+        let text_w = area.width.saturating_sub(3);
         let muted = state.value.is_none();
         buffer.set_stringn(
             text_x,
@@ -974,19 +974,20 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
                 recipe.placeholder,
             );
         }
+        apply_field_underline(buffer, area, &recipe);
     }
 
     fn paint_list(&self, area: Rect, buffer: &mut Buffer, state: &mut SelectState<Id>) {
-        let panel = Panel::new(self.system)
-            .variant(PanelVariant::Bordered)
-            .emphasis(if state.focused {
-                PanelChrome::Focused
-            } else {
-                PanelChrome::Normal
-            });
-        let inner = panel.inner(area);
-        use ratatui_core::widgets::Widget;
-        Widget::render(&panel, area, buffer);
+        let recipe = if state.focused {
+            SurfaceRecipe::OverlayFocused
+        } else {
+            SurfaceRecipe::Overlay
+        };
+        let inner = Surface::new(self.system)
+            .recipe(recipe)
+            .bordered(true)
+            .content_inset()
+            .paint(area, buffer);
         if inner.is_empty() {
             return;
         }
@@ -1104,7 +1105,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
                     let rect = Rect::new(list_area.x, row_y, list_area.width, 1);
                     let is_hi = state.collection.active() == Some(&opt.id);
                     let is_val = state.value.as_ref() == Some(&opt.id);
-                    let recipe = self.system.resolve_list_row(ListRowVisualState {
+                    let visual = ListRowVisualState {
                         selected: is_hi,
                         focused: is_hi && state.focused,
                         hovered: state.hovered.as_ref() == Some(&opt.id),
@@ -1112,26 +1113,13 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
                         loading: false,
                         checked: is_val,
                         ..ListRowVisualState::default()
-                    });
-                    if recipe.use_fill {
-                        buffer.set_style(rect, recipe.label);
-                    } else if recipe.use_tint {
-                        buffer.set_style(rect, recipe.tint);
-                    }
-                    let style = recipe.label;
-                    let mark = if is_val { "✓" } else { " " };
-                    let label = if let Some(desc) = &opt.description {
-                        format!("{mark} {} {} {desc}", opt.label, { "—" })
-                    } else {
-                        format!("{mark} {}", opt.label)
                     };
-                    buffer.set_stringn(
-                        rect.x,
-                        rect.y,
-                        take_display_cols(&label, usize::from(rect.width)),
-                        usize::from(rect.width),
-                        style,
-                    );
+                    let label = if let Some(desc) = &opt.description {
+                        format!("{} {} {desc}", opt.label, { "—" })
+                    } else {
+                        opt.label.clone()
+                    };
+                    paint_list_anatomy_row(buffer, rect, self.system, visual, is_val, &label);
                     if !opt.disabled {
                         state.option_regions.push((opt.id.clone(), rect));
                     }
@@ -1206,6 +1194,61 @@ impl<Id: Clone + PartialEq + std::fmt::Display> StatefulWidget for Select<'_, Id
 
 // Touch display_cols for measure helpers
 const _: fn(&str) -> usize = display_cols;
+
+/// Closed select occupies three rows (label, field, help) except compact.
+fn closed_select_height(recipe: SelectRecipe, has_label: bool, available: u16) -> u16 {
+    if matches!(recipe, SelectRecipe::Compact) {
+        return 1.min(available);
+    }
+    if has_label && available >= 3 {
+        3
+    } else if available >= 3 {
+        2
+    } else {
+        1.min(available)
+    }
+}
+
+fn apply_field_underline(buffer: &mut Buffer, field: Rect, recipe: &crate::style::InputRecipe) {
+    if field.is_empty() {
+        return;
+    }
+    let mut underline = Style::new().add_modifier(recipe.border.add_modifier);
+    if let Some(color) = recipe.border.underline_color {
+        underline = underline.underline_color(color);
+    }
+    buffer.set_style(field, underline);
+}
+
+/// List anatomy: `▎` in col0 (keyboard), `›` in col1 (chosen). Never `› ` as a gutter.
+fn paint_list_anatomy_row(
+    buffer: &mut Buffer,
+    row: Rect,
+    system: &DesignSystem,
+    visual: ListRowVisualState,
+    chosen: bool,
+    label: &str,
+) {
+    if row.is_empty() {
+        return;
+    }
+    let chrome = super::row_chrome::RowChrome::resolve(system, visual);
+    let recipe = system.resolve_list_row(visual);
+    let style = chrome.label_style(recipe.label);
+    chrome.paint(buffer, row);
+    let _ = chosen;
+    let text_x = row.x.saturating_add(3).min(row.right());
+    let text_w = row.right().saturating_sub(text_x);
+    if text_w > 0 {
+        buffer.set_stringn(
+            text_x,
+            row.y,
+            take_display_cols(label, usize::from(text_w)),
+            usize::from(text_w),
+            style,
+        );
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -1353,7 +1396,7 @@ mod tests {
 
     #[test]
     fn mouse_select_option() {
-        let system = DesignSystem::from_palette(RolePalette::default());
+        let system = DesignSystem::new(RolePalette::default());
         let opts = sample_options();
         let mut state = SelectState::new();
         state.set_focused(true);
@@ -1497,5 +1540,91 @@ mod tests {
             &state,
         );
         assert!(scene.get(&"s").is_some());
+    }
+
+    fn row_text(buffer: &Buffer, y: u16, width: u16) -> String {
+        (0..width)
+            .map(|x| buffer[(x, y)].symbol().to_string())
+            .collect()
+    }
+
+    #[test]
+    fn closed_select_is_three_rows_with_disclosure() {
+        let system = DesignSystem::default();
+        let opts = sample_options();
+        let mut state = SelectState::new()
+            .with_recipe(SelectRecipe::Form)
+            .with_value("apple");
+        state.set_focused(true);
+        let area = Rect::new(0, 0, 24, 3);
+        let mut buffer = Buffer::empty(area);
+        Select::new(&opts, &system)
+            .label("Fruit")
+            .paint_stacked(area, &mut buffer, &mut state);
+        assert_eq!(state.trigger.height, 1);
+        assert_eq!(state.trigger.y, 1);
+        let field = row_text(&buffer, 1, area.width);
+        assert!(
+            field.contains('▾') || field.contains(system.glyphs.resolve(Glyph::ChevronDown).text),
+            "closed disclosure: {field:?}"
+        );
+        assert_eq!(
+            buffer[(state.trigger.x, state.trigger.y)].symbol(),
+            system.glyphs.selection_gutter()
+        );
+        assert!(
+            buffer[(state.trigger.x + 1, state.trigger.y)]
+                .style()
+                .add_modifier
+                .contains(Modifier::UNDERLINED),
+            "editing underlines the field"
+        );
+    }
+
+    #[test]
+    fn open_popup_uses_list_anatomy_and_closes_outside() {
+        let system = DesignSystem::default();
+        let opts = sample_options();
+        let mut state = SelectState::new().with_value("apple");
+        state.set_focused(true);
+        let area = Rect::new(0, 0, 32, 14);
+        let mut buffer = Buffer::empty(area);
+        let _ = state.open(area, &opts);
+        Select::new(&opts, &system).paint_stacked(area, &mut buffer, &mut state);
+        assert!(!state.option_regions.is_empty());
+        let (_, rect) = state
+            .option_regions
+            .iter()
+            .find(|(id, _)| *id == "apple")
+            .cloned()
+            .expect("chosen option painted");
+        assert_eq!(
+            buffer[(rect.x, rect.y)].symbol(),
+            system.glyphs.selection_gutter(),
+            "col0 is the focus bar"
+        );
+        assert_eq!(
+            buffer[(rect.x + 1, rect.y)].symbol(),
+            Glyph::Success.resolve().text,
+            "committed value is list membership ✓, not checkbox [✓]"
+        );
+        let field = row_text(&buffer, state.trigger.y, area.width);
+        assert!(
+            field.contains('▴') || field.contains(system.glyphs.resolve(Glyph::ChevronUp).text),
+            "open disclosure: {field:?}"
+        );
+        assert_eq!(
+            state.handle_mouse(
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(80, 40),
+                    modifiers: KeyModifiers::NONE,
+                },
+                &opts,
+                area,
+            ),
+            SelectOutcome::Closed
+        );
+        assert!(!state.is_open());
     }
 }

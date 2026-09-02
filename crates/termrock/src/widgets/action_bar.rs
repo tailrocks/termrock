@@ -228,6 +228,9 @@ impl<Id: Clone + PartialEq> ActionBar<'_, Id> {
         button_state
             .activation
             .set_accepts_input(action.enabled && on_cursor);
+        // Focus is the `▎` bar. Only the cursor action owns it; siblings keep
+        // the reserved column with fg = fill so the glyph is invisible.
+        button_state.focused = on_cursor && action.enabled;
         let painted = button.paint(rect, buffer, &mut button_state);
         if action.enabled {
             state.regions.push(HitRegion {
@@ -268,16 +271,60 @@ mod tests {
         ];
         let system = DesignSystem::default();
 
+        // junie: each button is label+2, default gap is one cell.
         assert_eq!(
             ActionBar::new(&actions, &system).required_horizontal_width(),
-            13
+            9
         );
         assert_eq!(
             ActionBar::new(&actions, &system)
                 .gap(" · ")
                 .required_horizontal_width(),
-            15
+            11
         );
+    }
+
+    #[test]
+    fn only_the_cursor_action_paints_a_visible_focus_bar() {
+        let actions = [
+            Action {
+                id: "delete",
+                label: "Delete",
+                enabled: true,
+                variant: ActionVariant::Destructive,
+            },
+            Action {
+                id: "cancel",
+                label: "Cancel",
+                enabled: true,
+                variant: ActionVariant::Secondary,
+            },
+        ];
+        let system = DesignSystem::junie();
+        let mut state = ActionBarState {
+            cursor: Some("cancel"),
+            regions: Vec::new(),
+        };
+        let area = Rect::new(0, 0, 24, 1);
+        let mut buffer = Buffer::empty(area);
+        ActionBar::new(&actions, &system).render(area, &mut buffer, &mut state);
+        let delete = &buffer[(0, 0)];
+        let cancel_x = state
+            .regions
+            .iter()
+            .find(|r| r.id == "cancel")
+            .expect("cancel hit")
+            .area
+            .x;
+        let cancel = &buffer[(cancel_x, 0)];
+        assert_eq!(delete.symbol(), "▎");
+        assert_eq!(delete.fg, delete.bg, "unfocused Delete bar is invisible");
+        assert_eq!(cancel.symbol(), "▎");
+        assert_eq!(
+            cancel.fg,
+            system.style(crate::style::Role::Focus).fg.unwrap()
+        );
+        assert_ne!(cancel.fg, cancel.bg);
     }
 
     #[test]

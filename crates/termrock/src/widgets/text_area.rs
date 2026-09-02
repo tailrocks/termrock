@@ -14,7 +14,7 @@ use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
     style::{Modifier, Style},
-    widgets::{StatefulWidget, Widget},
+    widgets::StatefulWidget,
 };
 
 use crate::{
@@ -23,14 +23,11 @@ use crate::{
         MouseEventKind,
     },
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
-    style::{ControlState, DesignSystem, Role, RolePalette},
+    style::{DesignSystem, VisualState},
     text::{display_cols, display_cols_slice_into, take_display_cols},
 };
 
-use super::{
-    Panel, PanelChrome, PanelVariant, ScrollArea, ScrollAreaState, ScrollBarVisibility,
-    ScrollChain, edit_core,
-};
+use super::{ScrollAreaState, ScrollChain, edit_core};
 
 /// Undo snapshot limit for standalone TextArea.
 const UNDO_LIMIT: usize = 64;
@@ -194,6 +191,8 @@ pub struct TextAreaState {
     gutter_width: u16,
     scratch: String,
     selecting_mouse: bool,
+    /// Hardware caret cell while editing (host applies `set_cursor_position`).
+    hardware_cursor: Option<Position>,
 }
 
 impl Default for TextAreaState {
@@ -233,6 +232,7 @@ impl TextAreaState {
             gutter_width: 0,
             scratch: String::new(),
             selecting_mouse: false,
+            hardware_cursor: None,
         };
         state.cursor.line = state.lines.len() - 1;
         state.cursor.byte = state.lines.last().map_or(0, String::len);
@@ -517,10 +517,16 @@ impl TextAreaState {
         &self.scroll
     }
 
-    /// Last painted editor body, excluding panel chrome, prompt, and gutter.
+    /// Last painted editor body, excluding label, gutter, and scrollbar.
     #[must_use]
     pub const fn body_area(&self) -> Rect {
         self.body
+    }
+
+    /// Hardware caret cell while editing; `None` when not editing or off-screen.
+    #[must_use]
+    pub const fn cursor_cell(&self) -> Option<Position> {
+        self.hardware_cursor
     }
 
     /// Mutable scroll (hosts may overscan / chain when nested).
@@ -660,9 +666,8 @@ impl TextAreaState {
             return TextAreaOutcome::Ignored;
         }
         if key.code == KeyCode::Esc {
-            if self.select_anchor.take().is_some() {
-                return TextAreaOutcome::Changed;
-            }
+            // junie: Esc finishes editing and keeps the document.
+            self.select_anchor = None;
             return TextAreaOutcome::Cancelled;
         }
 
@@ -1392,10 +1397,14 @@ pub struct TextArea<'a> {
     system: &'a DesignSystem,
     title: Option<&'a str>,
     placeholder: Option<&'a str>,
+    help: Option<&'a str>,
+    error: Option<&'a str>,
     colorless: bool,
     line_numbers: bool,
     wrap: TextWrap,
     variant: TextAreaVariant,
+    /// Visible text rows. Height is `rows + 2` (label + footer). `0` fills `area`.
+    rows: u16,
 }
 
 impl<'a> TextArea<'a> {
@@ -1406,6 +1415,8 @@ impl<'a> TextArea<'a> {
             system,
             title: None,
             placeholder: None,
+            help: None,
+            error: None,
             // Seeded from the system: a widget that defaults to false is
             // claiming the terminal has Unicode and colour before anyone
             // asked it. Builders below still force either way.
@@ -1413,6 +1424,7 @@ impl<'a> TextArea<'a> {
             line_numbers: false,
             wrap: TextWrap::None,
             variant: TextAreaVariant::Editor,
+            rows: 0,
         }
     }
     /// Sets panel title.
@@ -1426,6 +1438,33 @@ impl<'a> TextArea<'a> {
     pub const fn placeholder(mut self, placeholder: &'a str) -> Self {
         self.placeholder = Some(placeholder);
         self
+    }
+
+    /// Footer help (yields to [`Self::error`]).
+    #[must_use]
+    pub const fn help(mut self, help: &'a str) -> Self {
+        self.help = Some(help);
+        self
+    }
+
+    /// Footer error; paints `!` in the field and replaces help.
+    #[must_use]
+    pub const fn error(mut self, error: &'a str) -> Self {
+        self.error = Some(error);
+        self
+    }
+
+    /// Visible text rows. Painted height is `rows + 2`.
+    #[must_use]
+    pub const fn rows(mut self, rows: u16) -> Self {
+        self.rows = rows;
+        self
+    }
+
+    /// Label + body rows + footer.
+    #[must_use]
+    pub const fn height(&self) -> u16 {
+        self.rows.saturating_add(2)
     }
 
     /// ASCII scrollbar / empty cues.
@@ -1503,91 +1542,101 @@ impl<'a> TextArea<'a> {
 impl StatefulWidget for &TextArea<'_> {
     type State = TextAreaState;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        let tokens = self.system.clone();
         state.wrap = self.wrap;
-        let focused = state.accepts_input;
-        let emphasis = match (self.variant, focused) {
-            (TextAreaVariant::Review, true) => PanelChrome::Focused,
-            (TextAreaVariant::Review, false) => PanelChrome::Normal,
-            (_, true) => PanelChrome::Focused,
-            (_, false) => PanelChrome::Normal,
-        };
-        let mut panel = Panel::new(&tokens)
-            .variant(PanelVariant::Bordered)
-            .emphasis(emphasis);
-        if let Some(title) = self.title {
-            panel = panel.title(title);
+        state.hardware_cursor = None;
+        state.vertical_scrollbar = None;
+        state.horizontal_scrollbar = None;
+        if area.is_empty() {
+            state.body = Rect::default();
+            return;
         }
-        let inner = panel.inner(area);
-        panel.render(area, buffer);
-        let input_recipe = self.system.input_recipe(
-            if focused {
-                ControlState::Focused
-            } else {
-                ControlState::Default
-            },
-            false,
-        );
-        buffer.set_style(inner, input_recipe.fill);
 
-        let gutter = if self.line_numbers {
+        let theme = self.system.junie_theme();
+        let focused = state.accepts_input;
+        let editing = focused && !state.read_only;
+        let invalid = self.error.is_some();
+        let visual = VisualState {
+            focused,
+            disabled: state.read_only,
+            editing,
+            error: invalid,
+            ..VisualState::default()
+        };
+        let fs = theme.field_style(visual);
+        let field_bg = fs.bg.unwrap_or(theme.field);
+        let canvas = theme.canvas;
+
+        // Label row (always reserved: height = rows + 2).
+        let label_style = if state.read_only {
+            theme.faint().bg(canvas)
+        } else if matches!(self.variant, TextAreaVariant::Review) && !focused {
+            theme.muted().bg(canvas)
+        } else {
+            theme.label(focused).bg(canvas)
+        };
+        if let Some(title) = self.title {
+            let text = take_display_cols(title, usize::from(area.width.saturating_sub(2)));
+            buffer.set_stringn(
+                area.x.saturating_add(2),
+                area.y,
+                text,
+                usize::from(area.width.saturating_sub(2)),
+                label_style,
+            );
+        }
+
+        let max_rows = area.height.saturating_sub(2);
+        let rows = if self.rows == 0 {
+            max_rows
+        } else {
+            self.rows.min(max_rows)
+        };
+        if rows == 0 {
+            state.body = Rect::default();
+            return;
+        }
+
+        let field = Rect::new(area.x, area.y.saturating_add(1), area.width, rows);
+        buffer.set_style(field, fs);
+        let gutter = self.system.gutter(visual, field_bg, false);
+        for y in field.top()..field.bottom() {
+            buffer.set_stringn(field.x, y, self.system.glyphs.selection_gutter(), 1, gutter);
+        }
+
+        let number_w = if self.line_numbers {
             let digits = state.lines.len().max(1).ilog10() as u16 + 1;
             digits.saturating_add(1).min(6)
         } else {
             0
         };
-        state.gutter_width = gutter;
-
-        // One prompt cell is reserved in every state. Focus arrival never
-        // shifts text, line numbers, or scrollbar geometry.
-        let prompt_width = 1.min(inner.width);
-        let mut show_vertical = false;
-        let mut show_horizontal = false;
-        for _ in 0..2 {
-            let width = inner
-                .width
-                .saturating_sub(u16::from(show_vertical))
-                .saturating_sub(prompt_width)
-                .saturating_sub(gutter);
-            let height = inner.height.saturating_sub(u16::from(show_horizontal));
-            let content_h = match state.wrap {
-                TextWrap::Soft => state.content_height.max(state.lines.len()),
-                TextWrap::None => state.lines.len(),
-            };
-            show_vertical =
-                width > 1 && crate::scroll::is_scrollable(content_h, usize::from(height.max(1)));
-            show_horizontal = inner.height > 1
-                && matches!(state.wrap, TextWrap::None)
-                && crate::scroll::is_scrollable(state.max_width, usize::from(width));
-        }
-        let body = Rect::new(
-            inner.x.saturating_add(gutter).saturating_add(prompt_width),
-            inner.y,
-            inner
-                .width
-                .saturating_sub(u16::from(show_vertical))
-                .saturating_sub(prompt_width)
-                .saturating_sub(gutter),
-            inner.height.saturating_sub(u16::from(show_horizontal)),
+        // Two-cell inset (bar + space) plus optional line numbers; right 2
+        // cells are scrollbar + pad, matching junie inner = width − 4.
+        state.gutter_width = 2u16.saturating_add(number_w);
+        let inner = Rect::new(
+            field.x.saturating_add(2),
+            field.y,
+            field.width.saturating_sub(4),
+            rows,
         );
-        state.body = body;
-        state.vertical_scrollbar = None;
-        state.horizontal_scrollbar = None;
-        state.viewport_width = usize::from(body.width);
-        state.viewport_height = usize::from(body.height);
+        let text = Rect::new(
+            inner.x.saturating_add(number_w),
+            inner.y,
+            inner.width.saturating_sub(number_w),
+            inner.height,
+        );
+        state.body = text;
+        state.viewport_width = usize::from(text.width);
+        state.viewport_height = usize::from(text.height);
         state.measure();
         state.reveal();
-        if body.is_empty() {
+        if text.is_empty() {
+            paint_textarea_footer(self, area, field, state, buffer, theme, editing);
             return;
         }
-        if let Some((glyph, style)) = input_recipe.prompt {
-            let prompt_x = inner.x.saturating_add(gutter);
-            buffer.set_stringn(prompt_x, inner.y, glyph, usize::from(prompt_width), style);
-        }
 
-        // Line number gutter
-        if gutter > 0 {
+        if number_w > 0 {
             let first = usize::from(state.scroll.offset_y());
+            let nstyle = theme.faint().bg(field_bg);
             for row in 0..state.viewport_height {
                 let line_no = first.saturating_add(row).saturating_add(1);
                 if line_no > state.lines.len() && matches!(state.wrap, TextWrap::None) {
@@ -1595,43 +1644,40 @@ impl StatefulWidget for &TextArea<'_> {
                 }
                 let label = format!(
                     "{line_no:>width$}",
-                    width = usize::from(gutter.saturating_sub(1))
+                    width = usize::from(number_w.saturating_sub(1))
                 );
                 buffer.set_stringn(
                     inner.x,
-                    body.y.saturating_add(u16::try_from(row).unwrap_or(0)),
-                    take_display_cols(&label, usize::from(gutter)),
-                    usize::from(gutter),
-                    input_recipe.placeholder,
+                    text.y.saturating_add(u16::try_from(row).unwrap_or(0)),
+                    take_display_cols(&label, usize::from(number_w)),
+                    usize::from(number_w),
+                    nstyle,
                 );
             }
         }
 
         let first = usize::from(state.scroll.offset_y());
-        // Read-only is not disabled: the words stay legible, the caret goes
-        // away, and the ground says the field is not accepting typing. A
-        // read-only area used to be pixel-identical to an editable one
-        // (plans/021 Step 4).
-        let text_style = input_recipe.value;
+        let text_style = fs;
+        let placeholder_style = theme.placeholder(visual);
+        let empty_doc = state.lines.len() == 1 && state.lines[0].is_empty();
 
         match state.wrap {
             TextWrap::None => {
                 let last = (first + state.viewport_height).min(state.lines.len());
-                for (painted, (line_idx, line)) in state.lines[first..last]
-                    .iter()
-                    .enumerate()
-                    .map(|(i, l)| (first + i, l))
-                    .enumerate()
-                {
-                    let _ = line_idx;
+                for (painted, line) in state.lines[first..last].iter().enumerate() {
+                    let y = text.y + u16::try_from(painted).unwrap_or(u16::MAX);
+                    let offset_x = usize::from(state.scroll.offset_x());
+                    if offset_x > 0 && !line.is_empty() {
+                        buffer.set_stringn(text.x, y, "…", 1, fs.fg(theme.text_muted));
+                    }
                     display_cols_slice_into(
                         line,
-                        usize::from(state.scroll.offset_x()),
+                        offset_x,
                         state.viewport_width,
                         &mut state.scratch,
                     );
-                    if line.is_empty()
-                        && state.lines.len() == 1
+                    if empty_doc
+                        && painted == 0
                         && let Some(placeholder) = self.placeholder
                     {
                         display_cols_slice_into(
@@ -1641,57 +1687,48 @@ impl StatefulWidget for &TextArea<'_> {
                             &mut state.scratch,
                         );
                     }
-                    let y = body.y + u16::try_from(painted).unwrap_or(u16::MAX);
-                    buffer.set_stringn(
-                        body.x,
-                        y,
-                        &state.scratch,
-                        state.viewport_width,
-                        if line.is_empty() {
-                            input_recipe.placeholder
-                        } else {
-                            text_style
-                        },
-                    );
-                    // Selection on this line
+                    let style = if empty_doc {
+                        placeholder_style
+                    } else {
+                        text_style
+                    };
+                    buffer.set_stringn(text.x, y, &state.scratch, state.viewport_width, style);
+                    if display_cols(line).saturating_sub(offset_x) > state.viewport_width
+                        && text.width > 0
+                    {
+                        buffer.set_stringn(
+                            text.right().saturating_sub(1),
+                            y,
+                            "…",
+                            1,
+                            fs.fg(theme.text_muted),
+                        );
+                    }
                     if let Some((a, b)) = state.selection_range() {
                         paint_selection_line(
                             buffer,
-                            body,
+                            text,
                             line,
                             first + painted,
                             a,
                             b,
-                            usize::from(state.scroll.offset_x()),
+                            offset_x,
                             state.viewport_width,
                             y,
                             self.system.selected_text(),
                         );
                     }
                 }
-                if state.accepts_input && state.cursor.line >= first && state.cursor.line < last {
-                    let col = display_cols(&state.lines[state.cursor.line][..state.cursor.byte])
-                        .saturating_sub(usize::from(state.scroll.offset_x()));
-                    let x = body
-                        .x
-                        .saturating_add(u16::try_from(col).unwrap_or(u16::MAX))
-                        .min(body.right().saturating_sub(1));
-                    let y = body.y + u16::try_from(state.cursor.line - first).unwrap_or(u16::MAX);
-                    // B3: the caret recipe is already the explicit pair;
-                    // stacking REVERSED swapped it back into invisibility.
-                    buffer.set_style(Rect::new(x, y, 1, 1), input_recipe.cursor);
-                }
             }
             TextWrap::Soft => {
-                // Paint visual rows starting at scroll offset
                 let w = state.viewport_width.max(1);
                 let mut visual = 0usize;
                 let mut painted = 0usize;
                 let sel = state.selection_range();
                 for (line_idx, line) in state.lines.iter().enumerate() {
                     let cols = display_cols(line).max(1);
-                    let rows = cols.div_ceil(w).max(1);
-                    for r in 0..rows {
+                    let wrap_rows = cols.div_ceil(w).max(1);
+                    for r in 0..wrap_rows {
                         if visual + r < first {
                             continue;
                         }
@@ -1700,69 +1737,174 @@ impl StatefulWidget for &TextArea<'_> {
                         }
                         let start_col = r.saturating_mul(w);
                         display_cols_slice_into(line, start_col, w, &mut state.scratch);
-                        if line.is_empty()
-                            && state.lines.len() == 1
+                        if empty_doc
                             && r == 0
                             && let Some(placeholder) = self.placeholder
                         {
                             display_cols_slice_into(placeholder, 0, w, &mut state.scratch);
                         }
-                        let y = body.y + u16::try_from(painted).unwrap_or(0);
+                        let y = text.y + u16::try_from(painted).unwrap_or(0);
                         buffer.set_stringn(
-                            body.x,
+                            text.x,
                             y,
                             &state.scratch,
                             w,
-                            if line.is_empty() {
-                                input_recipe.placeholder
+                            if empty_doc {
+                                placeholder_style
                             } else {
                                 text_style
                             },
                         );
-                        if let Some((a, b)) = sel {
-                            // soft wrap selection: approximate full-line highlight when line in range
-                            if line_idx >= a.line && line_idx <= b.line {
-                                buffer.set_style(
-                                    Rect::new(body.x, y, body.width.min(w as u16), 1),
-                                    self.system.selected_text(),
-                                );
-                            }
+                        if let Some((a, b)) = sel
+                            && line_idx >= a.line
+                            && line_idx <= b.line
+                        {
+                            buffer.set_style(
+                                Rect::new(text.x, y, text.width.min(w as u16), 1),
+                                self.system.selected_text(),
+                            );
                         }
                         painted += 1;
                     }
-                    visual = visual.saturating_add(rows);
+                    visual = visual.saturating_add(wrap_rows);
                     if painted >= state.viewport_height {
                         break;
-                    }
-                }
-                // Caret
-                if state.accepts_input {
-                    let crow = state.visual_row_of_cursor();
-                    if crow >= first && crow < first + state.viewport_height {
-                        let line = &state.lines[state.cursor.line];
-                        let col = display_cols(&line[..state.cursor.byte.min(line.len())]);
-                        let x_off = col % w;
-                        let y = body.y + u16::try_from(crow.saturating_sub(first)).unwrap_or(0);
-                        let x = body
-                            .x
-                            .saturating_add(u16::try_from(x_off).unwrap_or(0))
-                            .min(body.right().saturating_sub(1));
-                        buffer.set_style(Rect::new(x, y, 1, 1), input_recipe.cursor);
                     }
                 }
             }
         }
 
-        if show_vertical || show_horizontal {
-            let sa = ScrollArea::new(self.system).bar(ScrollBarVisibility::Auto);
-            sa.render_bars(inner, buffer, &state.scroll);
-            if show_vertical && inner.width > 0 {
-                state.vertical_scrollbar = Some(Rect::new(body.right(), inner.y, 1, body.height));
-            }
-            if show_horizontal && inner.height > 0 {
-                state.horizontal_scrollbar = Some(Rect::new(body.x, body.bottom(), body.width, 1));
+        // Current line: border-strong underline (not accent — that is
+        // single-line editing). Hardware cursor; no reverse cell caret.
+        if editing {
+            let (cy, cx_off) = match state.wrap {
+                TextWrap::None => {
+                    let col = display_cols(&state.lines[state.cursor.line][..state.cursor.byte])
+                        .saturating_sub(usize::from(state.scroll.offset_x()));
+                    let y = text.y
+                        + u16::try_from(state.cursor.line.saturating_sub(first))
+                            .unwrap_or(u16::MAX);
+                    (y, col)
+                }
+                TextWrap::Soft => {
+                    let crow = state.visual_row_of_cursor();
+                    let line = &state.lines[state.cursor.line];
+                    let col = display_cols(&line[..state.cursor.byte.min(line.len())]);
+                    let w = state.viewport_width.max(1);
+                    let y = text.y + u16::try_from(crow.saturating_sub(first)).unwrap_or(0);
+                    (y, col % w)
+                }
+            };
+            if cy >= text.y && cy < text.bottom() {
+                underline_row(buffer, inner, cy, theme.border_strong);
+                let x = text
+                    .x
+                    .saturating_add(u16::try_from(cx_off).unwrap_or(u16::MAX))
+                    .min(text.right());
+                state.hardware_cursor = Some(Position { x, y: cy });
             }
         }
+
+        if invalid {
+            buffer.set_stringn(
+                field.right().saturating_sub(2),
+                field.y,
+                "!",
+                1,
+                fs.fg(theme.error).add_modifier(Modifier::BOLD),
+            );
+        }
+
+        let content_h = match state.wrap {
+            TextWrap::Soft => state.content_height.max(state.lines.len()),
+            TextWrap::None => state.lines.len(),
+        };
+        let sb = Rect::new(field.right().saturating_sub(1), field.y, 1, rows);
+        state.vertical_scrollbar = Some(sb);
+        crate::scroll::paint_scrolled_region(
+            buffer,
+            text,
+            sb,
+            content_h,
+            state.viewport_height,
+            state.scroll.offset_y(),
+            self.system,
+        );
+
+        paint_textarea_footer(self, area, field, state, buffer, theme, editing);
+        let _ = self.colorless;
+    }
+}
+
+fn underline_row(buffer: &mut Buffer, inner: Rect, y: u16, color: ratatui_core::style::Color) {
+    for x in inner.x..inner.right() {
+        if let Some(cell) = buffer.cell_mut((x, y)) {
+            cell.set_style(
+                cell.style()
+                    .add_modifier(Modifier::UNDERLINED)
+                    .underline_color(color),
+            );
+        }
+    }
+}
+
+fn paint_textarea_footer(
+    widget: &TextArea<'_>,
+    area: Rect,
+    field: Rect,
+    state: &mut TextAreaState,
+    buffer: &mut Buffer,
+    theme: crate::style::JunieTheme,
+    editing: bool,
+) {
+    let fy = field.bottom();
+    if fy >= area.bottom() {
+        return;
+    }
+    let n = state.lines.len().max(1);
+    let first = usize::from(state.scroll.offset_y());
+    let last = (first + state.viewport_height.max(1)).min(n);
+    state.scratch.clear();
+    if editing {
+        use std::fmt::Write as _;
+        let _ = write!(
+            state.scratch,
+            "ln {}/{n}",
+            state.cursor.line.saturating_add(1)
+        );
+    } else if crate::scroll::is_scrollable(n, state.viewport_height.max(1)) {
+        use std::fmt::Write as _;
+        let _ = write!(state.scratch, "{}–{last} of {n}", first.saturating_add(1));
+    }
+    let pos_w = if state.scratch.is_empty() {
+        0
+    } else {
+        display_cols(&state.scratch) as u16 + 3
+    };
+    let msg_w = usize::from(area.width.saturating_sub(2 + pos_w));
+    if let Some(err) = widget.error {
+        buffer.set_stringn(
+            area.x.saturating_add(2),
+            fy,
+            take_display_cols(err, msg_w),
+            msg_w,
+            theme.error_fg().bg(theme.canvas),
+        );
+    } else if let Some(help) = widget.help {
+        buffer.set_stringn(
+            area.x.saturating_add(2),
+            fy,
+            take_display_cols(help, msg_w),
+            msg_w,
+            theme.muted().bg(theme.canvas),
+        );
+    }
+    if !state.scratch.is_empty() {
+        let w = display_cols(&state.scratch);
+        let px = area
+            .right()
+            .saturating_sub(u16::try_from(w).unwrap_or(0).saturating_add(1));
+        buffer.set_stringn(px, fy, &state.scratch, w, theme.faint().bg(theme.canvas));
     }
 }
 
@@ -1829,6 +1971,7 @@ fn parse_lines(text: &str) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::style::RolePalette;
     #[test]
     fn normalized_editing_and_goal_column_contract() {
         let mut state = TextAreaState::new("ab🧪\r\nx\r12345");
@@ -2245,18 +2388,22 @@ mod tests {
     }
 
     #[test]
-    fn scrollbars_stay_inside_panel_and_own_press_drag_geometry() {
+    fn scrollbars_stay_inside_field_and_own_press_drag_geometry() {
         let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
+        let system = crate::style::DesignSystem::new(theme.clone());
         let mut state = TextAreaState::new("wide content beyond viewport\none\ntwo\nthree\nfour");
         state.set_accepts_input(true);
         assert!(state.set_cursor(c(0, 0)));
         let area = Rect::new(2, 2, 14, 8);
         let mut buffer = Buffer::empty(Rect::new(0, 0, 20, 12));
-        (&TextArea::new(&system).title("Edit")).render(area, &mut buffer, &mut state);
-        assert_eq!(buffer[(area.right() - 1, area.y)].symbol(), "\u{256e}");
-        assert_eq!(buffer[(area.x, area.bottom() - 1)].symbol(), "\u{2570}");
+        (&TextArea::new(&system).title("Edit").rows(3)).render(area, &mut buffer, &mut state);
+        // junie: ▎ on every body row; scrollbar occupies the field's last column.
+        let field_y = area.y + 1;
+        assert_eq!(buffer[(area.x, field_y)].symbol(), "▎");
         let vertical = state.vertical_scrollbar.unwrap();
+        assert_eq!(vertical.x, area.right() - 1);
+        assert!(vertical.y >= field_y);
+        assert!(vertical.bottom() <= area.bottom());
         let outcome = state.handle_event(Event::Mouse(crate::input::MouseEvent {
             kind: MouseEventKind::Down(MouseButton::Left),
             position: Position::new(vertical.x, vertical.bottom() - 1),
@@ -2283,16 +2430,19 @@ mod tests {
     }
 
     #[test]
-    fn tiny_editor_keeps_one_content_row_before_scrollbar() {
+    fn height_is_rows_plus_two_and_body_fills_between_label_and_footer() {
         let system = crate::style::DesignSystem::default();
         let mut state = TextAreaState::new("Explain this module");
         state.set_accepts_input(true);
         let area = Rect::new(0, 0, 22, 5);
         let mut buffer = Buffer::empty(area);
 
-        (&TextArea::new(&system)).render(area, &mut buffer, &mut state);
+        let widget = TextArea::new(&system).rows(3);
+        assert_eq!(widget.height(), 5);
+        (&widget).render(area, &mut buffer, &mut state);
 
-        assert_eq!(state.body.height, 1);
+        // area 5 = label + 3 body rows + footer
+        assert_eq!(state.body.height, 3);
         assert!(state.horizontal_scrollbar.is_none());
         let painted: String = (state.body.x..state.body.right())
             .map(|x| buffer[(x, state.body.y)].symbol())
@@ -2489,17 +2639,14 @@ mod tests {
             .render(area, &mut buffer, &mut state);
         assert!(state.gutter_width >= 2);
         assert!(!state.body.is_empty());
-        // Gutter starts immediately before the live padded body.
-        let inner_x = state
-            .body
-            .x
-            .saturating_sub(state.gutter_width)
-            .saturating_sub(1);
-        let cell = &buffer[(inner_x, state.body.y)];
+        // junie: ▎ at the field origin; line numbers sit in the two-cell inset.
+        assert_eq!(buffer[(area.x, state.body.y)].symbol(), "▎");
+        let number_cell = &buffer[(area.x + 2, state.body.y)];
         assert!(
-            cell.symbol().chars().any(|c| c.is_ascii_digit()) || !cell.symbol().trim().is_empty(),
+            number_cell.symbol().chars().any(|c| c.is_ascii_digit())
+                || !number_cell.symbol().trim().is_empty(),
             "expected line number gutter cell, got {:?}",
-            cell.symbol()
+            number_cell.symbol()
         );
     }
 
@@ -2574,5 +2721,50 @@ mod tests {
         let mut scene = SemanticScene::<&str, ()>::default();
         widget.register_semantic(&mut scene, "ta", Rect::new(0, 0, 20, 5), &state);
         assert!(scene.get(&"ta").is_some());
+    }
+
+    #[test]
+    fn editing_uses_field_plane_border_strong_underline_and_hardware_cursor() {
+        let system = crate::style::DesignSystem::junie();
+        let theme = system.junie_theme();
+        let mut state = TextAreaState::new("hello\nworld");
+        state.set_accepts_input(true);
+        assert!(state.set_cursor(c(0, 2)));
+        let area = Rect::new(0, 0, 28, 6);
+        let mut buffer = Buffer::empty(area);
+        (&TextArea::new(&system)
+            .title("Notes")
+            .help("Enter inserts a newline")
+            .rows(3))
+            .render(area, &mut buffer, &mut state);
+
+        assert_eq!(TextArea::new(&system).rows(3).height(), 5);
+        let field_y = area.y + 1;
+        let cell = &buffer[(area.x + 4, field_y)];
+        assert_eq!(cell.bg, theme.field, "field plane is #1e1e22");
+        assert!(
+            cell.style().add_modifier.contains(Modifier::UNDERLINED),
+            "current line is underlined"
+        );
+        assert_eq!(cell.underline_color, theme.border_strong);
+        let cursor = state.cursor_cell().expect("hardware caret while editing");
+        assert_eq!(cursor.y, field_y);
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
+            TextAreaOutcome::Cancelled
+        );
+        assert_eq!(state.text(), "hello\nworld");
+    }
+
+    #[test]
+    fn enter_inserts_newline_while_editing() {
+        let mut state = TextAreaState::new("ab");
+        state.set_accepts_input(true);
+        assert!(state.set_cursor(c(0, 1)));
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
+            TextAreaOutcome::Changed
+        );
+        assert_eq!(state.text(), "a\nb");
     }
 }

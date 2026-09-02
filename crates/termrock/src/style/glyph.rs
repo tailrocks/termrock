@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-//! Semantic glyph catalog — names resolve to Unicode / ASCII / Enhanced cells.
+//! Semantic glyph catalog — names resolve to the one junie Unicode vocabulary.
 //!
 //! **Critical meaning.** Glyphs are never the only carrier of meaning: every
 //! [`Glyph`] has a stable English [`Glyph::meaning`]. Prefer pairing paint with
 //! [`crate::widgets::Icon::label`] or adjacent text for status that hosts act on.
 //!
 //! Inspired by Lucide's semantic naming; terminals constrain us to cell glyphs
-//! (Unicode box/status, ASCII fallbacks, optional Enhanced emoji / richer set).
+//! in one vocabulary. There is no ASCII or Enhanced profile.
 use crate::text::display_cols;
 
 /// Shared vertical block ramp from empty through a full cell.
@@ -125,7 +125,7 @@ pub enum Glyph {
     RuleHStrong,
     /// Selection gutter bar.
     SelectionGutter,
-    /// Selection marker triangle (classic `▸` cursor).
+    /// Chosen-row marker (`›`); `▸`/`▾` are tree disclosure only.
     SelectionMarker,
     /// List bullet.
     Bullet,
@@ -418,7 +418,7 @@ impl Glyph {
             Self::RuleV => "│",
             Self::RuleHStrong => "━",
             Self::SelectionGutter => "▎",
-            Self::SelectionMarker => "▸",
+            Self::SelectionMarker => "›",
             Self::Bullet => "•",
             Self::MetaSeparator => "·",
             Self::Ellipsis => "…",
@@ -506,6 +506,7 @@ pub const GLYPH_CONTEXTS: &[(&str, &[Glyph])] = &[
         "collection row (gutter col 0, marker col 1, content col 3)",
         &[
             Glyph::SelectionGutter,
+            Glyph::SelectionMarker,
             Glyph::Bullet,
             Glyph::DisclosureOpen,
             Glyph::DisclosureClosed,
@@ -563,6 +564,8 @@ mod tests {
     fn encodings_are_the_junie_vocabulary() {
         let cases = [
             (Glyph::SelectionGutter, "▎"),
+            (Glyph::SelectionMarker, "›"),
+            (Glyph::ChevronRight, "›"),
             (Glyph::RuleHStrong, "━"),
             (Glyph::Error, "!"),
             (Glyph::Warning, "•"),
@@ -614,8 +617,12 @@ mod tests {
             }
         }
         // The deliberate reuse: bullet and warning are both `•`, told apart
-        // by role, not shape.
+        // by role, not shape. Chosen-row `›` shares ChevronRight the same way.
         assert_eq!(Glyph::Bullet.resolve().text, Glyph::Warning.resolve().text);
+        assert_eq!(
+            Glyph::SelectionMarker.resolve().text,
+            Glyph::ChevronRight.resolve().text
+        );
     }
 
     #[test]

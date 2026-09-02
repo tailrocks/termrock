@@ -635,7 +635,7 @@ pub use permission::{
 };
 pub use picker::{
     PICKER_OVERLAY_ID, Picker, PickerOutcome, PickerSize, PickerState, dismiss_picker_overlay,
-    open_picker_overlay, place_picker,
+    open_picker_overlay, place_picker, place_picker_modal,
 };
 pub use popover::{
     POPOVER_CONTRACT_MAX_HEIGHT, POPOVER_CONTRACT_MAX_WIDTH, POPOVER_OVERLAY_ID, Popover,
@@ -659,8 +659,8 @@ pub use primitives::{
     IconButtonState, button_hit, toolbar_icon_action,
 };
 pub use progress::{
-    DEFAULT_PROGRESS_FRAMES, MIN_WIDTH_WITH_PERCENTAGE, PROGRESS_DEFAULT_THROTTLE_MS, ProgressBar,
-    ProgressBarState, ProgressKind, ProgressRecipe, ProgressStatus, ProgressUnit,
+    DEFAULT_PROGRESS_FRAMES, PROGRESS_DEFAULT_THROTTLE_MS, ProgressBar, ProgressBarState,
+    ProgressKind, ProgressRecipe, ProgressStatus, ProgressUnit,
 };
 pub use progress_steps::{
     PROGRESS_STEPS_COMPACT_MAX_WIDTH, PROGRESS_STEPS_HINTS, PROGRESS_STEPS_SUMMARY_MAX_WIDTH,

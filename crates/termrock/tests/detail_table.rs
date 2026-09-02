@@ -107,7 +107,7 @@ fn selection_includes_rows_without_capability() {
 fn click_on_copyable_row_returns_copy_and_affordance_changes() {
     let rows = rows();
     let theme = RolePalette::default();
-    let system = DesignSystem::from_palette(theme.clone());
+    let system = DesignSystem::new(theme.clone());
     let area = Rect::new(0, 0, 40, 3);
     let mut state = DetailTableState::default();
     let before = render(&rows, &system, &mut state, area, false);
@@ -132,7 +132,7 @@ fn click_on_copyable_row_returns_copy_and_affordance_changes() {
 fn click_link_returns_activate_link() {
     let rows = rows();
     let theme = RolePalette::default();
-    let system = DesignSystem::from_palette(theme.clone());
+    let system = DesignSystem::new(theme.clone());
     let mut state = DetailTableState::default();
     render(&rows, &system, &mut state, Rect::new(0, 0, 40, 3), false);
     let link = state
@@ -152,7 +152,7 @@ fn click_link_returns_activate_link() {
 fn hover_tracks_row_id() {
     let rows = rows();
     let theme = RolePalette::default();
-    let system = DesignSystem::from_palette(theme.clone());
+    let system = DesignSystem::new(theme.clone());
     let mut state = DetailTableState::default();
     render(&rows, &system, &mut state, Rect::new(3, 2, 40, 3), false);
     let copy = state
@@ -189,7 +189,7 @@ fn clamp_scroll_after_rows_shrink() {
         style: None,
     }];
     let theme = RolePalette::default();
-    let system = DesignSystem::from_palette(theme.clone());
+    let system = DesignSystem::new(theme.clone());
     let mut state = DetailTableState::default();
     render(&many, &system, &mut state, Rect::new(0, 0, 12, 3), false);
     state.scroll.scroll_x = u16::MAX;
@@ -239,7 +239,7 @@ fn wrap_mode_regions_cover_continuation_rows() {
         style: None,
     }];
     let theme = RolePalette::default();
-    let system = DesignSystem::from_palette(theme.clone());
+    let system = DesignSystem::new(theme.clone());
     let mut state = DetailTableState::default();
     render(&rows, &system, &mut state, Rect::new(0, 0, 18, 6), true);
     let regions = state

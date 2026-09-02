@@ -2154,7 +2154,7 @@ mod tests {
         use ratatui_core::{backend::TestBackend, terminal::Terminal};
 
         let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
+        let system = crate::style::DesignSystem::new(theme.clone());
         let prompt = PermissionPrompt::new(&system);
         let mut state = PermissionPromptState::new();
         state.enqueue(low_read());
@@ -2522,7 +2522,7 @@ mod tests {
     #[test]
     fn collapsed_frame_keeps_safety_and_moves_detail_behind_d() {
         use ratatui_core::{backend::TestBackend, terminal::Terminal};
-        let system = DesignSystem::from_palette(RolePalette::default());
+        let system = DesignSystem::new(RolePalette::default());
         let prompt = PermissionPrompt::new(&system);
         let mut state = PermissionPromptState::new();
         state.enqueue(
@@ -2572,7 +2572,7 @@ mod tests {
     #[test]
     fn paint_covers_checklist_fields() {
         use ratatui_core::{backend::TestBackend, terminal::Terminal};
-        let system = DesignSystem::from_palette(RolePalette::default());
+        let system = DesignSystem::new(RolePalette::default());
         let prompt = PermissionPrompt::new(&system);
         let mut state = PermissionPromptState::new();
         state.enqueue(
@@ -2709,7 +2709,7 @@ mod tests {
 
     #[test]
     fn paint_perf_smoke() {
-        let system = DesignSystem::from_palette(RolePalette::default());
+        let system = DesignSystem::new(RolePalette::default());
         let prompt = PermissionPrompt::new(&system);
         let area = Rect::new(0, 0, 64, 18);
         let mut buf = Buffer::empty(area);

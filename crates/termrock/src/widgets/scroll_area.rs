@@ -647,6 +647,8 @@ pub struct ScrollArea<'a> {
     tokens: &'a DesignSystem,
     bar: ScrollBarVisibility,
     show_new_content: bool,
+    focused: bool,
+    hovered: bool,
 }
 
 impl<'a> ScrollArea<'a> {
@@ -657,6 +659,8 @@ impl<'a> ScrollArea<'a> {
             tokens,
             bar: ScrollBarVisibility::Auto,
             show_new_content: true,
+            focused: false,
+            hovered: false,
         }
     }
 
@@ -671,6 +675,20 @@ impl<'a> ScrollArea<'a> {
     #[must_use]
     pub const fn show_new_content(mut self, show: bool) -> Self {
         self.show_new_content = show;
+        self
+    }
+
+    /// Keyboard owner: the thumb uses the primary rung.
+    #[must_use]
+    pub const fn focused(mut self, focused: bool) -> Self {
+        self.focused = focused;
+        self
+    }
+
+    /// Pointer over the track: the thumb uses the secondary rung.
+    #[must_use]
+    pub const fn hovered(mut self, hovered: bool) -> Self {
+        self.hovered = hovered;
         self
     }
 
@@ -716,9 +734,7 @@ impl<'a> ScrollArea<'a> {
         let need_v = self.need_bar_v(state);
         let need_h = self.need_bar_h(state);
 
-        // One scrollbar language for every scroll surface: the canonical `·`
-        // track with a `┃` / `━` thumb, and one owner for the thumb math
-        // (plans/022 Step 5).
+        // One scrollbar language: `│` track, `┃` / `━` thumb, overflow only.
         if need_v && area.width >= 1 {
             let bar_h = if need_h {
                 area.height.saturating_sub(1)
@@ -735,7 +751,9 @@ impl<'a> ScrollArea<'a> {
                         usize::from(state.viewport_h),
                         state.offset_y,
                     ),
-                ),
+                )
+                .focused(self.focused)
+                .hovered(self.hovered),
                 self.tokens,
             );
         }
@@ -756,7 +774,9 @@ impl<'a> ScrollArea<'a> {
                         usize::from(state.viewport_w),
                         state.offset_x,
                     ),
-                ),
+                )
+                .focused(self.focused)
+                .hovered(self.hovered),
                 self.tokens,
             );
         }
@@ -952,5 +972,46 @@ mod tests {
         };
         assert_eq!(s.handle_mouse(ev), ScrollOutcome::Scrolled);
         assert!(s.offset_x() > 1);
+    }
+
+    #[test]
+    fn overflow_paints_one_column_box_track_and_thumb() {
+        let system = DesignSystem::default();
+        let mut state = ScrollAreaState::new();
+        state.set_content_size(10, 40);
+        state.set_viewport(10, 8);
+        let area = Rect::new(0, 0, 10, 8);
+        let mut buffer = Buffer::empty(area);
+        ScrollArea::new(&system)
+            .focused(true)
+            .render_bars(area, &mut buffer, &state);
+        let gutter: Vec<&str> = (0..area.height)
+            .map(|y| buffer[(area.right() - 1, y)].symbol())
+            .collect();
+        assert!(gutter.contains(&"┃"), "{gutter:?}");
+        assert!(gutter.contains(&"│"), "{gutter:?}");
+        assert_eq!(
+            buffer[(area.right() - 1, 0)].fg,
+            system.scrollbar_thumb(true, false).fg.unwrap()
+        );
+        let track_y = gutter.iter().position(|g| *g == "│").unwrap() as u16;
+        assert_eq!(
+            buffer[(area.right() - 1, track_y)].fg,
+            system.scrollbar_track().fg.unwrap()
+        );
+    }
+
+    #[test]
+    fn no_bar_when_content_fits() {
+        let system = DesignSystem::default();
+        let mut state = ScrollAreaState::new();
+        state.set_content_size(10, 8);
+        state.set_viewport(10, 8);
+        let area = Rect::new(0, 0, 10, 8);
+        let mut buffer = Buffer::empty(area);
+        ScrollArea::new(&system).render_bars(area, &mut buffer, &state);
+        for y in 0..area.height {
+            assert_eq!(buffer[(area.right() - 1, y)].symbol(), " ");
+        }
     }
 }

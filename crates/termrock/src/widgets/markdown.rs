@@ -1941,7 +1941,7 @@ fn x() {}
     #[test]
     fn renders_heading_strong() {
         let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
+        let system = crate::style::DesignSystem::new(theme.clone());
         let blocks = [MarkdownBlock::heading("Hello", HeadingLevel::H1)];
         let mut buffer = Buffer::empty(Rect::new(0, 0, 20, 2));
         MarkdownView::new(&blocks, &system).render(Rect::new(0, 0, 20, 2), &mut buffer);

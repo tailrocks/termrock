@@ -519,9 +519,7 @@ pub(crate) struct ListInteractor {
 
 impl ListInteractor {
     pub(crate) fn new() -> Self {
-        let mut state = ListState::new(Some("beta"));
-        state.enable_multi_select();
-        state.selection_mut().unwrap().toggle(&"alpha");
+        let state = ListState::new(Some("beta"));
         Self {
             state,
             system: crate::design::lookbook_system(RolePalette::default()),
@@ -1482,7 +1480,6 @@ impl StoryInteraction for DesignInspectorInteractor {
             capability: ColorCapability::Truecolor,
             layers: &layers,
             recipes: &recipes,
-            selection_chrome: "gutter",
             semantics: &[],
             focus_graph: &[],
         };

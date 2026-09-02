@@ -32,7 +32,7 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     interaction::{NavigationMove, PageMove, UiIntent},
-    style::{DesignSystem, ListRowVisualState, Role},
+    style::{DesignSystem, Glyph, ListRowVisualState, Role},
     text::take_display_cols,
     widgets::{
         data_view::{
@@ -1413,7 +1413,7 @@ fn paint_checked_marker(system: &DesignSystem, buffer: &mut Buffer, row: Rect, c
         buffer.set_stringn(
             row.x.saturating_add(1),
             row.y,
-            system.glyphs.check_on(),
+            Glyph::Success.resolve().text,
             1,
             system.style(Role::Accent),
         );

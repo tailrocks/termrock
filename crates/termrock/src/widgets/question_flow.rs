@@ -1316,9 +1316,13 @@ impl<'a> QuestionFlow<'a> {
                     let checked = matches!(q.kind, QuestionKind::MultiChoice)
                         && st.multi_selected.contains(&opt.id);
                     let mark = if matches!(q.kind, QuestionKind::MultiChoice) {
-                        if checked { "[✓]" } else { "[ ]" }
+                        if checked {
+                            crate::style::Glyph::CheckOn.resolve().text
+                        } else {
+                            crate::style::Glyph::CheckOff.resolve().text
+                        }
                     } else if on {
-                        "›"
+                        crate::style::Glyph::SelectionMarker.resolve().text
                     } else {
                         " "
                     };
@@ -1334,9 +1338,7 @@ impl<'a> QuestionFlow<'a> {
                         checked,
                         ..ListRowVisualState::default()
                     });
-                    if recipe.use_fill {
-                        buffer.set_style(row, recipe.label);
-                    } else if recipe.use_tint {
+                    if recipe.use_tint {
                         buffer.set_style(row, recipe.tint);
                     }
                     buffer.set_stringn(inner.x, y, take_display_cols(&line, w), w, recipe.label);

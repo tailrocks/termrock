@@ -1159,7 +1159,7 @@ mod tests {
     #[test]
     fn empty_and_min_rect_do_not_panic() {
         let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
+        let system = crate::style::DesignSystem::new(theme.clone());
         let columns = columns();
         let rows: [GridRow<'_, u64>; 0] = [];
         let grid = VirtualGrid::new(&columns, &rows, &system).total_rows(0);
@@ -1181,7 +1181,7 @@ mod tests {
     #[test]
     fn keyboard_moves_cursor_and_viewport() {
         let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
+        let system = crate::style::DesignSystem::new(theme.clone());
         let columns = columns();
         let cell_store = cells("1", "2", "3");
         let rows = [GridRow::new(0, 0, &cell_store)];
@@ -1248,7 +1248,7 @@ mod tests {
     #[test]
     fn mouse_click_selects_painted_cell() {
         let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
+        let system = crate::style::DesignSystem::new(theme.clone());
         let columns = columns();
         let cell0 = cells("x", "y", "z");
         let cell1 = cells("p", "q", "r");
@@ -1288,7 +1288,7 @@ mod tests {
     #[test]
     fn pending_cells_render_without_panic() {
         let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
+        let system = crate::style::DesignSystem::new(theme.clone());
         let columns = columns();
         let pending = [
             GridCell::pending(),
@@ -1311,7 +1311,7 @@ mod tests {
     #[test]
     fn unicode_header_and_cell_width_is_safe() {
         let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
+        let system = crate::style::DesignSystem::new(theme.clone());
         let columns = [GridColumn::fixed("u", "日本語", 6)];
         let cells = [GridCell::text("🚀ok")];
         let rows = [GridRow::new(0, 0, &cells)];
@@ -1355,7 +1355,7 @@ mod tests {
     #[test]
     fn zero_total_has_no_body_hits_and_enter_ignored() {
         let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
+        let system = crate::style::DesignSystem::new(theme.clone());
         let columns = columns();
         let rows: [GridRow<'_, u64>; 0] = [];
         let grid = VirtualGrid::new(&columns, &rows, &system).total_rows(0);
@@ -1381,7 +1381,7 @@ mod tests {
     #[test]
     fn short_total_paints_only_existing_rows() {
         let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
+        let system = crate::style::DesignSystem::new(theme.clone());
         let columns = columns();
         let cell0 = cells("a", "b", "c");
         let cell1 = cells("d", "e", "f");
@@ -1407,7 +1407,7 @@ mod tests {
     #[test]
     fn disabled_resident_rows_cannot_be_selected_or_activated() {
         let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
+        let system = crate::style::DesignSystem::new(theme.clone());
         let columns = columns();
         let cell0 = cells("a", "b", "c");
         let cell1 = cells("d", "e", "f");
@@ -1473,7 +1473,7 @@ mod tests {
     #[test]
     fn range_paint_uses_anchor_to_cursor_rectangle() {
         let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
+        let system = crate::style::DesignSystem::new(theme.clone());
         let columns = columns();
         let shared = cells("x", "y", "z");
         let rows = [

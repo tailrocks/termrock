@@ -1001,7 +1001,7 @@ pub fn settings_query_matches(fieldsets: &[Fieldset<'_, &'static str>], query: &
 #[must_use]
 pub fn example_settings_appearance_fields() -> [Field<'static, &'static str>; 3] {
     [
-        Field::new("theme", "Theme", "phosphor")
+        Field::new("theme", "Theme", "junie")
             .description("restart required to apply system chrome")
             .dirty(true)
             .touched(true)

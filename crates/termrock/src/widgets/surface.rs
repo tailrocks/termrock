@@ -543,8 +543,9 @@ mod tests {
         let system = DesignSystem::default();
         let selected = system.surface_recipe(SurfaceRecipe::Selected);
         assert_eq!(selected.family, RecipeFamily::Collection);
-        assert!(
-            system.family_recipe(selected.family).selection.is_some(),
+        assert_eq!(
+            system.family_recipe(selected.family).non_color_cue,
+            crate::style::NonColorCue::SelectionGlyph,
             "selected membership needs a family selection cue"
         );
     }
@@ -670,7 +671,7 @@ mod tests {
 
     #[test]
     fn paint_with_explicit_fill_sets_bg() {
-        let system = DesignSystem::from_palette(crate::style::RolePalette::junie());
+        let system = DesignSystem::new(crate::style::RolePalette::junie());
         let mut buf = Buffer::empty(Rect::new(0, 0, 8, 4));
         Surface::new(&system)
             .recipe(SurfaceRecipe::Raised)
@@ -696,6 +697,22 @@ mod tests {
         ] {
             assert!(system.style(role).bg.is_some(), "{role:?} must carry bg");
         }
+    }
+
+    #[test]
+    fn inset_is_surface_fill_without_a_border() {
+        let system = DesignSystem::default();
+        let plan = system.surface_recipe(SurfaceRecipe::Inset);
+        assert!(plan.border.is_none());
+        assert_eq!(plan.fill, Some(system.style(Role::Surface)));
+        assert_eq!(plan.pad_x, system.spacing.card_inset);
+        let area = Rect::new(0, 0, 12, 5);
+        let mut buffer = Buffer::empty(area);
+        Surface::new(&system)
+            .recipe(SurfaceRecipe::Inset)
+            .paint(area, &mut buffer);
+        assert_eq!(buffer[(0, 0)].symbol(), " ");
+        assert_eq!(buffer[(0, 0)].bg, system.style(Role::Surface).bg.unwrap());
     }
 
     #[test]

@@ -4,11 +4,8 @@ use std::{ops::ControlFlow, time::Duration};
 use ratatui::{
     Frame,
     layout::{Constraint, Layout, Rect},
-    style::{Modifier, Style},
     text::{Line, Span},
-    widgets::{
-        Block, List as RatatuiList, ListItem, ListState as RatatuiListState, Paragraph, Wrap,
-    },
+    widgets::{Block, Paragraph, Wrap},
 };
 use termrock::{
     input::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent, MouseEventKind},
@@ -179,16 +176,17 @@ impl Lookbook {
     }
 
     fn render_sidebar(&mut self, frame: &mut Frame<'_>, area: Rect) {
-        let panel_tokens = self.host.system();
+        let tokens = self.host.system();
         let catalog = gallery_stories();
-        let panel = Panel::new(&panel_tokens)
+        let panel = Panel::new(&tokens)
             .variant(PanelVariant::Bordered)
             .title("Components · Application patterns")
             .emphasis(panel_chrome(&self.host.scene, FocusId::Sidebar));
         let inner = panel.inner(area);
         panel.paint(area, frame.buffer_mut(), None);
 
-        self.sidebar_viewport_items = (usize::from(inner.height) / 2).max(1);
+        // TermRock List rows are one cell tall (secondary rides inline).
+        self.sidebar_viewport_items = usize::from(inner.height).max(1);
         let offset = scroll::cursor_follow_offset(
             self.selected,
             catalog.len(),
@@ -196,39 +194,29 @@ impl Lookbook {
             usize::from(self.sidebar_scroll),
         );
         self.sidebar_scroll = u16::try_from(offset).unwrap_or(u16::MAX);
-        let items = catalog
+        let rows = catalog
             .iter()
-            .map(|story| {
+            .enumerate()
+            .map(|(index, story)| {
                 let kind = if is_pattern_demo(story.id) {
                     "application pattern"
                 } else {
                     story.id
                 };
-                ListItem::new(vec![
-                    Line::from(Span::styled(
-                        story.component(),
-                        self.host.theme.style(Role::Text),
-                    )),
-                    Line::from(Span::styled(kind, self.host.theme.style(Role::TextMuted))),
-                ])
+                ListRow::item(index, Line::from(story.component())).secondary(Line::from(kind))
             })
             .collect::<Vec<_>>();
-        let mut state = RatatuiListState::default()
-            .with_offset(offset)
-            .with_selected(Some(self.selected));
+        let mut state = ComponentListState::new(Some(self.selected));
+        state
+            .collection_mut()
+            .set_viewport(offset, self.sidebar_viewport_items, catalog.len());
+        let focused = is_focused(&self.host.scene, FocusId::Sidebar);
         frame.render_stateful_widget(
-            RatatuiList::new(items)
-                .highlight_style(
-                    self.host
-                        .theme
-                        .style(Role::Selection)
-                        .add_modifier(Modifier::BOLD),
-                )
-                .highlight_symbol("▸ ")
-                .highlight_spacing(ratatui::widgets::HighlightSpacing::Always),
+            &ComponentList::new(&rows, &tokens).focused(focused),
             inner,
             &mut state,
         );
+        self.sidebar_scroll = u16::try_from(state.offset()).unwrap_or(u16::MAX);
         self.sidebar_area = area;
         self.sidebar_inner_area = inner;
     }
@@ -253,9 +241,7 @@ impl Lookbook {
                 Span::raw("  "),
                 Span::styled(
                     story.component(),
-                    Style::default()
-                        .patch(self.host.theme.style(Role::Accent))
-                        .add_modifier(Modifier::DIM),
+                    self.host.theme.style(Role::TextSecondary),
                 ),
                 Span::raw("  "),
                 Span::styled(story.id, self.host.theme.style(Role::TextMuted)),
@@ -484,7 +470,7 @@ impl Lookbook {
             MouseEventKind::Down(_) => {
                 if self.sidebar_inner_area.contains(mouse.position) {
                     let row = usize::from(mouse.position.y - self.sidebar_inner_area.y);
-                    let index = (usize::from(self.sidebar_scroll) + row / 2)
+                    let index = (usize::from(self.sidebar_scroll) + row)
                         .min(gallery_stories().len().saturating_sub(1));
                     self.select(index);
                     self.focus(FocusId::Sidebar);

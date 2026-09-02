@@ -1,8 +1,8 @@
 table/basic 70x10 (story 68x8)
                                                                       
-   Name                                                           CPU 
- ▎ alpha                                                          12% 
-   beta                                                            4% 
+    Name                                                          CPU 
+ ▎› alpha                                                         12% 
+ ▎  beta                                                           4% 
                                                                       
                                                                       
                                                                       

@@ -39,7 +39,7 @@ use crate::{
         CollectionItem, CollectionOutcome, CollectionState, HitRegion, SemanticNode, SemanticRole,
         SemanticScene, SemanticState, UiIntent,
     },
-    style::{DesignSystem, Glyph, Role},
+    style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
 };
 
@@ -210,8 +210,8 @@ impl TabStatus {
             (Self::Success, false) => Some("✓"),
             (Self::Warning, true) => Some("!"),
             (Self::Warning, false) => Some("⚠"),
-            (Self::Error, true) => Some("x"),
-            (Self::Error, false) => Some("✗"),
+            (Self::Error, true) => Some("!"),
+            (Self::Error, false) => Some("!"),
             (Self::Dirty, true) => Some("."),
             (Self::Dirty, false) => Some("•"),
         }
@@ -353,8 +353,12 @@ pub struct TabsState<Id> {
     pub close_regions: Vec<(Id, Rect)>,
     /// Overflow trigger rect.
     pub overflow_trigger: Option<Rect>,
+    /// Left overflow `‹` hit (when scrolling).
+    pub overflow_left: Option<Rect>,
     /// Ids currently in overflow (host menu).
     pub overflow_ids: Vec<Id>,
+    /// Close glyph currently under the pointer.
+    pub hovered_close: Option<Id>,
     /// Roving focus among tabs.
     collection: CollectionState<Id>,
     activation: TabsActivation,
@@ -390,7 +394,9 @@ impl<Id> TabsState<Id> {
             regions: Vec::new(),
             close_regions: Vec::new(),
             overflow_trigger: None,
+            overflow_left: None,
             overflow_ids: Vec::new(),
+            hovered_close: None,
             collection: CollectionState::new()
                 .wrap(true)
                 .orientation(crate::interaction::RovingOrientation::Horizontal),
@@ -764,16 +770,24 @@ impl<Id> TabsState<Id> {
         }
         match event.kind {
             MouseEventKind::Moved | MouseEventKind::Drag(MouseButton::Left) => {
-                for r in &self.regions {
-                    if r.area.contains(event.position) {
-                        self.hovered = Some(r.id.clone());
-                        return TabsOutcome::Changed;
-                    }
+                let close = self
+                    .close_regions
+                    .iter()
+                    .find(|(_, rect)| rect.contains(event.position))
+                    .map(|(id, _)| id.clone());
+                let tab = self
+                    .regions
+                    .iter()
+                    .find(|r| r.area.contains(event.position))
+                    .map(|r| r.id.clone());
+                let changed = close != self.hovered_close || tab != self.hovered;
+                self.hovered_close = close;
+                self.hovered = tab;
+                if changed {
+                    TabsOutcome::Changed
+                } else {
+                    TabsOutcome::Ignored
                 }
-                if self.hovered.take().is_some() {
-                    return TabsOutcome::Changed;
-                }
-                TabsOutcome::Ignored
             }
             MouseEventKind::Down(MouseButton::Left) => {
                 self.focused = true;
@@ -783,15 +797,30 @@ impl<Id> TabsState<Id> {
                         return TabsOutcome::CloseRequested { id: id.clone() };
                     }
                 }
+                if let Some(left) = self.overflow_left {
+                    if left.contains(event.position) {
+                        self.scroll_offset = self.scroll_offset.saturating_sub(1);
+                        return TabsOutcome::Changed;
+                    }
+                }
                 if let Some(tr) = self.overflow_trigger {
                     if tr.contains(event.position) {
-                        self.overflow_open = !self.overflow_open;
-                        return if self.overflow_open {
-                            TabsOutcome::OverflowOpened {
-                                overflow_ids: self.overflow_ids.clone(),
+                        return match self.presentation {
+                            TabsPresentation::Scrolling => {
+                                self.scroll_offset = self.scroll_offset.saturating_add(1);
+                                TabsOutcome::Changed
                             }
-                        } else {
-                            TabsOutcome::OverflowClosed
+                            TabsPresentation::Overflow | TabsPresentation::Select => {
+                                self.overflow_open = !self.overflow_open;
+                                if self.overflow_open {
+                                    TabsOutcome::OverflowOpened {
+                                        overflow_ids: self.overflow_ids.clone(),
+                                    }
+                                } else {
+                                    TabsOutcome::OverflowClosed
+                                }
+                            }
+                            TabsPresentation::Expanded => TabsOutcome::Ignored,
                         };
                     }
                 }
@@ -868,6 +897,8 @@ pub struct Tabs<'a, Id> {
     system: &'a DesignSystem,
     show_close: bool,
     active_cue: TabsActiveCue,
+    /// Secondary-level strip: active underline is border-strong, not accent.
+    quiet: bool,
 }
 
 impl<'a, Id> Tabs<'a, Id> {
@@ -890,7 +921,16 @@ impl<'a, Id> Tabs<'a, Id> {
             // claiming the terminal has Unicode and colour before anyone
             // asked it. Builders below still force either way.
             show_close: true,
+            quiet: false,
         }
+    }
+
+    /// Secondary-level strip: the active rule is border-strong so one screen
+    /// keeps a single accent underline (the document tabs).
+    #[must_use]
+    pub const fn quiet(mut self, on: bool) -> Self {
+        self.quiet = on;
+        self
     }
 
     /// Spacing between adjacent horizontal items.
@@ -916,6 +956,7 @@ impl<'a, Id> Tabs<'a, Id> {
         state.regions.clear();
         state.close_regions.clear();
         state.overflow_trigger = None;
+        state.overflow_left = None;
         state.overflow_ids.clear();
         state.root = area;
         if area.is_empty() || self.tabs.is_empty() {
@@ -964,6 +1005,16 @@ impl<'a, Id> Tabs<'a, Id> {
             state.presentation = presentation;
         }
 
+        if matches!(state.orientation, TabsOrientation::Horizontal) && area.height >= 2 {
+            // Full-width baseline; the active tab overdraws `━` on top.
+            let theme = self.system.junie_theme();
+            let rule = self.system.glyphs.rule();
+            let style = ratatui_core::style::Style::new().fg(theme.border_subtle);
+            for x in area.x..area.right() {
+                buffer.set_stringn(x, area.y.saturating_add(1), rule, 1, style);
+            }
+        }
+
         match state.orientation {
             TabsOrientation::Vertical => self.paint_vertical(area, buffer, state),
             TabsOrientation::Horizontal => match state.presentation {
@@ -990,23 +1041,28 @@ impl<'a, Id> Tabs<'a, Id> {
     }
 
     fn tab_width(&self, tab: &Tab<'a, Id>, show_status: bool) -> u16 {
-        let mut cols = UnicodeWidthStr::width(tab.label).saturating_add(2); // padding
+        // junie: gutter 1 + label + 2 padding (+ prefix + 1) (+2 status) (+2 close)
+        let mut cols = 1u16
+            .saturating_add(UnicodeWidthStr::width(tab.label) as u16)
+            .saturating_add(2);
         if show_status {
-            if tab.glyph.is_some() {
-                cols = cols.saturating_add(2);
+            if let Some(g) = &tab.glyph {
+                cols = cols
+                    .saturating_add(UnicodeWidthStr::width(g.content.as_ref()) as u16)
+                    .saturating_add(1);
             } else if tab.status.mark(false).is_some() {
                 cols = cols.saturating_add(2);
             }
         }
         if let Some(b) = tab.badge {
             cols = cols
-                .saturating_add(UnicodeWidthStr::width(b))
+                .saturating_add(UnicodeWidthStr::width(b) as u16)
                 .saturating_add(1);
         }
         if self.show_close && tab.closable {
             cols = cols.saturating_add(2);
         }
-        u16::try_from(cols).unwrap_or(u16::MAX)
+        cols
     }
 
     fn paint_select(&self, area: Rect, buffer: &mut Buffer, state: &mut TabsState<Id>)
@@ -1056,89 +1112,119 @@ impl<'a, Id> Tabs<'a, Id> {
     where
         Id: Clone + PartialEq,
     {
-        let show_status = crate::layout::tabs_show_status_glyphs(area.width);
-        let ellipsis_w = 3u16;
-        let budget = area.width.saturating_sub(ellipsis_w).saturating_sub(1);
-        let mut x = area.x;
-        let mut used = 0u16;
-        let mut last_fit = 0usize;
-        for (i, tab) in self.tabs.iter().enumerate() {
-            let w = self.tab_width(tab, show_status);
-            let need = if i == 0 {
-                w
-            } else {
-                w.saturating_add(self.gap)
-            };
-            if used.saturating_add(need) > budget && i > 0 {
-                break;
-            }
-            if i > 0 {
-                x = x.saturating_add(self.gap);
-                used = used.saturating_add(self.gap);
-            }
-            let rect = self.paint_one_tab(tab, x, area, buffer, state, show_status);
-            x = x.saturating_add(rect.width);
-            used = used.saturating_add(rect.width);
-            last_fit = i + 1;
-        }
-        for tab in self.tabs.iter().skip(last_fit) {
-            state.overflow_ids.push(tab.id.clone());
-        }
-        if last_fit < self.tabs.len() {
-            let tr = Rect::new(
-                area.right().saturating_sub(ellipsis_w),
-                area.y,
-                ellipsis_w.min(area.width),
-                1,
-            );
-            buffer.set_stringn(
-                tr.x,
-                tr.y,
-                // Catalog-resolved and padded to the same budget in both
-                // profiles, so the overflow trigger does not shift by a cell
-                // between Unicode and ASCII.
-                &Glyph::Ellipsis.resolve().aligned(ellipsis_w),
-                usize::from(tr.width),
-                self.system.style(Role::TabInactive),
-            );
-            state.overflow_trigger = Some(tr);
-        }
+        self.paint_scroll_window(area, buffer, state, true);
     }
 
     fn paint_scrolling(&self, area: Rect, buffer: &mut Buffer, state: &mut TabsState<Id>)
     where
         Id: Clone + PartialEq,
     {
-        let show_status = crate::layout::tabs_show_status_glyphs(area.width);
-        // ensure focus in window
-        if let Some(active) = state.collection.active() {
-            if let Some(idx) = self.tabs.iter().position(|t| &t.id == active) {
+        self.paint_scroll_window(area, buffer, state, false);
+    }
+
+    /// junie overflow: `" ‹ "` / `" › "` around a visible window.
+    fn paint_scroll_window(
+        &self,
+        area: Rect,
+        buffer: &mut Buffer,
+        state: &mut TabsState<Id>,
+        _menu_on_right: bool,
+    ) where
+        Id: Clone + PartialEq,
+    {
+        let show_status = true;
+        let theme = self.system.junie_theme();
+        let widths: Vec<u16> = self
+            .tabs
+            .iter()
+            .map(|tab| self.tab_width(tab, show_status))
+            .collect();
+        let chev_w = 3u16;
+        let overflow = {
+            let mut total = 0u16;
+            for (i, w) in widths.iter().enumerate() {
+                total = total.saturating_add(*w);
+                if i + 1 < widths.len() {
+                    total = total.saturating_add(self.gap);
+                }
+            }
+            total > area.width
+        };
+        let side = if overflow { chev_w } else { 0 };
+        let avail = area.width.saturating_sub(side.saturating_mul(2));
+        if let Some(sel) = state.selected.as_ref() {
+            if let Some(idx) = self.tabs.iter().position(|t| &t.id == sel) {
                 if idx < state.scroll_offset {
                     state.scroll_offset = idx;
                 }
             }
         }
-        let mut x = area.x;
-        let mut i = state.scroll_offset;
-        while i < self.tabs.len() {
-            let tab = &self.tabs[i];
-            let w = self.tab_width(tab, show_status);
-            if x.saturating_add(w) > area.right() {
-                // remaining to overflow for discoverability
-                for t in self.tabs.iter().skip(i) {
-                    state.overflow_ids.push(t.id.clone());
+        let mut fit;
+        loop {
+            fit = 0;
+            let mut used = 0u16;
+            for w in widths.iter().skip(state.scroll_offset) {
+                let need = if fit == 0 {
+                    *w
+                } else {
+                    w.saturating_add(self.gap)
+                };
+                if used.saturating_add(need) > avail {
+                    break;
                 }
-                break;
+                used = used.saturating_add(need);
+                fit += 1;
             }
+            if fit == 0 && !self.tabs.is_empty() {
+                fit = 1;
+            }
+            let end = state.scroll_offset.saturating_add(fit);
+            if let Some(sel) = state.selected.as_ref() {
+                if let Some(idx) = self.tabs.iter().position(|t| &t.id == sel) {
+                    if idx >= end && state.scroll_offset + 1 < self.tabs.len() {
+                        state.scroll_offset += 1;
+                        continue;
+                    }
+                }
+            }
+            break;
+        }
+        let mut x = area.x;
+        if overflow {
+            let more_left = state.scroll_offset > 0;
+            let st = if more_left {
+                theme.secondary()
+            } else {
+                theme.faint()
+            };
+            buffer.set_stringn(x, area.y, if more_left { " ‹ " } else { "   " }, 3, st);
+            if more_left {
+                let left = Rect::new(x, area.y, 3, 1);
+                state.overflow_left = Some(left);
+            }
+            x = x.saturating_add(3);
+        }
+        let start = state.scroll_offset;
+        let end = (start + fit).min(self.tabs.len());
+        for i in start..end {
+            let tab = &self.tabs[i];
             let rect = self.paint_one_tab(tab, x, area, buffer, state, show_status);
             x = x.saturating_add(rect.width).saturating_add(self.gap);
-            i += 1;
         }
-        if state.scroll_offset > 0 || i < self.tabs.len() {
-            // scroll cues as overflow trigger for remaining
-            if i < self.tabs.len() {
-                let tr = Rect::new(area.right().saturating_sub(2), area.y, 2.min(area.width), 1);
-                buffer.set_stringn(tr.x, tr.y, "›", 1, self.system.style(Role::TextMuted));
+        for tab in self.tabs.iter().skip(end) {
+            state.overflow_ids.push(tab.id.clone());
+        }
+        if overflow {
+            let more_right = end < self.tabs.len();
+            let rx = area.right().saturating_sub(3);
+            let st = if more_right {
+                theme.secondary()
+            } else {
+                theme.faint()
+            };
+            buffer.set_stringn(rx, area.y, if more_right { " › " } else { "   " }, 3, st);
+            if more_right {
+                let tr = Rect::new(rx, area.y, 3.min(area.width), 1);
                 state.overflow_trigger = Some(tr);
             }
         }
@@ -1228,124 +1314,149 @@ impl<'a, Id> Tabs<'a, Id> {
         if rect.is_empty() {
             return rect;
         }
+        let theme = self.system.junie_theme();
         let selected = state.selected.as_ref() == Some(&tab.id);
         let focused_tab = state.collection.active() == Some(&tab.id) && state.focused;
-        let hovered = state.hovered.as_ref() == Some(&tab.id);
-        let role = match (selected, hovered) {
-            (true, true) => Role::TabActive,
-            (true, false) => Role::TabActive,
-            (false, true) => Role::TabInactive,
-            (false, false) => Role::TabInactive,
-        };
-        let mut style = self.system.style(role);
+        let hovered = state.hovered.as_ref() == Some(&tab.id) && tab.enabled;
+        let close_hovered = state.hovered_close.as_ref() == Some(&tab.id);
+        let bg = theme.canvas;
+        let mut style = ratatui_core::style::Style::new()
+            .bg(bg)
+            .fg(if selected || hovered {
+                theme.text_primary
+            } else {
+                theme.text_secondary
+            });
+        if hovered && !selected {
+            style = style.bg(theme.lift(bg)).fg(theme.text_primary);
+        }
+        if selected || focused_tab {
+            style = style.add_modifier(Modifier::BOLD);
+        }
         let mut marker = "";
         if selected {
-            // The active cue is named, not improvised (plans/015 Step 3), and
-            // it is the accent rule — never a wash: the selection tint is a
-            // selection plane, and the active tab spends its green on the
-            // `━` rule alone (D2 TabActive, D9 green budget).
-            style = style.add_modifier(Modifier::BOLD);
             match self.active_cue {
                 TabsActiveCue::AccentPill | TabsActiveCue::Rule => {}
                 TabsActiveCue::Connected => {
-                    if style.bg.is_none()
-                        && let Some(bg) = self.system.style(Role::Surface).bg
-                    {
-                        style = style.bg(bg);
-                    }
+                    style = style.bg(theme.surface);
                 }
                 TabsActiveCue::Marker => {
-                    marker = {
-                        self.system
-                            .glyphs
-                            .resolve(crate::style::Glyph::ChevronRight)
-                            .text
-                    };
+                    marker = self
+                        .system
+                        .glyphs
+                        .resolve(crate::style::Glyph::ChevronRight)
+                        .text;
                 }
-            }
-        }
-        if focused_tab && !selected {
-            // Roving focus that has not committed yet: brighten the tab's
-            // leading edge rather than reversing the whole label, so the cue
-            // does not depend on the strip having a second row (plans/021
-            // Step 4, design law §5.2).
-            style = style
-                .patch(self.system.style(Role::BorderFocused))
-                .add_modifier(Modifier::BOLD);
-        } else if focused_tab && selected {
-            style = style.add_modifier(Modifier::BOLD);
-        } else if hovered {
-            // junie: hover is one surface plane up, never a colour.
-            if let Some(bg) = self.system.style(Role::Surface).bg {
-                style = style.bg(self.system.lift(bg));
             }
         }
         if !tab.enabled {
-            // Disabled is a different fact from "inactive": muting both meant a
-            // tab you cannot click looked exactly like one you can.
-            style = self.system.style(Role::TextDisabled);
+            style = ratatui_core::style::Style::new().fg(theme.disabled).bg(bg);
         }
-
-        let mut parts = String::from(" ");
-        if !marker.is_empty() {
-            parts.push_str(marker);
-            parts.push(' ');
-        }
-        if show_status {
-            if let Some(g) = &tab.glyph {
-                parts.push_str(g.content.as_ref());
-                parts.push(' ');
-            } else if let Some(m) = tab.status.mark(false) {
-                parts.push_str(m);
-                parts.push(' ');
-            }
-        }
-        parts.push_str(tab.label);
-        if let Some(b) = tab.badge {
-            parts.push(' ');
-            parts.push_str(b);
-        }
-        if self.show_close && tab.closable {
-            parts.push_str(" ×");
-        }
-        parts.push(' ');
 
         let label_h = 1u16;
         let label_rect = Rect::new(rect.x, rect.y, rect.width, label_h);
+        buffer.set_style(label_rect, style);
         buffer.set_stringn(
             label_rect.x,
             label_rect.y,
-            take_display_cols(&parts, usize::from(label_rect.width)),
-            usize::from(label_rect.width),
-            style,
+            self.system.glyphs.selection_gutter(),
+            1,
+            self.system.gutter(
+                crate::style::VisualState {
+                    focused: focused_tab,
+                    hovered,
+                    selected,
+                    disabled: !tab.enabled,
+                    ..Default::default()
+                },
+                style.bg.unwrap_or(bg),
+                false,
+            ),
         );
-
-        if selected && matches!(self.active_cue, TabsActiveCue::Rule) && rect.height > 1 {
-            // N3: an active tab states itself with the strong rule in the
-            // accent, whenever it is active; an inactive tab draws no line at
-            // all — a faint rule under every tab is noise, not a cue.
-            let rule = self.system.glyphs.rule_strong();
-            let line: String = std::iter::repeat_n(rule, usize::from(rect.width)).collect();
+        let mut cx = label_rect.x.saturating_add(1);
+        if !marker.is_empty() && cx < label_rect.right() {
+            buffer.set_stringn(cx, label_rect.y, marker, 1, style);
+            cx = cx.saturating_add(2);
+        }
+        if show_status && cx < label_rect.right() {
+            if let Some(g) = &tab.glyph {
+                let mut g = g.clone();
+                g.style = g.style.bg(style.bg.unwrap_or(bg));
+                buffer.set_span(cx, label_rect.y, &g, label_rect.right().saturating_sub(cx));
+                cx = cx
+                    .saturating_add(UnicodeWidthStr::width(g.content.as_ref()) as u16)
+                    .saturating_add(1);
+            } else if let Some(m) = tab.status.mark(false) {
+                let mark_style = match tab.status {
+                    TabStatus::Error => style.fg(theme.error),
+                    TabStatus::Dirty | TabStatus::Warning => style.fg(theme.warning),
+                    TabStatus::Running | TabStatus::Success => style.fg(theme.accent),
+                    TabStatus::None => style,
+                };
+                buffer.set_stringn(cx, label_rect.y, m, 1, mark_style);
+                cx = cx.saturating_add(2);
+            }
+        }
+        if cx < label_rect.right() {
+            let lw = label_rect.right().saturating_sub(cx);
             buffer.set_stringn(
-                rect.x,
-                rect.y.saturating_add(1),
-                &line,
-                usize::from(rect.width),
-                self.system.style(Role::Accent),
+                cx,
+                label_rect.y,
+                take_display_cols(tab.label, usize::from(lw)),
+                usize::from(lw),
+                style,
             );
+            cx = cx.saturating_add(UnicodeWidthStr::width(tab.label) as u16);
+        }
+        if let Some(b) = tab.badge {
+            if cx.saturating_add(1) < label_rect.right() {
+                cx = cx.saturating_add(1);
+                let bw = label_rect.right().saturating_sub(cx);
+                buffer.set_stringn(
+                    cx,
+                    label_rect.y,
+                    take_display_cols(b, usize::from(bw)),
+                    usize::from(bw),
+                    style,
+                );
+                cx = cx.saturating_add(UnicodeWidthStr::width(b) as u16);
+            }
+        }
+        if self.show_close && tab.closable && cx.saturating_add(1) < label_rect.right() {
+            let close_x = cx.saturating_add(1);
+            let cs = if close_hovered && tab.enabled {
+                style
+                    .fg(theme.text_primary)
+                    .bg(theme.lift(style.bg.unwrap_or(bg)))
+            } else {
+                style.fg(theme.text_faint)
+            };
+            buffer.set_stringn(close_x, label_rect.y, "×", 1, cs);
+            if tab.enabled {
+                state
+                    .close_regions
+                    .push((tab.id.clone(), Rect::new(close_x, label_rect.y, 1, 1)));
+            }
         }
 
-        // Restyle glyph span color when present
-        if show_status
-            && label_rect.width > 1
-            && let Some(glyph) = &tab.glyph
-        {
-            buffer.set_span(
-                label_rect.x.saturating_add(1),
-                label_rect.y,
-                glyph,
-                label_rect.width.saturating_sub(1),
-            );
+        if selected && matches!(self.active_cue, TabsActiveCue::Rule) && rect.height > 1 {
+            let rule_fg = if self.quiet {
+                theme.border_strong
+            } else {
+                theme.accent
+            };
+            let rule = self.system.glyphs.rule_strong();
+            let start = rect.x.saturating_add(1);
+            let end = rect.right();
+            for xx in start..end {
+                buffer.set_stringn(
+                    xx,
+                    rect.y.saturating_add(1),
+                    rule,
+                    1,
+                    ratatui_core::style::Style::new().fg(rule_fg).bg(bg),
+                );
+            }
         }
 
         if tab.enabled {
@@ -1353,13 +1464,6 @@ impl<'a, Id> Tabs<'a, Id> {
                 id: tab.id.clone(),
                 area: Rect::new(rect.x, rect.y, rect.width, rect.height.min(2)),
             });
-        }
-        if self.show_close && tab.closable && tab.enabled {
-            let close_x = rect.right().saturating_sub(2);
-            state.close_regions.push((
-                tab.id.clone(),
-                Rect::new(close_x, rect.y, 2.min(rect.width), 1),
-            ));
         }
         rect
     }
@@ -1467,14 +1571,20 @@ mod tests {
             ..TabsState::default()
         };
         let theme = RolePalette::default();
-        let system = DesignSystem::from_palette(theme.clone());
+        let system = DesignSystem::new(theme.clone());
         (&Tabs::new(&tabs, &system).gap(1)).render(area, &mut buffer, &mut state);
 
-        assert!(buffer[(3, 4)].modifier.contains(Modifier::BOLD));
+        assert!(buffer[(4, 4)].modifier.contains(Modifier::BOLD));
         // No wash behind the active tab: the cue is the accent rule (D2/D9).
-        assert_eq!(buffer[(3, 4)].bg, Color::Reset);
-        assert_eq!(buffer[(3, 5)].symbol(), system.glyphs.rule_strong());
-        assert_eq!(buffer[(3, 5)].fg, theme.style(Role::Accent).fg.unwrap());
+        assert_eq!(
+            buffer[(4, 4)].bg,
+            system.junie_theme().canvas,
+            "active tab sits on canvas, not a tint wash"
+        );
+        assert_eq!(buffer[(3, 4)].symbol(), "▎");
+        // Baseline under the gutter; `━` starts at x+1.
+        assert_eq!(buffer[(4, 5)].symbol(), system.glyphs.rule_strong());
+        assert_eq!(buffer[(4, 5)].fg, theme.style(Role::Accent).fg.unwrap());
         assert_eq!(state.regions.len(), 1);
         assert!(state.regions[0].area.contains(Position::new(3, 5)));
     }
@@ -1489,14 +1599,19 @@ mod tests {
         let mut buffer = Buffer::empty(area);
         let mut state = TabsState::new().with_selected("overview");
         let theme = RolePalette::default();
-        let system = DesignSystem::from_palette(theme.clone());
+        let system = DesignSystem::new(theme.clone());
 
         Tabs::new(&tabs, &system).render(area, &mut buffer, &mut state);
 
-        assert_eq!(buffer[(0, 1)].symbol(), system.glyphs.rule_strong());
-        assert_eq!(buffer[(0, 1)].fg, theme.style(Role::Accent).fg.unwrap());
+        assert_eq!(buffer[(1, 1)].symbol(), system.glyphs.rule_strong());
+        assert_eq!(buffer[(1, 1)].fg, theme.style(Role::Accent).fg.unwrap());
         // The active label sits on the strip's own ground, not on the tint.
-        assert_eq!(buffer[(0, 0)].bg, Color::Reset);
+        assert_eq!(
+            buffer[(1, 0)].bg,
+            system.junie_theme().canvas,
+            "active tab sits on canvas, not a tint wash"
+        );
+        assert_eq!(buffer[(0, 0)].symbol(), "▎");
     }
 
     #[test]
@@ -1514,7 +1629,7 @@ mod tests {
         let mut buffer = Buffer::empty(area);
         let mut state = TabsState::default();
         let theme = RolePalette::default();
-        let system = DesignSystem::from_palette(theme.clone());
+        let system = DesignSystem::new(theme.clone());
 
         (&Tabs::new(&tabs, &system)
             .active_cue(TabsActiveCue::AccentPill)
@@ -1524,7 +1639,11 @@ mod tests {
         assert_eq!(buffer[(1, 0)].symbol(), "●");
         assert_eq!(buffer[(1, 0)].fg, Color::Yellow);
         // The glyph rides the label ground; the active tab carries no wash.
-        assert_eq!(buffer[(1, 0)].bg, Color::Reset);
+        assert_eq!(
+            buffer[(1, 0)].bg,
+            system.junie_theme().canvas,
+            "glyph rides the label ground with no wash"
+        );
     }
 
     #[test]
@@ -1811,8 +1930,8 @@ mod tests {
         let mut state = TabsState::new().with_selected("a");
         let mut buffer = Buffer::empty(area);
         Tabs::new(&tabs, &system).render(area, &mut buffer, &mut state);
-        assert_eq!(buffer[(0, 1)].symbol(), system.glyphs.rule_strong());
-        assert_eq!(buffer[(0, 1)].fg, system.style(Role::Accent).fg.unwrap());
+        assert_eq!(buffer[(1, 1)].symbol(), system.glyphs.rule_strong());
+        assert_eq!(buffer[(1, 1)].fg, system.style(Role::Accent).fg.unwrap());
     }
 
     #[test]
@@ -1820,5 +1939,156 @@ mod tests {
         // compile-time doc: TabsState has no panel content fields
         let s = TabsState::<&str>::new();
         assert!(s.selected().is_none());
+    }
+
+    fn row_text(buffer: &Buffer, y: u16, width: u16) -> String {
+        (0..width)
+            .map(|x| buffer[(x, y)].symbol().to_string())
+            .collect()
+    }
+
+    #[test]
+    fn inactive_is_secondary_active_is_bold_with_accent_rule() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let tabs = [Tab::new("a", "Files"), Tab::new("b", "Search")];
+        let area = Rect::new(0, 0, 30, 2);
+        let mut state = TabsState::new().with_selected("a");
+        let mut buffer = Buffer::empty(area);
+        Tabs::new(&tabs, &system).render(area, &mut buffer, &mut state);
+        assert!(buffer[(1, 0)].modifier.contains(Modifier::BOLD));
+        assert_eq!(buffer[(1, 0)].fg, theme.text_primary);
+        let search_x = state
+            .regions
+            .iter()
+            .find(|r| r.id == "b")
+            .expect("search")
+            .area
+            .x;
+        assert_eq!(
+            buffer[(search_x.saturating_add(1), 0)].fg,
+            theme.text_secondary
+        );
+        assert!(
+            !buffer[(search_x.saturating_add(1), 0)]
+                .modifier
+                .contains(Modifier::BOLD)
+        );
+        assert_eq!(buffer[(1, 1)].symbol(), system.glyphs.rule_strong());
+        assert_eq!(buffer[(1, 1)].fg, theme.accent);
+        assert_eq!(buffer[(0, 1)].symbol(), system.glyphs.rule());
+    }
+
+    #[test]
+    fn quiet_underline_is_border_strong_not_accent() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let tabs = [Tab::new("a", "Files")];
+        let area = Rect::new(0, 0, 16, 2);
+        let mut state = TabsState::new().with_selected("a");
+        let mut buffer = Buffer::empty(area);
+        Tabs::new(&tabs, &system)
+            .quiet(true)
+            .render(area, &mut buffer, &mut state);
+        assert_eq!(buffer[(1, 1)].symbol(), system.glyphs.rule_strong());
+        assert_eq!(buffer[(1, 1)].fg, theme.border_strong);
+        assert_ne!(buffer[(1, 1)].fg, theme.accent);
+    }
+
+    #[test]
+    fn dirty_warning_error_and_faint_close() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let tabs = [
+            Tab::new("d", "Draft")
+                .status(TabStatus::Dirty)
+                .closable(true),
+            Tab::new("e", "Err").status(TabStatus::Error),
+        ];
+        let area = Rect::new(0, 0, 40, 2);
+        let mut state = TabsState::new().with_selected("d");
+        let mut buffer = Buffer::empty(area);
+        Tabs::new(&tabs, &system).render(area, &mut buffer, &mut state);
+        let text = row_text(&buffer, 0, 40);
+        assert!(text.contains("•"), "{text}");
+        assert!(text.contains("!"), "{text}");
+        assert!(text.contains("×"), "{text}");
+        let close = state.close_regions[0].1;
+        assert_eq!(buffer[(close.x, close.y)].fg, theme.text_faint);
+        let err_x = state
+            .regions
+            .iter()
+            .find(|r| r.id == "e")
+            .expect("err")
+            .area
+            .x;
+        let mut found_bang = false;
+        for x in err_x..err_x.saturating_add(8) {
+            if buffer[(x, 0)].symbol() == "!" {
+                assert_eq!(buffer[(x, 0)].fg, theme.error);
+                found_bang = true;
+            }
+        }
+        assert!(found_bang, "{text}");
+        let mut found_dot = false;
+        for x in 0..20 {
+            if buffer[(x, 0)].symbol() == "•" {
+                assert_eq!(buffer[(x, 0)].fg, theme.warning);
+                found_dot = true;
+            }
+        }
+        assert!(found_dot);
+    }
+
+    #[test]
+    fn overflow_uses_chevrons() {
+        let many: Vec<Tab<'_, &str>> =
+            ["AlphaTab", "BetaTabX", "GammaTabs", "DeltaTab", "EpsilTab"]
+                .iter()
+                .enumerate()
+                .map(|(i, l)| Tab::new(["a", "b", "c", "d", "e"][i], l))
+                .collect();
+        let system = DesignSystem::junie();
+        let mut state = TabsState::new().with_selected("a");
+        let area = Rect::new(0, 0, 22, 2);
+        let mut buf = Buffer::empty(area);
+        Tabs::new(&many, &system).paint(area, &mut buf, &mut state);
+        let text = row_text(&buf, 0, 22);
+        assert!(
+            text.contains("‹") || text.contains("›") || !state.overflow_ids.is_empty(),
+            "{text} overflow={:?}",
+            state.overflow_ids
+        );
+    }
+
+    #[test]
+    fn hover_lifts_inactive_tab() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let tabs = [Tab::new("a", "Files"), Tab::new("b", "Search")];
+        let area = Rect::new(0, 0, 30, 2);
+        let mut state = TabsState::new().with_selected("a");
+        let mut buffer = Buffer::empty(area);
+        Tabs::new(&tabs, &system).paint(area, &mut buffer, &mut state);
+        let search = state
+            .regions
+            .iter()
+            .find(|r| r.id == "b")
+            .expect("search")
+            .area;
+        let _ = state.handle_mouse(
+            MouseEvent {
+                kind: MouseEventKind::Moved,
+                position: Position::new(search.x.saturating_add(1), search.y),
+                modifiers: KeyModifiers::NONE,
+            },
+            &tabs,
+        );
+        let mut buffer = Buffer::empty(area);
+        Tabs::new(&tabs, &system).paint(area, &mut buffer, &mut state);
+        assert_eq!(
+            buffer[(search.x.saturating_add(1), search.y)].bg,
+            theme.lift(theme.canvas)
+        );
     }
 }

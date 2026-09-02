@@ -2640,14 +2640,9 @@ mod tests {
         // said "plan" twice and spent the bold budget on chrome; it now comes
         // from the panel's own title grammar (plans/017 §B2).
         let plan_fg = system.style(Role::ActorPlan).fg;
+        // D3: actors are the text ladder, not a hue. Title and rail may share
+        // primary; the rail glyph still carries the actor.
         assert_eq!(buf[(0, 0)].fg, plan_fg.unwrap());
-        let title_row_in_actor_tone = (2..area.width)
-            .filter(|x| buf[(*x, 0)].fg == plan_fg.unwrap())
-            .count();
-        assert_eq!(
-            title_row_in_actor_tone, 0,
-            "the title repeats the tone the rail already spends"
-        );
         let mut text = String::new();
         for y in 0..area.height {
             for x in 0..area.width {

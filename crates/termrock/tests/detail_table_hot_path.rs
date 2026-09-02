@@ -30,7 +30,7 @@ fn unchanged_large_table_reuses_measurement_and_paints_visible_rows() {
         })
         .collect::<Vec<_>>();
     let theme = RolePalette::default();
-    let system = DesignSystem::from_palette(theme.clone());
+    let system = DesignSystem::new(theme.clone());
     let table = DetailTable::new(&rows, &system).content_revision(1);
     let area = Rect::new(0, 0, 120, 40);
     let mut buffer = Buffer::empty(area);

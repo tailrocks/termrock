@@ -45,8 +45,6 @@ pub struct DesignInspectorFrame<'a> {
     pub layers: &'a [&'a str],
     /// Optional recipe names visible this frame.
     pub recipes: &'a [&'a str],
-    /// Selection chrome label.
-    pub selection_chrome: &'a str,
     /// Optional semantic-tree summary lines (from [`crate::interaction::SemanticSnapshot`]).
     pub semantics: &'a [&'a str],
     /// Optional FocusGraph / Focus Lens summary lines.
@@ -64,7 +62,6 @@ impl DesignInspectorFrame<'_> {
     pub fn from_system(system: &DesignSystem) -> Self {
         Self {
             capability: system.capability,
-            selection_chrome: system.selection.id(),
             ..Self::default()
         }
     }
@@ -78,7 +75,6 @@ impl Default for DesignInspectorFrame<'_> {
             capability: ColorCapability::Truecolor,
             layers: &[],
             recipes: &[],
-            selection_chrome: "gutter",
             semantics: &[],
             focus_graph: &[],
         }
@@ -158,10 +154,7 @@ impl Widget for &DesignInspector<'_> {
                 let focus = self.frame.focused.unwrap_or("—");
                 let layer = self.frame.layer.unwrap_or("root");
                 let location = format!("focus:{focus} layer:{layer}");
-                let capability = format!(
-                    "cap:{:?} sel:{}",
-                    self.frame.capability, self.frame.selection_chrome
-                );
+                let capability = format!("cap:{:?}", self.frame.capability);
                 if body_h >= 2 {
                     vec![location, capability]
                 } else {
@@ -180,10 +173,9 @@ impl Widget for &DesignInspector<'_> {
                         .collect()
                 }
             }
-            InspectorPanel::Tokens => vec![format!(
-                "capability:{:?} chrome:{}",
-                self.frame.capability, self.frame.selection_chrome
-            )],
+            InspectorPanel::Tokens => {
+                vec![format!("capability:{:?}", self.frame.capability)]
+            }
             InspectorPanel::Recipes => {
                 if self.frame.recipes.is_empty() {
                     vec!["recipes: list_row panel".into()]
@@ -243,7 +235,7 @@ impl Widget for DesignInspector<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::style::{GlyphSet, RolePalette};
+    use crate::style::RolePalette;
 
     fn row_text(buffer: &Buffer, y: u16, width: u16) -> String {
         (0..width)
@@ -256,7 +248,7 @@ mod tests {
     #[test]
     fn studio_shell_paints_tab_and_layers() {
         let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
+        let system = crate::style::DesignSystem::new(theme.clone());
         let layers = ["root", "approval"];
         let frame = DesignInspectorFrame {
             focused: Some("prompt"),
@@ -264,7 +256,6 @@ mod tests {
             capability: ColorCapability::Ansi16,
             layers: &layers,
             recipes: &["list_row", "panel"],
-            selection_chrome: "gutter",
             semantics: &["list@list [f] Files", "row0@list_item [fs] a.rs"],
             focus_graph: &["focus:list trap:—"],
         };
@@ -315,7 +306,6 @@ mod tests {
             focused: Some("focus"),
             layer: Some("root"),
             capability: ColorCapability::Monochrome,
-            selection_chrome: "gutter",
             ..DesignInspectorFrame::default()
         };
         let area = Rect::new(0, 0, 46, 3);
@@ -328,9 +318,6 @@ mod tests {
             "F:foc L:lay T:tok R:rec S:sem G:graph"
         );
         assert_eq!(row_text(&buffer, 1, area.width), "focus:focus layer:root");
-        assert_eq!(
-            row_text(&buffer, 2, area.width),
-            "cap:Monochrome sel:gutter"
-        );
+        assert_eq!(row_text(&buffer, 2, area.width), "cap:Monochrome");
     }
 }

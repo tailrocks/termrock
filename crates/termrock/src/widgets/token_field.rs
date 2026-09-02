@@ -16,7 +16,12 @@
 //!
 //! Research: email recipient fields, token inputs, agent attachment/mention chips.
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
+use ratatui_core::{
+    buffer::Buffer,
+    layout::Rect,
+    style::{Modifier, Style},
+    widgets::StatefulWidget,
+};
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::{
@@ -1080,10 +1085,11 @@ impl<'a> TokenField<'a> {
             let ow = u16::try_from(display_cols(&label).saturating_add(2)).unwrap_or(4);
             let ox = row.right().saturating_sub(ow);
             let rect = Rect::new(ox, row.y, ow.min(row.width), 1);
+            let gutter = self.system.glyphs.selection_gutter();
             buffer.set_stringn(
                 rect.x,
                 rect.y,
-                &format!("[{label}]"),
+                &take_display_cols(&format!("{gutter}{label}"), usize::from(rect.width)),
                 usize::from(rect.width),
                 recipe.placeholder,
             );
@@ -1101,6 +1107,7 @@ impl<'a> TokenField<'a> {
             .placeholder(self.placeholder)
             .validation(self.validation);
         let _ = input.paint(draft, buffer, &mut state.draft);
+        apply_field_underline(buffer, row, &recipe);
 
         // Validation row
         if area.height >= 3
@@ -1165,6 +1172,17 @@ impl<'a> TokenField<'a> {
                 }),
         );
     }
+}
+
+fn apply_field_underline(buffer: &mut Buffer, field: Rect, recipe: &crate::style::InputRecipe) {
+    if field.is_empty() {
+        return;
+    }
+    let mut underline = Style::new().add_modifier(recipe.border.add_modifier);
+    if let Some(color) = recipe.border.underline_color {
+        underline = underline.underline_color(color);
+    }
+    buffer.set_style(field, underline);
 }
 
 fn measure_token_width(tok: &FieldToken<String>, system: &DesignSystem) -> u16 {
@@ -1371,7 +1389,7 @@ mod tests {
 
     #[test]
     fn paint_tokens_and_draft() {
-        let system = DesignSystem::from_palette(RolePalette::default());
+        let system = DesignSystem::new(RolePalette::default());
         let mut state = TokenFieldState::new();
         state.set_focused(true);
         let _ = state.push_token(FieldToken::new("1".into(), "alice"));

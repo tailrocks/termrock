@@ -22,7 +22,9 @@ use crate::{
 /// motion is not consulted: this is a static gradient, not a transition, and a
 /// tier that forbids animation still wants to know the list continues.
 /// Unicode-profile dim track glyph shared by every scrollbar.
-pub const SCROLLBAR_TRACK: &str = "·";
+///
+/// junie: a one-column `│` track, `┃` thumb, painted only on overflow.
+pub const SCROLLBAR_TRACK: &str = "│";
 /// Unicode-profile heavy horizontal scrollbar thumb glyph.
 pub const SCROLLBAR_HORIZONTAL_THUMB: &str = "━";
 
@@ -237,7 +239,7 @@ impl ScrollbarSpec {
 /// Paints the list-family scrollbar into a reserved gutter column.
 ///
 /// This is the one sanctioned entry point for scroll indication: menus,
-/// pickers, viewports, and text areas all reach the canonical `·` track /
+/// pickers, viewports, and text areas all reach the canonical `│` track /
 /// `┃` thumb language through it instead of re-deriving thumb math. Nothing
 /// is painted when the content already fits, so a reserved gutter stays blank
 /// rather than showing a full-height thumb.

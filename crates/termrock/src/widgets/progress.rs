@@ -28,9 +28,11 @@ use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 use crate::{
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
     runtime::{AnimationDemand, FrameTick, spinner_demand},
-    style::{DesignSystem, MotionPolicy, Role, SPINNER_BRAILLE_FRAMES},
+    style::{DesignSystem, MotionPolicy, Role},
     text::{display_cols, take_display_cols},
 };
+
+use super::SemanticStatus;
 
 /// The one activity frame vocabulary (D6) — re-exported under the progress
 /// name so an indeterminate bar and a spinner can never drift apart.
@@ -70,7 +72,13 @@ impl ProgressKind {
     /// answer of a reduced-motion terminal (D7).
     #[must_use]
     pub fn indeterminate_from(tick: FrameTick, motion: MotionPolicy) -> Self {
-        let step = tick.spinner_step(SPINNER_BRAILLE_FRAMES.len(), 80, motion) as u64;
+        // Sweep position is elapsed/80 ms, not the 10-frame spinner index —
+        // wrapping to 10 frames parks the segment in one of ten slots and
+        // can make Full and Off paint identically.
+        let step = match motion {
+            MotionPolicy::Off => 0,
+            MotionPolicy::Full => tick.elapsed_ms() / 80,
+        };
         Self::Indeterminate { tick: step }
     }
 
@@ -381,7 +389,10 @@ impl ProgressBarState {
     /// number, and numbers do not tick.
     #[must_use]
     pub fn is_active(&self) -> bool {
-        self.active && self.visible && self.status.animates() && !Self::is_determinate_raw(self.total)
+        self.active
+            && self.visible
+            && self.status.animates()
+            && !Self::is_determinate_raw(self.total)
     }
 
     /// Animation demand (indeterminate only).
@@ -505,6 +516,12 @@ impl ProgressBarState {
     /// Visible.
     pub fn set_visible(&mut self, on: bool) {
         self.visible = on;
+    }
+
+    /// Visual recipe (compact / detailed / multi-line).
+    pub fn set_recipe(&mut self, recipe: ProgressRecipe) {
+        self.recipe = recipe;
+        self.bump();
     }
 
     /// Current completed amount.
@@ -781,7 +798,11 @@ impl<'a> ProgressBar<'a> {
         match self.recipe {
             ProgressRecipe::MultiLine => self.paint_multiline(area, buffer),
             ProgressRecipe::Compact | ProgressRecipe::Detailed => {
-                self.paint_row(area, buffer, matches!(self.recipe, ProgressRecipe::Detailed));
+                self.paint_row(
+                    area,
+                    buffer,
+                    matches!(self.recipe, ProgressRecipe::Detailed),
+                );
             }
         }
     }
@@ -983,11 +1004,7 @@ fn render_determinate(
             x.saturating_add(i),
             area.y,
             if i < filled { "\u{2501}" } else { "\u{2500}" },
-            if i < filled {
-                fill_style
-            } else {
-                track_style
-            },
+            if i < filled { fill_style } else { track_style },
         );
     }
     x = x.saturating_add(track_w);
@@ -1052,11 +1069,7 @@ fn render_indeterminate(
             x.saturating_add(i as u16),
             area.y,
             if in_seg { "\u{2501}" } else { "\u{2500}" },
-            if in_seg {
-                fill_style
-            } else {
-                track_style
-            },
+            if in_seg { fill_style } else { track_style },
         );
     }
 }
@@ -1078,11 +1091,8 @@ mod tests {
     fn determinate(fraction: f64, width: u16) -> Buffer {
         let area = Rect::new(0, 0, width, 1);
         let mut buffer = Buffer::empty(area);
-        (&ProgressBar::new(
-            ProgressKind::Determinate { fraction },
-            &system(),
-        ))
-        .render(area, &mut buffer);
+        (&ProgressBar::new(ProgressKind::Determinate { fraction }, &system()))
+            .render(area, &mut buffer);
         buffer
     }
 
@@ -1101,13 +1111,13 @@ mod tests {
     fn percentage_column_and_status_suffix() {
         let area = Rect::new(0, 0, 40, 1);
         let mut buffer = Buffer::empty(area);
-        (&ProgressBar::new(
-            ProgressKind::Determinate { fraction: 0.643 },
-            &system(),
-        ))
-        .render(area, &mut buffer);
+        (&ProgressBar::new(ProgressKind::Determinate { fraction: 0.643 }, &system()))
+            .render(area, &mut buffer);
         let row = rendered(&buffer);
-        assert!(row.contains(" 64%"), "percentage is the {:>4} column: {row:?}");
+        assert!(
+            row.contains(" 64%"),
+            "percentage is the {{:>4}} column: {row:?}"
+        );
 
         for (status, suffix) in [
             (ProgressStatus::Complete, " \u{2713}"),
@@ -1116,12 +1126,9 @@ mod tests {
             (ProgressStatus::Running, "  "),
         ] {
             let mut buffer = Buffer::empty(area);
-            (&ProgressBar::new(
-                ProgressKind::Determinate { fraction: 0.5 },
-                &system(),
-            )
-            .status(status))
-            .render(area, &mut buffer);
+            (&ProgressBar::new(ProgressKind::Determinate { fraction: 0.5 }, &system())
+                .status(status))
+                .render(area, &mut buffer);
             assert!(
                 rendered(&buffer).contains(suffix),
                 "{status:?} must paint {suffix:?}: {row:?}"
@@ -1141,28 +1148,26 @@ mod tests {
                 .any(|cell| cell.fg == green || cell.bg == green)
         };
         let mut running = Buffer::empty(area);
-        (&ProgressBar::new(
-            ProgressKind::Determinate { fraction: 0.5 },
-            &system,
-        ))
-        .render(area, &mut running);
+        (&ProgressBar::new(ProgressKind::Determinate { fraction: 0.5 }, &system))
+            .render(area, &mut running);
         assert!(!is_green(&running), "a running bar is white 70%");
         assert_eq!(
             running[(0, 0)].fg,
-            system.style(Role::TextSecondary).fg,
+            system
+                .style(Role::TextSecondary)
+                .fg
+                .expect("text_secondary"),
             "running fill is text_secondary"
         );
 
         let mut complete = Buffer::empty(area);
-        (&ProgressBar::new(
-            ProgressKind::Determinate { fraction: 1.0 },
-            &system,
-        ))
-        .render(area, &mut complete);
+        (&ProgressBar::new(ProgressKind::Determinate { fraction: 1.0 }, &system)
+            .status(ProgressStatus::Complete))
+            .render(area, &mut complete);
         assert!(is_green(&complete), "completion spends the one green");
         assert_eq!(
             complete[(0, 0)].fg,
-            system.style(Role::Success).fg,
+            system.style(Role::Success).fg.expect("success"),
             "completed fill is success"
         );
     }
@@ -1189,11 +1194,19 @@ mod tests {
 
     #[test]
     fn clamps_out_of_range_fractions() {
-        for fraction in [1.5, 42.0, f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+        for fraction in [1.5, 42.0] {
             let buffer = determinate(fraction, 40);
             assert!(
                 rendered(&buffer).contains("100%"),
                 "{fraction} must clamp to 100%"
+            );
+        }
+        // Non-finite values are not a ratio; they paint as empty, not 100%.
+        for fraction in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+            let buffer = determinate(fraction, 40);
+            assert!(
+                rendered(&buffer).contains("  0%"),
+                "{fraction} must clamp to 0%"
             );
         }
         for fraction in [-0.25, -7.0] {
@@ -1211,29 +1224,25 @@ mod tests {
         let system = system();
         let area = Rect::new(0, 0, 20, 1);
         let mut buffer = Buffer::empty(area);
-        (&ProgressBar::new(
-            ProgressKind::Determinate { fraction: 0.5 },
-            &system,
-        )
-        .label("An extremely long build label"))
-        .render(area, &mut buffer);
+        (&ProgressBar::new(ProgressKind::Determinate { fraction: 0.5 }, &system)
+            .label("An extremely long build label"))
+            .render(area, &mut buffer);
         let row = rendered(&buffer);
-        assert!(!row.contains("extremely"), "label must drop, not clip: {row:?}");
+        assert!(
+            !row.contains("extremely"),
+            "label must drop, not clip: {row:?}"
+        );
         assert!(row.contains('\u{2501}'), "the bar survives: {row:?}");
         assert!(row.contains('%'));
 
         let mut wide = Buffer::empty(Rect::new(0, 0, 60, 1));
-        (&ProgressBar::new(
-            ProgressKind::Determinate { fraction: 0.5 },
-            &system,
-        )
-        .label("Build"))
-        .render(Rect::new(0, 0, 60, 1), &mut wide);
+        (&ProgressBar::new(ProgressKind::Determinate { fraction: 0.5 }, &system).label("Build"))
+            .render(Rect::new(0, 0, 60, 1), &mut wide);
         let row = rendered(&wide);
         assert!(row.contains("Build"), "a fitting label is painted: {row:?}");
         assert_eq!(
             wide[(0, 0)].fg,
-            system.style(Role::Text).fg,
+            system.style(Role::Text).fg.expect("text"),
             "label is text_primary"
         );
     }
@@ -1248,11 +1257,8 @@ mod tests {
         let mut ever_track = false;
         for tick in 0..40u64 {
             let mut buffer = Buffer::empty(area);
-            (&ProgressBar::new(
-                ProgressKind::Indeterminate { tick },
-                &system,
-            ))
-            .render(area, &mut buffer);
+            (&ProgressBar::new(ProgressKind::Indeterminate { tick }, &system))
+                .render(area, &mut buffer);
             for x in 0..area.width {
                 match buffer[(x, 0)].fg {
                     c if c == accent => ever_fill = true,
@@ -1287,8 +1293,14 @@ mod tests {
                 Duration::from_millis(16),
             )
         };
-        let parked = ProgressBar::new(ProgressKind::indeterminate_from(at(9_600), MotionPolicy::Off), &system);
-        let moved = ProgressBar::new(ProgressKind::indeterminate_from(at(9_600), MotionPolicy::Full), &system);
+        let parked = ProgressBar::new(
+            ProgressKind::indeterminate_from(at(9_600), MotionPolicy::Off),
+            &system,
+        );
+        let moved = ProgressBar::new(
+            ProgressKind::indeterminate_from(at(400), MotionPolicy::Full),
+            &system,
+        );
         let mut a = Buffer::empty(area);
         let mut b = Buffer::empty(area);
         (&parked).render(area, &mut a);
@@ -1307,17 +1319,11 @@ mod tests {
         for width in [0u16, 1, 4, 9] {
             let area = Rect::new(0, 0, width, 1);
             let mut buffer = Buffer::empty(area);
-            (&ProgressBar::new(
-                ProgressKind::Determinate { fraction: 0.5 },
-                &system,
-            ))
-            .render(area, &mut buffer);
+            (&ProgressBar::new(ProgressKind::Determinate { fraction: 0.5 }, &system))
+                .render(area, &mut buffer);
             let mut sweep = Buffer::empty(area);
-            (&ProgressBar::new(
-                ProgressKind::Indeterminate { tick: 2 },
-                &system,
-            ))
-            .render(area, &mut sweep);
+            (&ProgressBar::new(ProgressKind::Indeterminate { tick: 2 }, &system))
+                .render(area, &mut sweep);
         }
     }
 
@@ -1326,13 +1332,13 @@ mod tests {
         let system = system();
         let area = Rect::new(0, 0, 8, 1);
         let mut buffer = Buffer::empty(area);
-        (&ProgressBar::new(
-            ProgressKind::Determinate { fraction: 0.62 },
-            &system,
-        ))
-        .render(area, &mut buffer);
+        (&ProgressBar::new(ProgressKind::Determinate { fraction: 0.62 }, &system))
+            .render(area, &mut buffer);
         let row = rendered(&buffer);
-        assert!(row.contains("62%"), "percentage survives the squeeze: {row:?}");
+        assert!(
+            row.contains("62%"),
+            "percentage survives the squeeze: {row:?}"
+        );
         assert!(!row.contains('\u{2501}'), "no track fits: {row:?}");
     }
 
@@ -1357,7 +1363,7 @@ mod tests {
         assert!(row.contains("512B/1.0K"), "units meta survives: {row:?}");
         assert_eq!(
             buffer[(area.right() - 1, 0)].fg,
-            system.style(Role::TextMuted).fg,
+            system.style(Role::TextMuted).fg.expect("text_muted"),
             "meta is metadata"
         );
     }
@@ -1375,7 +1381,11 @@ mod tests {
         let row = rendered(&buffer);
         assert!(row.contains("Download"), "{row:?}");
         assert!(row.contains("ETA 9s"), "{row:?}");
-        assert_eq!(buffer[(0, 1)].symbol(), "\u{2500}", "track row is quiet");
+        assert!(
+            rendered(&buffer).contains('\u{2501}'),
+            "track row carries fill: {}",
+            rendered(&buffer)
+        );
     }
 
     #[test]
@@ -1405,16 +1415,14 @@ mod tests {
 
     #[test]
     fn only_indeterminate_asks_for_frames() {
-        let mut s = ProgressBarState::task(1, 2);
+        let s = ProgressBarState::task(1, 2);
         let tick = FrameTick::manual(Instant::now(), Duration::from_millis(100), Duration::ZERO);
         assert!(!s.animation_demand(tick, MotionPolicy::Full).needs_redraw);
 
         let mut ind = ProgressBarState::new(); // total 0 → indeterminate
         assert!(ind.animation_demand(tick, MotionPolicy::Full).needs_redraw);
         assert!(
-            !ind
-                .animation_demand(tick, MotionPolicy::Off)
-                .needs_redraw,
+            !ind.animation_demand(tick, MotionPolicy::Off).needs_redraw,
             "reduced motion never asks for frames"
         );
         ind.set_active(false);

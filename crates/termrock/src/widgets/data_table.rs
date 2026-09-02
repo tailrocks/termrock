@@ -2138,8 +2138,8 @@ mod tests {
             (buffer, state)
         };
 
-        let phosphor = DesignSystem::junie();
-        let (buffer, state) = render(&phosphor);
+        let junie = DesignSystem::junie();
+        let (buffer, state) = render(&junie);
         let row_y = state.body_origin.1;
         let label_x = (0..buffer.area.width)
             .find(|x| buffer[(*x, row_y)].symbol() == "l")
@@ -2151,9 +2151,9 @@ mod tests {
         let number = &buffer[(number_x, row_y)];
         // The keyboard's cell cursor is the explicit reversal pair; the rest
         // of the selected row keeps the tint and its own copy tone.
-        assert_eq!(label.fg, phosphor.junie_theme().canvas);
-        assert_eq!(label.bg, phosphor.junie_theme().text_primary);
-        assert_eq!(number.bg, phosphor.style(Role::SelectionTint).bg.unwrap());
+        assert_eq!(label.fg, junie.junie_theme().canvas);
+        assert_eq!(label.bg, junie.junie_theme().text_primary);
+        assert_eq!(number.bg, junie.style(Role::SelectionTint).bg.unwrap());
         assert_ne!(number.fg, number.bg);
         assert!(label.modifier.contains(Modifier::BOLD));
         assert!(!number.modifier.contains(Modifier::BOLD));

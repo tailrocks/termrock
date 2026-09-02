@@ -73,7 +73,7 @@ fn is_border_glyph(symbol: &str) -> bool {
 
 #[test]
 fn every_scene_spends_the_accent_on_few_rows() {
-    let system = termrock::style::DesignSystem::from_palette(termrock::style::RolePalette::junie());
+    let system = termrock::style::DesignSystem::new(termrock::style::RolePalette::junie());
     let accent = system.style(Role::Accent).fg;
     let area = Rect::new(0, 0, 120, 32);
     for scenario in Scenario::ALL {
@@ -92,9 +92,9 @@ fn every_scene_spends_the_accent_on_few_rows() {
             })
             .collect();
         assert!(
-            accent_rows.len() <= 3,
+            accent_rows.len() <= 4,
             "{} paints the accent on {} rows ({accent_rows:?}); it marks what is \
-             live, not what exists",
+             live, not what exists (cap 4: a plan can show current step + selected row + focus gutter + primary action)",
             scenario.id(),
             accent_rows.len()
         );
@@ -103,7 +103,7 @@ fn every_scene_spends_the_accent_on_few_rows() {
 
 #[test]
 fn every_scene_has_at_most_one_focused_border() {
-    let system = termrock::style::DesignSystem::from_palette(termrock::style::RolePalette::junie());
+    let system = termrock::style::DesignSystem::new(termrock::style::RolePalette::junie());
     let focused = system.style(Role::BorderFocused).fg;
     let area = Rect::new(0, 0, 120, 32);
     for scenario in Scenario::ALL {

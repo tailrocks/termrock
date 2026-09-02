@@ -115,28 +115,19 @@ impl ProgressStepStatus {
         }
     }
 
-    /// Non-color mark.
+    /// Non-color mark. One junie vocabulary; no ASCII profile.
     #[must_use]
-    pub const fn mark(self, _ascii: bool) -> &'static str {
-        match (self, false) {
-            (Self::Queued, true) => "[ ]",
-            (Self::Queued, false) => "[ ]",
-            (Self::Running, true) => "[>]",
-            (Self::Running, false) => "[›]",
-            (Self::Waiting, true) => "[.]",
-            (Self::Waiting, false) => "[…]",
-            (Self::Complete, true) => "[x]",
-            (Self::Complete, false) => "[✓]",
-            (Self::Skipped, true) => "[-]",
-            (Self::Skipped, false) => "[–]",
-            (Self::Warning, true) => "[~]",
-            (Self::Warning, false) => "[⚠]",
-            (Self::Failed, true) => "[!]",
-            (Self::Failed, false) => "[✗]",
-            (Self::Retrying, true) => "[r]",
-            (Self::Retrying, false) => "[↻]",
-            (Self::Cancelled, true) => "[#]",
-            (Self::Cancelled, false) => "[⊘]",
+    pub const fn mark(self) -> &'static str {
+        match self {
+            Self::Queued => crate::style::Glyph::CheckOff.resolve().text,
+            Self::Running => "[›]",
+            Self::Waiting => "[…]",
+            Self::Complete => crate::style::Glyph::CheckOn.resolve().text,
+            Self::Skipped => "[–]",
+            Self::Warning => "[⚠]",
+            Self::Failed => "[✗]",
+            Self::Retrying => "[↻]",
+            Self::Cancelled => "[⊘]",
         }
     }
 
@@ -749,7 +740,7 @@ impl<'a> ProgressSteps<'a> {
             let selected = state.cursor.as_ref() == Some(&step.id)
                 && matches!(state.mode, ProgressStepsMode::Interactive)
                 && state.focused;
-            let mark = step.status.mark(false);
+            let mark = step.status.mark();
             let dur = step.duration_ms.map(format_duration_ms).unwrap_or_default();
             let verb = step.effective_verb();
             let line = if expanded {
@@ -1009,8 +1000,7 @@ mod tests {
             ProgressStepStatus::Retrying,
             ProgressStepStatus::Cancelled,
         ] {
-            assert!(!s.mark(true).is_empty());
-            assert!(!s.mark(false).is_empty());
+            assert!(!s.mark().is_empty());
             assert!(!s.id().is_empty());
         }
     }

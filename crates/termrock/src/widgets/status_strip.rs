@@ -390,18 +390,16 @@ mod tests {
                 .semantic(SemanticStatus::Failed)
                 .priority(90),
         ];
-        for glyphs in [GlyphSet::Unicode] {
-            let system = DesignSystem::default().glyphs(glyphs);
-            for width in [32, 12, 1, 0] {
-                let area = Rect::new(0, 0, width, 1);
-                let mut buffer = Buffer::empty(area);
-                StatusStrip::new(&segments, &system).paint(area, &mut buffer);
-                if width == 32 {
-                    let text: String = buffer.content().iter().map(|cell| cell.symbol()).collect();
-                    assert!(text.contains('本'), "{text:?}");
-                    assert!(text.contains('🛰'), "{text:?}");
-                    assert!(text.contains("Cafe\u{301}"), "{text:?}");
-                }
+        let system = DesignSystem::default();
+        for width in [32, 12, 1, 0] {
+            let area = Rect::new(0, 0, width, 1);
+            let mut buffer = Buffer::empty(area);
+            StatusStrip::new(&segments, &system).paint(area, &mut buffer);
+            if width == 32 {
+                let text: String = buffer.content().iter().map(|cell| cell.symbol()).collect();
+                assert!(text.contains('本'), "{text:?}");
+                assert!(text.contains('🛰'), "{text:?}");
+                assert!(text.contains("Cafe\u{301}"), "{text:?}");
             }
         }
     }

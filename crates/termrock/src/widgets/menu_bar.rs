@@ -1609,9 +1609,7 @@ impl<'a, Id> MenuBar<'a, Id> {
                 ..ListRowVisualState::default()
             });
             let row = Rect::new(inner.x, y, inner.width, 1);
-            if recipe.use_fill {
-                buffer.set_style(row, recipe.label);
-            } else if recipe.use_tint {
+            if recipe.use_tint {
                 buffer.set_style(row, recipe.tint);
             }
             let style = if self.colorless {
@@ -1859,8 +1857,8 @@ pub fn example_app_menus() -> Vec<MenuBarMenu<&'static str>> {
             "view",
             "View",
             vec![
-                MenuNode::radio("theme-ph", "Phosphor", "theme", true)
-                    .command_key("view.theme.phosphor"),
+                MenuNode::radio("theme-junie", "Junie", "theme", true)
+                    .command_key("view.theme.junie"),
                 MenuNode::radio("theme-hi", "High contrast", "theme", false)
                     .command_key("view.theme.hc"),
                 MenuNode::separator("view-sep"),

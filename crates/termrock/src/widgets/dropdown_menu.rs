@@ -1296,9 +1296,7 @@ impl<'a, Id> DropdownMenu<'a, Id> {
                 ),
                 ..ListRowVisualState::default()
             });
-            if recipe.use_fill {
-                buffer.set_style(hit, recipe.label);
-            } else if recipe.use_tint {
+            if recipe.use_tint {
                 buffer.set_style(hit, recipe.tint);
             }
             let style = if self.colorless {

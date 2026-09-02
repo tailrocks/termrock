@@ -5,6 +5,7 @@
 //!
 use ratatui_core::style::{Color, Modifier, Style};
 
+mod ansi_rgb;
 #[cfg(test)]
 mod contrast_floor;
 mod glyph;
@@ -15,6 +16,7 @@ mod preview_host;
 mod quantize;
 mod tokens;
 
+pub use ansi_rgb::{color_to_rgb, xterm256_to_rgb};
 pub use glyph::{
     BLOCK_RAMP, BRAILLE_RAMP, GLYPH_CONTEXTS, Glyph, GlyphGroup, GlyphResolved, LEFT_BLOCK_RAMP,
     MASK_CELLS, SHADE_RAMP, SPINNER_BRAILLE_FRAMES, glyph_by_id,
@@ -35,8 +37,7 @@ pub use tokens::{
     AccentUsage, BorderShape, BreakpointScale, ButtonRecipe, ButtonRecipeVariant, ContentInset,
     ControlState, DesignSystem, Elevation, FamilyRecipe, FocusEmphasis, GlyphSet, InputRecipe,
     KvSeparator, ListRowRecipe, ListRowVisualState, MotionSemantics, NonColorCue, PanelChrome,
-    PanelRecipe, RecipeFamily, SelectionChrome, SpacerBand, SpacingScale, SurfaceFamily,
-    ThemePackage,
+    PanelRecipe, RecipeFamily, SpacerBand, SpacingScale, SurfaceFamily, ThemePackage,
 };
 
 #[must_use]
@@ -45,7 +46,7 @@ pub const fn color(rgb: Rgb) -> Color {
     Color::Rgb(rgb.r, rgb.g, rgb.b)
 }
 
-/// Truecolor phosphor swatch for web/SVG export; runtime TUI recipes use
+/// Truecolor preview-card swatch for web/SVG export; runtime TUI recipes use
 /// [`Ansi16Color`] names.
 /// Truecolor preview-card swatch (the junie elevated plane) for web/SVG
 /// export; never a runtime TUI authority.

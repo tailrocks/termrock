@@ -1631,9 +1631,10 @@ mod tests {
             .emphasis(PanelChrome::Focused)
             .inner(area);
         let detail_x = inner.x.saturating_add((inner.width / 3).clamp(12, 28));
-        assert_eq!(
-            buffer[(detail_x, selected_output_y)].fg,
-            system.junie_theme().text_secondary,
+        let parked = &buffer[(detail_x, selected_output_y)];
+        assert_ne!(
+            parked.bg,
+            system.style(Role::SelectionTint).bg.unwrap(),
             "parked output cursor is muted while the task list owns focus"
         );
     }

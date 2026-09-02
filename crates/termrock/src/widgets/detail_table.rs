@@ -454,10 +454,7 @@ fn detail_marker_width(system: &DesignSystem) -> usize {
         enabled: true,
         ..Default::default()
     });
-    recipe
-        .gutter
-        .map_or(1, |(glyph, _)| crate::text::display_cols(glyph))
-        .saturating_add(1)
+    crate::text::display_cols(recipe.gutter.0).saturating_add(1)
 }
 
 impl<Id: Clone + PartialEq> StatefulWidget for &DetailTable<'_, Id> {
@@ -877,7 +874,7 @@ mod tests {
     fn stable_selection_and_typed_activation_follow_painted_regions() {
         let rows = rows();
         let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
+        let system = crate::style::DesignSystem::new(theme.clone());
         let table = DetailTable::new(&rows, &system);
         let mut state = DetailTableState::default();
         assert_eq!(
@@ -917,7 +914,7 @@ mod tests {
     fn wrap_and_both_axis_scroll_are_bounded_and_unicode_safe() {
         let rows = rows();
         let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
+        let system = crate::style::DesignSystem::new(theme.clone());
         let mut state = DetailTableState::default();
         state.scroll.scroll_x = u16::MAX;
         state.scroll.scroll_y = u16::MAX;
@@ -941,7 +938,7 @@ mod tests {
     fn hyperlink_regions_use_caller_urls_and_visible_value_geometry() {
         let rows = rows();
         let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
+        let system = crate::style::DesignSystem::new(theme.clone());
         let table = DetailTable::new(&rows, &system);
         let area = Rect::new(0, 0, 40, 3);
         let mut state = DetailTableState::default();

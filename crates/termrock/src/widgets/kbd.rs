@@ -893,4 +893,24 @@ mod tests {
         Kbd::new("X", &system).paint(Rect::new(0, 0, 0, 0), &mut buf);
         ShortcutHint::new("C-X", "Cut", &system).paint(Rect::new(0, 0, 0, 0), &mut buf);
     }
+
+    #[test]
+    fn footer_hint_is_bold_key_and_muted_action() {
+        let system = DesignSystem::default();
+        let hint = ShortcutHint::new("Esc", "Cancel", &system).footer();
+        let area = Rect::new(0, 0, 16, 1);
+        let mut buffer = Buffer::empty(area);
+        hint.paint(area, &mut buffer);
+        assert_eq!(buffer[(0, 0)].symbol(), "E");
+        assert_eq!(buffer[(0, 0)].fg, system.key_hint_key().fg.unwrap());
+        assert!(
+            buffer[(0, 0)]
+                .modifier
+                .contains(ratatui_core::style::Modifier::BOLD)
+        );
+        assert_eq!(buffer[(4, 0)].symbol(), "C");
+        assert_eq!(buffer[(4, 0)].fg, system.key_hint_action().fg.unwrap());
+        let row: String = (0..area.width).map(|x| buffer[(x, 0)].symbol()).collect();
+        assert!(row.starts_with("Esc Cancel"), "{row}");
+    }
 }

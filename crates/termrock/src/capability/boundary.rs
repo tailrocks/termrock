@@ -121,11 +121,10 @@ impl CapabilityBoundary {
         palette.quantized(self.set.color)
     }
 
-    /// Project design tokens onto this boundary (host may still set density).
+    /// Project design tokens onto this boundary.
     ///
     /// The palette is resolved for the boundary's colour rung and the rung is
-    /// recorded; glyph projection is the only separate step, because the ASCII
-    /// set is a vocabulary choice, not a colour downgrade.
+    /// recorded. Glyphs are one junie vocabulary; capability does not swap them.
     #[must_use]
     pub fn project_system(self, system: DesignSystem) -> DesignSystem {
         let mut out = system;
@@ -189,15 +188,10 @@ mod tests {
     }
 
     #[test]
-    fn mono_projection_downgrades_selection_and_glyphs() {
+    fn mono_projection_downgrades_capability() {
         let b = CapabilityBoundary::from_profile(CapabilityProfile::Minimal);
         let projected = b.project_system(DesignSystem::junie());
         assert_eq!(projected.capability, ColorCapability::Monochrome);
-        assert_eq!(
-            projected.selection,
-            crate::style::SelectionChrome::Gutter,
-            "a fill has nothing to fill with once color is gone"
-        );
     }
 
     #[test]
@@ -205,7 +199,7 @@ mod tests {
         let b = CapabilityBoundary::from_profile(CapabilityProfile::Modern);
         let projected = b.project_system(DesignSystem::junie());
         assert_eq!(projected.glyphs, DesignSystem::junie().glyphs);
-        assert_eq!(projected.selection, DesignSystem::junie().selection);
+        assert_eq!(projected.capability, DesignSystem::junie().capability);
     }
 
     #[test]

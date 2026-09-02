@@ -23,7 +23,7 @@ fn warmed_large_document_render_is_allocation_free() {
         .collect::<Vec<_>>()
         .join("\n");
     let theme = RolePalette::default();
-    let system = DesignSystem::from_palette(theme.clone());
+    let system = DesignSystem::new(theme.clone());
     let widget = TextArea::new(&system);
     let mut state = TextAreaState::new(text);
     state.set_accepts_input(true);

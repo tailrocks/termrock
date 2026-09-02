@@ -4,7 +4,7 @@
 //! One selection language for collections that paint whole rows.
 //!
 //! Widgets that render a row as a single string used to hand-roll
-//! `match system.selection { … }` and repaint the row in `Role::Focus`, which
+//! `Role::Focus` fill, which
 //! erased whatever the row was *saying*. [`RowChrome`] resolves the same
 //! [`ListRowRecipe`] the list family uses. Selected row copy takes the
 //! recipe's contrast-safe label tone; semantic glyphs and words retain the
@@ -58,7 +58,8 @@ pub(crate) struct RowChrome {
     focused: bool,
     selected_foreground: Option<Color>,
     plain_foreground: Option<Color>,
-    gutter: Option<(&'static str, Style)>,
+    gutter: (&'static str, Style),
+    marker: (&'static str, Style),
     colorless: bool,
 }
 
@@ -66,21 +67,20 @@ impl RowChrome {
     /// Resolves the shared row recipe for this visual state.
     ///
     /// One resolver: [`DesignSystem::resolve_list_row`] states the whole law
-    /// (focus bar `▎` for the row that owns the keyboard, membership marker
-    /// `›` for a parked selection, tint only where the tint and the keyboard
-    /// agree). This type only restates the recipe's decisions in the shape the
-    /// painters call.
+    /// (col 0 is always the focus bar `▎`, col 1 is the membership marker
+    /// `›`/`✓`/space, tint only where the tint and the keyboard agree). This
+    /// type only restates the recipe's decisions in the shape the painters call.
     pub(crate) fn resolve(system: &DesignSystem, state: ListRowVisualState) -> Self {
         let recipe = system.resolve_list_row(state);
         Self {
             recipe,
             selected: state.selected,
-            focused: state.focused,
-            // The focused contrast pair is canonical: white on the tint, bold.
-            // A parked selection falls back to the body tone.
-            selected_foreground: system.style(Role::TextStrong).fg,
+            focused: state.focused && state.enabled,
+            // Body copy stays text-primary; the marker owns the accent.
+            selected_foreground: system.style(Role::Text).fg,
             plain_foreground: system.style(Role::Text).fg,
             gutter: recipe.gutter,
+            marker: recipe.marker,
             colorless: system.mono(),
         }
     }
@@ -93,26 +93,18 @@ impl RowChrome {
 
     /// Style for the row's primary text.
     ///
-    /// A selected row owns its foreground and ground as one contrast pair.
-    /// Preserving an arbitrary body foreground while adding the selection
-    /// ground can make both resolve to the same terminal color. Semantic
-    /// state belongs on a glyph or word painted after this base style.
+    /// The label keeps text-primary (or a semantic tone the caller passed).
+    /// Accent belongs on the membership marker, never on the words.
     pub(crate) fn label_style(&self, base: Style) -> Style {
         let mut style = base;
-        // The contrast pair (white on tint, bold) rides the keyboard. A parked
-        // selection reads as ordinary body copy on its row ground.
-        if self.selected && self.focused {
-            style.fg = self.selected_foreground;
-        } else if self.selected {
-            style.fg = self.plain_foreground;
-        } else if style.fg.is_none() {
-            style.fg = self.recipe.label.fg;
+        if style.fg.is_none() {
+            style.fg = self.recipe.label.fg.or(self.plain_foreground);
         }
         style = style.remove_modifier(Modifier::DIM);
         if let Some(bg) = self.wash() {
             style = style.bg(bg);
         }
-        if self.selected && self.focused {
+        if self.focused {
             style = style.add_modifier(Modifier::BOLD);
         }
         style
@@ -120,20 +112,16 @@ impl RowChrome {
 
     /// Style for secondary/numeric metadata inside the same row ground.
     pub(crate) fn secondary_style(&self, base: Style) -> Style {
-        let foreground = if self.selected && self.focused {
+        let foreground = self.recipe.secondary.fg.or(if self.selected {
             self.selected_foreground
-        } else if self.selected {
-            self.plain_foreground
         } else {
-            self.recipe.secondary.fg
-        };
+            None
+        });
         let mut style = foreground.map_or(base, |fg| base.fg(fg));
-        if self.selected {
-            // Selected metadata shares the row foreground but stays quieter
-            // through weight, which also survives monochrome.
-            style = style.remove_modifier(Modifier::BOLD | Modifier::DIM);
+        if let Some(bg) = self.wash() {
+            style = style.bg(bg);
         }
-        style
+        style.remove_modifier(Modifier::BOLD | Modifier::DIM)
     }
 
     /// Background the row sits on, if this chrome washes at all.
@@ -153,16 +141,17 @@ impl RowChrome {
         }
     }
 
-    /// Paints ground and gutter over an already-written row.
+    /// Paints ground, focus bar, and membership marker over an already-written row.
     ///
-    /// Call after the row's text: cell symbols are preserved, so this only
-    /// moves the ground and stamps the gutter glyph into the reserved slot.
+    /// Call after the row's text: cell symbols past col 1 are preserved, so this
+    /// only moves the ground and stamps the reserved chrome slots.
     pub(crate) fn paint(&self, buffer: &mut Buffer, row: Rect) {
         if row.width == 0 || row.height == 0 {
             return;
         }
         self.paint_wash(buffer, row);
         self.paint_gutter(buffer, row);
+        self.paint_marker(buffer, row);
     }
 
     /// Paints only the tint/hover ground, useful for wrapped continuations.
@@ -183,15 +172,33 @@ impl RowChrome {
         if row.width == 0 || row.height == 0 {
             return;
         }
-        if let Some((glyph, gutter_style)) = self.gutter {
-            let cell = &mut buffer[(row.x, row.y)];
-            let mut style = gutter_style;
-            if let Some(bg) = self.wash() {
-                style = style.bg(bg);
-            }
-            cell.set_symbol(glyph);
-            cell.set_style(style);
+        let (glyph, gutter_style) = self.gutter;
+        let cell = &mut buffer[(row.x, row.y)];
+        let mut style = gutter_style;
+        if let Some(bg) = self.wash() {
+            style = style.bg(bg);
         }
+        cell.set_symbol(glyph);
+        cell.set_style(style);
+    }
+
+    /// Paints the col-1 membership marker (`›` / `✓`). Space is left untouched
+    /// so callers that wrote content into the slot keep it.
+    pub(crate) fn paint_marker(&self, buffer: &mut Buffer, row: Rect) {
+        if row.width < 2 || row.height == 0 {
+            return;
+        }
+        let (glyph, marker_style) = self.marker;
+        if glyph.trim().is_empty() {
+            return;
+        }
+        let cell = &mut buffer[(row.x.saturating_add(1), row.y)];
+        let mut style = marker_style;
+        if let Some(bg) = self.wash() {
+            style = style.bg(bg);
+        }
+        cell.set_symbol(glyph);
+        cell.set_style(style);
     }
 }
 
@@ -212,9 +219,11 @@ mod tests {
     #[test]
     fn selected_body_tone_uses_the_recipe_contrast_pair() {
         let system = DesignSystem::junie();
+        let theme = system.junie_theme();
         let chrome = RowChrome::resolve(&system, state(true, true));
         let style = chrome.label_style(system.style(Role::Text));
-        assert_eq!(style.fg, system.style(Role::TextStrong).fg);
+        assert_eq!(style.fg, system.style(Role::Text).fg);
+        assert_ne!(style.fg, Some(theme.accent), "label never uses accent");
         assert_ne!(style.fg, chrome.wash());
         assert!(style.add_modifier.contains(Modifier::BOLD));
     }
@@ -225,7 +234,7 @@ mod tests {
         let chrome = RowChrome::resolve(&system, state(true, true));
         let style = chrome.secondary_style(system.style(Role::TextMuted));
 
-        assert_eq!(style.fg, system.style(Role::TextStrong).fg);
+        assert_eq!(style.fg, system.style(Role::TextMuted).fg);
         assert_ne!(style.fg, chrome.wash());
         assert!(!style.add_modifier.contains(Modifier::BOLD));
     }
@@ -244,26 +253,28 @@ mod tests {
         let system = DesignSystem::junie();
         let chrome = RowChrome::resolve(&system, state(true, true));
         let style = chrome.label_style(Style::new());
-        assert_eq!(style.fg, system.style(Role::TextStrong).fg);
+        assert_eq!(style.fg, system.style(Role::Text).fg);
     }
 
     #[test]
     fn gutter_lands_in_the_reserved_slot_without_eating_text() {
         let system = DesignSystem::junie();
-        let row = Rect::new(0, 0, 8, 1);
+        let row = Rect::new(0, 0, 10, 1);
         let mut buffer = Buffer::empty(row);
-        buffer.set_stringn(0, 0, " payload", 8, Style::new());
+        buffer.set_stringn(0, 0, "   payload", 10, Style::new());
 
         let chrome = RowChrome::resolve(&system, state(true, true));
         chrome.paint(&mut buffer, row);
 
         assert_eq!(buffer[(0, 0)].symbol(), system.glyphs.selection_gutter());
-        assert_eq!(buffer[(1, 0)].symbol(), "p");
+        assert_eq!(buffer[(1, 0)].symbol(), system.glyphs.selection_marker());
+        assert_eq!(buffer[(2, 0)].symbol(), " ");
+        assert_eq!(buffer[(3, 0)].symbol(), "p");
     }
 
     #[test]
     fn tint_chrome_washes_the_ground_and_keeps_symbols() {
-        let system = DesignSystem::junie().selection(crate::style::SelectionChrome::Tint);
+        let system = DesignSystem::junie();
         let row = Rect::new(0, 0, 6, 1);
         let mut buffer = Buffer::empty(row);
         buffer.set_stringn(0, 0, " abcde", 6, Style::new());
@@ -278,7 +289,7 @@ mod tests {
 
     #[test]
     fn configured_tint_cannot_replace_collection_gutter_and_tint() {
-        let system = DesignSystem::junie().selection(crate::style::SelectionChrome::Tint);
+        let system = DesignSystem::junie();
         let row = Rect::new(0, 0, 6, 1);
         let mut buffer = Buffer::empty(row);
         buffer.set_stringn(0, 0, " abcde", 6, Style::new());
@@ -315,28 +326,30 @@ mod tests {
     }
 
     #[test]
-    fn untouched_rows_have_nothing_to_say() {
+    fn unfocused_unselected_still_paints_an_invisible_bar() {
         let system = DesignSystem::junie();
+        let theme = system.junie_theme();
         let row = Rect::new(0, 0, 5, 1);
         let mut buffer = Buffer::empty(row);
         buffer.set_stringn(0, 0, "abcde", 5, Style::new());
-        let before = buffer.clone();
 
         RowChrome::resolve(&system, state(false, false)).paint(&mut buffer, row);
-        assert_eq!(buffer, before, "no cursor, no membership, no paint");
+        assert_eq!(buffer[(0, 0)].symbol(), system.glyphs.selection_gutter());
+        assert_eq!(buffer[(0, 0)].fg, buffer[(0, 0)].bg);
+        assert_eq!(buffer[(0, 0)].fg, theme.surface);
+        assert_eq!(buffer[(1, 0)].symbol(), "b", "idle marker slot stays empty");
     }
 
     #[test]
-    fn focus_bar_and_parked_marker_share_the_leading_slot() {
+    fn focus_bar_and_parked_marker_occupy_separate_slots() {
         let system = DesignSystem::junie();
         let theme = system.junie_theme();
         let row = Rect::new(0, 0, 8, 1);
         let mut buffer = Buffer::empty(row);
         buffer.set_stringn(0, 0, " payload", 8, Style::new());
 
-        // The row that owns the keyboard paints the focus bar in the focus
-        // accent; a parked selection marks membership with `›` instead, one
-        // tone down — never a second gutter colour.
+        // Col 0 is always ▎. Focus paints it in the accent; a parked
+        // selection keeps the bar invisible (fg=bg) and puts `›` at col 1.
         RowChrome::resolve(&system, state(false, true)).paint(&mut buffer, row);
         assert_eq!(buffer[(0, 0)].symbol(), system.glyphs.selection_gutter());
         assert_eq!(buffer[(0, 0)].fg, theme.focus);
@@ -344,7 +357,9 @@ mod tests {
         let mut buffer = Buffer::empty(row);
         buffer.set_stringn(0, 0, " payload", 8, Style::new());
         RowChrome::resolve(&system, state(true, false)).paint(&mut buffer, row);
-        assert_eq!(buffer[(0, 0)].symbol(), system.glyphs.selection_marker());
-        assert_eq!(buffer[(0, 0)].fg, theme.text_secondary);
+        assert_eq!(buffer[(0, 0)].symbol(), system.glyphs.selection_gutter());
+        assert_eq!(buffer[(0, 0)].fg, buffer[(0, 0)].bg);
+        assert_eq!(buffer[(1, 0)].symbol(), system.glyphs.selection_marker());
+        assert_eq!(buffer[(1, 0)].fg, theme.text_secondary);
     }
 }

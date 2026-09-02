@@ -991,7 +991,7 @@ mod tests {
 
     #[test]
     fn collapse_preserves_first_and_last() {
-        let system = DesignSystem::from_palette(RolePalette::default());
+        let system = DesignSystem::new(RolePalette::default());
         let items = sample();
         let mut state = BreadcrumbsState::new();
         state.set_focused(true);

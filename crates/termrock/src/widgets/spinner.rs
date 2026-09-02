@@ -27,8 +27,8 @@ use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 use crate::{
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
     runtime::{AnimationDemand, FrameTick, spinner_demand, spinner_step},
-    style::{DesignSystem, Glyph, MotionPolicy, Role},
-    text::{display_cols, take_display_cols, truncate_cols},
+    style::{DesignSystem, MotionPolicy, Role},
+    text::{take_display_cols, truncate_cols},
 };
 
 use super::SemanticStatus;
@@ -264,26 +264,15 @@ impl SpinnerState {
     /// Effective frames for phase + capability.
     ///
     /// There is exactly one animated frame vocabulary — the 10-frame braille
-    /// set at 80 ms. A phase never gets its own sequence; what distinguishes a
-    /// waiting spinner from a streaming one is the verb, the tone, and the
-    /// static mark, not a second cadence.
+    /// set at 80 ms. [`MotionPolicy::Off`] parks on the first frame. Done is
+    /// the settled `✓`; it never spins.
     #[must_use]
     pub fn frames(&self, motion: MotionPolicy) -> &'static [&'static str] {
+        if matches!(self.phase, ActivityPhase::Done) {
+            return &["✓"];
+        }
         if !motion.animate_spinners() || !self.phase.animates() {
-            // Reduced motion is not frozen: each phase keeps a distinct static
-            // mark. `Indeterminate` must NOT fall back to a filled `●` — filled
-            // reads as "terminal state reached", which is the one thing an
-            // in-flight spinner is not.
-            return {
-                match self.phase {
-                    ActivityPhase::Queued => &["◌"],
-                    ActivityPhase::Waiting => &["·"],
-                    ActivityPhase::Reconnecting => &["◍"],
-                    ActivityPhase::Streaming => &["≈"],
-                    ActivityPhase::Done => &["✓"],
-                    ActivityPhase::Indeterminate => &["○"],
-                }
-            };
+            return &SPINNER_BRAILLE_FRAMES[..1];
         }
         SPINNER_BRAILLE_FRAMES
     }
@@ -448,32 +437,37 @@ impl<'a> Spinner<'a> {
         let glyph = local.frame_glyph(tick, motion);
         let compact = matches!(local.variant, SpinnerVariant::CompactInline)
             || local.embedded_in_labeled_control();
-        let text = if compact && self.label.is_none() {
-            glyph.to_string()
+        let theme = self.system.junie_theme();
+        let glyph_style = if self.colorless {
+            self.system.style(Role::TextStrong)
         } else {
-            let label = self.resolved_label(&local);
-            format!("{glyph} {label}")
+            theme.accent_fg()
         };
         let ellipsis = self.system.glyphs.ellipsis();
-        let fitted = truncate_cols(&text, usize::from(area.width), ellipsis);
-        buffer.set_stringn(
-            area.x,
-            area.y,
-            &fitted,
-            usize::from(area.width),
-            self.system.style(Role::TextSecondary),
-        );
-        crate::widgets::row_chrome::paint_status_glyph(
-            buffer,
-            area,
-            0,
-            glyph,
-            self.system.style(if self.colorless {
-                Role::TextStrong
-            } else {
-                local.phase().semantic().role()
-            }),
-        );
+        if compact && self.label.is_none() {
+            let fitted = truncate_cols(glyph, usize::from(area.width), ellipsis);
+            buffer.set_stringn(
+                area.x,
+                area.y,
+                &fitted,
+                usize::from(area.width),
+                glyph_style,
+            );
+            return;
+        }
+        // junie: frame at x in accent, label at x+2 in secondary.
+        buffer.set_stringn(area.x, area.y, glyph, usize::from(area.width), glyph_style);
+        let label = self.resolved_label(&local);
+        if area.width > 2 {
+            let fitted = truncate_cols(label, usize::from(area.width.saturating_sub(2)), ellipsis);
+            buffer.set_stringn(
+                area.x.saturating_add(2),
+                area.y,
+                &fitted,
+                usize::from(area.width.saturating_sub(2)),
+                theme.secondary(),
+            );
+        }
     }
 
     /// Legacy paint without state (always active/visible).
@@ -586,52 +580,32 @@ impl<'a> ActivityIndicator<'a> {
         }
         let mut local = state.clone();
         let glyph = local.frame_glyph(tick, motion);
-        let rail = { self.system.glyphs.resolve(Glyph::RailHeavy).text };
-        let line1 = format!("{rail} {glyph} {}", self.label);
-        // The verb is words; the rail + spinner cells carry lifecycle tone.
-        buffer.set_stringn(
-            area.x,
-            area.y,
-            &take_display_cols(&line1, usize::from(area.width)),
-            usize::from(area.width),
-            self.system.style(Role::TextSecondary),
-        );
-        let semantic_role = if self.colorless {
-            Role::TextStrong
+        let theme = self.system.junie_theme();
+        let glyph_style = if self.colorless {
+            self.system.style(Role::TextStrong)
         } else {
-            local.phase().semantic().role()
+            theme.accent_fg()
         };
-        crate::widgets::row_chrome::paint_status_glyph(
-            buffer,
-            area,
-            0,
-            rail,
-            self.system.style(semantic_role),
-        );
-        let glyph_column = u16::try_from(display_cols(rail).saturating_add(1)).unwrap_or(u16::MAX);
-        crate::widgets::row_chrome::paint_status_glyph(
-            buffer,
-            area,
-            glyph_column,
-            glyph,
-            self.system.style(semantic_role),
-        );
+        // Compact activity: `⠋ label` — same vocabulary as Spinner.
+        buffer.set_stringn(area.x, area.y, glyph, usize::from(area.width), glyph_style);
+        if area.width > 2 {
+            buffer.set_stringn(
+                area.x.saturating_add(2),
+                area.y,
+                &take_display_cols(self.label, usize::from(area.width.saturating_sub(2))),
+                usize::from(area.width.saturating_sub(2)),
+                theme.secondary(),
+            );
+        }
         if let Some(detail) = self.detail {
             if area.height > 1 {
-                let prefix_cols = display_cols(rail)
-                    .saturating_add(display_cols(glyph))
-                    .saturating_add(2);
-                let x = area.x.saturating_add(prefix_cols as u16);
-                let w = area.width.saturating_sub(prefix_cols as u16);
-                if w > 0 {
-                    buffer.set_stringn(
-                        x,
-                        area.y + 1,
-                        &take_display_cols(detail, usize::from(w)),
-                        usize::from(w),
-                        self.system.style(Role::TextMuted),
-                    );
-                }
+                buffer.set_stringn(
+                    area.x.saturating_add(2),
+                    area.y + 1,
+                    &take_display_cols(detail, usize::from(area.width.saturating_sub(2))),
+                    usize::from(area.width.saturating_sub(2)),
+                    theme.muted(),
+                );
             }
         }
     }
@@ -722,30 +696,25 @@ mod tests {
     }
 
     #[test]
-    fn reduced_motion_marks_stay_distinct_per_phase() {
-        // Reduced is not frozen: the phase must still be readable, and no two
-        // phases may share a mark or the tier destroys the distinction.
-        let mut marks = Vec::new();
+    fn motion_off_parks_in_flight_phases_on_first_braille_frame() {
         for phase in [
             ActivityPhase::Indeterminate,
             ActivityPhase::Waiting,
             ActivityPhase::Queued,
             ActivityPhase::Reconnecting,
             ActivityPhase::Streaming,
-            ActivityPhase::Done,
         ] {
             let mut state = SpinnerState::new();
             state.set_phase(phase);
-            let mark = state.frame_glyph(tick_at(500), MotionPolicy::Off);
-            assert_ne!(mark, "●", "{phase:?} fell back to a filled dot");
-            marks.push(mark);
+            assert_eq!(
+                state.frame_glyph(tick_at(500), MotionPolicy::Off),
+                SPINNER_BRAILLE_FRAMES[0],
+                "{phase:?}"
+            );
         }
-        let unique: std::collections::HashSet<_> = marks.iter().collect();
-        assert_eq!(
-            unique.len(),
-            marks.len(),
-            "phases share a static mark: {marks:?}"
-        );
+        let mut done = SpinnerState::new();
+        done.set_phase(ActivityPhase::Done);
+        assert_eq!(done.frame_glyph(tick_at(500), MotionPolicy::Off), "✓");
     }
 
     #[test]
@@ -754,9 +723,10 @@ mod tests {
         let spinner = Spinner::new(&tokens);
         let now = Instant::now();
         let tick = FrameTick::manual(now, Duration::from_millis(560), Duration::from_millis(16));
-        // Hollow, never filled: a filled dot reads as "terminal state reached",
-        // which an in-flight spinner has not.
-        assert_eq!(spinner.frame_glyph(tick, MotionPolicy::Off), "○");
+        assert_eq!(
+            spinner.frame_glyph(tick, MotionPolicy::Off),
+            SPINNER_BRAILLE_FRAMES[0]
+        );
         let a = spinner.frame_glyph(tick, MotionPolicy::Full);
         let b = spinner.frame_glyph(
             FrameTick::manual(now, Duration::from_millis(640), Duration::from_millis(16)),
@@ -937,7 +907,7 @@ mod tests {
     }
 
     #[test]
-    fn activity_indicator_is_rail_glyph_and_verb_in_ascii_colorless_mode() {
+    fn activity_indicator_is_glyph_and_verb_in_ascii_colorless_mode() {
         let system = DesignSystem::default();
         let mut state = SpinnerState::new();
         state.set_phase(ActivityPhase::Reconnecting);
@@ -947,7 +917,10 @@ mod tests {
             .colorless(true)
             .paint(area, &mut buffer, &state, tick_at(100), MotionPolicy::Off);
         let text: String = buffer.content().iter().map(|cell| cell.symbol()).collect();
-        assert!(text.starts_with("┃ ◍ Reconnecting"), "{text:?}");
+        assert!(
+            text.starts_with(&format!("{} Reconnecting", SPINNER_BRAILLE_FRAMES[0])),
+            "{text:?}"
+        );
         let warning_fg = system.style(Role::Warning).fg;
         assert!(
             buffer
@@ -1119,6 +1092,26 @@ mod tests {
         assert!(
             SPINNER_BRAILLE_FRAMES.contains(&state.frame_glyph(tick_at(0), MotionPolicy::Full))
         );
+    }
+
+    #[test]
+    fn spinner_glyph_is_accent_label_is_secondary() {
+        let system = DesignSystem::default();
+        let state = SpinnerState::new();
+        let area = Rect::new(0, 0, 24, 1);
+        let mut buf = Buffer::empty(area);
+        Spinner::labeled("Fetching", &system).paint(
+            area,
+            &mut buf,
+            &state,
+            tick_at(0),
+            MotionPolicy::Off,
+        );
+        let theme = system.junie_theme();
+        assert_eq!(buf[(0, 0)].symbol(), SPINNER_BRAILLE_FRAMES[0]);
+        assert_eq!(buf[(0, 0)].fg, theme.accent_fg().fg.unwrap());
+        assert_eq!(buf[(2, 0)].symbol(), "F");
+        assert_eq!(buf[(2, 0)].fg, theme.secondary().fg.unwrap());
     }
 
     #[test]

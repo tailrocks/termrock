@@ -60,10 +60,7 @@ fn block_style_only_changes_vertical_thumb() {
 
 #[test]
 fn scrollbar_uses_semantic_theme_roles() {
-    let theme = crate::style::RolePalette::default()
-        .with_role(Role::ScrollTrack, Style::new().fg(Color::Red))
-        .with_role(Role::ScrollThumb, Style::new().fg(Color::Blue));
-    let system = crate::style::DesignSystem::from_palette(theme.clone());
+    let system = crate::style::DesignSystem::junie();
     let theme = system.junie_theme();
     let mut buffer = Buffer::empty(Rect::new(0, 0, 1, 5));
     let area = buffer.area;

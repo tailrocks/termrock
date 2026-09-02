@@ -1057,7 +1057,7 @@ pub fn example_setup_summary_lines() -> Vec<SetupSummaryLine<'static>> {
     vec![
         SetupSummaryLine::edited("Account", "Ada <ada@example>"),
         SetupSummaryLine::edited("Endpoint", "https://api.example"),
-        SetupSummaryLine::untouched("Theme", "phosphor"),
+        SetupSummaryLine::untouched("Theme", "junie"),
         SetupSummaryLine::untouched("Trust", "default-deny tools"),
     ]
 }

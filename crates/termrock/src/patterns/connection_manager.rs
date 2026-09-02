@@ -2161,8 +2161,16 @@ impl<'a> ConnectionManager<'a> {
                 return;
             }
             let focus = state.form_field == field;
-            let marker = if focus { ">" } else { " " };
-            let caret = if focus { "▎" } else { "" };
+            let marker = if focus {
+                crate::style::Glyph::SelectionMarker.resolve().text
+            } else {
+                " "
+            };
+            let caret = if focus {
+                crate::style::Glyph::SelectionGutter.resolve().text
+            } else {
+                ""
+            };
             let line = format!("{marker}{label:8} {value}{caret}");
             let style = if focus {
                 self.system

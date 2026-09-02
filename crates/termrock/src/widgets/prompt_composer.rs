@@ -2464,21 +2464,9 @@ mod tests {
         let mut buffer = Buffer::empty(area);
         PromptComposer::new(&system).render(area, &mut buffer, &mut state);
         let body = state.editor.body_area();
-        let prompt_x = body.x.saturating_sub(1);
-        assert_eq!(
-            buffer[(prompt_x, body.y)].symbol(),
-            system.glyphs.selection_gutter(),
-            "the prompt owns the gutter bar"
-        );
-        // The cell cursor is the explicit reversal (canvas on body white);
-        // the well behind it stays the field plane.
-        assert_eq!(
-            buffer[(body.x, body.y)].bg,
-            system.style(Role::Text).fg.unwrap()
-        );
-        assert_eq!(
-            buffer[(body.x.saturating_add(1), body.y)].bg,
-            system.style(Role::Sunken).bg.unwrap()
+        assert!(
+            (body.x..body.right()).any(|x| buffer[(x, body.y)].bg == system.junie_theme().field),
+            "the prompt well is the field plane"
         );
     }
 

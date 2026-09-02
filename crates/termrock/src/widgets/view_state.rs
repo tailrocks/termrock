@@ -174,7 +174,7 @@ mod tests {
     #[test]
     fn banner_uses_non_color_success_glyph() {
         let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
+        let system = crate::style::DesignSystem::new(theme.clone());
         let mut buffer = Buffer::empty(Rect::new(0, 0, 20, 1));
         Banner::new("Saved", Severity::Success, &system)
             .render(Rect::new(0, 0, 20, 1), &mut buffer);

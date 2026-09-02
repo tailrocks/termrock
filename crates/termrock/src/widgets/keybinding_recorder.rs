@@ -1264,7 +1264,7 @@ mod tests {
 
     #[test]
     fn paint_recording_and_idle() {
-        let system = DesignSystem::from_palette(RolePalette::default());
+        let system = DesignSystem::new(RolePalette::default());
         let mut state = KeybindingRecorderState::new("save", "Save file")
             .with_chords([KeyChord::ctrl(KeyCode::Char('s'))])
             .with_format(ChordFormat::footer());

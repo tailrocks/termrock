@@ -27,6 +27,9 @@ use crate::{
 
 use super::semantic_status::SemanticStatus;
 
+/// Footer status sentence lifetime. junie showcase default: 4 seconds.
+pub const STATUS_DEFAULT_TTL_MS: u64 = 4_000;
+
 /// Which band a slot belongs to.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -102,7 +105,7 @@ impl StatusKind {
             Self::Context => Some(Glyph::DisclosureClosed),
             Self::Shortcut | Self::Text => None,
             Self::FocusZone => Some(Glyph::DiamondFilled),
-            Self::Transient => Some(Glyph::Ellipsis),
+            Self::Transient => None,
         };
         match g {
             Some(glyph) => glyphs.resolve(glyph).text,
@@ -123,7 +126,7 @@ impl StatusKind {
             Self::Context => Role::TextMuted,
             Self::Shortcut => Role::HintKey,
             Self::FocusZone => Role::TextStrong,
-            Self::Transient => Role::Warning,
+            Self::Transient => Role::TextSecondary,
             Self::Text => Role::StatusBar,
         }
     }
@@ -357,6 +360,9 @@ pub struct StatusBarState<Id> {
     /// bar cross-fades instead (plans/014 Step 3b).
     previous_mode: Option<String>,
     mode_changed_at_ms: u64,
+    transient_set_at_ms: Option<u64>,
+    /// Lifetime of a timed status sentence. Default [`STATUS_DEFAULT_TTL_MS`].
+    pub transient_ttl_ms: u64,
 }
 
 impl<Id> StatusBarState<Id> {
@@ -392,6 +398,8 @@ impl<Id> Default for StatusBarState<Id> {
             transient: None,
             previous_mode: None,
             mode_changed_at_ms: 0,
+            transient_set_at_ms: None,
+            transient_ttl_ms: STATUS_DEFAULT_TTL_MS,
         }
     }
 }
@@ -406,6 +414,23 @@ impl<Id: Clone> StatusBarState<Id> {
     /// Sets or clears transient text (host-owned lifetime).
     pub fn set_transient(&mut self, message: Option<impl Into<String>>) {
         self.transient = message.map(Into::into);
+        self.transient_set_at_ms = None;
+    }
+
+    /// Sets a timed status sentence. Past tense, no period: `Cell saved`.
+    pub fn set_transient_at(&mut self, message: Option<impl Into<String>>, elapsed_ms: u64) {
+        self.transient = message.map(Into::into);
+        self.transient_set_at_ms = Some(elapsed_ms);
+    }
+
+    /// Drops an expired status sentence. Default TTL is 4 seconds.
+    pub fn expire_transient(&mut self, elapsed_ms: u64) {
+        if let Some(at) = self.transient_set_at_ms {
+            if elapsed_ms.saturating_sub(at) >= self.transient_ttl_ms {
+                self.transient = None;
+                self.transient_set_at_ms = None;
+            }
+        }
     }
 
     /// Updates hover state from the current pointer position and painted hit regions.
@@ -789,55 +814,40 @@ impl<Id: Clone> StatusBar<'_, Id> {
         let Some(text) = text.filter(|t| !t.is_empty()) else {
             return;
         };
-        let glyph = self
-            .transient
-            .and_then(|t| t.glyph)
-            .unwrap_or_else(|| StatusKind::Transient.default_glyph(self.system.glyphs));
+        let glyph = self.transient.and_then(|t| t.glyph).unwrap_or("");
 
-        // Free span: between max left edge and min right edge
-        let left_edge = placements
-            .iter()
-            .filter(|p| p.side == Side::Left)
-            .map(|p| p.area.right())
-            .max()
-            .unwrap_or(area.x);
-        let right_edge = placements
-            .iter()
-            .filter(|p| p.side == Side::Right)
-            .map(|p| p.area.x)
-            .min()
-            .unwrap_or(area.right());
-        // Also avoid permanent center slots
-        let center_used_right = placements
-            .iter()
-            .filter(|p| p.side == Side::Center)
-            .map(|p| p.area.right())
-            .max()
-            .unwrap_or(left_edge);
-        let start = left_edge.max(center_used_right);
-        if start >= right_edge {
-            return;
-        }
-        let avail = right_edge.saturating_sub(start);
+        // junie: status wins the right edge, text-secondary, `right - w - 1`.
         let mut label = String::new();
         if !glyph.is_empty() {
             label.push_str(glyph);
             label.push(' ');
         }
         label.push_str(text);
-        let need = (display_cols(&label) as u16 + 2).min(avail);
-        if need == 0 {
+        let w = display_cols(&label) as u16;
+        if area.width <= w + 2 {
             return;
         }
-        let pad = avail.saturating_sub(need) / 2;
-        let x = start.saturating_add(pad);
-        let shown = take_display_cols(&label, usize::from(need));
+        let occupied_right = placements
+            .iter()
+            .filter(|p| p.side == Side::Right)
+            .map(|p| p.area.x)
+            .min()
+            .unwrap_or(area.right());
+        if occupied_right <= area.x + w + 1 {
+            return;
+        }
+        let x = area.right().saturating_sub(w).saturating_sub(1);
+        let shown = take_display_cols(&label, usize::from(w));
         buffer.set_stringn(
             x,
             area.y,
             &shown,
-            usize::from(need),
-            apply_alpha(self.system, self.system.style(Role::Warning), self.alpha),
+            usize::from(w),
+            apply_alpha(
+                self.system,
+                self.system.junie_theme().secondary(),
+                self.alpha,
+            ),
         );
     }
 }
@@ -1048,7 +1058,7 @@ mod tests {
     #[test]
     fn priority_and_minimum_width_control_narrow_layout() {
         let theme = RolePalette::default();
-        let system = DesignSystem::from_palette(theme.clone());
+        let system = DesignSystem::new(theme.clone());
         let left = [slot("activity", " activity ", 10, 4)];
         let right = [
             slot("usage", " usage-long ", 1, 0),
@@ -1093,7 +1103,7 @@ mod tests {
     fn unicode_truncation_never_paints_half_a_wide_grapheme() {
         let left = [slot("wide", " 🧪🔬🧭 ", 1, 3)];
         let theme = RolePalette::default();
-        let system = DesignSystem::from_palette(theme.clone());
+        let system = DesignSystem::new(theme.clone());
         let bar = StatusBar::new(&left, &[], &system);
         let area = Rect::new(0, 0, 3, 1);
         let mut state = StatusBarState::default();
@@ -1106,19 +1116,17 @@ mod tests {
     #[test]
     fn resize_cjk_combining_and_ascii_safe() {
         let left = [slot("unicode", " 東京 Cafe\u{301} ", 10, 1)];
-        for glyphs in [GlyphSet::Unicode] {
-            let system = DesignSystem::default().glyphs(glyphs);
-            let bar = StatusBar::new(&left, &[], &system);
-            for width in [32, 12, 1, 0] {
-                let area = Rect::new(0, 0, width, 1);
-                let mut state = StatusBarState::default();
-                let mut buffer = Buffer::empty(area);
-                (&bar).render(area, &mut buffer, &mut state);
-                if width == 32 {
-                    let text: String = buffer.content().iter().map(|cell| cell.symbol()).collect();
-                    assert!(text.contains('東'), "{text:?}");
-                    assert!(text.contains("Cafe\u{301}"), "{text:?}");
-                }
+        let system = DesignSystem::default();
+        let bar = StatusBar::new(&left, &[], &system);
+        for width in [32, 12, 1, 0] {
+            let area = Rect::new(0, 0, width, 1);
+            let mut state = StatusBarState::default();
+            let mut buffer = Buffer::empty(area);
+            (&bar).render(area, &mut buffer, &mut state);
+            if width == 32 {
+                let text: String = buffer.content().iter().map(|cell| cell.symbol()).collect();
+                assert!(text.contains('東'), "{text:?}");
+                assert!(text.contains("Cafe\u{301}"), "{text:?}");
             }
         }
     }
@@ -1265,5 +1273,37 @@ mod tests {
     fn kind_ids_stable() {
         assert_eq!(StatusKind::FocusZone.id(), "focus-zone");
         assert_eq!(StatusBarRecipe::Minimal.id(), "minimal");
+    }
+
+    #[test]
+    fn transient_is_right_edge_text_secondary() {
+        let system = DesignSystem::default();
+        let left = [StatusSlot::mode("m", "NOR")];
+        let msg = TransientStatus::new("Cell saved");
+        let bar = StatusBar::new(&left, &[], &system).transient(&msg);
+        let mut state = StatusBarState::default();
+        let area = Rect::new(0, 0, 40, 1);
+        let mut buf = Buffer::empty(area);
+        (&bar).render(area, &mut buf, &mut state);
+        let row: String = (0..area.width).map(|x| buf[(x, 0)].symbol()).collect();
+        assert!(row.contains("Cell saved"), "{row}");
+        assert!(row.trim_end().ends_with("Cell saved"), "{row}");
+        let start = row.find("Cell saved").unwrap() as u16;
+        assert_eq!(
+            buf[(start, 0)].fg,
+            system.junie_theme().secondary().fg.unwrap()
+        );
+        assert!(!row.contains('.'), "{row}");
+    }
+
+    #[test]
+    fn default_ttl_is_4s() {
+        assert_eq!(STATUS_DEFAULT_TTL_MS, 4_000);
+        let mut state = StatusBarState::<&str>::new();
+        state.set_transient_at(Some("Cell saved"), 0);
+        state.expire_transient(3_999);
+        assert_eq!(state.transient.as_deref(), Some("Cell saved"));
+        state.expire_transient(4_000);
+        assert!(state.transient.is_none());
     }
 }

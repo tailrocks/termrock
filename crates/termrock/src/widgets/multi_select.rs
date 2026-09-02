@@ -17,8 +17,8 @@
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
-    style::Modifier,
-    widgets::{StatefulWidget, Widget},
+    style::{Modifier, Style},
+    widgets::StatefulWidget,
 };
 
 use crate::{
@@ -34,9 +34,9 @@ use crate::{
 };
 
 use super::{
-    Panel, PanelChrome, PanelVariant, SELECT_FULLSCREEN_MAX_HEIGHT, SELECT_FULLSCREEN_MAX_WIDTH,
-    SelectOption, SelectPresentation, SelectRecipe, SelectRowKind, Selection, TextInput,
-    TextInputOutcome, TextInputState, Validation,
+    SELECT_FULLSCREEN_MAX_HEIGHT, SELECT_FULLSCREEN_MAX_WIDTH, SelectOption, SelectPresentation,
+    SelectRecipe, SelectRowKind, Selection, Surface, SurfaceRecipe, TextInput, TextInputOutcome,
+    TextInputState, Validation,
 };
 
 // ── Outcomes ────────────────────────────────────────────────────────────────
@@ -831,12 +831,16 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
             self.paint_trigger_only(area, buffer, state);
             return;
         }
-        let base_trigger_h: u16 = if !self.label.is_empty() && area.height >= 3 {
+        let trigger_h = if matches!(state.recipe, SelectRecipe::Compact) {
+            1
+        } else if !self.label.is_empty() && area.height >= 3 {
+            3
+        } else if area.height >= 3 {
             2
         } else {
             1
-        };
-        let trigger_h = base_trigger_h.saturating_add(1).min(area.height);
+        }
+        .min(area.height);
         let trigger_area = Rect::new(area.x, area.y, area.width, trigger_h.min(area.height));
         let list = Rect::new(
             area.x,
@@ -958,7 +962,15 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
             }
         }
 
-        let chev = if state.is_open() { "▴" } else { "▾" };
+        let chev = self
+            .system
+            .glyphs
+            .resolve(if state.is_open() {
+                Glyph::ChevronUp
+            } else {
+                Glyph::ChevronDown
+            })
+            .text;
         if right > x {
             right = right.saturating_sub(1);
             buffer.set_stringn(right, trigger.y, chev, 1, recipe.placeholder);
@@ -972,6 +984,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
                 usize::from(right.saturating_sub(x).max(1)),
                 recipe.placeholder,
             );
+            apply_field_underline(buffer, trigger, &recipe);
             return;
         }
 
@@ -986,7 +999,8 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
                 .find(|o| o.is_option() && &o.id == id)
                 .map(|o| o.label.as_str())
                 .unwrap_or("?");
-            let chip = format!("[{label}]");
+            let gutter = self.system.glyphs.selection_gutter();
+            let chip = format!("{gutter}{label}");
             let w = display_cols(&chip) as u16;
             if x.saturating_add(w) >= right {
                 break;
@@ -996,7 +1010,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
                 trigger.y,
                 &take_display_cols(&chip, usize::from(w)),
                 usize::from(w),
-                recipe.cursor,
+                recipe.value,
             );
             x = x.saturating_add(w).saturating_add(1);
         }
@@ -1010,19 +1024,20 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
                 recipe.placeholder,
             );
         }
+        apply_field_underline(buffer, trigger, &recipe);
     }
 
     fn paint_list(&self, area: Rect, buffer: &mut Buffer, state: &mut MultiSelectState<Id>) {
-        let panel = Panel::new(self.system)
-            .variant(PanelVariant::Bordered)
-            .overlay(true)
-            .emphasis(if state.focused {
-                PanelChrome::Focused
-            } else {
-                PanelChrome::Normal
-            });
-        let inner = panel.inner(area);
-        Widget::render(&panel, area, buffer);
+        let recipe = if state.focused {
+            SurfaceRecipe::OverlayFocused
+        } else {
+            SurfaceRecipe::Overlay
+        };
+        let inner = Surface::new(self.system)
+            .recipe(recipe)
+            .bordered(true)
+            .content_inset()
+            .paint(area, buffer);
         if inner.is_empty() {
             return;
         }
@@ -1139,7 +1154,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
                     let rect = Rect::new(list_area.x, row_y, list_area.width, 1);
                     let is_hi = state.collection.active() == Some(&opt.id);
                     let is_on = state.selection.is_checked(&opt.id);
-                    let recipe = self.system.resolve_list_row(ListRowVisualState {
+                    let visual = ListRowVisualState {
                         selected: is_hi,
                         focused: is_hi && state.focused,
                         hovered: state.hovered.as_ref() == Some(&opt.id),
@@ -1147,27 +1162,13 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
                         loading: false,
                         checked: is_on,
                         ..ListRowVisualState::default()
-                    });
-                    if recipe.use_fill {
-                        buffer.set_style(rect, recipe.label);
-                    } else if recipe.use_tint {
-                        buffer.set_style(rect, recipe.tint);
-                    }
-                    let mark = if is_on { "[✓]" } else { "[ ]" };
-                    // Highlight = reverse focus; checked mark independent
-                    let style = recipe.label;
-                    let label = if let Some(desc) = &opt.description {
-                        format!("{mark} {} {} {desc}", opt.label, { "—" })
-                    } else {
-                        format!("{mark} {}", opt.label)
                     };
-                    buffer.set_stringn(
-                        rect.x,
-                        rect.y,
-                        take_display_cols(&label, usize::from(rect.width)),
-                        usize::from(rect.width),
-                        style,
-                    );
+                    let label = if let Some(desc) = &opt.description {
+                        format!("{} {} {desc}", opt.label, { "—" })
+                    } else {
+                        opt.label.clone()
+                    };
+                    paint_multi_select_row(buffer, rect, self.system, visual, is_on, &label);
                     if !opt.disabled {
                         state.option_regions.push((opt.id.clone(), rect));
                     }
@@ -1214,6 +1215,75 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
                     expanded: state.is_open(),
                     ..Default::default()
                 }),
+        );
+    }
+}
+
+fn apply_field_underline(buffer: &mut Buffer, field: Rect, recipe: &crate::style::InputRecipe) {
+    if field.is_empty() {
+        return;
+    }
+    let mut underline = Style::new().add_modifier(recipe.border.add_modifier);
+    if let Some(color) = recipe.border.underline_color {
+        underline = underline.underline_color(color);
+    }
+    buffer.set_style(field, underline);
+}
+
+/// List anatomy: `▎` col0 (keyboard) + `✓` col1 (checked). Never `› ` as a gutter.
+fn paint_multi_select_row(
+    buffer: &mut Buffer,
+    row: Rect,
+    system: &DesignSystem,
+    visual: ListRowVisualState,
+    checked: bool,
+    label: &str,
+) {
+    if row.is_empty() {
+        return;
+    }
+    let chrome = super::row_chrome::RowChrome::resolve(system, visual);
+    chrome.paint_wash(buffer, row);
+    let recipe = system.resolve_list_row(visual);
+    let style = chrome.label_style(recipe.label);
+    if row.width > 0 {
+        buffer.set_stringn(row.x, row.y, " ", 1, style);
+    }
+    if visual.focused && row.width > 0 {
+        let mut gutter = Style::new().fg(system
+            .style(Role::Focus)
+            .fg
+            .unwrap_or(system.junie_theme().focus));
+        if let Some(bg) = chrome.wash().or(recipe.tint.bg) {
+            gutter = gutter.bg(bg);
+        }
+        buffer.set_stringn(row.x, row.y, system.glyphs.selection_gutter(), 1, gutter);
+    }
+    if row.width > 1 {
+        let mark = if checked {
+            system.glyphs.resolve(Glyph::Success).text
+        } else {
+            " "
+        };
+        let mut marker = if checked && (visual.focused || visual.hovered) {
+            style.patch(system.style(Role::Accent))
+        } else {
+            style.patch(system.style(Role::TextSecondary))
+        };
+        if let Some(bg) = chrome.wash() {
+            marker = marker.bg(bg);
+        }
+        buffer.set_stringn(row.x.saturating_add(1), row.y, mark, 1, marker);
+    }
+    let text_x = row.x.saturating_add(3).min(row.right());
+    let text_w = row.right().saturating_sub(text_x);
+    if text_w > 0 {
+        buffer.set_stringn(
+            text_x,
+            row.y,
+            take_display_cols(label, usize::from(text_w)),
+            usize::from(text_w),
+            style,
         );
     }
 }
@@ -1396,7 +1466,7 @@ mod tests {
 
     #[test]
     fn summary_chips_paint() {
-        let system = DesignSystem::from_palette(RolePalette::default());
+        let system = DesignSystem::new(RolePalette::default());
         let options = opts();
         let mut state = MultiSelectState::new()
             .with_selected(["rs", "go", "ts"])

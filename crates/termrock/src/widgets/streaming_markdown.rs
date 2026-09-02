@@ -506,13 +506,13 @@ impl StreamingMarkdownState {
                         lines.push(l.to_string());
                     }
                     if b.incomplete && matches!(self.phase, StreamPhase::Streaming) {
-                        lines.push("▎".into());
+                        lines.push(crate::style::Glyph::SelectionGutter.resolve().text.into());
                     }
                 }
             }
         }
         if lines.is_empty() && matches!(self.phase, StreamPhase::Streaming) {
-            lines.push("▎".into());
+            lines.push(crate::style::Glyph::SelectionGutter.resolve().text.into());
         }
         lines
     }

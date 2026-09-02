@@ -67,7 +67,7 @@ fn rendering_exposes_sections_required_help_error_and_non_color_states() {
     let fields = fields();
     let sections = [Fieldset::new("General", &fields)];
     let theme = RolePalette::default();
-    let system = DesignSystem::from_palette(theme.clone());
+    let system = DesignSystem::new(theme.clone());
     let form = Form::new(&sections, &system).focused_field(Some(&"host"));
     let mut state = FormState::new();
     let area = Rect::new(0, 0, 36, 14);
@@ -114,7 +114,7 @@ fn error_summary_says_how_many_it_held_back() {
         Field::new("e", "E", "5").error("E is wrong"),
     ];
     let sections = [Fieldset::new("General", &fields)];
-    let system = DesignSystem::from_palette(RolePalette::default());
+    let system = DesignSystem::new(RolePalette::default());
     let area = Rect::new(0, 0, 48, 20);
     let mut buffer = Buffer::empty(area);
     let mut state = FormState::new();

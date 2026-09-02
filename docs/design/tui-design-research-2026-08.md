@@ -1,5 +1,7 @@
 # TUI design research 2026 — reference languages, design law v2, component improvement plan
 
+> **Superseded (2026-09-02).** Token taxonomy, spacing, glyphs, and state grammar live in [`DESIGN.md`](../../DESIGN.md). This file is historical.
+
 **Status:** binding shared design laws; historical component matrix
 **Audience:** design, implementers
 **Builds on:** `phosphor-obsidian-visual-direction.md`, `terminal-design-system.md`,

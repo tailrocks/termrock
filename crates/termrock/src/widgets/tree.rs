@@ -1,21 +1,26 @@
 //! **Tree** — hierarchical collection for files, schemas, tasks, settings, objects.
 //!
-//! **Mission.** Flattened projection with stable IDs, lazy children, loading/error
-//! child state, expansion, active cursor, selection/check, icons, metadata,
-//! context actions, and typeahead. Left/right define collapse / expand-or-enter
-//! precisely. Filtering retains ancestor context. Large trees virtualize via
-//! window + optional [`Virtualizer`]; scroll anchors preserve position. ASCII
-//! disclosure/indent fallbacks come from the design system glyph set.
+//! **Anatomy** (junie `TreeView` one-to-one): col 0 is always the focus bar
+//! `▎` from [`RowChrome`] / [`DesignSystem::resolve_list_row`]; then
+//! `depth × 2` indent; then a two-cell disclosure (`▾` open / `▸` closed /
+//! spinner while loading / space for a leaf); optional kind glyph; label
+//! (accent when selected, muted for notes); right-aligned meta. Disclosure
+//! never occupies the membership-marker slot — that `›` belongs to lists.
+//!
+//! **Keys.** `↑↓`/`jk`; `→`/`l` expands or steps in; `←`/`h` collapses or
+//! steps out; Enter toggles a folder or activates a leaf; Space checks when
+//! multi-select is on, otherwise toggles a folder; `*` / `-` request expand-all
+//! / collapse-all ([`TreeState::take_bulk_disclosure`]); `g`/`G` first/last.
 //!
 //! **Ownership.** Host owns hierarchy, expansion set, and lazy fetch. Tree owns
 //! cursor/selection interaction, scroll, hit geometry, and typed outcomes.
 //!
-//! Research: file explorers, broot, Yazi, VS Code trees, TermRock List/VirtualList.
+//! Research: junie TreeView, file explorers, broot, Yazi, VS Code trees.
 #![allow(unused_imports)] // test-only imports retained
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
-    style::Modifier,
+    style::{Modifier, Style},
     text::Line,
     widgets::StatefulWidget,
 };
@@ -24,11 +29,11 @@ use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
     interaction::{CollectionItem, CollectionState, HitRegion, NavigationMove, PageMove, UiIntent},
     scroll::max_offset,
-    style::{DesignSystem, ListRowVisualState, Role},
-    text::{display_cols, take_display_cols},
+    style::{DesignSystem, Glyph, ListRowVisualState, Role, SPINNER_BRAILLE_FRAMES},
+    text::{display_cols, display_cols_slice_into, take_display_cols},
 };
 
-use super::{ComposedRow, Selection, StickyRegion, Virtualizer};
+use super::{ComposedRow, Selection, StickyRegion, Virtualizer, row_chrome::RowChrome};
 
 /// Default overscan when using virtualized tree windows.
 pub const TREE_DEFAULT_OVERSCAN: u16 = 4;
@@ -366,6 +371,8 @@ pub struct TreeState<Id> {
     virtual_window_start: usize,
     /// Optional virtualizer for anchors / overscan diagnostics.
     virt: Virtualizer,
+    /// `*` / `-` bulk disclosure: `Some(true)` expand-all, `Some(false)` collapse-all.
+    bulk_disclosure: Option<bool>,
 }
 
 impl<Id> Default for TreeState<Id> {
@@ -389,6 +396,7 @@ impl<Id> Default for TreeState<Id> {
             virtual_total: 0,
             virtual_window_start: 0,
             virt: Virtualizer::fixed(1).with_overscan(TREE_DEFAULT_OVERSCAN),
+            bulk_disclosure: None,
         }
     }
 }
@@ -421,6 +429,7 @@ impl<Id> TreeState<Id> {
             virtual_total: 0,
             virtual_window_start: 0,
             virt: Virtualizer::fixed(1).with_overscan(TREE_DEFAULT_OVERSCAN),
+            bulk_disclosure: None,
         }
     }
 
@@ -428,6 +437,17 @@ impl<Id> TreeState<Id> {
     /// Returns the currently selected stable identity.
     pub const fn selected(&self) -> Option<&Id> {
         self.selected.as_ref()
+    }
+
+    /// `*` expand-all / `-` collapse-all request. Host owns expansion.
+    #[must_use]
+    pub const fn bulk_disclosure(&self) -> Option<bool> {
+        self.bulk_disclosure
+    }
+
+    /// Takes the pending `*` / `-` command (`true` = expand all).
+    pub fn take_bulk_disclosure(&mut self) -> Option<bool> {
+        self.bulk_disclosure.take()
     }
 
     #[must_use]
@@ -643,6 +663,29 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
                 _ => {}
             }
         }
+        if key.kind == KeyEventKind::Press && key.modifiers.is_empty() {
+            match key.code {
+                KeyCode::Char('*') => {
+                    self.collection.clear_typeahead();
+                    self.bulk_disclosure = Some(true);
+                    return TreeOutcome::Ignored;
+                }
+                KeyCode::Char('-') => {
+                    self.collection.clear_typeahead();
+                    self.bulk_disclosure = Some(false);
+                    return TreeOutcome::Ignored;
+                }
+                KeyCode::Char('g') => {
+                    self.collection.clear_typeahead();
+                    return self.select_boundary(nodes, false);
+                }
+                KeyCode::Char('G') => {
+                    self.collection.clear_typeahead();
+                    return self.select_boundary(nodes, true);
+                }
+                _ => {}
+            }
+        }
         if let Some(intent) = crate::interaction::default_tree_intent(key) {
             self.collection.clear_typeahead();
             return self.handle_intent(nodes, intent);
@@ -694,14 +737,29 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
             UiIntent::Page(PageMove::Forward) => self.page_selection(nodes, true),
             UiIntent::Collapse => self.collapse_or_parent(nodes),
             UiIntent::Expand => self.expand_or_enter(nodes),
-            UiIntent::Activate => self
-                .selected_node(nodes)
-                .map_or(TreeOutcome::Ignored, |node| {
-                    TreeOutcome::Activated(node.id.clone())
-                }),
-            UiIntent::Toggle => self.toggle_selected(nodes),
+            UiIntent::Activate => self.activate_or_toggle(nodes),
+            UiIntent::Toggle => {
+                if self.selection.is_some() {
+                    self.toggle_selected(nodes)
+                } else if self.selected_node(nodes).is_some_and(|node| node.branch) {
+                    self.activate_or_toggle(nodes)
+                } else {
+                    TreeOutcome::Ignored
+                }
+            }
             UiIntent::Cancel | UiIntent::Close => TreeOutcome::Cancelled,
             _ => TreeOutcome::Ignored,
+        }
+    }
+
+    fn activate_or_toggle(&self, nodes: &[TreeNode<'_, Id>]) -> TreeOutcome<Id> {
+        let Some(node) = self.selected_node(nodes) else {
+            return TreeOutcome::Ignored;
+        };
+        if node.branch {
+            TreeOutcome::Toggle(node.id.clone())
+        } else {
+            TreeOutcome::Activated(node.id.clone())
         }
     }
 
@@ -760,6 +818,13 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
         else {
             return TreeOutcome::Ignored;
         };
+        let is_branch = self.disclosure_regions.iter().any(|region| region.id == id);
+        if is_branch {
+            self.selected = Some(id.clone());
+            self.collection.set_active(Some(id.clone()));
+            self.follow_selection = true;
+            return TreeOutcome::Toggle(id);
+        }
         if self.selected.as_ref() == Some(&id) {
             TreeOutcome::Activated(id)
         } else {
@@ -935,6 +1000,8 @@ pub struct Tree<'a, Id> {
     nodes: &'a [TreeNode<'a, Id>],
     tokens: &'a DesignSystem,
     empty_message: Option<&'a str>,
+    /// Spinner frame index for loading disclosure (junie `spinner_frame(tick)`).
+    spinner_frame: usize,
 }
 
 impl<'a, Id> Tree<'a, Id> {
@@ -946,6 +1013,7 @@ impl<'a, Id> Tree<'a, Id> {
             nodes,
             tokens,
             empty_message: None,
+            spinner_frame: 0,
         }
     }
 
@@ -963,10 +1031,342 @@ impl<'a, Id> Tree<'a, Id> {
         self
     }
 
+    /// Busy-disclosure spinner frame (modulo the braille vocabulary).
+    #[must_use]
+    pub const fn spinner_frame(mut self, frame: usize) -> Self {
+        self.spinner_frame = frame;
+        self
+    }
+
     /// Design tokens used for recipes and glyphs.
     #[must_use]
     pub const fn tokens(&self) -> &DesignSystem {
         self.tokens
+    }
+}
+
+fn with_row_wash(style: Style, wash: Option<ratatui_core::style::Color>) -> Style {
+    wash.map_or(style, |bg| style.bg(bg))
+}
+
+fn paint_tree_row<Id: Clone + PartialEq>(
+    tokens: &DesignSystem,
+    focused: bool,
+    spinner_frame: usize,
+    node: &TreeNode<'_, Id>,
+    row: Rect,
+    buffer: &mut Buffer,
+    state: &mut TreeState<Id>,
+    indent_step: u16,
+) {
+    if row.width == 0 {
+        return;
+    }
+    let selected = state.selected.as_ref() == Some(&node.id);
+    let hovered = state.hovered.as_ref() == Some(&node.id);
+    let checked = state
+        .selection
+        .as_ref()
+        .is_some_and(|selection| selection.is_checked(&node.id));
+    let busy = matches!(node.status, TreeNodeStatus::Loading);
+    let visual = ListRowVisualState {
+        selected,
+        focused: focused && selected && node.enabled,
+        hovered: hovered && node.enabled,
+        enabled: node.enabled,
+        loading: busy,
+        checked,
+        error: matches!(node.status, TreeNodeStatus::Error),
+        ..ListRowVisualState::default()
+    };
+    let chrome = RowChrome::resolve(tokens, visual);
+    let recipe = tokens.resolve_list_row(visual);
+    let mut body = match node.status {
+        TreeNodeStatus::Ready if node.enabled => recipe.label.patch(tokens.style(node.tone.role())),
+        TreeNodeStatus::Ready => tokens.style(Role::TextDisabled),
+        TreeNodeStatus::Loading | TreeNodeStatus::Lazy => tokens.style(Role::TextSecondary),
+        TreeNodeStatus::Error => tokens.style(Role::Danger),
+    };
+    if !node.enabled {
+        body = tokens.style(Role::TextDisabled);
+    }
+    let body = chrome.label_style(body);
+    buffer.set_style(row, body);
+    chrome.paint_wash(buffer, row);
+    chrome.paint_gutter(buffer, row);
+
+    let y = row.y;
+    let max_indent = row.width.saturating_sub(4);
+    let indent = node.depth.saturating_mul(indent_step).min(max_indent);
+    let mut x = row.x.saturating_add(1).saturating_add(indent);
+    let wash = chrome.wash();
+    if x.saturating_add(2) > row.right() {
+        if node.enabled {
+            state.regions.push(HitRegion {
+                id: node.id.clone(),
+                area: row,
+            });
+            if node.branch {
+                state.disclosure_regions.push(HitRegion {
+                    id: node.id.clone(),
+                    area: Rect::new(row.x, y, 1, 1),
+                });
+            }
+        }
+        return;
+    }
+
+    let (glyph, glyph_style) = if busy {
+        let frames = SPINNER_BRAILLE_FRAMES;
+        let frame = frames[spinner_frame % frames.len()];
+        (frame, with_row_wash(tokens.style(Role::Accent), wash))
+    } else if node.branch {
+        let glyph = if node.expanded {
+            tokens.glyphs.disclosure_open()
+        } else {
+            tokens.glyphs.disclosure_closed()
+        };
+        (
+            glyph,
+            with_row_wash(tokens.style(Role::TextSecondary), wash),
+        )
+    } else {
+        (" ", body)
+    };
+    buffer.set_stringn(x, y, glyph, 1, glyph_style);
+    let disclosure_x = x;
+    let disclosure_w = 2.min(row.right().saturating_sub(x));
+    x = x.saturating_add(2);
+
+    if state.selection.is_some() && x < row.right() {
+        let marker = if checked {
+            Glyph::Success.resolve().text
+        } else {
+            " "
+        };
+        let gw = u16::try_from(display_cols(marker)).unwrap_or(1).max(1);
+        let paint_w = gw.min(row.right().saturating_sub(x));
+        if paint_w > 0 {
+            buffer.set_stringn(x, y, marker, usize::from(paint_w), body);
+            if node.enabled {
+                state.check_regions.push(HitRegion {
+                    id: node.id.clone(),
+                    area: Rect::new(x, y, paint_w, 1),
+                });
+            }
+            x = x.saturating_add(paint_w);
+            if x < row.right() {
+                x = x.saturating_add(1);
+            }
+        }
+    }
+
+    if let Some(leading) = node.leading.as_ref()
+        && x < row.right()
+    {
+        let lw = u16::try_from(leading.width())
+            .unwrap_or(1)
+            .min(row.right().saturating_sub(x))
+            .max(1)
+            .min(2);
+        let muted = chrome
+            .secondary_style(tokens.style(Role::TextMuted))
+            .remove_modifier(Modifier::BOLD);
+        buffer.set_line(x, y, leading, lw);
+        buffer.set_style(Rect::new(x, y, lw, 1), muted);
+        x = x.saturating_add(2);
+    }
+
+    let status = match node.status {
+        TreeNodeStatus::Ready => None,
+        TreeNodeStatus::Loading => Some(" loading"),
+        TreeNodeStatus::Lazy => Some(" lazy"),
+        TreeNodeStatus::Error => Some(" error"),
+    };
+    let status_w = status
+        .map(display_cols)
+        .and_then(|width| u16::try_from(width).ok())
+        .unwrap_or(0);
+    let badge = node.badge.as_ref();
+    let raw_meta_w = badge
+        .map(|meta| u16::try_from(meta.width()).unwrap_or(0))
+        .unwrap_or(0);
+    let avail = row.right().saturating_sub(x);
+    // Hide meta rather than starve the label below one identity cell.
+    let meta_w = if raw_meta_w > 0 && avail.saturating_sub(raw_meta_w.saturating_add(2)) >= 1 {
+        raw_meta_w
+    } else {
+        0
+    };
+
+    let shortcut_need = node
+        .shortcut
+        .map(|s| {
+            u16::try_from(display_cols(s))
+                .unwrap_or(0)
+                .saturating_add(1)
+        })
+        .unwrap_or(0);
+    let actions_need = node
+        .actions
+        .as_ref()
+        .map(|a| u16::try_from(a.width()).unwrap_or(0).saturating_add(1))
+        .unwrap_or(0);
+    let secondary_need = node
+        .secondary
+        .as_ref()
+        .map(|s| u16::try_from(s.width()).unwrap_or(0).saturating_add(1))
+        .unwrap_or(0);
+
+    let mut budget = avail
+        .saturating_sub(status_w)
+        .saturating_sub(if meta_w > 0 {
+            meta_w.saturating_add(1)
+        } else {
+            0
+        })
+        .saturating_sub(1);
+    let show_shortcut = node.shortcut.is_some() && budget >= shortcut_need;
+    if show_shortcut {
+        budget = budget.saturating_sub(shortcut_need);
+    }
+    let show_actions = node.actions.is_some() && budget >= actions_need;
+    if show_actions {
+        budget = budget.saturating_sub(actions_need);
+    }
+    let show_secondary = node.secondary.is_some() && budget >= secondary_need;
+
+    let shortcut_w = if show_shortcut {
+        node.shortcut
+            .map(|s| u16::try_from(display_cols(s)).unwrap_or(0))
+            .unwrap_or(0)
+    } else {
+        0
+    };
+    let actions_w = if show_actions {
+        node.actions
+            .as_ref()
+            .map(|a| u16::try_from(a.width()).unwrap_or(0))
+            .unwrap_or(0)
+    } else {
+        0
+    };
+    let extras = shortcut_w
+        .saturating_add(actions_w)
+        .saturating_add(u16::from(shortcut_w > 0 && actions_w > 0));
+    let label_right = row
+        .right()
+        .saturating_sub(status_w)
+        .saturating_sub(if meta_w > 0 {
+            meta_w.saturating_add(1)
+        } else {
+            0
+        })
+        .saturating_sub(extras);
+    let label_w = label_right.saturating_sub(x);
+
+    let mut label_style = if selected && node.enabled {
+        chrome.label_style(tokens.style(Role::Accent))
+    } else {
+        body
+    };
+    if !node.enabled {
+        label_style = chrome.label_style(tokens.style(Role::TextDisabled));
+    }
+
+    if label_w > 0 && x < row.right() {
+        if state.h_offset == 0 {
+            buffer.set_line(x, y, &node.label, label_w);
+            let painted = u16::try_from(node.label.width())
+                .unwrap_or(u16::MAX)
+                .min(label_w);
+            if painted > 0 {
+                buffer.set_style(Rect::new(x, y, painted, 1), label_style);
+            }
+            x = x.saturating_add(painted);
+        } else {
+            let mut visible = String::new();
+            display_cols_slice_into(
+                &node.plain_label(),
+                usize::from(state.h_offset),
+                usize::from(label_w),
+                &mut visible,
+            );
+            buffer.set_stringn(x, y, &visible, usize::from(label_w), label_style);
+            x = x.saturating_add(
+                u16::try_from(display_cols(&visible))
+                    .unwrap_or(label_w)
+                    .min(label_w),
+            );
+        }
+    }
+
+    if show_secondary && let Some(secondary) = node.secondary.as_ref() {
+        let avail = label_right.saturating_sub(x);
+        if avail > 2 {
+            x = x.saturating_add(1);
+            let sw = u16::try_from(secondary.width())
+                .unwrap_or(u16::MAX)
+                .min(label_right.saturating_sub(x));
+            if sw > 0 {
+                buffer.set_line(x, y, secondary, sw);
+                buffer.set_style(
+                    Rect::new(x, y, sw, 1),
+                    chrome.secondary_style(recipe.secondary),
+                );
+            }
+        }
+    }
+
+    let mut cursor = row.right().saturating_sub(status_w);
+    if meta_w > 0
+        && let Some(badge) = badge
+    {
+        cursor = cursor.saturating_sub(meta_w.saturating_add(1));
+        buffer.set_line(cursor, y, badge, meta_w);
+        buffer.set_style(
+            Rect::new(cursor, y, meta_w, 1),
+            chrome.secondary_style(tokens.style(Role::TextMuted)),
+        );
+    }
+    if show_actions && let Some(act) = node.actions.as_ref() {
+        let w = actions_w.min(cursor.saturating_sub(row.x));
+        if w > 0 {
+            cursor = cursor.saturating_sub(w.saturating_add(1));
+            buffer.set_line(cursor, y, act, w);
+            buffer.set_style(Rect::new(cursor, y, w, 1), recipe.shortcut);
+        }
+    }
+    if show_shortcut && let Some(shortcut) = node.shortcut {
+        let w = shortcut_w.min(cursor.saturating_sub(row.x));
+        if w > 0 {
+            cursor = cursor.saturating_sub(w.saturating_add(1));
+            buffer.set_stringn(cursor, y, shortcut, usize::from(w), recipe.shortcut);
+        }
+    }
+    if let Some(status) = status
+        && status_w > 0
+    {
+        buffer.set_stringn(
+            row.right().saturating_sub(status_w),
+            y,
+            status,
+            usize::from(status_w),
+            body,
+        );
+    }
+
+    if node.enabled {
+        state.regions.push(HitRegion {
+            id: node.id.clone(),
+            area: row,
+        });
+        if node.branch {
+            state.disclosure_regions.push(HitRegion {
+                id: node.id.clone(),
+                area: Rect::new(disclosure_x, y, disclosure_w.max(1), 1),
+            });
+        }
     }
 }
 
@@ -1068,17 +1468,12 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
             .map(|node| u16::try_from(node.label.width()).unwrap_or(u16::MAX))
             .max()
             .unwrap_or(0);
-        state.viewport_width = content_area.width.saturating_sub(4);
+        state.viewport_width = content_area.width.saturating_sub(3);
         state.h_offset = state
             .h_offset
             .min(state.content_width.saturating_sub(state.viewport_width));
-        // Density indent; collapse under narrow pressure (tiny → 0).
-        let indent_step = match content_area.width {
-            0..=7 => 0,
-            8..=11 => 1,
-            _ => self.tokens.spacing.tree_indent.max(1),
-        };
-        for (visible, node) in self
+        let indent_step = self.tokens.spacing.tree_indent.max(1);
+        for (index, node) in self
             .nodes
             .iter()
             .skip(paint_offset)
@@ -1087,330 +1482,18 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
         {
             let y = body
                 .y
-                .saturating_add(u16::try_from(visible).unwrap_or(u16::MAX));
+                .saturating_add(u16::try_from(index).unwrap_or(u16::MAX));
             let row = Rect::new(content_area.x, y, content_area.width, 1);
-            let selected = state.selected.as_ref() == Some(&node.id);
-            let hovered = state.hovered.as_ref() == Some(&node.id);
-            let checked = state
-                .selection
-                .as_ref()
-                .is_some_and(|selection| selection.is_checked(&node.id));
-            let loading = matches!(node.status, TreeNodeStatus::Loading | TreeNodeStatus::Lazy);
-            let recipe = self.tokens.resolve_list_row(ListRowVisualState {
-                selected,
-                focused: self.focused && selected,
-                hovered,
-                enabled: node.enabled,
-                loading,
-                checked,
-                ..ListRowVisualState::default()
-            });
-            let mut style = match node.status {
-                TreeNodeStatus::Ready if node.enabled => {
-                    recipe.label.patch(self.tokens.style(node.tone.role()))
-                }
-                TreeNodeStatus::Ready => self.tokens.style(Role::TextDisabled),
-                // Busy rows keep the body tone one plane down: secondary label
-                // (junie `row()` busy law); the spinner owns the accent.
-                TreeNodeStatus::Loading | TreeNodeStatus::Lazy => {
-                    self.tokens.style(Role::TextSecondary)
-                }
-                TreeNodeStatus::Error => self.tokens.style(Role::Danger),
-            };
-            if !node.enabled {
-                style = self.tokens.style(Role::TextDisabled);
-            }
-            if selected && node.enabled {
-                style = recipe.label;
-                if self.focused {
-                    style = style.add_modifier(Modifier::BOLD);
-                }
-            } else if hovered && node.enabled {
-                style = recipe.hover;
-            } else if checked && node.enabled {
-                style = style.patch(self.tokens.style(Role::Accent));
-            }
-            if recipe.use_fill && selected {
-                buffer.set_style(row, style);
-            } else if recipe.hover_fill {
-                buffer.set_style(row, recipe.hover_wash);
-            }
-
-            // Quiet selection gutter (aligned with List) when Gutter chrome.
-            let mut x_cursor = content_area.x;
-            if let Some((gutter_glyph, gutter_style)) = recipe.gutter {
-                buffer.set_stringn(x_cursor, y, gutter_glyph, 1, gutter_style);
-                x_cursor = x_cursor.saturating_add(2);
-            } else if recipe.show_gutter_slot
-                && matches!(
-                    self.tokens.selection,
-                    crate::style::SelectionChrome::Gutter | crate::style::SelectionChrome::Tint
-                )
-            {
-                // Reserve gutter column only when selection chrome uses a slot.
-                // For tree, reserve only if any selection likely — keep 2 cells when
-                // tokens use Gutter default (DesignSystem::phosphor).
-                if matches!(self.tokens.selection, crate::style::SelectionChrome::Gutter) {
-                    x_cursor = x_cursor.saturating_add(2);
-                }
-            }
-
-            let max_indent = content_area
-                .right()
-                .saturating_sub(x_cursor)
-                .saturating_sub(4);
-            let indent = node.depth.saturating_mul(indent_step).min(max_indent);
-            let disclosure_x = x_cursor.saturating_add(indent);
-            let glyph = if node.branch {
-                if node.expanded {
-                    self.tokens.glyphs.disclosure_open()
-                } else {
-                    self.tokens.glyphs.disclosure_closed()
-                }
-            } else {
-                " "
-            };
-            if disclosure_x < content_area.right() {
-                buffer.set_stringn(disclosure_x, y, glyph, 1, style);
-            }
-            let check_x = disclosure_x.saturating_add(2);
-            let mut check_w = 0u16;
-            if state.selection.is_some() && check_x < content_area.right() {
-                let marker = if checked {
-                    recipe.check_on
-                } else {
-                    recipe.check_off
-                };
-                let gw = u16::try_from(crate::text::display_cols(marker)).unwrap_or(1);
-                let available = content_area.right().saturating_sub(check_x);
-                let paint_w = gw.min(available);
-                if paint_w > 0 {
-                    buffer.set_stringn(check_x, y, marker, usize::from(paint_w), style);
-                    check_w = paint_w.saturating_add(u16::from(available > paint_w));
-                    if available > paint_w {
-                        buffer.set_stringn(check_x.saturating_add(paint_w), y, " ", 1, style);
-                    }
-                    if node.enabled {
-                        state.check_regions.push(HitRegion {
-                            id: node.id.clone(),
-                            area: Rect::new(check_x, y, paint_w.max(1), 1),
-                        });
-                    }
-                }
-            }
-            let label_x = check_x.saturating_add(check_w);
-            // Colorless status suffixes; composed anatomy owns label/badge/shortcut.
-            let status = match node.status {
-                TreeNodeStatus::Ready => None,
-                TreeNodeStatus::Loading => Some(" loading"),
-                TreeNodeStatus::Lazy => Some(" lazy"),
-                TreeNodeStatus::Error => Some(" error"),
-            };
-            let status_w = status
-                .map(crate::text::display_cols)
-                .and_then(|width| u16::try_from(width).ok())
-                .unwrap_or(0);
-            if label_x < content_area.right() {
-                let content_w = content_area
-                    .right()
-                    .saturating_sub(label_x)
-                    .saturating_sub(status_w);
-                // Zero-copy contraction: borrow fields; no Line clones (hot path).
-                // Fit-based: keep the badge whenever it still fits next to
-                // a one-cell primary identity (mirrors ComposedRow budgets).
-                let badge = node.badge.as_ref();
-                let badge_need = badge
-                    .map(|b| {
-                        u16::try_from(b.width())
-                            .unwrap_or(u16::MAX)
-                            .saturating_add(2)
-                    })
-                    .unwrap_or(0);
-                let actions_need = node
-                    .actions
-                    .as_ref()
-                    .map(|a| {
-                        u16::try_from(a.width())
-                            .unwrap_or(u16::MAX)
-                            .saturating_add(2)
-                    })
-                    .unwrap_or(0);
-                let shortcut_need = node
-                    .shortcut
-                    .map(|s| {
-                        u16::try_from(crate::text::display_cols(s))
-                            .unwrap_or(u16::MAX)
-                            .saturating_add(2)
-                    })
-                    .unwrap_or(0);
-                let leading_need = node
-                    .leading
-                    .as_ref()
-                    .map(|l| {
-                        u16::try_from(l.width())
-                            .unwrap_or(u16::MAX)
-                            .saturating_add(1)
-                    })
-                    .unwrap_or(0);
-                let secondary_need = node
-                    .secondary
-                    .as_ref()
-                    .map(|s| {
-                        u16::try_from(s.width())
-                            .unwrap_or(u16::MAX)
-                            .saturating_add(1)
-                    })
-                    .unwrap_or(0);
-                // Drop: shortcut → actions → badge → secondary → leading → primary
-                let mut budget = content_w.saturating_sub(1); // primary min
-                let show_shortcut = node.shortcut.is_some() && budget >= shortcut_need;
-                if show_shortcut {
-                    budget = budget.saturating_sub(shortcut_need);
-                }
-                let show_actions = node.actions.is_some() && budget >= actions_need;
-                if show_actions {
-                    budget = budget.saturating_sub(actions_need);
-                }
-                let show_badge = badge.is_some() && budget >= badge_need;
-                if show_badge {
-                    budget = budget.saturating_sub(badge_need);
-                }
-                let show_secondary = node.secondary.is_some() && budget >= secondary_need;
-                if show_secondary {
-                    budget = budget.saturating_sub(secondary_need);
-                }
-                let show_leading = node.leading.is_some() && budget >= leading_need;
-                let mut x = label_x;
-                if show_leading && let Some(leading) = node.leading.as_ref() {
-                    let lw = u16::try_from(leading.width())
-                        .unwrap_or(u16::MAX)
-                        .min(label_x.saturating_add(content_w).saturating_sub(x));
-                    if lw > 0 {
-                        buffer.set_line(x, y, leading, lw);
-                        x = x.saturating_add(lw).saturating_add(1);
-                    }
-                }
-                let badge_w = if show_badge {
-                    badge
-                        .map(|b| u16::try_from(b.width()).unwrap_or(u16::MAX))
-                        .unwrap_or(0)
-                } else {
-                    0
-                };
-                let actions_w = if show_actions {
-                    node.actions
-                        .as_ref()
-                        .map(|a| u16::try_from(a.width()).unwrap_or(u16::MAX))
-                        .unwrap_or(0)
-                } else {
-                    0
-                };
-                let shortcut_w = if show_shortcut {
-                    node.shortcut
-                        .map(|s| u16::try_from(crate::text::display_cols(s)).unwrap_or(u16::MAX))
-                        .unwrap_or(0)
-                } else {
-                    0
-                };
-                let right_edge = label_x.saturating_add(content_w);
-                let reserve = badge_w
-                    .saturating_add(actions_w)
-                    .saturating_add(shortcut_w)
-                    .saturating_add(u16::from(badge_w > 0 && (shortcut_w > 0 || actions_w > 0)))
-                    .saturating_add(u16::from(actions_w > 0 && shortcut_w > 0));
-                let mid_end = right_edge.saturating_sub(reserve);
-                let primary_budget = mid_end.saturating_sub(x);
-                if primary_budget > 0 {
-                    let painted = if state.h_offset == 0 {
-                        buffer.set_line(x, y, &node.label, primary_budget);
-                        u16::try_from(node.label.width())
-                            .unwrap_or(u16::MAX)
-                            .min(primary_budget)
-                    } else {
-                        let mut visible = String::new();
-                        crate::text::display_cols_slice_into(
-                            &node.plain_label(),
-                            usize::from(state.h_offset),
-                            usize::from(primary_budget),
-                            &mut visible,
-                        );
-                        let width = u16::try_from(crate::text::display_cols(&visible))
-                            .unwrap_or(primary_budget)
-                            .min(primary_budget);
-                        buffer.set_stringn(x, y, &visible, usize::from(primary_budget), style);
-                        width
-                    };
-                    x = x.saturating_add(painted);
-                }
-                if show_secondary && let Some(secondary) = node.secondary.as_ref() {
-                    let avail = mid_end.saturating_sub(x);
-                    if avail > 2 {
-                        x = x.saturating_add(1);
-                        let sw = u16::try_from(secondary.width())
-                            .unwrap_or(u16::MAX)
-                            .min(mid_end.saturating_sub(x));
-                        if sw > 0 {
-                            buffer.set_line(x, y, secondary, sw);
-                            buffer.set_style(Rect::new(x, y, sw, 1), recipe.secondary);
-                        }
-                    }
-                }
-                let mut cursor = right_edge;
-                if show_shortcut && let Some(shortcut) = node.shortcut {
-                    let w = shortcut_w.min(cursor.saturating_sub(label_x));
-                    if w > 0 {
-                        cursor = cursor.saturating_sub(w);
-                        buffer.set_stringn(cursor, y, shortcut, usize::from(w), recipe.shortcut);
-                    }
-                }
-                if show_actions && let Some(act) = node.actions.as_ref() {
-                    let w = actions_w.min(cursor.saturating_sub(label_x));
-                    if w > 0 {
-                        if show_shortcut {
-                            cursor = cursor.saturating_sub(1);
-                        }
-                        cursor = cursor.saturating_sub(w);
-                        buffer.set_line(cursor, y, act, w);
-                        buffer.set_style(Rect::new(cursor, y, w, 1), recipe.shortcut);
-                    }
-                }
-                if show_badge && let Some(badge) = badge {
-                    let w = badge_w.min(cursor.saturating_sub(label_x));
-                    if w > 0 {
-                        if show_shortcut {
-                            cursor = cursor.saturating_sub(1);
-                        }
-                        cursor = cursor.saturating_sub(w);
-                        buffer.set_line(cursor, y, badge, w);
-                        buffer.set_style(Rect::new(cursor, y, w, 1), recipe.trailing);
-                    }
-                }
-                if let Some(status) = status
-                    && status_w > 0
-                {
-                    buffer.set_stringn(
-                        content_area.right().saturating_sub(status_w),
-                        y,
-                        status,
-                        usize::from(status_w),
-                        style,
-                    );
-                }
-            }
-            buffer.set_style(row, style);
-
-            if node.enabled {
-                state.regions.push(HitRegion {
-                    id: node.id.clone(),
-                    area: row,
-                });
-                if node.branch && indent < content_area.width {
-                    state.disclosure_regions.push(HitRegion {
-                        id: node.id.clone(),
-                        area: Rect::new(disclosure_x, y, 1, 1),
-                    });
-                }
-            }
+            paint_tree_row(
+                self.tokens,
+                self.focused,
+                self.spinner_frame,
+                node,
+                row,
+                buffer,
+                state,
+                indent_step,
+            );
         }
 
         if show_scrollbar {
@@ -1447,7 +1530,7 @@ mod tests {
     use super::*;
     use crate::input::{KeyCode, KeyEvent, KeyModifiers};
     use crate::interaction::{NavigationMove, UiIntent};
-    use crate::style::{DesignSystem, GlyphSet, SelectionChrome};
+    use crate::style::{DesignSystem, Role};
 
     fn sample() -> Vec<TreeNode<'static, &'static str>> {
         vec![
@@ -1639,5 +1722,133 @@ mod tests {
             s.push_str(buffer[(x, 0)].symbol());
         }
         assert!(s.contains('/') || s.contains("fi"), "{s}");
+    }
+
+    fn row_text(buffer: &Buffer, y: u16, width: u16) -> String {
+        (0..width)
+            .map(|x| buffer[(x, y)].symbol().to_string())
+            .collect()
+    }
+
+    #[test]
+    fn anatomy_matches_junie_gutter_indent_disclosure_meta() {
+        let tokens = DesignSystem::junie();
+        let rows = [
+            TreeNode::new("src", Line::from("src"), 0)
+                .branch()
+                .expanded(),
+            TreeNode::new("api", Line::from("api"), 1).branch(),
+            TreeNode::new("file", Line::from("config.rs"), 1).badge(Line::from("1.9 KB")),
+        ];
+        let area = Rect::new(0, 0, 40, 3);
+        let mut buffer = Buffer::empty(area);
+        let mut state = TreeState::new(Some("src"));
+        Tree::new(&rows, &tokens).render(area, &mut buffer, &mut state);
+
+        assert_eq!(buffer[(0, 0)].symbol(), tokens.glyphs.selection_gutter());
+        assert_eq!(buffer[(0, 1)].symbol(), tokens.glyphs.selection_gutter());
+        assert_eq!(buffer[(0, 2)].symbol(), tokens.glyphs.selection_gutter());
+        assert_eq!(buffer[(1, 0)].symbol(), tokens.glyphs.disclosure_open());
+        assert_eq!(buffer[(1, 1)].symbol(), " ");
+        assert_eq!(buffer[(2, 1)].symbol(), " ");
+        assert_eq!(buffer[(3, 1)].symbol(), tokens.glyphs.disclosure_closed());
+        assert_eq!(buffer[(3, 2)].symbol(), " ");
+
+        let row0 = row_text(&buffer, 0, 40);
+        let row1 = row_text(&buffer, 1, 40);
+        let row2 = row_text(&buffer, 2, 40);
+        assert!(row0.contains("src"), "{row0:?}");
+        assert!(row1.contains("api"), "{row1:?}");
+        assert!(row2.contains("config.rs"), "{row2:?}");
+        assert!(row2.contains("1.9 KB"), "{row2:?}");
+        let meta_at = row2.find("1.9 KB").expect("meta");
+        let label_at = row2.find("config.rs").expect("label");
+        assert!(label_at < meta_at, "{row2:?}");
+        assert!(
+            !row0.contains(tokens.glyphs.selection_marker()),
+            "tree must not steal › as a selection marker: {row0:?}"
+        );
+    }
+
+    #[test]
+    fn selected_label_uses_accent_and_loading_paints_spinner() {
+        let tokens = DesignSystem::junie();
+        let rows = [
+            TreeNode::new("src", Line::from("src"), 0)
+                .branch()
+                .expanded(),
+            TreeNode::new("busy", Line::from("pending"), 1)
+                .branch()
+                .loading(),
+        ];
+        let area = Rect::new(0, 0, 24, 2);
+        let mut buffer = Buffer::empty(area);
+        let mut state = TreeState::new(Some("src"));
+        Tree::new(&rows, &tokens)
+            .spinner_frame(0)
+            .render(area, &mut buffer, &mut state);
+        assert_eq!(buffer[(3, 0)].symbol(), "s");
+        assert_eq!(
+            buffer[(3, 0)].fg,
+            tokens.style(Role::Accent).fg.expect("accent")
+        );
+        assert_eq!(buffer[(3, 1)].symbol(), SPINNER_BRAILLE_FRAMES[0]);
+        assert_eq!(
+            buffer[(3, 1)].fg,
+            tokens.style(Role::Accent).fg.expect("accent")
+        );
+    }
+
+    #[test]
+    fn enter_toggles_folder_and_activates_leaf() {
+        let nodes = [
+            TreeNode::new("dir", Line::from("dir"), 0).branch(),
+            TreeNode::new("file", Line::from("file"), 0),
+        ];
+        let mut state = TreeState::new(Some("dir"));
+        assert_eq!(
+            state.handle_key(&nodes, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
+            TreeOutcome::Toggle("dir")
+        );
+        state.select(Some("file"));
+        assert_eq!(
+            state.handle_key(&nodes, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
+            TreeOutcome::Activated("file")
+        );
+    }
+
+    #[test]
+    fn star_and_dash_request_bulk_disclosure() {
+        let nodes = [TreeNode::new("dir", Line::from("dir"), 0).branch()];
+        let mut state = TreeState::new(Some("dir"));
+        assert_eq!(
+            state.handle_key(
+                &nodes,
+                KeyEvent::new(KeyCode::Char('*'), KeyModifiers::NONE)
+            ),
+            TreeOutcome::Ignored
+        );
+        assert_eq!(state.take_bulk_disclosure(), Some(true));
+        assert_eq!(
+            state.handle_key(
+                &nodes,
+                KeyEvent::new(KeyCode::Char('-'), KeyModifiers::NONE)
+            ),
+            TreeOutcome::Ignored
+        );
+        assert_eq!(state.take_bulk_disclosure(), Some(false));
+    }
+
+    #[test]
+    fn space_toggles_folder_when_multi_select_is_off() {
+        let nodes = [TreeNode::new("dir", Line::from("dir"), 0).branch()];
+        let mut state = TreeState::new(Some("dir"));
+        assert_eq!(
+            state.handle_key(
+                &nodes,
+                KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE)
+            ),
+            TreeOutcome::Toggle("dir")
+        );
     }
 }

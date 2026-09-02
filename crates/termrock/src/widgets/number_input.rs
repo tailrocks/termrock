@@ -1230,6 +1230,7 @@ impl StatefulWidget for NumberInput<'_> {
 mod tests {
     use super::*;
     use crate::style::RolePalette;
+    use crate::widgets::Validation;
 
     #[test]
     fn draft_separate_from_committed() {
@@ -1349,7 +1350,7 @@ mod tests {
 
     #[test]
     fn paint_steppers_and_unit() {
-        let system = DesignSystem::from_palette(RolePalette::default());
+        let system = DesignSystem::new(RolePalette::default());
         let mut state = NumberInputState::new().with_value(3.0);
         state.set_focused(true);
         let area = Rect::new(0, 0, 28, 2);
@@ -1420,6 +1421,42 @@ mod tests {
                 assert!((-1000.0..=1000.0).contains(&v));
             }
         }
+    }
+
+    #[test]
+    fn field_plane_and_invalid_bang() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let mut state = NumberInputState::new().with_value(3.0);
+        state.set_focused(true);
+        let area = Rect::new(0, 0, 28, 3);
+        let mut buf = Buffer::empty(area);
+        let parts = NumberInput::new("Count", &system).paint(area, &mut buf, &mut state);
+        assert_eq!(buf[(parts.field.x, parts.field.y)].bg, theme.field);
+        let mut bad = NumberInputState::new();
+        bad.set_focused(true);
+        let mut err = Buffer::empty(area);
+        let err_parts = NumberInput::new("Count", &system)
+            .validation(Validation::Invalid("invalid number"))
+            .paint(area, &mut err, &mut bad);
+        let row: String = (0..area.width)
+            .map(|x| err[(x, err_parts.field.y)].symbol().to_string())
+            .collect();
+        assert!(row.contains('!'), "{row:?}");
+        let msg: String = (0..area.width)
+            .map(|x| {
+                err[(x, err_parts.field.y.saturating_add(1))]
+                    .symbol()
+                    .to_string()
+            })
+            .collect();
+        assert!(msg.contains("invalid number"), "{msg:?}");
+        let bang = err
+            .content()
+            .iter()
+            .find(|cell| cell.symbol() == "!")
+            .expect("trailing bang");
+        assert_eq!(bang.fg, theme.error);
     }
 
     #[test]

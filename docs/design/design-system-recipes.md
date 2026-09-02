@@ -1,5 +1,7 @@
 # DesignSystem + component recipes (complete terminal design system)
 
+> **Superseded (2026-09-02).** Token taxonomy, spacing, glyphs, and state grammar live in [`DESIGN.md`](../../DESIGN.md). This file is historical.
+
 | Field | Value |
 |-------|-------|
 | **Status** | Binding |

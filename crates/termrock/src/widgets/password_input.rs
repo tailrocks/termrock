@@ -24,7 +24,7 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
-    style::{ButtonRecipeVariant, ControlState, DesignSystem, Role},
+    style::{ButtonRecipeVariant, ControlState, DesignSystem, MASK_CELLS, Role},
     text::take_display_cols,
 };
 
@@ -753,7 +753,7 @@ impl<'a> PasswordInput<'a> {
             placeholder: "",
             validation: Validation::Valid,
             system,
-            mask: '*',
+            mask: '●',
             strength: PasswordStrengthHint::None,
             show_reveal: true,
         }
@@ -773,7 +773,7 @@ impl<'a> PasswordInput<'a> {
         self
     }
 
-    /// Mask grapheme (default `*`).
+    /// Mask grapheme (default `●`). Length is never tracked; paint uses [`MASK_CELLS`].
     #[must_use]
     pub const fn mask(mut self, mask: char) -> Self {
         self.mask = mask;
@@ -967,7 +967,7 @@ impl StatefulWidget for PasswordInput<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::style::RolePalette;
+    use crate::style::{MASK_CELLS, RolePalette};
 
     #[test]
     fn debug_never_contains_secret() {
@@ -1033,7 +1033,7 @@ mod tests {
 
     #[test]
     fn paint_masks_secret() {
-        let system = DesignSystem::from_palette(RolePalette::default());
+        let system = DesignSystem::new(RolePalette::default());
         let mut state = PasswordInputState::with_secret("hunter2");
         state.set_focused(true);
         let area = Rect::new(0, 0, 24, 2);
@@ -1045,7 +1045,34 @@ mod tests {
         }
         assert!(!row.contains('h'), "painted secret: {row:?}");
         assert!(!row.contains("hunter"), "painted secret: {row:?}");
-        assert!(row.contains('*'), "expected mask glyphs: {row:?}");
+        assert!(
+            row.contains(&"●".repeat(MASK_CELLS)),
+            "expected {MASK_CELLS} mask glyphs: {row:?}"
+        );
+        assert!(
+            !row.contains(&"●".repeat(MASK_CELLS + 1)),
+            "mask must not track secret length: {row:?}"
+        );
+    }
+
+    #[test]
+    fn masked_paint_is_field_plane_and_eight_dots() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let mut state = PasswordInputState::with_secret("hunter2");
+        state.set_focused(true);
+        let area = Rect::new(0, 0, 28, 3);
+        let mut buf = Buffer::empty(area);
+        let _ = PasswordInput::new("Password", &system).paint(area, &mut buf, &mut state);
+        let field_y = 1u16;
+        assert_eq!(buf[(0, field_y)].symbol(), "▎");
+        assert_eq!(buf[(0, field_y)].fg, theme.accent);
+        assert_eq!(buf[(0, field_y)].bg, theme.field);
+        let row: String = (0..area.width)
+            .map(|x| buf[(x, field_y)].symbol().to_string())
+            .collect();
+        assert!(row.contains(&"●".repeat(MASK_CELLS)), "{row:?}");
+        assert!(!row.contains('h'), "{row:?}");
     }
 
     #[test]

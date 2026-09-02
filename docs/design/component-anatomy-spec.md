@@ -1,5 +1,7 @@
 # TermRock component anatomy, behavior, variants, and state specification
 
+> **Superseded (2026-09-02).** Token taxonomy, spacing, glyphs, and state grammar live in [`DESIGN.md`](../../DESIGN.md). This file is historical.
+
 **Status:** binding design target for all component work  
 **Audience:** implementers, lookbook authors, migration writers  
 **Design system:** [`terminal-design-system.md`](./terminal-design-system.md)  

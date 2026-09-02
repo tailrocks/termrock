@@ -41,8 +41,8 @@ use termrock::style::{
     ACTION_FLASH_MS, AccentUsage, ActionFlash, BadgeKind, BorderShape, ButtonKind,
     ButtonRecipeVariant, ColorCapability, ControlState, DesignSystem, Elevation, Glyph, GlyphSet,
     JunieTheme, ListRowVisualState, MotionPolicy, NonColorCue, PanelChrome, RecipeFamily, Role,
-    RolePalette, SelectionChrome, SpacingScale, SurfaceFamily, SyntaxTone, Tone, VisualState,
-    contrast_ratio, downgrade, nearest_16, nearest_256,
+    RolePalette, SpacingScale, SurfaceFamily, SyntaxTone, Tone, VisualState, contrast_ratio,
+    downgrade, nearest_16, nearest_256,
 };
 use termrock::text::display_cols;
 
@@ -908,7 +908,7 @@ fn glyph_vocabulary_is_the_junie_table() {
         "✓", "•", "!", "·", "⠋", "[✓]", "[ ]", "●", "○", // action
         "×", "+", "−", // rules
         "─", "│", "━", // selection chrome
-        "▎", "▸", // meta
+        "▎", "›", // meta
         "•", "·", "…", // marks
         "●", "○", "◆", "┃", "◇", "●", // slider
         "●", "━", "─", // dividers
@@ -937,12 +937,9 @@ fn glyph_vocabulary_is_the_junie_table() {
             assert_eq!(display_cols(resolved.text), 1);
         }
     }
-    // `GlyphSet` survives as the single-variant marker, not a profile switch.
-    match GlyphSet::Unicode {
-        GlyphSet::Unicode => {}
-        _ => panic!("a second glyph profile reappeared (D6 deletes Ascii/Enhanced)"),
-    }
-    assert_eq!(GlyphSet::Unicode.id(), "junie");
+    // `GlyphSet` is the one junie vocabulary, not a profile switch.
+    assert_eq!(GlyphSet.id(), "junie");
+    assert_eq!(GlyphSet::default().id(), "junie");
     // junie's context law: co-occurring glyphs are documented, not unique.
     assert!(!termrock::style::GLYPH_CONTEXTS.is_empty());
     for (context, glyphs) in termrock::style::GLYPH_CONTEXTS {
@@ -1402,12 +1399,15 @@ fn selection_tint_requires_focus_and_hover_wins() {
         Some(GREEN_20)
     );
 
-    // 2. selected && !focused: no tint — the row keeps its own ground and the
-    // membership marker (`▸`, the one slot, so no layout shift) says selected
+    // 2. selected && !focused: no tint — the row keeps its own ground. Col 0
+    // is always the focus bar (invisible: fg=bg); col 1 carries `›`.
     let recipe = DesignSystem::junie().resolve_list_row(row_state(true, false, false));
     assert_ne!(recipe.label.bg, Some(GREEN_20), "a parked row never tints");
     assert_eq!(recipe.use_tint, false, "a parked row never claims the tint");
-    let (marker, marker_style) = recipe.gutter.expect("a parked selection carries a marker");
+    let (bar, bar_style) = recipe.gutter;
+    assert_eq!(bar, DesignSystem::junie().glyphs.selection_gutter());
+    assert_eq!(bar_style.fg, bar_style.bg, "unfocused bar is invisible");
+    let (marker, marker_style) = recipe.marker;
     assert_eq!(
         marker,
         DesignSystem::junie().glyphs.selection_marker(),
@@ -1462,16 +1462,11 @@ fn selection_chrome_is_not_overridden_in_widget_paint() {
             continue;
         }
         let source = fs::read_to_string(&path).expect("widget source is readable");
-        // Test modules legitimately build systems with an explicit chrome to
-        // prove both branches paint; production paint must not.
         let production = source
             .split("#[cfg(test)]")
             .next()
             .expect("split always yields a head");
-        // `.selection()` is also a state accessor; only the chrome setter counts.
-        if production.contains(".selection(SelectionChrome")
-            || production.contains(".selection(crate::style::SelectionChrome")
-        {
+        if production.contains("SelectionChrome") {
             offenders.push(
                 path.file_name()
                     .expect("file has a name")
@@ -1483,7 +1478,7 @@ fn selection_chrome_is_not_overridden_in_widget_paint() {
     offenders.sort();
     assert!(
         offenders.is_empty(),
-        "these widgets override the theme's selection chrome in paint: {offenders:?}"
+        "leftover SelectionChrome identifiers in production widget paint: {offenders:?}"
     );
 }
 
@@ -1569,9 +1564,14 @@ fn a_focused_field_says_so() {
             .any(|c| c.symbol() == "▎" && c.fg == GREEN),
         "the focused field paints its ▎ prompt in the focus green"
     );
+    // Junie reserves the gutter column always. Resting paints `▎` with fg=bg
+    // so the slot is present but invisible.
     assert!(
-        !resting.content().iter().any(|c| c.symbol() == "▎"),
-        "a resting field keeps the prompt slot empty"
+        resting
+            .content()
+            .iter()
+            .any(|c| c.symbol() == "▎" && c.fg == c.bg),
+        "a resting field keeps the prompt slot reserved (fg=bg)"
     );
 
     // The label takes the weight while the field owns the keyboard.
@@ -1683,6 +1683,18 @@ fn interaction_underline_is_three_color() {
             "author-set content span, not an interaction state",
         ),
         ("code_block.rs", "diagnostic range (squiggle substitute)"),
+        (
+            "text_input.rs",
+            "accent = editing here; error underline = invalid contract",
+        ),
+        (
+            "form.rs",
+            "accent = editing here; error underline = invalid contract",
+        ),
+        (
+            "field_row.rs",
+            "accent = editing here; error underline = invalid contract",
+        ),
     ];
 
     let widgets = Path::new(env!("CARGO_MANIFEST_DIR")).join("src/widgets");
@@ -2401,8 +2413,19 @@ fn progress_spends_green_only_when_complete() {
         "a running bar is white 70%, never the accent"
     );
 
-    let complete = painted(area, |buffer| {
+    let full_running = painted(area, |buffer| {
         ProgressBar::new(ProgressKind::Determinate { fraction: 1.0 }, &system).paint(area, buffer);
+    });
+    assert_eq!(
+        count_cells(&full_running, is_green),
+        0,
+        "a 100% running bar is still the ladder; green is the Done status, not the fill amount"
+    );
+
+    let complete = painted(area, |buffer| {
+        ProgressBar::new(ProgressKind::Determinate { fraction: 1.0 }, &system)
+            .status(termrock::widgets::ProgressStatus::Complete)
+            .paint(area, buffer);
     });
     assert!(
         count_cells(&complete, is_green) > 0,
@@ -3358,7 +3381,7 @@ fn a_scrolled_region_says_it_continues() {
         "scrollbar painters must go through the shared scroll authority: {bare:?}"
     );
     // `paint_scroll_edges` is deleted; the track constant is the vocabulary.
-    assert_eq!(SCROLLBAR_TRACK, "·");
+    assert_eq!(SCROLLBAR_TRACK, "│");
     assert_eq!(ScrollbarStyle::Line.vertical_thumb(), "┃");
 }
 
@@ -3537,7 +3560,6 @@ fn recipe_families_are_complete_and_restrained() {
         system.focus_emphasis(SurfaceFamily::Container),
         termrock::style::FocusEmphasis::BrightBorder
     );
-    assert_eq!(system.selection, SelectionChrome::Gutter);
 }
 
 /// Every exact public UI owner joins to one recipe and one monochrome proof.
@@ -3623,7 +3645,7 @@ fn family_focus_and_selection_survive_monochrome() {
     // Container: focus moves the border up the neutral ladder and adds weight.
     let panel = mono.panel_recipe(PanelChrome::Focused, Elevation::Overlay);
     let idle_panel = mono.panel_recipe(PanelChrome::Normal, Elevation::Overlay);
-    assert!(panel.border.add_modifier.contains(Modifier::BOLD));
+    assert!(!panel.border.add_modifier.contains(Modifier::BOLD));
     assert!(!idle_panel.border.add_modifier.contains(Modifier::BOLD));
     assert_ne!(panel.border, idle_panel.border);
     // junie's focused panel has no title marker: the frame is the cue.
@@ -3637,9 +3659,7 @@ fn family_focus_and_selection_survive_monochrome() {
 
     // Row: the gutter glyph and the weight are the non-colour cues.
     let selected = mono.resolve_list_row(row_state(true, true, false));
-    let (glyph, _) = selected
-        .gutter
-        .expect("selection needs a stable gutter glyph");
+    let (glyph, _) = selected.gutter;
     assert_eq!(glyph, "▎");
     assert!(selected.label.add_modifier.contains(Modifier::BOLD));
     assert_ne!(
@@ -3716,7 +3736,6 @@ fn bold_budget_per_row() {
                     );
                     let meta = [
                         ("secondary", recipe.secondary),
-                        ("trailing", recipe.trailing),
                         ("shortcut", recipe.shortcut),
                     ];
                     for (name, style) in meta {

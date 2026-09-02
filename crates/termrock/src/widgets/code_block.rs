@@ -27,7 +27,7 @@ use crate::interaction::{
     EventResult, NavigationMove, PageMove, SemanticNode, SemanticRole, SemanticScene,
     SemanticState, UiIntent, default_list_intent,
 };
-use crate::style::{DesignSystem, Role};
+use crate::style::{DesignSystem, Role, SyntaxTone, VisualState};
 use crate::text::{
     display_cols, expand_tabs, is_terminal_control_char, take_display_cols, wrap_display_cols,
 };
@@ -72,9 +72,11 @@ impl SyntaxHighlighter for PlainSyntax {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
 pub enum CodeTokenKind {
-    /// Ordinary source text, punctuation, whitespace.
+    /// Ordinary source text / whitespace.
     #[default]
     Plain,
+    /// Identifier (not a keyword, not a call).
+    Ident,
     /// Line comment through end of line.
     Comment,
     /// Quoted string literal.
@@ -85,6 +87,10 @@ pub enum CodeTokenKind {
     Keyword,
     /// Identifier immediately followed by `(`.
     Function,
+    /// Operator (`+`, `=`, `->`, …).
+    Operator,
+    /// Punctuation (`()`, `{}`, `,`, `;`, `.`).
+    Punct,
 }
 
 impl CodeTokenKind {
@@ -92,12 +98,27 @@ impl CodeTokenKind {
     #[must_use]
     pub const fn role(self) -> Role {
         match self {
-            Self::Plain => Role::Text,
+            Self::Plain | Self::Ident | Self::Function => Role::Text,
             Self::Comment => Role::SyntaxComment,
             Self::String => Role::SyntaxString,
             Self::Number => Role::SyntaxNumber,
             Self::Keyword => Role::SyntaxKeyword,
-            Self::Function => Role::SyntaxFunction,
+            Self::Operator | Self::Punct => Role::TextMuted,
+        }
+    }
+
+    /// junie syntax class — weight + text ladder, never hue.
+    #[must_use]
+    pub const fn syntax_tone(self) -> SyntaxTone {
+        match self {
+            Self::Keyword => SyntaxTone::Keyword,
+            Self::Ident | Self::Function => SyntaxTone::Ident,
+            Self::String => SyntaxTone::Str,
+            Self::Number => SyntaxTone::Number,
+            Self::Operator => SyntaxTone::Operator,
+            Self::Punct => SyntaxTone::Punct,
+            Self::Comment => SyntaxTone::Comment,
+            Self::Plain => SyntaxTone::Plain,
         }
     }
 }
@@ -629,6 +650,9 @@ pub struct CodeBlock<'a, H: SyntaxHighlighter = PlainSyntax> {
     streaming: bool,
     /// Legacy first-line when painting without state.
     first_line: usize,
+    /// Absolute inclusive-start / exclusive-end of the current statement block.
+    /// `›` is painted on the first line; `▎` is focus-only.
+    current_block: Option<(usize, usize)>,
 }
 
 impl<'a> CodeBlock<'a, PlainSyntax> {
@@ -650,6 +674,7 @@ impl<'a> CodeBlock<'a, PlainSyntax> {
             gutter_marks: &[],
             streaming: false,
             first_line: 0,
+            current_block: None,
         }
     }
 }
@@ -725,6 +750,7 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
             gutter_marks: self.gutter_marks,
             streaming: self.streaming,
             first_line: self.first_line,
+            current_block: self.current_block,
         }
     }
 
@@ -767,6 +793,14 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
     #[must_use]
     pub const fn streaming(mut self, on: bool) -> Self {
         self.streaming = on;
+        self
+    }
+
+    /// Current statement block (absolute lines, exclusive end). Marker `›`
+    /// lands on the first line; the focus bar `▎` is independent.
+    #[must_use]
+    pub const fn current_block(mut self, start: usize, end: usize) -> Self {
+        self.current_block = Some((start, if end < start { start } else { end }));
         self
     }
 
@@ -846,19 +880,32 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
         )
     }
 
-    fn gutter_width(&self, body_rows: u16, first: usize) -> u16 {
-        if !self.show_line_numbers {
-            return 0;
-        }
+    fn number_width(&self, body_rows: u16, first: usize) -> u16 {
         let last = first.saturating_add(usize::from(body_rows)).max(1);
         let display_last = self
             .meta
             .start_line_number
             .saturating_add(last.saturating_sub(1));
-        let digits = display_last.max(1).to_string().len().max(2);
-        // digits + space + optional mark column
-        let mark = if self.gutter_marks.is_empty() { 0 } else { 1 };
-        u16::try_from(digits + 1 + mark).unwrap_or(6)
+        u16::try_from(display_last.max(1).to_string().len().max(2)).unwrap_or(2)
+    }
+
+    fn gutter_width(&self, body_rows: u16, first: usize) -> u16 {
+        // junie: bar(1) marker(1) space(1) numbers(num_w) space(1)
+        if self.show_line_numbers {
+            return 1 + 1 + self.number_width(body_rows, first) + 1 + 1;
+        }
+        if !self.gutter_marks.is_empty() || self.current_block.is_some() {
+            2
+        } else {
+            0
+        }
+    }
+
+    fn resolved_block(&self, state: &CodeBlockState) -> Option<(usize, usize)> {
+        if let Some(b) = self.current_block {
+            return Some(b);
+        }
+        state.cursor_line.map(|line| (line, line.saturating_add(1)))
     }
 
     fn mark_for(&self, abs_line: usize) -> Option<&CodeGutterMark> {
@@ -873,9 +920,7 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
         {
             kinds.push(CodeHighlightKind::Selection);
         }
-        if state.cursor_line == Some(abs_line) && state.focused {
-            kinds.push(CodeHighlightKind::Emphasis);
-        }
+        // Focus is the `▎` bar, never a second current-line wash.
         for h in self.highlights {
             if h.line == abs_line {
                 kinds.push(h.kind);
@@ -900,10 +945,11 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
             // substitute; everything else reads through weight or ground.
             match kind {
                 CodeHighlightKind::Diagnostic => {
-                    // Sanctioned content annotation (design-language §5.9):
-                    // the underline stands in for a squiggle, matching the
-                    // caret rows `Diagnostic` paints.
-                    style = style.add_modifier(Modifier::UNDERLINED);
+                    // Error underline — never a hue wash on the line.
+                    let theme = self.system.junie_theme();
+                    style = style
+                        .add_modifier(Modifier::UNDERLINED)
+                        .underline_color(theme.error);
                 }
                 CodeHighlightKind::Search => {
                     style = style.add_modifier(Modifier::BOLD);
@@ -1038,6 +1084,25 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
         }
         self.paint_copy_flash(parts.header, buffer, state);
 
+        let theme = self.system.junie_theme();
+        let visual = VisualState {
+            focused: state.focused,
+            ..VisualState::default()
+        };
+        let fs = theme.field_style(visual);
+        let field_bg = fs.bg.unwrap_or(theme.field);
+        let well = Rect {
+            x: parts.gutter.x,
+            y: parts.body.y,
+            width: parts.gutter.width.saturating_add(parts.body.width),
+            height: parts.body.height,
+        };
+        if !well.is_empty() {
+            buffer.set_style(well, fs);
+        }
+        let gutter_bar = self.system.gutter(visual, field_bg, false);
+        let block = self.resolved_block(state);
+
         let mono = self.is_monochrome();
         let tab = usize::from(self.tab_width);
         let mut row = 0u16;
@@ -1068,45 +1133,59 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
             }
             let kinds = self.highlights_for(abs, state);
 
-            // Gutter
+            // Gutter: `▎` is focus only (cursor line). Marker is `›` for the
+            // current block or `!` for a diagnostic — never a second `▎`.
             if parts.gutter.width > 0 {
-                let mark = self.mark_for(abs);
-                let mark_w = u16::from(mark.is_some());
-                let num_w = parts.gutter.width.saturating_sub(mark_w);
-                if num_w > 0 {
-                    let display_n = self.meta.start_line_number.saturating_add(abs);
-                    let number = format!(
-                        "{:>width$}",
-                        display_n,
-                        width = usize::from(num_w).saturating_sub(1).max(1)
-                    );
-                    let mut nstyle = self.system.style(Role::TextDisabled);
-                    if state.cursor_line == Some(abs) {
-                        nstyle = self
-                            .system
-                            .style(Role::TextMuted)
-                            .add_modifier(Modifier::BOLD);
-                    }
+                let y = parts.body.y.saturating_add(row);
+                let gx = parts.gutter.x;
+                if state.cursor_line == Some(abs) && state.focused {
+                    buffer.set_stringn(gx, y, self.system.glyphs.selection_gutter(), 1, gutter_bar);
+                }
+                if let Some(m) = self.mark_for(abs) {
+                    // A diagnostic owns the marker slot (`!`).
                     buffer.set_stringn(
-                        parts.gutter.x,
-                        parts.body.y.saturating_add(row),
-                        &number,
-                        usize::from(num_w.saturating_sub(1)),
-                        nstyle,
+                        gx.saturating_add(1),
+                        y,
+                        m.glyph.to_string(),
+                        1,
+                        fs.patch(self.system.style(m.role))
+                            .add_modifier(Modifier::BOLD),
+                    );
+                } else if let Some((start, end)) = block
+                    && abs == start
+                    && abs < end
+                {
+                    buffer.set_stringn(
+                        gx.saturating_add(1),
+                        y,
+                        "›",
+                        1,
+                        fs.fg(if state.focused {
+                            theme.accent
+                        } else {
+                            theme.text_secondary
+                        }),
                     );
                 }
-                if let Some(m) = mark {
-                    let ch = m.glyph.to_string();
-                    let mark_x = parts
-                        .gutter
-                        .x
-                        .saturating_add(parts.gutter.width.saturating_sub(1));
+                if self.show_line_numbers && parts.gutter.width > 3 {
+                    let num_w = parts.gutter.width.saturating_sub(4);
+                    let display_n = self.meta.start_line_number.saturating_add(abs);
+                    let number =
+                        format!("{:>width$}", display_n, width = usize::from(num_w.max(1)));
+                    let in_block = block.is_some_and(|(s, e)| abs >= s && abs < e);
+                    let nstyle = if state.cursor_line == Some(abs) && state.focused {
+                        fs.fg(theme.text_primary).add_modifier(Modifier::BOLD)
+                    } else if in_block {
+                        fs.fg(theme.text_secondary)
+                    } else {
+                        fs.fg(theme.text_faint)
+                    };
                     buffer.set_stringn(
-                        mark_x,
-                        parts.body.y.saturating_add(row),
-                        &ch,
-                        1,
-                        self.system.style(m.role),
+                        gx.saturating_add(3),
+                        y,
+                        &number,
+                        usize::from(num_w),
+                        nstyle,
                     );
                 }
             }
@@ -1144,6 +1223,7 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
                     abs,
                     &kinds,
                     mono,
+                    fs,
                 );
                 row = row.saturating_add(1);
             }
@@ -1184,33 +1264,45 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
         abs_line: usize,
         kinds: &[CodeHighlightKind],
         mono: bool,
+        field: Style,
     ) {
         if width == 0 {
             return;
         }
         // Highlight against full prepared line; paint only display_row segment styles.
         let segments = self.highlighter.highlight_line(prepared_full, abs_line);
-        // If display_row is a horizontal slice or wrap piece, find it in prepared_full
-        // by display columns. Simpler approach: if display_row == prepared_full (clip
-        // with scroll 0) or is prefix after scroll, re-highlight display_row alone for
-        // token boundaries on the visible piece.
         let paint_segments = if display_row == prepared_full {
             segments
         } else {
             self.highlighter.highlight_line(display_row, abs_line)
         };
+        let unstyled = paint_segments.iter().all(|(_, s)| *s == Style::default());
+        let fallback: Vec<(&str, Style)>;
+        let paint_segments = if unstyled {
+            // Fallback: language-agnostic tokens through `theme.syntax()` —
+            // weight + text ladder, never historical ANSI hues.
+            fallback = tokenize_line(
+                display_row,
+                self.meta.language,
+                keywords_for(self.meta.language),
+            )
+            .into_iter()
+            .map(|(seg, kind)| (seg, self.system.junie_theme().syntax(kind.syntax_tone())))
+            .collect();
+            fallback
+        } else {
+            paint_segments
+        };
 
         let mut col = 0u16;
         for (segment, mut style) in paint_segments {
             if style == Style::default() {
-                style = self.system.style(Role::Text);
+                style = self.system.junie_theme().syntax(SyntaxTone::Plain);
             } else {
-                // Highlighter styles already carry their role tone; mono hosts
-                // only get a weight reinforcement, never a second palette.
                 style = monochrome_syntax_style(style, mono);
             }
+            style = field.patch(style);
             style = self.line_style_overlay(style, kinds, mono);
-            // Dense code: no accidental bg from Text role unless selection.
             if !kinds.iter().any(|k| {
                 matches!(
                     k,
@@ -1219,7 +1311,10 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
                         | CodeHighlightKind::DiffRemove
                 )
             }) {
-                style = Style { bg: None, ..style };
+                style = Style {
+                    bg: field.bg,
+                    ..style
+                };
             }
             if col >= width {
                 break;
@@ -1542,12 +1637,54 @@ fn monochrome_syntax_style(style: Style, mono: bool) -> Style {
     if !mono {
         return style;
     }
-    // Reinforce non-color cues when palette is mono.
+    // Reinforce non-color cues when palette is mono. Never introduce hue.
     let mut s = style;
-    if s.add_modifier.contains(Modifier::BOLD) || s.fg.is_some() {
+    if s.add_modifier.contains(Modifier::BOLD) {
         s = s.add_modifier(Modifier::BOLD);
     }
     s
+}
+
+const fn is_operator_byte(b: u8) -> bool {
+    matches!(
+        b,
+        b'+' | b'-'
+            | b'*'
+            | b'/'
+            | b'%'
+            | b'='
+            | b'<'
+            | b'>'
+            | b'!'
+            | b'&'
+            | b'|'
+            | b'^'
+            | b'~'
+            | b'?'
+            | b':'
+    )
+}
+
+const fn is_punct_byte(b: u8) -> bool {
+    matches!(
+        b,
+        b'(' | b')' | b'[' | b']' | b'{' | b'}' | b',' | b';' | b'.'
+    )
+}
+
+fn keywords_for(language: Option<&str>) -> &'static [&'static str] {
+    match language {
+        Some("rust") => &[
+            "fn", "let", "mut", "const", "pub", "struct", "enum", "impl", "use", "mod", "if",
+            "else", "match", "for", "while", "loop", "return", "async", "await", "self", "Self",
+            "true", "false", "where", "type", "trait", "in", "ref", "move",
+        ],
+        Some("sh" | "bash" | "zsh" | "shell") => &[
+            "if", "then", "else", "fi", "for", "do", "done", "while", "case", "esac", "function",
+            "export", "local", "return", "exit", "cd", "echo", "cargo", "git",
+        ],
+        _ => &[],
+    }
 }
 
 fn tokenize_line<'a>(
@@ -1628,35 +1765,44 @@ fn tokenize_code_part<'a>(line: &'a str, keywords: &[&str]) -> Vec<(&'a str, Cod
             } else if i < bytes.len() && bytes[i] == b'(' {
                 CodeTokenKind::Function
             } else {
-                CodeTokenKind::Plain
+                CodeTokenKind::Ident
             };
             out.push((word, kind));
             continue;
         }
-        // Single char punctuation / space
+        // Operator run
+        if is_operator_byte(bytes[i]) {
+            let start = i;
+            i += 1;
+            while i < bytes.len() && is_operator_byte(bytes[i]) {
+                i += 1;
+            }
+            out.push((&line[start..i], CodeTokenKind::Operator));
+            continue;
+        }
+        // Punctuation run
+        if is_punct_byte(bytes[i]) {
+            let start = i;
+            i += 1;
+            while i < bytes.len() && is_punct_byte(bytes[i]) {
+                i += 1;
+            }
+            out.push((&line[start..i], CodeTokenKind::Punct));
+            continue;
+        }
+        // Whitespace / other
         let start = i;
         i += 1;
-        // extend runs of non-ident non-string
         while i < bytes.len()
             && !bytes[i].is_ascii_alphanumeric()
             && bytes[i] != b'_'
             && bytes[i] != b'"'
             && bytes[i] != b'\''
-            && !bytes[i].is_ascii_digit()
+            && !is_operator_byte(bytes[i])
+            && !is_punct_byte(bytes[i])
         {
-            // stop before another token class
-            if bytes[i] == b'"' || bytes[i] == b'\'' {
-                break;
-            }
-            if bytes[i].is_ascii_alphanumeric() || bytes[i] == b'_' {
-                break;
-            }
             i += 1;
         }
-        // Actually only took one — simplify: single char
-        let _ = start;
-        // re-do as single
-        // (loop already advanced — if we extended, ok)
         out.push((&line[start..i], CodeTokenKind::Plain));
     }
     if out.is_empty() {
@@ -1667,23 +1813,27 @@ fn tokenize_code_part<'a>(line: &'a str, keywords: &[&str]) -> Vec<(&'a str, Cod
 
 // ── Role-aware token paint helper for hosts ─────────────────────────────────
 
-/// Map a token kind's [`Role`] through the design system's syntax tones.
+/// Map a token kind's [`Role`] through `theme.syntax()` (weight + ladder, no hue).
 ///
 /// Call from custom highlighters when building segments with [`Role`].
 #[must_use]
 pub fn syntax_role_style(system: &DesignSystem, role: Role) -> Style {
-    let mut style = system.style(role);
+    let theme = system.junie_theme();
+    let tone = match role {
+        Role::SyntaxKeyword => SyntaxTone::Keyword,
+        Role::SyntaxString => SyntaxTone::Str,
+        Role::SyntaxNumber => SyntaxTone::Number,
+        Role::SyntaxComment => SyntaxTone::Comment,
+        Role::SyntaxFunction => SyntaxTone::Ident,
+        Role::TextMuted => SyntaxTone::Operator,
+        _ => SyntaxTone::Plain,
+    };
+    let mut style = theme.syntax(tone);
     style = Style { bg: None, ..style };
-    if matches!(system.capability, crate::style::ColorCapability::Monochrome) {
-        // Monochrome keeps syntax distinct with weight; the comment italic is
-        // already the palette's, and a string is its quieter tone only (D5:
-        // ITALIC is the comment tier).
-        match role {
-            Role::SyntaxKeyword | Role::SyntaxFunction => {
-                style = style.add_modifier(Modifier::BOLD);
-            }
-            _ => {}
-        }
+    if matches!(system.capability, crate::style::ColorCapability::Monochrome)
+        && matches!(tone, SyntaxTone::Keyword)
+    {
+        style = style.add_modifier(Modifier::BOLD);
     }
     style
 }
@@ -1757,7 +1907,7 @@ impl SyntaxHighlighter for RoleTokenSyntax<'_> {
     ) -> Vec<(&'line str, Style)> {
         self.tokens_for_line(line)
             .into_iter()
-            .map(|(seg, kind)| (seg, syntax_role_style(self.system, kind.role())))
+            .map(|(seg, kind)| (seg, self.system.junie_theme().syntax(kind.syntax_tone())))
             .collect()
     }
 }
@@ -1872,5 +2022,86 @@ mod tests {
             .gutter_marks(&marks)
             .highlights(&highs)
             .paint(Rect::new(0, 0, 30, 4), &mut buf, &mut state);
+        assert_eq!(buf[(1, 1)].symbol(), "!");
+        assert!(
+            buf[(6, 1)]
+                .style()
+                .add_modifier
+                .contains(Modifier::UNDERLINED)
+        );
+    }
+
+    #[test]
+    fn syntax_uses_theme_ladder_not_hue() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let hi = RoleTokenSyntax::rust(&system);
+        let segs = hi.highlight_line("fn main() { let x = 1; // c", 0);
+        let keyword = segs.iter().find(|(s, _)| *s == "fn").map(|(_, st)| *st);
+        let ident = segs.iter().find(|(s, _)| *s == "main").map(|(_, st)| *st);
+        let stringish = hi.highlight_line("\"hi\"", 0);
+        let number = hi.highlight_line("42", 0);
+        let comment = hi.highlight_line("// x", 0);
+        assert_eq!(keyword, Some(theme.syntax(SyntaxTone::Keyword)));
+        assert_eq!(ident, Some(theme.syntax(SyntaxTone::Ident)));
+        assert_eq!(stringish[0].1, theme.syntax(SyntaxTone::Str));
+        assert_eq!(number[0].1, theme.syntax(SyntaxTone::Number));
+        assert_eq!(comment[0].1, theme.syntax(SyntaxTone::Comment));
+        assert_eq!(
+            theme.syntax(SyntaxTone::Keyword).fg,
+            Some(theme.text_primary)
+        );
+        assert!(
+            theme
+                .syntax(SyntaxTone::Keyword)
+                .add_modifier
+                .contains(Modifier::BOLD)
+        );
+        assert_eq!(theme.syntax(SyntaxTone::Comment).fg, Some(theme.text_faint));
+        assert!(
+            theme
+                .syntax(SyntaxTone::Comment)
+                .add_modifier
+                .contains(Modifier::ITALIC)
+        );
+    }
+
+    #[test]
+    fn current_block_marker_is_chevron_not_second_bar() {
+        let system = DesignSystem::junie();
+        let lines = ["fn main() {", "    let x = 1;", "}"];
+        let mut state = CodeBlockState::new();
+        state.set_focused(true);
+        state.set_cursor_line(Some(0));
+        let mut buf = Buffer::empty(Rect::new(0, 0, 40, 4));
+        let _ = CodeBlock::new(&lines, &system)
+            .line_numbers(true)
+            .language("rust")
+            .current_block(0, 1)
+            .paint(Rect::new(0, 0, 40, 4), &mut buf, &mut state);
+        // header is rust on row 0; body starts row 1
+        assert_eq!(buf[(0, 1)].symbol(), "▎", "focus bar on cursor line");
+        assert_eq!(buf[(1, 1)].symbol(), "›", "block marker, not a second bar");
+        assert_ne!(buf[(1, 1)].symbol(), "▎");
+        // line numbers are faint off the cursor line
+        assert_eq!(buf[(3, 2)].fg, system.junie_theme().text_faint);
+    }
+
+    #[test]
+    fn fallback_highlighter_has_no_ansi_hues() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let lines = ["fn foo() { let s = \"x\"; }"];
+        let mut state = CodeBlockState::new();
+        let mut buf = Buffer::empty(Rect::new(0, 0, 40, 2));
+        let _ = CodeBlock::new(&lines, &system).language("rust").paint(
+            Rect::new(0, 0, 40, 2),
+            &mut buf,
+            &mut state,
+        );
+        // Keyword `fn` is primary+bold, never a green/cyan ANSI hue.
+        let cell = &buf[(0, 1)];
+        assert_eq!(cell.fg, theme.text_primary);
+        assert_ne!(cell.fg, theme.accent);
     }
 }

@@ -1392,7 +1392,7 @@ mod tests {
 
     #[test]
     fn paint_full_and_mouse() {
-        let system = DesignSystem::from_palette(RolePalette::default());
+        let system = DesignSystem::new(RolePalette::default());
         let mut state = PaginationState::new(3, 10, PageTotal::Known(100));
         state.set_focused(true);
         let area = Rect::new(0, 0, 72, 1);

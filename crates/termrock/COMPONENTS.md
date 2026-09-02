@@ -333,7 +333,7 @@ column **priority** resolve visible widths — lowest priority drops first under
 pressure (ties rightmost). Recipes: Quiet, Bordered, Striped, Compact. Sticky
 header, horizontal scroll (`h_offset`), optional cell focus, clip/ellipsis
 overflow, and Ready/Loading/Error body states with host messages. Selection
-uses design-system `SelectionChrome` (gutter/tint/fill) rather than a hard-coded
+uses the junie row recipe (gutter `▎` plus tint) rather than a hard-coded
 chevron. `TableState` owns selection, hover, vertical/horizontal offsets, cell
 focus, resolved geometry, and painted header/row regions. Keyboard and pointer
 methods emit typed row selection/activation or column sort requests. Callers own

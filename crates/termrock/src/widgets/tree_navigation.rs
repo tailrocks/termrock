@@ -1387,7 +1387,7 @@ mod tests {
 
     #[test]
     fn paint_and_mouse() {
-        let system = DesignSystem::from_palette(RolePalette::default());
+        let system = DesignSystem::new(RolePalette::default());
         let nodes = example_schema_tree();
         let mut state = TreeNavigationState::new(Some("users"));
         state.set_focused(true);

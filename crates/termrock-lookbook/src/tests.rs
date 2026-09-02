@@ -5,12 +5,12 @@ use termrock::keymap::glyph;
 use termrock::{
     input::KeyCode,
     keymap::KeyChord,
-    style::{ColorCapability, DesignSystem, RolePalette},
+    style::{ColorCapability, DesignSystem},
 };
 
 use crate::{
     PREVIEW_KEYMAP, PreviewAction, SIDEBAR_KEYMAP, SidebarAction,
-    svg::{render_story_to_buffer, render_story_to_buffer_with_system},
+    svg::render_story_to_buffer_with_system,
 };
 use termrock_lookbook::stories::stories;
 
@@ -20,12 +20,12 @@ fn list_story_visibly_uses_the_selected_theme() {
         .into_iter()
         .find(|story| story.id == "list/selection")
         .expect("list story exists");
-    // One palette ships, so the visible contrast a theme selection buys is now
-    // the capability rung: truecolor tokens against their ANSI-16 projection.
-    let truecolor = render_story_to_buffer(story, &RolePalette::junie());
-    let ansi = render_story_to_buffer(
+    // One palette ships. Visible contrast is the capability rung: truecolor
+    // tokens against their ANSI-16 projection of the same junie system.
+    let truecolor = render_story_to_buffer_with_system(story, &DesignSystem::junie());
+    let ansi = render_story_to_buffer_with_system(
         story,
-        &RolePalette::junie().quantized(ColorCapability::Ansi16),
+        &DesignSystem::junie().quantize(ColorCapability::Ansi16),
     );
 
     assert_eq!(truecolor.area, ansi.area);

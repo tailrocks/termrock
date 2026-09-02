@@ -3,15 +3,13 @@
 
 //! SelectionModel — single / multi / range selection with stable IDs.
 //!
-//! Separates **selection membership** from focus (`FocusGraph`), active cursor
-//! (`CollectionState`), and paint chrome (`SelectionChrome`).
+//! Separates **selection membership** from focus (`FocusGraph`) and active
+//! cursor (`CollectionState`).
 //!
 //! Virtualization / filters: only pass **currently addressable** ids into
 //! `select_all` / `invert` / `extend_range`. Membership of ids outside the
 //! window is retained until [`SelectionModel::reconcile`] is told the universe
 //! of still-valid ids (or `reconcile_retain` keeps unknown ids for lazy hosts).
-use crate::style::SelectionChrome;
-
 /// How selection membership behaves.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -82,20 +80,11 @@ pub enum SelectionVisual {
     Gutter,
     /// Soft tint (`Role::SelectionTint`).
     Tint,
-    /// Multi-select check mark (Unicode/ASCII via glyph set).
+    /// Multi-select check mark.
     Check,
 }
 
 impl SelectionVisual {
-    /// Maps design-system list chrome to a selection visual.
-    #[must_use]
-    pub const fn from_chrome(chrome: SelectionChrome) -> Self {
-        match chrome {
-            SelectionChrome::Gutter => Self::Gutter,
-            SelectionChrome::Tint => Self::Tint,
-        }
-    }
-
     /// Whether this recipe requires a non-color glyph cue.
     #[must_use]
     pub const fn requires_glyph(self) -> bool {
@@ -847,14 +836,6 @@ mod tests {
         assert!(SelectionVisual::Gutter.requires_glyph());
         assert!(SelectionVisual::Check.requires_glyph());
         assert!(!SelectionVisual::Tint.requires_glyph());
-        assert_eq!(
-            SelectionVisual::from_chrome(SelectionChrome::Gutter),
-            SelectionVisual::Gutter
-        );
-        assert_eq!(
-            SelectionVisual::from_chrome(SelectionChrome::Tint),
-            SelectionVisual::Tint
-        );
     }
 
     #[test]

@@ -133,18 +133,35 @@ pub fn quick_open_presentation_for_bounds(bounds: Rect) -> QuickOpenPresentation
     }
 }
 
-/// Place using CommandPalette-class center policy (may fullscreen-promote).
+/// Place using CommandPalette-class center policy (upper third; may fullscreen).
 #[must_use]
 pub fn place_quick_open(bounds: Rect, preferred: QuickOpenSize) -> Rect {
     if bounds.is_empty() || preferred.width == 0 || preferred.height == 0 {
         return Rect::default();
     }
-    // Reuse command-palette policy (center + dim + narrow fullscreen).
-    place_overlay(
-        bounds,
-        None,
-        OverlaySize::from(preferred),
-        OverlayPolicy::for_kind(OverlayKind::CommandPalette),
+    if bounds.width <= QUICK_OPEN_FULLSCREEN_MAX_WIDTH
+        || bounds.height <= QUICK_OPEN_FULLSCREEN_MAX_HEIGHT
+    {
+        return place_overlay(
+            bounds,
+            None,
+            OverlaySize::from(preferred),
+            OverlayPolicy::for_kind(OverlayKind::CommandPalette),
+        );
+    }
+    let width = preferred.width.min(bounds.width.saturating_sub(4)).max(28);
+    let height = preferred.height.min(bounds.height.saturating_sub(2)).max(8);
+    let x = bounds
+        .x
+        .saturating_add(bounds.width.saturating_sub(width) / 2);
+    let y = bounds
+        .y
+        .saturating_add((bounds.height.saturating_sub(height) / 3).max(1));
+    Rect::new(
+        x,
+        y.min(bounds.bottom().saturating_sub(height)),
+        width,
+        height,
     )
 }
 
@@ -1606,16 +1623,15 @@ impl<'a, Id> QuickOpen<'a, Id> {
         }
 
         if self.items.is_empty() {
-            let (glyph, msg) = if state.query_text().is_empty() {
-                ({ "∅" }, self.empty_message)
+            let msg = if state.query_text().is_empty() {
+                self.empty_message
             } else {
-                ({ "∅" }, self.no_result_message)
+                self.no_result_message
             };
-            let line = format!("{glyph} {msg}");
             buffer.set_stringn(
                 area.x,
                 area.y,
-                &take_display_cols(&line, usize::from(area.width)),
+                &take_display_cols(msg, usize::from(area.width)),
                 usize::from(area.width),
                 self.system.style(Role::TextMuted),
             );
@@ -1650,14 +1666,22 @@ impl<'a, Id> QuickOpen<'a, Id> {
                 checked: false,
                 ..ListRowVisualState::default()
             });
-            if recipe.use_fill {
-                buffer.set_style(row, recipe.label);
-            } else if recipe.use_tint {
+            if recipe.use_tint {
                 buffer.set_style(row, recipe.tint);
             }
 
-            let gutter = if active { "› " } else { "  " };
-            let mut x = area.x;
+            let visual = ListRowVisualState {
+                selected: active,
+                focused: active,
+                hovered: state.hovered == Some(i),
+                enabled: true,
+                loading: false,
+                checked: false,
+                ..ListRowVisualState::default()
+            };
+            let chrome = super::row_chrome::RowChrome::resolve(self.system, visual);
+            chrome.paint(buffer, row);
+            let mut x = area.x.saturating_add(3);
             let base = if self.colorless {
                 if active {
                     self.system
@@ -1671,8 +1695,6 @@ impl<'a, Id> QuickOpen<'a, Id> {
             } else {
                 self.system.style(Role::Text)
             };
-            buffer.set_stringn(x, y, gutter, 2, base);
-            x = x.saturating_add(2);
 
             if item.recent {
                 let mark = { "↻ " };

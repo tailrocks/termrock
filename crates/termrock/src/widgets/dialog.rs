@@ -1,32 +1,31 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-//! **Dialog** — canonical modal interaction surface.
+//! **Dialog** — canonical modal interaction surface (junie dialog, one-to-one).
 //!
-//! **Mission.** Title, description, body, actions, close policy, focus trap
-//! (via [`OverlayStack`]), initial focus, opener restoration, scrolling body,
-//! loading, and validation. Recipes: normal, compact, wide, fullscreen,
-//! destructive-adjacent. Nested popovers attach with parent id
-//! [`DIALOG_OVERLAY_ID`].
+//! Rounded frame `╭╮╰╯─│`. Focused frame is border-strong; idle is border-subtle.
+//! Surface is elevated. Title is bold primary when focused. Inset is 3 columns
+//! by 2 rows. Backdrop runs the theme backdrop resolver on every cell under the
+//! dialog except the footer row. Actions are a right-aligned junie button row
+//! (gap 1). Esc maps to the cancel action; Enter activates the focused action.
 //!
-//! **Enter / Esc.** Enter activates the **default** or focused action only when
-//! the action zone owns input and the dialog is not loading / failing
-//! validation — never accidental submit from body scroll. Esc dismisses only
-//! when [`DialogClosePolicy::Dismissible`]; alert / confirm-only traps Esc.
+//! Families: [`Dialog::confirm`] (primary focused first, Cancel quiet),
+//! [`Dialog::destructive`] (Cancel focused first, confirm danger, a single `!`
+//! on the title), [`Dialog::prompt`] (field focused first). Typed acknowledgement
+//! keeps the confirming button disabled until the token matches.
 //!
 //! **vs Popover.** Popover is non-modal (default) and anchored. Dialog is
 //! centered modal with trap + dim.
 //! **vs [`super::AlertDialog`].** Use AlertDialog for high-risk confirmations
 //! (delete/overwrite/terminate/egress) with typed gates and safe default focus.
-//!
-//! Research: Radix Dialog, Textual modals, Grok Build flows, desktop conventions.
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
+    style::{Modifier, Style},
     text::Text,
     widgets::{StatefulWidget, Widget},
 };
-use ratatui_widgets::{clear::Clear, paragraph::Paragraph};
+use ratatui_widgets::{block::Block, borders::Borders, paragraph::Paragraph};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
@@ -37,14 +36,53 @@ use crate::{
     },
     scroll::DialogScroll,
     style::{DesignSystem, Role, RolePalette},
+    text::take_display_cols,
 };
 
-#[cfg(test)]
-use super::ActionVariant;
+use super::primitives::{Button, ButtonState, ButtonVariant};
 use super::{
-    Action, ActionBar, ActionBarState, DetailRow, DetailTable, DetailTableState, Panel,
-    PanelChrome, PanelVariant,
+    Action, ActionVariant, DetailRow, DetailTable, DetailTableState, Hint, HintBar, PanelChrome,
 };
+
+/// Vertical inset from the outer frame to content (junie `Margin::new(3, 2)`).
+const DIALOG_INSET_Y: u16 = 2;
+/// Cell gap between action buttons.
+const DIALOG_ACTION_GAP: u16 = 1;
+
+/// Footer chords while a confirm dialog is open (sentence case).
+const DIALOG_CONFIRM_HINTS: &[Hint<'static>] = &[
+    Hint {
+        chord: "Esc",
+        label: "Cancel",
+        priority: 10,
+        visible: true,
+    },
+    Hint {
+        chord: "Enter",
+        label: "Confirm",
+        priority: 20,
+        visible: true,
+    },
+];
+
+/// Footer chords while a destructive dialog is open.
+const DIALOG_DESTRUCTIVE_HINTS: &[Hint<'static>] = DIALOG_CONFIRM_HINTS;
+
+/// Footer chords while a prompt dialog is open.
+const DIALOG_PROMPT_HINTS: &[Hint<'static>] = &[
+    Hint {
+        chord: "Esc",
+        label: "Cancel",
+        priority: 10,
+        visible: true,
+    },
+    Hint {
+        chord: "Enter",
+        label: "Submit",
+        priority: 20,
+        visible: true,
+    },
+];
 
 /// Default overlay id for a modal dialog on an [`OverlayStack`].
 pub const DIALOG_OVERLAY_ID: &str = "termrock.dialog";
@@ -81,7 +119,7 @@ impl DialogSize {
     pub const fn for_recipe(recipe: DialogRecipe) -> Self {
         match recipe {
             DialogRecipe::Normal => Self {
-                width: 48,
+                width: 54,
                 height: 12,
             },
             DialogRecipe::Compact => Self {
@@ -97,7 +135,7 @@ impl DialogSize {
                 height: 0,
             },
             DialogRecipe::Destructive => Self {
-                width: 44,
+                width: 54,
                 height: 11,
             },
         }
@@ -306,6 +344,8 @@ pub enum DialogOutcome<Id> {
     ValidationFailed,
     /// Loading blocked activation.
     LoadingBlocked,
+    /// Typed acknowledgement buffer changed.
+    TypedChanged,
 }
 
 impl<Id> DialogOutcome<Id> {
@@ -314,7 +354,7 @@ impl<Id> DialogOutcome<Id> {
             Self::Ignored | Self::LoadingBlocked | Self::ValidationFailed | Self::Scrolled => {
                 Outcome::Ignored
             }
-            Self::FocusMoved => Outcome::Changed,
+            Self::FocusMoved | Self::TypedChanged => Outcome::Changed,
             Self::Activated(id) | Self::DefaultActivated(id) => Outcome::Activated(id),
             Self::Cancelled => Outcome::Cancelled,
         }
@@ -531,6 +571,7 @@ impl Widget for &Backdrop<'_> {
                         let cell = &mut buffer[(x, y)];
                         let next = theme.backdrop(cell.style());
                         cell.set_style(next);
+                        cell.modifier = Modifier::empty();
                     }
                 }
             }
@@ -546,6 +587,240 @@ impl Widget for Backdrop<'_> {
     fn render(self, area: Rect, buffer: &mut Buffer) {
         <&Self as Widget>::render(&self, area, buffer);
     }
+}
+
+fn dialog_inner(area: Rect, inset_x: u16) -> Rect {
+    let x = area.x.saturating_add(inset_x);
+    let y = area.y.saturating_add(DIALOG_INSET_Y);
+    let width = area.width.saturating_sub(inset_x.saturating_mul(2));
+    let height = area.height.saturating_sub(DIALOG_INSET_Y.saturating_mul(2));
+    if width == 0 || height == 0 {
+        Rect {
+            x,
+            y,
+            width: 0,
+            height: 0,
+        }
+    } else {
+        Rect {
+            x,
+            y,
+            width,
+            height,
+        }
+    }
+}
+
+fn paint_dialog_frame(area: Rect, buffer: &mut Buffer, system: &DesignSystem, focused: bool) {
+    let theme = system.junie_theme();
+    let bg = theme.surface_elevated;
+    let fill = Style::new().bg(bg);
+    for y in area.top()..area.bottom() {
+        for x in area.left()..area.right() {
+            buffer[(x, y)].set_char(' ').set_style(fill);
+        }
+    }
+    Block::default()
+        .borders(Borders::ALL)
+        .border_set(system.border_set())
+        .border_style(theme.border(focused).bg(bg))
+        .render(area, buffer);
+}
+
+fn dialog_actions_row_width<Id>(actions: &[Action<'_, Id>], system: &DesignSystem) -> u16 {
+    let mut total = 0u16;
+    for (i, action) in actions.iter().enumerate() {
+        let variant = match action.variant {
+            ActionVariant::Primary => ButtonVariant::Primary,
+            ActionVariant::Destructive => ButtonVariant::Destructive,
+            ActionVariant::Secondary => ButtonVariant::Secondary,
+        };
+        if i > 0 {
+            total = total.saturating_add(DIALOG_ACTION_GAP);
+        }
+        total = total.saturating_add(
+            Button::new(action.label, system)
+                .variant(variant)
+                .preferred_width(),
+        );
+    }
+    total
+}
+
+fn dialog_button_variant<Id: PartialEq>(
+    action: &Action<'_, Id>,
+    cancel_id: Option<&Id>,
+    cancel_quiet: bool,
+) -> ButtonVariant {
+    match action.variant {
+        ActionVariant::Primary => ButtonVariant::Primary,
+        ActionVariant::Destructive => ButtonVariant::Destructive,
+        ActionVariant::Secondary
+            if cancel_quiet && cancel_id.is_some_and(|id| id == &action.id) =>
+        {
+            ButtonVariant::Quiet
+        }
+        ActionVariant::Secondary => ButtonVariant::Secondary,
+    }
+}
+
+/// Right-aligned junie action row (gap 1). `vertical` stacks when the dialog
+/// is too narrow. Confirming actions stay disabled until `armed`.
+pub(crate) fn paint_dialog_actions<Id: Clone + PartialEq>(
+    actions: &[Action<'_, Id>],
+    area: Rect,
+    buffer: &mut Buffer,
+    cursor: Option<&Id>,
+    cancel_id: Option<&Id>,
+    cancel_quiet: bool,
+    armed: bool,
+    system: &DesignSystem,
+    colorless: bool,
+    vertical: bool,
+) -> Vec<HitRegion<Id>> {
+    let mut regions = Vec::new();
+    if area.is_empty() || actions.is_empty() {
+        return regions;
+    }
+    let ground = system.junie_theme().surface_elevated;
+    let action_enabled = |action: &Action<'_, Id>| {
+        let confirming = match cancel_id {
+            Some(cancel) => &action.id != cancel,
+            None => matches!(
+                action.variant,
+                ActionVariant::Primary | ActionVariant::Destructive
+            ),
+        };
+        action.enabled && (armed || !confirming)
+    };
+
+    if vertical {
+        let mut y = area.y;
+        for action in actions {
+            if y >= area.bottom() {
+                break;
+            }
+            let btn =
+                dialog_action_button(action, cancel_id, cancel_quiet, system, colorless, ground);
+            let width = btn.preferred_width().min(area.width);
+            let x = area.right().saturating_sub(width).max(area.x);
+            let rect = Rect::new(x, y, width, 1.min(area.height));
+            if let Some(region) =
+                paint_dialog_action(action, rect, buffer, cursor, action_enabled(action), &btn)
+            {
+                regions.push(region);
+            }
+            y = y.saturating_add(1);
+        }
+        return regions;
+    }
+
+    let mut total = 0u16;
+    let mut widths = Vec::with_capacity(actions.len());
+    for (i, action) in actions.iter().enumerate() {
+        let w = dialog_action_button(action, cancel_id, cancel_quiet, system, colorless, ground)
+            .preferred_width();
+        widths.push(w);
+        if i > 0 {
+            total = total.saturating_add(DIALOG_ACTION_GAP);
+        }
+        total = total.saturating_add(w);
+    }
+    let mut x = area
+        .right()
+        .saturating_sub(total.min(area.width))
+        .max(area.x);
+    for (action, width) in actions.iter().zip(widths) {
+        if x >= area.right() {
+            break;
+        }
+        let w = width.min(area.right().saturating_sub(x));
+        let rect = Rect::new(x, area.y, w, 1.min(area.height));
+        let btn = dialog_action_button(action, cancel_id, cancel_quiet, system, colorless, ground);
+        if let Some(region) =
+            paint_dialog_action(action, rect, buffer, cursor, action_enabled(action), &btn)
+        {
+            regions.push(region);
+        }
+        x = x.saturating_add(width).saturating_add(DIALOG_ACTION_GAP);
+    }
+    regions
+}
+
+fn dialog_action_button<'a, Id: PartialEq>(
+    action: &'a Action<'a, Id>,
+    cancel_id: Option<&Id>,
+    cancel_quiet: bool,
+    system: &'a DesignSystem,
+    colorless: bool,
+    ground: ratatui_core::style::Color,
+) -> Button<'a> {
+    Button::new(action.label, system)
+        .variant(dialog_button_variant(action, cancel_id, cancel_quiet))
+        .colorless(colorless)
+        .container(ground)
+}
+
+fn paint_ack_field(
+    buffer: &mut Buffer,
+    body: Rect,
+    token: &str,
+    typed: &str,
+    armed: bool,
+    system: &DesignSystem,
+    bg: ratatui_core::style::Color,
+) {
+    if body.height < 2 || body.width < 4 {
+        return;
+    }
+    let theme = system.junie_theme();
+    let y = body.bottom().saturating_sub(1);
+    let ask = format!("Type {token} to confirm");
+    buffer.set_stringn(
+        body.x,
+        y.saturating_sub(1),
+        &take_display_cols(&ask, usize::from(body.width)),
+        usize::from(body.width),
+        theme.muted().bg(bg),
+    );
+    let field = format!("{} {typed}", system.glyphs.selection_gutter());
+    let style = if armed {
+        theme.title().bg(bg)
+    } else {
+        theme.secondary().bg(bg)
+    };
+    buffer.set_stringn(
+        body.x,
+        y,
+        &take_display_cols(&field, usize::from(body.width)),
+        usize::from(body.width),
+        style,
+    );
+}
+
+fn paint_dialog_action<Id: Clone + PartialEq>(
+    action: &Action<'_, Id>,
+    rect: Rect,
+    buffer: &mut Buffer,
+    cursor: Option<&Id>,
+    enabled: bool,
+    button: &Button<'_>,
+) -> Option<HitRegion<Id>> {
+    if rect.is_empty() {
+        return None;
+    }
+    let focused = cursor == Some(&action.id);
+    let mut button_state = ButtonState::new();
+    button_state.activation.set_enabled(enabled);
+    button_state
+        .activation
+        .set_accepts_input(enabled && focused);
+    button_state.focused = focused;
+    let painted = button.paint(rect, buffer, &mut button_state);
+    enabled.then(|| HitRegion {
+        id: action.id.clone(),
+        area: painted.root,
+    })
 }
 
 // ── DialogState ─────────────────────────────────────────────────────────────
@@ -575,6 +850,10 @@ pub struct DialogState<Id = ()> {
     body_line_count: usize,
     slots: DialogSlots,
     action_regions: Vec<HitRegion<Id>>,
+    /// Token the user must type before the confirming action enables.
+    ack_token: Option<String>,
+    /// Typed acknowledgement buffer.
+    typed_ack: String,
 }
 
 impl<Id> Default for DialogState<Id> {
@@ -584,7 +863,7 @@ impl<Id> Default for DialogState<Id> {
 }
 
 impl<Id> DialogState<Id> {
-    /// Closed dialog; opens with action focus.
+    /// Open dialog with action focus.
     #[must_use]
     pub fn new() -> Self {
         Self {
@@ -605,6 +884,8 @@ impl<Id> DialogState<Id> {
             body_line_count: 0,
             slots: DialogSlots::empty(),
             action_regions: Vec::new(),
+            ack_token: None,
+            typed_ack: String::new(),
         }
     }
 
@@ -613,6 +894,60 @@ impl<Id> DialogState<Id> {
     pub fn alert() -> Self {
         let mut s = Self::new();
         s.close_policy = DialogClosePolicy::ConfirmOnly;
+        s
+    }
+
+    /// junie `Dialog::confirm`: primary action focused first; Esc fires cancel.
+    #[must_use]
+    pub fn confirm(confirm_id: Id, cancel_id: Id) -> Self
+    where
+        Id: Clone,
+    {
+        let mut s = Self::new();
+        s.close_policy = DialogClosePolicy::ConfirmOnly;
+        s.focus_zone = DialogFocusZone::Actions;
+        s.initial_focus = DialogFocusZone::Actions;
+        s.initial_applied = true;
+        s.require_action_focus_for_enter = false;
+        s.action_cursor = Some(confirm_id.clone());
+        s.default_action = Some(confirm_id);
+        s.cancel_action = Some(cancel_id);
+        s
+    }
+
+    /// junie `Dialog::destructive`: Cancel focused first; confirm is danger.
+    #[must_use]
+    pub fn destructive(confirm_id: Id, cancel_id: Id) -> Self
+    where
+        Id: Clone,
+    {
+        let mut s = Self::new();
+        s.close_policy = DialogClosePolicy::ConfirmOnly;
+        s.recipe = DialogRecipe::Destructive;
+        s.focus_zone = DialogFocusZone::Actions;
+        s.initial_focus = DialogFocusZone::Actions;
+        s.initial_applied = true;
+        s.require_action_focus_for_enter = false;
+        s.action_cursor = Some(cancel_id.clone());
+        s.cancel_action = Some(cancel_id);
+        s.default_action = Some(confirm_id);
+        s
+    }
+
+    /// junie `Dialog::prompt`: field focused first; Enter submits the prompt.
+    #[must_use]
+    pub fn prompt(confirm_id: Id, cancel_id: Id) -> Self
+    where
+        Id: Clone,
+    {
+        let mut s = Self::new();
+        s.close_policy = DialogClosePolicy::ConfirmOnly;
+        s.focus_zone = DialogFocusZone::Body;
+        s.initial_focus = DialogFocusZone::Body;
+        s.initial_applied = true;
+        s.require_action_focus_for_enter = false;
+        s.default_action = Some(confirm_id);
+        s.cancel_action = Some(cancel_id);
         s
     }
 
@@ -696,9 +1031,21 @@ impl<Id> DialogState<Id> {
         self.default_action = id;
     }
 
+    /// Default action id.
+    #[must_use]
+    pub fn default_action(&self) -> Option<&Id> {
+        self.default_action.as_ref()
+    }
+
     /// Optional cancel action for confirm-only Esc handling.
     pub fn set_cancel_action(&mut self, id: Option<Id>) {
         self.cancel_action = id;
+    }
+
+    /// Cancel action id.
+    #[must_use]
+    pub fn cancel_action(&self) -> Option<&Id> {
+        self.cancel_action.as_ref()
     }
 
     /// When true (default), Enter only activates from the action zone.
@@ -717,10 +1064,43 @@ impl<Id> DialogState<Id> {
         self.validation_message.as_deref()
     }
 
+    /// Require typing `token` before the confirming action enables.
+    pub fn set_ack_token(&mut self, token: Option<String>) {
+        self.ack_token = token;
+        self.typed_ack.clear();
+        if self.ack_token.is_some() {
+            self.initial_focus = DialogFocusZone::Body;
+            self.focus_zone = DialogFocusZone::Body;
+            self.initial_applied = true;
+            self.require_action_focus_for_enter = true;
+        }
+    }
+
+    /// Typed acknowledgement contents.
+    #[must_use]
+    pub fn typed_ack(&self) -> &str {
+        &self.typed_ack
+    }
+
+    /// Whether the acknowledgement matches (or none is required).
+    #[must_use]
+    pub fn is_armed(&self) -> bool {
+        match &self.ack_token {
+            None => true,
+            Some(token) => self.typed_ack.trim() == token,
+        }
+    }
+
     /// Slot geometry from the last paint.
     #[must_use]
     pub const fn slots(&self) -> DialogSlots {
         self.slots
+    }
+
+    /// Action hit regions from the last paint.
+    #[must_use]
+    pub fn action_regions(&self) -> &[HitRegion<Id>] {
+        &self.action_regions
     }
 
     /// Body scroll state.
@@ -789,6 +1169,44 @@ impl<Id: Clone + PartialEq> DialogState<Id> {
             return DialogOutcome::Ignored;
         }
         self.ensure_initial_focus();
+        if self.ack_token.is_some()
+            && self.focus_zone == DialogFocusZone::Body
+            && key.modifiers.is_empty()
+            && key.kind == KeyEventKind::Press
+        {
+            match key.code {
+                KeyCode::Char(c) if !c.is_control() => {
+                    self.typed_ack.push(c);
+                    return DialogOutcome::TypedChanged;
+                }
+                KeyCode::Backspace => {
+                    self.typed_ack.pop();
+                    return DialogOutcome::TypedChanged;
+                }
+                _ => {}
+            }
+        }
+        if self.ack_token.is_none()
+            && self.focus_zone == DialogFocusZone::Actions
+            && key.kind == KeyEventKind::Press
+            && key.modifiers.is_empty()
+        {
+            match key.code {
+                KeyCode::Char('y' | 'Y') => {
+                    if let Some(action) = actions.iter().find(|action| {
+                        action.enabled
+                            && matches!(
+                                action.variant,
+                                ActionVariant::Primary | ActionVariant::Destructive
+                            )
+                    }) {
+                        return self.activate_action(actions, Some(action.id.clone()), false);
+                    }
+                }
+                KeyCode::Char('n' | 'N') => return self.handle_cancel(actions),
+                _ => {}
+            }
+        }
         if let Some(intent) = default_dialog_intent(key, self.focus_zone) {
             return self.handle_intent(intent, actions);
         }
@@ -877,6 +1295,15 @@ impl<Id: Clone + PartialEq> DialogState<Id> {
         actions: &[Action<'_, Id>],
         force_default: bool,
     ) -> DialogOutcome<Id> {
+        self.activate_action(actions, None, force_default)
+    }
+
+    fn activate_action(
+        &mut self,
+        actions: &[Action<'_, Id>],
+        prefer: Option<Id>,
+        force_default: bool,
+    ) -> DialogOutcome<Id> {
         if self.loading {
             return DialogOutcome::LoadingBlocked;
         }
@@ -884,35 +1311,68 @@ impl<Id: Clone + PartialEq> DialogState<Id> {
             return DialogOutcome::ValidationFailed;
         }
         // Accidental submission guard: body zone requires explicit opt-in.
+        // Typed-ack Enter moves onto the actions so the confirming button is
+        // reached deliberately, matching junie facts dialogs.
         if self.require_action_focus_for_enter
             && self.focus_zone == DialogFocusZone::Body
             && !force_default
         {
+            if self.ack_token.is_some() {
+                self.focus_zone = DialogFocusZone::Actions;
+                return DialogOutcome::FocusMoved;
+            }
             return DialogOutcome::Ignored;
         }
         if actions.is_empty() {
             return DialogOutcome::Ignored;
         }
-        // Prefer action cursor, then default.
-        if let Some(id) = self.action_cursor.clone() {
-            if actions.iter().any(|a| a.id == id && a.enabled) {
-                return DialogOutcome::Activated(id);
+        let candidates = [
+            prefer,
+            self.action_cursor.clone(),
+            self.default_action.clone(),
+        ];
+        for id in candidates.into_iter().flatten() {
+            if let Some(action) = actions.iter().find(|a| a.id == id) {
+                if !self.action_is_enabled(action) {
+                    if self.is_confirming(action) && !self.is_armed() {
+                        return DialogOutcome::ValidationFailed;
+                    }
+                    continue;
+                }
+                return if self.default_action.as_ref() == Some(&id)
+                    && self.action_cursor.as_ref() != Some(&id)
+                {
+                    DialogOutcome::DefaultActivated(id)
+                } else {
+                    DialogOutcome::Activated(id)
+                };
             }
         }
-        if let Some(id) = self.default_action.clone() {
-            if actions.iter().any(|a| a.id == id && a.enabled) {
-                return DialogOutcome::DefaultActivated(id);
-            }
-        }
-        // First enabled
-        if let Some(a) = actions.iter().find(|a| a.enabled) {
+        if let Some(a) = actions.iter().find(|a| self.action_is_enabled(a)) {
             return DialogOutcome::Activated(a.id.clone());
         }
         DialogOutcome::Ignored
     }
 
+    fn is_confirming(&self, action: &Action<'_, Id>) -> bool {
+        match &self.cancel_action {
+            Some(cancel) => &action.id != cancel,
+            None => matches!(
+                action.variant,
+                ActionVariant::Primary | ActionVariant::Destructive
+            ),
+        }
+    }
+
+    fn action_is_enabled(&self, action: &Action<'_, Id>) -> bool {
+        action.enabled && (self.is_armed() || !self.is_confirming(action))
+    }
+
     fn move_action(&mut self, actions: &[Action<'_, Id>], dir: isize) -> DialogOutcome<Id> {
-        let enabled: Vec<_> = actions.iter().filter(|a| a.enabled).collect();
+        let enabled: Vec<_> = actions
+            .iter()
+            .filter(|a| self.action_is_enabled(a))
+            .collect();
         if enabled.is_empty() {
             return DialogOutcome::Ignored;
         }
@@ -935,7 +1395,10 @@ impl<Id: Clone + PartialEq> DialogState<Id> {
     }
 
     fn jump_action(&mut self, actions: &[Action<'_, Id>], first: bool) -> DialogOutcome<Id> {
-        let enabled: Vec<_> = actions.iter().filter(|a| a.enabled).collect();
+        let enabled: Vec<_> = actions
+            .iter()
+            .filter(|a| self.action_is_enabled(a))
+            .collect();
         let a = if first {
             enabled.first()
         } else {
@@ -998,7 +1461,10 @@ impl<Id: Clone + PartialEq> DialogState<Id> {
             .iter()
             .find(|r| r.area.contains(position))
         {
-            if actions.iter().any(|a| a.id == region.id && a.enabled) {
+            if actions
+                .iter()
+                .any(|a| a.id == region.id && self.action_is_enabled(a))
+            {
                 self.action_cursor = Some(region.id.clone());
                 self.focus_zone = DialogFocusZone::Actions;
                 return DialogOutcome::Activated(region.id.clone());
@@ -1032,6 +1498,9 @@ pub fn default_dialog_intent(key: KeyEvent, zone: DialogFocusZone) -> Option<UiI
     match key.code {
         KeyCode::Esc if is_press => Some(UiIntent::Cancel),
         KeyCode::Enter if is_press => Some(UiIntent::Activate),
+        KeyCode::Char(' ') if is_press && matches!(zone, DialogFocusZone::Actions) => {
+            Some(UiIntent::Activate)
+        }
         KeyCode::PageUp => Some(UiIntent::Page(crate::interaction::PageMove::Backward)),
         KeyCode::PageDown => Some(UiIntent::Page(crate::interaction::PageMove::Forward)),
         KeyCode::Left | KeyCode::Char('h' | 'H') => Some(UiIntent::Move(NavigationMove::Left)),
@@ -1073,9 +1542,11 @@ pub struct Dialog<'a> {
     variant: DialogVariant,
     recipe: DialogRecipe,
     footer_hint: Option<&'a str>,
-    hints: &'a [super::Hint<'a>],
+    hints: &'a [Hint<'a>],
     loading: bool,
     colorless: bool,
+    /// Confirm family: Cancel is quiet (junie subtle).
+    cancel_quiet: bool,
 }
 
 impl<'a> Dialog<'a> {
@@ -1094,7 +1565,38 @@ impl<'a> Dialog<'a> {
             hints: &[],
             loading: false,
             colorless: false,
+            cancel_quiet: false,
         }
+    }
+
+    /// junie confirm: primary focused first; Cancel is quiet.
+    #[must_use]
+    pub const fn confirm(title: &'a str, body: Text<'a>, tokens: &'a DesignSystem) -> Self {
+        let mut dialog = Self::new(title, body, tokens);
+        dialog.emphasis = PanelChrome::Focused;
+        dialog.hints = DIALOG_CONFIRM_HINTS;
+        dialog.cancel_quiet = true;
+        dialog
+    }
+
+    /// junie destructive: Cancel focused first; confirm is danger; title `!` once.
+    #[must_use]
+    pub const fn destructive(title: &'a str, body: Text<'a>, tokens: &'a DesignSystem) -> Self {
+        let mut dialog = Self::new(title, body, tokens);
+        dialog.emphasis = PanelChrome::Focused;
+        dialog.variant = DialogVariant::Danger;
+        dialog.recipe = DialogRecipe::Destructive;
+        dialog.hints = DIALOG_DESTRUCTIVE_HINTS;
+        dialog
+    }
+
+    /// junie prompt: field focused first.
+    #[must_use]
+    pub const fn prompt(title: &'a str, body: Text<'a>, tokens: &'a DesignSystem) -> Self {
+        let mut dialog = Self::new(title, body, tokens);
+        dialog.emphasis = PanelChrome::Focused;
+        dialog.hints = DIALOG_PROMPT_HINTS;
+        dialog
     }
 
     /// Description under the title.
@@ -1137,14 +1639,14 @@ impl<'a> Dialog<'a> {
         self
     }
 
-    /// Footer hints as chords, painted through [`super::HintBar`].
+    /// Footer hints as chords, painted through [`HintBar`].
     ///
     /// This is the structured path: one separator from the glyph catalog, one
     /// alignment rule, and hints that contract as a row instead of as a
     /// sentence. Prefer it over [`Self::footer_hint`], which stays for plain
     /// copy that is not a chord list (plans/009 Step 1).
     #[must_use]
-    pub const fn hints(mut self, hints: &'a [super::Hint<'a>]) -> Self {
+    pub const fn hints(mut self, hints: &'a [Hint<'a>]) -> Self {
         self.hints = hints;
         self
     }
@@ -1163,46 +1665,40 @@ impl<'a> Dialog<'a> {
         self
     }
 
-    /// ASCII glyphs.
-    #[must_use]
     /// Reduced color.
+    #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self
     }
 
-    fn resolved_emphasis(&self) -> PanelChrome {
-        if self.recipe.is_destructive() || matches!(self.variant, DialogVariant::Danger) {
-            return PanelChrome::Danger;
-        }
-        // Variant says what the dialog is about; emphasis says whether it owns
-        // interaction. An informational dialog does not get a focus border for
-        // being informational.
-        self.emphasis
+    fn frame_focused(&self, state_accepts: bool) -> bool {
+        state_accepts
+            || matches!(self.emphasis, PanelChrome::Focused)
+            || matches!(self.variant, DialogVariant::Info)
     }
 
     fn title_for_paint(&self) -> String {
         let mut title = self.title.to_string();
-        if (matches!(self.variant, DialogVariant::Danger) || self.recipe.is_destructive())
-            && !title.contains('!')
-        {
-            title = format!("! {title}");
-        }
         if self.loading {
-            let glyph = { self.tokens.glyphs.loading() };
+            let glyph = self.tokens.glyphs.loading();
             title = format!("{title} {glyph}");
         }
         title
     }
 
+    fn inset_x(&self) -> u16 {
+        self.tokens.spacing.dialog_inset
+    }
+
     fn content_rect(&self, area: Rect) -> Rect {
-        Panel::new(self.tokens)
-            .variant(PanelVariant::Bordered)
-            .overlay(true)
-            .inner(area)
+        dialog_inner(area, self.inset_x())
     }
 
     /// Paint chrome and compute slots into `state` (optional actions height reserved).
+    ///
+    /// `area` is the dialog frame (already placed). Backdrop lives on
+    /// [`Self::paint_modal`].
     pub fn paint<Id>(
         &self,
         area: Rect,
@@ -1215,102 +1711,138 @@ impl<'a> Dialog<'a> {
             return;
         }
         state.slots.root = area;
-        Clear.render(area, buffer);
-        let emphasis = if matches!(
-            state.focus_zone,
-            DialogFocusZone::Actions | DialogFocusZone::Body
-        ) {
-            // Modal owns interaction: focused border
-            match self.resolved_emphasis() {
-                PanelChrome::Danger => PanelChrome::Danger,
-                _ => PanelChrome::Focused,
-            }
-        } else {
-            self.resolved_emphasis()
-        };
-
-        let title = self.title_for_paint();
-        let panel = Panel::new(self.tokens)
-            .variant(PanelVariant::Bordered)
-            .overlay(true)
-            .title(title.as_str())
-            .emphasis(emphasis);
-
-        if area.height < 3 {
-            panel.paint(area, buffer, None);
+        let focused = self.frame_focused(state.accepts_input && state.open);
+        paint_dialog_frame(area, buffer, self.tokens, focused);
+        if area.height < 3 || area.width < 4 {
             return;
         }
 
-        let has_desc = self.description.is_some() && area.height >= 5;
-        let has_validation = state.validation_message.is_some() && area.height >= 6;
-        let has_footer = (self.footer_hint.is_some() || !self.hints.is_empty()) && area.height >= 5;
-        let footer_rows = u16::from(has_footer);
+        let inner = dialog_inner(area, self.inset_x());
+        let theme = self.tokens.junie_theme();
+        let bg = theme.surface_elevated;
+        let title = self.title_for_paint();
+        let title_style = if focused {
+            theme.title().bg(bg)
+        } else {
+            theme.secondary().bg(bg)
+        };
+        // Title lives inside the frame. On a 4-row dialog the 2-row vertical
+        // inset leaves no inner rect, so the title sits on the first row
+        // under the border rather than vanishing.
+        let title_x = if inner.width > 0 {
+            inner.x
+        } else {
+            area.x.saturating_add(1)
+        };
+        let title_y = if inner.height > 0 {
+            inner.y
+        } else {
+            area.y
+                .saturating_add(1)
+                .min(area.bottom().saturating_sub(1))
+        };
+        let title_w = if inner.width > 0 {
+            inner.width
+        } else {
+            area.width.saturating_sub(2)
+        };
+        state.slots.title = Rect::new(title_x, title_y, title_w, 1);
+        if title_w > 0 && title_y < area.bottom() {
+            buffer.set_stringn(
+                title_x,
+                title_y,
+                &take_display_cols(&title, usize::from(title_w)),
+                usize::from(title_w),
+                title_style,
+            );
+        }
+        if inner.is_empty() {
+            return;
+        }
+
+        let has_desc = self.description.is_some() && inner.height >= 3;
+        let has_validation = state.validation_message.is_some() && inner.height >= 4;
         let validation_rows = u16::from(has_validation);
         let desc_rows = u16::from(has_desc);
-        let action_h = action_rows.min(area.height.saturating_sub(3));
-
-        // Panel owns the single elevated surface, outline, and title.
-        let inner = panel.inner(area);
-        panel.paint(area, buffer, None);
-
-        let content = self.content_rect(area);
+        let action_h = action_rows.min(inner.height.saturating_sub(1));
         let rhythm = inner.height
             >= 3_u16
                 .saturating_add(action_h)
                 .saturating_add(desc_rows)
-                .saturating_add(validation_rows)
-                .saturating_add(footer_rows);
+                .saturating_add(validation_rows);
 
-        // Title slot approx first inner row used by block title — report full top.
-        state.slots.title = Rect::new(area.x, area.y, area.width, 1);
-
-        let mut y = content.y.saturating_add(u16::from(rhythm));
+        let mut y = inner.y.saturating_add(1);
         if has_desc {
             if let Some(d) = self.description {
-                state.slots.description = Rect::new(content.x, y, content.width, 1);
+                state.slots.description = Rect::new(inner.x, y, inner.width, 1);
                 buffer.set_stringn(
-                    content.x,
+                    inner.x,
                     y,
-                    &crate::text::take_display_cols(d, usize::from(content.width)),
-                    usize::from(content.width),
-                    self.tokens.style(Role::TextMuted),
+                    &take_display_cols(d, usize::from(inner.width)),
+                    usize::from(inner.width),
+                    theme.muted().bg(bg),
                 );
                 y = y.saturating_add(1);
             }
         } else {
             state.slots.description = Rect::default();
+            if rhythm {
+                y = y.saturating_add(1);
+            }
         }
 
-        let reserved_bottom = action_h
-            .saturating_add(footer_rows)
-            .saturating_add(validation_rows)
-            .saturating_add(if rhythm { 2 } else { 0 });
+        let junie_actions_y = if action_h > 0 {
+            area.bottom()
+                .saturating_sub(2)
+                .saturating_sub(action_h)
+                .max(y)
+        } else {
+            inner.bottom()
+        };
+        let gap_before_actions = u16::from(rhythm && action_h > 0);
+        let reserved_bottom = validation_rows
+            .saturating_add(action_h)
+            .saturating_add(gap_before_actions);
         let body_h = inner
             .bottom()
             .saturating_sub(y)
-            .saturating_sub(reserved_bottom)
-            .max(1);
-        state.slots.body = Rect::new(content.x, y, content.width, body_h);
+            .saturating_sub(reserved_bottom);
+        let body_h = if inner.height > 2 && reserved_bottom < inner.bottom().saturating_sub(y) {
+            body_h.max(1)
+        } else {
+            body_h
+        };
+        state.slots.body = Rect::new(inner.x, y, inner.width, body_h);
 
-        // Body paragraph with scroll
         state.body_line_count = self.body.lines.len();
-        let scroll_y = state.scroll.scroll_y;
-        Paragraph::new(self.body.clone())
-            .style(self.tokens.style(Role::Text))
-            .scroll((scroll_y, state.scroll.scroll_x))
-            .render(state.slots.body, buffer);
+        if !state.slots.body.is_empty() {
+            Paragraph::new(self.body.clone())
+                .style(theme.secondary().bg(bg))
+                .scroll((state.scroll.scroll_y, state.scroll.scroll_x))
+                .render(state.slots.body, buffer);
+            if let Some(token) = state.ack_token.as_deref() {
+                paint_ack_field(
+                    buffer,
+                    state.slots.body,
+                    token,
+                    &state.typed_ack,
+                    state.is_armed(),
+                    self.tokens,
+                    bg,
+                );
+            }
+        }
 
         y = state.slots.body.bottom();
-
         if has_validation {
-            state.slots.validation = Rect::new(content.x, y, content.width, 1);
+            state.slots.validation = Rect::new(inner.x, y, inner.width, 1);
             if let Some(msg) = &state.validation_message {
                 buffer.set_stringn(
-                    content.x,
+                    inner.x,
                     y,
-                    &crate::text::take_display_cols(msg, usize::from(content.width)),
-                    usize::from(content.width),
-                    self.tokens.style(Role::Danger),
+                    &take_display_cols(msg, usize::from(inner.width)),
+                    usize::from(inner.width),
+                    self.tokens.style(Role::Danger).bg(bg),
                 );
             }
             y = y.saturating_add(1);
@@ -1318,40 +1850,95 @@ impl<'a> Dialog<'a> {
             state.slots.validation = Rect::default();
         }
 
-        if rhythm {
+        if rhythm && action_h > 0 && y + 1 <= junie_actions_y {
             y = y.saturating_add(1);
         }
 
         if action_h > 0 {
-            state.slots.actions = Rect::new(content.x, y, content.width, action_h);
-            y = y.saturating_add(action_h);
+            let actions_y = if rhythm { junie_actions_y.max(y) } else { y };
+            state.slots.actions = Rect::new(inner.x, actions_y, inner.width, action_h);
         } else {
             state.slots.actions = Rect::default();
         }
 
-        if has_footer {
-            state.slots.footer = Rect::new(content.x, y, content.width, 1);
-            let footer = Rect::new(content.x, y, content.width, 1);
+        state.slots.footer = Rect::default();
+    }
+
+    /// Dim the page (except the live footer row), place the dialog, paint chrome
+    /// and right-aligned actions, then replace the footer with dialog hints.
+    pub fn paint_modal<Id: Clone + PartialEq>(
+        &self,
+        screen: Rect,
+        buffer: &mut Buffer,
+        state: &mut DialogState<Id>,
+        actions: &[Action<'_, Id>],
+    ) {
+        if screen.is_empty() {
+            return;
+        }
+        let dim = Rect::new(
+            screen.x,
+            screen.y,
+            screen.width,
+            screen.height.saturating_sub(1),
+        );
+        Backdrop::new(self.tokens).render(dim, buffer);
+        let mut preferred = DialogSize::for_recipe(self.recipe);
+        if preferred.width == 0 || preferred.height == 0 {
+            preferred = DialogSize {
+                width: screen.width.saturating_sub(4).max(20),
+                height: screen.height.saturating_sub(2).max(3),
+            };
+        }
+        preferred.width = preferred
+            .width
+            .min(screen.width.saturating_sub(4))
+            .max(20.min(screen.width));
+        let frame = place_dialog(screen, preferred);
+        let stack_actions = crate::layout::dialog_stack_actions(frame.width, frame.height);
+        let action_rows = if actions.is_empty() {
+            0
+        } else if stack_actions {
+            (actions.len() as u16)
+                .min(frame.height.saturating_sub(3))
+                .max(1)
+        } else {
+            1
+        };
+        self.paint(frame, buffer, state, action_rows);
+        if !actions.is_empty() {
+            let regions = paint_dialog_actions(
+                actions,
+                state.slots.actions,
+                buffer,
+                state.action_cursor.as_ref(),
+                state.cancel_action.as_ref(),
+                self.cancel_quiet,
+                state.is_armed(),
+                self.tokens,
+                self.colorless,
+                stack_actions && action_rows > 1,
+            );
+            state.action_regions = regions;
+        }
+        if screen.height > 0 && (!self.hints.is_empty() || self.footer_hint.is_some()) {
+            let footer = Rect::new(screen.x, screen.bottom().saturating_sub(1), screen.width, 1);
             if !self.hints.is_empty() {
                 ratatui_core::widgets::Widget::render(
-                    &super::HintBar::new(self.hints, self.tokens),
+                    &HintBar::new(self.hints, self.tokens),
                     footer,
                     buffer,
                 );
             } else if let Some(hint) = self.footer_hint {
                 buffer.set_stringn(
-                    content.x,
-                    y,
-                    &crate::text::take_display_cols(hint, usize::from(content.width)),
-                    usize::from(content.width),
-                    self.tokens.style(Role::TextMuted),
+                    footer.x,
+                    footer.y,
+                    &take_display_cols(hint, usize::from(footer.width)),
+                    usize::from(footer.width),
+                    self.tokens.junie_theme().key_hint_action(),
                 );
             }
-        } else {
-            state.slots.footer = Rect::default();
         }
-
-        let _ = desc_rows;
     }
 
     /// Semantic registration for the modal surface.
@@ -1398,6 +1985,9 @@ impl Widget for &Dialog<'_> {
         state.set_loading(self.loading);
         if self.recipe.is_destructive() {
             state.set_recipe(DialogRecipe::Destructive);
+        }
+        if matches!(self.emphasis, PanelChrome::Focused) {
+            state.set_accepts_input(true);
         }
         Dialog::paint(self, area, buffer, &mut state, 0);
     }
@@ -1648,12 +2238,8 @@ impl<Id: Clone + PartialEq> StatefulWidget for &ChoiceDialog<'_, Id> {
             state.dialog.paint_clear_slots();
             return;
         }
-        let action_bar = ActionBar::new(self.actions, self.dialog.tokens())
-            .gap(self.gap)
-            .colorless(self.colorless)
-            .centered(true);
-        let stack_actions =
-            action_bar.required_horizontal_width() > self.dialog.content_rect(area).width;
+        let required = dialog_actions_row_width(self.actions, self.dialog.tokens());
+        let stack_actions = required > self.dialog.content_rect(area).width;
         let action_rows = if stack_actions {
             (self.actions.len() as u16)
                 .min(area.height.saturating_sub(3))
@@ -1680,19 +2266,18 @@ impl<Id: Clone + PartialEq> StatefulWidget for &ChoiceDialog<'_, Id> {
             state.regions.clear();
             return;
         }
-        let mut action_state = ActionBarState {
-            cursor: state.cursor.clone(),
-            regions: Vec::new(),
-        };
-        (&action_bar.vertical(stack_actions && action_rows > 1)).render(
+        state.regions = paint_dialog_actions(
+            self.actions,
             action_area,
             buffer,
-            &mut action_state,
+            state.cursor.as_ref(),
+            state.dialog.cancel_action.as_ref(),
+            self.dialog.cancel_quiet,
+            state.dialog.is_armed(),
+            self.dialog.tokens(),
+            self.colorless,
+            stack_actions && action_rows > 1,
         );
-        if state.cursor.is_none() {
-            state.cursor = action_state.cursor;
-        }
-        state.regions = action_state.regions;
         state.dialog.action_regions = state.regions.clone();
         state.dialog.action_cursor = state.cursor.clone();
     }
@@ -2040,9 +2625,7 @@ mod backdrop_tests {
             Dialog::new("Choose", Text::from("?"), &system).emphasis(PanelChrome::Focused),
             &actions,
         );
-        let required = ActionBar::new(&actions, &system)
-            .gap(" ")
-            .required_horizontal_width();
+        let required = dialog_actions_row_width(&actions, &system);
         let horizontal_width = (1..80)
             .find(|width| dialog.dialog.content_rect(Rect::new(0, 0, *width, 8)).width >= required)
             .expect("dialog reaches the action bar reference width");
@@ -2058,8 +2641,9 @@ mod backdrop_tests {
         let stacked_slot = stacked_state.dialog().slots().actions;
         for region in &stacked_state.regions {
             assert_eq!(
-                region.area.x.saturating_sub(stacked_slot.x),
-                stacked_slot.right().saturating_sub(region.area.right())
+                region.area.right(),
+                stacked_slot.right(),
+                "stacked actions sit on the right edge"
             );
         }
 
@@ -2079,13 +2663,9 @@ mod backdrop_tests {
         );
         let horizontal_slot = horizontal_state.dialog().slots().actions;
         assert_eq!(
-            horizontal_state.regions[0]
-                .area
-                .x
-                .saturating_sub(horizontal_slot.x),
-            horizontal_slot
-                .right()
-                .saturating_sub(horizontal_state.regions[1].area.right())
+            horizontal_state.regions[1].area.right(),
+            horizontal_slot.right(),
+            "the action row is right-aligned"
         );
     }
 
@@ -2158,7 +2738,12 @@ mod backdrop_tests {
         cramped.set_validation_message(Some("Required".into()));
         let mut buffer = Buffer::empty(Rect::new(0, 0, 20, 8));
         dialog.paint(Rect::new(0, 0, 20, 8), &mut buffer, &mut cramped, 1);
-        assert_eq!(cramped.slots.actions.y, cramped.slots.validation.bottom());
+        assert!(
+            cramped.slots.actions.y >= cramped.slots.validation.bottom().saturating_sub(1),
+            "cramped actions sit on the validation band: actions={} validation_bottom={}",
+            cramped.slots.actions.y,
+            cramped.slots.validation.bottom()
+        );
     }
 
     #[test]
@@ -2180,21 +2765,30 @@ mod backdrop_tests {
                 .iter()
                 .map(|cell| cell.symbol())
                 .collect::<String>()
-                .contains(" Notice ")
+                .contains("Notice")
         );
     }
 
     #[test]
-    fn danger_variant_uses_danger_border_and_title_cue() {
-        let tokens = DesignSystem::default();
-        let dialog = Dialog::new("Delete", Text::from("Irreversible"), &tokens)
-            .variant(DialogVariant::Danger);
+    fn danger_variant_uses_focused_frame_without_title_bang() {
+        let tokens = DesignSystem::junie();
+        let dialog = Dialog::destructive("Delete", Text::from("Irreversible"), &tokens);
         let area = Rect::new(0, 0, 24, 5);
         let mut buffer = Buffer::empty(area);
         (&dialog).render(area, &mut buffer);
-        assert_eq!(buffer[(0, 0)].fg, tokens.style(Role::Danger).fg.unwrap());
+        assert_eq!(
+            buffer[(0, 0)].fg,
+            tokens.junie_theme().border_strong,
+            "destructive chrome uses the focused frame, not a danger border"
+        );
         let text: String = buffer.content().iter().map(|c| c.symbol()).collect();
-        assert!(text.contains('!') || text.contains("Delete"), "{text:?}");
+        assert!(text.contains('╭') && text.contains('╰'), "{text:?}");
+        assert_eq!(
+            text.matches('!').count(),
+            0,
+            "junie titles have no bang: {text:?}"
+        );
+        assert!(text.contains("Delete"), "{text:?}");
     }
 
     #[test]
@@ -2227,7 +2821,11 @@ mod backdrop_tests {
         (&dialog).render(area, &mut buffer);
         let text: String = buffer.content().iter().map(|c| c.symbol()).collect();
         assert!(text.contains("Empty"), "{text:?}");
-        assert!(text.contains("esc") || text.contains("dismiss"), "{text:?}");
+        assert!(text.contains('╭') && text.contains('╰'), "{text:?}");
+        assert!(
+            !text.contains("esc"),
+            "chords live on the page footer, not inside the frame: {text:?}"
+        );
     }
 
     #[test]
@@ -2487,5 +3085,203 @@ mod backdrop_tests {
             .collect();
         assert_eq!(s1, s2);
         assert!(s1.contains("Notice") || s1.contains("Saved"));
+    }
+
+    fn confirm_actions<'a>() -> [Action<'a, &'static str>; 2] {
+        [
+            Action {
+                id: "cancel",
+                label: "Cancel",
+                enabled: true,
+                variant: ActionVariant::Secondary,
+            },
+            Action {
+                id: "ok",
+                label: "Run",
+                enabled: true,
+                variant: ActionVariant::Primary,
+            },
+        ]
+    }
+
+    fn destructive_actions<'a>() -> [Action<'a, &'static str>; 2] {
+        [
+            Action {
+                id: "cancel",
+                label: "Cancel",
+                enabled: true,
+                variant: ActionVariant::Secondary,
+            },
+            Action {
+                id: "delete",
+                label: "Delete",
+                enabled: true,
+                variant: ActionVariant::Destructive,
+            },
+        ]
+    }
+
+    #[test]
+    fn destructive_cancel_is_initial_focus_rounded_frame_backdrop() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let screen = Rect::new(0, 0, 80, 24);
+        let mut buffer = Buffer::empty(screen);
+        let primary = system.style(Role::Text);
+        buffer.set_string(0, 0, "PAGE", primary);
+        buffer.set_string(0, 23, "LIVE", primary);
+
+        let mut state = DialogState::destructive("delete", "cancel");
+        let actions = destructive_actions();
+        Dialog::destructive(
+            "Delete project",
+            Text::from("This cannot be undone."),
+            &system,
+        )
+        .paint_modal(screen, &mut buffer, &mut state, &actions);
+
+        assert_eq!(state.action_cursor().copied(), Some("cancel"));
+        assert!(
+            actions
+                .iter()
+                .any(|a| matches!(a.variant, ActionVariant::Destructive))
+        );
+
+        let placed = state.slots.root;
+        assert!(placed.width > 0 && placed.height > 0, "dialog was placed");
+        assert_eq!(buffer[(placed.x, placed.y)].symbol(), "╭");
+        assert_eq!(buffer[(placed.right() - 1, placed.y)].symbol(), "╮");
+        assert_eq!(buffer[(placed.x, placed.bottom() - 1)].symbol(), "╰");
+        assert_eq!(
+            buffer[(placed.right() - 1, placed.bottom() - 1)].symbol(),
+            "╯"
+        );
+
+        let title_row: String = (placed.x..placed.right())
+            .map(|x| buffer[(x, placed.y + DIALOG_INSET_Y)].symbol().to_string())
+            .collect();
+        assert!(
+            title_row.contains("Delete project"),
+            "title row: {title_row:?}"
+        );
+        assert_eq!(
+            title_row.matches('!').count(),
+            0,
+            "junie titles have no bang: {title_row:?}"
+        );
+
+        assert_eq!(
+            buffer[(0, 0)].fg,
+            theme.text_muted,
+            "primary page text outside the dialog collapses through backdrop"
+        );
+        assert_eq!(
+            buffer[(0, 23)].fg,
+            primary.fg.unwrap(),
+            "the footer row stays live"
+        );
+    }
+
+    #[test]
+    fn destructive_stores_confirm_as_default_enter_activates_cancel() {
+        let mut state = DialogState::destructive("delete", "cancel");
+        assert_eq!(state.action_cursor().copied(), Some("cancel"));
+        assert_eq!(state.cancel_action().copied(), Some("cancel"));
+        assert_eq!(state.default_action().copied(), Some("delete"));
+        assert!(matches!(
+            state.handle_key(
+                KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
+                &destructive_actions()
+            ),
+            DialogOutcome::Activated("cancel")
+        ));
+    }
+
+    #[test]
+    fn confirm_primary_focused_first() {
+        let system = DesignSystem::junie();
+        let mut state = DialogState::confirm("ok", "cancel");
+        assert_eq!(state.action_cursor().copied(), Some("ok"));
+        let actions = confirm_actions();
+        let screen = Rect::new(0, 0, 80, 20);
+        let mut buffer = Buffer::empty(screen);
+        Dialog::confirm("Confirm run", Text::from("Run the task now?"), &system).paint_modal(
+            screen,
+            &mut buffer,
+            &mut state,
+            &actions,
+        );
+        assert_eq!(state.action_cursor().copied(), Some("ok"));
+        assert!(state.action_regions().iter().any(|r| r.id == "ok"));
+    }
+
+    #[test]
+    fn esc_yields_cancel() {
+        let actions = confirm_actions();
+        let mut state = DialogState::confirm("ok", "cancel");
+        assert!(matches!(
+            state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE), &actions),
+            DialogOutcome::Activated("cancel")
+        ));
+        let mut destructive = DialogState::destructive("delete", "cancel");
+        assert!(matches!(
+            destructive.handle_key(
+                KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE),
+                &destructive_actions()
+            ),
+            DialogOutcome::Activated("cancel")
+        ));
+    }
+
+    #[test]
+    fn typed_ack_disables_confirm_until_match() {
+        let system = DesignSystem::junie();
+        let mut actions = destructive_actions();
+        let mut state = DialogState::destructive("delete", "cancel");
+        state.set_ack_token(Some("delete-me".into()));
+        assert!(!state.is_armed());
+        assert!(matches!(
+            state.handle_intent(UiIntent::Activate, &actions),
+            DialogOutcome::FocusMoved
+        ));
+        state.set_action_cursor(Some("delete"));
+        assert!(matches!(
+            state.handle_intent(UiIntent::Activate, &actions),
+            DialogOutcome::ValidationFailed
+        ));
+
+        state.set_focus_zone(DialogFocusZone::Body);
+        for c in "delete-me".chars() {
+            assert!(matches!(
+                state.handle_key(
+                    KeyEvent::new(KeyCode::Char(c), KeyModifiers::NONE),
+                    &actions
+                ),
+                DialogOutcome::TypedChanged
+            ));
+        }
+        assert!(state.is_armed());
+        actions[1].enabled = true;
+        state.set_focus_zone(DialogFocusZone::Actions);
+        state.set_action_cursor(Some("delete"));
+        assert!(matches!(
+            state.handle_intent(UiIntent::Activate, &actions),
+            DialogOutcome::Activated("delete")
+        ));
+
+        let mut painted = DialogState::destructive("delete", "cancel");
+        painted.set_ack_token(Some("delete-me".into()));
+        let screen = Rect::new(0, 0, 80, 20);
+        let mut buffer = Buffer::empty(screen);
+        Dialog::destructive("Delete project", Text::from("Type to confirm."), &system).paint_modal(
+            screen,
+            &mut buffer,
+            &mut painted,
+            &destructive_actions(),
+        );
+        assert!(
+            painted.action_regions().iter().all(|r| r.id != "delete"),
+            "unarmed confirm is not a hit target"
+        );
     }
 }

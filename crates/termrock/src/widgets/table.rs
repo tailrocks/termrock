@@ -20,13 +20,14 @@ use ratatui_core::{
 use super::data_view::ColumnKind;
 use crate::{
     input::{KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind},
-    style::{DesignSystem, ListRowVisualState, Role},
+    style::{DesignSystem, ListRowVisualState, Role, VisualState},
     text::{LinePlacement, paint_line_overflow},
 };
 
 pub use crate::text::{CellAlignment, CellOverflow};
 
-const MARKER_WIDTH: u16 = 2;
+/// junie row anatomy: col0 `▎`, col1 `›` or space, col2 blank, content at col 3.
+const MARKER_WIDTH: u16 = 3;
 
 /// Presentation recipe (visual chrome without domain noise).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -129,6 +130,8 @@ pub struct Column<'a, Id> {
     pub priority: u8,
     /// What the column holds, which decides its tone.
     pub kind: ColumnKind,
+    /// Whether a filter is active on this column (header suffix `∇`).
+    pub filtered: bool,
 }
 
 impl<'a, Id> Column<'a, Id> {
@@ -144,16 +147,27 @@ impl<'a, Id> Column<'a, Id> {
             sort: None,
             priority: 50,
             kind: ColumnKind::Text,
+            filtered: false,
         }
     }
 
     /// States what the column holds, which decides its tone.
     ///
-    /// A numeric column reads quieter than the name beside it; a status
-    /// column contracts to its letter instead of to an ellipsis.
+    /// A numeric column reads quieter than the name beside it and right-aligns;
+    /// a status column contracts to its letter instead of to an ellipsis.
     #[must_use]
     pub const fn kind(mut self, kind: ColumnKind) -> Self {
         self.kind = kind;
+        if matches!(kind, ColumnKind::Numeric) {
+            self.alignment = CellAlignment::Right;
+        }
+        self
+    }
+
+    /// Projects a filter mark (`∇`) on the header.
+    #[must_use]
+    pub const fn filtered(mut self, on: bool) -> Self {
+        self.filtered = on;
         self
     }
 
@@ -490,6 +504,12 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> TableState<RowId, ColumnId> {
             return TableOutcome::Ignored;
         }
         let Some(intent) = crate::interaction::default_table_intent(key) else {
+            if key.kind == KeyEventKind::Press
+                && key.modifiers.is_empty()
+                && matches!(key.code, crate::input::KeyCode::Char('s'))
+            {
+                return self.sort_from_cursor();
+            }
             return TableOutcome::Ignored;
         };
         if matches!(intent, crate::interaction::UiIntent::Activate)
@@ -751,6 +771,22 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> TableState<RowId, ColumnId> {
         self.offset = self
             .offset
             .min(row_count.saturating_sub(self.viewport_rows));
+    }
+
+    fn sort_from_cursor(&self) -> TableOutcome<RowId, ColumnId> {
+        if let Some(id) = self.focused_column.as_ref()
+            && self
+                .header_regions
+                .iter()
+                .any(|region| region.sortable && &region.id == id)
+        {
+            return TableOutcome::SortRequested(id.clone());
+        }
+        self.header_regions
+            .iter()
+            .find(|region| region.sortable)
+            .map(|region| TableOutcome::SortRequested(region.id.clone()))
+            .unwrap_or(TableOutcome::Ignored)
     }
 
     fn project_row_identities(&mut self, rows: &[TableRow<'_, RowId>]) {
@@ -1054,6 +1090,16 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
             // The wash goes down before the cells, so a cell that states
             // itself with an explicit pair (the cursor) keeps its ground.
             chrome.paint_wash(buffer, row_area);
+            paint_row_anatomy(
+                buffer,
+                row_area,
+                self.tokens,
+                selected,
+                selected && self.focused,
+                hovered,
+                row.enabled,
+                style,
+            );
 
             // Shared responsive anatomy (ContentPriority), not magic width cutoffs.
             let (show_leading_tier, show_badge_tier) =
@@ -1108,7 +1154,6 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
                     buffer.set_line(bx, y, badge, bw);
                 }
             }
-            chrome.paint_gutter(buffer, row_area);
             if owns_id && row.enabled {
                 state.row_regions.push(TableRowRegion {
                     id: row.id.clone(),
@@ -1166,6 +1211,47 @@ fn content_width(visible: &[usize], widths: &[u16], gap: u16) -> u16 {
     cols.saturating_add(gaps)
 }
 
+/// junie row anatomy: `▎` at col 0, `›` at col 1 when selected, content at col 3.
+fn paint_row_anatomy(
+    buffer: &mut Buffer,
+    row: Rect,
+    tokens: &DesignSystem,
+    selected: bool,
+    focused: bool,
+    hovered: bool,
+    enabled: bool,
+    row_style: Style,
+) {
+    if row.width == 0 || row.height == 0 {
+        return;
+    }
+    let theme = tokens.junie_theme();
+    let visual = VisualState {
+        focused,
+        hovered: hovered && enabled,
+        selected,
+        disabled: !enabled,
+        ..VisualState::default()
+    };
+    let ground = row_style.bg.unwrap_or(theme.surface);
+    let gutter = tokens.gutter(visual, ground, false);
+    buffer.set_stringn(row.x, row.y, tokens.glyphs.selection_gutter(), 1, gutter);
+    if row.width < 2 {
+        return;
+    }
+    let marker = if selected { "›" } else { " " };
+    let marker_style = if selected {
+        row_style.fg(if focused {
+            theme.accent
+        } else {
+            theme.text_secondary
+        })
+    } else {
+        row_style
+    };
+    buffer.set_stringn(row.x.saturating_add(1), row.y, marker, 1, marker_style);
+}
+
 fn paint_header_row<RowId: Clone + Eq, ColumnId: Clone + Eq>(
     table: &Table<'_, RowId, ColumnId>,
     area: Rect,
@@ -1174,19 +1260,20 @@ fn paint_header_row<RowId: Clone + Eq, ColumnId: Clone + Eq>(
     gap: u16,
     bordered: bool,
 ) {
-    let header_style = super::table_chrome::header_style(table.tokens);
+    let idle_header = super::table_chrome::header_style(table.tokens);
     buffer.set_style(
         Rect::new(area.x, area.y, area.width, 1),
         super::table_chrome::header_band(table.tokens),
     );
     let origin_x = area.x.saturating_add(MARKER_WIDTH);
-    // Clear gutter under header for alignment.
+    // Header has no row gutter; keep the anatomy columns blank so body
+    // columns line up under the content origin.
     buffer.set_stringn(
         area.x,
         area.y,
-        "  ",
+        "   ",
         usize::from(MARKER_WIDTH),
-        header_style,
+        idle_header,
     );
     let mut logical_x: i32 = i32::from(origin_x) - i32::from(state.h_offset);
     let mut shown_sort = false;
@@ -1204,16 +1291,30 @@ fn paint_header_row<RowId: Clone + Eq, ColumnId: Clone + Eq>(
             if paint_w > 0 {
                 let sort = column.sort.filter(|_| column.sortable && !shown_sort);
                 shown_sort |= sort.is_some();
-                // A sortable column says so before it is sorted (plans/021
-                // Step 3): the neutral marker states the capability, the
-                // direction arrow replaces it once a sort is applied.
-                let sortable_hint = column.sortable && sort.is_none();
-                let sort_width = u16::from(sort.is_some() || sortable_hint)
-                    .saturating_mul(2)
-                    .min(paint_w);
-                // Only show title when the left edge of the column is visible enough.
+                let hovered = state.pointer.is_some_and(|position| {
+                    position.x >= paint_x && position.x < paint_end && position.y == area.y
+                });
+                let header_style = super::table_chrome::header_label_style(
+                    table.tokens,
+                    sort.is_some(),
+                    hovered,
+                    column.sortable,
+                );
+                // junie: suffix is `" ∇"` and/or `" ▴"`/`" ▾"`; unsorted
+                // sortable columns carry no capability glyph.
+                let mut suffix = String::new();
+                if column.filtered {
+                    suffix.push(' ');
+                    suffix.push_str(super::table_chrome::filter_marker());
+                }
+                if let Some(direction) = sort {
+                    suffix.push(' ');
+                    suffix.push_str(sort_glyph(table.tokens, direction));
+                }
+                let suffix_w = u16::try_from(suffix.chars().count()).unwrap_or(0);
+                let suffix_w = suffix_w.min(paint_w);
                 let skip_left = paint_x.saturating_sub(col_left.max(0) as u16);
-                let title_w = paint_w.saturating_sub(sort_width);
+                let title_w = paint_w.saturating_sub(suffix_w);
                 if title_w > 0 && skip_left == 0 {
                     let title_rect = Rect::new(paint_x, area.y, title_w, 1);
                     render_line(
@@ -1225,25 +1326,15 @@ fn paint_header_row<RowId: Clone + Eq, ColumnId: Clone + Eq>(
                         &mut state.scratch_text,
                     );
                 }
-                if sort_width > 0 && col_right as u16 <= clip_right {
-                    let sort_x = paint_end.saturating_sub(sort_width);
-                    buffer.set_stringn(sort_x, area.y, " ", 1, header_style);
-                    if sort_width > 1 {
-                        let (marker, marker_style) = match sort {
-                            Some(direction) => (sort_glyph(table.tokens, direction), header_style),
-                            None => (
-                                super::table_chrome::sortable_marker(table.tokens),
-                                super::table_chrome::sortable_marker_style(table.tokens),
-                            ),
-                        };
-                        buffer.set_stringn(
-                            sort_x.saturating_add(1),
-                            area.y,
-                            marker,
-                            1,
-                            marker_style,
-                        );
-                    }
+                if suffix_w > 0 && (col_right as u16) <= clip_right {
+                    let suffix_x = paint_end.saturating_sub(suffix_w);
+                    buffer.set_stringn(
+                        suffix_x,
+                        area.y,
+                        &suffix,
+                        usize::from(suffix_w),
+                        header_style,
+                    );
                 }
                 if !state
                     .header_regions
@@ -1620,7 +1711,10 @@ fn sort_glyph(_system: &DesignSystem, direction: SortDirection) -> &'static str 
 
 #[cfg(test)]
 mod tests {
-    use ratatui_core::{style::Color, text::Span};
+    use ratatui_core::{
+        style::{Color, Modifier},
+        text::Span,
+    };
 
     use crate::input::{KeyCode, KeyModifiers};
 
@@ -1750,6 +1844,7 @@ mod tests {
                 sort: None,
                 priority: 50,
                 kind: ColumnKind::Text,
+                filtered: false,
             },
             Column {
                 id: "region",
@@ -1760,6 +1855,7 @@ mod tests {
                 sort: None,
                 priority: 50,
                 kind: ColumnKind::Text,
+                filtered: false,
             },
             Column {
                 id: "cpu",
@@ -1770,6 +1866,7 @@ mod tests {
                 sort: Some(SortDirection::Descending),
                 priority: 50,
                 kind: ColumnKind::Text,
+                filtered: false,
             },
         ]
     }
@@ -1852,12 +1949,13 @@ mod tests {
                 .collect::<Vec<_>>(),
             [1, 3]
         );
-        // Phosphor gutter selection marker (not a noisy chevron).
+        // junie anatomy: `▎` at col 0, `›` at col 1 when selected, content at col 3.
         assert_eq!(
             buffer[(0, 1)].symbol(),
             DesignSystem::default().glyphs.selection_gutter()
         );
-        assert_eq!(buffer[(2, 1)].fg, Color::Red);
+        assert_eq!(buffer[(1, 1)].symbol(), "›");
+        assert_eq!(buffer[(3, 1)].fg, Color::Red);
         let text = buffer
             .content()
             .iter()
@@ -2087,6 +2185,7 @@ mod tests {
             sort: None,
             priority: 50,
             kind: ColumnKind::Text,
+            filtered: false,
         }];
         let cells = [
             [Line::from("e\u{301}")],
@@ -2099,12 +2198,12 @@ mod tests {
             TableRow::new(3, &cells[2]),
         ];
         let mut state = TableState::default();
-        let area = Rect::new(0, 0, 3, 4);
+        let area = Rect::new(0, 0, 4, 4);
         let mut buffer = Buffer::empty(area);
         (&Table::new(&columns, &rows, &tokens)).render(area, &mut buffer, &mut state);
-        assert_eq!(buffer[(2, 1)].symbol(), "e\u{301}");
-        assert_eq!(buffer[(2, 2)].symbol(), " ");
-        assert_eq!(buffer[(2, 3)].symbol(), "a");
+        assert_eq!(buffer[(3, 1)].symbol(), "e\u{301}");
+        assert_eq!(buffer[(3, 2)].symbol(), " ");
+        assert_eq!(buffer[(3, 3)].symbol(), "a");
     }
 
     #[test]
@@ -2120,6 +2219,7 @@ mod tests {
                 sort: None,
                 priority: 50,
                 kind: ColumnKind::Text,
+                filtered: false,
             },
             Column {
                 id: 1,
@@ -2130,6 +2230,7 @@ mod tests {
                 sort: None,
                 priority: 50,
                 kind: ColumnKind::Text,
+                filtered: false,
             },
         ];
         let rows: [TableRow<'_, u8>; 0] = [];
@@ -2264,24 +2365,17 @@ mod tests {
         let rows = rows(&cells);
         let area = Rect::new(0, 0, 30, 4);
 
-        let gutter = DesignSystem::default().selection(crate::style::SelectionChrome::Gutter);
+        let system = DesignSystem::junie();
         let mut state = TableState::new(Some(1));
         let mut buffer = Buffer::empty(area);
-        (&Table::new(&columns, &rows, &gutter)).render(area, &mut buffer, &mut state);
-        assert_eq!(buffer[(0, 1)].symbol(), gutter.glyphs.selection_gutter());
-
-        let tint_sys = DesignSystem::junie().selection(crate::style::SelectionChrome::Tint);
-        let mut state = TableState::new(Some(1));
-        let mut buffer = Buffer::empty(area);
-        (&Table::new(&columns, &rows, &tint_sys)).render(area, &mut buffer, &mut state);
-        assert_eq!(
-            buffer[(0, 1)].symbol(),
-            " ",
-            "tint chrome leaves the gutter slot empty"
-        );
+        (&Table::new(&columns, &rows, &system)).render(area, &mut buffer, &mut state);
+        assert_eq!(buffer[(0, 1)].symbol(), system.glyphs.selection_gutter());
+        assert_eq!(buffer[(1, 1)].symbol(), "›");
+        // junie anatomy is universal: `▎` always occupies col 0; selected
+        // unfocused is marker-only, selected+focused adds the accent tint.
         assert_eq!(
             buffer[(5, 1)].bg,
-            tint_sys.style(Role::SelectionTint).bg.unwrap(),
+            system.style(Role::SelectionTint).bg.unwrap(),
             "the focused row still wears the tint"
         );
     }
@@ -2399,5 +2493,130 @@ mod tests {
                 );
             }
         }
+    }
+
+    fn cell_text(buffer: &Buffer, x: u16, y: u16) -> String {
+        buffer[(x, y)].symbol().to_string()
+    }
+
+    #[test]
+    fn row_anatomy_is_gutter_marker_blank_content() {
+        let tokens = DesignSystem::junie();
+        let columns = columns();
+        let cells = cells();
+        let rows = rows(&cells);
+        let mut state = TableState::new(Some(1));
+        let area = Rect::new(0, 0, 36, 5);
+        let mut buffer = Buffer::empty(area);
+        (&Table::new(&columns, &rows, &tokens)).render(area, &mut buffer, &mut state);
+
+        assert_eq!(cell_text(&buffer, 0, 1), "▎");
+        assert_eq!(cell_text(&buffer, 1, 1), "›");
+        assert_eq!(cell_text(&buffer, 2, 1), " ");
+        assert_eq!(cell_text(&buffer, 3, 1), "a");
+        // unselected enabled row: gutter + space, no chevron
+        assert_eq!(cell_text(&buffer, 0, 3), "▎");
+        assert_eq!(cell_text(&buffer, 1, 3), " ");
+    }
+
+    #[test]
+    fn selected_unfocused_is_marker_only_focused_adds_tint_and_bold() {
+        let tokens = DesignSystem::junie();
+        let theme = tokens.junie_theme();
+        let columns = columns();
+        let cells = cells();
+        let rows = rows(&cells);
+        let area = Rect::new(0, 0, 36, 5);
+
+        let mut state = TableState::new(Some(1));
+        let mut buffer = Buffer::empty(area);
+        (&Table::new(&columns, &rows, &tokens).focused(false)).render(
+            area,
+            &mut buffer,
+            &mut state,
+        );
+        assert_eq!(cell_text(&buffer, 1, 1), "›");
+        assert_eq!(buffer[(1, 1)].fg, theme.text_secondary);
+        assert_ne!(buffer[(5, 1)].bg, theme.accent_bg);
+        assert!(!buffer[(3, 1)].modifier.contains(Modifier::BOLD));
+
+        let mut buffer = Buffer::empty(area);
+        (&Table::new(&columns, &rows, &tokens).focused(true)).render(area, &mut buffer, &mut state);
+        assert_eq!(cell_text(&buffer, 1, 1), "›");
+        assert_eq!(buffer[(1, 1)].fg, theme.accent);
+        assert_eq!(buffer[(5, 1)].bg, theme.accent_bg);
+        assert!(buffer[(3, 1)].modifier.contains(Modifier::BOLD));
+    }
+
+    #[test]
+    fn hover_lifts_one_plane_disabled_stays_faint() {
+        let tokens = DesignSystem::junie();
+        let theme = tokens.junie_theme();
+        let columns = columns();
+        let cells = cells();
+        let rows = rows(&cells);
+        let area = Rect::new(0, 0, 36, 5);
+        let mut state = TableState::new(None);
+        let mut buffer = Buffer::empty(area);
+        (&Table::new(&columns, &rows, &tokens)).render(area, &mut buffer, &mut state);
+        state.hover(Position::new(0, 3));
+        let mut buffer = Buffer::empty(area);
+        (&Table::new(&columns, &rows, &tokens)).render(area, &mut buffer, &mut state);
+        assert_eq!(buffer[(3, 3)].bg, theme.lift(theme.surface));
+
+        // disabled row (id 2 at y=2) uses disabled tone, no hover wash
+        let mut state = TableState::new(None);
+        state.hover(Position::new(0, 2));
+        let mut buffer = Buffer::empty(area);
+        (&Table::new(&columns, &rows, &tokens)).render(area, &mut buffer, &mut state);
+        assert_eq!(buffer[(3, 2)].fg, theme.disabled);
+    }
+
+    #[test]
+    fn header_sort_and_filter_suffixes_and_s_key() {
+        let tokens = DesignSystem::junie();
+        let columns = [
+            Column::new("name", Line::from("Name"), ColumnWidth::Fixed(10))
+                .sortable(Some(SortDirection::Ascending))
+                .filtered(true),
+            Column::new("n", Line::from("N"), ColumnWidth::Fixed(4)).kind(ColumnKind::Numeric),
+        ];
+        let cells = [[Line::from("alpha"), Line::from("12")]];
+        let rows = [TableRow::new(1, &cells[0])];
+        let mut state = TableState::new(Some(1));
+        let area = Rect::new(0, 0, 24, 3);
+        let mut buffer = Buffer::empty(area);
+        (&Table::new(&columns, &rows, &tokens)).render(area, &mut buffer, &mut state);
+        let header: String = (0..area.width)
+            .map(|x| buffer[(x, 0)].symbol().to_string())
+            .collect();
+        assert!(header.contains("∇"), "{header}");
+        assert!(header.contains("▴"), "{header}");
+        assert_eq!(
+            state.handle_key(&rows, KeyEvent::new(KeyCode::Char('s'), KeyModifiers::NONE)),
+            TableOutcome::SortRequested("name")
+        );
+    }
+
+    #[test]
+    fn numeric_cells_right_align_text_left_align() {
+        let tokens = DesignSystem::junie();
+        let columns = [
+            Column::new("name", Line::from("Name"), ColumnWidth::Fixed(8)),
+            Column::new("n", Line::from("N"), ColumnWidth::Fixed(4)).kind(ColumnKind::Numeric),
+        ];
+        let cells = [[Line::from("ab"), Line::from("9")]];
+        let rows = [TableRow::new(1, &cells[0])];
+        let mut state = TableState::new(None);
+        let area = Rect::new(0, 0, 20, 3);
+        let mut buffer = Buffer::empty(area);
+        (&Table::new(&columns, &rows, &tokens)).render(area, &mut buffer, &mut state);
+        assert_eq!(cell_text(&buffer, 3, 1), "a");
+        // numeric column starts after name(8) + gap(2) from content origin 3
+        let num_x = 3 + 8 + 2;
+        let numeric: String = (num_x..num_x + 4)
+            .map(|x| buffer[(x, 1)].symbol().to_string())
+            .collect();
+        assert_eq!(numeric, "   9");
     }
 }

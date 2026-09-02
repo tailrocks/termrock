@@ -35,7 +35,7 @@ use crate::{
         OverlaySize, OverlaySpec, OverlayStack, RovingOrientation, SemanticNode, SemanticRole,
         SemanticScene, SemanticState, UiIntent,
     },
-    style::{DesignSystem, Role},
+    style::{DesignSystem, Role, VisualState},
     text::{display_cols, take_display_cols},
 };
 
@@ -1213,13 +1213,9 @@ impl<'a, Id> NavigationList<'a, Id> {
                 self.system.style(Role::Text)
             };
 
-            // Route and cursor share the one gutter glyph; the tone says
-            // which is which (Accent while the rail owns keys, muted otherwise).
-            let gutter = if focus || route {
-                self.system.glyphs.selection_gutter()
-            } else {
-                " "
-            };
+            // Col 0 is always the focus bar. Unfocused rows keep the glyph
+            // with fg=bg from the row recipe; never a blank column.
+            let gutter = self.system.glyphs.selection_gutter();
 
             let text = if self.rail {
                 let ch = item
@@ -1261,6 +1257,20 @@ impl<'a, Id> NavigationList<'a, Id> {
                 take_display_cols(&text, usize::from(rect.width)),
                 usize::from(rect.width),
                 style,
+            );
+            let visual = VisualState {
+                focused: focus,
+                selected: route,
+                disabled: !item.enabled,
+                ..VisualState::default()
+            };
+            let bg = style.bg.unwrap_or(self.system.junie_theme().surface);
+            buffer.set_stringn(
+                rect.x,
+                rect.y,
+                self.system.glyphs.selection_gutter(),
+                1,
+                self.system.gutter(visual, bg, false),
             );
             if item.kind.is_focusable() {
                 state.regions.push(HitRegion {
@@ -1320,9 +1330,8 @@ impl<'a, Id: Clone + PartialEq> Sidebar<'a, Id> {
         self
     }
 
-    /// ASCII rail glyph fallback.
-    #[must_use]
     /// Optional title when panel chrome on.
+    #[must_use]
     pub const fn title(mut self, title: &'a str) -> Self {
         self.title = title;
         self
@@ -1843,7 +1852,7 @@ mod tests {
 
     #[test]
     fn paint_rail_and_expanded() {
-        let system = DesignSystem::from_palette(RolePalette::default());
+        let system = DesignSystem::new(RolePalette::default());
         let items = example_settings_nav();
         let mut state = SidebarState::new(Some("profile"));
         state.set_focused(true);

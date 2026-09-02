@@ -25,7 +25,7 @@ fn large_viewport_allocations_scale_with_visible_rows() {
         .map(|_| Line::from("resident line"))
         .collect::<Vec<_>>();
     let theme = RolePalette::default();
-    let system = DesignSystem::from_palette(theme.clone());
+    let system = DesignSystem::new(theme.clone());
     let viewport = Viewport::new(&lines, &system).content_revision(1);
     let area = Rect::new(0, 0, 120, VIEWPORT_HEIGHT);
     let mut buffer = Buffer::empty(area);

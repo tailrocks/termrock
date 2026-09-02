@@ -1,8 +1,10 @@
 # Phosphor Obsidian — visual audit and direction
 
-**Status:** design SoT for the phosphor palette values (audit of HEAD lookbook +
-`Theme::tailrocks_phosphor` + recipes). Interaction underline rules are superseded by
-[`termrock-design-language.md`](./termrock-design-language.md) §5 (binding).  
+> **Superseded (2026-09-02).** Phosphor is not a TermRock runtime system.
+> Canonical tokens and paint: [`DESIGN.md`](../../DESIGN.md) (Junie TUI:
+> canvas `#000000`, accent `#48e054`).
+
+**Status:** historical audit of the deleted phosphor palette. Not design SoT.  
 **Audience:** product, design, implementers  
 **Related:** [`terminal-design-system.md`](./terminal-design-system.md), component anatomy, AGENTS cross-surface consistency  
 **Not:** a CSS mood board. Specs are terminal-cell paint rules.

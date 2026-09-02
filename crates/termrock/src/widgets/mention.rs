@@ -1510,9 +1510,7 @@ impl<'a> InlineMention<'a> {
                 ..ListRowVisualState::default()
             });
             let row = Rect::new(area.x, y, area.width, 1);
-            if recipe.use_fill {
-                buffer.set_style(row, recipe.label);
-            } else if recipe.use_tint {
+            if recipe.use_tint {
                 buffer.set_style(row, recipe.tint);
             }
             buffer.set_stringn(
@@ -1579,6 +1577,7 @@ impl<'a> InlineMention<'a> {
             TagOutcome::Remove(id) => InlineMentionOutcome::Removed { id: id.to_string() },
             TagOutcome::PartChanged(p) => InlineMentionOutcome::PartChanged(p),
             TagOutcome::Activated(id) => InlineMentionOutcome::Activated { id: id.to_string() },
+            TagOutcome::HoverChanged => InlineMentionOutcome::Ignored,
         }
     }
 
@@ -1638,6 +1637,7 @@ impl<'a> InlineMention<'a> {
                     InlineMentionOutcome::Activated { id: id.to_string() }
                 }
             }
+            TagOutcome::HoverChanged => InlineMentionOutcome::Ignored,
         }
     }
 }

@@ -1135,7 +1135,7 @@ mod tests {
 
     #[test]
     fn paint_meta_before_query_and_status() {
-        let system = DesignSystem::from_palette(RolePalette::default());
+        let system = DesignSystem::new(RolePalette::default());
         let mut state = SearchInputState::new().with_query("table");
         state.set_focused(true);
         let chips = [SearchFilterChip::new("ext", "rs")];
@@ -1219,6 +1219,26 @@ mod tests {
         for _ in 0..200 {
             let _ = w.paint(area, &mut buf, &mut state);
         }
+    }
+
+    #[test]
+    fn field_plane_idle_and_hover() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let mut state = SearchInputState::new().with_query("table");
+        state.query_mut().set_editing(false);
+        let area = Rect::new(0, 0, 40, 2);
+        let mut buf = Buffer::empty(area);
+        let parts = SearchInput::new(&system).paint(area, &mut buf, &mut state);
+        let cell = &buf[(parts.field.x, parts.field.y)];
+        assert_eq!(cell.bg, theme.field);
+        state.query_mut().set_hovered(true);
+        let mut hover = Buffer::empty(area);
+        let hover_parts = SearchInput::new(&system).paint(area, &mut hover, &mut state);
+        assert_eq!(
+            hover[(hover_parts.field.x, hover_parts.field.y)].bg,
+            theme.field_hover
+        );
     }
 
     #[test]

@@ -1040,8 +1040,16 @@ impl<'a> ApprovalQueue<'a> {
             };
             let selected = vi == state.cursor;
             let multi = state.multi.iter().any(|m| m == &item.id);
-            let mark = if selected { "›" } else { " " };
-            let boxm = if multi { "[✓]" } else { "[ ]" };
+            let mark = if selected {
+                crate::style::Glyph::SelectionMarker.resolve().text
+            } else {
+                " "
+            };
+            let boxm = if multi {
+                crate::style::Glyph::CheckOn.resolve().text
+            } else {
+                crate::style::Glyph::CheckOff.resolve().text
+            };
             let kg = item.kind.glyph(false);
             let risk = format!("{} {}", item.risk.glyph(), item.risk.label());
             let proto = if item.protocol_ordered { " fifo" } else { "" };

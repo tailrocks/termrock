@@ -1373,6 +1373,15 @@ mod tests {
         }
         st.set_status(CompletionStatus::Ready);
         SlashCommandMenu::new(&cat, &system, area, anchor).paint(area, &mut buf, &mut st);
+        let text: String = buf
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
+        assert!(
+            text.contains("plan") || text.contains("▎"),
+            "slash menu reuses completion list anatomy, got {text}"
+        );
     }
 
     #[test]

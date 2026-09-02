@@ -245,14 +245,14 @@ fn color_to_css(color: Color) -> String {
     match color {
         Color::Black => "#000000".into(),
         Color::Red => "#ff0000".into(),
-        Color::Green => "#00ff41".into(),
-        Color::Yellow => "#ffd85e".into(),
+        Color::Green => "#2b8632".into(),
+        Color::Yellow => "#f59e09".into(),
         Color::Blue => "#0050b4".into(),
         Color::Magenta => "#ff00ff".into(),
         Color::Cyan => "#00ffff".into(),
         Color::Gray | Color::DarkGray => "#808080".into(),
-        Color::LightRed => "#ff5e7a".into(),
-        Color::LightGreen => "#00ff41".into(),
+        Color::LightRed => "#e44545".into(),
+        Color::LightGreen => "#48e054".into(),
         Color::LightYellow => "#ffd85e".into(),
         Color::LightBlue => "#7aa2ff".into(),
         Color::LightMagenta => "#ff7aff".into(),
@@ -413,7 +413,7 @@ mod color_tests {
             strip(&d),
             "disabled paint must not collapse to focused activation in SVG"
         );
-        // Disabled uses dim phosphor gray, not pure white label on green chip alone.
+        // Disabled uses the faint ladder, not white-on-accent alone.
         assert!(
             d.contains("#") && a.contains("#"),
             "both SVGs must serialize explicit fills"

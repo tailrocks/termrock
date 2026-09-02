@@ -1,8 +1,10 @@
 # TermRock terminal-native design system
 
-**Status:** design SoT for the token taxonomy (partially implemented; complete as
-target architecture). Interaction underline rules are superseded by
-[`termrock-design-language.md`](./termrock-design-language.md) §5 (binding).  
+> **Superseded (2026-09-02).** Token taxonomy, spacing, glyphs, and state
+> grammar live in [`DESIGN.md`](../../DESIGN.md). Density profiles, Appearance
+> auto-mapping, and phosphor ANSI-16 runtime authority are deleted.
+
+**Status:** historical. Binding SoT is [`DESIGN.md`](../../DESIGN.md).  
 **Supersedes:** treating `Theme` / `Role` alone as the design system  
 **Builds on:** `Theme`, `Role`, `Density`, `Motion`, `GlyphSet`, `SelectionChrome`,
 `SpacingScale`, `DesignTokens`, `DesignSystem`, `ColorCapability`, `Appearance`  

@@ -1130,7 +1130,7 @@ impl<'a> FormWizard<'a> {
                 break;
             }
             let st = state.statuses.get(i).copied().unwrap_or_default();
-            let line = format!("{} {} {} {}", st.mark(false), step.title, { "—" }, st.id());
+            let line = format!("{} {} {} {}", st.mark(), step.title, { "—" }, st.id());
             buffer.set_stringn(
                 area.x,
                 y,
@@ -1510,7 +1510,7 @@ mod tests {
 
     #[test]
     fn paint_and_mouse_nav() {
-        let system = DesignSystem::from_palette(RolePalette::default());
+        let system = DesignSystem::new(RolePalette::default());
         let mut state = three_steps();
         state.set_focused(true);
         let area = Rect::new(0, 0, 60, 14);

@@ -2505,7 +2505,7 @@ mod tests {
     use super::*;
 
     fn system() -> DesignSystem {
-        DesignSystem::from_palette(RolePalette::default())
+        DesignSystem::new(RolePalette::default())
     }
 
     #[test]

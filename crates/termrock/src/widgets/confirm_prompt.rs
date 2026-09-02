@@ -181,15 +181,26 @@ impl<'a> ConfirmPrompt<'a> {
         }
 
         // Cancel first: the safe way out is the one you reach without aiming.
-        let cancel = Button::new(self.cancel_label, system).variant(ButtonVariant::Secondary);
-        let confirm = Button::new(self.confirm_label, system).variant(if self.destructive {
-            ButtonVariant::Destructive
-        } else {
-            ButtonVariant::Primary
-        });
+        let ground = system.junie_theme().surface;
+        let cancel = Button::new(self.cancel_label, system)
+            .variant(if self.destructive {
+                ButtonVariant::Secondary
+            } else {
+                ButtonVariant::Quiet
+            })
+            .colorless(self.colorless)
+            .container(ground);
+        let confirm = Button::new(self.confirm_label, system)
+            .variant(if self.destructive {
+                ButtonVariant::Destructive
+            } else {
+                ButtonVariant::Primary
+            })
+            .colorless(self.colorless)
+            .container(ground);
         let cancel_w = cancel.preferred_width();
         let confirm_w = confirm.preferred_width();
-        let gap = 2u16;
+        let gap = 1u16;
         if bar_y < area.y || cancel_w + gap + confirm_w > area.width {
             return hits;
         }
@@ -197,17 +208,19 @@ impl<'a> ConfirmPrompt<'a> {
         // A button wears focus chrome when it accepts input, so exactly one
         // chip does — the prompt is stateless and the host owns activation.
         let mut cancel_state = ButtonState::new();
-        cancel_state
-            .activation
-            .set_accepts_input(matches!(self.focus, ConfirmFocus::Cancel));
+        let cancel_focus = matches!(self.focus, ConfirmFocus::Cancel);
+        cancel_state.activation.set_accepts_input(cancel_focus);
+        cancel_state.focused = cancel_focus;
         let mut confirm_state = ButtonState::new();
-        confirm_state
-            .activation
-            .set_accepts_input(matches!(self.focus, ConfirmFocus::Confirm));
+        let confirm_focus = matches!(self.focus, ConfirmFocus::Confirm);
+        confirm_state.activation.set_accepts_input(confirm_focus);
+        confirm_state.focused = confirm_focus;
 
-        let cancel_rect = Rect::new(area.x, bar_y, cancel_w, 1);
+        let total = cancel_w.saturating_add(gap).saturating_add(confirm_w);
+        let start = area.x.saturating_add(area.width.saturating_sub(total));
+        let cancel_rect = Rect::new(start, bar_y, cancel_w, 1);
         let confirm_rect = Rect::new(
-            area.x.saturating_add(cancel_w).saturating_add(gap),
+            start.saturating_add(cancel_w).saturating_add(gap),
             bar_y,
             confirm_w,
             1,

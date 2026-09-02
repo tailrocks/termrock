@@ -24,7 +24,7 @@ use std::collections::VecDeque;
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
-    style::Modifier,
+    style::{Modifier, Style},
     widgets::StatefulWidget,
 };
 
@@ -1010,6 +1010,7 @@ impl<'a> Combobox<'a> {
             .placeholder(self.placeholder)
             .validation(validation);
         let _ = input.paint(field, buffer, &mut state.draft);
+        apply_field_underline(buffer, field, &recipe);
 
         // The chevron says whether the menu is open; it goes in the cell the
         // status did not take.
@@ -1141,6 +1142,17 @@ impl<'a> Combobox<'a> {
 
 const _: fn(u16, u16) -> Position = Position::new;
 const _: &str = COMPLETION_OVERLAY_ID;
+
+fn apply_field_underline(buffer: &mut Buffer, field: Rect, recipe: &crate::style::InputRecipe) {
+    if field.is_empty() {
+        return;
+    }
+    let mut underline = Style::new().add_modifier(recipe.border.add_modifier);
+    if let Some(color) = recipe.border.underline_color {
+        underline = underline.underline_color(color);
+    }
+    buffer.set_style(field, underline);
+}
 
 #[cfg(test)]
 mod tests {
@@ -1304,7 +1316,7 @@ mod tests {
 
     #[test]
     fn paint_field_and_menu() {
-        let system = DesignSystem::from_palette(RolePalette::default());
+        let system = DesignSystem::new(RolePalette::default());
         let mut state: ComboboxState<&'static str> = ComboboxState::new().with_draft("Ru");
         state.set_focused(true);
         let c = cands();

@@ -280,7 +280,7 @@ impl StatefulWidget for &ThemePicker<'_> {
                 checked: false,
                 ..ListRowVisualState::default()
             });
-            let marker = recipe.gutter.map_or(" ", |(glyph, _)| glyph);
+            let marker = recipe.gutter.0;
             let tc = if preset.requires_truecolor {
                 " · truecolor"
             } else {
@@ -289,9 +289,7 @@ impl StatefulWidget for &ThemePicker<'_> {
             let line = format!("{marker} {}{tc}", preset.label);
             let row = Rect::new(inner.x, y, inner.width, 1);
             state.row_regions.push((index, row));
-            if recipe.use_fill {
-                buffer.set_style(row, recipe.label);
-            } else if recipe.use_tint {
+            if recipe.use_tint {
                 buffer.set_style(row, recipe.tint);
             }
             buffer.set_stringn(

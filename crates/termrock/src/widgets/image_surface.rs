@@ -212,7 +212,7 @@ mod tests {
     #[test]
     fn paints_label_and_lifecycle_flags() {
         let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
+        let system = crate::style::DesignSystem::new(theme.clone());
         let mut meta = ImageMeta::new("shot.png", ImageProtocol::Kitty);
         meta.pending = true;
         meta.generation = 3;

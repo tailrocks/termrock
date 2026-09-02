@@ -66,7 +66,7 @@ pub struct App {
 }
 
 impl App {
-    /// A booted app on the phosphor preset.
+    /// A booted app on the canonical Junie design system.
     #[must_use]
     pub fn new() -> Self {
         let mut session = Session::new("showcase");
@@ -76,7 +76,7 @@ impl App {
             "TermRock showcase — every surface here is a public widget.",
         ));
         Self {
-            system: DesignSystem::from_palette(RolePalette::junie()),
+            system: DesignSystem::new(RolePalette::junie()),
             workbench: AgentWorkbenchState::new(),
             session,
             demo: DemoRuntime::new(),

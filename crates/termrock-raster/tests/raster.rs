@@ -34,7 +34,7 @@ fn pixel(pixmap: &tiny_skia::Pixmap, x: u32, y: u32) -> [u8; 4] {
 }
 
 #[test]
-fn panel_story_png_has_exact_size_and_phosphor_border() {
+fn panel_story_png_has_exact_size_and_junie_accent() {
     let story = story_by_id("panel/focused").expect("panel/focused story");
     let palette = RolePalette::default();
     let backend = TestBackend::new(story.width, story.height);
@@ -47,7 +47,7 @@ fn panel_story_png_has_exact_size_and_phosphor_border() {
     let mut buffer = terminal.backend().buffer().clone();
     buffer[(1, 1)]
         .set_symbol("█")
-        .set_fg(Color::Rgb(0, 255, 65));
+        .set_fg(Color::Rgb(0x48, 0xe0, 0x54));
     let png = render_png(&buffer, &palette).expect("render PNG");
     let pixmap = tiny_skia::Pixmap::decode_png(&png).expect("decode PNG");
     assert_eq!(pixmap.width(), u32::from(story.width) * 9);
@@ -56,7 +56,7 @@ fn panel_story_png_has_exact_size_and_phosphor_border() {
         pixmap
             .data()
             .chunks_exact(4)
-            .any(|rgba| rgba == [0, 255, 65, 255])
+            .any(|rgba| rgba == [0x48, 0xe0, 0x54, 255])
     );
 }
 

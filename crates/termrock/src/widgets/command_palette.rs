@@ -124,17 +124,35 @@ pub fn command_palette_presentation_for_bounds(bounds: Rect) -> CommandPalettePr
     }
 }
 
-/// Centered command-palette rectangle inside `bounds` (policy-aware; may promote).
+/// Centered command-palette rectangle inside `bounds` (upper third).
 #[must_use]
 pub fn place_command_palette(bounds: Rect, preferred: CommandPaletteSize) -> Rect {
     if bounds.is_empty() || preferred.width == 0 || preferred.height == 0 {
         return Rect::default();
     }
-    place_overlay(
-        bounds,
-        None,
-        OverlaySize::from(preferred),
-        OverlayPolicy::for_kind(OverlayKind::CommandPalette),
+    if bounds.width <= COMMAND_PALETTE_FULLSCREEN_MAX_WIDTH
+        || bounds.height <= COMMAND_PALETTE_FULLSCREEN_MAX_HEIGHT
+    {
+        return place_overlay(
+            bounds,
+            None,
+            OverlaySize::from(preferred),
+            OverlayPolicy::for_kind(OverlayKind::CommandPalette),
+        );
+    }
+    let width = preferred.width.min(bounds.width.saturating_sub(4)).max(24);
+    let height = preferred.height.min(bounds.height.saturating_sub(2)).max(6);
+    let x = bounds
+        .x
+        .saturating_add(bounds.width.saturating_sub(width) / 2);
+    let y = bounds
+        .y
+        .saturating_add((bounds.height.saturating_sub(height) / 3).max(1));
+    Rect::new(
+        x,
+        y.min(bounds.bottom().saturating_sub(height)),
+        width,
+        height,
     )
 }
 
@@ -1667,22 +1685,24 @@ impl<'a, Id> CommandPalette<'a, Id> {
                 checked: false,
                 ..ListRowVisualState::default()
             });
-            if recipe.use_fill {
-                buffer.set_style(row_rect, recipe.label);
-            } else if recipe.use_tint {
+            if recipe.use_tint {
                 buffer.set_style(row_rect, recipe.tint);
             }
 
-            // Cursor gutter.
-            let gutter = if active { "› " } else { "  " };
-            let mut x = area.x;
-            let gstyle = if active {
-                recipe.label
-            } else {
-                self.system.style(Role::Text)
-            };
-            buffer.set_stringn(x, y, gutter, 2, gstyle);
-            x = x.saturating_add(2);
+            let chrome = super::row_chrome::RowChrome::resolve(
+                self.system,
+                ListRowVisualState {
+                    selected: active,
+                    focused: active,
+                    hovered: state.hovered == Some(i),
+                    enabled: entry.enabled,
+                    loading: false,
+                    checked: false,
+                    ..ListRowVisualState::default()
+                },
+            );
+            chrome.paint(buffer, row_rect);
+            let mut x = area.x.saturating_add(3);
 
             // Leading badges: recent / contextual / disabled.
             let mut leading = String::new();
@@ -1852,7 +1872,7 @@ pub fn example_command_catalog() -> Vec<CommandEntry<&'static str>> {
             .group("Appearance")
             .shortcut("C-t")
             .command_key("view.theme")
-            .preview("Cycle phosphor / high-contrast")
+            .preview("Cycle theme / high-contrast")
             .keywords(["appearance", "color"]),
         CommandEntry::new("status", "Toggle status bar")
             .group("Appearance")
@@ -2184,6 +2204,18 @@ mod tests {
         assert!(
             text.contains("Toggle") || text.contains("theme") || text.contains("Theme"),
             "{text}"
+        );
+        assert!(!s.hits.is_empty(), "result rows must paint hit geometry");
+        let (idx, row) = s.hits[0];
+        let _ = idx;
+        let gutter = buf[(row.x, row.y)].symbol();
+        assert_ne!(
+            gutter, "›",
+            "› is membership at col1, not a gutter replacement"
+        );
+        assert!(
+            gutter == system.glyphs.selection_gutter(),
+            "col0 is the focus bar or reserved slot, got {gutter:?}"
         );
     }
 

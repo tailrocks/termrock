@@ -80,24 +80,17 @@ impl StepStatus {
         }
     }
 
-    /// Non-color mark (always paired with style roles).
+    /// Non-color mark (always paired with style roles). One junie vocabulary.
     #[must_use]
-    pub const fn mark(self, ascii: bool) -> &'static str {
-        match (self, ascii) {
-            (Self::Complete, true) => "[x]",
-            (Self::Complete, false) => "[✓]",
-            (Self::Current, true) => "[>]",
-            (Self::Current, false) => "[›]",
-            (Self::Error, true) => "[!]",
-            (Self::Error, false) => "[!]",
-            (Self::Disabled, true) => "[#]",
-            (Self::Disabled, false) => "[⊘]",
-            (Self::Optional, true) => "[?]",
-            (Self::Optional, false) => "[◦]",
-            (Self::Skipped, true) => "[-]",
-            (Self::Skipped, false) => "[–]",
-            (Self::Future, true) => "[ ]",
-            (Self::Future, false) => "[ ]",
+    pub const fn mark(self) -> &'static str {
+        match self {
+            Self::Complete => crate::style::Glyph::CheckOn.resolve().text,
+            Self::Current => "[›]",
+            Self::Error => "[!]",
+            Self::Disabled => "[⊘]",
+            Self::Optional => "[◦]",
+            Self::Skipped => "[–]",
+            Self::Future => crate::style::Glyph::CheckOff.resolve().text,
         }
     }
 
@@ -875,9 +868,7 @@ impl<'a> Stepper<'a> {
             checked: matches!(status, StepStatus::Complete),
             ..ListRowVisualState::default()
         });
-        if recipe.use_fill {
-            buffer.set_style(rect, recipe.label);
-        } else if recipe.use_tint {
+        if recipe.use_tint {
             buffer.set_style(rect, recipe.tint);
         }
         self.status_style(status, recipe.label)
@@ -895,7 +886,7 @@ impl<'a> Stepper<'a> {
                 break;
             }
             let status = state.statuses.get(i).copied().unwrap_or_default();
-            let mark = status.mark(false);
+            let mark = status.mark();
             let title = take_display_cols(&step.title, max_title);
             let opt = if step.optional && !compact { "◦" } else { "" };
             let sep = if i + 1 < self.items.len() {
@@ -939,7 +930,7 @@ impl<'a> Stepper<'a> {
                 break;
             }
             let status = state.statuses.get(i).copied().unwrap_or_default();
-            let mark = status.mark(false);
+            let mark = status.mark();
             let title = take_display_cols(&step.title, usize::from(area.width.saturating_sub(6)));
             let line = format!("{mark} {title}");
             let rect = Rect::new(area.x, y, area.width, 1);
@@ -997,7 +988,7 @@ impl<'a> Stepper<'a> {
             .get(state.current)
             .copied()
             .unwrap_or(StepStatus::Current);
-        let mark = status.mark(false);
+        let mark = status.mark();
         let title = self
             .items
             .get(state.current)
@@ -1045,7 +1036,7 @@ impl<'a> Stepper<'a> {
             .get(state.current)
             .copied()
             .unwrap_or(StepStatus::Current);
-        let mark = status.mark(false);
+        let mark = status.mark();
         let chev = if state.menu_open { "▾" } else { "▸" };
         let line = format!("{mark} {cur}/{n} {title} {chev}");
         let recipe = self.system.button_recipe(
@@ -1079,7 +1070,7 @@ impl<'a> Stepper<'a> {
                     break;
                 }
                 let st = state.statuses.get(i).copied().unwrap_or_default();
-                let m = st.mark(false);
+                let m = st.mark();
                 let row = format!(
                     "{} {}",
                     m,
@@ -1205,10 +1196,16 @@ mod tests {
 
     #[test]
     fn marks_non_color() {
-        assert_eq!(StepStatus::Complete.mark(true), "[x]");
-        assert_eq!(StepStatus::Error.mark(false), "[!]");
-        assert_eq!(StepStatus::Disabled.mark(true), "[#]");
-        assert_eq!(StepStatus::Future.mark(true), "[ ]");
+        assert_eq!(
+            StepStatus::Complete.mark(),
+            crate::style::Glyph::CheckOn.resolve().text
+        );
+        assert_eq!(StepStatus::Error.mark(), "[!]");
+        assert_eq!(StepStatus::Disabled.mark(), "[⊘]");
+        assert_eq!(
+            StepStatus::Future.mark(),
+            crate::style::Glyph::CheckOff.resolve().text
+        );
     }
 
     #[test]

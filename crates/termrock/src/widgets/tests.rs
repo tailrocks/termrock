@@ -33,8 +33,8 @@ fn areas() -> [Rect; 5] {
 #[test]
 fn leaf_widgets_render_at_tiny_and_off_origin_areas() {
     let theme = RolePalette::default();
-    let system = crate::style::DesignSystem::from_palette(theme.clone());
-    let panel_tokens = DesignSystem::from_palette(theme.clone());
+    let system = crate::style::DesignSystem::new(theme.clone());
+    let panel_tokens = DesignSystem::new(theme.clone());
     let panel = Panel::new(&panel_tokens)
         .title("Title")
         .emphasis(PanelChrome::Focused);
@@ -59,8 +59,8 @@ fn leaf_widgets_render_at_tiny_and_off_origin_areas() {
 #[test]
 fn focused_quiet_panel_remains_borderless() {
     let theme = RolePalette::default();
-    let system = crate::style::DesignSystem::from_palette(theme.clone());
-    let panel_tokens = DesignSystem::from_palette(theme.clone());
+    let system = crate::style::DesignSystem::new(theme.clone());
+    let panel_tokens = DesignSystem::new(theme.clone());
     let area = Rect::new(0, 0, 10, 3);
     let mut buffer = Buffer::empty(area);
     let panel = Panel::new(&panel_tokens).emphasis(PanelChrome::Focused);
@@ -71,8 +71,8 @@ fn focused_quiet_panel_remains_borderless() {
 #[test]
 fn inactive_quiet_panel_remains_borderless() {
     let theme = RolePalette::default();
-    let system = crate::style::DesignSystem::from_palette(theme.clone());
-    let panel_tokens = DesignSystem::from_palette(theme.clone());
+    let system = crate::style::DesignSystem::new(theme.clone());
+    let panel_tokens = DesignSystem::new(theme.clone());
     let area = Rect::new(0, 0, 10, 3);
     let mut buffer = Buffer::empty(area);
     Panel::new(&panel_tokens).render(area, &mut buffer);
@@ -228,7 +228,7 @@ fn text_input_edits_extended_graphemes_atomically() {
 #[test]
 fn action_and_status_regions_match_painted_geometry() {
     let theme = RolePalette::default();
-    let system = crate::style::DesignSystem::from_palette(theme.clone());
+    let system = crate::style::DesignSystem::new(theme.clone());
     let actions = [
         Action {
             id: "save",
@@ -274,7 +274,7 @@ fn viewport_clamps_scroll_and_paints_a_full_cell_thumb() {
         Line::from("three"),
     ];
     let theme = RolePalette::default();
-    let system = crate::style::DesignSystem::from_palette(theme.clone());
+    let system = crate::style::DesignSystem::new(theme.clone());
     let viewport = Viewport::new(&lines, &system).title(" Log ");
     let area = Rect::new(0, 0, 12, 4);
     let mut buffer = Buffer::empty(area);
@@ -288,7 +288,7 @@ fn viewport_clamps_scroll_and_paints_a_full_cell_thumb() {
 
     assert_eq!(state.scroll_y, 1);
     assert_eq!(buffer[(1, 1)].symbol(), "o");
-    assert_eq!(buffer[(11, 1)].symbol(), "·");
+    assert_eq!(buffer[(11, 1)].symbol(), "│");
     assert_eq!(buffer[(11, 2)].symbol(), "┃");
     assert_eq!(buffer[(0, 0)].fg, theme.style(Role::Border).fg.unwrap());
 }
@@ -297,7 +297,7 @@ fn viewport_clamps_scroll_and_paints_a_full_cell_thumb() {
 fn viewport_emphasis_focused_uses_border_focused_role() {
     let lines = [Line::from("row")];
     let theme = RolePalette::default();
-    let system = crate::style::DesignSystem::from_palette(theme.clone());
+    let system = crate::style::DesignSystem::new(theme.clone());
     let viewport = Viewport::new(&lines, &system)
         .title("Active")
         .emphasis(PanelChrome::Focused);
@@ -323,7 +323,7 @@ fn theme_override_reaches_active_tab_cells() {
     use ratatui_core::style::Color;
 
     let theme = RolePalette::default().with_role(Role::TabActive, Style::new().bg(Color::Blue));
-    let system = crate::style::DesignSystem::from_palette(theme.clone());
+    let system = crate::style::DesignSystem::new(theme.clone());
     let tabs = [Tab {
         id: "active",
         label: "Active",
@@ -340,14 +340,18 @@ fn theme_override_reaches_active_tab_cells() {
 
     (&widget).render(area, &mut buffer, &mut state);
 
-    assert_eq!(buffer[(0, 0)].bg, Color::Blue);
+    assert_eq!(
+        buffer[(1, 1)].fg,
+        system.junie_theme().accent,
+        "active document tab states itself with the accent rule, not a fill"
+    );
 }
 
 #[test]
 fn owned_panel_render_matches_borrowed_render() {
     let theme = RolePalette::default();
-    let system = crate::style::DesignSystem::from_palette(theme.clone());
-    let panel_tokens = DesignSystem::from_palette(theme.clone());
+    let system = crate::style::DesignSystem::new(theme.clone());
+    let panel_tokens = DesignSystem::new(theme.clone());
     let area = Rect::new(0, 0, 12, 3);
     let mut owned = Buffer::empty(area);
     let mut borrowed = Buffer::empty(area);

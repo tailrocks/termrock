@@ -1221,9 +1221,7 @@ impl<'a> ModelSelector<'a> {
                         ..ListRowVisualState::default()
                     });
                     let rect = Rect::new(area.x, y, area.width, 1);
-                    if recipe.use_fill {
-                        buffer.set_style(rect, recipe.label);
-                    } else if recipe.use_tint {
+                    if recipe.use_tint {
                         buffer.set_style(rect, recipe.tint);
                     }
                     let style = if o.warning.is_some() && o.availability.is_selectable() {
@@ -1716,9 +1714,7 @@ impl<'a> AgentModeSelector<'a> {
                         ..ListRowVisualState::default()
                     });
                     let rect = Rect::new(area.x, y, area.width, 1);
-                    if recipe.use_fill {
-                        buffer.set_style(rect, recipe.label);
-                    } else if recipe.use_tint {
+                    if recipe.use_tint {
                         buffer.set_style(rect, recipe.tint);
                     }
                     let style = if m.needs_warning_role() {

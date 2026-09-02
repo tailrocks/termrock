@@ -2081,7 +2081,7 @@ pub fn stories() -> Vec<Story> {
             "list/selection",
             "List",
             StoryIdentity::PublicUi(PublicUiId::List),
-            "Stable-ID rows with checks and aligned metadata.",
+            "Single-select rows: ▎ gutter, › chosen marker, aligned metadata.",
             42,
             6,
             list_interactor,
@@ -11488,7 +11488,7 @@ fn grid_settings_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
     use termrock::layout::{GridItem, layout_grid, settings_grid_template};
     let spec = settings_grid_template(area.width, 14, 2);
     let pairs = [
-        ("Theme", "phosphor"),
+        ("Theme", "junie"),
         ("Density", "compact"),
         ("Keymap", "default"),
     ];
@@ -12247,7 +12247,7 @@ fn accordion_faq_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem)
     let items = [
         AccordionItem::new("q1", "How do I pin a version?").content_height(3),
         AccordionItem::new("q2", "Where is focus painted?").content_height(3),
-        AccordionItem::new("q3", "Can I theme phosphor away?").content_height(2),
+        AccordionItem::new("q3", "Can I theme Junie away?").content_height(2),
     ];
     let mut state = AccordionState::new().initially_open(["q1"]);
     state.set_surface_focused(true);
@@ -12838,9 +12838,7 @@ fn tree_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn tree_loading_error(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system
-        .clone()
-        .selection(termrock::style::SelectionChrome::Gutter);
+    let tokens = system.clone();
     let nodes = [
         TreeNode::new("root", Line::from("Workspace"), 0)
             .branch()
@@ -12859,9 +12857,7 @@ fn tree_loading_error(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) 
 }
 
 fn tree_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system
-        .clone()
-        .selection(termrock::style::SelectionChrome::Gutter);
+    let tokens = system.clone();
     let nodes = tree_nodes();
     let mut state = TreeState::new(Some("workspace"));
     state.enable_multi_select();
@@ -12894,9 +12890,7 @@ fn tree_composed(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn tree_tiny(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system
-        .clone()
-        .selection(termrock::style::SelectionChrome::Gutter);
+    let tokens = system.clone();
     let nodes = [
         TreeNode::new("r", Line::from("Root"), 0)
             .branch()
@@ -12910,9 +12904,7 @@ fn tree_tiny(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn tree_deep(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system
-        .clone()
-        .selection(termrock::style::SelectionChrome::Gutter);
+    let tokens = system.clone();
     let nodes = [
         TreeNode::new("d0", Line::from("depth-0"), 0)
             .branch()
@@ -12934,9 +12926,7 @@ fn tree_deep(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn tree_lazy_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system
-        .clone()
-        .selection(termrock::style::SelectionChrome::Gutter);
+    let tokens = system.clone();
     let nodes = [
         TreeNode::new("root", Line::from("project"), 0)
             .branch()
@@ -13652,9 +13642,7 @@ fn list(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn list_multi(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system
-        .clone()
-        .selection(termrock::style::SelectionChrome::Gutter);
+    let tokens = system.clone();
     let rows = list_rows();
     let mut state = ListState::new(Some("beta"));
     state.enable_multi_select();
@@ -13667,7 +13655,7 @@ fn list_empty(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     let tokens = system.clone();
     let rows: [ListRow<'_, &str>; 0] = [];
     let mut state = ListState::<&str>::default();
-    let list = List::new(&rows, &tokens).empty_message(Line::from("No matching items"));
+    let list = List::new(&rows, &tokens).empty_message(Line::from("Nothing here yet"));
     frame.render_stateful_widget(&list, area, &mut state);
 }
 
@@ -13696,9 +13684,7 @@ fn list_disabled(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
 }
 
 fn list_ascii(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
-    let tokens = system
-        .clone()
-        .selection(termrock::style::SelectionChrome::Gutter);
+    let tokens = system.clone();
     let rows = list_rows();
     let mut state = ListState::new(Some("beta"));
     state.enable_multi_select();
@@ -14740,7 +14726,7 @@ fn terminal_cell_grid_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
         TerminalCell::new(" ", Style::new()),
         TerminalCell::new("✓", green),
         TerminalCell::new(" ", Style::new()),
-        TerminalCell::new("界", Style::new().fg(Color::Yellow)).diff(
+        TerminalCell::new("🚀", Style::new().fg(Color::Yellow)).diff(
             ratatui::buffer::CellDiffOption::ForcedWidth(NonZeroU16::new(2).unwrap()),
         ),
         TerminalCell::new(" ", Style::new()),
@@ -16638,7 +16624,6 @@ fn scroll_area_follow_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
 
 fn selection_model_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
     use termrock::interaction::{SelectionModel, SelectionVisual};
-    use termrock::style::SelectionChrome;
     use termrock::widgets::{List, ListRow, ListState, Panel, PanelChrome, RowRole};
 
     let rows = [
@@ -16691,7 +16676,7 @@ fn selection_model_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSyste
         let _ = sel.toggle(&"a");
         let _ = sel.toggle(&"c");
     }
-    let visual = SelectionVisual::from_chrome(SelectionChrome::Gutter);
+    let visual = SelectionVisual::Gutter;
     frame.render_widget(
         Panel::new(system)
             .title(if visual.requires_glyph() {
@@ -16996,7 +16981,6 @@ fn design_inspector(frame: &mut Frame<'_>, area: Rect, system: &DesignSystem) {
         capability: ColorCapability::Truecolor,
         layers: &layers,
         recipes: &recipes,
-        selection_chrome: "gutter",
         semantics: &semantics,
         focus_graph: &[],
     };
@@ -17054,7 +17038,6 @@ fn semantic_scene_tree_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
         capability: ColorCapability::Truecolor,
         layers: &layers,
         recipes: &recipes,
-        selection_chrome: "gutter",
         semantics: &semantics,
         focus_graph: &[],
     };
@@ -17233,7 +17216,6 @@ fn capability_color_ladder_story(frame: &mut Frame<'_>, area: Rect, system: &Des
             capability: *cap,
             layers: &layers,
             recipes: &recipes,
-            selection_chrome: "gutter",
             semantics: &[],
             focus_graph: &[],
         };
@@ -17251,7 +17233,6 @@ fn capability_no_color_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
         capability: ColorCapability::Monochrome,
         layers: &layers,
         recipes: &recipes,
-        selection_chrome: "gutter",
         semantics: &[],
         focus_graph: &[],
     };
@@ -17279,7 +17260,6 @@ fn capability_headless_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
         capability: ColorCapability::Monochrome,
         layers: &layers,
         recipes: &recipes,
-        selection_chrome: "none",
         semantics: &[],
         focus_graph: &[],
     };
@@ -17813,16 +17793,16 @@ fn dialog_destructive_story(frame: &mut Frame<'_>, area: Rect, system: &DesignSy
     let tokens = system.clone();
     let actions = [
         Action {
-            id: "delete",
-            label: "Delete",
-            enabled: true,
-            variant: ActionVariant::Destructive,
-        },
-        Action {
             id: "cancel",
             label: "Cancel",
             enabled: true,
             variant: ActionVariant::Secondary,
+        },
+        Action {
+            id: "delete",
+            label: "Delete",
+            enabled: true,
+            variant: ActionVariant::Destructive,
         },
     ];
     let mut state = ChoiceDialogState::new(Some("cancel"));

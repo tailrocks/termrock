@@ -24,7 +24,7 @@
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
-    style::Style,
+    style::{Modifier, Style},
     widgets::StatefulWidget,
 };
 
@@ -37,7 +37,7 @@ use crate::{
         OverlaySpec, OverlayStack, PageMove, SemanticNode, SemanticRole, SemanticScene,
         SemanticState, UiIntent, place_overlay,
     },
-    style::{DesignSystem, Role},
+    style::{DesignSystem, ListRowVisualState, Role, VisualState},
     text::{display_cols, take_display_cols},
 };
 
@@ -1048,43 +1048,39 @@ impl<'a, Id> CompletionMenu<'a, Id> {
             0
         };
 
+        // junie: 24–48 wide, up to 8 item rows; chrome is rows+2.
+        let max_items = preferred.height.max(1).min(8);
         if self.candidates.is_empty()
             || matches!(
                 state.status,
                 CompletionStatus::Loading | CompletionStatus::Empty
             )
         {
-            preferred.height = preferred.height.min(3).max(1);
+            preferred.height = 3;
         } else {
-            preferred.height = preferred.height.min(
-                u16::try_from(self.candidates.len())
-                    .unwrap_or(u16::MAX)
-                    .max(1),
-            );
+            let items = u16::try_from(self.candidates.len())
+                .unwrap_or(u16::MAX)
+                .max(1)
+                .min(max_items);
+            preferred.height = items.saturating_add(2);
         }
 
         let content_width = self
             .candidates
             .iter()
             .map(|c| {
-                let kind = c.kind.map(display_cols).unwrap_or(0);
-                let glyph = c.kind_glyph.map(display_cols).unwrap_or(0);
+                let glyph = c.kind_glyph.map(display_cols).unwrap_or(1);
                 let detail = c.detail.map(display_cols).unwrap_or(0);
                 display_cols(c.label)
-                    .saturating_add(if kind == 0 { 0 } else { kind + 2 })
-                    .saturating_add(if glyph == 0 { 0 } else { glyph + 1 })
+                    .saturating_add(glyph)
+                    .saturating_add(8)
                     .saturating_add(if detail == 0 { 0 } else { detail + 2 })
             })
             .max()
-            .unwrap_or(display_cols(self.empty_message))
-            .saturating_add(2);
-        preferred.width = preferred
-            .width
-            .max(
-                u16::try_from(content_width)
-                    .unwrap_or(u16::MAX)
-                    .min(preferred.width.max(12)),
-            )
+            .unwrap_or(display_cols(self.empty_message).saturating_add(8));
+        preferred.width = u16::try_from(content_width)
+            .unwrap_or(48)
+            .clamp(24, 48)
             .saturating_add(docs_w);
 
         let menu = if let Some(forced) = self.force_area {
@@ -1123,17 +1119,18 @@ impl<'a, Id> CompletionMenu<'a, Id> {
         } else {
             0
         };
+        // Inner sits inside the elevated rounded frame (rows + 2 chrome).
         let list_body = Rect {
-            x: list_area.x,
-            y: list_area.y,
-            width: list_area.width,
-            height: list_area.height.saturating_sub(status_h),
+            x: list_area.x.saturating_add(1),
+            y: list_area.y.saturating_add(1),
+            width: list_area.width.saturating_sub(2),
+            height: list_area.height.saturating_sub(2).saturating_sub(status_h),
         };
         state.slots.status = if status_h > 0 {
             Rect::new(
-                list_area.x,
-                list_area.bottom().saturating_sub(1),
-                list_area.width,
+                list_body.x,
+                list_area.bottom().saturating_sub(2),
+                list_body.width,
                 1,
             )
         } else {
@@ -1236,97 +1233,97 @@ impl<'a, Id> CompletionMenu<'a, Id> {
             }
 
             let row_rect = Rect::new(list_body.x, y, list_body.width, 1);
-            state.hits.push((candidate.id.clone(), row_rect));
+            // Hit region includes the frame column so a click on `▎` commits.
+            let hit = Rect::new(list_area.x, y, list_area.width.max(1), 1);
+            state.hits.push((candidate.id.clone(), hit));
 
             let selected = state.selected.as_ref() == Some(&candidate.id);
             let hovered = state.hovered.as_ref() == Some(&candidate.id);
-            let style = row_style(
-                self.system,
-                candidate.enabled,
+            let visual = ListRowVisualState {
                 selected,
+                focused: selected,
                 hovered,
-                self.colorless,
+                enabled: candidate.enabled,
+                ..ListRowVisualState::default()
+            };
+            let chrome = super::row_chrome::RowChrome::resolve(self.system, visual)
+                .colorless(self.colorless);
+            let theme = self.system.junie_theme();
+            let row_bg = theme.surface_elevated;
+            let mut style = self.system.row(
+                VisualState {
+                    focused: selected,
+                    hovered,
+                    selected,
+                    disabled: !candidate.enabled,
+                    ..VisualState::default()
+                },
+                row_bg,
+            );
+            style = chrome.label_style(style);
+            buffer.set_style(row_rect, style);
+            chrome.paint_gutter(buffer, row_rect);
+
+            // List anatomy: `▎ kind label … detail`
+            let glyph = candidate.kind_glyph.unwrap_or(" ");
+            let g = take_display_cols(glyph, 1);
+            buffer.set_stringn(
+                row_rect.x.saturating_add(1),
+                y,
+                &g,
+                1,
+                style
+                    .fg(if selected {
+                        theme.text_primary
+                    } else {
+                        theme.text_muted
+                    })
+                    .remove_modifier(Modifier::BOLD),
             );
 
-            let mut x = list_body.x.saturating_add(1);
-            let right = list_body.right().saturating_sub(1);
-
-            // Selection gutter
-            if selected {
-                let mark = self.system.glyphs.selection_gutter();
-                if let Some(cell) = buffer.cell_mut((list_body.x, y)) {
-                    cell.set_symbol(mark);
-                    cell.set_style(style);
-                }
-            }
-
-            // Kind glyph
-            if let Some(glyph) = candidate.kind_glyph {
-                let g = take_display_cols(glyph, 2);
-                let gw = display_cols(&g) as u16;
-                buffer.set_stringn(x, y, &g, 2, self.system.style(Role::TextMuted));
-                x = x.saturating_add(gw.saturating_add(1));
-            }
-
-            // Kind + detail budgets from right
-            let kind_cols = candidate.kind.map(display_cols).unwrap_or(0);
             let detail_cols = candidate.detail.map(display_cols).unwrap_or(0);
-            let right_budget = kind_cols
-                .saturating_add(if kind_cols == 0 { 0 } else { 1 })
-                .saturating_add(detail_cols)
-                .saturating_add(if detail_cols == 0 { 0 } else { 1 });
-            let label_budget = usize::from(right.saturating_sub(x)).saturating_sub(right_budget);
-            let label_area = Rect::new(x, y, u16::try_from(label_budget).unwrap_or(0), 1);
-
-            if let Some(ranges) = candidate.match_ranges {
-                use crate::widgets::{HighlightVisual, HighlightedText, MatchTruncate};
-                let visual = if selected {
-                    HighlightVisual::Selected
-                } else if !candidate.enabled {
-                    HighlightVisual::Inactive
+            let kind_cols = candidate.kind.map(display_cols).unwrap_or(0);
+            let right = row_rect.right().saturating_sub(1);
+            let label_x = row_rect.x.saturating_add(3);
+            let show_detail = candidate.detail.is_some()
+                && usize::from(right.saturating_sub(label_x))
+                    > display_cols(candidate.label) + detail_cols + 2;
+            let right_reserve = if show_detail { detail_cols + 2 } else { 0 }
+                + if kind_cols == 0 || candidate.kind_glyph.is_some() {
+                    0
                 } else {
-                    HighlightVisual::Normal
+                    kind_cols + 1
                 };
-                let _ = HighlightedText::new(candidate.label, ranges, self.system)
-                    .visual(visual)
-                    .truncate(MatchTruncate::KeepFirstMatch)
-                    .paint(label_area, buffer);
-            } else {
-                let label = take_display_cols(candidate.label, label_budget);
-                buffer.set_stringn(x, y, label, label_budget, style);
-            }
+            let label_budget =
+                usize::from(right.saturating_sub(label_x)).saturating_sub(right_reserve);
+            let shown = take_display_cols(candidate.label, label_budget).to_string();
+            paint_matched_label(
+                buffer,
+                label_x,
+                y,
+                &shown,
+                candidate.label,
+                candidate.match_ranges.unwrap_or(&[]),
+                style,
+                selected,
+            );
 
-            // Detail then kind from right
-            let mut rx = right;
-            if let Some(kind) = candidate.kind {
-                let kind_text = take_display_cols(kind, kind_cols.min(12));
-                let kw = display_cols(&kind_text) as u16;
-                rx = rx.saturating_sub(kw);
-                buffer.set_stringn(
-                    rx,
-                    y,
-                    &kind_text,
-                    usize::from(kw),
-                    if candidate.enabled {
-                        self.system.style(Role::TextMuted)
-                    } else {
-                        style
-                    },
-                );
-                rx = rx.saturating_sub(1);
-            }
-            if let Some(detail) = candidate.detail {
-                let dtext = take_display_cols(detail, detail_cols.min(16));
+            let detail_style = style.fg(theme.text_muted).remove_modifier(Modifier::BOLD);
+            if show_detail && let Some(detail) = candidate.detail {
+                let dtext = take_display_cols(detail, detail_cols);
                 let dw = display_cols(&dtext) as u16;
-                rx = rx.saturating_sub(dw);
-                if rx > x {
-                    buffer.set_stringn(
-                        rx,
-                        y,
-                        &dtext,
-                        usize::from(dw),
-                        self.system.style(Role::TextMuted),
-                    );
+                let dx = row_rect.right().saturating_sub(dw.saturating_add(1));
+                if dx >= label_x {
+                    buffer.set_stringn(dx, y, &dtext, usize::from(dw), detail_style);
+                }
+            } else if let Some(kind) = candidate.kind {
+                if candidate.kind_glyph.is_none() {
+                    let kind_text = take_display_cols(kind, kind_cols.min(12));
+                    let kw = display_cols(&kind_text) as u16;
+                    let kx = right.saturating_sub(kw);
+                    if kx >= label_x {
+                        buffer.set_stringn(kx, y, &kind_text, usize::from(kw), detail_style);
+                    }
                 }
             }
 
@@ -1504,31 +1501,30 @@ fn paint_docs(buffer: &mut Buffer, area: Rect, docs: &str, scroll: u16, system: 
     }
 }
 
-fn row_style(
-    system: &DesignSystem,
-    enabled: bool,
+fn paint_matched_label(
+    buffer: &mut Buffer,
+    mut x: u16,
+    y: u16,
+    shown: &str,
+    full: &str,
+    ranges: &[crate::widgets::MatchRange],
+    style: Style,
     selected: bool,
-    hovered: bool,
-    colorless: bool,
-) -> Style {
-    if colorless {
-        if !enabled {
-            system.style(Role::TextMuted)
-        } else if selected {
-            system.style(Role::TextStrong)
-        } else {
-            system.style(Role::Text)
+) {
+    // Byte indices in `shown` match `full` while we truncate from the end.
+    let _ = full;
+    for (bi, ch) in shown.char_indices() {
+        let mut cs = style;
+        let matched = ranges.iter().any(|r| bi >= r.start && bi < r.end);
+        if matched {
+            cs = cs.add_modifier(Modifier::BOLD);
+        } else if !selected {
+            cs = cs.remove_modifier(Modifier::BOLD);
         }
-    } else if !enabled {
-        system.style(Role::TextDisabled)
-    } else if selected {
-        system
-            .style(Role::TextStrong)
-            .patch(system.style(Role::SelectionTint))
-    } else if hovered {
-        system.style(Role::TextStrong)
-    } else {
-        system.style(Role::Text)
+        let g = ch.to_string();
+        let w = display_cols(&g) as u16;
+        buffer.set_stringn(x, y, &g, usize::from(w.max(1)), cs);
+        x = x.saturating_add(w);
     }
 }
 
@@ -1916,6 +1912,69 @@ mod tests {
             .collect();
         assert_eq!(text1, text2);
         assert!(text1.contains("alpha"));
+    }
+
+    #[test]
+    fn rows_use_list_anatomy_matched_bold_detail_muted() {
+        use crate::widgets::MatchRange;
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        static MATCHES: &[MatchRange] = &[MatchRange::new(0, 3)];
+        let items = [
+            CompletionCandidate::new("sel", "SELECT")
+                .kind_glyph("K")
+                .detail("keyword")
+                .matches(MATCHES),
+            CompletionCandidate::new("frm", "FROM")
+                .kind_glyph("K")
+                .detail("keyword"),
+        ];
+        let mut state = CompletionMenuState::new(Some("sel"));
+        let area = Rect::new(0, 0, 48, 12);
+        let mut buf = Buffer::empty(area);
+        CompletionMenu::new(&items, &system, area, Rect::new(2, 1, 1, 1))
+            .preferred_size(CompletionMenuSize {
+                width: 32,
+                height: 8,
+            })
+            .paint(area, &mut buf, &mut state);
+
+        let list = state.slots().list;
+        assert!(
+            list.width >= 24 && list.width <= 48 + 4,
+            "anchored 24–48, got {}",
+            list.width
+        );
+        // Inner row: ▎ kind label
+        let y = list.y + 1;
+        let bar = buf[(list.x + 1, y)].symbol();
+        assert_eq!(bar, system.glyphs.selection_gutter());
+        let sel_s = buf[(list.x + 4, y)].symbol();
+        assert_eq!(sel_s, "S");
+        assert!(
+            buf[(list.x + 4, y)]
+                .style()
+                .add_modifier
+                .contains(Modifier::BOLD),
+            "matched characters are bold"
+        );
+        // Detail is muted and not bold on the focused row.
+        let row: String = (list.x..list.right())
+            .map(|x| buf[(x, y)].symbol().to_string())
+            .collect();
+        assert!(row.contains("keyword"), "{row}");
+        let detail_x = (list.x..list.right())
+            .rev()
+            .find(|&x| buf[(x, y)].symbol() == "d")
+            .or_else(|| {
+                (list.x..list.right())
+                    .rev()
+                    .find(|&x| buf[(x, y)].symbol() == "k")
+            });
+        if let Some(dx) = detail_x {
+            assert_eq!(buf[(dx, y)].fg, theme.text_muted);
+            assert!(!buf[(dx, y)].style().add_modifier.contains(Modifier::BOLD));
+        }
     }
 
     #[test]

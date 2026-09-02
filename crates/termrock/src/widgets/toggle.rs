@@ -44,7 +44,7 @@ use crate::interaction::{
     SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, default_button_intent,
     default_list_intent,
 };
-use crate::style::{ButtonRecipeVariant, ControlState, DesignSystem, Role};
+use crate::style::{ButtonRecipeVariant, ControlState, DesignSystem, Role, VisualState};
 use crate::text::{display_cols, take_display_cols};
 
 // ── Value / size / recipe ───────────────────────────────────────────────────
@@ -488,7 +488,7 @@ impl<'a> Toggle<'a> {
         style
     }
 
-    /// Paint toggle.
+    /// Paint toggle as the junie form switch: `▎──● label on` / `▎○── label off`.
     pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut ToggleState) -> ToggleParts {
         state.region = None;
         if area.is_empty() {
@@ -502,12 +502,82 @@ impl<'a> Toggle<'a> {
             state.region = Some(root);
             return ToggleParts { root };
         }
-        let face = self.format_face(state.value);
-        let text = take_display_cols(&face, usize::from(area.width));
-        let style = self.face_style(state);
-        buffer.set_stringn(area.x, area.y, &text, usize::from(area.width), style);
-        let w = display_cols(&text).min(usize::from(area.width)) as u16;
-        let root = Rect::new(area.x, area.y, w.max(1), 1.min(area.height));
+        let theme = self.system.junie_theme();
+        let bg = theme.surface;
+        let on = state.value.is_pressed();
+        let visual = VisualState {
+            focused: state.focused && state.enabled,
+            hovered: state.hovered && state.enabled,
+            selected: on,
+            disabled: !state.enabled,
+            ..VisualState::default()
+        };
+        let st = self.system.row(visual, bg);
+        let row = Rect::new(area.x, area.y, area.width, 1.min(area.height));
+        buffer.set_style(row, st);
+        buffer.set_stringn(
+            area.x,
+            area.y,
+            self.system.glyphs.selection_gutter(),
+            1,
+            self.system.gutter(visual, st.bg.unwrap_or(bg), false),
+        );
+        let knob = match state.value {
+            ToggleValue::Pressed => "──●",
+            ToggleValue::Unpressed => "○──",
+            ToggleValue::Indeterminate => "─●─",
+        };
+        let knob_style = if !state.enabled {
+            st
+        } else if on {
+            st.fg(theme.accent)
+        } else {
+            st.fg(theme.text_muted)
+        };
+        if area.width > 1 {
+            buffer.set_stringn(
+                area.x.saturating_add(1),
+                area.y,
+                knob,
+                3.min(usize::from(area.width.saturating_sub(1))),
+                knob_style,
+            );
+        }
+        let label = if self.label.is_empty() {
+            self.icon.unwrap_or("")
+        } else {
+            self.label
+        };
+        let label_x = area.x.saturating_add(5);
+        if label_x < area.right() && !label.is_empty() {
+            let lw = area.right().saturating_sub(label_x);
+            buffer.set_stringn(
+                label_x,
+                area.y,
+                take_display_cols(label, usize::from(lw)),
+                usize::from(lw),
+                st,
+            );
+        }
+        let state_word = if on { "on" } else { "off" };
+        let sx = label_x
+            .saturating_add(display_cols(label) as u16)
+            .saturating_add(1);
+        if sx + 3 < area.right() {
+            buffer.set_stringn(
+                sx,
+                area.y,
+                state_word,
+                3,
+                st.fg(if state.enabled {
+                    theme.text_muted
+                } else {
+                    theme.disabled
+                }),
+            );
+        }
+        let used = sx.saturating_add(3).saturating_sub(area.x).min(area.width);
+        let root = Rect::new(area.x, area.y, used.max(1), 1.min(area.height));
         state.region = Some(root);
         ToggleParts { root }
     }
@@ -1187,7 +1257,12 @@ impl<'a, Id: Clone + PartialEq> ToggleGroup<'a, Id> {
         ts.enabled = item.enabled;
         ts.focused = state.surface_focused && state.cursor.as_ref() == Some(&item.id);
         ts.hovered = state.hovered.as_ref() == Some(&item.id);
-        let _ = t.paint(area, buffer, &mut ts);
+        // Toolbar group keeps the compact `[B]` face; the form switch lives
+        // on standalone [`Toggle::paint`].
+        let face = t.format_face(item.value);
+        let text = take_display_cols(&face, usize::from(area.width));
+        let style = t.face_style(&ts);
+        buffer.set_stringn(area.x, area.y, &text, usize::from(area.width), style);
     }
 
     fn activate_item(&self, state: &ToggleGroupState<Id>, id: Id) -> ToggleGroupOutcome<Id> {
@@ -1757,14 +1832,71 @@ mod tests {
 
     #[test]
     fn indeterminate_paint() {
-        let system = DesignSystem::default();
+        let system = DesignSystem::junie();
         let t = Toggle::new("B", &system);
         let mut state = ToggleState::with_value(ToggleValue::Indeterminate);
-        let mut buf = Buffer::empty(Rect::new(0, 0, 12, 1));
-        let _ = t.paint(Rect::new(0, 0, 12, 1), &mut buf, &mut state);
-        let s0 = buf.cell((0, 0)).map(|c| c.symbol().to_string());
-        assert_eq!(s0.as_deref(), Some("["));
-        let s1 = buf.cell((1, 0)).map(|c| c.symbol().to_string());
-        assert_eq!(s1.as_deref(), Some("~"));
+        let mut buf = Buffer::empty(Rect::new(0, 0, 16, 1));
+        let _ = t.paint(Rect::new(0, 0, 16, 1), &mut buf, &mut state);
+        assert_eq!(
+            buf.cell((1, 0)).map(|c| c.symbol().to_string()).as_deref(),
+            Some("─")
+        );
+        assert_eq!(
+            buf.cell((2, 0)).map(|c| c.symbol().to_string()).as_deref(),
+            Some("●")
+        );
+    }
+
+    fn cell(buffer: &Buffer, x: u16, y: u16) -> String {
+        buffer[(x, y)].symbol().to_string()
+    }
+
+    #[test]
+    fn form_switch_anatomy_on_off_hover_disabled() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let t = Toggle::new("Verbose", &system);
+        let area = Rect::new(0, 0, 24, 1);
+
+        let mut on = ToggleState::with_value(ToggleValue::Pressed);
+        on.set_focused(true);
+        let mut buf = Buffer::empty(area);
+        let _ = t.paint(area, &mut buf, &mut on);
+        assert_eq!(cell(&buf, 0, 0), "▎");
+        assert_eq!(cell(&buf, 1, 0), "─");
+        assert_eq!(cell(&buf, 2, 0), "─");
+        assert_eq!(cell(&buf, 3, 0), "●");
+        assert_eq!(cell(&buf, 5, 0), "V");
+        assert_eq!(buf[(3, 0)].fg, theme.accent);
+        let text: String = (0..24).map(|x| buf[(x, 0)].symbol().to_string()).collect();
+        assert!(text.contains("on"), "{text}");
+
+        let mut off = ToggleState::new();
+        let mut buf = Buffer::empty(area);
+        let _ = t.paint(area, &mut buf, &mut off);
+        assert_eq!(cell(&buf, 1, 0), "○");
+        assert_eq!(cell(&buf, 2, 0), "─");
+        assert_eq!(cell(&buf, 3, 0), "─");
+        assert_eq!(buf[(1, 0)].fg, theme.text_muted);
+        let text: String = (0..24).map(|x| buf[(x, 0)].symbol().to_string()).collect();
+        assert!(text.contains("off"), "{text}");
+
+        let mut hover = ToggleState::new();
+        hover.hovered = true;
+        let mut buf = Buffer::empty(area);
+        let _ = t.paint(area, &mut buf, &mut hover);
+        assert_eq!(buf[(5, 0)].bg, theme.lift(theme.surface));
+
+        let mut disabled = ToggleState::with_value(ToggleValue::Pressed);
+        disabled.set_enabled(false);
+        let mut buf = Buffer::empty(area);
+        let _ = t.paint(area, &mut buf, &mut disabled);
+        assert_eq!(buf[(5, 0)].fg, theme.disabled);
+        assert_eq!(cell(&buf, 0, 0), "▎");
+        assert_eq!(
+            buf[(0, 0)].fg,
+            buf[(0, 0)].bg,
+            "disabled gutter is reserved, fg=bg"
+        );
     }
 }

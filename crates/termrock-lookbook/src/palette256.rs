@@ -6,44 +6,7 @@
 //! Both exporters used to render `Color::Indexed` as flat white, which made a
 //! 256-colour or ANSI-16 preview a page of white text — exactly the profiles a
 //! capability ladder exists to show (plans/011 Step 3).
-/// RGB for an xterm-256 palette index.
-#[must_use]
-pub fn xterm256_to_rgb(index: u8) -> [u8; 3] {
-    match index {
-        // The 16 system colours, in the same slots both exporters already use.
-        0 => [0x00, 0x00, 0x00],
-        1 => [0xff, 0x00, 0x00],
-        2 => [0x00, 0xff, 0x41],
-        3 => [0xff, 0xd8, 0x5e],
-        4 => [0x00, 0x50, 0xb4],
-        5 => [0xff, 0x00, 0xff],
-        6 => [0x00, 0xff, 0xff],
-        7 => [0xc0, 0xc0, 0xc0],
-        8 => [0x80, 0x80, 0x80],
-        9 => [0xff, 0x5e, 0x7a],
-        10 => [0x00, 0xff, 0x41],
-        11 => [0xff, 0xd8, 0x5e],
-        12 => [0x7a, 0xa2, 0xff],
-        13 => [0xff, 0x7a, 0xff],
-        14 => [0x7a, 0xff, 0xff],
-        15 => [0xff, 0xff, 0xff],
-        // 6×6×6 colour cube.
-        16..=231 => {
-            let i = index - 16;
-            let steps = [0u8, 95, 135, 175, 215, 255];
-            [
-                steps[usize::from(i / 36)],
-                steps[usize::from((i % 36) / 6)],
-                steps[usize::from(i % 6)],
-            ]
-        }
-        // 24-step grey ramp.
-        232..=255 => {
-            let level = 8 + (index - 232) * 10;
-            [level, level, level]
-        }
-    }
-}
+pub use termrock::style::xterm256_to_rgb;
 
 #[cfg(test)]
 mod tests {

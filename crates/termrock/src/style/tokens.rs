@@ -11,26 +11,18 @@ use ratatui_core::style::{Color, Modifier, Style};
 
 /// Glyph vocabulary marker.
 ///
-/// junie has exactly one vocabulary, so there is no profile to choose: this
-/// type survives as the single-variant marker a [`DesignSystem`] carries and
-/// the accessor surface (`selection_gutter()`, `rule()`, …) widgets already
-/// call. State must survive monochrome through glyphs and modifiers, which
-/// this one vocabulary guarantees.
+/// junie has exactly one vocabulary, so there is no profile to choose. This
+/// type is the accessor surface (`selection_gutter()`, `rule()`, …) widgets
+/// already call. State must survive monochrome through glyphs and modifiers,
+/// which this one vocabulary guarantees.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
-#[non_exhaustive]
-pub enum GlyphSet {
-    /// The junie vocabulary (the only one).
-    #[default]
-    Unicode,
-}
+pub struct GlyphSet;
 
 impl GlyphSet {
     /// Stable id.
     #[must_use]
     pub const fn id(self) -> &'static str {
-        match self {
-            Self::Unicode => "junie",
-        }
+        "junie"
     }
 
     /// Resolve a semantic glyph in the one vocabulary.
@@ -57,7 +49,7 @@ impl GlyphSet {
         super::glyph::Glyph::SelectionGutter.resolve().text
     }
 
-    /// Selected-row marker triangle (classic `▸` cursor; `SelectionChrome::Marker`).
+    /// Selected-row marker (`›` chosen item; same encoding as chevron-right).
     #[must_use]
     pub const fn selection_marker(self) -> &'static str {
         super::glyph::Glyph::SelectionMarker.resolve().text
@@ -136,21 +128,6 @@ impl GlyphSet {
         // kept for callers that need a non-color mark.
         super::glyph::Glyph::Remove.resolve().text
     }
-}
-
-/// How list/menu selection is painted.
-///
-/// junie has exactly one selection vocabulary — a leading gutter glyph plus the
-/// tint law — so the only question left is whether the marker glyph or the
-/// tint carries membership on a parked row.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
-#[non_exhaustive]
-pub enum SelectionChrome {
-    /// Leading gutter glyph; the tint still applies while the row owns focus.
-    #[default]
-    Gutter,
-    /// Tint only: the slot stays empty and membership is stated by the tint.
-    Tint,
 }
 
 /// How a family of surfaces says "the keyboard is here".
@@ -393,25 +370,12 @@ pub struct FamilyRecipe {
     pub border: Role,
     /// Focus vocabulary when the family can own interaction.
     pub focus: Option<FocusEmphasis>,
-    /// Selection vocabulary when the family has membership/cursor state.
-    pub selection: Option<SelectionChrome>,
     /// Required structure that survives monochrome projection.
     pub non_color_cue: NonColorCue,
     /// Restriction on brand-accent use.
     pub accent: AccentUsage,
     /// Motion class owned by the family.
     pub motion: MotionSemantics,
-}
-
-impl SelectionChrome {
-    /// Stable id, for inspectors and story metadata.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Gutter => "gutter",
-            Self::Tint => "tint",
-        }
-    }
 }
 
 /// Single-line border corner family.
@@ -794,12 +758,8 @@ pub struct InputRecipe {
     pub fill: Style,
     /// Cursor style.
     pub cursor: Style,
-    /// Field-local focus cue for chrome with no border of its own.
-    ///
-    /// A one-line field cannot swap a border color, so focus is carried by a
-    /// leading prompt cell instead. `None` when the field is not the
-    /// interaction owner; the column stays reserved either way so the value
-    /// does not shift when focus arrives.
+    /// Field-local focus cue: always the `▎` bar. Unfocused paints fg=bg so
+    /// the column stays reserved without a visible bar.
     pub prompt: Option<(&'static str, Style)>,
     /// Horizontal pad.
     pub pad_x: u16,
@@ -808,7 +768,7 @@ pub struct InputRecipe {
 /// User-owned theme package (source-install / product brand).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ThemePackage {
-    /// Stable package id (`phosphor`, `acme-brand`, …).
+    /// Stable package id (`junie`, `acme-brand`, …).
     pub id: String,
     /// Human label.
     pub label: String,
@@ -836,20 +796,18 @@ impl ThemePackage {
 
 /// Sole paint authority for a frame or app shell (pre-1.0 Break B).
 ///
-/// One object owns palette, density, glyphs, spacing, selection, capability,
-/// motion, and breakpoints. Widgets take `&DesignSystem` only.
+/// One object owns palette, glyphs, spacing, capability, motion, and
+/// breakpoints. Widgets take `&DesignSystem` only.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DesignSystem {
     /// Role → Style map.
     pub palette: RolePalette,
     /// Motion tier for animated chrome.
     pub motion: MotionPolicy,
-    /// Glyph policy.
+    /// Glyph vocabulary.
     pub glyphs: GlyphSet,
     /// Resolved spacing.
     pub spacing: SpacingScale,
-    /// Default list/menu selection chrome.
-    pub selection: SelectionChrome,
     /// Color depth used for quantize-at-edge.
     pub capability: ColorCapability,
     /// Width breakpoints for contraction hosts.
@@ -882,9 +840,7 @@ impl DesignSystem {
     /// The canonical junie system.
     #[must_use]
     pub fn junie() -> Self {
-        Self::from_palette(RolePalette::junie())
-            .capability(ColorCapability::Truecolor)
-            .selection(SelectionChrome::Gutter)
+        Self::new(RolePalette::junie()).capability(ColorCapability::Truecolor)
     }
 
     /// The canonical system resolved for the operator's terminal capability.
@@ -995,7 +951,6 @@ impl DesignSystem {
             motion: MotionPolicy::default(),
             glyphs: GlyphSet::default(),
             spacing: SpacingScale::junie(),
-            selection: SelectionChrome::default(),
             capability: ColorCapability::default(),
             breakpoints: BreakpointScale::default(),
             kv_separator: KvSeparator::default(),
@@ -1009,12 +964,6 @@ impl DesignSystem {
             ],
             tick: None,
         }
-    }
-
-    /// Alias of [`Self::new`] (the density argument is gone).
-    #[must_use]
-    pub fn from_palette(palette: RolePalette) -> Self {
-        Self::new(palette)
     }
 
     /// The focus cue this system gives a surface family.
@@ -1034,7 +983,6 @@ impl DesignSystem {
                 secondary: Role::TextMuted,
                 border: Role::Border,
                 focus: Some(FocusEmphasis::BrightBorder),
-                selection: None,
                 non_color_cue: NonColorCue::WeightedLabel,
                 accent: AccentUsage::PrimaryIntent,
                 motion: MotionSemantics::StateTransition,
@@ -1046,7 +994,6 @@ impl DesignSystem {
                 secondary: Role::TextMuted,
                 border: Role::Border,
                 focus: Some(self.focus_emphasis(SurfaceFamily::Field)),
-                selection: None,
                 non_color_cue: NonColorCue::PromptGlyph,
                 accent: AccentUsage::FocusOnly,
                 motion: MotionSemantics::StateTransition,
@@ -1058,7 +1005,6 @@ impl DesignSystem {
                 secondary: Role::TextMuted,
                 border: Role::Border,
                 focus: Some(self.focus_emphasis(SurfaceFamily::Row)),
-                selection: Some(self.selection),
                 non_color_cue: NonColorCue::SelectionGlyph,
                 accent: AccentUsage::FocusOnly,
                 motion: MotionSemantics::StateTransition,
@@ -1070,7 +1016,6 @@ impl DesignSystem {
                 secondary: Role::TextMuted,
                 border: Role::Border,
                 focus: Some(self.focus_emphasis(SurfaceFamily::Container)),
-                selection: None,
                 non_color_cue: NonColorCue::FramedTitle,
                 accent: AccentUsage::FocusOnly,
                 motion: MotionSemantics::StateTransition,
@@ -1082,7 +1027,6 @@ impl DesignSystem {
                 secondary: Role::TextMuted,
                 border: Role::Border,
                 focus: None,
-                selection: None,
                 non_color_cue: NonColorCue::GlyphAndLabel,
                 accent: AccentUsage::SemanticMark,
                 motion: MotionSemantics::Activity,
@@ -1094,7 +1038,6 @@ impl DesignSystem {
                 secondary: Role::TextMuted,
                 border: Role::ChartGrid,
                 focus: Some(self.focus_emphasis(SurfaceFamily::Cell)),
-                selection: Some(self.selection),
                 non_color_cue: NonColorCue::TieredText,
                 accent: AccentUsage::SemanticMark,
                 motion: MotionSemantics::Static,
@@ -1106,7 +1049,6 @@ impl DesignSystem {
                 secondary: Role::TextMuted,
                 border: Role::Border,
                 focus: Some(self.focus_emphasis(SurfaceFamily::Container)),
-                selection: None,
                 non_color_cue: NonColorCue::BorderedRegion,
                 accent: AccentUsage::None,
                 motion: MotionSemantics::StateTransition,
@@ -1157,20 +1099,6 @@ impl DesignSystem {
     #[must_use]
     pub const fn motion(mut self, motion: MotionPolicy) -> Self {
         self.motion = motion;
-        self
-    }
-
-    /// Overrides glyph set.
-    #[must_use]
-    pub const fn glyphs(mut self, glyphs: GlyphSet) -> Self {
-        self.glyphs = glyphs;
-        self
-    }
-
-    /// Overrides selection chrome recipe.
-    #[must_use]
-    pub const fn selection(mut self, selection: SelectionChrome) -> Self {
-        self.selection = selection;
         self
     }
 
@@ -1240,23 +1168,6 @@ impl DesignSystem {
         self.quantize(ColorCapability::Monochrome)
     }
 
-    /// Override one role style (partial theme package).
-    #[must_use]
-    pub fn with_role(mut self, role: Role, style: Style) -> Self {
-        self.palette = self.palette.with_role(role, style);
-        self
-    }
-
-    /// Merge non-empty styles from `other` onto this palette (inheritance).
-    ///
-    /// A style is applied when it has any fg, bg, or modifier — empty styles
-    /// leave the base role untouched.
-    #[must_use]
-    pub fn merge(mut self, other: &RolePalette) -> Self {
-        self.palette = self.palette.merge(other);
-        self
-    }
-
     /// Role style lookup.
     #[must_use]
     pub fn style(&self, role: Role) -> Style {
@@ -1313,14 +1224,11 @@ impl DesignSystem {
         // the title is `title()` when focused, `secondary()` when not. Danger
         // keeps the body text and states the risk through the frame and the
         // `!` mark, the only red chrome junie allows a container.
-        let mut border = match emphasis {
-            PanelChrome::Normal => theme.border(false),
-            PanelChrome::Focused => theme.border(true),
-            PanelChrome::Danger => Style::new().fg(theme.error),
+        let border = match emphasis {
+            PanelChrome::Normal => self.style(Role::Border),
+            PanelChrome::Focused => self.style(Role::BorderFocused),
+            PanelChrome::Danger => self.style(Role::Danger),
         };
-        if focused {
-            border = border.add_modifier(Modifier::BOLD);
-        }
         PanelRecipe {
             border,
             title: if focused {
@@ -1428,6 +1336,7 @@ impl DesignSystem {
         let visual = VisualState {
             hovered: matches!(state, ControlState::Hovered) && !editing,
             disabled: matches!(state, ControlState::Disabled),
+            focused: editing,
             editing,
             ..VisualState::default()
         };
@@ -1462,10 +1371,11 @@ impl DesignSystem {
         // junie edits with the hardware cursor; the recipe paints the cell it
         // occupies as the explicit reversal so a cell cursor reads as a cell.
         let cursor = Style::new().fg(theme.canvas).bg(theme.text_primary);
-        // The focus gutter is the `▎` bar; it exists only while the field owns
-        // the keyboard, and the column stays reserved either way.
-        let prompt =
-            editing.then(|| (self.glyphs.selection_gutter(), Style::new().fg(theme.focus)));
+        // Col 0 is always the focus bar; idle paints fg=bg.
+        let prompt = Some((
+            self.glyphs.selection_gutter(),
+            self.gutter(visual, fill.bg.unwrap_or(theme.field), false),
+        ));
         InputRecipe {
             value,
             placeholder,
@@ -1492,12 +1402,10 @@ impl DesignSystem {
     /// Full part×state list row recipe — literal port of the junie `row`
     /// resolver on the chrome-plane ground.
     ///
-    /// Selection law (junie, one vocabulary): the tint is painted only where
-    /// the keyboard is (`selected && focused`), a parked selection is carried
-    /// by the marker glyph alone, hover always wins with exactly one plane
-    /// up, and focus adds weight. There is no full-row fill anywhere in the
-    /// system. Membership is `selected` alone — focus only decides whether
-    /// the tint rides along.
+    /// Universal row: col 0 is always the focus bar `▎` via
+    /// [`Self::gutter`]; col 1 is the membership marker (`›` / `✓` / space).
+    /// Tint is `selected && focused` and hover replaces it with exactly one
+    /// plane up. The label never takes the accent — the marker does.
     ///
     /// Modifier order is the reference's: disabled, tint, hover, error, busy,
     /// focus weight, pressed replacement. Busy therefore lands *before* the
@@ -1508,8 +1416,9 @@ impl DesignSystem {
         let ground = theme.surface;
         let disabled = !state.enabled;
         let hovered = state.hovered && !disabled;
+        let focused = state.focused && !disabled;
         let visual = VisualState {
-            focused: state.focused,
+            focused,
             hovered,
             pressed: state.pressed,
             selected: state.selected,
@@ -1521,6 +1430,7 @@ impl DesignSystem {
         // The reference `row` resolver owns the whole ladder; the recipe only
         // re-states its output in the part vocabulary the widgets paint with.
         let painted = self.row(visual, ground);
+        let painted_bg = painted.bg.unwrap_or(ground);
         let label = painted;
         let secondary = Style::new().fg(if disabled {
             theme.disabled
@@ -1528,32 +1438,35 @@ impl DesignSystem {
             theme.text_muted
         });
         let shortcut = secondary;
-        // The leading slot carries the focus bar while the row owns the
-        // keyboard and the membership marker while it does not — the same
-        // cell, so a row reserves exactly one column. `Tint` chrome states
-        // membership with the tint instead and leaves the slot empty.
-        let gutter = if matches!(self.selection, SelectionChrome::Gutter)
-            && (state.selected || state.focused)
-            && !disabled
-        {
-            let (glyph, tone) = if state.focused {
-                (self.glyphs.selection_gutter(), theme.focus)
-            } else {
-                (self.glyphs.selection_marker(), theme.text_secondary)
-            };
-            Some((glyph, Style::new().fg(tone)))
+        let gutter = (
+            self.glyphs.selection_gutter(),
+            self.gutter(visual, painted_bg, false),
+        );
+        let membership = (state.selected || state.checked) && !disabled;
+        let marker_glyph = if state.checked {
+            Glyph::Success.resolve().text
+        } else if state.selected {
+            self.glyphs.selection_marker()
         } else {
-            None
+            " "
+        };
+        let marker_style = if membership {
+            painted.fg(if focused || hovered {
+                theme.accent
+            } else {
+                theme.text_secondary
+            })
+        } else {
+            painted
         };
         ListRowRecipe {
             label,
             secondary,
             shortcut,
-            trailing: secondary,
             gutter,
+            marker: (marker_glyph, marker_style),
             pad_x: self.spacing.inline,
-            use_fill: false,
-            use_tint: state.selected && state.focused && !hovered,
+            use_tint: state.selected && focused && !hovered,
             hover_fill: hovered,
             focus: Style::new().fg(theme.focus),
             hover: Style::new().fg(theme.text_primary),
@@ -1582,14 +1495,12 @@ pub struct ListRowRecipe {
     pub secondary: Style,
     /// Shortcut hint style.
     pub shortcut: Style,
-    /// Trailing metadata style (legacy alias of secondary tone).
-    pub trailing: Style,
-    /// Optional leading gutter glyph + style.
-    pub gutter: Option<(&'static str, Style)>,
+    /// Leading focus-bar `▎` + style. Always present; unfocused paints fg=bg.
+    pub gutter: (&'static str, Style),
+    /// Col-1 membership glyph (`›` chosen, `✓` checked, space otherwise).
+    pub marker: (&'static str, Style),
     /// Horizontal padding cells.
     pub pad_x: u16,
-    /// Whether the row background uses selection fill.
-    pub use_fill: bool,
     /// Whether selection uses tint (Focus role) without full Selection fill.
     pub use_tint: bool,
     /// Whether hover should tint the row background.
@@ -1604,7 +1515,7 @@ pub struct ListRowRecipe {
     pub hover: Style,
     /// Background wash for hovered rows.
     pub hover_wash: Style,
-    /// Tint style for [`SelectionChrome::Tint`].
+    /// Tint style for a focused selected row.
     pub tint: Style,
     /// Multi-select checked glyph.
     pub check_on: &'static str,
@@ -1648,21 +1559,27 @@ mod tests {
     }
 
     #[test]
-    fn list_row_recipe_changes_with_selection_chrome() {
-        let tint = DesignSystem::junie()
-            .selection(SelectionChrome::Tint)
-            .list_row_recipe(true, true, true);
-        let gutter = DesignSystem::junie()
-            .selection(SelectionChrome::Gutter)
-            .list_row_recipe(true, true, true);
-        // The tint law is shared; the chrome choice only decides whether the
-        // gutter slot carries the marker glyph.
-        assert!(tint.use_tint);
-        assert!(gutter.use_tint);
-        assert_eq!(tint.tint, gutter.tint);
-        assert!(tint.gutter.is_none(), "tint chrome leaves the slot empty");
-        assert!(gutter.gutter.is_some());
-        assert_eq!(tint.label, gutter.label, "one label grammar");
+    fn focused_selected_recipe_pins_gutter_and_checked_uses_success() {
+        let system = DesignSystem::junie();
+        let focused = system.list_row_recipe(true, true, true);
+        assert_eq!(focused.gutter.0, Glyph::SelectionGutter.resolve().text);
+        assert_eq!(focused.gutter.0, "▎");
+        assert_eq!(focused.marker.0, system.glyphs.selection_marker());
+        assert_eq!(focused.marker.0, "›");
+        let checked = system.resolve_list_row(ListRowVisualState {
+            selected: false,
+            focused: true,
+            checked: true,
+            enabled: true,
+            ..Default::default()
+        });
+        assert_eq!(checked.marker.0, Glyph::Success.resolve().text);
+        assert_eq!(checked.marker.0, "✓");
+        assert_ne!(
+            checked.marker.0,
+            Glyph::CheckOn.resolve().text,
+            "list membership is ✓, not the checkbox [✓]"
+        );
     }
 
     #[test]
@@ -1689,8 +1606,17 @@ mod tests {
             "a parked selection carries no tint: the row ground only"
         );
         assert!(!parked.use_tint);
-        assert!(parked.gutter.is_some(), "the marker glyph carries it");
+        let (bar, _) = parked.gutter;
+        assert_eq!(bar, system.glyphs.selection_gutter());
+        let (marker, marker_style) = parked.marker;
+        assert_eq!(marker, system.glyphs.selection_marker());
+        assert_eq!(marker_style.fg, Some(theme.text_secondary));
         assert!(!owned.label.add_modifier.contains(Modifier::REVERSED));
+        assert_ne!(
+            owned.label.fg,
+            Some(theme.accent),
+            "label never uses accent"
+        );
     }
 
     #[test]
@@ -1730,14 +1656,41 @@ mod tests {
             enabled: true,
             ..Default::default()
         });
+        let idle = system.resolve_list_row(ListRowVisualState {
+            selected: false,
+            focused: false,
+            enabled: true,
+            ..Default::default()
+        });
+        let (bar, bar_style) = focused.gutter;
+        assert_eq!(bar, system.glyphs.selection_gutter());
+        assert_eq!(bar_style.fg, Some(theme.focus));
+        let (parked_bar, parked_bar_style) = parked.gutter;
+        assert_eq!(parked_bar, system.glyphs.selection_gutter());
         assert_eq!(
-            focused.gutter.expect("selected rows carry a gutter").1.fg,
-            Some(theme.focus)
+            parked_bar_style.fg, parked_bar_style.bg,
+            "unfocused bar is invisible: fg=bg"
         );
-        assert_eq!(
-            parked.gutter.expect("selected rows carry a gutter").1.fg,
-            Some(theme.text_secondary)
-        );
+        let (marker, marker_style) = focused.marker;
+        assert_eq!(marker, system.glyphs.selection_marker());
+        assert_eq!(marker_style.fg, Some(theme.accent));
+        let (parked_marker, parked_marker_style) = parked.marker;
+        assert_eq!(parked_marker, system.glyphs.selection_marker());
+        assert_eq!(parked_marker_style.fg, Some(theme.text_secondary));
+        let (idle_bar, idle_bar_style) = idle.gutter;
+        assert_eq!(idle_bar, system.glyphs.selection_gutter());
+        assert_eq!(idle_bar_style.fg, idle_bar_style.bg);
+        assert_eq!(idle.marker.0, " ");
+        let checked = system.resolve_list_row(ListRowVisualState {
+            selected: false,
+            focused: true,
+            checked: true,
+            enabled: true,
+            ..Default::default()
+        });
+        assert_eq!(checked.marker.0, "✓");
+        assert_eq!(checked.marker.1.fg, Some(theme.accent));
+        assert_ne!(focused.label.fg, Some(theme.accent));
     }
 
     #[test]
@@ -1766,14 +1719,16 @@ mod tests {
 
     #[test]
     fn with_role_and_merge_partial_package() {
-        let base = DesignSystem::junie();
-        let patched = base.clone().with_role(
+        let base_palette = RolePalette::junie();
+        let patched_palette = base_palette.clone().with_role(
             Role::Accent,
             Style::new().fg(ratatui_core::style::Color::Cyan),
         );
+        let base = DesignSystem::new(base_palette);
+        let patched = DesignSystem::new(patched_palette);
         assert_ne!(base.style(Role::Accent), patched.style(Role::Accent));
         let package = RolePalette::from_fn(|_| Style::new()); // empty → no change
-        let merged = base.merge(&package);
+        let merged = DesignSystem::new(RolePalette::junie().merge(&package));
         assert_eq!(
             merged.style(Role::Text),
             DesignSystem::junie().style(Role::Text)
@@ -1993,7 +1948,12 @@ mod tests {
         assert_eq!(idle.value.fg, Some(theme.text_primary));
         assert_eq!(idle.placeholder.fg, Some(theme.text_muted));
         assert_eq!(idle.border.fg, Some(theme.border_subtle));
-        assert!(idle.prompt.is_none(), "the gutter exists only in focus");
+        let (idle_glyph, idle_prompt) = idle.prompt.expect("col 0 is always the focus bar");
+        assert_eq!(idle_glyph, system.glyphs.selection_gutter());
+        assert_eq!(
+            idle_prompt.fg, idle_prompt.bg,
+            "idle gutter is reserved, fg=bg"
+        );
 
         let focused = system.input_recipe(ControlState::Focused, false);
         assert!(

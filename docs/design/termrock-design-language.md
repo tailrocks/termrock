@@ -1,8 +1,12 @@
 # TermRock design language — the "expensive terminal"
 
+> **Superseded (2026-09-02).** The implemented design language is
+> [`DESIGN.md`](../../DESIGN.md) (Junie TUI). Phosphor / underline-free focus
+> grammar in this file is historical. Do not implement from this document.
+
 | Field | Value |
 |-------|-------|
-| **Status** | **Binding design SoT for interaction styling & focus grammar** (living). The component map is an archived 48-surface sample, never inventory. On conflict about focus/selection/active/underline paint, this file wins; [`terminal-design-system.md`](./terminal-design-system.md) stays SoT for token taxonomy; [`phosphor-obsidian-visual-direction.md`](./phosphor-obsidian-visual-direction.md) stays SoT for the phosphor palette values. |
+| **Status** | **Superseded.** Binding SoT is [`DESIGN.md`](../../DESIGN.md). |
 | **Date** | 2026-08-14 |
 | **Perspective** | Designer / craft, not architecture. Answers *why it looks cheap* and *what makes it read expensive*. |
 | **References** | Grok Build (same stack, studied from source), Amp (ampcode.com), Jackin (Tailrocks consumer, `=0.11.0`), shadcn/ui, Linear |

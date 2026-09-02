@@ -454,7 +454,7 @@ mod tests {
     #[test]
     fn rendering_is_deterministic_and_shows_follow_state() {
         let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
+        let system = crate::style::DesignSystem::new(theme.clone());
         let pane = LogPane::new(&system).title("Build");
         let area = Rect::new(0, 0, 24, 4);
         let mut state = LogPaneState::new();
@@ -472,7 +472,7 @@ mod tests {
     #[test]
     fn follow_indicator_preserves_borders_and_long_titles() {
         let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
+        let system = crate::style::DesignSystem::new(theme.clone());
         let mut state = LogPaneState::new();
         let exact_area = Rect::new(0, 0, 14, 3);
         let mut exact = Buffer::empty(exact_area);
@@ -495,7 +495,7 @@ mod tests {
     #[test]
     fn scrolled_back_indicator_reports_lines_below_view() {
         let theme = RolePalette::default();
-        let system = crate::style::DesignSystem::from_palette(theme.clone());
+        let system = crate::style::DesignSystem::new(theme.clone());
         let area = Rect::new(0, 0, 32, 4);
         let mut state = LogPaneState::new();
         for line in ["one", "two", "three", "four"] {

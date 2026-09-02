@@ -17,7 +17,7 @@ use ratatui::{
 use serde::{Deserialize, Serialize};
 use termrock::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
-    style::{DesignSystem, PREVIEW_CARD},
+    style::{DesignSystem, PREVIEW_CARD, color_to_rgb},
 };
 
 use crate::{
@@ -198,35 +198,6 @@ fn resolve_cell_paint(
         modifier.contains(Modifier::UNDERLINED),
         reversed,
     )
-}
-
-fn color_to_rgb(color: Color, is_fg: bool) -> [u8; 3] {
-    match color {
-        Color::Reset => {
-            if is_fg {
-                [0xff, 0xff, 0xff]
-            } else {
-                [0x00, 0x00, 0x00]
-            }
-        }
-        Color::Black => [0x00, 0x00, 0x00],
-        Color::Red => [0xff, 0x00, 0x00],
-        Color::Green => [0x00, 0xff, 0x41],
-        Color::Yellow => [0xff, 0xd8, 0x5e],
-        Color::Blue => [0x00, 0x50, 0xb4],
-        Color::Magenta => [0xff, 0x00, 0xff],
-        Color::Cyan => [0x00, 0xff, 0xff],
-        Color::Gray | Color::DarkGray => [0x80, 0x80, 0x80],
-        Color::LightRed => [0xff, 0x5e, 0x7a],
-        Color::LightGreen => [0x00, 0xff, 0x41],
-        Color::LightYellow => [0xff, 0xd8, 0x5e],
-        Color::LightBlue => [0x7a, 0xa2, 0xff],
-        Color::LightMagenta => [0xff, 0x7a, 0xff],
-        Color::LightCyan => [0x7a, 0xff, 0xff],
-        Color::White => [0xff, 0xff, 0xff],
-        Color::Rgb(r, g, b) => [r, g, b],
-        Color::Indexed(index) => crate::palette256::xterm256_to_rgb(index),
-    }
 }
 
 /// Look up a story by id.
@@ -427,12 +398,12 @@ mod tests {
                 let buf = frame.buffer_mut();
                 buf[(area.x, area.y)].set_symbol("A").set_style(
                     Style::default()
-                        .fg(Color::Rgb(0x00, 0xff, 0x41))
+                        .fg(Color::Rgb(0x48, 0xe0, 0x54))
                         .bg(Color::Rgb(0x10, 0x10, 0x10)),
                 );
                 buf[(area.x + 1, area.y)]
                     .set_symbol("B")
-                    .set_style(Style::default().fg(Color::Green));
+                    .set_style(Style::default().fg(Color::LightGreen));
             })
             .unwrap();
         let buf = terminal.backend().buffer().clone();
@@ -440,10 +411,10 @@ mod tests {
         assert_eq!((cols, rows), (2, 1));
         assert_eq!(cells.len(), 2);
         assert_eq!(cells[0].ch, "A");
-        assert_eq!(cells[0].fg, [0x00, 0xff, 0x41]);
+        assert_eq!(cells[0].fg, [0x48, 0xe0, 0x54]);
         assert_eq!(cells[0].bg, [0x10, 0x10, 0x10]);
         assert_eq!(cells[1].ch, "B");
-        assert_eq!(cells[1].fg, [0x00, 0xff, 0x41]); // phosphor green named
+        assert_eq!(cells[1].fg, [0x48, 0xe0, 0x54]); // junie accent named
     }
 
     #[test]
@@ -549,10 +520,8 @@ mod tests {
     fn keyed_frames_match_sessions_for_mounted_and_passive_nondefault_systems() {
         use crate::demo::DemoSession;
         use termrock::input::Event;
-        use termrock::style::SelectionChrome;
 
-        let system =
-            crate::design::lookbook_system(RolePalette::junie()).selection(SelectionChrome::Tint);
+        let system = crate::design::lookbook_system(RolePalette::junie());
         let key = PreviewKey {
             key: "ArrowDown".into(),
             ctrl: false,

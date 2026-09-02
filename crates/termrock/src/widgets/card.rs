@@ -208,12 +208,15 @@ impl<'a> Card<'a> {
     }
 
     fn panel(&self) -> Panel<'a> {
+        // Cards are a filled surface, never a second box. Interactive cards
+        // still stay borderless — focus is `▎` plus a bold title.
         let mut p = Panel::new(self.system)
             .emphasis(self.emphasis)
-            .variant(if self.interactive {
-                PanelVariant::Interactive
-            } else {
-                self.variant
+            .variant(match self.variant {
+                PanelVariant::Interactive | PanelVariant::Bordered | PanelVariant::Selected => {
+                    PanelVariant::Quiet
+                }
+                other => other,
             })
             .body(self.body)
             .collapsible(self.collapsible)
@@ -418,5 +421,52 @@ mod tests {
         let card = Card::new(&system).title("Pick").interactive(true);
         assert!(card.is_focusable());
         assert!(!Card::new(&system).title("Static").is_focusable());
+    }
+
+    #[test]
+    fn card_is_filled_surface_without_border() {
+        let system = DesignSystem::default();
+        let card = Card::new(&system).title("Metric").trailing("14 cols");
+        let area = Rect::new(0, 0, 32, 8);
+        let mut buffer = Buffer::empty(area);
+        let _ = card.paint(area, &mut buffer, None);
+        assert_eq!(buffer[(4, 2)].bg, system.style(Role::Surface).bg.unwrap());
+        let corners = [
+            buffer[(0, 0)].symbol(),
+            buffer[(31, 0)].symbol(),
+            buffer[(0, 7)].symbol(),
+            buffer[(31, 7)].symbol(),
+        ];
+        assert!(
+            corners
+                .iter()
+                .all(|c| *c != "╭" && *c != "╮" && *c != "╰" && *c != "╯"),
+            "{corners:?}"
+        );
+        let top: String = (0..area.width).map(|x| buffer[(x, 0)].symbol()).collect();
+        assert!(top.contains("Metric"), "{top}");
+        assert!(top.contains("14 cols"), "{top}");
+    }
+
+    #[test]
+    fn focused_card_paints_gutter_and_bold_title() {
+        let system = DesignSystem::default();
+        let card = Card::new(&system)
+            .title("Target")
+            .emphasis(PanelChrome::Focused);
+        let area = Rect::new(0, 0, 24, 6);
+        let mut buffer = Buffer::empty(area);
+        let _ = card.paint(area, &mut buffer, None);
+        assert_eq!(buffer[(1, 0)].symbol(), "▎");
+        let theme = system.junie_theme();
+        let title_x = (0..area.width)
+            .find(|x| buffer[(*x, 0)].symbol() == "T")
+            .unwrap();
+        assert_eq!(buffer[(title_x, 0)].fg, theme.title().fg.unwrap());
+        assert!(
+            buffer[(title_x, 0)]
+                .modifier
+                .contains(ratatui_core::style::Modifier::BOLD)
+        );
     }
 }

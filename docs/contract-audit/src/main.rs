@@ -4,7 +4,7 @@
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
 use ratatui_core::{buffer::Buffer, style::Color};
-use termrock::style::{ColorCapability, DesignSystem, GlyphSet};
+use termrock::style::{ColorCapability, DesignSystem};
 use termrock_lookbook::{
     demo::{DemoEvent, DemoSession},
     frame::{STORY_PAD, paint_story_buffer, story_by_id},
@@ -99,7 +99,7 @@ fn injected_character_flags(story: Story, sample: &str) -> (bool, bool, bool, bo
 }
 
 fn character_evidence(story: Story) -> (String, String, String, String) {
-    let system = DesignSystem::phosphor();
+    let system = DesignSystem::junie();
     let mut unicode = Vec::new();
     let mut cjk = Vec::new();
     let mut combining = Vec::new();
@@ -156,7 +156,7 @@ fn sibling_story_evidence(
     story: Story,
     predicate: impl Fn(&str) -> bool,
 ) -> String {
-    let system = DesignSystem::phosphor();
+    let system = DesignSystem::junie();
     stories()
         .into_iter()
         .filter(|candidate| candidate.identity() == story.identity())
@@ -304,7 +304,7 @@ fn focus_capability(story: Story) -> bool {
 }
 
 fn audit(story: Story) -> Option<String> {
-    let canonical_system = DesignSystem::phosphor();
+    let canonical_system = DesignSystem::junie();
     let canonical = render(story, &canonical_system, story.width, story.height)?;
     let canonical_repeat = render(story, &canonical_system, story.width, story.height);
     let canonical_nonempty = nonempty(&canonical);
@@ -332,11 +332,11 @@ fn audit(story: Story) -> Option<String> {
         ColorCapability::Monochrome,
     ];
     let color_ladder_safe = capabilities.into_iter().all(|capability| {
-        let system = DesignSystem::phosphor().quantize(capability);
+        let system = DesignSystem::junie().quantize(capability);
         render(story, &system, story.width, story.height)
             .is_some_and(|buffer| nonempty(&buffer) && capability_safe(&buffer, capability))
     });
-    let no_color = DesignSystem::phosphor().no_color().glyphs(GlyphSet::Ascii);
+    let no_color = DesignSystem::junie().no_color();
     let no_color_buffer = render(story, &no_color, story.width, story.height);
     let no_color_safe = no_color_buffer
         .as_ref()

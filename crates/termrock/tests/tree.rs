@@ -8,7 +8,7 @@ use ratatui_core::{
 };
 use termrock::{
     input::{KeyCode, KeyEvent, KeyModifiers},
-    style::{DesignSystem, Role, RolePalette, SelectionChrome},
+    style::{DesignSystem, Role, RolePalette},
     widgets::{Tree, TreeNode, TreeNodeStatus, TreeOutcome, TreeState},
 };
 
@@ -141,9 +141,7 @@ fn empty_and_zero_sized_trees_are_safe() {
 
 #[test]
 fn painted_disclosure_and_selected_row_have_distinct_mouse_outcomes() {
-    // Tint selection (not the gutter default) so disclosure column geometry
-    // matches the historical hit-test expectations for this regression.
-    let tokens = DesignSystem::new(RolePalette::default()).selection(SelectionChrome::Tint);
+    let tokens = DesignSystem::new(RolePalette::default());
     let rows = nodes();
     let tree = Tree::new(&rows, &tokens);
     let mut state = TreeState::new(Some("leaf"));
@@ -157,7 +155,7 @@ fn painted_disclosure_and_selected_row_have_distinct_mouse_outcomes() {
     );
     assert_eq!(
         state.click(Position::new(8, 6)),
-        TreeOutcome::Activated("leaf")
+        TreeOutcome::SelectionChanged("leaf")
     );
     assert_eq!(state.hover(Position::new(8, 6)), Some(&"leaf"));
 }
@@ -260,7 +258,7 @@ fn page_keys_and_scroll_delta_use_the_painted_viewport() {
     tree.render(area, &mut buffer, &mut state);
     // One scrollbar language across every scroll surface (plans/022 Step 5).
     assert_eq!(buffer[(11, 0)].symbol(), "┃");
-    assert_eq!(buffer[(11, 2)].symbol(), "·");
+    assert_eq!(buffer[(11, 2)].symbol(), "│");
 
     assert_eq!(
         state.handle_key(&rows, KeyEvent::new(KeyCode::PageDown, KeyModifiers::NONE)),
@@ -292,8 +290,8 @@ fn host_focus_chrome_preserves_non_color_selection_cues() {
     // and never the focus weight.
     assert_eq!(
         buffer[(0, 0)].symbol(),
-        tokens.glyphs.selection_marker(),
-        "unfocused selection carries the membership marker"
+        tokens.glyphs.selection_gutter(),
+        "col 0 is always the reserved ▎ gutter"
     );
     assert!(
         !buffer[(4, 0)]
@@ -546,15 +544,15 @@ fn badge_cells_align_right_and_preserve_wide_metadata() {
     ];
     let tree = Tree::new(&rows, &tokens);
     let mut state = TreeState::default();
-    let area = Rect::new(0, 0, 16, 2);
+    let area = Rect::new(0, 0, 32, 2);
     let mut buffer = Buffer::empty(area);
 
     tree.render(area, &mut buffer, &mut state);
 
-    let row0: String = (0..16)
+    let row0: String = (0..32)
         .map(|x| buffer[(x, 0)].symbol().to_string())
         .collect();
-    let row1: String = (0..16)
+    let row1: String = (0..32)
         .map(|x| buffer[(x, 1)].symbol().to_string())
         .collect();
     assert!(row0.contains("12") && row0.contains('B'), "{row0:?}");
@@ -644,8 +642,8 @@ fn multi_select_toggles_by_space_and_painted_checkbox() {
         .map(|x| buffer[(x, 0)].symbol().to_string())
         .collect();
     assert!(
-        row0.contains('☑') || row0.contains('[') || row0.contains('x'),
-        "multi-select check chrome: {row0:?}"
+        row0.contains('✓'),
+        "multi-select membership is list ✓, not checkbox [✓]: {row0:?}"
     );
     // Toggle leaf via Space after selecting it (check hit regions vary by glyph width).
     assert_eq!(

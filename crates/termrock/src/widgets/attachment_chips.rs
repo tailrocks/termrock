@@ -899,6 +899,7 @@ impl<'a> AttachmentChip<'a> {
             TagOutcome::Remove(id) => AttachmentChipOutcome::Removed { id: id.to_string() },
             TagOutcome::PartChanged(p) => AttachmentChipOutcome::PartChanged(p),
             TagOutcome::Activated(id) => AttachmentChipOutcome::Activated { id: id.to_string() },
+            TagOutcome::HoverChanged => AttachmentChipOutcome::Ignored,
         }
     }
 
@@ -920,6 +921,7 @@ impl<'a> AttachmentChip<'a> {
             TagOutcome::Remove(id) => AttachmentChipOutcome::Removed { id: id.to_string() },
             TagOutcome::PartChanged(p) => AttachmentChipOutcome::PartChanged(p),
             TagOutcome::Activated(id) => AttachmentChipOutcome::Activated { id: id.to_string() },
+            TagOutcome::HoverChanged => AttachmentChipOutcome::Ignored,
         }
     }
 }
@@ -1088,6 +1090,7 @@ impl<'a> PasteChip<'a> {
                     PasteChipOutcome::Expanded { id: id.to_string() }
                 }
             }
+            TagOutcome::HoverChanged => PasteChipOutcome::Ignored,
         }
     }
 
@@ -1130,6 +1133,7 @@ impl<'a> PasteChip<'a> {
                     PasteChipOutcome::Collapsed { id: id.to_string() }
                 }
             }
+            TagOutcome::HoverChanged => PasteChipOutcome::Ignored,
         }
     }
 }
@@ -1196,6 +1200,7 @@ pub fn map_strip_outcome(out: TokenStripOutcome<String>) -> AttachmentStripEvent
         TokenStripOutcome::Selected(id) | TokenStripOutcome::Unselected(id) => {
             AttachmentStripEvent::Activated { id }
         }
+        TokenStripOutcome::Add | TokenStripOutcome::HoverChanged => AttachmentStripEvent::Ignored,
     }
 }
 

@@ -20,7 +20,10 @@ use crate::{
     },
     interaction::{HitRegion, SemanticNode, SemanticRole, SemanticScene, SemanticState},
     runtime::FrameTick,
-    style::{ButtonRecipeVariant, ControlState, DesignSystem, Glyph, GlyphSet, MotionPolicy, Role},
+    style::{
+        ButtonRecipeVariant, ControlState, DesignSystem, Glyph, GlyphSet, MotionPolicy, Role,
+        VisualState,
+    },
     text::{display_cols, take_display_cols},
 };
 
@@ -582,13 +585,6 @@ impl<'a> Button<'a> {
         if let Some(g) = self.trailing {
             w = w.saturating_add(display_cols(g).saturating_add(1));
         }
-        // Variant prefix/suffix reserve (not sole affordance).
-        w = match self.variant {
-            ButtonVariant::Command => w.saturating_add(2),
-            ButtonVariant::Outline => w.saturating_add(2),
-            ButtonVariant::Destructive => w.saturating_add(1),
-            _ => w,
-        };
         u16::try_from(w.min(usize::from(u16::MAX))).unwrap_or(u16::MAX)
     }
 
@@ -804,27 +800,35 @@ impl Button<'_> {
         if self.full_width {
             buffer.set_style(Rect::new(area.x, area.y, area.width, 1), style);
         }
-        buffer.set_stringn(area.x, area.y, &text, usize::from(paint_w), style);
+        let fill_bg = recipe.fill.bg.or(style.bg).unwrap_or(ground);
+        let face = Rect::new(area.x, area.y, paint_w, 1.min(area.height));
+        buffer.set_style(face, style.bg(fill_bg));
+        buffer.set_stringn(
+            area.x,
+            area.y,
+            &text,
+            usize::from(paint_w),
+            style.bg(fill_bg),
+        );
         let theme_t = theme.junie_theme();
         let on_accent =
             matches!(recipe_variant, ButtonRecipeVariant::Primary) && !disabled && !loading;
         if paint_w > 0 {
-            let gutter_fg = if !focused {
-                // Unfocused gutter is invisible: the same colour as the fill
-                // it sits on, but the column stays reserved.
-                recipe.fill.bg.unwrap_or(ground)
-            } else if on_accent {
-                theme.style(Role::Text).fg.unwrap_or(theme_t.text_primary)
-            } else {
-                theme.style(Role::Focus).fg.unwrap_or(theme_t.focus)
+            // Junie: col 0 is always `▎`. Unfocused, fg equals the fill so the
+            // glyph is present but invisible. Use the resolver, not a guessed
+            // plane — Quiet/Link have no fill of their own and sit on `ground`.
+            let visual = VisualState {
+                focused,
+                hovered,
+                pressed: armed,
+                disabled,
+                busy: loading,
+                ..VisualState::default()
             };
+            let gutter = theme_t.gutter(visual, fill_bg, on_accent);
             let cell = &mut buffer[(area.x, area.y)];
-            let mut gutter_style = cell.style();
-            gutter_style.fg = Some(gutter_fg);
-            gutter_style.add_modifier = ratatui_core::style::Modifier::empty();
-            gutter_style.sub_modifier = ratatui_core::style::Modifier::empty();
             cell.set_symbol(theme.glyphs.selection_gutter());
-            cell.set_style(gutter_style);
+            cell.set_style(gutter);
         }
         // Busy states activity with the accent spinner cell, never with a
         // second fill or a hue on the label.
@@ -1486,6 +1490,28 @@ mod tests {
         // fill.
         assert_eq!(cell.bg, system.style(Role::Accent).fg.unwrap());
         assert_eq!(cell.fg, system.style(Role::TextOnAccent).fg.unwrap());
+        // Unfocused primary: the bar character is reserved, painted in the fill.
+        let gutter = &buffer[(0, 0)];
+        assert_eq!(gutter.symbol(), "▎");
+        assert_eq!(gutter.fg, gutter.bg);
+    }
+
+    #[test]
+    fn focused_button_paints_visible_gutter() {
+        let system = DesignSystem::junie();
+        let mut state = ButtonState::new();
+        state.activation.set_enabled(true);
+        state.activation.set_accepts_input(true);
+        state.focused = true;
+        let area = Rect::new(0, 0, 16, 1);
+        let mut buffer = Buffer::empty(area);
+        Button::new("Preview", &system)
+            .as_secondary()
+            .paint(area, &mut buffer, &mut state);
+        let gutter = &buffer[(0, 0)];
+        assert_eq!(gutter.symbol(), "▎");
+        assert_eq!(gutter.fg, system.style(Role::Focus).fg.unwrap());
+        assert_ne!(gutter.fg, gutter.bg);
     }
 
     #[test]

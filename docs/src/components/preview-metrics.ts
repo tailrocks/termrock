@@ -120,7 +120,7 @@ export function contrastRatio(
 
 /**
  * Ghostty-like minimum-contrast: nudge fg toward black/white until ratio ≥ min.
- * Used after dim so faint phosphor text stays readable on near-bg cells.
+ * Used after dim so faint muted text stays readable on near-bg cells.
  */
 export function ensureMinContrast(
   fg: [number, number, number],
@@ -441,7 +441,7 @@ export function formatRgbHex(rgb: [number, number, number]): string {
 
 /**
  * Status-bar probe string for a hovered cell (Ghostty-class cell inspector).
- * Example: `3,2 · A · #00ff41/#1c1c1c`
+ * Example: `3,2 · A · #48e054/#111111`
  */
 export function formatCellProbe(
   x: number,

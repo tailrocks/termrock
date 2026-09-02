@@ -569,6 +569,34 @@ impl<Id: Clone + PartialEq> ListState<Id> {
                 _ => {}
             }
         }
+        if key.kind == KeyEventKind::Press
+            && !key.modifiers.contains(KeyModifiers::CONTROL)
+            && !key.modifiers.contains(KeyModifiers::ALT)
+        {
+            match key.code {
+                KeyCode::Char('g') if !key.modifiers.contains(KeyModifiers::SHIFT) => {
+                    self.collection.clear_typeahead();
+                    return self.handle_intent(rows, UiIntent::Move(NavigationMove::First));
+                }
+                KeyCode::Char('g') | KeyCode::Char('G') => {
+                    self.collection.clear_typeahead();
+                    return self.handle_intent(rows, UiIntent::Move(NavigationMove::Last));
+                }
+                KeyCode::Left | KeyCode::Char('h' | 'H') => {
+                    self.collection.clear_typeahead();
+                    return self.handle_intent(rows, UiIntent::Move(NavigationMove::Previous));
+                }
+                KeyCode::Right | KeyCode::Char('l' | 'L') => {
+                    self.collection.clear_typeahead();
+                    return self.handle_intent(rows, UiIntent::Move(NavigationMove::Next));
+                }
+                KeyCode::Char('a' | 'A') if self.selection.is_some() => {
+                    self.collection.clear_typeahead();
+                    return self.toggle_all(rows);
+                }
+                _ => {}
+            }
+        }
         match default_list_intent(key) {
             Some(intent) => {
                 self.collection.clear_typeahead();
@@ -639,7 +667,13 @@ impl<Id: Clone + PartialEq> ListState<Id> {
                 }
             }
             UiIntent::Activate | UiIntent::Open | UiIntent::Submit => self.activate(rows),
-            UiIntent::Toggle => self.toggle_selected(rows),
+            UiIntent::Toggle => {
+                if self.selection.is_some() {
+                    self.toggle_selected(rows)
+                } else {
+                    self.activate(rows)
+                }
+            }
             UiIntent::Cancel | UiIntent::Close => Outcome::Cancelled,
             UiIntent::Expand | UiIntent::Collapse => Outcome::Ignored,
             // Global chrome / edit intents: host + specialized surfaces handle them.
@@ -663,6 +697,29 @@ impl<Id: Clone + PartialEq> ListState<Id> {
         key: KeyEvent,
     ) -> crate::interaction::EventResult<Outcome<Id>> {
         self.handle_key(rows, key).into_event_result()
+    }
+
+    fn toggle_all(&mut self, rows: &[ListRow<'_, Id>]) -> Outcome<Id> {
+        let Some(selection) = self.selection.as_mut() else {
+            return Outcome::Ignored;
+        };
+        let ids: Vec<Id> = rows
+            .iter()
+            .filter(|row| row.enabled && row.role.is_navigable())
+            .map(|row| row.id.clone())
+            .collect();
+        if ids.is_empty() {
+            return Outcome::Ignored;
+        }
+        let all = ids.iter().all(|id| selection.is_checked(id));
+        if all {
+            for id in &ids {
+                let _ = selection.toggle(id);
+            }
+        } else {
+            selection.select_all(&ids);
+        }
+        Outcome::Changed
     }
 
     fn toggle_selected(&mut self, rows: &[ListRow<'_, Id>]) -> Outcome<Id> {
@@ -1050,10 +1107,19 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
         }
         ensure_list_active_visible(state, self.rows, viewport_height);
         if self.rows.is_empty() {
-            if let Some(message) = self.empty_message.as_ref() {
-                let style = self.tokens.style(Role::TextMuted);
-                buffer.set_line(area.x, area.y, message, area.width);
-                buffer.set_style(Rect::new(area.x, area.y, area.width, 1), style);
+            let fallback = Line::from("Nothing here yet");
+            let message = self.empty_message.as_ref().unwrap_or(&fallback);
+            let width = u16::try_from(message.width())
+                .unwrap_or(u16::MAX)
+                .min(area.width);
+            if width > 0 && area.height > 0 {
+                let y = area.y.saturating_add(area.height / 2);
+                let x = area.x.saturating_add(area.width.saturating_sub(width) / 2);
+                buffer.set_line(x, y, message, width);
+                buffer.set_style(
+                    Rect::new(x, y, width, 1),
+                    self.tokens.style(Role::TextMuted),
+                );
             }
             state.hovered = None;
             return;
@@ -1103,7 +1169,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                 break;
             }
             let rect = Rect::new(body.x, y, content_width, 1);
-            let selected = state.collection.active() == Some(&row.id);
+            let cursor = state.collection.active() == Some(&row.id);
             let hovered = row.enabled
                 && row.role.is_navigable()
                 && state
@@ -1113,9 +1179,14 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                 .selection
                 .as_ref()
                 .is_some_and(|selection| selection.is_checked(&row.id));
+            let chosen = if state.selection.is_some() {
+                checked
+            } else {
+                cursor
+            };
             let visual_state = ListRowVisualState {
-                selected,
-                focused: self.focused && selected,
+                selected: chosen,
+                focused: self.focused && cursor && row.enabled,
                 hovered,
                 enabled: row.enabled,
                 loading: row.loading,
@@ -1124,28 +1195,10 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
             };
             let recipe = self.tokens.resolve_list_row(visual_state);
             let chrome = super::row_chrome::RowChrome::resolve(self.tokens, visual_state);
-            // The check marker carries the accent (when focused), never the
-            // label: a checked-but-unselected row stays in the body tone.
-            let base_style = if hovered && row.enabled && !selected {
-                recipe.hover
-            } else {
-                recipe.label
-            };
-            let style = chrome.label_style(base_style);
-            // Green budget: the marker owns the accent, the label never does.
-            let marker_hot = (selected && self.focused) || hovered;
-            let marker_style = if checked {
-                chrome.label_style(if marker_hot {
-                    self.tokens.style(Role::Accent)
-                } else {
-                    self.tokens.style(Role::TextSecondary)
-                })
-            } else {
-                style
-            };
+            let style = chrome.label_style(recipe.label);
             let secondary_style = chrome.secondary_style(recipe.secondary);
             let shortcut_style = chrome.secondary_style(recipe.shortcut);
-            let trailing_style = chrome.secondary_style(recipe.trailing);
+            let trailing_style = chrome.secondary_style(recipe.secondary);
             if matches!(row.role, RowRole::Separator) {
                 let rule = self.tokens.glyphs.rule();
                 buffer.set_stringn(rect.x, rect.y, rule, usize::from(rect.width), style);
@@ -1166,14 +1219,11 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                 buffer.set_line(rect.x, rect.y, &row.label, rect.width);
                 buffer.set_style(rect, style);
             } else {
-                // Stable 2-cell gutter slot for quiet selection chrome.
-                if recipe.show_gutter_slot {
-                    buffer.set_stringn(rect.x, rect.y, "  ", 2, style);
-                }
-                let check_x = rect.x.saturating_add(2);
-                let check_w =
-                    render_check_cell(buffer, state, row, rect, check_x, &recipe, marker_style);
-                let content_x = check_x.saturating_add(check_w);
+                buffer.set_style(rect, style);
+                chrome.paint(buffer, Rect::new(rect.x, rect.y, rect.width, rh));
+                register_check_region(state, row, rect);
+                // Universal row: col 0 bar, col 1 marker, col 2 space, col 3+ label.
+                let content_x = rect.x.saturating_add(3);
                 if content_x < rect.right() {
                     let content_w = rect.right().saturating_sub(content_x);
                     // Custom body replaces composed primary cluster.
@@ -1256,7 +1306,10 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                             .unwrap_or(0);
                         // junie list rows are strictly one line: the secondary rides
                         // inline or is dropped, never wrapped to a second row.
-                        let show_secondary = row.secondary.is_some() && budget >= secondary_need;
+                        // Hide meta rather than starve the label below 12 cells.
+                        let show_secondary = row.secondary.is_some()
+                            && budget >= secondary_need
+                            && budget.saturating_sub(secondary_need) >= 12;
                         if show_secondary {
                             budget = budget.saturating_sub(secondary_need);
                         }
@@ -1406,7 +1459,6 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                         }
                     } // end non-custom
                 }
-                chrome.paint(buffer, Rect::new(rect.x, rect.y, rect.width, rh));
             }
             let hit_h = rh;
             if row.enabled && row.role.is_navigable() && !rect.is_empty() {
@@ -1445,44 +1497,17 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
     }
 }
 
-/// Paints multi-select check chrome; returns occupied width including trailing gap.
-fn render_check_cell<Id: Clone>(
-    buffer: &mut Buffer,
-    state: &mut ListState<Id>,
-    row: &ListRow<'_, Id>,
-    rect: Rect,
-    check_x: u16,
-    recipe: &crate::style::ListRowRecipe,
-    style: ratatui_core::style::Style,
-) -> u16 {
-    if state.selection.is_none() || check_x >= rect.right() {
-        return 0;
+/// Multi-select hit target is the col-1 `✓` slot; paint lives in row chrome.
+fn register_check_region<Id: Clone>(state: &mut ListState<Id>, row: &ListRow<'_, Id>, rect: Rect) {
+    if state.selection.is_none() || rect.width < 2 {
+        return;
     }
-
-    let marker = if recipe.checked {
-        recipe.check_on
-    } else {
-        recipe.check_off
-    };
-    let glyph_w = u16::try_from(crate::text::display_cols(marker)).unwrap_or(1);
-    let available = rect.right().saturating_sub(check_x);
-    let paint_w = glyph_w.min(available);
-    if paint_w == 0 {
-        return 0;
-    }
-    buffer.set_stringn(check_x, rect.y, marker, usize::from(paint_w), style);
-    // Trailing gap after check for content separation.
-    let gap = u16::from(available > paint_w);
-    if gap > 0 {
-        buffer.set_stringn(check_x.saturating_add(paint_w), rect.y, " ", 1, style);
-    }
-    if row.enabled && paint_w >= 1 {
+    if row.enabled {
         state.check_regions.push(HitRegion {
             id: row.id.clone(),
-            area: Rect::new(check_x, rect.y, paint_w.max(1), 1),
+            area: Rect::new(rect.x.saturating_add(1), rect.y, 1, 1),
         });
     }
-    paint_w.saturating_add(gap)
 }
 
 impl<Id: Clone + PartialEq> StatefulWidget for List<'_, Id> {
@@ -1654,14 +1679,14 @@ mod tests {
         let position = Position::new(area.x, area.y);
         assert_eq!(state.hover(position), Some(&"second"));
         assert_eq!(state.click(position), Outcome::Activated("second"));
-        // Quiet phosphor selection uses design-token gutter glyph.
         assert_eq!(buffer[(area.x, area.y)].symbol(), "\u{258e}");
     }
 
     #[test]
-    fn phosphor_selection_is_a_gutter_not_neon() {
+    fn junie_selection_is_a_gutter_and_marker_not_neon() {
         let rows = rows();
-        let system = DesignSystem::default();
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
         let mut state = ListState::new(Some("second"));
         let area = Rect::new(0, 0, 16, 4);
         let mut buffer = Buffer::empty(area);
@@ -1675,22 +1700,27 @@ mod tests {
         assert_eq!(
             buffer[(row.x, row.y)].symbol(),
             system.glyphs.selection_gutter(),
-            "the selected row is marked by its gutter"
+            "col 0 is the focus bar"
         );
-        let label = &buffer[(row.x.saturating_add(2), row.y)];
+        assert_eq!(
+            buffer[(row.x.saturating_add(1), row.y)].symbol(),
+            system.glyphs.selection_marker(),
+            "col 1 is the chosen marker"
+        );
+        let label = &buffer[(row.x.saturating_add(3), row.y)];
+        assert_eq!(label.bg, theme.accent_bg, "selected+focused tints");
         assert_ne!(
             label.bg,
             system.style(Role::Selection).bg.unwrap(),
             "selection never fills the row by default"
         );
+        assert_ne!(label.fg, theme.accent, "label never uses accent");
     }
 
     #[test]
-    fn tint_chrome_states_membership_without_abandoning_the_ladder() {
-        // junie's second selection chrome paints the tint and leaves the gutter
-        // slot empty; the marker glyph is the shipped default.
+    fn selected_focused_tint_is_accent_bg_not_text_selection() {
         let rows = rows();
-        let system = DesignSystem::junie().selection(crate::style::SelectionChrome::Tint);
+        let system = DesignSystem::junie();
         let mut state = ListState::new(Some("second"));
         let area = Rect::new(0, 0, 16, 4);
         let mut buffer = Buffer::empty(area);
@@ -1702,12 +1732,12 @@ mod tests {
             .unwrap()
             .area;
         let tint_bg = system.style(Role::SelectionTint).bg.unwrap();
-        assert_ne!(
+        assert_eq!(
             buffer[(row.x, row.y)].symbol(),
             system.glyphs.selection_gutter(),
-            "tint chrome leaves the gutter slot empty"
+            "col 0 is always the focus bar"
         );
-        let label = &buffer[(row.x.saturating_add(2), row.y)];
+        let label = &buffer[(row.x.saturating_add(3), row.y)];
         assert_eq!(label.bg, tint_bg, "the quiet tint owns the row ground");
         assert_ne!(
             label.bg,
@@ -1750,7 +1780,7 @@ mod tests {
         ];
         let tokens = DesignSystem::default();
         let mut state = ListState::new(None);
-        // Gutter (2) + content: badge right-aligned within content band.
+        // Gutter (3) + content: badge right-aligned within content band.
         let area = Rect::new(0, 0, 14, 2);
         let mut buffer = Buffer::empty(area);
 
@@ -1761,8 +1791,8 @@ mod tests {
         assert_eq!(buffer[(13, 0)].symbol(), "B");
         assert_eq!(buffer[(11, 1)].symbol(), "1");
         assert_eq!(buffer[(13, 1)].symbol(), "B");
-        // Primary starts after gutter and keeps wide graphemes intact.
-        assert_eq!(buffer[(2, 0)].symbol(), "🧪");
+        // Primary starts after ▎, marker, space and keeps wide graphemes intact.
+        assert_eq!(buffer[(3, 0)].symbol(), "🧪");
     }
 
     #[test]
@@ -1772,7 +1802,7 @@ mod tests {
         let rows = [row];
         let tokens = DesignSystem::default();
         let mut state = ListState::new(None);
-        // Gutter 2 + content 3: badge "🧪Z" (3 cells) fits; grapheme-safe clip drops Z if tighter.
+        // Gutter 3 + content 2: badge "🧪Z" (3 cells) may drop; grapheme-safe clip never splits.
         let area = Rect::new(0, 0, 5, 1);
         let mut buffer = Buffer::empty(area);
 
@@ -1823,7 +1853,7 @@ mod tests {
         let rows = [row];
         let tokens = DesignSystem::default();
         let mut state = ListState::new(None);
-        // Gutter 2 + content 4: optional chrome must drop before primary.
+        // Gutter 3 + content 3: optional chrome must drop before primary.
         let area = Rect::new(0, 0, 6, 1);
         let mut buffer = Buffer::empty(area);
         (&List::new(&rows, &tokens)).render(area, &mut buffer, &mut state);
@@ -1872,20 +1902,21 @@ mod tests {
         let area = Rect::new(0, 0, 20, 4);
         let mut buffer = Buffer::empty(area);
         (&List::new(&rows, &tokens)).render(area, &mut buffer, &mut state);
-        // The one checkbox vocabulary: `[✓]` on, `[ ]` off — never `☑`/`☐`.
+        // List multi-select is a single-cell `✓` at col 1, never `[✓]` (Checkbox).
         let row: String = (0..area.width)
             .map(|x| buffer[(x, 2)].symbol().to_string())
             .collect();
+        assert_eq!(buffer[(1, 2)].symbol(), "✓", "got {row:?}");
         assert!(
-            row.contains("[✓]"),
-            "expected `[✓]` check chrome, got {row:?}"
+            !row.contains("[✓]") && !row.contains("[ ]"),
+            "checkbox brackets leaked into the list: {row:?}"
         );
         assert!(
             !row.contains('☑') && !row.contains('☐'),
             "legacy checkbox glyph leaked: {row:?}"
         );
         assert_eq!(
-            state.click(Position::new(2, 3)),
+            state.click(Position::new(1, 3)),
             Outcome::CheckToggled("second")
         );
         assert_eq!(state.selection().unwrap().checked(), ["first", "second"]);
@@ -1895,7 +1926,7 @@ mod tests {
         state.disable_multi_select();
         assert_eq!(
             state.handle_key(&rows, KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE)),
-            Outcome::Ignored
+            Outcome::Activated("second")
         );
     }
 
@@ -1958,7 +1989,7 @@ mod tests {
         let mut buffer = Buffer::empty(area);
         let list = List::new(&rows, &tokens).empty_message(Line::from("No items"));
         (&list).render(area, &mut buffer, &mut state);
-        assert_eq!(buffer[(0, 0)].symbol(), "N");
+        assert_eq!(buffer[(6, 1)].symbol(), "N");
         assert!(state.regions().is_empty());
     }
 
@@ -2146,5 +2177,111 @@ mod tests {
         state.sync_scroll_area(&mut scroll, rows.len(), 2);
         assert_eq!(scroll.viewport_h(), 2);
         assert_eq!(scroll.content_h(), 3);
+    }
+
+    #[test]
+    fn single_select_focused_chosen_row_paints_junie_anatomy() {
+        let rows = [ListRow::item("a", Line::from("Alpha"))];
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let mut state = ListState::new(Some("a"));
+        let area = Rect::new(0, 0, 20, 1);
+        let mut buffer = Buffer::empty(area);
+        (&List::new(&rows, &system)).render(area, &mut buffer, &mut state);
+        assert_eq!(buffer[(0, 0)].symbol(), "▎");
+        assert_eq!(buffer[(0, 0)].fg, theme.focus);
+        assert_eq!(buffer[(1, 0)].symbol(), "›");
+        assert_eq!(buffer[(1, 0)].fg, theme.accent);
+        assert_eq!(buffer[(2, 0)].symbol(), " ");
+        assert_eq!(buffer[(3, 0)].symbol(), "A");
+        assert_ne!(buffer[(3, 0)].fg, theme.accent);
+    }
+
+    #[test]
+    fn unfocused_selected_row_hides_the_bar_and_marks_in_secondary() {
+        let rows = [ListRow::item("a", Line::from("Alpha"))];
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let mut state = ListState::new(Some("a"));
+        let area = Rect::new(0, 0, 20, 1);
+        let mut buffer = Buffer::empty(area);
+        (&List::new(&rows, &system).focused(false)).render(area, &mut buffer, &mut state);
+        assert_eq!(buffer[(0, 0)].symbol(), "▎");
+        assert_eq!(buffer[(0, 0)].fg, buffer[(0, 0)].bg);
+        assert_eq!(buffer[(1, 0)].symbol(), "›");
+        assert_eq!(buffer[(1, 0)].fg, theme.text_secondary);
+        assert_ne!(buffer[(3, 0)].bg, theme.accent_bg);
+        assert_ne!(buffer[(3, 0)].fg, theme.accent);
+    }
+
+    #[test]
+    fn selected_focused_row_tints_accent_bg() {
+        let rows = [ListRow::item("a", Line::from("Alpha"))];
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let mut state = ListState::new(Some("a"));
+        let area = Rect::new(0, 0, 20, 1);
+        let mut buffer = Buffer::empty(area);
+        (&List::new(&rows, &system)).render(area, &mut buffer, &mut state);
+        assert_eq!(buffer[(3, 0)].bg, theme.accent_bg);
+    }
+
+    #[test]
+    fn multi_select_paints_check_in_marker_slot() {
+        let rows = [
+            ListRow::item("a", Line::from("Alpha")),
+            ListRow::item("b", Line::from("Beta")),
+        ];
+        let system = DesignSystem::junie();
+        let mut state = ListState::new(Some("a"));
+        state.set_selection_mode(ListSelectionMode::Multi);
+        assert!(state.selection_mut().unwrap().toggle(&"a"));
+        let area = Rect::new(0, 0, 20, 2);
+        let mut buffer = Buffer::empty(area);
+        (&List::new(&rows, &system)).render(area, &mut buffer, &mut state);
+        assert_eq!(buffer[(1, 0)].symbol(), "✓");
+        assert_eq!(buffer[(1, 1)].symbol(), " ");
+        assert_eq!(buffer[(3, 0)].symbol(), "A");
+        let row: String = (0..20)
+            .map(|x| buffer[(x, 0)].symbol().to_string())
+            .collect();
+        assert!(!row.contains("[✓]"), "checkbox brackets leaked: {row:?}");
+    }
+
+    #[test]
+    fn disabled_row_is_faint_with_no_hover_and_no_visible_bar() {
+        let rows = [
+            ListRow::item("a", Line::from("Able")),
+            ListRow::item("b", Line::from("Nope")).disabled(),
+        ];
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let mut state = ListState::new(Some("a"));
+        let _ = state.hover(Position::new(0, 1));
+        let area = Rect::new(0, 0, 20, 2);
+        let mut buffer = Buffer::empty(area);
+        (&List::new(&rows, &system)).render(area, &mut buffer, &mut state);
+        assert_eq!(buffer[(3, 1)].symbol(), "N");
+        assert_eq!(buffer[(3, 1)].fg, theme.disabled);
+        assert_eq!(buffer[(3, 1)].fg, theme.text_faint);
+        assert_eq!(buffer[(0, 1)].symbol(), "▎");
+        assert_eq!(buffer[(0, 1)].fg, buffer[(0, 1)].bg);
+        assert_ne!(buffer[(3, 1)].bg, theme.lift(theme.surface));
+        assert_eq!(buffer[(1, 1)].symbol(), " ");
+    }
+
+    #[test]
+    fn empty_list_centers_muted_default_message() {
+        let rows: [ListRow<'_, &str>; 0] = [];
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let mut state = ListState::<&str>::default();
+        let area = Rect::new(0, 0, 20, 5);
+        let mut buffer = Buffer::empty(area);
+        (&List::new(&rows, &system)).render(area, &mut buffer, &mut state);
+        assert_eq!(buffer[(2, 2)].symbol(), "N");
+        assert_eq!(buffer[(17, 2)].symbol(), "t");
+        assert_eq!(buffer[(2, 2)].fg, theme.text_muted);
+        assert_eq!(buffer[(0, 0)].symbol(), " ");
     }
 }

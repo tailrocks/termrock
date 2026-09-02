@@ -198,7 +198,7 @@ mod tests {
 
         let system = DesignSystem::default();
         let hints = [StatusSlot::new("tab", "tab panel")];
-        let knobs = [("density", "compact"), ("theme", "phosphor")];
+        let knobs = [("density", "compact"), ("theme", "junie")];
         let view = StudioShellView {
             preview_title: "Button",
             frame: DesignInspectorFrame::default(),

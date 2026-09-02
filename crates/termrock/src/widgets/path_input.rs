@@ -1420,7 +1420,7 @@ mod tests {
 
     #[test]
     fn destructive_paint() {
-        let system = DesignSystem::from_palette(RolePalette::default());
+        let system = DesignSystem::new(RolePalette::default());
         let mut state = PathInputState::new().with_path("/etc/passwd");
         state.set_focused(true);
         state.set_risk(PathRisk::Destructive);

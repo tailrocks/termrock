@@ -1,13 +1,13 @@
 dialog/destructive 50x12 (story 48x10)
                                                   
- ╭ ! ! Delete project ──────────────────────────╮ 
+ ╭──────────────────────────────────────────────╮ 
  │                                              │ 
- │                                              │ 
+ │  Delete project                              │ 
  │  All files and history will be removed.      │ 
  │  This cannot be undone.                      │ 
  │                                              │ 
- │            ▎ Delete    ▎ Cancel              │ 
- │  esc cancel · enter confirms focused         │ 
+ │                                              │ 
+ │                           ▎Cancel  ▎Delete   │ 
  │                                              │ 
  ╰──────────────────────────────────────────────╯ 
                                                   

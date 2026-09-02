@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-//! Phosphor PNG export for the widget families used by Jackin.
+//! Junie/TermRock PNG export for the widget families used by Jackin.
 use std::{
     fs, io,
     path::{Path, PathBuf},
@@ -52,7 +52,7 @@ pub fn story_png_filename(story: Story) -> String {
     format!("{}.png", story.id.replace('/', "-"))
 }
 
-/// Render one story at registered geometry using the phosphor palette.
+/// Render one story at registered geometry using the canonical junie palette.
 #[must_use]
 pub fn render_story_png(story: Story) -> Vec<u8> {
     let palette = RolePalette::default();

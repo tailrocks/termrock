@@ -43,7 +43,9 @@ use crate::interaction::{
     SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, default_button_intent,
     default_list_intent,
 };
-use crate::style::{ButtonRecipeVariant, ControlState, DesignSystem, Role};
+use crate::style::{
+    ButtonKind, ButtonRecipeVariant, ControlState, DesignSystem, Role, VisualState,
+};
 use crate::text::{display_cols, take_display_cols};
 
 // ── Types ───────────────────────────────────────────────────────────────────
@@ -505,22 +507,21 @@ impl<'a, Id: Clone + PartialEq> SegmentedControl<'a, Id> {
         hovered: bool,
         enabled: bool,
     ) -> ratatui_core::style::Style {
-        let control_state = if !enabled {
-            ControlState::Disabled
-        } else if focused {
-            ControlState::Focused
-        } else if hovered {
-            ControlState::Hovered
-        } else {
-            ControlState::Default
+        let theme = self.system.junie_theme();
+        let visual = VisualState {
+            focused: focused && enabled,
+            hovered: hovered && enabled,
+            selected,
+            disabled: !enabled,
+            ..VisualState::default()
         };
-        let recipe = self.system.button_recipe(
-            ButtonRecipeVariant::Secondary,
-            control_state,
-            self.system.junie_theme().surface,
-        );
-        let mut style = recipe.fill.patch(recipe.label);
-        if selected {
+        let kind = if selected {
+            ButtonKind::Toggle
+        } else {
+            ButtonKind::Subtle
+        };
+        let mut style = theme.button(kind, visual, theme.surface);
+        if selected && enabled {
             style = style.add_modifier(Modifier::BOLD);
         }
         style
@@ -1308,5 +1309,45 @@ mod tests {
         let mut buf = Buffer::empty(Rect::new(0, 0, 1, 1));
         let parts = g.paint(Rect::new(0, 0, 0, 0), &mut buf, &mut state);
         assert!(parts.items.is_empty());
+    }
+
+    fn cell(buffer: &Buffer, x: u16, y: u16) -> String {
+        buffer[(x, y)].symbol().to_string()
+    }
+
+    #[test]
+    fn selected_hover_focus_disabled_buffer() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let items = [
+            SegmentedItem::new("list", "List"),
+            SegmentedItem::new("grid", "Grid"),
+            SegmentedItem::new("off", "Off").enabled(false),
+        ];
+        let g = SegmentedControl::new(&items, &system);
+        let mut state = SegmentedControlState::new(Some("list"));
+        state.set_surface_focused(true);
+        let area = Rect::new(0, 0, 40, 1);
+        let mut buf = Buffer::empty(area);
+        let parts = g.paint(area, &mut buf, &mut state);
+        let list = parts.items.iter().find(|i| i.id == "list").unwrap();
+        assert_eq!(cell(&buf, list.area.x, 0), "[");
+        assert!(
+            buf[(list.area.x.saturating_add(1), 0)]
+                .modifier
+                .contains(Modifier::BOLD)
+        );
+
+        let grid = parts.items.iter().find(|i| i.id == "grid").unwrap();
+        state.hovered = Some("grid");
+        let mut buf = Buffer::empty(area);
+        let _ = g.paint(area, &mut buf, &mut state);
+        assert_eq!(
+            buf[(grid.area.x.saturating_add(1), 0)].bg,
+            theme.lift(theme.surface)
+        );
+
+        let off = parts.items.iter().find(|i| i.id == "off").unwrap();
+        assert_eq!(buf[(off.area.x.saturating_add(1), 0)].fg, theme.disabled);
     }
 }

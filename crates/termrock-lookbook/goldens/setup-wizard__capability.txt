@@ -1,14 +1,13 @@
 setup-wizard/capability 82x24 (story 80x22)
                                                                                   
  ╭ First run ───────────────────────────────────────────────────────────────────╮ 
- │                                                                              │ 
- │  [✓]Welcome → [›]Terminal → [ ]Account → [ ]◦Connection → [ ]◦Choices → [ ]  │ 
+ │  [✓]Welcome → [›]Terminal → [ ]Account → [ ]◦Connection → [ ]◦Choices → [ ]T │ 
  │  Capability check                                                            │ 
  │  Terminal capabilities                                                       │ 
- │    truecolor       ok                                                        │ 
- │    unicode         ok                                                        │ 
- │    kitty keyboard  partial                                                   │ 
- │    sixel           missing                                                   │ 
+ │  ▎ truecolor       ok                                                        │ 
+ │  ▎ unicode         ok                                                        │ 
+ │  ▎ kitty keyboard  partial                                                   │ 
+ │  ▎ sixel           missing                                                   │ 
  │                                                                              │ 
  │                                                                              │ 
  │                                                                              │ 
@@ -18,8 +17,9 @@ setup-wizard/capability 82x24 (story 80x22)
  │                                                                              │ 
  │                                                                              │ 
  │                                                                              │ 
- │                                                                ▎ Continue    │ 
- │  ← Back        Esc                                              Next →       │ 
  │                                                                              │ 
+ │                                                                              │ 
+ │                                                                   ▎Continue  │ 
+ │  ← Back        Esc                                               Next →      │ 
  ╰──────────────────────────────────────────────────────────────────────────────╯ 
                                                                                   

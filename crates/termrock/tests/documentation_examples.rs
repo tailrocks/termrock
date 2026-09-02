@@ -33,7 +33,7 @@ use termrock::{
 #[test]
 fn toast_documentation_example() {
     let theme = RolePalette::default();
-    let system = DesignSystem::from_palette(theme.clone());
+    let system = DesignSystem::new(theme.clone());
     let toast = Toast::new(&system, "Saved", Severity::Success)
         .anchor(Anchor::BottomRight)
         .margins(1, 1);
@@ -57,7 +57,7 @@ fn list_documentation_example() {
 #[test]
 fn handbook_button_action_bar_example() {
     let theme = RolePalette::default();
-    let system = DesignSystem::from_palette(theme.clone());
+    let system = DesignSystem::new(theme.clone());
     let tokens = DesignSystem::default();
     // Flagship Button (handbook basic + interactive)
     let button = Button::new("Save", &tokens).variant(termrock::widgets::ButtonVariant::Primary);
@@ -178,7 +178,7 @@ fn handbook_command_palette_example() {
 #[test]
 fn handbook_prompt_composer_example() {
     let theme = RolePalette::default();
-    let system = DesignSystem::from_palette(theme.clone());
+    let system = DesignSystem::new(theme.clone());
     let tokens = DesignSystem::new(theme.clone());
     let mut state = PromptComposerState::new();
     state.set_placeholder("Ask anything…");
@@ -238,7 +238,7 @@ fn handbook_permission_prompt_example() {
 #[test]
 fn theme_documentation_example() {
     let theme = RolePalette::default().with_role(Role::Accent, Style::new().fg(Color::Cyan));
-    let system = DesignSystem::from_palette(theme.clone());
+    let system = DesignSystem::new(theme.clone());
     assert_eq!(theme.style(Role::Accent).fg, Some(Color::Cyan));
 }
 

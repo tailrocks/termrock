@@ -13,7 +13,10 @@ use crate::{
     text::take_display_cols,
 };
 
-use super::{List, ListRow, ListState, RowRole, TextInput, TextInputOutcome, TextInputState};
+use super::{
+    Hint, HintBar, List, ListRow, ListState, RowRole, Surface, SurfaceRecipe, TextInput,
+    TextInputOutcome, TextInputState,
+};
 
 /// Default overlay id for a select/picker popup on an [`OverlayStack`].
 pub const PICKER_OVERLAY_ID: &str = "termrock.picker";
@@ -57,6 +60,32 @@ pub fn place_picker(bounds: Rect, anchor: Rect, preferred: PickerSize) -> Rect {
         Some(anchor),
         OverlaySize::from(preferred),
         crate::interaction::OverlayPolicy::for_kind(crate::interaction::OverlayKind::Select),
+    )
+}
+
+/// Centered in the upper third of `bounds` (command-palette / quick-open class).
+#[must_use]
+pub fn place_picker_modal(bounds: Rect, preferred: PickerSize) -> Rect {
+    place_upper_third(bounds, preferred.width, preferred.height)
+}
+
+fn place_upper_third(bounds: Rect, width: u16, height: u16) -> Rect {
+    if bounds.is_empty() || width == 0 || height == 0 {
+        return Rect::default();
+    }
+    let width = width.min(bounds.width).max(1);
+    let height = height.min(bounds.height).max(1);
+    let x = bounds
+        .x
+        .saturating_add(bounds.width.saturating_sub(width) / 2);
+    let y = bounds
+        .y
+        .saturating_add((bounds.height.saturating_sub(height) / 3).max(1));
+    Rect::new(
+        x,
+        y.min(bounds.bottom().saturating_sub(height)),
+        width,
+        height,
     )
 }
 
@@ -356,6 +385,7 @@ pub struct Picker<'a, Id> {
     empty_message: &'a str,
     focused: bool,
     colorless: bool,
+    title: &'a str,
 }
 
 impl<'a, Id> Picker<'a, Id> {
@@ -373,7 +403,15 @@ impl<'a, Id> Picker<'a, Id> {
             // claiming the terminal has Unicode and colour before anyone
             // asked it. Builders below still force either way.
             colorless: system.mono(),
+            title: "Picker",
         }
+    }
+
+    /// Overlay title painted above the query field.
+    #[must_use]
+    pub const fn title(mut self, title: &'a str) -> Self {
+        self.title = title;
+        self
     }
 
     /// Replaces the semantic query label.
@@ -427,22 +465,55 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
             );
             return;
         }
-        let tiny = area.height < 2;
-        let query_area = Rect::new(area.x, area.y, area.width, 1);
+        let chrome = area.height >= 6 && area.width >= 16;
+        let inner = if chrome {
+            let recipe = if self.focused {
+                SurfaceRecipe::OverlayFocused
+            } else {
+                SurfaceRecipe::Overlay
+            };
+            let inner = Surface::new(self.system)
+                .recipe(recipe)
+                .bordered(true)
+                .content_inset()
+                .paint(area, buffer);
+            if area.width > 4 {
+                buffer.set_stringn(
+                    area.x.saturating_add(2),
+                    area.y,
+                    take_display_cols(self.title, usize::from(area.width.saturating_sub(4))),
+                    usize::from(area.width.saturating_sub(4)),
+                    self.system.style(Role::TextStrong),
+                );
+            }
+            inner
+        } else {
+            area
+        };
+        if inner.is_empty() {
+            return;
+        }
+        let show_hints = chrome && inner.height >= 4;
+        let query_area = Rect::new(inner.x, inner.y, inner.width, 1);
         StatefulWidget::render(
             &TextInput::new(self.label, self.system).placeholder(self.placeholder),
             query_area,
             buffer,
             &mut state.query,
         );
-        if tiny {
+        if inner.height < 2 {
             return;
         }
+        let list_bottom = if show_hints {
+            inner.bottom().saturating_sub(1)
+        } else {
+            inner.bottom()
+        };
         let list_area = Rect::new(
-            area.x,
-            area.y.saturating_add(1),
-            area.width,
-            area.height.saturating_sub(1),
+            inner.x,
+            inner.y.saturating_add(1),
+            inner.width,
+            list_bottom.saturating_sub(inner.y.saturating_add(1)),
         );
         if list_area.is_empty() {
             return;
@@ -471,12 +542,39 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
             );
         } else {
             let list = List::new(self.rows, self.system);
-            // List focused chrome is selection-based; surface focus is host.
             let _ = (self.focused, false, self.colorless);
             StatefulWidget::render(&list, list_area, buffer, &mut state.list);
         }
+        if show_hints {
+            ratatui_core::widgets::Widget::render(
+                &HintBar::new(PICKER_HINTS, self.system),
+                Rect::new(inner.x, inner.bottom().saturating_sub(1), inner.width, 1),
+                buffer,
+            );
+        }
     }
 }
+
+const PICKER_HINTS: &[Hint<'static>] = &[
+    Hint {
+        chord: "↑↓",
+        label: "move",
+        priority: 10,
+        visible: true,
+    },
+    Hint {
+        chord: "enter",
+        label: "choose",
+        priority: 20,
+        visible: true,
+    },
+    Hint {
+        chord: "esc",
+        label: "close",
+        priority: 50,
+        visible: true,
+    },
+];
 
 impl<Id: Clone + PartialEq> StatefulWidget for Picker<'_, Id> {
     type State = PickerState<Id>;
@@ -510,6 +608,14 @@ mod tests {
                 loading: false,
             })
             .collect()
+    }
+
+    #[test]
+    fn modal_sits_in_the_upper_third() {
+        let bounds = Rect::new(0, 0, 80, 24);
+        let placed = place_picker_modal(bounds, PickerSize::default());
+        assert!(placed.y < bounds.height / 2, "upper third: {placed:?}");
+        assert!(placed.width >= 24);
     }
 
     #[test]
@@ -710,6 +816,49 @@ mod tests {
         assert_eq!(state.list().hovered(), Some(&"alpha"));
         (&Picker::new(&filtered, &tokens)).render(Rect::new(0, 0, 20, 4), &mut buffer, &mut state);
         assert_eq!(state.list().hovered(), None);
+    }
+
+    #[test]
+    fn modal_picker_sits_in_the_upper_third() {
+        let bounds = Rect::new(0, 0, 120, 40);
+        let placed = place_picker_modal(bounds, PickerSize::default());
+        assert!(placed.y < bounds.height / 2, "upper third, not true center");
+        assert_eq!(
+            placed.x,
+            bounds.width.saturating_sub(placed.width) / 2,
+            "horizontally centered"
+        );
+    }
+
+    #[test]
+    fn chrome_picker_keeps_list_anatomy_and_hint_row() {
+        let tokens = DesignSystem::default();
+        let visible = rows(&["alpha", "beta"]);
+        let mut state = PickerState::new(Some("alpha"));
+        let area = Rect::new(0, 0, 40, 12);
+        let mut buffer = Buffer::empty(area);
+        (&Picker::new(&visible, &tokens).title("Open")).render(area, &mut buffer, &mut state);
+        let mut text = String::new();
+        for y in 0..area.height {
+            for x in 0..area.width {
+                text.push_str(buffer[(x, y)].symbol());
+            }
+        }
+        assert!(text.contains("alpha"));
+        assert!(
+            text.contains("move") || text.contains("enter") || text.contains("choose"),
+            "own hint row: {text:?}"
+        );
+        let selected = state
+            .list()
+            .regions()
+            .iter()
+            .find(|r| r.id == "alpha")
+            .expect("selected row painted");
+        assert_eq!(
+            buffer[(selected.area.x, selected.area.y)].symbol(),
+            tokens.glyphs.selection_gutter()
+        );
     }
 
     #[test]

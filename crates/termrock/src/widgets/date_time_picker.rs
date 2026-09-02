@@ -2148,9 +2148,7 @@ impl<'a> DateTimePicker<'a> {
                 }
 
                 let rect = Rect::new(x, y, col_w.min(area.right().saturating_sub(x)), 1);
-                if recipe.use_fill {
-                    buffer.set_style(rect, recipe.label);
-                } else if recipe.use_tint {
+                if recipe.use_tint {
                     buffer.set_style(rect, recipe.tint);
                 }
                 buffer.set_stringn(
@@ -2228,9 +2226,7 @@ impl<'a> DateTimePicker<'a> {
                 checked: is_sel,
                 ..ListRowVisualState::default()
             });
-            if recipe.use_fill {
-                buffer.set_style(rect, recipe.label);
-            } else if recipe.use_tint {
+            if recipe.use_tint {
                 buffer.set_style(rect, recipe.tint);
             }
             buffer.set_stringn(
@@ -2292,9 +2288,7 @@ impl<'a> DateTimePicker<'a> {
                 checked: is_sel,
                 ..ListRowVisualState::default()
             });
-            if recipe.use_fill {
-                buffer.set_style(rect, recipe.label);
-            } else if recipe.use_tint {
+            if recipe.use_tint {
                 buffer.set_style(rect, recipe.tint);
             }
             buffer.set_stringn(
@@ -2526,7 +2520,7 @@ mod tests {
 
     #[test]
     fn unavailable_non_color_paint() {
-        let system = DesignSystem::from_palette(RolePalette::default());
+        let system = DesignSystem::new(RolePalette::default());
         let mut state = DateTimePickerState::new(DateTimePickerKind::Date)
             .with_min_date(CivilDate::new(2026, 8, 10).unwrap())
             .with_max_date(CivilDate::new(2026, 8, 20).unwrap())

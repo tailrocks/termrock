@@ -5,7 +5,7 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Style, text::Line, widgets::Widget};
 
 use crate::{
-    style::{ControlState, DesignSystem, ListRowVisualState, Role},
+    style::{DesignSystem, Glyph, MASK_CELLS, Role, VisualState},
     text::{display_cols, truncate_cols},
 };
 
@@ -71,6 +71,7 @@ pub struct FieldRow<'a> {
     hovered: bool,
     enabled: bool,
     invalid: bool,
+    editing: bool,
 }
 
 impl<'a> FieldRow<'a> {
@@ -89,6 +90,7 @@ impl<'a> FieldRow<'a> {
             hovered: false,
             enabled: true,
             invalid: false,
+            editing: false,
         }
     }
 
@@ -160,48 +162,44 @@ impl<'a> FieldRow<'a> {
         self
     }
 
+    /// Applies in-place editing chrome (accent underline; hover suppressed).
+    #[must_use]
+    pub const fn editing(mut self, editing: bool) -> Self {
+        self.editing = editing;
+        self
+    }
+
     /// Paints this row into one terminal line.
     pub fn paint(&self, area: Rect, buffer: &mut Buffer) {
         if area.is_empty() {
             return;
         }
-        let recipe = self.system.resolve_list_row(ListRowVisualState {
-            selected: self.selected,
-            focused: self.selected,
-            hovered: self.hovered,
-            enabled: self.enabled,
-            loading: false,
-            checked: false,
-            ..ListRowVisualState::default()
-        });
-        let input_recipe = self.system.input_recipe(
-            if !self.enabled {
-                ControlState::Disabled
-            } else if self.selected {
-                ControlState::Focused
-            } else {
-                ControlState::Default
-            },
-            self.invalid,
-        );
+        let theme = self.system.junie_theme();
+        let visual = VisualState {
+            focused: self.selected && self.enabled,
+            hovered: self.hovered && self.enabled && !self.editing,
+            disabled: !self.enabled,
+            error: self.invalid,
+            editing: self.editing && self.enabled,
+            ..VisualState::default()
+        };
+        let field = theme.field_style(visual);
         let row = Rect::new(area.x, area.y, area.width, 1);
-        if recipe.use_fill {
-            buffer.set_style(row, recipe.label);
-        } else if recipe.use_tint {
-            buffer.set_style(row, recipe.tint);
-        } else if recipe.hover_fill {
-            buffer.set_style(row, recipe.hover_wash);
-        }
+        buffer.set_style(row, field);
+        let gutter = theme.gutter(visual, field.bg.unwrap_or(theme.field), false);
+        buffer.set_stringn(
+            area.x,
+            area.y,
+            self.system.glyphs.selection_gutter(),
+            1,
+            gutter,
+        );
 
-        let mut x = area.x;
-        if let Some((glyph, style)) = recipe.gutter {
-            buffer.set_stringn(x, area.y, glyph, 1, style);
-        }
-        x = x.saturating_add(2);
+        let mut x = area.x.saturating_add(2);
         if let Some(marker) = self.marker {
             let marker_width =
                 display_cols(marker).min(usize::from(area.right().saturating_sub(x)));
-            buffer.set_stringn(x, area.y, marker, marker_width, recipe.secondary);
+            buffer.set_stringn(x, area.y, marker, marker_width, theme.secondary());
             x = x.saturating_add(u16::try_from(marker_width).unwrap_or(u16::MAX));
             x = x.saturating_add(self.system.spacing.gap);
         }
@@ -214,7 +212,7 @@ impl<'a> FieldRow<'a> {
             area.y,
             &label,
             usize::from(label_width),
-            recipe.secondary,
+            theme.label(visual.focused),
         );
         x = x.saturating_add(label_width);
         x = x.saturating_add(self.system.spacing.gap);
@@ -222,21 +220,33 @@ impl<'a> FieldRow<'a> {
             return;
         }
 
+        let bang = u16::from(self.invalid && remaining > 2);
         let annotation_width = self.annotation.map_or(0, |text| {
             display_cols(text).saturating_add(usize::from(self.system.spacing.gap))
         });
-        let value_width =
-            usize::from(area.right().saturating_sub(x)).saturating_sub(annotation_width);
-        let value_style = input_recipe.value;
+        let value_width = usize::from(
+            area.right()
+                .saturating_sub(x)
+                .saturating_sub(bang.saturating_add(u16::from(bang > 0))),
+        )
+        .saturating_sub(annotation_width);
+        let value_style = if !self.enabled {
+            theme.faint().bg(field.bg.unwrap_or(theme.field))
+        } else {
+            Style::new()
+                .fg(theme.text_primary)
+                .bg(field.bg.unwrap_or(theme.field))
+        };
+        let placeholder = theme.placeholder(visual);
         match &self.value {
             FieldRowValue::Plain(value) => {
                 let text = truncate_cols(value, value_width, "…");
                 buffer.set_stringn(x, area.y, &text, value_width, value_style);
             }
-            FieldRowValue::Masked { len } => {
-                let glyph = "●";
-                let text = glyph.repeat((*len).min(value_width));
-                buffer.set_stringn(x, area.y, &text, value_width, value_style);
+            FieldRowValue::Masked { .. } => {
+                let glyph = Glyph::Mask.resolve().text;
+                let n = MASK_CELLS.min(value_width);
+                buffer.set_stringn(x, area.y, &glyph.repeat(n), value_width, value_style);
             }
             FieldRowValue::Composed(line) => {
                 buffer.set_line(
@@ -248,41 +258,58 @@ impl<'a> FieldRow<'a> {
             }
             FieldRowValue::Unset { hint } => {
                 let style = if self.required {
-                    input_recipe
-                        .placeholder
-                        .patch(self.system.style(Role::Danger))
+                    placeholder.patch(self.system.style(Role::Danger))
                 } else {
-                    input_recipe.placeholder
+                    placeholder
                 };
                 let text = truncate_cols(hint, value_width, "…");
                 buffer.set_stringn(x, area.y, &text, value_width, style);
             }
         }
 
-        // A one-line row's border slot is the underline under the value:
-        // editing underlines in accent, an invalid value in error. The
-        // underline is not a second text colour, so the value keeps the tone
-        // `input_recipe` gave it.
-        let mut underline = Style::new().add_modifier(input_recipe.border.add_modifier);
-        if let Some(color) = input_recipe.border.underline_color {
-            underline = underline.underline_color(color);
+        let underline_color = if self.invalid {
+            Some(theme.error)
+        } else if visual.editing {
+            Some(theme.accent)
+        } else {
+            None
+        };
+        if let Some(color) = underline_color {
+            buffer.set_style(
+                Rect::new(
+                    x,
+                    area.y,
+                    u16::try_from(value_width)
+                        .unwrap_or(u16::MAX)
+                        .min(area.right().saturating_sub(x)),
+                    1,
+                ),
+                Style::new()
+                    .add_modifier(ratatui_core::style::Modifier::UNDERLINED)
+                    .underline_color(color),
+            );
         }
-        buffer.set_style(
-            Rect::new(
-                x,
-                area.y,
-                u16::try_from(value_width)
-                    .unwrap_or(u16::MAX)
-                    .min(area.right().saturating_sub(x)),
-                1,
-            ),
-            underline,
-        );
+
+        if self.invalid {
+            let bang_x = area.right().saturating_sub(2);
+            if bang_x >= x {
+                buffer.set_stringn(
+                    bang_x,
+                    area.y,
+                    Glyph::Error.resolve().text,
+                    1,
+                    Style::new()
+                        .fg(theme.error)
+                        .bg(field.bg.unwrap_or(theme.field))
+                        .add_modifier(ratatui_core::style::Modifier::BOLD),
+                );
+            }
+        }
 
         if let Some(annotation) = self.annotation {
             let used = match &self.value {
                 FieldRowValue::Plain(value) => display_cols(value),
-                FieldRowValue::Masked { len } => *len,
+                FieldRowValue::Masked { .. } => MASK_CELLS,
                 FieldRowValue::Composed(line) => line.width(),
                 FieldRowValue::Unset { hint } => display_cols(hint),
             }
@@ -291,15 +318,12 @@ impl<'a> FieldRow<'a> {
                 .saturating_add(u16::try_from(used).unwrap_or(u16::MAX))
                 .saturating_add(self.system.spacing.gap);
             if annotation_x < area.right() {
-                // An annotation is supporting text: the placeholder tone is its
-                // whole cue, and ITALIC stays the comment tier's (D5).
-                let style = input_recipe.placeholder;
                 buffer.set_stringn(
                     annotation_x,
                     area.y,
                     annotation,
                     usize::from(area.right().saturating_sub(annotation_x)),
-                    style,
+                    placeholder,
                 );
             }
         }
@@ -311,6 +335,7 @@ mod tests {
     use ratatui_core::{buffer::Buffer, layout::Rect};
 
     use super::*;
+    use crate::style::{DesignSystem, Glyph, MASK_CELLS, Role};
 
     #[test]
     fn label_measurement_is_wide_glyph_correct_with_minimum() {
@@ -319,9 +344,9 @@ mod tests {
     }
 
     #[test]
-    fn masked_value_has_requested_display_width() {
+    fn masked_value_is_fixed_mask_cells() {
         let system = DesignSystem::junie();
-        let area = Rect::new(0, 0, 24, 1);
+        let area = Rect::new(0, 0, 32, 1);
         let mut buffer = Buffer::empty(area);
         FieldRow::new(&system, "Token", FieldRowValue::Masked { len: 5 }).paint(area, &mut buffer);
         let row = buffer
@@ -329,7 +354,12 @@ mod tests {
             .iter()
             .map(|cell| cell.symbol())
             .collect::<String>();
-        assert!(row.contains("●●●●●"));
+        let mask = Glyph::Mask.resolve().text.repeat(MASK_CELLS);
+        assert!(row.contains(&mask), "{row:?}");
+        assert!(
+            !row.contains(&Glyph::Mask.resolve().text.repeat(MASK_CELLS + 1)),
+            "mask must not track secret length: {row:?}"
+        );
     }
 
     #[test]
@@ -351,11 +381,9 @@ mod tests {
 
     #[test]
     fn invalid_value_underlines_in_error_and_keeps_its_tone() {
-        // M6: an invalid field says so in its underline (`underline_color`
-        // error), never by recolouring the value text.
         let system = DesignSystem::junie();
         let theme = system.junie_theme();
-        let area = Rect::new(0, 0, 24, 1);
+        let area = Rect::new(0, 0, 32, 1);
         let mut buffer = Buffer::empty(area);
         FieldRow::new(&system, "Email", FieldRowValue::Plain("bad"))
             .invalid(true)
@@ -378,8 +406,98 @@ mod tests {
             .expect("the value is painted");
         assert_ne!(
             Some(value_cell.fg),
-            system.style(Role::Danger).fg,
+            Some(theme.error),
             "the value text is not the error colour"
         );
+        let row: String = (0..area.width)
+            .map(|x| buffer[(x, 0)].symbol().to_string())
+            .collect();
+        assert!(
+            row.contains('!'),
+            "invalid field trails a bold `!`: {row:?}"
+        );
+    }
+
+    #[test]
+    fn idle_field_is_field_plane_with_hidden_gutter() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let area = Rect::new(0, 0, 24, 1);
+        let mut buffer = Buffer::empty(area);
+        FieldRow::new(&system, "Name", FieldRowValue::Plain("Ada")).paint(area, &mut buffer);
+        let gutter = &buffer[(0, 0)];
+        assert_eq!(gutter.symbol(), "▎");
+        assert_eq!(gutter.fg, gutter.bg, "idle gutter is hidden (fg=bg)");
+        assert_eq!(gutter.bg, theme.field);
+        let value = buffer
+            .content()
+            .iter()
+            .find(|cell| cell.symbol() == "A")
+            .expect("value");
+        assert_eq!(value.bg, theme.field);
+        assert_eq!(value.fg, theme.text_primary);
+    }
+
+    #[test]
+    fn hover_not_editing_lifts_to_field_hover() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let area = Rect::new(0, 0, 24, 1);
+        let mut buffer = Buffer::empty(area);
+        FieldRow::new(&system, "Name", FieldRowValue::Plain("Ada"))
+            .hovered(true)
+            .paint(area, &mut buffer);
+        assert_eq!(buffer[(2, 0)].bg, theme.field_hover);
+    }
+
+    #[test]
+    fn focused_editing_keeps_field_plane_and_accent_underline() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let area = Rect::new(0, 0, 24, 1);
+        let mut buffer = Buffer::empty(area);
+        FieldRow::new(&system, "Name", FieldRowValue::Plain("Ada"))
+            .selected(true)
+            .editing(true)
+            .hovered(true)
+            .paint(area, &mut buffer);
+        let gutter = &buffer[(0, 0)];
+        assert_eq!(gutter.symbol(), "▎");
+        assert_eq!(gutter.fg, theme.focus);
+        let value = buffer
+            .content()
+            .iter()
+            .find(|cell| cell.symbol() == "A")
+            .expect("value");
+        assert_eq!(value.bg, theme.field, "editing does not lift the well");
+        assert_eq!(value.style().underline_color, Some(theme.accent));
+        assert!(
+            value
+                .style()
+                .add_modifier
+                .contains(ratatui_core::style::Modifier::UNDERLINED)
+        );
+    }
+
+    #[test]
+    fn disabled_is_faint_and_does_not_hover() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let area = Rect::new(0, 0, 24, 1);
+        let mut buffer = Buffer::empty(area);
+        FieldRow::new(&system, "Name", FieldRowValue::Plain("Ada"))
+            .enabled(false)
+            .hovered(true)
+            .paint(area, &mut buffer);
+        let gutter = &buffer[(0, 0)];
+        assert_eq!(gutter.fg, gutter.bg, "disabled has no focus bar");
+        assert_eq!(gutter.bg, theme.field);
+        let value = buffer
+            .content()
+            .iter()
+            .find(|cell| cell.symbol() == "A")
+            .expect("value");
+        assert_eq!(value.fg, theme.disabled);
+        assert_eq!(value.bg, theme.field);
     }
 }

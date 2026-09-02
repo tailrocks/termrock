@@ -22,7 +22,9 @@ use crate::{
         EventResult, SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent,
         default_button_intent,
     },
-    style::{ButtonRecipeVariant, ControlState, DesignSystem, ListRowVisualState, Role},
+    style::{
+        ButtonRecipeVariant, ControlState, DesignSystem, ListRowVisualState, Role, VisualState,
+    },
     text::{display_cols, take_display_cols},
 };
 
@@ -389,11 +391,10 @@ impl<'a, Id> Checkbox<'a, Id> {
     /// Preferred width for box + gap + label (description not included).
     #[must_use]
     pub fn preferred_width(&self, state: &CheckboxState) -> u16 {
-        let mark = self.box_mark(state.value);
-        let gap = 1u16;
+        let _ = state;
+        // gutter + `[✓]` + space + label
         let label_w = display_cols(self.label) as u16;
-        let mark_w = display_cols(mark) as u16;
-        mark_w.saturating_add(gap).saturating_add(label_w).max(3)
+        5u16.saturating_add(label_w).max(5)
     }
 
     fn box_mark(&self, value: CheckboxValue) -> &'static str {
@@ -402,64 +403,6 @@ impl<'a, Id> Checkbox<'a, Id> {
             CheckboxValue::Unchecked => self.system.glyphs.check_off(),
             CheckboxValue::Indeterminate => "[–]",
         }
-    }
-
-    fn mark_style(&self, state: &CheckboxState) -> ratatui_core::style::Style {
-        let control_state = if !state.enabled {
-            ControlState::Disabled
-        } else if state.focused {
-            ControlState::Focused
-        } else if state.hovered {
-            ControlState::Hovered
-        } else {
-            ControlState::Default
-        };
-        let recipe = self.system.button_recipe(
-            ButtonRecipeVariant::Quiet,
-            control_state,
-            self.system.junie_theme().surface,
-        );
-        let mut style = recipe.fill.patch(recipe.label);
-        if state.read_only {
-            // Read-only is the disabled fact: say it with the disabled tone,
-            // never with a dimmed copy of the active one.
-            style = style.patch(self.system.style(Role::TextDisabled));
-        }
-        if state.invalid {
-            style = style.patch(self.system.style(Role::Danger));
-        }
-        match state.value {
-            CheckboxValue::Checked => style.add_modifier(Modifier::BOLD),
-            CheckboxValue::Indeterminate => style.patch(self.system.style(Role::TextMuted)),
-            CheckboxValue::Unchecked => style,
-        }
-    }
-
-    fn label_style(&self, state: &CheckboxState) -> ratatui_core::style::Style {
-        let control_state = if !state.enabled {
-            ControlState::Disabled
-        } else if state.focused {
-            ControlState::Focused
-        } else if state.hovered {
-            ControlState::Hovered
-        } else {
-            ControlState::Default
-        };
-        let recipe = self.system.button_recipe(
-            ButtonRecipeVariant::Quiet,
-            control_state,
-            self.system.junie_theme().surface,
-        );
-        let mut style = recipe.fill.patch(recipe.label);
-        if state.read_only {
-            // Read-only is the disabled fact: say it with the disabled tone,
-            // never with a dimmed copy of the active one.
-            style = style.patch(self.system.style(Role::TextDisabled));
-        }
-        if state.invalid {
-            style = style.patch(self.system.style(Role::Danger));
-        }
-        style
     }
 
     /// Paint checkbox. Prefer this over [`StatefulWidget::render`].
@@ -475,20 +418,49 @@ impl<'a, Id> Checkbox<'a, Id> {
             return CheckboxParts::default();
         }
 
-        let mark = self.box_mark(state.value);
-        let mark_w = display_cols(mark).min(usize::from(area.width)) as u16;
-        let box_area = Rect::new(area.x, area.y, mark_w.max(1), 1.min(area.height));
+        let theme = self.system.junie_theme();
+        let bg = theme.surface;
+        let visual = VisualState {
+            focused: state.focused && state.enabled,
+            hovered: state.hovered && state.enabled && !state.read_only,
+            disabled: !state.enabled,
+            error: state.invalid,
+            ..VisualState::default()
+        };
+        let row_style = self.system.row(visual, bg);
+        let row = Rect::new(area.x, area.y, area.width, 1.min(area.height));
+        buffer.set_style(row, row_style);
         buffer.set_stringn(
-            box_area.x,
-            box_area.y,
-            mark,
-            usize::from(box_area.width),
-            self.mark_style(state),
+            area.x,
+            area.y,
+            self.system.glyphs.selection_gutter(),
+            1,
+            self.system
+                .gutter(visual, row_style.bg.unwrap_or(bg), false),
         );
 
-        // Tiny: box only when width cannot hold gap+1 label col
-        let after_box = area.x.saturating_add(mark_w);
-        let label_x = after_box.saturating_add(1);
+        let mark = self.box_mark(state.value);
+        let mark_w = 3u16.min(area.width.saturating_sub(1)).max(1);
+        let box_area = Rect::new(area.x.saturating_add(1), area.y, mark_w, 1.min(area.height));
+        let mark_style = if !state.enabled {
+            row_style
+        } else if matches!(state.value, CheckboxValue::Checked) {
+            row_style.fg(theme.accent)
+        } else {
+            row_style.fg(theme.text_muted)
+        };
+        if area.width > 1 {
+            buffer.set_stringn(
+                box_area.x,
+                box_area.y,
+                mark,
+                usize::from(box_area.width),
+                mark_style,
+            );
+        }
+
+        // junie: `[✓]` is 3 cells then space then label (label starts col 5).
+        let label_x = area.x.saturating_add(5);
         let mut label_area = Rect::new(area.x, area.y, 0, 0);
         if label_x < area.right() && area.height > 0 && !self.label.is_empty() {
             let lw = area.right().saturating_sub(label_x);
@@ -499,7 +471,7 @@ impl<'a, Id> Checkbox<'a, Id> {
                 label_area.y,
                 &text,
                 usize::from(lw),
-                self.label_style(state),
+                row_style,
             );
             let used = display_cols(&text).min(usize::from(lw)) as u16;
             label_area.width = used;
@@ -543,10 +515,8 @@ impl<'a, Id> Checkbox<'a, Id> {
         let hit_w = if description_area.is_some() {
             root_w
         } else {
-            let content = mark_w
-                .saturating_add(if label_area.width > 0 { 1 } else { 0 })
-                .saturating_add(label_area.width);
-            content.max(mark_w).min(root_w)
+            let content = 5u16.saturating_add(label_area.width);
+            content.max(5).min(root_w)
         };
         let hit = Rect::new(area.x, area.y, hit_w.max(1), root_h);
         state.region = Some(hit);
@@ -1005,39 +975,16 @@ impl<'a, Id> RadioGroup<'a, Id> {
         }
     }
 
-    fn mono(&self) -> bool {
-        self.colorless || self.system.mono()
-    }
-
     /// The pip an option wears: shape before colour.
     ///
     /// `○` empty → `◎` the cursor is on it but nothing is committed → `●`
     /// chosen. The middle rung existed in the model and was never painted, so
     /// a roving cursor looked identical to a made choice (plans/015 Step 5).
     fn mark(&self, selected: bool, previewed: bool) -> &'static str {
-        if self.mono() || false {
-            // Bracket forms keep 3-column alignment stable.
-            return match (selected, previewed) {
-                (true, _) => "(*)",
-                (false, true) => "(-)",
-                (false, false) => "( )",
-            };
-        }
-        match (selected, previewed) {
-            (true, _) => {
-                self.system
-                    .glyphs
-                    .resolve(crate::style::Glyph::RadioOn)
-                    .text
-            }
-            (false, true) => "◎",
-            (false, false) => {
-                self.system
-                    .glyphs
-                    .resolve(crate::style::Glyph::RadioOff)
-                    .text
-            }
-        }
+        // junie choice.rs: `(●)` / `( )`. Preview keeps the empty form so
+        // FollowFocus (move = select) is the painted truth. No ASCII profile.
+        let _ = previewed;
+        if selected { "(●)" } else { "( )" }
     }
 
     fn mark_cols(&self, selected: bool, previewed: bool) -> u16 {
@@ -1116,20 +1063,24 @@ impl<'a, Id: Clone + PartialEq> RadioGroup<'a, Id> {
         let mut legend_rect = None;
         if let Some(leg) = self.legend {
             if !leg.is_empty() && y < area.bottom() {
-                let mut style = self.system.style(if state.invalid {
-                    Role::Danger
-                } else {
-                    Role::TextStrong
-                });
-                if state.surface_focused {
-                    style = style.add_modifier(Modifier::BOLD);
+                let theme = self.system.junie_theme();
+                let mut style = theme.label(state.surface_focused).bg(theme.surface);
+                if !state.enabled {
+                    style = theme.faint().bg(theme.surface);
                 }
-                let text = take_display_cols(leg, usize::from(area.width));
-                buffer.set_stringn(area.x, y, &text, usize::from(area.width), style);
+                if state.invalid {
+                    style = style.fg(theme.error);
+                }
+                let lx = area.x.saturating_add(2);
+                let lw = area.right().saturating_sub(lx);
+                let text = take_display_cols(leg, usize::from(lw));
+                if lw > 0 {
+                    buffer.set_stringn(lx, y, &text, usize::from(lw), style);
+                }
                 legend_rect = Some(Rect::new(
-                    area.x,
+                    lx,
                     y,
-                    display_cols(&text).min(usize::from(area.width)) as u16,
+                    display_cols(&text).min(usize::from(lw.max(1))) as u16,
                     1,
                 ));
                 y = y.saturating_add(1);
@@ -1145,21 +1096,48 @@ impl<'a, Id: Clone + PartialEq> RadioGroup<'a, Id> {
                     }
                     let selected = state.selected.as_ref() == Some(&opt.id);
                     let focused = state.surface_focused && state.active() == Some(&opt.id);
-                    let hovered = state.hovered.as_ref() == Some(&opt.id);
-                    let mark = self.mark(selected, focused && !selected);
-                    let mark_w = self
-                        .mark_cols(selected, focused && !selected)
-                        .min(area.width);
-                    let mark_area = Rect::new(area.x, y, mark_w.max(1), 1);
-                    let style = self.option_style(state, opt, selected, focused, hovered);
+                    let hovered =
+                        state.hovered.as_ref() == Some(&opt.id) && state.enabled && opt.enabled;
+                    let theme = self.system.junie_theme();
+                    let bg = theme.surface;
+                    let visual = VisualState {
+                        focused,
+                        hovered,
+                        selected,
+                        disabled: !state.enabled || !opt.enabled,
+                        error: state.invalid && selected,
+                        ..VisualState::default()
+                    };
+                    let style = self.system.row(visual, bg);
+                    let row = Rect::new(area.x, y, area.width, 1);
+                    buffer.set_style(row, style);
                     buffer.set_stringn(
-                        mark_area.x,
-                        mark_area.y,
-                        mark,
-                        usize::from(mark_w.max(1)),
-                        style,
+                        area.x,
+                        y,
+                        self.system.glyphs.selection_gutter(),
+                        1,
+                        self.system.gutter(visual, style.bg.unwrap_or(bg), false),
                     );
-                    let label_x = area.x.saturating_add(mark_w).saturating_add(1);
+                    let mark = self.mark(selected, focused && !selected);
+                    let mark_w = 3u16.min(area.width.saturating_sub(1)).max(1);
+                    let mark_area = Rect::new(area.x.saturating_add(1), y, mark_w, 1);
+                    let mark_style = if !state.enabled || !opt.enabled {
+                        style
+                    } else if selected {
+                        style.fg(theme.accent)
+                    } else {
+                        style.fg(theme.text_muted)
+                    };
+                    if area.width > 1 {
+                        buffer.set_stringn(
+                            mark_area.x,
+                            mark_area.y,
+                            mark,
+                            usize::from(mark_w),
+                            mark_style,
+                        );
+                    }
+                    let label_x = area.x.saturating_add(5);
                     let mut row_h = 1u16;
                     if label_x < area.right() {
                         let lw = area.right().saturating_sub(label_x);
@@ -1339,13 +1317,13 @@ impl<'a, Id: Clone + PartialEq> RadioGroup<'a, Id> {
         if is_press && key.modifiers.is_empty() {
             let before = state.collection.active().cloned();
             match key.code {
-                KeyCode::Down | KeyCode::Right | KeyCode::Tab => {
+                KeyCode::Down | KeyCode::Right | KeyCode::Tab | KeyCode::Char('j' | 'J') => {
                     let _ = state.collection.move_next(&items);
                     if state.collection.active() != before.as_ref() {
                         return self.after_cursor_move(state, before);
                     }
                 }
-                KeyCode::Up | KeyCode::Left | KeyCode::BackTab => {
+                KeyCode::Up | KeyCode::Left | KeyCode::BackTab | KeyCode::Char('k' | 'K') => {
                     let _ = state.collection.move_previous(&items);
                     if state.collection.active() != before.as_ref() {
                         return self.after_cursor_move(state, before);
@@ -1959,39 +1937,19 @@ impl<'a, Id> Switch<'a, Id> {
     #[must_use]
     pub fn track_width(&self, state: &SwitchState) -> u16 {
         if state.loading {
-            return 5;
+            return 1;
         }
-        if self.show_value_text {
-            5 // [ON ] / [OFF]
-        } else if self.mono() {
-            4 // [●=] style compressed
-        } else {
-            4
-        }
-    }
-
-    fn mono(&self) -> bool {
-        self.colorless || self.system.mono()
+        3
     }
 
     fn track_face(&self, state: &SwitchState) -> String {
         if state.loading {
-            let spin = self.system.glyphs.loading();
-            return format!("[{spin:^3}]");
+            return self.system.glyphs.loading().to_string();
         }
-        if self.show_value_text || self.mono() {
-            // Explicit text — required for no-color and default ambiguity avoidance
-            return if state.on {
-                "[ON ]".to_string()
-            } else {
-                "[OFF]".to_string()
-            };
-        }
-        // Optional compact glyphs when value text disabled and not mono
         if state.on {
-            "[●=]".to_string()
+            "──●".to_string()
         } else {
-            "[=●]".to_string()
+            "○──".to_string()
         }
     }
 
@@ -2074,22 +2032,74 @@ impl<'a, Id> Switch<'a, Id> {
 
         let (track, label_area, description_area, root) = match self.recipe {
             SwitchRecipe::Compact => {
-                // [ON ] Label
-                let track = Rect::new(area.x, area.y, track_w, 1.min(area.height));
-                let face_t = take_display_cols(&face, usize::from(track_w));
-                buffer.set_stringn(track.x, track.y, &face_t, usize::from(track_w), track_style);
+                // junie: `▎──● label on`
+                let theme = self.system.junie_theme();
+                let visual = VisualState {
+                    focused: state.focused && state.enabled,
+                    hovered: state.hovered && state.enabled && !state.read_only,
+                    selected: state.on,
+                    disabled: !state.enabled,
+                    error: state.invalid,
+                    ..VisualState::default()
+                };
+                let row_style = self.system.row(visual, theme.surface);
+                let row = Rect::new(area.x, area.y, area.width, 1.min(area.height));
+                buffer.set_style(row, row_style);
+                buffer.set_stringn(
+                    area.x,
+                    area.y,
+                    self.system.glyphs.selection_gutter(),
+                    1,
+                    self.system
+                        .gutter(visual, row_style.bg.unwrap_or(theme.surface), false),
+                );
+                let track = Rect::new(
+                    area.x.saturating_add(1),
+                    area.y,
+                    track_w.min(area.width.saturating_sub(1)),
+                    1.min(area.height),
+                );
+                let face_t = take_display_cols(&face, usize::from(track.width));
+                let knob_style = if !state.enabled {
+                    row_style
+                } else if state.on {
+                    row_style.fg(theme.accent)
+                } else {
+                    row_style.fg(theme.text_muted)
+                };
+                let _ = track_style;
+                buffer.set_stringn(
+                    track.x,
+                    track.y,
+                    &face_t,
+                    usize::from(track.width),
+                    knob_style,
+                );
                 let mut label_area = None;
-                let lx = area.x.saturating_add(track_w).saturating_add(1);
+                let lx = area.x.saturating_add(5);
                 if lx < area.right() && !self.label.is_empty() {
                     let lw = area.right().saturating_sub(lx);
                     let text = take_display_cols(self.label, usize::from(lw));
                     buffer.set_stringn(lx, area.y, &text, usize::from(lw), label_style);
                     let used = display_cols(&text).min(usize::from(lw)) as u16;
                     label_area = Some(Rect::new(lx, area.y, used, 1));
+                    let word = if state.on { "on" } else { "off" };
+                    let sx = lx.saturating_add(used).saturating_add(1);
+                    if sx + 3 < area.right() {
+                        buffer.set_stringn(
+                            sx,
+                            area.y,
+                            word,
+                            3,
+                            row_style.fg(if state.enabled {
+                                theme.text_muted
+                            } else {
+                                theme.disabled
+                            }),
+                        );
+                    }
                 }
-                let content_w = track_w
-                    .saturating_add(if label_area.is_some() { 1 } else { 0 })
-                    .saturating_add(label_area.map(|r| r.width).unwrap_or(0));
+                let content_w = 5u16.saturating_add(label_area.map(|r| r.width).unwrap_or(0));
                 let root = Rect::new(
                     area.x,
                     area.y,
@@ -2756,7 +2766,7 @@ mod tests {
         let mut state = SwitchState::new(false);
         let mut buf = Buffer::empty(Rect::new(0, 0, 24, 1));
         let parts = sw.paint(Rect::new(0, 0, 24, 1), &mut buf, &mut state);
-        assert_eq!(parts.track.x, 0);
+        assert_eq!(parts.track.x, 1, "knob sits after the focus bar");
         assert!(parts.label_area.is_some());
     }
 
@@ -2770,33 +2780,36 @@ mod tests {
         let _ = sw.paint(Rect::new(0, 0, 20, 1), &mut buf, &mut state);
         assert_eq!(
             buf.cell((0, 0)).map(|c| c.symbol().to_string()).as_deref(),
-            Some("[")
+            Some("▎")
+        );
+        assert_eq!(
+            buf.cell((1, 0)).map(|c| c.symbol().to_string()).as_deref(),
+            Some(system.glyphs.loading())
         );
     }
 
     #[test]
-    fn a_roving_cursor_previews_before_it_commits() {
-        let system = DesignSystem::default();
+    fn radio_marks_are_the_junie_paren_forms() {
+        let system = DesignSystem::junie();
         let options = [
             RadioOption::new("a", "Compact"),
             RadioOption::new("b", "Comfortable"),
         ];
         let mut state = RadioState::new(Some("a"));
         state.surface_focused = true;
-        state.collection.set_active(Some("b"));
         let area = Rect::new(0, 0, 30, 3);
         let mut buffer = Buffer::empty(area);
-        RadioGroup::new(&options, &system).render(area, &mut buffer, &mut state);
+        RadioGroup::new(&options, &system)
+            .legend("Density")
+            .render(area, &mut buffer, &mut state);
 
         let rows: Vec<String> = (0..area.height)
             .map(|y| (0..area.width).map(|x| buffer[(x, y)].symbol()).collect())
             .collect();
         let all = rows.join("\n");
-        assert!(
-            all.contains('◎'),
-            "the option under the cursor previews with ◎: {all:?}"
-        );
-        assert!(all.contains('●'), "the committed option keeps ●: {all:?}");
+        assert!(all.contains("(●)"), "selected: {all:?}");
+        assert!(all.contains("( )"), "idle: {all:?}");
+        assert!(!all.contains('◎'), "junie has no preview pip: {all:?}");
     }
 
     #[test]
@@ -2813,6 +2826,102 @@ mod tests {
         let mut scene = SemanticScene::<&str, ()>::default();
         sw.register_semantic(&mut scene, area, &state);
         assert!(scene.len() >= 1);
+    }
+
+    fn cell(buffer: &Buffer, x: u16, y: u16) -> String {
+        buffer[(x, y)].symbol().to_string()
+    }
+
+    #[test]
+    fn checkbox_anatomy_gutter_mark_label() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let cb = Checkbox::new("n", "Notify", &system);
+        let area = Rect::new(0, 0, 24, 1);
+
+        let mut on = CheckboxState::new(true);
+        on.set_focused(true);
+        let mut buf = Buffer::empty(area);
+        let _ = cb.paint(area, &mut buf, &mut on);
+        assert_eq!(cell(&buf, 0, 0), "▎");
+        assert_eq!(cell(&buf, 1, 0), "[");
+        assert_eq!(cell(&buf, 2, 0), "✓");
+        assert_eq!(cell(&buf, 3, 0), "]");
+        assert_eq!(cell(&buf, 4, 0), " ");
+        assert_eq!(cell(&buf, 5, 0), "N");
+        assert_eq!(buf[(2, 0)].fg, theme.accent);
+
+        let mut off = CheckboxState::new(false);
+        let mut buf = Buffer::empty(area);
+        let _ = cb.paint(area, &mut buf, &mut off);
+        assert_eq!(cell(&buf, 2, 0), " ");
+        assert_eq!(buf[(1, 0)].fg, theme.text_muted);
+
+        let mut hover = CheckboxState::new(false);
+        hover.hovered = true;
+        let mut buf = Buffer::empty(area);
+        let _ = cb.paint(area, &mut buf, &mut hover);
+        assert_eq!(buf[(5, 0)].bg, theme.lift(theme.surface));
+
+        let mut disabled = CheckboxState::new(true);
+        disabled.set_enabled(false);
+        let mut buf = Buffer::empty(area);
+        let _ = cb.paint(area, &mut buf, &mut disabled);
+        assert_eq!(buf[(5, 0)].fg, theme.disabled);
+        assert_eq!(cell(&buf, 0, 0), "▎");
+        assert_eq!(
+            buf[(0, 0)].fg,
+            buf[(0, 0)].bg,
+            "disabled gutter is reserved, fg=bg"
+        );
+
+        let mut err = CheckboxState::new(false);
+        err.set_invalid(true);
+        err.set_focused(true);
+        let mut buf = Buffer::empty(area);
+        let _ = cb.paint(area, &mut buf, &mut err);
+        assert_eq!(buf[(5, 0)].fg, theme.error);
+    }
+
+    #[test]
+    fn radio_anatomy_and_jk_select() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let options = [
+            RadioOption::new("a", "Fast"),
+            RadioOption::new("b", "Balanced"),
+        ];
+        let g = RadioGroup::new(&options, &system).legend("Mode");
+        let mut state = RadioState::new(Some("a"));
+        state.set_surface_focused(true);
+        let area = Rect::new(0, 0, 24, 4);
+        let mut buf = Buffer::empty(area);
+        let _ = g.paint(area, &mut buf, &mut state);
+        assert_eq!(cell(&buf, 2, 0), "M");
+        assert_eq!(cell(&buf, 0, 1), "▎");
+        assert_eq!(cell(&buf, 1, 1), "(");
+        assert_eq!(cell(&buf, 2, 1), "●");
+        assert_eq!(cell(&buf, 3, 1), ")");
+        assert_eq!(cell(&buf, 5, 1), "F");
+        assert_eq!(buf[(2, 1)].fg, theme.accent);
+        assert_eq!(cell(&buf, 2, 2), " ");
+        assert_eq!(cell(&buf, 5, 2), "B");
+
+        let out = g.handle_key(
+            &mut state,
+            KeyEvent::new(KeyCode::Char('j'), KeyModifiers::NONE),
+        );
+        assert_eq!(out, RadioOutcome::Selected("b"));
+        let out = g.handle_key(
+            &mut state,
+            KeyEvent::new(KeyCode::Char('k'), KeyModifiers::NONE),
+        );
+        assert_eq!(out, RadioOutcome::Selected("a"));
+
+        state.set_enabled(false);
+        let mut buf = Buffer::empty(area);
+        let _ = g.paint(area, &mut buf, &mut state);
+        assert_eq!(buf[(5, 1)].fg, theme.disabled);
     }
 
     // Select / MultiSelect / Combobox: see dedicated widget modules.
