@@ -10927,6 +10927,7 @@ pub fn stories() -> Vec<Story> {
             toast_stack_story,
         ),
     ];
+    catalog.extend(crate::junie_screens::stories());
     catalog.extend(in_app_stories(&catalog));
     catalog
 }

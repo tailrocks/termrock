@@ -40,6 +40,11 @@ Landed reusable APIs (catalog/preview must use these; no page-local forks):
 - Workspace `png_baselines` red is presentation (subset stories without baselines / intended Junie paint drift). Core will not run `mise run bless-pngs`.
 - Pre-existing panel ellipsis tests are core defects; this agent fixes the painter.
 
+## Presentation claimed (this slice)
+
+- `crates/termrock-lookbook/src/stories.rs` + `junie_screens.rs` — Overview Tokens / Settings General / Task runner Targets stories from public APIs
+- `verify/junie/scenarios.json5` — un-SKIP those six showcase scenes with equivalent crops
+
 ## Presentation claimed (spawned)
 
 - `crates/termrock-lookbook/baselines/png/` — bless Jackin subset including `dialog-confirm-run.png` and `panel-framed-pane.png`
@@ -71,4 +76,9 @@ Remaining SKIP (`verify/junie`, 11 product shells):
 
 Panel scrollbar API landed (`vertical_scroll` / `scrolled_content_area` / `overflow_thumb`). `panel/framed-pane` consumes it; no story-local thumb/title overdraw.
 
-Lookbook+showcase merge: not started. SKIP 11 stay product shells: existing `settings-screen/*`, `background-tasks/*`, `database-workbench/*`, `design-inspector/*` stories are TermRock pattern demos, not junie page crops. Do not un-SKIP by pointing those at Overview/Settings/TaskRunner/TablePro. Next presentation slice: new lookbook stories that copy junie page anatomy from public APIs (Settings: Tabs+Form+TextInput+Radio; Task runner: Tree+Progress+LogPane; Overview: token KeyValue list).
+Junie screen stories (public APIs, equivalent crops, 0/0):
+- `overview/tokens` — Tokens card (swatch + name + note)
+- `settings/general` — Tabs + TextInput + RadioGroup + Toggle + Button
+- `taskrunner/targets` — Tree of payments-gateway / shared-libs
+
+SKIP remaining: 5 tablepro product shells (default/local/production/help). Do not map `database-workbench/*` pattern demos onto those.
