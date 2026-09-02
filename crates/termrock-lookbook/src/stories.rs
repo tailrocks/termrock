@@ -19653,7 +19653,7 @@ fn code_block_retry_rs_story(frame: &mut Frame<'_>, area: Rect, system: &DesignS
     state.set_cursor_line(Some(0));
     let _ = CodeBlock::new(&lines, system)
         .line_numbers(true)
-        .current_block(0, 1)
+        .current_block(0, 2)
         .highlighter(&hi)
         .paint(area, frame.buffer_mut(), &mut state);
 }
