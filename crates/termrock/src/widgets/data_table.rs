@@ -1254,12 +1254,14 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
             self.system.spacing.column_gap,
             &mut state.paint_widths,
         );
-        append_clipped_column(
-            self.columns,
-            layout_budget,
-            self.system.spacing.column_gap,
-            &mut state.paint_widths,
-        );
+        if !self.datagrid {
+            append_clipped_column(
+                self.columns,
+                layout_budget,
+                self.system.spacing.column_gap,
+                &mut state.paint_widths,
+            );
+        }
         // Pin bookkeeping
         let mut pin_start = 0usize;
         let mut pin_end = 0usize;

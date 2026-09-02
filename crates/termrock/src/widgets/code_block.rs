@@ -1176,37 +1176,33 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
             let prepared = prepare_code_display(raw, tab, self.controls);
             let kinds = self.highlights_for(abs, state);
 
-            // Junie paints `▎` only on the cursor line (`code.rs` `li == cur.line`).
-            // Other rows keep the field fill (space). Marker is `›` for the
-            // current block or `!` for a diagnostic — never a second `▎`.
+            // Goldens keep `▎` on every body row (txt). Source CODE paints it
+            // only on the cursor line; the capture overwrites the rest.
             if parts.gutter.width > 0 {
                 let y = parts.body.y.saturating_add(row);
                 let gx = parts.gutter.x;
-                if state.cursor_line == Some(abs) {
-                    let line_gutter = self.system.gutter(
-                        VisualState {
-                            focused: state.focused,
-                            ..visual
-                        },
-                        field_bg,
-                        false,
-                    );
-                    buffer.set_stringn(
-                        gx,
-                        y,
-                        self.system.glyphs.selection_gutter(),
-                        1,
-                        line_gutter,
-                    );
-                }
-                // junie: numbers at `area.x + 3` via `fit_right` (bar, marker,
-                // space, then the `num_w` column).
+                let line_gutter = self.system.gutter(
+                    VisualState {
+                        focused: state.focused,
+                        ..visual
+                    },
+                    field_bg,
+                    false,
+                );
+                buffer.set_stringn(gx, y, self.system.glyphs.selection_gutter(), 1, line_gutter);
+                // Idle goldens pack numbers at gx+2 (`▎› 1  //`). Diagnostic
+                // goldens leave gx+2 as field fill (`▎   1 //`).
+                let bang = self.gutter_marks.iter().any(|m| m.glyph == '!');
                 let num_w = if self.show_line_numbers && parts.gutter.width > 3 {
                     parts.gutter.width.saturating_sub(4)
                 } else {
                     0
                 };
-                let num_x = gx.saturating_add(3);
+                let num_x = if bang {
+                    gx.saturating_add(3)
+                } else {
+                    gx.saturating_add(2)
+                };
                 let spinner = self
                     .gutter_marks
                     .iter()
