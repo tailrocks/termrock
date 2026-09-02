@@ -439,12 +439,19 @@ impl AuthEntryState {
         let on = self.shell_focused;
         self.identity
             .set_focused(on && self.focus == AuthEntryField::Identity);
-        self.secrets
-            .password
-            .set_focused(on && self.focus == AuthEntryField::Password);
-        self.secrets
-            .confirm
-            .set_focused(on && self.focus == AuthEntryField::Confirm);
+        // A focused credential field is always in its insert session (the
+        // identity editor is constructed `.with_editing()`): the gate is a
+        // single-purpose form, so focus starts typing immediately.
+        let password_active = on && self.focus == AuthEntryField::Password;
+        let confirm_active = on && self.focus == AuthEntryField::Confirm;
+        if password_active {
+            self.secrets.password.begin_edit();
+        }
+        if confirm_active {
+            self.secrets.confirm.begin_edit();
+        }
+        self.secrets.password.set_focused(password_active);
+        self.secrets.confirm.set_focused(confirm_active);
         self.terms
             .set_focused(on && self.focus == AuthEntryField::Terms);
     }
