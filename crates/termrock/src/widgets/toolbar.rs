@@ -424,6 +424,11 @@ impl<Id: Clone + PartialEq> Toolbar<'_, Id> {
         )
     }
 
+    /// Paint the toolbar into `buffer`.
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut ToolbarState<Id>) {
+        StatefulWidget::render(self, area, buffer, state);
+    }
+
     /// Key path: requires surface focus. Roving + Activate.
     pub fn handle_key(
         &self,
@@ -813,9 +818,12 @@ fn item_main_size<Id>(
             .sum::<u16>()
             .saturating_add((parts.len().saturating_sub(1) as u16).min(2))
     };
-    // Toggle brackets
+    // Mark (+ following space) already lives in format_label; do not add
+    // checkbox-bracket extras on top.
     let toggle_extra = match item.kind {
-        ToolbarItemKind::Toggle { .. } => 2,
+        ToolbarItemKind::Toggle { pressed } => {
+            u16::try_from(display_cols(toolbar_toggle_mark(pressed)).saturating_add(1)).unwrap_or(0)
+        }
         _ => 0,
     };
     inner
@@ -824,12 +832,17 @@ fn item_main_size<Id>(
         .max(1)
 }
 
+/// Junie switch face copied from standalone Toggle paint. Not `[inner]` wells.
+fn toolbar_toggle_mark(pressed: bool) -> &'static str {
+    if pressed { "──●" } else { "○──" }
+}
+
 fn format_label<Id>(
     item: &ToolbarItem<'_, Id>,
     on_cursor: bool,
     surface_focused: bool,
     variant: ToolbarVariant,
-    glyphs: GlyphSet,
+    _glyphs: GlyphSet,
 ) -> String {
     let mut s = String::new();
     if let Some(icon) = item.icon {
@@ -847,12 +860,7 @@ fn format_label<Id>(
     if show_label {
         match item.kind {
             ToolbarItemKind::Toggle { pressed } => {
-                let mark = if pressed {
-                    glyphs.check_on()
-                } else {
-                    glyphs.check_off()
-                };
-                s.push_str(mark);
+                s.push_str(toolbar_toggle_mark(pressed));
                 s.push(' ');
                 s.push_str(item.label);
             }
@@ -1318,6 +1326,29 @@ mod tests {
                 pressed: true
             }
         ));
+    }
+
+    #[test]
+    fn toggle_paints_switch_glyphs_not_checkbox_wells() {
+        let system = DesignSystem::junie();
+        let items = [
+            ToolbarItem::toggle("on", "Wrap", true),
+            ToolbarItem::toggle("off", "Line", false),
+        ];
+        let tb = Toolbar::new(&items, &system);
+        let mut state = ToolbarState::horizontal();
+        let area = Rect::new(0, 0, 48, 1);
+        let mut buf = Buffer::empty(area);
+        StatefulWidget::render(&tb, area, &mut buf, &mut state);
+        let text: String = (0..area.width)
+            .map(|x| buf[(x, 0)].symbol().to_string())
+            .collect();
+        assert!(
+            !text.contains("[✓]") && !text.contains("[ ]"),
+            "checkbox wells leaked: {text:?}"
+        );
+        assert!(text.contains("──●"), "pressed switch missing: {text:?}");
+        assert!(text.contains("○──"), "idle switch missing: {text:?}");
     }
 
     #[test]

@@ -1318,9 +1318,9 @@ impl<'a> QuestionFlow<'a> {
                         && st.multi_selected.contains(&opt.id);
                     let mark = if matches!(q.kind, QuestionKind::MultiChoice) {
                         if checked {
-                            crate::style::Glyph::CheckOn.resolve().text
+                            crate::style::Glyph::Success.resolve().text
                         } else {
-                            crate::style::Glyph::CheckOff.resolve().text
+                            " "
                         }
                     } else if on {
                         crate::style::Glyph::SelectionMarker.resolve().text
@@ -1715,6 +1715,29 @@ mod tests {
             st.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
             QuestionFlowOutcome::Ignored
         ));
+    }
+
+    #[test]
+    fn multi_choice_membership_is_check_not_checkbox_well() {
+        let system = DesignSystem::junie();
+        let mut st = QuestionFlowState::new();
+        st.open_set(example_question_set());
+        let _ = st.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
+        let _ = st.handle_key(KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE));
+        let area = Rect::new(0, 0, 48, 16);
+        let mut buf = Buffer::empty(area);
+        QuestionFlow::new(&system).paint(area, &mut buf, &mut st);
+        let mut text = String::new();
+        for y in 0..area.height {
+            for x in 0..area.width {
+                text.push_str(buf[(x, y)].symbol());
+            }
+        }
+        assert!(
+            !text.contains("[✓]") && !text.contains("[ ]"),
+            "checkbox wells leaked: {text:?}"
+        );
+        assert!(text.contains('✓'), "membership ✓ missing: {text:?}");
     }
 
     #[test]

@@ -1046,9 +1046,9 @@ impl<'a> ApprovalQueue<'a> {
                 " "
             };
             let boxm = if multi {
-                crate::style::Glyph::CheckOn.resolve().text
+                crate::style::Glyph::Success.resolve().text
             } else {
-                crate::style::Glyph::CheckOff.resolve().text
+                " "
             };
             let kg = item.kind.glyph(false);
             let risk = format!("{} {}", item.risk.glyph(), item.risk.label());
@@ -1643,5 +1643,32 @@ mod tests {
             ApprovalQueueOutcome::SelectionToggled { selected: true, .. }
         ));
         assert!(st.multi.contains(&"p2".into()));
+    }
+
+    #[test]
+    fn multi_membership_is_check_not_checkbox_well() {
+        let system = DesignSystem::junie();
+        let mut st = open();
+        let i = st
+            .view
+            .iter()
+            .position(|&ii| st.items[ii].id == "p2")
+            .unwrap();
+        st.cursor = i;
+        let _ = st.handle_key(press(KeyCode::Char(' ')));
+        let area = Rect::new(0, 0, 56, 14);
+        let mut buf = Buffer::empty(area);
+        ApprovalQueue::new(&system).paint(area, &mut buf, &mut st);
+        let mut text = String::new();
+        for y in 0..area.height {
+            for x in 0..area.width {
+                text.push_str(buf[(x, y)].symbol());
+            }
+        }
+        assert!(
+            !text.contains("[✓]") && !text.contains("[ ]"),
+            "checkbox wells leaked: {text:?}"
+        );
+        assert!(text.contains('✓'), "list membership ✓ missing: {text:?}");
     }
 }

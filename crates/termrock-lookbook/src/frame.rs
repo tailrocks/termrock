@@ -17,7 +17,7 @@ use ratatui::{
 use serde::{Deserialize, Serialize};
 use termrock::{
     input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
-    style::{DesignSystem, PREVIEW_CARD, color_to_rgb},
+    style::{DesignSystem, PREVIEW_CARD, RolePalette, color_to_rgb},
 };
 
 use crate::{
@@ -80,6 +80,104 @@ pub struct TerminalFrame {
     pub interactive: bool,
     /// Theme label.
     pub theme: String,
+}
+
+/// Parsed `frame` subcommand flags (argv after the `frame` token).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FrameArgs {
+    /// Story id (`list/selection`).
+    pub story_id: String,
+    /// Optional inner story columns.
+    pub cols: Option<u16>,
+    /// Optional inner story rows.
+    pub rows: Option<u16>,
+    /// Preview keys applied before paint (empty → static path).
+    pub keys: Vec<PreviewKey>,
+}
+
+const FRAME_USAGE: &str =
+    "usage: termrock-lookbook frame --story <id> [--cols N] [--rows N] [--keys k1,k2]";
+
+/// Walk `frame` argv (without the `frame` token).
+pub fn parse_frame_args<I, S>(args: I) -> Result<FrameArgs, String>
+where
+    I: IntoIterator<Item = S>,
+    S: AsRef<str>,
+{
+    let mut story_id = None;
+    let mut cols = None;
+    let mut rows = None;
+    let mut keys_raw = None;
+    let mut iter = args.into_iter();
+    while let Some(flag) = iter.next() {
+        match flag.as_ref() {
+            "--story" => {
+                let Some(value) = iter.next() else {
+                    return Err(FRAME_USAGE.into());
+                };
+                story_id = Some(value.as_ref().to_owned());
+            }
+            "--cols" => {
+                cols = Some(parse_dim(&mut iter)?);
+            }
+            "--rows" => {
+                rows = Some(parse_dim(&mut iter)?);
+            }
+            "--keys" => {
+                let Some(value) = iter.next() else {
+                    return Err(FRAME_USAGE.into());
+                };
+                keys_raw = Some(value.as_ref().to_owned());
+            }
+            _ => return Err(FRAME_USAGE.into()),
+        }
+    }
+    let Some(story_id) = story_id else {
+        return Err(FRAME_USAGE.into());
+    };
+    Ok(FrameArgs {
+        story_id,
+        cols,
+        rows,
+        keys: preview_keys_from_csv(keys_raw.as_deref().unwrap_or("")),
+    })
+}
+
+fn parse_dim<I, S>(iter: &mut I) -> Result<u16, String>
+where
+    I: Iterator<Item = S>,
+    S: AsRef<str>,
+{
+    let Some(value) = iter.next() else {
+        return Err(FRAME_USAGE.into());
+    };
+    value.as_ref().parse().map_err(|_| FRAME_USAGE.into())
+}
+
+fn preview_keys_from_csv(raw: &str) -> Vec<PreviewKey> {
+    raw.split(',')
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(|k| PreviewKey {
+            key: k.into(),
+            ctrl: false,
+            alt: false,
+            shift: false,
+            meta: false,
+        })
+        .collect()
+}
+
+/// Paint a parsed `frame` request with the lookbook junie system.
+pub fn paint_frame_args(args: &FrameArgs) -> Result<TerminalFrame, String> {
+    let story =
+        story_by_id(&args.story_id).ok_or_else(|| format!("unknown story: {}", args.story_id))?;
+    let system = crate::design::lookbook_system(RolePalette::default());
+    Ok(if args.keys.is_empty() {
+        paint_story_frame(story, &system, args.cols, args.rows)
+    } else {
+        paint_story_after_keys(story, &system, args.cols, args.rows, &args.keys)
+    })
 }
 
 /// Browser → host key payload.
@@ -459,11 +557,22 @@ mod tests {
     }
 
     #[test]
+    fn parse_frame_args_story_cols_rows() {
+        let args = parse_frame_args(["--story", "list/selection", "--cols", "44", "--rows", "8"])
+            .expect("parse");
+        assert_eq!(args.story_id, "list/selection");
+        assert_eq!(args.cols, Some(44));
+        assert_eq!(args.rows, Some(8));
+        assert!(args.keys.is_empty());
+    }
+
+    #[test]
     fn paint_story_frame_nonempty_for_list_selection() {
         let story = story_by_id("list/selection").expect("list/selection story");
         let system = crate::design::lookbook_system(RolePalette::default());
         let frame = paint_story_frame(story, &system, None, None);
         assert_eq!(frame.story_id, "list/selection");
+        assert_eq!(frame.theme, "junie");
         assert!(frame.cols >= story.width);
         assert!(!frame.cells.is_empty());
         // Substantial fill: most cells not empty after paint
