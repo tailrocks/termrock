@@ -15,9 +15,10 @@ mod render;
 pub use render::{
     SCROLLBAR_HORIZONTAL_THUMB, SCROLLBAR_TRACK, ScrollbarGeometry, ScrollbarSpec, ScrollbarStyle,
     apply_scroll_delta, apply_scroll_delta_unclamped, apply_term_width_scroll_delta,
-    clamp_scroll_offset, horizontal_scrollbar_area, paint_list_scrollbar, paint_scrolled_region,
-    render_line_with_fixed_prefix_scroll, render_lines_with_offset_in_area, render_scrollbar,
-    scrollbar_offset_for_track_position, vertical_scrollbar_area, viewport_height, viewport_width,
+    clamp_scroll_offset, horizontal_scrollbar_area, paint_list_scrollbar, paint_overflow_scrollbar,
+    paint_scrolled_region, render_line_with_fixed_prefix_scroll, render_lines_with_offset_in_area,
+    render_scrollbar, scrollbar_offset_for_track_position, vertical_scrollbar_area,
+    viewport_height, viewport_width,
 };
 
 use ratatui_core::text::Line;
@@ -157,6 +158,44 @@ pub fn max_line_width(lines: &[Line<'_>]) -> usize {
 /// Returns whether content exceeds a non-empty viewport.
 pub const fn is_scrollable(content_len: usize, viewport_len: usize) -> bool {
     viewport_len > 0 && content_len > viewport_len
+}
+
+/// Full-cell overflow thumb matching junie `ScrollState::thumb`.
+///
+/// `len = (viewport * track) / content`. Returns `None` when content fits, so a
+/// reserved gutter stays blank. Line widgets (framed panel, picker) must use
+/// this geometry; [`full_cell_thumb`] is the subcell `tui-scrollbar` rounding
+/// used by other surfaces.
+#[must_use]
+pub const fn overflow_thumb(
+    content_len: usize,
+    viewport_len: usize,
+    track_len: usize,
+    offset: usize,
+) -> Option<(usize, usize)> {
+    if !is_scrollable(content_len, viewport_len) || track_len == 0 {
+        return None;
+    }
+    let len = viewport_len
+        .saturating_mul(track_len)
+        .checked_div(content_len)
+        .unwrap_or(1)
+        .max(1);
+    let len = if len > track_len { track_len } else { len };
+    let max_off = content_len - viewport_len;
+    let travel = track_len - len;
+    let start = if max_off == 0 {
+        0
+    } else {
+        offset
+            .saturating_mul(travel)
+            .saturating_add(max_off / 2)
+            .checked_div(max_off)
+            .unwrap_or(0)
+    };
+    let max_start = track_len - len;
+    let start = if start > max_start { max_start } else { start };
+    Some((start, len))
 }
 
 #[must_use]
