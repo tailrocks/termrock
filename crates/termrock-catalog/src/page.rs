@@ -86,4 +86,8 @@ pub trait Page {
     fn animating(&self) -> bool {
         false
     }
+    /// Page-owned modal already painted the footer hint row.
+    fn overlaying(&self) -> bool {
+        false
+    }
 }

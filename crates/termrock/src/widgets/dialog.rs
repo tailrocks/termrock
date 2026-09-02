@@ -614,12 +614,13 @@ fn dialog_inner(area: Rect, inset_x: u16) -> Rect {
 fn paint_dialog_frame(area: Rect, buffer: &mut Buffer, system: &DesignSystem, focused: bool) {
     let theme = system.junie_theme();
     let bg = theme.surface_elevated;
-    // junie `fill` only sets bg, so space cells keep the dimmed-page fg (muted).
-    // A fresh buffer has white leftover; pin muted so empty cells match the capture.
-    let fill = Style::new().fg(theme.text_muted).bg(bg);
+    // junie `fill` only sets bg, so empty cells keep the dimmed-page fg.
     for y in area.top()..area.bottom() {
         for x in area.left()..area.right() {
-            buffer[(x, y)].set_char(' ').set_style(fill);
+            let fg = buffer[(x, y)].fg;
+            buffer[(x, y)]
+                .set_char(' ')
+                .set_style(Style::new().fg(fg).bg(bg));
         }
     }
     Block::default()
@@ -1549,6 +1550,10 @@ pub struct Dialog<'a> {
     colorless: bool,
     /// Confirm family: Cancel is quiet (junie subtle).
     cancel_quiet: bool,
+    /// When set, `paint_modal` uses this instead of the recipe size.
+    preferred_size: Option<DialogSize>,
+    /// Facts-style body uses muted, not secondary.
+    muted_body: bool,
 }
 
 impl<'a> Dialog<'a> {
@@ -1568,6 +1573,8 @@ impl<'a> Dialog<'a> {
             loading: false,
             colorless: false,
             cancel_quiet: false,
+            preferred_size: None,
+            muted_body: false,
         }
     }
 
@@ -1638,6 +1645,20 @@ impl<'a> Dialog<'a> {
     #[must_use]
     pub const fn recipe(mut self, recipe: DialogRecipe) -> Self {
         self.recipe = recipe;
+        self
+    }
+
+    /// Override recipe geometry (source DataGrid facts dialog is 66×14).
+    #[must_use]
+    pub const fn preferred_size(mut self, size: DialogSize) -> Self {
+        self.preferred_size = Some(size);
+        self
+    }
+
+    /// Paint body copy as muted (source DataGrid facts).
+    #[must_use]
+    pub const fn muted_body(mut self, on: bool) -> Self {
+        self.muted_body = on;
         self
     }
 
@@ -1819,7 +1840,11 @@ impl<'a> Dialog<'a> {
         state.body_line_count = self.body.lines.len();
         if !state.slots.body.is_empty() {
             Paragraph::new(self.body.clone())
-                .style(theme.secondary().bg(bg))
+                .style(if self.muted_body {
+                    theme.muted().bg(bg)
+                } else {
+                    theme.secondary().bg(bg)
+                })
                 .wrap(ratatui_widgets::paragraph::Wrap { trim: false })
                 .scroll((state.scroll.scroll_y, state.scroll.scroll_x))
                 .render(state.slots.body, buffer);
@@ -1886,7 +1911,9 @@ impl<'a> Dialog<'a> {
             screen.height.saturating_sub(1),
         );
         Backdrop::new(self.tokens).render(dim, buffer);
-        let mut preferred = DialogSize::for_recipe(self.recipe);
+        let mut preferred = self
+            .preferred_size
+            .unwrap_or_else(|| DialogSize::for_recipe(self.recipe));
         if preferred.width == 0 || preferred.height == 0 {
             preferred = DialogSize {
                 width: screen.width.saturating_sub(4).max(20),

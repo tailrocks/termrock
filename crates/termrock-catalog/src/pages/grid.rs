@@ -18,7 +18,7 @@ use termrock::input::{
 use termrock::widgets::{
     Action, ActionVariant, ActivationOutcome, ButtonState, ButtonVariant, ColumnKind, ColumnModel,
     DataColumn, DataColumnWidth, DataTable, DataTableNavMode, DataTableOutcome, DataTableState,
-    Dialog, DialogOutcome, DialogState, LoadState, SortSpec,
+    Dialog, DialogOutcome, DialogSize, DialogState, Hint as KeyHint, LoadState, SortSpec,
 };
 
 use crate::ctx::RenderCtx;
@@ -34,6 +34,26 @@ const GRID: WidgetId = ID.sub("grid");
 const PREVIEW: WidgetId = ID.sub("preview");
 const DISCARD: WidgetId = ID.sub("discard");
 const SAVE: WidgetId = ID.sub("save");
+const PREVIEW_HINTS: &[KeyHint<'static>] = &[
+    KeyHint {
+        chord: "← →",
+        label: "Choose",
+        priority: 10,
+        visible: true,
+    },
+    KeyHint {
+        chord: "Enter",
+        label: "Confirm",
+        priority: 20,
+        visible: true,
+    },
+    KeyHint {
+        chord: "Esc",
+        label: "Cancel",
+        priority: 30,
+        visible: true,
+    },
+];
 const PAGE: usize = 40;
 const ALL: usize = 96;
 
@@ -654,7 +674,7 @@ impl GridPage {
             body.push_str(&code.join("\n"));
         }
         self.preview_body = body;
-        self.dialog = DialogState::confirm("copy", "cancel");
+        self.dialog = DialogState::destructive("close", "cancel");
         self.preview = true;
     }
 
@@ -855,19 +875,18 @@ impl GridPage {
                 variant: ActionVariant::Secondary,
             },
             Action {
-                id: "copy",
-                label: "Copy SQL",
+                id: "close",
+                label: "Close",
                 enabled: true,
                 variant: ActionVariant::Primary,
             },
         ]
     }
 
-    fn apply_preview(&mut self, out: DialogOutcome<&'static str>, cx: &mut PageCtx<'_>) -> Route {
+    fn apply_preview(&mut self, out: DialogOutcome<&'static str>, _cx: &mut PageCtx<'_>) -> Route {
         match out {
             DialogOutcome::Ignored | DialogOutcome::LoadingBlocked => Route::Consumed,
-            DialogOutcome::Activated("copy") | DialogOutcome::DefaultActivated("copy") => {
-                cx.status(format!("Copied {} statements", self.statements().len()));
+            DialogOutcome::Activated("close") | DialogOutcome::DefaultActivated("close") => {
                 self.preview = false;
                 Route::Changed
             }
@@ -950,6 +969,9 @@ impl Page for GridPage {
     }
     fn animating(&self) -> bool {
         self.commit_ticks > 0
+    }
+    fn overlaying(&self) -> bool {
+        self.preview
     }
 
     fn render(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx<'_>) {
@@ -1118,13 +1140,15 @@ impl Page for GridPage {
             self.dialog.set_accepts_input(true);
             let actions = Self::preview_actions();
             let body = self.preview_body.clone();
-            Dialog::confirm("Pending changes", Text::from(body), ctx.system).paint_modal(
-                area,
-                buf,
-                &mut self.dialog,
-                &actions,
-            );
-            ctx.control(ID.sub("modal"), area, false);
+            Dialog::confirm("Pending changes", Text::from(body), ctx.system)
+                .preferred_size(DialogSize {
+                    width: 66,
+                    height: 14,
+                })
+                .muted_body(true)
+                .hints(PREVIEW_HINTS)
+                .paint_modal(*buf.area(), buf, &mut self.dialog, &actions);
+            ctx.control(ID.sub("modal"), *buf.area(), false);
         }
     }
 

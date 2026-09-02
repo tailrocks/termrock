@@ -917,6 +917,8 @@ impl App {
         if self.help_open {
             hints.push(("Enter".into(), "Confirm".into()));
             hints.push(("Esc".into(), "Cancel".into()));
+        } else if page.overlaying() {
+            // Keep the dialog footer; only the status sentence is ours.
         } else if self.focus == Some(NAV) {
             hints.push(("↑ ↓".into(), "Move".into()));
             hints.push(("Enter".into(), "Open".into()));

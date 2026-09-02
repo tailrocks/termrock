@@ -87,11 +87,12 @@ impl Grid {
         if a.bold != b.bold && !tmux_weight {
             return false;
         }
-        if a.dim != b.dim && !tmux_weight && !colored_underline {
+        let same_paint = a.fg == b.fg && a.bg == b.bg;
+        if a.dim != b.dim && !tmux_weight && !colored_underline && !same_paint {
             return false;
         }
         // tmux `-e` encodes underline-color as SGR 9 (strike) + 2 (dim).
-        if a.strike != b.strike && !colored_underline && !space {
+        if a.strike != b.strike && !colored_underline && !space && !same_paint {
             return false;
         }
         if a.fg == b.fg {
@@ -161,6 +162,10 @@ impl Grid {
                 c.dim = false;
             }
             if c.underline {
+                c.dim = false;
+                c.strike = false;
+            }
+            if c.dim && c.strike && !c.underline {
                 c.dim = false;
                 c.strike = false;
             }

@@ -243,6 +243,7 @@ pub static ALL: &[Scenario] = &[
             Step::Backspace,
             Step::Type("12"),
             Step::Enter,
+            Step::Right,
         ],
     ),
     cat(
@@ -265,6 +266,7 @@ pub static ALL: &[Scenario] = &[
             Step::Backspace,
             Step::Type("12"),
             Step::Enter,
+            Step::Right,
             Step::Char('p'),
         ],
     ),
