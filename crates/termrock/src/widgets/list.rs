@@ -1171,6 +1171,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
         let mut painted_rows = 0usize;
         let breathing = false;
         let mut painted_any = false;
+        let mut scratch = String::new();
         for row in self.rows.iter().skip(offset) {
             if y >= body.bottom() {
                 break;
@@ -1296,7 +1297,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                             .map(|s| {
                                 u16::try_from(s.width())
                                     .unwrap_or(u16::MAX)
-                                    .saturating_add(1)
+                                    .saturating_add(2)
                             })
                             .unwrap_or(0);
                         let show_status =
@@ -1385,14 +1386,20 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                         let mid_end = right.saturating_sub(reserve);
                         let primary_budget = mid_end.saturating_sub(x);
                         if primary_budget > 0 {
-                            buffer.set_line(x, rect.y, &row.label, primary_budget);
+                            let label_area = Rect::new(x, rect.y, primary_budget, 1);
+                            crate::text::paint_line_overflow(
+                                buffer,
+                                label_area,
+                                &row.label,
+                                style,
+                                crate::text::LinePlacement::contracting(
+                                    self.tokens.glyphs.ellipsis(),
+                                ),
+                                &mut scratch,
+                            );
                             let primary_w = u16::try_from(row.label.width())
                                 .unwrap_or(u16::MAX)
                                 .min(primary_budget);
-                            buffer.set_style(
-                                Rect::new(x, rect.y, primary_w.max(1).min(primary_budget), 1),
-                                style,
-                            );
                             x = x.saturating_add(primary_w);
                         }
                         if show_secondary && let Some(sec) = row.secondary.as_ref() {
@@ -1475,10 +1482,10 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                                 .unwrap_or(u16::MAX)
                                 .min(cursor.saturating_sub(content_x));
                             if w > 0 {
-                                if show_badge || show_shortcut || show_actions || show_action_marker
-                                {
-                                    cursor = cursor.saturating_sub(1);
-                                }
+                                // Gap before status, plus a trailing pad when
+                                // status is rightmost — junie meta is
+                                // `right - width - 1`.
+                                cursor = cursor.saturating_sub(1);
                                 cursor = cursor.saturating_sub(w);
                                 buffer.set_line(cursor, rect.y, status, w);
                                 buffer.set_style(Rect::new(cursor, rect.y, w, 1), secondary_style);
@@ -1892,6 +1899,36 @@ mod tests {
         assert_eq!(buffer[(13, 1)].symbol(), "B");
         // Primary starts after ▎, marker, space and keeps wide graphemes intact.
         assert_eq!(buffer[(3, 0)].symbol(), "🧪");
+    }
+
+    #[test]
+    fn overflow_label_uses_ellipsis_not_hard_clip() {
+        let rows =
+            [ListRow::item(0usize, Line::from("src/api/auth.rs")).status(Line::from("modified"))];
+        let system = DesignSystem::junie();
+        let mut state = ListState::new(Some(0));
+        let area = Rect::new(0, 0, 26, 1);
+        let mut buffer = Buffer::empty(area);
+        (&List::new(&rows, &system)).render(area, &mut buffer, &mut state);
+        let line: String = (0..area.width)
+            .map(|x| buffer[(x, 0)].symbol().to_string())
+            .collect();
+        assert!(
+            line.contains(system.glyphs.ellipsis()),
+            "overflow label must mark the cut, got {line:?}"
+        );
+        assert!(
+            line.contains("auth…"),
+            "label must contract one cell before the status gap, got {line:?}"
+        );
+        assert!(
+            !line.contains("auth.…"),
+            "label budget must not keep the extra cell source leaves for the status gap, got {line:?}"
+        );
+        assert!(
+            line.contains("modified"),
+            "status must survive label contraction, got {line:?}"
+        );
     }
 
     #[test]

@@ -976,14 +976,9 @@ fn render_determinate(
     }
 
     let suffix = status.suffix();
-    let suffix_w = if suffix.trim().is_empty() {
-        0
-    } else {
-        SUFFIX_WIDTH
-    };
     let track_w = right
         .saturating_sub(x)
-        .saturating_sub(PERCENTAGE_WIDTH + suffix_w);
+        .saturating_sub(PERCENTAGE_WIDTH + SUFFIX_WIDTH);
     if track_w < MIN_TRACK_WIDTH {
         // Too narrow for a meaningful bar: percentage only (reference).
         buffer.set_stringn(
@@ -1015,15 +1010,13 @@ fn render_determinate(
         usize::from(PERCENTAGE_WIDTH),
         system.style(Role::TextSecondary),
     );
-    if suffix_w > 0 {
-        buffer.set_stringn(
-            x.saturating_add(PERCENTAGE_WIDTH),
-            area.y,
-            suffix,
-            usize::from(SUFFIX_WIDTH),
-            fill_style,
-        );
-    }
+    buffer.set_stringn(
+        x.saturating_add(PERCENTAGE_WIDTH),
+        area.y,
+        suffix,
+        usize::from(SUFFIX_WIDTH),
+        fill_style,
+    );
 }
 
 /// Indeterminate bar: a short accent segment sweeping a quiet track.
@@ -1134,6 +1127,32 @@ mod tests {
                 "{status:?} must paint {suffix:?}: {row:?}"
             );
         }
+    }
+
+    #[test]
+    fn running_reserves_the_two_cell_suffix_column() {
+        let area = Rect::new(0, 0, 40, 1);
+        let mut buffer = Buffer::empty(area);
+        (&ProgressBar::new(ProgressKind::Determinate { fraction: 0.0 }, &system())
+            .label("Building  "))
+            .render(area, &mut buffer);
+        let row = rendered(&buffer);
+        let last_track = (0..area.width)
+            .rev()
+            .find(|&x| buffer[(x, 0)].symbol() == "\u{2500}")
+            .expect("track");
+        let pct = (0..area.width)
+            .find(|&x| buffer[(x, 0)].symbol() == "0")
+            .expect("percent");
+        assert!(
+            pct > last_track.saturating_add(1),
+            "percent sits after a pad cell, not packed against the track: {row:?}"
+        );
+        assert_eq!(
+            area.width.saturating_sub(last_track.saturating_add(1)),
+            PERCENTAGE_WIDTH + SUFFIX_WIDTH,
+            "running still reserves pct+suffix, got {row:?}"
+        );
     }
 
     #[test]

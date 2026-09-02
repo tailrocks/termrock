@@ -704,6 +704,10 @@ fn token_style(
     if matches!(status, TokenStatus::Error) {
         style = style.patch(system.style(Role::Danger));
     }
+    // Source ChipBar: disabled/off chips keep the overlay well but `text_faint`.
+    if overlay && !selected && !disabled && !matches!(status, TokenStatus::Error) {
+        style = style.fg(system.junie_theme().text_faint);
+    }
     if focused {
         style = style.add_modifier(Modifier::BOLD);
     }
@@ -836,6 +840,10 @@ impl<'a, Id> Chip<'a, Id> {
     }
 
     /// Measure width for selected state.
+    ///
+    /// Source ChipBar: `1 + label + 1 + removable 2 + 1`, then a 1-cell gap
+    /// after the chip. The extra removable cell is trailing wash, not a
+    /// second glyph.
     #[must_use]
     pub fn measure_width(&self, _selected: bool) -> u16 {
         let mut body = self.label.to_string();
@@ -845,11 +853,11 @@ impl<'a, Id> Chip<'a, Id> {
         if matches!(self.status, TokenStatus::Error) {
             body = format!("{} {body}", self.system.glyphs.resolve(Glyph::Error).text);
         }
-        let mut w = 1 + display_cols(&body); // gutter + label
+        let mut w = 1 + display_cols(&body) + 1;
         if self.removable {
-            w += 1 + display_cols(remove_glyph(self.system));
+            w += 2;
         }
-        w += 1; // trailing pad
+        w += 1;
         u16::try_from(w).unwrap_or(1).max(1)
     }
 }
@@ -1224,6 +1232,10 @@ pub struct TokenStripState<Id> {
     pub overflow_region: Option<Rect>,
     /// Add-filter affordance region.
     pub add_region: Option<Rect>,
+    /// Leading control (` match all ▾ `) region. Source ChipBar `lead`.
+    pub lead_region: Option<Rect>,
+    /// When false, chips stay idle even if the strip owns keyboard focus.
+    pub show_chip_cursor: bool,
     /// Add-filter owns the strip cursor.
     pub add_focused: bool,
     /// Token whose remove glyph is hovered.
@@ -1252,6 +1264,8 @@ impl<Id> TokenStripState<Id> {
             regions: Vec::new(),
             overflow_region: None,
             add_region: None,
+            lead_region: None,
+            show_chip_cursor: false,
             add_focused: false,
             hovered_remove: None,
             overflow_ids: Vec::new(),
@@ -1288,6 +1302,8 @@ pub struct TokenStrip<'a, Id> {
     max_visible: usize,
     gap: u16,
     add_label: Option<&'a str>,
+    /// Leading label such as `match all ▾` (source ChipBar `lead`).
+    lead: Option<&'a str>,
 }
 
 impl<'a, Id> TokenStrip<'a, Id> {
@@ -1301,6 +1317,7 @@ impl<'a, Id> TokenStrip<'a, Id> {
             max_visible: 0,
             gap: 1,
             add_label: Some("+ Add filter"),
+            lead: None,
         }
     }
 
@@ -1338,6 +1355,14 @@ impl<'a, Id> TokenStrip<'a, Id> {
         self.add_label = label;
         self
     }
+
+    /// Leading control. Source ChipBar paints `" {lead} "` in muted on the
+    /// strip row, then a one-cell gap before the first chip.
+    #[must_use]
+    pub const fn lead(mut self, lead: Option<&'a str>) -> Self {
+        self.lead = lead;
+        self
+    }
 }
 
 impl<'a, Id: Clone + PartialEq + std::fmt::Display> TokenStrip<'a, Id> {
@@ -1354,8 +1379,11 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> TokenStrip<'a, Id> {
         state.regions.clear();
         state.overflow_region = None;
         state.add_region = None;
+        state.lead_region = None;
         state.overflow_ids.clear();
-        if area.is_empty() || (self.items.is_empty() && self.add_label.is_none()) {
+        if area.is_empty()
+            || (self.items.is_empty() && self.add_label.is_none() && self.lead.is_none())
+        {
             return;
         }
         let entries = self.entries();
@@ -1376,6 +1404,10 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> TokenStrip<'a, Id> {
             state.overflow_ids.push(o.id.clone());
         }
 
+        let area = self.paint_lead(area, buffer, state);
+        if area.is_empty() {
+            return;
+        }
         match self.layout {
             TokenStripLayout::Scroll => {
                 self.paint_scroll(area, buffer, state, &visible, !overflow.is_empty());
@@ -1383,6 +1415,38 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> TokenStrip<'a, Id> {
             TokenStripLayout::Wrap => {
                 self.paint_wrap(area, buffer, state, &visible, !overflow.is_empty());
             }
+        }
+    }
+
+    /// Source ChipBar: `" {lead} "` in muted on `surface`, then gap 1.
+    fn paint_lead(&self, area: Rect, buffer: &mut Buffer, state: &mut TokenStripState<Id>) -> Rect {
+        let Some(lead) = self.lead else {
+            return area;
+        };
+        let text = format!(" {lead} ");
+        let w = u16::try_from(display_cols(&text)).unwrap_or(0);
+        if w == 0 || area.width <= w {
+            return area;
+        }
+        let surface = self
+            .system
+            .style(Role::Surface)
+            .bg
+            .unwrap_or(ratatui_core::style::Color::Reset);
+        let style = self.system.style(Role::TextMuted).bg(surface);
+        buffer.set_string(area.x, area.y, &text, style);
+        state.lead_region = Some(Rect {
+            x: area.x,
+            y: area.y,
+            width: w,
+            height: 1.min(area.height),
+        });
+        let next = area.x.saturating_add(w).saturating_add(self.gap);
+        Rect {
+            x: next,
+            y: area.y,
+            width: area.right().saturating_sub(next),
+            height: area.height,
         }
     }
 
@@ -1397,11 +1461,9 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> TokenStrip<'a, Id> {
         // scroll is offset in cells of content start
         let mut content_x: i32 = -(i32::from(state.scroll));
         let overflow_w = if has_overflow { 5u16 } else { 0 };
-        let add_w = self.add_label.map(add_chip_width).unwrap_or(0);
-        let budget_right = area
-            .right()
-            .saturating_sub(overflow_w)
-            .saturating_sub(add_w.saturating_add(if add_w > 0 { self.gap } else { 0 }));
+        // Source ChipBar never shrinks a chip to keep the add control:
+        // a chip that does not fit becomes `…` and the add is leftover-only.
+        let budget_right = area.right().saturating_sub(overflow_w);
 
         for item in visible {
             let w = estimate_item_width(item, self.system);
@@ -1413,14 +1475,24 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> TokenStrip<'a, Id> {
             let draw_x = area
                 .x
                 .saturating_add(u16::try_from(abs_x.max(0)).unwrap_or(0));
-            if draw_x >= budget_right {
+            if draw_x.saturating_add(w) > budget_right {
+                // Source ChipBar paints `…` at the would-be chip origin even
+                // when only one cell remains.
+                if draw_x >= area.x && draw_x < buffer.area().right() {
+                    buffer.set_stringn(
+                        draw_x,
+                        area.y,
+                        self.system.glyphs.ellipsis(),
+                        1,
+                        self.system.style(Role::TextMuted),
+                    );
+                }
                 break;
             }
-            let width = w.min(budget_right.saturating_sub(draw_x));
             let rect = Rect {
                 x: draw_x,
                 y: area.y,
-                width,
+                width: w,
                 height: 1.min(area.height),
             };
             self.paint_item(item, rect, buffer, state);
@@ -1524,8 +1596,10 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> TokenStrip<'a, Id> {
         buffer: &mut Buffer,
         state: &TokenStripState<Id>,
     ) {
-        let focused =
-            state.surface_focused && !state.add_focused && state.roving.active() == Some(&item.id);
+        let focused = state.show_chip_cursor
+            && state.surface_focused
+            && !state.add_focused
+            && state.roving.active() == Some(&item.id);
         let hovered_remove = state.hovered_remove.as_ref() == Some(&item.id);
         if item.selectable {
             let chip = Chip::new(item.id.clone(), item.label, self.system)
@@ -1573,11 +1647,12 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> TokenStrip<'a, Id> {
         } else {
             area.x
         };
-        if x.saturating_add(w) > budget_right && area.x != x {
+        // Source ChipBar paints add only when the full control fits.
+        if x.saturating_add(w) > budget_right {
             return;
         }
-        let width = w.min(budget_right.saturating_sub(x)).min(area.width);
-        if width == 0 {
+        let width = w.min(area.width);
+        if width < w {
             return;
         }
         let rect = Rect {
@@ -1607,6 +1682,21 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> TokenStrip<'a, Id> {
         }
         let entries = self.entries();
         let _ = state.roving.reconcile(&entries);
+
+        // Source ChipBar: ← → move the chip cursor. TokenPart is mouse/Tab-internal,
+        // not arrow-internal.
+        if matches!(
+            key.code,
+            KeyCode::Left | KeyCode::Right | KeyCode::Char('h') | KeyCode::Char('l')
+        ) {
+            match state.roving.handle_key(key, &entries) {
+                RovingOutcome::Ignored => {}
+                RovingOutcome::ActiveChanged { from, to } => {
+                    state.part = TokenPart::Body;
+                    return TokenStripOutcome::CursorMoved { from, to };
+                }
+            }
+        }
 
         // Focused token internal part / activate / remove
         if let Some(id) = state.roving.active().cloned() {
@@ -2038,6 +2128,19 @@ mod tests {
     }
 
     #[test]
+    fn removable_chip_width_matches_junie_chip_bar() {
+        let system = DesignSystem::junie();
+        let chip = Chip::new("s", "status = 'pending'", &system).removable(true);
+        assert_eq!(
+            chip.measure_width(true),
+            1 + 18 + 1 + 2 + 1,
+            "gutter + label + pad + removable 2 + trail"
+        );
+        let plain = Chip::new("p", "ok", &system);
+        assert_eq!(plain.measure_width(false), 1 + 2 + 1 + 1);
+    }
+
+    #[test]
     fn filter_chip_is_gutter_row_not_boxed_pill() {
         let system = DesignSystem::default();
         let chip = Chip::new("rust", "Rust", &system).removable(true);
@@ -2071,6 +2174,59 @@ mod tests {
             muted,
             "hovered × brightens"
         );
+    }
+
+    #[test]
+    fn token_strip_keeps_full_chips_and_drops_add_when_tight() {
+        let system = DesignSystem::junie();
+        let items = [
+            TokenItem::chip(0, "status = 'pending'")
+                .removable(true)
+                .selected(true),
+            TokenItem::chip(1, "total > 100")
+                .removable(true)
+                .selected(true),
+            TokenItem::chip(2, "country in (DE, FR)")
+                .removable(true)
+                .selected(false),
+        ];
+        let strip = TokenStrip::new(&items, &system).add_label(Some("+ Add filter"));
+        let mut state = TokenStripState::new();
+        // 42 cells after the lead: three full chips fit, add does not.
+        let area = Rect::new(0, 0, 66, 1);
+        let mut buffer = Buffer::empty(area);
+        strip.paint(area, &mut buffer, &mut state);
+        let row: String = (0..area.width)
+            .map(|x| buffer[(x, 0)].symbol().to_string())
+            .collect();
+        assert!(
+            row.contains("country in (DE, FR)"),
+            "last chip must not clip: {row:?}"
+        );
+        assert!(!row.contains("Add filter"), "add is leftover-only: {row:?}");
+        assert!(state.add_region.is_none(), "add must drop, not clip");
+    }
+
+    #[test]
+    fn token_strip_does_not_clip_add_into_leftover() {
+        let system = DesignSystem::junie();
+        let items = [TokenItem::chip(0, "status = 'pending'")
+            .removable(true)
+            .selected(true)];
+        let strip = TokenStrip::new(&items, &system).add_label(Some("+ Add filter"));
+        let mut state = TokenStripState::new();
+        // Chip 23 + gap 1 = 24; leftover 10 < add 14.
+        let area = Rect::new(0, 0, 34, 1);
+        let mut buffer = Buffer::empty(area);
+        strip.paint(area, &mut buffer, &mut state);
+        let row: String = (0..area.width)
+            .map(|x| buffer[(x, 0)].symbol().to_string())
+            .collect();
+        assert!(
+            !row.contains('+') && !row.contains("Add"),
+            "clipped add must not paint: {row:?}"
+        );
+        assert!(state.add_region.is_none());
     }
 
     #[test]

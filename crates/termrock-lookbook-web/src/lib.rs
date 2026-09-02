@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-//! Handle-based WASM adapter for persistent TermRock demos.
+//! Handle-based WASM adapter over the canonical TermRock catalog.
 
 use std::{cell::RefCell, collections::BTreeMap};
 
-use termrock_lookbook::demo::{DemoEvent, DemoSession, catalog};
+use termrock_catalog::host::{CatalogSession, DemoEvent, catalog};
 use wasm_bindgen::prelude::*;
 
 thread_local! {
@@ -15,7 +15,7 @@ thread_local! {
 #[derive(Default)]
 struct SessionStore {
     next: u32,
-    sessions: BTreeMap<u32, DemoSession>,
+    sessions: BTreeMap<u32, CatalogSession>,
 }
 
 impl SessionStore {
@@ -25,25 +25,25 @@ impl SessionStore {
             .checked_add(1)
             .ok_or("demo handle space exhausted")?;
         let handle = self.next;
-        let session = DemoSession::mount(id, Some(cols), Some(rows))?;
+        let session = CatalogSession::mount(id, cols, rows)?;
         self.sessions.insert(handle, session);
         Ok(handle)
     }
 
-    fn get_mut(&mut self, handle: u32) -> Result<&mut DemoSession, String> {
+    fn get_mut(&mut self, handle: u32) -> Result<&mut CatalogSession, String> {
         self.sessions
             .get_mut(&handle)
             .ok_or_else(|| format!("unknown demo handle: {handle}"))
     }
 }
 
-/// Serialize the one shared demo catalog.
+/// Serialize the one shared catalog.
 #[wasm_bindgen]
 pub fn catalog_json() -> Result<String, JsValue> {
     serde_json::to_string(&catalog()).map_err(js_error)
 }
 
-/// Mount one persistent Rust demo and return its opaque handle.
+/// Mount one persistent catalog page and return its opaque handle.
 #[wasm_bindgen]
 pub fn mount_demo(id: &str, cols: u16, rows: u16) -> Result<u32, JsValue> {
     SESSIONS.with_borrow_mut(|store| store.mount(id, cols, rows).map_err(js_error))
@@ -61,7 +61,7 @@ pub fn dispatch_demo(handle: u32, event_json: &str) -> Result<String, JsValue> {
         .map_err(js_error)
 }
 
-/// Serialize the current truecolor frame for one mounted demo.
+/// Serialize the current truecolor frame for one mounted page.
 #[wasm_bindgen]
 pub fn demo_frame(handle: u32) -> Result<String, JsValue> {
     SESSIONS
@@ -72,7 +72,7 @@ pub fn demo_frame(handle: u32) -> Result<String, JsValue> {
         .map_err(js_error)
 }
 
-/// Reset one session to its initial state without remounting another implementation.
+/// Reset one session to its initial state without remounting another page.
 #[wasm_bindgen]
 pub fn reset_demo(handle: u32) -> Result<String, JsValue> {
     SESSIONS
@@ -107,10 +107,10 @@ mod tests {
     #[test]
     fn handles_isolate_and_reject_unknown_sessions() {
         let mut store = SessionStore::default();
-        let first = store.mount("tabs/status", 40, 8).unwrap();
-        let second = store.mount("tabs/status", 40, 8).unwrap();
+        let first = store.mount("overview", 80, 24).unwrap();
+        let second = store.mount("overview", 80, 24).unwrap();
         let event: DemoEvent =
-            serde_json::from_str(r#"{"type":"key","key":"ArrowRight","kind":"press"}"#).unwrap();
+            serde_json::from_str(r#"{"type":"key","key":"]","kind":"press"}"#).unwrap();
         store.get_mut(first).unwrap().dispatch(event).unwrap();
         let changed = store.get_mut(first).unwrap().frame();
         let untouched = store.get_mut(second).unwrap().frame();
@@ -122,7 +122,7 @@ mod tests {
     #[test]
     fn update_json_exposes_deadline_kind_and_semantic_revision() {
         let mut store = SessionStore::default();
-        let handle = store.mount("button/activation", 28, 3).unwrap();
+        let handle = store.mount("buttons", 80, 24).unwrap();
         let event: DemoEvent =
             serde_json::from_str(r#"{"type":"key","key":"Enter","kind":"press"}"#).unwrap();
         let update = store.get_mut(handle).unwrap().dispatch(event).unwrap();

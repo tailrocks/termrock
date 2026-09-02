@@ -20,10 +20,11 @@
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
-    layout::{Position, Rect},
+    layout::{Margin, Position, Rect},
     style::{Modifier, Style},
-    widgets::StatefulWidget,
+    widgets::{StatefulWidget, Widget},
 };
+use ratatui_widgets::{block::Block, borders::Borders};
 
 use crate::{
     input::{
@@ -33,8 +34,8 @@ use crate::{
         CollectionItem, CollectionOutcome, CollectionState, SemanticNode, SemanticRole,
         SemanticScene, SemanticState, UiIntent,
     },
-    style::{ControlState, DesignSystem, Glyph, ListRowVisualState, Role},
-    text::{display_cols, take_display_cols},
+    style::{ControlState, DesignSystem, Glyph, ListRowVisualState, Role, VisualState},
+    text::{display_cols, take_display_cols, truncate_cols},
 };
 
 use super::{Surface, SurfaceRecipe, TextInput, TextInputOutcome, TextInputState, Validation};
@@ -769,6 +770,7 @@ pub struct Select<'a, Id> {
     system: &'a DesignSystem,
     placeholder: &'a str,
     label: &'a str,
+    help: &'a str,
     validation: Validation<'a>,
 }
 
@@ -781,6 +783,7 @@ impl<'a, Id> Select<'a, Id> {
             system,
             placeholder: "Select",
             label: "",
+            help: "",
             validation: Validation::Valid,
         }
     }
@@ -796,6 +799,13 @@ impl<'a, Id> Select<'a, Id> {
     #[must_use]
     pub const fn label(mut self, label: &'a str) -> Self {
         self.label = label;
+        self
+    }
+
+    /// Muted help under the trigger (source Select `help`, origin `area.x + 2`).
+    #[must_use]
+    pub const fn help(mut self, help: &'a str) -> Self {
+        self.help = help;
         self
     }
 
@@ -832,26 +842,24 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
         let formish = !matches!(state.recipe, SelectRecipe::Compact)
             && (matches!(state.recipe, SelectRecipe::Form) || !self.label.is_empty());
         if formish && area.height >= 2 && !self.label.is_empty() {
-            let label_recipe = self.system.input_recipe(
-                if !state.enabled {
-                    ControlState::Disabled
-                } else if state.focused || state.is_open() {
-                    ControlState::Focused
-                } else {
-                    ControlState::Default
-                },
-                matches!(self.validation, Validation::Invalid(_)),
-                false,
-            );
-            let mut style = label_recipe.value;
+            // Source `Theme::label(focused)`: secondary idle, title when focused.
+            let theme = self.system.junie_theme();
+            let mut style = if !state.enabled {
+                Style::new().fg(theme.text_faint)
+            } else if state.focused || state.is_open() {
+                theme.title()
+            } else {
+                theme.secondary()
+            };
             if state.focused {
                 style = style.add_modifier(Modifier::BOLD);
             }
+            // Source Select: label at `area.x + 2` (gutter column stays empty).
             buffer.set_stringn(
-                area.x,
+                area.x.saturating_add(2),
                 y,
-                take_display_cols(self.label, usize::from(area.width)),
-                usize::from(area.width),
+                take_display_cols(self.label, usize::from(area.width.saturating_sub(2))),
+                usize::from(area.width.saturating_sub(2)),
                 style,
             );
             y = y.saturating_add(1);
@@ -866,25 +874,57 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
         state.trigger = trigger;
         self.paint_trigger(trigger, buffer, state);
 
-        if state.is_open() && !list_area.is_empty() {
-            state.panel = list_area;
-            self.paint_list(list_area, buffer, state);
-        } else {
-            state.panel = Rect::default();
+        // Help sits under the field. Source then paints the popup on top of
+        // the rest of the screen (`place(Below)`), covering the help row.
+        if trigger.y.saturating_add(1) < area.bottom() && !state.is_open() {
+            match self.validation {
+                Validation::Invalid(msg) => {
+                    crate::widgets::field_message::paint_field_message(
+                        buffer,
+                        Rect::new(area.x, trigger.y.saturating_add(1), area.width, 1),
+                        self.system,
+                        crate::widgets::label::DescriptionKind::Error,
+                        msg,
+                    );
+                }
+                _ if !self.help.is_empty() => {
+                    let help_x = area.x.saturating_add(2);
+                    let help_w = area.width.saturating_sub(2);
+                    let help = truncate_cols(
+                        self.help,
+                        usize::from(help_w),
+                        self.system.glyphs.ellipsis(),
+                    );
+                    buffer.set_stringn(
+                        help_x,
+                        trigger.y.saturating_add(1),
+                        help.as_ref(),
+                        usize::from(help_w),
+                        self.system.style(Role::TextMuted),
+                    );
+                }
+                _ => {}
+            }
         }
 
-        // Validation directly under the trigger — not pinned to the bottom
-        // edge, where it drifted away from the field it describes.
-        if trigger.y.saturating_add(1) < area.bottom()
-            && let Validation::Invalid(msg) = self.validation
-        {
-            crate::widgets::field_message::paint_field_message(
-                buffer,
-                Rect::new(area.x, trigger.y.saturating_add(1), area.width, 1),
-                self.system,
-                crate::widgets::label::DescriptionKind::Error,
-                msg,
-            );
+        if state.is_open() {
+            let n = self.options.iter().filter(|o| o.is_option()).count() as u16;
+            let h = n.saturating_add(2).min(10);
+            let w = trigger.width.clamp(12, 40);
+            let screen = *buffer.area();
+            let pa = if matches!(state.presentation, SelectPresentation::Fullscreen)
+                && !list_area.is_empty()
+            {
+                list_area
+            } else {
+                place_below(screen, trigger, w, h)
+            };
+            if !pa.is_empty() {
+                state.panel = pa;
+                self.paint_list(pa, buffer, state);
+            }
+        } else {
+            state.panel = Rect::default();
         }
     }
 
@@ -952,8 +992,9 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
                 Glyph::ChevronDown
             })
             .text;
-        let text_x = area.x.saturating_add(1).min(area.right());
-        let text_w = area.width.saturating_sub(3);
+        // Source Select: gutter, pad, value, chevron at `right-2`.
+        let text_x = area.x.saturating_add(2).min(area.right());
+        let text_w = area.width.saturating_sub(5);
         let muted = state.value.is_none();
         buffer.set_stringn(
             text_x,
@@ -966,29 +1007,42 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
                 recipe.value
             },
         );
-        if area.width > 0 {
+        if area.width > 1 {
+            let theme = self.system.junie_theme();
+            let chev_fg = if !state.enabled {
+                theme.disabled
+            } else {
+                theme.text_secondary
+            };
+            let chev_bg = recipe.fill.bg.unwrap_or(theme.field);
             buffer.set_stringn(
-                area.right().saturating_sub(1),
+                area.right().saturating_sub(2),
                 area.y,
                 chev,
                 1,
-                recipe.placeholder,
+                Style::new().fg(chev_fg).bg(chev_bg),
             );
         }
         apply_field_underline(buffer, area, &recipe);
     }
 
     fn paint_list(&self, area: Rect, buffer: &mut Buffer, state: &mut SelectState<Id>) {
-        let recipe = if state.focused {
-            SurfaceRecipe::OverlayFocused
+        let popover =
+            matches!(state.presentation, SelectPresentation::Popover) && !state.searchable;
+        let inner = if popover {
+            paint_junie_popup_surface(buffer, area, self.system)
         } else {
-            SurfaceRecipe::Overlay
+            let recipe = if state.focused {
+                SurfaceRecipe::OverlayFocused
+            } else {
+                SurfaceRecipe::Overlay
+            };
+            Surface::new(self.system)
+                .recipe(recipe)
+                .bordered(true)
+                .content_inset()
+                .paint(area, buffer)
         };
-        let inner = Surface::new(self.system)
-            .recipe(recipe)
-            .bordered(true)
-            .content_inset()
-            .paint(area, buffer);
         if inner.is_empty() {
             return;
         }
@@ -1015,21 +1069,24 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
         if full_list.is_empty() {
             return;
         }
-        // Reserve the scroll gutter whether or not it is painted, so rows do
-        // not reflow the moment the list grows past its viewport
-        // (plans/022 Step 2).
+        // Source Select popup has no scroll gutter. Reserve one only for
+        // searchable/fullscreen lists.
         let gutter = Rect::new(
             full_list.right().saturating_sub(1),
             full_list.y,
             1,
             full_list.height,
         );
-        let list_area = Rect::new(
-            full_list.x,
-            full_list.y,
-            full_list.width.saturating_sub(1),
-            full_list.height,
-        );
+        let list_area = if popover {
+            full_list
+        } else {
+            Rect::new(
+                full_list.x,
+                full_list.y,
+                full_list.width.saturating_sub(1),
+                full_list.height,
+            )
+        };
         if list_area.is_empty() {
             return;
         }
@@ -1106,21 +1163,33 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
                     let rect = Rect::new(list_area.x, row_y, list_area.width, 1);
                     let is_hi = state.collection.active() == Some(&opt.id);
                     let is_val = state.value.as_ref() == Some(&opt.id);
-                    let visual = ListRowVisualState {
-                        selected: is_hi,
-                        focused: is_hi && state.focused,
-                        hovered: state.hovered.as_ref() == Some(&opt.id),
-                        enabled: !opt.disabled,
-                        loading: false,
-                        checked: is_val,
-                        ..ListRowVisualState::default()
-                    };
                     let label = if let Some(desc) = &opt.description {
                         format!("{} {} {desc}", opt.label, { "—" })
                     } else {
                         opt.label.clone()
                     };
-                    paint_list_anatomy_row(buffer, rect, self.system, visual, is_val, &label);
+                    if popover {
+                        paint_junie_select_row(
+                            buffer,
+                            rect,
+                            self.system,
+                            is_hi && state.focused,
+                            is_val,
+                            !opt.disabled,
+                            &label,
+                        );
+                    } else {
+                        let visual = ListRowVisualState {
+                            selected: is_hi,
+                            focused: is_hi && state.focused,
+                            hovered: state.hovered.as_ref() == Some(&opt.id),
+                            enabled: !opt.disabled,
+                            loading: false,
+                            checked: is_val,
+                            ..ListRowVisualState::default()
+                        };
+                        paint_list_anatomy_row(buffer, rect, self.system, visual, is_val, &label);
+                    }
                     if !opt.disabled {
                         state.option_regions.push((opt.id.clone(), rect));
                     }
@@ -1130,15 +1199,17 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
             }
         }
 
-        crate::scroll::paint_scrolled_region(
-            buffer,
-            list_area,
-            gutter,
-            coll_items.len(),
-            vp,
-            u16::try_from(state.collection.offset()).unwrap_or(u16::MAX),
-            self.system,
-        );
+        if !popover {
+            crate::scroll::paint_scrolled_region(
+                buffer,
+                list_area,
+                gutter,
+                coll_items.len(),
+                vp,
+                u16::try_from(state.collection.offset()).unwrap_or(u16::MAX),
+                self.system,
+            );
+        }
     }
 
     /// Semantic registration for trigger.
@@ -1208,6 +1279,86 @@ fn closed_select_height(recipe: SelectRecipe, has_label: bool, available: u16) -
     } else {
         1.min(available)
     }
+}
+
+/// Source `ui/popup.rs` `surface()`: elevated fill, focused colour, no bold.
+fn paint_junie_popup_surface(buffer: &mut Buffer, area: Rect, system: &DesignSystem) -> Rect {
+    if area.is_empty() {
+        return area;
+    }
+    let theme = system.junie_theme();
+    buffer.set_style(area, Style::new().bg(theme.surface_elevated));
+    Block::default()
+        .borders(Borders::ALL)
+        .border_style(system.style(Role::BorderFocused).bg(theme.surface_elevated))
+        .border_set(system.border_set())
+        .render(area, buffer);
+    area.inner(Margin::new(1, 1))
+}
+
+/// Source Select popup row: `▎› label` (gutter + selected marker + text).
+fn paint_junie_select_row(
+    buffer: &mut Buffer,
+    row: Rect,
+    system: &DesignSystem,
+    focused: bool,
+    selected: bool,
+    enabled: bool,
+    label: &str,
+) {
+    if row.is_empty() {
+        return;
+    }
+    let theme = system.junie_theme();
+    let vis = VisualState {
+        focused,
+        selected,
+        disabled: !enabled,
+        ..VisualState::default()
+    };
+    let st = system.row(vis, theme.surface_elevated);
+    buffer.set_style(row, st);
+    buffer.set_stringn(
+        row.x,
+        row.y,
+        system.glyphs.selection_gutter(),
+        1,
+        system.gutter(vis, st.bg.unwrap_or(theme.surface_elevated), false),
+    );
+    if selected && row.width > 1 {
+        buffer.set_stringn(row.x.saturating_add(1), row.y, "›", 1, st.fg(theme.accent));
+    }
+    let text_x = row.x.saturating_add(3).min(row.right());
+    let text_w = row.right().saturating_sub(text_x);
+    if text_w > 0 {
+        buffer.set_stringn(
+            text_x,
+            row.y,
+            take_display_cols(label, usize::from(text_w)),
+            usize::from(text_w),
+            st,
+        );
+    }
+}
+
+/// Source `ui/popup.rs` `place(..., Placement::Below)`.
+fn place_below(screen: Rect, anchor: Rect, width: u16, height: u16) -> Rect {
+    let width = width.min(screen.width).max(1);
+    let height = height.min(screen.height).max(1);
+    let below = anchor.bottom();
+    let room_below = screen.bottom().saturating_sub(below);
+    let y = if room_below >= height {
+        below
+    } else if anchor.y >= screen.y.saturating_add(height) {
+        anchor.y.saturating_sub(height)
+    } else {
+        screen.bottom().saturating_sub(height)
+    };
+    let x = anchor
+        .x
+        .min(screen.right().saturating_sub(width))
+        .max(screen.x);
+    Rect::new(x, y, width, height)
 }
 
 fn apply_field_underline(buffer: &mut Buffer, field: Rect, recipe: &crate::style::InputRecipe) {
@@ -1453,7 +1604,29 @@ mod tests {
         Select::new(&opts, &system).paint(area, Rect::default(), &mut buffer, &mut state);
 
         assert_ne!(buffer[(area.x, area.y)].symbol(), "A");
-        assert_eq!(buffer[(area.x + 1, area.y)].symbol(), "A");
+        assert_eq!(buffer[(area.x + 1, area.y)].symbol(), " ");
+        assert_eq!(buffer[(area.x + 2, area.y)].symbol(), "A");
+    }
+
+    #[test]
+    fn form_label_and_value_use_source_inset() {
+        let system = DesignSystem::junie();
+        let opts = sample_options();
+        let mut state = SelectState::new()
+            .with_recipe(SelectRecipe::Form)
+            .with_value("apple");
+        let area = Rect::new(0, 0, 24, 3);
+        let mut buffer = Buffer::empty(area);
+        Select::new(&opts, &system)
+            .label("Fruit")
+            .help("Applies to the next query")
+            .paint(area, Rect::default(), &mut buffer, &mut state);
+        assert_eq!(buffer[(0, 0)].symbol(), " ");
+        assert_eq!(buffer[(2, 0)].symbol(), "F");
+        assert_eq!(buffer[(2, 1)].symbol(), "A");
+        assert_eq!(buffer[(area.right() - 2, 1)].symbol(), "▾");
+        assert_eq!(buffer[(2, 2)].symbol(), "A");
+        assert_eq!(buffer[(3, 2)].symbol(), "p");
     }
 
     #[test]
@@ -1606,8 +1779,8 @@ mod tests {
         );
         assert_eq!(
             buffer[(rect.x + 1, rect.y)].symbol(),
-            Glyph::Success.resolve().text,
-            "committed value is list membership ✓, not checkbox [✓]"
+            "›",
+            "committed value is selected marker ›"
         );
         let field = row_text(&buffer, state.trigger.y, area.width);
         assert!(

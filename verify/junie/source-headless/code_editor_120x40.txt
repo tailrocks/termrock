@@ -1,0 +1,40 @@
+ ▪ Junie Design system / Components / Code editor                            truecolor · 120×40   i Inspector   ? Help  
+                                                                                                                        
+   Foundations            Code editor  Blocks, tones, diagnostics and completion; the gutter says where you are         
+▎  Overview                                                                                                             
+                            retry.rs                                      3 blocks      State                           
+   Components                                                                                                           
+▎  Buttons                  ▎›  1 // Retry a request with exponential backoff.   ┃      Mode         navigating         
+▎  Inputs                       2 pub async fn fetch(url: &str) -> Result<Body, …┃      Cursor       ln 1 · col 1       
+▎  Text areas                   3     let mut delay = 200;                       ┃      Block        1 of 3             
+▎  Forms                        4     for attempt in 1..=5 {                     ┃      Runs         0                  
+▎  Lists                        5         match client().get(url).await {        ┃      Last run     —                  
+▎  Trees                        6             Ok(body) => return Ok(body),       ┃      Diagnostics  0                  
+▎  Tables                       7             Err(e) if e.is_transient() => {    ┃      Completion   closed             
+▎  Editable tables              8                 log::warn!("attempt {attempt} …┃                                      
+▎  Panels                       9                 sleep(delay).await;            ┃                                      
+▎  Sidebars                    10                 delay *= 2;                    ┃                                      
+▎  Dialogs                     11             }                                  ┃      Diagnostics                     
+▎  Progress                    12             Err(e) => return Err(e),           ┃                                      
+▎  Scrolling                   13         }                                      ┃                                      
+▎› Code editor                 14     }                                          ┃             Nothing flagged          
+▎  Data grid                   15     Err(Error::Exhausted)                      ┃                                      
+▎  Chips & selects             16 }                                              ┃        Run the second block: its     
+▎  Pickers                     17                                                ┃         unwrap() gets a warning      
+                               18 fn client() -> Client {                        ┃                                      
+   Screens                     19     Client::builder().timeout(10).build().unwr…│                                      
+▎  Settings                    20 }                                              │                                      
+▎  Task runner                 21                                                │                                      
+                               22 #[test]                                        │                                      
+                                                                       1–22 of 26                                       
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+ ↑ ↓ Move  Enter Open  Tab Into page  q Quit                                                                            

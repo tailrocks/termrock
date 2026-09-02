@@ -8,21 +8,15 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "The TermRock flagship workbench — a real-work TUI built on public APIs only"
-readme = "README.md"
+description = "Canonical Junie-style TermRock catalog binary (same shell as termrock-catalog)"
 publish = false
-
-[lib]
-name = "termrock_showcase"
-path = "src/lib.rs"
 
 [[bin]]
 name = "termrock-showcase"
 path = "src/main.rs"
 
 [dependencies]
-termrock = { path = "../termrock", version = "0.11.0", features = ["crossterm"] }
-ratatui-core.workspace = true
+termrock-catalog = { version = "0.11.0", path = "../termrock-catalog" }
 
 [lints]
 workspace = true

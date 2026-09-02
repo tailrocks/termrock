@@ -1,0 +1,30 @@
+{
+  "description": "Intentional differences between junie-reference profile and default TermRock catalog. Unlisted differences are defects.",
+  "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+  "deltas": [
+    {
+      "id": "product-name",
+      "junie-reference": "Junie",
+      "termrock": "TermRock",
+      "where": "header, too-small title, --help identity"
+    },
+    {
+      "id": "help-binary-name",
+      "junie-reference": "USAGE: Junie [--color ...]",
+      "termrock": "USAGE: TermRock [--color ...]",
+      "where": "--help"
+    },
+    {
+      "id": "applications-tablepro",
+      "junie-reference": "absent",
+      "termrock": "Applications / TablePro nav entry after source prefix",
+      "where": "sidebar"
+    },
+    {
+      "id": "termrock-extra-pages",
+      "junie-reference": "absent",
+      "termrock": "Library Feedback, Overlays, Charts, Structure after the source prefix",
+      "where": "sidebar"
+    }
+  ]
+}

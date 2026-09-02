@@ -1020,7 +1020,14 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
             }
         };
         let content_y = area.y.saturating_add(header.height);
-        let body_h = area.height.saturating_sub(header.height);
+        let content_h = area.height.saturating_sub(header.height);
+        // junie CodeEditor keeps one footer row (`1–22 of 26` / ln·col)
+        // when there is room for a body line plus that row.
+        let body_h = if content_h > 1 {
+            content_h.saturating_sub(1)
+        } else {
+            content_h
+        };
         let first = if state.parts.is_some() || state.viewport_rows > 0 {
             state.scroll_y
         } else {
@@ -1033,10 +1040,15 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
             width: gutter_w.min(area.width),
             height: body_h,
         };
+        let v_scroll =
+            crate::scroll::is_scrollable(self.document_len(), usize::from(body_h).max(1));
         let body = Rect {
             x: area.x.saturating_add(gutter.width),
             y: content_y,
-            width: area.width.saturating_sub(gutter.width),
+            width: area
+                .width
+                .saturating_sub(gutter.width)
+                .saturating_sub(u16::from(v_scroll)),
             height: body_h,
         };
         CodeBlockParts {
@@ -1091,12 +1103,16 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
         };
         let fs = theme.field_style(visual);
         let field_bg = fs.bg.unwrap_or(theme.field);
-        let well = Rect {
-            x: parts.gutter.x,
-            y: parts.body.y,
-            width: parts.gutter.width.saturating_add(parts.body.width),
-            height: parts.body.height,
-        };
+        // Source CodeEditor fills the whole editor rect (scrollbar column and
+        // footer included) with field_style. Restricting the well to
+        // gutter+body left ┃ on the card surface.
+        let fill_y = area.y.saturating_add(parts.header.height);
+        let well = Rect::new(
+            area.x,
+            fill_y,
+            area.width,
+            area.bottom().saturating_sub(fill_y),
+        );
         if !well.is_empty() {
             buffer.set_style(well, fs);
         }
@@ -1129,31 +1145,22 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
             let prepared = prepare_code_display(raw, tab, self.controls);
             let kinds = self.highlights_for(abs, state);
 
-            // Junie: the bar marks the cursor line only, like a list row.
-            // Unfocused, fg equals the field so the glyph is present but
-            // invisible. Marker is `›` for the current block or `!` for a
-            // diagnostic — never a second `▎`.
+            // Junie: every row keeps the gutter slot (`▎`). The cursor line
+            // uses the focus bar colour; other rows paint fg=bg so the glyph
+            // is still in the cell (txt goldens) but invisible. Marker is `›`
+            // for the current block or `!` for a diagnostic — never a second `▎`.
             if parts.gutter.width > 0 {
                 let y = parts.body.y.saturating_add(row);
                 let gx = parts.gutter.x;
-                let on_cursor = state.cursor_line == Some(abs);
-                if on_cursor {
-                    let line_gutter = self.system.gutter(
-                        VisualState {
-                            focused: state.focused,
-                            ..visual
-                        },
-                        field_bg,
-                        false,
-                    );
-                    buffer.set_stringn(
-                        gx,
-                        y,
-                        self.system.glyphs.selection_gutter(),
-                        1,
-                        line_gutter,
-                    );
-                }
+                let line_gutter = self.system.gutter(
+                    VisualState {
+                        focused: state.focused,
+                        ..visual
+                    },
+                    field_bg,
+                    false,
+                );
+                buffer.set_stringn(gx, y, self.system.glyphs.selection_gutter(), 1, line_gutter);
                 if let Some(m) = self.mark_for(abs) {
                     // A diagnostic owns the marker slot (`!`).
                     buffer.set_stringn(
@@ -1181,17 +1188,22 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
                     );
                 }
                 if self.show_line_numbers && parts.gutter.width > 3 {
+                    // bar + marker, then right-aligned numbers, then trailing spaces.
+                    // Captured shots: `▎› 1  //` and `▎ 10 ` (numbers at x+2).
                     let num_w = parts.gutter.width.saturating_sub(4);
                     let display_n = self.meta.start_line_number.saturating_add(abs);
                     let number =
                         format!("{:>width$}", display_n, width = usize::from(num_w.max(1)));
+                    let in_block = block.is_some_and(|(start, end)| abs >= start && abs < end);
                     let nstyle = if state.cursor_line == Some(abs) && state.focused {
                         fs.fg(theme.text_primary).add_modifier(Modifier::BOLD)
-                    } else {
+                    } else if in_block {
                         fs.fg(theme.text_secondary)
+                    } else {
+                        fs.fg(theme.text_muted)
                     };
                     buffer.set_stringn(
-                        gx.saturating_add(3),
+                        gx.saturating_add(2),
                         y,
                         &number,
                         usize::from(num_w),
@@ -1234,6 +1246,8 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
                     &kinds,
                     mono,
                     fs,
+                    display_cols(&prepared).saturating_sub(usize::from(state.scroll_x))
+                        > usize::from(body_w),
                 );
                 row = row.saturating_add(1);
             }
@@ -1256,6 +1270,54 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
             );
         }
 
+        let fy = parts.body.y.saturating_add(parts.body.height);
+        if fy < area.bottom() {
+            let doc = self.document_len();
+            let pos = if state.focused {
+                let line = state.cursor_line.unwrap_or(0).saturating_add(1);
+                format!("ln {line}/{doc} · col 1")
+            } else if crate::scroll::is_scrollable(doc, usize::from(body_h).max(1)) {
+                let first = state.scroll_y.saturating_add(1);
+                let last = (state.scroll_y.saturating_add(usize::from(body_h))).min(doc);
+                if last >= first && doc > 0 {
+                    format!("{first}–{last} of {doc}")
+                } else {
+                    String::new()
+                }
+            } else {
+                String::new()
+            };
+            if !pos.is_empty() {
+                let theme = self.system.junie_theme();
+                let w = display_cols(&pos) as u16;
+                let x = area.right().saturating_sub(w.saturating_add(1));
+                buffer.set_stringn(
+                    x.max(area.x),
+                    fy,
+                    &pos,
+                    usize::from(area.width),
+                    theme.faint().bg(theme.field),
+                );
+            }
+        }
+
+        if crate::scroll::is_scrollable(self.document_len(), usize::from(body_h).max(1)) {
+            crate::scroll::paint_overflow_scrollbar(
+                buffer,
+                Rect::new(
+                    area.right().saturating_sub(1),
+                    parts.body.y,
+                    1,
+                    parts.body.height,
+                ),
+                self.document_len(),
+                usize::from(body_h).max(1),
+                u16::try_from(state.scroll_y).unwrap_or(u16::MAX),
+                state.focused,
+                self.system,
+            );
+        }
+
         parts.visible_lines = visible;
         parts.streaming = self.streaming;
         state.parts = Some(parts.clone());
@@ -1275,6 +1337,7 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
         kinds: &[CodeHighlightKind],
         mono: bool,
         field: Style,
+        overflow: bool,
     ) {
         if width == 0 {
             return;
@@ -1336,6 +1399,16 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
                 .min(width.saturating_sub(col));
             buffer.set_stringn(x.saturating_add(col), y, &clipped, remaining, style);
             col = col.saturating_add(used);
+        }
+        if overflow && width > 0 {
+            let theme = self.system.junie_theme();
+            buffer.set_stringn(
+                x.saturating_add(width.saturating_sub(1)),
+                y,
+                self.system.glyphs.ellipsis(),
+                1,
+                field.fg(theme.text_muted),
+            );
         }
         let _ = abs_line;
     }
@@ -2100,6 +2173,22 @@ mod tests {
         );
         // line numbers are muted off the current block
         assert_eq!(buf[(3, 2)].fg, system.junie_theme().text_secondary);
+    }
+
+    #[test]
+    fn unfocused_cursor_line_still_paints_gutter_glyph() {
+        let system = DesignSystem::junie();
+        let lines = ["// Retry a request with exponential backoff."];
+        let mut state = CodeBlockState::new();
+        state.set_focused(false);
+        state.set_cursor_line(Some(0));
+        let mut buf = Buffer::empty(Rect::new(0, 0, 60, 2));
+        let _ = CodeBlock::new(&lines, &system)
+            .line_numbers(true)
+            .current_block(0, 1)
+            .paint(Rect::new(0, 0, 60, 2), &mut buf, &mut state);
+        assert_eq!(buf[(0, 0)].symbol(), "▎", "cursor line keeps the bar glyph");
+        assert_eq!(buf[(1, 0)].symbol(), "›", "current block marker");
     }
 
     #[test]

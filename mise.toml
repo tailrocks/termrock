@@ -68,20 +68,20 @@ cargo package -p termrock --locked --allow-dirty
 """
 
 [tasks.bless-previews]
-description = "Regenerate the flagship preview baselines after an intended paint change"
-run = "TERMROCK_BLESS_PREVIEWS=1 cargo nextest run -p termrock-lookbook --all-features --test goldens --no-capture"
+description = "Canonical catalog cell parity (replaces lookbook story goldens)"
+run = "cargo test -p termrock-catalog --offline --test parity --locked"
 
 [tasks.preview-goldens]
-description = "Diff the flagship previews against their committed baselines"
-run = "cargo nextest run -p termrock-lookbook --all-features --test goldens --locked"
+description = "Canonical catalog cell parity (replaces lookbook story goldens)"
+run = "cargo test -p termrock-catalog --offline --test parity --locked"
 
 [tasks.bless-pngs]
-description = "Regenerate the subset PNG baselines after an intended paint change"
-run = "TERMROCK_BLESS_PNGS=1 cargo nextest run -p termrock-lookbook --all-features --test png_baselines --no-capture"
+description = "Canonical catalog coverage (replaces lookbook PNG story baselines)"
+run = "cargo test -p termrock-catalog --offline --test coverage --locked"
 
 [tasks.png-baselines]
-description = "Diff the subset PNG baselines against their committed files"
-run = "cargo nextest run -p termrock-lookbook --all-features --test png_baselines --locked"
+description = "Canonical catalog coverage (replaces lookbook PNG story baselines)"
+run = "cargo test -p termrock-catalog --offline --test coverage --locked"
 
 [tasks.docs-quality]
 description = "Placeholder rustdoc ban + component quality contracts (v2)"

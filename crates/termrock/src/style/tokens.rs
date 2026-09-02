@@ -1356,7 +1356,11 @@ impl DesignSystem {
         } else {
             field.fg.unwrap_or(theme.text_primary)
         });
-        let fill = Style::new().bg(field.bg.unwrap_or(theme.field));
+        // Source `field_style` sets fg+bg on the whole well (idle primary,
+        // disabled `disabled`). Padding cells keep that fg.
+        let fill = Style::new()
+            .fg(value.fg.unwrap_or(theme.text_primary))
+            .bg(field.bg.unwrap_or(theme.field));
         let placeholder = Style::new().fg(theme.placeholder(visual).fg.unwrap_or(theme.text_muted));
         // A field has no frame; the border slot carries the underline
         // affordance. Editing underlines in accent and an invalid value moves

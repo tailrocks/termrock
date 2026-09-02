@@ -1,12 +1,14 @@
 [workspace]
 members = [
     "crates/termrock",
+    "crates/termrock-catalog",
     "crates/termrock-lookbook",
     "crates/termrock-lookbook-web",
-    "crates/termrock-cli",
     "crates/termrock-showcase",
+    "crates/termrock-cli",
     "crates/termrock-raster",
 ]
+default-members = ["crates/termrock-catalog"]
 resolver = "3"
 
 [workspace.package]

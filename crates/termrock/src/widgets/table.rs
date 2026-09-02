@@ -28,6 +28,9 @@ pub use crate::text::{CellAlignment, CellOverflow};
 
 /// junie row anatomy: col0 `▎`, col1 `›` or space, col2 blank, content at col 3.
 const MARKER_WIDTH: u16 = 3;
+/// With [`MARKER_WIDTH`], this is junie's `area.width - 5` before the
+/// optional overflow gutter: two cells for the header `…` indicator.
+const JUNIE_TRAILING: u16 = 2;
 
 /// Presentation recipe (visual chrome without domain noise).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -978,7 +981,21 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
         state
             .priorities
             .extend(self.columns.iter().map(|column| column.priority));
-        let column_budget = area.width.saturating_sub(MARKER_WIDTH);
+        let v_scroll = crate::scroll::is_scrollable(self.rows.len(), state.viewport_rows.max(1));
+        let mut column_budget = area
+            .width
+            .saturating_sub(MARKER_WIDTH)
+            .saturating_sub(JUNIE_TRAILING)
+            .saturating_sub(u16::from(v_scroll));
+        if column_budget == 0 {
+            // Keep one content cell so a 4-wide grapheme clip test still
+            // has a place to paint. Junie tables are never this tight.
+            column_budget = area
+                .width
+                .saturating_sub(MARKER_WIDTH)
+                .saturating_sub(u16::from(v_scroll))
+                .max(1);
+        }
         state.viewport_width = column_budget;
         resolve_layout_into(
             &state.policies,
@@ -1022,7 +1039,29 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
         }
 
         if self.sticky_header && header_h > 0 && !state.visible_columns.is_empty() {
-            paint_header_row(self, area, buffer, state, gap, bordered);
+            paint_header_row(self, area, buffer, state, gap, bordered, column_budget);
+            let theme = self.tokens.junie_theme();
+            let ellipsis = self.tokens.glyphs.ellipsis();
+            let more_left = state.h_offset > 0
+                || state
+                    .visible_columns
+                    .first()
+                    .is_some_and(|&index| index > 0);
+            let more_right = self.columns.len() > state.visible_columns.len()
+                || state.content_width.saturating_sub(state.h_offset) > column_budget;
+            if more_left {
+                buffer.set_stringn(area.x.saturating_add(1), area.y, ellipsis, 1, theme.faint());
+            }
+            if more_right {
+                let x = area
+                    .x
+                    .saturating_add(MARKER_WIDTH)
+                    .saturating_add(column_budget)
+                    .saturating_add(1);
+                if x < area.right() {
+                    buffer.set_stringn(x, area.y, ellipsis, 1, theme.faint());
+                }
+            }
         }
 
         let body_y = area.y.saturating_add(header_h);
@@ -1052,16 +1091,11 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
             TableBodyState::Ready => None,
         };
         if let Some((message, role)) = placeholder {
-            let msg_area = Rect::new(
-                area.x.saturating_add(MARKER_WIDTH),
-                body_y,
-                column_budget,
-                1,
-            );
+            let msg_area = Rect::new(area.x, body_y.saturating_add(body_h / 2), area.width, 1);
             render_line(
                 &message,
                 msg_area,
-                CellAlignment::Left,
+                CellAlignment::Center,
                 self.tokens.palette.style(role),
                 buffer,
                 &mut state.scratch_text,
@@ -1161,7 +1195,11 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
             } else {
                 0
             };
-            let columns_right = area.right().saturating_sub(badge_reserve);
+            let columns_right = area
+                .x
+                .saturating_add(MARKER_WIDTH)
+                .saturating_add(column_budget)
+                .min(area.right().saturating_sub(badge_reserve));
             paint_data_cells(
                 self,
                 buffer,
@@ -1192,6 +1230,17 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
                     area: row_area,
                 });
             }
+        }
+        if v_scroll {
+            crate::scroll::paint_overflow_scrollbar(
+                buffer,
+                Rect::new(area.right().saturating_sub(1), body_y, 1, body_h),
+                self.rows.len(),
+                state.viewport_rows.max(1),
+                u16::try_from(state.offset).unwrap_or(u16::MAX),
+                self.focused,
+                self.tokens,
+            );
         }
         state.hovered = state.pointer.and_then(|position| {
             state
@@ -1290,6 +1339,7 @@ fn paint_header_row<RowId: Clone + Eq, ColumnId: Clone + Eq>(
     state: &mut TableState<RowId, ColumnId>,
     gap: u16,
     bordered: bool,
+    column_budget: u16,
 ) {
     let idle_header = super::table_chrome::header_style(table.tokens);
     buffer.set_style(
@@ -1309,7 +1359,7 @@ fn paint_header_row<RowId: Clone + Eq, ColumnId: Clone + Eq>(
     let mut logical_x: i32 = i32::from(origin_x) - i32::from(state.h_offset);
     let mut shown_sort = false;
     let clip_left = origin_x;
-    let clip_right = area.right();
+    let clip_right = origin_x.saturating_add(column_budget).min(area.right());
     for (visible_index, column_index) in state.visible_columns.iter().copied().enumerate() {
         let column = &table.columns[column_index];
         let width = state.resolved_widths[column_index];
@@ -1899,6 +1949,51 @@ mod tests {
         );
         assert!(!visible.contains(&3), "status drops under 49: {visible:?}");
         assert_eq!(resolved[1], 33, "task Min absorbs leftover");
+    }
+
+    #[test]
+    fn overflow_chrome_reserves_gutter_and_marks_hidden_columns() {
+        let system = DesignSystem::junie();
+        let columns = [
+            Column::new("id", "ID", ColumnWidth::Fixed(5)),
+            Column::new("task", "Task", ColumnWidth::Min(24)),
+            Column::new("owner", "Owner", ColumnWidth::Fixed(7)),
+            Column::new("status", "Status", ColumnWidth::Fixed(9)),
+            Column::new("branch", "Branch", ColumnWidth::Fixed(20)),
+            Column::new("changes", "Changes", ColumnWidth::Fixed(9)),
+            Column::new("duration", "Duration", ColumnWidth::Fixed(9)),
+        ];
+        let cell = [
+            Line::from("#1040"),
+            Line::from("Add rate limiting to auth endpoints"),
+            Line::from("mira"),
+            Line::from("Done"),
+            Line::from("feat/rate-limit"),
+            Line::from("14"),
+            Line::from("6m 52s"),
+        ];
+        let rows: Vec<TableRow<'_, usize>> = (0..20).map(|i| TableRow::new(i, &cell)).collect();
+        let area = Rect::new(0, 0, 90, 12);
+        let mut state = TableState::new(Some(0));
+        let mut buffer = Buffer::empty(area);
+        (&Table::new(&columns, &rows, &system).focused(true)).render(area, &mut buffer, &mut state);
+        let header: String = (0..area.width)
+            .map(|x| buffer[(x, 0)].symbol().to_string())
+            .collect();
+        assert!(
+            header.contains("Owner"),
+            "Task Min must not eat Owner, got {header:?}"
+        );
+        assert!(
+            header.contains(system.glyphs.ellipsis()),
+            "hidden Duration must mark header overflow, got {header:?}"
+        );
+        let thumb = crate::scroll::ScrollbarStyle::Line.vertical_thumb();
+        let x = area.right().saturating_sub(1);
+        assert!(
+            (1..area.height).any(|y| buffer[(x, y)].symbol() == thumb),
+            "body overflow must paint a line thumb"
+        );
     }
 
     #[test]
@@ -2569,7 +2664,7 @@ mod tests {
         ]];
         let rows = [TableRow::new(1, &cells[0])];
         let mut state = TableState::default();
-        let area = Rect::new(0, 0, 24, 3);
+        let area = Rect::new(0, 0, 26, 3);
         let mut buffer = Buffer::empty(area);
         (&Table::new(&columns, &rows, &tokens)).render(area, &mut buffer, &mut state);
 

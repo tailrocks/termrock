@@ -20,7 +20,7 @@
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
-    style::Modifier,
+    style::{Modifier, Style},
     widgets::StatefulWidget,
 };
 
@@ -30,7 +30,7 @@ use crate::{
     },
     interaction::{NavigationMove, PageMove, UiIntent},
     style::{DesignSystem, Glyph, ListRowVisualState, Role},
-    text::take_display_cols,
+    text::{display_cols, take_display_cols, truncate_cols},
     widgets::data_view::{
         CellCoord, ColumnKind, ColumnModel, ColumnPin, CopyPayload, ExpandState, FilterSpec,
         GroupHeader, LoadState, SelectionMode, SelectionModel, SortSpec, VirtualWindow,
@@ -1049,7 +1049,7 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> Default for DataTableState<Ro
     }
 }
 
-/// DataTable chrome: toolbar + sticky header + virtual body + footer.
+/// DataTable chrome: toolbar + sticky header + virtual body + optional footer.
 #[derive(Debug, Clone)]
 pub struct DataTable<'a, RowId, ColId> {
     system: &'a DesignSystem,
@@ -1065,6 +1065,8 @@ pub struct DataTable<'a, RowId, ColId> {
     fullscreen_hint: bool,
     /// 1-based row index column (junie grid default).
     row_numbers: bool,
+    /// Status footer (`N rows · nav:cell`). Junie showcase tables have none.
+    show_footer: bool,
 }
 
 impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColId> {
@@ -1084,6 +1086,7 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
             focused: false,
             fullscreen_hint: false,
             row_numbers: true,
+            show_footer: false,
         }
     }
 
@@ -1122,6 +1125,13 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
         self
     }
 
+    /// Status footer (`N rows · nav:cell`). Off matches junie showcase tables.
+    #[must_use]
+    pub const fn footer(mut self, on: bool) -> Self {
+        self.show_footer = on;
+        self
+    }
+
     fn chrome_width(&self) -> u16 {
         grid_chrome_width(self.rows.len(), self.row_numbers)
     }
@@ -1138,7 +1148,7 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
         }
         let surface_focused = self.focused || state.accepts_input;
         let has_toolbar = self.toolbar.is_some();
-        let has_footer = true;
+        let has_footer = self.show_footer;
         let chrome_rows = 1u16 // header
             + u16::from(has_toolbar)
             + u16::from(has_footer);
@@ -1161,7 +1171,11 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
             y = y.saturating_add(1);
         }
 
-        let col_budget = area.width.saturating_sub(self.chrome_width());
+        // junie `cols_area` is `width - 5 - scrollbar` with a 3-cell gutter.
+        let col_budget = area
+            .width
+            .saturating_sub(self.chrome_width())
+            .saturating_sub(2);
         state.viewport_width = col_budget;
         self.columns.resolve_paint_widths_with_gap(
             col_budget.saturating_add(state.h_offset),
@@ -1236,9 +1250,24 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
             y = y.saturating_add(1);
         }
         state.body_rows = y.saturating_sub(body_start);
+        let body_h = body_bottom.saturating_sub(body_start);
+        let total = usize::try_from(state.window.logical_len.max(self.rows.len() as u64))
+            .unwrap_or(self.rows.len())
+            .max(self.rows.len());
+        if body_h > 0 {
+            crate::scroll::paint_overflow_scrollbar(
+                buffer,
+                Rect::new(area.right().saturating_sub(1), body_start, 1, body_h),
+                total,
+                usize::from(state.window.viewport.max(1)),
+                u16::try_from(state.window.offset.min(u64::from(u16::MAX))).unwrap_or(u16::MAX),
+                surface_focused,
+                self.system,
+            );
+        }
 
         // Footer
-        if y < area.bottom() || body_bottom < area.bottom() {
+        if self.show_footer && (y < area.bottom() || body_bottom < area.bottom()) {
             let fy = area.bottom().saturating_sub(1);
             let mut parts = Vec::new();
             match &state.load {
@@ -1276,6 +1305,36 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
             }
         }
     }
+}
+
+/// Source DataGrid `fit` / `fit_right`: truncate (tail `…`) then pad.
+fn paint_plain_cell(
+    buffer: &mut Buffer,
+    x: u16,
+    y: u16,
+    width: u16,
+    text: &str,
+    style: Style,
+    kind: ColumnKind,
+    ellipsis: &str,
+) {
+    let w = usize::from(width);
+    let shown = if kind.clips_instead_of_ellipsizing() {
+        take_display_cols(text, w)
+    } else {
+        truncate_cols(text, w, ellipsis).into_owned()
+    };
+    let shown = if kind.right_aligned() {
+        let pad = w.saturating_sub(display_cols(&shown));
+        if pad == 0 {
+            shown
+        } else {
+            format!("{}{shown}", " ".repeat(pad))
+        }
+    } else {
+        shown
+    };
+    buffer.set_stringn(x, y, &shown, w, style);
 }
 
 fn paint_status_line<RowId: Clone + Ord, ColId: Clone + PartialEq>(
@@ -1347,7 +1406,9 @@ fn paint_header_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
         style,
     );
     let origin = area.x.saturating_add(chrome);
-    let clip_right = area.right();
+    let clip_right = origin
+        .saturating_add(state.viewport_width)
+        .min(area.right());
     let mut x = origin;
     // Apply h_offset only to unpinned center columns; pin start paints first.
     let widths = &state.paint_widths;
@@ -1414,8 +1475,16 @@ fn paint_header_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
                 style.fg(table.system.junie_theme().text_faint),
             );
         } else {
-            let text = take_display_cols(&title, usize::from(paint_w));
-            buffer.set_stringn(paint_x, y, &text, usize::from(paint_w), style);
+            paint_plain_cell(
+                buffer,
+                paint_x,
+                y,
+                paint_w,
+                &title,
+                style,
+                col.kind,
+                table.system.glyphs.ellipsis(),
+            );
         }
         let handle_x = paint_end.saturating_sub(RESIZE_HIT);
         state.header_regions.push(DataTableHeaderRegion {
@@ -1446,24 +1515,24 @@ fn paint_clip_chevrons<RowId: Clone + Ord, ColId: Clone + PartialEq>(
     buffer: &mut Buffer,
     state: &DataTableState<RowId, ColId>,
 ) {
-    let style = table.system.style(Role::TextFaint);
-    let glyphs = table.system.glyphs;
+    let style = table.system.junie_theme().faint();
+    let ellipsis = table.system.glyphs.ellipsis();
     if state.h_offset > 0 {
-        let x = area.x.saturating_add(table.chrome_width());
+        let x = area.x.saturating_add(1);
         if x < area.right() {
-            buffer.set_stringn(x, y, glyphs.resolve(Glyph::ChevronLeft).text, 1, style);
+            buffer.set_stringn(x, y, ellipsis, 1, style);
         }
     }
-    let gap = table.system.spacing.column_gap;
-    let total: u16 = state
-        .paint_widths
-        .iter()
-        .map(|(_, w)| w.saturating_add(gap))
-        .sum();
-    let visible = area.width.saturating_sub(table.chrome_width());
-    if total.saturating_sub(state.h_offset) > visible {
-        let x = area.right().saturating_sub(1);
-        buffer.set_stringn(x, y, glyphs.resolve(Glyph::ChevronRight).text, 1, style);
+    let hidden = table.columns.visible().count() > state.paint_widths.len();
+    if hidden || state.content_width.saturating_sub(state.h_offset) > state.viewport_width {
+        let x = area
+            .x
+            .saturating_add(table.chrome_width())
+            .saturating_add(state.viewport_width)
+            .saturating_add(1);
+        if x < area.right() {
+            buffer.set_stringn(x, y, ellipsis, 1, style);
+        }
     }
 }
 
@@ -1618,11 +1687,27 @@ fn paint_data_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
         let cell = Rect::new(paint_x, y, paint_w, 1);
         buffer.set_style(cell, cell_style);
         if state.editing && cell_focused {
-            let draft = take_display_cols(&state.edit_draft, usize::from(paint_w));
-            buffer.set_stringn(paint_x, y, &draft, usize::from(paint_w), cell_style);
+            paint_plain_cell(
+                buffer,
+                paint_x,
+                y,
+                paint_w,
+                &state.edit_draft,
+                cell_style,
+                col.kind,
+                table.system.glyphs.ellipsis(),
+            );
         } else {
-            let text = take_display_cols(cell_text, usize::from(paint_w));
-            buffer.set_stringn(paint_x, y, &text, usize::from(paint_w), cell_style);
+            paint_plain_cell(
+                buffer,
+                paint_x,
+                y,
+                paint_w,
+                cell_text,
+                cell_style,
+                col.kind,
+                table.system.glyphs.ellipsis(),
+            );
         }
         state.cell_regions.push(DataTableCellRegion {
             row: id.clone(),
@@ -2239,6 +2324,58 @@ mod tests {
     }
 
     #[test]
+    fn numeric_cells_and_headers_right_align() {
+        let system = DesignSystem::junie();
+        let cols = ColumnModel::new(vec![
+            DataColumn::new("name", "Name", DataColumnWidth::Fixed(8)),
+            DataColumn::new("n", "N", DataColumnWidth::Fixed(4)).kind(ColumnKind::Numeric),
+        ]);
+        let cells: &[&str] = &["ab", "9"];
+        let rows = [(1u64, cells)];
+        let mut state = DataTableState::<u64, &str>::new();
+        state.set_accepts_input(false);
+        let area = Rect::new(0, 0, 24, 4);
+        let mut buffer = Buffer::empty(area);
+        DataTable::new(&system, &cols, &rows)
+            .row_numbers(false)
+            .render(area, &mut buffer, &mut state);
+        let chrome = 3u16;
+        let num_x = chrome + 8 + 2;
+        let header: String = (num_x..num_x + 4)
+            .map(|x| buffer[(x, 0)].symbol().to_string())
+            .collect();
+        let numeric: String = (num_x..num_x + 4)
+            .map(|x| buffer[(x, 1)].symbol().to_string())
+            .collect();
+        assert_eq!(header, "   N", "{header}");
+        assert_eq!(numeric, "   9", "{numeric}");
+        assert_eq!(buffer[(chrome, 1)].symbol(), "a");
+    }
+
+    #[test]
+    fn overflow_gutter_paints_line_thumb_on_body_not_header() {
+        let system = DesignSystem::junie();
+        let cols = ColumnModel::new(vec![DataColumn::new("c", "C", DataColumnWidth::Min(8))]);
+        let c0: &[&str] = &["a"];
+        let rows: Vec<(u64, &[&str])> = (0..20).map(|i| (i, c0)).collect();
+        let mut state = DataTableState::<u64, &str>::new();
+        state.set_logical_rows(20);
+        state.set_accepts_input(false);
+        let area = Rect::new(0, 0, 20, 6);
+        let mut buffer = Buffer::empty(area);
+        DataTable::new(&system, &cols, &rows)
+            .row_numbers(false)
+            .render(area, &mut buffer, &mut state);
+        assert_ne!(
+            buffer[(19, 0)].symbol(),
+            "┃",
+            "header must not wear the body thumb"
+        );
+        assert_eq!(buffer[(19, 1)].symbol(), "┃");
+        assert_eq!(buffer[(19, 5)].symbol(), "│");
+    }
+
+    #[test]
     fn numeric_columns_read_quieter_than_text_columns() {
         let system = DesignSystem::default();
         let cols = ColumnModel::new(vec![
@@ -2285,7 +2422,7 @@ mod tests {
             let rows = [(1u64, cells)];
             let mut state = DataTableState::<u64, &str>::new();
             state.selection.select_row(1);
-            let area = Rect::new(0, 0, 20, 4);
+            let area = Rect::new(0, 0, 24, 4);
             let mut buffer = Buffer::empty(area);
 
             DataTable::new(system, &cols, &rows).focused(true).render(

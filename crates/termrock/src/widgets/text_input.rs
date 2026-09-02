@@ -33,7 +33,7 @@ use crate::{
         EventResult, SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent,
     },
     style::{ButtonRecipeVariant, ControlState, DesignSystem, Glyph, MASK_CELLS, VisualState},
-    text::{display_cols, take_display_cols},
+    text::{display_cols, take_display_cols, truncate_cols},
 };
 
 use super::edit_core;
@@ -1301,7 +1301,7 @@ impl<'a> TextInput<'a> {
 
         let empty = state.value.is_empty();
         let painted = if empty {
-            take_display_cols(self.placeholder, field_w)
+            truncate_cols(self.placeholder, field_w, self.system.glyphs.ellipsis()).into_owned()
         } else if self.secret {
             take_display_cols(&self.masked_display(), field_w)
         } else {
@@ -1920,6 +1920,26 @@ mod tests {
         let msg = row_text(&buffer, 2, area.width);
         assert!(msg.contains("Display name"), "{msg:?}");
         assert_eq!(buffer[(2, 2)].fg, theme.text_muted);
+    }
+
+    #[test]
+    fn overflow_placeholder_uses_ellipsis_not_hard_clip() {
+        let system = DesignSystem::junie();
+        let area = Rect::new(0, 0, 16, 1);
+        let mut state = TextInputState::new("");
+        let mut buffer = Buffer::empty(area);
+        TextInput::new("", &system)
+            .placeholder("What should Junie do, and what does done look like?")
+            .paint(area, &mut buffer, &mut state);
+        let line = row_text(&buffer, 0, area.width);
+        assert!(
+            line.contains(system.glyphs.ellipsis()),
+            "overflow placeholder must mark the cut, got {line:?}"
+        );
+        assert!(
+            !line.contains("look"),
+            "overflow placeholder must not hard-clip the tail, got {line:?}"
+        );
     }
     use super::*;
     use crate::style::{MASK_CELLS, RolePalette};

@@ -6,7 +6,11 @@
 //! most one status hue and at most one accent survive; everything else reads
 //! as metadata — and it drops by stated priority rather than by whatever
 //! happened to be last in the vector.
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Style};
+use ratatui_core::{
+    buffer::Buffer,
+    layout::Rect,
+    style::{Color, Modifier, Style},
+};
 
 use crate::style::{DesignSystem, GlyphSet, Role};
 use crate::text::display_cols;
@@ -257,6 +261,131 @@ impl<'a> StatusStrip<'a> {
     }
 }
 
+/// One identity-strip fact. Source `segments::Segment`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct LineSegment<'a> {
+    text: &'a str,
+    role: Role,
+    bold: bool,
+    /// Higher survives longer when the line is short.
+    priority: u8,
+}
+
+impl<'a> LineSegment<'a> {
+    /// Normal-tone fact, priority 5.
+    #[must_use]
+    pub const fn new(text: &'a str) -> Self {
+        Self {
+            text,
+            role: Role::Text,
+            bold: false,
+            priority: 5,
+        }
+    }
+
+    /// Foreground tone (source `Segment` `Tone`).
+    #[must_use]
+    pub const fn tone(mut self, role: Role) -> Self {
+        self.role = role;
+        self
+    }
+
+    /// Bold copy (source `Segment::bold`).
+    #[must_use]
+    pub const fn bold(mut self) -> Self {
+        self.bold = true;
+        self
+    }
+
+    /// Survival priority (higher stays longer).
+    #[must_use]
+    pub const fn priority(mut self, priority: u8) -> Self {
+        self.priority = priority;
+        self
+    }
+}
+
+const SEGMENT_GAP: u16 = 2;
+
+/// Source `segments::render`: left-packed then right-packed, two-cell gap.
+pub fn paint_line_segments(
+    area: Rect,
+    buffer: &mut Buffer,
+    system: &DesignSystem,
+    left: &[LineSegment<'_>],
+    right: &[LineSegment<'_>],
+    bg: Color,
+) {
+    let area = area.intersection(*buffer.area());
+    if area.is_empty() {
+        return;
+    }
+    let width_of = |s: &LineSegment<'_>| u16::try_from(display_cols(s.text)).unwrap_or(0);
+    let mut keep_l = vec![true; left.len()];
+    let mut keep_r = vec![true; right.len()];
+    let total = |kl: &[bool], kr: &[bool]| -> u16 {
+        let l: u16 = left
+            .iter()
+            .zip(kl)
+            .filter(|(_, k)| **k)
+            .map(|(s, _)| width_of(s) + SEGMENT_GAP)
+            .sum();
+        let r: u16 = right
+            .iter()
+            .zip(kr)
+            .filter(|(_, k)| **k)
+            .map(|(s, _)| width_of(s) + SEGMENT_GAP)
+            .sum();
+        l + r + 2
+    };
+    while total(&keep_l, &keep_r) > area.width {
+        let mut best: Option<(u8, bool, usize)> = None;
+        for (i, s) in left.iter().enumerate() {
+            if keep_l[i] && best.is_none_or(|b| s.priority < b.0) {
+                best = Some((s.priority, true, i));
+            }
+        }
+        for (i, s) in right.iter().enumerate() {
+            if keep_r[i] && best.is_none_or(|b| s.priority <= b.0) {
+                best = Some((s.priority, false, i));
+            }
+        }
+        match best {
+            Some((_, true, i)) => keep_l[i] = false,
+            Some((_, false, i)) => keep_r[i] = false,
+            None => break,
+        }
+    }
+    let mut x = area.x.saturating_add(1);
+    for (s, k) in left.iter().zip(&keep_l) {
+        if !*k {
+            continue;
+        }
+        let mut st = system.style(s.role);
+        st.bg = Some(bg);
+        if s.bold {
+            st = st.add_modifier(Modifier::BOLD);
+        }
+        buffer.set_stringn(x, area.y, s.text, display_cols(s.text), st);
+        x = x.saturating_add(width_of(s)).saturating_add(SEGMENT_GAP);
+    }
+    let mut rx = area.right().saturating_sub(1);
+    for (s, k) in right.iter().zip(&keep_r).rev() {
+        if !*k {
+            continue;
+        }
+        let sw = width_of(s);
+        rx = rx.saturating_sub(sw);
+        let mut st = system.style(s.role);
+        st.bg = Some(bg);
+        if s.bold {
+            st = st.add_modifier(Modifier::BOLD);
+        }
+        buffer.set_stringn(rx, area.y, s.text, display_cols(s.text), st);
+        rx = rx.saturating_sub(SEGMENT_GAP);
+    }
+}
+
 /// The quiet tier a segment falls back to when the budget is spent.
 const fn role_quiet(role: Role) -> Role {
     match role {
@@ -283,6 +412,32 @@ mod tests {
                 .priority(80),
             StatusSegment::new("$0.42").priority(10),
         ]
+    }
+
+    #[test]
+    fn line_segments_use_two_cell_gap_and_no_status_glyph() {
+        let system = DesignSystem::junie();
+        let left = [
+            LineSegment::new("▪").tone(Role::Success).priority(9),
+            LineSegment::new("Acme").bold().priority(9),
+        ];
+        let right = [LineSegment::new("? help").tone(Role::TextMuted).priority(3)];
+        let area = Rect::new(0, 0, 40, 1);
+        let mut buffer = Buffer::empty(area);
+        paint_line_segments(
+            area,
+            &mut buffer,
+            &system,
+            &left,
+            &right,
+            system.junie_theme().surface,
+        );
+        let row: String = (0..area.width)
+            .map(|x| buffer[(x, 0)].symbol().to_string())
+            .collect();
+        assert!(row.starts_with(" ▪  Acme"), "{row:?}");
+        assert!(!row.contains('✓'), "{row:?}");
+        assert!(row.contains("? help"), "{row:?}");
     }
 
     #[test]

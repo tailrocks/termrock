@@ -24,7 +24,7 @@ use crate::{
     },
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
     style::{DesignSystem, VisualState},
-    text::{display_cols, display_cols_slice_into, take_display_cols},
+    text::{display_cols, display_cols_slice_into, take_display_cols, truncate_cols},
 };
 
 use super::{ScrollAreaState, ScrollChain, edit_core};
@@ -1752,11 +1752,11 @@ impl StatefulWidget for &TextArea<'_> {
                         && painted == 0
                         && let Some(placeholder) = self.placeholder
                     {
-                        display_cols_slice_into(
-                            placeholder,
-                            0,
-                            state.viewport_width,
+                        write_placeholder(
                             &mut state.scratch,
+                            placeholder,
+                            state.viewport_width,
+                            self.system.glyphs.ellipsis(),
                         );
                     }
                     let style = if empty_doc {
@@ -1813,7 +1813,12 @@ impl StatefulWidget for &TextArea<'_> {
                             && r == 0
                             && let Some(placeholder) = self.placeholder
                         {
-                            display_cols_slice_into(placeholder, 0, w, &mut state.scratch);
+                            write_placeholder(
+                                &mut state.scratch,
+                                placeholder,
+                                w,
+                                self.system.glyphs.ellipsis(),
+                            );
                         }
                         let y = text.y + u16::try_from(painted).unwrap_or(0);
                         buffer.set_stringn(
@@ -1893,19 +1898,24 @@ impl StatefulWidget for &TextArea<'_> {
         };
         let sb = Rect::new(field.right().saturating_sub(1), field.y, 1, rows);
         state.vertical_scrollbar = Some(sb);
-        crate::scroll::paint_scrolled_region(
+        crate::scroll::paint_overflow_scrollbar(
             buffer,
-            text,
             sb,
             content_h,
             state.viewport_height,
             state.scroll.offset_y(),
+            editing,
             self.system,
         );
 
         paint_textarea_footer(self, area, field, state, buffer, theme, editing);
         let _ = self.colorless;
     }
+}
+
+fn write_placeholder(scratch: &mut String, placeholder: &str, width: usize, ellipsis: &str) {
+    scratch.clear();
+    scratch.push_str(truncate_cols(placeholder, width, ellipsis).as_ref());
 }
 
 fn underline_row(buffer: &mut Buffer, inner: Rect, y: u16, color: ratatui_core::style::Color) {
@@ -1958,7 +1968,7 @@ fn paint_textarea_footer(
         buffer.set_stringn(
             area.x.saturating_add(2),
             fy,
-            take_display_cols(err, msg_w),
+            crate::text::truncate_cols(err, msg_w, widget.system.glyphs.ellipsis()).as_ref(),
             msg_w,
             theme.error_fg().bg(theme.canvas),
         );
@@ -1966,7 +1976,7 @@ fn paint_textarea_footer(
         buffer.set_stringn(
             area.x.saturating_add(2),
             fy,
-            take_display_cols(help, msg_w),
+            crate::text::truncate_cols(help, msg_w, widget.system.glyphs.ellipsis()).as_ref(),
             msg_w,
             theme.muted().bg(theme.canvas),
         );
@@ -2910,5 +2920,29 @@ mod tests {
             TextAreaOutcome::Changed
         );
         assert_eq!(state.text(), "a\nb");
+    }
+
+    #[test]
+    fn overflow_placeholder_uses_ellipsis_not_hard_clip() {
+        let system = crate::style::DesignSystem::junie();
+        let mut state = TextAreaState::new("");
+        let area = Rect::new(0, 0, 20, 3);
+        let mut buffer = Buffer::empty(area);
+        (&TextArea::new(&system)
+            .placeholder("What should Junie do, and what does done look like?")
+            .rows(1))
+            .render(area, &mut buffer, &mut state);
+        let y = area.y + 1;
+        let line: String = (0..area.width)
+            .map(|x| buffer[(x, y)].symbol().to_string())
+            .collect();
+        assert!(
+            line.contains(system.glyphs.ellipsis()),
+            "overflow placeholder must mark the cut, got {line:?}"
+        );
+        assert!(
+            !line.contains("look"),
+            "overflow placeholder must not hard-clip the tail, got {line:?}"
+        );
     }
 }

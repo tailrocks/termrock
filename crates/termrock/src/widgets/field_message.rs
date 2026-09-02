@@ -11,7 +11,7 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Style};
 
 use crate::style::{DesignSystem, Glyph, Role};
-use crate::text::take_display_cols;
+use crate::text::truncate_cols;
 
 use super::label::DescriptionKind;
 
@@ -60,8 +60,14 @@ pub(crate) fn paint_field_message(
         },
         DescriptionKind::Help | DescriptionKind::Meta => message.to_string(),
     };
-    let painted = take_display_cols(&text, usize::from(row.width));
-    buffer.set_stringn(row.x, row.y, &painted, usize::from(row.width), style);
+    let painted = truncate_cols(&text, usize::from(row.width), system.glyphs.ellipsis());
+    buffer.set_stringn(
+        row.x,
+        row.y,
+        painted.as_ref(),
+        usize::from(row.width),
+        style,
+    );
 }
 
 #[cfg(test)]
@@ -82,6 +88,31 @@ mod tests {
         let system = DesignSystem::junie();
         let line = render(DescriptionKind::Help, &system);
         assert!(line.starts_with("too short"), "help carries no event glyph");
+    }
+
+    #[test]
+    fn overflow_help_uses_ellipsis_not_hard_clip() {
+        let system = DesignSystem::junie();
+        let row = Rect::new(0, 0, 12, 1);
+        let mut buffer = Buffer::empty(row);
+        paint_field_message(
+            &mut buffer,
+            row,
+            &system,
+            DescriptionKind::Help,
+            "Leave empty to work on a detached checkout",
+        );
+        let line: String = (0..row.width)
+            .map(|x| buffer[(x, 0)].symbol().to_string())
+            .collect();
+        assert!(
+            line.contains(system.glyphs.ellipsis()),
+            "overflow help must mark the cut, got {line:?}"
+        );
+        assert!(
+            !line.contains("checkout"),
+            "overflow help must not hard-clip the tail, got {line:?}"
+        );
     }
 
     #[test]

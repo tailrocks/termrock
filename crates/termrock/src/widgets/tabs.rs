@@ -1446,8 +1446,9 @@ impl<'a, Id> Tabs<'a, Id> {
                 theme.accent
             };
             let rule = self.system.glyphs.rule_strong();
+            // Source: `x+1 .. x+w-1` — gutter and trailing pad stay baseline `─`.
             let start = rect.x.saturating_add(1);
-            let end = rect.right();
+            let end = rect.right().saturating_sub(1);
             for xx in start..end {
                 buffer.set_stringn(
                     xx,
@@ -1585,6 +1586,12 @@ mod tests {
         // Baseline under the gutter; `━` starts at x+1.
         assert_eq!(buffer[(4, 5)].symbol(), system.glyphs.rule_strong());
         assert_eq!(buffer[(4, 5)].fg, theme.style(Role::Accent).fg.unwrap());
+        let tab_w = state.regions[0].area.width;
+        assert_eq!(
+            buffer[(3 + tab_w - 1, 5)].symbol(),
+            system.glyphs.rule(),
+            "trailing pad stays the baseline"
+        );
         assert_eq!(state.regions.len(), 1);
         assert!(state.regions[0].area.contains(Position::new(3, 5)));
     }

@@ -761,7 +761,7 @@ pub use status_bar::{
 pub use status_indicator::{
     StatusIndicator, StatusIndicatorState, StatusIndicatorVariant, example_status_catalog,
 };
-pub use status_strip::{StatusSegment, StatusStrip};
+pub use status_strip::{LineSegment, StatusSegment, StatusStrip, paint_line_segments};
 pub use stepper::{
     STEPPER_COMPACT_MAX_HEIGHT, STEPPER_COMPACT_MAX_WIDTH, STEPPER_NARROW_MAX_WIDTH, StepItem,
     StepStatus, Stepper, StepperNavPolicy, StepperOrientation, StepperOutcome, StepperPresentation,

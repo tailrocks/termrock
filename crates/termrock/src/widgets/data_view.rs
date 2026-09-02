@@ -272,7 +272,8 @@ pub enum ColumnKind {
     /// Prose, names, paths: the row's own tone.
     #[default]
     Text,
-    /// Counts, sizes, durations: the quiet tone, so the identity stays loud.
+    /// Counts, sizes, durations: the quiet tone, right-aligned, so the
+    /// identity stays loud.
     Numeric,
     /// A state letter or glyph. Keeps the row tone and, unlike every other
     /// column, contracts to its first grapheme instead of ellipsizing — a
@@ -299,6 +300,15 @@ impl ColumnKind {
     #[must_use]
     pub const fn clips_instead_of_ellipsizing(self) -> bool {
         matches!(self, Self::Status)
+    }
+
+    /// Whether header and body cells sit on the right edge of the column.
+    ///
+    /// Source DataGrid `CellKind::right_aligned` is Number-only; the same
+    /// rule is the kind, not a second alignment field.
+    #[must_use]
+    pub const fn right_aligned(self) -> bool {
+        matches!(self, Self::Numeric)
     }
 }
 
@@ -346,7 +356,7 @@ impl<Id> DataColumn<Id> {
         }
     }
 
-    /// States what the column holds, which decides its tone.
+    /// States what the column holds, which decides its tone and alignment.
     #[must_use]
     pub const fn kind(mut self, kind: ColumnKind) -> Self {
         self.kind = kind;
@@ -544,9 +554,37 @@ impl<Id: PartialEq> ColumnModel<Id> {
         out: &mut Vec<(usize, u16)>,
     ) {
         out.clear();
-        let visible: Vec<usize> = self.visible().map(|(i, _)| i).collect();
+        let mut visible: Vec<usize> = self.visible().map(|(i, _)| i).collect();
         if visible.is_empty() || budget == 0 {
             return;
+        }
+        let floor = |index: usize| -> u16 {
+            if let Some(Some(w)) = self.width_overrides.get(index).copied() {
+                return w.max(1);
+            }
+            match self.columns[index].width {
+                DataColumnWidth::Fixed(w) | DataColumnWidth::Min(w) => w.max(1),
+                DataColumnWidth::Fill(_) => 0,
+            }
+        };
+        loop {
+            if visible.len() <= 1 {
+                break;
+            }
+            let gaps =
+                gap.saturating_mul(u16::try_from(visible.len().saturating_sub(1)).unwrap_or(0));
+            let mandatory: u64 = visible.iter().map(|&i| u64::from(floor(i))).sum();
+            if mandatory + u64::from(gaps) <= u64::from(budget) {
+                break;
+            }
+            let Some(drop) = visible
+                .iter()
+                .copied()
+                .min_by_key(|i| (self.columns[*i].priority, usize::MAX - i))
+            else {
+                break;
+            };
+            visible.retain(|&index| index != drop);
         }
         let gaps = gap.saturating_mul(u16::try_from(visible.len().saturating_sub(1)).unwrap_or(0));
         let mut remaining = budget.saturating_sub(gaps);
@@ -578,7 +616,26 @@ impl<Id: PartialEq> ColumnModel<Id> {
             .filter_map(|(pos, (_, _, f))| (*f).then_some(pos))
             .collect();
         if fill_positions.is_empty() {
-            // nothing
+            // junie `Constraint::Min` grows into leftover; Fixed does not.
+            let mins: Vec<usize> = bases
+                .iter()
+                .enumerate()
+                .filter_map(|(pos, (index, _, _))| {
+                    matches!(self.columns[*index].width, DataColumnWidth::Min(_)).then_some(pos)
+                })
+                .collect();
+            if !mins.is_empty() && remaining > 0 {
+                let n = u64::try_from(mins.len()).unwrap_or(1);
+                let total = u64::from(remaining);
+                let mut left = total;
+                for (k, &pos) in mins.iter().enumerate() {
+                    let extra = if k + 1 == mins.len() { left } else { total / n };
+                    bases[pos].1 = bases[pos]
+                        .1
+                        .saturating_add(u16::try_from(extra).unwrap_or(u16::MAX));
+                    left = left.saturating_sub(extra);
+                }
+            }
         } else if remaining == 0 {
             for pos in fill_positions {
                 bases[pos].1 = 1;
@@ -986,6 +1043,37 @@ pub mod bench {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn min_width_absorbs_leftover_after_fixed() {
+        let cols = ColumnModel::new(vec![
+            DataColumn::new("id", "ID", DataColumnWidth::Fixed(5)),
+            DataColumn::new("task", "Task", DataColumnWidth::Min(24)),
+            DataColumn::new("owner", "Owner", DataColumnWidth::Fixed(8)),
+        ]);
+        let mut out = Vec::new();
+        cols.resolve_paint_widths_with_gap(51, 2, &mut out);
+        assert_eq!(out, vec![(0, 5), (1, 34), (2, 8)]);
+    }
+
+    #[test]
+    fn resolve_drops_rightmost_when_over_budget_then_min_grows() {
+        let cols = ColumnModel::new(vec![
+            DataColumn::new("id", "ID", DataColumnWidth::Fixed(5)),
+            DataColumn::new("task", "Task", DataColumnWidth::Min(24)),
+            DataColumn::new("owner", "Owner", DataColumnWidth::Fixed(8)),
+            DataColumn::new("status", "Status", DataColumnWidth::Fixed(9)),
+            DataColumn::new("branch", "Branch", DataColumnWidth::Fixed(22)),
+            DataColumn::new("changes", "Changes", DataColumnWidth::Fixed(8)),
+        ]);
+        let mut out = Vec::new();
+        cols.resolve_paint_widths_with_gap(85, 2, &mut out);
+        assert!(
+            !out.iter().any(|(index, _)| *index == 5),
+            "Changes must drop: {out:?}"
+        );
+        assert_eq!(out[1], (1, 33), "Task Min absorbs leftover after the drop");
+    }
 
     #[test]
     fn virtual_window_clamps_and_reveals() {

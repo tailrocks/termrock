@@ -1821,7 +1821,9 @@ fn tab_active_underline_is_an_accent_rule() {
     let rules: Vec<u16> = (0..area.width)
         .filter(|x| buffer[(area.x + x, area.y + 1)].symbol() == "━")
         .collect();
-    assert_eq!(rules.len(), 7, "one tab width of ━, painted once");
+    // Source Tabs: `x+1 .. x+w-1` (gutter and trailing pad stay baseline `─`).
+    // "First" is gutter+5+pad2 = 8 wide, so 6 accent cells.
+    assert_eq!(rules.len(), 6, "one tab width of ━, painted once");
     for x in rules {
         assert_eq!(
             buffer[(area.x + x, area.y + 1)].fg,
