@@ -11507,7 +11507,6 @@ pub const fn termrock::patterns::ConnectionStatus::glyph(self, bool) -> &'static
 pub const fn termrock::patterns::ConnectionStatus::id(self) -> &'static str
 pub const fn termrock::patterns::ConnectionStatus::is_offline_like(self) -> bool
 pub const fn termrock::patterns::ConnectionStatus::label(self) -> &'static str
-pub const fn termrock::patterns::ConnectionStatus::letter(self) -> char
 pub const fn termrock::patterns::ConnectionStatus::semantic(self) -> termrock::widgets::SemanticStatus
 pub const fn termrock::patterns::ConnectionStatus::to_connectivity_phase(self) -> termrock::widgets::ConnectivityPhase
 impl core::clone::Clone for termrock::patterns::ConnectionStatus
