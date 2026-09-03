@@ -1079,21 +1079,18 @@ impl<'a> MarkdownView<'a> {
         } else {
             body_sub
         };
-        let lines: Vec<&str> = block.text.lines().collect();
-        if let Some(src) = lines.get(usize::from(line_sub)) {
+        // nth() walks the source once per painted row; collecting lines() into
+        // a Vec allocated a full document split on every row of every frame.
+        if let Some(src) = block.text.lines().nth(usize::from(line_sub)) {
             // Single-line CodeBlock paint for syntax
             let hi = RoleTokenSyntax::new(self.system, block.language, &[]);
-            let slice = [*src];
+            let slice = [src];
             let mut st = CodeBlockState::new();
             let mut cb = CodeBlock::new(&slice, self.system)
                 .wrap(CodeWrap::Clip)
                 .highlighter(&hi);
             if self.fence_line_numbers {
                 cb = cb.line_numbers(true);
-            }
-            if let Some(lang) = block.language {
-                // language already in header
-                let _ = lang;
             }
             let _ = cb.paint(area, buffer, &mut st);
             return;
