@@ -436,7 +436,9 @@ impl<Id: Clone + PartialEq> RovingFocusGroup<Id> {
             self.typeahead.clear();
             self.typeahead.push(ch);
             let needle = self.typeahead.to_lowercase();
-            for e in entries {
+            for offset in 0..n {
+                let i = (start + offset) % n;
+                let e = &entries[i];
                 if e.enabled && !e.label.is_empty() && e.label.to_lowercase().starts_with(&needle) {
                     self.active = Some(e.id.clone());
                     return self.outcome(from);
@@ -703,6 +705,24 @@ mod tests {
 
         assert!(g.typeahead_char('é', &e).changed());
         assert_eq!(g.active(), Some(&"accented"));
+    }
+
+    #[test]
+    fn repeated_typeahead_retries_from_next_active() {
+        let e = vec![
+            RovingEntry::new("apple", "Apple"),
+            RovingEntry::new("apricot", "Apricot"),
+            RovingEntry::new("avocado", "Avocado"),
+        ];
+        let mut g = RovingFocusGroup::new();
+        let _ = g.reconcile(&e);
+
+        let _ = g.typeahead_char('a', &e);
+        assert_eq!(g.active(), Some(&"apricot"));
+        let _ = g.typeahead_char('a', &e);
+        assert_eq!(g.active(), Some(&"avocado"));
+        let _ = g.typeahead_char('a', &e);
+        assert_eq!(g.active(), Some(&"apple"));
     }
 
     #[test]
