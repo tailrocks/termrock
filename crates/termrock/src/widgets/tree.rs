@@ -330,7 +330,7 @@ pub fn filter_tree_with_ancestors<'a, Id: Clone + PartialEq>(
 pub enum TreeOutcome<Id> {
     /// The event produced no tree-state change.
     Ignored,
-    /// Navigation selected this stable node identity (active cursor).
+    /// Navigation moved the active cursor to this stable node identity.
     SelectionChanged(Id),
     /// The identified branch requested disclosure inversion (or lazy load).
     Toggle(Id),
@@ -345,9 +345,13 @@ pub enum TreeOutcome<Id> {
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// Runtime state for `Tree`.
 ///
-/// **Cursor** is [`Self::selected`]. Multi **check** state is optional
-/// [`Self::selection`]. Expansion remains on the host projection (`TreeNode.expanded`).
+/// Navigation cursor and semantic selection are independent. The cursor is
+/// the focused row; semantic selection is committed by activation or an
+/// explicit [`TreeState::select`] call. Multi **check** state is optional
+/// [`Self::selection`]. Expansion remains on the host projection
+/// (`TreeNode.expanded`).
 pub struct TreeState<Id> {
+    cursor: Option<Id>,
     selected: Option<Id>,
     hovered: Option<Id>,
     offset: usize,
@@ -377,6 +381,7 @@ pub struct TreeState<Id> {
 impl<Id> Default for TreeState<Id> {
     fn default() -> Self {
         Self {
+            cursor: None,
             selected: None,
             hovered: None,
             offset: 0,
@@ -403,14 +408,15 @@ impl<Id> Default for TreeState<Id> {
 impl<Id> TreeState<Id> {
     #[must_use]
     /// Creates tree state with no hover/scroll; optional initial cursor.
-    pub fn new(selected: Option<Id>) -> Self
+    pub fn new(cursor: Option<Id>) -> Self
     where
         Id: Clone + PartialEq,
     {
         let mut collection = CollectionState::new();
-        collection.set_active(selected.clone());
+        collection.set_active(cursor.clone());
         Self {
-            selected,
+            cursor,
+            selected: None,
             hovered: None,
             offset: 0,
             viewport_height: 0,
@@ -433,9 +439,29 @@ impl<Id> TreeState<Id> {
     }
 
     #[must_use]
-    /// Returns the currently selected stable identity.
+    /// Returns the current navigation cursor.
+    ///
+    /// This accessor retains its historical name for existing consumers;
+    /// [`Self::cursor`] is the explicit spelling for new code.
     pub const fn selected(&self) -> Option<&Id> {
+        self.cursor.as_ref()
+    }
+
+    /// Returns the current navigation cursor.
+    #[must_use]
+    pub const fn cursor(&self) -> Option<&Id> {
+        self.cursor.as_ref()
+    }
+
+    /// Returns the committed semantic selection, if any.
+    #[must_use]
+    pub const fn semantic_selection(&self) -> Option<&Id> {
         self.selected.as_ref()
+    }
+
+    /// Sets the committed semantic selection without moving the cursor.
+    pub fn set_semantic_selection(&mut self, selected: Option<Id>) {
+        self.selected = selected;
     }
 
     /// `*` expand-all / `-` collapse-all request. Host owns expansion.
@@ -485,11 +511,12 @@ impl<Id> TreeState<Id> {
         changed
     }
 
-    /// Selects the item with the supplied stable identity (active cursor).
+    /// Selects the supplied stable identity and commits it as semantic selection.
     pub fn select(&mut self, selected: Option<Id>)
     where
         Id: Clone + PartialEq,
     {
+        self.cursor = selected.clone();
         self.selected = selected.clone();
         self.collection.set_active(selected);
         self.follow_selection = true;
@@ -703,7 +730,7 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
         let out = self.collection.handle_key(key, &items);
         if out.active_changed() {
             if let Some(id) = self.collection.active().cloned() {
-                self.selected = Some(id.clone());
+                self.cursor = Some(id.clone());
                 self.follow_selection = true;
                 return TreeOutcome::SelectionChanged(id);
             }
@@ -734,7 +761,7 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
             UiIntent::Toggle => {
                 if self.selection.is_some() {
                     self.toggle_selected(nodes)
-                } else if self.selected_node(nodes).is_some_and(|node| node.branch) {
+                } else if self.cursor_node(nodes).is_some_and(|node| node.branch) {
                     self.activate_or_toggle(nodes)
                 } else {
                     TreeOutcome::Ignored
@@ -745,13 +772,14 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
         }
     }
 
-    fn activate_or_toggle(&self, nodes: &[TreeNode<'_, Id>]) -> TreeOutcome<Id> {
-        let Some(node) = self.selected_node(nodes) else {
+    fn activate_or_toggle(&mut self, nodes: &[TreeNode<'_, Id>]) -> TreeOutcome<Id> {
+        let Some(node) = self.cursor_node(nodes) else {
             return TreeOutcome::Ignored;
         };
         if node.branch {
             TreeOutcome::Toggle(node.id.clone())
         } else {
+            self.selected = Some(node.id.clone());
             TreeOutcome::Activated(node.id.clone())
         }
     }
@@ -760,11 +788,11 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
         let Some(selection) = self.selection.as_mut() else {
             return TreeOutcome::Ignored;
         };
-        let Some(node) = self.selected.as_ref().and_then(|selected| {
-            nodes
-                .iter()
-                .find(|node| node.enabled && &node.id == selected)
-        }) else {
+        let Some(node) = self
+            .cursor
+            .as_ref()
+            .and_then(|cursor| nodes.iter().find(|node| node.enabled && &node.id == cursor))
+        else {
             return TreeOutcome::Ignored;
         };
         selection.toggle(&node.id);
@@ -796,7 +824,7 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
             .find(|region| region.area.contains(position))
             .map(|region| region.id.clone())
         {
-            self.selected = Some(id.clone());
+            self.cursor = Some(id.clone());
             self.follow_selection = true;
             if let Some(selection) = self.selection.as_mut() {
                 selection.toggle(&id);
@@ -813,36 +841,37 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
         };
         let is_branch = self.disclosure_regions.iter().any(|region| region.id == id);
         if is_branch {
-            self.selected = Some(id.clone());
+            self.cursor = Some(id.clone());
             self.collection.set_active(Some(id.clone()));
             self.follow_selection = true;
             return TreeOutcome::Toggle(id);
         }
-        if self.selected.as_ref() == Some(&id) {
+        if self.cursor.as_ref() == Some(&id) {
+            self.selected = Some(id.clone());
             TreeOutcome::Activated(id)
         } else {
-            self.selected = Some(id.clone());
+            self.cursor = Some(id.clone());
             self.follow_selection = true;
             TreeOutcome::SelectionChanged(id)
         }
     }
 
-    fn selected_index(&self, nodes: &[TreeNode<'_, Id>]) -> Option<usize> {
-        let selected = self.selected.as_ref()?;
-        nodes.iter().position(|node| &node.id == selected)
+    fn cursor_index(&self, nodes: &[TreeNode<'_, Id>]) -> Option<usize> {
+        let cursor = self.cursor.as_ref()?;
+        nodes.iter().position(|node| &node.id == cursor)
     }
 
-    fn selected_node<'a>(&self, nodes: &'a [TreeNode<'_, Id>]) -> Option<&'a TreeNode<'a, Id>> {
-        let index = self.selected_index(nodes)?;
+    fn cursor_node<'a>(&self, nodes: &'a [TreeNode<'_, Id>]) -> Option<&'a TreeNode<'a, Id>> {
+        let index = self.cursor_index(nodes)?;
         nodes.get(index).filter(|node| node.enabled)
     }
 
     fn move_selection(&mut self, nodes: &[TreeNode<'_, Id>], delta: i32) -> TreeOutcome<Id> {
-        if self.selected.is_none() {
+        if self.cursor.is_none() {
             return self.select_boundary(nodes, delta < 0);
         }
         let start = self
-            .selected_index(nodes)
+            .cursor_index(nodes)
             .unwrap_or(if delta < 0 { nodes.len() } else { 0 });
         let candidate = if delta < 0 {
             nodes[..start].iter().rposition(|node| node.enabled)
@@ -854,14 +883,14 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
                 .find(|(_, node)| node.enabled)
                 .map(|(index, _)| index)
         };
-        self.select_index(nodes, candidate)
+        self.set_cursor_index(nodes, candidate)
     }
 
     fn page_selection(&mut self, nodes: &[TreeNode<'_, Id>], forward: bool) -> TreeOutcome<Id> {
-        if self.selected.is_none() {
+        if self.cursor.is_none() {
             return self.select_boundary(nodes, !forward);
         }
-        let Some(start) = self.selected_index(nodes) else {
+        let Some(start) = self.cursor_index(nodes) else {
             return TreeOutcome::Ignored;
         };
         let distance = self.viewport_height.max(1);
@@ -893,7 +922,7 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
                         .map(|(index, _)| index)
                 })
         };
-        self.select_index(nodes, candidate)
+        self.set_cursor_index(nodes, candidate)
     }
 
     fn select_boundary(&mut self, nodes: &[TreeNode<'_, Id>], from_end: bool) -> TreeOutcome<Id> {
@@ -902,10 +931,10 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
         } else {
             nodes.iter().position(|node| node.enabled)
         };
-        self.select_index(nodes, candidate)
+        self.set_cursor_index(nodes, candidate)
     }
 
-    fn select_index(
+    fn set_cursor_index(
         &mut self,
         nodes: &[TreeNode<'_, Id>],
         index: Option<usize>,
@@ -913,7 +942,7 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
         let Some(node) = index.and_then(|index| nodes.get(index)) else {
             return TreeOutcome::Ignored;
         };
-        self.selected = Some(node.id.clone());
+        self.cursor = Some(node.id.clone());
         self.collection.set_active(Some(node.id.clone()));
         self.follow_selection = true;
         TreeOutcome::SelectionChanged(node.id.clone())
@@ -921,7 +950,7 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
 
     /// Left: collapse expanded branch, else select parent.
     fn collapse_or_parent(&mut self, nodes: &[TreeNode<'_, Id>]) -> TreeOutcome<Id> {
-        let Some(index) = self.selected_index(nodes) else {
+        let Some(index) = self.cursor_index(nodes) else {
             return TreeOutcome::Ignored;
         };
         let node = &nodes[index];
@@ -931,18 +960,18 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
         // Prefer explicit parent id when present.
         if let Some(ref pid) = node.parent {
             if let Some(pidx) = nodes.iter().position(|n| n.enabled && &n.id == pid) {
-                return self.select_index(nodes, Some(pidx));
+                return self.set_cursor_index(nodes, Some(pidx));
             }
         }
         let parent = nodes[..index]
             .iter()
             .rposition(|candidate| candidate.enabled && candidate.depth < node.depth);
-        self.select_index(nodes, parent)
+        self.set_cursor_index(nodes, parent)
     }
 
     /// Right: expand collapsed/lazy branch, else enter first visible child.
     fn expand_or_enter(&mut self, nodes: &[TreeNode<'_, Id>]) -> TreeOutcome<Id> {
-        let Some(index) = self.selected_index(nodes) else {
+        let Some(index) = self.cursor_index(nodes) else {
             return TreeOutcome::Ignored;
         };
         let node = &nodes[index];
@@ -963,7 +992,7 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
                 .take_while(|(_, n)| n.depth >= child_depth)
                 .find(|(_, n)| n.enabled && n.depth == child_depth)
                 .map(|(i, _)| i);
-            return self.select_index(nodes, child);
+            return self.set_cursor_index(nodes, child);
         }
         TreeOutcome::Ignored
     }
@@ -1086,7 +1115,7 @@ fn paint_tree_row<Id: Clone + PartialEq>(
     let busy = matches!(node.status, TreeNodeStatus::Loading);
     let visual = ListRowVisualState {
         selected,
-        focused: focused && selected && node.enabled,
+        focused: focused && state.cursor.as_ref() == Some(&node.id) && node.enabled,
         hovered: hovered && node.enabled,
         enabled: node.enabled,
         loading: busy,
@@ -1441,7 +1470,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
         }
 
         if state.follow_selection
-            && let Some(selected) = state.selected_index(self.nodes)
+            && let Some(selected) = state.cursor_index(self.nodes)
         {
             // selected is index in projected window
             if selected < state.offset {
@@ -1791,6 +1820,52 @@ mod tests {
     }
 
     #[test]
+    fn cursor_and_semantic_selection_paint_independently() {
+        let tokens = DesignSystem::junie();
+        let rows = [
+            TreeNode::new("cursor", Line::from("cursor"), 0),
+            TreeNode::new("selected", Line::from("selected"), 0),
+        ];
+        let area = Rect::new(0, 0, 24, 2);
+        let mut state = TreeState::new(Some("cursor"));
+
+        assert_eq!(state.cursor(), Some(&"cursor"));
+        assert_eq!(state.selected(), Some(&"cursor"));
+        assert_eq!(state.semantic_selection(), None);
+
+        let mut buffer = Buffer::empty(area);
+        Tree::new(&rows, &tokens)
+            .focused(true)
+            .render(area, &mut buffer, &mut state);
+        assert_eq!(buffer[(0, 0)].fg, tokens.junie_theme().focus);
+        assert!(buffer[(3, 0)].modifier.contains(Modifier::BOLD));
+        assert_eq!(
+            buffer[(3, 0)].bg,
+            tokens.junie_theme().surface,
+            "cursor focus alone must not paint selection tint"
+        );
+        assert!(!buffer[(3, 1)].modifier.contains(Modifier::BOLD));
+
+        state.set_semantic_selection(Some("selected"));
+        assert_eq!(state.cursor(), Some(&"cursor"));
+        assert_eq!(state.semantic_selection(), Some(&"selected"));
+        state.set_semantic_selection(Some("cursor"));
+        let mut selected_buffer = Buffer::empty(area);
+        Tree::new(&rows, &tokens)
+            .focused(true)
+            .render(area, &mut selected_buffer, &mut state);
+        assert_eq!(state.cursor(), Some(&"cursor"));
+        assert_eq!(state.semantic_selection(), Some(&"cursor"));
+        assert_eq!(
+            selected_buffer[(3, 0)].bg,
+            tokens
+                .style(Role::SelectionTint)
+                .bg
+                .expect("selection tint")
+        );
+    }
+
+    #[test]
     fn selected_label_uses_accent_and_loading_paints_spinner() {
         let tokens = DesignSystem::junie();
         let rows = [
@@ -1804,6 +1879,7 @@ mod tests {
         let area = Rect::new(0, 0, 24, 2);
         let mut buffer = Buffer::empty(area);
         let mut state = TreeState::new(Some("src"));
+        state.set_semantic_selection(Some("src"));
         Tree::new(&rows, &tokens)
             .spinner_frame(0)
             .render(area, &mut buffer, &mut state);
