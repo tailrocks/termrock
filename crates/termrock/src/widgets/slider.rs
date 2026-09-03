@@ -325,11 +325,6 @@ impl SliderState {
         }
     }
 
-    /// Controlled value.
-    pub const fn set_value(&mut self, value: f64) {
-        self.value = value;
-    }
-
     /// Whether activatable.
     #[must_use]
     pub const fn can_edit(&self) -> bool {
@@ -483,8 +478,9 @@ impl<'a> Slider<'a> {
                 numeric_only: true,
             };
         }
+        // Host-projected value may be off-step; snap for display only and
+        // never write back — paint must not mutate host-owned state.
         let value = self.bounds.snap(state.value);
-        state.value = value;
 
         if self.numeric_only(area) || state.editing {
             return self.paint_numeric(area, buffer, state, value);
