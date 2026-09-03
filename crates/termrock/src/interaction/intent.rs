@@ -252,6 +252,8 @@ pub fn default_menu_intent(key: KeyEvent) -> Option<UiIntent> {
         KeyCode::Up | KeyCode::Char('k' | 'K') => Some(UiIntent::Move(NavigationMove::Previous)),
         KeyCode::Home => Some(UiIntent::Move(NavigationMove::First)),
         KeyCode::End => Some(UiIntent::Move(NavigationMove::Last)),
+        KeyCode::PageDown => Some(UiIntent::Page(PageMove::Forward)),
+        KeyCode::PageUp => Some(UiIntent::Page(PageMove::Backward)),
         KeyCode::Enter if is_press => Some(UiIntent::Activate),
         KeyCode::Char(' ') if is_press => Some(UiIntent::Toggle),
         KeyCode::Esc if is_press => Some(UiIntent::Cancel),

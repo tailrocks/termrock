@@ -417,6 +417,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0435 | `v0.14.0` | [MultiSelect lifecycle actions](migrations/0435-v0.14.0-multi-select-lifecycle-actions.md) |
 | 0436 | `v0.14.0` | [Combobox lifecycle actions](migrations/0436-v0.14.0-combobox-lifecycle-actions.md) |
 | 0437 | `v0.14.0` | [Tabs restore canonical gutter, underline, and clipping geometry](migrations/0437-v0.14.0-tabs-remove-selection-gutter.md) |
+| 0438 | `v0.14.0` | [DropdownMenu lifecycle actions](migrations/0438-v0.14.0-dropdown-menu-lifecycle-actions.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical
