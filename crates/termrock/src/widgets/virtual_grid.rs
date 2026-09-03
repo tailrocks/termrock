@@ -17,7 +17,7 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     style::{DesignSystem, Role, RolePalette},
-    text::{display_cols, take_display_cols},
+    text::take_display_cols,
     widgets::virtualizer::Virtualizer2D,
 };
 
@@ -223,7 +223,6 @@ pub struct VirtualGridState<RowId, ColId> {
     body_cols_visible: usize,
     total_rows: Option<u64>,
     total_cols: usize,
-    painted_area: Rect,
     /// Exact body cell regions from the latest render.
     pub cell_regions: Vec<GridCellRegion<RowId, ColId>>,
     /// Exact header regions from the latest render.
@@ -243,7 +242,6 @@ impl<RowId, ColId> Default for VirtualGridState<RowId, ColId> {
             body_cols_visible: 0,
             total_rows: None,
             total_cols: 0,
-            painted_area: Rect::default(),
             cell_regions: Vec::new(),
             header_regions: Vec::new(),
             gutter_width: 0,
@@ -931,7 +929,6 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> StatefulWidget for &VirtualGrid<'_, R
     type State = VirtualGridState<RowId, ColId>;
 
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        state.painted_area = area;
         state.cell_regions.clear();
         state.header_regions.clear();
         state.total_rows = self.total_rows;
@@ -970,12 +967,16 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> StatefulWidget for &VirtualGrid<'_, R
         let mut visible: Vec<(usize, u16)> = Vec::new();
         state.fill_visible_columns(content_width, self.system.spacing.column_gap, &mut visible);
         state.body_cols_visible = visible.len();
+        let first_col = state.first_col();
         state.sync_virt_bounds();
         state.clamp_cursor();
+
         state.ensure_cursor_visible();
 
-        // Recompute visible after clamp may have changed first_col.
-        state.fill_visible_columns(content_width, self.system.spacing.column_gap, &mut visible);
+        // Recompute only when revealing the cursor moved the horizontal window.
+        if state.first_col() != first_col {
+            state.fill_visible_columns(content_width, self.system.spacing.column_gap, &mut visible);
+        }
         state.body_cols_visible = visible.len();
 
         let header_style = super::table_chrome::header_style(self.system);
@@ -1104,7 +1105,6 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> StatefulWidget for &VirtualGrid<'_, R
                     }
                 }
                 buffer.set_stringn(x, y, &label, usize::from(width), style);
-                let _ = display_cols(&label);
                 state.cell_regions.push(GridCellRegion {
                     row_id: resident.map(|row| row.id.clone()),
                     row_index: abs_row,
@@ -1197,6 +1197,112 @@ mod tests {
             VirtualGridOutcome::CursorMoved { col: 1, .. }
                 | VirtualGridOutcome::ViewportChanged { .. }
         ));
+    }
+
+    #[test]
+    fn offscreen_horizontal_cursor_reveals_header_and_cell_regions() {
+        let system = DesignSystem::default();
+        let columns = [
+            GridColumn::fixed(0, "A", 3),
+            GridColumn::fixed(1, "B", 5),
+            GridColumn::fixed(2, "C", 2),
+            GridColumn::fixed(3, "D", 4),
+            GridColumn::fixed(4, "E", 3),
+        ];
+        let cells = [
+            GridCell::text("a"),
+            GridCell::text("b"),
+            GridCell::text("c"),
+            GridCell::text("d"),
+            GridCell::text("e"),
+        ];
+        let rows = [GridRow::new(0, 0, &cells)];
+        let grid = VirtualGrid::new(&columns, &rows, &system)
+            .total_rows(1)
+            .gutter(false);
+        let area = Rect::new(0, 0, 12, 2);
+        let mut buffer = Buffer::empty(area);
+        let mut state = VirtualGridState::new();
+        state.cursor_col = 4;
+
+        StatefulWidget::render(&grid, area, &mut buffer, &mut state);
+
+        assert_eq!(state.first_col(), 3);
+        assert_eq!(state.body_cols_visible, 2);
+        assert_eq!(
+            state
+                .header_regions
+                .iter()
+                .map(|region| region.index)
+                .collect::<Vec<_>>(),
+            vec![3, 4]
+        );
+        assert_eq!(
+            state
+                .cell_regions
+                .iter()
+                .map(|region| region.col_index)
+                .collect::<Vec<_>>(),
+            vec![3, 4]
+        );
+    }
+
+    #[test]
+    fn column_count_shrink_reprojects_after_offset_clamp() {
+        let system = DesignSystem::default();
+        let columns = [
+            GridColumn::fixed(0, "A", 3),
+            GridColumn::fixed(1, "B", 5),
+            GridColumn::fixed(2, "C", 2),
+            GridColumn::fixed(3, "D", 4),
+            GridColumn::fixed(4, "E", 3),
+            GridColumn::fixed(5, "F", 4),
+        ];
+        let cells = [
+            GridCell::text("a"),
+            GridCell::text("b"),
+            GridCell::text("c"),
+            GridCell::text("d"),
+            GridCell::text("e"),
+            GridCell::text("f"),
+        ];
+        let rows = [GridRow::new(0, 0, &cells)];
+        let area = Rect::new(0, 0, 12, 2);
+        let mut state = VirtualGridState::new();
+        let initial_grid = VirtualGrid::new(&columns, &rows, &system)
+            .total_rows(1)
+            .gutter(false);
+        let mut buffer = Buffer::empty(area);
+        StatefulWidget::render(&initial_grid, area, &mut buffer, &mut state);
+
+        state.virtualizer_mut().cols.set_viewport_extent(1);
+        state.virtualizer_mut().cols.set_offset(5);
+        let shrunken_columns = &columns[..4];
+        let shrunken_cells = &cells[..4];
+        let shrunken_rows = [GridRow::new(0, 0, shrunken_cells)];
+        let shrunken_grid = VirtualGrid::new(shrunken_columns, &shrunken_rows, &system)
+            .total_rows(1)
+            .gutter(false);
+        StatefulWidget::render(&shrunken_grid, area, &mut buffer, &mut state);
+
+        assert_eq!(state.first_col(), 3);
+        assert_eq!(state.body_cols_visible, 1);
+        assert_eq!(
+            state
+                .header_regions
+                .iter()
+                .map(|region| region.index)
+                .collect::<Vec<_>>(),
+            vec![3]
+        );
+        assert_eq!(
+            state
+                .cell_regions
+                .iter()
+                .map(|region| region.col_index)
+                .collect::<Vec<_>>(),
+            vec![3]
+        );
     }
 
     #[test]
