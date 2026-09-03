@@ -459,7 +459,7 @@ pub static PUBLIC_UI_INVENTORY: &[PublicUiInventoryEntry] = &[
     ),
     public_ui!(
         Accordion,
-        Widget,
+        Paint,
         Navigation,
         "accordion",
         "accordion/section"
@@ -564,7 +564,7 @@ pub static PUBLIC_UI_INVENTORY: &[PublicUiInventoryEntry] = &[
     public_ui!(Button, Widget, Action, "button", "button/activation"),
     public_ui!(
         ButtonGroup,
-        Widget,
+        Paint,
         Action,
         "button-group",
         "button-group/dialog"
