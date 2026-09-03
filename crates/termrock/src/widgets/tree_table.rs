@@ -1026,7 +1026,9 @@ impl<'a, Id: Clone + Ord, ColId: Clone + PartialEq> TreeTable<'a, Id, ColId> {
         if area.is_empty() {
             return;
         }
-        let surface_focused = self.focused || state.accepts_input;
+        // Input permission and scene focus are separate authorities. Neither
+        // one alone may paint active focus chrome.
+        let surface_focused = self.focused && state.accepts_input;
         let header_h = u16::from(self.sticky_header);
         let footer_h = 1u16;
         state.window.viewport = area.height.saturating_sub(header_h + footer_h).max(1);
@@ -1933,6 +1935,43 @@ mod tests {
             "a byte count must not read as loudly as the process name"
         );
         assert_eq!(at('4'), system.style(Role::TextMuted).fg);
+    }
+
+    #[test]
+    fn visual_focus_requires_widget_focus_and_input_authority() {
+        let system = DesignSystem::junie();
+        let columns = ColumnModel::new(vec![DataColumn::new(
+            "name",
+            "Name",
+            DataColumnWidth::Fixed(8),
+        )]);
+        let cells: &[&str] = &["alpha"];
+        let rows = [TreeTableRow::new("r", 0, cells)];
+        let area = Rect::new(0, 0, 24, 6);
+
+        let mut focused_state = TreeTableState::<&str, &str>::new(Some("r"));
+        focused_state.set_accepts_input(true);
+        let mut focused = Buffer::empty(area);
+        TreeTable::new(&system, &columns, &rows)
+            .focused(true)
+            .render(area, &mut focused, &mut focused_state);
+
+        let mut scene_unfocused_state = TreeTableState::<&str, &str>::new(Some("r"));
+        scene_unfocused_state.set_accepts_input(true);
+        let mut scene_unfocused = Buffer::empty(area);
+        TreeTable::new(&system, &columns, &rows)
+            .focused(false)
+            .render(area, &mut scene_unfocused, &mut scene_unfocused_state);
+
+        let mut input_disabled_state = TreeTableState::<&str, &str>::new(Some("r"));
+        input_disabled_state.set_accepts_input(false);
+        let mut input_disabled = Buffer::empty(area);
+        TreeTable::new(&system, &columns, &rows)
+            .focused(true)
+            .render(area, &mut input_disabled, &mut input_disabled_state);
+
+        assert_ne!(focused.content(), scene_unfocused.content());
+        assert_eq!(scene_unfocused.content(), input_disabled.content());
     }
 
     #[test]
