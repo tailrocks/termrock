@@ -1632,15 +1632,14 @@ impl StatefulWidget for &TextArea<'_> {
         };
         let fs = theme.field_style(visual);
         let field_bg = fs.bg.unwrap_or(theme.field);
-        let canvas = theme.canvas;
 
         // Label row (always reserved: height = rows + 2).
         let label_style = if state.read_only {
-            theme.faint().bg(canvas)
+            theme.faint()
         } else if matches!(self.variant, TextAreaVariant::Review) && !focused {
-            theme.muted().bg(canvas)
+            theme.muted()
         } else {
-            theme.label(focused).bg(canvas)
+            theme.label(focused)
         };
         if let Some(title) = self.title {
             let text = take_display_cols(title, usize::from(area.width.saturating_sub(2)));
@@ -2747,6 +2746,26 @@ mod tests {
             "expected line number gutter cell, got {:?}",
             number_cell.symbol()
         );
+    }
+
+    #[test]
+    fn title_paint_preserves_prefilled_owner_surface() {
+        let system = crate::style::DesignSystem::junie();
+        let theme = system.junie_theme();
+        let area = Rect::new(0, 0, 24, 4);
+        let mut buffer = Buffer::empty(area);
+        buffer.set_style(area, Style::new().bg(theme.surface));
+        let mut state = TextAreaState::new("body");
+
+        (&TextArea::new(&system).title("Description")).render(area, &mut buffer, &mut state);
+
+        let title_x = area.x + 2;
+        let title = &buffer[(title_x, area.y)];
+        assert_eq!(title.symbol(), "D");
+        assert_eq!(title.bg, theme.surface);
+        assert_eq!(title.fg, theme.text_secondary);
+        assert!(!title.modifier.contains(Modifier::BOLD));
+        assert_eq!(buffer[(title_x + 11, area.y)].bg, theme.surface);
     }
 
     #[test]
