@@ -390,16 +390,16 @@ impl<Id, LayerId, Action> InteractionScene<Id, LayerId, Action> {
                 && element.focusable
                 && element.enabled
                 && !element.hidden
-                && self.layer_accepts_focus(&element.layer)
+                && self.layer_accepts_input(&element.layer)
         })
     }
 
-    fn layer_accepts_focus(&self, layer_id: &LayerId) -> bool
+    fn layer_accepts_input(&self, layer_id: &LayerId) -> bool
     where
         LayerId: PartialEq,
     {
         // Only elements on the top input-owning layer (or root if none) may
-        // receive focus while a modal stack is open.
+        // receive input while a modal stack is open.
         let Some(top) = self.layers.iter().rev().find(|layer| layer.owns_input) else {
             return true;
         };
@@ -416,7 +416,7 @@ impl<Id, LayerId, Action> InteractionScene<Id, LayerId, Action> {
                 element.focusable
                     && element.enabled
                     && !element.hidden
-                    && self.layer_accepts_focus(&element.layer)
+                    && self.layer_accepts_input(&element.layer)
             })
             .collect()
     }
@@ -435,11 +435,16 @@ impl<Id, LayerId, Action> InteractionScene<Id, LayerId, Action> {
 
     /// Topmost enabled, non-hidden element containing `position`.
     #[must_use]
-    pub fn hit_test(&self, position: Position) -> Option<&InteractionElement<Id, LayerId, Action>> {
-        self.elements
-            .iter()
-            .rev()
-            .find(|element| element.enabled && !element.hidden && element.area.contains(position))
+    pub fn hit_test(&self, position: Position) -> Option<&InteractionElement<Id, LayerId, Action>>
+    where
+        LayerId: PartialEq,
+    {
+        self.elements.iter().rev().find(|element| {
+            element.enabled
+                && !element.hidden
+                && element.area.contains(position)
+                && self.layer_accepts_input(&element.layer)
+        })
     }
 
     /// Looks up an element by id.
@@ -1637,6 +1642,59 @@ mod tests {
             ))
             .unwrap();
         assert_eq!(scene.hit_test(Position::new(3, 2)).map(|e| e.id), Some("b"));
+    }
+
+    #[test]
+    fn trapping_layer_blocks_lower_pointer_hits_but_accepts_own_hits() {
+        let mut scene = InteractionScene::<&str, Layer, Act>::new();
+        scene.ensure_root(root_layer());
+        scene
+            .register(InteractionElement::control(
+                "main",
+                Layer::Root,
+                Rect::new(5, 0, 2, 1),
+            ))
+            .unwrap();
+        scene
+            .register(InteractionElement::control(
+                "other",
+                Layer::Root,
+                Rect::new(0, 0, 2, 1),
+            ))
+            .unwrap();
+        scene.reconcile();
+        assert_eq!(scene.focused(), Some(&"main"));
+
+        scene.push_layer(dialog_trap());
+        scene
+            .register(InteractionElement::control(
+                "dialog",
+                Layer::Dialog,
+                Rect::new(10, 0, 2, 1),
+            ))
+            .unwrap();
+
+        assert!(scene.hit_test(Position::new(0, 0)).is_none());
+        assert_eq!(
+            scene.handle_mouse(MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: Position::new(0, 0),
+                modifiers: KeyModifiers::NONE,
+            }),
+            InteractionOutcome::Ignored
+        );
+        assert_eq!(scene.focused(), Some(&"main"));
+        assert_eq!(
+            scene.handle_mouse(MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: Position::new(10, 0),
+                modifiers: KeyModifiers::NONE,
+            }),
+            InteractionOutcome::FocusChanged {
+                from: Some("main"),
+                to: Some("dialog"),
+            }
+        );
     }
 
     #[test]
