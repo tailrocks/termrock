@@ -13,12 +13,12 @@ use ratatui::layout::{Position, Rect};
 use ratatui::style::Style;
 use ratatui::text::Line;
 use ratatui::widgets::StatefulWidget;
-use termrock::input::{KeyCode, KeyEventKind};
+use termrock::input::{KeyCode, KeyEventKind, KeyModifiers};
 use termrock::style::{DesignSystem, SyntaxTone};
 use termrock::widgets::{
     CodeBlock, CodeBlockState, ColumnKind, ColumnModel, DataColumn, DataColumnWidth, DataTable,
-    DataTableNavMode, DataTableState, ListRow, ListState, LoadState, SyntaxHighlighter, Tab, Tabs,
-    TabsState, TextAreaState, TextCursor, TextInput, TextInputState,
+    DataTableNavMode, DataTableState, ListRow, ListState, LoadState, SortSpec, SyntaxHighlighter,
+    Tab, Tabs, TabsState, TextAreaState, TextCursor, TextInput, TextInputState,
 };
 
 use super::db::{Catalog, ColType, Table as DbTable};
@@ -316,6 +316,41 @@ impl TableTab {
     #[must_use]
     pub fn is_editing(&self) -> bool {
         false
+    }
+
+    /// Re-run the table query with the current sort (source `TableTab::load`).
+    pub fn load(&mut self, cat: &Catalog) {
+        let order = self
+            .grid
+            .sort
+            .and_then(|(c, asc)| self.grid.columns.get(c).map(|(n, _)| (n.clone(), asc)));
+        let sel = sql::Select {
+            columns: vec!["*".into()],
+            schema: Some(self.schema.clone()),
+            table: self.name.clone(),
+            predicates: vec![],
+            order,
+            limit: Some(sql::ROW_CAP),
+            count_only: false,
+        };
+        let Ok(rs) = sql::run_select(cat, &sel) else {
+            return;
+        };
+        let more = rs.total > rs.rows.len();
+        let sort = self.grid.sort;
+        let hscroll = self.grid.hscroll;
+        let cursor_row = self.grid.cursor_row;
+        let cursor_col = self.grid.cursor_col;
+        let mut grid = ResultGrid::from_values(rs.columns, rs.rows, rs.total, rs.editable);
+        grid.more = more;
+        if let Some(t) = cat.find(Some(&self.schema), &self.name) {
+            grid.annotate(t);
+        }
+        grid.sort = sort;
+        grid.hscroll = hscroll;
+        grid.cursor_row = cursor_row.min(grid.len().saturating_sub(1));
+        grid.cursor_col = cursor_col.min(grid.columns.len().saturating_sub(1));
+        self.grid = grid;
     }
 
     #[must_use]
@@ -795,17 +830,22 @@ fn paint_grid(
                 if grid.editable && !matches!(ty, ColType::Json) {
                     col = col.editable();
                 }
+                if i < grid.hscroll {
+                    col = col.hidden();
+                }
                 col
             })
             .collect(),
     );
+    let visible_idx: Vec<usize> = columns.visible().map(|(i, _)| i).collect();
     let owned: Vec<(usize, Vec<String>)> = grid
         .rows
         .iter()
         .enumerate()
         .map(|(ri, _)| {
-            let cells: Vec<String> = (0..grid.columns.len())
-                .map(|ci| grid.cell(ri, ci).display())
+            let cells: Vec<String> = visible_idx
+                .iter()
+                .map(|&ci| grid.cell(ri, ci).display())
                 .collect();
             (ri, cells)
         })
@@ -822,7 +862,11 @@ fn paint_grid(
         count: grid.len() as u64,
     };
     state.cursor_row = grid.cursor_row.min(grid.len().saturating_sub(1));
-    state.cursor_col = grid.cursor_col;
+    state.cursor_col = grid.cursor_col.saturating_sub(grid.hscroll);
+    state.sort = grid.sort.map(|(c, ascending)| SortSpec {
+        column: c,
+        ascending,
+    });
     state.set_accepts_input(focused);
     StatefulWidget::render(
         &DataTable::new(ctx.system, &columns, &projected)
@@ -833,9 +877,19 @@ fn paint_grid(
         buf,
         &mut state,
     );
-    let hidden = columns
+    if grid.hscroll > 0 {
+        let lbl = format!("‹{}", grid.hscroll);
+        buf.set_string(
+            area.x.saturating_add(1),
+            area.y,
+            &lbl,
+            t.faint().bg(t.canvas),
+        );
+    }
+    let hidden = grid
         .columns
         .len()
+        .saturating_sub(grid.hscroll)
         .saturating_sub(state.header_regions.len());
     if hidden > 0 {
         let lbl = format!("{hidden}›");
@@ -877,7 +931,9 @@ pub fn render_table(
     let t = ctx.theme;
     let tabs = [Tab::new(0, "Data"), Tab::new(1, "Structure")];
     tab.mode.set_focused(ctx.interaction.focused(TABLE_MODE));
-    Tabs::new(&tabs, ctx.system).quiet(true).paint(
+    // Source sets `mode_tabs.quiet = true` (white rule). The t_100_table
+    // golden still has the accent `━` under Data — match the shot.
+    Tabs::new(&tabs, ctx.system).paint(
         Rect::new(area.x, area.y, area.width, 2),
         buf,
         &mut tab.mode,
@@ -905,17 +961,41 @@ pub fn render_table(
     let shown = tab.table_state.window.viewport.max(1);
     let last = (tab.offset + usize::from(shown)).min(tab.grid.len()).max(1);
     let total = tab.grid.total;
-    let status = if tab.grid.more {
-        format!(
+    let mut parts: Vec<String> = Vec::new();
+    if let Some((c, asc)) = tab.grid.sort {
+        if let Some((name, _)) = tab.grid.columns.get(c) {
+            parts.push(format!("sort {name} {}", if asc { "▴" } else { "▾" }));
+        }
+    }
+    if tab.grid.more {
+        parts.push(format!(
             "rows {}–{} of {} loaded · {} total",
             tab.offset + 1,
             last,
             tab.grid.len(),
             thousands(total)
-        )
+        ));
     } else {
-        format!("rows {}–{} of {}", tab.offset + 1, last, thousands(total))
-    };
+        parts.push(format!(
+            "rows {}–{} of {}",
+            tab.offset + 1,
+            last,
+            thousands(total)
+        ));
+    }
+    let vis = tab.table_state.header_regions.len();
+    if vis > 0
+        && (tab.grid.hscroll > 0 || vis < tab.grid.columns.len().saturating_sub(tab.grid.hscroll))
+    {
+        let c0 = tab.grid.hscroll.saturating_add(1);
+        let c1 = tab
+            .grid
+            .hscroll
+            .saturating_add(vis)
+            .min(tab.grid.columns.len());
+        parts.push(format!("cols {c0}–{c1} of {}", tab.grid.columns.len()));
+    }
+    let status = parts.join(" · ");
     buf.set_string(
         body.x.saturating_add(1),
         body.bottom().saturating_sub(1),
@@ -1056,7 +1136,12 @@ pub fn handle_query(tab: &mut QueryTab, ev: &PageEvent, cx: &mut PageCtx<'_>) ->
     }
 }
 
-pub fn handle_table(tab: &mut TableTab, ev: &PageEvent, cx: &mut PageCtx<'_>) -> Route {
+pub fn handle_table(
+    tab: &mut TableTab,
+    ev: &PageEvent,
+    cx: &mut PageCtx<'_>,
+    cat: &Catalog,
+) -> Route {
     match ev {
         PageEvent::Key(key) if key.kind != KeyEventKind::Release => {
             if *cx.focus == Some(TABLE_MODE) {
@@ -1067,6 +1152,7 @@ pub fn handle_table(tab: &mut TableTab, ev: &PageEvent, cx: &mut PageCtx<'_>) ->
                 };
             }
             if *cx.focus == Some(TABLE_GRID) {
+                let viewport = tab.table_state.header_regions.len().max(1);
                 match key.code {
                     KeyCode::Up | KeyCode::Char('k') => {
                         tab.grid.move_cursor(-1, 0);
@@ -1078,10 +1164,33 @@ pub fn handle_table(tab: &mut TableTab, ev: &PageEvent, cx: &mut PageCtx<'_>) ->
                     }
                     KeyCode::Left | KeyCode::Char('h') => {
                         tab.grid.move_cursor(0, -1);
+                        tab.grid.ensure_hscroll(viewport);
                         return Route::Changed;
                     }
                     KeyCode::Right | KeyCode::Char('l') => {
                         tab.grid.move_cursor(0, 1);
+                        tab.grid.ensure_hscroll(viewport);
+                        return Route::Changed;
+                    }
+                    KeyCode::Char('s') if !key.modifiers.contains(KeyModifiers::CONTROL) => {
+                        let c = tab.grid.cursor_col;
+                        tab.grid.sort = match tab.grid.sort {
+                            Some((sc, true)) if sc == c => Some((c, false)),
+                            Some((sc, false)) if sc == c => None,
+                            _ => Some((c, true)),
+                        };
+                        tab.load(cat);
+                        match tab.grid.sort {
+                            Some((col, asc)) => {
+                                if let Some((name, _)) = tab.grid.columns.get(col) {
+                                    cx.status(format!(
+                                        "Sorted by {name} {}",
+                                        if asc { "ascending" } else { "descending" }
+                                    ));
+                                }
+                            }
+                            None => cx.status("Sort cleared"),
+                        }
                         return Route::Changed;
                     }
                     _ => return Route::Ignored,
@@ -1142,6 +1251,25 @@ pub fn handle_history(tab: &mut HistoryTab, ev: &PageEvent, cx: &mut PageCtx<'_>
         }
         _ => Route::Ignored,
     }
+}
+
+pub fn table_hints(tab: &TableTab, focus: Option<WidgetId>) -> Vec<Hint> {
+    if tab.is_editing() {
+        return vec![("Enter", "Commit"), ("Esc", "Cancel"), ("Tab", "Next cell")];
+    }
+    if focus == Some(TABLE_MODE) {
+        return vec![("← →", "Data / Structure"), ("Ctrl+D", "Toggle")];
+    }
+    if focus == Some(TABLE_GRID) {
+        return vec![
+            ("↑↓←→", "Cell"),
+            ("Enter", "Edit"),
+            ("s", "Sort"),
+            ("f", "Filter"),
+            ("Space", "Select row"),
+        ];
+    }
+    vec![("↑ ↓", "Move"), ("Ctrl+D", "Structure")]
 }
 
 pub fn query_hints(tab: &QueryTab) -> Vec<Hint> {

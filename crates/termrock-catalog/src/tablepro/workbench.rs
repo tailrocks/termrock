@@ -24,7 +24,7 @@ use super::db::{Catalog, Connection, ObjectKind};
 use super::model::History;
 use super::tabs::{
     HistoryTab, QueryTab, TableTab, handle_history, handle_query, handle_table, query_hints,
-    render_history, render_query, render_table,
+    render_history, render_query, render_table, table_hints,
 };
 use crate::ctx::RenderCtx;
 use crate::id::WidgetId;
@@ -515,10 +515,23 @@ impl Workbench {
                         _ => return Route::Changed,
                     }
                 }
-                match self.tabs.get_mut(self.active) {
-                    Some(WorkTab::Query(q)) => return handle_query(q, ev, cx),
-                    Some(WorkTab::Table(tt)) => return handle_table(tt, ev, cx),
-                    Some(WorkTab::History(h)) => return handle_history(h, ev, cx),
+                match self.tabs.get(self.active) {
+                    Some(WorkTab::Query(_)) => {
+                        if let Some(WorkTab::Query(q)) = self.tabs.get_mut(self.active) {
+                            return handle_query(q, ev, cx);
+                        }
+                    }
+                    Some(WorkTab::Table(_)) => {
+                        let cat = self.catalog.clone();
+                        if let Some(WorkTab::Table(tt)) = self.tabs.get_mut(self.active) {
+                            return handle_table(tt, ev, cx, &cat);
+                        }
+                    }
+                    Some(WorkTab::History(_)) => {
+                        if let Some(WorkTab::History(h)) = self.tabs.get_mut(self.active) {
+                            return handle_history(h, ev, cx);
+                        }
+                    }
                     None => {}
                 }
                 Route::Ignored
@@ -538,22 +551,52 @@ impl Workbench {
                     cx.set_focus(TABSTRIP);
                     return Route::Changed;
                 }
-                match self.tabs.get_mut(self.active) {
-                    Some(WorkTab::Query(q)) => handle_query(q, ev, cx),
-                    Some(WorkTab::Table(tt)) => handle_table(tt, ev, cx),
-                    Some(WorkTab::History(h)) => handle_history(h, ev, cx),
-                    None => Route::Ignored,
+                match self.tabs.get(self.active) {
+                    Some(WorkTab::Query(_)) => {
+                        if let Some(WorkTab::Query(q)) = self.tabs.get_mut(self.active) {
+                            return handle_query(q, ev, cx);
+                        }
+                    }
+                    Some(WorkTab::Table(_)) => {
+                        let cat = self.catalog.clone();
+                        if let Some(WorkTab::Table(tt)) = self.tabs.get_mut(self.active) {
+                            return handle_table(tt, ev, cx, &cat);
+                        }
+                    }
+                    Some(WorkTab::History(_)) => {
+                        if let Some(WorkTab::History(h)) = self.tabs.get_mut(self.active) {
+                            return handle_history(h, ev, cx);
+                        }
+                    }
+                    None => {}
                 }
+                Route::Ignored
             }
             PageEvent::Wheel { id, delta } if *id == EXPLORER => {
                 let n = self.explorer_nodes().len();
                 let _ = self.explorer.scroll_by(*delta as isize, n);
                 Route::Changed
             }
-            PageEvent::Paste(_) | PageEvent::Wheel { .. } => match self.tabs.get_mut(self.active) {
-                Some(WorkTab::Query(q)) => handle_query(q, ev, cx),
-                Some(WorkTab::Table(tt)) => handle_table(tt, ev, cx),
-                Some(WorkTab::History(h)) => handle_history(h, ev, cx),
+            PageEvent::Paste(_) | PageEvent::Wheel { .. } => match self.tabs.get(self.active) {
+                Some(WorkTab::Query(_)) => {
+                    if let Some(WorkTab::Query(q)) = self.tabs.get_mut(self.active) {
+                        return handle_query(q, ev, cx);
+                    }
+                    Route::Ignored
+                }
+                Some(WorkTab::Table(_)) => {
+                    let cat = self.catalog.clone();
+                    if let Some(WorkTab::Table(tt)) = self.tabs.get_mut(self.active) {
+                        return handle_table(tt, ev, cx, &cat);
+                    }
+                    Route::Ignored
+                }
+                Some(WorkTab::History(_)) => {
+                    if let Some(WorkTab::History(h)) = self.tabs.get_mut(self.active) {
+                        return handle_history(h, ev, cx);
+                    }
+                    Route::Ignored
+                }
                 None => Route::Ignored,
             },
             _ => Route::Ignored,
@@ -649,7 +692,7 @@ impl Workbench {
         }
         match self.tabs.get(self.active) {
             Some(WorkTab::Query(q)) => query_hints(q),
-            Some(WorkTab::Table(_)) => vec![("↑ ↓", "Rows"), ("s", "Structure")],
+            Some(WorkTab::Table(t)) => table_hints(t, focus),
             Some(WorkTab::History(_)) => vec![("↑ ↓", "Move"), ("Enter", "Open")],
             None => vec![("Ctrl+T", "New query")],
         }

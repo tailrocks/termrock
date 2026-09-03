@@ -117,6 +117,8 @@ pub struct ResultGrid {
     pub cursor_row: usize,
     pub cursor_col: usize,
     pub offset: usize,
+    /// Source DataGrid `hscroll.offset` (absolute column index).
+    pub hscroll: usize,
     pub sort: Option<(usize, bool)>,
     pub editable: bool,
     /// Per-column primary-key flag (source `ColumnSpec::primary`).
@@ -147,6 +149,7 @@ impl ResultGrid {
             cursor_row: 0,
             cursor_col: 0,
             offset: 0,
+            hscroll: 0,
             sort: None,
             editable,
             primary: vec![false; n],
@@ -199,8 +202,13 @@ impl ResultGrid {
             .collect();
         ws.sort_unstable();
         let p95 = u16::try_from(ws.get(ws.len() * 95 / 100).copied().unwrap_or(0)).unwrap_or(0);
-        let header =
-            u16::try_from(ttext::width(name)).unwrap_or(0) + if primary { 2 } else { 0 } + 2;
+        let sorted = self.sort.is_some_and(|(c, _)| c == col);
+        // Source `fit_header_marks`: name + primary 2 + sorted 2 + 1.
+        // Idle pad is +2; sorted adds one more so `"status ▴"` fits at 9.
+        let header = u16::try_from(ttext::width(name)).unwrap_or(0)
+            + if primary { 2 } else { 0 }
+            + if sorted { 1 } else { 0 }
+            + 2;
         let max = max_width.max(header.min(24));
         p95.max(header).clamp(min_width.min(max), max)
     }
@@ -259,5 +267,17 @@ impl ResultGrid {
         let c = (self.cursor_col as isize + dcol).clamp(0, nc - 1) as usize;
         self.cursor_row = r;
         self.cursor_col = c;
+    }
+
+    /// Source `DataGrid::ensure_cursor_visible` for columns.
+    pub fn ensure_hscroll(&mut self, viewport: usize) {
+        let vp = viewport.max(1);
+        let n = self.columns.len().max(1);
+        if self.cursor_col < self.hscroll {
+            self.hscroll = self.cursor_col;
+        } else if self.cursor_col >= self.hscroll.saturating_add(vp) {
+            self.hscroll = self.cursor_col.saturating_add(1).saturating_sub(vp);
+        }
+        self.hscroll = self.hscroll.min(n.saturating_sub(vp.min(n)));
     }
 }

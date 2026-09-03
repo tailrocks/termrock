@@ -1500,6 +1500,10 @@ fn paint_header_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
         let mut title = col.title.clone();
         let sorted = state.sort.as_ref().is_some_and(|s| s.column == col.id);
         if sorted {
+            // Source DataGrid suffix is `" ▴"` / `" ▾"` (leading space).
+            if table.datagrid {
+                title.push(' ');
+            }
             title.push_str(super::table_chrome::sort_marker(
                 state.sort.as_ref().is_some_and(|s| s.ascending),
             ));
