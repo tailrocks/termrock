@@ -423,18 +423,15 @@ impl<'a, Id> Label<'a, Id> {
         let theme = self.system.junie_theme();
         let width = parts.label.width;
         let name = crate::text::take_display_cols(self.text, usize::from(width));
-        // Match source label rows: fit the foreground across the whole row,
-        // while retaining each cell's background and other style attributes.
+        // Match source label rows: fit the complete label style across the
+        // whole row, while retaining each cell's existing background.
         let label_style = self.label_style();
         let backgrounds: Vec<_> = (parts.label.x..parts.label.right())
             .map(|x| buffer[(x, parts.label.y)].bg)
             .collect();
-        if let Some(fg) = label_style.fg {
-            for y in parts.label.y..parts.label.bottom() {
-                for x in parts.label.x..parts.label.right() {
-                    buffer[(x, y)].fg = fg;
-                }
-            }
+        for (offset, background) in backgrounds.iter().copied().enumerate() {
+            let x = parts.label.x.saturating_add(offset as u16);
+            buffer[(x, parts.label.y)].set_style(label_style.bg(background));
         }
         buffer.set_stringn(
             parts.label.x,
@@ -1043,12 +1040,26 @@ mod tests {
         let mut buffer = Buffer::empty(area);
         buffer.set_style(area, system.style(Role::Surface).fg(Color::Red));
 
-        Label::<()>::new("Name", &system).paint(area, &mut buffer);
+        Label::<()>::new("Name", &system)
+            .focused()
+            .paint(area, &mut buffer);
 
-        assert_eq!(buffer[(0, 0)].fg, theme.text_secondary);
+        assert_eq!(buffer[(0, 0)].fg, theme.text_primary);
         assert_eq!(buffer[(0, 0)].bg, theme.surface);
-        assert_eq!(buffer[(8, 0)].fg, theme.text_secondary);
+        assert!(
+            buffer[(0, 0)]
+                .style()
+                .add_modifier
+                .contains(ratatui_core::style::Modifier::BOLD)
+        );
+        assert_eq!(buffer[(8, 0)].fg, theme.text_primary);
         assert_eq!(buffer[(8, 0)].bg, theme.surface);
+        assert!(
+            buffer[(8, 0)]
+                .style()
+                .add_modifier
+                .contains(ratatui_core::style::Modifier::BOLD)
+        );
     }
 
     #[test]
