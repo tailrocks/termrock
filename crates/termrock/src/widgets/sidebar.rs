@@ -306,6 +306,23 @@ pub fn filter_nav_collapsed<Id: Clone>(items: &[NavItem<Id>]) -> Vec<NavItem<Id>
     out
 }
 
+fn filter_nav_query<Id>(items: Vec<NavItem<Id>>, query: &str) -> Vec<NavItem<Id>> {
+    if query.is_empty() {
+        return items;
+    }
+    let query = query.to_ascii_lowercase();
+    items
+        .into_iter()
+        .filter(|item| {
+            item.label.to_ascii_lowercase().contains(&query)
+                || item
+                    .command
+                    .as_ref()
+                    .is_some_and(|command| command.to_ascii_lowercase().contains(&query))
+        })
+        .collect()
+}
+
 // ── Presentation ────────────────────────────────────────────────────────────
 
 /// Sidebar chrome presentation.
@@ -475,7 +492,7 @@ pub struct NavigationListState<Id> {
     route: Option<Id>,
     /// Roving focus among focusable rows.
     collection: CollectionState<Id>,
-    /// Search / filter query (host may filter projection).
+    /// Search / filter query.
     filter: String,
     /// Filter field active.
     filter_active: bool,
@@ -535,7 +552,8 @@ impl<Id> NavigationListState<Id> {
     where
         Id: Clone + PartialEq,
     {
-        let focusable = focusable_items(items);
+        let projected = self.projected_items(items);
+        let focusable = focusable_items(&projected);
         self.collection.active_index(&focusable).unwrap_or(0)
     }
 
@@ -583,6 +601,13 @@ impl<Id> NavigationListState<Id> {
         self.filter = q.into();
     }
 
+    fn projected_items(&self, items: &[NavItem<Id>]) -> Vec<NavItem<Id>>
+    where
+        Id: Clone,
+    {
+        filter_nav_query(filter_nav_collapsed(items), &self.filter)
+    }
+
     fn collection_items(items: &[NavItem<Id>]) -> Vec<CollectionItem<Id>>
     where
         Id: Clone,
@@ -590,14 +615,40 @@ impl<Id> NavigationListState<Id> {
         focusable_items(items)
     }
 
+    fn reconcile_projected(&mut self, projected: &[NavItem<Id>]) -> Vec<CollectionItem<Id>>
+    where
+        Id: Clone + PartialEq,
+    {
+        let coll = Self::collection_items(projected);
+        let _ = self.collection.reconcile(&coll);
+        coll
+    }
+
+    fn ensure_initial_focus(&mut self, coll: &[CollectionItem<Id>])
+    where
+        Id: Clone + PartialEq,
+    {
+        if self.collection.active().is_none() {
+            if let Some(r) = self.route.clone() {
+                if coll.iter().any(|c| c.id == r) {
+                    self.collection.set_active(Some(r));
+                }
+            }
+            if self.collection.active().is_none() {
+                let _ = self.collection.move_first(coll);
+            }
+        }
+    }
+
     /// Activate focused row as route (if item).
     ///
-    /// `items` should be the **visible** projection (see [`filter_nav_collapsed`]).
+    /// `items` is the full host projection; collapse and query filtering are
+    /// applied before activation.
     pub fn activate_focus(&mut self, items: &[NavItem<Id>]) -> NavigationListOutcome<Id>
     where
         Id: Clone + PartialEq,
     {
-        let projected = filter_nav_collapsed(items);
+        let projected = self.projected_items(items);
         self.activate_focus_projected(&projected)
     }
 
@@ -632,9 +683,9 @@ impl<Id> NavigationListState<Id> {
 
     /// Key adapter.
     ///
-    /// Collapsed section/group children are skipped for focus (via
-    /// [`filter_nav_collapsed`]). Host still owns storing `expanded` on the
-    /// full tree after [`NavigationListOutcome::ExpandToggled`].
+    /// Collapsed section/group children and non-matching query rows are skipped
+    /// for focus. Host still owns storing `expanded` on the full tree after
+    /// [`NavigationListOutcome::ExpandToggled`].
     pub fn handle_key(&mut self, key: KeyEvent, items: &[NavItem<Id>]) -> NavigationListOutcome<Id>
     where
         Id: Clone + PartialEq,
@@ -646,7 +697,7 @@ impl<Id> NavigationListState<Id> {
             return NavigationListOutcome::Ignored;
         }
 
-        let projected = filter_nav_collapsed(items);
+        let mut projected = self.projected_items(items);
 
         // Filter mode
         if self.filter_active {
@@ -656,11 +707,15 @@ impl<Id> NavigationListState<Id> {
                     return NavigationListOutcome::Changed;
                 }
                 KeyCode::Enter => {
+                    let _ = self.reconcile_projected(&projected);
                     self.filter_active = false;
                     return self.activate_focus_projected(&projected);
                 }
                 KeyCode::Backspace => {
                     self.filter.pop();
+                    projected = self.projected_items(items);
+                    let coll = self.reconcile_projected(&projected);
+                    self.ensure_initial_focus(&coll);
                     return NavigationListOutcome::FilterChanged {
                         query: self.filter.clone(),
                     };
@@ -671,6 +726,9 @@ impl<Id> NavigationListState<Id> {
                         && !c.is_control() =>
                 {
                     self.filter.push(c);
+                    projected = self.projected_items(items);
+                    let coll = self.reconcile_projected(&projected);
+                    self.ensure_initial_focus(&coll);
                     return NavigationListOutcome::FilterChanged {
                         query: self.filter.clone(),
                     };
@@ -679,18 +737,8 @@ impl<Id> NavigationListState<Id> {
             }
         }
 
-        let coll = Self::collection_items(&projected);
-        let _ = self.collection.reconcile(&coll);
-        if self.collection.active().is_none() {
-            if let Some(r) = self.route.clone() {
-                if coll.iter().any(|c| c.id == r) {
-                    self.collection.set_active(Some(r));
-                }
-            }
-            if self.collection.active().is_none() {
-                let _ = self.collection.move_first(&coll);
-            }
-        }
+        let coll = self.reconcile_projected(&projected);
+        self.ensure_initial_focus(&coll);
 
         // Start filter
         if matches!(key.code, KeyCode::Char('/') | KeyCode::Char('f'))
@@ -745,7 +793,7 @@ impl<Id> NavigationListState<Id> {
         }
     }
 
-    /// Intent (same collapse projection as [`Self::handle_key`]).
+    /// Intent (same collapse + query projection as [`Self::handle_key`]).
     pub fn handle_intent(
         &mut self,
         intent: UiIntent,
@@ -757,9 +805,8 @@ impl<Id> NavigationListState<Id> {
         if !self.enabled || !self.focused || !self.accepts_input {
             return NavigationListOutcome::Ignored;
         }
-        let projected = filter_nav_collapsed(items);
-        let coll = Self::collection_items(&projected);
-        let _ = self.collection.reconcile(&coll);
+        let projected = self.projected_items(items);
+        let coll = self.reconcile_projected(&projected);
         match intent {
             UiIntent::Activate | UiIntent::Submit => self.activate_focus_projected(&projected),
             UiIntent::Search => {
@@ -817,7 +864,7 @@ impl<Id> NavigationListState<Id> {
             return NavigationListOutcome::Ignored;
         }
         self.focused = true;
-        let projected = filter_nav_collapsed(items);
+        let projected = self.projected_items(items);
         for r in &self.regions {
             if r.area.contains(event.position) {
                 let id = r.id.clone();
@@ -1106,24 +1153,9 @@ impl<'a, Id> NavigationList<'a, Id> {
         if area.is_empty() {
             return;
         }
-        // Reconcile focus/viewport against the same collapsed projection used for paint.
-        let collapsed = filter_nav_collapsed(self.items);
-        let coll = NavigationListState::<Id>::collection_items(&collapsed);
-        let _ = state.collection.reconcile(&coll);
-        // Drop active if it pointed at a now-hidden nested row.
-        if let Some(active) = state.collection.active().cloned() {
-            if !coll.iter().any(|c| c.id == active) {
-                if let Some(r) = state.route.clone() {
-                    if coll.iter().any(|c| c.id == r) {
-                        state.collection.set_active(Some(r));
-                    } else {
-                        let _ = state.collection.move_first(&coll);
-                    }
-                } else {
-                    let _ = state.collection.move_first(&coll);
-                }
-            }
-        }
+        // Reconcile focus/viewport against the exact projection used for paint.
+        let projected = state.projected_items(self.items);
+        let coll = state.reconcile_projected(&projected);
         let vp = usize::from(area.height).max(1);
         state
             .collection
@@ -1144,21 +1176,8 @@ impl<'a, Id> NavigationList<'a, Id> {
         }
 
         let surface = state.focused && state.accepts_input;
-        let filter_q = state.filter.to_ascii_lowercase();
-        let visible: Vec<&NavItem<Id>> = collapsed
-            .iter()
-            .filter(|i| {
-                if filter_q.is_empty() {
-                    return true;
-                }
-                i.label.to_ascii_lowercase().contains(&filter_q)
-                    || i.command
-                        .as_ref()
-                        .is_some_and(|c| c.to_ascii_lowercase().contains(&filter_q))
-            })
-            .collect();
 
-        if visible.is_empty() && !filter_q.is_empty() && y < area.bottom() {
+        if projected.is_empty() && !state.filter.is_empty() && y < area.bottom() {
             // A filter that hides everything has to say so, or the rail looks
             // like it lost its contents.
             buffer.set_stringn(
@@ -1174,7 +1193,7 @@ impl<'a, Id> NavigationList<'a, Id> {
         let offset = state.collection.offset();
         // Map offset through focusable — simple paint all filtered from y
         let mut painted = 0usize;
-        for item in visible {
+        for item in &projected {
             if y >= area.bottom() {
                 break;
             }
@@ -1922,6 +1941,100 @@ mod tests {
             NavigationListOutcome::Changed
         );
         assert!(!state.is_filter_active());
+    }
+
+    #[test]
+    fn filter_projection_reconciles_focus_and_activation() {
+        let items = [
+            NavItem::new("alpha", "Alpha"),
+            NavItem::new("beta", "Beta"),
+            NavItem::new("gamma", "Gamma"),
+        ];
+        let mut state = NavigationListState::new(None);
+        state.set_focused(true);
+        state.collection.set_active(Some("alpha"));
+        state.set_filter("beta");
+
+        assert!(matches!(
+            state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &items),
+            NavigationListOutcome::RouteChanged { id: "beta" }
+        ));
+        assert_eq!(state.focus(), Some(&"beta"));
+        assert_eq!(state.route(), Some(&"beta"));
+    }
+
+    #[test]
+    fn filter_edit_reconciles_focus_and_no_match() {
+        let items = [NavItem::new("alpha", "Alpha"), NavItem::new("beta", "Beta")];
+        let mut state = NavigationListState::new(None);
+        state.set_focused(true);
+        state.collection.set_active(Some("alpha"));
+        state.filter_active = true;
+
+        assert!(matches!(
+            state.handle_key(KeyEvent::new(KeyCode::Char('b'), KeyModifiers::NONE), &items),
+            NavigationListOutcome::FilterChanged { query } if query == "b"
+        ));
+        assert_eq!(state.focus(), Some(&"beta"));
+
+        assert!(matches!(
+            state.handle_key(KeyEvent::new(KeyCode::Char('z'), KeyModifiers::NONE), &items),
+            NavigationListOutcome::FilterChanged { query } if query == "bz"
+        ));
+        assert_eq!(state.focus(), None);
+    }
+
+    #[test]
+    fn paint_uses_filtered_projection_for_offset() {
+        let system = DesignSystem::default();
+        let items = [
+            NavItem::new("alpha", "Alpha"),
+            NavItem::new("beta", "Beta"),
+            NavItem::new("gamma", "Gamma"),
+        ];
+        let mut state = NavigationListState::new(None);
+        state.set_focused(true);
+        state.collection.set_active(Some("gamma"));
+        state.collection.set_viewport(1, 1, 3);
+        state.set_filter("gamma");
+        let area = Rect::new(0, 0, 24, 1);
+        let mut buf = Buffer::empty(area);
+
+        NavigationList::new(&items, &system).paint(area, &mut buf, &mut state);
+
+        assert_eq!(state.collection.offset(), 0);
+        assert_eq!(
+            state
+                .regions
+                .iter()
+                .map(|region| region.id)
+                .collect::<Vec<_>>(),
+            vec!["gamma"]
+        );
+        let row: String = (0..area.width)
+            .map(|x| buf[(x, area.y)].symbol().to_string())
+            .collect();
+        assert!(row.contains("Gamma"), "{row:?}");
+    }
+
+    #[test]
+    fn paint_clears_focus_for_no_matches() {
+        let system = DesignSystem::default();
+        let items = [NavItem::new("alpha", "Alpha")];
+        let mut state = NavigationListState::new(None);
+        state.set_focused(true);
+        state.collection.set_active(Some("alpha"));
+        state.set_filter("missing");
+        let area = Rect::new(0, 0, 24, 2);
+        let mut buf = Buffer::empty(area);
+
+        NavigationList::new(&items, &system).paint(area, &mut buf, &mut state);
+
+        assert_eq!(state.focus(), None);
+        let row: String = (0..area.width)
+            .map(|x| buf[(x, area.y)].symbol().to_string())
+            .collect();
+        assert!(row.contains("No matches"), "{row:?}");
     }
 
     #[test]
