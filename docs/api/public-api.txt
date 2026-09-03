@@ -6142,7 +6142,6 @@ pub fn termrock::interaction::select_subtree<Id: core::clone::Clone + core::cmp:
 pub mod termrock::keymap
 pub mod termrock::keymap::glyph
 pub const termrock::keymap::glyph::ALL_ARROWS: &str
-pub const termrock::keymap::glyph::ALT_SHIFT_ALL_ARROWS: &str
 pub const termrock::keymap::glyph::ENTER: &str
 pub const termrock::keymap::glyph::ESC: &str
 pub const termrock::keymap::glyph::LEFT_RIGHT: &str
@@ -8548,7 +8547,6 @@ pub termrock::layout::ResponsiveRecipe::name: &'static str
 pub termrock::layout::ResponsiveRecipe::surface: core::option::Option<termrock::layout::ResponsiveSurface>
 impl termrock::layout::ResponsiveRecipe
 pub const termrock::layout::ResponsiveRecipe::AGENT_SHELL: Self
-pub const termrock::layout::ResponsiveRecipe::DATA_DENSE: Self
 pub const termrock::layout::ResponsiveRecipe::DEFAULT: Self
 pub fn termrock::layout::ResponsiveRecipe::classify(self, u16, u16) -> termrock::layout::ViewportClass
 pub fn termrock::layout::ResponsiveRecipe::stage_for(self, u16, u16) -> termrock::layout::ContractionStage
@@ -9499,8 +9497,6 @@ pub mod termrock::patterns::plan_review_bench
 pub const termrock::patterns::plan_review_bench::PAINT_FRAMES: u32
 pub mod termrock::patterns::process_table_bench
 pub const termrock::patterns::process_table_bench::PROCESS_COUNT: usize
-pub const termrock::patterns::process_table_bench::REFRESH_MS: u32
-pub const termrock::patterns::process_table_bench::STREAM_FRAMES: u32
 pub const termrock::patterns::process_table_bench::VIEWPORT: u16
 pub mod termrock::patterns::project_launcher_bench
 pub const termrock::patterns::project_launcher_bench::BURST_ENTRIES: usize
@@ -9509,9 +9505,6 @@ pub const termrock::patterns::project_launcher_bench::VIEWPORT: (u16, u16)
 pub mod termrock::patterns::prompt_queue_bench
 pub const termrock::patterns::prompt_queue_bench::PAINT_FRAMES: u32
 pub mod termrock::patterns::query_editor_bench
-pub const termrock::patterns::query_editor_bench::COMPLETION_CANDIDATES: usize
-pub const termrock::patterns::query_editor_bench::DIAGNOSTIC_COUNT: usize
-pub const termrock::patterns::query_editor_bench::DRAFT_CHARS: usize
 pub const termrock::patterns::query_editor_bench::DRAFT_LINES: usize
 pub const termrock::patterns::query_editor_bench::PAINT_FRAMES: u32
 pub mod termrock::patterns::result_grid_bench
@@ -32641,7 +32634,6 @@ pub mod termrock::widgets
 pub mod termrock::widgets::attachment_chips_bench
 pub const termrock::widgets::attachment_chips_bench::ATTACHMENT_COUNT: usize
 pub const termrock::widgets::attachment_chips_bench::PAINT_FRAMES: u32
-pub const termrock::widgets::attachment_chips_bench::PASTE_BODY_BYTES: usize
 pub const termrock::widgets::attachment_chips_bench::PASTE_COUNT: usize
 pub mod termrock::widgets::charts_bench
 pub const termrock::widgets::charts_bench::SAMPLES_PER_SEC: u32
@@ -32656,9 +32648,7 @@ pub const termrock::widgets::citation_bench::PAINT_FRAMES: u32
 pub mod termrock::widgets::context_meter_bench
 pub const termrock::widgets::context_meter_bench::PAINT_FRAMES: u32
 pub mod termrock::widgets::data_view_bench
-pub const termrock::widgets::data_view_bench::COLS_WIDE: usize
 pub const termrock::widgets::data_view_bench::MAX_PAINT_CELLS: u32
-pub const termrock::widgets::data_view_bench::ROWS_10: u64
 pub const termrock::widgets::data_view_bench::ROWS_10K: u64
 pub const termrock::widgets::data_view_bench::ROWS_1M: u64
 pub const termrock::widgets::data_view_bench::VIEWPORT_ROWS: u16
@@ -32669,22 +32659,17 @@ pub const termrock::widgets::dependency_graph_bench::EDGE_COUNT: usize
 pub const termrock::widgets::dependency_graph_bench::NODE_COUNT: usize
 pub const termrock::widgets::dependency_graph_bench::PAINT_FRAMES: u32
 pub mod termrock::widgets::diagnostic_bench
-pub const termrock::widgets::diagnostic_bench::LARGE_LIST: usize
 pub const termrock::widgets::diagnostic_bench::MAX_PAINT_CELLS: u32
 pub const termrock::widgets::diagnostic_bench::VIEWPORT: u16
 pub mod termrock::widgets::diff_bench
-pub const termrock::widgets::diff_bench::LARGE_DIFF_LINES: usize
 pub const termrock::widgets::diff_bench::MAX_PAINT_CELLS: u32
 pub const termrock::widgets::diff_bench::SPLIT_MIN_WIDTH: u16
 pub const termrock::widgets::diff_bench::VIEWPORT: u16
 pub mod termrock::widgets::diff_review_bench
-pub const termrock::widgets::diff_review_bench::COMMENTS: usize
-pub const termrock::widgets::diff_review_bench::FILE_TREE: usize
 pub const termrock::widgets::diff_review_bench::UNDO: usize
 pub const termrock::widgets::diff_review_bench::VIEWPORT: u16
 pub mod termrock::widgets::event_stream_bench
 pub const termrock::widgets::event_stream_bench::BURST_BATCH: u32
-pub const termrock::widgets::event_stream_bench::EVENTS_PER_SEC: u32
 pub const termrock::widgets::event_stream_bench::MAX_PAINT_CELLS: u32
 pub const termrock::widgets::event_stream_bench::VIEWPORT: u16
 pub mod termrock::widgets::file_tree_bench
@@ -32723,7 +32708,6 @@ pub const termrock::widgets::prompt_composer_bench::PASTE_ROUNDS: usize
 pub mod termrock::widgets::question_flow_bench
 pub const termrock::widgets::question_flow_bench::PAINT_FRAMES: u32
 pub mod termrock::widgets::search_results_bench
-pub const termrock::widgets::search_results_bench::GROUP_COUNT: usize
 pub const termrock::widgets::search_results_bench::HIT_COUNT: usize
 pub const termrock::widgets::search_results_bench::PAINT_FRAMES: u32
 pub const termrock::widgets::search_results_bench::VIEWPORT: u16
