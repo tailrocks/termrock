@@ -730,68 +730,254 @@ impl ConnectionsScreen {
         let (inner, bg) = layout::card(area, buf, t, Some(title), None, false);
         let tabs = [Tab::new(0, "Basic"), Tab::new(1, "Advanced")];
         form.tabs.set_focused(ctx.interaction.focused(FORM_TABS));
-        Tabs::new(&tabs, ctx.system).paint(
-            Rect::new(inner.x, inner.y, inner.width, 2),
-            buf,
-            &mut form.tabs,
+        let tab_area = Rect::new(inner.x, inner.y, inner.width, 2);
+        Tabs::new(&tabs, ctx.system).paint(tab_area, buf, &mut form.tabs);
+        ctx.control(FORM_TABS, tab_area, false);
+
+        let body = Rect::new(
+            inner.x,
+            inner.y.saturating_add(3),
+            inner.width,
+            inner.height.saturating_sub(5),
         );
-        ctx.control(
-            FORM_TABS,
-            Rect::new(inner.x, inner.y, inner.width, 2),
-            false,
-        );
-        let y = inner.y + 3;
-        form.name.set_focused(ctx.interaction.focused(FORM_NAME));
-        TextInput::new("Name", ctx.system).required(true).paint(
-            Rect::new(inner.x, y, inner.width.min(40), 2),
-            buf,
-            &mut form.name,
-        );
-        ctx.control(
-            FORM_NAME,
-            Rect::new(inner.x, y, inner.width.min(40), 2),
-            false,
-        );
-        form.host.set_focused(ctx.interaction.focused(FORM_HOST));
-        TextInput::new("Host", ctx.system).paint(
-            Rect::new(inner.x, y + 3, inner.width.min(40), 2),
-            buf,
-            &mut form.host,
-        );
-        ctx.control(
-            FORM_HOST,
-            Rect::new(inner.x, y + 3, inner.width.min(40), 2),
-            false,
-        );
-        let env = [
-            RadioOption::new(0, "local"),
-            RadioOption::new(1, "development"),
-            RadioOption::new(2, "staging"),
-            RadioOption::new(3, "production"),
-        ];
-        form.env.set_surface_focused(false);
-        RadioGroup::new(&env, ctx.system)
-            .legend("Environment")
-            .paint(
-                Rect::new(inner.x, y + 6, inner.width.min(40), 5),
-                buf,
-                &mut form.env,
+        let left_width = body.width.saturating_sub(4).min(58);
+        let (left, right) = layout::columns(body, left_width, 4);
+        let basic = form.tabs.selected != Some(1);
+
+        if basic {
+            let mut y = left.y;
+            let field_width = left.width;
+            let name_area = Rect::new(left.x, y, field_width, 2);
+            form.name.set_focused(ctx.interaction.focused(FORM_NAME));
+            if !form.name.is_focused() && form.name.is_editing() {
+                form.name.commit();
+            }
+            TextInput::new("Name", ctx.system)
+                .required(true)
+                .paint(name_area, buf, &mut form.name);
+            ctx.control(FORM_NAME, name_area, false);
+            y = y.saturating_add(2);
+
+            let engine_area = Rect::new(left.x, y, field_width, 2);
+            form.engine.set_focused(ctx.interaction.focused(FORM_ENGINE));
+            let engines = engine_options();
+            Select::new(&engines, ctx.system)
+                .label("Engine")
+                .placeholder("Select engine")
+                .paint(engine_area, engine_area, buf, &mut form.engine);
+            ctx.control(FORM_ENGINE, engine_area, false);
+            y = y.saturating_add(2);
+
+            let host_port = Rect::new(left.x, y, field_width, 2);
+            let port_width = field_width / 4;
+            let host_width = field_width.saturating_sub(port_width + 2);
+            let host_area = Rect::new(host_port.x, host_port.y, host_width, 2);
+            let port_area = Rect::new(
+                host_area.right().saturating_add(2),
+                host_port.y,
+                port_width,
+                2,
             );
+            form.host.set_focused(ctx.interaction.focused(FORM_HOST));
+            if !form.host.is_focused() && form.host.is_editing() {
+                form.host.commit();
+            }
+            TextInput::new("Host", ctx.system)
+                .placeholder("localhost")
+                .paint(host_area, buf, &mut form.host);
+            ctx.control(FORM_HOST, host_area, false);
+            form.port.set_focused(ctx.interaction.focused(FORM_PORT));
+            if !form.port.is_focused() && form.port.is_editing() {
+                form.port.commit();
+            }
+            TextInput::new("Port", ctx.system)
+                .placeholder("5432")
+                .paint(port_area, buf, &mut form.port);
+            ctx.control(FORM_PORT, port_area, false);
+            y = y.saturating_add(2);
+
+            let database_area = Rect::new(left.x, y, field_width, 2);
+            form.database
+                .set_focused(ctx.interaction.focused(FORM_DATABASE));
+            if !form.database.is_focused() && form.database.is_editing() {
+                form.database.commit();
+            }
+            TextInput::new("Database", ctx.system)
+                .paint(database_area, buf, &mut form.database);
+            ctx.control(FORM_DATABASE, database_area, false);
+            y = y.saturating_add(2);
+
+            let user_area = Rect::new(left.x, y, field_width, 2);
+            form.user.set_focused(ctx.interaction.focused(FORM_USER));
+            if !form.user.is_focused() && form.user.is_editing() {
+                form.user.commit();
+            }
+            TextInput::new("Username", ctx.system)
+                .paint(user_area, buf, &mut form.user);
+            ctx.control(FORM_USER, user_area, false);
+            y = y.saturating_add(2);
+
+            let password_area = Rect::new(left.x, y, field_width, 2);
+            form.password
+                .set_focused(ctx.interaction.focused(FORM_PASSWORD));
+            PasswordInput::new("Password", ctx.system)
+                .placeholder("stored in the keychain")
+                .paint(password_area, buf, &mut form.password);
+            ctx.control(FORM_PASSWORD, password_area, false);
+            y = y.saturating_add(2);
+
+            let prompt_area = Rect::new(left.x, y, field_width, 1);
+            form.prompt_pw
+                .set_focused(ctx.interaction.focused(FORM_PROMPT));
+            Checkbox::new(FORM_PROMPT, "Prompt for password on connect", ctx.system).paint(
+                prompt_area,
+                buf,
+                &mut form.prompt_pw,
+            );
+            ctx.control(FORM_PROMPT, prompt_area, false);
+
+            let env = env_options();
+            let env_area = Rect::new(right.x, right.y, right.width, 5);
+            form.env.set_surface_focused(ctx.interaction.focused(FORM_ENV));
+            RadioGroup::new(&env, ctx.system)
+                .legend("Environment")
+                .paint(env_area, buf, &mut form.env);
+            ctx.control(FORM_ENV, env_area, false);
+
+            let group_area = Rect::new(right.x, right.y.saturating_add(6), right.width, 2);
+            form.group.set_focused(ctx.interaction.focused(FORM_GROUP));
+            let groups = group_options();
+            Select::new(&groups, ctx.system)
+                .label("Group")
+                .placeholder("Select group")
+                .paint(group_area, group_area, buf, &mut form.group);
+            ctx.control(FORM_GROUP, group_area, false);
+
+            let safe_area = Rect::new(right.x, right.y.saturating_add(9), right.width, 8);
+            let safe = safe_options();
+            form.safe.set_surface_focused(ctx.interaction.focused(FORM_SAFE));
+            RadioGroup::new(&safe, ctx.system)
+                .legend("Safe Mode")
+                .paint(safe_area, buf, &mut form.safe);
+            ctx.control(FORM_SAFE, safe_area, false);
+        } else {
+            let mut y = left.y;
+            let ssl_area = Rect::new(left.x, y, left.width, 1);
+            form.ssl.set_focused(ctx.interaction.focused(FORM_SSL));
+            Toggle::new("Use SSL / TLS", ctx.system).paint(ssl_area, buf, &mut form.ssl);
+            ctx.control(FORM_SSL, ssl_area, false);
+            y = y.saturating_add(2);
+
+            let ssh_area = Rect::new(left.x, y, left.width, 1);
+            form.ssh.set_focused(ctx.interaction.focused(FORM_SSH));
+            Toggle::new("SSH tunnel", ctx.system).paint(ssh_area, buf, &mut form.ssh);
+            ctx.control(FORM_SSH, ssh_area, false);
+            y = y.saturating_add(1);
+
+            let ssh_enabled = form.ssh.value.is_pressed();
+            form.ssh_host.set_enabled(ssh_enabled);
+            form.ssh_user.set_enabled(ssh_enabled);
+            let ssh_host_area = Rect::new(left.x, y, left.width, 2);
+            form.ssh_host
+                .set_focused(ctx.interaction.focused(FORM_SSH_HOST));
+            if !form.ssh_host.is_focused() && form.ssh_host.is_editing() {
+                form.ssh_host.commit();
+            }
+            TextInput::new("SSH host", ctx.system)
+                .placeholder("bastion.example.com")
+                .paint(ssh_host_area, buf, &mut form.ssh_host);
+            ctx.control(FORM_SSH_HOST, ssh_host_area, !ssh_enabled);
+            y = y.saturating_add(2);
+
+            let ssh_user_area = Rect::new(left.x, y, left.width, 2);
+            form.ssh_user
+                .set_focused(ctx.interaction.focused(FORM_SSH_USER));
+            if !form.ssh_user.is_focused() && form.ssh_user.is_editing() {
+                form.ssh_user.commit();
+            }
+            TextInput::new("SSH user", ctx.system)
+                .paint(ssh_user_area, buf, &mut form.ssh_user);
+            ctx.control(FORM_SSH_USER, ssh_user_area, !ssh_enabled);
+            y = y.saturating_add(2);
+
+            let local_area = Rect::new(left.x, y, left.width, 1);
+            form.local_only
+                .set_focused(ctx.interaction.focused(FORM_LOCAL));
+            Toggle::new("Local only (no iCloud sync)", ctx.system).paint(
+                local_area,
+                buf,
+                &mut form.local_only,
+            );
+            ctx.control(FORM_LOCAL, local_area, false);
+
+            let startup_area = Rect::new(right.x, right.y, right.width, 5);
+            let startup_focused = ctx.interaction.focused(FORM_STARTUP);
+            form.startup.set_accepts_input(startup_focused);
+            StatefulWidget::render(
+                &TextArea::new(ctx.system)
+                    .title("Startup commands")
+                    .placeholder("SET statement_timeout = '60s';")
+                    .help("Run after every connect, one per line")
+                    .rows(3),
+                startup_area,
+                buf,
+                &mut form.startup,
+            );
+            ctx.control(FORM_STARTUP, startup_area, false);
+            ctx.scrollable(FORM_STARTUP, startup_area);
+            if startup_focused && let Some(cursor) = form.startup.cursor_cell() {
+                ctx.set_cursor(cursor);
+            }
+        }
+
+        // Repaint open selects last so their popovers remain above later fields.
+        if basic && form.engine.is_open() {
+            let engine_area = Rect::new(left.x, left.y.saturating_add(2), left.width, 2);
+            let engines = engine_options();
+            Select::new(&engines, ctx.system)
+                .label("Engine")
+                .placeholder("Select engine")
+                .paint(engine_area, engine_area, buf, &mut form.engine);
+        }
+        if basic && form.group.is_open() {
+            let group_area = Rect::new(right.x, right.y.saturating_add(6), right.width, 2);
+            let groups = group_options();
+            Select::new(&groups, ctx.system)
+                .label("Group")
+                .placeholder("Select group")
+                .paint(group_area, group_area, buf, &mut form.group);
+        }
+
         let ay = inner.bottom().saturating_sub(1);
         let widths = [
-            paint::button_width("Save & connect"),
-            paint::button_width("Save"),
+            paint::button_width("Test connection"),
             paint::button_width("Cancel"),
+            paint::button_width("Save"),
+            paint::button_width("Save & connect"),
         ];
         let rects = layout::row_layout(Rect::new(inner.x, ay, inner.width, 1), &widths, 2);
+        form.test
+            .activation
+            .set_loading(matches!(self.state, ConnState::Testing { .. }));
         paint::button(
-            "Save & connect",
-            ButtonVariant::Primary,
-            FORM_CONNECT,
+            "Test connection",
+            ButtonVariant::Secondary,
+            FORM_TEST,
             rects[0],
             buf,
             ctx,
-            &mut form.save_connect,
+            &mut form.test,
+            matches!(self.state, ConnState::Testing { .. }),
+            bg,
+        );
+        paint::button(
+            "Cancel",
+            ButtonVariant::Quiet,
+            FORM_CANCEL,
+            rects[1],
+            buf,
+            ctx,
+            &mut form.cancel,
             false,
             bg,
         );
@@ -799,7 +985,7 @@ impl ConnectionsScreen {
             "Save",
             ButtonVariant::Secondary,
             FORM_SAVE,
-            rects[1],
+            rects[2],
             buf,
             ctx,
             &mut form.save,
@@ -807,16 +993,27 @@ impl ConnectionsScreen {
             bg,
         );
         paint::button(
-            "Cancel",
-            ButtonVariant::Quiet,
-            FORM_CANCEL,
-            rects[2],
+            "Save & connect",
+            ButtonVariant::Primary,
+            FORM_CONNECT,
+            rects[3],
             buf,
             ctx,
-            &mut form.cancel,
+            &mut form.save_connect,
             false,
             bg,
         );
+        if let ConnState::Tested(result) = &self.state {
+            let (glyph, message, style) = match result {
+                Ok(message) => ("✓", message.as_str(), t.secondary()),
+                Err(message) => ("!", message.as_str(), t.error_fg()),
+            };
+            let x = rects[3].right().saturating_add(2);
+            if x < inner.right() {
+                buf.set_string(x, ay, glyph, style.bg(bg));
+                buf.set_string(x.saturating_add(2), ay, message, style.bg(bg));
+            }
+        }
     }
 
     pub fn handle(&mut self, ev: &PageEvent, cx: &mut PageCtx<'_>) -> (Route, Option<ConnEvent>) {

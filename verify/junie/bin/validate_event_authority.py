@@ -153,7 +153,7 @@ def rust_inventory(path: Path) -> dict[str, list[str]]:
     inventory = {}
     for match in CALL_RE.finditer(masked):
         opening = masked.find("(", match.start(), match.end())
-        closing = matching_paren(body, opening)
+        closing = matching_paren(masked, opening)
         call = body[opening + 1 : closing]
         id_match = re.search(r'"((?:\\.|[^"\\])*)"', call)
         if not id_match:
