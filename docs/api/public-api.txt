@@ -36129,7 +36129,6 @@ pub termrock::widgets::CitationSourceType::Paper
 pub termrock::widgets::CitationSourceType::Url
 impl termrock::widgets::CitationSourceType
 pub const fn termrock::widgets::CitationSourceType::glyph(self, bool) -> &'static str
-pub const fn termrock::widgets::CitationSourceType::id(self) -> &'static str
 pub fn termrock::widgets::CitationSourceType::infer(&str) -> Self
 pub const fn termrock::widgets::CitationSourceType::letter(self) -> char
 impl core::clone::Clone for termrock::widgets::CitationSourceType

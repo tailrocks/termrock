@@ -475,6 +475,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0496 | `v0.14.0` | [Synchronize removed CollapsibleState protocol method](migrations/0496-v0.14.0-sync-removed-collapsible-state-method.md) |
 | 0497 | `v0.14.0` | [Synchronize removed SourceCitationState setter](migrations/0497-v0.14.0-sync-removed-source-citation-state-setter.md) |
 | 0498 | `v0.14.0` | [Synchronize removed OfflineSurface semantic method](migrations/0498-v0.14.0-sync-removed-offline-surface-method.md) |
+| 0499 | `v0.14.0` | [Synchronize removed CitationSourceType getter](migrations/0499-v0.14.0-sync-removed-citation-source-type-getter.md) |
 | 0464 | `v0.14.0` | [Stepper physical one-shot actions](migrations/0464-v0.14.0-stepper-one-shot-actions.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
