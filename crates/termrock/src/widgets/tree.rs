@@ -747,6 +747,47 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
         TreeOutcome::Ignored
     }
 
+    fn reconcile_projection(&mut self, nodes: &[TreeNode<'_, Id>]) {
+        let partial = self.virtual_total > nodes.len();
+        let had_cursor = self.cursor.is_some();
+        if partial {
+            self.collection
+                .set_virtual_window(self.virtual_window_start, self.virtual_total);
+        } else {
+            self.collection.clear_virtual_window();
+        }
+        if self.collection.active() != self.cursor.as_ref() {
+            self.collection.set_active(self.cursor.clone());
+        }
+
+        if had_cursor {
+            let cursor_node = self
+                .cursor
+                .as_ref()
+                .and_then(|cursor| nodes.iter().find(|node| &node.id == cursor));
+            if cursor_node.is_some_and(|node| !node.is_interactive())
+                || (!partial && cursor_node.is_none())
+            {
+                let repaired = nodes
+                    .iter()
+                    .find(|node| node.is_interactive())
+                    .map(|node| node.id.clone());
+                self.cursor = repaired.clone();
+                self.collection.set_active(repaired);
+            }
+        }
+
+        let keep_selected = self.selected.as_ref().is_some_and(|selected| {
+            match nodes.iter().find(|node| &node.id == selected) {
+                Some(node) => node.is_interactive(),
+                None => partial,
+            }
+        });
+        if !keep_selected {
+            self.selected = None;
+        }
+    }
+
     /// Routes a semantic intent (keymap / scene adapter).
     ///
     /// **Left (Collapse):** if expanded branch → toggle collapse; else move to parent.  
@@ -1444,6 +1485,8 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
         if area.is_empty() {
             state.offset = 0;
             state.viewport_height = 0;
+            state.reconcile_projection(self.nodes);
+            state.hovered = None;
             return;
         }
         // Filter chrome strip
@@ -1467,11 +1510,14 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
             .unwrap_or_else(|| self.tokens.junie_theme().surface);
         state.viewport_height = usize::from(body.height);
         state.virt.set_viewport_extent(body.height.max(1));
+        state.reconcile_projection(self.nodes);
         if body.is_empty() {
+            state.hovered = None;
             return;
         }
         if self.nodes.is_empty() {
             state.offset = 0;
+            state.hovered = None;
             if let Some(message) = self.empty_message {
                 let style = self.tokens.style(Role::TextMuted);
                 buffer.set_stringn(body.x, body.y, message, usize::from(body.width), style);
@@ -1562,6 +1608,14 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
                 state,
                 indent_step,
             );
+        }
+
+        if state
+            .hovered
+            .as_ref()
+            .is_some_and(|hovered| !state.regions.iter().any(|region| &region.id == hovered))
+        {
+            state.hovered = None;
         }
 
         if show_scrollbar {
@@ -1694,6 +1748,74 @@ mod tests {
             state.click(Position::new(10, 1)),
             TreeOutcome::Activated("ready")
         );
+    }
+
+    #[test]
+    fn full_projection_reconciles_removed_cursor_selection_and_hover() {
+        let tokens = DesignSystem::junie();
+        let first = [
+            TreeNode::new("a", Line::from("A"), 0),
+            TreeNode::new("b", Line::from("B"), 0),
+        ];
+        let second = [
+            TreeNode::new("b", Line::from("B"), 0),
+            TreeNode::new("c", Line::from("C"), 0),
+        ];
+        let area = Rect::new(0, 0, 24, 2);
+        let mut state = TreeState::new(Some("a"));
+        state.set_semantic_selection(Some("a"));
+        let mut buffer = Buffer::empty(area);
+        Tree::new(&first, &tokens).render(area, &mut buffer, &mut state);
+        assert_eq!(state.hover(Position::new(10, 0)), Some(&"a"));
+
+        Tree::new(&second, &tokens).render(area, &mut buffer, &mut state);
+
+        assert_eq!(state.cursor(), Some(&"b"));
+        assert_eq!(state.semantic_selection(), None);
+        assert_eq!(state.hovered(), None);
+        assert_eq!(
+            state.handle_intent(&second, UiIntent::Move(NavigationMove::Next)),
+            TreeOutcome::SelectionChanged("c")
+        );
+        assert_eq!(
+            state.handle_intent(&second, UiIntent::Activate),
+            TreeOutcome::Activated("c")
+        );
+    }
+
+    #[test]
+    fn partial_virtual_projection_preserves_off_window_identity() {
+        let tokens = DesignSystem::junie();
+        let nodes = [TreeNode::new("b", Line::from("B"), 0)];
+        let area = Rect::new(0, 0, 24, 1);
+        let mut state = TreeState::new(Some("a"));
+        state.set_semantic_selection(Some("a"));
+        state.set_virtual_window(1, 3);
+        let mut buffer = Buffer::empty(area);
+
+        Tree::new(&nodes, &tokens).render(area, &mut buffer, &mut state);
+
+        assert_eq!(state.cursor(), Some(&"a"));
+        assert_eq!(state.semantic_selection(), Some(&"a"));
+        assert_eq!(
+            state.handle_intent(&nodes, UiIntent::Move(NavigationMove::Next)),
+            TreeOutcome::Ignored
+        );
+    }
+
+    #[test]
+    fn full_projection_without_cursor_preserves_no_focus() {
+        let tokens = DesignSystem::junie();
+        let nodes = [TreeNode::new("a", Line::from("A"), 0)];
+        let area = Rect::new(0, 0, 24, 1);
+        let mut state = TreeState::default();
+        let mut buffer = Buffer::empty(area);
+
+        Tree::new(&nodes, &tokens).render(area, &mut buffer, &mut state);
+
+        assert_eq!(state.cursor(), None);
+        assert_eq!(state.semantic_selection(), None);
+        assert_eq!(state.regions().len(), 1);
     }
 
     #[test]
