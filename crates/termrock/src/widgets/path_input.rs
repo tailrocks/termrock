@@ -346,11 +346,6 @@ pub enum PathInputOutcome {
         /// Recalled path.
         path: String,
     },
-    /// Host should re-resolve existence (after quiet edit or explicit).
-    LookupRequested {
-        /// Path to look up (raw).
-        path: String,
-    },
     /// Paste request.
     ClipboardPasteRequest,
     /// Copy.
