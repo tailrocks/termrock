@@ -489,6 +489,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0510 | `v0.14.0` | [Synchronize removed BackgroundOutputBuffer emptiness getter](migrations/0510-v0.14.0-sync-removed-background-output-buffer-emptiness-getter.md) |
 | 0511 | `v0.14.0` | [Synchronize removed ConnectionKind glyph getter](migrations/0511-v0.14.0-sync-removed-connection-kind-glyph-getter.md) |
 | 0512 | `v0.14.0` | [Synchronize removed ConnectionStatus letter getter](migrations/0512-v0.14.0-sync-removed-connection-status-letter-getter.md) |
+| 0513 | `v0.14.0` | [Synchronize removed IntegrationHealth glyph getter](migrations/0513-v0.14.0-sync-removed-integration-health-glyph-getter.md) |
 | 0464 | `v0.14.0` | [Stepper physical one-shot actions](migrations/0464-v0.14.0-stepper-one-shot-actions.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an

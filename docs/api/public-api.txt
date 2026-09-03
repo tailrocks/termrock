@@ -13307,7 +13307,6 @@ impl termrock::patterns::IntegrationHealth
 pub const fn termrock::patterns::IntegrationHealth::can_disable(self) -> bool
 pub const fn termrock::patterns::IntegrationHealth::can_enable(self) -> bool
 pub const fn termrock::patterns::IntegrationHealth::can_restart(self) -> bool
-pub const fn termrock::patterns::IntegrationHealth::glyph(self, bool) -> &'static str
 pub const fn termrock::patterns::IntegrationHealth::id(self) -> &'static str
 pub const fn termrock::patterns::IntegrationHealth::label(self) -> &'static str
 pub const fn termrock::patterns::IntegrationHealth::needs_attention(self) -> bool
