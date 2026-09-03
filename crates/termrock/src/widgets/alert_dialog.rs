@@ -893,7 +893,7 @@ impl<'a, Id> AlertDialog<'a, Id> {
                     buffer.set_stringn(
                         x,
                         y,
-                        &take_display_cols(&msg, usize::from(w)),
+                        take_display_cols(&msg, usize::from(w)).as_ref(),
                         usize::from(w),
                         self.system.style(Role::TextMuted),
                     );
@@ -1097,7 +1097,7 @@ fn paint_typed_field(
         buffer.set_stringn(
             body.x,
             y.saturating_sub(1),
-            &take_display_cols(&ask, usize::from(body.width)),
+            take_display_cols(&ask, usize::from(body.width)).as_ref(),
             usize::from(body.width),
             system.style(Role::TextMuted),
         );
@@ -1117,7 +1117,7 @@ fn paint_typed_field(
     buffer.set_stringn(
         body.x,
         y,
-        &take_display_cols(&line, usize::from(body.width)),
+        take_display_cols(&line, usize::from(body.width)).as_ref(),
         usize::from(body.width),
         style,
     );

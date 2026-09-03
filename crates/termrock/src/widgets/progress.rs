@@ -818,7 +818,7 @@ impl<'a> ProgressBar<'a> {
             buffer.set_stringn(
                 area.x,
                 area.y,
-                &take_display_cols(title, usize::from(area.width)),
+                take_display_cols(title, usize::from(area.width)).as_ref(),
                 usize::from(area.width),
                 self.system.style(Role::TextStrong),
             );
@@ -834,7 +834,7 @@ impl<'a> ProgressBar<'a> {
             buffer.set_stringn(
                 area.x,
                 area.y + 2,
-                &take_display_cols(meta, usize::from(area.width)),
+                take_display_cols(meta, usize::from(area.width)).as_ref(),
                 usize::from(area.width),
                 self.system.style(Role::TextMuted),
             );
@@ -967,7 +967,7 @@ fn render_determinate(
             buffer.set_stringn(
                 mx,
                 area.y,
-                &take_display_cols(m, usize::from(mw)),
+                take_display_cols(m, usize::from(mw)).as_ref(),
                 usize::from(mw),
                 system.style(Role::TextMuted),
             );

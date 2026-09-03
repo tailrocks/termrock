@@ -597,7 +597,7 @@ impl TokenPaint<'_> {
             buffer.set_stringn(
                 body_x,
                 area.y,
-                &take_display_cols(&inner, usize::from(body_w)),
+                take_display_cols(&inner, usize::from(body_w)).as_ref(),
                 usize::from(body_w),
                 style,
             );

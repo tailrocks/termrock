@@ -965,7 +965,7 @@ impl<'a> SearchInput<'a> {
     fn status_label(&self, _state: &SearchInputState) -> String {
         if let Some(msg) = self.status_message {
             if matches!(self.status, SearchStatus::Error) {
-                return take_display_cols(msg, STATUS_LABEL_COLS);
+                return take_display_cols(msg, STATUS_LABEL_COLS).into_owned();
             }
         }
         let label = match self.status {
@@ -977,7 +977,7 @@ impl<'a> SearchInput<'a> {
         };
         // Display columns, not code points: a status label is painted, and a
         // wide glyph spends two cells (plans/022 Step 3).
-        crate::text::take_display_cols(&label, STATUS_LABEL_COLS)
+        crate::text::take_display_cols(&label, STATUS_LABEL_COLS).into_owned()
     }
 
     /// Semantic registration — status ids, never raw error dumps with secrets.

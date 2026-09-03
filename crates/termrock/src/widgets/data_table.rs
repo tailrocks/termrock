@@ -1858,7 +1858,7 @@ fn paint_plain_cell(
 ) {
     let w = usize::from(width);
     let shown = if kind.clips_instead_of_ellipsizing() {
-        take_display_cols(text, w)
+        take_display_cols(text, w).into_owned()
     } else {
         truncate_cols(text, w, ellipsis).into_owned()
     };
@@ -1890,7 +1890,7 @@ fn paint_status_line<RowId: Clone + Ord, ColId: Clone + PartialEq>(
     buffer.set_stringn(
         area.x,
         y,
-        &take_display_cols(&line, usize::from(area.width)),
+        take_display_cols(&line, usize::from(area.width)).as_ref(),
         usize::from(area.width),
         table.system.style(role),
     );
@@ -1913,7 +1913,7 @@ fn paint_group_band<RowId: Clone + Ord, ColId: Clone + PartialEq>(
     buffer.set_stringn(
         area.x,
         y,
-        &take_display_cols(&line, usize::from(area.width)),
+        take_display_cols(&line, usize::from(area.width)).as_ref(),
         usize::from(area.width),
         style,
     );

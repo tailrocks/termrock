@@ -1244,7 +1244,7 @@ impl<'a, Id: Clone + Ord, ColId: Clone + PartialEq> TreeTable<'a, Id, ColId> {
             buffer.set_stringn(
                 area.x,
                 fy,
-                &take_display_cols(&footer, usize::from(area.width)),
+                take_display_cols(&footer, usize::from(area.width)).as_ref(),
                 usize::from(area.width),
                 self.system.style(Role::TextMuted),
             );
@@ -1385,7 +1385,7 @@ fn paint_msg<Id: Clone + Ord, ColId: Clone + PartialEq>(
     buffer.set_stringn(
         area.x,
         y,
-        &take_display_cols(&line, usize::from(area.width)),
+        take_display_cols(&line, usize::from(area.width)).as_ref(),
         usize::from(area.width),
         table.system.style(role),
     );
@@ -1426,7 +1426,7 @@ fn paint_header<Id: Clone + Ord, ColId: Clone + PartialEq>(
         buffer.set_stringn(
             paint_x,
             y,
-            &take_display_cols(&title, usize::from(paint_w)),
+            take_display_cols(&title, usize::from(paint_w)).as_ref(),
             usize::from(paint_w),
             style,
         );
@@ -1519,7 +1519,7 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
         buffer.set_stringn(
             origin,
             y,
-            &take_display_cols(&line, usize::from(clip_right.saturating_sub(origin))),
+            take_display_cols(&line, usize::from(clip_right.saturating_sub(origin))).as_ref(),
             usize::from(clip_right.saturating_sub(origin)),
             base_style,
         );
@@ -1591,7 +1591,7 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
                 buffer.set_stringn(
                     x,
                     y,
-                    &take_display_cols(label, usize::from(remain)),
+                    take_display_cols(label, usize::from(remain)).as_ref(),
                     usize::from(remain),
                     cell_style,
                 );
@@ -1601,7 +1601,7 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
             buffer.set_stringn(
                 paint_x,
                 y,
-                &take_display_cols(text, usize::from(paint_w)),
+                take_display_cols(text, usize::from(paint_w)).as_ref(),
                 usize::from(paint_w),
                 cell_style,
             );

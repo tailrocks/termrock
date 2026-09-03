@@ -1118,7 +1118,7 @@ impl<'a, Id> HistoryPicker<'a, Id> {
             buffer.set_stringn(
                 inner.x,
                 y,
-                &take_display_cols(msg, usize::from(inner.width)),
+                take_display_cols(msg, usize::from(inner.width)).as_ref(),
                 usize::from(inner.width),
                 self.system.style(Role::TextMuted),
             );
@@ -1191,7 +1191,7 @@ impl<'a, Id> HistoryPicker<'a, Id> {
                 buffer.set_stringn(
                     footer.x,
                     footer.y,
-                    &take_display_cols(hint, usize::from(footer.width)),
+                    take_display_cols(hint, usize::from(footer.width)).as_ref(),
                     usize::from(footer.width),
                     self.system.style(Role::TextMuted),
                 );
@@ -1217,7 +1217,7 @@ impl<'a, Id> HistoryPicker<'a, Id> {
             buffer.set_stringn(
                 area.x,
                 area.y,
-                &take_display_cols(self.empty_message, usize::from(area.width)),
+                take_display_cols(self.empty_message, usize::from(area.width)).as_ref(),
                 usize::from(area.width),
                 self.system.style(Role::TextMuted),
             );
@@ -1248,7 +1248,7 @@ impl<'a, Id> HistoryPicker<'a, Id> {
                     buffer.set_stringn(
                         area.x,
                         y,
-                        &take_display_cols(g, usize::from(area.width)),
+                        take_display_cols(g, usize::from(area.width)).as_ref(),
                         usize::from(area.width),
                         self.system.style(Role::TextMuted),
                     );
@@ -1363,7 +1363,7 @@ impl<'a, Id> HistoryPicker<'a, Id> {
                     buffer.set_stringn(
                         x,
                         y,
-                        &take_display_cols(&display, usize::from(label_w)),
+                        take_display_cols(&display, usize::from(label_w)).as_ref(),
                         usize::from(label_w),
                         base,
                     );
@@ -1375,7 +1375,7 @@ impl<'a, Id> HistoryPicker<'a, Id> {
                     buffer.set_stringn(
                         mx,
                         y,
-                        &take_display_cols(m, usize::from(meta_w)),
+                        take_display_cols(m, usize::from(meta_w)).as_ref(),
                         usize::from(meta_w),
                         self.system.style(Role::TextMuted),
                     );
@@ -1398,7 +1398,7 @@ impl<'a, Id> HistoryPicker<'a, Id> {
         buffer.set_stringn(
             area.x,
             area.y,
-            &take_display_cols("Preview", usize::from(area.width)),
+            take_display_cols("Preview", usize::from(area.width)).as_ref(),
             usize::from(area.width),
             self.system.style(Role::TextMuted),
         );
@@ -1426,7 +1426,7 @@ impl<'a, Id> HistoryPicker<'a, Id> {
             buffer.set_stringn(
                 area.x,
                 y,
-                &take_display_cols(line, usize::from(area.width)),
+                take_display_cols(line, usize::from(area.width)).as_ref(),
                 usize::from(area.width),
                 self.system.style(Role::Text),
             );

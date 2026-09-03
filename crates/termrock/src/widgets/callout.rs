@@ -455,7 +455,7 @@ fn paint_feedback<Id: Clone + PartialEq>(
     buffer.set_stringn(
         title_x,
         y,
-        &take_display_cols(args.content.title, usize::from(title_w)),
+        take_display_cols(args.content.title, usize::from(title_w)).as_ref(),
         usize::from(title_w),
         title_style,
     );
@@ -473,7 +473,7 @@ fn paint_feedback<Id: Clone + PartialEq>(
             buffer.set_stringn(
                 content_x,
                 y,
-                &take_display_cols(desc, usize::from(content_w)),
+                take_display_cols(desc, usize::from(content_w)).as_ref(),
                 usize::from(content_w),
                 text_style,
             );
@@ -489,7 +489,7 @@ fn paint_feedback<Id: Clone + PartialEq>(
                 buffer.set_stringn(
                     content_x,
                     y,
-                    &take_display_cols(details, usize::from(content_w)),
+                    take_display_cols(details, usize::from(content_w)).as_ref(),
                     usize::from(content_w),
                     muted,
                 );
@@ -506,7 +506,7 @@ fn paint_feedback<Id: Clone + PartialEq>(
             buffer.set_stringn(
                 content_x,
                 y,
-                &take_display_cols(&line, usize::from(content_w)),
+                take_display_cols(&line, usize::from(content_w)).as_ref(),
                 usize::from(content_w),
                 muted,
             );
@@ -542,7 +542,7 @@ fn paint_feedback<Id: Clone + PartialEq>(
             buffer.set_stringn(
                 x,
                 y,
-                &take_display_cols(&label, usize::from(avail)),
+                take_display_cols(&label, usize::from(avail)).as_ref(),
                 usize::from(avail),
                 style,
             );

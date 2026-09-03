@@ -615,7 +615,7 @@ impl<'a> Text<'a> {
             let was = display_cols(&joined) > w;
             (t, was)
         } else {
-            let t = take_display_cols(&joined, w);
+            let t = take_display_cols(&joined, w).into_owned();
             let was = display_cols(&joined) > w;
             (t, was)
         };
@@ -643,7 +643,7 @@ impl<'a> Text<'a> {
                     break;
                 }
                 let remain = w - used;
-                let piece = take_display_cols(text, remain);
+                let piece = take_display_cols(text, remain).into_owned();
                 let pw = display_cols(&piece);
                 if piece.is_empty() && !text.is_empty() {
                     break;

@@ -1408,7 +1408,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
             buffer.set_stringn(
                 area.x.saturating_add(2),
                 area.y,
-                &take_display_cols(self.title, usize::from(area.width.saturating_sub(4))),
+                take_display_cols(self.title, usize::from(area.width.saturating_sub(4))).as_ref(),
                 usize::from(area.width.saturating_sub(4)),
                 self.system.style(Role::TextStrong),
             );
@@ -1443,7 +1443,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
                 buffer.set_stringn(
                     content.x,
                     content.y,
-                    &take_display_cols(&crumb, usize::from(content.width)),
+                    take_display_cols(&crumb, usize::from(content.width)).as_ref(),
                     usize::from(content.width),
                     self.system.style(Role::TextMuted),
                 );
@@ -1463,7 +1463,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
                     buffer.set_stringn(
                         field_area.x,
                         field_area.y,
-                        &take_display_cols(&prefix, usize::from(field_area.width)),
+                        take_display_cols(&prefix, usize::from(field_area.width)).as_ref(),
                         usize::from(field_area.width),
                         self.system.style(Role::TextMuted),
                     );
@@ -1532,7 +1532,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
                 buffer.set_stringn(
                     inner.x,
                     y,
-                    &take_display_cols(preview, usize::from(inner.width)),
+                    take_display_cols(preview, usize::from(inner.width)).as_ref(),
                     usize::from(inner.width),
                     self.system.style(Role::TextMuted),
                 );
@@ -1546,7 +1546,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
                 buffer.set_stringn(
                     footer.x,
                     footer.y,
-                    &take_display_cols(hint, usize::from(footer.width)),
+                    take_display_cols(hint, usize::from(footer.width)).as_ref(),
                     usize::from(footer.width),
                     self.system.style(Role::TextMuted),
                 );
@@ -1579,7 +1579,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
             buffer.set_stringn(
                 area.x,
                 area.y,
-                &take_display_cols(msg, usize::from(area.width)),
+                take_display_cols(msg, usize::from(area.width)).as_ref(),
                 usize::from(area.width),
                 style,
             );
@@ -1597,7 +1597,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
             buffer.set_stringn(
                 area.x,
                 area.y,
-                &take_display_cols(&line, usize::from(area.width)),
+                take_display_cols(&line, usize::from(area.width)).as_ref(),
                 usize::from(area.width),
                 self.system.style(Role::TextMuted),
             );
@@ -1607,7 +1607,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
                 buffer.set_stringn(
                     area.x,
                     area.y.saturating_add(1),
-                    &take_display_cols("Recent queries", usize::from(area.width)),
+                    take_display_cols("Recent queries", usize::from(area.width)).as_ref(),
                     usize::from(area.width),
                     self.system.style(Role::TextMuted),
                 );
@@ -1623,7 +1623,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
                     buffer.set_stringn(
                         area.x,
                         y,
-                        &take_display_cols(h, usize::from(area.width)),
+                        take_display_cols(h, usize::from(area.width)).as_ref(),
                         usize::from(area.width),
                         self.system.style(Role::Text),
                     );
@@ -1659,7 +1659,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
                     buffer.set_stringn(
                         area.x,
                         y,
-                        &take_display_cols(g, usize::from(area.width)),
+                        take_display_cols(g, usize::from(area.width)).as_ref(),
                         usize::from(area.width),
                         style,
                     );
@@ -1772,7 +1772,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
                     buffer.set_stringn(
                         x,
                         y,
-                        &take_display_cols(&entry.label, usize::from(label_w)),
+                        take_display_cols(&entry.label, usize::from(label_w)).as_ref(),
                         usize::from(label_w),
                         style,
                     );
@@ -1785,7 +1785,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
                     buffer.set_stringn(
                         sx,
                         y,
-                        &take_display_cols(sc, usize::from(sc_w)),
+                        take_display_cols(sc, usize::from(sc_w)).as_ref(),
                         usize::from(sc_w),
                         self.system.style(Role::TextMuted),
                     );

@@ -826,7 +826,7 @@ fn paint_ack_field(
     buffer.set_stringn(
         body.x,
         y.saturating_sub(1),
-        &take_display_cols(&ask, usize::from(body.width)),
+        take_display_cols(&ask, usize::from(body.width)).as_ref(),
         usize::from(body.width),
         theme.muted().bg(bg),
     );
@@ -839,7 +839,7 @@ fn paint_ack_field(
     buffer.set_stringn(
         body.x,
         y,
-        &take_display_cols(&field, usize::from(body.width)),
+        take_display_cols(&field, usize::from(body.width)).as_ref(),
         usize::from(body.width),
         style,
     );
@@ -1833,7 +1833,7 @@ impl<'a> Dialog<'a> {
             buffer.set_stringn(
                 title_x,
                 title_y,
-                &take_display_cols(&title, usize::from(title_w)),
+                take_display_cols(&title, usize::from(title_w)).as_ref(),
                 usize::from(title_w),
                 title_style,
             );
@@ -1860,7 +1860,7 @@ impl<'a> Dialog<'a> {
                 buffer.set_stringn(
                     inner.x,
                     y,
-                    &take_display_cols(d, usize::from(inner.width)),
+                    take_display_cols(d, usize::from(inner.width)).as_ref(),
                     usize::from(inner.width),
                     theme.muted().bg(bg),
                 );
@@ -1949,7 +1949,7 @@ impl<'a> Dialog<'a> {
                 buffer.set_stringn(
                     inner.x,
                     y,
-                    &take_display_cols(msg, usize::from(inner.width)),
+                    take_display_cols(msg, usize::from(inner.width)).as_ref(),
                     usize::from(inner.width),
                     self.tokens.style(Role::Danger).bg(bg),
                 );
@@ -2044,7 +2044,7 @@ impl<'a> Dialog<'a> {
                 buffer.set_stringn(
                     footer.x,
                     footer.y,
-                    &take_display_cols(hint, usize::from(footer.width)),
+                    take_display_cols(hint, usize::from(footer.width)).as_ref(),
                     usize::from(footer.width),
                     self.tokens.junie_theme().key_hint_action(),
                 );

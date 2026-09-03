@@ -1017,7 +1017,7 @@ impl<'a> Drawer<'a> {
                 buffer.set_stringn(
                     inner.x,
                     inner.y,
-                    &take_display_cols(t, usize::from(inner.width)),
+                    take_display_cols(t, usize::from(inner.width)).as_ref(),
                     usize::from(inner.width),
                     self.system
                         .style(Role::TextStrong)
@@ -1052,7 +1052,7 @@ impl<'a> Drawer<'a> {
                 buffer.set_stringn(
                     inner.x,
                     y,
-                    &take_display_cols(title, usize::from(inner.width)),
+                    take_display_cols(title, usize::from(inner.width)).as_ref(),
                     usize::from(inner.width),
                     self.system
                         .style(Role::TextStrong)
@@ -1073,7 +1073,7 @@ impl<'a> Drawer<'a> {
                 buffer.set_stringn(
                     inner.x,
                     y,
-                    &take_display_cols(ft, usize::from(inner.width)),
+                    take_display_cols(ft, usize::from(inner.width)).as_ref(),
                     usize::from(inner.width),
                     self.system.style(Role::TextMuted),
                 );

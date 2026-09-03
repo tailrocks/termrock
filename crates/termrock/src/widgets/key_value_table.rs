@@ -1420,7 +1420,7 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
                     x,
                     area.y,
                     u16::try_from(key_w).unwrap_or(8),
-                    &take_display_cols(field.key, key_w),
+                    take_display_cols(field.key, key_w).as_ref(),
                     self.system.style(Role::TextMuted),
                 );
                 x = x.saturating_add(u16::try_from(key_w).unwrap_or(8));
@@ -1440,7 +1440,7 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
                         x,
                         area.y,
                         TYPE_W,
-                        &take_display_cols(t, usize::from(TYPE_W)),
+                        take_display_cols(t, usize::from(TYPE_W)).as_ref(),
                         self.system.style(Role::TextMuted),
                     );
                     x = x.saturating_add(TYPE_W + 1);
@@ -1452,7 +1452,7 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
                         x,
                         area.y,
                         SOURCE_W,
-                        &take_display_cols(s, usize::from(SOURCE_W)),
+                        take_display_cols(s, usize::from(SOURCE_W)).as_ref(),
                         self.system.style(Role::TextMuted),
                     );
                     x = x.saturating_add(SOURCE_W + 1);
@@ -1470,7 +1470,7 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
                         x,
                         area.y,
                         half.saturating_sub(1),
-                        &take_display_cols(&body, usize::from(half.saturating_sub(1))),
+                        take_display_cols(&body, usize::from(half.saturating_sub(1))).as_ref(),
                         value_style,
                     );
                     x = x.saturating_add(half);
@@ -1481,7 +1481,8 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
                         x,
                         area.y,
                         area.right().saturating_sub(x),
-                        &take_display_cols(other, usize::from(area.right().saturating_sub(x))),
+                        take_display_cols(other, usize::from(area.right().saturating_sub(x)))
+                            .as_ref(),
                         if changed {
                             self.system.style(Role::Warning)
                         } else {
@@ -1495,7 +1496,8 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
                         value
                     };
                     // copy affordance when selected + copyable
-                    let mut text = take_display_cols(&body, usize::from(remain.saturating_sub(3)));
+                    let mut text = take_display_cols(&body, usize::from(remain.saturating_sub(3)))
+                        .into_owned();
                     if selected && field.copyable {
                         if state.copied.as_ref() == Some(&field.id) {
                             text.push_str(" ✓");

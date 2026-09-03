@@ -1255,7 +1255,7 @@ impl<'a, Id> FullscreenViewer<'a, Id> {
                 buffer.set_stringn(
                     inner.x,
                     y,
-                    &take_display_cols(&path, usize::from(inner.width)),
+                    take_display_cols(&path, usize::from(inner.width)).as_ref(),
                     usize::from(inner.width),
                     style,
                 );
@@ -1323,7 +1323,7 @@ impl<'a, Id> FullscreenViewer<'a, Id> {
             buffer.set_stringn(
                 inner.x,
                 y,
-                &take_display_cols(&q, usize::from(inner.width)),
+                take_display_cols(&q, usize::from(inner.width)).as_ref(),
                 usize::from(inner.width),
                 style,
             );
@@ -1351,7 +1351,7 @@ impl<'a, Id> FullscreenViewer<'a, Id> {
         buffer.set_stringn(
             inner.x,
             y,
-            &take_display_cols(hint, usize::from(inner.width)),
+            take_display_cols(hint, usize::from(inner.width)).as_ref(),
             usize::from(inner.width),
             style,
         );
@@ -1444,7 +1444,7 @@ impl<'a> SemanticZoomBadge<'a> {
         buffer.set_stringn(
             area.x,
             area.y,
-            &take_display_cols(label, usize::from(area.width)),
+            take_display_cols(label, usize::from(area.width)).as_ref(),
             usize::from(area.width),
             self.system.style(Role::TextMuted),
         );
@@ -1748,7 +1748,7 @@ mod tests {
         buf.set_stringn(
             area.x,
             area.y,
-            &take_display_cols(s, usize::from(area.width)),
+            take_display_cols(s, usize::from(area.width)).as_ref(),
             usize::from(area.width),
             ratatui_core::style::Style::default(),
         );

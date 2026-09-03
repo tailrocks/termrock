@@ -1002,7 +1002,7 @@ impl<'a, Id> RadioGroup<'a, Id> {
                 s.push(']');
             }
         }
-        take_display_cols(&s, max_cols)
+        take_display_cols(&s, max_cols).into_owned()
     }
 
     fn collection_items(&self) -> Vec<crate::interaction::CollectionItem<Id>>

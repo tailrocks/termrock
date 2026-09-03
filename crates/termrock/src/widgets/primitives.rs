@@ -1075,10 +1075,10 @@ impl<'a> IconButton<'a> {
         let g = self.face_glyph();
         let gw = display_cols(g);
         if gw <= max_cols && gw > 0 {
-            return take_display_cols(g, max_cols);
+            return take_display_cols(g, max_cols).into_owned();
         }
         if let Some(fb) = self.text_fallback {
-            return take_display_cols(fb, max_cols.max(1));
+            return take_display_cols(fb, max_cols.max(1)).into_owned();
         }
         // First char of a11y name as last-resort fallback
         let ch = self
@@ -1087,7 +1087,7 @@ impl<'a> IconButton<'a> {
             .next()
             .unwrap_or('?')
             .to_ascii_uppercase();
-        take_display_cols(&ch.to_string(), max_cols.max(1))
+        take_display_cols(&ch.to_string(), max_cols.max(1)).into_owned()
     }
 }
 

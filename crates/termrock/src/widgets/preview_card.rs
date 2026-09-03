@@ -1147,7 +1147,7 @@ impl<'a> PreviewCard<'a> {
         buffer.set_stringn(
             inner.x,
             y,
-            &take_display_cols(&title, usize::from(inner.width)),
+            take_display_cols(&title, usize::from(inner.width)).as_ref(),
             usize::from(inner.width),
             title_style,
         );
@@ -1157,7 +1157,7 @@ impl<'a> PreviewCard<'a> {
                 buffer.set_stringn(
                     inner.x,
                     y,
-                    &take_display_cols(sub, usize::from(inner.width)),
+                    take_display_cols(sub, usize::from(inner.width)).as_ref(),
                     usize::from(inner.width),
                     self.system.style(Role::TextMuted),
                 );
@@ -1176,7 +1176,7 @@ impl<'a> PreviewCard<'a> {
                 buffer.set_stringn(
                     inner.x,
                     y,
-                    &take_display_cols(&line, usize::from(inner.width)),
+                    take_display_cols(&line, usize::from(inner.width)).as_ref(),
                     usize::from(inner.width),
                     self.system.style(Role::Text),
                 );
@@ -1212,7 +1212,7 @@ impl<'a> PreviewCard<'a> {
                 buffer.set_stringn(
                     inner.x,
                     y,
-                    &take_display_cols(&line, usize::from(inner.width)),
+                    take_display_cols(&line, usize::from(inner.width)).as_ref(),
                     usize::from(inner.width),
                     self.system.style(Role::Danger),
                 );
@@ -1244,7 +1244,7 @@ impl<'a> PreviewCard<'a> {
                     buffer.set_stringn(
                         inner.x,
                         y.saturating_add(i as u16),
-                        &take_display_cols(line, usize::from(inner.width)),
+                        take_display_cols(line, usize::from(inner.width)).as_ref(),
                         usize::from(inner.width),
                         self.system.style(Role::Text),
                     );
@@ -1263,7 +1263,7 @@ impl<'a> PreviewCard<'a> {
         buffer.set_stringn(
             inner.x,
             y,
-            &take_display_cols(hint, usize::from(inner.width)),
+            take_display_cols(hint, usize::from(inner.width)).as_ref(),
             usize::from(inner.width),
             self.system.style(Role::TextMuted),
         );

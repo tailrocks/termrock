@@ -1783,7 +1783,7 @@ fn horizontal_slice(s: &str, scroll_x: u16, width: u16) -> String {
     }
     // Skip scroll_x columns then take width.
     let skipped = take_display_cols_from(s, usize::from(scroll_x));
-    take_display_cols(&skipped, usize::from(width))
+    take_display_cols(&skipped, usize::from(width)).into_owned()
 }
 
 /// Drop the first `skip` display columns of `s`, return remainder.

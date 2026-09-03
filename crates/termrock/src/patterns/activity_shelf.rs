@@ -251,7 +251,7 @@ impl ActivityItem {
             s.push(' ');
             s.push_str(e);
         }
-        take_display_cols(&s, max_cols)
+        take_display_cols(&s, max_cols).into_owned()
     }
 
     /// One-line detail for summary.

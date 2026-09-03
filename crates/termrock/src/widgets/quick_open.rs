@@ -1512,7 +1512,7 @@ impl<'a, Id> QuickOpen<'a, Id> {
                 buffer.set_stringn(
                     inner.x,
                     inner.bottom().saturating_sub(1),
-                    &take_display_cols(&line, usize::from(inner.width)),
+                    take_display_cols(&line, usize::from(inner.width)).as_ref(),
                     usize::from(inner.width),
                     self.system.style(Role::TextMuted),
                 );
@@ -1571,7 +1571,7 @@ impl<'a, Id> QuickOpen<'a, Id> {
             buffer.set_stringn(
                 x,
                 area.y,
-                &take_display_cols(&text, usize::from(w)),
+                take_display_cols(&text, usize::from(w)).as_ref(),
                 usize::from(w),
                 style,
             );
@@ -1598,7 +1598,7 @@ impl<'a, Id> QuickOpen<'a, Id> {
             buffer.set_stringn(
                 area.x,
                 area.y,
-                &take_display_cols(msg, usize::from(area.width)),
+                take_display_cols(msg, usize::from(area.width)).as_ref(),
                 usize::from(area.width),
                 self.system.style(Role::TextMuted),
             );
@@ -1615,7 +1615,7 @@ impl<'a, Id> QuickOpen<'a, Id> {
             buffer.set_stringn(
                 area.x,
                 area.y,
-                &take_display_cols(msg, usize::from(area.width)),
+                take_display_cols(msg, usize::from(area.width)).as_ref(),
                 usize::from(area.width),
                 self.system.style(Role::TextMuted),
             );
@@ -1691,7 +1691,7 @@ impl<'a, Id> QuickOpen<'a, Id> {
                 buffer.set_stringn(
                     x,
                     y,
-                    &take_display_cols(&badge, usize::from(bw)),
+                    take_display_cols(&badge, usize::from(bw)).as_ref(),
                     usize::from(bw),
                     self.system.style(Role::TextMuted),
                 );
@@ -1721,7 +1721,7 @@ impl<'a, Id> QuickOpen<'a, Id> {
                     buffer.set_stringn(
                         x,
                         y,
-                        &take_display_cols(&item.label, usize::from(label_w)),
+                        take_display_cols(&item.label, usize::from(label_w)).as_ref(),
                         usize::from(label_w),
                         base,
                     );
@@ -1767,7 +1767,7 @@ impl<'a, Id> QuickOpen<'a, Id> {
         buffer.set_stringn(
             area.x,
             area.y,
-            &take_display_cols(header, usize::from(area.width)),
+            take_display_cols(header, usize::from(area.width)).as_ref(),
             usize::from(area.width),
             self.system.style(Role::TextMuted),
         );
@@ -1784,7 +1784,7 @@ impl<'a, Id> QuickOpen<'a, Id> {
                     buffer.set_stringn(
                         area.x,
                         y,
-                        &take_display_cols(line.as_str(), usize::from(area.width)),
+                        take_display_cols(line.as_str(), usize::from(area.width)).as_ref(),
                         usize::from(area.width),
                         self.system.style(Role::Text),
                     );
@@ -1796,7 +1796,7 @@ impl<'a, Id> QuickOpen<'a, Id> {
                     buffer.set_stringn(
                         area.x,
                         y,
-                        &take_display_cols(s.as_str(), usize::from(area.width)),
+                        take_display_cols(s.as_str(), usize::from(area.width)).as_ref(),
                         usize::from(area.width),
                         self.system.style(Role::TextMuted),
                     );
@@ -1808,7 +1808,7 @@ impl<'a, Id> QuickOpen<'a, Id> {
                     buffer.set_stringn(
                         area.x,
                         y,
-                        &take_display_cols(msg, usize::from(area.width)),
+                        take_display_cols(msg, usize::from(area.width)).as_ref(),
                         usize::from(area.width),
                         self.system.style(Role::TextMuted),
                     );
@@ -1820,7 +1820,7 @@ impl<'a, Id> QuickOpen<'a, Id> {
                         buffer.set_stringn(
                             area.x,
                             y,
-                            &take_display_cols(d, usize::from(area.width)),
+                            take_display_cols(d, usize::from(area.width)).as_ref(),
                             usize::from(area.width),
                             self.system.style(Role::TextMuted),
                         );

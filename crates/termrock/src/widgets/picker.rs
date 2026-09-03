@@ -587,7 +587,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
                 buffer.set_stringn(
                     list_area.x,
                     list_area.y,
-                    &take_display_cols(&msg, usize::from(list_area.width)),
+                    take_display_cols(&msg, usize::from(list_area.width)).as_ref(),
                     usize::from(list_area.width),
                     self.system.style(Role::TextMuted),
                 );
@@ -635,7 +635,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
         buffer.set_stringn(
             inner.x,
             y,
-            &take_display_cols(self.title, usize::from(inner.width)),
+            take_display_cols(self.title, usize::from(inner.width)).as_ref(),
             usize::from(inner.width),
             theme.title().bg(bg),
         );
@@ -680,7 +680,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
                     buffer.set_stringn(
                         text_x,
                         y,
-                        &take_display_cols(self.placeholder, usize::from(text_w)),
+                        take_display_cols(self.placeholder, usize::from(text_w)).as_ref(),
                         usize::from(text_w),
                         theme.placeholder(visual),
                     );
@@ -688,7 +688,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
                     buffer.set_stringn(
                         text_x,
                         y,
-                        &take_display_cols(query, usize::from(text_w)),
+                        take_display_cols(query, usize::from(text_w)).as_ref(),
                         usize::from(text_w),
                         fs.add_modifier(Modifier::UNDERLINED)
                             .underline_color(theme.accent),
@@ -740,7 +740,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
             buffer.set_stringn(
                 list_area.x,
                 list_area.y,
-                &take_display_cols(&msg, usize::from(list_area.width)),
+                take_display_cols(&msg, usize::from(list_area.width)).as_ref(),
                 usize::from(list_area.width),
                 theme.muted().bg(bg),
             );

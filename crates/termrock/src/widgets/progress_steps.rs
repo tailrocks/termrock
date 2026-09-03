@@ -680,7 +680,7 @@ impl<'a> ProgressSteps<'a> {
             buffer.set_stringn(
                 area.x,
                 area.y,
-                &take_display_cols(&line, usize::from(area.width)),
+                take_display_cols(&line, usize::from(area.width)).as_ref(),
                 usize::from(area.width),
                 self.system.style(Role::Text),
             );
@@ -692,7 +692,7 @@ impl<'a> ProgressSteps<'a> {
             buffer.set_stringn(
                 area.x,
                 y,
-                &take_display_cols(title, usize::from(area.width)),
+                take_display_cols(title, usize::from(area.width)).as_ref(),
                 usize::from(area.width),
                 self.system
                     .style(Role::TextStrong)
@@ -758,7 +758,7 @@ impl<'a> ProgressSteps<'a> {
             buffer.set_stringn(
                 area.x,
                 y,
-                &take_display_cols(&line, usize::from(area.width)),
+                take_display_cols(&line, usize::from(area.width)).as_ref(),
                 usize::from(area.width),
                 style,
             );
@@ -789,7 +789,8 @@ impl<'a> ProgressSteps<'a> {
                     buffer.set_stringn(
                         area.x.saturating_add(4),
                         y + 1,
-                        &take_display_cols(&detail, usize::from(area.width.saturating_sub(4))),
+                        take_display_cols(&detail, usize::from(area.width.saturating_sub(4)))
+                            .as_ref(),
                         usize::from(area.width.saturating_sub(4)),
                         self.system.style(Role::TextMuted),
                     );

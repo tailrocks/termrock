@@ -1325,7 +1325,7 @@ impl<'a> ObjectInspector<'a> {
                 buffer.set_stringn(
                     area.x,
                     y,
-                    &take_display_cols(&title, usize::from(area.width)),
+                    take_display_cols(&title, usize::from(area.width)).as_ref(),
                     usize::from(area.width),
                     self.system.style(Role::TextStrong),
                 );
@@ -1393,7 +1393,7 @@ impl<'a> ObjectInspector<'a> {
             buffer.set_stringn(
                 area.x,
                 y,
-                &take_display_cols(&line, usize::from(area.width)),
+                take_display_cols(&line, usize::from(area.width)).as_ref(),
                 usize::from(area.width),
                 self.system.style(Role::TextMuted),
             );
@@ -1512,7 +1512,7 @@ impl<'a> ObjectInspector<'a> {
             buffer.set_stringn(
                 x,
                 y,
-                &take_display_cols(&line, usize::from(remain)),
+                take_display_cols(&line, usize::from(remain)).as_ref(),
                 usize::from(remain),
                 style,
             );
@@ -1558,7 +1558,7 @@ impl<'a> ObjectInspector<'a> {
         buffer.set_stringn(
             area.x,
             y,
-            &take_display_cols(&line, usize::from(area.width)),
+            take_display_cols(&line, usize::from(area.width)).as_ref(),
             usize::from(area.width),
             self.system.style(Role::TextMuted),
         );

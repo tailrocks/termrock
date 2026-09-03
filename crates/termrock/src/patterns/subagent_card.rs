@@ -1048,7 +1048,7 @@ impl<'a> SubagentCard<'a> {
         let mut text = format!("{indent}{line}");
         if let Some(s) = run.latest_summary.as_ref().or(run.result_summary.as_ref()) {
             text.push_str(" · ");
-            text.push_str(&take_display_cols(s, 24));
+            text.push_str(take_display_cols(s, 24).as_ref());
         }
         let style = if state.focused {
             self.system.style(Role::Text).add_modifier(Modifier::BOLD)

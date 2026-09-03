@@ -529,7 +529,7 @@ impl BackgroundTask {
     pub fn meta_line(&self) -> String {
         let mut parts = Vec::new();
         if let Some(c) = &self.command {
-            parts.push(take_display_cols(c, 40));
+            parts.push(take_display_cols(c, 40).into_owned());
         }
         if let Some(r) = &self.resources {
             parts.push(r.clone());
@@ -1234,10 +1234,11 @@ impl<'a> BackgroundTaskPanel<'a> {
             self.system.paint_row(
                 buffer,
                 Rect::new(command_x, y, command_width, 1),
-                &take_display_cols(
+                take_display_cols(
                     task.command.as_deref().unwrap_or(&task.title),
                     usize::from(command_width),
-                ),
+                )
+                .as_ref(),
                 self.system.style(Role::Text),
             );
         }

@@ -1575,9 +1575,10 @@ fn paint_word_line(
         // inside it is new content and must not inherit the strike.
         .remove_modifier(Modifier::CROSSED_OUT);
         let remain = max_x.saturating_sub(x);
-        let t = take_display_cols(&escape_diff_text(w.text), usize::from(remain));
-        let wcols = display_cols(&t) as u16;
-        buffer.set_stringn(x, area.y, &t, usize::from(remain), st);
+        let escaped = escape_diff_text(w.text);
+        let t = take_display_cols(&escaped, usize::from(remain));
+        let wcols = display_cols(t.as_ref()) as u16;
+        buffer.set_stringn(x, area.y, t.as_ref(), usize::from(remain), st);
         x = x.saturating_add(wcols);
         let _ = surface;
     }

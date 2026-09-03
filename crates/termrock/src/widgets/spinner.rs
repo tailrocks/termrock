@@ -592,7 +592,7 @@ impl<'a> ActivityIndicator<'a> {
             buffer.set_stringn(
                 area.x.saturating_add(2),
                 area.y,
-                &take_display_cols(self.label, usize::from(area.width.saturating_sub(2))),
+                take_display_cols(self.label, usize::from(area.width.saturating_sub(2))).as_ref(),
                 usize::from(area.width.saturating_sub(2)),
                 theme.secondary(),
             );
@@ -602,7 +602,7 @@ impl<'a> ActivityIndicator<'a> {
                 buffer.set_stringn(
                     area.x.saturating_add(2),
                     area.y + 1,
-                    &take_display_cols(detail, usize::from(area.width.saturating_sub(2))),
+                    take_display_cols(detail, usize::from(area.width.saturating_sub(2))).as_ref(),
                     usize::from(area.width.saturating_sub(2)),
                     theme.muted(),
                 );

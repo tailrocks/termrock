@@ -1028,7 +1028,7 @@ impl<'a> Stepper<'a> {
             buffer.set_stringn(
                 rect.x,
                 rect.y,
-                &take_display_cols(&cell, usize::from(w)),
+                take_display_cols(&cell, usize::from(w)).as_ref(),
                 usize::from(w),
                 style,
             );
@@ -1063,7 +1063,7 @@ impl<'a> Stepper<'a> {
             buffer.set_stringn(
                 rect.x,
                 rect.y,
-                &take_display_cols(&line, usize::from(area.width)),
+                take_display_cols(&line, usize::from(area.width)).as_ref(),
                 usize::from(area.width),
                 style,
             );
@@ -1083,7 +1083,7 @@ impl<'a> Stepper<'a> {
                 buffer.set_stringn(
                     area.x,
                     y,
-                    &take_display_cols(&d, usize::from(area.width)),
+                    take_display_cols(&d, usize::from(area.width)).as_ref(),
                     usize::from(area.width),
                     if state.enabled {
                         self.system.style(Role::TextMuted)
@@ -1135,7 +1135,7 @@ impl<'a> Stepper<'a> {
         buffer.set_stringn(
             area.x,
             area.y,
-            &take_display_cols(&line, usize::from(area.width)),
+            take_display_cols(&line, usize::from(area.width)).as_ref(),
             usize::from(area.width),
             style,
         );
@@ -1176,7 +1176,7 @@ impl<'a> Stepper<'a> {
         buffer.set_stringn(
             area.x,
             area.y,
-            &take_display_cols(&line, usize::from(area.width)),
+            take_display_cols(&line, usize::from(area.width)).as_ref(),
             usize::from(area.width),
             style,
         );
@@ -1210,7 +1210,7 @@ impl<'a> Stepper<'a> {
                 buffer.set_stringn(
                     rect.x,
                     rect.y,
-                    &take_display_cols(&row, usize::from(area.width)),
+                    take_display_cols(&row, usize::from(area.width)).as_ref(),
                     usize::from(area.width),
                     style,
                 );

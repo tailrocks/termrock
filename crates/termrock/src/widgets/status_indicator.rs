@@ -348,7 +348,7 @@ impl<'a> StatusIndicator<'a> {
         buffer.set_stringn(
             area.x,
             area.y,
-            &take_display_cols(&text, usize::from(area.width)),
+            take_display_cols(&text, usize::from(area.width)).as_ref(),
             usize::from(area.width),
             style,
         );

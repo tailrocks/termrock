@@ -714,18 +714,16 @@ impl<'a> Tooltip<'a> {
                     y = y.saturating_add(1);
                 }
                 if y < area.bottom() {
-                    let mut body = take_display_cols(self.content.body, usize::from(area.width));
+                    let mut body =
+                        take_display_cols(self.content.body, usize::from(area.width)).into_owned();
                     if let Some(sc) = self.content.shortcut {
                         let extra = format!("  {}", sc);
-                        let combined = format!(
-                            "{}{}",
-                            take_display_cols(
-                                self.content.body,
-                                usize::from(area.width.saturating_sub(display_cols(&extra) as u16))
-                            ),
-                            extra
+                        let clipped = take_display_cols(
+                            self.content.body,
+                            usize::from(area.width.saturating_sub(display_cols(&extra) as u16)),
                         );
-                        body = take_display_cols(&combined, usize::from(area.width));
+                        let combined = format!("{}{}", clipped, extra);
+                        body = take_display_cols(&combined, usize::from(area.width)).into_owned();
                     }
                     buffer.set_stringn(area.x, y, &body, usize::from(area.width), muted);
                 }

@@ -450,10 +450,11 @@ impl<'a, Id> SegmentedControl<'a, Id> {
             .map(|t| display_cols(t).saturating_add(1))
             .unwrap_or(0);
         let inner_budget = usize::from(rect.right().saturating_sub(x)).saturating_sub(trail_cols);
-        let inner = take_display_cols(&item.face_inner(), inner_budget);
-        let iw = display_cols(&inner);
+        let face = item.face_inner();
+        let inner = take_display_cols(&face, inner_budget);
+        let iw = display_cols(inner.as_ref());
         if iw > 0 {
-            buffer.set_stringn(x, rect.y, &inner, iw, style);
+            buffer.set_stringn(x, rect.y, inner.as_ref(), iw, style);
             x = x.saturating_add(u16::try_from(iw).unwrap_or(u16::MAX));
         }
         let Some(trail) = trailing else {

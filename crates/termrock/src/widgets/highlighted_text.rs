@@ -647,7 +647,7 @@ impl<'a> HighlightedText<'a> {
         }
         // Final col clamp
         if display_cols(&text) > max {
-            text = take_display_cols(&text, max);
+            text = take_display_cols(&text, max).into_owned();
         }
         (text, shifted, visible)
     }

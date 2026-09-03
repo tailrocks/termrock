@@ -1096,7 +1096,7 @@ impl<'a> KeyboardHelp<'a> {
             buffer.set_stringn(
                 x,
                 y,
-                &take_display_cols(&label, usize::from(lw)),
+                take_display_cols(&label, usize::from(lw)).as_ref(),
                 usize::from(lw),
                 text_style,
             );
@@ -1171,7 +1171,7 @@ impl<'a> KeyboardHelp<'a> {
                 buffer.set_stringn(
                     inner.x,
                     y,
-                    &take_display_cols(&e.category, usize::from(inner.width)),
+                    take_display_cols(&e.category, usize::from(inner.width)).as_ref(),
                     usize::from(inner.width),
                     self.system
                         .style(Role::TextStrong)
@@ -1233,7 +1233,7 @@ impl<'a> KeyboardHelp<'a> {
             buffer.set_stringn(
                 inner.x,
                 y,
-                &take_display_cols(&e.chord, 10),
+                take_display_cols(&e.chord, 10).as_ref(),
                 usize::from(chord_w.min(inner.width)),
                 if self.colorless {
                     self.system.style(Role::TextStrong)
@@ -1259,7 +1259,7 @@ impl<'a> KeyboardHelp<'a> {
                 buffer.set_stringn(
                     rest_x,
                     y,
-                    &take_display_cols(&rest, usize::from(rest_w)),
+                    take_display_cols(&rest, usize::from(rest_w)).as_ref(),
                     usize::from(rest_w),
                     style,
                 );

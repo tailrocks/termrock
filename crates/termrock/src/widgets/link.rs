@@ -537,7 +537,8 @@ impl<'a> Link<'a> {
         if parts.root.is_empty() {
             return parts;
         }
-        let text = take_display_cols(&self.decorated(state), usize::from(parts.root.width));
+        let decorated = self.decorated(state);
+        let text = take_display_cols(&decorated, usize::from(parts.root.width));
         let style = self.style(state);
         buffer.set_stringn(
             parts.root.x,

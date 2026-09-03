@@ -607,11 +607,12 @@ impl<'a> Collapsible<'a> {
                 let rule = self.system.glyphs.rule();
                 let fill_x = parts.trigger.x.saturating_add(used);
                 let fill_w = parts.trigger.width.saturating_sub(used);
-                let pad = take_display_cols(&rule.repeat(usize::from(fill_w)), usize::from(fill_w));
+                let rule_fill = rule.repeat(usize::from(fill_w));
+                let pad = take_display_cols(&rule_fill, usize::from(fill_w));
                 buffer.set_stringn(
                     fill_x,
                     parts.trigger.y,
-                    &pad,
+                    pad.as_ref(),
                     usize::from(fill_w),
                     self.system.style(Role::Border),
                 );

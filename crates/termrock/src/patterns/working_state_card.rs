@@ -334,7 +334,7 @@ impl WorkingState {
             .unwrap_or_default();
         let mut s = format!("{g} {} · {}{el}", self.phase.label(), self.summary);
         if display_cols(&s) > max_cols {
-            s = take_display_cols(&s, max_cols);
+            s = take_display_cols(&s, max_cols).into_owned();
         }
         s
     }
@@ -843,7 +843,7 @@ impl<'a> WorkingStateCard<'a> {
         self.system.paint_row(
             buffer,
             Rect::new(inner.x, inner.y, inner.width, 1),
-            &take_display_cols(&text, usize::from(inner.width)),
+            take_display_cols(&text, usize::from(inner.width)).as_ref(),
             self.system.style(Role::Text),
         );
         StatusIndicator::compact(semantic, self.system)

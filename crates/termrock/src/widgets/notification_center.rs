@@ -1236,7 +1236,7 @@ impl<'a> NotificationCenter<'a> {
         buffer.set_stringn(
             inner.x,
             y,
-            &take_display_cols(&title, usize::from(inner.width)),
+            take_display_cols(&title, usize::from(inner.width)).as_ref(),
             usize::from(inner.width),
             self.system
                 .style(Role::TextStrong)
@@ -1271,7 +1271,7 @@ impl<'a> NotificationCenter<'a> {
         buffer.set_stringn(
             inner.x,
             y,
-            &take_display_cols(filter_label, usize::from(inner.width)),
+            take_display_cols(filter_label, usize::from(inner.width)).as_ref(),
             usize::from(inner.width),
             self.system.style(Role::TextMuted),
         );
@@ -1352,7 +1352,7 @@ impl<'a> NotificationCenter<'a> {
                 buffer.set_stringn(
                     inner.x,
                     row_y,
-                    &take_display_cols(&line, usize::from(inner.width)),
+                    take_display_cols(&line, usize::from(inner.width)).as_ref(),
                     usize::from(inner.width),
                     if selected {
                         tone

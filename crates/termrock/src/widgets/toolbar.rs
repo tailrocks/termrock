@@ -1134,7 +1134,7 @@ fn paint_overflow_chip<Id: Clone + PartialEq>(
     buffer.set_stringn(
         rect.x,
         rect.y,
-        &take_display_cols(&label, usize::from(rect.width)),
+        take_display_cols(&label, usize::from(rect.width)).as_ref(),
         usize::from(rect.width),
         style,
     );

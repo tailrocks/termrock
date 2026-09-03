@@ -891,6 +891,7 @@ impl<'a> ToolCallCard<'a> {
                     .unwrap_or(call.args_summary.as_str()),
                 usize::from(body.width),
             )
+            .into_owned()
         };
         let style = self.system.style(Role::Text);
         buffer.set_stringn(body.x, y, &line1, usize::from(body.width), style);

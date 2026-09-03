@@ -461,7 +461,7 @@ impl<'a> AvatarGlyph<'a> {
                     while display_cols(&s) < cols {
                         s.push(' ');
                     }
-                    take_display_cols(&s, cols)
+                    take_display_cols(&s, cols).into_owned()
                 }
             }
             AvatarFace::RoleGlyph => {
@@ -485,11 +485,11 @@ impl<'a> AvatarGlyph<'a> {
             let _ = ascii;
         }
         // Final clamp to exact cols
-        let mut out = take_display_cols(&raw, cols);
+        let mut out = take_display_cols(&raw, cols).into_owned();
         while display_cols(&out) < cols {
             out.push(' ');
         }
-        take_display_cols(&out, cols)
+        take_display_cols(&out, cols).into_owned()
     }
 
     /// Paint role for the face (deterministic from seed unless role-forced).
@@ -616,12 +616,11 @@ impl Widget for AvatarGlyph<'_> {
 }
 
 fn fit_glyph_text(text: &str, cols: usize, _ascii: bool) -> String {
-    let t = take_display_cols(text, cols);
-    let mut out = t;
+    let mut out = take_display_cols(text, cols).into_owned();
     while display_cols(&out) < cols {
         out.push(' ');
     }
-    take_display_cols(&out, cols)
+    take_display_cols(&out, cols).into_owned()
 }
 
 // ── Identity ────────────────────────────────────────────────────────────────

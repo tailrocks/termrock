@@ -1385,7 +1385,7 @@ impl<'a, Id> MenuBar<'a, Id> {
                     let label = if matches!(presentation, MenuBarPresentation::Compact)
                         && menu.label.chars().count() > 6
                     {
-                        take_display_cols(&menu.label, 4)
+                        take_display_cols(&menu.label, 4).into_owned()
                     } else {
                         menu.label.clone()
                     };
@@ -1570,8 +1570,8 @@ impl<'a, Id> MenuBar<'a, Id> {
             }
             if matches!(item.kind, MenuRowKind::Loading) {
                 let prefix = { "… " };
-                let text =
-                    take_display_cols(&format!("{prefix}{}", item.label), usize::from(inner.width));
+                let formatted = format!("{prefix}{}", item.label);
+                let text = take_display_cols(&formatted, usize::from(inner.width)).into_owned();
                 buffer.set_stringn(
                     inner.x,
                     y,

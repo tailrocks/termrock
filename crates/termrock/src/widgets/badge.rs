@@ -477,7 +477,7 @@ impl<'a> Badge<'a> {
         if self.max_cols > 0 {
             budget = budget.min(usize::from(self.max_cols));
         }
-        text = take_display_cols(&text, budget);
+        text = take_display_cols(&text, budget).into_owned();
         let w = u16::try_from(display_cols(&text))
             .unwrap_or(0)
             .min(area.width);
@@ -515,7 +515,7 @@ impl<'a> Badge<'a> {
         }
         let mut text = self.decorated(Some(&snap));
         let budget = usize::from(parts.content.width);
-        text = take_display_cols(&text, budget);
+        text = take_display_cols(&text, budget).into_owned();
         let style = self.paint_style(Some(&snap));
         if matches!(self.fill, BadgeFill::Soft) && !parts.content.is_empty() {
             buffer.set_style(parts.content, style);

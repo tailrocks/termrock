@@ -621,7 +621,7 @@ impl<'a, Id> VirtualList<'a, Id> {
             buffer.set_stringn(
                 area.x,
                 y,
-                &take_display_cols(&line, usize::from(area.width)),
+                take_display_cols(&line, usize::from(area.width)).as_ref(),
                 usize::from(area.width),
                 self.system.style(Role::TextSecondary),
             );
@@ -665,7 +665,7 @@ impl<'a, Id> VirtualList<'a, Id> {
             buffer.set_stringn(
                 area.x,
                 y,
-                &take_display_cols(&line, usize::from(area.width)),
+                take_display_cols(&line, usize::from(area.width)).as_ref(),
                 usize::from(area.width),
                 self.system.style(Role::TextDisabled),
             );
@@ -895,7 +895,13 @@ fn paint_simple_row<Id>(
     // Reserve the gutter column so pinned rows line up with the body.
     let text = format!(" {}", row.plain_label());
     let w = display_cols(&text).min(usize::from(area.width));
-    buffer.set_stringn(area.x, area.y, &take_display_cols(&text, w), w, style);
+    buffer.set_stringn(
+        area.x,
+        area.y,
+        take_display_cols(&text, w).as_ref(),
+        w,
+        style,
+    );
     chrome.paint(buffer, area);
 }
 

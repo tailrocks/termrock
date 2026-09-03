@@ -986,7 +986,7 @@ impl<'a> TerminalRunCard<'a> {
         let leading = run.status.glyph(false);
         let badge = phase.badge();
         let card = Card::new(self.system)
-            .title(title.as_str())
+            .title(title.as_ref())
             .leading(leading)
             .badge(badge)
             .subtitle(subtitle.as_str())

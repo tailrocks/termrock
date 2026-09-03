@@ -33,9 +33,15 @@ pub fn display_cols(s: &str) -> usize {
 
 /// Take the longest prefix of `s` whose display width fits inside
 /// `max_cols`, skipping control bytes.
+///
+/// Borrows `s` unchanged when it already fits — the common case at paint
+/// time — and allocates only when a prefix must be carved out.
 #[must_use]
-pub fn take_display_cols(s: &str, max_cols: usize) -> String {
+pub fn take_display_cols(s: &str, max_cols: usize) -> std::borrow::Cow<'_, str> {
     use unicode_width::UnicodeWidthChar;
+    if display_cols(s) <= max_cols && !s.chars().any(is_terminal_control_char) {
+        return std::borrow::Cow::Borrowed(s);
+    }
     let mut out = String::new();
     let mut used = 0usize;
     for c in s.chars() {
@@ -49,7 +55,7 @@ pub fn take_display_cols(s: &str, max_cols: usize) -> String {
         out.push(c);
         used += width;
     }
-    out
+    std::borrow::Cow::Owned(out)
 }
 
 /// Truncate to display columns without splitting a grapheme, appending the
@@ -61,7 +67,7 @@ pub fn truncate_cols<'a>(s: &'a str, max_cols: usize, ellipsis: &str) -> Cow<'a,
     }
     let ellipsis_width = display_cols(ellipsis);
     if ellipsis_width > max_cols {
-        return Cow::Owned(take_display_cols(ellipsis, max_cols));
+        return Cow::Owned(take_display_cols(ellipsis, max_cols).into_owned());
     }
     let budget = max_cols - ellipsis_width;
     let mut out = String::new();
@@ -325,16 +331,16 @@ pub fn truncate_display_cols(
     let full = display_cols(s);
     if full <= max_cols {
         // Still strip controls for copy-safe consistency.
-        return take_display_cols(s, max_cols);
+        return take_display_cols(s, max_cols).into_owned();
     }
     let ell_w = display_cols(ellipsis);
     if ell_w >= max_cols {
-        return take_display_cols(ellipsis, max_cols);
+        return take_display_cols(ellipsis, max_cols).into_owned();
     }
     let budget = max_cols.saturating_sub(ell_w);
     match mode {
         TruncateMode::End => {
-            let mut out = take_display_cols(s, budget);
+            let mut out = take_display_cols(s, budget).into_owned();
             out.push_str(ellipsis);
             out
         }
@@ -350,7 +356,7 @@ pub fn truncate_display_cols(
             let head = budget / 2;
             let tail = budget.saturating_sub(head);
             let total = display_cols(s);
-            let mut out = take_display_cols(s, head);
+            let mut out = take_display_cols(s, head).into_owned();
             out.push_str(ellipsis);
             let skip = total.saturating_sub(tail);
             out.push_str(&display_cols_slice(s, skip, tail));

@@ -1250,7 +1250,7 @@ impl<'a, Id> DropdownMenu<'a, Id> {
                 buffer.set_stringn(
                     inner.x,
                     y,
-                    &take_display_cols(&item.label, usize::from(inner.width)),
+                    take_display_cols(&item.label, usize::from(inner.width)).as_ref(),
                     usize::from(inner.width),
                     self.system.style(Role::TextMuted),
                 );
@@ -1262,10 +1262,8 @@ impl<'a, Id> DropdownMenu<'a, Id> {
                 buffer.set_stringn(
                     inner.x,
                     y,
-                    &take_display_cols(
-                        &format!("{prefix}{}", item.label),
-                        usize::from(inner.width),
-                    ),
+                    take_display_cols(&format!("{prefix}{}", item.label), usize::from(inner.width))
+                        .as_ref(),
                     usize::from(inner.width),
                     self.system.style(Role::TextMuted),
                 );
@@ -1277,7 +1275,7 @@ impl<'a, Id> DropdownMenu<'a, Id> {
                 buffer.set_stringn(
                     inner.x,
                     y,
-                    &take_display_cols(&item.label, usize::from(inner.width)),
+                    take_display_cols(&item.label, usize::from(inner.width)).as_ref(),
                     usize::from(inner.width),
                     self.system.style(Role::TextMuted),
                 );
@@ -1359,7 +1357,7 @@ impl<'a, Id> DropdownMenu<'a, Id> {
             buffer.set_stringn(
                 inner.x,
                 y,
-                &take_display_cols(&line, usize::from(inner.width)),
+                take_display_cols(&line, usize::from(inner.width)).as_ref(),
                 usize::from(inner.width),
                 style,
             );

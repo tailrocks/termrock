@@ -1333,9 +1333,9 @@ impl<'a> TextInput<'a> {
         let painted = if empty {
             truncate_cols(self.placeholder, field_w, self.system.glyphs.ellipsis()).into_owned()
         } else if self.secret {
-            take_display_cols(&self.masked_display(), field_w)
+            take_display_cols(&self.masked_display(), field_w).into_owned()
         } else {
-            take_display_cols(&state.value[state.viewport..], field_w)
+            take_display_cols(&state.value[state.viewport..], field_w).into_owned()
         };
         let mut text_style = if empty {
             theme.placeholder(visual)

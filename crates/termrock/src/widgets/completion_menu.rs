@@ -1506,7 +1506,7 @@ fn paint_status_line<Id>(
     buffer.set_stringn(
         strip.x.saturating_add(1),
         strip.y,
-        &take_display_cols(msg, usize::from(strip.width.saturating_sub(2))),
+        take_display_cols(msg, usize::from(strip.width.saturating_sub(2))).as_ref(),
         usize::from(strip.width.saturating_sub(2)),
         menu.system.style(Role::TextMuted),
     );
@@ -1542,7 +1542,7 @@ fn paint_docs(buffer: &mut Buffer, area: Rect, docs: &str, scroll: u16, system: 
         buffer.set_stringn(
             area.x,
             y,
-            &take_display_cols(line, width),
+            take_display_cols(line, width).as_ref(),
             width,
             system.style(Role::Text),
         );

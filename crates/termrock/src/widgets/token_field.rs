@@ -1106,7 +1106,7 @@ impl<'a> TokenField<'a> {
             buffer.set_stringn(
                 rect.x,
                 rect.y,
-                &take_display_cols(&format!("{gutter}{label}"), usize::from(rect.width)),
+                take_display_cols(&format!("{gutter}{label}"), usize::from(rect.width)).as_ref(),
                 usize::from(rect.width),
                 recipe.placeholder,
             );

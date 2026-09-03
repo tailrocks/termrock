@@ -1023,7 +1023,7 @@ impl<'a, Id> TreeNavigation<'a, Id> {
             };
 
             let label = if state.narrow {
-                take_display_cols(&node.label, 8)
+                take_display_cols(&node.label, 8).into_owned()
             } else {
                 node.label.clone()
             };

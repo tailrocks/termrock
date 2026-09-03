@@ -477,7 +477,7 @@ impl GlyphResolved {
     pub fn aligned(&self, width: u16) -> String {
         use crate::text::take_display_cols;
         let w = usize::from(width.max(1));
-        let mut s = take_display_cols(self.text, w);
+        let mut s = take_display_cols(self.text, w).into_owned();
         let used = display_cols(&s);
         if used < w {
             s.push_str(&" ".repeat(w - used));

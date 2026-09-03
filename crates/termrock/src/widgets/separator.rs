@@ -296,8 +296,9 @@ fn paint_vertical(sep: Separator<'_>, area: Rect, buffer: &mut Buffer) {
     let mut y = band.y;
     if let Some(label) = sep.label.filter(|s| !s.trim().is_empty()) {
         let ch = label.chars().next().unwrap_or('|');
-        let s = take_display_cols(&ch.to_string(), 1);
-        buffer.set_stringn(band.x, y, &s, 1, sep.system.style(Role::TextMuted));
+        let ch_str = ch.to_string();
+        let s = take_display_cols(&ch_str, 1);
+        buffer.set_stringn(band.x, y, s.as_ref(), 1, sep.system.style(Role::TextMuted));
         y = y.saturating_add(1);
     }
     while y < band.bottom() {

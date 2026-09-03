@@ -1813,7 +1813,7 @@ fn table_display_rows(raw: &str, width: u16) -> Vec<String> {
         }
     }
     if parsed.is_empty() {
-        return vec![take_display_cols(raw, usize::from(width.max(1)))];
+        return vec![take_display_cols(raw, usize::from(width.max(1))).into_owned()];
     }
     let cols = parsed.iter().map(Vec::len).max().unwrap_or(1);
     // Responsive: drop trailing columns until row fits

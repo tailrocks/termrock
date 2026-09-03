@@ -563,7 +563,7 @@ impl<'a> LoadingOverlay<'a> {
         buffer.set_stringn(
             x,
             area.y,
-            take_display_cols(badge, usize::from(w)).as_str(),
+            take_display_cols(badge, usize::from(w)).as_ref(),
             usize::from(w),
             self.system
                 .style(Role::Warning)
@@ -592,7 +592,7 @@ impl<'a> LoadingOverlay<'a> {
         buffer.set_stringn(
             x,
             area.y,
-            take_display_cols(&text, usize::from(w)).as_str(),
+            take_display_cols(&text, usize::from(w)).as_ref(),
             usize::from(w),
             self.system.style(Role::TextSecondary),
         );

@@ -1039,7 +1039,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
             buffer.set_stringn(
                 x,
                 trigger.y,
-                &take_display_cols(&chip, usize::from(w)),
+                take_display_cols(&chip, usize::from(w)).as_ref(),
                 usize::from(w),
                 recipe.value,
             );

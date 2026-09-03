@@ -1462,7 +1462,7 @@ impl StatefulWidget for &PermissionPrompt<'_> {
                 buffer.set_stringn(
                     inner.x,
                     inner.y,
-                    &take_display_cols(&msg, usize::from(inner.width)),
+                    take_display_cols(&msg, usize::from(inner.width)).as_ref(),
                     usize::from(inner.width),
                     self.system.style(Role::TextMuted),
                 );

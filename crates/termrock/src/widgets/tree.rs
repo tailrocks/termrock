@@ -1407,7 +1407,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
             buffer.set_stringn(
                 area.x,
                 area.y,
-                &take_display_cols(&strip, usize::from(area.width)),
+                take_display_cols(&strip, usize::from(area.width)).as_ref(),
                 usize::from(area.width),
                 self.tokens.style(Role::TextSecondary),
             );
