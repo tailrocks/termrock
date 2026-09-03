@@ -24,7 +24,6 @@ mod agent_blocks;
 mod alert_dialog;
 mod attachment_chips;
 mod badge;
-mod blocks;
 mod brand;
 mod breadcrumbs;
 mod button_group;
@@ -172,7 +171,6 @@ pub use accent_rail::AccentRail;
 pub use action_bar::{Action, ActionBar, ActionBarState, ActionVariant};
 pub use agent::{ThinkingBlock, TokenMeter, ToolCard, ToolStatus};
 pub use agent_blocks::{ModeRibbon, ModeRibbonOutcome, ModeRibbonState, WorkbenchMode};
-pub use blocks::BlockChrome;
 pub use button_group::{
     ButtonGroup, ButtonGroupItem, ButtonGroupItemParts, ButtonGroupOrientation, ButtonGroupOutcome,
     ButtonGroupParts, ButtonGroupRecipe, ButtonGroupState,

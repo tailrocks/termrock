@@ -280,6 +280,7 @@ pub const STRUCTURE_UI: &[PublicUiId] = &[
     PublicUiId::UiContext,
     PublicUiId::ImageSurface,
     PublicUiId::Identity,
+    PublicUiId::Lockup,
     PublicUiId::AvatarGlyph,
     PublicUiId::Kbd,
     PublicUiId::KeyboardHelp,

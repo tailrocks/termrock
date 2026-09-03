@@ -8,11 +8,9 @@
 //! thresholds, drill-down, loading, partial failure, and responsive grid.
 //! Prioritize trend and exception readability. Keyboard spatial navigation and
 //! command-palette action ids. Narrow terminals collapse to a vertical summary.
-//!
-//! **vs [`super::blocks::OpsDashboardState`].** OpsDashboard is a thin region
-//! router over DataTable + LogStream. MetricsDashboard owns metric-card grid
-//! chrome, thresholds, comparison deltas, and layout contraction.
-//!
+
+//! MetricsDashboard owns metric-card grid chrome, thresholds, comparison
+//! deltas, and layout contraction.
 //! Research: btop, Grafana concepts, observability TUIs, operating dashboards.
 //!
 //! Teaches: how to compose reusable observability dashboard block.

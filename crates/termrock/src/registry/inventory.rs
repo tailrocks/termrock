@@ -143,6 +143,7 @@ define_public_ui_ids![
     LoadingOverlay,
     LoadingView,
     LogPane,
+    Lockup,
     LogStream,
     MarkdownView,
     MenuBar,
@@ -904,6 +905,7 @@ pub static PUBLIC_UI_INVENTORY: &[PublicUiInventoryEntry] = &[
         "loading-view",
         "loading-view/basic"
     ),
+    public_ui!(Lockup, Widget, Content, "lockup", "lockup/basic"),
     public_ui!(LogPane, Widget, Data, "log-pane", "log-pane/follow"),
     public_ui!(LogStream, Widget, Data, "log-stream", "log-stream/follow"),
     public_ui!(
@@ -1835,7 +1837,7 @@ mod tests {
 
     #[test]
     fn public_inventory_is_complete_unique_and_joinable() {
-        assert_eq!(public_ui_inventory().len(), 210);
+        assert_eq!(public_ui_inventory().len(), 211);
         assert_eq!(public_ui_inventory().len(), PublicUiId::ALL.len());
         assert_eq!(
             PublicUiId::ALL.iter().copied().collect::<BTreeSet<_>>(),
@@ -1858,13 +1860,13 @@ mod tests {
                     counts[index] += 1;
                     counts
                 });
-        assert_eq!(kind_counts, [128, 68, 6, 8]);
+        assert_eq!(kind_counts, [129, 68, 6, 8]);
         assert_eq!(
             public_ui_inventory()
                 .iter()
                 .filter(|entry| entry.documentation == DocumentationKind::Component)
                 .count(),
-            192
+            193
         );
         assert_eq!(
             public_ui_inventory()
