@@ -381,6 +381,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0394 | `v0.14.0` | [EmptyState uses one stateful paint path](migrations/0394-v0.14.0-paint-only-empty-state.md) |
 | 0395 | `v0.14.0` | [ErrorState and StatusIndicator use one paint path](migrations/0395-v0.14.0-paint-only-error-status.md) |
 | 0396 | `v0.14.0` | [Slider family and Tooltip are paint-only](migrations/0396-v0.14.0-paint-only-slider-tooltip.md) |
+| 0397 | `v0.14.0` | [SegmentedControl and ToggleGroup are paint-only](migrations/0397-v0.14.0-paint-only-segmented-toggle.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

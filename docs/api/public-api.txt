@@ -82810,8 +82810,6 @@ pub const fn termrock::widgets::SegmentedControl<'a, Id>::colorless(self, bool) 
 pub const fn termrock::widgets::SegmentedControl<'a, Id>::new(&'a [termrock::widgets::SegmentedItem<'a, Id>], &'a termrock::style::DesignSystem) -> Self
 pub const fn termrock::widgets::SegmentedControl<'a, Id>::overflow_label(self, &'a str) -> Self
 pub fn termrock::widgets::SegmentedControl<'a, Id>::plan(&self, u16, core::option::Option<&Id>) -> (termrock::widgets::SegmentedPresentation, alloc::vec::Vec<usize>, alloc::vec::Vec<usize>) where Id: core::cmp::PartialEq
-impl<'a, Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::widget::Widget for &termrock::widgets::SegmentedControl<'a, Id>
-pub fn &termrock::widgets::SegmentedControl<'a, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::SegmentedControl<'a, Id>
 pub fn termrock::widgets::SegmentedControl<'a, Id>::clone(&self) -> termrock::widgets::SegmentedControl<'a, Id>
 impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::SegmentedControl<'a, Id>
@@ -88834,8 +88832,6 @@ pub const fn termrock::widgets::ToggleGroup<'a, Id>::overflow_label(self, &'a st
 pub fn termrock::widgets::ToggleGroup<'a, Id>::plan_overflow(&self, u16) -> (alloc::vec::Vec<usize>, alloc::vec::Vec<usize>)
 pub const fn termrock::widgets::ToggleGroup<'a, Id>::separated(self) -> Self
 pub const fn termrock::widgets::ToggleGroup<'a, Id>::single(self) -> Self
-impl<'a, Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::widget::Widget for &termrock::widgets::ToggleGroup<'a, Id>
-pub fn &termrock::widgets::ToggleGroup<'a, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::ToggleGroup<'a, Id>
 pub fn termrock::widgets::ToggleGroup<'a, Id>::clone(&self) -> termrock::widgets::ToggleGroup<'a, Id>
 impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::ToggleGroup<'a, Id>

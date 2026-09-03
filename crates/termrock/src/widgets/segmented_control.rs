@@ -37,7 +37,6 @@ use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
     style::{Color, Modifier, Style},
-    widgets::Widget,
 };
 
 use crate::input::{KeyEvent, MouseButton, MouseEvent, MouseEventKind};
@@ -1139,13 +1138,6 @@ impl<'a, Id: Clone + PartialEq> SegmentedControl<'a, Id> {
                 );
             }
         }
-    }
-}
-
-impl<'a, Id: Clone + PartialEq> Widget for &SegmentedControl<'a, Id> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        let mut state = SegmentedControlState::new(None);
-        let _ = self.paint(area, buffer, &mut state);
     }
 }
 

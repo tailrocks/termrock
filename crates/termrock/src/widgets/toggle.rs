@@ -34,7 +34,7 @@
 //! - Exclusive options with long descriptions → RadioGroup
 //!
 //! Research: Radix Toggle/ToggleGroup, editor toolbars, terminal mode chips.
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
 
 use crate::input::{KeyEvent, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{
@@ -1494,13 +1494,6 @@ impl<'a, Id: Clone + PartialEq> ToggleGroup<'a, Id> {
                 t.register_semantic(scene, it.id.clone(), it.area, &ts);
             }
         }
-    }
-}
-
-impl<'a, Id: Clone + PartialEq> Widget for &ToggleGroup<'a, Id> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        let mut state = ToggleGroupState::new();
-        let _ = self.paint(area, buffer, &mut state);
     }
 }
 

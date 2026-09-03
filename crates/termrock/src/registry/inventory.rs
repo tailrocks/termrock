@@ -1171,7 +1171,7 @@ pub static PUBLIC_UI_INVENTORY: &[PublicUiInventoryEntry] = &[
     public_ui!(Section, Widget, Layout, "section", "section/quiet"),
     public_ui!(
         SegmentedControl,
-        Widget,
+        Paint,
         Navigation,
         "segmented-control",
         "segmented-control/basic"
@@ -1344,7 +1344,7 @@ pub static PUBLIC_UI_INVENTORY: &[PublicUiInventoryEntry] = &[
     public_ui!(Toggle, Paint, Action, "toggle", "toggle/pressed"),
     public_ui!(
         ToggleGroup,
-        Widget,
+        Paint,
         Action,
         "toggle-group",
         "toggle-group/format"
@@ -1858,7 +1858,7 @@ mod tests {
                     counts[index] += 1;
                     counts
                 });
-        assert_eq!(kind_counts, [132, 64, 6, 8]);
+        assert_eq!(kind_counts, [130, 66, 6, 8]);
         assert_eq!(
             public_ui_inventory()
                 .iter()
