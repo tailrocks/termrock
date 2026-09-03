@@ -28,6 +28,30 @@ pub fn contains_lower(hay: &str, needle_lower: &str) -> bool {
     hay.to_ascii_lowercase().contains(needle_lower)
 }
 
+/// Case-folded substring test across all `fields`, joined with spaces.
+///
+/// The fields are matched as one space-joined haystack, so a query may span
+/// a field boundary (`"auth termrock"` matches name `auth` + group
+/// `termrock`). `needle_lower` must already be ASCII-lowercase — fold the
+/// query once per change, exactly like [`contains_lower`].
+#[must_use]
+pub fn contains_lower_all(fields: &[&str], needle_lower: &str) -> bool {
+    if needle_lower.is_empty() {
+        return true;
+    }
+    let mut hay = String::new();
+    for field in fields {
+        if !hay.is_empty() {
+            hay.push(' ');
+        }
+        hay.push_str(&field.to_ascii_lowercase());
+        if hay.contains(needle_lower) {
+            return true;
+        }
+    }
+    false
+}
+
 /// Case-folded prefix test for typeahead: `hay` starts with `needle_lower`.
 ///
 /// Unlike [`contains_lower`] this folds with full Unicode `to_lowercase`,

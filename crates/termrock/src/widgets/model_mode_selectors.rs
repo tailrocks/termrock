@@ -25,7 +25,7 @@ use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{NavigationMove, UiIntent, default_button_intent, default_list_intent},
     style::{ButtonRecipeVariant, ControlState, DesignSystem, ListRowVisualState, Role},
-    text::{display_cols, take_display_cols},
+    text::{contains_lower_all, display_cols, take_display_cols},
     widgets::{
         agent_blocks::WorkbenchMode,
         prompt_composer::{ModeIndicator, ModelIndicator},
@@ -322,15 +322,15 @@ pub fn filter_model_options<'a>(options: &'a [ModelOption], query: &str) -> Vec<
                 .map(|c| c.label.as_str())
                 .collect::<Vec<_>>()
                 .join(" ");
-            let hay = format!(
-                "{} {} {} {}",
-                o.id,
-                o.label,
-                o.provider.as_deref().unwrap_or(""),
-                caps
+            contains_lower_all(
+                &[
+                    o.id.as_str(),
+                    o.label.as_str(),
+                    o.provider.as_deref().unwrap_or(""),
+                    caps.as_str(),
+                ],
+                &q,
             )
-            .to_ascii_lowercase();
-            hay.contains(&q)
         })
         .collect()
 }

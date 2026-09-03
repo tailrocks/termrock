@@ -22,7 +22,7 @@ use ratatui_core::{buffer::Buffer, layout::Rect};
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     style::{DesignSystem, ListRowVisualState, Role},
-    text::take_display_cols,
+    text::{contains_lower_all, take_display_cols},
     widgets::{
         data_view::{ColumnModel, DataColumn, DataColumnWidth},
         object_inspector::{InspectKind, InspectorField},
@@ -537,17 +537,7 @@ pub fn filter_dep_nodes<'a>(nodes: &'a [DepNode<'a>], query: &str) -> Vec<&'a De
     }
     nodes
         .iter()
-        .filter(|n| {
-            let hay = format!(
-                "{} {} {} {}",
-                n.id,
-                n.label,
-                n.kind.id(),
-                n.group.unwrap_or("")
-            )
-            .to_ascii_lowercase();
-            hay.contains(&q)
-        })
+        .filter(|n| contains_lower_all(&[n.id, n.label, n.kind.id(), n.group.unwrap_or("")], &q))
         .collect()
 }
 

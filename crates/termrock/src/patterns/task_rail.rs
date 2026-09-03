@@ -517,11 +517,12 @@ pub fn filter_activity_models<'a>(
                 || i.waiting_reason
                     .as_ref()
                     .is_some_and(|w| crate::text::contains_lower(&w, &q))
-                || i.scope.id().contains(q.as_str())
-                || i.kind.id().contains(q.as_str())
-                || i.dependencies
-                    .iter()
-                    .any(|d| crate::text::contains_lower(&d.label, &q) || d.id.contains(&q))
+                || crate::text::contains_lower(i.scope.id(), &q)
+                || crate::text::contains_lower(i.kind.id(), &q)
+                || i.dependencies.iter().any(|d| {
+                    crate::text::contains_lower(&d.label, &q)
+                        || crate::text::contains_lower(&d.id, &q)
+                })
         })
         .collect()
 }

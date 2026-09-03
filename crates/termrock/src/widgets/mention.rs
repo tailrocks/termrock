@@ -24,7 +24,7 @@ use ratatui_core::{buffer::Buffer, layout::Rect};
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseEvent},
     style::{DesignSystem, Role},
-    text::take_display_cols,
+    text::{contains_lower_all, take_display_cols},
     widgets::{
         completion_menu::CompletionCandidate,
         tag_chip::{Tag, TagOutcome, TagState, TokenItem, TokenPart, TokenParts, TokenStatus},
@@ -832,8 +832,7 @@ pub fn filter_mention_candidates<'a>(
             if q.is_empty() {
                 return true;
             }
-            let hay = format!("{} {} {}", c.label, c.canonical, c.id).to_ascii_lowercase();
-            hay.contains(&q)
+            contains_lower_all(&[c.label.as_str(), c.canonical.as_str(), c.id.as_str()], &q)
         })
         .collect()
 }

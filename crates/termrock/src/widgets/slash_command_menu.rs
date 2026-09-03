@@ -532,14 +532,14 @@ pub fn filter_slash_commands(catalog: &[SlashCommand], prefix: &str) -> Vec<Slas
             }
             // also plain contains on name
             if best.is_none() {
-                let hay = format!(
-                    "{} {} {}",
-                    c.name,
-                    c.aliases.join(" "),
-                    c.description.as_deref().unwrap_or("")
-                )
-                .to_ascii_lowercase();
-                if hay.contains(&q) {
+                if crate::text::contains_lower_all(
+                    &[
+                        c.name.as_str(),
+                        &c.aliases.join(" "),
+                        c.description.as_deref().unwrap_or(""),
+                    ],
+                    &q,
+                ) {
                     best = Some((50, MatchRanges::default()));
                 }
             }

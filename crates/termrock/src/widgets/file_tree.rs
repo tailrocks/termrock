@@ -17,7 +17,7 @@ use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::StatefulWi
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers},
     style::{DesignSystem, Role},
-    text::take_display_cols,
+    text::{contains_lower_all, take_display_cols},
     widgets::{
         breadcrumbs::BreadcrumbItem,
         quick_open::{QuickOpenItem, QuickOpenPreview},
@@ -422,8 +422,7 @@ pub fn filter_file_tree_entries<'a, Id: Clone + PartialEq>(
     }
     let mut keep = vec![false; base.len()];
     for (i, e) in base.iter().enumerate() {
-        let hay = format!("{} {}", e.name, e.path).to_ascii_lowercase();
-        if hay.contains(&q) {
+        if contains_lower_all(&[e.name, e.path], &q) {
             keep[i] = true;
             let mut parent = e.parent.clone();
             while let Some(pid) = parent {

@@ -280,15 +280,15 @@ impl HelpTopic {
         if q.is_empty() {
             return true;
         }
-        let hay = format!(
-            "{} {} {} {}",
-            self.title,
-            self.markdown,
-            self.group.id(),
-            self.anchors.join(" ")
+        crate::text::contains_lower_all(
+            &[
+                &self.title,
+                &self.markdown,
+                self.group.id(),
+                &self.anchors.join(" "),
+            ],
+            &q,
         )
-        .to_ascii_lowercase();
-        hay.contains(&q)
     }
 }
 
@@ -355,14 +355,14 @@ pub fn filter_command_entries<'a>(
             if q.is_empty() {
                 return true;
             }
-            let hay = format!(
-                "{} {} {}",
-                c.label,
-                c.shortcut.as_deref().unwrap_or(""),
-                c.keywords.join(" ")
+            crate::text::contains_lower_all(
+                &[
+                    &c.label,
+                    c.shortcut.as_deref().unwrap_or(""),
+                    &c.keywords.join(" "),
+                ],
+                &q,
             )
-            .to_ascii_lowercase();
-            hay.contains(&q)
         })
         .collect()
 }

@@ -517,9 +517,7 @@ pub fn filter_processes<'a>(
             if q.is_empty() {
                 return true;
             }
-            let pid = r.key.pid.to_string();
-            let hay = format!("{} {} {}", r.command, r.user, pid).to_ascii_lowercase();
-            hay.contains(&q)
+            crate::text::contains_lower_all(&[r.command, r.user, &r.key.pid.to_string()], &q)
         })
         .collect()
 }

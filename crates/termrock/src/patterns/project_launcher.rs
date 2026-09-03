@@ -393,15 +393,15 @@ impl ProjectEntry {
         if q.is_empty() {
             return true;
         }
-        let hay = format!(
-            "{} {} {} {}",
-            self.name,
-            self.path,
-            self.branch.as_deref().unwrap_or(""),
-            self.group.id()
+        crate::text::contains_lower_all(
+            &[
+                &self.name,
+                &self.path,
+                self.branch.as_deref().unwrap_or(""),
+                self.group.id(),
+            ],
+            &q,
         )
-        .to_ascii_lowercase();
-        hay.contains(&q)
     }
 }
 

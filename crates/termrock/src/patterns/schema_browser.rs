@@ -461,8 +461,7 @@ pub fn filter_schema_entries<'a, Id: Clone + PartialEq>(
     }
     let mut keep = vec![false; entries.len()];
     for (i, e) in entries.iter().enumerate() {
-        let hay = format!("{} {} {}", e.name, e.path, e.kind.id()).to_ascii_lowercase();
-        if hay.contains(&q) {
+        if crate::text::contains_lower_all(&[e.name, e.path, e.kind.id()], &q) {
             keep[i] = true;
             let mut parent = e.parent.clone();
             while let Some(pid) = parent {

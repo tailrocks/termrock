@@ -270,14 +270,23 @@ impl NotificationFilter {
             Self::Source(s) => item
                 .source
                 .as_ref()
-                .is_some_and(|src| src.contains(s.as_str())),
+                .is_some_and(|src| crate::text::contains_lower(src, &s.to_ascii_lowercase())),
             Self::Query(q) if q.is_empty() => true,
             Self::Query(q) => {
-                let q = q.as_str();
-                item.message.contains(q)
-                    || item.title.as_ref().is_some_and(|t| t.contains(q))
-                    || item.source.as_ref().is_some_and(|s| s.contains(q))
-                    || item.group_id.as_ref().is_some_and(|g| g.contains(q))
+                let q = q.to_ascii_lowercase();
+                crate::text::contains_lower(&item.message, &q)
+                    || item
+                        .title
+                        .as_ref()
+                        .is_some_and(|t| crate::text::contains_lower(t, &q))
+                    || item
+                        .source
+                        .as_ref()
+                        .is_some_and(|s| crate::text::contains_lower(s, &q))
+                    || item
+                        .group_id
+                        .as_ref()
+                        .is_some_and(|g| crate::text::contains_lower(g, &q))
             }
         }
     }

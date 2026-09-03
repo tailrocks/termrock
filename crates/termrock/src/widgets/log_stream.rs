@@ -30,7 +30,7 @@ use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{NavigationMove, PageMove, UiIntent},
     style::{DesignSystem, ListRowVisualState, Role},
-    text::{display_cols, take_display_cols, wrap_display_cols},
+    text::{contains_lower_all, display_cols, take_display_cols, wrap_display_cols},
     widgets::{scroll_area::ScrollAreaState, tiered_row::TieredRow},
 };
 
@@ -866,14 +866,10 @@ pub fn filter_log_lines<'a>(
             if q.is_empty() {
                 return true;
             }
-            let hay = format!(
-                "{} {} {}",
-                l.text,
-                l.source.unwrap_or(""),
-                l.timestamp.unwrap_or("")
+            contains_lower_all(
+                &[l.text, l.source.unwrap_or(""), l.timestamp.unwrap_or("")],
+                &q,
             )
-            .to_ascii_lowercase();
-            hay.contains(&q)
         })
         .collect()
 }

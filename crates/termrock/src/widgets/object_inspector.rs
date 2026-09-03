@@ -24,7 +24,7 @@ use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{NavigationMove, PageMove, UiIntent},
     style::{DesignSystem, Glyph, ListRowVisualState, MASK_CELLS, Role},
-    text::{display_cols, take_display_cols},
+    text::{contains_lower_all, display_cols, take_display_cols},
     widgets::{data_view::LoadState, scroll_area::ScrollAreaState, tiered_row::TieredRow},
 };
 
@@ -1155,8 +1155,7 @@ pub fn filter_inspect_fields<'a>(
     }
     let mut keep = vec![false; fields.len()];
     for (i, f) in fields.iter().enumerate() {
-        let hay = format!("{} {} {}", f.key, f.value, f.path).to_ascii_lowercase();
-        if hay.contains(&q) {
+        if contains_lower_all(&[f.key, f.value, f.path], &q) {
             keep[i] = true;
             let mut depth = f.depth;
             let mut j = i;

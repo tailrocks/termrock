@@ -21,7 +21,7 @@ use ratatui_core::{buffer::Buffer, layout::Rect};
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     style::{DesignSystem, ListRowVisualState, Role},
-    text::take_display_cols,
+    text::{contains_lower_all, take_display_cols},
     widgets::{
         data_view::VirtualWindow,
         object_inspector::{InspectKind, InspectorField},
@@ -331,15 +331,15 @@ pub fn filter_trace_spans<'a>(spans: &'a [TraceSpan<'a>], query: &str) -> Vec<&'
     }
     let mut keep = vec![false; spans.len()];
     for (i, s) in spans.iter().enumerate() {
-        let hay = format!(
-            "{} {} {} {}",
-            s.name,
-            s.service,
-            s.kind.unwrap_or(""),
-            s.error.unwrap_or("")
-        )
-        .to_ascii_lowercase();
-        if hay.contains(&q) {
+        if contains_lower_all(
+            &[
+                s.name,
+                s.service,
+                s.kind.unwrap_or(""),
+                s.error.unwrap_or(""),
+            ],
+            &q,
+        ) {
             keep[i] = true;
             let mut parent = s.parent;
             while let Some(pid) = parent {

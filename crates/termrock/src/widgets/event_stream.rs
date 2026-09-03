@@ -28,7 +28,7 @@ use crate::{
     input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind},
     interaction::{NavigationMove, PageMove, UiIntent},
     style::{DesignSystem, ListRowVisualState, Role},
-    text::take_display_cols,
+    text::{contains_lower_all, take_display_cols},
     widgets::{scroll_area::ScrollAreaState, tiered_row::TieredRow},
 };
 
@@ -821,17 +821,17 @@ pub fn filter_stream_events<'a, Id>(
             continue;
         }
         if !q.is_empty() {
-            let hay = format!(
-                "{} {} {} {} {} {}",
-                e.event_type,
-                e.summary,
-                e.fields.unwrap_or(""),
-                e.source.unwrap_or(""),
-                e.correlation.unwrap_or(""),
-                e.timestamp
-            )
-            .to_ascii_lowercase();
-            if !hay.contains(&q) {
+            if !contains_lower_all(
+                &[
+                    e.event_type,
+                    e.summary,
+                    e.fields.unwrap_or(""),
+                    e.source.unwrap_or(""),
+                    e.correlation.unwrap_or(""),
+                    e.timestamp,
+                ],
+                &q,
+            ) {
                 continue;
             }
         }

@@ -19,7 +19,7 @@ use crate::{
     input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind},
     interaction::{NavigationMove, PageMove, UiIntent},
     style::{DesignSystem, ListRowVisualState, Role},
-    text::take_display_cols,
+    text::{contains_lower_all, take_display_cols},
 };
 
 const GUTTER: u16 = 2;
@@ -781,17 +781,18 @@ pub fn filter_timeline_events<'a, Id>(
     }
     let mut keep = vec![false; events.len()];
     for (i, e) in events.iter().enumerate() {
-        let hay = format!(
-            "{} {} {} {} {} {}",
-            e.when,
-            e.text,
-            e.actor.unwrap_or(""),
-            e.correlation.unwrap_or(""),
-            e.status.id(),
-            e.group_key.unwrap_or("")
-        )
-        .to_ascii_lowercase();
-        if hay.contains(&q) && e.focusable() {
+        if contains_lower_all(
+            &[
+                e.when,
+                e.text,
+                e.actor.unwrap_or(""),
+                e.correlation.unwrap_or(""),
+                e.status.id(),
+                e.group_key.unwrap_or(""),
+            ],
+            &q,
+        ) && e.focusable()
+        {
             keep[i] = true;
             // Keep preceding group header
             let mut j = i;
