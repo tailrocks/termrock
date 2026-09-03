@@ -479,6 +479,15 @@ impl<Id> ListState<Id> {
         &self.regions
     }
 
+    /// Drops painted hit regions so hit tests miss until the next render.
+    ///
+    /// Callers that skip a frame's render (empty view, early return) use this
+    /// to keep [`Self::regions`] honest instead of serving stale geometry.
+    pub fn clear_hit_regions(&mut self) {
+        self.regions.clear();
+        self.check_regions.clear();
+    }
+
     /// Disables multi-selection and discards checked identities.
     pub fn disable_multi_select(&mut self) {
         self.selection = None;

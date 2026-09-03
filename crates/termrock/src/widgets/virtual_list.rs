@@ -158,8 +158,6 @@ pub struct VirtualListState<Id> {
     last_diag: VirtualListDiagnostics,
     /// Pointer for hover hit tests on last paint.
     pointer: Option<Position>,
-    /// Hit regions for projected body rows only.
-    regions: Vec<HitRegion<Id>>,
 }
 
 impl<Id> Default for VirtualListState<Id> {
@@ -183,7 +181,6 @@ impl<Id> VirtualListState<Id> {
             filter_match_count: None,
             last_diag: VirtualListDiagnostics::default(),
             pointer: None,
-            regions: Vec::new(),
         }
     }
 
@@ -407,10 +404,13 @@ impl<Id> VirtualListState<Id> {
         }
     }
 
-    /// Hit regions from last paint.
+    /// Hit regions from the last paint (projected body rows only).
+    ///
+    /// Forwards to the inner [`ListState`], which owns its regions — the
+    /// previous duplicate `Vec` was re-copied from it every frame.
     #[must_use]
     pub fn regions(&self) -> &[HitRegion<Id>] {
-        &self.regions
+        self.list.regions()
     }
 
     /// Hover at position.
@@ -419,7 +419,8 @@ impl<Id> VirtualListState<Id> {
         Id: Clone,
     {
         self.pointer = Some(position);
-        self.regions
+        self.list
+            .regions()
             .iter()
             .find(|r| r.area.contains(position))
             .map(|r| &r.id)
@@ -432,7 +433,8 @@ impl<Id> VirtualListState<Id> {
     {
         self.pointer = Some(position);
         let Some(region) = self
-            .regions
+            .list
+            .regions()
             .iter()
             .find(|r| r.area.contains(position))
             .map(|r| r.id.clone())
@@ -608,7 +610,9 @@ impl<'a, Id> VirtualList<'a, Id> {
         if area.is_empty() {
             return;
         }
-        state.regions.clear();
+        // Regions live in the inner ListState now; a frame that returns early
+        // (empty view) must not leave the previous frame's geometry behind.
+        state.list.clear_hit_regions();
         state.pointer = state.list.hovered().and_then(|_| state.pointer);
 
         let mut y = area.y;
@@ -695,36 +699,42 @@ impl<'a, Id> VirtualList<'a, Id> {
             return;
         }
 
-        // Partition projected into sticky leading vs body (by logical index).
+        // Partition projected into sticky leading / body / sticky trail.
+        //
+        // projection_indices() returns ascending logical indexes, so the three
+        // bands are contiguous ranges of `self.projected` — no per-frame
+        // partition `Vec`s or row clones are needed. Sticky rows paint
+        // directly; only the body slice materializes rows for `List`.
         let sticky_lead = state.virt.sticky().leading;
         let sticky_trail = state.virt.sticky().trailing;
         let len = state.virt.logical_len();
+        let trail_floor = len.saturating_sub(sticky_trail);
 
-        let mut sticky_rows: Vec<ListRow<'_, Id>> = Vec::new();
-        let mut body_items: Vec<&VirtualListItem<'_, Id>> = Vec::new();
-        let mut trail_rows: Vec<ListRow<'_, Id>> = Vec::new();
-
-        for p in self.projected {
-            if p.logical_index < sticky_lead {
-                sticky_rows.push(p.row.clone());
-            } else if sticky_trail > 0 && p.logical_index >= len.saturating_sub(sticky_trail) {
-                trail_rows.push(p.row.clone());
-            } else {
-                body_items.push(p);
-            }
-        }
+        let lead_end = if sticky_lead > 0 {
+            self.projected
+                .partition_point(|p| p.logical_index < sticky_lead)
+        } else {
+            0
+        };
+        let trail_start = if sticky_trail > 0 {
+            self.projected
+                .partition_point(|p| p.logical_index < trail_floor)
+        } else {
+            self.projected.len()
+        };
+        let trail_count = self.projected.len() - trail_start;
 
         let mut paint_y = body.y;
         // Sticky headers
-        for row in &sticky_rows {
+        for item in &self.projected[..lead_end] {
             if paint_y >= body.bottom() {
                 break;
             }
-            let selected = state.list.selected() == Some(&row.id);
+            let selected = state.list.selected() == Some(&item.row.id);
             paint_simple_row(
                 buffer,
                 Rect::new(body.x, paint_y, body.width, 1),
-                row,
+                &item.row,
                 self.system,
                 true,
                 selected,
@@ -733,7 +743,7 @@ impl<'a, Id> VirtualList<'a, Id> {
             paint_y = paint_y.saturating_add(1);
         }
 
-        let body_bottom_reserve = u16::try_from(trail_rows.len()).unwrap_or(0);
+        let body_bottom_reserve = u16::try_from(trail_count).unwrap_or(0);
         let list_bottom = body.bottom().saturating_sub(body_bottom_reserve);
         let list_area = Rect::new(
             body.x,
@@ -742,34 +752,34 @@ impl<'a, Id> VirtualList<'a, Id> {
             list_bottom.saturating_sub(paint_y),
         );
 
-        // Body via List (window already projected; offset 0)
-        if !list_area.is_empty() {
-            let body_rows: Vec<ListRow<'_, Id>> =
-                body_items.iter().map(|p| p.row.clone()).collect();
-            // Virtual total: body scroll universe for scrollbar only
-            let body_total = state.virt.scrollable_len();
-            state
-                .list
-                .set_virtual_window(0, usize::try_from(body_total).unwrap_or(usize::MAX));
-            // Keep list offset at 0 — Virtualizer owns scroll
-            // Selection still works on projected ids
-            let list = List::new(&body_rows, self.system).focused(self.focused);
-            StatefulWidget::render(&list, list_area, buffer, &mut state.list);
-            // Capture hit regions (adjust? List uses list_area coords — already absolute)
-            state.regions = state.list.regions().to_vec();
-        }
+        // Body via List (window already projected; offset 0). Render even when
+        // the area is empty: ListState owns the hit regions now, and its
+        // render clears them — the old shadow `Vec` did that by hand.
+        let body_rows: Vec<ListRow<'_, Id>> = self.projected[lead_end..trail_start]
+            .iter()
+            .map(|p| p.row.clone())
+            .collect();
+        // Virtual total: body scroll universe for scrollbar only
+        let body_total = state.virt.scrollable_len();
+        state
+            .list
+            .set_virtual_window(0, usize::try_from(body_total).unwrap_or(usize::MAX));
+        // Keep list offset at 0 — Virtualizer owns scroll
+        // Selection still works on projected ids
+        let list = List::new(&body_rows, self.system).focused(self.focused);
+        StatefulWidget::render(&list, list_area, buffer, &mut state.list);
 
         // Sticky trail
         let mut ty = body.bottom().saturating_sub(body_bottom_reserve);
-        for row in &trail_rows {
+        for item in &self.projected[trail_start..] {
             if ty >= body.bottom() {
                 break;
             }
-            let selected = state.list.selected() == Some(&row.id);
+            let selected = state.list.selected() == Some(&item.row.id);
             paint_simple_row(
                 buffer,
                 Rect::new(body.x, ty, body.width, 1),
-                row,
+                &item.row,
                 self.system,
                 true,
                 selected,
@@ -831,7 +841,7 @@ impl<'a, Id> VirtualList<'a, Id> {
                 // Soft cap: still register all projected; projected is already window-sized.
             }
             let row_area = state
-                .regions
+                .regions()
                 .iter()
                 .find(|r| r.id == p.row.id)
                 .map(|r| r.area)
