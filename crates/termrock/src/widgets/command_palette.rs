@@ -510,21 +510,21 @@ pub fn filter_command_entries<'a, Id>(
                 };
                 return Some(CommandMatch::new(e, score, None));
             }
-            let mut best: Option<(u32, MatchRanges)> = fuzzy_match_label(q, &e.label);
+            let mut best =
+                fuzzy_match_label(q, &e.label).map(|(score, ranges)| (score, Some(ranges)));
             for kw in &e.keywords {
-                if let Some((s, r)) = fuzzy_match_label(q, kw) {
+                if let Some((score, _)) = fuzzy_match_label(q, kw) {
+                    let score = score.saturating_add(5); // keyword slightly worse
                     best = Some(match best {
-                        Some((bs, br)) if bs <= s => (bs, br),
-                        _ => (s.saturating_add(5), r), // keyword slightly worse
+                        Some((best_score, best_ranges)) if best_score <= score => {
+                            (best_score, best_ranges)
+                        }
+                        _ => (score, None),
                     });
                 }
             }
             best.map(|(score, ranges)| {
-                let match_ranges = if ranges.as_slice().is_empty() {
-                    None
-                } else {
-                    Some(ranges)
-                };
+                let match_ranges = ranges.filter(|ranges| !ranges.as_slice().is_empty());
                 CommandMatch::new(e, score, match_ranges)
             })
         })
@@ -1967,6 +1967,17 @@ mod tests {
         assert!(score < 100);
         assert!(!ranges.as_slice().is_empty());
         assert!(fuzzy_match_label("zzz", "Toggle theme").is_none());
+    }
+
+    #[test]
+    fn keyword_match_does_not_highlight_primary_label() {
+        let entries = [CommandEntry::new("alpha", "Alpha").keywords(["beta"])];
+
+        let matches = filter_command_entries(&entries, "beta", None);
+
+        assert_eq!(matches.len(), 1);
+        assert_eq!(matches[0].id, "alpha");
+        assert_eq!(matches[0].match_ranges, None);
     }
 
     #[test]

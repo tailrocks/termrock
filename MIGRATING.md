@@ -394,6 +394,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0410 | `v0.14.0` | [Panel and Card use explicit paint](migrations/0410-v0.14.0-remove-panel-card-widget-impls.md) |
 | 0413 | `v0.14.0` | [Tree virtual windows use absolute scroll geometry](migrations/0413-v0.14.0-tree-virtual-window-absolute-offset.md) |
 | 0414 | `v0.14.0` | [InteractionScene gates pointer hits by input ownership](migrations/0414-v0.14.0-interaction-scene-modal-pointer-ownership.md) |
+| 0415 | `v0.14.0` | [CommandPalette keeps keyword ranges out of label highlights](migrations/0415-v0.14.0-command-palette-keyword-highlight-ranges.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical
