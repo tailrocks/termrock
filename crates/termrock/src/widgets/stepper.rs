@@ -677,12 +677,15 @@ impl StepperState {
         let entries = Self::entries(items, &self.statuses);
         let _ = self.collection.reconcile(&entries);
         self.ensure_vertical_cursor_visible(items);
+        let is_press = key.is_press();
 
         if matches!(self.presentation, StepperPresentation::Menu) && !self.menu_open {
-            if matches!(
-                key.code,
-                KeyCode::Enter | KeyCode::Char(' ') | KeyCode::Down
-            ) {
+            if is_press
+                && matches!(
+                    key.code,
+                    KeyCode::Enter | KeyCode::Char(' ') | KeyCode::Down
+                )
+            {
                 self.menu_open = true;
                 return StepperOutcome::MenuToggled { open: true };
             }
@@ -690,11 +693,11 @@ impl StepperState {
 
         if self.menu_open {
             match key.code {
-                KeyCode::Esc => {
+                KeyCode::Esc if is_press => {
                     self.menu_open = false;
                     return StepperOutcome::MenuToggled { open: false };
                 }
-                KeyCode::Enter | KeyCode::Char(' ') => {
+                KeyCode::Enter | KeyCode::Char(' ') if is_press => {
                     return self.activate(self.cursor(), items);
                 }
                 _ => {}
@@ -705,11 +708,13 @@ impl StepperState {
             return self.handle_intent(intent, items);
         }
         // Digit jump 1..9
-        if let KeyCode::Char(c) = key.code {
-            if c.is_ascii_digit() && c != '0' {
-                let idx = (c as u8 - b'1') as usize;
-                if idx < items.len() {
-                    return self.activate(idx, items);
+        if is_press {
+            if let KeyCode::Char(c) = key.code {
+                if c.is_ascii_digit() && c != '0' {
+                    let idx = (c as u8 - b'1') as usize;
+                    if idx < items.len() {
+                        return self.activate(idx, items);
+                    }
                 }
             }
         }
@@ -1282,7 +1287,7 @@ pub fn example_onboarding_steps() -> Vec<StepItem> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyModifiers;
+    use crate::input::{KeyEventKind, KeyModifiers};
     use crate::widgets::tests::click;
 
     fn steps() -> Vec<StepItem> {
@@ -1427,6 +1432,55 @@ mod tests {
             s.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE), &items),
             StepperOutcome::MenuToggled { open: false }
         ));
+    }
+
+    #[test]
+    fn repeated_stepper_one_shot_actions_are_ignored() {
+        let items = steps();
+        let repeat = |code| {
+            let mut key = KeyEvent::new(code, KeyModifiers::NONE);
+            key.kind = KeyEventKind::Repeat;
+            key
+        };
+
+        for code in [KeyCode::Enter, KeyCode::Char(' ')] {
+            let mut state = focused_linear(items.len()).policy(StepperNavPolicy::Host);
+            state.set_presentation_override(Some(StepperPresentation::Menu));
+            assert_eq!(
+                state.handle_key(repeat(code), &items),
+                StepperOutcome::Ignored
+            );
+            assert!(!state.menu_open());
+        }
+
+        let mut navigation = focused_linear(items.len()).policy(StepperNavPolicy::Host);
+        navigation.set_presentation_override(Some(StepperPresentation::Menu));
+        assert_eq!(
+            navigation.handle_key(repeat(KeyCode::Down), &items),
+            StepperOutcome::CursorMoved { index: 1 }
+        );
+        assert!(!navigation.menu_open());
+
+        let mut state = focused_linear(items.len()).policy(StepperNavPolicy::Host);
+        state.set_presentation_override(Some(StepperPresentation::Menu));
+        assert!(matches!(
+            state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &items),
+            StepperOutcome::MenuToggled { open: true }
+        ));
+        let cursor = state.cursor();
+        for code in [
+            KeyCode::Esc,
+            KeyCode::Enter,
+            KeyCode::Char(' '),
+            KeyCode::Char('3'),
+        ] {
+            assert_eq!(
+                state.handle_key(repeat(code), &items),
+                StepperOutcome::Ignored
+            );
+            assert!(state.menu_open());
+            assert_eq!(state.cursor(), cursor);
+        }
     }
 
     #[test]
