@@ -501,11 +501,6 @@ impl<Id> SemanticZoomState<Id> {
     pub fn source(&self) -> Option<&SourceContext<Id>> {
         self.source.as_ref()
     }
-
-    /// Snapshot source without changing level (host updates anchors while open).
-    pub fn update_source(&mut self, ctx: SourceContext<Id>) {
-        self.source = Some(ctx);
-    }
 }
 
 impl<Id: Clone> SemanticZoomState<Id> {
@@ -643,11 +638,6 @@ impl<Id> FullscreenViewerState<Id> {
     #[must_use]
     pub fn zoom(&self) -> &SemanticZoomState<Id> {
         &self.zoom
-    }
-
-    /// Mutable zoom.
-    pub fn zoom_mut(&mut self) -> &mut SemanticZoomState<Id> {
-        &mut self.zoom
     }
 
     /// Whether fullscreen chrome is open.
