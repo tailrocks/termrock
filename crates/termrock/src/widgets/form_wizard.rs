@@ -11,7 +11,7 @@
 //! **vs [`Form`](super::Form).** Form is single-surface field chrome. Wizard
 //! sequences multiple host-owned step surfaces with a stepper and nav.
 //! **vs [`super::Stepper`].** Stepper is the reusable step chrome; FormWizard
-//! embeds it for paint and maps [`WizardStepStatus`] = [`StepStatus`].
+//! embeds it for paint and projects [`StepItem`] steps onto it.
 //!
 //! Research: Huh forms, installers, cloud CLIs, onboarding wizards.
 use ratatui_core::{
@@ -39,9 +39,6 @@ pub const FORM_WIZARD_NARROW_MAX_WIDTH: u16 = 36;
 pub const FORM_WIZARD_COMPACT_MAX_HEIGHT: u16 = 10;
 
 // ── Step model (shared with Stepper) ─────────────────────────────────────────
-
-/// Wizard step definition — alias of [`StepItem`].
-pub type WizardStep = StepItem;
 
 /// Host-projected gate for the **current** step (or review).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -73,11 +70,6 @@ impl WizardGate {
         matches!(self, Self::Valid)
     }
 }
-
-/// Visual / progress status — alias of [`StepStatus`].
-///
-/// Historical name `Upcoming` maps to [`StepStatus::Future`].
-pub type WizardStepStatus = StepStatus;
 
 /// Wizard high-level phase.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -259,13 +251,13 @@ pub enum FormWizardOutcome {
 /// Runtime state for [`FormWizard`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FormWizardState {
-    steps: Vec<WizardStep>,
+    steps: Vec<StepItem>,
     index: usize,
     phase: WizardPhase,
     /// Per-step gate (host projects; length == steps).
     gates: Vec<WizardGate>,
     /// Per-step status for stepper (derived + host overrides).
-    statuses: Vec<WizardStepStatus>,
+    statuses: Vec<StepStatus>,
     completed: Vec<String>,
     skipped: Vec<String>,
     /// Enable review screen before submit.
@@ -307,23 +299,23 @@ impl FormWizardState {
     pub fn new(step_count: usize) -> Self {
         let n = step_count.max(1);
         let steps = (0..n)
-            .map(|i| WizardStep::new(format!("step-{i}"), format!("Step {}", i + 1)))
+            .map(|i| StepItem::new(format!("step-{i}"), format!("Step {}", i + 1)))
             .collect::<Vec<_>>();
         Self::with_steps(steps)
     }
 
     /// Wizard from step definitions.
     #[must_use]
-    pub fn with_steps(steps: impl IntoIterator<Item = WizardStep>) -> Self {
+    pub fn with_steps(steps: impl IntoIterator<Item = StepItem>) -> Self {
         let steps: Vec<_> = steps.into_iter().collect();
         let steps = if steps.is_empty() {
-            vec![WizardStep::new("step-0", "Step 1")]
+            vec![StepItem::new("step-0", "Step 1")]
         } else {
             steps
         };
         let n = steps.len();
-        let mut statuses = vec![WizardStepStatus::Future; n];
-        statuses[0] = WizardStepStatus::Current;
+        let mut statuses = vec![StepStatus::Future; n];
+        statuses[0] = StepStatus::Current;
         Self {
             steps,
             index: 0,
@@ -377,7 +369,7 @@ impl FormWizardState {
 
     /// Steps.
     #[must_use]
-    pub fn steps(&self) -> &[WizardStep] {
+    pub fn steps(&self) -> &[StepItem] {
         &self.steps
     }
 
@@ -401,7 +393,7 @@ impl FormWizardState {
 
     /// Current step def.
     #[must_use]
-    pub fn current_step(&self) -> Option<&WizardStep> {
+    pub fn current_step(&self) -> Option<&StepItem> {
         self.steps.get(self.index)
     }
 
@@ -416,7 +408,7 @@ impl FormWizardState {
 
     /// Statuses for stepper.
     #[must_use]
-    pub fn statuses(&self) -> &[WizardStepStatus] {
+    pub fn statuses(&self) -> &[StepStatus] {
         &self.statuses
     }
 
@@ -545,12 +537,12 @@ impl FormWizardState {
 
     fn rebuild_statuses(&mut self) {
         let n = self.steps.len();
-        self.statuses = vec![WizardStepStatus::Future; n];
+        self.statuses = vec![StepStatus::Future; n];
         for (i, step) in self.steps.iter().enumerate() {
             if self.skipped.iter().any(|s| s == &step.id) {
-                self.statuses[i] = WizardStepStatus::Skipped;
+                self.statuses[i] = StepStatus::Skipped;
             } else if self.completed.iter().any(|s| s == &step.id) {
-                self.statuses[i] = WizardStepStatus::Complete;
+                self.statuses[i] = StepStatus::Complete;
             }
         }
         match self.phase {
@@ -558,9 +550,9 @@ impl FormWizardState {
                 let gate = self.current_gate();
                 if let Some(s) = self.statuses.get_mut(self.index) {
                     *s = if matches!(gate, WizardGate::Invalid) {
-                        WizardStepStatus::Error
+                        StepStatus::Error
                     } else {
-                        WizardStepStatus::Current
+                        StepStatus::Current
                     };
                 }
             }
@@ -736,15 +728,16 @@ impl FormWizardState {
         if self.linear {
             // only completed, skipped, current, or previous
             let allowed = index <= self.index
-                || self.statuses.get(index).is_some_and(|s| {
-                    matches!(s, WizardStepStatus::Complete | WizardStepStatus::Skipped)
-                });
+                || self
+                    .statuses
+                    .get(index)
+                    .is_some_and(|s| matches!(s, StepStatus::Complete | StepStatus::Skipped));
             if !allowed && index > self.index {
                 // allow only if all prior complete/skipped
                 let prior_ok = (0..index).all(|i| {
                     matches!(
                         self.statuses.get(i),
-                        Some(WizardStepStatus::Complete | WizardStepStatus::Skipped)
+                        Some(StepStatus::Complete | StepStatus::Skipped)
                     ) || i == self.index && self.current_gate().allows_advance()
                 });
                 if !prior_ok {
@@ -1331,9 +1324,9 @@ mod tests {
 
     fn three_steps() -> FormWizardState {
         FormWizardState::with_steps([
-            WizardStep::new("account", "Account"),
-            WizardStep::new("region", "Region").optional(true),
-            WizardStep::new("confirm", "Confirm"),
+            StepItem::new("account", "Account"),
+            StepItem::new("region", "Region").optional(true),
+            StepItem::new("confirm", "Confirm"),
         ])
         .with_review(true)
         .with_allow_skip(true)

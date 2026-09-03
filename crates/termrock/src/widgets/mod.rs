@@ -452,7 +452,7 @@ pub use form::{
 pub use form_wizard::{
     FORM_WIZARD_COMPACT_MAX_HEIGHT, FORM_WIZARD_NARROW_MAX_WIDTH, FormWizard, FormWizardOutcome,
     FormWizardPresentation, FormWizardState, StepChangeReason, WizardGate, WizardPhase,
-    WizardProgress, WizardStep, WizardStepStatus,
+    WizardProgress,
 };
 pub use fullscreen_viewer::{
     FULLSCREEN_VIEWER_HINT, FULLSCREEN_VIEWER_NESTED_PREFIX, FULLSCREEN_VIEWER_OVERLAY_ID,

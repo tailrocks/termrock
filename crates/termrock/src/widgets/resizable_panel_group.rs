@@ -23,7 +23,7 @@ use ratatui_core::{
 use crate::{
     input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind},
     style::{DesignSystem, Role},
-    widgets::{SplitDirection, SplitRatio},
+    widgets::SplitDirection,
 };
 
 const RATIO_SCALE: u32 = 10_000;
@@ -1126,12 +1126,6 @@ fn intersect_rect(inner: Rect, outer: Rect) -> Rect {
         width: right.saturating_sub(x),
         height: bottom.saturating_sub(y),
     }
-}
-
-// SplitRatio re-export bridge for preset interop with binary splits.
-#[allow(dead_code)]
-fn _ratio_bridge(r: SplitRatio) -> u16 {
-    r.basis_points()
 }
 
 #[cfg(test)]

@@ -374,19 +374,6 @@ impl MessageEntry {
 
 // ── Projection ──────────────────────────────────────────────────────────────
 
-/// Owned line buffers + block metadata for one paint (host retains across frame).
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[allow(dead_code)]
-pub struct ProjectedThread {
-    /// Owned lines per entry (parallel to blocks).
-    pub line_bufs: Vec<Vec<String>>,
-    /// Pointer tables into `line_bufs` for TranscriptBlock::lines.
-    pub line_refs: Vec<Vec<&'static str>>,
-    /// Block shells (ids/kinds); lines filled after pinning refs — see
-    /// [`build_transcript_blocks`].
-    pub meta: Vec<ProjectedEntryMeta>,
-}
-
 /// Metadata for a projected entry.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProjectedEntryMeta {

@@ -401,8 +401,6 @@ enum ReviewOp {
         after_files: BTreeSet<String>,
     },
     CommentAdd(DiffComment),
-    #[allow(dead_code)]
-    CommentRemove(DiffComment),
     CommentResolve {
         id: String,
         before: bool,
@@ -508,11 +506,6 @@ pub enum DiffReviewOutcome {
         id: String,
         /// Resolved after.
         resolved: bool,
-    },
-    /// Comment removed.
-    CommentRemoved {
-        /// Id.
-        id: String,
     },
     /// Destructive confirm shown / updated.
     ConfirmRequired(DiffDestructiveConfirm),
@@ -762,13 +755,6 @@ impl DiffReviewState {
                     }
                 } else {
                     self.comments.retain(|x| x.id != c.id);
-                }
-            }
-            ReviewOp::CommentRemove(c) => {
-                if forward {
-                    self.comments.retain(|x| x.id != c.id);
-                } else if !self.comments.iter().any(|x| x.id == c.id) {
-                    self.comments.push(c.clone());
                 }
             }
             ReviewOp::CommentResolve { id, before, after } => {
@@ -1740,7 +1726,11 @@ fn paint_review_marks(
         // Paint at right edge of row
         let x = body
             .right()
-            .saturating_sub(display_width_u16(&marks).saturating_add(1))
+            .saturating_sub(
+                u16::try_from(crate::text::display_cols(&marks))
+                    .unwrap_or(u16::MAX)
+                    .saturating_add(1),
+            )
             .max(body.x);
         let style = if colorless {
             system.style(Role::TextStrong).add_modifier(Modifier::BOLD)
@@ -1750,10 +1740,6 @@ fn paint_review_marks(
         buffer.set_stringn(x, region.area.y, take_display_cols(&marks, 4), 4, style);
         let _ = hunks;
     }
-}
-
-fn display_width_u16(s: &str) -> u16 {
-    u16::try_from(crate::text::display_cols(s)).unwrap_or(u16::MAX)
 }
 
 impl StatefulWidget for &DiffReview<'_> {

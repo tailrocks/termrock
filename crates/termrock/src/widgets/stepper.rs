@@ -99,10 +99,6 @@ impl StepStatus {
     }
 }
 
-/// Alias used by FormWizard historically (`Upcoming` = [`StepStatus::Future`]).
-#[allow(dead_code)]
-pub type WizardStepStatus = StepStatus;
-
 /// One step definition (host-projected; values stay outside).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StepItem {
@@ -152,10 +148,6 @@ impl StepItem {
         self
     }
 }
-
-/// FormWizard-compatible name.
-#[allow(dead_code)]
-pub type WizardStep = StepItem;
 
 /// Layout orientation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]

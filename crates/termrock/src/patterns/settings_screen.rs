@@ -1034,17 +1034,6 @@ pub fn example_settings_profile_fields() -> [Field<'static, &'static str>; 2] {
     ]
 }
 
-/// Demo fieldsets for Studio stories.
-#[must_use]
-#[allow(dead_code)]
-pub fn example_settings_fieldsets() -> Vec<Fieldset<'static, &'static str>> {
-    let appearance = example_settings_appearance_fields();
-    // Leak-free: stories build fieldsets locally. Here return empty template via statics.
-    // Hosts use Fieldset::new with their field arrays.
-    let _ = appearance;
-    vec![]
-}
-
 /// Help entries for settings keyboard help.
 #[must_use]
 pub fn example_settings_help_entries() -> Vec<crate::widgets::HelpEntry> {

@@ -33,8 +33,8 @@ use crate::{
         Button, ButtonState, ButtonVariant, ConfirmPrompt, EmptyKind, EmptyState, Field, Fieldset,
         Form, FormOutcome, FormState, FormWizard, FormWizardOutcome, FormWizardState, KeyValueList,
         KeyValueListState, KeybindingRecorderState, KvEntry, KvStatus, PermissionPrompt,
-        PermissionPromptState, StepChangeReason, ThemePicker, ThemePickerOutcome, ThemePickerState,
-        ThemePreset, WizardGate, WizardPhase, WizardProgress, WizardStep,
+        PermissionPromptState, StepChangeReason, StepItem, ThemePicker, ThemePickerOutcome,
+        ThemePickerState, ThemePreset, WizardGate, WizardPhase, WizardProgress,
     },
 };
 
@@ -128,7 +128,7 @@ impl SetupStepKind {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SetupStep {
     /// Wizard step chrome.
-    pub step: WizardStep,
+    pub step: StepItem,
     /// Body kind.
     pub kind: SetupStepKind,
 }
@@ -138,7 +138,7 @@ impl SetupStep {
     #[must_use]
     pub fn new(id: impl Into<String>, title: impl Into<String>, kind: SetupStepKind) -> Self {
         Self {
-            step: WizardStep::new(id, title),
+            step: StepItem::new(id, title),
             kind,
         }
     }
@@ -272,7 +272,7 @@ impl SetupWizardState {
     pub fn from_steps(steps: impl IntoIterator<Item = SetupStep>) -> Self {
         let collected: Vec<SetupStep> = steps.into_iter().collect();
         let kinds: Vec<SetupStepKind> = collected.iter().map(|s| s.kind).collect();
-        let wizard_steps: Vec<WizardStep> = collected.into_iter().map(|s| s.step).collect();
+        let wizard_steps: Vec<StepItem> = collected.into_iter().map(|s| s.step).collect();
         let mut wizard = FormWizardState::with_steps(wizard_steps).with_review(true);
         wizard.set_focused(true);
         // Apply default gates for first step
@@ -1055,9 +1055,9 @@ pub fn example_setup_summary_lines() -> Vec<SetupSummaryLine<'static>> {
     ]
 }
 
-/// Build WizardStep list only (for hosts that only need FormWizard).
+/// Build StepItem list only (for hosts that only need FormWizard).
 #[must_use]
-pub fn setup_steps_to_wizard_steps(steps: &[SetupStep]) -> Vec<WizardStep> {
+pub fn setup_steps_to_wizard_steps(steps: &[SetupStep]) -> Vec<StepItem> {
     steps.iter().map(|s| s.step.clone()).collect()
 }
 
