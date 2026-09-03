@@ -15,7 +15,6 @@
 //!
 //! Research: Zellij help, lazygit keybindings, Vim help, Textual bindings.
 #![allow(unused_imports)] // test-only imports retained
-use std::collections::BTreeMap;
 
 use ratatui_core::{
     buffer::Buffer,
@@ -740,10 +739,66 @@ impl KeyboardHelpState {
             .collect()
     }
 
+    fn projected_entries(&self, visible: &[HelpEntry]) -> Vec<HelpEntry> {
+        let mut projected = filter_help_entries(visible, self.query_text());
+        if matches!(self.presentation, KeyboardHelpPresentation::Tiny) {
+            return contract_help_entries(&projected, 6);
+        }
+        projected.sort_by(|a, b| a.category.cmp(&b.category));
+        projected
+    }
+
+    fn reconcile_projected(&mut self, projected: &[HelpEntry]) {
+        let entries = Self::entries_coll(projected);
+        let _ = self.collection.reconcile(&entries);
+        self.scroll = self.scroll.min(projected.len().saturating_sub(1));
+    }
+
+    fn rows_to_cursor(&self, projected: &[HelpEntry], start: usize, cursor: usize) -> usize {
+        let mut rows = 0usize;
+        let mut last_category = projected
+            .get(start.saturating_sub(1))
+            .map(|entry| entry.category.as_str());
+        for entry in projected
+            .iter()
+            .skip(start)
+            .take(cursor.saturating_sub(start).saturating_add(1))
+        {
+            if !matches!(self.presentation, KeyboardHelpPresentation::Tiny)
+                && last_category != Some(entry.category.as_str())
+            {
+                rows = rows.saturating_add(1);
+                last_category = Some(entry.category.as_str());
+            }
+            rows = rows.saturating_add(1);
+        }
+        rows
+    }
+
+    fn ensure_cursor_visible(&mut self, projected: &[HelpEntry]) {
+        let Some(cursor) = self.collection.active().copied() else {
+            self.scroll = 0;
+            return;
+        };
+        if projected.is_empty() {
+            self.scroll = 0;
+            return;
+        }
+        self.scroll = self.scroll.min(projected.len().saturating_sub(1));
+        if cursor < self.scroll {
+            self.scroll = cursor;
+        }
+        let capacity = usize::from(self.painted_rows.max(1));
+        while self.scroll < cursor && self.rows_to_cursor(projected, self.scroll, cursor) > capacity
+        {
+            self.scroll = self.scroll.saturating_add(1);
+        }
+    }
+
     /// Reconcile after host rebuilds visible list.
     pub fn reconcile(&mut self, visible: &[HelpEntry]) {
-        let e = Self::entries_coll(visible);
-        let _ = self.collection.reconcile(&e);
+        let projected = self.projected_entries(visible);
+        self.reconcile_projected(&projected);
     }
 
     /// Keyboard (modal primarily; footer is mostly display).
@@ -784,9 +839,12 @@ impl KeyboardHelpState {
         }
 
         match self.query.handle_key(key) {
-            TextInputOutcome::Changed => KeyboardHelpOutcome::QueryChanged {
-                query: self.query_text().to_string(),
-            },
+            TextInputOutcome::Changed => {
+                self.reconcile(visible);
+                KeyboardHelpOutcome::QueryChanged {
+                    query: self.query_text().to_string(),
+                }
+            }
             TextInputOutcome::Cancelled => self.close_modal(),
             TextInputOutcome::Ignored => {
                 if let Some(intent) = default_keyboard_help_intent(key) {
@@ -808,8 +866,8 @@ impl KeyboardHelpState {
         if !self.live() || !self.open || !matches!(self.mode, KeyboardHelpMode::Modal) {
             return KeyboardHelpOutcome::Ignored;
         }
-        self.reconcile(visible);
-        let entries = Self::entries_coll(visible);
+        let projected = self.projected_entries(visible);
+        self.reconcile_projected(&projected);
         match intent {
             UiIntent::Move(
                 NavigationMove::Next
@@ -819,18 +877,14 @@ impl KeyboardHelpState {
                 | NavigationMove::Up
                 | NavigationMove::Down,
             ) => {
-                if visible.is_empty() {
+                if projected.is_empty() {
                     return KeyboardHelpOutcome::Ignored;
                 }
+                let entries = Self::entries_coll(&projected);
                 let out = self.collection.handle_intent(intent, &entries);
                 if out.active_changed() {
+                    self.ensure_cursor_visible(&projected);
                     let cur = self.cursor_index();
-                    let vis = usize::from(self.painted_rows.max(1));
-                    if cur < self.scroll {
-                        self.scroll = cur;
-                    } else if cur >= self.scroll.saturating_add(vis) {
-                        self.scroll = cur.saturating_sub(vis.saturating_sub(1));
-                    }
                     KeyboardHelpOutcome::CursorMoved { index: cur }
                 } else {
                     KeyboardHelpOutcome::Ignored
@@ -845,7 +899,7 @@ impl KeyboardHelpState {
     pub fn handle_mouse(
         &mut self,
         event: MouseEvent,
-        _visible: &[HelpEntry],
+        visible: &[HelpEntry],
     ) -> KeyboardHelpOutcome {
         if !self.live() || !self.open {
             return KeyboardHelpOutcome::Ignored;
@@ -861,10 +915,10 @@ impl KeyboardHelpState {
                 KeyboardHelpOutcome::Ignored
             }
             MouseEventKind::ScrollDown => {
-                self.handle_intent(UiIntent::Move(NavigationMove::Next), _visible)
+                self.handle_intent(UiIntent::Move(NavigationMove::Next), visible)
             }
             MouseEventKind::ScrollUp => {
-                self.handle_intent(UiIntent::Move(NavigationMove::Previous), _visible)
+                self.handle_intent(UiIntent::Move(NavigationMove::Previous), visible)
             }
             _ => KeyboardHelpOutcome::Ignored,
         }
@@ -1092,46 +1146,21 @@ impl<'a> KeyboardHelp<'a> {
             y = y.saturating_add(1);
         }
 
-        // Group by category
-        let mut by_cat: BTreeMap<&str, Vec<(usize, &HelpEntry)>> = BTreeMap::new();
-        for (i, e) in self.entries.iter().enumerate() {
-            by_cat.entry(e.category.as_str()).or_default().push((i, e));
-        }
+        let flat = state.projected_entries(self.entries);
 
-        let flat: Vec<(usize, &HelpEntry)> =
-            if matches!(state.presentation, KeyboardHelpPresentation::Tiny) {
-                let c = contract_help_entries(self.entries, 6);
-                // map back indices poorly — re-enumerate contracted
-                c.iter()
-                    .filter_map(|ce| {
-                        self.entries
-                            .iter()
-                            .position(|e| e.id == ce.id)
-                            .map(|i| (i, &self.entries[i]))
-                    })
-                    .collect()
-            } else {
-                by_cat.values().flatten().copied().collect()
-            };
-
-        state.reconcile(&flat.iter().map(|(_, e)| (*e).clone()).collect::<Vec<_>>());
-
-        let cursor = state.cursor_index();
         let list_h = inner.bottom().saturating_sub(y);
         if list_h == 0 {
             return;
         }
-        let capacity = usize::from(list_h);
-        if cursor < state.scroll {
-            state.scroll = cursor;
-        } else if cursor >= state.scroll.saturating_add(capacity) {
-            state.scroll = cursor.saturating_sub(capacity.saturating_sub(1));
-        }
+        state.painted_rows = list_h;
+        state.reconcile_projected(&flat);
+        state.ensure_cursor_visible(&flat);
 
-        let mut painted = 0u16;
-        let mut last_cat = "";
-        let mut flat_i = 0usize;
-        for (orig_i, e) in flat.iter().skip(state.scroll) {
+        let cursor = state.cursor_index();
+        let mut last_cat = flat
+            .get(state.scroll.saturating_sub(1))
+            .map_or("", |entry| entry.category.as_str());
+        for (flat_i, e) in flat.iter().enumerate().skip(state.scroll) {
             if y >= inner.bottom() {
                 break;
             }
@@ -1149,16 +1178,14 @@ impl<'a> KeyboardHelp<'a> {
                         .add_modifier(Modifier::BOLD),
                 );
                 y = y.saturating_add(1);
-                painted = painted.saturating_add(1);
                 if y >= inner.bottom() {
                     break;
                 }
             }
 
-            let active = flat_i + state.scroll == cursor && surface;
-            flat_i += 1;
+            let active = flat_i == cursor && surface;
             let rect = Rect::new(inner.x, y, inner.width, 1);
-            state.hits.push((*orig_i, rect));
+            state.hits.push((flat_i, rect));
 
             let flags = format!(
                 "{}{}",
@@ -1239,9 +1266,7 @@ impl<'a> KeyboardHelp<'a> {
             }
             let _ = line;
             y = y.saturating_add(1);
-            painted = painted.saturating_add(1);
         }
-        state.painted_rows = painted;
     }
 
     /// Semantic registration.
@@ -1533,6 +1558,92 @@ mod tests {
         );
         let c = contract_help_entries(&e, 2);
         assert!(c.len() <= 2);
+    }
+
+    #[test]
+    fn modal_query_projection_drives_reconcile_and_paint() {
+        let sys = system();
+        let entries = vec![
+            HelpEntry::new("save", "Edit", "ctrl+s", "Save file"),
+            HelpEntry::new("quit", "Navigation", "q", "Quit application"),
+        ];
+        let mut state = KeyboardHelpState::modal();
+        for character in "save".chars() {
+            assert!(matches!(
+                state.handle_key(
+                    KeyEvent::new(KeyCode::Char(character), KeyModifiers::NONE),
+                    &entries,
+                ),
+                KeyboardHelpOutcome::QueryChanged { .. }
+            ));
+        }
+
+        let area = Rect::new(0, 0, 64, 16);
+        let mut buffer = Buffer::empty(area);
+        KeyboardHelp::new(&entries, &sys).paint(area, &mut buffer, &mut state);
+
+        assert_eq!(state.hits.len(), 1);
+        assert_eq!(state.hits[0].0, 0);
+        let text: String = buffer
+            .content()
+            .iter()
+            .map(|cell| cell.symbol().to_string())
+            .collect();
+        assert!(text.contains("Save file"), "{text}");
+        assert!(!text.contains("Quit application"), "{text}");
+    }
+
+    #[test]
+    fn tiny_projection_keeps_mouse_hits_in_projected_order() {
+        let sys = system();
+        let entries = vec![
+            HelpEntry::new("slow", "Other", "s", "Slow").priority(80),
+            HelpEntry::new("best", "Priority", "b", "Best").priority(1),
+        ];
+        let mut state = KeyboardHelpState::modal();
+        state.set_presentation_override(Some(KeyboardHelpPresentation::Tiny));
+
+        let area = Rect::new(0, 0, 20, 10);
+        let mut buffer = Buffer::empty(area);
+        KeyboardHelp::new(&entries, &sys).paint(area, &mut buffer, &mut state);
+
+        let (index, rect) = state.hits[0];
+        assert_eq!(index, 0);
+        assert_eq!(
+            state.handle_mouse(
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(rect.x, rect.y),
+                    modifiers: KeyModifiers::NONE,
+                },
+                &entries,
+            ),
+            KeyboardHelpOutcome::CursorMoved { index: 0 }
+        );
+        assert_eq!(state.cursor_index(), 0);
+    }
+
+    #[test]
+    fn modal_scroll_accounts_for_category_headers() {
+        let sys = system();
+        let entries = vec![
+            HelpEntry::new("a1", "A", "a", "A one"),
+            HelpEntry::new("a2", "A", "b", "A two"),
+            HelpEntry::new("b1", "B", "c", "B one"),
+            HelpEntry::new("b2", "B", "d", "B two"),
+        ];
+        let mut state = KeyboardHelpState::modal();
+        state.set_presentation_override(Some(KeyboardHelpPresentation::Full));
+        state.reconcile(&entries);
+        state.collection.set_active(Some(2));
+
+        let area = Rect::new(0, 0, 40, 4);
+        let mut buffer = Buffer::empty(area);
+        KeyboardHelp::new(&entries, &sys).paint(area, &mut buffer, &mut state);
+
+        assert_eq!(state.painted_rows, 2);
+        assert_eq!(state.scroll, 2);
+        assert!(state.hits.iter().any(|(index, _)| *index == 2));
     }
 
     #[test]
