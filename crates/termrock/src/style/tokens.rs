@@ -624,6 +624,13 @@ pub struct PanelRecipe {
     pub pad_y: u16,
     /// Optional surface fill style.
     pub surface: ratatui_core::style::Style,
+    /// Resolved paint fill for this panel plane.
+    ///
+    /// Design-system recipes populate this for every [`Elevation`], including
+    /// [`Elevation::Canvas`] and [`Elevation::Overlay`]. A transparent panel
+    /// variant may clear this at the widget boundary while retaining
+    /// [`Self::surface`] as its base token.
+    pub fill: Option<ratatui_core::style::Style>,
     /// Glyph the title carries when the chrome itself is a warning.
     ///
     /// Danger chrome must not rely on a red border alone: colorless and
@@ -1348,6 +1355,7 @@ impl DesignSystem {
             PanelChrome::Focused => self.style(Role::BorderFocused),
             PanelChrome::Danger => self.style(Role::Danger),
         };
+        let surface = self.style(elevation.role());
         PanelRecipe {
             border,
             title: if focused {
@@ -1357,7 +1365,8 @@ impl DesignSystem {
             },
             pad_x: self.spacing.card_inset,
             pad_y: 1,
-            surface: self.style(elevation.role()),
+            surface,
+            fill: Some(surface),
             title_prefix: match emphasis {
                 PanelChrome::Danger => Some(self.glyphs.resolve(Glyph::Error).text),
                 PanelChrome::Focused | PanelChrome::Normal => None,
@@ -2465,6 +2474,35 @@ mod tests {
             system.elevation(Elevation::Surface),
             system.elevation(Elevation::Raised)
         );
+    }
+
+    #[test]
+    fn panel_recipe_fill_matches_surface_for_every_elevation_and_chrome() {
+        let system = DesignSystem::junie();
+        let elevations = [
+            Elevation::Canvas,
+            Elevation::Surface,
+            Elevation::Raised,
+            Elevation::Overlay,
+        ];
+        let emphases = [
+            PanelChrome::Normal,
+            PanelChrome::Focused,
+            PanelChrome::Danger,
+        ];
+
+        for elevation in elevations {
+            for emphasis in emphases {
+                let recipe = system.panel_recipe(emphasis, elevation);
+                assert_eq!(
+                    recipe.fill,
+                    Some(recipe.surface),
+                    "fill follows the resolved {} plane for {emphasis:?}",
+                    elevation.id()
+                );
+                assert_eq!(recipe.fill, Some(system.elevation(elevation)));
+            }
+        }
     }
 
     #[test]

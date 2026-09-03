@@ -31700,6 +31700,7 @@ pub fn termrock::style::ListRowVisualState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::style::ListRowVisualState
 pub struct termrock::style::PanelRecipe
 pub termrock::style::PanelRecipe::border: ratatui_core::style::Style
+pub termrock::style::PanelRecipe::fill: core::option::Option<ratatui_core::style::Style>
 pub termrock::style::PanelRecipe::pad_x: u16
 pub termrock::style::PanelRecipe::pad_y: u16
 pub termrock::style::PanelRecipe::surface: ratatui_core::style::Style
@@ -77086,7 +77087,6 @@ pub const fn termrock::widgets::Panel<'a>::body(self, termrock::widgets::PanelBo
 pub const fn termrock::widgets::Panel<'a>::body_detail(self, &'a str) -> Self
 pub const fn termrock::widgets::Panel<'a>::body_title(self, &'a str) -> Self
 pub const fn termrock::widgets::Panel<'a>::collapsible(self, bool) -> Self
-pub const fn termrock::widgets::Panel<'a>::elevation(&self) -> termrock::style::Elevation
 pub const fn termrock::widgets::Panel<'a>::emphasis(self, termrock::style::PanelChrome) -> Self
 pub const fn termrock::widgets::Panel<'a>::footer(self, &'a str) -> Self
 pub const fn termrock::widgets::Panel<'a>::has_box_border(&self) -> bool
@@ -77101,7 +77101,6 @@ pub fn termrock::widgets::Panel<'a>::paint(&self, ratatui_core::layout::rect::Re
 pub fn termrock::widgets::Panel<'a>::paint_skeleton_body(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, u16)
 pub const fn termrock::widgets::Panel<'a>::palette(&self) -> &termrock::style::RolePalette
 pub const fn termrock::widgets::Panel<'a>::quiet(&'a termrock::style::DesignSystem) -> Self
-pub const fn termrock::widgets::Panel<'a>::raised(self, bool) -> Self
 pub fn termrock::widgets::Panel<'a>::recipe(&self) -> termrock::style::PanelRecipe
 pub fn termrock::widgets::Panel<'a>::register_semantic<Id, Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, core::option::Option<&termrock::widgets::PanelState>) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
 pub const fn termrock::widgets::Panel<'a>::resolved_chrome(&self) -> termrock::style::PanelChrome

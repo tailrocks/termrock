@@ -433,6 +433,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0452 | `v0.14.0` | [NotificationCenter physical one-shot actions](migrations/0452-v0.14.0-notification-center-one-shot-actions.md) |
 | 0453 | `v0.14.0` | [Drawer and Popover physical one-shot close actions](migrations/0453-v0.14.0-overlay-close-one-shot-actions.md) |
 | 0454 | `v0.14.0` | [Callout alert physical one-shot actions](migrations/0454-v0.14.0-callout-alert-one-shot-actions.md) |
+| 0455 | `v0.14.0` | [Panel surface resolver, overlay framing, and raised/elevation API removal](migrations/0455-v0.14.0-panel-raised-elevation.md) |
 | 0456 | `v0.14.0` | [Breadcrumbs physical one-shot actions](migrations/0456-v0.14.0-breadcrumbs-one-shot-actions.md) |
 | 0457 | `v0.14.0` | [DetailTable physical one-shot activation](migrations/0457-v0.14.0-detail-table-one-shot-activation.md) |
 | 0458 | `v0.14.0` | [InlineMention physical one-shot actions](migrations/0458-v0.14.0-inline-mention-one-shot-actions.md) |
