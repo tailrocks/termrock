@@ -880,12 +880,6 @@ impl DesignSystem {
         Self::new(RolePalette::junie()).capability(ColorCapability::Truecolor)
     }
 
-    /// The canonical system resolved for the operator's terminal capability.
-    #[must_use]
-    pub fn adaptive() -> Self {
-        Self::junie().quantize(ColorCapability::detect_from_env())
-    }
-
     /// The junie theme resolved for this system's colour capability.
     ///
     /// Widgets that need a resolver (`lift`, `backdrop`, `button`, …) call the

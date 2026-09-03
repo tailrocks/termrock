@@ -325,19 +325,6 @@ impl AdaptiveAnatomy {
             },
         }
     }
-
-    /// Whether a content priority tier is shown.
-    #[must_use]
-    pub const fn shows(self, priority: ContentPriority) -> bool {
-        match priority {
-            ContentPriority::Essential => self.essential,
-            ContentPriority::Important => self.important,
-            ContentPriority::Optional => self.optional_meta,
-            ContentPriority::Decorative => {
-                self.optional_meta && self.full_secondary_labels && self.secondary_actions
-            }
-        }
-    }
 }
 
 /// Viewport classification from width × height.
@@ -919,18 +906,6 @@ impl AnatomyPart {
     /// Optional metadata (hides under meta contraction).
     #[must_use]
     pub const fn optional(name: &'static str, preferred: u16) -> Self {
-        Self {
-            name,
-            priority: ContentPriority::Optional,
-            preferred_width: preferred,
-            min_width: 0,
-            overflow: OverflowBehavior::Hide,
-        }
-    }
-
-    /// Secondary action slot.
-    #[must_use]
-    pub const fn secondary_action(name: &'static str, preferred: u16) -> Self {
         Self {
             name,
             priority: ContentPriority::Optional,

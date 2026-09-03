@@ -378,17 +378,6 @@ impl<'a> Kbd<'a> {
         }
     }
 
-    /// Alternative chords for one command.
-    #[must_use]
-    pub fn alternatives(chords: &[KeyChord], system: &'a DesignSystem) -> Self {
-        let fmt = ChordFormat::new();
-        Self {
-            label: Cow::Owned(format_alternatives(chords, fmt)),
-            system,
-            variant: KbdVariant::Compact,
-        }
-    }
-
     /// From a keymap binding (glyph override wins).
     #[must_use]
     pub fn from_binding<A: Clone + 'static>(

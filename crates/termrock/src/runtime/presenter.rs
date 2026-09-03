@@ -39,17 +39,6 @@ pub enum FrameRate {
 }
 
 impl FrameRate {
-    /// Frames per second for this rung (`0` for [`Self::Idle`]).
-    #[must_use]
-    pub const fn fps(self) -> u16 {
-        match self {
-            Self::Idle => 0,
-            Self::Ambient => 12,
-            Self::Active => 30,
-            Self::Ceiling => 60,
-        }
-    }
-
     /// Interval between frames, or `None` when nothing should wake the loop.
     #[must_use]
     pub const fn interval(self) -> Option<Duration> {

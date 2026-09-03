@@ -318,10 +318,6 @@ impl AuthEntryState {
         self.secrets.password.secret()
     }
 
-    /// Take password secret (clears password field).
-    pub fn take_password_secret(&mut self) -> String {
-        self.secrets.password.take_secret()
-    }
     /// Terms accepted.
     #[must_use]
     pub fn terms_accepted(&self) -> bool {

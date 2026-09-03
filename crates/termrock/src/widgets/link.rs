@@ -28,7 +28,7 @@ use crate::interaction::{
     EventResult, SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent,
     default_button_intent,
 };
-use crate::osc::{HyperlinkRegion, Request, encode_hyperlink_close, encode_hyperlink_open};
+use crate::osc::{HyperlinkRegion, Request, encode_hyperlink_open};
 use crate::style::{ButtonRecipeVariant, ControlState, DesignSystem, Role};
 use crate::text::{display_cols, take_display_cols};
 
@@ -461,12 +461,6 @@ impl<'a> Link<'a> {
             return Vec::new();
         };
         encode_hyperlink_open(self.osc_id, url)
-    }
-
-    /// Encode OSC close bytes.
-    #[must_use]
-    pub fn encode_osc_close() -> Vec<u8> {
-        encode_hyperlink_close()
     }
 
     /// Hyperlink region for hit testing / host OSC region lists.

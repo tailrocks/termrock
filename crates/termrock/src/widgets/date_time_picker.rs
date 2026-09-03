@@ -888,12 +888,6 @@ impl DateTimePickerState {
         self.value_time
     }
 
-    /// Committed datetime.
-    #[must_use]
-    pub fn datetime(&self) -> Option<CivilDateTime> {
-        Some(CivilDateTime::new(self.value_date?, self.value_time?))
-    }
-
     /// Committed range.
     #[must_use]
     pub fn range(&self) -> Option<CivilDateRange> {

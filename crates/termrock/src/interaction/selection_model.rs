@@ -363,37 +363,6 @@ impl<Id: Clone + PartialEq> SelectionModel<Id> {
         }
     }
 
-    /// Extends selection from `anchor` to `to` along `order` (visible/filtered order).
-    ///
-    /// Disabled items should already be omitted from `order`. Existing multi
-    /// members outside the range are kept (additive range, desktop-style).
-    pub fn extend_range(&mut self, order: &[Id], to: &Id) -> SelectionDelta<Id> {
-        if !matches!(self.kind, SelectionKind::Range | SelectionKind::Multiple) {
-            return self.select(to.clone());
-        }
-        let anchor = self.anchor.clone().unwrap_or_else(|| to.clone());
-        let Some(ai) = order.iter().position(|id| id == &anchor) else {
-            return self.select(to.clone());
-        };
-        let Some(ti) = order.iter().position(|id| id == to) else {
-            return SelectionDelta::Replaced {
-                selected: self.selected.clone(),
-            };
-        };
-        let (lo, hi) = if ai <= ti { (ai, ti) } else { (ti, ai) };
-        for id in &order[lo..=hi] {
-            if !self.is_selected(id) {
-                self.selected.push(id.clone());
-            }
-        }
-        self.anchor = Some(anchor.clone());
-        SelectionDelta::RangeApplied {
-            from: anchor,
-            to: to.clone(),
-            selected: self.selected.clone(),
-        }
-    }
-
     /// Replaces selection with exactly the range `[anchor, to]` along `order`.
     pub fn set_range(&mut self, order: &[Id], to: &Id) -> SelectionDelta<Id> {
         if !matches!(self.kind, SelectionKind::Range | SelectionKind::Multiple) {

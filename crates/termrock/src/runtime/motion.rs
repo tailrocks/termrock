@@ -386,18 +386,6 @@ impl Presence {
             PresencePhase::Exiting { since } => since.checked_add(self.exit_duration),
         }
     }
-
-    /// Animation demand while present.
-    #[must_use]
-    pub fn demand(self) -> AnimationDemand {
-        match self.next_deadline() {
-            Some(d) => AnimationDemand {
-                needs_redraw: true,
-                next_deadline: Some(d),
-            },
-            None => AnimationDemand::idle(),
-        }
-    }
 }
 
 /// Visibility transition from [`Presence::advance`].

@@ -16,8 +16,7 @@ use ratatui_core::{
 };
 
 use super::{
-    DismissDecision, DismissEventId, DismissGuard, DismissableLayer, InteractionLayer,
-    InteractionScene, LayerDismissPolicy, LayerKind,
+    DismissDecision, DismissEventId, DismissGuard, DismissableLayer, LayerDismissPolicy, LayerKind,
 };
 
 /// Stable overlay identity.
@@ -1316,28 +1315,6 @@ impl<FocusId: Clone> OverlayStack<FocusId> {
     /// Removes an overlay by id (and its transitive descendants).
     pub fn dismiss(&mut self, id: &OverlayId) -> OverlayOutcome<FocusId> {
         self.dismiss_root(id)
-    }
-
-    /// Pushes matching layers onto an [`InteractionScene`] (does not clear root).
-    ///
-    /// Call after ensuring a root layer. Overlay layer ids are stringified
-    /// [`OverlayId`] values — use the same string when registering elements.
-    pub fn sync_scene_layers<Id, Action>(&self, scene: &mut InteractionScene<Id, String, Action>)
-    where
-        Id: Clone + PartialEq,
-        FocusId: Into<Id> + Clone,
-    {
-        for entry in &self.entries {
-            let focus_return = entry.opener_focus.clone().map(Into::into);
-            scene.push_layer(InteractionLayer {
-                id: entry.id.0.clone(),
-                kind: OverlayPolicy::scene_layer_kind(entry.kind),
-                owns_input: entry.policy.owns_input,
-                esc: entry.policy.esc,
-                outside: entry.policy.outside,
-                focus_return,
-            });
-        }
     }
 }
 

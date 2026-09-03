@@ -130,12 +130,6 @@ impl<Id> RovingFocusGroup<Id> {
         self.wrap = wrap;
         self
     }
-    /// Whether wrap is enabled.
-    #[must_use]
-    pub const fn wraps(&self) -> bool {
-        self.wrap
-    }
-
     /// Active descendant id.
     #[must_use]
     pub const fn active(&self) -> Option<&Id> {

@@ -655,17 +655,6 @@ impl PromptComposerState {
         self.validation_error.as_deref()
     }
 
-    /// Clears draft text only (keeps chips).
-    pub fn clear_draft(&mut self) {
-        self.push_undo();
-        self.editor.set_text("");
-        self.select_anchor = None;
-        self.completion = CompletionQuery::default();
-        self.history_index = None;
-        self.history_draft = None;
-        self.validation_error = None;
-    }
-
     /// Whether a non-empty selection is active.
     #[must_use]
     pub fn has_selection(&self) -> bool {

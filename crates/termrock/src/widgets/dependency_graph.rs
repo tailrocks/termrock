@@ -279,13 +279,6 @@ impl<'a> DepEdge<'a> {
         self.kind = k;
         self
     }
-
-    /// Undirected.
-    #[must_use]
-    pub const fn undirected(mut self) -> Self {
-        self.directed = false;
-        self
-    }
 }
 
 // ── View / layout ───────────────────────────────────────────────────────────

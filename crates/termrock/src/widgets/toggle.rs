@@ -906,13 +906,6 @@ impl<'a, Id> ToggleGroup<'a, Id> {
         self
     }
 
-    /// Separated faces.
-    #[must_use]
-    pub const fn separated(mut self) -> Self {
-        self.recipe = ToggleGroupRecipe::Separated;
-        self
-    }
-
     /// Orientation.
     #[must_use]
     pub const fn orientation(mut self, o: ToggleGroupOrientation) -> Self {

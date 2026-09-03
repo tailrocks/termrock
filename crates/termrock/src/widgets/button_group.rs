@@ -381,13 +381,6 @@ impl<'a, Id> ButtonGroup<'a, Id> {
         self
     }
 
-    /// Separated recipe.
-    #[must_use]
-    pub const fn separated(mut self) -> Self {
-        self.recipe = ButtonGroupRecipe::Separated;
-        self
-    }
-
     /// Recipe override.
     #[must_use]
     pub const fn recipe(mut self, recipe: ButtonGroupRecipe) -> Self {

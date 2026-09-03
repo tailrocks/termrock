@@ -423,12 +423,6 @@ impl MentionRef {
         s
     }
 
-    /// Label for composer chip bridge.
-    #[must_use]
-    pub fn to_composer_label(&self) -> String {
-        self.label.clone()
-    }
-
     /// Apply selected disambiguator (host confirms resolution).
     pub fn apply_disambiguation(&mut self, index: usize) -> bool {
         let Some(d) = self.disambiguators.get(index) else {

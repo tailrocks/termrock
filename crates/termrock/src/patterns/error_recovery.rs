@@ -304,24 +304,6 @@ pub struct CrashReportSnapshot {
     pub class: FailureClass,
 }
 
-impl CrashReportSnapshot {
-    /// Minimal crash snapshot.
-    #[must_use]
-    pub fn crash(summary: impl Into<String>, technical: impl Into<String>) -> Self {
-        Self {
-            summary: summary.into(),
-            technical: technical.into(),
-            source: "termrock".into(),
-            preserved_note: "Session draft retained".into(),
-            work_preserved: true,
-            env_lines: Vec::new(),
-            log_lines: Vec::new(),
-            capabilities_text: String::new(),
-            class: FailureClass::Crash,
-        }
-    }
-}
-
 // ── Secret redaction (pure; used by copy + diagnostics paint) ───────────────
 
 /// Redact common secret patterns from crash-report text.

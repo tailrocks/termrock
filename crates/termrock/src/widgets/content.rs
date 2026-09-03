@@ -133,20 +133,6 @@ impl<'a> Heading<'a> {
         self
     }
 
-    /// H2 convenience.
-    #[must_use]
-    pub const fn h2(mut self) -> Self {
-        self.level = HeadingLevel::H2;
-        self
-    }
-
-    /// H3 convenience.
-    #[must_use]
-    pub const fn h3(mut self) -> Self {
-        self.level = HeadingLevel::H3;
-        self
-    }
-
     /// Recipe.
     #[must_use]
     pub const fn recipe(mut self, recipe: HeadingRecipe) -> Self {

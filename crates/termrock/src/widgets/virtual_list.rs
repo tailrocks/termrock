@@ -347,12 +347,6 @@ impl<Id> VirtualListState<Id> {
         self.virt.visible_slice()
     }
 
-    /// Measure/overscan slice (what host should project).
-    #[must_use]
-    pub fn measure_slice(&self) -> VirtSlice {
-        self.virt.visible_slice()
-    }
-
     /// Indices the host should project this frame (sticky + measure window).
     ///
     /// Never returns O(logical_len) for large universes.

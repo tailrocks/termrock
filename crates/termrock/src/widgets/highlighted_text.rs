@@ -367,17 +367,6 @@ impl MatchRanges {
     pub fn prepare(self, source: &str) -> Self {
         self.normalized(source).resolve_overlaps(source)
     }
-
-    /// Indices of original ranges containing `byte` (before resolve).
-    #[must_use]
-    pub fn covering(&self, byte: usize) -> Vec<usize> {
-        self.ranges
-            .iter()
-            .enumerate()
-            .filter(|(_, r)| r.start <= byte && byte < r.end)
-            .map(|(i, _)| i)
-            .collect()
-    }
 }
 
 impl FromIterator<MatchRange> for MatchRanges {
