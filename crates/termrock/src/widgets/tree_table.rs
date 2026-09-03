@@ -1544,6 +1544,11 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
             continue;
         }
         let col = &table.columns.columns[col_idx];
+        let cell_ordinal = table
+            .columns
+            .visible()
+            .position(|(visible_index, _)| visible_index == col_idx)
+            .unwrap_or(ord);
         let paint_x = rect.x;
         let paint_end = rect.right();
         let paint_w = rect.width;
@@ -1601,7 +1606,7 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
                 );
             }
         } else {
-            let text = row.cells.get(ord).copied().unwrap_or("");
+            let text = row.cells.get(cell_ordinal).copied().unwrap_or("");
             buffer.set_stringn(
                 paint_x,
                 y,
@@ -1880,6 +1885,45 @@ mod tests {
                 .map(|(index, _)| *index)
                 .collect::<Vec<_>>(),
             [0, 1]
+        );
+    }
+
+    #[test]
+    fn responsive_paint_keeps_row_cells_aligned_with_surviving_headers() {
+        let columns = ColumnModel::new(vec![
+            DataColumn::new("left", "Left", DataColumnWidth::Min(12)).priority(100),
+            DataColumn::new("dropped", "Dropped", DataColumnWidth::Fixed(6)).priority(10),
+            DataColumn::new("right", "Right", DataColumnWidth::Fixed(6)).priority(100),
+        ]);
+        let cells: &[&str] = &["L", "wrong", "R"];
+        let rows = [TreeTableRow::new("r", 0, cells)];
+        let system = DesignSystem::default();
+        let area = Rect::new(0, 0, 22, 6);
+        let mut state = TreeTableState::<&str, &str>::new(Some("r"));
+        let mut buffer = Buffer::empty(area);
+
+        TreeTable::new(&system, &columns, &rows).render(area, &mut buffer, &mut state);
+
+        assert_eq!(
+            state
+                .paint_widths
+                .iter()
+                .map(|(index, _)| *index)
+                .collect::<Vec<_>>(),
+            [0, 2]
+        );
+        let right_header = state
+            .header_regions
+            .iter()
+            .find(|region| region.id == "right")
+            .expect("surviving right column has a header hit region");
+        assert_eq!(
+            buffer[(right_header.area.x, right_header.area.y)].symbol(),
+            "R"
+        );
+        assert_eq!(
+            buffer[(right_header.area.x, right_header.area.y + 1)].symbol(),
+            "R"
         );
     }
 
