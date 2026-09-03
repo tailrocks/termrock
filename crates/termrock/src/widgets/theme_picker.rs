@@ -44,7 +44,6 @@ pub fn system_from_preset_id(id: &str) -> Option<DesignSystem> {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ThemePickerState {
     selected: usize,
-    confirmed: Option<&'static str>,
     focused: bool,
     enabled: bool,
     row_regions: Vec<(usize, Rect)>,
@@ -62,7 +61,6 @@ impl ThemePickerState {
     pub const fn new(selected: usize) -> Self {
         Self {
             selected,
-            confirmed: None,
             focused: true,
             enabled: true,
             row_regions: Vec::new(),
