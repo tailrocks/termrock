@@ -1493,6 +1493,18 @@ impl<'a, Id: Clone + PartialEq> RadioGroup<'a, Id> {
 }
 
 impl<Id: Clone + PartialEq> RadioState<Id> {
+    fn collection_items(options: &[Id]) -> Vec<crate::interaction::CollectionItem<Id>> {
+        options
+            .iter()
+            .map(|id| crate::interaction::CollectionItem {
+                id: id.clone(),
+                enabled: true,
+                label: String::new(),
+                parent: None,
+            })
+            .collect()
+    }
+
     /// Headless key path using option ids only (all enabled, no labels).
     ///
     /// Prefer [`RadioGroup::handle_key`] for full option metadata (disabled,
@@ -1503,15 +1515,7 @@ impl<Id: Clone + PartialEq> RadioState<Id> {
         }
         // Ensure surface focused for headless tests
         self.surface_focused = true;
-        let items: Vec<crate::interaction::CollectionItem<Id>> = options
-            .iter()
-            .map(|id| crate::interaction::CollectionItem {
-                id: id.clone(),
-                enabled: true,
-                label: String::new(),
-                parent: None,
-            })
-            .collect();
+        let items = Self::collection_items(options);
         let _ = self.collection.reconcile(&items);
         let is_press = key.kind == KeyEventKind::Press;
         if is_press
@@ -1546,15 +1550,7 @@ impl<Id: Clone + PartialEq> RadioState<Id> {
             return RadioOutcome::Ignored;
         }
         self.surface_focused = true;
-        let items: Vec<crate::interaction::CollectionItem<Id>> = options
-            .iter()
-            .map(|id| crate::interaction::CollectionItem {
-                id: id.clone(),
-                enabled: true,
-                label: String::new(),
-                parent: None,
-            })
-            .collect();
+        let items = Self::collection_items(options);
         let _ = self.collection.reconcile(&items);
         match intent {
             UiIntent::Activate | UiIntent::Submit | UiIntent::Toggle => {
