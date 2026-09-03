@@ -925,6 +925,9 @@ impl<'a, Id> Tabs<'a, Id> {
     where
         Id: Clone + PartialEq,
     {
+        // Every downstream painter assumes coordinates belong to the buffer.
+        // Clip caller geometry before persisting state or writing cells.
+        let area = area.intersection(*buffer.area());
         state.regions.clear();
         state.close_regions.clear();
         state.overflow_trigger = None;
@@ -1013,7 +1016,7 @@ impl<'a, Id> Tabs<'a, Id> {
     }
 
     fn tab_width(&self, tab: &Tab<'a, Id>, show_status: bool) -> u16 {
-        // junie: gutter 1 + label + 2 padding (+ prefix + 1) (+2 status) (+2 close)
+        // junie: leading inset 1 + label + 2 padding (+ prefix + 1) (+2 status) (+2 close)
         let mut cols = 1u16
             .saturating_add(UnicodeWidthStr::width(tab.label) as u16)
             .saturating_add(2);
@@ -1323,23 +1326,8 @@ impl<'a, Id> Tabs<'a, Id> {
         let label_h = 1u16;
         let label_rect = Rect::new(rect.x, rect.y, rect.width, label_h);
         buffer.set_style(label_rect, style);
-        buffer.set_stringn(
-            label_rect.x,
-            label_rect.y,
-            self.system.glyphs.selection_gutter(),
-            1,
-            self.system.gutter(
-                crate::style::VisualState {
-                    focused: focused_tab,
-                    hovered,
-                    selected,
-                    disabled: !tab.enabled,
-                    ..Default::default()
-                },
-                style.bg.unwrap_or(bg),
-                false,
-            ),
-        );
+        // Tabs keep the canonical one-cell label inset, but never paint the
+        // row/field selection gutter (`▎`).
         let mut cx = label_rect.x.saturating_add(1);
         if !marker.is_empty() && cx < label_rect.right() {
             buffer.set_stringn(cx, label_rect.y, marker, 1, style);
@@ -1427,10 +1415,8 @@ impl<'a, Id> Tabs<'a, Id> {
                 theme.accent
             };
             let rule = self.system.glyphs.rule_strong();
-            // Source: `x+1 .. x+w-1` — gutter and trailing pad stay baseline `─`.
-            let start = rect.x.saturating_add(1);
-            let end = rect.right().saturating_sub(1);
-            for xx in start..end {
+            // The canonical active rule spans the tab plane edge to edge.
+            for xx in rect.x..rect.right() {
                 buffer.set_stringn(
                     xx,
                     rect.y.saturating_add(1),
@@ -1523,6 +1509,19 @@ mod tests {
         ]
     }
 
+    fn assert_no_selection_gutter(buffer: &Buffer) {
+        let area = *buffer.area();
+        for y in area.y..area.bottom() {
+            for x in area.x..area.right() {
+                assert_ne!(
+                    buffer[(x, y)].symbol(),
+                    "▎",
+                    "selection gutter painted at ({x}, {y})"
+                );
+            }
+        }
+    }
+
     #[test]
     fn default_rule_and_hit_regions_share_two_row_geometry() {
         let tabs = [
@@ -1564,15 +1563,24 @@ mod tests {
             system.junie_theme().canvas,
             "active tab sits on canvas, not a tint wash"
         );
-        assert_eq!(buffer[(3, 4)].symbol(), "▎");
-        // Baseline under the gutter; `━` starts at x+1.
-        assert_eq!(buffer[(4, 5)].symbol(), system.glyphs.rule_strong());
-        assert_eq!(buffer[(4, 5)].fg, theme.style(Role::Accent).fg.unwrap());
+        assert_no_selection_gutter(&buffer);
         let tab_w = state.regions[0].area.width;
+        for x in 3..3 + tab_w {
+            assert_eq!(
+                buffer[(x, 5)].symbol(),
+                system.glyphs.rule_strong(),
+                "active underline must span the tab plane at x={x}"
+            );
+            assert_eq!(
+                buffer[(x, 5)].fg,
+                theme.style(Role::Accent).fg.unwrap(),
+                "active underline color at x={x}"
+            );
+        }
         assert_eq!(
-            buffer[(3 + tab_w - 1, 5)].symbol(),
+            buffer[(3 + tab_w, 5)].symbol(),
             system.glyphs.rule(),
-            "trailing pad stays the baseline"
+            "the gap after the active tab stays the baseline"
         );
         assert_eq!(state.regions.len(), 1);
         assert!(state.regions[0].area.contains(Position::new(3, 5)));
@@ -1600,7 +1608,7 @@ mod tests {
             system.junie_theme().canvas,
             "active tab sits on canvas, not a tint wash"
         );
-        assert_eq!(buffer[(0, 0)].symbol(), "▎");
+        assert_no_selection_gutter(&buffer);
     }
 
     #[test]
@@ -1778,6 +1786,54 @@ mod tests {
             state.presentation(),
             TabsPresentation::Overflow | TabsPresentation::Scrolling | TabsPresentation::Select
         ));
+    }
+
+    #[test]
+    fn no_selection_gutter_in_overflow_and_vertical_tabs() {
+        let tabs = sample_tabs();
+        let system = DesignSystem::junie();
+
+        let overflow_area = Rect::new(0, 0, 22, 2);
+        let mut overflow_state = TabsState::new().with_selected("overview");
+        let mut overflow_buffer = Buffer::empty(overflow_area);
+        Tabs::new(&tabs, &system).paint(overflow_area, &mut overflow_buffer, &mut overflow_state);
+        assert!(matches!(
+            overflow_state.presentation(),
+            TabsPresentation::Overflow | TabsPresentation::Scrolling
+        ));
+        assert_no_selection_gutter(&overflow_buffer);
+
+        let vertical_area = Rect::new(0, 0, 16, 6);
+        let mut vertical_state = TabsState::new()
+            .with_selected("overview")
+            .with_orientation(TabsOrientation::Vertical);
+        let mut vertical_buffer = Buffer::empty(vertical_area);
+        Tabs::new(&tabs, &system).paint(vertical_area, &mut vertical_buffer, &mut vertical_state);
+        assert_no_selection_gutter(&vertical_buffer);
+    }
+
+    #[test]
+    fn paint_clips_partial_and_out_of_bounds_areas() {
+        let tabs = sample_tabs();
+        let system = DesignSystem::junie();
+        let buffer_area = Rect::new(5, 4, 12, 2);
+        let requested = Rect::new(3, 3, 12, 3);
+        let mut state = TabsState::new().with_selected("overview");
+        let mut buffer = Buffer::empty(buffer_area);
+
+        Tabs::new(&tabs, &system).paint(requested, &mut buffer, &mut state);
+
+        assert_eq!(state.root, requested.intersection(buffer_area));
+        assert_no_selection_gutter(&buffer);
+
+        let outside = Rect::new(0, 0, 4, 2);
+        let mut outside_state = TabsState::new().with_selected("overview");
+        let mut outside_buffer = Buffer::empty(buffer_area);
+        Tabs::new(&tabs, &system).paint(outside, &mut outside_buffer, &mut outside_state);
+
+        assert!(outside_state.root.is_empty());
+        assert!(outside_state.regions.is_empty());
+        assert_no_selection_gutter(&outside_buffer);
     }
 
     #[test]
@@ -1999,7 +2055,11 @@ mod tests {
         );
         assert_eq!(buffer[(1, 1)].symbol(), system.glyphs.rule_strong());
         assert_eq!(buffer[(1, 1)].fg, theme.accent);
-        assert_eq!(buffer[(0, 1)].symbol(), system.glyphs.rule());
+        assert_eq!(
+            buffer[(0, 1)].symbol(),
+            system.glyphs.rule_strong(),
+            "active underline reaches the tab's left edge"
+        );
     }
 
     #[test]
