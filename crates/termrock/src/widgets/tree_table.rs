@@ -584,7 +584,7 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
             UiIntent::Collapse => self.hierarchy_step(rows, false),
             UiIntent::Activate | UiIntent::Submit | UiIntent::Open => {
                 let row = &rows[self.cursor_row];
-                if selectable(row) {
+                if selectable(row) && self.selected.as_ref() == Some(&row.id) {
                     TreeTableOutcome::Activated(row.id.clone())
                 } else {
                     TreeTableOutcome::Ignored
@@ -2062,6 +2062,32 @@ mod tests {
 
         assert_eq!(state.selected(), Some(&100));
         assert_eq!(state.cursor_row, 0);
+    }
+
+    #[test]
+    fn virtual_off_window_selection_cannot_activate_visible_cursor() {
+        let cells: &[&str] = &["row", "", ""];
+        let first = [
+            TreeTableRow::new(100u64, 0, cells),
+            TreeTableRow::new(101, 0, cells),
+        ];
+        let second = [
+            TreeTableRow::new(200u64, 0, cells),
+            TreeTableRow::new(201, 0, cells),
+        ];
+        let columns = cols();
+        let mut state = TreeTableState::<u64, &str>::new(Some(101));
+        state.set_logical_rows(1_000);
+        state.window.viewport = 2;
+        state.reconcile(&first);
+        state.window.offset = 200;
+        state.reconcile(&second);
+
+        let out = state.handle_intent(&second, &columns, UiIntent::Activate);
+
+        assert!(matches!(out, TreeTableOutcome::Ignored));
+        assert_eq!(state.selected(), Some(&101));
+        assert_eq!(state.cursor_row, 1);
     }
 
     #[test]
