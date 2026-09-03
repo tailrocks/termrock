@@ -467,7 +467,7 @@ pub static PUBLIC_UI_INVENTORY: &[PublicUiInventoryEntry] = &[
     public_ui!(ActionBar, Widget, Action, "action-bar", "action-bar/basic"),
     public_ui!(
         ActionLink,
-        Widget,
+        Paint,
         Action,
         "action-link",
         "action-link/basic"
@@ -608,7 +608,7 @@ pub static PUBLIC_UI_INVENTORY: &[PublicUiInventoryEntry] = &[
     ),
     public_ui!(
         Collapsible,
-        Widget,
+        Paint,
         Navigation,
         "collapsible",
         "collapsible/inline"
@@ -888,7 +888,7 @@ pub static PUBLIC_UI_INVENTORY: &[PublicUiInventoryEntry] = &[
         "keyboard-help/footer"
     ),
     public_ui!(Label, Widget, Layout, "label", "label/basic"),
-    public_ui!(Link, Widget, Action, "link", "link/basic"),
+    public_ui!(Link, Paint, Action, "link", "link/basic"),
     public_ui!(List, Widget, Navigation, "list", "list/selection"),
     public_ui!(
         LoadingOverlay,
@@ -1341,7 +1341,7 @@ pub static PUBLIC_UI_INVENTORY: &[PublicUiInventoryEntry] = &[
         "toast-stack",
         "toast-stack/basic"
     ),
-    public_ui!(Toggle, Widget, Action, "toggle", "toggle/pressed"),
+    public_ui!(Toggle, Paint, Action, "toggle", "toggle/pressed"),
     public_ui!(
         ToggleGroup,
         Widget,
@@ -1858,7 +1858,7 @@ mod tests {
                     counts[index] += 1;
                     counts
                 });
-        assert_eq!(kind_counts, [146, 50, 6, 8]);
+        assert_eq!(kind_counts, [142, 54, 6, 8]);
         assert_eq!(
             public_ui_inventory()
                 .iter()

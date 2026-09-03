@@ -11,6 +11,10 @@
 //! **Controlled vs uncontrolled.** Pass [`Collapsible::open`] each frame for
 //! controlled open state; omit it and [`CollapsibleState`] owns open/closed.
 //!
+//! Collapsible paints only through `Collapsible::paint(area, buffer, state)`;
+//! a stateless render would rebuild `CollapsibleState` per frame and repaint
+//! the disclosure closed, losing animation and focus geometry.
+//!
 //! **Keep-mounted policy.** When closed, layout always collapses body height to
 //! zero. [`CollapsedContentPolicy::KeepMounted`] is a host signal: keep domain
 //! child *state* alive while not painting; [`Unmount`] allows dropping children.
@@ -18,7 +22,7 @@
 //! Glyphs use [`GlyphSet`] disclosure markers (ASCII fallbacks).
 //!
 //! References: Radix Collapsible, tree disclosures, agent tool-detail expansion.
-use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
+use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::input::{KeyEvent, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{EventResult, UiIntent, default_tree_intent};
@@ -645,22 +649,6 @@ impl<'a> Collapsible<'a> {
                     ..Default::default()
                 }),
         );
-    }
-}
-
-impl Widget for &Collapsible<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        let mut state = CollapsibleState::new();
-        if let Some(open) = self.open {
-            state.open = open;
-        }
-        let _ = self.paint(area, buffer, &mut state);
-    }
-}
-
-impl Widget for Collapsible<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        <&Self as Widget>::render(&self, area, buffer);
     }
 }
 

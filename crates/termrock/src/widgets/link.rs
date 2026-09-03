@@ -16,7 +16,12 @@
 //! typed outcomes; it never writes raw OSC bytes to the PTY itself.
 //!
 //! References: Rich hyperlinks, OSC 8, CLI docs conventions.
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
+//!
+//! Link and ActionLink paint only through
+//! `Link::paint(area, buffer, state)` / `ActionLink::paint(area, buffer, state)`;
+//! a stateless render would rebuild `LinkState` per frame and drop focus and
+//! hit geometry between frames.
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
 
 use crate::input::{KeyEvent, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{
@@ -651,19 +656,6 @@ impl<'a> Link<'a> {
     }
 }
 
-impl Widget for &Link<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        let mut state = LinkState::new();
-        let _ = self.paint(area, buffer, &mut state);
-    }
-}
-
-impl Widget for Link<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        <&Self as Widget>::render(&self, area, buffer);
-    }
-}
-
 // ── ActionLink ──────────────────────────────────────────────────────────────
 
 /// ActionLink outcomes (no external URL).
@@ -861,19 +853,6 @@ impl<'a> ActionLink<'a> {
                 .description(self.plain())
                 .focusable(!state.disabled),
         );
-    }
-}
-
-impl Widget for &ActionLink<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        let mut state = LinkState::new();
-        let _ = self.paint(area, buffer, &mut state);
-    }
-}
-
-impl Widget for ActionLink<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        <&Self as Widget>::render(&self, area, buffer);
     }
 }
 

@@ -12,6 +12,10 @@
 //! label association and checked semantics (`[✓]` / `[ ]`). Toggle is a toolbar
 //! affordance (pressed reverse + label vs padded idle label). No `[inner]` wells.
 //!
+//! Toggle paints only through `Toggle::paint(area, buffer, state)`; a stateless
+//! render would rebuild `ToggleState` per frame and every frame would paint the
+//! switch idle regardless of the pressed state the host owns.
+//!
 //! **vs [`Switch`](crate::widgets::Switch).** Switch is an immediate On/Off
 //! setting (`▎──●` / `○──`). Toggle does not imply a persistent preference.
 //!
@@ -653,13 +657,6 @@ impl<'a> Toggle<'a> {
                     ..Default::default()
                 }),
         );
-    }
-}
-
-impl Widget for &Toggle<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        let mut state = ToggleState::new();
-        let _ = self.paint(area, buffer, &mut state);
     }
 }
 
