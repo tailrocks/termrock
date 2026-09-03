@@ -463,6 +463,20 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
         out
     }
 
+    fn filtered_collection_items(
+        options: &[SelectOption<Id>],
+        query: &str,
+    ) -> Vec<CollectionItem<Id>> {
+        if query.trim().is_empty() {
+            return Self::collection_items(options);
+        }
+        Self::filter_options(options, query)
+            .into_iter()
+            .filter(|o| o.is_option())
+            .map(|o| CollectionItem::new(o.id.clone(), o.label.clone()).enabled(!o.disabled))
+            .collect()
+    }
+
     /// Choose presentation for terminal size.
     #[must_use]
     pub fn presentation_for_bounds(bounds: Rect, force_fullscreen: bool) -> SelectPresentation {
@@ -565,12 +579,7 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
     /// Reconcile after option list changes while open.
     pub fn reconcile_options(&mut self, options: &[SelectOption<Id>]) {
         let items = if self.searchable && !self.search.value().is_empty() {
-            let filtered = Self::filter_options(options, self.search.value());
-            filtered
-                .into_iter()
-                .filter(|o| o.is_option())
-                .map(|o| CollectionItem::new(o.id.clone(), o.label.clone()).enabled(!o.disabled))
-                .collect()
+            Self::filtered_collection_items(options, self.search.value())
         } else {
             Self::collection_items(options)
         };
@@ -687,11 +696,7 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
         }
 
         let items = if self.searchable && !self.search.value().is_empty() {
-            Self::filter_options(options, self.search.value())
-                .into_iter()
-                .filter(|o| o.is_option())
-                .map(|o| CollectionItem::new(o.id.clone(), o.label.clone()).enabled(!o.disabled))
-                .collect::<Vec<_>>()
+            Self::filtered_collection_items(options, self.search.value())
         } else {
             Self::collection_items(options)
         };
@@ -1142,11 +1147,11 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
             };
 
         // Flatten for collection viewport among options only
-        let coll_items: Vec<CollectionItem<Id>> = visible_opts
-            .iter()
-            .filter(|o| o.is_option())
-            .map(|o| CollectionItem::new(o.id.clone(), o.label.clone()).enabled(!o.disabled))
-            .collect();
+        let coll_items = if state.searchable && !state.search.value().is_empty() {
+            SelectState::filtered_collection_items(self.options, state.search.value())
+        } else {
+            SelectState::collection_items(self.options)
+        };
         let vp = usize::from(list_area.height).max(1);
         state
             .collection
