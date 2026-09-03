@@ -408,6 +408,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0427 | `v0.14.0` | [CommandPalette one-shot actions](migrations/0427-v0.14.0-command-palette-one-shot-actions.md) |
 | 0428 | `v0.14.0` | [QuickOpen one-shot actions](migrations/0428-v0.14.0-quick-open-one-shot-actions.md) |
 | 0429 | `v0.14.0` | [MenuBar one-shot actions](migrations/0429-v0.14.0-menu-bar-one-shot-actions.md) |
+| 0430 | `v0.14.0` | [KeyboardHelp one-shot actions](migrations/0430-v0.14.0-keyboard-help-one-shot-actions.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

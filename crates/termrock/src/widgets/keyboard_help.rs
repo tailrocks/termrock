@@ -806,10 +806,16 @@ impl KeyboardHelpState {
         if !self.live() || key.is_release() {
             return KeyboardHelpOutcome::Ignored;
         }
+        // Escape closes the modal exactly once. Consume repeats before they
+        // reach TextInputState, whose Escape path also cancels its draft.
+        if key.code == KeyCode::Esc && !key.is_press() {
+            return KeyboardHelpOutcome::Ignored;
+        }
         // ? opens modal from footer context when host routes here
         if matches!(self.mode, KeyboardHelpMode::Footer)
             && matches!(key.code, KeyCode::Char('?'))
             && key.modifiers.is_empty()
+            && key.is_press()
         {
             return self.open_modal();
         }
@@ -820,7 +826,7 @@ impl KeyboardHelpState {
 
         self.reconcile(visible);
 
-        if key.code == KeyCode::Esc {
+        if key.code == KeyCode::Esc && key.is_press() {
             return self.close_modal();
         }
 
@@ -1446,6 +1452,7 @@ pub fn example_help_entries() -> Vec<HelpEntry> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::input::KeyEventKind;
     use crate::input::KeyModifiers;
     use crate::keymap::{KeyBinding, KeyChord, Visibility};
 
@@ -1688,6 +1695,30 @@ mod tests {
         ));
         assert!(st.is_open());
         assert_eq!(st.mode(), KeyboardHelpMode::Modal);
+    }
+
+    #[test]
+    fn repeated_modal_triggers_do_not_open_or_close() {
+        let entries = example_help_entries();
+
+        let mut footer = KeyboardHelpState::new();
+        let mut repeat_question = KeyEvent::new(KeyCode::Char('?'), KeyModifiers::NONE);
+        repeat_question.kind = KeyEventKind::Repeat;
+        assert_eq!(
+            footer.handle_key(repeat_question, &refs(&entries)),
+            KeyboardHelpOutcome::Ignored
+        );
+        assert!(!footer.is_open());
+        assert_eq!(footer.mode(), KeyboardHelpMode::Footer);
+
+        let mut modal = KeyboardHelpState::modal();
+        let mut repeat_escape = KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE);
+        repeat_escape.kind = KeyEventKind::Repeat;
+        assert_eq!(
+            modal.handle_key(repeat_escape, &refs(&entries)),
+            KeyboardHelpOutcome::Ignored
+        );
+        assert!(modal.is_open());
     }
 
     #[test]
