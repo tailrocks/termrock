@@ -557,6 +557,25 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
         if !self.focused {
             return MultiSelectOutcome::Ignored;
         }
+        // Keep one-shot activation and clearing out of the closed-state
+        // fallbacks. Printable typeahead opens the searchable list, while
+        // Backspace/Delete mutates the checked set.
+        if !key.is_press()
+            && ((key.modifiers.is_empty()
+                && matches!(
+                    key.code,
+                    KeyCode::Enter
+                        | KeyCode::Char(' ')
+                        | KeyCode::Down
+                        | KeyCode::Backspace
+                        | KeyCode::Delete
+                ))
+                || (matches!(key.code, KeyCode::Char(c) if !c.is_control())
+                    && !key.modifiers.contains(KeyModifiers::CONTROL)
+                    && !key.modifiers.contains(KeyModifiers::ALT)))
+        {
+            return MultiSelectOutcome::Ignored;
+        }
         match key.code {
             KeyCode::Enter | KeyCode::Char(' ') | KeyCode::Down if key.modifiers.is_empty() => {
                 self.open(bounds, options)
@@ -591,6 +610,24 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
         options: &[SelectOption<Id>],
         bounds: Rect,
     ) -> MultiSelectOutcome<Id> {
+        // Keep one-shot actions out of the search and collection fallbacks.
+        // Searchable Space remains repeatable once it is part of a non-empty
+        // query; otherwise it toggles membership and must fire once.
+        let one_shot_space = key.modifiers.is_empty()
+            && matches!(key.code, KeyCode::Char(' '))
+            && (!self.searchable || self.search.value().is_empty());
+        if !key.is_press()
+            && (key.code == KeyCode::Esc && key.modifiers.is_empty()
+                || key.code == KeyCode::Enter && key.modifiers.is_empty()
+                || one_shot_space
+                || key.modifiers.contains(KeyModifiers::CONTROL)
+                    && matches!(
+                        key.code,
+                        KeyCode::Char('a' | 'A' | 'd' | 'D') | KeyCode::Backspace
+                    ))
+        {
+            return MultiSelectOutcome::Ignored;
+        }
         if key.code == KeyCode::Esc && key.modifiers.is_empty() {
             return self.close();
         }
@@ -1318,6 +1355,7 @@ impl<Id: Clone + PartialEq + std::fmt::Display> StatefulWidget for MultiSelect<'
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::input::KeyEventKind;
     use crate::style::RolePalette;
     use ratatui_core::layout::Position;
 
@@ -1329,6 +1367,12 @@ mod tests {
             SelectOption::option("ts", "TypeScript"),
             SelectOption::option("off", "Off").disabled(true),
         ]
+    }
+
+    fn key_with_kind(code: KeyCode, modifiers: KeyModifiers, kind: KeyEventKind) -> KeyEvent {
+        let mut key = KeyEvent::new(code, modifiers);
+        key.kind = kind;
+        key
     }
 
     #[test]
@@ -1461,6 +1505,76 @@ mod tests {
             MultiSelectOutcome::Closed
         );
         assert!(state.is_checked(&"rs"));
+    }
+
+    #[test]
+    fn repeated_lifecycle_and_mutation_actions_are_ignored() {
+        let options = opts();
+        let bounds = Rect::new(0, 0, 80, 24);
+
+        for kind in [KeyEventKind::Repeat, KeyEventKind::Release] {
+            for (code, modifiers) in [
+                (KeyCode::Enter, KeyModifiers::NONE),
+                (KeyCode::Char(' '), KeyModifiers::NONE),
+                (KeyCode::Down, KeyModifiers::NONE),
+                (KeyCode::Char('r'), KeyModifiers::NONE),
+                (KeyCode::Backspace, KeyModifiers::NONE),
+                (KeyCode::Delete, KeyModifiers::NONE),
+            ] {
+                let mut state = MultiSelectState::new().with_selected(["rs"]);
+                state.set_focused(true);
+                assert_eq!(
+                    state.handle_key(key_with_kind(code, modifiers, kind), &options, bounds,),
+                    MultiSelectOutcome::Ignored
+                );
+                assert!(!state.is_open());
+                assert_eq!(state.selected(), &["rs"]);
+                assert_eq!(state.search_query(), "");
+            }
+        }
+
+        let mut state = MultiSelectState::new().with_selected(["rs"]);
+        state.set_focused(true);
+        let _ = state.open(bounds, &options);
+        for kind in [KeyEventKind::Repeat, KeyEventKind::Release] {
+            for (code, modifiers) in [
+                (KeyCode::Esc, KeyModifiers::NONE),
+                (KeyCode::Enter, KeyModifiers::NONE),
+                (KeyCode::Char(' '), KeyModifiers::NONE),
+                (KeyCode::Char('a'), KeyModifiers::CONTROL),
+                (KeyCode::Char('d'), KeyModifiers::CONTROL),
+                (KeyCode::Backspace, KeyModifiers::CONTROL),
+            ] {
+                assert_eq!(
+                    state.handle_key(key_with_kind(code, modifiers, kind), &options, bounds,),
+                    MultiSelectOutcome::Ignored
+                );
+            }
+        }
+        assert!(state.is_open());
+        assert_eq!(state.selected(), &["rs"]);
+
+        let mut searchable = MultiSelectState::new();
+        searchable.set_focused(true);
+        let _ = searchable.open(bounds, &options);
+        assert!(matches!(
+            searchable.handle_key(
+                key_with_kind(KeyCode::Char('r'), KeyModifiers::NONE, KeyEventKind::Repeat),
+                &options,
+                bounds,
+            ),
+            MultiSelectOutcome::SearchChanged { .. }
+        ));
+        assert!(matches!(
+            searchable.handle_key(
+                key_with_kind(KeyCode::Char(' '), KeyModifiers::NONE, KeyEventKind::Repeat),
+                &options,
+                bounds,
+            ),
+            MultiSelectOutcome::SearchChanged { .. }
+        ));
+        assert_eq!(searchable.search_query(), "r ");
+        assert!(searchable.is_open());
     }
 
     #[test]
