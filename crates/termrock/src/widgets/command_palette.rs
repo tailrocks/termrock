@@ -962,7 +962,8 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
         }
 
         // Ctrl+P / Ctrl+N history when query empty (or always with Ctrl).
-        if key.modifiers.contains(KeyModifiers::CONTROL)
+        if key.is_press()
+            && key.modifiers.contains(KeyModifiers::CONTROL)
             && matches!(key.code, KeyCode::Char('p' | 'P' | 'n' | 'N'))
         {
             return self.history_step(matches!(key.code, KeyCode::Char('p' | 'P')));
@@ -2083,6 +2084,19 @@ mod tests {
 
         let _ = s.handle_key(KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE), &vis);
         let query_before = s.query_text().to_owned();
+
+        for code in [KeyCode::Char('p'), KeyCode::Char('n')] {
+            let mut history_state = focused();
+            history_state.push_history("older");
+            history_state.push_history("newer");
+            let mut repeat_history = KeyEvent::new(code, KeyModifiers::CONTROL);
+            repeat_history.kind = KeyEventKind::Repeat;
+            assert_eq!(
+                history_state.handle_key(repeat_history, &vis),
+                CommandPaletteOutcome::Ignored
+            );
+            assert_eq!(history_state.query_text(), "");
+        }
 
         let mut repeat_escape = KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE);
         repeat_escape.kind = KeyEventKind::Repeat;
