@@ -29063,7 +29063,6 @@ pub fn termrock::scroll::DialogScroll::handle_key(&mut self, termrock::input::Ke
 pub fn termrock::scroll::DialogScroll::handle_key_for_axes(&mut self, termrock::input::KeyEvent, usize, usize, usize, usize, termrock::scroll::ScrollAxes) -> bool
 pub fn termrock::scroll::DialogScroll::handle_mouse(&mut self, termrock::input::MouseEventKind, termrock::input::KeyModifiers, termrock::scroll::ScrollAxes) -> bool
 pub const fn termrock::scroll::DialogScroll::new() -> Self
-pub fn termrock::scroll::DialogScroll::paint_scrollbars(&self, &mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, usize, usize, &termrock::style::DesignSystem)
 impl core::clone::Clone for termrock::scroll::DialogScroll
 pub fn termrock::scroll::DialogScroll::clone(&self) -> termrock::scroll::DialogScroll
 impl core::cmp::Eq for termrock::scroll::DialogScroll

@@ -273,28 +273,6 @@ pub struct DialogScroll {
     pub(crate) measurement: Measured,
 }
 
-/// Horizontal track inside the bottom border.
-#[must_use]
-const fn horizontal_scrollbar_area(block_area: Rect) -> Rect {
-    Rect::new(
-        block_area.x + 1,
-        block_area.y + block_area.height.saturating_sub(1),
-        block_area.width.saturating_sub(2),
-        1,
-    )
-}
-
-/// Vertical track inside the right border.
-#[must_use]
-const fn vertical_scrollbar_area(block_area: Rect) -> Rect {
-    Rect::new(
-        block_area.x + block_area.width.saturating_sub(1),
-        block_area.y + 1,
-        1,
-        block_area.height.saturating_sub(2),
-    )
-}
-
 impl DialogScroll {
     #[must_use]
     /// Creates zero-offset dialog scroll state.
@@ -409,47 +387,6 @@ impl DialogScroll {
         self.scroll_x = self
             .scroll_x
             .min(max_offset_u16(content_width, viewport_width));
-    }
-
-    /// Render vertical and/or horizontal scrollbars on the block border.
-    pub fn paint_scrollbars(
-        &self,
-        frame: &mut ratatui_core::terminal::Frame<'_>,
-        block_area: ratatui_core::layout::Rect,
-        content_height: usize,
-        content_width: usize,
-        system: &crate::style::DesignSystem,
-    ) {
-        if is_scrollable(content_height, viewport_height(block_area)) {
-            paint_scrollbar(
-                frame.buffer_mut(),
-                vertical_scrollbar_area(block_area),
-                ScrollbarSpec::new(
-                    ScrollAxis::Vertical,
-                    ScrollbarGeometry::new(
-                        content_height,
-                        viewport_height(block_area),
-                        self.scroll_y,
-                    ),
-                ),
-                system,
-            );
-        }
-        if is_scrollable(content_width, viewport_width(block_area)) {
-            paint_scrollbar(
-                frame.buffer_mut(),
-                horizontal_scrollbar_area(block_area),
-                ScrollbarSpec::new(
-                    ScrollAxis::Horizontal,
-                    ScrollbarGeometry::new(
-                        content_width,
-                        viewport_width(block_area),
-                        self.scroll_x,
-                    ),
-                ),
-                system,
-            );
-        }
     }
 }
 
