@@ -1104,7 +1104,10 @@ impl<'a, Id: Clone + PartialEq> RadioGroup<'a, Id> {
                     let visual = VisualState {
                         focused,
                         hovered,
-                        selected,
+                        // Selection is carried by the radio mark. The row's
+                        // selected state is reserved for a focused selection
+                        // tint, which Junie's choice widget does not apply.
+                        selected: false,
                         disabled: !state.enabled || !opt.enabled,
                         error: state.invalid && selected,
                         ..VisualState::default()
@@ -2538,6 +2541,28 @@ mod tests {
             },
         );
         assert_eq!(out, RadioOutcome::Selected("b"));
+    }
+
+    #[test]
+    fn radio_focused_selection_marks_without_row_tint() {
+        let system = DesignSystem::junie();
+        let options = [
+            RadioOption::new("a", "Alpha"),
+            RadioOption::new("b", "Beta"),
+        ];
+        let group = RadioGroup::new(&options, &system);
+        let mut state = RadioState::new(Some("a"));
+        state.set_surface_focused(true);
+        let area = Rect::new(0, 0, 24, 2);
+        let mut buffer = Buffer::empty(area);
+
+        group.paint(area, &mut buffer, &mut state);
+
+        let theme = system.junie_theme();
+        assert_eq!(buffer[(5, 0)].bg, theme.surface);
+        assert_eq!(buffer[(2, 0)].symbol(), "●");
+        assert_eq!(buffer[(2, 0)].fg, theme.accent);
+        assert!(buffer[(2, 0)].modifier.contains(Modifier::BOLD));
     }
 
     #[test]
