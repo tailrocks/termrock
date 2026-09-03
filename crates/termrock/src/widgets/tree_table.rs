@@ -389,6 +389,9 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
 
     /// Reconcile selection after host reprojects rows.
     pub fn reconcile(&mut self, rows: &[TreeTableRow<'_, Id>]) {
+        for row in rows.iter().filter(|row| !selectable(row)) {
+            self.selection.remove_row(&row.id);
+        }
         if let Some(sel) = self.selected.as_ref()
             && let Some(idx) = rows.iter().position(|r| selectable(r) && &r.id == sel)
         {
@@ -2149,6 +2152,32 @@ mod tests {
 
         assert!(matches!(out, TreeTableOutcome::Ignored));
         assert!(!state.selection.is_row_selected(&"r"));
+    }
+
+    #[test]
+    fn reconcile_prunes_multi_selection_for_nonselectable_rows() {
+        let cells: &[&str] = &["row", "", ""];
+        let rows = [
+            TreeTableRow::new("r", 0, cells),
+            TreeTableRow::new("s", 0, cells),
+        ];
+        let changed_rows = [
+            TreeTableRow::new("r", 0, cells).disabled(),
+            TreeTableRow::new("s", 0, cells),
+        ];
+        let columns = cols();
+        let mut state = TreeTableState::<&str, &str>::new(Some("r"));
+        state.enable_multi_select();
+        assert!(matches!(
+            state.handle_intent(&rows, &columns, UiIntent::Toggle),
+            TreeTableOutcome::CheckToggled("r")
+        ));
+        assert!(state.selection.is_row_selected(&"r"));
+
+        state.reconcile(&changed_rows);
+
+        assert!(!state.selection.is_row_selected(&"r"));
+        assert_eq!(state.selected(), Some(&"s"));
     }
 
     #[test]
