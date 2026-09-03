@@ -433,6 +433,22 @@ mod tests {
     }
 
     #[test]
+    fn movement_from_disabled_active_does_not_skip_neighbor() {
+        let list = items(&[("a", true), ("b", false), ("c", true)]);
+        let mut c = CollectionState::new();
+        c.set_active(Some("b"));
+
+        assert_eq!(
+            c.move_next(&list),
+            CollectionOutcome::ActiveChanged {
+                from: Some("b"),
+                to: Some("c"),
+            }
+        );
+        assert_eq!(c.active(), Some(&"c"));
+    }
+
+    #[test]
     fn virtual_window_metadata() {
         let mut c = CollectionState::new();
         let window = items(&[("c", true), ("d", true)]);

@@ -228,6 +228,51 @@ impl<Id: Clone + PartialEq> RovingFocusGroup<Id> {
         if enabled.is_empty() || steps == 0 {
             return self.reconcile(entries);
         }
+        if let Some(disabled_index) = self
+            .active
+            .as_ref()
+            .and_then(|active| entries.iter().position(|entry| &entry.id == active))
+            .filter(|&index| !entries[index].enabled)
+        {
+            let insertion = enabled
+                .iter()
+                .position(|&index| index > disabled_index)
+                .unwrap_or(enabled.len());
+            let magnitude = steps.unsigned_abs();
+            let target = if steps > 0 {
+                let start = if insertion < enabled.len() {
+                    insertion
+                } else if self.wrap {
+                    0
+                } else {
+                    enabled.len() - 1
+                };
+                if self.wrap {
+                    (start + (magnitude.saturating_sub(1) % enabled.len())) % enabled.len()
+                } else {
+                    start
+                        .saturating_add(magnitude.saturating_sub(1))
+                        .min(enabled.len() - 1)
+                }
+            } else {
+                let start = insertion
+                    .checked_sub(1)
+                    .unwrap_or_else(|| if self.wrap { enabled.len() - 1 } else { 0 });
+                if self.wrap {
+                    let back = magnitude.saturating_sub(1) % enabled.len();
+                    if back <= start {
+                        start - back
+                    } else {
+                        enabled.len() - (back - start)
+                    }
+                } else {
+                    start.saturating_sub(magnitude.saturating_sub(1))
+                }
+            };
+            self.active = Some(entries[enabled[target]].id.clone());
+            self.typeahead.clear();
+            return self.outcome(from);
+        }
         let _ = self.reconcile(entries);
         let from = self.active.clone().or(from);
         let enabled = Self::enabled_indices(entries);
@@ -545,6 +590,32 @@ mod tests {
         e[1].enabled = false;
         assert!(g.reconcile(&e).changed());
         assert_eq!(g.active(), Some(&"c"));
+    }
+
+    #[test]
+    fn movement_from_disabled_active_does_not_skip_repaired_neighbor() {
+        let e = entries(&[("a", true), ("b", false), ("c", true)]);
+        let mut g = RovingFocusGroup::new();
+        g.set_active(Some("b"));
+
+        assert_eq!(
+            g.move_next(&e),
+            RovingOutcome::ActiveChanged {
+                from: Some("b"),
+                to: Some("c"),
+            }
+        );
+        assert_eq!(g.active(), Some(&"c"));
+
+        g.set_active(Some("b"));
+        assert_eq!(
+            g.move_previous(&e),
+            RovingOutcome::ActiveChanged {
+                from: Some("b"),
+                to: Some("a"),
+            }
+        );
+        assert_eq!(g.active(), Some(&"a"));
     }
 
     #[test]
