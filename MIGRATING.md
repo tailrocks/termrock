@@ -396,7 +396,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0414 | `v0.14.0` | [InteractionScene gates pointer hits by input ownership](migrations/0414-v0.14.0-interaction-scene-modal-pointer-ownership.md) |
 | 0415 | `v0.14.0` | [CommandPalette keeps keyword ranges out of label highlights](migrations/0415-v0.14.0-command-palette-keyword-highlight-ranges.md) |
 | 0416 | `v0.14.0` | [SearchResults ignores stale completions](migrations/0416-v0.14.0-search-results-ignore-stale-completions.md) |
-| 0417 | `v0.14.0` | [Escape cancellation is press-only](migrations/0417-v0.14.0-one-shot-cancel-intent.md) |
+| 0417 | `v0.14.0` | [Text-area Escape cancel is one-shot](migrations/0417-v0.14.0-one-shot-cancel-intent.md) |
 | 0418 | `v0.14.0` | [Keymap resolution uses canonical key events](migrations/0418-v0.14.0-canonical-keymap-resolution.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
