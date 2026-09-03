@@ -164,6 +164,30 @@ impl KeyEvent {
             state: KeyEventState::NONE,
         }
     }
+
+    #[must_use]
+    /// Returns whether this event is an initial key press.
+    pub const fn is_press(self) -> bool {
+        matches!(self.kind, KeyEventKind::Press)
+    }
+
+    #[must_use]
+    /// Returns whether this event is a key repeat.
+    pub const fn is_repeat(self) -> bool {
+        matches!(self.kind, KeyEventKind::Repeat)
+    }
+
+    #[must_use]
+    /// Returns whether this event is a key release.
+    pub const fn is_release(self) -> bool {
+        matches!(self.kind, KeyEventKind::Release)
+    }
+
+    #[must_use]
+    /// Returns whether this event can drive ordinary repeated input.
+    pub const fn is_action(self) -> bool {
+        matches!(self.kind, KeyEventKind::Press | KeyEventKind::Repeat)
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -351,5 +375,32 @@ mod adapter {
                 _ => Self::Unknown,
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
+
+    #[test]
+    fn key_event_phase_predicates_are_exhaustive() {
+        let mut key = KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE);
+
+        assert!(key.is_press());
+        assert!(!key.is_repeat());
+        assert!(!key.is_release());
+        assert!(key.is_action());
+
+        key.kind = KeyEventKind::Repeat;
+        assert!(!key.is_press());
+        assert!(key.is_repeat());
+        assert!(!key.is_release());
+        assert!(key.is_action());
+
+        key.kind = KeyEventKind::Release;
+        assert!(!key.is_press());
+        assert!(!key.is_repeat());
+        assert!(key.is_release());
+        assert!(!key.is_action());
     }
 }
