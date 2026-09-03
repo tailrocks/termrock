@@ -16,12 +16,7 @@
 //! Research: VS Code palette, Textual, Posting, Zellij, television, agent TUIs.
 use std::collections::VecDeque;
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::{Position, Rect},
-    style::Modifier,
-    widgets::StatefulWidget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
@@ -1192,7 +1187,7 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
         match event.kind {
             MouseEventKind::Down(MouseButton::Left) => {
                 for (idx, rect) in &self.hits {
-                    if rect_contains(*rect, event.position) {
+                    if rect.contains(event.position) {
                         self.collection.set_active(Some(*idx));
                         return self.activate_at(visible, *idx);
                     }
@@ -1210,10 +1205,10 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
                 self.hovered = self
                     .hits
                     .iter()
-                    .find(|(_, rect)| rect_contains(*rect, event.position))
+                    .find(|(_, rect)| rect.contains(event.position))
                     .map(|(idx, _)| *idx);
                 for (idx, rect) in &self.hits {
-                    if rect_contains(*rect, event.position) {
+                    if rect.contains(event.position) {
                         if self.cursor_index() != *idx {
                             self.collection.set_active(Some(*idx));
                             return CommandPaletteOutcome::CursorMoved;
@@ -1240,13 +1235,6 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
             CommandPaletteOutcome::Ignored
         }
     }
-}
-
-fn rect_contains(rect: Rect, pos: Position) -> bool {
-    pos.x >= rect.x
-        && pos.y >= rect.y
-        && pos.x < rect.x.saturating_add(rect.width)
-        && pos.y < rect.y.saturating_sub(0).saturating_add(rect.height)
 }
 
 // ── Widget ──────────────────────────────────────────────────────────────────
@@ -1939,6 +1927,7 @@ pub fn example_command_catalog() -> Vec<CommandEntry<&'static str>> {
 mod tests {
     use super::*;
     use crate::input::{KeyEventKind, KeyModifiers};
+    use ratatui_core::layout::Position;
 
     fn catalog() -> Vec<CommandEntry<&'static str>> {
         example_command_catalog()

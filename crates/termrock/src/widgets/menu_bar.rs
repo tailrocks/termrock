@@ -18,12 +18,7 @@
 //!
 //! Research: desktop menu bars, Textual, terminal editors (Helix/Kakoune chrome),
 //! Radix Menubar / DropdownMenu (roving + nested dismiss).
-use ratatui_core::{
-    buffer::Buffer,
-    layout::{Position, Rect},
-    style::Modifier,
-    widgets::StatefulWidget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
@@ -1066,7 +1061,7 @@ impl MenuBarState {
                 let pos = event.position;
                 // Panel hits first (top of cascade).
                 for (depth, item_idx, rect) in self.panel_hits.iter().rev() {
-                    if rect_contains(*rect, pos) {
+                    if rect.contains(pos) {
                         // Close deeper than depth.
                         while self.cascade.len() > *depth + 1 {
                             self.cascade.pop();
@@ -1080,7 +1075,7 @@ impl MenuBarState {
                 }
                 // Bar hits.
                 for (idx, rect) in &self.bar_hits {
-                    if rect_contains(*rect, pos) {
+                    if rect.contains(pos) {
                         if matches!(self.presentation, MenuBarPresentation::CommandPalette) {
                             return MenuBarOutcome::PreferCommandPalette;
                         }
@@ -1101,17 +1096,17 @@ impl MenuBarState {
                     .panel_hits
                     .iter()
                     .rev()
-                    .find(|(_, _, rect)| rect_contains(*rect, event.position))
+                    .find(|(_, _, rect)| rect.contains(event.position))
                     .map(|(depth, idx, _)| (*depth, *idx));
                 // Desktop: hover switches top menus.
                 for (idx, rect) in &self.bar_hits {
-                    if rect_contains(*rect, event.position) && Some(*idx) != self.open_top {
+                    if rect.contains(event.position) && Some(*idx) != self.open_top {
                         return self.open_menu_at(menus, *idx);
                     }
                 }
                 // Hover into panel items: move cursor; open submenu on hover optionally.
                 for (depth, item_idx, rect) in &self.panel_hits {
-                    if rect_contains(*rect, event.position) {
+                    if rect.contains(event.position) {
                         while self.cascade.len() > *depth + 1 {
                             self.cascade.pop();
                             self.open_path.pop();
@@ -1143,13 +1138,6 @@ impl MenuBarState {
 
 // open_path needs to be on state — I referenced it before declaring. Fix by adding field.
 // Re-open the struct... I'll use search_replace after write if needed.
-
-fn rect_contains(rect: Rect, pos: Position) -> bool {
-    pos.x >= rect.x
-        && pos.y >= rect.y
-        && pos.x < rect.x.saturating_add(rect.width)
-        && pos.y < rect.y.saturating_add(rect.height)
-}
 
 /// Default intent map for MenuBar (closed + open panels).
 #[must_use]
@@ -1884,6 +1872,7 @@ mod tests {
     use crate::input::KeyEventKind;
     use crate::style::RolePalette;
     use ratatui_core::backend::TestBackend;
+    use ratatui_core::layout::Position;
     use ratatui_core::terminal::Terminal;
 
     fn menus() -> Vec<MenuBarMenu<&'static str>> {

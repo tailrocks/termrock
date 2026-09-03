@@ -17,12 +17,7 @@
 //! values into a draft.
 //!
 //! Research: shell history search, prompt histories, session pickers, palettes.
-use ratatui_core::{
-    buffer::Buffer,
-    layout::{Position, Rect},
-    style::Modifier,
-    widgets::StatefulWidget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
@@ -896,7 +891,7 @@ impl<Id: Clone + PartialEq> HistoryPickerState<Id> {
         match event.kind {
             MouseEventKind::Down(MouseButton::Left) => {
                 for (idx, rect) in &self.hits {
-                    if rect_contains(*rect, event.position) {
+                    if rect.contains(event.position) {
                         self.collection.set_active(Some(*idx));
                         return self.select_cursor(visible);
                     }
@@ -914,10 +909,10 @@ impl<Id: Clone + PartialEq> HistoryPickerState<Id> {
                 self.hovered = self
                     .hits
                     .iter()
-                    .find(|(_, rect)| rect_contains(*rect, event.position))
+                    .find(|(_, rect)| rect.contains(event.position))
                     .map(|(idx, _)| *idx);
                 for (idx, rect) in &self.hits {
-                    if rect_contains(*rect, event.position) && self.cursor_index() != *idx {
+                    if rect.contains(event.position) && self.cursor_index() != *idx {
                         self.collection.set_active(Some(*idx));
                         return HistoryPickerOutcome::CursorMoved;
                     }
@@ -941,13 +936,6 @@ impl<Id: Clone + PartialEq> HistoryPickerState<Id> {
             HistoryPickerOutcome::Ignored
         }
     }
-}
-
-fn rect_contains(rect: Rect, pos: Position) -> bool {
-    pos.x >= rect.x
-        && pos.y >= rect.y
-        && pos.x < rect.x.saturating_add(rect.width)
-        && pos.y < rect.y.saturating_add(rect.height)
 }
 
 // ── Widget ──────────────────────────────────────────────────────────────────
@@ -1518,6 +1506,7 @@ pub fn example_history_entries() -> Vec<HistoryEntry<&'static str>> {
 mod tests {
     use super::*;
     use crate::input::{KeyEventKind, KeyModifiers};
+    use ratatui_core::layout::Position;
 
     fn catalog() -> Vec<HistoryEntry<&'static str>> {
         example_history_entries()

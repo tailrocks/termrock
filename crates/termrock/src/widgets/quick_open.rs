@@ -24,12 +24,7 @@
 //! Research: fzf, television, VS Code Quick Open, Yazi, launchers.
 use std::collections::HashMap;
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::{Position, Rect},
-    style::Modifier,
-    widgets::StatefulWidget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
@@ -1214,12 +1209,12 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
         match event.kind {
             MouseEventKind::Down(MouseButton::Left) => {
                 for (idx, rect) in &self.provider_hits {
-                    if rect_contains(*rect, event.position) {
+                    if rect.contains(event.position) {
                         return self.set_provider(providers, *idx, visible);
                     }
                 }
                 for (idx, rect) in &self.hits {
-                    if rect_contains(*rect, event.position) {
+                    if rect.contains(event.position) {
                         self.collection.set_active(Some(*idx));
                         return self.activate(providers, visible, *idx);
                     }
@@ -1237,10 +1232,10 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
                 self.hovered = self
                     .hits
                     .iter()
-                    .find(|(_, rect)| rect_contains(*rect, event.position))
+                    .find(|(_, rect)| rect.contains(event.position))
                     .map(|(idx, _)| *idx);
                 for (idx, rect) in &self.hits {
-                    if rect_contains(*rect, event.position) && self.cursor_index() != *idx {
+                    if rect.contains(event.position) && self.cursor_index() != *idx {
                         self.collection.set_active(Some(*idx));
                         return QuickOpenOutcome::CursorMoved;
                     }
@@ -1264,13 +1259,6 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
             QuickOpenOutcome::Ignored
         }
     }
-}
-
-fn rect_contains(rect: Rect, pos: Position) -> bool {
-    pos.x >= rect.x
-        && pos.y >= rect.y
-        && pos.x < rect.x.saturating_add(rect.width)
-        && pos.y < rect.y.saturating_add(rect.height)
 }
 
 /// Build [`JumpTarget`]s from last painted result hits (JumpMode integration).
@@ -1961,6 +1949,7 @@ pub fn example_quick_open_symbols() -> Vec<QuickOpenItem<&'static str>> {
 mod tests {
     use super::*;
     use crate::input::{KeyEventKind, KeyModifiers};
+    use ratatui_core::layout::Position;
 
     fn providers() -> Vec<QuickOpenProvider> {
         example_quick_open_providers()

@@ -15,12 +15,7 @@
 //!
 //! Research: Zellij help, lazygit keybindings, Vim help, Textual bindings.
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::{Position, Rect},
-    style::Modifier,
-    widgets::StatefulWidget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
     input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind},
@@ -900,7 +895,7 @@ impl KeyboardHelpState {
         match event.kind {
             MouseEventKind::Down(MouseButton::Left) => {
                 for (idx, rect) in &self.hits {
-                    if rect_contains(*rect, event.position) {
+                    if rect.contains(event.position) {
                         self.collection.set_active(Some(*idx));
                         return KeyboardHelpOutcome::CursorMoved { index: *idx };
                     }
@@ -930,13 +925,6 @@ impl KeyboardHelpState {
             KeyboardHelpOutcome::Ignored
         }
     }
-}
-
-fn rect_contains(rect: Rect, pos: Position) -> bool {
-    pos.x >= rect.x
-        && pos.y >= rect.y
-        && pos.x < rect.x.saturating_add(rect.width)
-        && pos.y < rect.y.saturating_add(rect.height)
 }
 
 /// Default intents for modal list.
@@ -1442,6 +1430,7 @@ mod tests {
     use crate::input::KeyEventKind;
     use crate::input::KeyModifiers;
     use crate::keymap::{KeyBinding, KeyChord, Visibility};
+    use ratatui_core::layout::Position;
 
     fn refs(v: &[HelpEntry]) -> Vec<&HelpEntry> {
         v.iter().collect()
