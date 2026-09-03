@@ -1124,38 +1124,6 @@ fn paint_typed_field(
 
 // ── Overlay helpers ─────────────────────────────────────────────────────────
 
-/// Open default alert overlay id with confirm-only policy.
-pub fn open_alert_dialog_widget_overlay<FocusId: Clone>(
-    stack: &mut OverlayStack<FocusId>,
-    bounds: Rect,
-    opener_focus: Option<FocusId>,
-    locked: bool,
-) -> OverlayOutcome<FocusId> {
-    open_dialog_configured(
-        stack,
-        bounds,
-        DialogSize {
-            width: ALERT_DIALOG_DEFAULT_WIDTH,
-            height: ALERT_DIALOG_DEFAULT_HEIGHT,
-        },
-        opener_focus,
-        if locked {
-            DialogClosePolicy::Locked
-        } else {
-            DialogClosePolicy::ConfirmOnly
-        },
-        Some(DialogRecipe::Destructive),
-        Some(ALERT_DIALOG_OVERLAY_ID.to_string()),
-    )
-}
-
-/// Dismiss alert widget overlay.
-pub fn dismiss_alert_dialog_overlay<FocusId: Clone>(
-    stack: &mut OverlayStack<FocusId>,
-) -> OverlayOutcome<FocusId> {
-    stack.dismiss(&OverlayId::from_static(ALERT_DIALOG_OVERLAY_ID))
-}
-
 // ── Tests ───────────────────────────────────────────────────────────────────
 
 #[cfg(test)]

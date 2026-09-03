@@ -21,8 +21,8 @@ use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
 
 use crate::{
     interaction::{
-        OverlayId, OverlayKind, OverlayOutcome, OverlayPolicy, OverlaySize, OverlaySpec,
-        OverlayStack, place_overlay,
+        OverlayKind, OverlayOutcome, OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack,
+        place_overlay,
     },
     runtime::{FrameTick, Presence},
     style::{DesignSystem, MotionPolicy, Role},
@@ -86,13 +86,6 @@ pub fn open_tooltip_overlay<FocusId: Clone>(
         bounds,
         OverlaySpec::tooltip(TOOLTIP_OVERLAY_ID, anchor, size, opener_focus),
     )
-}
-
-/// Dismiss tooltip overlay when present.
-pub fn dismiss_tooltip_overlay<FocusId: Clone>(
-    stack: &mut OverlayStack<FocusId>,
-) -> OverlayOutcome<FocusId> {
-    stack.dismiss(&OverlayId::from_static(TOOLTIP_OVERLAY_ID))
 }
 
 /// Measure overlay size for content (clamped).

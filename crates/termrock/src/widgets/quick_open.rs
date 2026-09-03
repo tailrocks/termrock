@@ -34,7 +34,7 @@ use ratatui_core::{
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{
-        CollectionItem, CollectionState, NavigationMove, OverlayId, OverlayKind, OverlayOutcome,
+        CollectionItem, CollectionState, NavigationMove, OverlayKind, OverlayOutcome,
         OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, PageMove, RovingOrientation,
         SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, default_palette_intent,
         place_overlay,
@@ -190,13 +190,6 @@ pub fn open_quick_open_fullscreen<FocusId: Clone>(
         bounds,
         OverlaySpec::fullscreen(QUICK_OPEN_OVERLAY_ID, opener_focus),
     )
-}
-
-/// Dismiss default overlay.
-pub fn dismiss_quick_open_overlay<FocusId: Clone>(
-    stack: &mut OverlayStack<FocusId>,
-) -> OverlayOutcome<FocusId> {
-    stack.dismiss(&OverlayId::from_static(QUICK_OPEN_OVERLAY_ID))
 }
 
 // ── Providers & query syntax ────────────────────────────────────────────────

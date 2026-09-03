@@ -26,7 +26,7 @@ use ratatui_core::{
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{
-        CollectionItem, CollectionState, NavigationMove, OverlayId, OverlayKind, OverlayOutcome,
+        CollectionItem, CollectionState, NavigationMove, OverlayKind, OverlayOutcome,
         OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, PageMove, RovingOrientation,
         SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, default_palette_intent,
         place_overlay,
@@ -168,13 +168,6 @@ pub fn open_command_palette_overlay<FocusId: Clone>(
             opener_focus,
         ),
     )
-}
-
-/// Dismisses the default command-palette overlay when present.
-pub fn dismiss_command_palette_overlay<FocusId: Clone>(
-    stack: &mut OverlayStack<FocusId>,
-) -> OverlayOutcome<FocusId> {
-    stack.dismiss(&OverlayId::from_static(COMMAND_PALETTE_OVERLAY_ID))
 }
 
 // ── Entry model ─────────────────────────────────────────────────────────────

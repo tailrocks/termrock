@@ -25,7 +25,7 @@ use ratatui_core::{
 use crate::{
     input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind},
     interaction::{
-        CollectionItem, CollectionState, NavigationMove, OverlayId, OverlayKind, OverlayOutcome,
+        CollectionItem, CollectionState, NavigationMove, OverlayKind, OverlayOutcome,
         OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, RovingOrientation, SemanticNode,
         SemanticRole, SemanticScene, SemanticState, UiIntent, place_overlay,
     },
@@ -109,13 +109,6 @@ pub fn open_keyboard_help_overlay<FocusId: Clone>(
             opener_focus,
         ),
     )
-}
-
-/// Dismiss modal help.
-pub fn dismiss_keyboard_help_overlay<FocusId: Clone>(
-    stack: &mut OverlayStack<FocusId>,
-) -> OverlayOutcome<FocusId> {
-    stack.dismiss(&OverlayId::from_static(KEYBOARD_HELP_OVERLAY_ID))
 }
 
 // ── Model ───────────────────────────────────────────────────────────────────

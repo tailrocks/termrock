@@ -1113,13 +1113,6 @@ pub fn open_slash_command_overlay<FocusId: Clone>(
     )
 }
 
-/// Dismiss slash overlay.
-pub fn dismiss_slash_command_overlay<FocusId: Clone>(
-    stack: &mut OverlayStack<FocusId>,
-) -> OverlayOutcome<FocusId> {
-    stack.dismiss(&OverlayId::from_static(SLASH_COMMAND_OVERLAY_ID))
-}
-
 /// Preferred placement (reuses completion placer).
 #[must_use]
 pub fn place_slash_command_menu(bounds: Rect, anchor: Rect) -> Rect {

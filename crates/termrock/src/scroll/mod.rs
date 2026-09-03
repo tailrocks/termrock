@@ -253,25 +253,6 @@ impl ScrollAxes {
     }
 }
 
-/// Derive available scroll axes for a one-cell-bordered dialog body.
-#[must_use]
-pub const fn dialog_scroll_axes(
-    content_width: usize,
-    content_height: usize,
-    block_area: ratatui_core::layout::Rect,
-) -> ScrollAxes {
-    ScrollAxes {
-        vertical: is_scrollable(content_height, viewport_height(block_area)),
-        horizontal: is_scrollable(content_width, viewport_width(block_area)),
-    }
-}
-
-/// Scroll-key hint spans reflecting per-axis availability.
-#[must_use]
-pub fn scroll_hint_spans(axes: ScrollAxes) -> Vec<crate::widgets::HintSpan<'static>> {
-    crate::keymap::SCROLL_HINT_KEYMAP.hint_spans_for_axes(axes)
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// A signed scroll amount on one axis.
 pub struct ScrollDelta {
@@ -589,40 +570,6 @@ pub fn mouse_scroll_delta_with_step(
         }),
         _ => None,
     }
-}
-
-/// Applies a pointer-wheel delta when its axis is visible.
-pub fn apply_mouse_scroll_u16(
-    kind: MouseEventKind,
-    modifiers: KeyModifiers,
-    axes: ScrollAxes,
-    horizontal: ScrollSpan,
-    vertical: ScrollSpan,
-    scroll_x: &mut u16,
-    scroll_y: &mut u16,
-) -> bool {
-    let Some(delta) = mouse_scroll_delta(kind, modifiers, axes) else {
-        return false;
-    };
-    match delta.axis {
-        ScrollAxis::Horizontal => {
-            apply_delta_u16(
-                horizontal.content_len,
-                horizontal.viewport_len,
-                scroll_x,
-                isize::from(delta.amount),
-            );
-        }
-        ScrollAxis::Vertical => {
-            apply_delta_u16(
-                vertical.content_len,
-                vertical.viewport_len,
-                scroll_y,
-                isize::from(delta.amount),
-            );
-        }
-    }
-    true
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

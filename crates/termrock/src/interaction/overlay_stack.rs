@@ -1125,12 +1125,6 @@ impl<FocusId> OverlayStack<FocusId> {
         }
         PointerRoute::OutsideTop { index: top_i }
     }
-
-    /// Whether the top layer traps Tab/focus.
-    #[must_use]
-    pub fn top_focus_trap(&self) -> bool {
-        self.entries.last().is_some_and(|e| e.policy.focus_trap)
-    }
 }
 
 impl<FocusId: Clone> OverlayStack<FocusId> {
@@ -1217,21 +1211,6 @@ impl<FocusId: Clone> OverlayStack<FocusId> {
         Some(self.push_entry(self.bounds, spec))
     }
 
-    /// Drain until queue empty or a blocking top remains.
-    pub fn drain_queue_all(&mut self) -> Vec<OverlayOutcome<FocusId>> {
-        let mut out = Vec::new();
-        while let Some(o) = self.drain_queue() {
-            out.push(o);
-            if matches!(
-                self.entries.last().map(|e| e.kind),
-                Some(k) if kind_blocks_queue(k)
-            ) {
-                break;
-            }
-        }
-        out
-    }
-
     fn dismiss_root(&mut self, root_id: &OverlayId) -> OverlayOutcome<FocusId> {
         let Some(index) = self.entries.iter().position(|e| &e.id == root_id) else {
             return OverlayOutcome::Ignored;
@@ -1259,38 +1238,6 @@ impl<FocusId: Clone> OverlayStack<FocusId> {
         top.policy.prefer = PlacementPrefer::Fullscreen;
         let id = top.id.clone();
         OverlayOutcome::Opened { id, rect: bounds }
-    }
-
-    /// Clears fullscreen promotion and reflows preferred placement.
-    pub fn demote_top_fullscreen(&mut self, bounds: Rect) -> OverlayOutcome<FocusId> {
-        self.bounds = bounds;
-        let Some(top) = self.entries.last_mut() else {
-            return OverlayOutcome::Ignored;
-        };
-        if !top.fullscreen_promoted && !matches!(top.kind, OverlayKind::Fullscreen) {
-            return OverlayOutcome::Ignored;
-        }
-        // Explicit Fullscreen kind cannot demote.
-        if matches!(top.kind, OverlayKind::Fullscreen) {
-            top.rect = bounds;
-            top.fit = top.size.fit_within(bounds);
-            let id = top.id.clone();
-            return OverlayOutcome::Opened { id, rect: bounds };
-        }
-        top.fullscreen_promoted = false;
-        // Restore kind default prefer if we had forced Fullscreen.
-        if matches!(top.policy.prefer, PlacementPrefer::Fullscreen) {
-            top.policy.prefer = OverlayPolicy::for_kind(top.kind).prefer;
-        }
-        let placement = resolve_placement(bounds, top.anchor, top.size, top.policy, top.kind);
-        top.rect = placement.rect;
-        top.fullscreen_promoted = placement.fullscreen_promoted;
-        top.fit = placement.fit;
-        let id = top.id.clone();
-        OverlayOutcome::Opened {
-            id,
-            rect: placement.rect,
-        }
     }
 
     /// Reflows all geometries after resize (keeps stack order and open set).
@@ -1391,12 +1338,6 @@ impl<FocusId: Clone> OverlayStack<FocusId> {
         }
     }
 
-    /// Access top dismiss controller (tests / advanced hosts).
-    #[must_use]
-    pub const fn top_dismissable(&self) -> &DismissableLayer {
-        &self.top_dismiss
-    }
-
     /// Removes an overlay by id (and its transitive descendants).
     pub fn dismiss(&mut self, id: &OverlayId) -> OverlayOutcome<FocusId> {
         self.dismiss_root(id)
@@ -1420,22 +1361,6 @@ impl<FocusId: Clone> OverlayStack<FocusId> {
                 esc: entry.policy.esc,
                 outside: entry.policy.outside,
                 focus_return,
-            });
-        }
-    }
-}
-
-impl OverlayStack<()> {
-    /// Convenience sync when focus ids are unit.
-    pub fn sync_scene_layers_unit<Action>(&self, scene: &mut InteractionScene<(), String, Action>) {
-        for entry in &self.entries {
-            scene.push_layer(InteractionLayer {
-                id: entry.id.0.clone(),
-                kind: OverlayPolicy::scene_layer_kind(entry.kind),
-                owns_input: entry.policy.owns_input,
-                esc: entry.policy.esc,
-                outside: entry.policy.outside,
-                focus_return: None,
             });
         }
     }

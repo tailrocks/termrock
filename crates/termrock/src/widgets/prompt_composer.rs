@@ -1312,37 +1312,6 @@ impl PromptComposerState {
         )
     }
 
-    /// Opens fullscreen editor overlay on the stack.
-    pub fn open_fullscreen_overlay<FocusId: Clone>(
-        &self,
-        stack: &mut OverlayStack<FocusId>,
-        bounds: Rect,
-        opener: Option<FocusId>,
-    ) -> OverlayOutcome<FocusId> {
-        stack.open(
-            bounds,
-            OverlaySpec {
-                id: OverlayId::from_static(PROMPT_FULLSCREEN_OVERLAY_ID),
-                kind: OverlayKind::Dialog,
-                parent: None,
-                anchor: None,
-                size: OverlaySize::dialog(
-                    bounds.width.saturating_sub(2).max(20),
-                    bounds.height.saturating_sub(2).max(8),
-                ),
-                opener_focus: opener,
-                policy: None,
-            },
-        )
-    }
-
-    /// Dismisses fullscreen editor overlay.
-    pub fn dismiss_fullscreen_overlay<FocusId: Clone>(
-        stack: &mut OverlayStack<FocusId>,
-    ) -> OverlayOutcome<FocusId> {
-        stack.dismiss(&OverlayId::from_static(PROMPT_FULLSCREEN_OVERLAY_ID))
-    }
-
     // —— internals ——
 
     fn try_submit_or_queue(&mut self) -> PromptComposerOutcome {

@@ -27,7 +27,7 @@ use ratatui_core::{
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{
-        CollectionItem, CollectionState, NavigationMove, OverlayId, OverlayKind, OverlayOutcome,
+        CollectionItem, CollectionState, NavigationMove, OverlayKind, OverlayOutcome,
         OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, PageMove, RovingOrientation,
         SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, default_palette_intent,
         place_overlay,
@@ -180,44 +180,6 @@ pub fn open_history_picker_overlay<FocusId: Clone>(
             opener_focus,
         ),
     )
-}
-
-/// Open fullscreen layer.
-pub fn open_history_picker_fullscreen<FocusId: Clone>(
-    stack: &mut OverlayStack<FocusId>,
-    bounds: Rect,
-    opener_focus: Option<FocusId>,
-) -> OverlayOutcome<FocusId> {
-    stack.open(
-        bounds,
-        OverlaySpec::fullscreen(HISTORY_PICKER_OVERLAY_ID, opener_focus),
-    )
-}
-
-/// Open anchored popover overlay.
-pub fn open_history_picker_popover_overlay<FocusId: Clone>(
-    stack: &mut OverlayStack<FocusId>,
-    bounds: Rect,
-    anchor: Rect,
-    preferred: HistoryPickerSize,
-    opener_focus: Option<FocusId>,
-) -> OverlayOutcome<FocusId> {
-    stack.open(
-        bounds,
-        OverlaySpec::popover(
-            HISTORY_PICKER_OVERLAY_ID,
-            anchor,
-            OverlaySize::from(preferred),
-            opener_focus,
-        ),
-    )
-}
-
-/// Dismiss default overlay.
-pub fn dismiss_history_picker_overlay<FocusId: Clone>(
-    stack: &mut OverlayStack<FocusId>,
-) -> OverlayOutcome<FocusId> {
-    stack.dismiss(&OverlayId::from_static(HISTORY_PICKER_OVERLAY_ID))
 }
 
 // ── Privacy / redaction ─────────────────────────────────────────────────────
