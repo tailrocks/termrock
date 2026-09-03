@@ -310,22 +310,22 @@ impl<Id: Clone + PartialEq> ToolbarState<Id> {
     }
 
     /// Build roving entries for interactive items only (visible + overflow chip).
-    fn roving_entries(
-        items: &[ToolbarItem<'_, Id>],
+    fn roving_entries<'a>(
+        items: &'a [ToolbarItem<'a, Id>],
         visible: &[usize],
         overflow_id: Option<&Id>,
         has_overflow: bool,
-    ) -> Vec<RovingEntry<Id>> {
+    ) -> Vec<RovingEntry<'a, Id>> {
         let mut out = Vec::new();
         for &i in visible {
             let item = &items[i];
             if item.is_interactive() {
-                out.push(RovingEntry::new(item.id.clone(), item.label.to_string()).enabled(true));
+                out.push(RovingEntry::new(item.id.clone(), item.label).enabled(true));
             }
         }
         if has_overflow {
             if let Some(oid) = overflow_id {
-                out.push(RovingEntry::new(oid.clone(), String::from("More")).enabled(true));
+                out.push(RovingEntry::new(oid.clone(), "More").enabled(true));
             }
         }
         out

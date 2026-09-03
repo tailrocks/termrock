@@ -1349,11 +1349,11 @@ impl<'a, Id> TokenStrip<'a, Id> {
 }
 
 impl<'a, Id: Clone + PartialEq + std::fmt::Display> TokenStrip<'a, Id> {
-    fn entries(&self) -> Vec<RovingEntry<Id>> {
-        self.items
+    fn entries<'b>(items: &'b [TokenItem<'b, Id>]) -> Vec<RovingEntry<'b, Id>> {
+        items
             .iter()
             .filter(|i| !i.disabled)
-            .map(|i| RovingEntry::new(i.id.clone(), i.label.to_string()).enabled(true))
+            .map(|i| RovingEntry::new(i.id.clone(), i.label).enabled(true))
             .collect()
     }
 
@@ -1369,7 +1369,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> TokenStrip<'a, Id> {
         {
             return;
         }
-        let entries = self.entries();
+        let entries = Self::entries(&self.items);
         let _ = state.roving.reconcile(&entries);
 
         let max_v = if self.max_visible == 0 {
@@ -1663,7 +1663,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> TokenStrip<'a, Id> {
         if !state.surface_focused || !key.is_press() {
             return TokenStripOutcome::Ignored;
         }
-        let entries = self.entries();
+        let entries = Self::entries(&self.items);
         let _ = state.roving.reconcile(&entries);
 
         // Source ChipBar: ← → move the chip cursor. TokenPart is mouse/Tab-internal,

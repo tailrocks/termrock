@@ -659,7 +659,8 @@ impl<Id: Clone + PartialEq> ListState<Id> {
         {
             return Outcome::Ignored;
         }
-        let items = collection_items_from_rows(rows);
+        let mut labels = Vec::new();
+        let items = collection_items_from_rows(rows, &mut labels);
         let out = self.collection.handle_key(key, &items);
         if out.active_changed() {
             ensure_list_active_visible(self, rows, self.collection.viewport_len());
@@ -673,7 +674,8 @@ impl<Id: Clone + PartialEq> ListState<Id> {
     pub fn handle_intent(&mut self, rows: &[ListRow<'_, Id>], intent: UiIntent) -> Outcome<Id> {
         match intent {
             UiIntent::Move(_) | UiIntent::Page(_) => {
-                let items = collection_items_from_rows(rows);
+                let mut labels = Vec::new();
+                let items = collection_items_from_rows(rows, &mut labels);
                 // Empty selection: first Next/PageForward lands on first, Previous on last.
                 let out = if self.collection.active().is_none() {
                     match intent {
@@ -799,7 +801,8 @@ impl<Id: Clone + PartialEq> ListState<Id> {
 
     /// Moves selection to the next enabled item, wrapping at the end.
     pub fn select_next(&mut self, rows: &[ListRow<'_, Id>]) -> Outcome<Id> {
-        let items = collection_items_from_rows(rows);
+        let mut labels = Vec::new();
+        let items = collection_items_from_rows(rows, &mut labels);
         if self.collection.move_next(&items).active_changed() {
             Outcome::Changed
         } else {
@@ -809,7 +812,8 @@ impl<Id: Clone + PartialEq> ListState<Id> {
 
     /// Moves selection to the previous enabled item, wrapping at the start.
     pub fn select_previous(&mut self, rows: &[ListRow<'_, Id>]) -> Outcome<Id> {
-        let items = collection_items_from_rows(rows);
+        let mut labels = Vec::new();
+        let items = collection_items_from_rows(rows, &mut labels);
         if self.collection.move_previous(&items).active_changed() {
             Outcome::Changed
         } else {
@@ -932,7 +936,8 @@ impl<Id: Clone + PartialEq> ListState<Id> {
     }
 
     fn reconcile_rows(&mut self, rows: &[ListRow<'_, Id>], viewport_height: usize) {
-        let items = collection_items_from_rows(rows);
+        let mut labels = Vec::new();
+        let items = collection_items_from_rows(rows, &mut labels);
         let total = if self.virtual_total > 0 {
             self.virtual_total
         } else {
@@ -1552,16 +1557,22 @@ impl<Id: Clone + PartialEq> StatefulWidget for List<'_, Id> {
 }
 
 /// Frame projection for headless [`crate::interaction::CollectionState`] (no long-lived borrows).
-fn collection_items_from_rows<Id: Clone>(
+fn collection_items_from_rows<'a, Id: Clone>(
     rows: &[ListRow<'_, Id>],
-) -> Vec<crate::interaction::CollectionItem<Id>> {
-    rows.iter()
-        .filter(|row| row.role.is_navigable())
-        .map(|row| crate::interaction::CollectionItem {
+    labels: &'a mut Vec<String>,
+) -> Vec<crate::interaction::CollectionItem<'a, Id>> {
+    labels.clear();
+    let navigable: Vec<&ListRow<'_, Id>> =
+        rows.iter().filter(|row| row.role.is_navigable()).collect();
+    labels.extend(navigable.iter().map(|row| row.plain_label()));
+    navigable
+        .iter()
+        .zip(labels.iter())
+        .map(|(row, label)| crate::interaction::CollectionItem {
             id: row.id.clone(),
             enabled: row.enabled,
             // Primary plain text enables roving typeahead.
-            label: row.plain_label(),
+            label,
             parent: None,
         })
         .collect()

@@ -728,14 +728,14 @@ impl KeyboardHelpState {
         self.accepts_input && self.focused
     }
 
-    fn entries_coll(visible: &[&HelpEntry]) -> Vec<CollectionItem<usize>> {
+    fn entries_coll<'a>(visible: &'a [&HelpEntry]) -> Vec<CollectionItem<'a, usize>> {
         visible
             .iter()
             .enumerate()
             .map(|(i, e)| CollectionItem {
                 id: i,
                 enabled: true,
-                label: e.action.clone(),
+                label: &e.action,
                 parent: None,
             })
             .collect()

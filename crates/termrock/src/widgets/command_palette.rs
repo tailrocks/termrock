@@ -813,14 +813,16 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
         self.generation
     }
 
-    fn entries_collection(visible: &[CommandMatch<'_, Id>]) -> Vec<CollectionItem<usize>> {
+    fn entries_collection<'a>(
+        visible: &'a [CommandMatch<'_, Id>],
+    ) -> Vec<CollectionItem<'a, usize>> {
         visible
             .iter()
             .enumerate()
             .map(|(i, e)| CollectionItem {
                 id: i,
                 enabled: e.enabled,
-                label: e.label.clone(),
+                label: &e.label,
                 parent: None,
             })
             .collect()

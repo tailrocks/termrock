@@ -418,11 +418,11 @@ impl<Id> SelectState<Id> {
 impl<Id: Clone + PartialEq> SelectState<Id> {
     /// Build collection items from options (only selectable options).
     #[must_use]
-    pub fn collection_items(options: &[SelectOption<Id>]) -> Vec<CollectionItem<Id>> {
+    pub fn collection_items<'a>(options: &'a [SelectOption<Id>]) -> Vec<CollectionItem<'a, Id>> {
         options
             .iter()
             .filter(|o| o.is_option())
-            .map(|o| CollectionItem::new(o.id.clone(), o.label.clone()).enabled(!o.disabled))
+            .map(|o| CollectionItem::new(o.id.clone(), &o.label).enabled(!o.disabled))
             .collect()
     }
 
@@ -460,21 +460,24 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
         out
     }
 
-    fn filtered_collection_items(
-        options: &[SelectOption<Id>],
+    fn filtered_collection_items<'a>(
+        options: &'a [SelectOption<Id>],
         query: &str,
-    ) -> Vec<CollectionItem<Id>> {
+    ) -> Vec<CollectionItem<'a, Id>> {
         if query.trim().is_empty() {
             return Self::collection_items(options);
         }
         Self::filter_options(options, query)
             .into_iter()
             .filter(|o| o.is_option())
-            .map(|o| CollectionItem::new(o.id.clone(), o.label.clone()).enabled(!o.disabled))
+            .map(|o| CollectionItem::new(o.id.clone(), &o.label).enabled(!o.disabled))
             .collect()
     }
 
-    fn current_collection_items(&self, options: &[SelectOption<Id>]) -> Vec<CollectionItem<Id>> {
+    fn current_collection_items<'a>(
+        &self,
+        options: &'a [SelectOption<Id>],
+    ) -> Vec<CollectionItem<'a, Id>> {
         if self.searchable {
             Self::filtered_collection_items(options, self.search.value())
         } else {
@@ -1642,12 +1645,7 @@ mod tests {
         let _ = state.open(bounds, &opts);
         let _ = state.search.insert_str("car");
         state.reconcile_options(&opts);
-        let items = SelectState::collection_items(
-            &SelectState::filter_options(&opts, "car")
-                .into_iter()
-                .cloned()
-                .collect::<Vec<_>>(),
-        );
+        let items = SelectState::filtered_collection_items(&opts, "car");
         assert!(items.iter().any(|i| i.id == "carrot"));
         assert!(!items.iter().any(|i| i.id == "apple"));
     }

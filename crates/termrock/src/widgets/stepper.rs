@@ -617,7 +617,10 @@ impl StepperState {
         }
     }
 
-    fn entries(items: &[StepItem], statuses: &[StepStatus]) -> Vec<CollectionItem<usize>> {
+    fn entries<'a>(
+        items: &'a [StepItem],
+        statuses: &[StepStatus],
+    ) -> Vec<CollectionItem<'a, usize>> {
         items
             .iter()
             .enumerate()
@@ -627,7 +630,7 @@ impl StepperState {
                 CollectionItem {
                     id: i,
                     enabled,
-                    label: it.title.clone(),
+                    label: &it.title,
                     parent: None,
                 }
             })

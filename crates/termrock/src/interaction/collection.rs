@@ -17,26 +17,29 @@ use crate::{
 };
 
 /// One item in a frame projection (not stored long-term in [`CollectionState`]).
+///
+/// The label borrows from the projected model: building the projection used to
+/// clone one `String` per visible row per frame.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CollectionItem<Id> {
+pub struct CollectionItem<'a, Id> {
     /// Stable identity across frames.
     pub id: Id,
     /// Whether the item participates in movement / activation.
     pub enabled: bool,
     /// Typeahead / a11y label for this call only (empty disables typeahead match).
-    pub label: String,
+    pub label: &'a str,
     /// Optional parent id (trees); ignored by flat movement.
     pub parent: Option<Id>,
 }
 
-impl<Id> CollectionItem<Id> {
+impl<'a, Id> CollectionItem<'a, Id> {
     /// Enabled flat item with label.
     #[must_use]
-    pub fn new(id: Id, label: impl Into<String>) -> Self {
+    pub const fn new(id: Id, label: &'a str) -> Self {
         Self {
             id,
             enabled: true,
-            label: label.into(),
+            label,
             parent: None,
         }
     }
@@ -245,15 +248,17 @@ impl<Id: Clone + PartialEq> CollectionState<Id> {
         self.offset = offset.min(max);
     }
 
-    /// Converts frame items to roving entries (owned labels for this call).
+    /// Converts frame items to roving entries (labels keep borrowing the model).
     #[must_use]
-    pub fn to_roving_entries(items: &[CollectionItem<Id>]) -> Vec<RovingEntry<Id>> {
+    pub fn to_roving_entries<'a, Id2: Clone>(
+        items: &[CollectionItem<'a, Id2>],
+    ) -> Vec<RovingEntry<'a, Id2>> {
         items
             .iter()
             .map(|i| RovingEntry {
                 id: i.id.clone(),
                 enabled: i.enabled,
-                label: i.label.clone(),
+                label: i.label,
             })
             .collect()
     }
@@ -261,7 +266,7 @@ impl<Id: Clone + PartialEq> CollectionState<Id> {
     /// Reconciles active id against a full (or filtered) projection.
     ///
     /// Sets `total_len` to `items.len()` when not using a virtual window.
-    pub fn reconcile(&mut self, items: &[CollectionItem<Id>]) -> CollectionOutcome<Id> {
+    pub fn reconcile(&mut self, items: &[CollectionItem<'_, Id>]) -> CollectionOutcome<Id> {
         self.window_start = None;
         self.total_len = items.len();
         if self.viewport_len == 0 {
@@ -286,7 +291,7 @@ impl<Id: Clone + PartialEq> CollectionState<Id> {
     /// collection.
     pub fn reconcile_window(
         &mut self,
-        window: &[CollectionItem<Id>],
+        window: &[CollectionItem<'_, Id>],
         window_start: usize,
         total_len: usize,
         viewport_len: usize,
@@ -317,7 +322,11 @@ impl<Id: Clone + PartialEq> CollectionState<Id> {
     }
 
     /// Moves active by `steps` among enabled items in the projection.
-    pub fn move_by(&mut self, items: &[CollectionItem<Id>], steps: isize) -> CollectionOutcome<Id> {
+    pub fn move_by(
+        &mut self,
+        items: &[CollectionItem<'_, Id>],
+        steps: isize,
+    ) -> CollectionOutcome<Id> {
         if self.window_start.is_some()
             && self.total_len > 0
             && self
@@ -339,17 +348,17 @@ impl<Id: Clone + PartialEq> CollectionState<Id> {
     }
 
     /// Next enabled item.
-    pub fn move_next(&mut self, items: &[CollectionItem<Id>]) -> CollectionOutcome<Id> {
+    pub fn move_next(&mut self, items: &[CollectionItem<'_, Id>]) -> CollectionOutcome<Id> {
         self.move_by(items, 1)
     }
 
     /// Previous enabled item.
-    pub fn move_previous(&mut self, items: &[CollectionItem<Id>]) -> CollectionOutcome<Id> {
+    pub fn move_previous(&mut self, items: &[CollectionItem<'_, Id>]) -> CollectionOutcome<Id> {
         self.move_by(items, -1)
     }
 
     /// First enabled item (scrolls to top).
-    pub fn move_first(&mut self, items: &[CollectionItem<Id>]) -> CollectionOutcome<Id> {
+    pub fn move_first(&mut self, items: &[CollectionItem<'_, Id>]) -> CollectionOutcome<Id> {
         let entries = Self::to_roving_entries(items);
         let out: CollectionOutcome<Id> = self.roving.move_first(&entries).into();
         if out.active_changed() {
@@ -359,7 +368,7 @@ impl<Id: Clone + PartialEq> CollectionState<Id> {
     }
 
     /// Last enabled item.
-    pub fn move_last(&mut self, items: &[CollectionItem<Id>]) -> CollectionOutcome<Id> {
+    pub fn move_last(&mut self, items: &[CollectionItem<'_, Id>]) -> CollectionOutcome<Id> {
         let entries = Self::to_roving_entries(items);
         let out: CollectionOutcome<Id> = self.roving.move_last(&entries).into();
         if out.active_changed() {
@@ -371,7 +380,7 @@ impl<Id: Clone + PartialEq> CollectionState<Id> {
     /// Page-scale move of the active item among the projection.
     pub fn move_page(
         &mut self,
-        items: &[CollectionItem<Id>],
+        items: &[CollectionItem<'_, Id>],
         direction: isize,
     ) -> CollectionOutcome<Id> {
         let page = self.viewport_len.max(1) as isize;
@@ -400,7 +409,10 @@ impl<Id: Clone + PartialEq> CollectionState<Id> {
     }
 
     /// Ensures active lies within `[offset, offset+viewport)` when possible.
-    pub fn ensure_active_visible(&mut self, items: &[CollectionItem<Id>]) -> CollectionOutcome<Id> {
+    pub fn ensure_active_visible(
+        &mut self,
+        items: &[CollectionItem<'_, Id>],
+    ) -> CollectionOutcome<Id> {
         let Some(active) = self.roving.active() else {
             return CollectionOutcome::Ignored;
         };
@@ -430,7 +442,7 @@ impl<Id: Clone + PartialEq> CollectionState<Id> {
     pub fn handle_intent(
         &mut self,
         intent: UiIntent,
-        items: &[CollectionItem<Id>],
+        items: &[CollectionItem<'_, Id>],
     ) -> CollectionOutcome<Id> {
         match intent {
             UiIntent::Move(NavigationMove::Next | NavigationMove::Down | NavigationMove::Right) => {
@@ -454,7 +466,7 @@ impl<Id: Clone + PartialEq> CollectionState<Id> {
     pub fn handle_key(
         &mut self,
         key: KeyEvent,
-        items: &[CollectionItem<Id>],
+        items: &[CollectionItem<'_, Id>],
     ) -> CollectionOutcome<Id> {
         let entries = Self::to_roving_entries(items);
         let out: CollectionOutcome<Id> = self.roving.handle_key(key, &entries).into();
@@ -466,7 +478,7 @@ impl<Id: Clone + PartialEq> CollectionState<Id> {
 
     /// Index of active within `items`, if any.
     #[must_use]
-    pub fn active_index(&self, items: &[CollectionItem<Id>]) -> Option<usize> {
+    pub fn active_index(&self, items: &[CollectionItem<'_, Id>]) -> Option<usize> {
         self.roving
             .active()
             .and_then(|id| items.iter().position(|i| &i.id == id))
@@ -478,7 +490,7 @@ mod tests {
     use super::*;
     use crate::interaction::PageMove;
 
-    fn items(specs: &[(&'static str, bool)]) -> Vec<CollectionItem<&'static str>> {
+    fn items(specs: &[(&'static str, bool)]) -> Vec<CollectionItem<'static, &'static str>> {
         specs
             .iter()
             .map(|(id, en)| CollectionItem::new(*id, *id).enabled(*en))

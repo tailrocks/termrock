@@ -763,7 +763,8 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
         {
             return TreeOutcome::Ignored;
         }
-        let items = collection_items_from_nodes(nodes);
+        let mut labels = Vec::new();
+        let items = collection_items_from_nodes(nodes, &mut labels);
         let out = self.collection.handle_key(key, &items);
         if out.active_changed() {
             if let Some(id) = self.collection.active().cloned() {
@@ -1107,14 +1108,20 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
     }
 }
 
-fn collection_items_from_nodes<Id: Clone>(nodes: &[TreeNode<'_, Id>]) -> Vec<CollectionItem<Id>> {
-    nodes
+fn collection_items_from_nodes<'a, Id: Clone>(
+    nodes: &[TreeNode<'_, Id>],
+    labels: &'a mut Vec<String>,
+) -> Vec<CollectionItem<'a, Id>> {
+    labels.clear();
+    let interactive: Vec<&TreeNode<'_, Id>> = nodes.iter().filter(|n| n.is_interactive()).collect();
+    labels.extend(interactive.iter().map(|n| n.plain_label()));
+    interactive
         .iter()
-        .filter(|n| n.is_interactive())
-        .map(|n| CollectionItem {
+        .zip(labels.iter())
+        .map(|(n, label)| CollectionItem {
             id: n.id.clone(),
             enabled: true,
-            label: n.plain_label(),
+            label,
             parent: None,
         })
         .collect()

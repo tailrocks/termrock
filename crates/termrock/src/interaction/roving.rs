@@ -28,24 +28,26 @@ pub enum RovingOrientation {
 }
 
 /// One item in a roving group (frame projection; may be a virtualized window).
+///
+/// The label borrows from the projected model; roving state never stores it.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct RovingEntry<Id> {
+pub struct RovingEntry<'a, Id> {
     /// Stable identity (not index — survives reordering when ids stable).
     pub id: Id,
     /// Disabled entries are skipped by movement and typeahead.
     pub enabled: bool,
     /// Typeahead / a11y label (empty skips typeahead match for this row).
-    pub label: String,
+    pub label: &'a str,
 }
 
-impl<Id> RovingEntry<Id> {
+impl<'a, Id> RovingEntry<'a, Id> {
     /// Enabled entry with label.
     #[must_use]
-    pub fn new(id: Id, label: impl Into<String>) -> Self {
+    pub const fn new(id: Id, label: &'a str) -> Self {
         Self {
             id,
             enabled: true,
-            label: label.into(),
+            label,
         }
     }
 
@@ -167,7 +169,7 @@ impl<Id: Clone + PartialEq> RovingFocusGroup<Id> {
     }
 
     /// Enabled entries only, in list order.
-    fn enabled_indices(entries: &[RovingEntry<Id>]) -> Vec<usize> {
+    fn enabled_indices(entries: &[RovingEntry<'_, Id>]) -> Vec<usize> {
         entries
             .iter()
             .enumerate()
@@ -198,7 +200,7 @@ impl<Id: Clone + PartialEq> RovingFocusGroup<Id> {
     /// Ensures `active` is an enabled entry; otherwise nearest enabled (or None).
     ///
     /// Call after virtual window changes, insert/remove, or disabled flips.
-    pub fn reconcile(&mut self, entries: &[RovingEntry<Id>]) -> RovingOutcome<Id> {
+    pub fn reconcile(&mut self, entries: &[RovingEntry<'_, Id>]) -> RovingOutcome<Id> {
         let from = self.active.clone();
         let enabled = Self::enabled_indices(entries);
         if enabled.is_empty() {
@@ -228,14 +230,14 @@ impl<Id: Clone + PartialEq> RovingFocusGroup<Id> {
     }
 
     /// Index of active among all entries, if present.
-    fn active_index(&self, entries: &[RovingEntry<Id>]) -> Option<usize> {
+    fn active_index(&self, entries: &[RovingEntry<'_, Id>]) -> Option<usize> {
         self.active
             .as_ref()
             .and_then(|id| entries.iter().position(|e| &e.id == id))
     }
 
     /// Moves by signed steps among enabled entries.
-    pub fn move_by(&mut self, entries: &[RovingEntry<Id>], steps: isize) -> RovingOutcome<Id> {
+    pub fn move_by(&mut self, entries: &[RovingEntry<'_, Id>], steps: isize) -> RovingOutcome<Id> {
         let from = self.active.clone();
         let enabled = Self::enabled_indices(entries);
         if enabled.is_empty() || steps == 0 {
@@ -313,17 +315,17 @@ impl<Id: Clone + PartialEq> RovingFocusGroup<Id> {
     }
 
     /// Next enabled item.
-    pub fn move_next(&mut self, entries: &[RovingEntry<Id>]) -> RovingOutcome<Id> {
+    pub fn move_next(&mut self, entries: &[RovingEntry<'_, Id>]) -> RovingOutcome<Id> {
         self.move_by(entries, 1)
     }
 
     /// Previous enabled item.
-    pub fn move_previous(&mut self, entries: &[RovingEntry<Id>]) -> RovingOutcome<Id> {
+    pub fn move_previous(&mut self, entries: &[RovingEntry<'_, Id>]) -> RovingOutcome<Id> {
         self.move_by(entries, -1)
     }
 
     /// First enabled item.
-    pub fn move_first(&mut self, entries: &[RovingEntry<Id>]) -> RovingOutcome<Id> {
+    pub fn move_first(&mut self, entries: &[RovingEntry<'_, Id>]) -> RovingOutcome<Id> {
         let from = self.active.clone();
         let enabled = Self::enabled_indices(entries);
         if enabled.is_empty() {
@@ -336,7 +338,7 @@ impl<Id: Clone + PartialEq> RovingFocusGroup<Id> {
     }
 
     /// Last enabled item.
-    pub fn move_last(&mut self, entries: &[RovingEntry<Id>]) -> RovingOutcome<Id> {
+    pub fn move_last(&mut self, entries: &[RovingEntry<'_, Id>]) -> RovingOutcome<Id> {
         let from = self.active.clone();
         let enabled = Self::enabled_indices(entries);
         if enabled.is_empty() {
@@ -352,7 +354,7 @@ impl<Id: Clone + PartialEq> RovingFocusGroup<Id> {
     pub fn handle_intent(
         &mut self,
         intent: UiIntent,
-        entries: &[RovingEntry<Id>],
+        entries: &[RovingEntry<'_, Id>],
     ) -> RovingOutcome<Id> {
         match intent {
             UiIntent::Move(NavigationMove::Next | NavigationMove::Down | NavigationMove::Right) => {
@@ -384,7 +386,11 @@ impl<Id: Clone + PartialEq> RovingFocusGroup<Id> {
     /// Key routing: Home/End, orientation arrows, printable typeahead.
     ///
     /// Does not Activate — host maps Enter/Space after consulting [`Self::active`].
-    pub fn handle_key(&mut self, key: KeyEvent, entries: &[RovingEntry<Id>]) -> RovingOutcome<Id> {
+    pub fn handle_key(
+        &mut self,
+        key: KeyEvent,
+        entries: &[RovingEntry<'_, Id>],
+    ) -> RovingOutcome<Id> {
         if key.is_release() || entries.is_empty() {
             return RovingOutcome::Ignored;
         }
@@ -414,7 +420,11 @@ impl<Id: Clone + PartialEq> RovingFocusGroup<Id> {
     }
 
     /// Append typeahead char and jump to first enabled label prefix match (case-insensitive).
-    pub fn typeahead_char(&mut self, ch: char, entries: &[RovingEntry<Id>]) -> RovingOutcome<Id> {
+    pub fn typeahead_char(
+        &mut self,
+        ch: char,
+        entries: &[RovingEntry<'_, Id>],
+    ) -> RovingOutcome<Id> {
         if ch == '\u{1b}' {
             self.typeahead.clear();
             return RovingOutcome::Ignored;
@@ -455,17 +465,17 @@ impl<Id: Clone + PartialEq> RovingFocusGroup<Id> {
 
     /// Builds entries from parallel id/enabled/label slices (virtualized windows).
     #[must_use]
-    pub fn entries_from_parts(
+    pub fn entries_from_parts<'a>(
         ids: &[Id],
         enabled: &[bool],
-        labels: &[&str],
-    ) -> Vec<RovingEntry<Id>> {
+        labels: &[&'a str],
+    ) -> Vec<RovingEntry<'a, Id>> {
         ids.iter()
             .enumerate()
             .map(|(i, id)| RovingEntry {
                 id: id.clone(),
                 enabled: enabled.get(i).copied().unwrap_or(true),
-                label: labels.get(i).unwrap_or(&"").to_string(),
+                label: labels.get(i).copied().unwrap_or(""),
             })
             .collect()
     }
@@ -477,7 +487,7 @@ impl<Id: Clone + PartialEq> RovingFocusGroup<Id> {
         &self,
         scene: &mut crate::interaction::SemanticScene<Id>,
         parent: &Id,
-        entries: &[RovingEntry<Id>],
+        entries: &[RovingEntry<'_, Id>],
         areas: &[ratatui_core::layout::Rect],
     ) where
         Id: Clone + PartialEq + std::fmt::Display,
@@ -494,7 +504,7 @@ impl<Id: Clone + PartialEq> RovingFocusGroup<Id> {
                     ..crate::interaction::SemanticState::default()
                 });
             if !e.label.is_empty() {
-                node = node.label(e.label.clone());
+                node = node.label(e.label);
             }
             let _ = scene.register(node);
         }
@@ -567,13 +577,13 @@ pub fn roving_hint_keymap(orientation: RovingOrientation) -> Keymap<&'static str
 mod tests {
     use super::*;
 
-    fn entries(specs: &[(&'static str, bool)]) -> Vec<RovingEntry<&'static str>> {
+    fn entries(specs: &[(&'static str, bool)]) -> Vec<RovingEntry<'static, &'static str>> {
         specs
             .iter()
             .map(|(id, en)| RovingEntry {
                 id: *id,
                 enabled: *en,
-                label: (*id).to_string(),
+                label: *id,
             })
             .collect()
     }

@@ -1268,14 +1268,15 @@ impl DateTimePickerState {
     }
 
     fn rebuild_collections(&mut self) {
-        let times = self.time_list_items();
+        let mut labels = Vec::new();
+        let times = self.time_list_items(&mut labels);
         let _ = self.time_collection.reconcile(&times);
         if let Some(t) = self.value_time {
             let id = t.minutes_since_midnight().to_string();
             self.time_collection.set_active(Some(id));
         }
 
-        let days = self.day_list_items();
+        let days = self.day_list_items(&mut labels);
         let _ = self.day_collection.reconcile(&days);
         if let Some(f) = self.focus_date {
             self.day_collection.set_active(Some(f.to_iso()));
@@ -1603,7 +1604,8 @@ impl DateTimePickerState {
             self.rebuild_collections();
             return DateTimePickerOutcome::Changed;
         }
-        let items = self.day_list_items();
+        let mut labels = Vec::new();
+        let items = self.day_list_items(&mut labels);
         if key.code == KeyCode::Enter && key.modifiers.is_empty() {
             if let Some(id) = self.day_collection.active() {
                 if let Some(d) = CivilDate::parse_iso(id) {
@@ -1624,7 +1626,8 @@ impl DateTimePickerState {
     }
 
     fn handle_time_list_key(&mut self, key: KeyEvent) -> DateTimePickerOutcome {
-        let items = self.time_list_items();
+        let mut labels = Vec::new();
+        let items = self.time_list_items(&mut labels);
         if key.code == KeyCode::Enter && key.modifiers.is_empty() {
             if let Some(id) = self.time_collection.active() {
                 if let Ok(mins) = id.parse::<u32>() {
@@ -1656,32 +1659,42 @@ impl DateTimePickerState {
         }
     }
 
-    fn day_list_items(&self) -> Vec<CollectionItem<String>> {
-        let mut days = Vec::new();
+    fn day_list_items<'a>(&self, labels: &'a mut Vec<String>) -> Vec<CollectionItem<'a, String>> {
+        labels.clear();
+        let mut ids: Vec<String> = Vec::new();
+        let mut enabled: Vec<bool> = Vec::new();
         if let Some(dim) = days_in_month(self.view_year, self.view_month) {
             for day in 1..=dim {
                 if let Some(d) = CivilDate::new(self.view_year, self.view_month, day) {
-                    days.push(
-                        CollectionItem::new(d.to_iso(), format!("{day:02}"))
-                            .enabled(self.is_available(d)),
-                    );
+                    ids.push(d.to_iso());
+                    labels.push(format!("{day:02}"));
+                    enabled.push(self.is_available(d));
                 }
             }
         }
-        days
+        ids.into_iter()
+            .zip(labels.iter())
+            .zip(enabled)
+            .map(|((id, label), enabled)| CollectionItem::new(id, label).enabled(enabled))
+            .collect()
     }
 
-    fn time_list_items(&self) -> Vec<CollectionItem<String>> {
+    fn time_list_items<'a>(&self, labels: &'a mut Vec<String>) -> Vec<CollectionItem<'a, String>> {
+        labels.clear();
         let step = self.time_step_minutes.max(1);
-        let mut times = Vec::new();
+        let mut ids: Vec<String> = Vec::new();
         let mut m = 0u32;
         while m < 24 * 60 {
             if let Some(t) = CivilTime::from_minutes(m) {
-                times.push(CollectionItem::new(m.to_string(), self.time_fmt.format(t)));
+                ids.push(m.to_string());
+                labels.push(self.time_fmt.format(t));
             }
             m = m.saturating_add(step);
         }
-        times
+        ids.into_iter()
+            .zip(labels.iter())
+            .map(|(id, label)| CollectionItem::new(id, label))
+            .collect()
     }
 
     fn ensure_view_shows(&mut self, d: CivilDate) {
@@ -2174,7 +2187,8 @@ impl<'a> DateTimePicker<'a> {
             area.width,
             area.height.saturating_sub(1),
         );
-        let items = state.day_list_items();
+        let mut labels = Vec::new();
+        let items = state.day_list_items(&mut labels);
         let vp = usize::from(list.height).max(1);
         state
             .day_collection
@@ -2242,7 +2256,8 @@ impl<'a> DateTimePicker<'a> {
             area.width,
             area.height.saturating_sub(1),
         );
-        let items = state.time_list_items();
+        let mut labels = Vec::new();
+        let items = state.time_list_items(&mut labels);
         let vp = usize::from(list.height).max(1);
         state
             .time_collection

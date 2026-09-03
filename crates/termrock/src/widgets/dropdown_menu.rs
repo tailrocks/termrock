@@ -564,14 +564,14 @@ impl DropdownMenuState {
         self.enabled && self.accepts_input && self.focused
     }
 
-    fn panel_entries<Id>(items: &[MenuNode<Id>]) -> Vec<CollectionItem<usize>> {
+    fn panel_entries<'a, Id>(items: &'a [MenuNode<Id>]) -> Vec<CollectionItem<'a, usize>> {
         items
             .iter()
             .enumerate()
             .map(|(i, n)| CollectionItem {
                 id: i,
                 enabled: n.is_activatable(),
-                label: n.label.clone(),
+                label: &n.label,
                 parent: None,
             })
             .collect()
@@ -599,10 +599,10 @@ impl DropdownMenuState {
         Self::items_at_path(root, &self.open_path)
     }
 
-    fn ensure_top_frame<Id>(
+    fn ensure_top_frame<'a, Id>(
         &mut self,
-        root: &[MenuNode<Id>],
-    ) -> Option<Vec<CollectionItem<usize>>> {
+        root: &'a [MenuNode<Id>],
+    ) -> Option<Vec<CollectionItem<'a, usize>>> {
         let items = self.current_items(root)?;
         let entries = Self::panel_entries(items);
         if let Some(frame) = self.cascade.last_mut() {
@@ -861,7 +861,7 @@ impl DropdownMenuState {
     fn typeahead_char<Id: Clone>(
         &mut self,
         ch: char,
-        entries: &[CollectionItem<usize>],
+        entries: &[CollectionItem<'_, usize>],
     ) -> DropdownMenuOutcome<Id> {
         let frame = match self.cascade.last_mut() {
             Some(f) => f,
@@ -901,7 +901,7 @@ impl DropdownMenuState {
         &mut self,
         intent: UiIntent,
         root: &[MenuNode<Id>],
-        entries: &[CollectionItem<usize>],
+        entries: &[CollectionItem<'_, usize>],
     ) -> DropdownMenuOutcome<Id> {
         match intent {
             UiIntent::Move(

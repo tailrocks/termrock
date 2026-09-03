@@ -992,7 +992,7 @@ impl<'a, Id> RadioGroup<'a, Id> {
         take_display_cols(&s, max_cols).into_owned()
     }
 
-    fn collection_items(&self) -> Vec<crate::interaction::CollectionItem<Id>>
+    fn collection_items(&self) -> Vec<crate::interaction::CollectionItem<'_, Id>>
     where
         Id: Clone,
     {
@@ -1001,7 +1001,7 @@ impl<'a, Id> RadioGroup<'a, Id> {
             .map(|o| crate::interaction::CollectionItem {
                 id: o.id.clone(),
                 enabled: o.enabled,
-                label: o.label.to_string(),
+                label: &o.label,
                 parent: None,
             })
             .collect()
@@ -1475,13 +1475,13 @@ impl<'a, Id: Clone + PartialEq> RadioGroup<'a, Id> {
 }
 
 impl<Id: Clone + PartialEq> RadioState<Id> {
-    fn collection_items(options: &[Id]) -> Vec<crate::interaction::CollectionItem<Id>> {
+    fn collection_items(options: &[Id]) -> Vec<crate::interaction::CollectionItem<'_, Id>> {
         options
             .iter()
             .map(|id| crate::interaction::CollectionItem {
                 id: id.clone(),
                 enabled: true,
-                label: String::new(),
+                label: "",
                 parent: None,
             })
             .collect()

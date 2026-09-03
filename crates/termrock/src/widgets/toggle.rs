@@ -1095,7 +1095,7 @@ impl<'a, Id: Clone + PartialEq> ToggleGroup<'a, Id> {
                 .or_else(|| visible_ids.first().cloned());
         }
 
-        let roving_entries: Vec<RovingEntry<Id>> = visible
+        let roving_entries: Vec<RovingEntry<'_, Id>> = visible
             .iter()
             .map(|&i| {
                 let it = &self.items[i];
@@ -1292,7 +1292,7 @@ impl<'a, Id: Clone + PartialEq> ToggleGroup<'a, Id> {
         }
 
         let parts = state.parts.clone();
-        let visible: Vec<RovingEntry<Id>> = if let Some(p) = &parts {
+        let visible: Vec<RovingEntry<'_, Id>> = if let Some(p) = &parts {
             p.items
                 .iter()
                 .filter(|it| !it.overflowed)

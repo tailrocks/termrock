@@ -822,14 +822,16 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
         self.accepts_input && self.focused
     }
 
-    fn collection_items(visible: &[QuickOpenMatch<'_, Id>]) -> Vec<CollectionItem<usize>> {
+    fn collection_items<'a>(
+        visible: &'a [QuickOpenMatch<'_, Id>],
+    ) -> Vec<CollectionItem<'a, usize>> {
         visible
             .iter()
             .enumerate()
             .map(|(i, it)| CollectionItem {
                 id: i,
                 enabled: true,
-                label: it.label.clone(),
+                label: &it.label,
                 parent: None,
             })
             .collect()

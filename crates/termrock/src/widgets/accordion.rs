@@ -307,10 +307,10 @@ impl<Id: Clone + PartialEq> AccordionState<Id> {
         self.open.retain(|id| items.iter().any(|i| &i.id == id));
     }
 
-    fn roving_entries(items: &[AccordionItem<'_, Id>]) -> Vec<RovingEntry<Id>> {
+    fn roving_entries<'a>(items: &'a [AccordionItem<'a, Id>]) -> Vec<RovingEntry<'a, Id>> {
         items
             .iter()
-            .map(|i| RovingEntry::new(i.id.clone(), i.trigger.to_string()).enabled(!i.disabled))
+            .map(|i| RovingEntry::new(i.id.clone(), i.trigger).enabled(!i.disabled))
             .collect()
     }
 

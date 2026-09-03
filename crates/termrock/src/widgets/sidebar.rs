@@ -597,14 +597,17 @@ impl<Id> NavigationListState<Id> {
         filter_nav_query(filter_nav_collapsed(items), &self.filter)
     }
 
-    fn collection_items(items: &[&NavItem<Id>]) -> Vec<CollectionItem<Id>>
+    fn collection_items<'a>(items: &'a [&NavItem<Id>]) -> Vec<CollectionItem<'a, Id>>
     where
         Id: Clone,
     {
         focusable_items(items)
     }
 
-    fn reconcile_projected(&mut self, projected: &[&NavItem<Id>]) -> Vec<CollectionItem<Id>>
+    fn reconcile_projected<'a>(
+        &mut self,
+        projected: &'a [&NavItem<Id>],
+    ) -> Vec<CollectionItem<'a, Id>>
     where
         Id: Clone + PartialEq,
     {
@@ -613,7 +616,7 @@ impl<Id> NavigationListState<Id> {
         coll
     }
 
-    fn ensure_initial_focus(&mut self, coll: &[CollectionItem<Id>])
+    fn ensure_initial_focus(&mut self, coll: &[CollectionItem<'_, Id>])
     where
         Id: Clone + PartialEq,
     {
@@ -879,7 +882,7 @@ impl<Id> NavigationListState<Id> {
     }
 }
 
-fn focusable_items<Id: Clone>(items: &[&NavItem<Id>]) -> Vec<CollectionItem<Id>> {
+fn focusable_items<'a, Id: Clone>(items: &'a [&NavItem<Id>]) -> Vec<CollectionItem<'a, Id>> {
     // Collapse filtering is host-projected: callers pass already-filtered lists,
     // or use [`filter_nav_collapsed`]. Do not double-filter raw slices that mix
     // expanded/collapsed inconsistently — host owns projection. Filter here only
@@ -888,7 +891,7 @@ fn focusable_items<Id: Clone>(items: &[&NavItem<Id>]) -> Vec<CollectionItem<Id>>
         .iter()
         .filter(|i| i.kind.is_focusable() && i.kind != NavItemKind::Separator)
         .map(|i| {
-            CollectionItem::new(i.id.clone(), i.label.clone())
+            CollectionItem::new(i.id.clone(), &i.label)
                 .enabled(i.enabled || matches!(i.kind, NavItemKind::Section | NavItemKind::Group))
         })
         .collect()

@@ -364,15 +364,20 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
         out
     }
 
-    fn collection_items_from_projection(options: &[&SelectOption<Id>]) -> Vec<CollectionItem<Id>> {
+    fn collection_items_from_projection<'a>(
+        options: &[&'a SelectOption<Id>],
+    ) -> Vec<CollectionItem<'a, Id>> {
         options
             .iter()
             .filter(|o| o.is_option())
-            .map(|o| CollectionItem::new(o.id.clone(), o.label.clone()).enabled(!o.disabled))
+            .map(|o| CollectionItem::new(o.id.clone(), &o.label).enabled(!o.disabled))
             .collect()
     }
 
-    fn filtered_items(options: &[SelectOption<Id>], query: &str) -> Vec<CollectionItem<Id>> {
+    fn filtered_items<'a>(
+        options: &'a [SelectOption<Id>],
+        query: &str,
+    ) -> Vec<CollectionItem<'a, Id>> {
         let visible = Self::filtered_options(options, query);
         Self::collection_items_from_projection(&visible)
     }

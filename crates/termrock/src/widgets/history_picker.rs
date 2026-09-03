@@ -756,14 +756,14 @@ impl<Id: Clone + PartialEq> HistoryPickerState<Id> {
         self.accepts_input && self.focused
     }
 
-    fn entries(visible: &[HistoryMatch<'_, Id>]) -> Vec<CollectionItem<usize>> {
+    fn entries<'a>(visible: &'a [HistoryMatch<'_, Id>]) -> Vec<CollectionItem<'a, usize>> {
         visible
             .iter()
             .enumerate()
             .map(|(i, e)| CollectionItem {
                 id: i,
                 enabled: true,
-                label: e.display.clone(),
+                label: &e.display,
                 parent: None,
             })
             .collect()

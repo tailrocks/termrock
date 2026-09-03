@@ -545,12 +545,12 @@ impl<Id> TabsState<Id> {
         }
     }
 
-    fn items_from_tabs(tabs: &[Tab<'_, Id>]) -> Vec<CollectionItem<Id>>
+    fn items_from_tabs<'a>(tabs: &'a [Tab<'a, Id>]) -> Vec<CollectionItem<'a, Id>>
     where
         Id: Clone,
     {
         tabs.iter()
-            .map(|t| CollectionItem::new(t.id.clone(), t.label.to_owned()).enabled(t.enabled))
+            .map(|t| CollectionItem::new(t.id.clone(), t.label).enabled(t.enabled))
             .collect()
     }
 

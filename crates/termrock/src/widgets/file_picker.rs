@@ -950,11 +950,11 @@ impl FilePickerState {
         entries
     }
 
-    fn collection_items(entries: &[FileEntry]) -> Vec<CollectionItem<String>> {
+    fn collection_items<'a>(entries: &'a [FileEntry]) -> Vec<CollectionItem<'a, String>> {
         entries
             .iter()
             .map(|e| {
-                CollectionItem::new(e.id.clone(), e.name.clone())
+                CollectionItem::new(e.id.clone(), &e.name)
                     .enabled(e.error.is_none() && (e.selectable || e.kind.is_dir()))
             })
             .collect()
@@ -2146,7 +2146,7 @@ mod tests {
         state.listing_generation = 1;
         assert!(state.apply_listing(1, "/p", sample_entries("/p"), None));
         // move to README
-        let items = FilePickerState::collection_items(state.entries());
+        let items = FilePickerState::collection_items(&state.entries);
         let _ = state.collection.move_next(&items);
         assert!(matches!(
             state.handle_key(KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE)),

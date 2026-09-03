@@ -596,33 +596,36 @@ impl MenuBarState {
         self.enabled && self.accepts_input && self.focused
     }
 
-    fn bar_entries<Id>(menus: &[MenuBarMenu<Id>]) -> Vec<CollectionItem<usize>> {
+    fn bar_entries<'a, Id>(menus: &'a [MenuBarMenu<Id>]) -> Vec<CollectionItem<'a, usize>> {
         menus
             .iter()
             .enumerate()
             .map(|(i, m)| CollectionItem {
                 id: i,
                 enabled: m.enabled,
-                label: m.label.clone(),
+                label: &m.label,
                 parent: None,
             })
             .collect()
     }
 
-    fn panel_entries<Id>(items: &[MenuNode<Id>]) -> Vec<CollectionItem<usize>> {
+    fn panel_entries<'a, Id>(items: &'a [MenuNode<Id>]) -> Vec<CollectionItem<'a, usize>> {
         items
             .iter()
             .enumerate()
             .map(|(i, n)| CollectionItem {
                 id: i,
                 enabled: n.is_activatable(),
-                label: n.label.clone(),
+                label: &n.label,
                 parent: None,
             })
             .collect()
     }
 
-    fn ensure_bar<Id>(&mut self, menus: &[MenuBarMenu<Id>]) -> Vec<CollectionItem<usize>> {
+    fn ensure_bar<'a, Id>(
+        &mut self,
+        menus: &'a [MenuBarMenu<Id>],
+    ) -> Vec<CollectionItem<'a, usize>> {
         let entries = Self::bar_entries(menus);
         let _ = self.bar.reconcile(&entries);
         entries
@@ -706,10 +709,10 @@ impl MenuBarState {
         Self::items_at_path(menus, top, &self.open_path)
     }
 
-    fn ensure_top_frame<Id>(
+    fn ensure_top_frame<'a, Id>(
         &mut self,
-        menus: &[MenuBarMenu<Id>],
-    ) -> Option<Vec<CollectionItem<usize>>> {
+        menus: &'a [MenuBarMenu<Id>],
+    ) -> Option<Vec<CollectionItem<'a, usize>>> {
         let items = self.current_items(menus)?;
         let entries = Self::panel_entries(items);
         if let Some(frame) = self.cascade.last_mut() {
@@ -942,7 +945,7 @@ impl MenuBarState {
         &mut self,
         intent: UiIntent,
         menus: &[MenuBarMenu<Id>],
-        bar_entries: &[CollectionItem<usize>],
+        bar_entries: &[CollectionItem<'_, usize>],
     ) -> MenuBarOutcome<Id> {
         match intent {
             UiIntent::Move(
@@ -984,7 +987,7 @@ impl MenuBarState {
         &mut self,
         intent: UiIntent,
         menus: &[MenuBarMenu<Id>],
-        bar_entries: &[CollectionItem<usize>],
+        bar_entries: &[CollectionItem<'_, usize>],
     ) -> MenuBarOutcome<Id> {
         let Some(entries) = self.ensure_top_frame(menus) else {
             self.close_all();

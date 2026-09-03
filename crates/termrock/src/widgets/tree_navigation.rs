@@ -438,13 +438,13 @@ impl<Id> TreeNavigationState<Id> {
         self.route.as_ref() == Some(id)
     }
 
-    fn collection_items(nodes: &[TreeNavNode<Id>]) -> Vec<CollectionItem<Id>>
+    fn collection_items<'a>(nodes: &'a [TreeNavNode<Id>]) -> Vec<CollectionItem<'a, Id>>
     where
         Id: Clone,
     {
         nodes
             .iter()
-            .map(|n| CollectionItem::new(n.id.clone(), n.label.clone()).enabled(n.enabled))
+            .map(|n| CollectionItem::new(n.id.clone(), &n.label).enabled(n.enabled))
             .collect()
     }
 
@@ -518,7 +518,7 @@ impl<Id> TreeNavigationState<Id> {
     fn reconcile_route_with_collection(
         &mut self,
         nodes: &[TreeNavNode<Id>],
-        coll: &[CollectionItem<Id>],
+        coll: &[CollectionItem<'_, Id>],
     ) where
         Id: Clone + PartialEq,
     {
