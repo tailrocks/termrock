@@ -728,7 +728,7 @@ impl TextAreaState {
                 _ => TextAreaOutcome::Ignored,
             };
         }
-        if key.code == KeyCode::Esc {
+        if key.is_press() && key.code == KeyCode::Esc {
             // junie: Esc finishes editing and keeps the document.
             self.editing = false;
             self.select_anchor = None;
@@ -2049,6 +2049,7 @@ fn parse_lines(text: &str) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::input::KeyEventKind;
     use crate::style::RolePalette;
     #[test]
     fn normalized_editing_and_goal_column_contract() {
@@ -2568,6 +2569,24 @@ mod tests {
         );
         assert!(!state.is_editing());
         assert_eq!(state.text(), "one\ntwo");
+    }
+
+    #[test]
+    fn repeated_escape_does_not_finish_editing() {
+        let mut state = TextAreaState::new("one\ntwo");
+        state.set_accepts_input(true);
+        state.set_editing(true);
+        let mut repeat = KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE);
+        repeat.kind = KeyEventKind::Repeat;
+
+        assert_eq!(state.handle_key(repeat), TextAreaOutcome::Ignored);
+        assert!(state.is_editing());
+        assert_eq!(state.text(), "one\ntwo");
+
+        let mut release = KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE);
+        release.kind = KeyEventKind::Release;
+        assert_eq!(state.handle_key(release), TextAreaOutcome::Ignored);
+        assert!(state.is_editing());
     }
 
     #[test]
