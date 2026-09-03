@@ -472,12 +472,32 @@ impl SearchInputState {
         if key.is_release() || !self.enabled {
             return SearchInputOutcome::Ignored;
         }
-        self.query.set_focused(self.focused);
-        self.query.set_enabled(self.enabled);
-
         let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
         let alt = key.modifiers.contains(KeyModifiers::ALT);
         let shift = key.modifiers.contains(KeyModifiers::SHIFT);
+
+        // These branches emit host-facing lifecycle or clipboard outcomes.
+        // A held key must not clear, submit, request completion, or repeat a
+        // clipboard request before the editor is synchronized.
+        let one_shot = matches!(
+            key.code,
+            KeyCode::Enter
+                | KeyCode::Tab
+                | KeyCode::BackTab
+                | KeyCode::Esc
+                | KeyCode::Char('c' | 'C' | 'm' | 'M' | 'u' | 'U' | 'v' | 'V' | 'x' | 'X')
+        );
+        if !key.is_press()
+            && (matches!(
+                key.code,
+                KeyCode::Enter | KeyCode::Tab | KeyCode::BackTab | KeyCode::Esc
+            ) || (ctrl && !alt && one_shot))
+        {
+            return SearchInputOutcome::Ignored;
+        }
+
+        self.query.set_focused(self.focused);
+        self.query.set_enabled(self.enabled);
 
         // History: Up/Down when query empty or Alt+Up/Down
         if !ctrl
@@ -1014,6 +1034,7 @@ impl StatefulWidget for SearchInput<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::input::KeyEventKind;
     use crate::style::RolePalette;
 
     fn tick_at(start: Instant, ms: u64) -> FrameTick {
@@ -1114,6 +1135,36 @@ mod tests {
             state.handle_key(KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE)),
             SearchInputOutcome::CompletionRequested
         );
+    }
+
+    #[test]
+    fn repeated_lifecycle_and_clipboard_actions_are_ignored() {
+        let mut state = SearchInputState::new().with_query("abc");
+        state.set_focused(true);
+        state.begin_edit();
+        let actions = [
+            (KeyCode::Esc, KeyModifiers::NONE),
+            (KeyCode::Enter, KeyModifiers::NONE),
+            (KeyCode::Tab, KeyModifiers::NONE),
+            (KeyCode::BackTab, KeyModifiers::NONE),
+            (KeyCode::Char('u'), KeyModifiers::CONTROL),
+            (KeyCode::Char('m'), KeyModifiers::CONTROL),
+            (KeyCode::Char('c'), KeyModifiers::CONTROL),
+            (KeyCode::Char('x'), KeyModifiers::CONTROL),
+            (KeyCode::Char('v'), KeyModifiers::CONTROL),
+        ];
+        for (code, modifiers) in actions {
+            let before = state.clone();
+            let mut key = KeyEvent::new(code, modifiers);
+            key.kind = KeyEventKind::Repeat;
+            assert_eq!(state.handle_key(key), SearchInputOutcome::Ignored);
+            assert_eq!(state, before, "{code:?} repeat mutated search state");
+        }
+
+        let mut key = KeyEvent::new(KeyCode::Char('z'), KeyModifiers::NONE);
+        key.kind = KeyEventKind::Repeat;
+        assert_eq!(state.handle_key(key), SearchInputOutcome::Changed);
+        assert_eq!(state.query(), "abcz");
     }
 
     #[test]

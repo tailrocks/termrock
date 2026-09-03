@@ -489,12 +489,11 @@ impl PasswordInputState {
 
     /// Default key adapter with secret policies.
     pub fn handle_key(&mut self, key: KeyEvent) -> PasswordInputOutcome {
-        self.sync_editor_gates();
-
         // Hold reveal: Alt+H press/release (neutral KeyCode has no function keys).
         let alt_hold = key.modifiers.contains(KeyModifiers::ALT)
             && matches!(key.code, KeyCode::Char('h' | 'H'));
         if matches!(self.reveal_policy, RevealPolicy::Hold) && alt_hold {
+            self.sync_editor_gates();
             match key.kind {
                 KeyEventKind::Press | KeyEventKind::Repeat => {
                     if !self.hold_reveal {
@@ -523,6 +522,26 @@ impl PasswordInputState {
 
         let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
         let alt = key.modifiers.contains(KeyModifiers::ALT);
+        let explicit_reveal = alt && !ctrl && matches!(key.code, KeyCode::Char('r' | 'R'));
+
+        // Explicit reveal, submit/cancel, and clipboard outcomes are one-shot
+        // physical actions. Keep ordinary editor repeats and Hold reveal above.
+        if !key.is_press()
+            && (matches!(
+                key.code,
+                KeyCode::Enter | KeyCode::Esc | KeyCode::Tab | KeyCode::BackTab
+            ) || (ctrl
+                && !alt
+                && matches!(
+                    key.code,
+                    KeyCode::Char('c' | 'C' | 'm' | 'M' | 'v' | 'V' | 'x' | 'X')
+                ))
+                || explicit_reveal)
+        {
+            return PasswordInputOutcome::Ignored;
+        }
+
+        self.sync_editor_gates();
 
         // Explicit reveal: Alt+R
         if alt
@@ -1096,6 +1115,32 @@ mod tests {
             state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
             PasswordInputOutcome::Cancelled
         );
+    }
+
+    #[test]
+    fn repeated_lifecycle_reveal_and_clipboard_actions_are_ignored() {
+        let mut state =
+            PasswordInputState::with_secret("abc").with_reveal_policy(RevealPolicy::Explicit);
+        state.set_focused(true);
+        state.begin_edit();
+        let actions = [
+            (KeyCode::Char('r'), KeyModifiers::ALT),
+            (KeyCode::Enter, KeyModifiers::NONE),
+            (KeyCode::Esc, KeyModifiers::NONE),
+            (KeyCode::Tab, KeyModifiers::NONE),
+            (KeyCode::BackTab, KeyModifiers::NONE),
+            (KeyCode::Char('m'), KeyModifiers::CONTROL),
+            (KeyCode::Char('c'), KeyModifiers::CONTROL),
+            (KeyCode::Char('x'), KeyModifiers::CONTROL),
+            (KeyCode::Char('v'), KeyModifiers::CONTROL),
+        ];
+        for (code, modifiers) in actions {
+            let before = state.clone();
+            let mut key = KeyEvent::new(code, modifiers);
+            key.kind = KeyEventKind::Repeat;
+            assert_eq!(state.handle_key(key), PasswordInputOutcome::Ignored);
+            assert_eq!(state, before, "{code:?} repeat mutated password state");
+        }
     }
 
     #[test]

@@ -577,11 +577,28 @@ impl NumberInputState {
         if key.is_release() || !self.enabled {
             return NumberInputOutcome::Ignored;
         }
-        self.sync_draft_gates();
-
         let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
         let alt = key.modifiers.contains(KeyModifiers::ALT);
         let shift = key.modifiers.contains(KeyModifiers::SHIFT);
+
+        // Submit, cancel, and host clipboard requests are one-shot physical
+        // actions. Filter them before draft synchronization or any fallback
+        // editor path can mutate state on Repeat.
+        if !key.is_press()
+            && (matches!(
+                key.code,
+                KeyCode::Enter | KeyCode::Esc | KeyCode::Tab | KeyCode::BackTab
+            ) || (ctrl
+                && !alt
+                && matches!(
+                    key.code,
+                    KeyCode::Char('c' | 'C' | 'm' | 'M' | 'v' | 'V' | 'x' | 'X')
+                )))
+        {
+            return NumberInputOutcome::Ignored;
+        }
+
+        self.sync_draft_gates();
 
         // Steppers via arrows / page (when not shifting selection in draft)
         if !ctrl && !alt && !shift {
@@ -1202,6 +1219,7 @@ impl StatefulWidget for NumberInput<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::input::KeyEventKind;
     use crate::style::RolePalette;
     use crate::widgets::Validation;
 
@@ -1312,6 +1330,29 @@ mod tests {
         );
         assert_eq!(state.value(), Some(7.0));
         assert_eq!(state.draft_text(), "7");
+    }
+
+    #[test]
+    fn repeated_lifecycle_and_clipboard_actions_are_ignored() {
+        let mut state = NumberInputState::new().with_value(7.0);
+        state.set_focused(true);
+        let actions = [
+            (KeyCode::Enter, KeyModifiers::NONE),
+            (KeyCode::Esc, KeyModifiers::NONE),
+            (KeyCode::Tab, KeyModifiers::NONE),
+            (KeyCode::BackTab, KeyModifiers::NONE),
+            (KeyCode::Char('m'), KeyModifiers::CONTROL),
+            (KeyCode::Char('c'), KeyModifiers::CONTROL),
+            (KeyCode::Char('x'), KeyModifiers::CONTROL),
+            (KeyCode::Char('v'), KeyModifiers::CONTROL),
+        ];
+        for (code, modifiers) in actions {
+            let before = state.clone();
+            let mut key = KeyEvent::new(code, modifiers);
+            key.kind = KeyEventKind::Repeat;
+            assert_eq!(state.handle_key(key), NumberInputOutcome::Ignored);
+            assert_eq!(state, before, "{code:?} repeat mutated number state");
+        }
     }
 
     #[test]

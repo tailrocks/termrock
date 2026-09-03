@@ -419,6 +419,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0437 | `v0.14.0` | [Tabs restore canonical gutter, underline, and clipping geometry](migrations/0437-v0.14.0-tabs-remove-selection-gutter.md) |
 | 0438 | `v0.14.0` | [DropdownMenu lifecycle actions](migrations/0438-v0.14.0-dropdown-menu-lifecycle-actions.md) |
 | 0439 | `v0.14.0` | [StatusBar spacing and collision-free transient geometry](migrations/0439-v0.14.0-status-bar-spacing-and-collision.md) |
+| 0440 | `v0.14.0` | [Input lifecycle actions](migrations/0440-v0.14.0-input-lifecycle-actions.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical
