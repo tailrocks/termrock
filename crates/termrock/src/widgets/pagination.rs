@@ -538,6 +538,9 @@ impl PaginationState {
 
         // Jump entry mode
         if self.jump_active {
+            if !key.is_press() && matches!(key.code, KeyCode::Esc | KeyCode::Enter) {
+                return PaginationOutcome::Ignored;
+            }
             match key.code {
                 KeyCode::Esc => {
                     self.jump_active = false;
@@ -565,6 +568,19 @@ impl PaginationState {
                 }
                 _ => return PaginationOutcome::Ignored,
             }
+        }
+
+        let one_shot = match key.code {
+            KeyCode::Char('g' | 'G' | '/' | 's' | 'S' | ' ') | KeyCode::Enter => {
+                key.modifiers.is_empty()
+            }
+            KeyCode::Tab => !key.modifiers.contains(KeyModifiers::SHIFT),
+            KeyCode::BackTab => true,
+            KeyCode::Char(c) if c.is_ascii_digit() => true,
+            _ => false,
+        };
+        if !key.is_press() && one_shot {
+            return PaginationOutcome::Ignored;
         }
 
         match key.code {
@@ -1184,8 +1200,9 @@ impl StatefulWidget for Pagination<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::input::KeyEventKind;
     use crate::style::RolePalette;
-    use crate::widgets::tests::click;
+    use crate::widgets::tests::{click, key_with_kind};
 
     #[test]
     fn page_request_offset() {
@@ -1293,6 +1310,51 @@ mod tests {
             PaginationOutcome::JumpCancelled
         );
         assert_eq!(state.page(), 4);
+    }
+
+    #[test]
+    fn repeated_pagination_lifecycle_actions_are_ignored() {
+        let actions = [
+            (KeyCode::Char('g'), KeyModifiers::NONE),
+            (KeyCode::Char('/'), KeyModifiers::NONE),
+            (KeyCode::Char('s'), KeyModifiers::NONE),
+            (KeyCode::Enter, KeyModifiers::NONE),
+            (KeyCode::Char(' '), KeyModifiers::NONE),
+            (KeyCode::Tab, KeyModifiers::NONE),
+            (KeyCode::BackTab, KeyModifiers::NONE),
+            (KeyCode::Char('3'), KeyModifiers::NONE),
+        ];
+        for (code, modifiers) in actions {
+            let mut state = PaginationState::new(2, 10, PageTotal::Known(100));
+            state.set_focused(true);
+            let before = state.clone();
+            assert_eq!(
+                state.handle_key(key_with_kind(code, modifiers, KeyEventKind::Repeat)),
+                PaginationOutcome::Ignored,
+                "repeat of {code:?} must not fire a pagination lifecycle action"
+            );
+            assert_eq!(state, before);
+        }
+
+        let mut jump = PaginationState::new(2, 10, PageTotal::Known(100));
+        jump.set_focused(true);
+        assert_eq!(
+            jump.handle_key(KeyEvent::new(KeyCode::Char('g'), KeyModifiers::NONE)),
+            PaginationOutcome::JumpStarted
+        );
+        let _ = jump.handle_key(KeyEvent::new(KeyCode::Char('3'), KeyModifiers::NONE));
+        let before = jump.clone();
+        for code in [KeyCode::Esc, KeyCode::Enter] {
+            assert_eq!(
+                jump.handle_key(key_with_kind(
+                    code,
+                    KeyModifiers::NONE,
+                    KeyEventKind::Repeat
+                )),
+                PaginationOutcome::Ignored
+            );
+            assert_eq!(jump, before);
+        }
     }
 
     #[test]
