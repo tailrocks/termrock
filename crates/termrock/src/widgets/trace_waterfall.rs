@@ -1069,7 +1069,6 @@ impl<'a> TraceWaterfall<'a> {
                 self.system,
                 state.time_start_ms,
                 state.time_duration_ms,
-                false,
             );
             y = y.saturating_add(1);
             h = h.saturating_sub(1);
@@ -1242,7 +1241,6 @@ fn paint_time_ruler(
     system: &DesignSystem,
     start_ms: u64,
     dur_ms: u64,
-    _ascii: bool,
 ) {
     if area.is_empty() || dur_ms == 0 {
         return;

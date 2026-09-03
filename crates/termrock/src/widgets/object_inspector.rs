@@ -73,7 +73,7 @@ impl InspectKind {
 
     /// Short type glyph for chrome.
     #[must_use]
-    pub const fn glyph(self, _ascii: bool) -> &'static str {
+    pub const fn glyph(self) -> &'static str {
         match self {
             Self::Null => "∅",
             Self::Bool => "⊤",
@@ -335,7 +335,7 @@ impl<'a> InspectorField<'a> {
 
     /// Preview text for collapsed containers.
     #[must_use]
-    pub fn container_preview(&self, _ascii: bool) -> String {
+    pub fn container_preview(&self) -> String {
         match self.kind {
             InspectKind::Object => {
                 if let Some(n) = self.child_count {
@@ -1258,7 +1258,7 @@ impl<'a> ObjectInspector<'a> {
             return escape_inspect_value(&state.edit_draft);
         }
         if field.branch && !field.expanded {
-            return field.container_preview(false);
+            return field.container_preview();
         }
         if matches!(field.status, InspectNodeStatus::Loading) {
             return "…".into();
@@ -1382,7 +1382,7 @@ impl<'a> ObjectInspector<'a> {
                 usize::from(area.width),
                 self.system.style(Role::TextMuted),
             );
-            self.paint_footer(area, buffer, state, false);
+            self.paint_footer(area, buffer, state);
             return;
         }
 
@@ -1513,16 +1513,10 @@ impl<'a> ObjectInspector<'a> {
             y = y.saturating_add(1);
         }
 
-        self.paint_footer(area, buffer, state, false);
+        self.paint_footer(area, buffer, state);
     }
 
-    fn paint_footer(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &ObjectInspectorState,
-        _ascii: bool,
-    ) {
+    fn paint_footer(&self, area: Rect, buffer: &mut Buffer, state: &ObjectInspectorState) {
         let y = area.bottom().saturating_sub(1);
         if y < area.y {
             return;

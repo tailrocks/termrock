@@ -150,7 +150,7 @@ impl PresenceStatus {
 
     /// 1-cell paint character from shared [`SemanticStatus`] glyphs.
     #[must_use]
-    pub const fn glyph_char(self, _ascii: bool) -> Option<&'static str> {
+    pub const fn glyph_char(self) -> Option<&'static str> {
         match self {
             Self::None => None,
             other => Some(other.semantic().glyph()),
@@ -466,11 +466,11 @@ impl<'a> AvatarGlyph<'a> {
             }
             AvatarFace::RoleGlyph => {
                 let g = self.system.glyphs.resolve(self.role.glyph());
-                fit_glyph_text(g.text, cols, ascii)
+                fit_glyph_text(g.text, cols)
             }
             AvatarFace::Glyph(glyph) => {
                 let g = self.system.glyphs.resolve(glyph);
-                fit_glyph_text(g.text, cols, ascii)
+                fit_glyph_text(g.text, cols)
             }
         };
         // Bracketed 2-cell face: use [A] style for 2 cols? That is 3 cols.
@@ -578,7 +578,7 @@ impl<'a> AvatarGlyph<'a> {
             style,
         );
         if parts.presence.width > 0 {
-            if let Some(ch) = self.presence.glyph_char(false) {
+            if let Some(ch) = self.presence.glyph_char() {
                 let mut ps = self.system.style(self.presence.role());
                 ps = ratatui_core::style::Style { bg: None, ..ps };
                 if matches!(
@@ -614,7 +614,7 @@ impl Widget for AvatarGlyph<'_> {
     }
 }
 
-fn fit_glyph_text(text: &str, cols: usize, _ascii: bool) -> String {
+fn fit_glyph_text(text: &str, cols: usize) -> String {
     let mut out = take_display_cols(text, cols).into_owned();
     while display_cols(&out) < cols {
         out.push(' ');

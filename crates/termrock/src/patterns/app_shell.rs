@@ -838,7 +838,6 @@ mod tests {
         let slots = layout_app_shell(Rect::new(0, 0, 90, 30), cfg);
         if slots.anatomy.multi_pane && slots.sidebar.is_some() {
             // Inspector may be dropped first.
-            let _ = slots.inspector;
         }
         assert!(slots.main.width > 0);
     }

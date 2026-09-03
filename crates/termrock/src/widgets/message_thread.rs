@@ -402,7 +402,7 @@ pub fn project_message_thread(
     expanded_ids: &BTreeSet<String>,
     force_collapsed: &BTreeSet<String>,
 ) -> (Vec<ProjectedEntryMeta>, Vec<Vec<String>>) {
-    project_message_thread_profile(entries, zoom, search, expanded_ids, force_collapsed, false)
+    project_message_thread_profile(entries, zoom, search, expanded_ids, force_collapsed)
 }
 
 fn project_message_thread_profile(
@@ -411,7 +411,6 @@ fn project_message_thread_profile(
     search: Option<&str>,
     expanded_ids: &BTreeSet<String>,
     force_collapsed: &BTreeSet<String>,
-    _ascii: bool,
 ) -> (Vec<ProjectedEntryMeta>, Vec<Vec<String>>) {
     let q = search
         .map(|s| s.trim().to_ascii_lowercase())
@@ -464,7 +463,7 @@ fn project_message_thread_profile(
             }
         };
 
-        let lines = project_entry_lines(e, zoom, folded, false);
+        let lines = project_entry_lines(e, zoom, folded);
         bufs.push(lines);
         meta.push(ProjectedEntryMeta {
             id: e.id.clone(),
@@ -479,12 +478,7 @@ fn project_message_thread_profile(
     (meta, bufs)
 }
 
-fn project_entry_lines(
-    e: &MessageEntry,
-    zoom: MessageZoom,
-    folded: bool,
-    _ascii: bool,
-) -> Vec<String> {
+fn project_entry_lines(e: &MessageEntry, zoom: MessageZoom, folded: bool) -> Vec<String> {
     if folded {
         let mut s = String::new();
         if let Some(t) = &e.timestamp {
@@ -497,7 +491,7 @@ fn project_entry_lines(
         }
         if let Some(c) = e.status_letter {
             s.push('[');
-            s.push(if false && !c.is_ascii() { '*' } else { c });
+            s.push(c);
             s.push(']');
             s.push(' ');
         }
@@ -530,7 +524,7 @@ fn project_entry_lines(
             head.push(' ');
         }
         head.push('[');
-        head.push(if false && !c.is_ascii() { '*' } else { c });
+        head.push(c);
         head.push(']');
     }
     if e.checkpoint {
@@ -635,16 +629,9 @@ impl ThreadProjection {
         search: Option<&str>,
         expanded_ids: &BTreeSet<String>,
         force_collapsed: &BTreeSet<String>,
-        _ascii: bool,
     ) -> Self {
-        let (meta, bufs) = project_message_thread_profile(
-            entries,
-            zoom,
-            search,
-            expanded_ids,
-            force_collapsed,
-            false,
-        );
+        let (meta, bufs) =
+            project_message_thread_profile(entries, zoom, search, expanded_ids, force_collapsed);
         Self { meta, bufs }
     }
 
@@ -884,14 +871,13 @@ impl MessageThreadState {
         )
     }
 
-    fn projection_profile(&self, entries: &[MessageEntry], _ascii: bool) -> ThreadProjection {
+    fn projection_profile(&self, entries: &[MessageEntry]) -> ThreadProjection {
         ThreadProjection::project_profile(
             entries,
             self.zoom,
             self.search.as_deref(),
             &self.expanded,
             &self.force_collapsed,
-            false,
         )
     }
 
@@ -1085,7 +1071,7 @@ impl<'a> MessageThread<'a> {
         }
 
         let colorless = self.colorless || self.system.mono();
-        let proj = state.projection_profile(self.entries, false);
+        let proj = state.projection_profile(self.entries);
         let mut line_ptrs: Vec<Vec<&str>> = Vec::new();
         let blocks = proj.blocks(&mut line_ptrs);
 

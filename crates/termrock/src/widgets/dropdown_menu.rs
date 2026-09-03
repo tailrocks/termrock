@@ -1319,7 +1319,7 @@ impl<'a, Id> DropdownMenu<'a, Id> {
                 _ if active => "› ",
                 _ => "  ",
             };
-            let label = format_mnemonic_label(&item.label, item.mnemonic, false);
+            let label = format_mnemonic_label(&item.label, item.mnemonic);
             let mut line = format!("{mark}{label}");
             if matches!(item.kind, MenuRowKind::Submenu) {
                 line.push('›');
@@ -1421,7 +1421,7 @@ impl<Id: Clone> StatefulWidget for &DropdownMenu<'_, Id> {
     }
 }
 
-fn format_mnemonic_label(label: &str, mnemonic: Option<char>, _ascii: bool) -> String {
+fn format_mnemonic_label(label: &str, mnemonic: Option<char>) -> String {
     let Some(m) = mnemonic else {
         return label.to_string();
     };

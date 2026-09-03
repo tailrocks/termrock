@@ -108,7 +108,7 @@ impl SchemaNodeKind {
 
     /// Leading glyph.
     #[must_use]
-    pub const fn glyph(self, _ascii: bool) -> &'static str {
+    pub const fn glyph(self) -> &'static str {
         {
             match self {
                 Self::Connection => "⬡",
@@ -500,7 +500,6 @@ pub fn filter_schema_entries<'a, Id: Clone + PartialEq>(
 #[must_use]
 pub fn schema_entries_to_tree_nodes<'a, Id: Clone>(
     entries: &[&'a SchemaBrowserEntry<'a, Id>],
-    _ascii: bool,
 ) -> Vec<TreeNode<'a, Id>> {
     entries
         .iter()
@@ -521,7 +520,7 @@ pub fn schema_entries_to_tree_nodes<'a, Id: Clone>(
             } else if !e.enabled {
                 node = node.disabled();
             }
-            let lead = e.kind.glyph(false);
+            let lead = e.kind.glyph();
             node = node.leading(Line::from(lead));
             // Badge: key or connection letter
             if let Some(kb) = e.key_badge {
@@ -927,7 +926,7 @@ impl<Id: Clone + Ord + PartialEq> SchemaBrowserState<Id> {
 
         // Project to tree for nav
         let visible = self.visible_entries(entries);
-        let nodes = schema_entries_to_tree_nodes(&visible, false);
+        let nodes = schema_entries_to_tree_nodes(&visible);
         let out = self.tree.handle_key(&nodes, key);
         map_tree_outcome(out, entries, &mut self.expanded)
     }
@@ -1122,7 +1121,7 @@ impl<'a, Id: Clone + PartialEq + Ord> SchemaBrowser<'a, Id> {
             return;
         }
 
-        let nodes = schema_entries_to_tree_nodes(&visible, false);
+        let nodes = schema_entries_to_tree_nodes(&visible);
         Tree::new(&nodes, self.system)
             .focused(self.focused && state.accepts_input)
             .render(body, buffer, &mut state.tree);
@@ -1223,7 +1222,7 @@ mod tests {
         let entries = sample();
         let mut state = SchemaBrowserState::with_selected(Some("orders"));
         // Activate lazy table
-        let nodes = schema_entries_to_tree_nodes(&entries.iter().collect::<Vec<_>>(), true);
+        let nodes = schema_entries_to_tree_nodes(&entries.iter().collect::<Vec<_>>());
         let _ = nodes;
         let out = state.handle_key(&entries, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
         assert!(
@@ -1385,7 +1384,7 @@ mod tests {
     fn tree_nodes_have_kind_glyphs() {
         let entries = sample();
         let refs: Vec<_> = entries.iter().collect();
-        let nodes = schema_entries_to_tree_nodes(&refs, true);
+        let nodes = schema_entries_to_tree_nodes(&refs);
         assert!(!nodes.is_empty());
         assert!(nodes.iter().any(|n| n.leading.is_some()));
     }

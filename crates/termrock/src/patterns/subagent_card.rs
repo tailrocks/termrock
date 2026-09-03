@@ -365,7 +365,7 @@ impl SubagentRun {
 
     /// Header line.
     #[must_use]
-    pub fn header_line(&self, _ascii: bool) -> String {
+    pub fn header_line(&self) -> String {
         let g = { self.status.glyph_unicode() };
         let phase = self.phase().badge();
         let mut s = format!("{g} [{phase}] {} — {}", self.role, self.task);
@@ -381,7 +381,7 @@ impl SubagentRun {
 
     /// Provenance display `a › b › c`.
     #[must_use]
-    pub fn provenance_line(&self, _ascii: bool) -> Option<String> {
+    pub fn provenance_line(&self) -> Option<String> {
         if self.provenance.is_empty() && self.parent_id.is_none() {
             return None;
         }
@@ -474,9 +474,9 @@ pub fn subagent_to_activity_model(run: &SubagentRun) -> ActivityModel {
 
 /// Project compact lines for MessageThread / rail.
 #[must_use]
-pub fn project_subagent_lines(run: &SubagentRun, expanded: bool, _ascii: bool) -> Vec<String> {
-    let mut lines = vec![run.header_line(false)];
-    if let Some(p) = run.provenance_line(false) {
+pub fn project_subagent_lines(run: &SubagentRun, expanded: bool) -> Vec<String> {
+    let mut lines = vec![run.header_line()];
+    if let Some(p) = run.provenance_line() {
         lines.push(format!("  via {p}"));
     }
     if let Some(m) = &run.model {
@@ -834,7 +834,7 @@ impl<'a> SubagentCard<'a> {
         let phase = run.phase();
 
         if matches!(state.presentation, SubagentPresentation::CompactRow) {
-            self.paint_row(area, buffer, state, false);
+            self.paint_row(area, buffer, state);
             return;
         }
 
@@ -897,7 +897,7 @@ impl<'a> SubagentCard<'a> {
             y = y.saturating_add(1);
         }
 
-        if let Some(p) = run.provenance_line(false) {
+        if let Some(p) = run.provenance_line() {
             if y < max_y {
                 self.system.paint_row(
                     buffer,
@@ -1013,13 +1013,7 @@ impl<'a> SubagentCard<'a> {
         }
     }
 
-    fn paint_row(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut SubagentCardState,
-        _ascii: bool,
-    ) {
+    fn paint_row(&self, area: Rect, buffer: &mut Buffer, state: &mut SubagentCardState) {
         let run = self.run;
         let rail_role = if self.colorless {
             Role::TextStrong
@@ -1176,7 +1170,7 @@ mod tests {
             .hop("sub:a")
             .hop("sub:b")
             .depth(2);
-        let p = run.provenance_line(true).unwrap();
+        let p = run.provenance_line().unwrap();
         assert!(p.contains("main"));
         assert!(p.contains("sub:b"));
         assert!(p.contains("d2") || p.contains('2'));
@@ -1256,8 +1250,8 @@ mod tests {
             .output_preview("line1\nline2")
             .result_summary("done")
             .status(SemanticStatus::Success);
-        let c = project_subagent_lines(&run, false, true);
-        let e = project_subagent_lines(&run, true, true);
+        let c = project_subagent_lines(&run, false);
+        let e = project_subagent_lines(&run, true);
         assert!(e.len() >= c.len());
         assert!(e.join("\n").contains("result") || e.join("\n").contains("done"));
     }

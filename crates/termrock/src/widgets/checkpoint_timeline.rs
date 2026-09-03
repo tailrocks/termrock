@@ -1897,7 +1897,7 @@ mod tests {
         ] {
             assert!(!k.id().is_empty());
             let _ = k.glyph(true);
-            let _ = k.glyph(false);
+            let _ = k.glyph(true);
         }
         for b in [
             CheckpointBoundary::Soft,

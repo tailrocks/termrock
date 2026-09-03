@@ -616,11 +616,7 @@ pub const RESULT_TRUNC_MARK: &str = "…";
 
 /// Format a cell for grid display under redaction policy.
 #[must_use]
-pub fn format_result_cell(
-    cell: &ResultCell<'_>,
-    redaction: ResultRedaction,
-    _ascii: bool,
-) -> String {
+pub fn format_result_cell(cell: &ResultCell<'_>, redaction: ResultRedaction) -> String {
     if cell.secret || matches!(cell.kind, ResultCellKind::Secret) {
         if matches!(redaction, ResultRedaction::RevealSecrets) {
             return with_trunc(cell.text, cell.truncated);
@@ -711,7 +707,6 @@ pub fn project_result_rows(
     rows: &[ResultRow<'_>],
     columns: &[ResultColumn],
     redaction: ResultRedaction,
-    _ascii: bool,
     row_numbers: bool,
 ) -> Vec<(u64, Vec<String>)> {
     rows.iter()
@@ -729,7 +724,7 @@ pub fn project_result_rows(
                 if col.binary && matches!(c.kind, ResultCellKind::Text | ResultCellKind::Other) {
                     c.kind = ResultCellKind::Binary;
                 }
-                let formatted = format_result_cell(&c, redaction, false);
+                let formatted = format_result_cell(&c, redaction);
                 cells.push(clamp_cell_display(&formatted, RESULT_CELL_MAX_DISPLAY));
             }
             (r.id, cells)
@@ -743,14 +738,13 @@ pub fn result_row_to_inspector_fields<'a>(
     columns: &'a [ResultColumn],
     row: &ResultRow<'a>,
     redaction: ResultRedaction,
-    _ascii: bool,
 ) -> Vec<InspectorField<'a>> {
     columns
         .iter()
         .enumerate()
         .map(|(i, col)| {
             let cell = row.cells.get(i).copied().unwrap_or(ResultCell::null());
-            let display = format_result_cell(&cell, redaction, false);
+            let display = format_result_cell(&cell, redaction);
             // InspectorField needs &'a str for value — we only have owned display.
             // Host should prefer raw cell.text when not redacted; we expose key/path only
             // when text is already borrowed.
@@ -787,7 +781,6 @@ pub fn export_result_window_tsv(
     columns: &[ResultColumn],
     rows: &[ResultRow<'_>],
     redaction: ResultRedaction,
-    _ascii: bool,
     include_header: bool,
 ) -> String {
     let mut out = String::new();
@@ -809,7 +802,7 @@ pub fn export_result_window_tsv(
             if col.secret {
                 cell.secret = true;
             }
-            let s = format_result_cell(&cell, redaction, false);
+            let s = format_result_cell(&cell, redaction);
             // Escape tabs/newlines lightly
             out.push_str(&s.replace(['\t', '\n', '\r'], " "));
         }
@@ -1344,13 +1337,8 @@ impl<'a> ResultGrid<'a> {
         };
 
         // Project strings for DataTable
-        let projected_owned = project_result_rows(
-            self.rows,
-            self.columns,
-            state.redaction,
-            false,
-            state.row_numbers,
-        );
+        let projected_owned =
+            project_result_rows(self.rows, self.columns, state.redaction, state.row_numbers);
         // Build col model
         let col_model = result_column_model(self.columns, state.row_numbers);
 
@@ -1475,22 +1463,18 @@ mod tests {
     #[test]
     fn format_null_secret_binary() {
         assert_eq!(
-            format_result_cell(&ResultCell::null(), ResultRedaction::Safe, false),
+            format_result_cell(&ResultCell::null(), ResultRedaction::Safe),
             RESULT_NULL_GLYPH
         );
         assert_eq!(
-            format_result_cell(&ResultCell::secret_value("x"), ResultRedaction::Safe, false),
+            format_result_cell(&ResultCell::secret_value("x"), ResultRedaction::Safe),
             RESULT_SECRET_MASK
         );
-        assert!(
-            format_result_cell(&ResultCell::binary(99), ResultRedaction::Safe, false)
-                .contains("99")
-        );
+        assert!(format_result_cell(&ResultCell::binary(99), ResultRedaction::Safe).contains("99"));
         assert_eq!(
             format_result_cell(
                 &ResultCell::secret_value("open"),
-                ResultRedaction::RevealSecrets,
-                false
+                ResultRedaction::RevealSecrets
             ),
             "open"
         );
@@ -1499,7 +1483,7 @@ mod tests {
     #[test]
     fn project_includes_row_numbers_and_redaction() {
         let (cols, rows) = sample_rows();
-        let proj = project_result_rows(&rows, &cols, ResultRedaction::Safe, true, true);
+        let proj = project_result_rows(&rows, &cols, ResultRedaction::Safe, true);
         assert_eq!(proj[0].1[0], "1"); // row#
         assert!(proj[0].1.iter().any(|c| c == RESULT_SECRET_MASK));
         assert!(proj[0].1.iter().any(|c| c.contains("blob")));
@@ -1508,7 +1492,7 @@ mod tests {
     #[test]
     fn export_tsv_header() {
         let (cols, rows) = sample_rows();
-        let tsv = export_result_window_tsv(&cols, &rows, ResultRedaction::Safe, true, true);
+        let tsv = export_result_window_tsv(&cols, &rows, ResultRedaction::Safe, true);
         assert!(tsv.starts_with("ID\tName"));
         assert!(tsv.contains("alpha"));
         assert!(tsv.contains(RESULT_SECRET_MASK));
@@ -1653,7 +1637,7 @@ mod tests {
     #[test]
     fn inspector_bridge() {
         let (cols, rows) = sample_rows();
-        let fields = result_row_to_inspector_fields(&cols, &rows[0], ResultRedaction::Safe, true);
+        let fields = result_row_to_inspector_fields(&cols, &rows[0], ResultRedaction::Safe);
         assert_eq!(fields.len(), cols.len());
         assert!(fields.iter().any(|f| f.secret));
     }

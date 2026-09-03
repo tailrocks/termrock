@@ -89,7 +89,7 @@ impl CitationSourceType {
 
     /// Glyph.
     #[must_use]
-    pub const fn glyph(self, _ascii: bool) -> &'static str {
+    pub const fn glyph(self) -> &'static str {
         match self {
             // One column each (plans/013).
             Self::File => "▤",
@@ -361,9 +361,9 @@ impl CitationSource {
 
     /// Compact meta line (type · range · conf · offline).
     #[must_use]
-    pub fn meta_line(&self, _ascii: bool) -> String {
+    pub fn meta_line(&self) -> String {
         let mut parts = Vec::new();
-        parts.push(self.kind.glyph(false).to_string());
+        parts.push(self.kind.glyph().to_string());
         if let Some(r) = self.range {
             if r.line_start == r.line_end {
                 parts.push(format!("L{}", r.line_start));
@@ -672,7 +672,7 @@ impl<'a> SourceCitation<'a> {
     /// Decorated string for measure/paint.
     #[must_use]
     pub fn decorated(&self) -> String {
-        let g = self.source.kind.glyph(false);
+        let g = self.source.kind.glyph();
         let mut s = format!("{}{}", g, self.source.inline_label(false));
         let show_dest = match self.show_destination {
             DestinationDisplay::Always => true,
@@ -1142,7 +1142,7 @@ impl<'a> CitationList<'a> {
             };
             let selected = state.focused && i == state.cursor;
             let mark = " ";
-            let g = src.kind.glyph(false);
+            let g = src.kind.glyph();
             let mut line = format!("{mark}{} {} {}", src.inline_label(false), g, src.title);
             // always show dest for external / no_hyperlink / sensitive
             let show_dest = src.external
@@ -1158,7 +1158,7 @@ impl<'a> CitationList<'a> {
                     self.system.glyphs.ellipsis(),
                 ));
             }
-            let meta = src.meta_line(false);
+            let meta = src.meta_line();
             if !meta.is_empty() && area.width > 40 {
                 line.push_str(" · ");
                 line.push_str(&meta);

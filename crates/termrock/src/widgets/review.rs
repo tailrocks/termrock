@@ -120,7 +120,7 @@ impl DiffDecision {
 
     /// Compact mark (ascii uses letters).
     #[must_use]
-    pub const fn glyph(self, _ascii: bool) -> &'static str {
+    pub const fn glyph(self) -> &'static str {
         match self {
             Self::Pending => " ",
             Self::Approved => "✓",
@@ -1510,7 +1510,6 @@ impl<'a> DiffReview<'a> {
                 state,
                 self.system,
                 surface,
-                false,
                 colorless,
             );
         }
@@ -1526,15 +1525,7 @@ impl<'a> DiffReview<'a> {
         view.render(body, buffer, &mut state.view);
 
         // Overlay selection / comment / decision marks on visible regions
-        paint_review_marks(
-            buffer,
-            body,
-            self.lines,
-            state,
-            self.system,
-            false,
-            colorless,
-        );
+        paint_review_marks(buffer, body, self.lines, state, self.system, colorless);
 
         let mut y = area.bottom().saturating_sub(bottom_h);
 
@@ -1608,7 +1599,6 @@ fn paint_file_tree(
     state: &mut DiffReviewState,
     system: &DesignSystem,
     surface: bool,
-    _ascii: bool,
     colorless: bool,
 ) {
     if area.is_empty() {
@@ -1640,7 +1630,7 @@ fn paint_file_tree(
             .unwrap_or(DiffDecision::Pending);
         let sel = state.selected_files.contains(f.id);
         let cur = i == state.file_cursor;
-        let mark = dec.glyph(false);
+        let mark = dec.glyph();
         let sel_m = if sel { "★" } else { " " };
         let gutter = " ";
         let stats = if area.width >= 20 {
@@ -1688,7 +1678,6 @@ fn paint_review_marks(
     lines: &[DiffLine<'_>],
     state: &DiffReviewState,
     system: &DesignSystem,
-    _ascii: bool,
     colorless: bool,
 ) {
     // Use DiffView regions if present
@@ -1707,7 +1696,7 @@ fn paint_review_marks(
             let key = DiffReviewUnit::hunk(hid).key();
             if let Some(d) = state.decisions.get(&key) {
                 if *d != DiffDecision::Pending {
-                    marks.push_str(d.glyph(false));
+                    marks.push_str(d.glyph());
                 }
             }
         }
@@ -2115,7 +2104,7 @@ mod tests {
         assert!(DiffDecision::Rejected.safe_verb().contains("reject"));
         assert!(DiffDecision::Applied.is_destructive());
         assert!(!DiffDecision::Approved.is_destructive());
-        assert_eq!(DiffDecision::Staged.glyph(true), "●");
+        assert_eq!(DiffDecision::Staged.glyph(), "●");
     }
 
     #[test]

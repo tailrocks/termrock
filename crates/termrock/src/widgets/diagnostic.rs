@@ -92,7 +92,7 @@ impl DiagnosticSeverity {
 
     /// Glyph (ASCII uses letter).
     #[must_use]
-    pub const fn glyph(self, _ascii: bool) -> &'static str {
+    pub const fn glyph(self) -> &'static str {
         match self {
             Self::Error => "x",
             Self::Warning => "!",
@@ -152,7 +152,7 @@ impl SpanStyle {
 
     /// Underline glyph row (ASCII-safe).
     #[must_use]
-    pub const fn underline_char(self, _ascii: bool) -> char {
+    pub const fn underline_char(self) -> char {
         match (self, false) {
             (Self::Primary, true) | (Self::Primary, false) => '^',
             (Self::Secondary, true) => '-',
@@ -780,7 +780,7 @@ impl<'a> CodeFrame<'a> {
                 let (sc, ec) = cols_on_line(lab.range, line.number, expanded.chars().count());
                 let start = sc.saturating_sub(1) as usize;
                 let end = (ec.saturating_sub(1) as usize).max(start + 1);
-                let ch = lab.style.underline_char(false);
+                let ch = lab.style.underline_char();
                 for i in start..end.min(row.len()) {
                     row[i] = ch;
                     if lab.style == SpanStyle::Primary {
@@ -1385,7 +1385,7 @@ impl<'a> DiagnosticView<'a> {
             DiagnosticRecipe::Inline => {
                 // Single item or cursor item
                 let d = self.items.get(state.cursor).unwrap_or(&self.items[0]);
-                paint_inline(buffer, area, d, self.system, surface, false, colorless);
+                paint_inline(buffer, area, d, self.system, surface, colorless);
                 state.regions.push(DiagnosticRegion {
                     id: d.id.to_string(),
                     index: state.cursor.min(self.items.len() - 1),
@@ -1416,7 +1416,6 @@ impl<'a> DiagnosticView<'a> {
                         self.source_lines,
                         self.system,
                         surface,
-                        false,
                         colorless,
                         cursor,
                         expanded,
@@ -1440,10 +1439,9 @@ fn paint_inline(
     d: &Diagnostic<'_>,
     system: &DesignSystem,
     surface: bool,
-    _ascii: bool,
     colorless: bool,
 ) {
-    let g = d.severity.glyph(false);
+    let g = d.severity.glyph();
     let letter = d.severity.letter();
     let code = d.code.map(|c| format!("[{c}] ")).unwrap_or_default();
     let line = format!("{g}{letter} {code}{}", d.message);
@@ -1470,7 +1468,6 @@ fn paint_list_item(
     source_lines: &[CodeFrameLine<'_>],
     system: &DesignSystem,
     surface: bool,
-    _ascii: bool,
     colorless: bool,
     cursor: bool,
     expanded: bool,
@@ -1483,7 +1480,7 @@ fn paint_list_item(
     let mut y = area.y;
     // The cursor column is stamped by the shared row chrome.
     let gutter = " ";
-    let g = d.severity.glyph(false);
+    let g = d.severity.glyph();
     let letter = d.severity.letter();
     let code = d.code.map(|c| format!("[{c}] ")).unwrap_or_default();
     let loc = match (d.file, d.primary_range()) {
@@ -1564,7 +1561,7 @@ fn paint_list_item(
         if y >= area.bottom() {
             break;
         }
-        let ng = note.severity.glyph(false);
+        let ng = note.severity.glyph();
         let msg = format!("  {ng} {}: {}", note.severity.label(), note.message);
         buffer.set_stringn(
             area.x,
@@ -1781,14 +1778,14 @@ pub fn diagnostics_to_highlights(items: &[Diagnostic<'_>]) -> Vec<CodeHighlight>
 
 /// Map diagnostics into gutter marks (severity glyph).
 #[must_use]
-pub fn diagnostics_to_gutter_marks(items: &[Diagnostic<'_>], _ascii: bool) -> Vec<CodeGutterMark> {
+pub fn diagnostics_to_gutter_marks(items: &[Diagnostic<'_>]) -> Vec<CodeGutterMark> {
     let mut out = Vec::new();
     let mut seen = BTreeSet::new();
     for d in items {
         if let Some(r) = d.primary_range() {
             let line = r.start_line.saturating_sub(1) as usize;
             if seen.insert(line) {
-                let g = d.severity.glyph(false).chars().next().unwrap_or('!');
+                let g = d.severity.glyph().chars().next().unwrap_or('!');
                 out.push(CodeGutterMark::new(line, g, d.severity.role()));
             }
         }
@@ -1866,8 +1863,8 @@ mod tests {
             DiagnosticSeverity::Help,
         ] {
             assert!(!s.letter().is_whitespace());
-            assert!(!s.glyph(true).is_empty());
-            assert!(!s.glyph(false).is_empty());
+            assert!(!s.glyph().is_empty());
+            assert!(!s.glyph().is_empty());
             assert!(!s.label().is_empty());
         }
     }
@@ -2001,7 +1998,7 @@ mod tests {
         let highs = diagnostics_to_highlights(&items);
         assert!(!highs.is_empty());
         assert_eq!(highs[0].line, 1);
-        let marks = diagnostics_to_gutter_marks(&items, true);
+        let marks = diagnostics_to_gutter_marks(&items);
         assert_eq!(marks[0].line, 1);
     }
 

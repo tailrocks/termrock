@@ -74,7 +74,7 @@ impl SearchResultKind {
 
     /// Short glyph.
     #[must_use]
-    pub const fn glyph(self, _ascii: bool) -> &'static str {
+    pub const fn glyph(self) -> &'static str {
         {
             match self {
                 Self::File => "·",
@@ -1205,7 +1205,7 @@ impl<'a> SearchResults<'a> {
                     } else {
                         " "
                     };
-                    let glyph = item.kind.glyph(false);
+                    let glyph = item.kind.glyph();
                     let line_no = item.line.map(|n| format!(":{n}")).unwrap_or_default();
                     let title_budget = usize::from(area.width).saturating_sub(4);
                     // Focused match walk: mark first range focused when this is walk target

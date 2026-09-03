@@ -76,7 +76,7 @@ impl LogLevel {
 
     /// Level mark (`ascii` uses T/D/I/W/E).
     #[must_use]
-    pub const fn glyph(self, _ascii: bool) -> &'static str {
+    pub const fn glyph(self) -> &'static str {
         match self {
             Self::Trace => ".",
             Self::Debug => "·",
@@ -1123,7 +1123,7 @@ impl<'a> LogStream<'a> {
                 );
                 let style = chrome.label_style(style);
 
-                let g = line.level.glyph(false);
+                let g = line.level.glyph();
                 let bm = if bookmarked { "★" } else { " " };
                 let batch = if line.batch_count > 1 {
                     format!("{}{}", "×", line.batch_count)

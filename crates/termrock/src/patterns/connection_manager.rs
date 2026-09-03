@@ -2841,7 +2841,7 @@ mod tests {
         ] {
             assert!(!s.id().is_empty());
             let _ = s.glyph(true);
-            let _ = s.glyph(false);
+            let _ = s.glyph(true);
             let _ = s.to_connectivity_phase();
         }
         for k in [

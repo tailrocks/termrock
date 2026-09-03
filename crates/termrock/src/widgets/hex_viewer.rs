@@ -383,7 +383,7 @@ pub fn inspect_at(window: &HexWindow<'_>, offset: u64, endian: HexEndian) -> Hex
 
 /// Format inspector as one status line.
 #[must_use]
-pub fn format_inspector_line(v: &HexInspectorValues, _ascii: bool) -> String {
+pub fn format_inspector_line(v: &HexInspectorValues) -> String {
     let end = v.endian.id();
     let mut parts = vec![format!("@{offset:X}", offset = v.offset)];
     if let Some(b) = v.u8 {
@@ -1258,7 +1258,6 @@ impl<'a> HexViewer<'a> {
                     state,
                     self.system,
                     surface,
-                    false,
                     colorless,
                     tiny,
                 );
@@ -1274,7 +1273,7 @@ impl<'a> HexViewer<'a> {
         if inspector_h > 0 {
             let iy = area.bottom().saturating_sub(1);
             let vals = inspect_at(&self.window, state.cursor, state.endian);
-            let mut line = format_inspector_line(&vals, false);
+            let mut line = format_inspector_line(&vals);
             if let Some((s, e)) = state.selection() {
                 line.push_str(&format!(" sel={s:X}..{e:X}"));
             }
@@ -1302,7 +1301,6 @@ fn paint_hex_row(
     state: &HexViewerState,
     system: &DesignSystem,
     surface: bool,
-    _ascii: bool,
     colorless: bool,
     tiny: bool,
 ) {

@@ -78,7 +78,7 @@ impl DepNodeKind {
 
     /// Glyph.
     #[must_use]
-    pub const fn glyph(self, _ascii: bool) -> &'static str {
+    pub const fn glyph(self) -> &'static str {
         match self {
             Self::Package => "▣",
             Self::Service => "⬡",
@@ -188,7 +188,7 @@ impl DepEdgeKind {
 
     /// Connector glyph preference.
     #[must_use]
-    pub const fn arrow(self, _ascii: bool) -> &'static str {
+    pub const fn arrow(self) -> &'static str {
         match self {
             Self::DependsOn | Self::Imports => "→",
             Self::Calls => "⇒",
@@ -1217,7 +1217,6 @@ impl<'a> DependencyGraph<'a> {
                     buffer,
                     self.system,
                     state,
-                    false,
                     self.focused,
                 );
             }
@@ -1229,7 +1228,6 @@ impl<'a> DependencyGraph<'a> {
                     buffer,
                     self.system,
                     state,
-                    false,
                     self.focused,
                     matches!(view, DependencyGraphView::Tree),
                 );
@@ -1245,7 +1243,6 @@ fn paint_graph(
     buffer: &mut Buffer,
     system: &DesignSystem,
     state: &mut DependencyGraphState,
-    _ascii: bool,
     focused: bool,
 ) {
     if nodes.is_empty() {
@@ -1309,7 +1306,7 @@ fn paint_graph(
         if mid_x >= area.x && mid_x < area.right() && mid_y >= area.y && mid_y < area.bottom() {
             put_sym(buffer, mid_x, mid_y, corner, style);
         }
-        let _ = e.kind.arrow(false);
+        let _ = e.kind.arrow();
     }
 
     // Draw nodes
@@ -1334,7 +1331,7 @@ fn paint_graph(
         let mark = " ";
         let label = format!(
             "{mark}{}{} {}",
-            n.kind.glyph(false),
+            n.kind.glyph(),
             letter,
             take_display_cols(n.label, usize::from(w.saturating_sub(4)))
         );
@@ -1398,7 +1395,6 @@ fn paint_list_or_tree(
     buffer: &mut Buffer,
     system: &DesignSystem,
     state: &mut DependencyGraphState,
-    _ascii: bool,
     focused: bool,
     tree: bool,
 ) {

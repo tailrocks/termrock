@@ -683,7 +683,7 @@ pub fn paint_setup_wizard(buffer: &mut Buffer, area: Rect, surfaces: SetupWizard
                 .paint(body, buffer, &mut crate::widgets::EmptyStateState::new());
         }
         SetupStepKind::Capability => {
-            paint_capability_list(buffer, body, system, capabilities, false);
+            paint_capability_list(buffer, body, system, capabilities);
         }
         SetupStepKind::Account
         | SetupStepKind::Connection
@@ -691,13 +691,7 @@ pub fn paint_setup_wizard(buffer: &mut Buffer, area: Rect, surfaces: SetupWizard
         | SetupStepKind::Validation
         | SetupStepKind::Custom => {
             if fieldsets.is_empty() {
-                paint_body_hint(
-                    buffer,
-                    body,
-                    system,
-                    "Host form fields for this step",
-                    false,
-                );
+                paint_body_hint(buffer, body, system, "Host form fields for this step");
             } else {
                 StatefulWidget::render(
                     &Form::new(fieldsets, system).focused_field(state.focused_field.as_ref()),
@@ -735,14 +729,7 @@ pub fn paint_setup_wizard(buffer: &mut Buffer, area: Rect, surfaces: SetupWizard
             );
         }
         SetupStepKind::Summary => {
-            paint_summary(
-                buffer,
-                body,
-                system,
-                summary_lines,
-                state.show_all_summary,
-                false,
-            );
+            paint_summary(buffer, body, system, summary_lines, state.show_all_summary);
         }
         SetupStepKind::Recovery => {
             let msg = state
@@ -828,7 +815,6 @@ fn paint_capability_list(
     area: Rect,
     system: &DesignSystem,
     lines: &[CapabilityLine<'_>],
-    _ascii: bool,
 ) {
     if area.is_empty() {
         return;
@@ -881,7 +867,6 @@ fn paint_summary(
     system: &DesignSystem,
     lines: &[SetupSummaryLine<'_>],
     show_all: bool,
-    _ascii: bool,
 ) {
     if area.is_empty() {
         return;
@@ -952,13 +937,7 @@ fn paint_summary(
     }
 }
 
-fn paint_body_hint(
-    buffer: &mut Buffer,
-    area: Rect,
-    system: &DesignSystem,
-    text: &str,
-    _ascii: bool,
-) {
+fn paint_body_hint(buffer: &mut Buffer, area: Rect, system: &DesignSystem, text: &str) {
     if area.is_empty() {
         return;
     }

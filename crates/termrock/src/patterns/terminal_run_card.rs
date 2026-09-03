@@ -35,13 +35,12 @@ use ratatui_core::{buffer::Buffer, layout::Rect};
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     style::{DesignSystem, PanelChrome, Role},
-    text::{display_cols, take_display_cols},
+    text::take_display_cols,
     widgets::{
         AccentRail, Card, SemanticStatus, StatusIndicator, TerminalCommandMeta, TerminalEnvEntry,
         TerminalLine, TerminalOutput, TerminalOutputOutcome, TerminalOutputRecipe,
         TerminalOutputState, TerminalPaintMode, TerminalRunStatus, ToolCall, ToolRisk, ToolStatus,
-        escape_raw_terminal, filter_terminal_lines, format_duration_ms, redact_env_value,
-        redact_tool_secrets,
+        filter_terminal_lines, format_duration_ms, redact_env_value, redact_tool_secrets,
     },
 };
 
@@ -367,8 +366,8 @@ impl TerminalRun {
 
     /// Header summary line.
     #[must_use]
-    pub fn header_line(&self, ascii: bool) -> String {
-        let g = self.status.glyph(ascii);
+    pub fn header_line(&self) -> String {
+        let g = self.status.glyph();
         let phase = self.phase().badge();
         let mut s = format!(
             "{g} [{phase}] {}",
@@ -487,9 +486,8 @@ pub fn project_terminal_run_lines(
     run: &TerminalRun,
     lines: &[TerminalLine<'_>],
     expanded: bool,
-    ascii: bool,
 ) -> Vec<String> {
-    let mut out = vec![run.header_line(ascii)];
+    let mut out = vec![run.header_line()];
     let phase = run.phase();
     if phase != TerminalCommandPhase::Executed
         || run
@@ -524,7 +522,7 @@ pub fn project_terminal_run_lines(
         {
             out.push(format!(
                 "  {}{}",
-                l.stream.prefix(ascii),
+                l.stream.prefix(),
                 redact_tool_secrets(l.text)
             ));
         }
@@ -987,7 +985,7 @@ impl<'a> TerminalRunCard<'a> {
 
         // Colorless is exactly when the glyph matters most: dropping it left
         // the card with no status cue at all (plans/013 Step 2).
-        let leading = run.status.glyph(false);
+        let leading = run.status.glyph();
         let badge = phase.badge();
         let card = Card::new(self.system)
             .title(title.as_ref())
@@ -1119,8 +1117,6 @@ impl<'a> TerminalRunCard<'a> {
             .colorless(colorless)
             .show_chrome(false); // card owns command chrome; substrate owns stream
         view.paint(stream_area, buffer, &mut state.output);
-
-        let _ = (display_cols, escape_raw_terminal);
     }
 }
 
@@ -1323,7 +1319,7 @@ mod tests {
             .status(TerminalRunStatus::Succeeded)
             .exit_code(0);
         let lines = example_terminal_run_lines();
-        let p = project_terminal_run_lines(&run, &lines, true, true);
+        let p = project_terminal_run_lines(&run, &lines, true);
         let j = p.join("\n");
         assert!(j.contains("proposed"));
         assert!(j.contains("executed"));
@@ -1468,7 +1464,7 @@ mod tests {
             TerminalRunStatus::Detached,
         ] {
             let run = TerminalRun::new("r", "cmd").status(s);
-            let _ = run.header_line(true);
+            let _ = run.header_line();
             let _ = terminal_run_to_tool_call(&run);
         }
         for p in [

@@ -1005,7 +1005,6 @@ impl<'a> OfflineSurface<'a> {
                 } else {
                     &mut state.retry_btn
                 },
-                false,
             );
         }
         idx += 1;
@@ -1027,7 +1026,6 @@ impl<'a> OfflineSurface<'a> {
                     ConnectivityFocus::WorkOffline | ConnectivityFocus::ViewQueue
                 ),
                 &mut state.offline_btn,
-                false,
             );
         }
     }
@@ -1093,7 +1091,6 @@ fn paint_action(
     primary: bool,
     focused: bool,
     btn_state: &mut ButtonState,
-    _ascii: bool,
 ) {
     if area.is_empty() {
         return;

@@ -584,7 +584,7 @@ pub fn task_rail_status_summary(items: &[ActivityModel], ascii: bool) -> String 
         }
     }
     // Prefer shelf summary for active; append completed count
-    let base = activity_status_summary(&shelf, ascii);
+    let base = activity_status_summary(&shelf);
     let c = task_rail_counts(items);
     if c.completed > 0 {
         format!("{base} · {} done", c.completed)
@@ -600,7 +600,7 @@ pub fn project_task_rail_for_status_bar(
     ascii: bool,
 ) -> ActivityStatusProjection {
     let shelf = activity_models_to_shelf(items);
-    let mut p = project_activities_for_status_bar(&shelf, ascii);
+    let mut p = project_activities_for_status_bar(&shelf);
     p.badge_text = items.len().to_string();
     // Keep high priority when needs_input
     if items.iter().any(|i| i.needs_input) {
@@ -645,7 +645,7 @@ fn task_rail_status_text(items: &[ActivityModel]) -> String {
     let mut text = if shelf.is_empty() {
         "tasks idle".to_string()
     } else {
-        let summary = activity_status_summary(&shelf, true);
+        let summary = activity_status_summary(&shelf);
         summary
             .split_once(' ')
             .map_or(summary.clone(), |(_, words)| words.to_string())

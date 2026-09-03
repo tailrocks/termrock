@@ -1032,7 +1032,6 @@ impl GitWorkbenchState {
                     .priority(100),
             );
         }
-        let _ = self.head_label.as_str();
         slots
     }
 }

@@ -703,7 +703,7 @@ impl<'a, Id> Transcript<'a, Id> {
     }
 }
 
-fn kind_prefix(kind: TranscriptKind, _ascii: bool) -> &'static str {
+fn kind_prefix(kind: TranscriptKind) -> &'static str {
     kind.glyph()
 }
 
@@ -787,7 +787,7 @@ impl<Id: Clone + Eq> StatefulWidget for &Transcript<'_, Id> {
                 kind_style(self.system, block.kind, colorless)
             };
 
-            let prefix = kind_prefix(block.kind, false);
+            let prefix = kind_prefix(block.kind);
             let mut region_y0: Option<u16> = None;
             let mut region_y1: u16 = area.y;
 

@@ -65,7 +65,7 @@ impl TerminalStream {
 
     /// No-color prefix.
     #[must_use]
-    pub const fn prefix(self, _ascii: bool) -> &'static str {
+    pub const fn prefix(self) -> &'static str {
         match self {
             Self::Stdout => "│ ",
             Self::Stderr => "! ",
@@ -144,7 +144,7 @@ impl TerminalRunStatus {
 
     /// Glyph (ASCII uses letter).
     #[must_use]
-    pub const fn glyph(self, _ascii: bool) -> &'static str {
+    pub const fn glyph(self) -> &'static str {
         match self {
             Self::Pending => "·",
             Self::WaitingPermission => "⏸",
@@ -1111,7 +1111,6 @@ impl<'a> TerminalOutput<'a> {
                 state,
                 self.system,
                 surface,
-                false,
                 colorless,
                 tiny,
                 narrow,
@@ -1153,7 +1152,6 @@ impl<'a> TerminalOutput<'a> {
                     state.paint_mode,
                     self.system,
                     surface,
-                    false,
                     colorless,
                     cursor,
                     tiny,
@@ -1216,7 +1214,6 @@ fn paint_header(
     state: &TerminalOutputState,
     system: &DesignSystem,
     surface: bool,
-    _ascii: bool,
     colorless: bool,
     tiny: bool,
     narrow: bool,
@@ -1226,7 +1223,7 @@ fn paint_header(
         return area.y;
     }
     let mut y = area.y;
-    let g = meta.status.glyph(false);
+    let g = meta.status.glyph();
     let badge = meta.status.label();
     let exit = meta
         .exit_code
@@ -1353,7 +1350,6 @@ fn paint_line(
     paint_mode: TerminalPaintMode,
     system: &DesignSystem,
     surface: bool,
-    _ascii: bool,
     colorless: bool,
     cursor: bool,
     tiny: bool,
@@ -1363,7 +1359,7 @@ fn paint_line(
     }
     // The cursor column is stamped by the shared row chrome.
     let gutter = " ";
-    let prefix = if tiny { "" } else { line.stream.prefix(false) };
+    let prefix = if tiny { "" } else { line.stream.prefix() };
 
     // The stream rides its prefix, not the whole sentence: a page of stderr
     // is a page of readable text with a marked left edge, not a wall of red
@@ -1777,14 +1773,14 @@ mod tests {
             TerminalRunStatus::Detached,
         ] {
             assert!(!s.id().is_empty());
-            assert!(!s.glyph(true).is_empty());
+            assert!(!s.glyph().is_empty());
         }
         for st in [
             TerminalStream::Stdout,
             TerminalStream::Stderr,
             TerminalStream::System,
         ] {
-            assert!(!st.prefix(true).is_empty());
+            assert!(!st.prefix().is_empty());
         }
         assert!(bench::LINES_PER_SEC >= 1000);
     }

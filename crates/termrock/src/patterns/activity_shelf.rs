@@ -348,7 +348,7 @@ pub fn activity_counts(items: &[ActivityItem]) -> ActivityCounts {
 
 /// One-line summary for narrow StatusBar / shelf.
 #[must_use]
-pub fn activity_status_summary(items: &[ActivityItem], _ascii: bool) -> String {
+pub fn activity_status_summary(items: &[ActivityItem]) -> String {
     let c = activity_counts(items);
     if c.total == 0 {
         return "∅ idle".into();
@@ -410,7 +410,7 @@ const fn activity_semantic(counts: ActivityCounts) -> SemanticStatus {
 
 /// Tiny badge text (`!3` / `●3`).
 #[must_use]
-pub fn activity_badge_label(items: &[ActivityItem], _ascii: bool) -> String {
+pub fn activity_badge_label(items: &[ActivityItem]) -> String {
     let c = activity_counts(items);
     if c.total == 0 {
         return "·".into();
@@ -506,7 +506,6 @@ pub fn plan_activity_shelf(
     sorted: &[&ActivityItem],
     width: u16,
     presentation: ActivityShelfPresentation,
-    _ascii: bool,
 ) -> ActivityShelfPlan {
     match presentation {
         ActivityShelfPresentation::Badge | ActivityShelfPresentation::Summary => {
@@ -579,10 +578,7 @@ pub struct ActivityStatusProjection {
 
 /// Project activities → StatusBar slot content.
 #[must_use]
-pub fn project_activities_for_status_bar(
-    items: &[ActivityItem],
-    _ascii: bool,
-) -> ActivityStatusProjection {
+pub fn project_activities_for_status_bar(items: &[ActivityItem]) -> ActivityStatusProjection {
     let c = activity_counts(items);
     let priority = if c.action_required > 0 {
         95
@@ -594,9 +590,9 @@ pub fn project_activities_for_status_bar(
         55
     };
     ActivityStatusProjection {
-        summary: activity_status_summary(items, false),
+        summary: activity_status_summary(items),
         summary_text: activity_status_text(items),
-        badge: activity_badge_label(items, false),
+        badge: activity_badge_label(items),
         badge_text: c.total.to_string(),
         priority,
         region: StatusRegion::Right,
@@ -914,7 +910,7 @@ impl<'a> ActivityShelf<'a> {
         let presentation = state
             .force_presentation
             .unwrap_or_else(|| ActivityShelfPresentation::for_width(area.width));
-        let plan = plan_activity_shelf(&sorted, area.width, presentation, false);
+        let plan = plan_activity_shelf(&sorted, area.width, presentation);
         state.last_plan = Some(plan.clone());
 
         // fill muted bar background line
@@ -949,7 +945,7 @@ impl<'a> ActivityShelf<'a> {
                     .paint(Rect::new(area.x, area.y, area.width, 1), buffer, None);
             }
             ActivityShelfPresentation::Chips | ActivityShelfPresentation::IconsOnly => {
-                self.paint_chips(area, buffer, state, &sorted, &plan, false);
+                self.paint_chips(area, buffer, state, &sorted, &plan);
             }
         }
     }
@@ -961,7 +957,6 @@ impl<'a> ActivityShelf<'a> {
         state: &mut ActivityShelfState,
         sorted: &[&ActivityItem],
         plan: &ActivityShelfPlan,
-        _ascii: bool,
     ) {
         let icons = matches!(plan.presentation, ActivityShelfPresentation::IconsOnly);
         let vertical = matches!(state.orientation, ActivityShelfOrientation::Vertical);
@@ -1184,10 +1179,10 @@ mod tests {
         );
         let items = example_activities();
         let sorted = sort_activity_items(&items);
-        let p = plan_activity_shelf(&sorted, 20, ActivityShelfPresentation::Summary, true);
+        let p = plan_activity_shelf(&sorted, 20, ActivityShelfPresentation::Summary);
         assert!(p.visible.is_empty());
         assert_eq!(p.overflow, items.len());
-        let badge = activity_badge_label(&items, true);
+        let badge = activity_badge_label(&items);
         assert!(badge.chars().any(|c| c.is_ascii_digit()));
     }
 
@@ -1235,7 +1230,7 @@ mod tests {
     #[test]
     fn status_bar_projection() {
         let items = example_activities();
-        let p = project_activities_for_status_bar(&items, true);
+        let p = project_activities_for_status_bar(&items);
         assert!(p.summary.contains("action") || p.summary.contains("run"));
         assert!(p.priority >= 90);
         let slot = activity_status_slot("act", &p, false);
@@ -1409,9 +1404,9 @@ mod tests {
 
     #[test]
     fn empty_idle_summary() {
-        let s = activity_status_summary(&[], true);
+        let s = activity_status_summary(&[]);
         assert!(s.contains("idle"));
-        let b = activity_badge_label(&[], false);
+        let b = activity_badge_label(&[]);
         assert!(!b.is_empty());
     }
 

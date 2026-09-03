@@ -94,7 +94,7 @@ impl EventSeverity {
 
     /// Glyph for structured chrome.
     #[must_use]
-    pub const fn glyph(self, _ascii: bool) -> &'static str {
+    pub const fn glyph(self) -> &'static str {
         match self {
             Self::Trace => ".",
             Self::Debug => "·",
@@ -1053,7 +1053,7 @@ impl<'a, Id: Clone + PartialEq + Ord> EventStream<'a, Id> {
                 );
                 buffer.set_stringn(area.x.saturating_add(1), y, " ", 1, style);
 
-                let sev = event.severity.glyph(false);
+                let sev = event.severity.glyph();
                 let batch = if event.batch_count > 1 {
                     format!("{}{}", "×", event.batch_count)
                 } else {
