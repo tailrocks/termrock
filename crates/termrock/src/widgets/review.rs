@@ -276,8 +276,6 @@ pub struct DiffComment {
     pub anchor: DiffCommentAnchor,
     /// Body text.
     pub body: String,
-    /// Optional author label.
-    pub author: Option<String>,
     /// Resolved thread.
     pub resolved: bool,
 }
@@ -290,16 +288,8 @@ impl DiffComment {
             id: id.into(),
             anchor,
             body: body.into(),
-            author: None,
             resolved: false,
         }
-    }
-
-    /// Author.
-    #[must_use]
-    pub fn author(mut self, author: impl Into<String>) -> Self {
-        self.author = Some(author.into());
-        self
     }
 }
 
@@ -314,8 +304,6 @@ pub struct DiffReviewFileRow<'a> {
     pub added: u32,
     /// Removed line count (display).
     pub removed: u32,
-    /// Optional rename old path.
-    pub old_path: Option<&'a str>,
 }
 
 impl<'a> DiffReviewFileRow<'a> {
@@ -327,7 +315,6 @@ impl<'a> DiffReviewFileRow<'a> {
             path,
             added: 0,
             removed: 0,
-            old_path: None,
         }
     }
 
@@ -336,13 +323,6 @@ impl<'a> DiffReviewFileRow<'a> {
     pub const fn stats(mut self, added: u32, removed: u32) -> Self {
         self.added = added;
         self.removed = removed;
-        self
-    }
-
-    /// Rename.
-    #[must_use]
-    pub const fn old_path(mut self, old: &'a str) -> Self {
-        self.old_path = Some(old);
         self
     }
 }

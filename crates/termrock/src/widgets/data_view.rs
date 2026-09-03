@@ -803,8 +803,6 @@ pub struct SortSpec<ColId> {
 pub struct FilterSpec {
     /// Free-text search.
     pub query: String,
-    /// Optional column-scoped filters as opaque key=value (consumer parses).
-    pub clauses: Vec<(String, String)>,
 }
 
 // ── Copy ────────────────────────────────────────────────────────────────────

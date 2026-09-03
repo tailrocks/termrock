@@ -269,8 +269,6 @@ pub struct DiffFile<'a> {
     pub id: &'a str,
     /// Display path (new side preferred).
     pub path: &'a str,
-    /// Old path when renamed.
-    pub old_path: Option<&'a str>,
     /// Language hint for host syntax (paint-neutral).
     pub language: Option<&'a str>,
     /// Start line index in projection.
@@ -286,18 +284,10 @@ impl<'a> DiffFile<'a> {
         Self {
             id,
             path,
-            old_path: None,
             language: None,
             start,
             len,
         }
-    }
-
-    /// Old path (rename).
-    #[must_use]
-    pub const fn old_path(mut self, old: &'a str) -> Self {
-        self.old_path = Some(old);
-        self
     }
 
     /// Language.

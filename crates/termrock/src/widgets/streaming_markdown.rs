@@ -81,8 +81,6 @@ pub struct StreamInsertion {
     pub kind: String,
     /// Display lines (already projected).
     pub lines: Vec<String>,
-    /// Byte offset into committed+tail where insertion anchors (best-effort).
-    pub at_byte: usize,
 }
 
 impl StreamInsertion {
@@ -97,15 +95,7 @@ impl StreamInsertion {
             id: id.into(),
             kind: kind.into(),
             lines: lines.into_iter().map(Into::into).collect(),
-            at_byte: 0,
         }
-    }
-
-    /// Anchor byte.
-    #[must_use]
-    pub const fn at_byte(mut self, b: usize) -> Self {
-        self.at_byte = b;
-        self
     }
 }
 

@@ -323,31 +323,6 @@ impl<'a> DiagnosticNote<'a> {
     }
 }
 
-/// Suggested fix applicability (rustc-like).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
-#[non_exhaustive]
-pub enum FixApplicability {
-    /// Machine-applicable.
-    MachineApplicable,
-    /// Maybe incorrect.
-    MaybeIncorrect,
-    /// Unspecified / human only.
-    #[default]
-    Unspecified,
-}
-
-impl FixApplicability {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::MachineApplicable => "machine",
-            Self::MaybeIncorrect => "maybe",
-            Self::Unspecified => "unspecified",
-        }
-    }
-}
-
 /// Suggested fix (host applies).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SuggestedFix<'a> {
@@ -357,8 +332,6 @@ pub struct SuggestedFix<'a> {
     pub message: &'a str,
     /// Optional replacement snippet (preview).
     pub replacement: Option<&'a str>,
-    /// Applicability.
-    pub applicability: FixApplicability,
 }
 
 impl<'a> SuggestedFix<'a> {
@@ -369,7 +342,6 @@ impl<'a> SuggestedFix<'a> {
             id,
             message,
             replacement: None,
-            applicability: FixApplicability::Unspecified,
         }
     }
 
@@ -377,13 +349,6 @@ impl<'a> SuggestedFix<'a> {
     #[must_use]
     pub const fn replacement(mut self, text: &'a str) -> Self {
         self.replacement = Some(text);
-        self
-    }
-
-    /// Applicability.
-    #[must_use]
-    pub const fn applicability(mut self, a: FixApplicability) -> Self {
-        self.applicability = a;
         self
     }
 }

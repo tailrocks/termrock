@@ -205,8 +205,6 @@ pub struct QuickOpenProvider {
     pub glyph: Option<String>,
     /// Whether a preview pane is meaningful.
     pub supports_preview: bool,
-    /// Whether host understands query syntax beyond plain text.
-    pub supports_query_syntax: bool,
 }
 
 impl QuickOpenProvider {
@@ -218,7 +216,6 @@ impl QuickOpenProvider {
             label: label.into(),
             glyph: None,
             supports_preview: true,
-            supports_query_syntax: true,
         }
     }
 
@@ -235,13 +232,6 @@ impl QuickOpenProvider {
         self.supports_preview = on;
         self
     }
-
-    /// Query syntax support.
-    #[must_use]
-    pub const fn supports_query_syntax(mut self, on: bool) -> Self {
-        self.supports_query_syntax = on;
-        self
-    }
 }
 
 /// Parsed query with optional provider override and filter body.
@@ -251,15 +241,12 @@ pub struct ParsedQuickOpenQuery {
     pub provider_override: Option<String>,
     /// Remaining filter text (after syntax prefix).
     pub filter: String,
-    /// Raw full query string.
-    pub raw: String,
 }
 
 /// Parse query syntax: `@files foo`, `#symbols bar` ( `#` alias for symbols),
 /// plain text otherwise. Leading `@id` or `#id` switches provider.
 #[must_use]
 pub fn parse_quick_open_query(raw: &str) -> ParsedQuickOpenQuery {
-    let raw_owned = raw.to_string();
     let trimmed = raw.trim_start();
     if let Some(rest) = trimmed
         .strip_prefix('@')
@@ -276,7 +263,6 @@ pub fn parse_quick_open_query(raw: &str) -> ParsedQuickOpenQuery {
                 return ParsedQuickOpenQuery {
                     provider_override: Some(id.to_string()),
                     filter,
-                    raw: raw_owned,
                 };
             }
         }
@@ -284,7 +270,6 @@ pub fn parse_quick_open_query(raw: &str) -> ParsedQuickOpenQuery {
     ParsedQuickOpenQuery {
         provider_override: None,
         filter: raw.to_string(),
-        raw: raw_owned,
     }
 }
 

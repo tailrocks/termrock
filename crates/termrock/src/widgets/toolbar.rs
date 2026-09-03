@@ -105,8 +105,6 @@ pub struct ToolbarItem<'a, Id> {
     pub kind: ToolbarItemKind,
     /// Optional generated command id for host command catalogs.
     pub command: Option<&'a str>,
-    /// Optional semantic intent metadata (host maps Activate → effects).
-    pub intent: Option<UiIntent>,
 }
 
 impl<'a, Id> ToolbarItem<'a, Id> {
@@ -122,7 +120,6 @@ impl<'a, Id> ToolbarItem<'a, Id> {
             priority: 50,
             kind: ToolbarItemKind::Action,
             command: None,
-            intent: None,
         }
     }
 
@@ -138,7 +135,6 @@ impl<'a, Id> ToolbarItem<'a, Id> {
             priority: 50,
             kind: ToolbarItemKind::Toggle { pressed },
             command: None,
-            intent: None,
         }
     }
 
@@ -154,7 +150,6 @@ impl<'a, Id> ToolbarItem<'a, Id> {
             priority: 100,
             kind: ToolbarItemKind::Separator,
             command: None,
-            intent: None,
         }
     }
     /// Icon glyph.
@@ -189,13 +184,6 @@ impl<'a, Id> ToolbarItem<'a, Id> {
     #[must_use]
     pub const fn command(mut self, command: &'a str) -> Self {
         self.command = Some(command);
-        self
-    }
-
-    /// Intent metadata.
-    #[must_use]
-    pub const fn intent(mut self, intent: UiIntent) -> Self {
-        self.intent = Some(intent);
         self
     }
 

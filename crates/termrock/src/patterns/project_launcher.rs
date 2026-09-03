@@ -594,7 +594,6 @@ pub struct ProjectLauncherState {
     /// Selected project id.
     pub selected_id: Option<String>,
     /// Project count chrome.
-    pub project_count: u64,
     /// Stale/missing count chrome.
     pub problem_count: u64,
     /// Colorless.
@@ -641,7 +640,6 @@ impl ProjectLauncherState {
             focus: ProjectLauncherPane::Projects.id(),
             density: None,
             selected_id: None,
-            project_count: 0,
             problem_count: 0,
             colorless: false,
             last_panes: Vec::new(),
@@ -1341,7 +1339,6 @@ pub fn paint_project_launcher(
     state.last_panes = panes.clone();
     state.clamp_focus_to_density(density);
     state.apply_focus_gates();
-    state.project_count = projects.len() as u64;
     state.problem_count = projects
         .iter()
         .filter(|p| p.path_status.is_problem())

@@ -203,9 +203,9 @@ pub use diagnostic::bench as diagnostic_bench;
 pub use diagnostic::{
     CODE_FRAME_TAB_STOP, CodeFrame, CodeFrameLine, Diagnostic, DiagnosticNote, DiagnosticOutcome,
     DiagnosticRecipe, DiagnosticRegion, DiagnosticSeverity, DiagnosticState, DiagnosticView,
-    FixApplicability, RelatedLocation, SourceLabel, SourceRange, SpanStyle, SuggestedFix,
-    code_frame_window, diagnostics_to_gutter_marks, diagnostics_to_highlights, expand_tabs,
-    format_diagnostic_plain, format_diagnostics_plain,
+    RelatedLocation, SourceLabel, SourceRange, SpanStyle, SuggestedFix, code_frame_window,
+    diagnostics_to_gutter_marks, diagnostics_to_highlights, expand_tabs, format_diagnostic_plain,
+    format_diagnostics_plain,
 };
 pub use event_stream::bench as event_stream_bench;
 pub use event_stream::{
