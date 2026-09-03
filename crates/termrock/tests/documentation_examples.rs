@@ -21,7 +21,7 @@ use termrock::{
     widgets::{
         Action, ActionBar, ActionBarState, ActionVariant, ActivationOutcome, Anchor, Button,
         ButtonState, CellAlignment, ChoiceDialog, ChoiceDialogState, Column, ColumnWidth,
-        CommandEntry, CommandPalette, CommandPaletteOutcome, CommandPaletteSize,
+        CommandEntry, CommandMatch, CommandPalette, CommandPaletteOutcome, CommandPaletteSize,
         CommandPaletteState, Dialog, DialogSize, InitiatorKind, List, ListRow, ListState,
         ModeIndicator, ModelIndicator, PermissionAction, PermissionOutcome, PermissionPromptState,
         PermissionProvenance, PermissionRequest, PermissionRisk, PromptComposer,
@@ -159,14 +159,15 @@ fn handbook_dialog_examples() {
 fn handbook_command_palette_example() {
     let tokens = DesignSystem::default();
     let entries = [CommandEntry::new("quit", "Quit")];
-    let palette = CommandPalette::new("Commands", &entries, &tokens);
+    let matches = [CommandMatch::new(&entries[0], 10, None)];
+    let palette = CommandPalette::new("Commands", &matches, &tokens);
     let rect = place_command_palette(Rect::new(0, 0, 80, 24), CommandPaletteSize::default());
     assert!(rect.width > 0);
     let mut state = CommandPaletteState::new(Some("quit"));
     let outcome = CommandPalette::handle_key(
         &mut state,
         KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
-        &entries,
+        &matches,
     );
     assert!(matches!(
         outcome,

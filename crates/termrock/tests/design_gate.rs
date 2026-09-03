@@ -2728,6 +2728,10 @@ fn priority_pattern_frames(system: &DesignSystem) -> Vec<(&'static str, Buffer)>
     let db_fields = example_inspect_fields();
     let history = example_db_history();
     let commands = example_db_commands();
+    let command_matches: Vec<termrock::widgets::CommandMatch<'_, &'static str>> = commands
+        .iter()
+        .map(|c| termrock::widgets::CommandMatch::new(c, 0, None))
+        .collect();
 
     let mut observability = ObservabilityDashboardState::new();
     let logs = example_observability_logs();
@@ -2781,7 +2785,7 @@ fn priority_pattern_frames(system: &DesignSystem) -> Vec<(&'static str, Buffer)>
                         result_rows: &rows,
                         inspect_fields: &db_fields,
                         history: &history,
-                        commands: &commands,
+                        commands: &command_matches,
                     },
                 );
             }),

@@ -447,31 +447,68 @@ pub fn fuzzy_match_label(query: &str, haystack: &str) -> Option<(u32, MatchRange
     Some((score, ranges))
 }
 
+/// One scored filter match: the borrowed entry plus computed match metadata.
+///
+/// Filtering used to clone every matching [`CommandEntry`] per frame; the
+/// projection now borrows the entry and carries only the score and the
+/// highlight ranges computed for the current query.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CommandMatch<'a, Id> {
+    /// The matched entry.
+    pub entry: &'a CommandEntry<Id>,
+    /// Sort score (lower is better).
+    pub score: u32,
+    /// Highlight ranges into [`CommandEntry::label`] (byte offsets).
+    pub match_ranges: Option<MatchRanges>,
+}
+
+impl<'a, Id> CommandMatch<'a, Id> {
+    /// Wrap an entry with match metadata.
+    #[must_use]
+    pub const fn new(
+        entry: &'a CommandEntry<Id>,
+        score: u32,
+        match_ranges: Option<MatchRanges>,
+    ) -> Self {
+        Self {
+            entry,
+            score,
+            match_ranges,
+        }
+    }
+}
+
+impl<Id> std::ops::Deref for CommandMatch<'_, Id> {
+    type Target = CommandEntry<Id>;
+
+    fn deref(&self) -> &Self::Target {
+        self.entry
+    }
+}
+
 /// Filter + score entries for `query` on the active page.
 ///
 /// Host may replace this with its own scorer; this is the built-in default.
 #[must_use]
-pub fn filter_command_entries<Id: Clone>(
-    entries: &[CommandEntry<Id>],
+pub fn filter_command_entries<'a, Id>(
+    entries: &'a [CommandEntry<Id>],
     query: &str,
     page: Option<&str>,
-) -> Vec<CommandEntry<Id>> {
+) -> Vec<CommandMatch<'a, Id>> {
     let q = query.trim();
-    let mut out: Vec<CommandEntry<Id>> = entries
+    let mut out: Vec<CommandMatch<'a, Id>> = entries
         .iter()
         .filter(|e| e.page.as_deref() == page)
         .filter_map(|e| {
             if q.is_empty() {
-                let mut c = e.clone();
-                c.match_ranges = None;
-                c.score = if c.recent {
+                let score = if e.recent {
                     0
-                } else if c.contextual {
+                } else if e.contextual {
                     1
                 } else {
                     10
                 };
-                return Some(c);
+                return Some(CommandMatch::new(e, score, None));
             }
             let mut best: Option<(u32, MatchRanges)> = fuzzy_match_label(q, &e.label);
             for kw in &e.keywords {
@@ -483,14 +520,12 @@ pub fn filter_command_entries<Id: Clone>(
                 }
             }
             best.map(|(score, ranges)| {
-                let mut c = e.clone();
-                c.score = score;
-                c.match_ranges = if ranges.as_slice().is_empty() {
+                let match_ranges = if ranges.as_slice().is_empty() {
                     None
                 } else {
                     Some(ranges)
                 };
-                c
+                CommandMatch::new(e, score, match_ranges)
             })
         })
         .collect();
@@ -778,7 +813,7 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
         self.generation
     }
 
-    fn entries_collection(visible: &[CommandEntry<Id>]) -> Vec<CollectionItem<usize>> {
+    fn entries_collection(visible: &[CommandMatch<'_, Id>]) -> Vec<CollectionItem<usize>> {
         visible
             .iter()
             .enumerate()
@@ -796,7 +831,7 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
     /// Call after filtering / async apply. `generation` must match
     /// [`Self::generation`] for async replies — otherwise the update is ignored
     /// (stale-result cancellation).
-    pub fn apply_results(&mut self, generation: u64, visible: &[CommandEntry<Id>]) -> bool {
+    pub fn apply_results(&mut self, generation: u64, visible: &[CommandMatch<'_, Id>]) -> bool {
         if generation != self.generation {
             return false;
         }
@@ -808,7 +843,7 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
     }
 
     /// Convenience: filter locally and apply (sync path).
-    pub fn refilter(&mut self, catalog: &[CommandEntry<Id>]) -> Vec<CommandEntry<Id>> {
+    pub fn refilter<'a>(&mut self, catalog: &'a [CommandEntry<Id>]) -> Vec<CommandMatch<'a, Id>> {
         let page = self.current_page().map(str::to_string);
         let visible = filter_command_entries(catalog, self.query_text(), page.as_deref());
         let generation = self.generation;
@@ -848,7 +883,7 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
 
     fn activate_at(
         &mut self,
-        visible: &[CommandEntry<Id>],
+        visible: &[CommandMatch<'_, Id>],
         idx: usize,
     ) -> CommandPaletteOutcome<Id> {
         let entry = match visible.get(idx) {
@@ -918,7 +953,7 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
     pub fn handle_key(
         &mut self,
         key: KeyEvent,
-        visible: &[CommandEntry<Id>],
+        visible: &[CommandMatch<'_, Id>],
     ) -> CommandPaletteOutcome<Id> {
         if !self.live() || key.is_release() {
             return CommandPaletteOutcome::Ignored;
@@ -1063,7 +1098,7 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
     pub fn handle_intent(
         &mut self,
         intent: UiIntent,
-        visible: &[CommandEntry<Id>],
+        visible: &[CommandMatch<'_, Id>],
     ) -> CommandPaletteOutcome<Id> {
         if !self.live() {
             return CommandPaletteOutcome::Ignored;
@@ -1143,7 +1178,7 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
     pub fn handle_mouse(
         &mut self,
         event: MouseEvent,
-        visible: &[CommandEntry<Id>],
+        visible: &[CommandMatch<'_, Id>],
     ) -> CommandPaletteOutcome<Id> {
         if !self.live() {
             return CommandPaletteOutcome::Ignored;
@@ -1214,7 +1249,7 @@ fn rect_contains(rect: Rect, pos: Position) -> bool {
 #[derive(Debug, Clone, Copy)]
 pub struct CommandPalette<'a, Id> {
     title: &'a str,
-    entries: &'a [CommandEntry<Id>],
+    entries: &'a [CommandMatch<'a, Id>],
     system: &'a DesignSystem,
     focused: bool,
     colorless: bool,
@@ -1258,7 +1293,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
     #[must_use]
     pub const fn new(
         title: &'a str,
-        entries: &'a [CommandEntry<Id>],
+        entries: &'a [CommandMatch<'a, Id>],
         system: &'a DesignSystem,
     ) -> Self {
         Self {
@@ -1329,7 +1364,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
     pub fn handle_key(
         state: &mut CommandPaletteState<Id>,
         key: KeyEvent,
-        entries: &[CommandEntry<Id>],
+        entries: &[CommandMatch<'_, Id>],
     ) -> CommandPaletteOutcome<Id>
     where
         Id: Clone + PartialEq,
@@ -1341,7 +1376,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
     pub fn handle_intent(
         state: &mut CommandPaletteState<Id>,
         intent: UiIntent,
-        entries: &[CommandEntry<Id>],
+        entries: &[CommandMatch<'_, Id>],
     ) -> CommandPaletteOutcome<Id>
     where
         Id: Clone + PartialEq,
@@ -1948,7 +1983,8 @@ mod tests {
     #[test]
     fn query_changed_bumps_generation() {
         let mut s = focused();
-        let vis = s.refilter(&catalog());
+        let cat = catalog();
+        let vis = s.refilter(&cat);
         let g0 = s.generation();
         let out = s.handle_key(KeyEvent::new(KeyCode::Char('t'), KeyModifiers::NONE), &vis);
         assert!(matches!(
@@ -2119,7 +2155,8 @@ mod tests {
     fn accepts_input_gate() {
         let mut s = focused();
         s.set_accepts_input(false);
-        let vis = filter_command_entries(&catalog(), "", None);
+        let cat = catalog();
+        let vis = filter_command_entries(&cat, "", None);
         assert!(matches!(
             s.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &vis),
             CommandPaletteOutcome::Ignored
@@ -2128,7 +2165,8 @@ mod tests {
 
     #[test]
     fn mouse_hit_activates_same_enabled_command_as_keyboard() {
-        let visible = vec![CommandEntry::new("run", "Run")];
+        let run = CommandEntry::new("run", "Run");
+        let visible = vec![CommandMatch::new(&run, 10, None)];
         let mut state = focused();
         state.hits = vec![(0, Rect::new(4, 3, 8, 1))];
         let out = state.handle_mouse(
@@ -2144,7 +2182,8 @@ mod tests {
             CommandPaletteOutcome::Activated { id: "run", .. }
         ));
 
-        let disabled = vec![CommandEntry::new("run", "Run").enabled(false)];
+        let dis = CommandEntry::new("run", "Run").enabled(false);
+        let disabled = vec![CommandMatch::new(&dis, 10, None)];
         assert_eq!(
             state.handle_mouse(
                 MouseEvent {
