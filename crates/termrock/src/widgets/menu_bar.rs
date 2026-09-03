@@ -847,6 +847,7 @@ impl MenuBarState {
             && key.modifiers.contains(KeyModifiers::CONTROL)
             && key.modifiers.contains(KeyModifiers::SHIFT)
             && !key.modifiers.contains(KeyModifiers::ALT)
+            && key.is_press()
         {
             let armed = !self.mnemonic_mode;
             self.mnemonic_mode = armed;
@@ -858,7 +859,7 @@ impl MenuBarState {
 
         // Alt+letter or armed mnemonic + letter → top menu.
         if let KeyCode::Char(ch) = key.code {
-            if (alt || self.mnemonic_mode) && !self.is_open() {
+            if key.is_press() && (alt || self.mnemonic_mode) && !self.is_open() {
                 if let Some(idx) = Self::match_mnemonic_top(menus, ch) {
                     return self.open_menu_at(menus, idx);
                 }
@@ -867,7 +868,7 @@ impl MenuBarState {
                     return MenuBarOutcome::Ignored;
                 }
             }
-            if self.is_open() && (self.mnemonic_mode || !alt) {
+            if key.is_press() && self.is_open() && (self.mnemonic_mode || !alt) {
                 // Letter mnemonic inside open panel (no Ctrl).
                 if !key.modifiers.contains(KeyModifiers::CONTROL) {
                     if let Some(items) = self.current_items(menus) {
@@ -884,10 +885,12 @@ impl MenuBarState {
 
         // Narrow chip: Enter / Space opens palette preference.
         if matches!(self.presentation, MenuBarPresentation::CommandPalette) && !self.is_open() {
-            if matches!(
-                key.code,
-                KeyCode::Enter | KeyCode::Char(' ') | KeyCode::Down
-            ) {
+            if key.is_press()
+                && matches!(
+                    key.code,
+                    KeyCode::Enter | KeyCode::Char(' ') | KeyCode::Down
+                )
+            {
                 return MenuBarOutcome::PreferCommandPalette;
             }
             if let Some(intent) = default_menu_bar_intent(key) {
@@ -1878,6 +1881,7 @@ pub fn example_app_menus() -> Vec<MenuBarMenu<&'static str>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::input::KeyEventKind;
     use crate::style::RolePalette;
     use ratatui_core::backend::TestBackend;
     use ratatui_core::terminal::Terminal;
@@ -2054,6 +2058,40 @@ mod tests {
             s.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &menus),
             MenuBarOutcome::PreferCommandPalette
         ));
+    }
+
+    #[test]
+    fn repeated_menu_actions_do_not_toggle_or_activate() {
+        let menus = menus();
+        let mut s = focused_state();
+
+        let mut repeat_toggle =
+            KeyEvent::new(KeyCode::Char('m'), KeyModifiers::CONTROL.with_shift());
+        repeat_toggle.kind = KeyEventKind::Repeat;
+        assert_eq!(s.handle_key(repeat_toggle, &menus), MenuBarOutcome::Ignored);
+        assert!(!s.mnemonic_mode);
+
+        s.set_presentation_override(Some(MenuBarPresentation::CommandPalette));
+        for code in [KeyCode::Enter, KeyCode::Char(' '), KeyCode::Down] {
+            let mut repeat = KeyEvent::new(code, KeyModifiers::NONE);
+            repeat.kind = KeyEventKind::Repeat;
+            assert_eq!(
+                s.handle_key(repeat, &menus),
+                MenuBarOutcome::Ignored,
+                "repeat of {code:?} must not open the command palette"
+            );
+        }
+
+        s.set_presentation_override(None);
+        let _ = s.set_mnemonic_mode(true);
+        let _ = s.open_menu_at(&menus, 0);
+        let mut repeat_mnemonic = KeyEvent::new(KeyCode::Char('n'), KeyModifiers::NONE);
+        repeat_mnemonic.kind = KeyEventKind::Repeat;
+        assert_eq!(
+            s.handle_key(repeat_mnemonic, &menus),
+            MenuBarOutcome::Ignored
+        );
+        assert!(s.is_open());
     }
 
     #[test]
