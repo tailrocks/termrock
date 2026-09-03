@@ -76562,7 +76562,6 @@ pub fn termrock::widgets::NumberInputState::insert_str(&mut self, &str) -> termr
 pub const fn termrock::widgets::NumberInputState::is_editing(&self) -> bool
 pub const fn termrock::widgets::NumberInputState::is_enabled(&self) -> bool
 pub const fn termrock::widgets::NumberInputState::is_focused(&self) -> bool
-pub const fn termrock::widgets::NumberInputState::is_read_only(&self) -> bool
 pub const fn termrock::widgets::NumberInputState::kind(&self) -> termrock::widgets::NumberKind
 pub fn termrock::widgets::NumberInputState::new() -> Self
 pub fn termrock::widgets::NumberInputState::page_by(&mut self, bool) -> termrock::widgets::NumberInputOutcome

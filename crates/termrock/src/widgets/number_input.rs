@@ -357,12 +357,6 @@ impl NumberInputState {
         self.enabled
     }
 
-    /// Read-only.
-    #[must_use]
-    pub const fn is_read_only(&self) -> bool {
-        self.read_only
-    }
-
     /// Editing draft (vs idle display of committed).
     #[must_use]
     pub const fn is_editing(&self) -> bool {
