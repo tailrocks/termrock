@@ -369,12 +369,7 @@ pub(crate) struct SliderChrome {
     pub(crate) thumb: ratatui_core::style::Style,
 }
 
-pub(crate) fn slider_chrome(
-    system: &DesignSystem,
-    _colorless: bool,
-    enabled: bool,
-    active: bool,
-) -> SliderChrome {
+pub(crate) fn slider_chrome(system: &DesignSystem, enabled: bool, active: bool) -> SliderChrome {
     let recipe = system.input_recipe(
         if !enabled {
             ControlState::Disabled
@@ -804,12 +799,7 @@ impl<'a> Slider<'a> {
     }
 
     fn chrome(&self, state: &SliderState) -> SliderChrome {
-        slider_chrome(
-            self.system,
-            self.colorless,
-            state.enabled,
-            state.focused || state.dragging,
-        )
+        slider_chrome(self.system, state.enabled, state.focused || state.dragging)
     }
 
     fn track_style(&self, state: &SliderState) -> ratatui_core::style::Style {
@@ -1409,12 +1399,7 @@ impl<'a> RangeSlider<'a> {
             // Same chrome answer as Slider: the thumb the operator is moving
             // carries the accent, the range between them is data
             // (plans/008 Step 4).
-            let chrome = slider_chrome(
-                self.system,
-                self.colorless,
-                state.enabled,
-                state.focused && active,
-            );
+            let chrome = slider_chrome(self.system, state.enabled, state.focused && active);
             let style = if is_start || is_end {
                 chrome.thumb
             } else if in_range {

@@ -833,7 +833,6 @@ impl<'a> Panel<'a> {
         &self,
         spec: PanelTitleSpec<'a>,
         collapsed: Option<bool>,
-        _budget: u16,
         title_style: Style,
     ) -> Line<'static> {
         let live_glyph = self
@@ -1164,16 +1163,10 @@ impl<'a> Panel<'a> {
             }
             let recipe = self.tokens.panel_recipe(emphasis, self.elevation());
             let slots = self.slots_for_width(area.width);
-            // Reserve right band for header actions so title does not collide.
-            let action_reserve = parts
-                .actions
-                .map(|a| a.width.saturating_add(1))
-                .unwrap_or(0);
-            let budget = area.width.saturating_sub(4).saturating_sub(action_reserve);
             let mut title_slots = slots;
             title_slots.trailing = None;
             let title = if let Some(spec) = self.title_spec {
-                Some(self.title_spec_line(spec, Some(collapsed), budget, recipe.title))
+                Some(self.title_spec_line(spec, Some(collapsed), recipe.title))
             } else if let Some(title) = self.title_line(title_slots, Some(collapsed)) {
                 Some(Line::from(Span::styled(format!(" {title} "), recipe.title)))
             } else {
@@ -1416,7 +1409,7 @@ fn paint_header_line(
         );
     }
     if let Some(spec) = panel.title_spec {
-        let line = panel.title_spec_line(spec, Some(collapsed), header.width, style);
+        let line = panel.title_spec_line(spec, Some(collapsed), style);
         let mut scratch = String::new();
         crate::text::paint_line_overflow(
             buffer,

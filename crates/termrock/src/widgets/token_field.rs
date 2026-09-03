@@ -676,7 +676,7 @@ impl TokenFieldState<String> {
         }
 
         match self.zone {
-            TokenFieldZone::Draft => self.handle_draft_key(key, ctrl, alt, shift),
+            TokenFieldZone::Draft => self.handle_draft_key(key, ctrl, shift),
             TokenFieldZone::Token { index, part } => {
                 self.handle_token_key(key, index, part, ctrl, shift)
             }
@@ -687,7 +687,6 @@ impl TokenFieldState<String> {
         &mut self,
         key: KeyEvent,
         ctrl: bool,
-        _alt: bool,
         shift: bool,
     ) -> TokenFieldOutcome<String> {
         // Left at start → last token

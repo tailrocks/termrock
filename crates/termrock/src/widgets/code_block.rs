@@ -42,11 +42,7 @@ use crate::text::{
 /// uses, or highlight against prepared text via [`prepare_code_display`].
 pub trait SyntaxHighlighter {
     /// Styles a single prepared source line. Return styled segments covering the line.
-    fn highlight_line<'line>(
-        &self,
-        line: &'line str,
-        line_index: usize,
-    ) -> Vec<(&'line str, Style)>;
+    fn highlight_line<'line>(&self, line: &'line str) -> Vec<(&'line str, Style)>;
 }
 
 /// Neutral highlighter — whole line as plain text role at paint time.
@@ -54,11 +50,7 @@ pub trait SyntaxHighlighter {
 pub struct PlainSyntax;
 
 impl SyntaxHighlighter for PlainSyntax {
-    fn highlight_line<'line>(
-        &self,
-        line: &'line str,
-        _line_index: usize,
-    ) -> Vec<(&'line str, Style)> {
+    fn highlight_line<'line>(&self, line: &'line str) -> Vec<(&'line str, Style)> {
         vec![(line, Style::default())]
     }
 }
@@ -133,11 +125,7 @@ impl CodeTokenKind {
 pub struct AnsiSyntax;
 
 impl SyntaxHighlighter for AnsiSyntax {
-    fn highlight_line<'line>(
-        &self,
-        line: &'line str,
-        _line_index: usize,
-    ) -> Vec<(&'line str, Style)> {
+    fn highlight_line<'line>(&self, line: &'line str) -> Vec<(&'line str, Style)> {
         // Detect ANSI but cannot re-borrow owned span content; paint plain.
         // Hosts that need SGR fidelity should expand via ansi_text before
         // CodeBlock or provide a custom highlighter with owned styles.
@@ -1406,11 +1394,11 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
             return;
         }
         // Highlight against full prepared line; paint only display_row segment styles.
-        let segments = self.highlighter.highlight_line(prepared_full, abs_line);
+        let segments = self.highlighter.highlight_line(prepared_full);
         let paint_segments = if display_row == prepared_full {
             segments
         } else {
-            self.highlighter.highlight_line(display_row, abs_line)
+            self.highlighter.highlight_line(display_row)
         };
         let unstyled = paint_segments.iter().all(|(_, s)| *s == Style::default());
         let fallback: Vec<(&str, Style)>;
@@ -2070,11 +2058,7 @@ impl<'a> RoleTokenSyntax<'a> {
 }
 
 impl SyntaxHighlighter for RoleTokenSyntax<'_> {
-    fn highlight_line<'line>(
-        &self,
-        line: &'line str,
-        _line_index: usize,
-    ) -> Vec<(&'line str, Style)> {
+    fn highlight_line<'line>(&self, line: &'line str) -> Vec<(&'line str, Style)> {
         self.tokens_for_line(line)
             .into_iter()
             .map(|(seg, kind)| (seg, self.system.junie_theme().syntax(kind.syntax_tone())))
@@ -2208,12 +2192,12 @@ mod tests {
         let system = DesignSystem::junie();
         let theme = system.junie_theme();
         let hi = RoleTokenSyntax::rust(&system);
-        let segs = hi.highlight_line("fn main() { let x = 1; // c", 0);
+        let segs = hi.highlight_line("fn main() { let x = 1; // c");
         let keyword = segs.iter().find(|(s, _)| *s == "fn").map(|(_, st)| *st);
         let ident = segs.iter().find(|(s, _)| *s == "main").map(|(_, st)| *st);
-        let stringish = hi.highlight_line("\"hi\"", 0);
-        let number = hi.highlight_line("42", 0);
-        let comment = hi.highlight_line("// x", 0);
+        let stringish = hi.highlight_line("\"hi\"");
+        let number = hi.highlight_line("42");
+        let comment = hi.highlight_line("// x");
         assert_eq!(keyword, Some(theme.syntax(SyntaxTone::Keyword)));
         assert_eq!(ident, Some(theme.syntax(SyntaxTone::Ident)));
         assert_eq!(stringish[0].1, theme.syntax(SyntaxTone::Str));

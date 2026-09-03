@@ -167,11 +167,7 @@ struct SampleSyntax<'a> {
 }
 
 impl SyntaxHighlighter for SampleSyntax<'_> {
-    fn highlight_line<'line>(
-        &self,
-        line: &'line str,
-        _line_index: usize,
-    ) -> Vec<(&'line str, Style)> {
+    fn highlight_line<'line>(&self, line: &'line str) -> Vec<(&'line str, Style)> {
         let theme = self.system.junie_theme();
         let spans = highlight(line);
         let mut out = Vec::new();

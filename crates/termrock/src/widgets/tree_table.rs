@@ -1193,7 +1193,7 @@ impl<'a, Id: Clone + Ord, ColId: Clone + PartialEq> TreeTable<'a, Id, ColId> {
         );
 
         if self.sticky_header && y < area.bottom() {
-            paint_header(self, area, y, buffer, state, surface_focused);
+            paint_header(self, area, y, buffer, state);
             y = y.saturating_add(1);
         }
 
@@ -1443,7 +1443,6 @@ fn paint_header<Id: Clone + Ord, ColId: Clone + PartialEq>(
     y: u16,
     buffer: &mut Buffer,
     state: &mut TreeTableState<Id, ColId>,
-    _surface_focused: bool,
 ) where
     ColId: Clone,
 {

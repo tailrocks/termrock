@@ -1038,11 +1038,7 @@ impl DependencyGraphState {
     }
 
     /// Mouse.
-    pub fn handle_mouse(
-        &mut self,
-        _nodes: &[DepNode<'_>],
-        event: MouseEvent,
-    ) -> DependencyGraphOutcome {
+    pub fn handle_mouse(&mut self, event: MouseEvent) -> DependencyGraphOutcome {
         if !self.accepts_input {
             return DependencyGraphOutcome::Ignored;
         }

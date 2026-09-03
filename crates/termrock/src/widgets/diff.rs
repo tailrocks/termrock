@@ -1170,7 +1170,7 @@ impl<'a> DiffView<'a> {
 
         let view = filter_diff_lines(self.lines, state.search.as_deref().unwrap_or(""), state);
         // Also fold hunk ranges by DiffHunk id when lines lack hunk_id
-        let view = apply_hunk_fold_fallback(view, self.lines, self.hunks, state);
+        let view = apply_hunk_fold_fallback(view, self.hunks, state);
 
         state.content_width = view
             .iter()
@@ -1337,7 +1337,6 @@ impl<'a> DiffView<'a> {
 
 fn apply_hunk_fold_fallback<'a>(
     view: Vec<&'a DiffLine<'a>>,
-    _all: &'a [DiffLine<'a>],
     hunks: &[DiffHunk],
     state: &DiffViewState,
 ) -> Vec<&'a DiffLine<'a>> {

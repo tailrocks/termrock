@@ -403,7 +403,7 @@ impl ViewportClass {
         if height > 0 && height <= policy.line_mode_max_height {
             stage = ContractionStage::LineMode;
         }
-        let anatomy = policy.refine_anatomy(AdaptiveAnatomy::from_stage(stage), stage);
+        let anatomy = policy.refine_anatomy(AdaptiveAnatomy::from_stage(stage));
         Self {
             width,
             height,
@@ -536,11 +536,7 @@ impl SurfaceResponsivePolicy {
 
     /// Surface-specific anatomy tweaks after baseline stage mapping.
     #[must_use]
-    pub const fn refine_anatomy(
-        self,
-        mut anatomy: AdaptiveAnatomy,
-        _stage: ContractionStage,
-    ) -> AdaptiveAnatomy {
+    pub const fn refine_anatomy(self, mut anatomy: AdaptiveAnatomy) -> AdaptiveAnatomy {
         anatomy.overflow = self.overflow;
         if !self.supports_multi_pane {
             anatomy.multi_pane = false;
@@ -1213,7 +1209,7 @@ impl ResponsiveRecipe {
             if height > 0 && height <= policy.line_mode_max_height {
                 stage = ContractionStage::LineMode;
             }
-            let anatomy = policy.refine_anatomy(AdaptiveAnatomy::from_stage(stage), stage);
+            let anatomy = policy.refine_anatomy(AdaptiveAnatomy::from_stage(stage));
             return ViewportClass {
                 width,
                 height,

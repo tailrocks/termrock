@@ -30,7 +30,7 @@ use std::collections::BTreeSet;
 use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::StatefulWidget};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers, MouseEvent},
+    input::{KeyCode, KeyEvent, KeyModifiers},
     style::{DesignSystem, Role},
     widgets::{
         BreadcrumbItem, EmptyKind, EmptyState, QuickOpenItem, QuickOpenPreview, SemanticStatus,
@@ -929,15 +929,6 @@ impl<Id: Clone + Ord + PartialEq> SchemaBrowserState<Id> {
         let nodes = schema_entries_to_tree_nodes(&visible);
         let out = self.tree.handle_key(&nodes, key);
         map_tree_outcome(out, entries, &mut self.expanded)
-    }
-
-    /// Mouse: Tree has no pointer API yet — host may select via hit regions after paint.
-    pub fn handle_mouse(
-        &mut self,
-        _entries: &[SchemaBrowserEntry<'_, Id>],
-        _event: MouseEvent,
-    ) -> SchemaBrowserOutcome<Id> {
-        SchemaBrowserOutcome::Ignored
     }
 }
 

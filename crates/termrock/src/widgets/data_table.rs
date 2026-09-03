@@ -1689,7 +1689,7 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
             if let Some(groups) = self.groups
                 && let Some(g) = groups.iter().find(|g| &g.id == id)
             {
-                paint_group_band(self, area, y, buffer, g, state);
+                paint_group_band(self, area, y, buffer, g);
                 y = y.saturating_add(1);
                 continue;
             }
@@ -1902,7 +1902,6 @@ fn paint_group_band<RowId: Clone + Ord, ColId: Clone + PartialEq>(
     y: u16,
     buffer: &mut Buffer,
     group: &GroupHeader<RowId>,
-    _state: &DataTableState<RowId, ColId>,
 ) {
     let mark = if group.expanded { "▾ " } else { "▸ " };
     let line = format!("{mark}{} ({})", group.label, group.count);

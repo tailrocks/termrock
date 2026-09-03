@@ -15,7 +15,7 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::StatefulWidget};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers, MouseEvent},
+    input::{KeyCode, KeyEvent, KeyModifiers},
     style::{DesignSystem, Role},
     text::take_display_cols,
     widgets::{
@@ -900,15 +900,6 @@ impl<Id: Clone + PartialEq> FileTreeState<Id> {
         let nodes = file_entries_to_tree_nodes(&view, false);
         let out = self.tree.handle_key(&nodes, key);
         map_tree_outcome(out, &view)
-    }
-
-    /// Mouse: no tree mouse API — host may call select via hit regions after paint.
-    pub fn handle_mouse(
-        &mut self,
-        _entries: &[FileTreeEntry<'_, Id>],
-        _event: MouseEvent,
-    ) -> FileTreeOutcome<Id> {
-        FileTreeOutcome::Ignored
     }
 }
 

@@ -829,7 +829,6 @@ fn format_label<Id>(
     on_cursor: bool,
     surface_focused: bool,
     variant: ToolbarVariant,
-    _glyphs: GlyphSet,
 ) -> String {
     let mut s = String::new();
     if let Some(icon) = item.icon {
@@ -1038,13 +1037,7 @@ fn paint_item<Id: Clone + PartialEq>(
     }
 
     let on_cursor = state.roving.active() == Some(&item.id);
-    let label = format_label(
-        item,
-        on_cursor,
-        state.surface_focused,
-        bar.variant,
-        bar.system.glyphs,
-    );
+    let label = format_label(item, on_cursor, state.surface_focused, bar.variant);
     let need = (display_cols(&label) as u16).min(slot.width).max(1);
     let rect = Rect {
         x: slot.x,

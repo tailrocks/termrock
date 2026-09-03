@@ -1412,14 +1412,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
             SurfaceRecipe::Overlay
         };
 
-        let title = if state.current_page_title().is_some() {
-            // "Commands › Page"
-            // Panel title is &'a str — use base title only; page drawn in body.
-            self.title
-        } else {
-            self.title
-        };
-        let _ = pt_title_marker(state, title);
+        let _ = pt_title_marker(state);
 
         let colorless_system;
         let surface_system = if self.colorless {
@@ -1869,10 +1862,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
     }
 }
 
-fn pt_title_marker<Id: Clone + PartialEq>(
-    state: &CommandPaletteState<Id>,
-    _title: &str,
-) -> Option<()> {
+fn pt_title_marker<Id: Clone + PartialEq>(state: &CommandPaletteState<Id>) -> Option<()> {
     state.current_page_title().map(|_| ())
 }
 

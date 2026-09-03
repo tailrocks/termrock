@@ -1301,25 +1301,25 @@ impl<'a, Id: Clone + PartialEq> RadioGroup<'a, Id> {
                 KeyCode::Down | KeyCode::Right | KeyCode::Char('j' | 'J') => {
                     let _ = state.collection.move_next(&items);
                     if state.collection.active() != before.as_ref() {
-                        return self.after_cursor_move(state, before);
+                        return self.after_cursor_move(state);
                     }
                 }
                 KeyCode::Up | KeyCode::Left | KeyCode::Char('k' | 'K') => {
                     let _ = state.collection.move_previous(&items);
                     if state.collection.active() != before.as_ref() {
-                        return self.after_cursor_move(state, before);
+                        return self.after_cursor_move(state);
                     }
                 }
                 KeyCode::Home => {
                     let _ = state.collection.move_first(&items);
                     if state.collection.active() != before.as_ref() {
-                        return self.after_cursor_move(state, before);
+                        return self.after_cursor_move(state);
                     }
                 }
                 KeyCode::End => {
                     let _ = state.collection.move_last(&items);
                     if state.collection.active() != before.as_ref() {
-                        return self.after_cursor_move(state, before);
+                        return self.after_cursor_move(state);
                     }
                 }
                 _ => {}
@@ -1330,16 +1330,12 @@ impl<'a, Id: Clone + PartialEq> RadioGroup<'a, Id> {
         let before = state.collection.active().cloned();
         let _ = state.collection.handle_key(key, &items);
         if state.collection.active() != before.as_ref() {
-            return self.after_cursor_move(state, before);
+            return self.after_cursor_move(state);
         }
         RadioOutcome::Ignored
     }
 
-    fn after_cursor_move(
-        &self,
-        state: &mut RadioState<Id>,
-        _before: Option<Id>,
-    ) -> RadioOutcome<Id> {
+    fn after_cursor_move(&self, state: &mut RadioState<Id>) -> RadioOutcome<Id> {
         let Some(id) = state.collection.active().cloned() else {
             return RadioOutcome::Ignored;
         };
@@ -1368,7 +1364,7 @@ impl<'a, Id: Clone + PartialEq> RadioGroup<'a, Id> {
                 let before = state.collection.active().cloned();
                 let _ = state.collection.handle_intent(other, &items);
                 if state.collection.active() != before.as_ref() {
-                    self.after_cursor_move(state, before)
+                    self.after_cursor_move(state)
                 } else {
                     RadioOutcome::Ignored
                 }

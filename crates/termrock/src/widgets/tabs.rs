@@ -1121,24 +1121,19 @@ impl<'a, Id> Tabs<'a, Id> {
     where
         Id: Clone + PartialEq,
     {
-        self.paint_scroll_window(area, buffer, state, true);
+        self.paint_scroll_window(area, buffer, state);
     }
 
     fn paint_scrolling(&self, area: Rect, buffer: &mut Buffer, state: &mut TabsState<Id>)
     where
         Id: Clone + PartialEq,
     {
-        self.paint_scroll_window(area, buffer, state, false);
+        self.paint_scroll_window(area, buffer, state);
     }
 
     /// junie overflow: `" ‹ "` / `" › "` around a visible window.
-    fn paint_scroll_window(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &mut TabsState<Id>,
-        _menu_on_right: bool,
-    ) where
+    fn paint_scroll_window(&self, area: Rect, buffer: &mut Buffer, state: &mut TabsState<Id>)
+    where
         Id: Clone + PartialEq,
     {
         let show_status = true;
