@@ -78268,7 +78268,6 @@ pub fn termrock::widgets::PathInputState::history(&self) -> impl core::iter::tra
 pub fn termrock::widgets::PathInputState::insert_str(&mut self, &str) -> termrock::widgets::PathInputOutcome
 pub const fn termrock::widgets::PathInputState::is_enabled(&self) -> bool
 pub const fn termrock::widgets::PathInputState::is_focused(&self) -> bool
-pub const fn termrock::widgets::PathInputState::is_read_only(&self) -> bool
 pub fn termrock::widgets::PathInputState::kind_mismatch(&self) -> bool
 pub fn termrock::widgets::PathInputState::lookup_request(&self) -> termrock::widgets::PathInputOutcome
 pub fn termrock::widgets::PathInputState::new() -> Self

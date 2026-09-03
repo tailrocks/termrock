@@ -496,12 +496,6 @@ impl PathInputState {
         self.enabled
     }
 
-    /// Read-only.
-    #[must_use]
-    pub const fn is_read_only(&self) -> bool {
-        self.read_only
-    }
-
     /// Parts.
     #[must_use]
     pub const fn parts(&self) -> Option<&PathInputParts> {
