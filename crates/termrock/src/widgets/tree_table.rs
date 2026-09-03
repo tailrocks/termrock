@@ -379,6 +379,9 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
 
     /// Reconcile selection after host reprojects rows.
     pub fn reconcile(&mut self, rows: &[TreeTableRow<'_, Id>]) {
+        // Row IDs alone do not capture branch, depth, or disclosure geometry.
+        // Require a fresh render before pointer input can use the projection.
+        self.row_regions.clear();
         for row in rows.iter().filter(|row| !selectable(row)) {
             self.selection.remove_row(&row.id);
         }
@@ -2088,6 +2091,39 @@ mod tests {
         assert!(matches!(out, TreeTableOutcome::Ignored));
         assert_eq!(state.selected(), Some(&101));
         assert_eq!(state.cursor_row, 1);
+    }
+
+    #[test]
+    fn reconcile_invalidates_disclosure_geometry_when_row_semantics_change() {
+        let system = DesignSystem::default();
+        let columns = cols();
+        let cells: &[&str] = &["row", "", ""];
+        let branch_rows = [TreeTableRow::new("r", 0, cells).branch()];
+        let leaf_rows = [TreeTableRow::new("r", 0, cells)];
+        let area = Rect::new(0, 0, 40, 6);
+        let mut state = TreeTableState::<&str, &str>::new(Some("r"));
+        state.set_logical_rows(10);
+        let table = TreeTable::new(&system, &columns, &branch_rows);
+        table.render(area, &mut Buffer::empty(area), &mut state);
+        let disclosure = state.row_regions[0]
+            .disclosure
+            .expect("branch has disclosure");
+
+        state.reconcile(&leaf_rows);
+
+        let out = state.handle_mouse(
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: Position {
+                    x: disclosure.x,
+                    y: disclosure.y,
+                },
+                modifiers: KeyModifiers::NONE,
+            },
+            &leaf_rows,
+            &columns,
+        );
+        assert!(matches!(out, TreeTableOutcome::Ignored));
     }
 
     #[test]
