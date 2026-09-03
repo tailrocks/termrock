@@ -30,6 +30,8 @@ pub struct DemoDescriptor {
     pub cols: u16,
     pub rows: u16,
     pub interactive: bool,
+    /// High-level interaction family used by the browser host.
+    pub interaction_kind: &'static str,
     pub hints: Vec<&'static str>,
 }
 
@@ -99,6 +101,8 @@ pub struct DemoUpdate {
     pub outcome: Option<String>,
     pub hints: Vec<&'static str>,
     pub interactive: bool,
+    /// Whether the current state accepts literal text and paste payloads.
+    pub captures_text_input: bool,
     pub next_deadline_ms: Option<u64>,
     pub deadline_kind: Option<&'static str>,
     pub semantic_revision: u64,
@@ -107,22 +111,38 @@ pub struct DemoUpdate {
 /// One truecolor cell for the browser host.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct FrameCell {
+    /// Grapheme cluster or terminal cell symbol.
     pub ch: String,
+    /// Truecolor foreground RGB.
     pub fg: [u8; 3],
+    /// Truecolor background RGB.
     pub bg: [u8; 3],
-    #[serde(default)]
+    /// Bold modifier.
     pub bold: bool,
+    /// Dim modifier.
+    pub dim: bool,
+    /// Underline modifier.
+    pub underline: bool,
+    /// Reverse-video modifier after terminal color resolution.
+    pub reversed: bool,
+    /// Italic modifier.
+    pub italic: bool,
+    /// Strikethrough modifier.
+    pub strike: bool,
 }
 
 /// Full terminal frame for a catalog page.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-#[serde(rename_all = "camelCase")]
 pub struct TerminalFrame {
     pub story_id: String,
     pub title: String,
     pub component: String,
     pub cols: u16,
     pub rows: u16,
+    /// Inner story columns. Catalog frames have no outer padding.
+    pub story_cols: u16,
+    /// Inner story rows. Catalog frames have no outer padding.
+    pub story_rows: u16,
     pub cells: Vec<FrameCell>,
     pub interactive: bool,
     pub theme: String,
@@ -146,8 +166,33 @@ fn descriptor(e: &NavEntry) -> DemoDescriptor {
         cols: 120,
         rows: 40,
         interactive: true,
+        interaction_kind: interaction_kind(e.id),
         hints: vec!["Tab", "Enter", "[", "]"],
     }
+}
+
+fn interaction_kind(page: PageId) -> &'static str {
+    match page {
+        PageId::INPUTS | PageId::TEXT_AREAS | PageId::FORMS | PageId::EDITOR => "editor-form",
+        PageId::PROGRESS | PageId::TASK_RUNNER => "timed-state",
+        PageId::DIALOGS | PageId::CHIPS | PageId::PICKERS | PageId::OVERLAYS => {
+            "disclosure-overlay"
+        }
+        PageId::TABLES
+        | PageId::EDITABLE
+        | PageId::LISTS
+        | PageId::TREES
+        | PageId::SETTINGS
+        | PageId::TABLEPRO => "selection-navigation",
+        _ => "activation",
+    }
+}
+
+fn captures_text_input(page: PageId) -> bool {
+    matches!(
+        page,
+        PageId::INPUTS | PageId::TEXT_AREAS | PageId::FORMS | PageId::EDITOR
+    )
 }
 
 /// One long-lived catalog page instance.
@@ -293,6 +338,7 @@ impl CatalogSession {
             outcome: None,
             hints: vec!["Tab", "Enter", "[", "]"],
             interactive: true,
+            captures_text_input: captures_text_input(self.page),
             next_deadline_ms: None,
             deadline_kind: Some("functional"),
             semantic_revision: self.semantic_revision,
@@ -321,6 +367,11 @@ impl CatalogSession {
                 fg: color_to_rgb(c.fg, true),
                 bg: color_to_rgb(c.bg, false),
                 bold: c.modifier.contains(ratatui::style::Modifier::BOLD),
+                dim: c.modifier.contains(ratatui::style::Modifier::DIM),
+                underline: c.modifier.contains(ratatui::style::Modifier::UNDERLINED),
+                reversed: c.modifier.contains(ratatui::style::Modifier::REVERSED),
+                italic: c.modifier.contains(ratatui::style::Modifier::ITALIC),
+                strike: c.modifier.contains(ratatui::style::Modifier::CROSSED_OUT),
             })
             .collect();
         let entry = nav_entries(CatalogProfile::TermRock)
@@ -334,6 +385,8 @@ impl CatalogSession {
             component: entry.map(|e| e.section.to_owned()).unwrap_or_default(),
             cols: snap.cols,
             rows: snap.rows,
+            story_cols: snap.cols,
+            story_rows: snap.rows,
             cells,
             interactive: true,
             theme: "junie".into(),
@@ -372,6 +425,9 @@ mod tests {
         assert!(c.iter().any(|d| d.id == "overview"));
         assert!(c.iter().any(|d| d.id == "tablepro"));
         assert!(c.iter().any(|d| d.title == "Buttons"));
+        let json = serde_json::to_value(&c[0]).expect("descriptor json");
+        assert!(json.get("interactionKind").is_some());
+        assert!(json.get("interaction_kind").is_none());
     }
 
     #[test]
@@ -388,5 +444,17 @@ mod tests {
         let update = s.dispatch(event).unwrap();
         assert!(update.changed);
         assert!(update.semantic_revision > 0);
+        let json = serde_json::to_value(s.frame()).expect("frame json");
+        assert!(json.get("story_cols").is_some());
+        assert!(json.get("story_rows").is_some());
+        assert!(json.get("storyCols").is_none());
+        assert!(json["cells"][0].get("underline").is_some());
+        assert!(json["cells"][0].get("strike").is_some());
+        assert!(
+            serde_json::to_value(update)
+                .expect("update json")
+                .get("capturesTextInput")
+                .is_some()
+        );
     }
 }

@@ -6,6 +6,7 @@
 //! Replay inventoried [`crate::scenarios::Scenario`] steps against the same
 //! `App` the interactive binaries mount.
 
+#[cfg(feature = "native")]
 use std::path::Path;
 use std::time::Duration;
 

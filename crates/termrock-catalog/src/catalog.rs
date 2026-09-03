@@ -74,8 +74,9 @@ pub struct NavEntry {
     pub section: &'static str,
 }
 
-/// Source-defined navigation prefix. Do not reorder.
-pub const SOURCE_NAV: &[NavEntry] = &[
+/// Canonical navigation storage. Keep the source-defined prefix first and do
+/// not reorder it; TermRock extensions follow it.
+pub static CATALOG_NAV: [NavEntry; 25] = [
     NavEntry {
         id: PageId::OVERVIEW,
         label: "Overview",
@@ -176,10 +177,6 @@ pub const SOURCE_NAV: &[NavEntry] = &[
         label: "Task runner",
         section: "Screens",
     },
-];
-
-/// TermRock extensions after the frozen source prefix.
-pub const TERMROCK_NAV: &[NavEntry] = &[
     NavEntry {
         id: PageId::FEEDBACK,
         label: "Feedback",
@@ -207,6 +204,14 @@ pub const TERMROCK_NAV: &[NavEntry] = &[
     },
 ];
 
+/// Source-defined navigation prefix. Do not reorder.
+const CATALOG_NAV_PARTS: (&[NavEntry], &[NavEntry]) = CATALOG_NAV.split_at(20);
+
+pub const SOURCE_NAV: &[NavEntry] = CATALOG_NAV_PARTS.0;
+
+/// TermRock extensions after the frozen source prefix.
+pub const TERMROCK_NAV: &[NavEntry] = CATALOG_NAV_PARTS.1;
+
 /// Navigation for a profile. Junie-reference hides TermRock-only entries.
 #[must_use]
 pub fn nav_entries(profile: CatalogProfile) -> &'static [NavEntry] {
@@ -217,40 +222,7 @@ pub fn nav_entries(profile: CatalogProfile) -> &'static [NavEntry] {
 }
 
 /// Source prefix plus TermRock extensions (contiguous static storage).
-pub static TERMROCK_NAV_FULL: &[NavEntry] = &{
-    // Built at runtime via concat in nav_for — static merge:
-    // we expose a function that returns a Vec for TermRock, but tests need
-    // a slice. Use a lazy once... actually we can just concatenate in a const
-    // by listing them. Keep SOURCE then TERMROCK listed once more here.
-    // The compiler cannot concat slices in stable const easily; list both.
-    [
-        SOURCE_NAV[0],
-        SOURCE_NAV[1],
-        SOURCE_NAV[2],
-        SOURCE_NAV[3],
-        SOURCE_NAV[4],
-        SOURCE_NAV[5],
-        SOURCE_NAV[6],
-        SOURCE_NAV[7],
-        SOURCE_NAV[8],
-        SOURCE_NAV[9],
-        SOURCE_NAV[10],
-        SOURCE_NAV[11],
-        SOURCE_NAV[12],
-        SOURCE_NAV[13],
-        SOURCE_NAV[14],
-        SOURCE_NAV[15],
-        SOURCE_NAV[16],
-        SOURCE_NAV[17],
-        SOURCE_NAV[18],
-        SOURCE_NAV[19],
-        TERMROCK_NAV[0],
-        TERMROCK_NAV[1],
-        TERMROCK_NAV[2],
-        TERMROCK_NAV[3],
-        TERMROCK_NAV[4],
-    ]
-};
+pub static TERMROCK_NAV_FULL: &[NavEntry] = &CATALOG_NAV;
 
 impl PageId {
     /// Index in the active navigation, or 0.
