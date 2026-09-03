@@ -741,6 +741,9 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
             .map(|(i, _)| i)
             .collect();
         if enabled.is_empty() {
+            if self.window.scroll_by(delta) {
+                return TreeTableOutcome::Scrolled;
+            }
             return TreeTableOutcome::Ignored;
         }
         let next_pos = match enabled.binary_search(&self.cursor_row) {
@@ -1899,6 +1902,27 @@ mod tests {
         assert_eq!(state.window.offset, 11);
         assert_eq!(state.selected(), Some(&"off-window"));
         assert_eq!(state.cursor_row, 1);
+    }
+
+    #[test]
+    fn movement_scrolls_virtual_window_when_projection_has_no_selectable_rows() {
+        let group_cells: &[&str] = &["group", "", ""];
+        let rows = [
+            TreeTableRow::new("group-a", 0, group_cells).group(),
+            TreeTableRow::new("group-b", 0, group_cells).group(),
+        ];
+        let columns = cols();
+        let mut state = TreeTableState::<&str, &str>::new(Some("off-window"));
+        state.set_logical_rows(100);
+        state.window.viewport = 2;
+        state.window.offset = 10;
+
+        let out = state.handle_intent(&rows, &columns, UiIntent::Move(NavigationMove::Down));
+
+        assert!(matches!(out, TreeTableOutcome::Scrolled));
+        assert_eq!(state.window.offset, 11);
+        assert_eq!(state.selected(), Some(&"off-window"));
+        assert_eq!(state.cursor_row, 0);
     }
 
     #[test]
