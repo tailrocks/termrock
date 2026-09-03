@@ -133,6 +133,8 @@ pub struct Presence {
     visible_ttl: Option<Duration>,
     /// Exit phase duration (`Duration::ZERO` = instant hide).
     exit_duration: Duration,
+    /// When timed progression was paused, if any.
+    paused_since: Option<Instant>,
 }
 
 impl Default for Presence {
@@ -150,6 +152,7 @@ impl Presence {
             show_delay: Duration::ZERO,
             visible_ttl: None,
             exit_duration: Duration::ZERO,
+            paused_since: None,
         }
     }
 
@@ -161,6 +164,7 @@ impl Presence {
             show_delay: delay,
             visible_ttl: None,
             exit_duration: Duration::ZERO,
+            paused_since: None,
         }
     }
 
@@ -172,6 +176,7 @@ impl Presence {
             show_delay: Duration::ZERO,
             visible_ttl: Some(ttl),
             exit_duration: Duration::ZERO,
+            paused_since: None,
         }
     }
 
@@ -218,7 +223,8 @@ impl Presence {
         if span.is_zero() {
             return 1.0;
         }
-        let elapsed = tick.now().saturating_duration_since(since);
+        let now = self.paused_since.unwrap_or(tick.now());
+        let elapsed = now.saturating_duration_since(since);
         (elapsed.as_secs_f32() / span.as_secs_f32()).clamp(0.0, 1.0)
     }
 
@@ -259,6 +265,9 @@ impl Presence {
         } else {
             self.phase = PresencePhase::Pending { since: tick.now() };
         }
+        if self.paused_since.is_some() {
+            self.paused_since = Some(tick.now());
+        }
     }
 
     /// Request hide (instant or Exiting).
@@ -269,18 +278,60 @@ impl Presence {
         // Exits are transitions, not spinners: `Basic` still fades.
         if self.exit_duration.is_zero() || !motion.allows_transitions() {
             self.phase = PresencePhase::Hidden;
+            self.paused_since = None;
         } else {
             self.phase = PresencePhase::Exiting { since: tick.now() };
+            if self.paused_since.is_some() {
+                self.paused_since = Some(tick.now());
+            }
         }
     }
 
     /// Hard clear (no exit phase).
     pub const fn force_hide(&mut self) {
         self.phase = PresencePhase::Hidden;
+        self.paused_since = None;
+    }
+
+    /// Pause timed progression at this frame.
+    ///
+    /// The timestamp is required so resuming can extend every timed phase by
+    /// the exact time spent paused. Pending show and exit phases use the same
+    /// origin shift as visible TTLs.
+    pub fn set_paused(&mut self, tick: FrameTick, on: bool) {
+        match (self.paused_since, on) {
+            (None, true) => self.paused_since = Some(tick.now()),
+            (Some(paused_since), false) => {
+                let paused_for = tick.now().saturating_duration_since(paused_since);
+                self.phase = match self.phase {
+                    PresencePhase::Hidden => PresencePhase::Hidden,
+                    PresencePhase::Pending { since } => PresencePhase::Pending {
+                        since: since.checked_add(paused_for).unwrap_or(since),
+                    },
+                    PresencePhase::Visible { since } => PresencePhase::Visible {
+                        since: since.checked_add(paused_for).unwrap_or(since),
+                    },
+                    PresencePhase::Exiting { since } => PresencePhase::Exiting {
+                        since: since.checked_add(paused_for).unwrap_or(since),
+                    },
+                };
+                self.paused_since = None;
+            }
+            (Some(_), true) | (None, false) => {}
+        }
+    }
+
+    /// Whether timed progression is paused.
+    #[must_use]
+    pub const fn is_paused(self) -> bool {
+        self.paused_since.is_some()
     }
 
     /// Advance phase from frame time; returns whether visibility changed.
     pub fn advance(&mut self, tick: FrameTick, motion: MotionPolicy) -> PresenceChange {
+        if self.is_paused() {
+            return PresenceChange::None;
+        }
         let before = self.is_visible();
         match self.phase {
             PresencePhase::Hidden => {}
@@ -315,6 +366,9 @@ impl Presence {
     /// Next deadline for pending / TTL / exit (for host poll).
     #[must_use]
     pub fn next_deadline(self) -> Option<Instant> {
+        if self.is_paused() {
+            return None;
+        }
         match self.phase {
             PresencePhase::Hidden => None,
             PresencePhase::Pending { since } => since.checked_add(self.show_delay),
@@ -417,6 +471,39 @@ mod tests {
         let change = p.advance(tick_at(&mut clock, start, 2000), MotionPolicy::Full);
         assert_eq!(change, PresenceChange::BecameHidden);
         assert!(!p.is_focusable());
+    }
+
+    #[test]
+    fn presence_pause_shifts_timed_phase_origin() {
+        let start = Instant::now();
+        let mut p = Presence::toast(Duration::from_secs(2));
+        p.request_show(FrameTick::manual(start, Duration::ZERO, Duration::ZERO));
+        p.set_paused(
+            FrameTick::manual(
+                start + Duration::from_secs(1),
+                Duration::from_secs(1),
+                Duration::from_secs(1),
+            ),
+            true,
+        );
+        assert!(p.is_paused());
+        assert_eq!(p.next_deadline(), None);
+        p.set_paused(
+            FrameTick::manual(
+                start + Duration::from_secs(10),
+                Duration::from_secs(10),
+                Duration::from_secs(9),
+            ),
+            false,
+        );
+        assert!(!p.is_paused());
+        assert_eq!(
+            p.phase(),
+            PresencePhase::Visible {
+                since: start + Duration::from_secs(9)
+            }
+        );
+        assert_eq!(p.next_deadline(), Some(start + Duration::from_secs(11)));
     }
 
     #[test]

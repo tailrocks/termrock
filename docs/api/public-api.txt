@@ -28556,6 +28556,7 @@ pub const fn termrock::runtime::Presence::exit_duration(self) -> core::time::Dur
 pub const fn termrock::runtime::Presence::force_hide(&mut self)
 pub const fn termrock::runtime::Presence::immediate() -> Self
 pub const fn termrock::runtime::Presence::is_focusable(self) -> bool
+pub const fn termrock::runtime::Presence::is_paused(self) -> bool
 pub const fn termrock::runtime::Presence::is_visible(self) -> bool
 pub fn termrock::runtime::Presence::next_deadline(self) -> core::option::Option<std::time::Instant>
 pub const fn termrock::runtime::Presence::persistent() -> Self
@@ -28563,6 +28564,7 @@ pub const fn termrock::runtime::Presence::phase(self) -> termrock::runtime::Pres
 pub fn termrock::runtime::Presence::phase_fraction(self, termrock::runtime::FrameTick) -> f32
 pub fn termrock::runtime::Presence::request_hide(&mut self, termrock::runtime::FrameTick, termrock::style::MotionPolicy)
 pub fn termrock::runtime::Presence::request_show(&mut self, termrock::runtime::FrameTick)
+pub fn termrock::runtime::Presence::set_paused(&mut self, termrock::runtime::FrameTick, bool)
 pub const fn termrock::runtime::Presence::toast(core::time::Duration) -> Self
 pub const fn termrock::runtime::Presence::tooltip(core::time::Duration) -> Self
 pub const fn termrock::runtime::Presence::with_exit(self, core::time::Duration) -> Self
@@ -31173,6 +31175,7 @@ pub const fn termrock::style::DesignSystem::palette(&self) -> &termrock::style::
 pub fn termrock::style::DesignSystem::panel_recipe(&self, termrock::style::PanelChrome, termrock::style::Elevation) -> termrock::style::PanelRecipe
 pub fn termrock::style::DesignSystem::quantize(self, termrock::style::ColorCapability) -> Self
 pub fn termrock::style::DesignSystem::resolve_list_row(&self, termrock::style::ListRowVisualState) -> termrock::style::ListRowRecipe
+pub fn termrock::style::DesignSystem::resolve_list_row_on(&self, termrock::style::ListRowVisualState, ratatui_core::style::color::Color) -> termrock::style::ListRowRecipe
 pub fn termrock::style::DesignSystem::reversed(&self) -> ratatui_core::style::Style
 pub fn termrock::style::DesignSystem::row(&self, termrock::style::VisualState, ratatui_core::style::color::Color) -> ratatui_core::style::Style
 pub fn termrock::style::DesignSystem::scrollbar_thumb(&self, bool, bool) -> ratatui_core::style::Style
@@ -88560,10 +88563,10 @@ pub fn termrock::widgets::ToastQueue::next_deadline(&self) -> core::option::Opti
 pub fn termrock::widgets::ToastQueue::push(&mut self, termrock::runtime::FrameTick, termrock::widgets::ToastSpec) -> termrock::widgets::ToastOutcome
 pub fn termrock::widgets::ToastQueue::region_at(&self, u16, u16) -> core::option::Option<&str>
 pub fn termrock::widgets::ToastQueue::set_anchor(&mut self, termrock::widgets::Anchor)
-pub fn termrock::widgets::ToastQueue::set_focus_paused(&mut self, bool) -> termrock::widgets::ToastOutcome
+pub fn termrock::widgets::ToastQueue::set_focus_paused(&mut self, termrock::runtime::FrameTick, bool) -> termrock::widgets::ToastOutcome
 pub fn termrock::widgets::ToastQueue::set_margins(&mut self, u16, u16)
 pub fn termrock::widgets::ToastQueue::set_max_visible(&mut self, usize)
-pub fn termrock::widgets::ToastQueue::set_paused(&mut self, bool) -> termrock::widgets::ToastOutcome
+pub fn termrock::widgets::ToastQueue::set_paused(&mut self, termrock::runtime::FrameTick, bool) -> termrock::widgets::ToastOutcome
 impl core::clone::Clone for termrock::widgets::ToastQueue
 pub fn termrock::widgets::ToastQueue::clone(&self) -> termrock::widgets::ToastQueue
 impl core::cmp::Eq for termrock::widgets::ToastQueue
@@ -88724,7 +88727,7 @@ pub fn termrock::widgets::ToastState::is_visible(&self, termrock::runtime::Frame
 pub const fn termrock::widgets::ToastState::lifetime(self) -> termrock::widgets::ToastLifetime
 pub const fn termrock::widgets::ToastState::new(termrock::widgets::ToastLifetime) -> Self
 pub fn termrock::widgets::ToastState::next_deadline(&self) -> core::option::Option<std::time::Instant>
-pub fn termrock::widgets::ToastState::set_paused(&mut self, bool)
+pub fn termrock::widgets::ToastState::set_paused(&mut self, termrock::runtime::FrameTick, bool)
 pub fn termrock::widgets::ToastState::show(&mut self, termrock::runtime::FrameTick)
 pub const fn termrock::widgets::ToastState::shown_at(self) -> core::option::Option<std::time::Instant>
 impl core::clone::Clone for termrock::widgets::ToastState
@@ -90639,9 +90642,11 @@ pub fn termrock::widgets::TransientStatus<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::TransientStatus<'a>
 pub struct termrock::widgets::Tree<'a, Id>
 impl<'a, Id> termrock::widgets::Tree<'a, Id>
+pub const fn termrock::widgets::Tree<'a, Id>::background(self, ratatui_core::style::color::Color) -> Self
 pub const fn termrock::widgets::Tree<'a, Id>::empty_message(self, &'a str) -> Self
 pub const fn termrock::widgets::Tree<'a, Id>::focused(self, bool) -> Self
 pub const fn termrock::widgets::Tree<'a, Id>::new(&'a [termrock::widgets::TreeNode<'a, Id>], &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::Tree<'a, Id>::selection_visible(self, bool) -> Self
 pub const fn termrock::widgets::Tree<'a, Id>::spinner_frame(self, usize) -> Self
 pub const fn termrock::widgets::Tree<'a, Id>::tokens(&self) -> &termrock::style::DesignSystem
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::Tree<'a, Id>

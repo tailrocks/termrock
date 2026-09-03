@@ -324,8 +324,6 @@ pub enum ToastOutcome {
 pub struct ToastState {
     presence: Presence,
     lifetime: ToastLifetime,
-    /// Timeout pause (host focus lost).
-    paused: bool,
 }
 
 impl Default for ToastState {
@@ -341,11 +339,7 @@ impl ToastState {
             ToastLifetime::Persistent => Presence::persistent(),
             ToastLifetime::ExpiresAfter(ttl) => Presence::toast(ttl),
         };
-        Self {
-            presence,
-            lifetime,
-            paused: false,
-        }
+        Self { presence, lifetime }
     }
 
     /// Lifetime policy.
@@ -362,25 +356,21 @@ impl ToastState {
     /// Hides the toast immediately.
     pub const fn dismiss(&mut self) {
         self.presence.force_hide();
-        self.paused = false;
     }
 
     /// Pause TTL (e.g. terminal focus lost).
-    pub fn set_paused(&mut self, on: bool) {
-        self.paused = on;
+    pub fn set_paused(&mut self, tick: FrameTick, on: bool) {
+        self.presence.set_paused(tick, on);
     }
 
     /// Paused?
     #[must_use]
     pub const fn is_paused(self) -> bool {
-        self.paused
+        self.presence.is_paused()
     }
 
     /// Advance TTL (call once per frame when shown). No-op while paused.
     pub fn advance(&mut self, tick: FrameTick, motion: MotionPolicy) {
-        if self.paused {
-            return;
-        }
         let _ = self.presence.advance(tick, motion);
     }
 
@@ -395,9 +385,6 @@ impl ToastState {
 
     /// Returns whether the toast is visible at this frame.
     pub fn is_visible(&self, tick: FrameTick, motion: MotionPolicy) -> bool {
-        if self.paused {
-            return self.presence.is_visible();
-        }
         let mut copy = *self;
         copy.advance(tick, motion);
         copy.presence.is_visible()
@@ -405,9 +392,6 @@ impl ToastState {
 
     /// Returns the expiration deadline, or `None` when hidden or persistent.
     pub fn next_deadline(&self) -> Option<Instant> {
-        if self.paused {
-            return None;
-        }
         self.presence.next_deadline()
     }
 
@@ -721,13 +705,13 @@ impl ToastQueue {
     }
 
     /// Pause all TTL clocks (terminal focus lost).
-    pub fn set_paused(&mut self, on: bool) -> ToastOutcome {
+    pub fn set_paused(&mut self, tick: FrameTick, on: bool) -> ToastOutcome {
         if self.paused == on {
             return ToastOutcome::Ignored;
         }
         self.paused = on;
         for t in &mut self.live {
-            t.state.set_paused(on);
+            t.state.set_paused(tick, on);
         }
         if on {
             ToastOutcome::Paused
@@ -795,7 +779,7 @@ impl ToastQueue {
     fn insert_live(&mut self, tick: FrameTick, spec: ToastSpec) {
         let mut state = ToastState::new(spec.lifetime);
         state.show(tick);
-        state.set_paused(self.paused);
+        state.set_paused(tick, self.paused);
         let announcement = spec.announcement.unwrap_or_else(|| spec.message.clone());
         self.live.push_front(LiveToast {
             id: spec.id,
@@ -869,8 +853,8 @@ impl ToastQueue {
     /// Pauses or resumes every live toast's TTL.
     ///
     /// Hosts wire this to terminal focus (`FocusGained` / `FocusLost`).
-    pub fn set_focus_paused(&mut self, paused: bool) -> ToastOutcome {
-        self.set_paused(paused)
+    pub fn set_focus_paused(&mut self, tick: FrameTick, paused: bool) -> ToastOutcome {
+        self.set_paused(tick, paused)
     }
 
     /// Activate undo / action for matching id (host maps hotkey).
@@ -1603,7 +1587,10 @@ mod tests {
             ToastOutcome::Replaced { .. }
         ));
         assert_eq!(q.len(), 1);
-        assert!(matches!(q.set_paused(true), ToastOutcome::Paused));
+        assert!(matches!(
+            q.set_paused(tick(start, Duration::ZERO), true),
+            ToastOutcome::Paused
+        ));
         assert!(q.is_paused());
         assert!(
             q.advance(tick(start, Duration::from_secs(9)), MotionPolicy::Off)
@@ -1754,14 +1741,72 @@ mod tests {
     }
 
     #[test]
-    fn pause_freezes_ttl() {
+    fn pause_freezes_ttl_and_shifts_deadline() {
         let start = Instant::now();
         let mut state = ToastState::new(ToastLifetime::ExpiresAfter(Duration::from_secs(2)));
         state.show(tick(start, Duration::ZERO));
-        state.set_paused(true);
+        state.set_paused(tick(start, Duration::from_secs(1)), true);
+        assert!(state.is_paused());
+        assert!(state.next_deadline().is_none());
         assert!(state.is_visible(tick(start, Duration::from_secs(10)), MotionPolicy::Off));
-        state.set_paused(false);
-        assert!(!state.is_visible(tick(start, Duration::from_secs(10)), MotionPolicy::Off));
+
+        state.set_paused(tick(start, Duration::from_secs(10)), false);
+        assert!(!state.is_paused());
+        assert_eq!(state.shown_at(), start.checked_add(Duration::from_secs(9)));
+        assert_eq!(
+            state.next_deadline(),
+            start.checked_add(Duration::from_secs(11))
+        );
+        assert!(state.is_visible(tick(start, Duration::from_secs(10)), MotionPolicy::Off));
+        state.advance(tick(start, Duration::from_secs(11)), MotionPolicy::Off);
+        assert!(!state.is_visible(tick(start, Duration::from_secs(11)), MotionPolicy::Off));
+    }
+
+    #[test]
+    fn queue_pause_freezes_existing_and_new_toasts() {
+        let start = Instant::now();
+        let lifetime = ToastLifetime::ExpiresAfter(Duration::from_secs(2));
+        let mut q = ToastQueue::new();
+        let _ = q.push(
+            tick(start, Duration::ZERO),
+            ToastSpec::message("old", "old").lifetime(lifetime),
+        );
+        assert!(matches!(
+            q.set_paused(tick(start, Duration::from_secs(1)), true),
+            ToastOutcome::Paused
+        ));
+        let _ = q.push(
+            tick(start, Duration::from_secs(9)),
+            ToastSpec::message("new", "new").lifetime(lifetime),
+        );
+
+        assert!(q.next_deadline().is_none());
+        assert!(
+            q.advance(tick(start, Duration::from_secs(10)), MotionPolicy::Off)
+                .is_empty()
+        );
+        assert!(matches!(
+            q.set_paused(tick(start, Duration::from_secs(10)), false),
+            ToastOutcome::Resumed
+        ));
+        assert_eq!(
+            q.next_deadline(),
+            start.checked_add(Duration::from_secs(11))
+        );
+        let old_expired = q.advance(tick(start, Duration::from_secs(11)), MotionPolicy::Off);
+        assert!(
+            old_expired
+                .iter()
+                .any(|out| matches!(out, ToastOutcome::Expired { id } if id == "old"))
+        );
+        assert_eq!(q.len(), 1);
+        let new_expired = q.advance(tick(start, Duration::from_secs(12)), MotionPolicy::Off);
+        assert!(
+            new_expired
+                .iter()
+                .any(|out| matches!(out, ToastOutcome::Expired { id } if id == "new"))
+        );
+        assert!(q.is_empty());
     }
 
     #[test]
@@ -1795,7 +1840,7 @@ mod tests {
                     );
                 }
                 2 => {
-                    let _ = q.set_paused(seed % 2 == 0);
+                    let _ = q.set_paused(t, seed % 2 == 0);
                 }
                 3 => {
                     let _ = q.advance(t, MotionPolicy::Off);
