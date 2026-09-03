@@ -372,6 +372,11 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
         let is_press = key.kind == KeyEventKind::Press;
 
         if self.editing {
+            if visible_rows.is_empty() {
+                self.editing = false;
+                self.edit_draft.clear();
+                return DataTableOutcome::EditCancelled;
+            }
             return self.handle_edit_key(key, visible_rows, columns);
         }
 
@@ -508,6 +513,7 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
             KeyCode::Enter => {
                 let Some(col) = self.cursor_column_id(columns) else {
                     self.editing = false;
+                    self.edit_draft.clear();
                     return DataTableOutcome::EditCancelled;
                 };
                 let text = std::mem::take(&mut self.edit_draft);
@@ -2428,6 +2434,38 @@ mod tests {
             &cols,
         );
         assert!(matches!(out, DataTableOutcome::EditCancelled));
+    }
+
+    #[test]
+    fn edit_mode_cancels_when_projection_loses_rows_or_columns() {
+        let cols = ColumnModel::new(vec![
+            DataColumn::new("a", "A", DataColumnWidth::Min(4)).editable(),
+        ]);
+        let mut state = DataTableState::<u64, &str>::new();
+        state.editing = true;
+        state.edit_draft = "stale".into();
+
+        let out = state.handle_key(
+            KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE),
+            &[],
+            &cols,
+        );
+        assert!(matches!(out, DataTableOutcome::EditCancelled));
+        assert!(!state.editing);
+        assert!(state.edit_draft.is_empty());
+
+        let empty_columns = ColumnModel::<&str>::new(Vec::new());
+        state.editing = true;
+        state.edit_draft = "stale".into();
+        let rows = [1u64];
+        let out = state.handle_key(
+            KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
+            &rows,
+            &empty_columns,
+        );
+        assert!(matches!(out, DataTableOutcome::EditCancelled));
+        assert!(!state.editing);
+        assert!(state.edit_draft.is_empty());
     }
 
     #[test]
