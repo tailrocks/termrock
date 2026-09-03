@@ -746,6 +746,9 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
         let next_pos = match enabled.binary_search(&self.cursor_row) {
             Ok(cur_pos) if delta >= 0 => (cur_pos + delta as usize).min(enabled.len() - 1),
             Ok(cur_pos) => cur_pos.saturating_sub((-delta) as usize),
+            Err(insertion) if delta >= 0 && insertion == enabled.len() => {
+                return TreeTableOutcome::Ignored;
+            }
             Err(insertion) if delta >= 0 => insertion
                 .saturating_add((delta as usize).saturating_sub(1))
                 .min(enabled.len() - 1),
@@ -1815,6 +1818,26 @@ mod tests {
         assert!(matches!(out, TreeTableOutcome::Ignored));
         assert_eq!(state.selected(), Some(&"off-window"));
         assert_eq!(state.cursor_row, 0);
+    }
+
+    #[test]
+    fn move_down_from_trailing_nonselectable_row_is_inert() {
+        let first_cells: &[&str] = &["first", "", ""];
+        let group_cells: &[&str] = &["group", "", ""];
+        let rows = [
+            TreeTableRow::new("first", 0, first_cells),
+            TreeTableRow::new("group", 0, group_cells).group(),
+        ];
+        let columns = cols();
+        let mut state = TreeTableState::<&str, &str>::new(Some("off-window"));
+        state.set_logical_rows(100);
+        state.cursor_row = 1;
+
+        let out = state.handle_intent(&rows, &columns, UiIntent::Move(NavigationMove::Down));
+
+        assert!(matches!(out, TreeTableOutcome::Ignored));
+        assert_eq!(state.selected(), Some(&"off-window"));
+        assert_eq!(state.cursor_row, 1);
     }
 
     #[test]
