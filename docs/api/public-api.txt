@@ -11220,7 +11220,6 @@ pub termrock::patterns::ConnectionKind::Database
 pub termrock::patterns::ConnectionKind::Service
 pub termrock::patterns::ConnectionKind::Ssh
 impl termrock::patterns::ConnectionKind
-pub const fn termrock::patterns::ConnectionKind::glyph(self, bool) -> &'static str
 pub const fn termrock::patterns::ConnectionKind::id(self) -> &'static str
 pub const fn termrock::patterns::ConnectionKind::label(self) -> &'static str
 impl core::clone::Clone for termrock::patterns::ConnectionKind
