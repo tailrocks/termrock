@@ -1172,6 +1172,10 @@ mod tests {
             PasswordInputOutcome::RevealChanged { revealed: true }
         );
         assert!(state.is_revealed());
+        let mut repeat = KeyEvent::new(KeyCode::Char('h'), KeyModifiers::ALT);
+        repeat.kind = KeyEventKind::Repeat;
+        assert_eq!(state.handle_key(repeat), PasswordInputOutcome::Ignored);
+        assert!(state.is_revealed());
         let mut release = KeyEvent::new(KeyCode::Char('h'), KeyModifiers::ALT);
         release.kind = KeyEventKind::Release;
         assert_eq!(

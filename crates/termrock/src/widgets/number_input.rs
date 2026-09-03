@@ -1336,6 +1336,7 @@ mod tests {
     fn repeated_lifecycle_and_clipboard_actions_are_ignored() {
         let mut state = NumberInputState::new().with_value(7.0);
         state.set_focused(true);
+        state.begin_edit();
         let actions = [
             (KeyCode::Enter, KeyModifiers::NONE),
             (KeyCode::Esc, KeyModifiers::NONE),
@@ -1353,6 +1354,13 @@ mod tests {
             assert_eq!(state.handle_key(key), NumberInputOutcome::Ignored);
             assert_eq!(state, before, "{code:?} repeat mutated number state");
         }
+
+        let mut key = KeyEvent::new(KeyCode::Up, KeyModifiers::NONE);
+        key.kind = KeyEventKind::Repeat;
+        assert_eq!(
+            state.handle_key(key),
+            NumberInputOutcome::ValueChanged { value: Some(8.0) }
+        );
     }
 
     #[test]

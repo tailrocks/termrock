@@ -1090,8 +1090,10 @@ mod tests {
             }
         );
         assert_eq!(state.query(), "two");
+        let mut repeat_up = KeyEvent::new(KeyCode::Up, KeyModifiers::NONE);
+        repeat_up.kind = KeyEventKind::Repeat;
         assert_eq!(
-            state.handle_key(KeyEvent::new(KeyCode::Up, KeyModifiers::NONE)),
+            state.handle_key(repeat_up),
             SearchInputOutcome::HistoryRecalled {
                 query: "one".into()
             }
