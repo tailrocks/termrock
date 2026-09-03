@@ -869,8 +869,8 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
         let body = Rect {
             x: ox,
             y: oy,
-            width: self.body_width.max(1),
-            height: self.body_rows.max(1),
+            width: self.body_width,
+            height: self.body_rows,
         };
 
         // Resize drag in progress
@@ -1177,6 +1177,9 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
         state.cell_regions.clear();
         state.paint_rects.clear();
         if area.is_empty() {
+            state.body_origin = (0, 0);
+            state.body_rows = 0;
+            state.body_width = 0;
             return;
         }
         // Input permission and scene focus are separate authorities. Neither
@@ -2143,6 +2146,47 @@ mod tests {
         let out = state.handle_mouse(event, &rows, &cols);
         assert!(matches!(out, DataTableOutcome::CursorMoved));
         assert_eq!(state.cursor_row, 1);
+    }
+
+    #[test]
+    fn mouse_ignores_body_after_empty_or_status_paint() {
+        let system = DesignSystem::default();
+        let cols = ColumnModel::new(vec![DataColumn::new("c", "C", DataColumnWidth::Min(8))]);
+        let cells: &[&str] = &["row"];
+        let rows = [(1u64, cells)];
+        let area = Rect::new(0, 0, 24, 4);
+
+        let mut state = DataTableState::<u64, &str>::new();
+        let mut buffer = Buffer::empty(area);
+        DataTable::new(&system, &cols, &rows).render(area, &mut buffer, &mut state);
+        assert!(state.body_rows > 0);
+
+        let mut empty_buffer = Buffer::empty(Rect::new(0, 0, 0, 0));
+        DataTable::new(&system, &cols, &rows).render(
+            Rect::new(0, 0, 0, 0),
+            &mut empty_buffer,
+            &mut state,
+        );
+        let event = MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: Position { x: 1, y: 2 },
+            modifiers: KeyModifiers::NONE,
+        };
+        assert!(matches!(
+            state.handle_mouse(event, &[1], &cols),
+            DataTableOutcome::Ignored
+        ));
+
+        state.load = LoadState::Empty {
+            message: Some("no rows".into()),
+        };
+        let mut status_buffer = Buffer::empty(area);
+        DataTable::new(&system, &cols, &rows).render(area, &mut status_buffer, &mut state);
+        assert_eq!(state.body_rows, 0);
+        assert!(matches!(
+            state.handle_mouse(event, &[1], &cols),
+            DataTableOutcome::Ignored
+        ));
     }
 
     #[test]
