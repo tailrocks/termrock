@@ -684,7 +684,7 @@ pub enum TaskRailRow {
 /// Build ordered rows from filtered models + collapsed scopes.
 #[must_use]
 pub fn build_task_rail_rows(
-    items: &[ActivityModel],
+    items: &[&ActivityModel],
     collapsed: &BTreeSet<ActivityScope>,
     hide_completed: bool,
 ) -> Vec<TaskRailRow> {
@@ -699,6 +699,7 @@ pub fn build_task_rail_rows(
     ] {
         let mut group: Vec<&ActivityModel> = items
             .iter()
+            .copied()
             .filter(|i| i.scope == scope)
             .filter(|i| !(hide_completed && matches!(i.scope, ActivityScope::Completed)))
             .collect();
@@ -778,7 +779,7 @@ fn emit_tree<'a>(
 /// Project to List rows for the internal [`List`]-backed paint path.
 #[must_use]
 fn project_task_rail_list_rows(
-    items: &[ActivityModel],
+    items: &[&ActivityModel],
     rows: &[TaskRailRow],
     ascii: bool,
     detail: bool,
@@ -1090,14 +1091,12 @@ impl TaskRailState {
     }
 
     fn rebuild_rows(&mut self, items: &[ActivityModel]) -> Vec<ListRow<'static, String>> {
-        let filtered: Vec<ActivityModel> = filter_activity_models(items, &self.filter)
-            .into_iter()
-            .cloned()
-            .collect();
+        let filtered = filter_activity_models(items, &self.filter);
         let rows = build_task_rail_rows(&filtered, &self.collapsed, self.hide_completed);
-        self.last_rows = rows.clone();
         let detail = matches!(self.zoom, TaskRailZoom::Detail);
-        project_task_rail_list_rows(&filtered, &rows, false, detail)
+        let list_rows = project_task_rail_list_rows(&filtered, &rows, false, detail);
+        self.last_rows = rows;
+        list_rows
     }
 
     /// Keys.
@@ -1422,14 +1421,11 @@ impl<'a> TaskRail<'a> {
         };
         let footer_y = inner.bottom().saturating_sub(1);
 
-        let filtered: Vec<ActivityModel> = filter_activity_models(self.items, &state.filter)
-            .into_iter()
-            .cloned()
-            .collect();
+        let filtered = filter_activity_models(self.items, &state.filter);
         let rows = build_task_rail_rows(&filtered, &state.collapsed, state.hide_completed);
-        state.last_rows = rows.clone();
         let detail = matches!(state.zoom, TaskRailZoom::Detail);
         let list_rows = project_task_rail_list_rows(&filtered, &rows, false, detail);
+        state.last_rows = rows;
 
         StatefulWidget::render(
             &List::new(&list_rows, self.system).focused(state.focused && state.accepts_input),
@@ -1566,7 +1562,8 @@ mod tests {
         let items = example_activity_models();
         let mut collapsed = BTreeSet::new();
         collapsed.insert(ActivityScope::Completed);
-        let rows = build_task_rail_rows(&items, &collapsed, false);
+        let refs: Vec<&ActivityModel> = items.iter().collect();
+        let rows = build_task_rail_rows(&refs, &collapsed, false);
         assert!(rows.iter().any(|r| matches!(
             r,
             TaskRailRow::Group {
@@ -1593,7 +1590,8 @@ mod tests {
     #[test]
     fn tree_parent_indent() {
         let items = example_activity_models();
-        let rows = build_task_rail_rows(&items, &BTreeSet::new(), true);
+        let refs: Vec<&ActivityModel> = items.iter().collect();
+        let rows = build_task_rail_rows(&refs, &BTreeSet::new(), true);
         let s1 = rows.iter().find_map(|r| match r {
             TaskRailRow::Item { id, depth } if id == "s1" => Some(*depth),
             _ => None,
@@ -1696,8 +1694,9 @@ mod tests {
     #[test]
     fn list_projection_has_groups() {
         let items = example_activity_models();
-        let rows = build_task_rail_rows(&items, &BTreeSet::new(), false);
-        let list = project_task_rail_list_rows(&items, &rows, true, true);
+        let refs: Vec<&ActivityModel> = items.iter().collect();
+        let rows = build_task_rail_rows(&refs, &BTreeSet::new(), false);
+        let list = project_task_rail_list_rows(&refs, &rows, true, true);
         assert!(list.iter().any(|r| r.role == RowRole::GroupHeader));
         assert!(list.iter().any(|r| r.id == "p1"));
     }
