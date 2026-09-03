@@ -852,7 +852,7 @@ pub use tree_table::{
     filter_tree_table_with_ancestors,
 };
 pub use view_state::{Banner, LoadingView};
-pub use viewport::Viewport;
+pub use viewport::{CellPos, Viewport, ViewportEvent, ViewportState};
 pub use virtual_grid::{
     GridCell, GridCellRegion, GridColumn, GridColumnWidth, GridHeaderRegion, GridRow, VirtualGrid,
     VirtualGridOutcome, VirtualGridState,

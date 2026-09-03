@@ -10,19 +10,20 @@
 //! LogPane when a single local process/build buffer must own append+evict.
 //! Project owned lines with [`super::log_stream::log_lines_from_plain`] or map
 //! each frame into [`super::LogLine`] when severity/source are known.
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::fmt::Write as _;
 
 use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::StatefulWidget};
 
 use crate::{
-    input::{KeyCode, KeyEvent},
+    input::{KeyCode, KeyEvent, KeyEventKind},
     interaction::Outcome,
-    scroll::{DialogScroll, TailScroll, max_offset},
-    style::{DesignSystem, Role},
+    scroll::{TailScroll, max_offset},
+    style::{DesignSystem, Role, RolePalette},
     text::display_cols,
 };
 
-use super::Viewport;
+use super::{Viewport, ViewportState};
 
 /// Default maximum number of retained log lines.
 pub const DEFAULT_LOG_HISTORY_LINES: usize = 10_000;
@@ -38,6 +39,7 @@ pub struct LogPaneState {
     max_lines: Option<usize>,
     viewport_height: usize,
     scroll_indicator: String,
+    viewport: ViewportState,
 }
 
 impl Default for LogPaneState {
@@ -59,6 +61,7 @@ impl LogPaneState {
             max_lines: Some(DEFAULT_LOG_HISTORY_LINES),
             viewport_height: 0,
             scroll_indicator: String::new(),
+            viewport: ViewportState::new(),
         }
     }
 
@@ -97,6 +100,7 @@ impl LogPaneState {
         self.follow = true;
         self.pending_oldest = false;
         self.scroll_indicator.clear();
+        self.viewport = ViewportState::default();
     }
 
     #[must_use]
@@ -263,6 +267,7 @@ impl PartialEq for LogPaneState {
             && self.max_lines == other.max_lines
             && self.viewport_height == other.viewport_height
             && self.scroll_indicator == other.scroll_indicator
+            && self.viewport.scroll == other.viewport.scroll
     }
 }
 
@@ -300,18 +305,16 @@ impl StatefulWidget for &LogPane<'_> {
         state.viewport_height = usize::from(area.height.saturating_sub(2));
         state.clamp_tail();
         let top = state.tail.to_top_offset(state.len(), state.viewport_height);
-        let mut scroll = DialogScroll {
-            scroll_x: 0,
-            scroll_y: u16::try_from(top).unwrap_or(u16::MAX),
-            ..DialogScroll::default()
-        };
-        let viewport = Viewport::new(state.lines(), self.system);
+        state.viewport.scroll.scroll_x = 0;
+        state.viewport.scroll.scroll_y = u16::try_from(top).unwrap_or(u16::MAX);
+        let lines = &state.lines[state.history_start..];
+        let viewport = Viewport::new(lines, self.system);
         let viewport = if let Some(title) = self.title {
             viewport.title(title)
         } else {
             viewport
         };
-        (&viewport).render(area, buffer, &mut scroll);
+        (&viewport).render(area, buffer, &mut state.viewport);
 
         if area.height > 0 {
             let indicator = if state.follow {
