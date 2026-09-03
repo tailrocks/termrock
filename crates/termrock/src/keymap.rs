@@ -87,6 +87,15 @@ impl From<crate::input::KeyEvent> for KeyChord {
         if ev.modifiers.contains(KeyModifiers::ALT) {
             mods = mods.with_alt();
         }
+        if ev.modifiers.contains(KeyModifiers::SUPER) {
+            mods = mods.with_super();
+        }
+        if ev.modifiers.contains(KeyModifiers::HYPER) {
+            mods = mods.with_hyper();
+        }
+        if ev.modifiers.contains(KeyModifiers::META) {
+            mods = mods.with_meta();
+        }
         // Shift is intrinsic to Char casing; only track it for non-Char keys.
         if !is_char && ev.modifiers.contains(KeyModifiers::SHIFT) {
             mods = mods.with_shift();

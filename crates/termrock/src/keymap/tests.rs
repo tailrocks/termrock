@@ -225,8 +225,20 @@ fn serde_deserialization_produces_an_owned_runtime_map() {
 #[cfg(feature = "serde")]
 #[test]
 fn serde_rejects_unknown_modifier_bits() {
-    let error = serde_json::from_str::<KeyModifiers>("8").expect_err("bit 3 is not a modifier");
+    let error = serde_json::from_str::<KeyModifiers>("64").expect_err("bit 6 is not a modifier");
     assert!(error.to_string().contains("unknown key modifier bits"));
+}
+
+#[cfg(feature = "serde")]
+#[test]
+fn serde_round_trips_extended_modifier_bits() {
+    let modifiers = KeyModifiers::NONE.with_super().with_hyper().with_meta();
+    let encoded = serde_json::to_string(&modifiers).expect("extended modifiers serialize");
+    assert_eq!(encoded, "56");
+    assert_eq!(
+        serde_json::from_str::<KeyModifiers>(&encoded).expect("extended modifiers deserialize"),
+        modifiers
+    );
 }
 
 const TEST_BINDINGS: &[KeyBinding<TestAction>] = &[
@@ -298,6 +310,23 @@ fn key_event_conversion_preserves_unified_modifiers() {
 
     assert_eq!(chord, KeyChord::ctrl(KeyCode::Char('x')));
     assert_eq!(CTRL_MAP.dispatch(chord), Some(TestAction::Confirm));
+}
+
+#[test]
+fn key_event_conversion_preserves_extended_modifiers_and_distinguishes_chords() {
+    let base = KeyCode::Char('x');
+    let cases = [
+        KeyModifiers::SUPER,
+        KeyModifiers::HYPER,
+        KeyModifiers::META,
+        KeyModifiers::CONTROL.with_super().with_hyper().with_meta(),
+    ];
+
+    for modifiers in cases {
+        let chord = KeyChord::from(crate::input::KeyEvent::new(base, modifiers));
+        assert_eq!(chord.mods, modifiers);
+        assert_ne!(chord, KeyChord::plain(base));
+    }
 }
 
 #[test]
