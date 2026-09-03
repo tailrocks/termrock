@@ -757,7 +757,7 @@ impl FormWizardState {
 
     /// Key adapter.
     pub fn handle_key(&mut self, key: KeyEvent) -> FormWizardOutcome {
-        if key.is_release() || !self.enabled {
+        if !key.is_press() || !self.enabled {
             return FormWizardOutcome::Ignored;
         }
         if !self.focused {
@@ -1300,6 +1300,7 @@ impl<'a> FormWizard<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::input::KeyEventKind;
     use crate::style::RolePalette;
     use ratatui_core::layout::Position;
 
@@ -1450,6 +1451,48 @@ mod tests {
             w.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
             FormWizardOutcome::Cancelled
         ));
+    }
+
+    #[test]
+    fn repeated_actions_are_ignored_across_wizard_phases() {
+        let mut step = three_steps();
+        step.set_focused(true);
+        for (code, modifiers) in [
+            (KeyCode::Right, KeyModifiers::NONE),
+            (KeyCode::Enter, KeyModifiers::NONE),
+            (KeyCode::Char('s'), KeyModifiers::CONTROL),
+            (KeyCode::Esc, KeyModifiers::NONE),
+        ] {
+            let before = step.clone();
+            let mut key = KeyEvent::new(code, modifiers);
+            key.kind = KeyEventKind::Repeat;
+            assert_eq!(
+                step.handle_key(key),
+                FormWizardOutcome::Ignored,
+                "{code:?} repeat emitted a wizard action"
+            );
+            assert_eq!(step, before, "{code:?} repeat mutated step state");
+        }
+
+        let mut review = three_steps();
+        review.set_focused(true);
+        let _ = review.next();
+        let _ = review.next();
+        assert!(matches!(review.next(), FormWizardOutcome::ReviewOpened));
+        let before = review.clone();
+        let mut repeat_submit = KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE);
+        repeat_submit.kind = KeyEventKind::Repeat;
+        assert_eq!(review.handle_key(repeat_submit), FormWizardOutcome::Ignored);
+        assert_eq!(review, before);
+
+        let mut failed = three_steps();
+        failed.set_focused(true);
+        let _ = failed.fail("network down");
+        let before = failed.clone();
+        let mut repeat_retry = KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE);
+        repeat_retry.kind = KeyEventKind::Repeat;
+        assert_eq!(failed.handle_key(repeat_retry), FormWizardOutcome::Ignored);
+        assert_eq!(failed, before);
     }
 
     #[test]
