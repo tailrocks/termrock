@@ -775,7 +775,7 @@ pub struct RadioState<Id> {
     hovered: Option<Id>,
     /// Last parts.
     parts: Option<RadioGroupParts<Id>>,
-    /// Legacy hit regions (same order as painted options).
+    /// Hit regions (same order as painted options).
     regions: Vec<Rect>,
 }
 
@@ -868,7 +868,7 @@ impl<Id: Clone + PartialEq> RadioState<Id> {
         self
     }
 
-    /// Hit regions (legacy).
+    /// Hit regions (same order as painted options).
     #[must_use]
     pub fn regions(&self) -> &[Rect] {
         &self.regions

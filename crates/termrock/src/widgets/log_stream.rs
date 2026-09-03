@@ -780,16 +780,6 @@ impl LogStreamState {
         }
     }
 
-    /// Legacy key API without lines (scroll/follow only).
-    pub fn handle_key_scroll(&mut self, key: KeyEvent) -> LogStreamOutcome {
-        self.handle_key(key, &[])
-    }
-
-    /// Legacy intent without lines.
-    pub fn handle_intent_scroll(&mut self, intent: UiIntent) -> LogStreamOutcome {
-        self.handle_intent(intent, &[])
-    }
-
     fn copy_outcome(&self, lines: &[LogLine<'_>]) -> LogStreamOutcome {
         let view = self.filtered(lines);
         let text = if !self.selected.is_empty() {
@@ -862,11 +852,6 @@ impl LogStreamState {
             }
             _ => LogStreamOutcome::Ignored,
         }
-    }
-
-    /// Legacy mouse without lines.
-    pub fn handle_mouse_scroll(&mut self, event: MouseEvent) -> LogStreamOutcome {
-        self.handle_mouse(event, &[])
     }
 }
 

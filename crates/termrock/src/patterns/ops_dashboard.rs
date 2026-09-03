@@ -281,6 +281,7 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> OpsDashboardState<RowId, ColI
         key: KeyEvent,
         visible_rows: &[RowId],
         columns: &ColumnModel<ColId>,
+        logs: &[LogLine<'_>],
     ) -> OpsDashboardOutcome<RowId, ColId> {
         if !key.is_press() {
             return OpsDashboardOutcome::Ignored;
@@ -305,8 +306,8 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> OpsDashboardState<RowId, ColI
             OpsRegion::Main => {
                 OpsDashboardOutcome::Table(self.table.handle_key(key, visible_rows, columns))
             }
-            // Scroll/follow without a projected window (host may re-route with lines).
-            OpsRegion::Log => OpsDashboardOutcome::Log(self.log.handle_key_scroll(key)),
+            // Log pane owns scroll/follow/cursor over the same lines the host paints.
+            OpsRegion::Log => OpsDashboardOutcome::Log(self.log.handle_key(key, logs)),
             _ => OpsDashboardOutcome::Ignored,
         }
     }
@@ -403,6 +404,7 @@ mod state_tests {
             KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE),
             &rows,
             &cols,
+            &[],
         );
         assert!(matches!(
             out,

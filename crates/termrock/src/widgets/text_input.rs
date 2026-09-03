@@ -95,13 +95,13 @@ pub enum EditAction {
 }
 
 impl EditAction {
-    /// Move left without selection (legacy).
+    /// Move left without selection.
     #[must_use]
     pub const fn move_left() -> Self {
         Self::MoveLeft { select: false }
     }
 
-    /// Move right without selection (legacy).
+    /// Move right without selection.
     #[must_use]
     pub const fn move_right() -> Self {
         Self::MoveRight { select: false }

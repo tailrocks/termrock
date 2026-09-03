@@ -666,8 +666,7 @@ pub use progress_steps::{
     PROGRESS_STEPS_COMPACT_MAX_WIDTH, PROGRESS_STEPS_HINTS, PROGRESS_STEPS_SUMMARY_MAX_WIDTH,
     ProgressStep, ProgressStepStatus, ProgressSteps, ProgressStepsMode, ProgressStepsOutcome,
     ProgressStepsPresentation, ProgressStepsState, example_agent_plan_steps,
-    example_build_pipeline, paint_progress_steps_as_timeline, progress_steps_as_list_rows,
-    progress_steps_as_timeline_events,
+    example_build_pipeline, paint_progress_steps_as_timeline, progress_steps_as_timeline_events,
 };
 pub use prompt_composer::bench as prompt_composer_bench;
 pub use prompt_composer::{

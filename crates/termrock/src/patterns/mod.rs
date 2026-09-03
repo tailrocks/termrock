@@ -338,8 +338,7 @@ pub use task_rail::{
     TaskRailCounts, TaskRailOutcome, TaskRailPresentation, TaskRailRow, TaskRailState,
     TaskRailZoom, activity_model_from_shelf, activity_models_to_shelf, build_task_rail_rows,
     example_activity_models, filter_activity_models, project_task_rail_for_status_bar,
-    project_task_rail_list_rows, sort_activity_models, task_rail_counts, task_rail_status_slot,
-    task_rail_status_summary,
+    sort_activity_models, task_rail_counts, task_rail_status_slot, task_rail_status_summary,
 };
 pub use terminal_run_card::bench as terminal_run_card_bench;
 pub use terminal_run_card::{

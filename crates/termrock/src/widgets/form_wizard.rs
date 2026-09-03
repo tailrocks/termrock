@@ -295,17 +295,21 @@ pub struct FormWizardState {
 
 impl Default for FormWizardState {
     fn default() -> Self {
-        Self::from_count(1)
+        Self::new(1)
     }
 }
 
 impl FormWizardState {
-    /// Wizard with N placeholder steps (legacy / quick start).
+    /// Wizard with N untitled placeholder steps (`step-0`…).
     ///
     /// Prefer [`Self::with_steps`] for titled optional steps.
     #[must_use]
     pub fn new(step_count: usize) -> Self {
-        Self::from_count(step_count)
+        let n = step_count.max(1);
+        let steps = (0..n)
+            .map(|i| WizardStep::new(format!("step-{i}"), format!("Step {}", i + 1)))
+            .collect::<Vec<_>>();
+        Self::with_steps(steps)
     }
 
     /// Wizard from step definitions.
@@ -346,16 +350,6 @@ impl FormWizardState {
             body_area: Rect::default(),
             root: Rect::default(),
         }
-    }
-
-    /// N untitled steps `step-0`…
-    #[must_use]
-    pub fn from_count(step_count: usize) -> Self {
-        let n = step_count.max(1);
-        let steps = (0..n)
-            .map(|i| WizardStep::new(format!("step-{i}"), format!("Step {}", i + 1)))
-            .collect::<Vec<_>>();
-        Self::with_steps(steps)
     }
 
     /// Review screen before submit.
@@ -1531,11 +1525,11 @@ mod tests {
     }
 
     #[test]
-    fn from_count_compat() {
-        let w = FormWizardState::from_count(3);
+    fn count_constructor_yields_placeholder_steps() {
+        let w = FormWizardState::new(3);
         assert_eq!(w.step_count(), 3);
-        let w2 = FormWizardState::new(2);
-        assert_eq!(w2.step_count(), 2);
+        let empty = FormWizardState::new(0);
+        assert_eq!(empty.step_count(), 1, "count clamps to at least one step");
     }
 
     #[test]

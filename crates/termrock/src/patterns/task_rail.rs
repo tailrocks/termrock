@@ -11,8 +11,8 @@
 //!
 //! **vs [`super::ActivityShelf`].** Shelf = glanceable strip of concurrent
 //! actives. Rail = full vertical inventory with groups + search + deps.
-//! **vs thin List façade (removed).** Hosts project [`ActivityModel`]; optional
-//! [`project_task_rail_list_rows`] still feeds raw [`List`] if needed.
+//! Hosts project [`ActivityModel`]; the raw [`List`] row projection is an
+//! internal paint detail, not public API.
 //!
 //! Research: Grok Build tasks pane, Amp sessions, OpenCode agents, CI lists,
 //! Zellij panes.
@@ -775,9 +775,9 @@ fn emit_tree<'a>(
     }
 }
 
-/// Project to List rows (migration / workbench List path).
+/// Project to List rows for the internal [`List`]-backed paint path.
 #[must_use]
-pub fn project_task_rail_list_rows(
+fn project_task_rail_list_rows(
     items: &[ActivityModel],
     rows: &[TaskRailRow],
     ascii: bool,

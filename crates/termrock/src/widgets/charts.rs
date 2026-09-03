@@ -303,8 +303,6 @@ pub struct Sparkline<'a> {
     threshold: Option<f64>,
     /// Selected sample index (absolute into samples, not windowed).
     selected: Option<usize>,
-    /// When true, treat values as already `0..=1` (legacy).
-    pre_normalized: bool,
     /// Time-window: only last N samples (0 = all / width fit).
     window: usize,
     role: Role,
@@ -321,17 +319,9 @@ impl<'a> Sparkline<'a> {
             glyphs: VizGlyphSet::Auto,
             threshold: None,
             selected: None,
-            pre_normalized: false,
             window: 0,
             role: Role::ChartSeries1,
         }
-    }
-
-    /// Force pre-normalized `0..=1` path (old API semantics).
-    #[must_use]
-    pub const fn pre_normalized(mut self, on: bool) -> Self {
-        self.pre_normalized = on;
-        self
     }
 
     /// Scale mode.
@@ -391,11 +381,7 @@ impl Widget for &Sparkline<'_> {
         let samples = window_samples(self.samples, win_n);
         let base = self.samples.len().saturating_sub(samples.len());
 
-        let domain = if self.pre_normalized {
-            ScaleDomain::unit()
-        } else {
-            resolve_domain(self.scale, samples.iter().copied())
-        };
+        let domain = resolve_domain(self.scale, samples.iter().copied());
         let gset = self.glyphs.resolve();
         let ladder = gset.ladder();
         let miss = gset.missing_mark();
@@ -409,11 +395,7 @@ impl Widget for &Sparkline<'_> {
             let abs_i = base + index;
             let sample = samples.get(index).copied().unwrap_or(f64::NAN);
             let missing = !sample.is_finite();
-            let fraction = if self.pre_normalized && sample.is_finite() {
-                Some(sample.clamp(0.0, 1.0))
-            } else {
-                domain.normalize(sample)
-            };
+            let fraction = domain.normalize(sample);
             let mut glyph = glyph_for_fraction(fraction.unwrap_or(0.0), ladder, missing, miss);
             // threshold band: use threshold mark when close
             if thr_f >= 0.0 {
@@ -2545,9 +2527,7 @@ mod tests {
         let system = system();
         let samples = [0.0, 0.5, 1.0];
         let mut buffer = Buffer::empty(Rect::new(0, 0, 3, 1));
-        Sparkline::new(&samples, &system)
-            .pre_normalized(true)
-            .render(Rect::new(0, 0, 3, 1), &mut buffer);
+        Sparkline::new(&samples, &system).render(Rect::new(0, 0, 3, 1), &mut buffer);
         assert_ne!(buffer[(0, 0)].symbol(), buffer[(2, 0)].symbol());
     }
 

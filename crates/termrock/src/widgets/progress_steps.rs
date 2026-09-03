@@ -33,7 +33,6 @@ use crate::{
     widgets::{Hint, HintBar},
 };
 
-use super::list::ListRow;
 use super::stepper::StepStatus;
 use super::timeline::{Timeline, TimelineEvent};
 
@@ -892,36 +891,6 @@ pub fn paint_progress_steps_as_timeline(
     Timeline::new(&events, system).paint(area, buffer, state);
 }
 
-/// Project to list rows for List / legacy rail hosts (prefer [`ActivityModel`](super::ActivityModel) + TaskRail).
-///
-/// **Note:** `label`/`trailing` use owned strings via `Line::from`; callers
-/// typically rebuild rows each frame from live steps.
-#[must_use]
-pub fn progress_steps_as_list_rows(steps: &[ProgressStep]) -> Vec<ListRow<'static, String>> {
-    steps
-        .iter()
-        .map(|s| {
-            let mut row = ListRow::item(
-                s.id.clone(),
-                ratatui_core::text::Line::from(s.title.clone()),
-            );
-            row.status = Some(ratatui_core::text::Line::from(format!(
-                "| {} {}",
-                s.status.semantic().glyph_unicode(),
-                s.status.default_verb()
-            )));
-            if let Some(d) = &s.detail {
-                row.secondary = Some(ratatui_core::text::Line::from(d.clone()));
-            }
-            if let Some(ms) = s.duration_ms {
-                row.badge = Some(ratatui_core::text::Line::from(format_duration_ms(ms)));
-            }
-            row.enabled = !matches!(s.status, ProgressStepStatus::Cancelled);
-            row
-        })
-        .collect()
-}
-
 // ── Example data ────────────────────────────────────────────────────────────
 
 /// Demo CI-style pipeline.
@@ -1201,14 +1170,6 @@ mod tests {
             text.contains("Compile") || text.contains("●") || text.contains("○"),
             "{text}"
         );
-    }
-
-    #[test]
-    fn list_rows_projection() {
-        let steps = example_build_pipeline();
-        let rows = progress_steps_as_list_rows(&steps);
-        assert_eq!(rows.len(), steps.len());
-        assert_eq!(rows[0].id, "fetch");
     }
 
     #[test]
