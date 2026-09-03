@@ -430,6 +430,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0449 | `v0.14.0` | [ProgressBar buffer clipping](migrations/0449-v0.14.0-progress-buffer-clipping.md) |
 | 0450 | `v0.14.0` | [Attachment chip physical one-shot actions](migrations/0450-v0.14.0-attachment-chip-one-shot-actions.md) |
 | 0451 | `v0.14.0` | [KeybindingRecorder physical one-shot actions](migrations/0451-v0.14.0-keybinding-recorder-one-shot-actions.md) |
+| 0452 | `v0.14.0` | [NotificationCenter physical one-shot actions](migrations/0452-v0.14.0-notification-center-one-shot-actions.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

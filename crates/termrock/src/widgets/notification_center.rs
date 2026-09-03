@@ -922,8 +922,9 @@ impl NotificationCenterState {
         if !key.is_insert() {
             return NotificationCenterOutcome::Ignored;
         }
+        let is_press = key.is_press();
 
-        if matches!(key.code, KeyCode::Esc) && key.modifiers.is_empty() {
+        if matches!(key.code, KeyCode::Esc) && is_press && key.modifiers.is_empty() {
             return self.close();
         }
 
@@ -954,7 +955,7 @@ impl NotificationCenterState {
                     NotificationCenterOutcome::Ignored
                 }
             }
-            KeyCode::Enter => {
+            KeyCode::Enter if is_press => {
                 if let Some(id) = self.cursor.clone() {
                     let _ = self.mark_read(&id);
                     NotificationCenterOutcome::OpenItem { id }
@@ -962,26 +963,28 @@ impl NotificationCenterState {
                     NotificationCenterOutcome::Ignored
                 }
             }
-            KeyCode::Char('u' | 'U') if key.modifiers.is_empty() => {
+            KeyCode::Char('u' | 'U') if is_press && key.modifiers.is_empty() => {
                 if let Some(id) = self.cursor.clone() {
                     self.mark_read(&id)
                 } else {
                     NotificationCenterOutcome::Ignored
                 }
             }
-            KeyCode::Char('U') if key.modifiers.contains(KeyModifiers::SHIFT) => {
+            KeyCode::Char('U') if is_press && key.modifiers.contains(KeyModifiers::SHIFT) => {
                 self.mark_all_read()
             }
-            KeyCode::Char('x' | 'X' | 'd' | 'D') if key.modifiers.is_empty() => {
+            KeyCode::Char('x' | 'X' | 'd' | 'D') if is_press && key.modifiers.is_empty() => {
                 if let Some(id) = self.cursor.clone() {
                     self.dismiss(&id)
                 } else {
                     NotificationCenterOutcome::Ignored
                 }
             }
-            KeyCode::Char('c' | 'C') if key.modifiers.is_empty() => self.clear_all(),
-            KeyCode::Char('/' | 'f' | 'F') if key.modifiers.is_empty() => self.cycle_filter(),
-            KeyCode::Char('1') => {
+            KeyCode::Char('c' | 'C') if is_press && key.modifiers.is_empty() => self.clear_all(),
+            KeyCode::Char('/' | 'f' | 'F') if is_press && key.modifiers.is_empty() => {
+                self.cycle_filter()
+            }
+            KeyCode::Char('1') if is_press => {
                 if let Some(id) = self.cursor.clone() {
                     if let Some(item) = self.items.iter().find(|i| i.id == id) {
                         if let Some((aid, _)) = item.actions.first() {
@@ -1420,7 +1423,7 @@ pub fn example_notifications(now_secs: u64) -> Vec<NotificationItem> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyModifiers;
+    use crate::input::{KeyEventKind, KeyModifiers};
     use crate::runtime::FrameTick;
     use crate::widgets::toast::ToastArchiveReason;
     use crate::widgets::toast::{ToastLifetime, ToastSpec};
@@ -1534,6 +1537,46 @@ mod tests {
             NotificationCenterOutcome::Closed
         ));
         assert!(!s.is_open());
+    }
+
+    #[test]
+    fn repeated_one_shot_actions_are_ignored_but_navigation_repeats() {
+        let mut s = NotificationCenterState::new();
+        s.replace_items(vec![
+            NotificationItem::new("1", "first", ToastKind::Info)
+                .action("open", "Open")
+                .unread(true),
+            NotificationItem::new("2", "second", ToastKind::Warning).unread(true),
+        ]);
+        let _ = s.open();
+        s.cursor = Some("1".into());
+
+        for (code, modifiers) in [
+            (KeyCode::Enter, KeyModifiers::NONE),
+            (KeyCode::Esc, KeyModifiers::NONE),
+            (KeyCode::Char('u'), KeyModifiers::NONE),
+            (KeyCode::Char('U'), KeyModifiers::SHIFT),
+            (KeyCode::Char('x'), KeyModifiers::NONE),
+            (KeyCode::Char('c'), KeyModifiers::NONE),
+            (KeyCode::Char('/'), KeyModifiers::NONE),
+            (KeyCode::Char('1'), KeyModifiers::NONE),
+        ] {
+            let mut repeat = KeyEvent::new(code, modifiers);
+            repeat.kind = KeyEventKind::Repeat;
+            let before = s.clone();
+            assert_eq!(s.handle_key(repeat), NotificationCenterOutcome::Ignored);
+            assert_eq!(s, before, "{code:?} repeat mutated notification center");
+        }
+
+        let mut repeat_down = KeyEvent::new(KeyCode::Down, KeyModifiers::NONE);
+        repeat_down.kind = KeyEventKind::Repeat;
+        assert_eq!(
+            s.handle_key(repeat_down),
+            NotificationCenterOutcome::SelectionChanged {
+                id: Some("2".into())
+            }
+        );
+        assert_eq!(s.cursor(), Some("2"));
     }
 
     #[test]
