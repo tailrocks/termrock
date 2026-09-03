@@ -859,14 +859,22 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
         self.hovered.as_ref()
     }
 
+    fn focus_pointer(&mut self, id: Id) {
+        self.collection.set_active(Some(id.clone()));
+        self.cursor = Some(id);
+        self.follow_selection = true;
+    }
+
     /// Maps a pointer position to the semantic outcome of the painted hit region.
     pub fn click(&mut self, position: Position) -> TreeOutcome<Id> {
-        if let Some(region) = self
+        if let Some(id) = self
             .disclosure_regions
             .iter()
             .find(|region| region.area.contains(position))
+            .map(|region| region.id.clone())
         {
-            return TreeOutcome::Toggle(region.id.clone());
+            self.focus_pointer(id.clone());
+            return TreeOutcome::Toggle(id);
         }
         if let Some(id) = self
             .check_regions
@@ -874,8 +882,7 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
             .find(|region| region.area.contains(position))
             .map(|region| region.id.clone())
         {
-            self.cursor = Some(id.clone());
-            self.follow_selection = true;
+            self.focus_pointer(id.clone());
             if let Some(selection) = self.selection.as_mut() {
                 selection.toggle(&id);
                 return TreeOutcome::CheckToggled(id);
@@ -891,17 +898,14 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
         };
         let is_branch = self.disclosure_regions.iter().any(|region| region.id == id);
         if is_branch {
-            self.cursor = Some(id.clone());
-            self.collection.set_active(Some(id.clone()));
-            self.follow_selection = true;
+            self.focus_pointer(id.clone());
             return TreeOutcome::Toggle(id);
         }
         if self.cursor.as_ref() == Some(&id) {
             self.selected = Some(id.clone());
             TreeOutcome::Activated(id)
         } else {
-            self.cursor = Some(id.clone());
-            self.follow_selection = true;
+            self.focus_pointer(id.clone());
             TreeOutcome::SelectionChanged(id)
         }
     }
@@ -1747,6 +1751,33 @@ mod tests {
         assert_eq!(
             state.click(Position::new(10, 1)),
             TreeOutcome::Activated("ready")
+        );
+    }
+
+    #[test]
+    fn pointer_focus_syncs_typeahead_after_leaf_click() {
+        let tokens = DesignSystem::junie();
+        let nodes = [
+            TreeNode::new("a", Line::from("Alpha"), 0),
+            TreeNode::new("b", Line::from("Beta"), 0),
+            TreeNode::new("c", Line::from("Bravo"), 0),
+        ];
+        let area = Rect::new(0, 0, 24, 3);
+        let mut state = TreeState::new(Some("a"));
+        let mut buffer = Buffer::empty(area);
+        Tree::new(&nodes, &tokens).render(area, &mut buffer, &mut state);
+
+        assert_eq!(
+            state.click(Position::new(4, 1)),
+            TreeOutcome::SelectionChanged("b")
+        );
+        assert_eq!(state.cursor(), Some(&"b"));
+        assert_eq!(
+            state.handle_key(
+                &nodes,
+                KeyEvent::new(KeyCode::Char('b'), KeyModifiers::NONE)
+            ),
+            TreeOutcome::SelectionChanged("c")
         );
     }
 
