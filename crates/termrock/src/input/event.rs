@@ -405,10 +405,6 @@ mod adapter {
 
     impl From<crossterm::event::Event> for Event {
         fn from(value: crossterm::event::Event) -> Self {
-            #[allow(
-                unreachable_patterns,
-                reason = "future Crossterm event variants must degrade to Unknown"
-            )]
             match value {
                 crossterm::event::Event::Key(event) => Self::Key(event.into()),
                 crossterm::event::Event::Mouse(event) => Self::Mouse(event.into()),
@@ -416,7 +412,6 @@ mod adapter {
                 crossterm::event::Event::Resize(width, height) => Self::Resize { width, height },
                 crossterm::event::Event::FocusGained => Self::FocusGained,
                 crossterm::event::Event::FocusLost => Self::FocusLost,
-                _ => Self::Unknown,
             }
         }
     }

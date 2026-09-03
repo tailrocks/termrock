@@ -3606,7 +3606,6 @@ fn public_ui_inventory_has_exact_recipe_and_monochrome_evidence() {
     };
 
     fn recipe_family(family: ComponentFamily) -> RecipeFamily {
-        #[allow(unreachable_patterns)]
         match family {
             ComponentFamily::Action => RecipeFamily::Action,
             ComponentFamily::Input => RecipeFamily::Input,

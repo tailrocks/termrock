@@ -218,7 +218,7 @@ pub struct TextInputState {
     selecting_with_mouse: bool,
 }
 
-#[cfg_attr(not(feature = "serde"), allow(dead_code))]
+#[cfg_attr(not(feature = "serde"), expect(dead_code))]
 fn default_true() -> bool {
     true
 }
