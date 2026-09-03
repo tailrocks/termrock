@@ -662,7 +662,7 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
         expand_or_enter: bool,
     ) -> TreeTableOutcome<Id, ColId> {
         let row = &rows[self.cursor_row];
-        if !row.enabled || matches!(row.kind, TreeTableRowKind::Aggregate) {
+        if !hierarchy_interactive(row) || matches!(row.kind, TreeTableRowKind::Aggregate) {
             return TreeTableOutcome::Ignored;
         }
         if expand_or_enter {
@@ -927,7 +927,7 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
                         .disclosure
                         .is_some_and(|d| d.contains(event.position))
                     {
-                        if row.enabled {
+                        if hierarchy_interactive(row) {
                             return TreeTableOutcome::ExpandToggled(region.id.clone());
                         }
                         return TreeTableOutcome::Ignored;
@@ -984,6 +984,10 @@ fn navigable<Id>(row: &TreeTableRow<'_, Id>) -> bool {
 
 fn selectable<Id>(row: &TreeTableRow<'_, Id>) -> bool {
     row.enabled && navigable(row)
+}
+
+fn hierarchy_interactive<Id>(row: &TreeTableRow<'_, Id>) -> bool {
+    row.enabled && !matches!(row.status, TreeNodeStatus::Loading)
 }
 
 /// Intent map for TreeTable: mode-sensitive Left/Right.
@@ -1894,6 +1898,39 @@ mod tests {
             KeyEvent::new(KeyCode::Right, KeyModifiers::NONE),
         );
         assert!(matches!(out, TreeTableOutcome::ExpandToggled("L")));
+    }
+
+    #[test]
+    fn loading_status_blocks_hierarchy_keyboard_and_pointer_actions() {
+        let cells: &[&str] = &["loading", "", ""];
+        let rows = [TreeTableRow::new("r", 0, cells)
+            .branch()
+            .with_status(TreeNodeStatus::Loading)];
+        let columns = cols();
+        let mut state = TreeTableState::<&str, &str>::new(Some("r"));
+
+        let key_out = state.handle_intent(&rows, &columns, UiIntent::Expand);
+        assert!(matches!(key_out, TreeTableOutcome::Ignored));
+
+        let system = DesignSystem::default();
+        let area = Rect::new(0, 0, 40, 6);
+        TreeTable::new(&system, &columns, &rows).render(area, &mut Buffer::empty(area), &mut state);
+        let disclosure = state.row_regions[0]
+            .disclosure
+            .expect("branch has disclosure");
+        let pointer_out = state.handle_mouse(
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: Position {
+                    x: disclosure.x,
+                    y: disclosure.y,
+                },
+                modifiers: KeyModifiers::NONE,
+            },
+            &rows,
+            &columns,
+        );
+        assert!(matches!(pointer_out, TreeTableOutcome::Ignored));
     }
 
     #[test]
