@@ -2238,7 +2238,7 @@ impl<Id: Clone> StatefulWidget for &Switch<'_, Id> {
 mod tests {
     use super::*;
     use crate::input::KeyModifiers;
-    use crate::widgets::tests::click;
+    use crate::widgets::tests::{click, mouse};
     use ratatui_core::layout::Position;
 
     #[test]
@@ -2650,11 +2650,7 @@ mod tests {
         // Up in region toggles
         let out = sw.handle_mouse(
             &mut state,
-            MouseEvent {
-                kind: MouseEventKind::Up(MouseButton::Left),
-                position: pos,
-                modifiers: KeyModifiers::NONE,
-            },
+            mouse(MouseEventKind::Up(MouseButton::Left), pos.x, pos.y),
         );
         assert!(matches!(
             out,
@@ -2687,19 +2683,11 @@ mod tests {
         let _ = sw.handle_mouse(&mut state, click(inside.x, inside.y));
         let _ = sw.handle_mouse(
             &mut state,
-            MouseEvent {
-                kind: MouseEventKind::Moved,
-                position: outside,
-                modifiers: KeyModifiers::NONE,
-            },
+            mouse(MouseEventKind::Moved, outside.x, outside.y),
         );
         let out = sw.handle_mouse(
             &mut state,
-            MouseEvent {
-                kind: MouseEventKind::Up(MouseButton::Left),
-                position: outside,
-                modifiers: KeyModifiers::NONE,
-            },
+            mouse(MouseEventKind::Up(MouseButton::Left), outside.x, outside.y),
         );
         assert!(matches!(out, SwitchOutcome::Ignored));
         assert!(!state.is_on());

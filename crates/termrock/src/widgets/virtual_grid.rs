@@ -1118,7 +1118,7 @@ mod tests {
     use super::*;
     use crate::input::{KeyCode, KeyEvent, KeyModifiers, MouseEventKind};
     use crate::style::RolePalette;
-    use crate::widgets::tests::click;
+    use crate::widgets::tests::{click, mouse};
     use ratatui_core::{backend::TestBackend, layout::Position, terminal::Terminal};
 
     fn columns() -> Vec<GridColumn<'static, &'static str>> {
@@ -1422,11 +1422,7 @@ mod tests {
 
         let position = Position::new(8, 2);
         let edge = state.handle_mouse(
-            MouseEvent {
-                kind: MouseEventKind::ScrollLeft,
-                position,
-                modifiers: KeyModifiers::NONE,
-            },
+            mouse(MouseEventKind::ScrollLeft, position.x, position.y),
             &columns,
             &rows,
         );

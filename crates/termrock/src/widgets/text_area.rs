@@ -2047,6 +2047,7 @@ mod tests {
     use super::*;
     use crate::input::{KeyEventKind, KeyEventState};
     use crate::style::RolePalette;
+    use crate::widgets::tests::mouse;
     #[test]
     fn normalized_editing_and_goal_column_contract() {
         let mut state = TextAreaState::new("ab🧪\r\nx\r12345");
@@ -2486,27 +2487,27 @@ mod tests {
         assert_eq!(vertical.x, area.right() - 1);
         assert!(vertical.y >= field_y);
         assert!(vertical.bottom() <= area.bottom());
-        let outcome = state.handle_event(Event::Mouse(crate::input::MouseEvent {
-            kind: MouseEventKind::Down(MouseButton::Left),
-            position: Position::new(vertical.x, vertical.bottom() - 1),
-            modifiers: KeyModifiers::NONE,
-        }));
+        let outcome = state.handle_event(Event::Mouse(mouse(
+            MouseEventKind::Down(MouseButton::Left),
+            vertical.x,
+            vertical.bottom() - 1,
+        )));
         assert_eq!(outcome, TextAreaOutcome::Changed);
         assert!(state.scroll.offset_y() > 0);
         assert_eq!(
-            state.handle_event(Event::Mouse(crate::input::MouseEvent {
-                kind: MouseEventKind::Drag(MouseButton::Left),
-                position: Position::new(vertical.x, vertical.bottom() - 1),
-                modifiers: KeyModifiers::NONE,
-            })),
+            state.handle_event(Event::Mouse(mouse(
+                MouseEventKind::Drag(MouseButton::Left),
+                vertical.x,
+                vertical.bottom() - 1
+            ))),
             TextAreaOutcome::Ignored
         );
         assert_eq!(
-            state.handle_event(Event::Mouse(crate::input::MouseEvent {
-                kind: MouseEventKind::Drag(MouseButton::Left),
-                position: Position::new(0, 0),
-                modifiers: KeyModifiers::NONE,
-            })),
+            state.handle_event(Event::Mouse(mouse(
+                MouseEventKind::Drag(MouseButton::Left),
+                0,
+                0
+            ))),
             TextAreaOutcome::Ignored
         );
     }

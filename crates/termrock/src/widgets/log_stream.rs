@@ -1370,6 +1370,7 @@ pub mod bench {
 mod tests {
     use super::*;
     use crate::widgets::tests::click;
+    use crate::widgets::tests::mouse;
 
     fn sample() -> Vec<LogLine<'static>> {
         vec![
@@ -1603,7 +1604,6 @@ mod tests {
 
     #[test]
     fn mouse_wheel_and_chip() {
-        use ratatui_core::layout::Position;
         let system = DesignSystem::default();
         let lines = sample();
         let mut state = LogStreamState::new();
@@ -1611,11 +1611,7 @@ mod tests {
         let mut buffer = Buffer::empty(area);
         LogStream::new(&lines, &system).render(area, &mut buffer, &mut state);
         assert!(state.is_following());
-        let wheel = MouseEvent {
-            kind: MouseEventKind::ScrollUp,
-            position: Position::new(0, 0),
-            modifiers: KeyModifiers::NONE,
-        };
+        let wheel = mouse(MouseEventKind::ScrollUp, 0, 0);
         assert!(matches!(
             state.handle_mouse(wheel, &lines),
             LogStreamOutcome::Detach

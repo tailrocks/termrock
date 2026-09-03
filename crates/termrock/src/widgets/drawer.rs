@@ -1094,7 +1094,7 @@ mod tests {
     use crate::interaction::OverlayKind;
     use crate::style::MotionPolicy;
     use crate::widgets::tests::click;
-    use ratatui_core::layout::Position;
+    use crate::widgets::tests::mouse;
 
     #[test]
     fn place_right_and_left_edges() {
@@ -1310,11 +1310,11 @@ mod tests {
         assert!(state.resizing);
 
         state.set_enabled(false);
-        let drag = MouseEvent {
-            kind: MouseEventKind::Drag(MouseButton::Left),
-            position: Position::new(handle.x.saturating_sub(2), handle.y),
-            modifiers: KeyModifiers::NONE,
-        };
+        let drag = mouse(
+            MouseEventKind::Drag(MouseButton::Left),
+            handle.x.saturating_sub(2),
+            handle.y,
+        );
         assert_eq!(state.handle_mouse(drag), DrawerOutcome::Ignored);
         assert_eq!(state.depth(), 20);
 

@@ -2269,6 +2269,7 @@ mod tests {
         ColumnKind, ColumnPin, DataColumn, DataColumnWidth, LoadState, bench,
     };
     use crate::widgets::tests::click;
+    use crate::widgets::tests::mouse;
     use ratatui_core::layout::Position;
 
     #[test]
@@ -2611,33 +2612,21 @@ mod tests {
         let initial_offset = state.h_offset;
         assert!(initial_offset > 0);
 
-        let event = MouseEvent {
-            kind: MouseEventKind::ScrollLeft,
-            position: Position { x: 1, y: 1 },
-            modifiers: KeyModifiers::NONE,
-        };
+        let event = mouse(MouseEventKind::ScrollLeft, 1, 1);
         assert!(matches!(
             state.handle_mouse(event, &[1], &columns),
             DataTableOutcome::Scrolled
         ));
         assert!(state.h_offset < initial_offset);
 
-        let event = MouseEvent {
-            kind: MouseEventKind::ScrollRight,
-            position: Position { x: 1, y: 1 },
-            modifiers: KeyModifiers::NONE,
-        };
+        let event = mouse(MouseEventKind::ScrollRight, 1, 1);
         assert!(matches!(
             state.handle_mouse(event, &[1], &columns),
             DataTableOutcome::Scrolled
         ));
         assert_eq!(state.h_offset, initial_offset);
 
-        let event = MouseEvent {
-            kind: MouseEventKind::ScrollLeft,
-            position: Position { x: 1, y: 1 },
-            modifiers: KeyModifiers::NONE,
-        };
+        let event = mouse(MouseEventKind::ScrollLeft, 1, 1);
         assert!(matches!(
             state.handle_mouse(event, &[1], &columns),
             DataTableOutcome::Scrolled
@@ -2698,11 +2687,7 @@ mod tests {
         let mut state = DataTableState::<u64, &str>::new();
         state.resize_drag = Some(("a", 8, 10));
 
-        let drag = MouseEvent {
-            kind: MouseEventKind::Drag(MouseButton::Left),
-            position: Position { x: 14, y: 0 },
-            modifiers: KeyModifiers::NONE,
-        };
+        let drag = mouse(MouseEventKind::Drag(MouseButton::Left), 14, 0);
         let out = state.handle_mouse(drag, &[], &cols);
         match out {
             DataTableOutcome::ColumnResized { column, width } => {
@@ -2715,11 +2700,7 @@ mod tests {
         assert_eq!(cols.effective_width(0), 8);
         assert!(state.resize_drag.is_some());
 
-        let up = MouseEvent {
-            kind: MouseEventKind::Up(MouseButton::Left),
-            position: Position { x: 14, y: 0 },
-            modifiers: KeyModifiers::NONE,
-        };
+        let up = mouse(MouseEventKind::Up(MouseButton::Left), 14, 0);
         let out = state.handle_mouse(up, &[], &cols);
         match out {
             DataTableOutcome::ColumnResized { column, width } => {

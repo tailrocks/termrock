@@ -1308,6 +1308,7 @@ mod tests {
     use super::*;
     use crate::input::KeyModifiers;
     use crate::widgets::tests::click;
+    use crate::widgets::tests::mouse;
     use ratatui_core::layout::Position;
     use ratatui_core::widgets::Widget;
 
@@ -1494,11 +1495,7 @@ mod tests {
         state.region = Some(Rect::new(0, 0, 8, 1));
         let down = click(1, 0);
         assert_eq!(state.handle_mouse(down), ActivationOutcome::Pressed);
-        let up = MouseEvent {
-            kind: MouseEventKind::Up(MouseButton::Left),
-            position: Position::new(1, 0),
-            modifiers: KeyModifiers::NONE,
-        };
+        let up = mouse(MouseEventKind::Up(MouseButton::Left), 1, 0);
         assert_eq!(state.handle_mouse(up), ActivationOutcome::Activated);
     }
 
@@ -1577,11 +1574,7 @@ mod tests {
         state.region = Some(Rect::new(0, 0, 8, 1));
         let down = click(1, 0);
         assert_eq!(state.handle_mouse(down), ActivationOutcome::Pressed);
-        let up = MouseEvent {
-            kind: MouseEventKind::Up(MouseButton::Left),
-            position: Position::new(20, 0),
-            modifiers: KeyModifiers::NONE,
-        };
+        let up = mouse(MouseEventKind::Up(MouseButton::Left), 20, 0);
         assert_eq!(state.handle_mouse(up), ActivationOutcome::Ignored);
     }
 

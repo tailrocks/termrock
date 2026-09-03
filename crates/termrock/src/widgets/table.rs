@@ -1852,6 +1852,7 @@ mod tests {
     use crate::input::{KeyCode, KeyModifiers};
 
     use super::*;
+    use crate::widgets::tests::mouse;
     fn fill(weight: u16) -> ColumnWidth {
         ColumnWidth::Fill(NonZeroU16::new(weight).unwrap())
     }
@@ -2548,11 +2549,7 @@ mod tests {
         assert_eq!(state.hovered_column(), Some(&"cpu"));
 
         state.offset = 1;
-        let outside_wheel = MouseEvent {
-            kind: MouseEventKind::ScrollDown,
-            position: Position::new(0, 0),
-            modifiers: KeyModifiers::NONE,
-        };
+        let outside_wheel = mouse(MouseEventKind::ScrollDown, 0, 0);
         let _ = state.handle_mouse(outside_wheel, rows.len());
         assert_eq!(state.offset(), 1);
     }

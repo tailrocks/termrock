@@ -1496,6 +1496,7 @@ mod tests {
     use super::*;
     use crate::style::RolePalette;
     use crate::widgets::tests::click;
+    use crate::widgets::tests::mouse;
     use ratatui_core::layout::Position;
     use ratatui_core::style::{Color, Style};
 
@@ -2147,11 +2148,7 @@ mod tests {
             .expect("search")
             .area;
         let _ = state.handle_mouse(
-            MouseEvent {
-                kind: MouseEventKind::Moved,
-                position: Position::new(search.x.saturating_add(1), search.y),
-                modifiers: KeyModifiers::NONE,
-            },
+            mouse(MouseEventKind::Moved, search.x.saturating_add(1), search.y),
             &tabs,
         );
         let mut buffer = Buffer::empty(area);

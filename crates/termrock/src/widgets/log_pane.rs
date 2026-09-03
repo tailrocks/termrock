@@ -410,6 +410,7 @@ mod tests {
     use super::*;
     use crate::input::{KeyModifiers, MouseButton, MouseEventKind};
     use crate::style::RolePalette;
+    use crate::widgets::tests::mouse;
 
     fn key(code: KeyCode) -> KeyEvent {
         KeyEvent::new(code, KeyModifiers::NONE)
@@ -531,11 +532,7 @@ mod tests {
         );
         pane.handle_mouse(
             &mut state,
-            MouseEvent {
-                kind: MouseEventKind::Drag(MouseButton::Left),
-                position: ratatui_core::layout::Position::new(4, 1),
-                modifiers: KeyModifiers::NONE,
-            },
+            mouse(MouseEventKind::Drag(MouseButton::Left), 4, 1),
         );
 
         let (outcome, event) = pane.handle_key(

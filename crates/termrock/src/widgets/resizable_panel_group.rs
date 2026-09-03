@@ -1127,6 +1127,7 @@ fn intersect_rect(inner: Rect, outer: Rect) -> Rect {
 mod tests {
     use super::*;
     use crate::style::DesignSystem;
+    use crate::widgets::tests::mouse;
 
     #[test]
     fn three_panel_workbench_layout() {
@@ -1383,14 +1384,11 @@ mod tests {
         ));
         let out = group.handle_mouse(
             &mut state,
-            MouseEvent {
-                kind: MouseEventKind::Drag(MouseButton::Left),
-                position: Position {
-                    x: h.x.saturating_add(5),
-                    y: h.y,
-                },
-                modifiers: crate::input::KeyModifiers::NONE,
-            },
+            mouse(
+                MouseEventKind::Drag(MouseButton::Left),
+                h.x.saturating_add(5),
+                h.y,
+            ),
             area,
         );
         assert!(

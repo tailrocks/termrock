@@ -1735,7 +1735,7 @@ mod tests {
     use crate::input::KeyEventKind;
     use crate::widgets::data_view::{ColumnKind, DataColumn, DataColumnWidth, bench};
     use crate::widgets::tests::click;
-    use ratatui_core::layout::Position;
+    use crate::widgets::tests::mouse;
 
     fn cols() -> ColumnModel<&'static str> {
         ColumnModel::new(vec![
@@ -2551,15 +2551,7 @@ mod tests {
         let area = Rect::new(0, 0, 40, 6);
         TreeTable::new(&system, &columns, &rows).render(area, &mut Buffer::empty(area), &mut state);
         let row = state.row_regions[0].area;
-        let out = state.handle_mouse(
-            MouseEvent {
-                kind: MouseEventKind::Moved,
-                position: Position { x: row.x, y: row.y },
-                modifiers: KeyModifiers::NONE,
-            },
-            &rows,
-            &columns,
-        );
+        let out = state.handle_mouse(mouse(MouseEventKind::Moved, row.x, row.y), &rows, &columns);
         assert!(matches!(out, TreeTableOutcome::Ignored));
         assert_eq!(state.hovered, Some("r"));
     }
@@ -2579,11 +2571,7 @@ mod tests {
         TreeTable::new(&system, &columns, &old_rows).render(area, &mut buffer, &mut state);
         let old = state.row_regions[0].area;
         let _ = state.handle_mouse(
-            MouseEvent {
-                kind: MouseEventKind::Moved,
-                position: Position { x: old.x, y: old.y },
-                modifiers: KeyModifiers::NONE,
-            },
+            mouse(MouseEventKind::Moved, old.x, old.y),
             &old_rows,
             &columns,
         );
