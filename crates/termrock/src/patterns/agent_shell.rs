@@ -122,8 +122,6 @@ pub fn layout_agent_shell(area: Rect, config: AgentShellLayout) -> AgentShellSlo
 pub enum AgentShellFocus {
     /// The side rail.
     Rail,
-    /// The conversation stream.
-    Stream,
     /// The prompt composer.
     #[default]
     Prompt,

@@ -425,8 +425,6 @@ pub enum PromptComposerOutcome {
     },
     /// Presentation mode changed.
     PresentationChanged(ComposerPresentation),
-    /// Focus left the composer (consumer may move focus).
-    Blur,
     /// Selection copied (Ctrl+C with active selection when not busy).
     SelectionCopied {
         /// Selected text.
