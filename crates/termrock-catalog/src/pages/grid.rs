@@ -349,7 +349,7 @@ impl GridPage {
             DataColumn::new("mrr", "mrr", DataColumnWidth::Fixed(7))
                 .kind(ColumnKind::Numeric)
                 .sortable(),
-            DataColumn::new("active", "active", DataColumnWidth::Fixed(5)).editable(),
+            DataColumn::new("active", "active", DataColumnWidth::Fixed(6)).editable(),
             DataColumn::new("renewed_at", "renewed_at", DataColumnWidth::Fixed(12)).editable(),
             DataColumn::new("notes", "notes", DataColumnWidth::Fixed(27)).editable(),
         ]);
@@ -1108,27 +1108,6 @@ impl Page for GridPage {
                     labels[i], vars[i], ids[i], rects[i], buf, ctx, states[i], false, bg,
                 );
             }
-        }
-
-        let hy = area.y.saturating_add(h).saturating_add(1);
-        if hy < area.bottom() {
-            let help = if pending {
-                format!(
-                    "Enter edits · Space selects · s sorts · + inserts · - deletes · p previews SQL · Ctrl+S saves · seats over 500 are rejected on save · saved so far: {}",
-                    self.saved
-                )
-            } else {
-                format!(
-                    "p previews SQL · Ctrl+S saves · seats over 500 are rejected on save · saved so far: {}",
-                    self.saved
-                )
-            };
-            buf.set_string(
-                area.x.saturating_add(2),
-                hy,
-                &text::truncate(&help, usize::from(area.width.saturating_sub(2))),
-                t.muted(),
-            );
         }
         ctx.inert = saved_inert;
         if overlay {
