@@ -2,7 +2,7 @@
 //!
 //! **Mission.** Rows compose leading, primary, secondary, status, badge,
 //! trailing actions, and shortcuts with group headers and separators. State is
-//! [`CollectionState`] + [`SelectionModel`] (via [`Selection`]) + roving focus
+//! [`CollectionState`] + [`SelectionModel`] + roving focus
 //! + scroll/virtualization. Single / multi / range selection, typeahead,
 //! search, disabled/loading/empty, density, and narrow drop priority.
 //!
@@ -22,13 +22,11 @@ use ratatui_core::style::Modifier;
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers},
     interaction::{
-        CollectionState, HitRegion, NavigationMove, Outcome, PageMove, UiIntent,
+        CollectionState, HitRegion, NavigationMove, Outcome, PageMove, SelectionModel, UiIntent,
         default_list_intent,
     },
     style::{DesignSystem, ListRowVisualState, Role},
 };
-
-use super::Selection;
 
 /// How a pointer press on a row is interpreted.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -279,7 +277,7 @@ pub struct ListState<Id> {
     hovered: Option<Id>,
     regions: Vec<HitRegion<Id>>,
     pointer: Option<Position>,
-    selection: Option<Selection<Id>>,
+    selection: Option<SelectionModel<Id>>,
     check_regions: Vec<HitRegion<Id>>,
     click_policy: ListClickPolicy,
     selection_mode: ListSelectionMode,
@@ -365,14 +363,10 @@ impl<Id> ListState<Id> {
         match mode {
             ListSelectionMode::Single => self.disable_multi_select(),
             ListSelectionMode::Multi => {
-                self.selection.get_or_insert_with(|| {
-                    Selection::from(crate::interaction::SelectionModel::multiple())
-                });
+                self.selection.get_or_insert_with(SelectionModel::multiple);
             }
             ListSelectionMode::Range => {
-                self.selection.get_or_insert_with(|| {
-                    Selection::from(crate::interaction::SelectionModel::range())
-                });
+                self.selection.get_or_insert_with(SelectionModel::range);
             }
         }
     }
@@ -495,12 +489,12 @@ impl<Id> ListState<Id> {
 
     #[must_use]
     /// Returns the ordered multi-selection state, if enabled.
-    pub const fn selection(&self) -> Option<&Selection<Id>> {
+    pub const fn selection(&self) -> Option<&SelectionModel<Id>> {
         self.selection.as_ref()
     }
 
     /// Returns mutable access to ordered multi-selection state, if enabled.
-    pub fn selection_mut(&mut self) -> Option<&mut Selection<Id>> {
+    pub fn selection_mut(&mut self) -> Option<&mut SelectionModel<Id>> {
         self.selection.as_mut()
     }
 
@@ -741,7 +735,7 @@ impl<Id: Clone + PartialEq> ListState<Id> {
         let all = ids.iter().all(|id| selection.is_checked(id));
         if all {
             for id in &ids {
-                let _ = selection.toggle(id);
+                selection.toggle(id);
             }
         } else {
             selection.select_all(&ids);
@@ -760,8 +754,8 @@ impl<Id: Clone + PartialEq> ListState<Id> {
             return Outcome::Ignored;
         };
         // Anchor for subsequent range ops.
-        if selection.model().anchor().is_none() {
-            selection.model_mut().set_anchor(Some(row.id.clone()));
+        if selection.anchor().is_none() {
+            selection.set_anchor(Some(row.id.clone()));
         }
         selection.toggle(&row.id);
         Outcome::CheckToggled(row.id.clone())
@@ -780,10 +774,10 @@ impl<Id: Clone + PartialEq> ListState<Id> {
             .filter(|r| r.enabled && r.role.is_navigable())
             .map(|r| r.id.clone())
             .collect();
-        if selection.model().anchor().is_none() {
-            selection.model_mut().set_anchor(Some(active.clone()));
+        if selection.anchor().is_none() {
+            selection.set_anchor(Some(active.clone()));
         }
-        let _ = selection.model_mut().set_range(&order, &active);
+        let _ = selection.set_range(&order, &active);
         Outcome::CheckToggled(active)
     }
 
@@ -852,7 +846,7 @@ impl<Id: Clone + PartialEq> ListState<Id> {
         {
             self.collection.set_active(Some(id.clone()));
             if let Some(selection) = self.selection.as_mut() {
-                selection.toggle(&id);
+                let _ = selection.toggle(&id);
                 return Outcome::CheckToggled(id);
             }
         }
@@ -888,15 +882,15 @@ impl<Id: Clone + PartialEq> ListState<Id> {
         self.collection.set_active(Some(id.clone()));
         if !extend_range {
             if let Some(sel) = self.selection.as_mut() {
-                sel.model_mut().set_anchor(Some(id.clone()));
-                let _ = sel.model_mut().select(id.clone());
+                sel.set_anchor(Some(id.clone()));
+                let _ = sel.select(id.clone());
             }
             return Outcome::Changed;
         }
         // Need rows for order — host should call range_select_to_active with rows.
         if let Some(sel) = self.selection.as_mut() {
-            if sel.model().anchor().is_none() {
-                sel.model_mut().set_anchor(Some(id.clone()));
+            if sel.anchor().is_none() {
+                sel.set_anchor(Some(id.clone()));
             }
             let _ = sel.toggle(&id);
         }
@@ -913,10 +907,10 @@ impl<Id: Clone + PartialEq> ListState<Id> {
             .filter(|r| r.enabled && r.role.is_navigable())
             .map(|r| r.id.clone())
             .collect();
-        if selection.model().anchor().is_none() {
-            selection.model_mut().set_anchor(Some(to.clone()));
+        if selection.anchor().is_none() {
+            selection.set_anchor(Some(to.clone()));
         }
-        let _ = selection.model_mut().set_range(&order, to);
+        let _ = selection.set_range(&order, to);
         self.collection.set_active(Some(to.clone()));
         Outcome::CheckToggled(to.clone())
     }
@@ -2073,7 +2067,7 @@ mod tests {
 
         state.select(Some("second"));
         state.enable_multi_select();
-        assert!(state.selection_mut().unwrap().toggle(&"second"));
+        state.selection_mut().unwrap().toggle(&"second");
 
         assert_eq!(state.selected(), Some(&"second"));
         assert_eq!(state.selection().unwrap().checked(), ["second"]);
@@ -2406,7 +2400,8 @@ mod tests {
         let system = DesignSystem::junie();
         let mut state = ListState::new(Some("a"));
         state.set_selection_mode(ListSelectionMode::Multi);
-        assert!(state.selection_mut().unwrap().toggle(&"a"));
+        state.selection_mut().unwrap().toggle(&"a");
+        assert!(state.selection().unwrap().is_checked(&"a"));
         let area = Rect::new(0, 0, 20, 2);
         let mut buffer = Buffer::empty(area);
         (&List::new(&rows, &system)).render(area, &mut buffer, &mut state);

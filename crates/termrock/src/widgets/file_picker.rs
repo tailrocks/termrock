@@ -25,8 +25,8 @@ use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{
         CollectionItem, CollectionOutcome, CollectionState, OverlayId, OverlayOutcome, OverlaySize,
-        OverlaySpec, OverlayStack, SemanticNode, SemanticRole, SemanticScene, SemanticState,
-        UiIntent,
+        OverlaySpec, OverlayStack, SelectionModel, SemanticNode, SemanticRole, SemanticScene,
+        SemanticState, UiIntent,
     },
     style::{ButtonRecipeVariant, ControlState, DesignSystem, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
@@ -34,7 +34,7 @@ use crate::{
 
 use super::{
     Panel, PanelChrome, PanelTitleSpec, PanelVariant, PathExpect, PathFsStatus, PathInput,
-    PathInputOutcome, PathInputState, PathStyle, Selection, join_path, normalize_separators,
+    PathInputOutcome, PathInputState, PathStyle, join_path, normalize_separators,
 };
 
 /// Overlay id for modal file pickers.
@@ -451,7 +451,7 @@ pub struct FilePickerState {
     /// Visible entries after filter/sort.
     entries: Vec<FileEntry>,
     collection: CollectionState<String>,
-    selection: Selection<String>,
+    selection: SelectionModel<String>,
     multi: bool,
     mode: FilePickerMode,
     path_style: PathStyle,
@@ -508,7 +508,7 @@ impl FilePickerState {
             raw_entries: Vec::new(),
             entries: Vec::new(),
             collection: CollectionState::new().wrap(true),
-            selection: Selection::new(),
+            selection: SelectionModel::multiple(),
             multi: false,
             mode: FilePickerMode::OpenFile,
             path_style: PathStyle::Unix,

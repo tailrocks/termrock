@@ -101,7 +101,8 @@ impl<Id> From<RovingOutcome<Id>> for CollectionOutcome<Id> {
 /// # Current vs active
 ///
 /// For single-cursor collections, **current** == **active** (the keyboard
-/// descendant). Multi-select membership stays on widget `Selection` — not here.
+/// descendant). Multi-select membership stays on
+/// [`SelectionModel`](super::SelectionModel) — not here.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CollectionState<Id> {
     roving: RovingFocusGroup<Id>,

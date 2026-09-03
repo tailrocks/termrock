@@ -8,7 +8,7 @@
 //! max selection, groups, search, and a compact summary when closed.
 //!
 //! **vs [`Select`](super::Select).** Single value. MultiSelect owns ordered
-//! membership via [`Selection`](super::Selection).
+//! membership via [`SelectionModel`](crate::interaction::SelectionModel).
 //! **vs always-visible checkbox lists.** MultiSelect is closed-by-default with
 //! popover/fullscreen list chrome (host places overlays).
 //!
@@ -23,8 +23,8 @@ use ratatui_core::{
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{
-        CollectionItem, CollectionOutcome, CollectionState, SemanticNode, SemanticRole,
-        SemanticScene, SemanticState, UiIntent,
+        CollectionItem, CollectionOutcome, CollectionState, SelectionModel, SemanticNode,
+        SemanticRole, SemanticScene, SemanticState, UiIntent,
     },
     style::{ButtonRecipeVariant, ControlState, DesignSystem, Glyph, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
@@ -32,7 +32,7 @@ use crate::{
 
 use super::{
     SELECT_FULLSCREEN_MAX_HEIGHT, SELECT_FULLSCREEN_MAX_WIDTH, SelectOption, SelectPresentation,
-    SelectRecipe, SelectRowKind, Selection, Surface, SurfaceRecipe, TextInput, TextInputOutcome,
+    SelectRecipe, SelectRowKind, Surface, SurfaceRecipe, TextInput, TextInputOutcome,
     TextInputState, Validation,
 };
 
@@ -102,7 +102,7 @@ pub enum MultiSelectOutcome<Id> {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MultiSelectState<Id: Clone + PartialEq> {
     /// Ordered checked membership.
-    selection: Selection<Id>,
+    selection: SelectionModel<Id>,
     /// Open presentation.
     presentation: SelectPresentation,
     /// Keyboard highlight (distinct from checks).
@@ -144,7 +144,7 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
             .with_editing();
         search.set_focused(false);
         Self {
-            selection: Selection::new(),
+            selection: SelectionModel::multiple(),
             presentation: SelectPresentation::Closed,
             collection: CollectionState::new().wrap(true),
             search,
@@ -281,12 +281,12 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
 
     /// Selection model.
     #[must_use]
-    pub const fn selection(&self) -> &Selection<Id> {
+    pub const fn selection(&self) -> &SelectionModel<Id> {
         &self.selection
     }
 
     /// Mutable selection (advanced).
-    pub fn selection_mut(&mut self) -> &mut Selection<Id> {
+    pub fn selection_mut(&mut self) -> &mut SelectionModel<Id> {
         &mut self.selection
     }
 
@@ -473,7 +473,8 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
                 }
             }
         }
-        let now = self.selection.toggle(id);
+        self.selection.toggle(id);
+        let now = self.selection.is_checked(id);
         MultiSelectOutcome::Toggled {
             id: id.clone(),
             checked: now,

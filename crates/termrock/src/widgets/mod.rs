@@ -123,7 +123,6 @@ mod search_results;
 mod section;
 mod segmented_control;
 mod select;
-mod selection;
 mod semantic_status;
 mod separator;
 mod sidebar;
@@ -719,7 +718,6 @@ pub use select::{
     SELECT_FULLSCREEN_MAX_HEIGHT, SELECT_FULLSCREEN_MAX_WIDTH, Select, SelectOption, SelectOutcome,
     SelectPresentation, SelectRecipe, SelectRowKind, SelectState,
 };
-pub use selection::Selection;
 pub use semantic_status::SemanticStatus;
 pub use separator::{Separator, SeparatorOrientation, SeparatorThickness, SeparatorVariant};
 pub use sidebar::{

@@ -26,13 +26,16 @@ use ratatui_core::{
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers},
-    interaction::{CollectionItem, CollectionState, HitRegion, NavigationMove, PageMove, UiIntent},
+    interaction::{
+        CollectionItem, CollectionState, HitRegion, NavigationMove, PageMove, SelectionModel,
+        UiIntent,
+    },
     scroll::max_offset,
     style::{DesignSystem, Glyph, ListRowVisualState, Role, SPINNER_BRAILLE_FRAMES},
     text::{display_cols, display_cols_slice_into, take_display_cols},
 };
 
-use super::{ComposedRow, Selection, StickyRegion, Virtualizer, row_chrome::RowChrome};
+use super::{ComposedRow, StickyRegion, Virtualizer, row_chrome::RowChrome};
 
 /// Default overscan when using virtualized tree windows.
 pub const TREE_DEFAULT_OVERSCAN: u16 = 4;
@@ -362,7 +365,7 @@ pub struct TreeState<Id> {
     follow_selection: bool,
     regions: Vec<HitRegion<Id>>,
     disclosure_regions: Vec<HitRegion<Id>>,
-    selection: Option<Selection<Id>>,
+    selection: Option<SelectionModel<Id>>,
     check_regions: Vec<HitRegion<Id>>,
     scrollbar_region: Option<Rect>,
     /// Typeahead / collection model over the flat projection.
@@ -524,7 +527,7 @@ impl<Id> TreeState<Id> {
 
     /// Enables ordered multi-selection with an empty selection.
     pub fn enable_multi_select(&mut self) {
-        self.selection.get_or_insert_with(Selection::new);
+        self.selection.get_or_insert_with(SelectionModel::multiple);
     }
 
     /// Typeahead buffer (roving).
@@ -594,12 +597,12 @@ impl<Id> TreeState<Id> {
 
     #[must_use]
     /// Returns the ordered multi-selection state, if enabled.
-    pub const fn selection(&self) -> Option<&Selection<Id>> {
+    pub const fn selection(&self) -> Option<&SelectionModel<Id>> {
         self.selection.as_ref()
     }
 
     /// Returns mutable access to ordered multi-selection state, if enabled.
-    pub fn selection_mut(&mut self) -> Option<&mut Selection<Id>> {
+    pub fn selection_mut(&mut self) -> Option<&mut SelectionModel<Id>> {
         self.selection.as_mut()
     }
 
