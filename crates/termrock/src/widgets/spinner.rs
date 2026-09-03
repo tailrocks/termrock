@@ -341,13 +341,6 @@ impl<'a> Spinner<'a> {
         self
     }
 
-    /// Variant.
-    #[must_use]
-    pub const fn variant(mut self, v: SpinnerVariant) -> Self {
-        self.variant = Some(v);
-        self
-    }
-
     /// Frame glyph (legacy API preserved).
     #[must_use]
     pub fn frame_glyph(&self, tick: FrameTick, motion: MotionPolicy) -> &'static str {

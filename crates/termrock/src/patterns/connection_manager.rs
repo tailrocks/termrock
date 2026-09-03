@@ -108,27 +108,6 @@ impl ConnectionKind {
             Self::Custom => "Custom",
         }
     }
-
-    /// Glyph.
-    #[must_use]
-    pub const fn glyph(self, ascii: bool) -> &'static str {
-        if ascii {
-            return match self {
-                Self::Database => "D",
-                Self::Ssh => "S",
-                Self::Api => "A",
-                Self::Service => "V",
-                Self::Custom => "C",
-            };
-        }
-        match self {
-            Self::Database => "▣",
-            Self::Ssh => "⌘",
-            Self::Api => "⇄",
-            Self::Service => "⬡",
-            Self::Custom => "◆",
-        }
-    }
 }
 
 /// Live connection health (host-projected).
@@ -178,20 +157,6 @@ impl ConnectionStatus {
             Self::Error => "error",
             Self::AuthRequired => "auth required",
             Self::Offline => "offline",
-        }
-    }
-
-    /// Letter (colorless).
-    #[must_use]
-    pub const fn letter(self) -> char {
-        match self {
-            Self::Connected => 'C',
-            Self::Disconnected => 'D',
-            Self::Connecting => '~',
-            Self::Reconnecting => 'R',
-            Self::Error => 'E',
-            Self::AuthRequired => '!',
-            Self::Offline => 'O',
         }
     }
 

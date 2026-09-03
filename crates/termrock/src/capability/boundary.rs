@@ -41,12 +41,6 @@ impl CapabilityBoundary {
         }
     }
 
-    /// Explicit set + profile.
-    #[must_use]
-    pub const fn new(set: CapabilitySet, profile: CapabilityProfile) -> Self {
-        Self { set, profile }
-    }
-
     /// Disable chromatic color (NO_COLOR / monochrome).
     #[must_use]
     pub const fn colorless(self) -> bool {

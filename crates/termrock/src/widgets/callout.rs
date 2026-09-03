@@ -587,13 +587,6 @@ impl<'a, Id> Callout<'a, Id> {
         self
     }
 
-    /// Recipe.
-    #[must_use]
-    pub const fn recipe(mut self, recipe: CalloutRecipe) -> Self {
-        self.recipe = recipe;
-        self
-    }
-
     /// Compact helper.
     #[must_use]
     pub const fn compact(mut self) -> Self {
@@ -780,12 +773,6 @@ impl<Id> AlertState<Id> {
     /// Set focus (host / scene).
     pub fn set_focused(&mut self, on: bool) {
         self.focused = on;
-    }
-
-    /// Slots.
-    #[must_use]
-    pub const fn slots(&self) -> CalloutSlots {
-        self.slots
     }
 
     /// Dismiss programmatically.
@@ -1051,13 +1038,6 @@ impl<'a, Id> Alert<'a, Id> {
         self
     }
 
-    /// Recipe.
-    #[must_use]
-    pub const fn recipe(mut self, recipe: CalloutRecipe) -> Self {
-        self.recipe = recipe;
-        self
-    }
-
     /// Compact inline alert.
     #[must_use]
     pub const fn compact(mut self) -> Self {
@@ -1083,14 +1063,6 @@ impl<'a, Id> Alert<'a, Id> {
     #[must_use]
     pub const fn actions(mut self, actions: &'a [Action<'a, Id>]) -> Self {
         self.actions = actions;
-        self
-    }
-
-    /// ASCII.
-    #[must_use]
-    /// Colorless.
-    pub const fn colorless(mut self, on: bool) -> Self {
-        self.colorless = on;
         self
     }
 

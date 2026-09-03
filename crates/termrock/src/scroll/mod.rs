@@ -518,17 +518,6 @@ pub struct ScrollSpan {
     pub viewport_len: usize,
 }
 
-impl ScrollSpan {
-    #[must_use]
-    /// Creates a scroll span from content and viewport lengths.
-    pub const fn new(content_len: usize, viewport_len: usize) -> Self {
-        Self {
-            content_len,
-            viewport_len,
-        }
-    }
-}
-
 /// Scroll a selectable list by wheel while keeping selection and viewport
 /// coherent.
 ///

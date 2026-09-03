@@ -29,12 +29,6 @@ impl VirtRange {
     pub const fn len(self) -> u64 {
         self.end.saturating_sub(self.start)
     }
-
-    /// Empty?
-    #[must_use]
-    pub const fn is_empty(self) -> bool {
-        self.len() == 0
-    }
 }
 
 /// How each logical item maps to display extent (rows or columns).
@@ -99,12 +93,6 @@ impl VirtSlice {
     #[must_use]
     pub const fn len(self) -> u64 {
         self.end.saturating_sub(self.start)
-    }
-
-    /// Whether the visible window is empty.
-    #[must_use]
-    pub const fn is_empty(self) -> bool {
-        self.len() == 0
     }
 
     /// Measure/prefetch length (includes overscan).

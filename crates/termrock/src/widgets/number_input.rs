@@ -70,12 +70,6 @@ impl Default for NumberConstraints {
 }
 
 impl NumberConstraints {
-    /// Unbounded with step 1.
-    #[must_use]
-    pub fn new() -> Self {
-        Self::default()
-    }
-
     /// Min and max inclusive.
     #[must_use]
     pub fn bounded(min: f64, max: f64, step: f64) -> Self {
@@ -306,12 +300,6 @@ impl NumberInputState {
         self
     }
 
-    /// Kind.
-    #[must_use]
-    pub const fn kind(&self) -> NumberKind {
-        self.kind
-    }
-
     /// Constraints.
     #[must_use]
     pub const fn constraints(&self) -> NumberConstraints {
@@ -334,12 +322,6 @@ impl NumberInputState {
     #[must_use]
     pub const fn is_editing(&self) -> bool {
         self.editing
-    }
-
-    /// Paint geometry.
-    #[must_use]
-    pub const fn parts(&self) -> Option<&NumberInputParts> {
-        self.parts.as_ref()
     }
 
     /// Focus flag. Does not begin the draft edit session.

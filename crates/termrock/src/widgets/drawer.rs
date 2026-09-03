@@ -504,12 +504,6 @@ impl DrawerState {
         self.footer_rows = rows;
     }
 
-    /// Slots after paint.
-    #[must_use]
-    pub const fn slots(&self) -> DrawerSlots {
-        self.slots
-    }
-
     /// Body area convenience.
     #[must_use]
     pub const fn body_area(&self) -> Rect {

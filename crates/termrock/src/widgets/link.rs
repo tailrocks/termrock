@@ -230,13 +230,6 @@ impl<'a> Link<'a> {
         }
     }
 
-    /// Variant chrome.
-    #[must_use]
-    pub const fn variant(mut self, variant: LinkVariant) -> Self {
-        self.variant = variant;
-        self
-    }
-
     /// Destination display policy.
     #[must_use]
     pub const fn destination_display(mut self, display: DestinationDisplay) -> Self {
@@ -327,22 +320,6 @@ impl<'a> Link<'a> {
                 }
             }
         }
-    }
-
-    /// A11y plain description.
-    #[must_use]
-    pub fn plain(&self) -> String {
-        let kind = self.destination.kind_id();
-        format!(
-            "{} → {} ({kind}{})",
-            self.label.trim(),
-            self.destination.as_str(),
-            if self.destination.is_external() {
-                "; external"
-            } else {
-                ""
-            }
-        )
     }
 
     /// Measure width.
@@ -589,24 +566,11 @@ impl<'a> ActionLink<'a> {
         }
     }
 
-    /// Variant.
-    #[must_use]
-    pub const fn variant(mut self, variant: LinkVariant) -> Self {
-        self.variant = variant;
-        self
-    }
-
     /// Visible risk / scope note (never hidden).
     #[must_use]
     pub const fn risk_note(mut self, note: &'a str) -> Self {
         self.risk_note = Some(note);
         self
-    }
-
-    /// Label.
-    #[must_use]
-    pub const fn label(&self) -> &'a str {
-        self.label
     }
 
     fn decorated(&self) -> String {
@@ -696,26 +660,6 @@ impl<'a> ActionLink<'a> {
         if default_button_intent(key)
             .is_some_and(|i| matches!(i, UiIntent::Activate | UiIntent::Submit))
         {
-            return ActionLinkOutcome::Activated;
-        }
-        ActionLinkOutcome::Ignored
-    }
-
-    /// Mouse click.
-    pub fn handle_mouse(&self, state: &mut LinkState, event: MouseEvent) -> ActionLinkOutcome {
-        if state.disabled {
-            return ActionLinkOutcome::Ignored;
-        }
-        let Some(parts) = &state.parts else {
-            return ActionLinkOutcome::Ignored;
-        };
-        let hit = parts.root.contains(event.position);
-        if matches!(event.kind, MouseEventKind::Moved | MouseEventKind::Drag(_)) {
-            state.hovered = hit;
-            return ActionLinkOutcome::Ignored;
-        }
-        if event.kind == MouseEventKind::Down(MouseButton::Left) && hit {
-            state.focused = true;
             return ActionLinkOutcome::Activated;
         }
         ActionLinkOutcome::Ignored

@@ -21,7 +21,7 @@ use std::collections::BTreeSet;
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{KeyCode, KeyEvent, KeyModifiers},
     interaction::{NavigationMove, PageMove, UiIntent},
     style::{DesignSystem, Glyph, ListRowVisualState, MASK_CELLS, Role},
     text::{contains_lower_all, display_cols, take_display_cols},
@@ -68,21 +68,6 @@ impl InspectKind {
             Self::Object => "object",
             Self::Array => "array",
             Self::Unknown => "unknown",
-        }
-    }
-
-    /// Short type glyph for chrome.
-    #[must_use]
-    pub const fn glyph(self) -> &'static str {
-        match self {
-            Self::Null => "∅",
-            Self::Bool => "⊤",
-            Self::Number => "#",
-            Self::String => "\"",
-            Self::Binary => "⬡",
-            Self::Object => "{}",
-            Self::Array => "[]",
-            Self::Unknown => "·",
         }
     }
 }
@@ -993,87 +978,6 @@ impl ObjectInspectorState {
             }
             KeyCode::Char(c) if !key.modifiers.contains(KeyModifiers::CONTROL) => {
                 self.edit_draft.push(c);
-                ObjectInspectorOutcome::Ignored
-            }
-            _ => ObjectInspectorOutcome::Ignored,
-        }
-    }
-
-    /// Mouse.
-    pub fn handle_mouse(
-        &mut self,
-        event: MouseEvent,
-        fields: &[InspectorField<'_>],
-    ) -> ObjectInspectorOutcome {
-        if !self.accepts_input || fields.is_empty() {
-            return ObjectInspectorOutcome::Ignored;
-        }
-        let field_count = fields.len();
-        let (ox, oy) = self.origin;
-        let body = Rect {
-            x: ox,
-            y: oy,
-            width: self.body_width.max(1),
-            height: self.body_rows.max(1),
-        };
-        match event.kind {
-            MouseEventKind::ScrollDown if body.contains(event.position) => {
-                self.handle_intent(UiIntent::Move(NavigationMove::Next), fields)
-            }
-            MouseEventKind::ScrollUp if body.contains(event.position) => {
-                self.handle_intent(UiIntent::Move(NavigationMove::Previous), fields)
-            }
-            MouseEventKind::Down(MouseButton::Left) => {
-                let hit = self
-                    .regions
-                    .iter()
-                    .find(|r| r.area.contains(event.position))
-                    .map(|r| {
-                        (
-                            r.index,
-                            r.path.clone(),
-                            r.disclosure.is_some_and(|d| d.contains(event.position)),
-                        )
-                    });
-                if let Some((index, path, on_disclosure)) = hit {
-                    if on_disclosure {
-                        let expanded = self.toggle_expanded(&path);
-                        return ObjectInspectorOutcome::ExpandToggled {
-                            path,
-                            index,
-                            expanded,
-                        };
-                    }
-                    if self.cursor == index {
-                        return ObjectInspectorOutcome::Activated { path, index };
-                    }
-                    self.cursor = index;
-                    self.cursor_path = Some(path.clone());
-                    self.ensure_cursor_visible(field_count);
-                    return ObjectInspectorOutcome::CursorMoved { index, path };
-                }
-                // Fallback row math
-                if body.contains(event.position) {
-                    let start = self.scroll.offset_y() as usize;
-                    let row = usize::from(event.position.y.saturating_sub(oy));
-                    let index = start.saturating_add(row);
-                    if index >= field_count {
-                        return ObjectInspectorOutcome::Ignored;
-                    }
-                    if self.cursor == index {
-                        return ObjectInspectorOutcome::Activated {
-                            path: path_at(fields, index),
-                            index,
-                        };
-                    }
-                    self.cursor = index;
-                    self.sync_path(fields);
-                    self.ensure_cursor_visible(field_count);
-                    return ObjectInspectorOutcome::CursorMoved {
-                        index,
-                        path: path_at(fields, index),
-                    };
-                }
                 ObjectInspectorOutcome::Ignored
             }
             _ => ObjectInspectorOutcome::Ignored,

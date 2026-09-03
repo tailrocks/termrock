@@ -165,18 +165,6 @@ pub struct AnsiSegment {
     pub href: Option<String>,
 }
 
-impl AnsiSegment {
-    /// Plain segment.
-    #[must_use]
-    pub fn plain(text: impl Into<String>, style: Style) -> Self {
-        Self {
-            text: text.into(),
-            style,
-            href: None,
-        }
-    }
-}
-
 /// One logical output line after CR/BS resolution.
 #[derive(Debug, Clone, PartialEq)]
 pub struct AnsiLine {
@@ -389,26 +377,6 @@ impl AnsiStream {
     pub fn into_lines(mut self) -> Vec<AnsiLine> {
         self.finish_line();
         self.lines.into_iter().collect()
-    }
-
-    /// Plain history + pending for copy.
-    #[must_use]
-    pub fn plain(&self) -> String {
-        let mut out = String::new();
-        for (i, line) in self.lines.iter().enumerate() {
-            if i > 0 {
-                out.push('\n');
-            }
-            out.push_str(&line.plain);
-        }
-        let pending = self.pending_plain();
-        if !pending.is_empty() {
-            if !out.is_empty() {
-                out.push('\n');
-            }
-            out.push_str(&pending);
-        }
-        out
     }
 
     fn push_line(&mut self, line: AnsiLine) {
@@ -943,22 +911,6 @@ impl<'a> AnsiText<'a> {
     #[must_use]
     pub const fn len(&self) -> usize {
         self.lines.len()
-    }
-
-    /// Empty.
-    #[must_use]
-    pub const fn is_empty(&self) -> bool {
-        self.lines.is_empty()
-    }
-
-    /// Plain join for copy.
-    #[must_use]
-    pub fn plain(&self) -> String {
-        self.lines
-            .iter()
-            .map(|l| l.plain.as_str())
-            .collect::<Vec<_>>()
-            .join("\n")
     }
 
     /// Paint with scroll state.

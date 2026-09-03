@@ -264,12 +264,6 @@ impl<'a> StatusIndicator<'a> {
         self
     }
 
-    /// Resolved kind.
-    #[must_use]
-    pub const fn kind(self) -> SemanticStatus {
-        self.kind
-    }
-
     /// Glyph for current capability.
     #[must_use]
     pub fn glyph(&self) -> &'static str {

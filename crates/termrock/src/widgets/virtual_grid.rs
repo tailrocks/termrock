@@ -861,16 +861,6 @@ impl<'a, RowId, ColId> VirtualGrid<'a, RowId, ColId> {
         }
     }
 
-    /// Line shown when there is nothing to show.
-    ///
-    /// A collection that paints nothing when empty reads as broken; it has to
-    /// say that it is empty.
-    #[must_use]
-    pub const fn empty_message(mut self, message: &'a str) -> Self {
-        self.empty_message = message;
-        self
-    }
-
     /// Declares a known total row count (unknown totals omit this).
     #[must_use]
     pub const fn total_rows(mut self, total: u64) -> Self {

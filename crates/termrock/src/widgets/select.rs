@@ -340,12 +340,6 @@ impl<Id> SelectState<Id> {
         self.search.value()
     }
 
-    /// Recipe.
-    #[must_use]
-    pub const fn recipe(&self) -> SelectRecipe {
-        self.recipe
-    }
-
     /// Collection model.
     #[must_use]
     pub const fn collection(&self) -> &CollectionState<Id> {

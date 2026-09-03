@@ -133,16 +133,6 @@ pub struct SkeletonLayout {
 }
 
 impl SkeletonLayout {
-    /// Empty layout.
-    #[must_use]
-    pub fn new() -> Self {
-        Self {
-            shapes: Vec::new(),
-            gap: 0,
-            reserved_height: None,
-        }
-    }
-
     /// Classic staggered list lines ([`Skeleton::new`] shape).
     #[must_use]
     pub fn lines(n: u16) -> Self {

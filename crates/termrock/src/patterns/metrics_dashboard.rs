@@ -186,16 +186,6 @@ impl MetricAlertSeverity {
         }
     }
 
-    /// Letter.
-    #[must_use]
-    pub const fn letter(self) -> char {
-        match self {
-            Self::Info => 'i',
-            Self::Warning => 'w',
-            Self::Critical => 'c',
-        }
-    }
-
     /// Shared severity projection for recipe-owned status paint.
     #[must_use]
     pub const fn semantic(self) -> SemanticStatus {

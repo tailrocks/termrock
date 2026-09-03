@@ -133,13 +133,6 @@ impl<'a> Heading<'a> {
         self
     }
 
-    /// Recipe.
-    #[must_use]
-    pub const fn recipe(mut self, recipe: HeadingRecipe) -> Self {
-        self.recipe = recipe;
-        self
-    }
-
     /// Compact single-line recipe (ASCII-friendly prefixes on by default).
     #[must_use]
     pub const fn compact(mut self) -> Self {
@@ -218,12 +211,6 @@ impl<'a> Heading<'a> {
             HeadingLevel::H2 => "## ",
             HeadingLevel::H3 => "### ",
         }
-    }
-
-    /// Copy-safe plain title (no prefix).
-    #[must_use]
-    pub fn plain(&self) -> &str {
-        self.text
     }
 
     /// Full plain including prefix (clipboard for compact hierarchy).
@@ -434,13 +421,6 @@ impl<'a> Paragraph<'a> {
     #[must_use]
     pub const fn kind(mut self, kind: ParagraphKind) -> Self {
         self.kind = kind;
-        self
-    }
-
-    /// Recipe.
-    #[must_use]
-    pub const fn recipe(mut self, recipe: ParagraphRecipe) -> Self {
-        self.recipe = recipe;
         self
     }
 

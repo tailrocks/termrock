@@ -1209,57 +1209,6 @@ impl<'a, Id: Clone + PartialEq> ToggleGroup<'a, Id> {
         ToggleGroupOutcome::Ignored
     }
 
-    /// Mouse.
-    pub fn handle_mouse(
-        &self,
-        state: &mut ToggleGroupState<Id>,
-        event: MouseEvent,
-    ) -> ToggleGroupOutcome<Id> {
-        let Some(parts) = state.parts.clone() else {
-            return ToggleGroupOutcome::Ignored;
-        };
-        if !parts.root.contains(event.position) {
-            if matches!(event.kind, MouseEventKind::Moved) {
-                state.hovered = None;
-            }
-            return ToggleGroupOutcome::Ignored;
-        }
-        match event.kind {
-            MouseEventKind::Moved | MouseEventKind::Drag(_) => {
-                state.hovered = parts
-                    .items
-                    .iter()
-                    .find(|it| !it.overflowed && it.area.contains(event.position))
-                    .map(|it| it.id.clone());
-                ToggleGroupOutcome::Ignored
-            }
-            MouseEventKind::Down(MouseButton::Left) => {
-                if let Some(tr) = parts.overflow_trigger {
-                    if tr.contains(event.position) {
-                        state.surface_focused = true;
-                        state.overflow_open = !state.overflow_open;
-                        return if state.overflow_open {
-                            ToggleGroupOutcome::OverflowOpened
-                        } else {
-                            ToggleGroupOutcome::OverflowClosed
-                        };
-                    }
-                }
-                if let Some(it) = parts
-                    .items
-                    .iter()
-                    .find(|it| !it.overflowed && it.area.contains(event.position))
-                {
-                    state.surface_focused = true;
-                    state.cursor = Some(it.id.clone());
-                    return self.activate_item(state, it.id.clone());
-                }
-                ToggleGroupOutcome::Ignored
-            }
-            _ => ToggleGroupOutcome::Ignored,
-        }
-    }
-
     /// Host selected overflow menu item → activate.
     pub fn activate_overflow(
         &self,

@@ -447,12 +447,6 @@ impl PopoverState {
         self.footer_rows = rows;
     }
 
-    /// Slots after last paint.
-    #[must_use]
-    pub const fn slots(&self) -> PopoverSlots {
-        self.slots
-    }
-
     /// Body area convenience.
     #[must_use]
     pub const fn body_area(&self) -> Rect {

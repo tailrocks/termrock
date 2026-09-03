@@ -22,7 +22,7 @@ use std::collections::BTreeMap;
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{KeyCode, KeyEvent, KeyModifiers},
     style::{DesignSystem, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
     widgets::{
@@ -57,20 +57,6 @@ pub enum CitationSourceType {
 }
 
 impl CitationSourceType {
-    /// ASCII letter.
-    #[must_use]
-    pub const fn letter(self) -> char {
-        match self {
-            Self::File => 'F',
-            Self::Url => 'U',
-            Self::Docs => 'D',
-            Self::Issue => 'I',
-            Self::Paper => 'P',
-            Self::Message => 'M',
-            Self::Other => '?',
-        }
-    }
-
     /// Glyph.
     #[must_use]
     pub const fn glyph(self) -> &'static str {
@@ -761,26 +747,6 @@ impl<'a> SourceCitation<'a> {
             }
             _ => SourceCitationOutcome::Ignored,
         }
-    }
-
-    /// Mouse click.
-    pub fn handle_mouse(
-        &self,
-        state: &mut SourceCitationState,
-        event: MouseEvent,
-    ) -> SourceCitationOutcome {
-        if event.kind != MouseEventKind::Down(MouseButton::Left) {
-            if event.kind == MouseEventKind::Moved && state.area.contains(event.position) {
-                state.hovered = true;
-                return SourceCitationOutcome::Ignored;
-            }
-            return SourceCitationOutcome::Ignored;
-        }
-        if !state.area.contains(event.position) && state.area.width > 0 {
-            return SourceCitationOutcome::Ignored;
-        }
-        state.focused = true;
-        self.open_outcome(state)
     }
 
     fn open_outcome(&self, state: &mut SourceCitationState) -> SourceCitationOutcome {

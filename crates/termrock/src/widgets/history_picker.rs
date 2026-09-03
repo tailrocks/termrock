@@ -921,25 +921,10 @@ impl<'a, Id> HistoryPicker<'a, Id> {
         self
     }
 
-    /// ASCII.
-    #[must_use]
-    /// Colorless.
-    pub const fn colorless(mut self, on: bool) -> Self {
-        self.colorless = on;
-        self
-    }
-
     /// Footer.
     #[must_use]
     pub const fn footer_hint(mut self, h: Option<&'a str>) -> Self {
         self.footer_hint = h;
-        self
-    }
-
-    /// Empty message.
-    #[must_use]
-    pub const fn empty_message(mut self, m: &'a str) -> Self {
-        self.empty_message = m;
         self
     }
 

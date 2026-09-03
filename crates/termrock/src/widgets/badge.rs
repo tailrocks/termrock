@@ -14,7 +14,7 @@
 //! References: shadcn Badge, issue labels, btop indicators, agent task status.
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
 
-use crate::input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind};
+use crate::input::{KeyCode, KeyEvent};
 use crate::interaction::{
     SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, default_button_intent,
 };
@@ -533,24 +533,6 @@ impl<'a> Badge<'a> {
             UiIntent::Activate | UiIntent::Submit | UiIntent::Toggle => self.activate(state),
             _ => BadgeOutcome::Ignored,
         }
-    }
-
-    /// Mouse down on painted region.
-    pub fn handle_mouse(&self, state: &mut BadgeState, event: MouseEvent) -> BadgeOutcome {
-        if !self.interactive
-            || self.disabled
-            || event.kind != MouseEventKind::Down(MouseButton::Left)
-        {
-            return BadgeOutcome::Ignored;
-        }
-        let Some(region) = state.region else {
-            return BadgeOutcome::Ignored;
-        };
-        if !region.contains(event.position) {
-            return BadgeOutcome::Ignored;
-        }
-        state.focused = true;
-        self.activate(state)
     }
 
     fn activate(&self, state: &mut BadgeState) -> BadgeOutcome {

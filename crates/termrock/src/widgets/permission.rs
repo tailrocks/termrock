@@ -1404,14 +1404,6 @@ impl<'a> PermissionPrompt<'a> {
         self.danger_chrome = chrome;
         self
     }
-
-    /// Prefer ASCII risk markers.
-    #[must_use]
-    /// Reduced-color paint (non-color risk still has glyphs).
-    pub const fn colorless(mut self, colorless: bool) -> Self {
-        self.colorless = colorless;
-        self
-    }
 }
 
 impl StatefulWidget for &PermissionPrompt<'_> {

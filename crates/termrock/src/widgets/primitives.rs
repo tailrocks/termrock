@@ -830,13 +830,6 @@ impl<'a> IconButton<'a> {
         self
     }
 
-    /// Variant (quiet / primary / destructive common).
-    #[must_use]
-    pub const fn variant(mut self, variant: ButtonVariant) -> Self {
-        self.variant = variant;
-        self
-    }
-
     /// Destructive recipe (never safe default focus for dialogs).
     #[must_use]
     pub const fn destructive(mut self) -> Self {

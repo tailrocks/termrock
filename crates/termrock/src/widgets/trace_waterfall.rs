@@ -19,7 +19,7 @@ use std::collections::BTreeSet;
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{KeyCode, KeyEvent, KeyModifiers},
     style::{DesignSystem, ListRowVisualState, Role},
     text::{contains_lower_all, take_display_cols},
     widgets::{
@@ -876,65 +876,6 @@ impl TraceWaterfallState {
             _ => {}
         }
         TraceWaterfallOutcome::Ignored
-    }
-
-    /// Mouse.
-    pub fn handle_mouse(
-        &mut self,
-        spans: &[TraceSpan<'_>],
-        event: MouseEvent,
-    ) -> TraceWaterfallOutcome {
-        if !self.accepts_input {
-            return TraceWaterfallOutcome::Ignored;
-        }
-        match event.kind {
-            MouseEventKind::ScrollDown if event.modifiers.contains(KeyModifiers::SHIFT) => {
-                self.sync_total(spans);
-                self.pan_time(0.1)
-            }
-            MouseEventKind::ScrollUp if event.modifiers.contains(KeyModifiers::SHIFT) => {
-                self.sync_total(spans);
-                self.pan_time(-0.1)
-            }
-            MouseEventKind::ScrollDown => {
-                let before = self.window.offset;
-                let _ = self.window.scroll_by(3);
-                if self.window.offset != before {
-                    TraceWaterfallOutcome::Scrolled
-                } else {
-                    TraceWaterfallOutcome::Ignored
-                }
-            }
-            MouseEventKind::ScrollUp => {
-                let before = self.window.offset;
-                let _ = self.window.scroll_by(-3);
-                if self.window.offset != before {
-                    TraceWaterfallOutcome::Scrolled
-                } else {
-                    TraceWaterfallOutcome::Ignored
-                }
-            }
-            MouseEventKind::Down(MouseButton::Left) => {
-                let hit = self
-                    .row_regions
-                    .iter()
-                    .chain(self.bar_regions.iter())
-                    .find(|(_, r)| r.contains(event.position))
-                    .map(|(id, _)| id.clone());
-                if let Some(id) = hit {
-                    let visible = self.visible_spans(spans);
-                    if let Some(i) = visible.iter().position(|s| s.id == id) {
-                        self.cursor = i;
-                        let _ = self.window.reveal(i as u64);
-                    }
-                    self.selected = Some(id.clone());
-                    TraceWaterfallOutcome::SelectionChanged { id }
-                } else {
-                    TraceWaterfallOutcome::Ignored
-                }
-            }
-            _ => TraceWaterfallOutcome::Ignored,
-        }
     }
 }
 

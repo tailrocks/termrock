@@ -175,18 +175,6 @@ impl SchemaConnStatus {
             Self::Stale => "stale",
         }
     }
-
-    /// Short letter.
-    #[must_use]
-    pub const fn letter(self) -> char {
-        match self {
-            Self::Connected => '●',
-            Self::Connecting => '…',
-            Self::Offline => '○',
-            Self::Error => '!',
-            Self::Stale => '~',
-        }
-    }
     /// Shared lifecycle projection for recipe-owned status paint.
     #[must_use]
     pub const fn semantic(self) -> SemanticStatus {
@@ -429,13 +417,6 @@ impl<'a, Id> SchemaBrowserEntry<'a, Id> {
     #[must_use]
     pub const fn secondary(mut self, s: &'a str) -> Self {
         self.secondary = Some(s);
-        self
-    }
-
-    /// Disabled.
-    #[must_use]
-    pub const fn disabled(mut self) -> Self {
-        self.enabled = false;
         self
     }
 

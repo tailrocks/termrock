@@ -172,13 +172,6 @@ impl FileEntry {
         self.selectable = on;
         self
     }
-
-    /// Kind.
-    #[must_use]
-    pub const fn kind(mut self, kind: FileEntryKind) -> Self {
-        self.kind = kind;
-        self
-    }
 }
 
 /// Breadcrumb segment (path → label).
@@ -213,12 +206,6 @@ pub struct FilePreview {
 }
 
 impl FilePreview {
-    /// Empty.
-    #[must_use]
-    pub fn new() -> Self {
-        Self::default()
-    }
-
     /// Title + lines.
     #[must_use]
     pub fn text(title: impl Into<String>, lines: impl IntoIterator<Item = String>) -> Self {

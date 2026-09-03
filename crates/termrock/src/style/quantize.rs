@@ -48,17 +48,6 @@ impl ColorCapability {
         }
     }
 
-    /// Human label, for capability readouts.
-    #[must_use]
-    pub const fn label(self) -> &'static str {
-        match self {
-            Self::Truecolor => "Truecolor",
-            Self::Indexed256 => "256-color",
-            Self::Ansi16 => "16-color",
-            Self::Monochrome => "Monochrome",
-        }
-    }
-
     /// Detects the operator's colour capability from the environment.
     ///
     /// Same ladder the reference uses: a *non-empty* `NO_COLOR` → monochrome;

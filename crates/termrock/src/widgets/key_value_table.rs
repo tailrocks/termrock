@@ -502,16 +502,6 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
         }
     }
 
-    /// Line shown when there is nothing to show.
-    ///
-    /// A collection that paints nothing when empty reads as broken; it has to
-    /// say that it is empty.
-    #[must_use]
-    pub const fn empty_message(mut self, message: &'a str) -> Self {
-        self.empty_message = message;
-        self
-    }
-
     /// Fixed key column width (0 = auto).
     #[must_use]
     pub const fn key_width(mut self, w: u16) -> Self {

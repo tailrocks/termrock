@@ -166,33 +166,6 @@ impl IntegrationHealth {
         }
     }
 
-    /// Glyph.
-    #[must_use]
-    pub const fn glyph(self, ascii: bool) -> &'static str {
-        if ascii {
-            return match self {
-                Self::Connected => "+",
-                Self::Disconnected => "o",
-                Self::Starting => "~",
-                Self::Error => "x",
-                Self::PermissionRequired => "!",
-                Self::UpdateAvailable => "^",
-                Self::Disabled => "-",
-                Self::Degraded => "!",
-            };
-        }
-        match self {
-            Self::Connected => "●",
-            Self::Disconnected => "○",
-            Self::Starting => "◌",
-            Self::Error => "✗",
-            Self::PermissionRequired => "⚠",
-            Self::UpdateAvailable => "↑",
-            Self::Disabled => "–",
-            Self::Degraded => "◐",
-        }
-    }
-
     /// Shared lifecycle projection for recipe-owned status paint.
     #[must_use]
     pub const fn semantic(self) -> SemanticStatus {

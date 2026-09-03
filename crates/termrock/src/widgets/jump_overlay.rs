@@ -22,7 +22,7 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{KeyCode, KeyEvent, KeyModifiers},
     interaction::{
         HitRegion, OverlayId, OverlayOutcome, OverlaySpec, OverlayStack, SemanticRole,
         SemanticScene,
@@ -177,13 +177,6 @@ impl<Id> JumpTarget<Id> {
     #[must_use]
     pub const fn depth(mut self, d: u8) -> Self {
         self.depth = d;
-        self
-    }
-
-    /// Label.
-    #[must_use]
-    pub fn label(mut self, l: impl Into<String>) -> Self {
-        self.label = Some(l.into());
         self
     }
 }
@@ -622,18 +615,6 @@ impl JumpOverlayState {
             JumpOutcome::Ignored
         }
     }
-
-    /// Mouse event adapter.
-    pub fn handle_mouse<Id: Clone>(
-        &mut self,
-        event: MouseEvent,
-        targets: &[JumpTarget<Id>],
-    ) -> JumpOutcome<Id> {
-        match event.kind {
-            MouseEventKind::Down(MouseButton::Left) => self.handle_click(event.position, targets),
-            _ => JumpOutcome::Ignored,
-        }
-    }
 }
 
 // ── Paint ───────────────────────────────────────────────────────────────────
@@ -650,18 +631,6 @@ pub struct JumpOverlay<'a, Id> {
 }
 
 impl<'a, Id> JumpOverlay<'a, Id> {
-    /// Creates a jump overlay over borrowed targets.
-    #[must_use]
-    pub const fn new(targets: &'a [JumpTarget<Id>], system: &'a DesignSystem) -> Self {
-        Self {
-            targets,
-            system,
-            colorless: false,
-            prefix: "",
-            dim_unmatched: true,
-        }
-    }
-
     /// ASCII brackets only.
     #[must_use]
     /// Reduced-color roles.

@@ -35,7 +35,7 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
 
 use crate::{
-    input::{Event, KeyCode, KeyEvent, KeyModifiers, MouseEvent},
+    input::{KeyCode, KeyEvent, KeyModifiers},
     style::{DesignSystem, Role},
     widgets::{
         CompletionMenuState, Diagnostic, DiagnosticSeverity, HelpEntry, HistoryEntry, HistoryKind,
@@ -1017,42 +1017,6 @@ impl QueryEditorState {
             KeyCode::Esc => self.set_focus(QueryFocus::Editor),
             _ => QueryEditorOutcome::Ignored,
         }
-    }
-
-    /// Mouse: click focus zones; else forward to editor when focused.
-    pub fn handle_mouse(&mut self, event: MouseEvent) -> QueryEditorOutcome {
-        if !self.accepts_input {
-            return QueryEditorOutcome::Ignored;
-        }
-        let pos = event.position;
-        let slots = self.slots;
-        if !slots.results.is_empty() && slots.results.contains(pos) {
-            return self.set_focus(QueryFocus::Results);
-        }
-        if !slots.diagnostics.is_empty() && slots.diagnostics.contains(pos) {
-            return self.set_focus(QueryFocus::Diagnostics);
-        }
-        if !slots.parameters.is_empty() && slots.parameters.contains(pos) {
-            return self.set_focus(QueryFocus::Parameters);
-        }
-        if !slots.editor.is_empty() && slots.editor.contains(pos) {
-            let out = self.set_focus(QueryFocus::Editor);
-            if matches!(
-                out,
-                QueryEditorOutcome::Ignored | QueryEditorOutcome::FocusChanged(_)
-            ) && matches!(self.focus, QueryFocus::Editor)
-            {
-                self.sync_editor_input();
-                match self.editor.handle_event(Event::Mouse(event)) {
-                    TextAreaOutcome::Changed | TextAreaOutcome::Scrolled => {
-                        return QueryEditorOutcome::Changed;
-                    }
-                    _ => {}
-                }
-            }
-            return out;
-        }
-        QueryEditorOutcome::Ignored
     }
 }
 

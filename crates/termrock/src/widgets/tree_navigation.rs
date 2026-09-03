@@ -823,14 +823,6 @@ impl<'a, Id> TreeNavigation<'a, Id> {
         }
     }
 
-    /// ASCII glyphs.
-    #[must_use]
-    /// Empty message.
-    pub const fn empty_message(mut self, msg: &'a str) -> Self {
-        self.empty_message = msg;
-        self
-    }
-
     /// Paint.
     pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut TreeNavigationState<Id>)
     where

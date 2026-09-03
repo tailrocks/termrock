@@ -61,18 +61,6 @@ impl MetricTileHealth {
         }
     }
 
-    /// Letter (never color alone).
-    #[must_use]
-    pub const fn letter(self) -> char {
-        match self {
-            Self::Ok => '·',
-            Self::Warning => '!',
-            Self::Danger => '‼',
-            Self::Loading => '…',
-            Self::Failed => 'x',
-            Self::Stale => '~',
-        }
-    }
     /// Shared health projection for recipe-owned status paint.
     #[must_use]
     pub const fn semantic(self) -> SemanticStatus {

@@ -26,9 +26,7 @@ use crate::{
     text::take_display_cols,
 };
 
-use super::{
-    TextInput, TextInputOutcome, TextInputParts, TextInputState, TextInputValidity, Validation,
-};
+use super::{TextInput, TextInputOutcome, TextInputState, TextInputValidity, Validation};
 
 // ── Policies ────────────────────────────────────────────────────────────────
 
@@ -380,12 +378,6 @@ impl PasswordInputState {
     #[must_use]
     pub fn validity(&self) -> TextInputValidity {
         self.editor.validity()
-    }
-
-    /// Last paint geometry from the inner editor.
-    #[must_use]
-    pub fn parts(&self) -> Option<&TextInputParts> {
-        self.editor.parts()
     }
 
     /// Clear secret (secure).

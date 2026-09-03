@@ -72,19 +72,6 @@ impl CheckpointKind {
         }
     }
 
-    /// Compact letter (colorless / rail).
-    #[must_use]
-    pub const fn letter(self) -> char {
-        match self {
-            Self::Turn => 'T',
-            Self::FileState => 'F',
-            Self::Action => 'A',
-            Self::Manual => 'M',
-            Self::Branch => 'B',
-            Self::System => 'S',
-        }
-    }
-
     /// Glyph.
     #[must_use]
     pub const fn glyph(self, ascii: bool) -> &'static str {

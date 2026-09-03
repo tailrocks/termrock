@@ -20,7 +20,7 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{KeyCode, KeyEvent, KeyModifiers},
     style::{DesignSystem, ListRowVisualState, Role},
     text::{contains_lower_all, take_display_cols},
     widgets::object_inspector::{InspectKind, InspectorField},
@@ -951,57 +951,6 @@ impl DependencyGraphState {
                     }
                 }
                 DependencyGraphOutcome::Ignored
-            }
-            _ => DependencyGraphOutcome::Ignored,
-        }
-    }
-
-    /// Mouse.
-    pub fn handle_mouse(&mut self, event: MouseEvent) -> DependencyGraphOutcome {
-        if !self.accepts_input {
-            return DependencyGraphOutcome::Ignored;
-        }
-        match event.kind {
-            MouseEventKind::ScrollDown if event.modifiers.contains(KeyModifiers::SHIFT) => {
-                self.pan_x = self.pan_x.saturating_add(4);
-                DependencyGraphOutcome::Panned {
-                    x: self.pan_x,
-                    y: self.pan_y,
-                }
-            }
-            MouseEventKind::ScrollUp if event.modifiers.contains(KeyModifiers::SHIFT) => {
-                self.pan_x = self.pan_x.saturating_sub(4);
-                DependencyGraphOutcome::Panned {
-                    x: self.pan_x,
-                    y: self.pan_y,
-                }
-            }
-            MouseEventKind::ScrollDown => {
-                self.pan_y = self.pan_y.saturating_add(2);
-                DependencyGraphOutcome::Panned {
-                    x: self.pan_x,
-                    y: self.pan_y,
-                }
-            }
-            MouseEventKind::ScrollUp => {
-                self.pan_y = self.pan_y.saturating_sub(2);
-                DependencyGraphOutcome::Panned {
-                    x: self.pan_x,
-                    y: self.pan_y,
-                }
-            }
-            MouseEventKind::Down(MouseButton::Left) => {
-                let hit = self
-                    .node_regions
-                    .iter()
-                    .find(|(_, r)| r.contains(event.position))
-                    .map(|(id, _)| id.clone());
-                if let Some(id) = hit {
-                    self.selected = Some(id.clone());
-                    DependencyGraphOutcome::SelectionChanged { id }
-                } else {
-                    DependencyGraphOutcome::Ignored
-                }
             }
             _ => DependencyGraphOutcome::Ignored,
         }

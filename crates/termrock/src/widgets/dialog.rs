@@ -1025,12 +1025,6 @@ impl<Id> DialogState<Id> {
         self.recipe = r;
     }
 
-    /// Current recipe.
-    #[must_use]
-    pub const fn recipe(&self) -> DialogRecipe {
-        self.recipe
-    }
-
     /// Explicit zone change (marks initial focus as applied).
     pub fn set_focus_zone(&mut self, z: DialogFocusZone) {
         self.focus_zone = z;
@@ -1621,13 +1615,6 @@ impl<'a> Dialog<'a> {
     #[must_use]
     pub const fn emphasis(mut self, emphasis: PanelChrome) -> Self {
         self.emphasis = emphasis;
-        self
-    }
-
-    /// Chrome variant.
-    #[must_use]
-    pub const fn variant(mut self, variant: DialogVariant) -> Self {
-        self.variant = variant;
         self
     }
 

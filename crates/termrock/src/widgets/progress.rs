@@ -347,12 +347,6 @@ impl ProgressBarState {
         self.status
     }
 
-    /// Recipe.
-    #[must_use]
-    pub const fn recipe(&self) -> ProgressRecipe {
-        self.recipe
-    }
-
     /// Generation (for host dirty checks).
     #[must_use]
     pub const fn generation(&self) -> u64 {
@@ -493,12 +487,6 @@ impl ProgressBarState {
     #[must_use]
     pub const fn total(&self) -> f64 {
         self.total
-    }
-
-    /// Task / bar label.
-    #[must_use]
-    pub fn label(&self) -> &str {
-        &self.label
     }
 
     /// Phase name (e.g. compile step).

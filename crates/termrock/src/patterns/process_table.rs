@@ -100,20 +100,6 @@ impl ProcessStatus {
         }
     }
 
-    /// Short status letter (htop-class).
-    #[must_use]
-    pub const fn label(self) -> &'static str {
-        match self {
-            Self::Running => "R",
-            Self::Sleeping => "S",
-            Self::Idle => "D",
-            Self::Stopped => "T",
-            Self::Zombie => "Z",
-            Self::Dead => "X",
-            Self::Unknown => "?",
-        }
-    }
-
     /// Shared lifecycle projection for recipe-owned status paint.
     #[must_use]
     pub const fn semantic(self) -> SemanticStatus {
@@ -398,13 +384,6 @@ impl<'a> ProcessRow<'a> {
     #[must_use]
     pub const fn elapsed_ms(mut self, ms: u64) -> Self {
         self.elapsed_ms = ms;
-        self
-    }
-
-    /// Disabled.
-    #[must_use]
-    pub const fn disabled(mut self) -> Self {
-        self.enabled = false;
         self
     }
 }

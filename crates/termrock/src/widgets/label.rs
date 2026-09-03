@@ -328,12 +328,6 @@ impl<'a, Id> Label<'a, Id> {
         out
     }
 
-    /// Plain text for copy / help (includes mark glyphs when present).
-    #[must_use]
-    pub fn plain(&self) -> String {
-        self.decorated(80)
-    }
-
     /// Help line for semantic scene / Studio (without target id).
     #[must_use]
     pub fn semantic_description(&self) -> String {
@@ -535,12 +529,6 @@ impl<'a, Id> Description<'a, Id> {
     #[must_use]
     pub fn visible_at(&self, width: u16) -> bool {
         !self.text.is_empty() && width >= DROP_DESCRIPTION_WIDTH
-    }
-
-    /// Plain text.
-    #[must_use]
-    pub fn plain(&self) -> &str {
-        self.text
     }
 
     /// Semantic help string (kind only; target appended in `register_semantic`).

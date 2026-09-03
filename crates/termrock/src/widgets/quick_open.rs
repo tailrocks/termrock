@@ -1264,13 +1264,6 @@ impl<'a, Id> QuickOpen<'a, Id> {
         self
     }
 
-    /// Empty catalog message.
-    #[must_use]
-    pub const fn empty_message(mut self, m: &'a str) -> Self {
-        self.empty_message = m;
-        self
-    }
-
     /// No results.
     #[must_use]
     pub const fn no_result_message(mut self, m: &'a str) -> Self {

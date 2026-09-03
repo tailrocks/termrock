@@ -178,12 +178,6 @@ impl<'a, Id> Tag<'a, Id> {
         self
     }
 
-    /// Label text.
-    #[must_use]
-    pub const fn label(&self) -> &'a str {
-        self.label
-    }
-
     /// Whether removable.
     #[must_use]
     pub const fn is_removable(&self) -> bool {
@@ -694,12 +688,6 @@ impl<'a, Id> Chip<'a, Id> {
         self
     }
 
-    /// Label.
-    #[must_use]
-    pub const fn label(&self) -> &'a str {
-        self.label
-    }
-
     /// Removable and enabled.
     #[must_use]
     pub const fn is_removable(&self) -> bool {
@@ -791,12 +779,6 @@ impl ChipState {
     /// Set part.
     pub const fn set_part(&mut self, part: TokenPart) {
         self.part = part;
-    }
-
-    /// Parts.
-    #[must_use]
-    pub const fn parts(&self) -> Option<TokenParts> {
-        self.parts
     }
 
     /// Pointer over the remove glyph.
@@ -1002,13 +984,6 @@ impl<'a, Id> TokenItem<'a, Id> {
     #[must_use]
     pub const fn status(mut self, status: TokenStatus) -> Self {
         self.status = status;
-        self
-    }
-
-    /// Disabled (skipped by roving).
-    #[must_use]
-    pub const fn disabled(mut self, on: bool) -> Self {
-        self.disabled = on;
         self
     }
 }

@@ -128,12 +128,6 @@ impl LogPaneState {
     }
 
     #[must_use]
-    /// Returns whether the retained history contains no lines.
-    pub fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
-
-    #[must_use]
     /// Returns whether the viewport tracks the live tail.
     pub const fn is_following(&self) -> bool {
         self.follow

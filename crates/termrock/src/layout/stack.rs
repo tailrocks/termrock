@@ -230,12 +230,6 @@ impl StackLayout {
         self.children.len()
     }
 
-    /// Empty layout.
-    #[must_use]
-    pub fn is_empty(&self) -> bool {
-        self.children.is_empty()
-    }
-
     /// Child rect by index.
     #[must_use]
     pub fn get(&self, index: usize) -> Option<Rect> {

@@ -342,12 +342,6 @@ pub struct AlertDialogState<Id> {
 }
 
 impl<Id> AlertDialogState<Id> {
-    /// Kind.
-    #[must_use]
-    pub const fn kind(&self) -> AlertKind {
-        self.kind
-    }
-
     /// Scope.
     #[must_use]
     pub fn scope(&self) -> &AlertScope {

@@ -163,13 +163,6 @@ impl<'a, Id> ButtonGroupItem<'a, Id> {
         }
     }
 
-    /// Variant override.
-    #[must_use]
-    pub const fn variant(mut self, variant: ButtonVariant) -> Self {
-        self.variant = variant;
-        self
-    }
-
     /// Enabled flag.
     #[must_use]
     pub const fn enabled(mut self, on: bool) -> Self {
@@ -358,13 +351,6 @@ impl<'a, Id> ButtonGroup<'a, Id> {
     #[must_use]
     pub const fn connected(mut self) -> Self {
         self.recipe = ButtonGroupRecipe::Connected;
-        self
-    }
-
-    /// Recipe override.
-    #[must_use]
-    pub const fn recipe(mut self, recipe: ButtonGroupRecipe) -> Self {
-        self.recipe = recipe;
         self
     }
 

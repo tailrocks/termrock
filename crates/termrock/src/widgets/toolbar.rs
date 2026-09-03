@@ -321,13 +321,6 @@ impl<'a, Id> Toolbar<'a, Id> {
         self
     }
 
-    /// Variant recipe.
-    #[must_use]
-    pub const fn variant(mut self, variant: ToolbarVariant) -> Self {
-        self.variant = variant;
-        self
-    }
-
     /// Compact density.
     #[must_use]
     pub const fn compact(mut self) -> Self {

@@ -260,12 +260,6 @@ impl GridLayout {
         self.cells.len()
     }
 
-    /// Empty placement list.
-    #[must_use]
-    pub fn is_empty(&self) -> bool {
-        self.cells.is_empty()
-    }
-
     /// Cell by item index.
     #[must_use]
     pub fn get(&self, index: usize) -> Option<Rect> {

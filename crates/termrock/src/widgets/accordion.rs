@@ -493,13 +493,6 @@ impl<'a, Id> Accordion<'a, Id> {
         self
     }
 
-    /// Trigger paint variant.
-    #[must_use]
-    pub const fn variant(mut self, variant: CollapsibleVariant) -> Self {
-        self.variant = variant;
-        self
-    }
-
     /// Cap open body height (scroll host for overflow).
     #[must_use]
     pub const fn max_content_height(mut self, rows: u16) -> Self {

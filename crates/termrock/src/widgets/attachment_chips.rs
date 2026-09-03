@@ -76,19 +76,6 @@ impl AttachmentType {
         }
     }
 
-    /// ASCII type letter for colorless / recordings.
-    #[must_use]
-    pub const fn letter(self) -> char {
-        match self {
-            Self::File => 'F',
-            Self::Image => 'I',
-            Self::Url => 'U',
-            Self::Code => 'C',
-            Self::Document => 'D',
-            Self::Other => 'A',
-        }
-    }
-
     /// Glyph mark (emoji or letter).
     #[must_use]
     pub const fn glyph(self, ascii: bool) -> &'static str {
@@ -312,13 +299,6 @@ impl AttachmentItem {
             sensitive: false,
             removable: true,
         }
-    }
-
-    /// Kind.
-    #[must_use]
-    pub const fn kind(mut self, kind: AttachmentType) -> Self {
-        self.kind = kind;
-        self
     }
 
     /// Meta string.

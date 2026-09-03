@@ -24,7 +24,7 @@ use std::collections::BTreeSet;
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{KeyCode, KeyEvent, KeyModifiers},
     interaction::{NavigationMove, PageMove, UiIntent},
     style::{DesignSystem, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
@@ -276,16 +276,6 @@ pub struct RelatedLocation<'a> {
 }
 
 impl<'a> RelatedLocation<'a> {
-    /// Construct.
-    #[must_use]
-    pub const fn new(message: &'a str, range: SourceRange) -> Self {
-        Self {
-            file: None,
-            range,
-            message,
-        }
-    }
-
     /// File.
     #[must_use]
     pub const fn file(mut self, file: &'a str) -> Self {
@@ -1121,40 +1111,6 @@ impl DiagnosticState {
                 DiagnosticOutcome::Expanded { id, on }
             }
             UiIntent::Cancel => DiagnosticOutcome::Cancelled,
-            _ => DiagnosticOutcome::Ignored,
-        }
-    }
-
-    /// Mouse.
-    pub fn handle_mouse(
-        &mut self,
-        event: MouseEvent,
-        items: &[Diagnostic<'_>],
-    ) -> DiagnosticOutcome {
-        if !self.accepts_input {
-            return DiagnosticOutcome::Ignored;
-        }
-        match event.kind {
-            MouseEventKind::ScrollDown => {
-                self.handle_intent(UiIntent::Move(NavigationMove::Next), items)
-            }
-            MouseEventKind::ScrollUp => {
-                self.handle_intent(UiIntent::Move(NavigationMove::Previous), items)
-            }
-            MouseEventKind::Down(MouseButton::Left) => {
-                if let Some(r) = self
-                    .regions
-                    .iter()
-                    .find(|r| r.area.contains(event.position))
-                {
-                    self.cursor = r.index;
-                    if event.modifiers.contains(KeyModifiers::CONTROL) {
-                        return DiagnosticOutcome::Activated { id: r.id.clone() };
-                    }
-                    return DiagnosticOutcome::CursorMoved { index: self.cursor };
-                }
-                DiagnosticOutcome::Ignored
-            }
             _ => DiagnosticOutcome::Ignored,
         }
     }

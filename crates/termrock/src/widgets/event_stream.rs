@@ -25,7 +25,7 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind},
+    input::{KeyCode, KeyEvent},
     interaction::{NavigationMove, PageMove, UiIntent},
     style::{DesignSystem, ListRowVisualState, Role},
     text::{contains_lower_all, take_display_cols},
@@ -145,28 +145,6 @@ pub struct StreamEvent<'a, Id = ()> {
     pub batch_count: u32,
     /// Interactive.
     pub enabled: bool,
-}
-
-impl<'a> StreamEvent<'a, ()> {
-    /// Simple event without id.
-    #[must_use]
-    pub const fn new(event_type: &'a str, timestamp: &'a str, summary: &'a str) -> Self {
-        Self {
-            id: (),
-            event_type,
-            timestamp,
-            severity: EventSeverity::Info,
-            source: None,
-            summary,
-            fields: None,
-            correlation: None,
-            detail: None,
-            group_key: None,
-            kind: StreamRowKind::Event,
-            batch_count: 1,
-            enabled: true,
-        }
-    }
 }
 
 impl<'a, Id> StreamEvent<'a, Id> {
@@ -722,62 +700,6 @@ impl<Id: Clone + PartialEq + Ord> EventStreamState<Id> {
         if let Some(e) = view.get(self.cursor) {
             self.selected = Some(e.id.clone());
             self.anchor_id = Some(e.id.clone());
-        }
-    }
-
-    /// Mouse.
-    pub fn handle_mouse(
-        &mut self,
-        event: MouseEvent,
-        events: &[StreamEvent<'_, Id>],
-    ) -> EventStreamOutcome<Id> {
-        if !self.accepts_input {
-            return EventStreamOutcome::Ignored;
-        }
-        let (ox, oy) = self.origin;
-        let hit = Rect {
-            x: ox,
-            y: oy,
-            width: 240,
-            height: self.area_rows.max(1),
-        };
-        if !hit.contains(event.position) {
-            return EventStreamOutcome::Ignored;
-        }
-        match event.kind {
-            MouseEventKind::ScrollDown => {
-                self.handle_intent(UiIntent::Move(NavigationMove::Next), events)
-            }
-            MouseEventKind::ScrollUp => {
-                self.handle_intent(UiIntent::Move(NavigationMove::Previous), events)
-            }
-            MouseEventKind::Down(MouseButton::Left) => {
-                let chip_y = oy.saturating_add(self.area_rows.saturating_sub(1));
-                if self.area_rows >= 2 && event.position.y == chip_y {
-                    if self.scroll.is_following() && self.dropped == 0 {
-                        return EventStreamOutcome::Ignored;
-                    }
-                    self.scroll.jump_to_new_content();
-                    return EventStreamOutcome::Follow;
-                }
-                if let Some(r) = self
-                    .regions
-                    .iter()
-                    .find(|r| r.area.contains(event.position))
-                {
-                    if self.selected.as_ref() == Some(&r.id) {
-                        self.detail_open = true;
-                        return EventStreamOutcome::Activated(r.id.clone());
-                    }
-                    self.cursor = r.index;
-                    self.selected = Some(r.id.clone());
-                    self.anchor_id = Some(r.id.clone());
-                    self.scroll.pause_follow();
-                    return EventStreamOutcome::Selected(r.id.clone());
-                }
-                EventStreamOutcome::Ignored
-            }
-            _ => EventStreamOutcome::Ignored,
         }
     }
 }

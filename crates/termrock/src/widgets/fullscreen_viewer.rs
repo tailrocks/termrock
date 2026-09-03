@@ -646,12 +646,6 @@ impl<Id> FullscreenViewerState<Id> {
         self.zoom.level()
     }
 
-    /// Slots after paint.
-    #[must_use]
-    pub const fn slots(&self) -> FullscreenViewerSlots {
-        self.slots
-    }
-
     /// Body rect for host content.
     #[must_use]
     pub const fn body_area(&self) -> Rect {

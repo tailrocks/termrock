@@ -568,12 +568,6 @@ impl<'a> MarkdownView<'a> {
         self.blocks.len()
     }
 
-    /// Empty.
-    #[must_use]
-    pub const fn is_empty(&self) -> bool {
-        self.blocks.is_empty()
-    }
-
     /// Measure display rows for one block at `width`.
     #[must_use]
     pub fn measure_block_height(&self, block: &MarkdownBlock<'_>, width: u16) -> u16 {

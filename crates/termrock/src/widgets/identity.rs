@@ -329,13 +329,6 @@ impl<'a> AvatarGlyph<'a> {
         self
     }
 
-    /// Explicit glyph face.
-    #[must_use]
-    pub const fn glyph(mut self, glyph: Glyph) -> Self {
-        self.face = AvatarFace::Glyph(glyph);
-        self
-    }
-
     /// Explicit initials (overrides derivation).
     #[must_use]
     pub const fn initials(mut self, initials: &'a str) -> Self {

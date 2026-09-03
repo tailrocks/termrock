@@ -127,16 +127,6 @@ pub struct TerminalRunEnv {
 }
 
 impl TerminalRunEnv {
-    /// Construct.
-    #[must_use]
-    pub fn new(key: impl Into<String>, value: impl Into<String>) -> Self {
-        Self {
-            key: key.into(),
-            value: value.into(),
-            redacted: false,
-        }
-    }
-
     /// Secret placeholder.
     #[must_use]
     pub fn secret(key: impl Into<String>) -> Self {

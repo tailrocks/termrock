@@ -202,13 +202,6 @@ impl<'a> ResultCell<'a> {
         }
     }
 
-    /// Kind override.
-    #[must_use]
-    pub const fn kind(mut self, kind: ResultCellKind) -> Self {
-        self.kind = kind;
-        self
-    }
-
     /// Secret flag.
     #[must_use]
     pub const fn secret(mut self) -> Self {

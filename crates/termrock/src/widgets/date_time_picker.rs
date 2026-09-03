@@ -809,12 +809,6 @@ impl DateTimePickerState {
     }
     // ── accessors ───────────────────────────────────────────────────────────
 
-    /// Kind.
-    #[must_use]
-    pub const fn kind(&self) -> DateTimePickerKind {
-        self.kind
-    }
-
     /// View.
     #[must_use]
     pub const fn view(&self) -> DateTimePickerView {

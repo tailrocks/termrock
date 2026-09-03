@@ -298,12 +298,6 @@ impl BackgroundOutputBuffer {
         self.lines.len()
     }
 
-    /// Empty?
-    #[must_use]
-    pub fn is_empty(&self) -> bool {
-        self.lines.is_empty()
-    }
-
     /// Slice.
     #[must_use]
     pub fn lines(&self) -> &VecDeque<BackgroundOutputLine> {

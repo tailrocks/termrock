@@ -137,12 +137,6 @@ impl<Id> SelectionModel<Id> {
         Self::new(SelectionKind::Range)
     }
 
-    /// Current kind.
-    #[must_use]
-    pub const fn kind(&self) -> SelectionKind {
-        self.kind
-    }
-
     /// Ordered selected identities.
     #[must_use]
     pub fn selected(&self) -> &[Id] {

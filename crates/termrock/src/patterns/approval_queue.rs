@@ -519,12 +519,6 @@ impl ApprovalQueueState {
         self.items.len()
     }
 
-    /// Empty.
-    #[must_use]
-    pub fn is_empty(&self) -> bool {
-        self.items.is_empty()
-    }
-
     /// Blocking count.
     #[must_use]
     pub fn blocking_count(&self) -> usize {

@@ -295,12 +295,6 @@ impl SearchInputState {
         self.focused
     }
 
-    /// Paint parts.
-    #[must_use]
-    pub const fn parts(&self) -> Option<&SearchInputParts> {
-        self.parts.as_ref()
-    }
-
     /// Focus.
     pub fn set_focused(&mut self, on: bool) {
         self.focused = on;
@@ -672,13 +666,6 @@ impl<'a> SearchInput<'a> {
             show_leading_icon: true,
             validation: Validation::Valid,
         }
-    }
-
-    /// Optional label row.
-    #[must_use]
-    pub const fn label(mut self, label: &'a str) -> Self {
-        self.label = label;
-        self
     }
 
     /// Placeholder.

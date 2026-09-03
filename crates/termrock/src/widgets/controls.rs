@@ -763,11 +763,6 @@ impl<Id: Clone + PartialEq> RadioState<Id> {
     pub const fn policy(&self) -> RadioSelectionPolicy {
         self.policy
     }
-    /// Parts from last paint.
-    #[must_use]
-    pub const fn parts(&self) -> Option<&RadioGroupParts<Id>> {
-        self.parts.as_ref()
-    }
 
     /// Controlled select (also moves active when `Some`).
     pub fn set_selected(&mut self, selected: Option<Id>) {
@@ -1682,13 +1677,6 @@ impl<'a, Id> Switch<'a, Id> {
     #[must_use]
     pub const fn description(mut self, description: &'a str) -> Self {
         self.description = Some(description);
-        self
-    }
-
-    /// Recipe.
-    #[must_use]
-    pub const fn recipe(mut self, recipe: SwitchRecipe) -> Self {
-        self.recipe = recipe;
         self
     }
 

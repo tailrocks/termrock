@@ -339,13 +339,6 @@ impl<'a> Kbd<'a> {
             .map(|b| Self::from_binding(b, system))
     }
 
-    /// Visual variant.
-    #[must_use]
-    pub const fn variant(mut self, variant: KbdVariant) -> Self {
-        self.variant = variant;
-        self
-    }
-
     /// Keycap form.
     #[must_use]
     pub const fn keycap(mut self) -> Self {
@@ -509,16 +502,6 @@ impl<'a> ShortcutHint<'a> {
     #[must_use]
     pub fn command(&self) -> &str {
         self.command.as_ref()
-    }
-
-    /// Full plain text for a11y / copy.
-    #[must_use]
-    pub fn plain(&self) -> String {
-        if self.command.is_empty() {
-            self.chord.to_string()
-        } else {
-            format!("{} {}", self.chord, self.command)
-        }
     }
 
     /// Measure natural width.

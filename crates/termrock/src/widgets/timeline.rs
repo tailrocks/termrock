@@ -16,7 +16,7 @@ use std::collections::BTreeSet;
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
-    input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind},
+    input::{KeyCode, KeyEvent},
     interaction::{NavigationMove, PageMove, UiIntent},
     style::{DesignSystem, ListRowVisualState, Role},
     text::{contains_lower_all, take_display_cols},
@@ -335,13 +335,6 @@ impl<'a, Id> TimelineEvent<'a, Id> {
     #[must_use]
     pub const fn group_key(mut self, key: &'a str) -> Self {
         self.group_key = Some(key);
-        self
-    }
-
-    /// Disabled (skipped by keyboard).
-    #[must_use]
-    pub const fn disabled(mut self) -> Self {
-        self.enabled = false;
         self
     }
 
@@ -726,47 +719,6 @@ impl<Id: Clone + PartialEq + Ord> TimelineState<Id> {
         self.selected = Some(e.id.clone());
         TimelineOutcome::Selected(e.id.clone())
     }
-
-    /// Mouse.
-    pub fn handle_mouse(
-        &mut self,
-        event: MouseEvent,
-        events: &[TimelineEvent<'_, Id>],
-    ) -> TimelineOutcome<Id> {
-        if !self.accepts_input {
-            return TimelineOutcome::Ignored;
-        }
-        let view = filter_timeline_events(events, self.filter.as_deref().unwrap_or(""));
-        match event.kind {
-            MouseEventKind::ScrollUp if self.painted.contains(event.position) => {
-                self.following = false;
-                self.handle_intent(UiIntent::Move(NavigationMove::Previous), &view)
-            }
-            MouseEventKind::ScrollDown if self.painted.contains(event.position) => {
-                self.handle_intent(UiIntent::Move(NavigationMove::Next), &view)
-            }
-            MouseEventKind::Down(MouseButton::Left) => {
-                if let Some(r) = self
-                    .regions
-                    .iter()
-                    .find(|r| r.area.contains(event.position))
-                {
-                    if self.selected.as_ref() == Some(&r.id) {
-                        if self.checkpoint_mode {
-                            return TimelineOutcome::RestoreRequested(r.id.clone());
-                        }
-                        return TimelineOutcome::Activated(r.id.clone());
-                    }
-                    self.cursor = r.index;
-                    self.following = false;
-                    self.selected = Some(r.id.clone());
-                    return TimelineOutcome::Selected(r.id.clone());
-                }
-                TimelineOutcome::Ignored
-            }
-            _ => TimelineOutcome::Ignored,
-        }
-    }
 }
 
 /// Filter events by text/actor/correlation/status (keeps group headers for matches).
@@ -836,16 +788,6 @@ impl<'a> Timeline<'a, ()> {
             focused: true,
             colorless: false,
         }
-    }
-
-    /// Line shown when there is nothing to show.
-    ///
-    /// A collection that paints nothing when empty reads as broken; it has to
-    /// say that it is empty.
-    #[must_use]
-    pub const fn empty_message(mut self, message: &'a str) -> Self {
-        self.empty_message = message;
-        self
     }
 }
 

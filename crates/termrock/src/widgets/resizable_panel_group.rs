@@ -454,13 +454,6 @@ impl<'a> ResizablePanelGroup<'a> {
         self
     }
 
-    /// Responsive recipe.
-    #[must_use]
-    pub const fn recipe(mut self, recipe: PanelGroupRecipe) -> Self {
-        self.recipe = recipe;
-        self
-    }
-
     /// Workbench recipe (side drawers when narrow).
     #[must_use]
     pub const fn workbench(mut self) -> Self {

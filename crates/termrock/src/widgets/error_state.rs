@@ -580,13 +580,6 @@ impl<'a> ErrorState<'a> {
         self.recipe = ErrorRecipe::Dialog;
         self
     }
-    /// Override illustration glyph.
-    #[must_use]
-    pub const fn glyph(mut self, glyph: &'a str) -> Self {
-        self.illustration = Some(glyph);
-        self
-    }
-
     /// Summary text.
     #[must_use]
     pub const fn summary(self) -> &'a str {

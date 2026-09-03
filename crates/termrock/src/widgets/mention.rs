@@ -21,7 +21,7 @@
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers, MouseEvent},
+    input::{KeyCode, KeyEvent, KeyModifiers},
     style::{DesignSystem, Role},
     text::{contains_lower_all, take_display_cols},
     widgets::{
@@ -117,22 +117,6 @@ impl MentionType {
             | Self::Resource
             | Self::User
             | Self::Other => MentionFamily::Entity,
-        }
-    }
-
-    /// ASCII type letter.
-    #[must_use]
-    pub const fn letter(self) -> char {
-        match self {
-            Self::File => 'F',
-            Self::Directory => 'D',
-            Self::Symbol => 'S',
-            Self::Agent => 'A',
-            Self::Tool => 'T',
-            Self::Session => 'H',
-            Self::Resource => 'R',
-            Self::User => 'U',
-            Self::Other => '?',
         }
     }
 
@@ -1484,35 +1468,6 @@ impl<'a> InlineMention<'a> {
             _ => InlineMentionOutcome::Ignored,
         }
     }
-
-    /// Mouse.
-    pub fn handle_mouse(
-        &self,
-        state: &mut InlineMentionState,
-        event: MouseEvent,
-    ) -> InlineMentionOutcome {
-        let label = self.mention.display_label(false);
-        let tag = if self.mention.removable {
-            Tag::removable_tag(self.mention.id.as_str(), label.as_str(), self.system)
-        } else {
-            Tag::new(self.mention.id.as_str(), label.as_str(), self.system)
-        }
-        .status(self.mention.validity.token_status());
-        match tag.handle_mouse(&mut state.tag, event) {
-            TagOutcome::Ignored => InlineMentionOutcome::Ignored,
-            TagOutcome::Remove(id) => InlineMentionOutcome::Removed { id: id.to_string() },
-            TagOutcome::PartChanged(p) => InlineMentionOutcome::PartChanged(p),
-            TagOutcome::Activated(id) => {
-                if matches!(self.mention.validity, MentionValidity::Ambiguous) {
-                    state.disambiguation_open = true;
-                    InlineMentionOutcome::DisambiguateRequested { id: id.to_string() }
-                } else {
-                    InlineMentionOutcome::Activated { id: id.to_string() }
-                }
-            }
-            TagOutcome::HoverChanged => InlineMentionOutcome::Ignored,
-        }
-    }
 }
 
 // ── TokenStrip / semantic helpers ───────────────────────────────────────────
@@ -1644,16 +1599,6 @@ pub struct EntityMentionState {
 }
 
 impl EntityMentionState {
-    /// Fresh.
-    #[must_use]
-    pub fn new() -> Self {
-        Self {
-            open: false,
-            query: None,
-            accepts_input: true,
-        }
-    }
-
     /// Sync.
     pub fn sync_from_draft(&mut self, text: &str, cursor_byte: usize) -> bool {
         if !self.accepts_input {

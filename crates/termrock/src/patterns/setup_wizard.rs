@@ -266,21 +266,6 @@ impl SetupWizardState {
         }
     }
 
-    /// Quick start with N custom steps (all Custom).
-    #[must_use]
-    pub fn new(step_count: usize) -> Self {
-        let steps: Vec<SetupStep> = (0..step_count.max(1))
-            .map(|i| {
-                SetupStep::new(
-                    format!("step-{i}"),
-                    format!("Step {}", i + 1),
-                    SetupStepKind::Custom,
-                )
-            })
-            .collect();
-        Self::from_steps(steps)
-    }
-
     /// Mode.
     #[must_use]
     pub const fn with_mode(mut self, mode: SetupWizardMode) -> Self {

@@ -1544,13 +1544,6 @@ impl<'a> TextArea<'a> {
         self
     }
 
-    /// Variant recipe.
-    #[must_use]
-    pub const fn variant(mut self, variant: TextAreaVariant) -> Self {
-        self.variant = variant;
-        self
-    }
-
     /// Review / comment chrome.
     #[must_use]
     pub const fn review(mut self) -> Self {

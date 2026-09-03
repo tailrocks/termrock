@@ -640,12 +640,6 @@ impl PreviewCardState {
         self.load
     }
 
-    /// Slots after paint.
-    #[must_use]
-    pub const fn slots(&self) -> PreviewCardSlots {
-        self.slots
-    }
-
     /// Body area for host-extended paint.
     #[must_use]
     pub const fn body_area(&self) -> Rect {
@@ -949,14 +943,6 @@ impl<'a> PreviewCard<'a> {
             colorless: false,
             max_width: PREVIEW_CARD_DEFAULT_MAX_WIDTH,
         }
-    }
-
-    /// ASCII borders.
-    #[must_use]
-    /// Colorless roles.
-    pub const fn colorless(mut self, on: bool) -> Self {
-        self.colorless = on;
-        self
     }
 
     /// Max width.

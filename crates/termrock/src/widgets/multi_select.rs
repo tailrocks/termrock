@@ -247,12 +247,6 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
         }
     }
 
-    /// Recipe.
-    #[must_use]
-    pub const fn recipe(&self) -> SelectRecipe {
-        self.recipe
-    }
-
     /// Selection model.
     #[must_use]
     pub const fn selection(&self) -> &SelectionModel<Id> {

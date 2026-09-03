@@ -137,13 +137,6 @@ impl<Id> FieldToken<Id> {
         self.status = status;
         self
     }
-
-    /// Builder.
-    #[must_use]
-    pub const fn disabled(mut self, on: bool) -> Self {
-        self.disabled = on;
-        self
-    }
 }
 
 /// Focus zone inside the field (not host Tab stops).
@@ -329,12 +322,6 @@ impl<Id> TokenFieldState<Id> {
     #[must_use]
     pub const fn zone(&self) -> TokenFieldZone {
         self.zone
-    }
-
-    /// Parts.
-    #[must_use]
-    pub const fn parts(&self) -> Option<&TokenFieldParts> {
-        self.parts.as_ref()
     }
 
     /// Labels in order.

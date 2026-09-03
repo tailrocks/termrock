@@ -544,12 +544,6 @@ impl NotificationCenterState {
         self.open
     }
 
-    /// Recipe.
-    #[must_use]
-    pub const fn recipe(&self) -> NotificationRecipe {
-        self.recipe
-    }
-
     /// Filter.
     #[must_use]
     pub fn filter(&self) -> &NotificationFilter {
@@ -578,12 +572,6 @@ impl NotificationCenterState {
     #[must_use]
     pub fn cursor(&self) -> Option<&str> {
         self.cursor.as_deref()
-    }
-
-    /// Slots.
-    #[must_use]
-    pub const fn slots(&self) -> NotificationCenterSlots {
-        self.slots
     }
 
     /// Capacity.

@@ -307,13 +307,6 @@ impl<'a> SearchResultItem<'a> {
         self.score = Some(s);
         self
     }
-
-    /// Disabled.
-    #[must_use]
-    pub const fn disabled(mut self) -> Self {
-        self.enabled = false;
-        self
-    }
 }
 
 // ── Flattened paint rows ────────────────────────────────────────────────────

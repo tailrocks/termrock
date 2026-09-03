@@ -1218,12 +1218,6 @@ impl<'a> TextInput<'a> {
         self
     }
 
-    /// Label.
-    #[must_use]
-    pub const fn label(&self) -> &'a str {
-        self.label
-    }
-
     fn masked_display(&self) -> String {
         self.secret_mask.to_string().repeat(MASK_CELLS)
     }

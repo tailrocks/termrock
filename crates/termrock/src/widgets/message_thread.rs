@@ -641,12 +641,6 @@ impl ThreadProjection {
     pub fn len(&self) -> usize {
         self.meta.len()
     }
-
-    /// Empty.
-    #[must_use]
-    pub fn is_empty(&self) -> bool {
-        self.meta.is_empty()
-    }
 }
 
 /// Compact old entries while keeping checkpoints (returns kept entries).

@@ -687,14 +687,6 @@ impl<'a> ToolCallCard<'a> {
         }
     }
 
-    /// ASCII.
-    #[must_use]
-    /// Colorless.
-    pub const fn colorless(mut self, on: bool) -> Self {
-        self.colorless = on;
-        self
-    }
-
     /// Supplies the host-owned deterministic paint tick.
     #[must_use]
     pub const fn tick(mut self, tick: u64) -> Self {

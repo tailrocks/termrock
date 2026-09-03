@@ -608,13 +608,6 @@ impl<'a> Panel<'a> {
     }
 
     #[must_use]
-    /// Replaces all panel slots at once.
-    pub const fn slots(mut self, slots: PanelSlots<'a>) -> Self {
-        self.slots = slots;
-        self
-    }
-
-    #[must_use]
     /// Sets the semantic panel emphasis (focus / danger).
     pub const fn emphasis(mut self, emphasis: PanelChrome) -> Self {
         self.emphasis = emphasis;

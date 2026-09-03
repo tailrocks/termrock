@@ -304,16 +304,6 @@ impl<'a, Id> DetailTable<'a, Id> {
         self.system.kv_separator().text()
     }
 
-    /// Line shown when there is nothing to show.
-    ///
-    /// A collection that paints nothing when empty reads as broken; it has to
-    /// say that it is empty.
-    #[must_use]
-    pub const fn empty_message(mut self, message: &'a str) -> Self {
-        self.empty_message = message;
-        self
-    }
-
     #[must_use]
     /// Creates a detail table over borrowed rows and mutable table state.
     pub const fn new(rows: &'a [DetailRow<'a, Id>], system: &'a DesignSystem) -> Self {

@@ -511,13 +511,6 @@ impl<'a> Tooltip<'a> {
         }
     }
 
-    /// Variant.
-    #[must_use]
-    pub const fn variant(mut self, v: TooltipVariant) -> Self {
-        self.variant = v;
-        self
-    }
-
     /// Shortcut variant helper.
     #[must_use]
     pub const fn shortcut(mut self) -> Self {

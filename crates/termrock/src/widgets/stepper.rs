@@ -134,13 +134,6 @@ impl StepItem {
         self.optional = on;
         self
     }
-
-    /// Disabled flag.
-    #[must_use]
-    pub const fn disabled(mut self, on: bool) -> Self {
-        self.disabled = on;
-        self
-    }
 }
 
 /// Layout orientation.

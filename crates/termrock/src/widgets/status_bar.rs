@@ -322,13 +322,6 @@ impl<'a> TransientStatus<'a> {
     pub const fn new(text: &'a str) -> Self {
         Self { text, glyph: None }
     }
-
-    /// With glyph.
-    #[must_use]
-    pub const fn glyph(mut self, glyph: &'a str) -> Self {
-        self.glyph = Some(glyph);
-        self
-    }
 }
 
 /// Runtime state for `StatusBar`.

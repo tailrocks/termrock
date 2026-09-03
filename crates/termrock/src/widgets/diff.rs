@@ -156,14 +156,6 @@ pub struct DiffSyntaxSpan {
     pub role: Role,
 }
 
-impl DiffSyntaxSpan {
-    /// Construct span.
-    #[must_use]
-    pub const fn new(start: usize, end: usize, role: Role) -> Self {
-        Self { start, end, role }
-    }
-}
-
 /// Layout mode for side-by-side vs unified.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -271,18 +263,6 @@ pub struct DiffFile<'a> {
 }
 
 impl<'a> DiffFile<'a> {
-    /// Construct.
-    #[must_use]
-    pub const fn new(id: &'a str, path: &'a str, start: usize, len: usize) -> Self {
-        Self {
-            id,
-            path,
-            language: None,
-            start,
-            len,
-        }
-    }
-
     /// Language.
     #[must_use]
     pub const fn language(mut self, lang: &'a str) -> Self {

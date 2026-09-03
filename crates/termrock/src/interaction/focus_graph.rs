@@ -699,29 +699,10 @@ pub struct FocusLens<'a, Id> {
 }
 
 impl<'a, Id> FocusLens<'a, Id> {
-    /// Creates a lens over a graph snapshot.
-    #[must_use]
-    pub const fn new(graph: &'a FocusGraph<Id>, system: &'a DesignSystem) -> Self {
-        Self {
-            graph,
-            system,
-            show_order: true,
-            mode: FocusLensMode::Combined,
-            colorless: false,
-        }
-    }
-
     /// Lens mode.
     #[must_use]
     pub const fn mode(mut self, mode: FocusLensMode) -> Self {
         self.mode = mode;
-        self
-    }
-
-    /// Reduced-color roles (strong/muted only).
-    #[must_use]
-    pub const fn colorless(mut self, on: bool) -> Self {
-        self.colorless = on;
         self
     }
 }

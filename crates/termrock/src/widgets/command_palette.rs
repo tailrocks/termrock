@@ -1246,13 +1246,6 @@ impl<'a, Id> CommandPalette<'a, Id> {
         self
     }
 
-    /// Empty catalog message (no entries at all).
-    #[must_use]
-    pub const fn empty_message(mut self, message: &'a str) -> Self {
-        self.empty_message = message;
-        self
-    }
-
     /// Query with zero matches.
     #[must_use]
     pub const fn no_result_message(mut self, message: &'a str) -> Self {

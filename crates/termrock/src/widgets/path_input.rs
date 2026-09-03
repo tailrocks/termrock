@@ -469,12 +469,6 @@ impl PathInputState {
         self.risk
     }
 
-    /// Parts.
-    #[must_use]
-    pub const fn parts(&self) -> Option<&PathInputParts> {
-        self.parts.as_ref()
-    }
-
     /// History (newest first).
     #[must_use]
     pub fn history(&self) -> impl Iterator<Item = &str> {

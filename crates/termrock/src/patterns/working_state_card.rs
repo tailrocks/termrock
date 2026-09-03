@@ -98,29 +98,6 @@ impl WorkingPhase {
         }
     }
 
-    /// Glyph.
-    #[must_use]
-    pub const fn glyph(self, ascii: bool) -> &'static str {
-        if ascii {
-            return match self {
-                Self::Planning => "P",
-                Self::Searching => "/",
-                Self::Editing => "E",
-                Self::Running => "*",
-                Self::Waiting => "!",
-                Self::Reviewing => "R",
-            };
-        }
-        match self {
-            Self::Planning => "◇",
-            Self::Searching => "⌕",
-            Self::Editing => "✎",
-            Self::Running => "●",
-            Self::Waiting => "⏸",
-            Self::Reviewing => "◎",
-        }
-    }
-
     /// Map to ActivityShelf kind for collapse.
     #[must_use]
     pub const fn to_activity_kind(self) -> ActivityKind {

@@ -488,24 +488,10 @@ impl<'a, Id> Picker<'a, Id> {
         self
     }
 
-    /// Replaces the semantic query label.
-    #[must_use]
-    pub const fn label(mut self, label: &'a str) -> Self {
-        self.label = label;
-        self
-    }
-
     /// Replaces the empty-query placeholder.
     #[must_use]
     pub const fn placeholder(mut self, placeholder: &'a str) -> Self {
         self.placeholder = placeholder;
-        self
-    }
-
-    /// Replaces the cue rendered when the projection is empty.
-    #[must_use]
-    pub const fn empty_message(mut self, empty_message: &'a str) -> Self {
-        self.empty_message = empty_message;
         self
     }
 

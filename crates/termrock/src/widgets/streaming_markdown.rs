@@ -24,7 +24,7 @@
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
-    input::{KeyEvent, MouseEvent},
+    input::KeyEvent,
     style::{DesignSystem, Role},
     text::take_display_cols,
     widgets::markdown::{
@@ -494,14 +494,6 @@ impl StreamingMarkdownState {
             return MarkdownOutcome::Ignored;
         }
         view.handle_key(&mut self.view, key)
-    }
-
-    /// Mouse.
-    pub fn handle_mouse(&mut self, event: MouseEvent, view: &MarkdownView<'_>) -> MarkdownOutcome {
-        if !self.accepts_input {
-            return MarkdownOutcome::Ignored;
-        }
-        view.handle_mouse(&mut self.view, event)
     }
 }
 

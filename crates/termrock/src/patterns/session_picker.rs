@@ -83,19 +83,6 @@ impl SessionStatus {
         }
     }
 
-    /// Letter (colorless).
-    #[must_use]
-    pub const fn letter(self) -> char {
-        match self {
-            Self::Active => 'A',
-            Self::Idle => 'I',
-            Self::ActionRequired => '!',
-            Self::Completed => 'S',
-            Self::Failed => 'F',
-            Self::Archived => 'Z',
-        }
-    }
-
     /// Glyph.
     #[must_use]
     pub const fn glyph(self, ascii: bool) -> &'static str {
