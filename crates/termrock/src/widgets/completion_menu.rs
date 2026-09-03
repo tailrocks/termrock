@@ -515,6 +515,12 @@ impl<Id> CompletionMenuState<Id> {
     pub fn set_open(&mut self, open: bool) {
         self.open = open;
         if !open {
+            if self.pending_generation.is_some() {
+                // Closing cancels the in-flight request. Invalidate its token
+                // before dropping the pending marker so a late result cannot
+                // repopulate this menu after it is reopened.
+                self.generation = self.generation.saturating_add(1);
+            }
             self.hovered = None;
             self.hits.clear();
             self.pending_generation = None;
@@ -1727,6 +1733,21 @@ mod tests {
         assert_eq!(state.selected().copied(), Some("a"));
         let _ = state.mark_stale();
         assert_eq!(state.status(), CompletionStatus::Stale);
+    }
+
+    #[test]
+    fn closing_invalidates_pending_generation() {
+        let mut state = CompletionMenuState::<&str>::new(None);
+        let generation = state.begin_async();
+        state.set_open(false);
+
+        assert!(matches!(
+            state.apply_results(generation, &candidates(&["late"])),
+            CompletionMenuOutcome::GenerationStale { generation: stale }
+                if stale == generation
+        ));
+        state.set_open(true);
+        assert_eq!(state.selected(), None);
     }
 
     #[test]
