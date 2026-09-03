@@ -33,6 +33,7 @@ fn every_mapped_crossterm_key_roundtrips() {
         (CrosstermKeyCode::BackTab, KeyCode::BackTab),
         (CrosstermKeyCode::Delete, KeyCode::Delete),
         (CrosstermKeyCode::Esc, KeyCode::Esc),
+        (CrosstermKeyCode::F(5), KeyCode::F(5)),
         (CrosstermKeyCode::Char('x'), KeyCode::Char('x')),
     ];
 
@@ -104,7 +105,6 @@ fn neutral_mouse_event_drives_list_activation() {
 #[test]
 fn unmapped_keys_become_unknown() {
     let keys = [
-        CrosstermKeyCode::F(5),
         CrosstermKeyCode::Insert,
         CrosstermKeyCode::CapsLock,
         CrosstermKeyCode::Media(MediaKeyCode::Play),

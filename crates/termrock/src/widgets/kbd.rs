@@ -295,6 +295,7 @@ fn format_key(key: KeyCode) -> String {
         KeyCode::End => "End".into(),
         KeyCode::PageUp => "PgUp".into(),
         KeyCode::PageDown => "PgDn".into(),
+        KeyCode::F(number) => format!("F{number}"),
         KeyCode::Unknown => "?".into(),
     }
 }

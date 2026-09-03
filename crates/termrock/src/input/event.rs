@@ -34,11 +34,12 @@ pub enum KeyCode {
     Delete,
     /// The esc key.
     Esc,
+    /// A function key (`F1` through `F24`, depending on the backend).
+    F(u8),
     /// The char key.
     Char(char),
-    /// A key the neutral vocabulary does not model (function keys, media
-    /// keys, lock keys, and similar keys). Widgets and keymaps must treat it
-    /// as non-actionable.
+    /// A key the neutral vocabulary does not model (media keys, lock keys,
+    /// and similar keys). Widgets and keymaps must treat it as non-actionable.
     Unknown,
 }
 
@@ -308,6 +309,7 @@ mod adapter {
                 crossterm::event::KeyCode::BackTab => Self::BackTab,
                 crossterm::event::KeyCode::Delete => Self::Delete,
                 crossterm::event::KeyCode::Esc => Self::Esc,
+                crossterm::event::KeyCode::F(number) => Self::F(number),
                 crossterm::event::KeyCode::Char(c) => Self::Char(c),
                 _ => Self::Unknown,
             }
