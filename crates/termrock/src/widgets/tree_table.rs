@@ -749,6 +749,7 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
             Err(insertion) if delta >= 0 => insertion
                 .saturating_add((delta as usize).saturating_sub(1))
                 .min(enabled.len() - 1),
+            Err(0) => return TreeTableOutcome::Ignored,
             Err(insertion) => insertion.saturating_sub((-delta) as usize),
         };
         let idx = enabled[next_pos];
@@ -1795,6 +1796,25 @@ mod tests {
 
         assert!(matches!(out, TreeTableOutcome::Selected("first")));
         assert_eq!(state.cursor_row, 1);
+    }
+
+    #[test]
+    fn move_up_from_leading_nonselectable_row_is_inert() {
+        let group_cells: &[&str] = &["group", "", ""];
+        let first_cells: &[&str] = &["first", "", ""];
+        let rows = [
+            TreeTableRow::new("group", 0, group_cells).group(),
+            TreeTableRow::new("first", 0, first_cells),
+        ];
+        let columns = cols();
+        let mut state = TreeTableState::<&str, &str>::new(Some("off-window"));
+        state.set_logical_rows(100);
+
+        let out = state.handle_intent(&rows, &columns, UiIntent::Move(NavigationMove::Up));
+
+        assert!(matches!(out, TreeTableOutcome::Ignored));
+        assert_eq!(state.selected(), Some(&"off-window"));
+        assert_eq!(state.cursor_row, 0);
     }
 
     #[test]
