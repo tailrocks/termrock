@@ -687,7 +687,7 @@ impl DrawerState {
         if key.is_release() {
             return DrawerOutcome::Ignored;
         }
-        if key.code == KeyCode::Esc && key.modifiers.is_empty() {
+        if key.code == KeyCode::Esc && key.is_press() && key.modifiers.is_empty() {
             return self.request_close();
         }
         // Resize via [ ] when horizontal and focused
@@ -1090,7 +1090,7 @@ impl StatefulWidget for Drawer<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyModifiers;
+    use crate::input::{KeyEventKind, KeyModifiers};
     use crate::interaction::OverlayKind;
     use crate::style::MotionPolicy;
     use ratatui_core::layout::Position;
@@ -1254,6 +1254,26 @@ mod tests {
             state.handle_intent(UiIntent::Cancel),
             DrawerOutcome::Closed
         ));
+    }
+
+    #[test]
+    fn repeated_escape_is_ignored_but_resize_repeats() {
+        let mut state = DrawerState::new();
+        state.open = true;
+        state.accepts_input = true;
+
+        let mut repeat_escape = KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE);
+        repeat_escape.kind = KeyEventKind::Repeat;
+        assert_eq!(state.handle_key(repeat_escape), DrawerOutcome::Ignored);
+        assert!(state.is_open());
+
+        state.set_depth(20);
+        let mut repeat_resize = KeyEvent::new(KeyCode::Char(']'), KeyModifiers::NONE);
+        repeat_resize.kind = KeyEventKind::Repeat;
+        assert_eq!(
+            state.handle_key(repeat_resize),
+            DrawerOutcome::Resized { depth: 22 }
+        );
     }
 
     #[test]

@@ -568,7 +568,7 @@ impl PopoverState {
         if key.is_release() {
             return PopoverOutcome::Ignored;
         }
-        if key.code == KeyCode::Esc && key.modifiers.is_empty() {
+        if key.code == KeyCode::Esc && key.is_press() && key.modifiers.is_empty() {
             return self.request_close();
         }
         PopoverOutcome::Ignored
@@ -843,7 +843,7 @@ impl StatefulWidget for Popover<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyModifiers;
+    use crate::input::{KeyEventKind, KeyModifiers};
 
     #[test]
     fn modality_policies_differ() {
@@ -948,6 +948,19 @@ mod tests {
             PopoverOutcome::CloseRequested
         ));
         assert!(!state.is_open());
+    }
+
+    #[test]
+    fn repeated_escape_is_ignored() {
+        let mut state = PopoverState::new();
+        state.open = true;
+        state.focused = true;
+        state.accepts_input = true;
+
+        let mut repeat_escape = KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE);
+        repeat_escape.kind = KeyEventKind::Repeat;
+        assert_eq!(state.handle_key(repeat_escape), PopoverOutcome::Ignored);
+        assert!(state.is_open());
     }
 
     #[test]
