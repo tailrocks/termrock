@@ -402,33 +402,31 @@ pub fn fuzzy_match_label(query: &str, haystack: &str) -> Option<(u32, MatchRange
     if query.is_empty() {
         return Some((0, MatchRanges::default()));
     }
-    let q: Vec<char> = query.chars().map(|c| c.to_ascii_lowercase()).collect();
-    let h: Vec<(usize, char)> = haystack.char_indices().map(|(i, c)| (i, c)).collect();
-    if q.is_empty() {
-        return Some((0, MatchRanges::default()));
-    }
-    let mut qi = 0usize;
+    // Stream both sides: this runs per row on every query change, so neither
+    // the query nor the haystack is materialized.
+    let mut q = query.chars().map(|c| c.to_ascii_lowercase());
+    let mut want = q.next();
     let mut ranges = MatchRanges::default();
     let mut score = 0u32;
     let mut last_match_idx = None::<usize>;
     let mut run_start: Option<(usize, usize)> = None; // byte start, end
 
-    for (byte_i, ch) in &h {
+    for (byte_i, ch) in haystack.char_indices() {
         let lower = ch.to_ascii_lowercase();
-        if qi < q.len() && lower == q[qi] {
+        if want == Some(lower) {
             let end = byte_i + ch.len_utf8();
             match run_start {
                 Some((s, _)) => run_start = Some((s, end)),
-                None => run_start = Some((*byte_i, end)),
+                None => run_start = Some((byte_i, end)),
             }
             if let Some(prev) = last_match_idx {
-                score = score.saturating_add((*byte_i as u32).saturating_sub(prev as u32));
+                score = score.saturating_add((byte_i as u32).saturating_sub(prev as u32));
             } else {
-                score = score.saturating_add(*byte_i as u32); // prefer early match
+                score = score.saturating_add(byte_i as u32); // prefer early match
             }
-            last_match_idx = Some(*byte_i);
-            qi += 1;
-            if qi == q.len() {
+            last_match_idx = Some(byte_i);
+            want = q.next();
+            if want.is_none() {
                 if let Some((s, e)) = run_start.take() {
                     ranges.push(MatchRange::with_kind(s, e, MatchKind::Match));
                 }
@@ -438,7 +436,7 @@ pub fn fuzzy_match_label(query: &str, haystack: &str) -> Option<(u32, MatchRange
             ranges.push(MatchRange::with_kind(s, e, MatchKind::Match));
         }
     }
-    if qi < q.len() {
+    if want.is_some() {
         return None;
     }
     if let Some((s, e)) = run_start {

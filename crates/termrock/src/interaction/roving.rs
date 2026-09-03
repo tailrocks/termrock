@@ -441,7 +441,7 @@ impl<Id: Clone + PartialEq> RovingFocusGroup<Id> {
             if !e.enabled || e.label.is_empty() {
                 continue;
             }
-            if e.label.to_lowercase().starts_with(&needle) {
+            if crate::text::starts_with_lower(e.label, &needle) {
                 self.active = Some(e.id.clone());
                 return self.outcome(from);
             }
@@ -454,7 +454,10 @@ impl<Id: Clone + PartialEq> RovingFocusGroup<Id> {
             for offset in 0..n {
                 let i = (start + offset) % n;
                 let e = &entries[i];
-                if e.enabled && !e.label.is_empty() && e.label.to_lowercase().starts_with(&needle) {
+                if e.enabled
+                    && !e.label.is_empty()
+                    && crate::text::starts_with_lower(e.label, &needle)
+                {
                     self.active = Some(e.id.clone());
                     return self.outcome(from);
                 }

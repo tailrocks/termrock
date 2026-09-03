@@ -28,6 +28,32 @@ pub fn contains_lower(hay: &str, needle_lower: &str) -> bool {
     hay.to_ascii_lowercase().contains(needle_lower)
 }
 
+/// Case-folded prefix test for typeahead: `hay` starts with `needle_lower`.
+///
+/// Unlike [`contains_lower`] this folds with full Unicode `to_lowercase`,
+/// char by char, allocating nothing — typeahead tests every row on every
+/// printable keypress. The fold is per-char, so it matches
+/// `hay.to_lowercase().starts_with(..)` except for the rare multi-char
+/// expansions (`İ`, `ẞ`). `needle_lower` must already be lowercased (fold the
+/// typeahead buffer once per keypress).
+#[must_use]
+pub fn starts_with_lower(hay: &str, needle_lower: &str) -> bool {
+    let mut rest = needle_lower;
+    for hc in hay.chars() {
+        if rest.is_empty() {
+            return true;
+        }
+        let mut folded = hc.to_lowercase();
+        match folded.next() {
+            Some(fc) if folded.next().is_none() && rest.starts_with(fc) => {
+                rest = &rest[fc.len_utf8()..];
+            }
+            _ => return false,
+        }
+    }
+    rest.is_empty()
+}
+
 /// Display-column width of `s`, excluding terminal control bytes.
 #[must_use]
 pub fn display_cols(s: &str) -> usize {
@@ -675,6 +701,18 @@ mod tests {
     /// Row content without the blank continuation cell of a wide grapheme.
     fn row_glyphs(buffer: &Buffer, row: u16) -> String {
         row_text(buffer, row).replace(' ', "")
+    }
+
+    #[test]
+    fn starts_with_lower_folds_ascii_and_unicode_prefixes() {
+        assert!(starts_with_lower("Apple", "app"));
+        assert!(starts_with_lower("Éclair", "é"));
+        assert!(!starts_with_lower("Apple", "apples"));
+        assert!(!starts_with_lower("", "a"));
+        assert!(starts_with_lower("", ""));
+        assert!(starts_with_lower("anything", ""));
+        // Multi-char expansion is the documented divergence from a full fold.
+        assert!(!starts_with_lower("İstanbul", "i̇"));
     }
 
     #[test]

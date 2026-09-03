@@ -657,10 +657,11 @@ impl<Id> TreeNavigationState<Id> {
                 && c != '/'
             {
                 self.typeahead.push(c);
-                let needle = self.typeahead.to_ascii_lowercase();
-                if let Some(node) = nodes.iter().find(|n| {
-                    n.enabled && n.label.to_ascii_lowercase().starts_with(needle.as_str())
-                }) {
+                let needle = self.typeahead.to_lowercase();
+                if let Some(node) = nodes
+                    .iter()
+                    .find(|n| n.enabled && crate::text::starts_with_lower(&n.label, &needle))
+                {
                     self.collection.set_active(Some(node.id.clone()));
                     return TreeNavigationOutcome::TypeaheadMatched {
                         id: node.id.clone(),
