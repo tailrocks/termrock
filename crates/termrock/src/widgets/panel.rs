@@ -1381,7 +1381,11 @@ impl<'a> Panel<'a> {
         if body.is_empty() {
             return;
         }
-        Widget::render(&Skeleton::new(lines, self.tokens), body, buffer);
+        Skeleton::new(lines, self.tokens).paint(
+            body,
+            buffer,
+            &crate::widgets::SkeletonState::new(),
+        );
     }
 }
 

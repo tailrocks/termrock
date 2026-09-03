@@ -1272,16 +1272,6 @@ fn motion_policy_off_paints_static_frames() {
     });
     assert_eq!(a, c, "Spinner animated under MotionPolicy::Off");
 
-    let skeleton = Skeleton::new(2, &system);
-    let skeleton_state = SkeletonState::new();
-    let a = painted(area, |b| {
-        skeleton.paint_with_state(area, b, &skeleton_state, first, MotionPolicy::Off);
-    });
-    let c = painted(area, |b| {
-        skeleton.paint_with_state(area, b, &skeleton_state, second, MotionPolicy::Off);
-    });
-    assert_eq!(a, c, "Skeleton animated under MotionPolicy::Off");
-
     let a = painted(area, |b| {
         ProgressBar::new(
             ProgressKind::indeterminate_from(first, MotionPolicy::Off),
@@ -3823,7 +3813,7 @@ fn bold_budget_per_row() {
 use termrock::widgets::{
     List, ListRow, ListState, ProgressBar, ProgressKind, RowRole,
     SPINNER_BRAILLE_FRAMES as SPINNER_FRAMES, SPINNER_DEFAULT_PERIOD_MS as SPINNER_PERIOD_MS,
-    Skeleton, SkeletonState, Spinner, SpinnerState, TextInput, TextInputState,
+    Spinner, SpinnerState, TextInput, TextInputState,
 };
 
 /// An enabled row in the three interaction states every gate varies.

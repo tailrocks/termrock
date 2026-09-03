@@ -12,7 +12,7 @@ use termrock::runtime::FrameTick;
 use termrock::style::{JunieTheme, MotionPolicy};
 use termrock::widgets::{
     Badge, Callout, EmptyKind, EmptyState, Kbd, Label, ProgressBar, ProgressKind, ProgressStatus,
-    SemanticStatus, Separator, Skeleton, Spinner, SpinnerState, StatusIndicator,
+    SemanticStatus, Separator, Skeleton, SkeletonState, Spinner, SpinnerState, StatusIndicator,
 };
 
 use crate::catalog::PageId;
@@ -124,7 +124,7 @@ fn paint_demo(
                 .paint(inner, buf);
         }
         PublicUiId::Skeleton => {
-            Skeleton::new(inner.height.min(3), system).paint(inner, buf);
+            Skeleton::new(inner.height.min(3), system).paint(inner, buf, &SkeletonState::new());
         }
         PublicUiId::Separator => {
             Separator::new(system).paint(inner, buf);

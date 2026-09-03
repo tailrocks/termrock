@@ -1214,7 +1214,7 @@ pub static PUBLIC_UI_INVENTORY: &[PublicUiInventoryEntry] = &[
         "shortcut-hint/footer"
     ),
     public_ui!(Sidebar, Widget, Navigation, "sidebar", "sidebar/settings"),
-    public_ui!(Skeleton, Widget, Feedback, "skeleton", "skeleton/basic"),
+    public_ui!(Skeleton, Paint, Feedback, "skeleton", "skeleton/basic"),
     public_ui!(
         SlashCommandMenu,
         Paint,
@@ -1858,7 +1858,7 @@ mod tests {
                     counts[index] += 1;
                     counts
                 });
-        assert_eq!(kind_counts, [142, 54, 6, 8]);
+        assert_eq!(kind_counts, [141, 55, 6, 8]);
         assert_eq!(
             public_ui_inventory()
                 .iter()
