@@ -921,13 +921,30 @@ impl PromptComposerState {
         if !self.accepts_input || key.is_release() {
             return PromptComposerOutcome::Ignored;
         }
+        let is_press = key.is_press();
 
         // Escape peels exactly one composer layer only for a bare physical
         // press. Reject other phases/modifiers before TextArea sees them;
         // TextArea's raw Escape path otherwise treats them as edit-finish.
-        let bare_escape_press =
-            key.code == KeyCode::Esc && key.is_press() && key.modifiers.is_empty();
+        let bare_escape_press = key.code == KeyCode::Esc && is_press && key.modifiers.is_empty();
         if key.code == KeyCode::Esc && !bare_escape_press {
+            return PromptComposerOutcome::Ignored;
+        }
+
+        // Host-facing chords and chip removal are physical one-shot actions.
+        // Reject repeats before they can fall through to TextArea or the chip
+        // strip, while ordinary editing and caret motion remain repeatable.
+        let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
+        let alt = key.modifiers.contains(KeyModifiers::ALT);
+        let shift = key.modifiers.contains(KeyModifiers::SHIFT);
+        let busy_cancel =
+            self.busy && (matches!(key.code, KeyCode::Char('u' | 'U') | KeyCode::Backspace));
+        let one_shot_ctrl = ctrl
+            && !alt
+            && (matches!(key.code, KeyCode::Char('c' | 'C' | 'e' | 'E'))
+                || (shift && matches!(key.code, KeyCode::Char('o' | 'O' | 'f' | 'F')))
+                || busy_cancel);
+        if !is_press && one_shot_ctrl {
             return PromptComposerOutcome::Ignored;
         }
 
@@ -953,9 +970,7 @@ impl PromptComposerState {
         }
 
         // Ctrl chords: undo/redo, interrupt/cancel, external editor, select-all, attach
-        if key.modifiers.contains(KeyModifiers::CONTROL)
-            && !key.modifiers.contains(KeyModifiers::ALT)
-        {
+        if ctrl && !alt {
             match key.code {
                 KeyCode::Char('z') | KeyCode::Char('Z') => return self.undo(),
                 KeyCode::Char('y') | KeyCode::Char('Y') => return self.redo(),
@@ -998,7 +1013,7 @@ impl PromptComposerState {
         }
 
         // Submit / newline policy
-        if key.code == KeyCode::Enter && key.is_press() {
+        if key.code == KeyCode::Enter && is_press {
             let mod_newline = self.policy.newline_chord
                 && (key.modifiers.contains(KeyModifiers::ALT)
                     || key.modifiers.contains(KeyModifiers::CONTROL)
@@ -1442,11 +1457,22 @@ impl PromptComposerState {
         // Focus chips with Shift+Tab from empty? Keep simple: when chip_cursor set.
         let Some(idx) = self.chip_cursor else {
             if key.code == KeyCode::BackTab {
+                if !key.is_press() {
+                    return Some(PromptComposerOutcome::Ignored);
+                }
                 self.chip_cursor = Some(self.chips.len() - 1);
                 return Some(PromptComposerOutcome::Changed);
             }
             return None;
         };
+        if !key.is_press()
+            && matches!(
+                key.code,
+                KeyCode::Backspace | KeyCode::Delete | KeyCode::Enter | KeyCode::Esc
+            )
+        {
+            return Some(PromptComposerOutcome::Ignored);
+        }
         match key.code {
             KeyCode::Left => {
                 self.chip_cursor = Some(idx.saturating_sub(1));
@@ -2343,6 +2369,66 @@ mod tests {
         assert_eq!(state.text(), "keep");
         let out = state.handle_key(KeyEvent::new(KeyCode::Char('u'), KeyModifiers::CONTROL));
         assert_eq!(out, PromptComposerOutcome::Cancel);
+    }
+
+    #[test]
+    fn repeated_prompt_host_actions_and_chip_mutations_are_ignored() {
+        let repeat = |code, modifiers| {
+            let mut key = KeyEvent::new(code, modifiers);
+            key.kind = KeyEventKind::Repeat;
+            key
+        };
+
+        let mut state = PromptComposerState::new();
+        state.set_accepts_input(true);
+        state.set_busy(true);
+        state.set_text("keep");
+        for (code, modifiers) in [
+            (KeyCode::Char('c'), KeyModifiers::CONTROL),
+            (KeyCode::Char('e'), KeyModifiers::CONTROL),
+            (KeyCode::Char('u'), KeyModifiers::CONTROL),
+            (KeyCode::Backspace, KeyModifiers::CONTROL),
+            (
+                KeyCode::Char('o'),
+                KeyModifiers::CONTROL | KeyModifiers::SHIFT,
+            ),
+            (
+                KeyCode::Char('f'),
+                KeyModifiers::CONTROL | KeyModifiers::SHIFT,
+            ),
+        ] {
+            let before = state.clone();
+            assert_eq!(
+                state.handle_key(repeat(code, modifiers)),
+                PromptComposerOutcome::Ignored,
+                "repeat of {code:?} with {modifiers:?} must be ignored"
+            );
+            assert_eq!(state, before);
+        }
+
+        let mut chips = PromptComposerState::new();
+        chips.set_accepts_input(true);
+        chips.add_chip(ComposerChip::file("file", "main.rs"));
+        chips.chip_cursor = Some(0);
+        assert_eq!(
+            chips.handle_key(repeat(KeyCode::Delete, KeyModifiers::NONE)),
+            PromptComposerOutcome::Ignored
+        );
+        assert_eq!(chips.chips().len(), 1);
+
+        let mut focus = PromptComposerState::new();
+        focus.set_accepts_input(true);
+        focus.add_chip(ComposerChip::file("file", "main.rs"));
+        assert_eq!(
+            focus.handle_key(repeat(KeyCode::BackTab, KeyModifiers::NONE)),
+            PromptComposerOutcome::Ignored
+        );
+        assert_eq!(focus.chip_cursor, None);
+        assert_eq!(
+            focus.handle_key(KeyEvent::new(KeyCode::BackTab, KeyModifiers::NONE)),
+            PromptComposerOutcome::Changed
+        );
+        assert_eq!(focus.chip_cursor, Some(0));
     }
 
     #[test]
