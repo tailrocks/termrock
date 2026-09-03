@@ -781,6 +781,22 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
         self.accepts_input && self.focused
     }
 
+    fn collection_items(visible: &[QuickOpenItem<Id>]) -> Vec<CollectionItem<usize>>
+    where
+        Id: Clone,
+    {
+        visible
+            .iter()
+            .enumerate()
+            .map(|(i, it)| CollectionItem {
+                id: i,
+                enabled: true,
+                label: it.label.clone(),
+                parent: None,
+            })
+            .collect()
+    }
+
     fn bump_generation(&mut self) -> u64 {
         let prev = self.generation;
         self.generation = self.generation.saturating_add(1);
@@ -863,16 +879,7 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
         self.applied_generation = generation;
         self.stream_complete = complete;
         self.total_hint = total_hint;
-        let entries: Vec<CollectionItem<usize>> = visible
-            .iter()
-            .enumerate()
-            .map(|(i, it)| CollectionItem {
-                id: i,
-                enabled: true,
-                label: it.label.clone(),
-                parent: None,
-            })
-            .collect();
+        let entries = Self::collection_items(visible);
         let _ = self.collection.reconcile(&entries);
         // Prefer remembered label when present for this generation's provider.
         if let Some(mem) = self.memory.values().find(|m| m.selected_label.is_some()) {
@@ -1126,16 +1133,7 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
         if !self.live() {
             return QuickOpenOutcome::Ignored;
         }
-        let entries: Vec<CollectionItem<usize>> = visible
-            .iter()
-            .enumerate()
-            .map(|(i, it)| CollectionItem {
-                id: i,
-                enabled: true,
-                label: it.label.clone(),
-                parent: None,
-            })
-            .collect();
+        let entries = Self::collection_items(visible);
         match intent {
             UiIntent::Move(
                 NavigationMove::Next
