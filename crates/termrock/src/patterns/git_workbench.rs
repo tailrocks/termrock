@@ -433,8 +433,8 @@ pub struct GitWorkbenchSurfaces<'a> {
     pub terminal_meta: &'a TerminalCommandMeta<'a>,
     /// Terminal lines.
     pub terminal_lines: &'a [TerminalLine<'a>],
-    /// Keyboard help entries.
-    pub help_entries: &'a [HelpEntry],
+    /// Keyboard help entries (host-filtered references).
+    pub help_entries: &'a [&'a HelpEntry],
 }
 
 // ── State ───────────────────────────────────────────────────────────────────
@@ -757,7 +757,7 @@ impl GitWorkbenchState {
         hunks: &[DiffHunk],
         diff_lines: &[DiffLine<'_>],
         diff_files: &[DiffReviewFileRow<'_>],
-        help_entries: &[HelpEntry],
+        help_entries: &[&HelpEntry],
         diagnostics: &[Diagnostic<'_>],
         terminal_lines: &[TerminalLine<'_>],
         terminal_meta: &TerminalCommandMeta<'_>,
@@ -1691,7 +1691,7 @@ mod tests {
     fn hk_help(
         st: &mut GitWorkbenchState,
         key: KeyEvent,
-        help: &[HelpEntry],
+        help: &[&HelpEntry],
     ) -> GitWorkbenchOutcome {
         st.handle_key(key, &[], &[], &[], &[], help, &[], &[], &meta_empty())
     }
@@ -1744,6 +1744,7 @@ mod tests {
         let meta = example_git_terminal_meta();
         let tlines = example_git_terminal_lines();
         let help = example_git_help_entries(&system);
+        let help_refs: Vec<&HelpEntry> = help.iter().collect();
         let area = Rect::new(0, 0, 120, 36);
         let mut buf = Buffer::empty(area);
         st.focus = "files";
@@ -1762,7 +1763,7 @@ mod tests {
                 diagnostics: &diags,
                 terminal_meta: &meta,
                 terminal_lines: &tlines,
-                help_entries: &help,
+                help_entries: &help_refs,
             },
         );
         assert!(
@@ -1784,7 +1785,7 @@ mod tests {
                 diagnostics: &diags,
                 terminal_meta: &meta,
                 terminal_lines: &tlines,
-                help_entries: &help,
+                help_entries: &help_refs,
             },
         );
         assert!(st.history.focused);
@@ -1962,6 +1963,7 @@ mod tests {
         let meta = example_git_terminal_meta();
         let tlines = example_git_terminal_lines();
         let help = example_git_help_entries(&system);
+        let help_refs: Vec<&HelpEntry> = help.iter().collect();
         let area = Rect::new(0, 0, 100, 28);
         let mut buf = Buffer::empty(area);
         // Clean paint
@@ -1979,7 +1981,7 @@ mod tests {
                 diagnostics: &diags,
                 terminal_meta: &meta,
                 terminal_lines: &tlines,
-                help_entries: &help,
+                help_entries: &help_refs,
             },
         );
         assert!(!st.last_panes().is_empty());
@@ -1999,7 +2001,7 @@ mod tests {
                 diagnostics: &diags,
                 terminal_meta: &meta,
                 terminal_lines: &[],
-                help_entries: &help,
+                help_entries: &help_refs,
             },
         );
     }
@@ -2080,6 +2082,7 @@ mod tests {
         let meta = example_git_terminal_meta();
         let tlines = example_git_terminal_lines();
         let help = example_git_help_entries(&system);
+        let help_refs: Vec<&HelpEntry> = help.iter().collect();
 
         for d in [
             GitWorkbenchDensity::Normal,
@@ -2108,7 +2111,7 @@ mod tests {
                     diagnostics: &diags,
                     terminal_meta: &meta,
                     terminal_lines: &tlines,
-                    help_entries: &help,
+                    help_entries: &help_refs,
                 },
             );
             assert!(!st.last_panes().is_empty());
@@ -2162,6 +2165,7 @@ mod tests {
         let meta = example_git_terminal_meta();
         let tlines = example_git_terminal_lines();
         let help = example_git_help_entries(&system);
+        let help_refs: Vec<&HelpEntry> = help.iter().collect();
         let area = Rect::new(0, 0, 120, 40);
         let mut buf = Buffer::empty(area);
         let start = std::time::Instant::now();
@@ -2180,7 +2184,7 @@ mod tests {
                     diagnostics: &diags,
                     terminal_meta: &meta,
                     terminal_lines: &tlines,
-                    help_entries: &help,
+                    help_entries: &help_refs,
                 },
             );
         }
@@ -2192,12 +2196,13 @@ mod tests {
     fn help_and_refresh() {
         let mut st = open();
         let help = example_git_help_entries(&DesignSystem::default());
-        let out = hk_help(&mut st, press(KeyCode::Char('?')), &help);
+        let help_refs: Vec<&HelpEntry> = help.iter().collect();
+        let out = hk_help(&mut st, press(KeyCode::Char('?')), &help_refs);
         assert!(matches!(out, GitWorkbenchOutcome::OpenHelp));
         assert!(st.help_is_open());
         st.help_open = false;
         let _ = st.help.close_modal();
-        let out = hk_help(&mut st, ctrl(KeyCode::Char('r')), &help);
+        let out = hk_help(&mut st, ctrl(KeyCode::Char('r')), &help_refs);
         assert!(
             matches!(out, GitWorkbenchOutcome::RefreshRequested),
             "{out:?}"

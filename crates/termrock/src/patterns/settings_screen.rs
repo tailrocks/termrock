@@ -850,7 +850,8 @@ pub fn paint_settings_screen<SectionId: Clone + PartialEq>(
     // Help overlay
     if let Some(help_area) = slots.help {
         let entries = example_settings_help_entries();
-        KeyboardHelp::new(&entries, system).paint(help_area, buffer, &mut state.help);
+        let entry_refs: Vec<&crate::widgets::HelpEntry> = entries.iter().collect();
+        KeyboardHelp::new(&entry_refs, system).paint(help_area, buffer, &mut state.help);
     }
 }
 

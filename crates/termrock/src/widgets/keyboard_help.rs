@@ -489,34 +489,39 @@ pub fn merge_help_entries(parts: impl IntoIterator<Item = Vec<HelpEntry>>) -> Ve
     out
 }
 
+/// One entry's case-insensitive hit (category, action, chord, zone, mouse).
+#[must_use]
+pub fn help_entry_matches(entry: &HelpEntry, q: &str) -> bool {
+    entry.action.to_ascii_lowercase().contains(q)
+        || entry.chord.to_ascii_lowercase().contains(q)
+        || entry.category.to_ascii_lowercase().contains(q)
+        || entry
+            .zone
+            .as_ref()
+            .is_some_and(|z| z.to_ascii_lowercase().contains(q))
+        || entry
+            .mouse
+            .as_ref()
+            .is_some_and(|m| m.to_ascii_lowercase().contains(q))
+}
+
 /// Filter entries by search query (category, action, chord, zone).
 #[must_use]
-pub fn filter_help_entries(entries: &[HelpEntry], query: &str) -> Vec<HelpEntry> {
+pub fn filter_help_entries<'a>(entries: &'a [HelpEntry], query: &str) -> Vec<&'a HelpEntry> {
     let q = query.trim().to_ascii_lowercase();
     if q.is_empty() {
-        return entries.to_vec();
+        return entries.iter().collect();
     }
     entries
         .iter()
-        .filter(|e| {
-            e.action.to_ascii_lowercase().contains(&q)
-                || e.chord.to_ascii_lowercase().contains(&q)
-                || e.category.to_ascii_lowercase().contains(&q)
-                || e.zone
-                    .as_ref()
-                    .is_some_and(|z| z.to_ascii_lowercase().contains(&q))
-                || e.mouse
-                    .as_ref()
-                    .is_some_and(|m| m.to_ascii_lowercase().contains(&q))
-        })
-        .cloned()
+        .filter(|e| help_entry_matches(e, &q))
         .collect()
 }
 
 /// Contract to top priorities for tiny layouts.
 #[must_use]
-pub fn contract_help_entries(entries: &[HelpEntry], max: usize) -> Vec<HelpEntry> {
-    let mut v = entries.to_vec();
+pub fn contract_help_entries<'a>(entries: &[&'a HelpEntry], max: usize) -> Vec<&'a HelpEntry> {
+    let mut v: Vec<&'a HelpEntry> = entries.to_vec();
     v.sort_by_key(|e| e.priority);
     v.truncate(max);
     v
@@ -723,7 +728,7 @@ impl KeyboardHelpState {
         self.accepts_input && self.focused
     }
 
-    fn entries_coll(visible: &[HelpEntry]) -> Vec<CollectionItem<usize>> {
+    fn entries_coll(visible: &[&HelpEntry]) -> Vec<CollectionItem<usize>> {
         visible
             .iter()
             .enumerate()
@@ -736,8 +741,17 @@ impl KeyboardHelpState {
             .collect()
     }
 
-    fn projected_entries(&self, visible: &[HelpEntry]) -> Vec<HelpEntry> {
-        let mut projected = filter_help_entries(visible, self.query_text());
+    fn projected_entries<'a>(&self, visible: &'a [&'a HelpEntry]) -> Vec<&'a HelpEntry> {
+        let q = self.query_text().trim().to_ascii_lowercase();
+        let mut projected: Vec<&'a HelpEntry> = if q.is_empty() {
+            visible.to_vec()
+        } else {
+            visible
+                .iter()
+                .copied()
+                .filter(|e| help_entry_matches(e, &q))
+                .collect()
+        };
         if matches!(self.presentation, KeyboardHelpPresentation::Tiny) {
             return contract_help_entries(&projected, 6);
         }
@@ -745,13 +759,13 @@ impl KeyboardHelpState {
         projected
     }
 
-    fn reconcile_projected(&mut self, projected: &[HelpEntry]) {
+    fn reconcile_projected(&mut self, projected: &[&HelpEntry]) {
         let entries = Self::entries_coll(projected);
         let _ = self.collection.reconcile(&entries);
         self.scroll = self.scroll.min(projected.len().saturating_sub(1));
     }
 
-    fn rows_to_cursor(&self, projected: &[HelpEntry], start: usize, cursor: usize) -> usize {
+    fn rows_to_cursor(&self, projected: &[&HelpEntry], start: usize, cursor: usize) -> usize {
         let mut rows = 0usize;
         let mut last_category = projected
             .get(start.saturating_sub(1))
@@ -772,7 +786,7 @@ impl KeyboardHelpState {
         rows
     }
 
-    fn ensure_cursor_visible(&mut self, projected: &[HelpEntry]) {
+    fn ensure_cursor_visible(&mut self, projected: &[&HelpEntry]) {
         let Some(cursor) = self.collection.active().copied() else {
             self.scroll = 0;
             return;
@@ -793,13 +807,13 @@ impl KeyboardHelpState {
     }
 
     /// Reconcile after host rebuilds visible list.
-    pub fn reconcile(&mut self, visible: &[HelpEntry]) {
+    pub fn reconcile(&mut self, visible: &[&HelpEntry]) {
         let projected = self.projected_entries(visible);
         self.reconcile_projected(&projected);
     }
 
     /// Keyboard (modal primarily; footer is mostly display).
-    pub fn handle_key(&mut self, key: KeyEvent, visible: &[HelpEntry]) -> KeyboardHelpOutcome {
+    pub fn handle_key(&mut self, key: KeyEvent, visible: &[&HelpEntry]) -> KeyboardHelpOutcome {
         if !self.live() || key.is_release() {
             return KeyboardHelpOutcome::Ignored;
         }
@@ -858,7 +872,7 @@ impl KeyboardHelpState {
     pub fn handle_intent(
         &mut self,
         intent: UiIntent,
-        visible: &[HelpEntry],
+        visible: &[&HelpEntry],
     ) -> KeyboardHelpOutcome {
         if !self.live() || !self.open || !matches!(self.mode, KeyboardHelpMode::Modal) {
             return KeyboardHelpOutcome::Ignored;
@@ -896,7 +910,7 @@ impl KeyboardHelpState {
     pub fn handle_mouse(
         &mut self,
         event: MouseEvent,
-        visible: &[HelpEntry],
+        visible: &[&HelpEntry],
     ) -> KeyboardHelpOutcome {
         if !self.live() || !self.open {
             return KeyboardHelpOutcome::Ignored;
@@ -965,16 +979,16 @@ pub fn default_keyboard_help_intent(key: KeyEvent) -> Option<UiIntent> {
 /// Keyboard help paint (footer strip or modal).
 #[derive(Debug, Clone, Copy)]
 pub struct KeyboardHelp<'a> {
-    entries: &'a [HelpEntry],
+    entries: &'a [&'a HelpEntry],
     system: &'a DesignSystem,
     title: &'a str,
     colorless: bool,
 }
 
 impl<'a> KeyboardHelp<'a> {
-    /// Live entries + design system.
+    /// Live entries (host-filtered) + design system.
     #[must_use]
-    pub const fn new(entries: &'a [HelpEntry], system: &'a DesignSystem) -> Self {
+    pub const fn new(entries: &'a [&'a HelpEntry], system: &'a DesignSystem) -> Self {
         Self {
             entries,
             system,
@@ -1021,7 +1035,7 @@ impl<'a> KeyboardHelp<'a> {
             KeyboardHelpPresentation::Compact => 5.min(state.footer_max),
             KeyboardHelpPresentation::Full => state.footer_max,
         };
-        let mut sorted: Vec<&HelpEntry> = self.entries.iter().collect();
+        let mut sorted: Vec<&HelpEntry> = self.entries.iter().copied().collect();
         sorted.sort_by_key(|e| e.priority);
         let slice: Vec<&HelpEntry> = sorted.into_iter().take(max).collect();
 
@@ -1454,6 +1468,10 @@ mod tests {
     use crate::input::KeyModifiers;
     use crate::keymap::{KeyBinding, KeyChord, Visibility};
 
+    fn refs(v: &[HelpEntry]) -> Vec<&HelpEntry> {
+        v.iter().collect()
+    }
+
     fn system() -> DesignSystem {
         DesignSystem::default()
     }
@@ -1553,7 +1571,7 @@ mod tests {
                 .all(|x| x.action.to_ascii_lowercase().contains("save")
                     || x.chord.to_ascii_lowercase().contains('s'))
         );
-        let c = contract_help_entries(&e, 2);
+        let c = contract_help_entries(&refs(&e), 2);
         assert!(c.len() <= 2);
     }
 
@@ -1569,7 +1587,7 @@ mod tests {
             assert!(matches!(
                 state.handle_key(
                     KeyEvent::new(KeyCode::Char(character), KeyModifiers::NONE),
-                    &entries,
+                    &refs(&entries),
                 ),
                 KeyboardHelpOutcome::QueryChanged { .. }
             ));
@@ -1577,7 +1595,7 @@ mod tests {
 
         let area = Rect::new(0, 0, 64, 16);
         let mut buffer = Buffer::empty(area);
-        KeyboardHelp::new(&entries, &sys).paint(area, &mut buffer, &mut state);
+        KeyboardHelp::new(&refs(&entries), &sys).paint(area, &mut buffer, &mut state);
 
         assert_eq!(state.hits.len(), 1);
         assert_eq!(state.hits[0].0, 0);
@@ -1602,7 +1620,7 @@ mod tests {
 
         let area = Rect::new(0, 0, 20, 10);
         let mut buffer = Buffer::empty(area);
-        KeyboardHelp::new(&entries, &sys).paint(area, &mut buffer, &mut state);
+        KeyboardHelp::new(&refs(&entries), &sys).paint(area, &mut buffer, &mut state);
 
         let (index, rect) = state.hits[0];
         assert_eq!(index, 0);
@@ -1613,7 +1631,7 @@ mod tests {
                     position: Position::new(rect.x, rect.y),
                     modifiers: KeyModifiers::NONE,
                 },
-                &entries,
+                &refs(&entries),
             ),
             KeyboardHelpOutcome::CursorMoved { index: 0 }
         );
@@ -1631,12 +1649,12 @@ mod tests {
         ];
         let mut state = KeyboardHelpState::modal();
         state.set_presentation_override(Some(KeyboardHelpPresentation::Full));
-        state.reconcile(&entries);
+        state.reconcile(&refs(&entries));
         state.collection.set_active(Some(2));
 
         let area = Rect::new(0, 0, 40, 4);
         let mut buffer = Buffer::empty(area);
-        KeyboardHelp::new(&entries, &sys).paint(area, &mut buffer, &mut state);
+        KeyboardHelp::new(&refs(&entries), &sys).paint(area, &mut buffer, &mut state);
 
         assert_eq!(state.painted_rows, 2);
         assert_eq!(state.scroll, 2);
@@ -1650,7 +1668,7 @@ mod tests {
         let mut st = KeyboardHelpState::new();
         let area = Rect::new(0, 0, 60, 1);
         let mut buf = Buffer::empty(area);
-        KeyboardHelp::new(&e, &sys).paint(area, &mut buf, &mut st);
+        KeyboardHelp::new(&refs(&e), &sys).paint(area, &mut buf, &mut st);
         let text: String = buf
             .content()
             .iter()
@@ -1661,7 +1679,7 @@ mod tests {
         let mut st2 = KeyboardHelpState::modal();
         let area2 = Rect::new(0, 0, 64, 16);
         let mut buf2 = Buffer::empty(area2);
-        KeyboardHelp::new(&e, &sys).paint(area2, &mut buf2, &mut st2);
+        KeyboardHelp::new(&refs(&e), &sys).paint(area2, &mut buf2, &mut st2);
         let t2: String = buf2
             .content()
             .iter()
@@ -1678,7 +1696,7 @@ mod tests {
         let mut st = KeyboardHelpState::modal();
         let e = example_help_entries(&system());
         assert!(matches!(
-            st.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE), &e),
+            st.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE), &refs(&e)),
             KeyboardHelpOutcome::Closed
         ));
         assert!(!st.is_open());
@@ -1744,7 +1762,7 @@ mod tests {
         let mut st = KeyboardHelpState::new();
         let area = Rect::new(0, 0, 40, 1);
         let mut buf = Buffer::empty(area);
-        KeyboardHelp::new(&e, &sys)
+        KeyboardHelp::new(&refs(&e), &sys)
             .colorless(true)
             .paint(area, &mut buf, &mut st);
     }
@@ -1761,7 +1779,7 @@ mod tests {
                     position: Position::new(2, 3),
                     modifiers: KeyModifiers::NONE,
                 },
-                &entries,
+                &refs(&entries),
             ),
             KeyboardHelpOutcome::CursorMoved { index: 1 }
         );
@@ -1785,7 +1803,7 @@ mod tests {
             if !st.is_open() {
                 let _ = st.open_modal();
             }
-            let _ = st.handle_key(KeyEvent::new(k, KeyModifiers::NONE), &e);
+            let _ = st.handle_key(KeyEvent::new(k, KeyModifiers::NONE), &refs(&e));
         }
     }
 
