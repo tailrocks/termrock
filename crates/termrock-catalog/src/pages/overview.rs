@@ -82,6 +82,9 @@ impl Page for OverviewPage {
     fn blurb(&self) -> &'static str {
         "Tokens and principles behind every component"
     }
+    fn interactive(&self) -> bool {
+        false
+    }
 
     fn render(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx<'_>) {
         let t = ctx.theme;

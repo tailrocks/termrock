@@ -77,6 +77,10 @@ pub type Hint = (&'static str, &'static str);
 pub trait Page {
     fn title(&self) -> &'static str;
     fn blurb(&self) -> &'static str;
+    /// Whether the page accepts interaction in its current presentation.
+    fn interactive(&self) -> bool {
+        true
+    }
     fn render(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx<'_>);
     fn handle(&mut self, ev: &PageEvent, cx: &mut PageCtx<'_>) -> Route;
     fn hints(&self, focus: Option<WidgetId>) -> Vec<Hint>;
@@ -85,6 +89,20 @@ pub trait Page {
     }
     fn animating(&self) -> bool {
         false
+    }
+    /// Browser interaction family derived from live page state.
+    fn interaction_kind(&self) -> &'static str {
+        if self.editing() {
+            "editor-form"
+        } else if self.animating() {
+            "timed-state"
+        } else {
+            "activation"
+        }
+    }
+    /// Whether the page currently owns literal text or paste input.
+    fn captures_text_input(&self) -> bool {
+        self.editing()
     }
     /// Page-owned modal already painted the footer hint row.
     fn overlaying(&self) -> bool {

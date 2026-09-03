@@ -27,7 +27,7 @@ use crate::draw::fill;
 use crate::id::WidgetId;
 use crate::layout;
 use crate::outcome::Route;
-use crate::page::{Page, PageCtx, PageEvent, Request};
+use crate::page::{Hint, Page, PageCtx, PageEvent, Request};
 use crate::pages;
 use crate::text;
 
@@ -51,6 +51,18 @@ const HELP_TEXT: &str = "Tab / Shift+Tab   move keyboard focus\n\
                          Mouse: hover to preview, click to focus and activate, wheel to scroll, drag the scrollbar thumb.";
 
 pub use crate::ctx::LayerId;
+
+/// Live metadata for the currently mounted catalog page.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PageMetadata {
+    pub title: &'static str,
+    pub description: &'static str,
+    pub interactive: bool,
+    pub interaction_kind: &'static str,
+    pub captures_text_input: bool,
+    pub hints: Vec<Hint>,
+    pub animating: bool,
+}
 
 #[derive(Debug, Default, Clone, Copy)]
 struct ShellLayout {
@@ -135,6 +147,21 @@ impl App {
     #[must_use]
     pub fn nav(&self) -> &'static [NavEntry] {
         nav_entries(self.profile)
+    }
+
+    /// Read metadata from the mounted page implementation.
+    #[must_use]
+    pub fn page_metadata(&self) -> PageMetadata {
+        let page = &self.pages[self.page.index(self.nav())];
+        PageMetadata {
+            title: page.title(),
+            description: page.blurb(),
+            interactive: page.interactive(),
+            interaction_kind: page.interaction_kind(),
+            captures_text_input: page.captures_text_input(),
+            hints: page.hints(self.focus),
+            animating: page.animating(),
+        }
     }
 
     pub fn goto(&mut self, page: PageId) {

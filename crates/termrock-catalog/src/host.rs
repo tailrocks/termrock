@@ -16,7 +16,7 @@ use termrock::runtime::FrameTick;
 use termrock::style::{ColorCapability, color_to_rgb};
 
 use crate::catalog::{CatalogProfile, NavEntry, PageId, nav_entries};
-use crate::shell::App;
+use crate::shell::{App, PageMetadata};
 use crate::snapshot::Snapshot;
 
 /// Static catalog metadata available before mounting.
@@ -151,48 +151,28 @@ pub struct TerminalFrame {
 /// Catalog pages the web host can mount.
 #[must_use]
 pub fn catalog() -> Vec<DemoDescriptor> {
+    let mut app = App::new(CatalogProfile::TermRock, ColorCapability::Truecolor);
     nav_entries(CatalogProfile::TermRock)
         .iter()
-        .map(descriptor)
+        .map(|entry| {
+            app.goto(entry.id);
+            descriptor(entry, &app.page_metadata())
+        })
         .collect()
 }
 
-fn descriptor(e: &NavEntry) -> DemoDescriptor {
+fn descriptor(e: &NavEntry, metadata: &PageMetadata) -> DemoDescriptor {
     DemoDescriptor {
         id: crate::catalog::normalize(e.label),
-        title: e.label,
+        title: metadata.title,
         component: e.section,
-        description: e.label,
+        description: metadata.description,
         cols: 120,
         rows: 40,
-        interactive: true,
-        interaction_kind: interaction_kind(e.id),
-        hints: vec!["Tab", "Enter", "[", "]"],
+        interactive: metadata.interactive,
+        interaction_kind: metadata.interaction_kind,
+        hints: metadata.hints.iter().map(|(key, _)| *key).collect(),
     }
-}
-
-fn interaction_kind(page: PageId) -> &'static str {
-    match page {
-        PageId::INPUTS | PageId::TEXT_AREAS | PageId::FORMS | PageId::EDITOR => "editor-form",
-        PageId::PROGRESS | PageId::TASK_RUNNER => "timed-state",
-        PageId::DIALOGS | PageId::CHIPS | PageId::PICKERS | PageId::OVERLAYS => {
-            "disclosure-overlay"
-        }
-        PageId::TABLES
-        | PageId::EDITABLE
-        | PageId::LISTS
-        | PageId::TREES
-        | PageId::SETTINGS
-        | PageId::TABLEPRO => "selection-navigation",
-        _ => "activation",
-    }
-}
-
-fn captures_text_input(page: PageId) -> bool {
-    matches!(
-        page,
-        PageId::INPUTS | PageId::TEXT_AREAS | PageId::FORMS | PageId::EDITOR
-    )
 }
 
 /// One long-lived catalog page instance.
@@ -231,6 +211,8 @@ impl CatalogSession {
     }
 
     pub fn dispatch(&mut self, event: DemoEvent) -> Result<DemoUpdate, String> {
+        let before = self.frame();
+        let before_cursor = self.app.last_cursor;
         if let DemoEvent::Tick { elapsed_ms } = &event {
             self.elapsed_ms = *elapsed_ms;
         }
@@ -360,19 +342,24 @@ impl CatalogSession {
                 let _ = self.app.handle_event(event, tick);
             }
         }
-        self.semantic_revision = self.semantic_revision.saturating_add(1);
-        Ok(self.update(true))
+        let after = self.frame();
+        let changed = before != after || before_cursor != self.app.last_cursor;
+        if changed {
+            self.semantic_revision = self.semantic_revision.saturating_add(1);
+        }
+        Ok(self.update(changed))
     }
 
     fn update(&self, changed: bool) -> DemoUpdate {
+        let metadata = self.app.page_metadata();
         DemoUpdate {
             changed,
             outcome: None,
-            hints: vec!["Tab", "Enter", "[", "]"],
-            interactive: true,
-            captures_text_input: captures_text_input(self.page),
-            next_deadline_ms: None,
-            deadline_kind: Some("functional"),
+            hints: metadata.hints.iter().map(|(key, _)| *key).collect(),
+            interactive: metadata.interactive,
+            captures_text_input: metadata.captures_text_input,
+            next_deadline_ms: metadata.animating.then_some(80),
+            deadline_kind: metadata.animating.then_some("visual-motion"),
             semantic_revision: self.semantic_revision,
         }
     }
@@ -461,6 +448,12 @@ mod tests {
         assert!(c.iter().any(|d| d.id == "overview"));
         assert!(c.iter().any(|d| d.id == "tablepro"));
         assert!(c.iter().any(|d| d.title == "Buttons"));
+        let overview = c.iter().find(|d| d.id == "overview").expect("overview");
+        assert!(!overview.interactive);
+        assert_eq!(
+            overview.description,
+            "Tokens and principles behind every component"
+        );
         let json = serde_json::to_value(&c[0]).expect("descriptor json");
         assert!(json.get("interactionKind").is_some());
         assert!(json.get("interaction_kind").is_none());
@@ -492,5 +485,7 @@ mod tests {
                 .get("capturesTextInput")
                 .is_some()
         );
+        let update = s.dispatch(DemoEvent::Focus { focused: true }).unwrap();
+        assert!(!update.changed);
     }
 }
