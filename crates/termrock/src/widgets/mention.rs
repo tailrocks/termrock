@@ -1422,20 +1422,28 @@ impl<'a> InlineMention<'a> {
         if key.is_release() {
             return InlineMentionOutcome::Ignored;
         }
+        let is_press = key.is_press();
         if state.disambiguation_open {
             return self.handle_disambiguation_key(state, key);
         }
-        if key.code == KeyCode::Char('c') && key.modifiers.contains(KeyModifiers::CONTROL) {
+        if is_press
+            && key.code == KeyCode::Char('c')
+            && key.modifiers.contains(KeyModifiers::CONTROL)
+        {
             return InlineMentionOutcome::CopyRequested {
                 id: self.mention.id.clone(),
             };
         }
-        if key.code == KeyCode::Char('p') && key.modifiers.contains(KeyModifiers::CONTROL) {
+        if is_press
+            && key.code == KeyCode::Char('p')
+            && key.modifiers.contains(KeyModifiers::CONTROL)
+        {
             return InlineMentionOutcome::PreviewRequested {
                 id: self.mention.id.clone(),
             };
         }
-        if key.code == KeyCode::Char('d')
+        if is_press
+            && key.code == KeyCode::Char('d')
             && key.modifiers.contains(KeyModifiers::CONTROL)
             && matches!(self.mention.validity, MentionValidity::Ambiguous)
         {
@@ -1446,7 +1454,8 @@ impl<'a> InlineMention<'a> {
             };
         }
         // Enter on ambiguous opens disambiguation
-        if key.code == KeyCode::Enter
+        if is_press
+            && key.code == KeyCode::Enter
             && matches!(self.mention.validity, MentionValidity::Ambiguous)
             && state.tag.part == TokenPart::Body
         {
@@ -1478,7 +1487,7 @@ impl<'a> InlineMention<'a> {
     ) -> InlineMentionOutcome {
         let n = self.mention.disambiguators.len().max(1);
         match key.code {
-            KeyCode::Esc => {
+            KeyCode::Esc if key.is_press() => {
                 state.disambiguation_open = false;
                 InlineMentionOutcome::Ignored
             }
@@ -1490,7 +1499,7 @@ impl<'a> InlineMention<'a> {
                 state.disambiguation_cursor = (state.disambiguation_cursor + 1).min(n - 1);
                 InlineMentionOutcome::Ignored
             }
-            KeyCode::Enter => {
+            KeyCode::Enter if key.is_press() => {
                 let idx = state.disambiguation_cursor.min(n - 1);
                 state.disambiguation_open = false;
                 InlineMentionOutcome::DisambiguationSelected {
@@ -1783,6 +1792,7 @@ pub mod bench {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::input::KeyEventKind;
     use crate::style::DesignSystem;
     use crate::widgets::remove_label;
 
@@ -1926,6 +1936,85 @@ mod tests {
         assert!(matches!(out, InlineMentionOutcome::CopyRequested { .. }));
         let desc = mention_semantic_description(file.as_ref());
         assert!(desc.contains("missing"));
+    }
+
+    #[test]
+    fn repeated_direct_actions_and_disambiguation_lifecycle_are_ignored() {
+        let system = DesignSystem::default();
+        let file = FileMention::missing("m", "gone.rs", "gone.rs");
+        let mention = InlineMention::file(&file, &system);
+        let mut state = InlineMentionState::new();
+        state.set_focused(true);
+
+        for (code, modifiers) in [
+            (KeyCode::Char('c'), KeyModifiers::CONTROL),
+            (KeyCode::Char('p'), KeyModifiers::CONTROL),
+        ] {
+            let mut repeat = KeyEvent::new(code, modifiers);
+            repeat.kind = KeyEventKind::Repeat;
+            let before = state.clone();
+            assert_eq!(
+                mention.handle_key(&mut state, repeat),
+                InlineMentionOutcome::Ignored
+            );
+            assert_eq!(state, before, "{code:?} repeat mutated mention state");
+        }
+        assert!(matches!(
+            mention.handle_key(
+                &mut state,
+                KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL)
+            ),
+            InlineMentionOutcome::CopyRequested { .. }
+        ));
+
+        let ambiguous = FileMention::ambiguous(
+            "a",
+            "same.rs",
+            vec![
+                MentionDisambiguator::new("one/same.rs", "same.rs"),
+                MentionDisambiguator::new("two/same.rs", "same.rs"),
+            ],
+        );
+        let ambiguous_mention = InlineMention::file(&ambiguous, &system);
+        let mut repeat_disambiguate = KeyEvent::new(KeyCode::Char('d'), KeyModifiers::CONTROL);
+        repeat_disambiguate.kind = KeyEventKind::Repeat;
+        assert_eq!(
+            ambiguous_mention.handle_key(&mut state, repeat_disambiguate),
+            InlineMentionOutcome::Ignored
+        );
+        assert!(!state.disambiguation_open);
+        assert!(matches!(
+            ambiguous_mention.handle_key(
+                &mut state,
+                KeyEvent::new(KeyCode::Char('d'), KeyModifiers::CONTROL)
+            ),
+            InlineMentionOutcome::DisambiguateRequested { .. }
+        ));
+
+        let before = state.clone();
+        let mut repeat_escape = KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE);
+        repeat_escape.kind = KeyEventKind::Repeat;
+        assert_eq!(
+            ambiguous_mention.handle_key(&mut state, repeat_escape),
+            InlineMentionOutcome::Ignored
+        );
+        assert_eq!(state, before);
+
+        let mut repeat_enter = KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE);
+        repeat_enter.kind = KeyEventKind::Repeat;
+        let before = state.clone();
+        assert_eq!(
+            ambiguous_mention.handle_key(&mut state, repeat_enter),
+            InlineMentionOutcome::Ignored
+        );
+        assert_eq!(state, before);
+        assert!(matches!(
+            ambiguous_mention.handle_key(
+                &mut state,
+                KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)
+            ),
+            InlineMentionOutcome::DisambiguationSelected { index: 0, .. }
+        ));
     }
 
     #[test]
