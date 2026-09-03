@@ -163,3 +163,96 @@ fn drag_auto_scroll_is_applied_to_dialog_scroll_on_render() {
     viewport.render(area, &mut Buffer::empty(area), &mut state);
     assert_eq!(state.scroll.scroll_y, 1);
 }
+
+#[test]
+fn selection_state_survives_repaint_and_rejects_outside_pointer_events() {
+    let lines =
+        Box::leak(vec![Line::from("alpha beta"), Line::from("second line")].into_boxed_slice());
+    let system = Box::leak(Box::new(DesignSystem::default()));
+    let viewport = Viewport::new(lines, system);
+    let mut state = ViewportState::default();
+    let area = Rect::new(0, 0, 24, 6);
+
+    viewport.render(area, &mut Buffer::empty(area), &mut state);
+    assert_eq!(
+        viewport.on_mouse(
+            &mut state,
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: Position::new(0, 0),
+                modifiers: KeyModifiers::NONE,
+            },
+        ),
+        Outcome::Ignored
+    );
+    viewport.on_click(&mut state, Position::new(1, 1));
+    viewport.on_drag(&mut state, Position::new(7, 2));
+    assert_eq!(
+        viewport.selected_text(&state).as_deref(),
+        Some("alpha beta\nsecond")
+    );
+
+    let fresh_viewport = Viewport::new(lines, system);
+    fresh_viewport.render(area, &mut Buffer::empty(area), &mut state);
+
+    assert_eq!(
+        fresh_viewport.selected_text(&state).as_deref(),
+        Some("alpha beta\nsecond")
+    );
+}
+
+#[test]
+fn scrollbar_pointer_changes_persistent_scroll_state() {
+    let lines = Box::leak(
+        (0..20)
+            .map(|index| Line::from(format!("line {index}")))
+            .collect::<Vec<_>>()
+            .into_boxed_slice(),
+    );
+    let system = Box::leak(Box::new(DesignSystem::default()));
+    let viewport = Viewport::new(lines, system);
+    let mut state = ViewportState::default();
+    let area = Rect::new(0, 0, 24, 5);
+    viewport.render(area, &mut Buffer::empty(area), &mut state);
+    // Surface leaves the trailing border column as the scrollbar gutter.
+    let scrollbar_x = area.right().saturating_sub(1);
+    let before = state.scroll.scroll_y;
+
+    let outcome = viewport.on_mouse(
+        &mut state,
+        MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: Position::new(scrollbar_x, area.bottom().saturating_sub(2)),
+            modifiers: KeyModifiers::NONE,
+        },
+    );
+
+    assert_eq!(outcome, Outcome::Changed);
+    assert!(state.scroll.scroll_y > before);
+}
+
+#[test]
+fn selectable_cells_preserve_tabs_wide_graphemes_and_trailing_spaces() {
+    let lines = Box::leak(vec![Line::from("a\t界  ")].into_boxed_slice());
+    let system = Box::leak(Box::new(DesignSystem::default()));
+    let viewport = Viewport::new(lines, system);
+    let mut state = ViewportState::default();
+    let area = Rect::new(0, 0, 20, 4);
+    viewport.render(area, &mut Buffer::empty(area), &mut state);
+
+    viewport.on_click(&mut state, Position::new(1, 1));
+    viewport.on_drag(&mut state, Position::new(10, 1));
+    assert_eq!(viewport.selected_text(&state).as_deref(), Some("a    界  "));
+
+    viewport.on_click(&mut state, Position::new(6, 1));
+    viewport.on_drag(&mut state, Position::new(7, 1));
+    assert_eq!(viewport.selected_text(&state).as_deref(), Some("界"));
+
+    viewport.on_click(&mut state, Position::new(1, 1));
+    let (outcome, event) = viewport.on_key(
+        &mut state,
+        KeyEvent::new(KeyCode::Char('y'), KeyModifiers::NONE),
+    );
+    assert_eq!(outcome, Outcome::Ignored);
+    assert!(event.is_none());
+}

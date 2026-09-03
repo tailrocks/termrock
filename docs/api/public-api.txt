@@ -57723,6 +57723,49 @@ pub unsafe fn termrock::widgets::ViewerContentKind::clone_to_uninit(&self, *mut 
 impl<T> core::convert::From<T> for termrock::widgets::ViewerContentKind
 pub fn termrock::widgets::ViewerContentKind::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ViewerContentKind
+#[non_exhaustive] pub enum termrock::widgets::ViewportEvent
+pub termrock::widgets::ViewportEvent::Copy(alloc::string::String)
+pub termrock::widgets::ViewportEvent::SelectionChanged
+impl core::clone::Clone for termrock::widgets::ViewportEvent
+pub fn termrock::widgets::ViewportEvent::clone(&self) -> termrock::widgets::ViewportEvent
+impl core::cmp::Eq for termrock::widgets::ViewportEvent
+impl core::cmp::PartialEq for termrock::widgets::ViewportEvent
+pub fn termrock::widgets::ViewportEvent::eq(&self, &termrock::widgets::ViewportEvent) -> bool
+impl core::fmt::Debug for termrock::widgets::ViewportEvent
+pub fn termrock::widgets::ViewportEvent::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for termrock::widgets::ViewportEvent
+impl core::marker::Freeze for termrock::widgets::ViewportEvent
+impl core::marker::Send for termrock::widgets::ViewportEvent
+impl core::marker::Sync for termrock::widgets::ViewportEvent
+impl core::marker::Unpin for termrock::widgets::ViewportEvent
+impl core::marker::UnsafeUnpin for termrock::widgets::ViewportEvent
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ViewportEvent
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ViewportEvent
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ViewportEvent where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::ViewportEvent::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::ViewportEvent where U: core::convert::From<T>
+pub fn termrock::widgets::ViewportEvent::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ViewportEvent where U: core::convert::Into<T>
+pub type termrock::widgets::ViewportEvent::Error = never
+pub fn termrock::widgets::ViewportEvent::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ViewportEvent where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ViewportEvent::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ViewportEvent::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ViewportEvent where T: core::clone::Clone
+pub type termrock::widgets::ViewportEvent::Owned = T
+pub fn termrock::widgets::ViewportEvent::clone_into(&self, &mut T)
+pub fn termrock::widgets::ViewportEvent::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ViewportEvent where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ViewportEvent::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ViewportEvent where T: ?core::marker::Sized
+pub fn termrock::widgets::ViewportEvent::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ViewportEvent where T: ?core::marker::Sized
+pub fn termrock::widgets::ViewportEvent::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ViewportEvent where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ViewportEvent::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ViewportEvent
+pub fn termrock::widgets::ViewportEvent::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ViewportEvent
 #[non_exhaustive] pub enum termrock::widgets::VirtualGridOutcome<RowId, ColId>
 pub termrock::widgets::VirtualGridOutcome::Activated
 pub termrock::widgets::VirtualGridOutcome::Activated::col: usize
@@ -61457,6 +61500,56 @@ pub unsafe fn termrock::widgets::CarouselState::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::CarouselState
 pub fn termrock::widgets::CarouselState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::CarouselState
+pub struct termrock::widgets::CellPos
+pub termrock::widgets::CellPos::col: usize
+pub termrock::widgets::CellPos::line: usize
+impl core::clone::Clone for termrock::widgets::CellPos
+pub fn termrock::widgets::CellPos::clone(&self) -> termrock::widgets::CellPos
+impl core::cmp::Eq for termrock::widgets::CellPos
+impl core::cmp::Ord for termrock::widgets::CellPos
+pub fn termrock::widgets::CellPos::cmp(&self, &termrock::widgets::CellPos) -> core::cmp::Ordering
+impl core::cmp::PartialEq for termrock::widgets::CellPos
+pub fn termrock::widgets::CellPos::eq(&self, &termrock::widgets::CellPos) -> bool
+impl core::cmp::PartialOrd for termrock::widgets::CellPos
+pub fn termrock::widgets::CellPos::partial_cmp(&self, &termrock::widgets::CellPos) -> core::option::Option<core::cmp::Ordering>
+impl core::fmt::Debug for termrock::widgets::CellPos
+pub fn termrock::widgets::CellPos::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::widgets::CellPos
+impl core::marker::StructuralPartialEq for termrock::widgets::CellPos
+impl core::marker::Freeze for termrock::widgets::CellPos
+impl core::marker::Send for termrock::widgets::CellPos
+impl core::marker::Sync for termrock::widgets::CellPos
+impl core::marker::Unpin for termrock::widgets::CellPos
+impl core::marker::UnsafeUnpin for termrock::widgets::CellPos
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::CellPos
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::CellPos
+impl<Q, K> equivalent::Comparable<K> for termrock::widgets::CellPos where Q: core::cmp::Ord + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::CellPos::compare(&self, &K) -> core::cmp::Ordering
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::CellPos where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::CellPos::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::CellPos where U: core::convert::From<T>
+pub fn termrock::widgets::CellPos::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::CellPos where U: core::convert::Into<T>
+pub type termrock::widgets::CellPos::Error = never
+pub fn termrock::widgets::CellPos::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::CellPos where U: core::convert::TryFrom<T>
+pub type termrock::widgets::CellPos::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::CellPos::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::CellPos where T: core::clone::Clone
+pub type termrock::widgets::CellPos::Owned = T
+pub fn termrock::widgets::CellPos::clone_into(&self, &mut T)
+pub fn termrock::widgets::CellPos::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::CellPos where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::CellPos::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::CellPos where T: ?core::marker::Sized
+pub fn termrock::widgets::CellPos::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::CellPos where T: ?core::marker::Sized
+pub fn termrock::widgets::CellPos::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::CellPos where T: core::clone::Clone
+pub unsafe fn termrock::widgets::CellPos::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::CellPos
+pub fn termrock::widgets::CellPos::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::CellPos
 pub struct termrock::widgets::Chart<'a>
 impl<'a> termrock::widgets::Chart<'a>
 pub const fn termrock::widgets::Chart<'a>::area(self) -> Self
@@ -62731,7 +62824,6 @@ pub fn termrock::widgets::CodeBlock<'a, H>::copy_range(&self, usize, usize) -> a
 pub fn termrock::widgets::CodeBlock<'a, H>::copy_text(&self, &termrock::widgets::CodeBlockState) -> alloc::string::String
 pub const fn termrock::widgets::CodeBlock<'a, H>::current_block(self, usize, usize) -> Self
 pub fn termrock::widgets::CodeBlock<'a, H>::document_len(&self) -> usize
-pub const fn termrock::widgets::CodeBlock<'a, H>::first_line(self, usize) -> Self
 pub const fn termrock::widgets::CodeBlock<'a, H>::footer_status(self, core::option::Option<(&'a str, termrock::style::Role)>) -> Self
 pub const fn termrock::widgets::CodeBlock<'a, H>::gutter_marks(self, &'a [termrock::widgets::CodeGutterMark]) -> Self
 pub fn termrock::widgets::CodeBlock<'a, H>::handle_intent(&self, &mut termrock::widgets::CodeBlockState, termrock::context::ContextUiIntent, usize) -> termrock::widgets::CodeBlockOutcome
@@ -62760,10 +62852,6 @@ pub fn termrock::widgets::CodeBlock<'a, H>::clone(&self) -> termrock::widgets::C
 impl<'a, H: core::fmt::Debug + termrock::widgets::SyntaxHighlighter> core::fmt::Debug for termrock::widgets::CodeBlock<'a, H>
 pub fn termrock::widgets::CodeBlock<'a, H>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl<'a, H: core::marker::Copy + termrock::widgets::SyntaxHighlighter> core::marker::Copy for termrock::widgets::CodeBlock<'a, H>
-impl<H: termrock::widgets::SyntaxHighlighter> ratatui_core::widgets::widget::Widget for &termrock::widgets::CodeBlock<'_, H>
-pub fn &termrock::widgets::CodeBlock<'_, H>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
-impl<H: termrock::widgets::SyntaxHighlighter> ratatui_core::widgets::widget::Widget for termrock::widgets::CodeBlock<'_, H>
-pub fn termrock::widgets::CodeBlock<'_, H>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
 impl<'a, H> core::marker::Freeze for termrock::widgets::CodeBlock<'a, H> where &'a H: core::marker::Freeze
 impl<'a, H> core::marker::Send for termrock::widgets::CodeBlock<'a, H> where &'a H: core::marker::Send
 impl<'a, H> core::marker::Sync for termrock::widgets::CodeBlock<'a, H> where &'a H: core::marker::Sync
@@ -73505,6 +73593,8 @@ pub fn termrock::widgets::LogLine<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::LogLine<'a>
 pub struct termrock::widgets::LogPane<'a>
 impl<'a> termrock::widgets::LogPane<'a>
+pub fn termrock::widgets::LogPane<'a>::handle_key(&self, &mut termrock::widgets::LogPaneState, termrock::input::KeyEvent) -> (termrock::interaction::Outcome<()>, core::option::Option<termrock::widgets::ViewportEvent>)
+pub fn termrock::widgets::LogPane<'a>::handle_mouse(&self, &mut termrock::widgets::LogPaneState, termrock::input::MouseEvent) -> termrock::interaction::Outcome<()>
 pub const fn termrock::widgets::LogPane<'a>::new(&'a termrock::style::DesignSystem) -> Self
 pub const fn termrock::widgets::LogPane<'a>::title(self, &'a str) -> Self
 impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::LogPane<'_>
@@ -74001,7 +74091,6 @@ pub fn termrock::widgets::MarkdownView<'a>::measure_height(&self, u16) -> u16
 pub const fn termrock::widgets::MarkdownView<'a>::new(&'a [termrock::widgets::MarkdownBlock<'a>], &'a termrock::style::DesignSystem) -> Self
 pub fn termrock::widgets::MarkdownView<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::MarkdownViewState) -> termrock::widgets::MarkdownParts
 pub fn termrock::widgets::MarkdownView<'a>::register_semantic<Id, Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, &termrock::widgets::MarkdownViewState) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
-pub fn termrock::widgets::MarkdownView<'a>::row_map(&self, u16) -> alloc::vec::Vec<(usize, u16)>
 pub const fn termrock::widgets::MarkdownView<'a>::section_gap(self, bool) -> Self
 pub const fn termrock::widgets::MarkdownView<'a>::selectable(self, bool) -> Self
 impl ratatui_core::widgets::widget::Widget for &termrock::widgets::MarkdownView<'_>
@@ -90951,6 +91040,7 @@ impl<Id> termrock::widgets::TreeState<Id>
 pub const fn termrock::widgets::TreeState<Id>::bulk_disclosure(&self) -> core::option::Option<bool>
 pub fn termrock::widgets::TreeState<Id>::capture_scroll_anchor(&mut self)
 pub fn termrock::widgets::TreeState<Id>::clear_typeahead(&mut self)
+pub const fn termrock::widgets::TreeState<Id>::cursor(&self) -> core::option::Option<&Id>
 pub fn termrock::widgets::TreeState<Id>::disable_multi_select(&mut self)
 pub fn termrock::widgets::TreeState<Id>::enable_multi_select(&mut self)
 pub fn termrock::widgets::TreeState<Id>::filter_query(&self) -> core::option::Option<&str>
@@ -90967,8 +91057,10 @@ pub fn termrock::widgets::TreeState<Id>::select(&mut self, core::option::Option<
 pub const fn termrock::widgets::TreeState<Id>::selected(&self) -> core::option::Option<&Id>
 pub const fn termrock::widgets::TreeState<Id>::selection(&self) -> core::option::Option<&termrock::widgets::Selection<Id>>
 pub fn termrock::widgets::TreeState<Id>::selection_mut(&mut self) -> core::option::Option<&mut termrock::widgets::Selection<Id>>
+pub const fn termrock::widgets::TreeState<Id>::semantic_selection(&self) -> core::option::Option<&Id>
 pub fn termrock::widgets::TreeState<Id>::set_filter_query(&mut self, core::option::Option<alloc::string::String>)
 pub fn termrock::widgets::TreeState<Id>::set_h_offset(&mut self, u16)
+pub fn termrock::widgets::TreeState<Id>::set_semantic_selection(&mut self, core::option::Option<Id>)
 pub fn termrock::widgets::TreeState<Id>::set_sticky(&mut self, termrock::widgets::StickyRegion)
 pub fn termrock::widgets::TreeState<Id>::set_virtual_window(&mut self, usize, usize)
 pub fn termrock::widgets::TreeState<Id>::take_bulk_disclosure(&mut self) -> core::option::Option<bool>
@@ -90985,13 +91077,13 @@ impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::TreeState<Id>
 pub fn termrock::widgets::TreeState<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl<Id> core::default::Default for termrock::widgets::TreeState<Id>
 pub fn termrock::widgets::TreeState<Id>::default() -> Self
-impl<Id> core::marker::Freeze for termrock::widgets::TreeState<Id> where core::option::Option<Id>: core::marker::Freeze + core::marker::Freeze, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::marker::Freeze + core::marker::Freeze + core::marker::Freeze, core::option::Option<termrock::widgets::Selection<Id>>: core::marker::Freeze, termrock::interaction::CollectionState<Id>: core::marker::Freeze
-impl<Id> core::marker::Send for termrock::widgets::TreeState<Id> where core::option::Option<Id>: core::marker::Send + core::marker::Send, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::marker::Send + core::marker::Send + core::marker::Send, core::option::Option<termrock::widgets::Selection<Id>>: core::marker::Send, termrock::interaction::CollectionState<Id>: core::marker::Send
-impl<Id> core::marker::Sync for termrock::widgets::TreeState<Id> where core::option::Option<Id>: core::marker::Sync + core::marker::Sync, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::marker::Sync + core::marker::Sync + core::marker::Sync, core::option::Option<termrock::widgets::Selection<Id>>: core::marker::Sync, termrock::interaction::CollectionState<Id>: core::marker::Sync
-impl<Id> core::marker::Unpin for termrock::widgets::TreeState<Id> where core::option::Option<Id>: core::marker::Unpin + core::marker::Unpin, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::marker::Unpin + core::marker::Unpin + core::marker::Unpin, core::option::Option<termrock::widgets::Selection<Id>>: core::marker::Unpin, termrock::interaction::CollectionState<Id>: core::marker::Unpin
-impl<Id> core::marker::UnsafeUnpin for termrock::widgets::TreeState<Id> where core::option::Option<Id>: core::marker::UnsafeUnpin + core::marker::UnsafeUnpin, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::marker::UnsafeUnpin + core::marker::UnsafeUnpin + core::marker::UnsafeUnpin, core::option::Option<termrock::widgets::Selection<Id>>: core::marker::UnsafeUnpin, termrock::interaction::CollectionState<Id>: core::marker::UnsafeUnpin
-impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TreeState<Id> where core::option::Option<Id>: core::panic::unwind_safe::RefUnwindSafe + core::panic::unwind_safe::RefUnwindSafe, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::panic::unwind_safe::RefUnwindSafe + core::panic::unwind_safe::RefUnwindSafe + core::panic::unwind_safe::RefUnwindSafe, core::option::Option<termrock::widgets::Selection<Id>>: core::panic::unwind_safe::RefUnwindSafe, termrock::interaction::CollectionState<Id>: core::panic::unwind_safe::RefUnwindSafe
-impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::TreeState<Id> where core::option::Option<Id>: core::panic::unwind_safe::UnwindSafe + core::panic::unwind_safe::UnwindSafe, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::panic::unwind_safe::UnwindSafe + core::panic::unwind_safe::UnwindSafe + core::panic::unwind_safe::UnwindSafe, core::option::Option<termrock::widgets::Selection<Id>>: core::panic::unwind_safe::UnwindSafe, termrock::interaction::CollectionState<Id>: core::panic::unwind_safe::UnwindSafe
+impl<Id> core::marker::Freeze for termrock::widgets::TreeState<Id> where core::option::Option<Id>: core::marker::Freeze + core::marker::Freeze + core::marker::Freeze, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::marker::Freeze + core::marker::Freeze + core::marker::Freeze, core::option::Option<termrock::widgets::Selection<Id>>: core::marker::Freeze, termrock::interaction::CollectionState<Id>: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::TreeState<Id> where core::option::Option<Id>: core::marker::Send + core::marker::Send + core::marker::Send, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::marker::Send + core::marker::Send + core::marker::Send, core::option::Option<termrock::widgets::Selection<Id>>: core::marker::Send, termrock::interaction::CollectionState<Id>: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::TreeState<Id> where core::option::Option<Id>: core::marker::Sync + core::marker::Sync + core::marker::Sync, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::marker::Sync + core::marker::Sync + core::marker::Sync, core::option::Option<termrock::widgets::Selection<Id>>: core::marker::Sync, termrock::interaction::CollectionState<Id>: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::TreeState<Id> where core::option::Option<Id>: core::marker::Unpin + core::marker::Unpin + core::marker::Unpin, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::marker::Unpin + core::marker::Unpin + core::marker::Unpin, core::option::Option<termrock::widgets::Selection<Id>>: core::marker::Unpin, termrock::interaction::CollectionState<Id>: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::TreeState<Id> where core::option::Option<Id>: core::marker::UnsafeUnpin + core::marker::UnsafeUnpin + core::marker::UnsafeUnpin, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::marker::UnsafeUnpin + core::marker::UnsafeUnpin + core::marker::UnsafeUnpin, core::option::Option<termrock::widgets::Selection<Id>>: core::marker::UnsafeUnpin, termrock::interaction::CollectionState<Id>: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TreeState<Id> where core::option::Option<Id>: core::panic::unwind_safe::RefUnwindSafe + core::panic::unwind_safe::RefUnwindSafe + core::panic::unwind_safe::RefUnwindSafe, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::panic::unwind_safe::RefUnwindSafe + core::panic::unwind_safe::RefUnwindSafe + core::panic::unwind_safe::RefUnwindSafe, core::option::Option<termrock::widgets::Selection<Id>>: core::panic::unwind_safe::RefUnwindSafe, termrock::interaction::CollectionState<Id>: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::TreeState<Id> where core::option::Option<Id>: core::panic::unwind_safe::UnwindSafe + core::panic::unwind_safe::UnwindSafe + core::panic::unwind_safe::UnwindSafe, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::panic::unwind_safe::UnwindSafe + core::panic::unwind_safe::UnwindSafe + core::panic::unwind_safe::UnwindSafe, core::option::Option<termrock::widgets::Selection<Id>>: core::panic::unwind_safe::UnwindSafe, termrock::interaction::CollectionState<Id>: core::panic::unwind_safe::UnwindSafe
 impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::TreeState<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
 pub fn termrock::widgets::TreeState<Id>::equivalent(&self, &K) -> bool
 impl<T, U> core::convert::Into<U> for termrock::widgets::TreeState<Id> where U: core::convert::From<T>
@@ -91286,23 +91378,36 @@ pub fn termrock::widgets::TreeTableState<Id, ColId>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::TreeTableState<Id, ColId>
 pub struct termrock::widgets::Viewport<'a>
 impl<'a> termrock::widgets::Viewport<'a>
+pub fn termrock::widgets::Viewport<'a>::clear_selection(&self, &mut termrock::widgets::ViewportState) -> termrock::interaction::Outcome<()>
 pub const fn termrock::widgets::Viewport<'a>::content_revision(self, u64) -> Self
 pub const fn termrock::widgets::Viewport<'a>::content_style(self, ratatui_core::style::Style) -> Self
+pub fn termrock::widgets::Viewport<'a>::copy_selection(&self, &termrock::widgets::ViewportState) -> core::option::Option<alloc::string::String>
 pub const fn termrock::widgets::Viewport<'a>::emphasis(self, termrock::style::PanelChrome) -> Self
+pub fn termrock::widgets::Viewport<'a>::has_anchor(&self, &termrock::widgets::ViewportState) -> bool
+pub fn termrock::widgets::Viewport<'a>::has_selection(&self, &termrock::widgets::ViewportState) -> bool
 pub const fn termrock::widgets::Viewport<'a>::new(&'a [ratatui_core::text::line::Line<'a>], &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::Viewport<'a>::on_click(&self, &mut termrock::widgets::ViewportState, ratatui_core::layout::position::Position) -> termrock::interaction::Outcome<()>
+pub fn termrock::widgets::Viewport<'a>::on_drag(&self, &mut termrock::widgets::ViewportState, ratatui_core::layout::position::Position) -> termrock::interaction::Outcome<()>
+pub fn termrock::widgets::Viewport<'a>::on_key(&self, &mut termrock::widgets::ViewportState, termrock::input::KeyEvent) -> (termrock::interaction::Outcome<()>, core::option::Option<termrock::widgets::ViewportEvent>)
+pub fn termrock::widgets::Viewport<'a>::on_mouse(&self, &mut termrock::widgets::ViewportState, termrock::input::MouseEvent) -> termrock::interaction::Outcome<()>
 pub const fn termrock::widgets::Viewport<'a>::padded_content(self) -> Self
+pub fn termrock::widgets::Viewport<'a>::pos_at(&self, &termrock::widgets::ViewportState, ratatui_core::layout::position::Position) -> core::option::Option<termrock::widgets::CellPos>
+pub fn termrock::widgets::Viewport<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::ViewportState)
+pub fn termrock::widgets::Viewport<'a>::select_word_at(&self, &mut termrock::widgets::ViewportState, ratatui_core::layout::position::Position) -> termrock::interaction::Outcome<()>
+pub fn termrock::widgets::Viewport<'a>::selected_text(&self, &termrock::widgets::ViewportState) -> core::option::Option<alloc::string::String>
+pub fn termrock::widgets::Viewport<'a>::selection(&self, &termrock::widgets::ViewportState) -> core::option::Option<(termrock::widgets::CellPos, termrock::widgets::CellPos)>
+pub fn termrock::widgets::Viewport<'a>::set_area(&self, ratatui_core::layout::rect::Rect, &mut termrock::widgets::ViewportState)
 pub const fn termrock::widgets::Viewport<'a>::title(self, &'a str) -> Self
 impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::Viewport<'_>
-pub type &termrock::widgets::Viewport<'_>::State = termrock::scroll::DialogScroll
+pub type &termrock::widgets::Viewport<'_>::State = termrock::widgets::ViewportState
 pub fn &termrock::widgets::Viewport<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
 impl ratatui_core::widgets::stateful_widget::StatefulWidget for termrock::widgets::Viewport<'_>
-pub type termrock::widgets::Viewport<'_>::State = termrock::scroll::DialogScroll
+pub type termrock::widgets::Viewport<'_>::State = termrock::widgets::ViewportState
 pub fn termrock::widgets::Viewport<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
 impl<'a> core::clone::Clone for termrock::widgets::Viewport<'a>
 pub fn termrock::widgets::Viewport<'a>::clone(&self) -> termrock::widgets::Viewport<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::Viewport<'a>
 pub fn termrock::widgets::Viewport<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<'a> core::marker::Copy for termrock::widgets::Viewport<'a>
 impl<'a> core::marker::Freeze for termrock::widgets::Viewport<'a>
 impl<'a> core::marker::Send for termrock::widgets::Viewport<'a>
 impl<'a> core::marker::Sync for termrock::widgets::Viewport<'a>
@@ -91333,6 +91438,46 @@ pub unsafe fn termrock::widgets::Viewport<'a>::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::Viewport<'a>
 pub fn termrock::widgets::Viewport<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Viewport<'a>
+pub struct termrock::widgets::ViewportState
+pub termrock::widgets::ViewportState::scroll: termrock::scroll::DialogScroll
+impl termrock::widgets::ViewportState
+pub const fn termrock::widgets::ViewportState::new() -> Self
+impl core::clone::Clone for termrock::widgets::ViewportState
+pub fn termrock::widgets::ViewportState::clone(&self) -> termrock::widgets::ViewportState
+impl core::default::Default for termrock::widgets::ViewportState
+pub fn termrock::widgets::ViewportState::default() -> termrock::widgets::ViewportState
+impl core::fmt::Debug for termrock::widgets::ViewportState
+pub fn termrock::widgets::ViewportState::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for termrock::widgets::ViewportState
+impl core::marker::Send for termrock::widgets::ViewportState
+impl core::marker::Sync for termrock::widgets::ViewportState
+impl core::marker::Unpin for termrock::widgets::ViewportState
+impl core::marker::UnsafeUnpin for termrock::widgets::ViewportState
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ViewportState
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::ViewportState
+impl<T, U> core::convert::Into<U> for termrock::widgets::ViewportState where U: core::convert::From<T>
+pub fn termrock::widgets::ViewportState::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::ViewportState where U: core::convert::Into<T>
+pub type termrock::widgets::ViewportState::Error = never
+pub fn termrock::widgets::ViewportState::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::ViewportState where U: core::convert::TryFrom<T>
+pub type termrock::widgets::ViewportState::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::ViewportState::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::ViewportState where T: core::clone::Clone
+pub type termrock::widgets::ViewportState::Owned = T
+pub fn termrock::widgets::ViewportState::clone_into(&self, &mut T)
+pub fn termrock::widgets::ViewportState::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::ViewportState where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::ViewportState::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::ViewportState where T: ?core::marker::Sized
+pub fn termrock::widgets::ViewportState::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::ViewportState where T: ?core::marker::Sized
+pub fn termrock::widgets::ViewportState::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::ViewportState where T: core::clone::Clone
+pub unsafe fn termrock::widgets::ViewportState::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::ViewportState
+pub fn termrock::widgets::ViewportState::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::ViewportState
 pub struct termrock::widgets::VirtRange
 pub termrock::widgets::VirtRange::end: u64
 pub termrock::widgets::VirtRange::start: u64
@@ -92477,7 +92622,6 @@ pub fn termrock::widgets::format_binding<A: core::clone::Clone + 'static>(&termr
 pub fn termrock::widgets::format_budget_compact(&termrock::widgets::BudgetMeasure) -> alloc::string::String
 pub fn termrock::widgets::format_budget_count(u64, termrock::widgets::BudgetPrecision) -> alloc::string::String
 pub fn termrock::widgets::format_budget_percent(core::option::Option<f64>, termrock::widgets::BudgetPrecision) -> alloc::string::String
-pub fn termrock::widgets::format_byte_hex(u8) -> alloc::string::String
 pub fn termrock::widgets::format_chord(termrock::keymap::KeyChord, termrock::widgets::ChordFormat) -> alloc::string::String
 pub fn termrock::widgets::format_diagnostic_plain(&termrock::widgets::Diagnostic<'_>) -> alloc::string::String
 pub fn termrock::widgets::format_diagnostics_plain(&[termrock::widgets::Diagnostic<'_>]) -> alloc::string::String
@@ -92627,6 +92771,7 @@ pub fn termrock::widgets::project_tool_call_lines(&termrock::widgets::ToolCall, 
 pub fn termrock::widgets::prompt_composer_help_entries() -> alloc::vec::Vec<termrock::widgets::HelpEntry>
 pub fn termrock::widgets::protocol_emission_hint(termrock::widgets::ImageProtocol, &str) -> alloc::string::String
 pub fn termrock::widgets::protocol_limitations(termrock::widgets::Platform) -> alloc::vec::Vec<&'static str>
+pub fn termrock::widgets::push_byte_hex(&mut alloc::string::String, u8)
 pub fn termrock::widgets::quick_open_jump_targets<Id: core::clone::Clone>(&[termrock::widgets::QuickOpenItem<Id>], &[(usize, ratatui_core::layout::rect::Rect)], &[char]) -> alloc::vec::Vec<termrock::widgets::JumpTarget<Id>>
 pub fn termrock::widgets::quick_open_presentation_for_bounds(ratatui_core::layout::rect::Rect) -> termrock::widgets::QuickOpenPresentation
 pub fn termrock::widgets::redact_env_value(&str, &str) -> (alloc::string::String, bool)

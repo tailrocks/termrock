@@ -5,6 +5,7 @@ use ratatui_core::{
     text::Line,
     widgets::StatefulWidget,
 };
+use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
@@ -56,6 +57,7 @@ pub struct ViewportState {
     cells: Vec<Vec<ViewportCell>>,
     cached_len: usize,
     cached_revision: u64,
+    cached_base_style: Style,
     cache_valid: bool,
 }
 
@@ -71,7 +73,22 @@ impl ViewportState {
             cells: Vec::new(),
             cached_len: 0,
             cached_revision: UNCACHED_REVISION,
+            cached_base_style: Style::new(),
             cache_valid: false,
+        }
+    }
+
+    /// Rebases logical line positions after a host removes a prefix.
+    pub(crate) fn rebase_lines(&mut self, removed: usize) {
+        if removed == 0 {
+            return;
+        }
+        if let Some((start, end)) = self.selection.as_mut() {
+            start.line = start.line.saturating_sub(removed);
+            end.line = end.line.saturating_sub(removed);
+        }
+        if let Some(anchor) = self.drag_anchor.as_mut() {
+            anchor.line = anchor.line.saturating_sub(removed);
         }
     }
 
@@ -80,6 +97,7 @@ impl ViewportState {
             && self.cache_valid
             && self.cached_len == lines.len()
             && self.cached_revision == revision
+            && self.cached_base_style == base_style
         {
             return;
         }
@@ -87,33 +105,45 @@ impl ViewportState {
         self.cells = lines
             .iter()
             .map(|line| {
-                line.styled_graphemes(base_style)
-                    .flat_map(|grapheme| {
-                        if grapheme.symbol == "\t" {
-                            return (0..4)
-                                .map(|_| ViewportCell {
-                                    symbol: " ".to_owned(),
-                                    width: 1,
-                                    style: grapheme.style,
-                                })
-                                .collect::<Vec<_>>();
-                        }
-                        let width = UnicodeWidthStr::width(grapheme.symbol);
-                        if width == 0 {
-                            Vec::new()
-                        } else {
-                            vec![ViewportCell {
-                                symbol: grapheme.symbol.to_owned(),
-                                width,
-                                style: grapheme.style,
-                            }]
-                        }
+                let line_style = base_style.patch(line.style);
+                line.spans
+                    .iter()
+                    .flat_map(move |span| {
+                        let style = line_style.patch(span.style);
+                        span.content
+                            .as_ref()
+                            .graphemes(true)
+                            .flat_map(move |grapheme| {
+                                if grapheme == "\t" {
+                                    return (0..4)
+                                        .map(|_| ViewportCell {
+                                            symbol: " ".to_owned(),
+                                            width: 1,
+                                            style,
+                                        })
+                                        .collect::<Vec<_>>();
+                                }
+                                if grapheme.contains(char::is_control) {
+                                    return Vec::new();
+                                }
+                                let width = UnicodeWidthStr::width(grapheme);
+                                if width == 0 {
+                                    Vec::new()
+                                } else {
+                                    vec![ViewportCell {
+                                        symbol: grapheme.to_owned(),
+                                        width,
+                                        style,
+                                    }]
+                                }
+                            })
                     })
                     .collect()
             })
             .collect();
         self.cached_len = lines.len();
         self.cached_revision = revision;
+        self.cached_base_style = base_style;
         self.cache_valid = revision != UNCACHED_REVISION;
 
         let line_count = self.cells.len();
@@ -173,15 +203,25 @@ impl ViewportState {
     }
 
     fn pos_at(&self, position: Position) -> Option<CellPos> {
-        if self.area.is_empty() || self.cells.is_empty() {
+        if self.area.is_empty() || self.cells.is_empty() || !self.area.contains(position) {
             return None;
         }
         let row = usize::from(position.y.saturating_sub(self.area.y))
             .saturating_add(usize::from(self.scroll.scroll_y))
             .min(self.cells.len() - 1);
-        let column = usize::from(position.x.saturating_sub(self.area.x))
+        let raw_column = usize::from(position.x.saturating_sub(self.area.x))
             .saturating_add(usize::from(self.scroll.scroll_x))
             .min(self.line_width(row));
+        let cell = self.cell_at(row, raw_column);
+        let cell_start = self.column_of(row, cell);
+        let cell_end = self.column_of(row, cell.saturating_add(1));
+        let column = if raw_column.saturating_sub(cell_start).saturating_mul(2)
+            >= cell_end.saturating_sub(cell_start)
+        {
+            cell_end
+        } else {
+            cell_start
+        };
         Some(CellPos {
             line: row,
             col: column,
@@ -195,6 +235,16 @@ impl ViewportState {
                 .saturating_sub(usize::from(self.area.height)),
         )
         .unwrap_or(u16::MAX)
+    }
+
+    fn scroll_axes(&self) -> crate::scroll::ScrollAxes {
+        crate::scroll::ScrollAxes {
+            vertical: crate::scroll::is_scrollable(self.cells.len(), usize::from(self.area.height)),
+            horizontal: crate::scroll::is_scrollable(
+                self.max_line_width(),
+                usize::from(self.area.width),
+            ),
+        }
     }
 
     fn set_scroll_y(&mut self, offset: u16) {
@@ -212,6 +262,26 @@ impl ViewportState {
                 .min(usize::from(self.max_scroll_y()))
         };
         self.set_scroll_y(u16::try_from(next).unwrap_or(u16::MAX));
+    }
+
+    fn scrollbar_area(&self) -> Rect {
+        Rect::new(self.area.right(), self.area.y, 1, self.area.height)
+    }
+
+    fn scroll_to_track(&mut self, position: Position) -> bool {
+        let track = self.scrollbar_area();
+        if !track.contains(position) || self.max_scroll_y() == 0 {
+            return false;
+        }
+        let track_len = usize::from(track.height.saturating_sub(1)).max(1);
+        let along = usize::from(position.y.saturating_sub(track.y)).min(track_len);
+        let target = along
+            .saturating_mul(usize::from(self.max_scroll_y()))
+            .checked_div(track_len)
+            .unwrap_or(0);
+        let before = self.scroll.scroll_y;
+        self.set_scroll_y(u16::try_from(target).unwrap_or(u16::MAX));
+        before != self.scroll.scroll_y
     }
 }
 
@@ -343,7 +413,7 @@ impl<'a> Viewport<'a> {
         }
     }
 
-    /// Returns the selected text, preserving line breaks and trimming line tails.
+    /// Returns the selected text, preserving line breaks and terminal spaces.
     #[must_use]
     pub fn selected_text(&self, state: &ViewportState) -> Option<String> {
         let (start, end) = state.normalized_selection()?;
@@ -364,7 +434,7 @@ impl<'a> Viewport<'a> {
                 .iter()
                 .map(|cell| cell.symbol.as_str())
                 .collect();
-            text.push_str(line_text.trim_end());
+            text.push_str(&line_text);
             if line != end.line {
                 text.push('\n');
             }
@@ -400,6 +470,8 @@ impl<'a> Viewport<'a> {
         let Some(anchor) = state.drag_anchor else {
             return Outcome::Ignored;
         };
+        let before_scroll_y = state.scroll.scroll_y;
+        let before_selection = state.selection;
         if position.y < state.area.y {
             state.scroll_by(-1);
         } else if position.y >= state.area.bottom() {
@@ -414,10 +486,18 @@ impl<'a> Viewport<'a> {
                 .clamp(state.area.y, state.area.bottom().saturating_sub(1)),
         );
         let Some(head) = state.pos_at(clamped) else {
-            return Outcome::Changed;
+            return if state.scroll.scroll_y != before_scroll_y {
+                Outcome::Changed
+            } else {
+                Outcome::Ignored
+            };
         };
         state.selection = Some((anchor, head));
-        Outcome::Changed
+        if state.scroll.scroll_y != before_scroll_y || state.selection != before_selection {
+            Outcome::Changed
+        } else {
+            Outcome::Ignored
+        }
     }
 
     /// Double-click: select the word under the pointer.
@@ -441,7 +521,7 @@ impl<'a> Viewport<'a> {
             })
         };
         if !is_word(&cells[index]) {
-            return Outcome::Changed;
+            return self.clear_selection(state);
         }
         let mut start = index;
         while start > 0 && is_word(&cells[start - 1]) {
@@ -477,24 +557,40 @@ impl<'a> Viewport<'a> {
             | crate::input::MouseEventKind::ScrollLeft
             | crate::input::MouseEventKind::ScrollRight => {
                 self.ensure_interaction_layout(state);
-                if !state.area.contains(event.position) {
+                if !state.area.contains(event.position)
+                    && !state.scrollbar_area().contains(event.position)
+                {
                     return Outcome::Ignored;
                 }
-                let axes = crate::scroll::dialog_scroll_axes(
-                    state.max_line_width(),
+                let axes = state.scroll_axes();
+                let before = state.scroll.clone();
+                let handled = state.scroll.handle_mouse(event.kind, event.modifiers, axes);
+                state.scroll.clamp(
                     self.lines.len(),
-                    state.area,
+                    usize::from(state.area.height),
+                    state.max_line_width(),
+                    usize::from(state.area.width),
                 );
-                if state.scroll.handle_mouse(event.kind, event.modifiers, axes) {
+                if handled && state.scroll != before {
                     Outcome::Changed
                 } else {
                     Outcome::Ignored
                 }
             }
             crate::input::MouseEventKind::Down(crate::input::MouseButton::Left) => {
+                if state.scroll_to_track(event.position) {
+                    return Outcome::Changed;
+                }
                 self.on_click(state, event.position)
             }
             crate::input::MouseEventKind::Drag(crate::input::MouseButton::Left) => {
+                if state.scrollbar_area().contains(event.position) {
+                    return if state.scroll_to_track(event.position) {
+                        Outcome::Changed
+                    } else {
+                        Outcome::Ignored
+                    };
+                }
                 self.on_drag(state, event.position)
             }
             crate::input::MouseEventKind::Up(crate::input::MouseButton::Left) => {
@@ -523,7 +619,7 @@ impl<'a> Viewport<'a> {
         if key.is_press() && matches!(key.code, KeyCode::Char('y')) && key.modifiers.is_empty() {
             return match self.selected_text(state) {
                 Some(text) => (Outcome::Changed, Some(ViewportEvent::Copy(text))),
-                None => (Outcome::Changed, None),
+                None => (Outcome::Ignored, None),
             };
         }
         if key.code == KeyCode::Esc {
@@ -534,9 +630,9 @@ impl<'a> Viewport<'a> {
             };
         }
 
-        let axes =
-            crate::scroll::dialog_scroll_axes(state.max_line_width(), self.lines.len(), state.area);
-        let changed = state.scroll.handle_key_for_axes(
+        let axes = state.scroll_axes();
+        let before = state.scroll.clone();
+        let handled = state.scroll.handle_key_for_axes(
             key,
             self.lines.len(),
             usize::from(state.area.height),
@@ -544,7 +640,7 @@ impl<'a> Viewport<'a> {
             usize::from(state.area.width),
             axes,
         );
-        if changed {
+        if handled && state.scroll != before {
             (Outcome::Changed, None)
         } else {
             (Outcome::Ignored, None)
@@ -631,7 +727,6 @@ impl StatefulWidget for &Viewport<'_> {
             .enumerate()
         {
             let line_index = start + row;
-            let mut x = content.x;
             let mut column: usize = 0;
             for cell in line {
                 let cell_end = column.saturating_add(cell.width);
@@ -639,6 +734,10 @@ impl StatefulWidget for &Viewport<'_> {
                     column = cell_end;
                     continue;
                 }
+                let visible_column = column.saturating_sub(usize::from(state.scroll.scroll_x));
+                let x = content
+                    .x
+                    .saturating_add(u16::try_from(visible_column).unwrap_or(u16::MAX));
                 if x >= content.right() {
                     break;
                 }
@@ -669,7 +768,6 @@ impl StatefulWidget for &Viewport<'_> {
                     usize::from(content.right().saturating_sub(x)),
                     style,
                 );
-                x = x.saturating_add(u16::try_from(cell.width).unwrap_or(u16::MAX));
                 column = cell_end;
             }
             if let Some((a, b)) = selection

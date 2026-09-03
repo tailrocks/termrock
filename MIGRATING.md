@@ -350,6 +350,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0334 | `v0.14.0` | [SegmentedControl selection authority](migrations/0334-v0.14.0-segmented-control-selection-authority.md) |
 | 0335 | `v0.14.0` | [KeyEvent phase predicates](migrations/0335-v0.14.0-key-event-phase-predicates.md) |
 | 0336 | `v0.14.0` | [Scrolled-region gutter contract](migrations/0336-v0.14.0-scrolled-region-gutter-contract.md) |
+| 0367 | `v0.14.0` | [Stateful selectable Viewport](migrations/0367-v0.14.0-viewport-selection-state.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical
