@@ -1211,23 +1211,17 @@ pub fn termrock::context::adapters::paint_refs<'a, Id, LayerId, Action, MapActio
 pub fn termrock::context::adapters::route_escape<Id, LayerId, Action, MapAction>(&mut termrock::context::UiContext<'_, Id, LayerId, Action, MapAction>) -> termrock::context::adapters::RoutedEscape<Id> where Id: core::clone::Clone + core::cmp::Eq + core::hash::Hash, LayerId: core::clone::Clone + core::cmp::Eq + core::hash::Hash, MapAction: core::clone::Clone + 'static
 #[non_exhaustive] pub enum termrock::context::ContextUiIntent
 pub termrock::context::ContextUiIntent::Activate
-pub termrock::context::ContextUiIntent::AppCommand(termrock::interaction::intent::AppCommandId)
-pub termrock::context::ContextUiIntent::Backspace
 pub termrock::context::ContextUiIntent::Cancel
 pub termrock::context::ContextUiIntent::Close
 pub termrock::context::ContextUiIntent::Collapse
-pub termrock::context::ContextUiIntent::Delete
 pub termrock::context::ContextUiIntent::Edit
 pub termrock::context::ContextUiIntent::Expand
 pub termrock::context::ContextUiIntent::FocusNext
 pub termrock::context::ContextUiIntent::FocusPrevious
 pub termrock::context::ContextUiIntent::Fullscreen
 pub termrock::context::ContextUiIntent::Help
-pub termrock::context::ContextUiIntent::JumpLabel(char)
-pub termrock::context::ContextUiIntent::JumpStart
 pub termrock::context::ContextUiIntent::Move(termrock::interaction::NavigationMove)
 pub termrock::context::ContextUiIntent::Open
-pub termrock::context::ContextUiIntent::OpenCommandPalette
 pub termrock::context::ContextUiIntent::Page(termrock::interaction::PageMove)
 pub termrock::context::ContextUiIntent::Search
 pub termrock::context::ContextUiIntent::Submit
@@ -3356,13 +3350,7 @@ impl<T> core::convert::From<T> for termrock::interaction::OverlayOutcome<FocusId
 pub fn termrock::interaction::OverlayOutcome<FocusId>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::interaction::OverlayOutcome<FocusId>
 #[non_exhaustive] pub enum termrock::interaction::OverlayRequest
-pub termrock::interaction::OverlayRequest::Dismiss(termrock::interaction::OverlayId)
 pub termrock::interaction::OverlayRequest::DismissTop
-pub termrock::interaction::OverlayRequest::OpenCommandPalette
-pub termrock::interaction::OverlayRequest::OpenJump
-pub termrock::interaction::OverlayRequest::OpenNamed
-pub termrock::interaction::OverlayRequest::OpenNamed::id: termrock::interaction::OverlayId
-pub termrock::interaction::OverlayRequest::OpenNamed::kind: termrock::interaction::OverlayKind
 impl core::clone::Clone for termrock::interaction::OverlayRequest
 pub fn termrock::interaction::OverlayRequest::clone(&self) -> termrock::interaction::OverlayRequest
 impl core::cmp::Eq for termrock::interaction::OverlayRequest
@@ -3811,7 +3799,6 @@ pub fn termrock::interaction::RovingOutcome<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::interaction::RovingOutcome<Id>
 #[non_exhaustive] pub enum termrock::interaction::SceneError
 pub termrock::interaction::SceneError::DuplicateElement
-pub termrock::interaction::SceneError::DuplicateLayer
 pub termrock::interaction::SceneError::UnknownLayer
 impl core::clone::Clone for termrock::interaction::SceneError
 pub fn termrock::interaction::SceneError::clone(&self) -> termrock::interaction::SceneError
@@ -4169,23 +4156,17 @@ pub fn termrock::interaction::SemanticRole::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::interaction::SemanticRole
 #[non_exhaustive] pub enum termrock::interaction::UiIntent
 pub termrock::interaction::UiIntent::Activate
-pub termrock::interaction::UiIntent::AppCommand(termrock::interaction::intent::AppCommandId)
-pub termrock::interaction::UiIntent::Backspace
 pub termrock::interaction::UiIntent::Cancel
 pub termrock::interaction::UiIntent::Close
 pub termrock::interaction::UiIntent::Collapse
-pub termrock::interaction::UiIntent::Delete
 pub termrock::interaction::UiIntent::Edit
 pub termrock::interaction::UiIntent::Expand
 pub termrock::interaction::UiIntent::FocusNext
 pub termrock::interaction::UiIntent::FocusPrevious
 pub termrock::interaction::UiIntent::Fullscreen
 pub termrock::interaction::UiIntent::Help
-pub termrock::interaction::UiIntent::JumpLabel(char)
-pub termrock::interaction::UiIntent::JumpStart
 pub termrock::interaction::UiIntent::Move(termrock::interaction::NavigationMove)
 pub termrock::interaction::UiIntent::Open
-pub termrock::interaction::UiIntent::OpenCommandPalette
 pub termrock::interaction::UiIntent::Page(termrock::interaction::PageMove)
 pub termrock::interaction::UiIntent::Search
 pub termrock::interaction::UiIntent::Submit
@@ -6880,7 +6861,6 @@ impl<T> core::convert::From<T> for termrock::layout::Justify
 pub fn termrock::layout::Justify::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::layout::Justify
 #[non_exhaustive] pub enum termrock::layout::OverflowAction
-pub termrock::layout::OverflowAction::CollapsePane
 pub termrock::layout::OverflowAction::Drop
 pub termrock::layout::OverflowAction::LineMode
 pub termrock::layout::OverflowAction::OverflowMenu
@@ -11823,7 +11803,6 @@ pub termrock::patterns::DatabaseWorkbenchOutcome::Connection(termrock::patterns:
 pub termrock::patterns::DatabaseWorkbenchOutcome::CopyRequested
 pub termrock::patterns::DatabaseWorkbenchOutcome::CopyRequested::kind: alloc::string::String
 pub termrock::patterns::DatabaseWorkbenchOutcome::CopyRequested::tab_id: alloc::string::String
-pub termrock::patterns::DatabaseWorkbenchOutcome::DensityChanged(termrock::patterns::DatabaseWorkbenchDensity)
 pub termrock::patterns::DatabaseWorkbenchOutcome::ExportRequested
 pub termrock::patterns::DatabaseWorkbenchOutcome::ExportRequested::format: termrock::patterns::ResultExportFormat
 pub termrock::patterns::DatabaseWorkbenchOutcome::ExportRequested::tab_id: alloc::string::String
@@ -14831,8 +14810,6 @@ pub termrock::patterns::ProcessTableOutcome::SignalRequested::signal: termrock::
 pub termrock::patterns::ProcessTableOutcome::SortChanged
 pub termrock::patterns::ProcessTableOutcome::SortChanged::ascending: bool
 pub termrock::patterns::ProcessTableOutcome::SortChanged::key: termrock::patterns::ProcessSortKey
-pub termrock::patterns::ProcessTableOutcome::StatusFilterChanged(core::option::Option<termrock::patterns::ProcessStatus>)
-pub termrock::patterns::ProcessTableOutcome::UserFilterChanged(core::option::Option<alloc::string::String>)
 pub termrock::patterns::ProcessTableOutcome::ViewModeChanged(termrock::patterns::ProcessViewMode)
 impl core::clone::Clone for termrock::patterns::ProcessTableOutcome
 pub fn termrock::patterns::ProcessTableOutcome::clone(&self) -> termrock::patterns::ProcessTableOutcome
@@ -15628,8 +15605,6 @@ pub termrock::patterns::QueryEditorOutcome::SaveQueryRequested
 pub termrock::patterns::QueryEditorOutcome::SaveQueryRequested::language: alloc::string::String
 pub termrock::patterns::QueryEditorOutcome::SaveQueryRequested::name: core::option::Option<alloc::string::String>
 pub termrock::patterns::QueryEditorOutcome::SaveQueryRequested::text: alloc::string::String
-pub termrock::patterns::QueryEditorOutcome::SavedQuerySelected
-pub termrock::patterns::QueryEditorOutcome::SavedQuerySelected::id: alloc::string::String
 pub termrock::patterns::QueryEditorOutcome::Scrolled
 pub termrock::patterns::QueryEditorOutcome::StopRequested
 pub termrock::patterns::QueryEditorOutcome::StopRequested::run_id: core::option::Option<alloc::string::String>
@@ -17469,7 +17444,6 @@ pub termrock::patterns::TaskRailOutcome::Ignored
 pub termrock::patterns::TaskRailOutcome::InspectDeps
 pub termrock::patterns::TaskRailOutcome::InspectDeps::id: alloc::string::String
 pub termrock::patterns::TaskRailOutcome::PreferDrawer
-pub termrock::patterns::TaskRailOutcome::PreferStatusSummary
 pub termrock::patterns::TaskRailOutcome::Promote
 pub termrock::patterns::TaskRailOutcome::Promote::id: alloc::string::String
 pub termrock::patterns::TaskRailOutcome::RetryTask
@@ -26167,7 +26141,6 @@ pub fn termrock::perf::FollowMode::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::perf::FollowMode
 #[non_exhaustive] pub enum termrock::perf::PerfClass
 pub termrock::perf::PerfClass::Chrome
-pub termrock::perf::PerfClass::InteractiveViewport
 pub termrock::perf::PerfClass::OverlayScene
 pub termrock::perf::PerfClass::StreamingSurface
 pub termrock::perf::PerfClass::VirtualizedLarge
@@ -38228,9 +38201,6 @@ impl<T> core::convert::From<T> for termrock::widgets::DataTableOutcome<RowId, Co
 pub fn termrock::widgets::DataTableOutcome<RowId, ColId>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::DataTableOutcome<RowId, ColId>
 #[non_exhaustive] pub enum termrock::widgets::DataViewOutcome<RowId, ColId>
-pub termrock::widgets::DataViewOutcome::CellActivated
-pub termrock::widgets::DataViewOutcome::CellActivated::column: ColId
-pub termrock::widgets::DataViewOutcome::CellActivated::row: RowId
 pub termrock::widgets::DataViewOutcome::ColumnResized
 pub termrock::widgets::DataViewOutcome::ColumnResized::column: ColId
 pub termrock::widgets::DataViewOutcome::ColumnResized::width: u16
@@ -38254,7 +38224,6 @@ pub termrock::widgets::DataViewOutcome::FilterChanged(termrock::widgets::FilterS
 pub termrock::widgets::DataViewOutcome::FocusChanged
 pub termrock::widgets::DataViewOutcome::Ignored
 pub termrock::widgets::DataViewOutcome::RetryLoad
-pub termrock::widgets::DataViewOutcome::RowActivated(RowId)
 pub termrock::widgets::DataViewOutcome::Scrolled
 pub termrock::widgets::DataViewOutcome::SelectionChanged
 pub termrock::widgets::DataViewOutcome::SortRequested(termrock::widgets::SortSpec<ColId>)
@@ -41071,9 +41040,6 @@ pub termrock::widgets::EventStreamOutcome::Scrolled::following: bool
 pub termrock::widgets::EventStreamOutcome::Scrolled::offset: u16
 pub termrock::widgets::EventStreamOutcome::Selected(Id)
 pub termrock::widgets::EventStreamOutcome::SeverityFilter(termrock::widgets::EventSeverity)
-pub termrock::widgets::EventStreamOutcome::TypeFilterChanged
-pub termrock::widgets::EventStreamOutcome::TypeFilterChanged::event_type: alloc::string::String
-pub termrock::widgets::EventStreamOutcome::TypeFilterChanged::included: bool
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::EventStreamOutcome<Id>
 pub fn termrock::widgets::EventStreamOutcome<Id>::clone(&self) -> termrock::widgets::EventStreamOutcome<Id>
 impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::EventStreamOutcome<Id>
@@ -49421,8 +49387,6 @@ pub termrock::widgets::PromptComposerOutcome::Interrupt
 pub termrock::widgets::PromptComposerOutcome::ModeMenu
 pub termrock::widgets::PromptComposerOutcome::ModelMenu
 pub termrock::widgets::PromptComposerOutcome::PresentationChanged(termrock::widgets::ComposerPresentation)
-pub termrock::widgets::PromptComposerOutcome::QueueRemoved
-pub termrock::widgets::PromptComposerOutcome::QueueRemoved::id: alloc::string::String
 pub termrock::widgets::PromptComposerOutcome::Queued
 pub termrock::widgets::PromptComposerOutcome::Queued::entry: termrock::patterns::QueuedPrompt
 pub termrock::widgets::PromptComposerOutcome::SelectionCopied
@@ -50253,8 +50217,6 @@ impl<T> either::into_either::IntoEither for termrock::widgets::ReasoningEffort
 #[non_exhaustive] pub enum termrock::widgets::ResizablePanelOutcome
 pub termrock::widgets::ResizablePanelOutcome::Collapsed
 pub termrock::widgets::ResizablePanelOutcome::Collapsed::id: termrock::widgets::PanelId
-pub termrock::widgets::ResizablePanelOutcome::DrawerSuggested
-pub termrock::widgets::ResizablePanelOutcome::DrawerSuggested::ids: alloc::vec::Vec<termrock::widgets::PanelId>
 pub termrock::widgets::ResizablePanelOutcome::Expanded
 pub termrock::widgets::ResizablePanelOutcome::Expanded::id: termrock::widgets::PanelId
 pub termrock::widgets::ResizablePanelOutcome::HandleFocused
@@ -53404,8 +53366,6 @@ impl<T> either::into_either::IntoEither for termrock::widgets::StreamRowKind
 #[non_exhaustive] pub enum termrock::widgets::StreamingMarkdownOutcome
 pub termrock::widgets::StreamingMarkdownOutcome::Changed
 pub termrock::widgets::StreamingMarkdownOutcome::Changed::revision: u64
-pub termrock::widgets::StreamingMarkdownOutcome::CitationActivated
-pub termrock::widgets::StreamingMarkdownOutcome::CitationActivated::id: alloc::string::String
 pub termrock::widgets::StreamingMarkdownOutcome::Ignored
 pub termrock::widgets::StreamingMarkdownOutcome::View(termrock::widgets::MarkdownOutcome)
 impl core::clone::Clone for termrock::widgets::StreamingMarkdownOutcome
@@ -55218,7 +55178,6 @@ impl<T> either::into_either::IntoEither for termrock::widgets::TimelineStatus
 pub termrock::widgets::ToastArchiveReason::Dismissed
 pub termrock::widgets::ToastArchiveReason::Evicted
 pub termrock::widgets::ToastArchiveReason::Expired
-pub termrock::widgets::ToastArchiveReason::HostArchived
 impl core::clone::Clone for termrock::widgets::ToastArchiveReason
 pub fn termrock::widgets::ToastArchiveReason::clone(&self) -> termrock::widgets::ToastArchiveReason
 impl core::cmp::Eq for termrock::widgets::ToastArchiveReason
