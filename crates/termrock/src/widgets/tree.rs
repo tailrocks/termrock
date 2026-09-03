@@ -257,6 +257,12 @@ impl<'a, Id> TreeNode<'a, Id> {
         self
     }
 
+    /// Whether this node participates in navigation and pointer interaction.
+    #[must_use]
+    pub const fn is_interactive(&self) -> bool {
+        self.enabled && !self.status.skips_navigation()
+    }
+
     /// Sets semantic emphasis for this row without hardcoded color.
     #[must_use]
     pub const fn tone(mut self, tone: ToneTier) -> Self {
@@ -285,7 +291,7 @@ impl<'a, Id> TreeNode<'a, Id> {
             secondary: self.secondary.clone(),
             badge: self.badge.clone().or_else(|| self.actions.clone()),
             shortcut: self.shortcut,
-            enabled: self.enabled,
+            enabled: self.is_interactive(),
             loading: matches!(self.status, TreeNodeStatus::Loading | TreeNodeStatus::Lazy),
         }
     }
@@ -791,11 +797,11 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
         let Some(selection) = self.selection.as_mut() else {
             return TreeOutcome::Ignored;
         };
-        let Some(node) = self
-            .cursor
-            .as_ref()
-            .and_then(|cursor| nodes.iter().find(|node| node.enabled && &node.id == cursor))
-        else {
+        let Some(node) = self.cursor.as_ref().and_then(|cursor| {
+            nodes
+                .iter()
+                .find(|node| node.is_interactive() && &node.id == cursor)
+        }) else {
             return TreeOutcome::Ignored;
         };
         selection.toggle(&node.id);
@@ -866,7 +872,7 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
 
     fn cursor_node<'a>(&self, nodes: &'a [TreeNode<'_, Id>]) -> Option<&'a TreeNode<'a, Id>> {
         let index = self.cursor_index(nodes)?;
-        nodes.get(index).filter(|node| node.enabled)
+        nodes.get(index).filter(|node| node.is_interactive())
     }
 
     fn move_selection(&mut self, nodes: &[TreeNode<'_, Id>], delta: i32) -> TreeOutcome<Id> {
@@ -877,13 +883,15 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
             .cursor_index(nodes)
             .unwrap_or(if delta < 0 { nodes.len() } else { 0 });
         let candidate = if delta < 0 {
-            nodes[..start].iter().rposition(|node| node.enabled)
+            nodes[..start]
+                .iter()
+                .rposition(|node| node.is_interactive())
         } else {
             nodes
                 .iter()
                 .enumerate()
                 .skip(start.saturating_add(1))
-                .find(|(_, node)| node.enabled)
+                .find(|(_, node)| node.is_interactive())
                 .map(|(index, _)| index)
         };
         self.set_cursor_index(nodes, candidate)
@@ -909,19 +917,23 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
                 .iter()
                 .enumerate()
                 .skip(target)
-                .find(|(_, node)| node.enabled)
+                .find(|(_, node)| node.is_interactive())
                 .map(|(index, _)| index)
-                .or_else(|| nodes[..target].iter().rposition(|node| node.enabled))
+                .or_else(|| {
+                    nodes[..target]
+                        .iter()
+                        .rposition(|node| node.is_interactive())
+                })
         } else {
             nodes[..=target]
                 .iter()
-                .rposition(|node| node.enabled)
+                .rposition(|node| node.is_interactive())
                 .or_else(|| {
                     nodes
                         .iter()
                         .enumerate()
                         .skip(target.saturating_add(1))
-                        .find(|(_, node)| node.enabled)
+                        .find(|(_, node)| node.is_interactive())
                         .map(|(index, _)| index)
                 })
         };
@@ -930,9 +942,9 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
 
     fn select_boundary(&mut self, nodes: &[TreeNode<'_, Id>], from_end: bool) -> TreeOutcome<Id> {
         let candidate = if from_end {
-            nodes.iter().rposition(|node| node.enabled)
+            nodes.iter().rposition(|node| node.is_interactive())
         } else {
-            nodes.iter().position(|node| node.enabled)
+            nodes.iter().position(|node| node.is_interactive())
         };
         self.set_cursor_index(nodes, candidate)
     }
@@ -957,18 +969,21 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
             return TreeOutcome::Ignored;
         };
         let node = &nodes[index];
-        if node.enabled && node.branch && node.expanded {
+        if node.is_interactive() && node.branch && node.expanded {
             return TreeOutcome::Toggle(node.id.clone());
         }
         // Prefer explicit parent id when present.
         if let Some(ref pid) = node.parent {
-            if let Some(pidx) = nodes.iter().position(|n| n.enabled && &n.id == pid) {
+            if let Some(pidx) = nodes
+                .iter()
+                .position(|n| n.is_interactive() && &n.id == pid)
+            {
                 return self.set_cursor_index(nodes, Some(pidx));
             }
         }
         let parent = nodes[..index]
             .iter()
-            .rposition(|candidate| candidate.enabled && candidate.depth < node.depth);
+            .rposition(|candidate| candidate.is_interactive() && candidate.depth < node.depth);
         self.set_cursor_index(nodes, parent)
     }
 
@@ -978,7 +993,7 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
             return TreeOutcome::Ignored;
         };
         let node = &nodes[index];
-        if !node.enabled {
+        if !node.is_interactive() {
             return TreeOutcome::Ignored;
         }
         // Lazy or collapsed branch → request expand/load.
@@ -993,7 +1008,7 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
                 .enumerate()
                 .skip(index.saturating_add(1))
                 .take_while(|(_, n)| n.depth >= child_depth)
-                .find(|(_, n)| n.enabled && n.depth == child_depth)
+                .find(|(_, n)| n.is_interactive() && n.depth == child_depth)
                 .map(|(i, _)| i);
             return self.set_cursor_index(nodes, child);
         }
@@ -1004,7 +1019,7 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
 fn collection_items_from_nodes<Id: Clone>(nodes: &[TreeNode<'_, Id>]) -> Vec<CollectionItem<Id>> {
     nodes
         .iter()
-        .filter(|n| n.enabled && !n.status.skips_navigation())
+        .filter(|n| n.is_interactive())
         .map(|n| CollectionItem {
             id: n.id.clone(),
             enabled: true,
@@ -1109,7 +1124,8 @@ fn paint_tree_row<Id: Clone + PartialEq>(
     if row.width == 0 {
         return;
     }
-    let selected = selection_visible && state.selected.as_ref() == Some(&node.id);
+    let interactive = node.is_interactive();
+    let selected = selection_visible && interactive && state.selected.as_ref() == Some(&node.id);
     let hovered = state.hovered.as_ref() == Some(&node.id);
     let checked = state
         .selection
@@ -1118,9 +1134,9 @@ fn paint_tree_row<Id: Clone + PartialEq>(
     let busy = matches!(node.status, TreeNodeStatus::Loading);
     let visual = ListRowVisualState {
         selected,
-        focused: focused && state.cursor.as_ref() == Some(&node.id) && node.enabled,
-        hovered: hovered && node.enabled,
-        enabled: node.enabled,
+        focused: focused && state.cursor.as_ref() == Some(&node.id) && interactive,
+        hovered: hovered && interactive,
+        enabled: interactive,
         loading: busy,
         checked,
         error: matches!(node.status, TreeNodeStatus::Error),
@@ -1129,7 +1145,7 @@ fn paint_tree_row<Id: Clone + PartialEq>(
     let chrome = RowChrome::resolve_on(tokens, visual, ground);
     let recipe = tokens.resolve_list_row_on(visual, ground);
     let mut body = match node.status {
-        TreeNodeStatus::Ready if node.enabled => recipe.label.patch(tokens.style(node.tone.role())),
+        TreeNodeStatus::Ready if interactive => recipe.label.patch(tokens.style(node.tone.role())),
         TreeNodeStatus::Ready => tokens.style(Role::TextDisabled),
         TreeNodeStatus::Loading | TreeNodeStatus::Lazy => tokens.style(Role::TextSecondary),
         TreeNodeStatus::Error => tokens.style(Role::Danger),
@@ -1148,7 +1164,7 @@ fn paint_tree_row<Id: Clone + PartialEq>(
     let mut x = row.x.saturating_add(1).saturating_add(indent);
     let wash = chrome.wash();
     if x.saturating_add(2) > row.right() {
-        if node.enabled {
+        if interactive {
             state.regions.push(HitRegion {
                 id: node.id.clone(),
                 area: row,
@@ -1195,7 +1211,7 @@ fn paint_tree_row<Id: Clone + PartialEq>(
         let paint_w = gw.min(row.right().saturating_sub(x));
         if paint_w > 0 {
             buffer.set_stringn(x, y, marker, usize::from(paint_w), body);
-            if node.enabled {
+            if interactive {
                 state.check_regions.push(HitRegion {
                     id: node.id.clone(),
                     area: Rect::new(x, y, paint_w, 1),
@@ -1312,7 +1328,7 @@ fn paint_tree_row<Id: Clone + PartialEq>(
         .saturating_sub(extras);
     let label_w = label_right.saturating_sub(x);
 
-    let mut label_style = if selected && node.enabled {
+    let mut label_style = if selected {
         chrome.label_style(tokens.style(Role::Accent))
     } else {
         body
@@ -1403,7 +1419,7 @@ fn paint_tree_row<Id: Clone + PartialEq>(
         );
     }
 
-    if node.enabled {
+    if interactive {
         state.regions.push(HitRegion {
             id: node.id.clone(),
             area: row,
@@ -1643,6 +1659,40 @@ mod tests {
         assert_eq!(
             state.handle_key(&nodes, KeyEvent::new(KeyCode::Down, KeyModifiers::NONE)),
             TreeOutcome::SelectionChanged("leaf")
+        );
+    }
+
+    #[test]
+    fn loading_status_is_not_interactive_when_enabled() {
+        let tokens = DesignSystem::junie();
+        let nodes = [
+            TreeNode::new("loading", Line::from("Loading"), 0).with_status(TreeNodeStatus::Loading),
+            TreeNode::new("ready", Line::from("Ready"), 0),
+        ];
+        assert!(nodes[0].enabled);
+        assert!(!nodes[0].is_interactive());
+        assert!(nodes[1].is_interactive());
+        assert!(!nodes[0].composed().enabled);
+
+        let mut state = TreeState::new(Some("loading"));
+        assert_eq!(
+            state.handle_intent(&nodes, UiIntent::Activate),
+            TreeOutcome::Ignored
+        );
+        assert_eq!(
+            state.handle_intent(&nodes, UiIntent::Move(NavigationMove::Next)),
+            TreeOutcome::SelectionChanged("ready")
+        );
+
+        let area = Rect::new(0, 0, 24, 2);
+        let mut buffer = Buffer::empty(area);
+        Tree::new(&nodes, &tokens).render(area, &mut buffer, &mut state);
+        assert_eq!(state.regions().len(), 1);
+        assert_eq!(state.regions()[0].id, "ready");
+        assert_eq!(state.click(Position::new(10, 0)), TreeOutcome::Ignored);
+        assert_eq!(
+            state.click(Position::new(10, 1)),
+            TreeOutcome::Activated("ready")
         );
     }
 
