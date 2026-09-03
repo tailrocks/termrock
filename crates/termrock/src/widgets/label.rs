@@ -423,15 +423,22 @@ impl<'a, Id> Label<'a, Id> {
         let theme = self.system.junie_theme();
         let width = parts.label.width;
         let name = crate::text::take_display_cols(self.text, usize::from(width));
-        // Match source label rows: fit the label style across the whole row,
-        // while retaining the background established by the owning control.
-        buffer.set_style(parts.label, self.label_style());
+        // Match source label rows: fit the foreground across the whole row,
+        // while retaining each cell's background and other style attributes.
+        let label_style = self.label_style();
+        if let Some(fg) = label_style.fg {
+            for y in parts.label.y..parts.label.bottom() {
+                for x in parts.label.x..parts.label.right() {
+                    buffer[(x, y)].fg = fg;
+                }
+            }
+        }
         buffer.set_stringn(
             parts.label.x,
             parts.label.y,
             &name,
             usize::from(width),
-            self.label_style(),
+            label_style,
         );
         if self.show_mark(width) {
             let name_w = crate::text::display_cols(&name) as u16;
@@ -974,7 +981,7 @@ mod tests {
     use super::*;
     use crate::style::GlyphSet;
     use ratatui_core::buffer::Buffer;
-    use ratatui_core::style::{Color, Style};
+    use ratatui_core::style::Color;
 
     #[test]
     fn required_mark_and_disabled_is_tone_not_glyph() {
@@ -1027,13 +1034,13 @@ mod tests {
         let theme = system.junie_theme();
         let area = Rect::new(0, 0, 12, 1);
         let mut buffer = Buffer::empty(area);
-        buffer.set_style(area, Style::new().fg(Color::Red).bg(Color::Blue));
+        buffer.set_style(area, system.style(Role::Surface).fg(Color::Red));
 
         Label::<()>::new("Name", &system).paint(area, &mut buffer);
 
         assert_eq!(buffer[(0, 0)].fg, theme.text_secondary);
         assert_eq!(buffer[(8, 0)].fg, theme.text_secondary);
-        assert_eq!(buffer[(8, 0)].bg, Color::Blue);
+        assert_eq!(buffer[(8, 0)].bg, theme.surface);
     }
 
     #[test]
