@@ -459,10 +459,6 @@ pub struct GitWorkbenchState {
     pub branch_cursor: usize,
     /// Repo status chrome.
     pub repo_status: GitRepoStatus,
-    /// Current branch / HEAD label.
-    pub head_label: String,
-    /// Short SHA.
-    pub head_sha: Option<String>,
     /// Commit message draft.
     pub commit_message: String,
     /// Focused pane id.
@@ -511,8 +507,6 @@ impl GitWorkbenchState {
             branches: example_git_branches(),
             branch_cursor: 0,
             repo_status: GitRepoStatus::Dirty,
-            head_label: "main".into(),
-            head_sha: Some("a1b2c3d".into()),
             commit_message: String::new(),
             focus: GitWorkbenchPane::Files.id(),
             density: None,

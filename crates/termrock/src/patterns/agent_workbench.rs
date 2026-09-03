@@ -51,11 +51,10 @@ use crate::{
     },
     style::{DesignSystem, PanelChrome},
     widgets::{
-        DiffHunk, DiffReview, DiffReviewState, ModeRibbon, ModeRibbonState, Panel,
-        PermissionOutcome, PermissionPrompt, PermissionPromptState, PromptComposer,
-        PromptComposerOutcome, PromptComposerState, QuestionFlow, QuestionFlowState, StatusBar,
-        StatusBarState, StatusSlot, Transcript, TranscriptBlock, TranscriptOutcome,
-        TranscriptState, WorkbenchMode,
+        DiffHunk, DiffReview, DiffReviewState, ModeRibbon, Panel, PermissionOutcome,
+        PermissionPrompt, PermissionPromptState, PromptComposer, PromptComposerOutcome,
+        PromptComposerState, QuestionFlow, QuestionFlowState, StatusBar, StatusBarState,
+        StatusSlot, Transcript, TranscriptBlock, TranscriptOutcome, TranscriptState, WorkbenchMode,
     },
 };
 
@@ -194,8 +193,6 @@ pub struct AgentWorkbenchState {
     pub activity: ActivityShelfState,
     /// Working-state card.
     pub working: WorkingStateCardState,
-    /// Mode ribbon selection (plan/build/…).
-    pub mode_ribbon: ModeRibbonState<&'static str>,
     /// Question-flow state (never owns composer draft).
     pub question: QuestionFlowState,
     /// Plan review state.
@@ -233,7 +230,6 @@ impl AgentWorkbenchState {
             task_rail: TaskRailState::new(),
             activity: ActivityShelfState::new(),
             working: WorkingStateCardState::new(),
-            mode_ribbon: ModeRibbonState::default(),
             question: QuestionFlowState::new(),
             plan: PlanReviewState::new(),
             diff: DiffReviewState::default(),
