@@ -326,7 +326,10 @@ pub static ALL: &[Scenario] = &[
         30,
         Some("Production"),
         "SELECT * FROM customers LIMIT 20",
-        &[Step::Ctrl('r'), Step::Ticks(4)],
+        // The source capture leaves the narrow explorer drawer before running
+        // the seeded query; this is the same Tab transition covered by the
+        // source's `narrow_terminals_turn_the_explorer_into_a_drawer` test.
+        &[Step::Tab, Step::Ctrl('r'), Step::Ticks(4)],
     ),
     tp(
         "t_100_table",
@@ -372,7 +375,14 @@ pub static ALL: &[Scenario] = &[
             Step::Enter,
         ],
     ),
-    tp("t_80", 80, 24, Some("Production"), &[]),
+    tp_sql(
+        "t_80",
+        80,
+        24,
+        Some("Production"),
+        "SELECT * FROM orders LIMIT 20",
+        &[Step::Tab, Step::Ctrl('r'), Step::Ticks(8)],
+    ),
     tp(
         "t_80_drawer",
         80,
@@ -380,7 +390,14 @@ pub static ALL: &[Scenario] = &[
         Some("Production"),
         &[Step::Ctrl('b')],
     ),
-    tp("t_80_query", 80, 24, Some("Production"), &[Step::Tab]),
+    tp_sql(
+        "t_80_query",
+        80,
+        24,
+        Some("Production"),
+        "SELECT * FROM orders LIMIT 20",
+        &[Step::Tab, Step::Ctrl('r'), Step::Ticks(8)],
+    ),
     tp(
         "t_complete",
         120,
@@ -643,6 +660,36 @@ pub static ALL: &[Scenario] = &[
     ),
 ];
 
+/// TablePro application states used by the presentation verification harness.
+/// These are separate from [`ALL`], which is the exact 63-file source `shots/`
+/// inventory, because the source repository's TablePro captures were operator
+/// evidence rather than checked-in `shots/` fixtures.
+pub static TABLEPRO: &[Scenario] = &[
+    tp("tablepro_default_120x40", 120, 40, None, &[]),
+    tp("tablepro_default_80x24", 80, 24, None, &[]),
+    tp(
+        "tablepro_local_120x40",
+        120,
+        40,
+        Some("Local PostgreSQL"),
+        &[],
+    ),
+    tp(
+        "tablepro_production_120x40",
+        120,
+        40,
+        Some("Production"),
+        &[],
+    ),
+    tp("tablepro_help_120x40", 120, 40, None, &[Step::Char('?')]),
+];
+
+/// Every deterministic presentation capture, including application fixtures.
+#[must_use]
+pub fn capture_scenarios() -> impl Iterator<Item = &'static Scenario> {
+    ALL.iter().chain(TABLEPRO.iter())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -654,5 +701,15 @@ mod tests {
         ids.sort_unstable();
         ids.dedup();
         assert_eq!(ids.len(), 63);
+    }
+
+    #[test]
+    fn capture_scenarios_have_unique_ids() {
+        let mut ids: Vec<_> = capture_scenarios().map(|s| s.id).collect();
+        let count = ids.len();
+        ids.sort_unstable();
+        ids.dedup();
+        assert_eq!(ids.len(), count);
+        assert_eq!(count, 68);
     }
 }
