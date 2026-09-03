@@ -21791,7 +21791,7 @@ pub termrock::patterns::OpsDashboardState::log: termrock::widgets::LogStreamStat
 pub termrock::patterns::OpsDashboardState::region: termrock::patterns::OpsRegion
 pub termrock::patterns::OpsDashboardState::table: termrock::widgets::DataTableState<RowId, ColId>
 impl<RowId: core::clone::Clone + core::cmp::Ord, ColId: core::clone::Clone + core::cmp::PartialEq> termrock::patterns::OpsDashboardState<RowId, ColId>
-pub fn termrock::patterns::OpsDashboardState<RowId, ColId>::handle_key(&mut self, termrock::input::KeyEvent, &[RowId], &termrock::widgets::ColumnModel<ColId>) -> termrock::patterns::OpsDashboardOutcome<RowId, ColId>
+pub fn termrock::patterns::OpsDashboardState<RowId, ColId>::handle_key(&mut self, termrock::input::KeyEvent, &[RowId], &termrock::widgets::ColumnModel<ColId>, &[termrock::widgets::LogLine<'_>]) -> termrock::patterns::OpsDashboardOutcome<RowId, ColId>
 pub fn termrock::patterns::OpsDashboardState<RowId, ColId>::new() -> Self
 impl<RowId: core::clone::Clone + core::clone::Clone + core::cmp::Ord, ColId: core::clone::Clone + core::clone::Clone + core::cmp::PartialEq> core::clone::Clone for termrock::patterns::OpsDashboardState<RowId, ColId>
 pub fn termrock::patterns::OpsDashboardState<RowId, ColId>::clone(&self) -> termrock::patterns::OpsDashboardState<RowId, ColId>
@@ -25972,7 +25972,6 @@ pub fn termrock::patterns::project_quick_open_rect(ratatui_core::layout::rect::R
 pub fn termrock::patterns::project_result_rows(&[termrock::patterns::ResultRow<'_>], &[termrock::patterns::ResultColumn], termrock::patterns::ResultRedaction, bool, bool) -> alloc::vec::Vec<(u64, alloc::vec::Vec<alloc::string::String>)>
 pub fn termrock::patterns::project_subagent_lines(&termrock::patterns::SubagentRun, bool, bool) -> alloc::vec::Vec<alloc::string::String>
 pub fn termrock::patterns::project_task_rail_for_status_bar(&[termrock::patterns::ActivityModel], bool) -> termrock::patterns::ActivityStatusProjection
-pub fn termrock::patterns::project_task_rail_list_rows(&[termrock::patterns::ActivityModel], &[termrock::patterns::TaskRailRow], bool, bool) -> alloc::vec::Vec<termrock::widgets::ListRow<'static, alloc::string::String>>
 pub fn termrock::patterns::project_terminal_run_lines(&termrock::patterns::TerminalRun, &[termrock::widgets::TerminalLine<'_>], bool, bool) -> alloc::vec::Vec<alloc::string::String>
 pub fn termrock::patterns::query_editor_help_entries() -> alloc::vec::Vec<termrock::widgets::HelpEntry>
 pub fn termrock::patterns::queue_item_from_composer(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, &[(alloc::string::String, alloc::string::String, alloc::string::String)]) -> termrock::patterns::QueuedPrompt
@@ -69376,7 +69375,6 @@ pub fn termrock::widgets::FormWizardState::cancel(&mut self) -> termrock::widget
 pub fn termrock::widgets::FormWizardState::current_gate(&self) -> termrock::widgets::WizardGate
 pub fn termrock::widgets::FormWizardState::current_step(&self) -> core::option::Option<&termrock::widgets::WizardStep>
 pub fn termrock::widgets::FormWizardState::fail(&mut self, impl core::convert::Into<alloc::string::String>) -> termrock::widgets::FormWizardOutcome
-pub fn termrock::widgets::FormWizardState::from_count(usize) -> Self
 pub const fn termrock::widgets::FormWizardState::generation(&self) -> u64
 pub fn termrock::widgets::FormWizardState::handle_intent(&mut self, termrock::context::ContextUiIntent) -> termrock::widgets::FormWizardOutcome
 pub fn termrock::widgets::FormWizardState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::FormWizardOutcome
@@ -73803,11 +73801,8 @@ pub fn termrock::widgets::LogStreamState::ack_dropped(&mut self)
 pub fn termrock::widgets::LogStreamState::bookmarks(&self) -> &alloc::collections::btree::set::BTreeSet<alloc::string::String>
 pub fn termrock::widgets::LogStreamState::capture_anchor(&mut self, &[termrock::widgets::LogLine<'_>])
 pub fn termrock::widgets::LogStreamState::handle_intent(&mut self, termrock::context::ContextUiIntent, &[termrock::widgets::LogLine<'_>]) -> termrock::widgets::LogStreamOutcome
-pub fn termrock::widgets::LogStreamState::handle_intent_scroll(&mut self, termrock::context::ContextUiIntent) -> termrock::widgets::LogStreamOutcome
 pub fn termrock::widgets::LogStreamState::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::widgets::LogLine<'_>]) -> termrock::widgets::LogStreamOutcome
-pub fn termrock::widgets::LogStreamState::handle_key_scroll(&mut self, termrock::input::KeyEvent) -> termrock::widgets::LogStreamOutcome
 pub fn termrock::widgets::LogStreamState::handle_mouse(&mut self, termrock::input::MouseEvent, &[termrock::widgets::LogLine<'_>]) -> termrock::widgets::LogStreamOutcome
-pub fn termrock::widgets::LogStreamState::handle_mouse_scroll(&mut self, termrock::input::MouseEvent) -> termrock::widgets::LogStreamOutcome
 pub const fn termrock::widgets::LogStreamState::is_following(&self) -> bool
 pub fn termrock::widgets::LogStreamState::new() -> Self
 pub const fn termrock::widgets::LogStreamState::offset(&self) -> u16
@@ -84693,7 +84688,6 @@ pub struct termrock::widgets::Sparkline<'a>
 impl<'a> termrock::widgets::Sparkline<'a>
 pub const fn termrock::widgets::Sparkline<'a>::glyphs(self, termrock::widgets::VizGlyphSet) -> Self
 pub const fn termrock::widgets::Sparkline<'a>::new(&'a [f64], &'a termrock::style::DesignSystem) -> Self
-pub const fn termrock::widgets::Sparkline<'a>::pre_normalized(self, bool) -> Self
 pub const fn termrock::widgets::Sparkline<'a>::role(self, termrock::style::Role) -> Self
 pub const fn termrock::widgets::Sparkline<'a>::scale(self, termrock::widgets::ScaleMode) -> Self
 pub const fn termrock::widgets::Sparkline<'a>::selected(self, usize) -> Self
@@ -92662,7 +92656,6 @@ pub fn termrock::widgets::place_tooltip(ratatui_core::layout::rect::Rect, ratatu
 pub fn termrock::widgets::popover_presentation_for(ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize) -> termrock::widgets::PopoverPresentation
 pub fn termrock::widgets::prepare_code_display(&str, usize, termrock::widgets::ControlRender) -> alloc::string::String
 pub fn termrock::widgets::preview_card_overlay_size(&termrock::widgets::PreviewCardContent<'_>, u16) -> termrock::interaction::OverlaySize
-pub fn termrock::widgets::progress_steps_as_list_rows(&[termrock::widgets::ProgressStep]) -> alloc::vec::Vec<termrock::widgets::ListRow<'static, alloc::string::String>>
 pub fn termrock::widgets::progress_steps_as_timeline_events(&[termrock::widgets::ProgressStep]) -> alloc::vec::Vec<termrock::widgets::TimelineEvent<'_>>
 pub fn termrock::widgets::project_dep_tree_rows(&[termrock::widgets::DepNode<'_>], &[termrock::widgets::DepEdge<'_>], &mut alloc::vec::Vec<[alloc::string::String; 4]>) -> alloc::vec::Vec<(alloc::string::String, u16, bool, bool, core::option::Option<alloc::string::String>, usize)>
 pub fn termrock::widgets::project_index_window<'a>(&[u64], &'a str) -> alloc::vec::Vec<(u64, alloc::string::String, alloc::string::String)>
