@@ -83994,7 +83994,6 @@ impl<'a> termrock::widgets::SourceCitation<'a>
 pub fn termrock::widgets::SourceCitation<'a>::can_open(&self) -> bool
 pub fn termrock::widgets::SourceCitation<'a>::decorated(&self) -> alloc::string::String
 pub fn termrock::widgets::SourceCitation<'a>::handle_key(&self, &mut termrock::widgets::SourceCitationState, termrock::input::KeyEvent) -> termrock::widgets::SourceCitationOutcome
-pub fn termrock::widgets::SourceCitation<'a>::handle_mouse(&self, &mut termrock::widgets::SourceCitationState, termrock::input::MouseEvent) -> termrock::widgets::SourceCitationOutcome
 pub fn termrock::widgets::SourceCitation<'a>::measure_width(&self) -> u16
 pub const fn termrock::widgets::SourceCitation<'a>::new(&'a termrock::widgets::CitationSource, &'a termrock::style::DesignSystem) -> Self
 pub const fn termrock::widgets::SourceCitation<'a>::offline(self, bool) -> Self
