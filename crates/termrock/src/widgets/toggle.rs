@@ -374,13 +374,6 @@ impl<'a> Toggle<'a> {
         self
     }
 
-    /// Solid pressed fill.
-    #[must_use]
-    pub const fn solid(mut self) -> Self {
-        self.recipe = ToggleRecipe::Solid;
-        self
-    }
-
     /// Colorless emphasis.
     #[must_use]
     pub const fn colorless(mut self, on: bool) -> Self {
