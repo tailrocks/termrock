@@ -42,6 +42,22 @@ pub use outcome::Route;
 pub use profile::ProductIdentity;
 pub use shell::{App, MIN_HEIGHT, MIN_WIDTH};
 
+/// Default dimensions used by the deterministic catalog render command.
+pub const DEFAULT_FRAME_COLS: u16 = 120;
+/// Default dimensions used by the deterministic catalog render command.
+pub const DEFAULT_FRAME_ROWS: u16 = 40;
+
+/// Serialize one canonical catalog page through [`host::CatalogSession`].
+pub fn canonical_frame_json(page: PageId, cols: u16, rows: u16) -> Result<String, String> {
+    let entry = nav_entries(CatalogProfile::TermRock)
+        .iter()
+        .find(|entry| entry.id == page)
+        .ok_or_else(|| format!("unknown catalog page id {}", page.0))?;
+    let page_name = catalog::normalize(entry.label);
+    let mut session = host::CatalogSession::mount(&page_name, cols, rows)?;
+    serde_json::to_string_pretty(&session.frame()).map_err(|error| error.to_string())
+}
+
 /// Native catalog entry: parse argv, then run the crossterm event loop.
 #[cfg(feature = "native")]
 pub fn run() -> std::io::Result<()> {
@@ -49,7 +65,7 @@ pub fn run() -> std::io::Result<()> {
     use std::process;
     use termrock::runtime::{RunOptions, run as run_app};
 
-    let opts = match cli::parse_args(std::env::args().skip(1)) {
+    let command = match cli::parse_command(std::env::args().skip(1)) {
         Ok(o) => o,
         Err(cli::ParseError::Help) => {
             println!("{}", cli::ParseError::Help);
@@ -60,23 +76,45 @@ pub fn run() -> std::io::Result<()> {
             process::exit(2);
         }
     };
-    let mut app = shell::App::new(opts.profile, opts.level);
-    if let Some(p) = opts.page {
-        app.goto(p);
-    }
-    run_app(
-        &mut app,
-        RunOptions::default(),
-        |app, frame, tick| app.render(frame, tick),
-        |app, event, tick| {
-            let flow = app.handle_event(event, tick);
-            if !app.quit {
-                app.on_tick(tick);
+    match command {
+        cli::Command::Frame(opts) => {
+            let json = canonical_frame_json(opts.page, opts.cols, opts.rows)
+                .map_err(std::io::Error::other)?;
+            println!("{json}");
+            return Ok(());
+        }
+        cli::Command::Render(opts) => {
+            std::fs::create_dir_all(&opts.out)?;
+            for entry in nav_entries(CatalogProfile::TermRock) {
+                let json = canonical_frame_json(entry.id, DEFAULT_FRAME_COLS, DEFAULT_FRAME_ROWS)
+                    .map_err(std::io::Error::other)?;
+                let path = opts
+                    .out
+                    .join(format!("{}.json", catalog::normalize(entry.label)));
+                std::fs::write(path, format!("{json}\n"))?;
             }
-            flow
-        },
-        |app| app.next_deadline(),
-    )?;
+            return Ok(());
+        }
+        cli::Command::Interactive(opts) => {
+            let mut app = shell::App::new(opts.profile, opts.level);
+            if let Some(p) = opts.page {
+                app.goto(p);
+            }
+            run_app(
+                &mut app,
+                RunOptions::default(),
+                |app, frame, tick| app.render(frame, tick),
+                |app, event, tick| {
+                    let flow = app.handle_event(event, tick);
+                    if !app.quit {
+                        app.on_tick(tick);
+                    }
+                    flow
+                },
+                |app| app.next_deadline(),
+            )?;
+        }
+    }
     let _ = ControlFlow::<()>::Continue(());
     Ok(())
 }
