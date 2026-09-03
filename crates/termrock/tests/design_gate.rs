@@ -3232,7 +3232,7 @@ fn workbench_overlays_survive_tiny_and_random_geometry() {
         AgentWorkbenchState, WorkbenchSurfaces, default_modes, paint_agent_workbench,
     };
     use termrock::widgets::{
-        ListRow, PermissionPrompt, PermissionPromptState, PermissionRequest, PromptComposer,
+        PermissionPrompt, PermissionPromptState, PermissionRequest, PromptComposer,
         PromptComposerState, StatusBarState, StatusSlot, Transcript, TranscriptState,
     };
 
@@ -3265,7 +3265,6 @@ fn workbench_overlays_survive_tiny_and_random_geometry() {
         let mut status_state = StatusBarState::<&str>::new();
         let slots = [StatusSlot::mode("mode", "busy")];
         let modes = default_modes("build");
-        let tasks: [ListRow<'_, &'static str>; 0] = [];
 
         let _ = painted(area, |buffer| {
             paint_agent_workbench(
@@ -3274,8 +3273,7 @@ fn workbench_overlays_survive_tiny_and_random_geometry() {
                 WorkbenchSurfaces {
                     system: &system,
                     state: &mut workbench,
-                    task_models: None,
-                    tasks: &tasks,
+                    task_models: &[],
                     modes: &modes,
                     transcript: &transcript,
                     transcript_state: &mut transcript_state,

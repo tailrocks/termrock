@@ -96,9 +96,9 @@ pub use agent_shell::{
 pub use agent_workbench::{
     AgentWorkbenchState, WorkbenchDensity, WorkbenchKeyOutcome, WorkbenchModals, WorkbenchPane,
     WorkbenchSurfaces, agent_workbench_layout, agent_workbench_layout_density, default_modes,
-    dialog_modal_rect, diff_modal_rect, empty_task_row, example_agent_workbench_nav,
-    example_workbench_activities, example_workbench_tasks, paint_agent_workbench,
-    permission_modal_rect, register_workbench_scene, sync_workbench_scene,
+    dialog_modal_rect, diff_modal_rect, example_agent_workbench_nav, example_workbench_activities,
+    example_workbench_tasks, paint_agent_workbench, permission_modal_rect,
+    register_workbench_scene, sync_workbench_scene,
 };
 pub use app_dashboard::{
     AppDashboardLayout, AppDashboardOutcome, AppDashboardPane, AppDashboardSlots,
@@ -194,10 +194,10 @@ pub use resource_browser::{
 };
 pub use settings_screen::{
     SettingsBodyMode, SettingsDensity, SettingsRegion, SettingsScreenOutcome, SettingsScreenSlots,
-    SettingsScreenState, SettingsScreenSurfaces, SettingsShellOutcome, SettingsShellState,
-    example_settings_appearance_fields, example_settings_categories, example_settings_help_entries,
-    example_settings_keys_fields, example_settings_profile_fields, filter_settings_fieldsets,
-    filter_settings_nav, layout_settings_screen, paint_settings_screen, settings_query_matches,
+    SettingsScreenState, SettingsScreenSurfaces, example_settings_appearance_fields,
+    example_settings_categories, example_settings_help_entries, example_settings_keys_fields,
+    example_settings_profile_fields, filter_settings_fieldsets, filter_settings_nav,
+    layout_settings_screen, paint_settings_screen, settings_query_matches,
 };
 pub use setup_wizard::{
     CapabilityLine, SetupStep, SetupStepKind, SetupWizardMode, SetupWizardOutcome,

@@ -13,8 +13,8 @@
 //! Research: Zellij config UIs, btop options, editor settings, shadcn layouts
 //! (experience references, not product clones).
 //!
-//! Migrates thin [`SettingsShellState`](crate::widgets::SettingsShellState)
-//! surface (0056) into this elevated composition (**0237**).
+//! Elevates the retired 0056 `SettingsShellState` surface into this
+//! composition (**0237**).
 //!
 //! Teaches: how to compose a searchable settings experience: sections,
 //! fields, validation and an explicit apply action.
@@ -1071,16 +1071,6 @@ pub fn example_settings_help_entries() -> Vec<crate::widgets::HelpEntry> {
 pub fn example_settings_categories() -> Vec<NavItem<&'static str>> {
     example_settings_nav()
 }
-
-// ── Legacy aliases (0056 → 0237) ────────────────────────────────────────────
-
-/// Legacy outcome name (prefer [`SettingsScreenOutcome`]).
-pub type SettingsShellOutcome<SectionId> = SettingsScreenOutcome<SectionId, &'static str>;
-
-/// Legacy state name (prefer [`SettingsScreenState`]).
-///
-/// Note: fields differ from the thin 0056 state — use the elevated API.
-pub type SettingsShellState<SectionId> = SettingsScreenState<SectionId>;
 
 // ── Tests ───────────────────────────────────────────────────────────────────
 
