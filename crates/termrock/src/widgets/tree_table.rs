@@ -696,7 +696,10 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
                 return TreeTableOutcome::ExpandToggled(row.id.clone());
             }
             if let Some(parent) = row.parent.as_ref() {
-                if let Some(idx) = rows.iter().position(|r| selectable(r) && &r.id == parent) {
+                if let Some(idx) = rows[..self.cursor_row]
+                    .iter()
+                    .position(|r| selectable(r) && r.depth < row.depth && &r.id == parent)
+                {
                     self.cursor_row = idx;
                     self.selected = Some(parent.clone());
                     self.previous_index = Some(idx);
@@ -2264,6 +2267,27 @@ mod tests {
         let columns = cols();
         let mut state = TreeTableState::<&str, &str>::new(Some("child"));
         state.cursor_row = 2;
+
+        let out = state.handle_intent(&rows, &columns, UiIntent::Collapse);
+
+        assert!(matches!(out, TreeTableOutcome::Selected("root")));
+        assert_eq!(state.selected(), Some(&"root"));
+        assert_eq!(state.cursor_row, 0);
+    }
+
+    #[test]
+    fn collapse_ignores_forward_parent_metadata() {
+        let root_cells: &[&str] = &["root", "", ""];
+        let child_cells: &[&str] = &["child", "", ""];
+        let future_cells: &[&str] = &["future", "", ""];
+        let rows = [
+            TreeTableRow::new("root", 0, root_cells).branch().expanded(),
+            TreeTableRow::new("child", 1, child_cells).parent("future"),
+            TreeTableRow::new("future", 0, future_cells),
+        ];
+        let columns = cols();
+        let mut state = TreeTableState::<&str, &str>::new(Some("child"));
+        state.cursor_row = 1;
 
         let out = state.handle_intent(&rows, &columns, UiIntent::Collapse);
 
