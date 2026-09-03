@@ -606,13 +606,16 @@ impl DropdownMenuState {
         Self::items_at_path(root, &self.open_path)
     }
 
-    fn ensure_top_frame<Id>(&mut self, root: &[MenuNode<Id>]) {
-        if let Some(items) = self.current_items(root) {
-            if let Some(frame) = self.cascade.last_mut() {
-                let entries = Self::panel_entries(items);
-                let _ = frame.collection.reconcile(&entries);
-            }
+    fn ensure_top_frame<Id>(
+        &mut self,
+        root: &[MenuNode<Id>],
+    ) -> Option<Vec<CollectionItem<usize>>> {
+        let items = self.current_items(root)?;
+        let entries = Self::panel_entries(items);
+        if let Some(frame) = self.cascade.last_mut() {
+            let _ = frame.collection.reconcile(&entries);
         }
+        Some(entries)
     }
 
     /// Close without outcome.
@@ -822,7 +825,9 @@ impl DropdownMenuState {
         if !self.is_open() {
             return DropdownMenuOutcome::Ignored;
         }
-        self.ensure_top_frame(root);
+        let Some(entries) = self.ensure_top_frame(root) else {
+            return DropdownMenuOutcome::Ignored;
+        };
 
         // Left/Right for cascade (beyond default_menu_intent).
         if key.modifiers.is_empty() || key.modifiers == KeyModifiers::NONE {
@@ -843,7 +848,7 @@ impl DropdownMenuState {
         }
 
         if let Some(intent) = crate::interaction::default_menu_intent(key) {
-            let out = self.handle_intent(intent, root);
+            let out = self.handle_intent_after_ensure(intent, root, &entries);
             if !matches!(out, DropdownMenuOutcome::Ignored) {
                 return out;
             }
@@ -853,7 +858,7 @@ impl DropdownMenuState {
         if key.modifiers.is_empty() {
             if let KeyCode::Char(c) = key.code {
                 if !c.is_control() {
-                    return self.typeahead_char(c, root);
+                    return self.typeahead_char(c, &entries);
                 }
             }
         }
@@ -863,22 +868,17 @@ impl DropdownMenuState {
     fn typeahead_char<Id: Clone>(
         &mut self,
         ch: char,
-        root: &[MenuNode<Id>],
+        entries: &[CollectionItem<usize>],
     ) -> DropdownMenuOutcome<Id> {
-        let items = match self.current_items(root) {
-            Some(i) => i,
-            None => return DropdownMenuOutcome::Ignored,
-        };
         let frame = match self.cascade.last_mut() {
             Some(f) => f,
             None => return DropdownMenuOutcome::Ignored,
         };
-        let entries = Self::panel_entries(items);
         let before = frame.cursor();
         // CollectionState/roving typeahead via handle_key on synthetic char? Use roving API.
         let out = frame.collection.handle_key(
             KeyEvent::new(KeyCode::Char(ch), KeyModifiers::NONE),
-            &entries,
+            entries,
         );
         self.typeahead.push(ch);
         if out.active_changed() || frame.cursor() != before {
@@ -898,12 +898,18 @@ impl DropdownMenuState {
         if !self.live() || !self.is_open() || root.is_empty() {
             return DropdownMenuOutcome::Ignored;
         }
-        self.ensure_top_frame(root);
-        let items = match self.current_items(root) {
-            Some(i) => i,
-            None => return DropdownMenuOutcome::Ignored,
+        let Some(entries) = self.ensure_top_frame(root) else {
+            return DropdownMenuOutcome::Ignored;
         };
-        let entries = Self::panel_entries(items);
+        self.handle_intent_after_ensure(intent, root, &entries)
+    }
+
+    fn handle_intent_after_ensure<Id: Clone>(
+        &mut self,
+        intent: UiIntent,
+        root: &[MenuNode<Id>],
+        entries: &[CollectionItem<usize>],
+    ) -> DropdownMenuOutcome<Id> {
         match intent {
             UiIntent::Move(
                 NavigationMove::Next
@@ -917,7 +923,7 @@ impl DropdownMenuState {
                     Some(f) => f,
                     None => return DropdownMenuOutcome::Ignored,
                 };
-                let out = frame.collection.handle_intent(intent, &entries);
+                let out = frame.collection.handle_intent(intent, entries);
                 self.typeahead.clear();
                 if out.active_changed() {
                     DropdownMenuOutcome::CursorMoved
@@ -987,7 +993,7 @@ impl DropdownMenuState {
                 while self.open_path.len() > depth {
                     self.open_path.pop();
                 }
-                self.ensure_top_frame(root);
+                let _ = self.ensure_top_frame(root);
                 if let Some(frame) = self.cascade.get_mut(depth) {
                     frame.set_cursor(idx);
                 }

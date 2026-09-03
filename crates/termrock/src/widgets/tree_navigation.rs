@@ -519,9 +519,19 @@ impl<Id> TreeNavigationState<Id> {
     where
         Id: Clone + PartialEq,
     {
-        self.recompute_ancestors(nodes);
         let coll = Self::collection_items(nodes);
-        let _ = self.collection.reconcile(&coll);
+        self.reconcile_route_with_collection(nodes, &coll);
+    }
+
+    fn reconcile_route_with_collection(
+        &mut self,
+        nodes: &[TreeNavNode<Id>],
+        coll: &[CollectionItem<Id>],
+    ) where
+        Id: Clone + PartialEq,
+    {
+        self.recompute_ancestors(nodes);
+        let _ = self.collection.reconcile(coll);
         if let Some(r) = self.route.clone() {
             if nodes.iter().any(|n| n.id == r) {
                 // keep focus near route if focus missing
@@ -909,8 +919,8 @@ impl<'a, Id> TreeNavigation<'a, Id> {
             return;
         }
 
-        state.reconcile_route(self.nodes);
         let coll = TreeNavigationState::<Id>::collection_items(self.nodes);
+        state.reconcile_route_with_collection(self.nodes, &coll);
         let vp = usize::from(area.height).saturating_sub(if state.filter_active { 1 } else { 0 });
         state
             .collection

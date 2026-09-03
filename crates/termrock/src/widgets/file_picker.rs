@@ -959,16 +959,19 @@ impl FilePickerState {
         entries
     }
 
-    fn reprocess_visible(&mut self) {
-        self.entries = self.process_entries(self.raw_entries.clone());
-        let items: Vec<CollectionItem<String>> = self
-            .entries
+    fn collection_items(entries: &[FileEntry]) -> Vec<CollectionItem<String>> {
+        entries
             .iter()
             .map(|e| {
                 CollectionItem::new(e.id.clone(), e.name.clone())
                     .enabled(e.error.is_none() && (e.selectable || e.kind.is_dir()))
             })
-            .collect();
+            .collect()
+    }
+
+    fn reprocess_visible(&mut self) {
+        self.entries = self.process_entries(self.raw_entries.clone());
+        let items = Self::collection_items(&self.entries);
         if self.collection.reconcile(&items).active_changed() {
             self.bump_preview_generation();
         }
@@ -1114,14 +1117,7 @@ impl FilePickerState {
     }
 
     fn handle_list_key(&mut self, key: KeyEvent) -> FilePickerOutcome {
-        let items: Vec<CollectionItem<String>> = self
-            .entries
-            .iter()
-            .map(|e| {
-                CollectionItem::new(e.id.clone(), e.name.clone())
-                    .enabled(e.error.is_none() && (e.selectable || e.kind.is_dir()))
-            })
-            .collect();
+        let items = Self::collection_items(&self.entries);
 
         // Enter open / confirm
         if key.code == KeyCode::Enter && key.modifiers.is_empty() {
@@ -1181,14 +1177,7 @@ impl FilePickerState {
                 }
             }
             other if matches!(self.pane, FilePickerPane::List) => {
-                let items: Vec<CollectionItem<String>> = self
-                    .entries
-                    .iter()
-                    .map(|e| {
-                        CollectionItem::new(e.id.clone(), e.name.clone())
-                            .enabled(e.error.is_none() && (e.selectable || e.kind.is_dir()))
-                    })
-                    .collect();
+                let items = Self::collection_items(&self.entries);
                 match self.collection.handle_intent(other, &items) {
                     CollectionOutcome::ActiveChanged { to, .. } => self.active_entry_changed(to),
                     CollectionOutcome::Scrolled => FilePickerOutcome::Changed,
@@ -1578,14 +1567,7 @@ impl<'a> FilePicker<'a> {
         if area.is_empty() {
             return;
         }
-        let items: Vec<CollectionItem<String>> = state
-            .entries
-            .iter()
-            .map(|e| {
-                CollectionItem::new(e.id.clone(), e.name.clone())
-                    .enabled(e.error.is_none() && (e.selectable || e.kind.is_dir()))
-            })
-            .collect();
+        let items = FilePickerState::collection_items(&state.entries);
         let vp = usize::from(area.height).max(1);
         state
             .collection
@@ -2169,11 +2151,7 @@ mod tests {
         state.listing_generation = 1;
         assert!(state.apply_listing(1, "/p", sample_entries("/p"), None));
         // move to README
-        let items: Vec<_> = state
-            .entries()
-            .iter()
-            .map(|e| CollectionItem::new(e.id.clone(), e.name.clone()).enabled(true))
-            .collect();
+        let items = FilePickerState::collection_items(state.entries());
         let _ = state.collection.move_next(&items);
         assert!(matches!(
             state.handle_key(KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE)),

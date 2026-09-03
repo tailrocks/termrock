@@ -339,15 +339,18 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
             .collect()
     }
 
+    fn normalized_search_query(query: &str) -> Option<String> {
+        let query = query.trim();
+        (!query.is_empty()).then(|| query.to_ascii_lowercase())
+    }
+
     fn filtered_items(options: &[SelectOption<Id>], query: &str) -> Vec<CollectionItem<Id>> {
-        if query.trim().is_empty() {
+        let Some(query) = Self::normalized_search_query(query) else {
             return Self::collection_items(options);
-        }
-        // Reuse Select filter logic inline
-        let q = query.trim().to_ascii_lowercase();
+        };
         options
             .iter()
-            .filter(|o| o.is_option() && o.label.to_ascii_lowercase().contains(&q))
+            .filter(|o| o.is_option() && o.label.to_ascii_lowercase().contains(&query))
             .map(|o| CollectionItem::new(o.id.clone(), o.label.clone()).enabled(!o.disabled))
             .collect()
     }
@@ -1082,25 +1085,29 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
         }
 
         let query = state.search.value().to_owned();
-        let visible: Vec<&SelectOption<Id>> = if state.searchable && !query.is_empty() {
-            let q = query.to_ascii_lowercase();
-            let mut out = Vec::new();
-            let mut pending_group: Option<&SelectOption<Id>> = None;
-            for o in self.options {
-                match o.kind {
-                    SelectRowKind::Group => pending_group = Some(o),
-                    SelectRowKind::Separator => {}
-                    SelectRowKind::Option => {
-                        if o.label.to_ascii_lowercase().contains(&q) {
-                            if let Some(g) = pending_group.take() {
-                                out.push(g);
+        let normalized_query = MultiSelectState::<Id>::normalized_search_query(&query);
+        let visible: Vec<&SelectOption<Id>> = if state.searchable {
+            if let Some(q) = normalized_query.as_deref() {
+                let mut out = Vec::new();
+                let mut pending_group: Option<&SelectOption<Id>> = None;
+                for o in self.options {
+                    match o.kind {
+                        SelectRowKind::Group => pending_group = Some(o),
+                        SelectRowKind::Separator => {}
+                        SelectRowKind::Option => {
+                            if o.label.to_ascii_lowercase().contains(&q) {
+                                if let Some(g) = pending_group.take() {
+                                    out.push(g);
+                                }
+                                out.push(o);
                             }
-                            out.push(o);
                         }
                     }
                 }
+                out
+            } else {
+                self.options.iter().collect()
             }
-            out
         } else {
             self.options.iter().collect()
         };
@@ -1528,6 +1535,59 @@ mod tests {
         let items = MultiSelectState::filtered_items(&options, "go");
         assert!(items.iter().any(|i| i.id == "go"));
         assert!(!items.iter().any(|i| i.id == "rs"));
+    }
+
+    #[test]
+    fn padded_search_projection_matches_paint_and_focus() {
+        let system = DesignSystem::default();
+        let options = opts();
+        let mut state = MultiSelectState::new().with_searchable(true);
+        let bounds = Rect::new(0, 0, 48, 16);
+        let _ = state.open(bounds, &options);
+        let _ = state.search.insert_str(" go ");
+        state.reconcile_options(&options);
+
+        assert_eq!(state.highlight(), Some(&"go"));
+        assert!(matches!(
+            state.handle_intent(UiIntent::Activate, &options, bounds),
+            MultiSelectOutcome::Toggled {
+                id: "go",
+                checked: true
+            }
+        ));
+
+        let mut buf = Buffer::empty(bounds);
+        MultiSelect::new(&options, &system).paint_stacked(bounds, &mut buf, &mut state);
+        assert_eq!(
+            state
+                .option_regions
+                .iter()
+                .map(|(id, _)| *id)
+                .collect::<Vec<_>>(),
+            vec!["go"]
+        );
+    }
+
+    #[test]
+    fn whitespace_search_matches_empty_projection() {
+        let system = DesignSystem::default();
+        let options = opts();
+        let mut state = MultiSelectState::new().with_searchable(true);
+        let bounds = Rect::new(0, 0, 48, 16);
+        let _ = state.open(bounds, &options);
+        let _ = state.search.insert_str("   ");
+        state.reconcile_options(&options);
+
+        let mut buf = Buffer::empty(bounds);
+        MultiSelect::new(&options, &system).paint_stacked(bounds, &mut buf, &mut state);
+        assert_eq!(
+            state
+                .option_regions
+                .iter()
+                .map(|(id, _)| *id)
+                .collect::<Vec<_>>(),
+            vec!["rs", "go", "ts"]
+        );
     }
 
     #[test]
