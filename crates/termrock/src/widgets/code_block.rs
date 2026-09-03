@@ -19,7 +19,6 @@ use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
     style::{Modifier, Style},
-    widgets::Widget,
 };
 
 use crate::input::{KeyEvent, MouseButton, MouseEvent, MouseEventKind};
@@ -665,8 +664,6 @@ pub struct CodeBlock<'a, H: SyntaxHighlighter = PlainSyntax> {
     gutter_marks: &'a [CodeGutterMark],
     /// Unfinished fence / streaming append.
     streaming: bool,
-    /// Legacy first-line when painting without state.
-    first_line: usize,
     /// Absolute inclusive-start / exclusive-end of the current statement block.
     /// `›` is painted on the first line; `▎` is focus-only.
     current_block: Option<(usize, usize)>,
@@ -692,7 +689,6 @@ impl<'a> CodeBlock<'a, PlainSyntax> {
             highlights: &[],
             gutter_marks: &[],
             streaming: false,
-            first_line: 0,
             current_block: None,
             footer_status: None,
         }
@@ -725,13 +721,6 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
     #[must_use]
     pub const fn line_numbers(mut self, enabled: bool) -> Self {
         self.show_line_numbers = enabled;
-        self
-    }
-
-    /// Legacy first visible line (Widget path / seed). Prefer [`CodeBlockState::scroll_y`].
-    #[must_use]
-    pub const fn first_line(mut self, first_line: usize) -> Self {
-        self.first_line = first_line;
         self
     }
 
@@ -769,7 +758,6 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
             highlights: self.highlights,
             gutter_marks: self.gutter_marks,
             streaming: self.streaming,
-            first_line: self.first_line,
             current_block: self.current_block,
             footer_status: self.footer_status,
         }
@@ -1059,11 +1047,7 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
         } else {
             content_h
         };
-        let first = if state.parts.is_some() || state.viewport_rows > 0 {
-            state.scroll_y
-        } else {
-            state.scroll_y.max(self.first_line)
-        };
+        let first = state.scroll_y;
         let gutter_w = self.gutter_width(body_h, first);
         let gutter = Rect {
             x: area.x,
@@ -1110,8 +1094,6 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
         state.viewport_rows = parts.body.height;
         state.body_width = parts.body.width;
         state.clamp(self.document_len());
-        parts.first_line = state.scroll_y.max(self.first_line);
-        // Prefer state.scroll_y after clamp
         parts.first_line = state.scroll_y;
 
         let header_text = self.meta.header_text();
@@ -1789,18 +1771,9 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
     }
 }
 
-impl<H: SyntaxHighlighter> Widget for &CodeBlock<'_, H> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        let mut state = CodeBlockState::new().with_scroll_y(self.first_line);
-        let _ = self.paint(area, buffer, &mut state);
-    }
-}
-
-impl<H: SyntaxHighlighter> Widget for CodeBlock<'_, H> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        <&Self as Widget>::render(&self, area, buffer);
-    }
-}
+// CodeBlock paints only through `CodeBlock::paint(area, buffer, state)`:
+// a stateless render would discard cursor geometry, viewport rows, and
+// copy-flash, and silently repaint a different block than the state path.
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -2132,10 +2105,11 @@ mod tests {
         let system = DesignSystem::default();
         let lines = ["fn main() {}", "    // hi"];
         let mut buffer = Buffer::empty(Rect::new(0, 0, 30, 3));
+        let mut state = CodeBlockState::new();
         CodeBlock::new(&lines, &system)
             .line_numbers(true)
             .language("rust")
-            .render(Rect::new(0, 0, 30, 3), &mut buffer);
+            .paint(Rect::new(0, 0, 30, 3), &mut buffer, &mut state);
         let header: String = (0..30)
             .map(|x| buffer[(x, 0)].symbol().to_owned())
             .collect();

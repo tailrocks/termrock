@@ -598,7 +598,7 @@ pub static PUBLIC_UI_INVENTORY: &[PublicUiInventoryEntry] = &[
         "citation-list",
         "citation-list/expanded"
     ),
-    public_ui!(CodeBlock, Widget, Data, "code-block", "code-block/basic"),
+    public_ui!(CodeBlock, Paint, Data, "code-block", "code-block/basic"),
     public_ui!(
         CodeFrame,
         Paint,
@@ -1858,7 +1858,7 @@ mod tests {
                     counts[index] += 1;
                     counts
                 });
-        assert_eq!(kind_counts, [148, 48, 6, 8]);
+        assert_eq!(kind_counts, [147, 49, 6, 8]);
         assert_eq!(
             public_ui_inventory()
                 .iter()
