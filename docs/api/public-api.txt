@@ -19603,7 +19603,6 @@ pub fn termrock::patterns::BackgroundOutputBuffer::append_all<I: core::iter::tra
 pub fn termrock::patterns::BackgroundOutputBuffer::as_terminal_lines(&self) -> alloc::vec::Vec<(alloc::string::String, termrock::widgets::TerminalStream, alloc::string::String)>
 pub fn termrock::patterns::BackgroundOutputBuffer::default_history() -> Self
 pub fn termrock::patterns::BackgroundOutputBuffer::dropped_banner(&self, bool) -> core::option::Option<alloc::string::String>
-pub fn termrock::patterns::BackgroundOutputBuffer::is_empty(&self) -> bool
 pub fn termrock::patterns::BackgroundOutputBuffer::len(&self) -> usize
 pub fn termrock::patterns::BackgroundOutputBuffer::lines(&self) -> &alloc::collections::vec_deque::VecDeque<termrock::patterns::BackgroundOutputLine>
 pub fn termrock::patterns::BackgroundOutputBuffer::new(usize) -> Self
