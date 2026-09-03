@@ -526,7 +526,7 @@ pub enum DiffReviewOutcome {
     Cancelled,
     /// Summary focus / bulk activate.
     SummaryActivated(DiffReviewSummary),
-    /// Legacy activate (current hunk) — host may stage/open.
+    /// Current hunk activated — host may stage/open.
     HunkActivated {
         /// Index.
         index: usize,
@@ -1385,16 +1385,6 @@ impl DiffReviewState {
         }
         let out = self.view.handle_mouse(event, lines, hunks);
         self.map_view(out)
-    }
-
-    /// Legacy mouse.
-    pub fn handle_mouse(
-        &mut self,
-        event: MouseEvent,
-        hunks: &[DiffHunk],
-        _line_count: usize,
-    ) -> DiffReviewOutcome {
-        self.handle_mouse_lines(event, &[], hunks, &[])
     }
 }
 

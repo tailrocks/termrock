@@ -651,9 +651,6 @@ impl Perform for PlainPerformer {
     }
 }
 
-// ── Legacy one-shot styled performer (used only via parse path) ─────────────
-// Kept logic unified through AnsiStream.
-
 // ── SGR ─────────────────────────────────────────────────────────────────────
 
 fn apply_sgr(params: &Params, style: &mut Style, default_style: Style, no_color: bool) {

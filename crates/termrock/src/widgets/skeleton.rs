@@ -143,7 +143,7 @@ impl SkeletonLayout {
         }
     }
 
-    /// Classic staggered list lines (legacy `Skeleton::new(n)`).
+    /// Classic staggered list lines ([`Skeleton::new`] shape).
     #[must_use]
     pub fn lines(n: u16) -> Self {
         let mut shapes = Vec::with_capacity(usize::from(n));
@@ -372,7 +372,7 @@ impl SkeletonState {
 /// use termrock::widgets::Skeleton;
 ///
 /// let system = DesignSystem::default();
-/// let sk = Skeleton::new(4, &system); // legacy staggered lines
+/// let sk = Skeleton::new(4, &system); // staggered lines
 /// ```
 #[derive(Debug, Clone)]
 pub struct Skeleton<'a> {
@@ -385,7 +385,7 @@ pub struct Skeleton<'a> {
 impl<'a> Skeleton<'a> {
     /// Creates a skeleton with the requested row count (staggered lines).
     ///
-    /// **Preserved** constructor used by Panel / lookbook.
+    /// Staggered lines; the shape Panel / lookbook reach for by default.
     #[must_use]
     pub fn new(rows: u16, system: &'a DesignSystem) -> Self {
         Self {

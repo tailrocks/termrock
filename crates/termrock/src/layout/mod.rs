@@ -280,11 +280,14 @@ mod tests {
     fn dialog_center_stays_inside_tiny_and_large_inputs() {
         let outer = Rect::new(7, 11, 20, 10);
         assert_eq!(
-            Center::dialog(8, 4).layout(outer).child,
+            Center::new(8, 4).safe_margin(true).layout(outer).child,
             Rect::new(13, 14, 8, 4)
         );
         for (width, height) in [(0, 0), (1, 1), (2, 2), (u16::MAX, u16::MAX)] {
-            let rect = Center::dialog(width, height).layout(outer).child;
+            let rect = Center::new(width, height)
+                .safe_margin(true)
+                .layout(outer)
+                .child;
             assert!(rect.x >= outer.x && rect.y >= outer.y);
             assert!(rect.right() <= outer.right());
             assert!(rect.bottom() <= outer.bottom());

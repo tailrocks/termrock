@@ -762,22 +762,6 @@ impl Widget for ShortcutHint<'_> {
     }
 }
 
-// ── Legacy Kbd::from_chord buffer API ───────────────────────────────────────
-
-impl<'a> Kbd<'a> {
-    /// Format a [`KeyChord`] into a short display label (writes into `buf`).
-    #[must_use]
-    pub fn from_chord_buf(chord: KeyChord, buf: &'a mut String, tokens: &'a DesignSystem) -> Self {
-        let fmt = ChordFormat::from_glyphs(tokens.glyphs);
-        *buf = format_chord(chord, fmt);
-        Self {
-            label: Cow::Borrowed(buf.as_str()),
-            system: tokens,
-            variant: KbdVariant::Keycap,
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

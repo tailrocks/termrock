@@ -14,7 +14,7 @@
 //! - Never underflows: sizes use saturating arithmetic; child is always
 //!   contained in `area` (may be zero-sized when outer is empty).
 //! - Tiny terminals: preferred size is clamped to available space after margins.
-//! - Optional one-cell safe margin through [`Center::dialog`].
+//! - Optional one-cell safe margin through [`Center::safe_margin`].
 use ratatui_core::layout::Rect;
 
 /// Which axes to center on.
@@ -99,23 +99,6 @@ impl CenterSpec {
             margin_x: 0,
             margin_y: 0,
             safe_margin: false,
-        }
-    }
-
-    /// Legacy dialog helper: both axes + 1-cell safe margin when room.
-    #[must_use]
-    pub const fn dialog(width: u16, height: u16) -> Self {
-        Self {
-            axis: CenterAxis::Both,
-            width,
-            height,
-            max_width: None,
-            max_height: None,
-            min_width: 0,
-            min_height: 0,
-            margin_x: 0,
-            margin_y: 0,
-            safe_margin: true,
         }
     }
 
@@ -278,14 +261,6 @@ impl Center {
     pub const fn new(width: u16, height: u16) -> Self {
         Self {
             spec: CenterSpec::new(width, height),
-        }
-    }
-
-    /// Dialog-style with safe margin.
-    #[must_use]
-    pub const fn dialog(width: u16, height: u16) -> Self {
-        Self {
-            spec: CenterSpec::dialog(width, height),
         }
     }
 
@@ -661,18 +636,7 @@ mod tests {
     #[test]
     fn dialog_safe_margin_matches_expected_geometry() {
         let outer = Rect::new(7, 11, 20, 10);
-        let legacy = {
-            let w = 8u16.min(outer.width.saturating_sub(2));
-            let h = 4u16.min(outer.height.saturating_sub(2));
-            Rect {
-                x: outer.x + outer.width.saturating_sub(w) / 2,
-                y: outer.y + outer.height.saturating_sub(h) / 2,
-                width: w,
-                height: h,
-            }
-        };
-        let child = Center::dialog(8, 4).layout(outer).child;
-        assert_eq!(child, legacy);
+        let child = Center::new(8, 4).safe_margin(true).layout(outer).child;
         assert_eq!(child, Rect::new(13, 14, 8, 4));
     }
 
@@ -806,7 +770,7 @@ mod tests {
         for &(ow, oh) in &screens {
             for &(pw, ph) in &prefs {
                 let outer = Rect::new(0, 0, ow, oh);
-                let child = Center::dialog(pw, ph).layout(outer).child;
+                let child = Center::new(pw, ph).safe_margin(true).layout(outer).child;
                 assert!(child_inside(outer, child));
                 let fail = Center::failure(pw, ph).layout(outer).child;
                 assert!(child_inside(outer, fail));
