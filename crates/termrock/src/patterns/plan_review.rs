@@ -1880,7 +1880,11 @@ impl<'a> PlanReview<'a> {
         if plan.tasks.is_empty() && y < max_y {
             EmptyState::new("No tasks", self.system)
                 .kind(EmptyKind::NoData)
-                .paint(Rect::new(area.x, y, area.width, 1), buffer);
+                .paint(
+                    Rect::new(area.x, y, area.width, 1),
+                    buffer,
+                    &mut crate::widgets::EmptyStateState::new(),
+                );
         }
     }
 
@@ -2015,7 +2019,11 @@ impl<'a> PlanReview<'a> {
         if plan.affected_files.is_empty() && y < max_y {
             EmptyState::new("No files", self.system)
                 .kind(EmptyKind::NoData)
-                .paint(Rect::new(area.x, y, area.width, 1), buffer);
+                .paint(
+                    Rect::new(area.x, y, area.width, 1),
+                    buffer,
+                    &mut crate::widgets::EmptyStateState::new(),
+                );
         }
     }
 

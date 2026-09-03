@@ -618,7 +618,7 @@ impl Page for EditorPage {
                 EmptyState::new("Nothing flagged", ctx.system)
                     .kind(EmptyKind::NoData)
                     .explanation("Run the second block: its unwrap() gets a warning")
-                    .paint(inner, buf);
+                    .paint(inner, buf, &mut termrock::widgets::EmptyStateState::new());
             } else {
                 for (i, d) in self.diagnostics.iter().enumerate() {
                     let yy = inner.y + i as u16;

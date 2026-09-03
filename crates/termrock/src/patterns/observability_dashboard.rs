@@ -1214,7 +1214,11 @@ pub fn render_observability_dashboard(
             if !inner.is_empty() {
                 EmptyState::new("Pick a row", system)
                     .kind(EmptyKind::NoData)
-                    .paint(Rect::new(inner.x, inner.y, inner.width, 1), buffer);
+                    .paint(
+                        Rect::new(inner.x, inner.y, inner.width, 1),
+                        buffer,
+                        &mut crate::widgets::EmptyStateState::new(),
+                    );
             }
         } else {
             ObjectInspector::new(inspect_fields, system)

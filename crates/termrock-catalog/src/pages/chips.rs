@@ -418,7 +418,7 @@ impl Page for ChipsPage {
         EmptyState::new("No results yet", ctx.system)
             .kind(EmptyKind::NoResults)
             .explanation("A title and one hint, centred in whatever is left")
-            .paint(inner, buf);
+            .paint(inner, buf, &mut termrock::widgets::EmptyStateState::new());
     }
 
     fn handle(&mut self, ev: &PageEvent, cx: &mut PageCtx<'_>) -> Route {

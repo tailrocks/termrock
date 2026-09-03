@@ -1121,8 +1121,11 @@ impl<'a> CheckpointTimeline<'a> {
         }
 
         if state.checkpoints.is_empty() {
-            super::EmptyState::new("No checkpoints yet", self.system)
-                .paint(Rect::new(inner.x, inner.y, inner.width, 1), buffer);
+            super::EmptyState::new("No checkpoints yet", self.system).paint(
+                Rect::new(inner.x, inner.y, inner.width, 1),
+                buffer,
+                &mut super::EmptyStateState::new(),
+            );
             return;
         }
 

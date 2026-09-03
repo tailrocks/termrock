@@ -306,7 +306,11 @@ impl<'a> Carousel<'a> {
         if self.slides.is_empty() {
             // Empty bodies speak one language: glyph + sentence, through the
             // widget that owns it (plans/009 Step 2).
-            super::EmptyState::new("No slides", self.system).paint(area, buffer);
+            super::EmptyState::new("No slides", self.system).paint(
+                area,
+                buffer,
+                &mut super::EmptyStateState::new(),
+            );
             return;
         }
         let i = state.index.min(self.slides.len() - 1);

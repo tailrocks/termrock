@@ -1445,7 +1445,11 @@ pub fn render_help_center(buffer: &mut Buffer, area: Rect, surfaces: HelpCenterS
             if rows.is_empty() {
                 EmptyState::new("No topics", system)
                     .kind(EmptyKind::NoResults)
-                    .paint(Rect::new(inner.x, inner.y, inner.width, 1), buffer);
+                    .paint(
+                        Rect::new(inner.x, inner.y, inner.width, 1),
+                        buffer,
+                        &mut crate::widgets::EmptyStateState::new(),
+                    );
             } else {
                 let list = List::new(&rows, system).focused(focused);
                 StatefulWidget::render(&list, inner, buffer, &mut state.nav);
@@ -1494,7 +1498,11 @@ pub fn render_help_center(buffer: &mut Buffer, area: Rect, surfaces: HelpCenterS
             if rows.is_empty() {
                 EmptyState::new("No commands", system)
                     .kind(EmptyKind::NoResults)
-                    .paint(Rect::new(inner.x, inner.y, inner.width, 1), buffer);
+                    .paint(
+                        Rect::new(inner.x, inner.y, inner.width, 1),
+                        buffer,
+                        &mut crate::widgets::EmptyStateState::new(),
+                    );
             } else {
                 let list = List::new(&rows, system).focused(focused);
                 StatefulWidget::render(&list, inner, buffer, &mut state.commands);
@@ -1524,7 +1532,11 @@ pub fn render_help_center(buffer: &mut Buffer, area: Rect, surfaces: HelpCenterS
             } else {
                 EmptyState::new("Pick a topic", system)
                     .kind(EmptyKind::NoData)
-                    .paint(Rect::new(inner.x, inner.y, inner.width, 1), buffer);
+                    .paint(
+                        Rect::new(inner.x, inner.y, inner.width, 1),
+                        buffer,
+                        &mut crate::widgets::EmptyStateState::new(),
+                    );
             }
         }
     }
@@ -1542,7 +1554,11 @@ pub fn render_help_center(buffer: &mut Buffer, area: Rect, surfaces: HelpCenterS
                 EmptyState::new("No findings", system)
                     .kind(EmptyKind::NoData)
                     .explanation("d opens the doctor")
-                    .paint(Rect::new(inner.x, inner.y, inner.width, 1), buffer);
+                    .paint(
+                        Rect::new(inner.x, inner.y, inner.width, 1),
+                        buffer,
+                        &mut crate::widgets::EmptyStateState::new(),
+                    );
             } else {
                 let list = List::new(&rows, system).focused(focused);
                 StatefulWidget::render(&list, inner, buffer, &mut state.diagnostics);

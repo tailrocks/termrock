@@ -1290,7 +1290,11 @@ impl<'a> ProcessTable<'a> {
         if visible.is_empty() {
             EmptyState::new("No processes", self.system)
                 .kind(EmptyKind::NoData)
-                .paint(Rect::new(area.x, py, area.width, 1), buffer);
+                .paint(
+                    Rect::new(area.x, py, area.width, 1),
+                    buffer,
+                    &mut crate::widgets::EmptyStateState::new(),
+                );
         } else {
             for p in visible.iter().skip(start).take(end.saturating_sub(start)) {
                 if py >= bottom {

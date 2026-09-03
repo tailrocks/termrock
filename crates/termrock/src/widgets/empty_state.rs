@@ -5,7 +5,17 @@
 //!
 //! junie: centred muted title, one blank row, faint wrapped hint that names
 //! the key which fills it (`Ctrl+N creates one`). No illustration glyphs.
-use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
+//!
+//! Every configured slot paints: title, explanation, example, context,
+//! actions (focus from [`EmptyStateState`]), and the shortcut footer. Paint
+//! goes only through `EmptyState::paint(area, buffer, state)` — a stateless
+//! render would rebuild the state per frame and drop action focus between
+//! frames while the interaction model still honored it.
+use ratatui_core::{
+    buffer::Buffer,
+    layout::Rect,
+    style::{Modifier, Style},
+};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
@@ -15,7 +25,6 @@ use crate::{
     layout::center_line_x,
     style::{DesignSystem, Role},
     text::{display_cols, take_display_cols, wrap_display_cols},
-    widgets::ButtonState,
 };
 
 /// Width under which Full density collapses toward Inline.
@@ -55,13 +64,11 @@ impl EmptyKind {
         }
     }
 
-    /// Title role (permission stays warning-toned; others muted title emphasis).
-    #[must_use]
-    pub const fn title_role(self) -> Role {
+    /// Title style: junie muted, except permission stays warning-toned.
+    fn title_style(&self, system: &DesignSystem) -> ratatui_core::style::Style {
         match self {
-            Self::PermissionLimited => Role::Warning,
-            Self::FirstUse => Role::TextStrong,
-            _ => Role::TextStrong,
+            Self::PermissionLimited => system.style(Role::Warning),
+            _ => system.junie_theme().muted(),
         }
     }
 }
@@ -124,12 +131,10 @@ pub enum EmptyStateOutcome {
     SecondaryActivated,
 }
 
-/// Optional interaction state when primary/secondary actions are present.
+/// Interaction state for empty states with actions.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct EmptyStateState {
     focus: EmptyFocus,
-    primary: ButtonState,
-    secondary: ButtonState,
 }
 
 impl EmptyStateState {
@@ -257,18 +262,13 @@ impl<'a> EmptyState<'a> {
         self.kind
     }
 
-    /// Rows needed: title, plus a blank row and wrapped hint when present.
+    /// Rows needed at `width`: every configured slot, as painted.
     #[must_use]
     pub fn measure_height(&self, width: u16) -> u16 {
         if width == 0 {
             return 0;
         }
-        let hint = self.hint_text();
-        if hint.is_none() {
-            return 1;
-        }
-        let wrap_w = usize::from(width.saturating_sub(4)).max(8);
-        1 + 1 + u16::try_from(wrap_words(hint.unwrap_or(""), wrap_w).len()).unwrap_or(1)
+        u16::try_from(self.rows(width, EmptyFocus::None).len()).unwrap_or(u16::MAX)
     }
 
     /// Hint copy: explanation, else the shortcut that fills the surface.
@@ -278,37 +278,71 @@ impl<'a> EmptyState<'a> {
             .or(self.primary.and_then(|a| a.shortcut))
     }
 
-    /// Passive paint (no interaction state).
-    pub fn paint(&self, area: Rect, buffer: &mut Buffer) {
-        let mut state = EmptyStateState::new();
-        self.paint_with_state(area, buffer, &mut state);
+    /// Full slot projection: title, explanation, example, context, actions
+    /// (focus-marked per `focus`), shortcut footer — one centered row each
+    /// (explanation wraps). `measure_height` and `paint` share this, so a
+    /// host sizing with one can never paint the other's layout.
+    fn rows(&self, width: u16, focus: EmptyFocus) -> Vec<(String, ratatui_core::style::Style)> {
+        let theme = self.system.junie_theme();
+        let mut rows: Vec<(String, ratatui_core::style::Style)> =
+            vec![(self.title.to_owned(), self.kind.title_style(self.system))];
+        if let Some(hint) = self.hint_text() {
+            rows.push((String::new(), theme.faint()));
+            let wrap_w = usize::from(width.saturating_sub(4)).max(8);
+            for line in wrap_words(hint, wrap_w) {
+                rows.push((line, theme.faint()));
+            }
+        }
+        if let Some(example) = self.example {
+            rows.push((String::new(), theme.faint()));
+            rows.push((format!("e.g. {example}"), theme.faint()));
+        }
+        if let Some(context) = self.context {
+            rows.push((String::new(), theme.faint()));
+            rows.push((context.to_owned(), theme.secondary()));
+        }
+        if self.primary.is_some() || self.secondary.is_some() {
+            rows.push((String::new(), theme.faint()));
+            for (action, focused) in [
+                (self.primary, focus == EmptyFocus::Primary),
+                (self.secondary, focus == EmptyFocus::Secondary),
+            ] {
+                let Some(action) = action else {
+                    continue;
+                };
+                let mut text = action.label.to_owned();
+                if let Some(shortcut) = action.shortcut {
+                    text.push_str(&format!(" ({shortcut})"));
+                }
+                let style = if focused {
+                    // junie focus: accent tone plus weight — never color alone.
+                    Style::new().fg(theme.focus).add_modifier(Modifier::BOLD)
+                } else {
+                    theme.muted()
+                };
+                if focused {
+                    text = format!("{} {text}", self.system.glyphs.selection_marker());
+                }
+                rows.push((text, style));
+            }
+        }
+        if let Some(shortcut) = self.shortcut {
+            rows.push((String::new(), theme.faint()));
+            rows.push((shortcut.to_owned(), theme.faint()));
+        }
+        rows
     }
 
-    /// Paint with optional action focus.
-    pub fn paint_with_state(&self, area: Rect, buffer: &mut Buffer, state: &mut EmptyStateState) {
-        let _ = state;
+    /// Paint the empty state; action focus comes from `state`.
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut EmptyStateState) {
         if area.is_empty() {
             return;
         }
-        let theme = self.system.junie_theme();
-        let hint = self.hint_text();
-        let wrap_w = usize::from(area.width.saturating_sub(4)).max(8);
-        let hint_lines: Vec<String> = hint.map(|h| wrap_words(h, wrap_w)).unwrap_or_default();
-        let total = 1 + if hint_lines.is_empty() {
-            0
-        } else {
-            hint_lines.len() as u16 + 1
-        };
+        let rows = self.rows(area.width, state.focus());
+        let total = rows.len() as u16;
         let y0 = area.y + area.height.saturating_sub(total) / 2;
-        self.paint_centered(area, buffer, y0, self.title, theme.muted());
-        for (i, line) in hint_lines.iter().enumerate() {
-            self.paint_centered(
-                area,
-                buffer,
-                y0.saturating_add(2).saturating_add(i as u16),
-                line,
-                theme.faint(),
-            );
+        for (i, (text, style)) in rows.iter().enumerate() {
+            self.paint_centered(area, buffer, y0.saturating_add(i as u16), text, *style);
         }
     }
 
@@ -465,22 +499,6 @@ impl<'a> EmptyState<'a> {
     }
 }
 
-impl Widget for &EmptyState<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        self.paint(area, buffer);
-    }
-}
-
-impl Widget for EmptyState<'_> {
-    #[expect(
-        clippy::needless_borrows_for_generic_args,
-        reason = "explicitly delegate the owned contract to the borrowed renderer"
-    )]
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        <&Self as Widget>::render(&self, area, buffer);
-    }
-}
-
 /// Word-wrap with a hard fallback, matching junie `ui::text::wrap`.
 fn wrap_words(s: &str, width: usize) -> Vec<String> {
     let width = width.max(1);
@@ -633,7 +651,7 @@ mod tests {
         let text = painted(Rect::new(0, 0, 40, 5), |a, b| {
             EmptyState::new("No results", &system)
                 .explanation("Try another query")
-                .paint(a, b);
+                .paint(a, b, &mut EmptyStateState::new());
         });
         assert!(text.contains("No results"), "{text}");
         assert!(text.contains("Try another"), "{text}");
@@ -645,7 +663,7 @@ mod tests {
     }
 
     #[test]
-    fn full_paints_title_and_hint_not_actions() {
+    fn full_paints_every_slot_including_actions() {
         let system = system();
         let text = painted(Rect::new(0, 0, 48, 12), |a, b| {
             EmptyState::new("No rows", &system)
@@ -654,12 +672,77 @@ mod tests {
                 .primary(EmptyAction::new("Add row"))
                 .secondary(EmptyAction::new("Import"))
                 .example("csv path")
-                .paint(a, b);
+                .paint(a, b, &mut EmptyStateState::new());
         });
         assert!(text.contains("No rows"), "{text}");
         assert!(text.contains("a creates one"), "{text}");
-        assert!(!text.contains("Add row"), "{text}");
-        assert!(!text.contains("Import"), "{text}");
+        assert!(text.contains("Add row"), "{text}");
+        assert!(text.contains("Import"), "{text}");
+        assert!(text.contains("e.g. csv path"), "{text}");
+    }
+
+    #[test]
+    fn focus_marks_primary_with_marker_and_weight() {
+        // junie: focus speaks through the marker plus weight, not color alone.
+        let system = system();
+        let paint = |focus: EmptyFocus| {
+            let mut buf = Buffer::empty(Rect::new(0, 0, 40, 8));
+            let mut state = EmptyStateState::new();
+            state.set_focus(focus);
+            EmptyState::new("No rows", &system)
+                .primary(EmptyAction::new("Add row"))
+                .secondary(EmptyAction::new("Import"))
+                .paint(Rect::new(0, 0, 40, 8), &mut buf, &mut state);
+            buf
+        };
+        let marker = system.glyphs.selection_marker();
+        let row_of = |buf: &Buffer, needle: &str| {
+            (0..8u16)
+                .find(|&y| {
+                    (0..40u16).any(|x| {
+                        let mut s = String::new();
+                        for x2 in x..40u16 {
+                            s.push_str(buf[(x2, y)].symbol());
+                        }
+                        s.contains(needle)
+                    })
+                })
+                .expect("action row")
+        };
+        let col_of = |buf: &Buffer, y: u16, needle: &str| {
+            // `find` is a byte offset; the marker glyph is multi-byte UTF-8,
+            // so convert to a cell index via chars.
+            let row: String = (0..40u16).map(|x| buf[(x, y)].symbol()).collect();
+            let byte = row.find(needle).unwrap();
+            (row[..byte].chars().count() as u16).saturating_sub(2)
+        };
+
+        let focused_primary = paint(EmptyFocus::Primary);
+        let pr = row_of(&focused_primary, "Add row");
+        let sr = row_of(&focused_primary, "Import");
+        let px = col_of(&focused_primary, pr, "Add row");
+        let sx = col_of(&focused_primary, sr, "Import");
+        assert_eq!(focused_primary[(px, pr)].symbol(), marker);
+        assert!(
+            focused_primary[(px + 2, pr)]
+                .modifier
+                .contains(Modifier::BOLD)
+        );
+        assert_ne!(focused_primary[(sx, sr)].symbol(), marker);
+
+        let focused_secondary = paint(EmptyFocus::Secondary);
+        let sr2 = row_of(&focused_secondary, "Import");
+        let sx2 = col_of(&focused_secondary, sr2, "Import");
+        assert_eq!(focused_secondary[(sx2, sr2)].symbol(), marker);
+
+        let unfocused = paint(EmptyFocus::None);
+        let pr3 = row_of(&unfocused, "Add row");
+        let px3 = col_of(&unfocused, pr3, "Add row");
+        assert_ne!(
+            unfocused[(px3, pr3)].symbol(),
+            marker,
+            "no focus, no marker"
+        );
     }
 
     #[test]
@@ -669,7 +752,7 @@ mod tests {
         let mut buffer = Buffer::empty(area);
         EmptyState::new("No rows", &system)
             .explanation("Ctrl+N creates one")
-            .paint(area, &mut buffer);
+            .paint(area, &mut buffer, &mut EmptyStateState::new());
         let theme = system.junie_theme();
         let rows: Vec<String> = (0..area.height)
             .map(|y| {
@@ -707,7 +790,7 @@ mod tests {
             EmptyState::new("Empty", &system)
                 .explanation("detail")
                 .primary(EmptyAction::new("Act"))
-                .paint(a, b);
+                .paint(a, b, &mut EmptyStateState::new());
         });
         assert!(text.contains("Empty"), "{text}");
         // Inline should not explode height content messily
@@ -736,7 +819,9 @@ mod tests {
             example_empty_search(&system),
             example_empty_permission(&system),
         ] {
-            let text = painted(Rect::new(0, 0, 50, 14), |a, b| e.paint(a, b));
+            let text = painted(Rect::new(0, 0, 50, 14), |a, b| {
+                e.paint(a, b, &mut EmptyStateState::new())
+            });
             assert!(!text.trim().is_empty(), "kind={}", e.kind.id());
             assert!(
                 text.contains(e.title) || text.chars().any(|c| !c.is_whitespace()),
@@ -820,8 +905,16 @@ mod tests {
     fn tiny_and_empty_safe() {
         let system = system();
         let mut buf = Buffer::empty(Rect::new(0, 0, 8, 2));
-        EmptyState::new("X", &system).paint(Rect::new(0, 0, 1, 1), &mut buf);
-        EmptyState::new("X", &system).paint(Rect::new(0, 0, 0, 0), &mut buf);
+        EmptyState::new("X", &system).paint(
+            Rect::new(0, 0, 1, 1),
+            &mut buf,
+            &mut EmptyStateState::new(),
+        );
+        EmptyState::new("X", &system).paint(
+            Rect::new(0, 0, 0, 0),
+            &mut buf,
+            &mut EmptyStateState::new(),
+        );
     }
 
     #[test]
@@ -831,11 +924,11 @@ mod tests {
             EmptyState::new("Hidden by filters", &system)
                 .kind(EmptyKind::FilteredOut)
                 .primary(EmptyAction::new("Clear filters"))
-                .paint(a, b);
+                .paint(a, b, &mut EmptyStateState::new());
         });
         assert!(f.contains("Hidden") || f.contains("Clear"), "{f}");
         let p = painted(Rect::new(0, 0, 40, 8), |a, b| {
-            example_empty_permission(&system).paint(a, b);
+            example_empty_permission(&system).paint(a, b, &mut EmptyStateState::new());
         });
         assert!(p.contains("Access") || p.contains("Request"), "{p}");
     }
@@ -864,7 +957,7 @@ mod tests {
             if seed % 3 == 0 {
                 e = e.secondary(EmptyAction::new("S")).example("ex");
             }
-            e.paint(area, &mut buf);
+            e.paint(area, &mut buf, &mut EmptyStateState::new());
         }
     }
 
@@ -874,7 +967,11 @@ mod tests {
         let paint = || {
             let mut t = Terminal::new(TestBackend::new(36, 8)).unwrap();
             t.draw(|f| {
-                example_empty_search(&system).paint(f.area(), f.buffer_mut());
+                example_empty_search(&system).paint(
+                    f.area(),
+                    f.buffer_mut(),
+                    &mut EmptyStateState::new(),
+                );
             })
             .unwrap();
             t.backend()
@@ -895,7 +992,11 @@ mod tests {
         for _ in 0..120 {
             terminal
                 .draw(|f| {
-                    example_empty_table(&system).paint(f.area(), f.buffer_mut());
+                    example_empty_table(&system).paint(
+                        f.area(),
+                        f.buffer_mut(),
+                        &mut EmptyStateState::new(),
+                    );
                 })
                 .unwrap();
         }

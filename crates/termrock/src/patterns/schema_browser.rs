@@ -1115,7 +1115,11 @@ impl<'a, Id: Clone + PartialEq + Ord> SchemaBrowser<'a, Id> {
         if visible.is_empty() {
             EmptyState::new("No objects", self.system)
                 .kind(EmptyKind::NoData)
-                .paint(Rect::new(body.x, body.y, body.width, 1), buffer);
+                .paint(
+                    Rect::new(body.x, body.y, body.width, 1),
+                    buffer,
+                    &mut crate::widgets::EmptyStateState::new(),
+                );
             return;
         }
 

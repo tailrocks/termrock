@@ -1482,7 +1482,11 @@ impl<'a> SessionPicker<'a> {
         let Some(s) = state.current() else {
             EmptyState::new("No session selected", self.system)
                 .kind(EmptyKind::NoData)
-                .paint(Rect::new(area.x, y, area.width, 1), buffer);
+                .paint(
+                    Rect::new(area.x, y, area.width, 1),
+                    buffer,
+                    &mut crate::widgets::EmptyStateState::new(),
+                );
             return;
         };
         // Default frame: five quiet lines. Everything else is one keypress

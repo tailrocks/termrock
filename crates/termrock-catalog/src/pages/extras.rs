@@ -121,7 +121,7 @@ fn paint_demo(
         PublicUiId::EmptyState => {
             EmptyState::new("Nothing here", system)
                 .kind(EmptyKind::NoData)
-                .paint(inner, buf);
+                .paint(inner, buf, &mut termrock::widgets::EmptyStateState::new());
         }
         PublicUiId::Skeleton => {
             Skeleton::new(inner.height.min(3), system).paint(inner, buf, &SkeletonState::new());

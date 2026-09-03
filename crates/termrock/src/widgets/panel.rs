@@ -1268,7 +1268,8 @@ impl<'a> Panel<'a> {
                     if let Some(d) = self.slots.body_detail {
                         empty = empty.explanation(d);
                     }
-                    Widget::render(&empty, parts.body, buffer);
+                    let mut empty_state = crate::widgets::EmptyStateState::new();
+                    empty.paint(parts.body, buffer, &mut empty_state);
                 }
                 PanelBody::Error => {
                     let title = self.slots.body_title.unwrap_or("Error");

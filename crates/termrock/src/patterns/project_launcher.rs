@@ -1404,7 +1404,8 @@ pub fn render_project_launcher(
                 } else {
                     EmptyState::new("No matches", system).kind(EmptyKind::FilteredOut)
                 };
-                empty.paint(inner, buffer);
+                let mut empty_state = crate::widgets::EmptyStateState::new();
+                empty.paint(inner, buffer, &mut empty_state);
             } else {
                 let list = List::new(&rows, system).focused(focused);
                 StatefulWidget::render(&list, inner, buffer, &mut state.projects);
@@ -1453,7 +1454,7 @@ pub fn render_project_launcher(
             .primary(EmptyAction::with_shortcut("New project", "n"))
             .secondary(EmptyAction::with_shortcut("Import…", "i"))
             .shortcut("n new · i import · s setup");
-        empty.paint_with_state(r, buffer, &mut state.onboarding);
+        empty.paint(r, buffer, &mut state.onboarding);
     }
 
     // Status

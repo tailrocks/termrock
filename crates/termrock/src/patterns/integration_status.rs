@@ -1098,7 +1098,11 @@ impl<'a> IntegrationStatus<'a> {
         if state.entries.is_empty() {
             EmptyState::new("No integrations", self.system)
                 .kind(EmptyKind::NoData)
-                .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
+                .paint(
+                    Rect::new(inner.x, y, inner.width, 1),
+                    buffer,
+                    &mut crate::widgets::EmptyStateState::new(),
+                );
             return;
         }
 
@@ -1316,7 +1320,11 @@ impl<'a> IntegrationStatus<'a> {
                 if e.capabilities.is_empty() && y < content_bottom {
                     EmptyState::new("No capabilities declared", self.system)
                         .kind(EmptyKind::NoData)
-                        .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
+                        .paint(
+                            Rect::new(inner.x, y, inner.width, 1),
+                            buffer,
+                            &mut crate::widgets::EmptyStateState::new(),
+                        );
                 }
                 self.paint_more_note(
                     buffer,
@@ -1353,7 +1361,11 @@ impl<'a> IntegrationStatus<'a> {
                 if e.permissions.is_empty() && y < content_bottom {
                     EmptyState::new("No permissions declared", self.system)
                         .kind(EmptyKind::NoData)
-                        .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
+                        .paint(
+                            Rect::new(inner.x, y, inner.width, 1),
+                            buffer,
+                            &mut crate::widgets::EmptyStateState::new(),
+                        );
                 }
                 self.paint_more_note(
                     buffer,
@@ -1383,7 +1395,11 @@ impl<'a> IntegrationStatus<'a> {
                     EmptyState::new("No logs", self.system)
                         .kind(EmptyKind::NoData)
                         .explanation("g requests the host stream")
-                        .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
+                        .paint(
+                            Rect::new(inner.x, y, inner.width, 1),
+                            buffer,
+                            &mut crate::widgets::EmptyStateState::new(),
+                        );
                 }
                 self.paint_more_note(
                     buffer,

@@ -1086,8 +1086,11 @@ impl<'a> TraceWaterfall<'a> {
 
         if visible.is_empty() {
             let msg = state.empty_message.as_deref().unwrap_or("No spans");
-            super::EmptyState::new(msg, self.system)
-                .paint(Rect::new(area.x, y, area.width, 1), buffer);
+            super::EmptyState::new(msg, self.system).paint(
+                Rect::new(area.x, y, area.width, 1),
+                buffer,
+                &mut super::EmptyStateState::new(),
+            );
             return;
         }
 

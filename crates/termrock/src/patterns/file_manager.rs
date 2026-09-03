@@ -1611,7 +1611,11 @@ pub fn render_file_manager(buffer: &mut Buffer, area: Rect, surfaces: FileManage
             if rows.is_empty() {
                 EmptyState::new("No pending operations", system)
                     .kind(EmptyKind::NoData)
-                    .paint(Rect::new(inner.x, inner.y, inner.width, 1), buffer);
+                    .paint(
+                        Rect::new(inner.x, inner.y, inner.width, 1),
+                        buffer,
+                        &mut crate::widgets::EmptyStateState::new(),
+                    );
             } else {
                 let list = List::new(&rows, system).focused(focused);
                 StatefulWidget::render(&list, inner, buffer, &mut state.queue);

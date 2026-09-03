@@ -1291,8 +1291,11 @@ impl<'a> NotificationCenter<'a> {
         }
 
         if indices.is_empty() {
-            super::EmptyState::new("No notifications", self.system)
-                .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
+            super::EmptyState::new("No notifications", self.system).paint(
+                Rect::new(inner.x, y, inner.width, 1),
+                buffer,
+                &mut super::EmptyStateState::new(),
+            );
         } else {
             for (row, &item_idx) in indices.iter().skip(state.scroll).take(page).enumerate() {
                 let Some(item) = state.items.get(item_idx) else {

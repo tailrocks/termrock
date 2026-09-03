@@ -682,7 +682,7 @@ pub fn render_setup_wizard(buffer: &mut Buffer, area: Rect, surfaces: SetupWizar
                 .kind(EmptyKind::FirstUse)
                 .explanation(welcome_detail)
                 .shortcut("Enter continue · Esc cancel")
-                .paint(body, buffer);
+                .paint(body, buffer, &mut crate::widgets::EmptyStateState::new());
         }
         SetupStepKind::Capability => {
             paint_capability_list(buffer, body, system, capabilities, false);
@@ -718,13 +718,13 @@ pub fn render_setup_wizard(buffer: &mut Buffer, area: Rect, surfaces: SetupWizar
                         .kind(EmptyKind::PermissionLimited)
                         .explanation("Review tool trust on first use. Host opens gates when ready.")
                         .shortcut("Enter continue")
-                        .paint(body, buffer);
+                        .paint(body, buffer, &mut crate::widgets::EmptyStateState::new());
                 }
             } else {
                 EmptyState::new("Permissions", system)
                     .kind(EmptyKind::PermissionLimited)
                     .explanation("Host will request elevated tools before first run.")
-                    .paint(body, buffer);
+                    .paint(body, buffer, &mut crate::widgets::EmptyStateState::new());
             }
         }
         SetupStepKind::Theme => {
@@ -756,7 +756,7 @@ pub fn render_setup_wizard(buffer: &mut Buffer, area: Rect, surfaces: SetupWizar
                 .kind(EmptyKind::NoData)
                 .explanation(msg.as_str())
                 .shortcut("r retry · Esc cancel")
-                .paint(body, buffer);
+                .paint(body, buffer, &mut crate::widgets::EmptyStateState::new());
         }
     }
 

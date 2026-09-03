@@ -1628,8 +1628,11 @@ impl<'a> FilePicker<'a> {
         }
 
         if state.entries.is_empty() && matches!(state.status, FileListingStatus::Ready) {
-            super::EmptyState::new("Empty folder", self.system)
-                .paint(Rect::new(area.x, area.y, area.width, 1), buffer);
+            super::EmptyState::new("Empty folder", self.system).paint(
+                Rect::new(area.x, area.y, area.width, 1),
+                buffer,
+                &mut super::EmptyStateState::new(),
+            );
         }
     }
 

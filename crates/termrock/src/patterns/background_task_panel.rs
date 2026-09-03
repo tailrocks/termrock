@@ -1169,7 +1169,11 @@ impl<'a> BackgroundTaskPanel<'a> {
             } else {
                 EmptyState::new("Pick a task", self.system)
                     .kind(EmptyKind::NoData)
-                    .paint(detail_area, buffer);
+                    .paint(
+                        detail_area,
+                        buffer,
+                        &mut crate::widgets::EmptyStateState::new(),
+                    );
             }
         }
 

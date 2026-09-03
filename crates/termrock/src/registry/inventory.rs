@@ -733,7 +733,7 @@ pub static PUBLIC_UI_INVENTORY: &[PublicUiInventoryEntry] = &[
     ),
     public_ui!(
         EmptyState,
-        Widget,
+        Paint,
         Feedback,
         "empty-state",
         "empty-state/basic"
@@ -1858,7 +1858,7 @@ mod tests {
                     counts[index] += 1;
                     counts
                 });
-        assert_eq!(kind_counts, [141, 55, 6, 8]);
+        assert_eq!(kind_counts, [140, 56, 6, 8]);
         assert_eq!(
             public_ui_inventory()
                 .iter()

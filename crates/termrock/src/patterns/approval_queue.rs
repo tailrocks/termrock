@@ -1009,7 +1009,11 @@ impl<'a> ApprovalQueue<'a> {
         if state.view.is_empty() {
             EmptyState::new("Nothing to decide", self.system)
                 .kind(EmptyKind::NoData)
-                .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
+                .paint(
+                    Rect::new(inner.x, y, inner.width, 1),
+                    buffer,
+                    &mut crate::widgets::EmptyStateState::new(),
+                );
             return;
         }
 
