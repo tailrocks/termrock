@@ -663,6 +663,93 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
         }
     }
 
+    fn ensure_cursor_column_projected(
+        &mut self,
+        columns: &ColumnModel<ColId>,
+        viewport_width: u16,
+        gap: u16,
+    ) -> bool {
+        if !matches!(
+            self.nav_mode,
+            DataTableNavMode::Cell | DataTableNavMode::Range
+        ) {
+            return false;
+        }
+        let Some(cursor_index) = self.cursor_column_index(columns) else {
+            return false;
+        };
+        if self
+            .paint_widths
+            .iter()
+            .any(|(index, _)| *index == cursor_index)
+        {
+            return false;
+        }
+        let visible_count = columns.visible().count();
+        let total_width = columns
+            .visible()
+            .map(|(index, _)| u64::from(columns.effective_width(index)))
+            .sum::<u64>()
+            .saturating_add(u64::from(gap.saturating_mul(
+                u16::try_from(visible_count.saturating_sub(1)).unwrap_or(0),
+            )));
+        let required = total_width.saturating_sub(u64::from(viewport_width));
+        let next = self
+            .h_offset
+            .max(u16::try_from(required).unwrap_or(u16::MAX));
+        let changed = next != self.h_offset;
+        self.h_offset = next;
+        changed
+    }
+
+    fn reveal_cursor_column(
+        &mut self,
+        columns: &ColumnModel<ColId>,
+        center_left: u16,
+        center_right: u16,
+        max_h: u16,
+        gap: u16,
+    ) -> bool {
+        if !matches!(
+            self.nav_mode,
+            DataTableNavMode::Cell | DataTableNavMode::Range
+        ) {
+            return false;
+        }
+        let Some(cursor_index) = self.cursor_column_index(columns) else {
+            return false;
+        };
+        let mut center_offset = 0i64;
+        let mut target = None;
+        for &(index, width) in &self.paint_widths {
+            if columns.columns[index].pin == ColumnPin::None {
+                if index == cursor_index {
+                    let left = i64::from(center_left) + center_offset - i64::from(self.h_offset);
+                    target = Some((left, left + i64::from(width)));
+                }
+                center_offset += i64::from(width) + i64::from(gap);
+            }
+        }
+        let Some((target_left, target_right)) = target else {
+            return false;
+        };
+        let left = i64::from(center_left);
+        let right = i64::from(center_right);
+        let next = if target_left < left {
+            self.h_offset
+                .saturating_sub(u16::try_from(left - target_left).unwrap_or(u16::MAX))
+        } else if target_right > right {
+            self.h_offset
+                .saturating_add(u16::try_from(target_right - right).unwrap_or(u16::MAX))
+                .min(max_h)
+        } else {
+            self.h_offset
+        };
+        let changed = next != self.h_offset;
+        self.h_offset = next;
+        changed
+    }
+
     fn request_sort(&mut self, columns: &ColumnModel<ColId>) -> DataTableOutcome<RowId, ColId>
     where
         ColId: Clone,
@@ -1446,6 +1533,18 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
             self.system.spacing.column_gap,
             &mut state.paint_widths,
         );
+        if state.ensure_cursor_column_projected(
+            self.columns,
+            col_budget,
+            self.system.spacing.column_gap,
+        ) {
+            let layout_budget = col_budget.saturating_add(state.h_offset);
+            self.columns.resolve_paint_widths_with_gap(
+                layout_budget,
+                self.system.spacing.column_gap,
+                &mut state.paint_widths,
+            );
+        }
         state.sync_cursor_focus_to_paint(self.columns);
         // Pin bookkeeping
         let mut pin_start = 0usize;
@@ -1485,6 +1584,21 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
         let clip_right = origin
             .saturating_add(state.viewport_width)
             .min(area.right());
+        let center_left = origin.saturating_add(start_extent).saturating_add(
+            if pin_start > 0 && center_extent > 0 {
+                gap
+            } else {
+                0
+            },
+        );
+        let center_right = clip_right.saturating_sub(end_extent).saturating_sub(
+            if pin_end > 0 && center_extent > 0 {
+                gap
+            } else {
+                0
+            },
+        );
+        let _ = state.reveal_cursor_column(self.columns, center_left, center_right, max_h, gap);
         resolve_column_rects(
             &state.paint_widths,
             self.columns,
@@ -3108,6 +3222,41 @@ mod tests {
         assert!(matches!(out, DataTableOutcome::CursorMoved));
         assert_eq!(state.cursor_col, 2);
         assert_eq!(state.selection.focus_col, 2);
+    }
+
+    #[test]
+    fn cell_navigation_reveals_a_column_beyond_the_initial_projection() {
+        let system = DesignSystem::default();
+        let columns = ColumnModel::new(vec![
+            DataColumn::new("a", "A", DataColumnWidth::Fixed(6)),
+            DataColumn::new("b", "B", DataColumnWidth::Fixed(6)),
+            DataColumn::new("c", "C", DataColumnWidth::Fixed(6)),
+            DataColumn::new("d", "D", DataColumnWidth::Fixed(6)),
+        ]);
+        let cells: &[&str] = &["A", "B", "C", "D"];
+        let rows = [(1u64, cells)];
+        let mut state = DataTableState::<u64, &str>::new();
+        state.nav_mode = DataTableNavMode::Cell;
+        state.cursor_col = 3;
+        let area = Rect::new(0, 0, 24, 4);
+        let mut buffer = Buffer::empty(area);
+
+        DataTable::new(&system, &columns, &rows)
+            .focused(true)
+            .row_numbers(false)
+            .render(area, &mut buffer, &mut state);
+
+        assert_eq!(state.paint_widths.len(), 4);
+        assert!(state.h_offset > 0);
+        assert_eq!(state.cursor_col, 3);
+        assert_eq!(state.selection.focus_col, 3);
+        let focused = state
+            .cell_regions
+            .iter()
+            .find(|region| region.column == "d")
+            .expect("focused column is painted");
+        assert_eq!(focused.col_index, 3);
+        assert!(focused.area.width > 0);
     }
 
     #[test]
