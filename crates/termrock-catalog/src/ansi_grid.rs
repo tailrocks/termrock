@@ -306,6 +306,18 @@ impl Sgr {
                     self.bg = [nums[i + 2] as u8, nums[i + 3] as u8, nums[i + 4] as u8];
                     i += 4;
                 }
+                // Underline color is state not represented by GridCell. Consume
+                // its parameters so the color selector cannot become DIM.
+                58 if i + 1 < nums.len() && nums[i + 1] == 2 => {
+                    i = i.saturating_add(4).min(nums.len().saturating_sub(1));
+                }
+                58 if i + 1 < nums.len() && nums[i + 1] == 5 => {
+                    i = i.saturating_add(2).min(nums.len().saturating_sub(1));
+                }
+                58 if i + 1 < nums.len() && nums[i + 1] == 0 => {
+                    i += 1;
+                }
+                59 => {}
                 _ => {}
             }
             i += 1;
@@ -504,6 +516,21 @@ fn html_unescape(s: &str) -> String {
         .replace("&apos;", "'")
         .replace("&#39;", "'")
         .replace("&#x27;", "'")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_ansi;
+
+    #[test]
+    fn underline_color_does_not_enable_dim() {
+        let grid = parse_ansi("\u{1b}[4m\u{1b}[58;2;72;224;84mX", 1, 1);
+        let cell = grid.at(0, 0).expect("parsed text cell");
+
+        assert_eq!(cell.ch, "X");
+        assert!(cell.underline);
+        assert!(!cell.dim);
+    }
 }
 
 /// Trailing-space-normalized txt lines (tmux `capture-pane -p`).
