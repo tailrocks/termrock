@@ -250,6 +250,14 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
         self.search.value()
     }
 
+    fn effective_query(&self) -> &str {
+        if self.searchable {
+            self.search.value()
+        } else {
+            ""
+        }
+    }
+
     /// Focused.
     #[must_use]
     pub const fn is_focused(&self) -> bool {
@@ -331,7 +339,35 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
         self.presentation = presentation;
     }
 
-    fn collection_items(options: &[SelectOption<Id>]) -> Vec<CollectionItem<Id>> {
+    fn filtered_options<'a>(
+        options: &'a [SelectOption<Id>],
+        query: &str,
+    ) -> Vec<&'a SelectOption<Id>> {
+        let q = query.trim().to_ascii_lowercase();
+        if q.is_empty() {
+            return options.iter().collect();
+        }
+
+        let mut out = Vec::new();
+        let mut pending_group: Option<&SelectOption<Id>> = None;
+        for option in options {
+            match option.kind {
+                SelectRowKind::Group => pending_group = Some(option),
+                SelectRowKind::Separator => {}
+                SelectRowKind::Option => {
+                    if option.label.to_ascii_lowercase().contains(&q) {
+                        if let Some(group) = pending_group.take() {
+                            out.push(group);
+                        }
+                        out.push(option);
+                    }
+                }
+            }
+        }
+        out
+    }
+
+    fn collection_items_from_projection(options: &[&SelectOption<Id>]) -> Vec<CollectionItem<Id>> {
         options
             .iter()
             .filter(|o| o.is_option())
@@ -339,20 +375,9 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
             .collect()
     }
 
-    fn normalized_search_query(query: &str) -> Option<String> {
-        let query = query.trim();
-        (!query.is_empty()).then(|| query.to_ascii_lowercase())
-    }
-
     fn filtered_items(options: &[SelectOption<Id>], query: &str) -> Vec<CollectionItem<Id>> {
-        let Some(query) = Self::normalized_search_query(query) else {
-            return Self::collection_items(options);
-        };
-        options
-            .iter()
-            .filter(|o| o.is_option() && o.label.to_ascii_lowercase().contains(&query))
-            .map(|o| CollectionItem::new(o.id.clone(), o.label.clone()).enabled(!o.disabled))
-            .collect()
+        let visible = Self::filtered_options(options, query);
+        Self::collection_items_from_projection(&visible)
     }
 
     fn presentation_for_bounds(bounds: Rect) -> SelectPresentation {
@@ -380,7 +405,7 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
         }
         let presentation = Self::presentation_for_bounds(bounds);
         self.presentation = presentation;
-        let items = Self::collection_items(options);
+        let items = Self::filtered_items(options, self.effective_query());
         let _ = self.collection.reconcile(&items);
         // Prefer highlight first selected, else first enabled
         if let Some(first) = self.selection.checked().first() {
@@ -420,7 +445,7 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
 
     /// Select all enabled options in current filter.
     pub fn select_all_visible(&mut self, options: &[SelectOption<Id>]) -> MultiSelectOutcome<Id> {
-        let ids = Self::navigable_ids(options, self.search.value());
+        let ids = Self::navigable_ids(options, self.effective_query());
         if ids.is_empty() {
             return MultiSelectOutcome::Ignored;
         }
@@ -460,7 +485,7 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
 
     /// Apply range check from anchor to `to` (inclusive among navigable ids).
     fn apply_range(&mut self, options: &[SelectOption<Id>], to: &Id) -> MultiSelectOutcome<Id> {
-        let nav = Self::navigable_ids(options, self.search.value());
+        let nav = Self::navigable_ids(options, self.effective_query());
         let Some(anchor) = self.range_anchor.clone() else {
             self.range_anchor = Some(to.clone());
             return self.try_toggle(to);
@@ -494,7 +519,7 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
 
     /// Reconcile after option changes.
     pub fn reconcile_options(&mut self, options: &[SelectOption<Id>]) {
-        let items = Self::filtered_items(options, self.search.value());
+        let items = Self::filtered_items(options, self.effective_query());
         let valid: Vec<Id> = options
             .iter()
             .filter(|o| o.is_option())
@@ -616,7 +641,7 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
             }
         }
 
-        let items = Self::filtered_items(options, self.search.value());
+        let items = Self::filtered_items(options, self.effective_query());
 
         // Space / Enter toggles highlight (Enter can also close with Ctrl)
         if matches!(key.code, KeyCode::Char(' ')) && key.modifiers.is_empty() {
@@ -688,7 +713,7 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
                 }
             }
             other if self.is_open() => {
-                let items = Self::filtered_items(options, self.search.value());
+                let items = Self::filtered_items(options, self.effective_query());
                 match self.collection.handle_intent(other, &items) {
                     CollectionOutcome::ActiveChanged { to, .. } => {
                         MultiSelectOutcome::HighlightChanged { id: to }
@@ -1084,35 +1109,10 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
             return;
         }
 
-        let query = state.search.value().to_owned();
-        let normalized_query = MultiSelectState::<Id>::normalized_search_query(&query);
-        let visible: Vec<&SelectOption<Id>> = if state.searchable {
-            if let Some(q) = normalized_query.as_deref() {
-                let mut out = Vec::new();
-                let mut pending_group: Option<&SelectOption<Id>> = None;
-                for o in self.options {
-                    match o.kind {
-                        SelectRowKind::Group => pending_group = Some(o),
-                        SelectRowKind::Separator => {}
-                        SelectRowKind::Option => {
-                            if o.label.to_ascii_lowercase().contains(&q) {
-                                if let Some(g) = pending_group.take() {
-                                    out.push(g);
-                                }
-                                out.push(o);
-                            }
-                        }
-                    }
-                }
-                out
-            } else {
-                self.options.iter().collect()
-            }
-        } else {
-            self.options.iter().collect()
-        };
+        let query = state.effective_query().to_owned();
+        let visible = MultiSelectState::filtered_options(self.options, &query);
 
-        let coll_items = MultiSelectState::filtered_items(self.options, &query);
+        let coll_items = MultiSelectState::collection_items_from_projection(&visible);
         let vp = usize::from(list_area.height).max(1);
         state
             .collection
@@ -1537,6 +1537,76 @@ mod tests {
         assert!(!items.iter().any(|i| i.id == "rs"));
     }
 
+    fn painted_row_text(buffer: &Buffer, row: Rect) -> String {
+        let mut text = String::new();
+        for x in row.x..row.right() {
+            text.push_str(buffer[(x, row.y)].symbol());
+        }
+        text
+    }
+
+    #[test]
+    fn padded_search_keeps_collection_paint_and_hit_regions_aligned() {
+        let system = DesignSystem::default();
+        let options = opts();
+        let area = Rect::new(0, 0, 48, 16);
+        let mut state = MultiSelectState::new();
+        let _ = state.search.insert_str(" GO ");
+        state.set_focused(true);
+        let _ = state.open(area, &options);
+
+        assert_eq!(state.search_query(), " GO ");
+        assert_eq!(state.collection().total_len(), 1);
+        assert_eq!(state.highlight(), Some(&"go"));
+
+        let mut buffer = Buffer::empty(area);
+        MultiSelect::new(&options, &system).paint_stacked(area, &mut buffer, &mut state);
+        let ids: Vec<&str> = state.option_regions.iter().map(|(id, _)| *id).collect();
+        assert_eq!(ids, ["go"]);
+
+        let (id, rect) = state.option_regions[0];
+        assert!(painted_row_text(&buffer, rect).contains("Go"));
+        let group_row = Rect::new(rect.x, rect.y.saturating_sub(1), rect.width, 1);
+        assert!(painted_row_text(&buffer, group_row).contains("Lang"));
+        assert!(matches!(
+            state.handle_mouse(
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(rect.x, rect.y),
+                    modifiers: KeyModifiers::NONE,
+                },
+                &options,
+                area,
+            ),
+            MultiSelectOutcome::Toggled { id: tid, checked: true } if tid == id
+        ));
+    }
+
+    #[test]
+    fn non_searchable_stale_query_remains_unfiltered() {
+        let system = DesignSystem::default();
+        let options = opts();
+        let area = Rect::new(0, 0, 48, 16);
+        let mut state = MultiSelectState::new();
+        let _ = state.search.insert_str("go");
+        state.searchable = false;
+        state.set_focused(true);
+        let _ = state.open(area, &options);
+        state.reconcile_options(&options);
+
+        assert_eq!(state.search_query(), "go");
+        assert_eq!(state.collection().total_len(), 4);
+        assert_eq!(
+            state.select_all_visible(&options),
+            MultiSelectOutcome::SelectAll { count: 3 }
+        );
+
+        let mut buffer = Buffer::empty(area);
+        MultiSelect::new(&options, &system).paint_stacked(area, &mut buffer, &mut state);
+        let ids: Vec<&str> = state.option_regions.iter().map(|(id, _)| *id).collect();
+        assert_eq!(ids, ["rs", "go", "ts"]);
+    }
+
     #[test]
     fn padded_search_projection_matches_paint_and_focus() {
         let system = DesignSystem::default();
@@ -1578,16 +1648,28 @@ mod tests {
         let _ = state.search.insert_str("   ");
         state.reconcile_options(&options);
 
+        assert_eq!(state.search_query(), "   ");
+        assert_eq!(state.collection().total_len(), 4);
+
         let mut buf = Buffer::empty(bounds);
         MultiSelect::new(&options, &system).paint_stacked(bounds, &mut buf, &mut state);
-        assert_eq!(
-            state
-                .option_regions
-                .iter()
-                .map(|(id, _)| *id)
-                .collect::<Vec<_>>(),
-            vec!["rs", "go", "ts"]
-        );
+        let ids: Vec<&str> = state.option_regions.iter().map(|(id, _)| *id).collect();
+        assert_eq!(ids, ["rs", "go", "ts"]);
+
+        let (id, rect) = state.option_regions[0];
+        assert!(painted_row_text(&buf, rect).contains("Rust"));
+        assert!(matches!(
+            state.handle_mouse(
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(rect.x, rect.y),
+                    modifiers: KeyModifiers::NONE,
+                },
+                &options,
+                bounds,
+            ),
+            MultiSelectOutcome::Toggled { id: tid, checked: true } if tid == id
+        ));
     }
 
     #[test]
