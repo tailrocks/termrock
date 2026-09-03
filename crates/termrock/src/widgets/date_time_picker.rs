@@ -1329,6 +1329,21 @@ impl DateTimePickerState {
         }
 
         let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
+        let opens_from_empty_field = !self.open
+            && matches!(self.view, DateTimePickerView::Field)
+            && self.draft.value().is_empty()
+            && key.modifiers.is_empty()
+            && matches!(key.code, KeyCode::Down | KeyCode::Char(' '));
+        let one_shot = matches!(
+            key.code,
+            KeyCode::Enter | KeyCode::Tab | KeyCode::BackTab | KeyCode::Esc
+        ) || (matches!(self.view, DateTimePickerView::Calendar)
+            && matches!(key.code, KeyCode::Char(' ')))
+            || (key.code == KeyCode::Down && key.modifiers.contains(KeyModifiers::ALT))
+            || opens_from_empty_field;
+        if !key.is_press() && one_shot {
+            return DateTimePickerOutcome::Ignored;
+        }
 
         // Alt+Down opens expanded view (neutral KeyCode has no F-keys).
         if key.code == KeyCode::Down && key.modifiers.contains(KeyModifiers::ALT) {
@@ -2305,6 +2320,7 @@ pub mod guidance {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::input::KeyEventKind;
     use crate::style::RolePalette;
     use ratatui_core::layout::Position;
 
@@ -2471,6 +2487,61 @@ mod tests {
             state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
             DateTimePickerOutcome::Cancelled
         ));
+    }
+
+    #[test]
+    fn repeated_one_shot_actions_are_ignored_but_navigation_repeats() {
+        let mut state = DateTimePickerState::new(DateTimePickerKind::Date)
+            .with_date(CivilDate::new(2026, 8, 10).unwrap());
+        state.set_focused(true);
+        state.set_today(CivilDate::new(2026, 8, 10).unwrap());
+        let _ = state.open(Rect::new(0, 0, 40, 16));
+
+        for (code, modifiers) in [
+            (KeyCode::Enter, KeyModifiers::NONE),
+            (KeyCode::Tab, KeyModifiers::NONE),
+            (KeyCode::BackTab, KeyModifiers::NONE),
+            (KeyCode::Esc, KeyModifiers::NONE),
+            (KeyCode::Char(' '), KeyModifiers::NONE),
+            (KeyCode::Down, KeyModifiers::ALT),
+        ] {
+            let before = state.clone();
+            let mut key = KeyEvent::new(code, modifiers);
+            key.kind = KeyEventKind::Repeat;
+            assert_eq!(
+                state.handle_key(key),
+                DateTimePickerOutcome::Ignored,
+                "{code:?} repeat emitted a one-shot outcome"
+            );
+            assert_eq!(state, before, "{code:?} repeat mutated picker state");
+        }
+
+        let mut repeat_right = KeyEvent::new(KeyCode::Right, KeyModifiers::NONE);
+        repeat_right.kind = KeyEventKind::Repeat;
+        assert_eq!(
+            state.handle_key(repeat_right),
+            DateTimePickerOutcome::Changed,
+            "calendar navigation remains repeatable"
+        );
+        assert_eq!(state.focus_date().map(|date| date.day), Some(11));
+
+        let mut closed = DateTimePickerState::new(DateTimePickerKind::Date);
+        closed.set_focused(true);
+        for (code, modifiers) in [
+            (KeyCode::Down, KeyModifiers::NONE),
+            (KeyCode::Char(' '), KeyModifiers::NONE),
+            (KeyCode::Down, KeyModifiers::ALT),
+        ] {
+            let before = closed.clone();
+            let mut key = KeyEvent::new(code, modifiers);
+            key.kind = KeyEventKind::Repeat;
+            assert_eq!(
+                closed.handle_key(key),
+                DateTimePickerOutcome::Ignored,
+                "closed {code:?} repeat reopened the picker"
+            );
+            assert_eq!(closed, before, "closed {code:?} repeat mutated state");
+        }
     }
 
     #[test]

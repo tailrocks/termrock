@@ -425,6 +425,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0444 | `v0.14.0` | [MenuBar focused closed-bar gutter](migrations/0444-v0.14.0-menu-bar-focus-gutter.md) |
 | 0445 | `v0.14.0` | [PathInput physical one-shot actions](migrations/0445-v0.14.0-path-input-one-shot-actions.md) |
 | 0446 | `v0.14.0` | [TokenField physical one-shot actions](migrations/0446-v0.14.0-token-field-one-shot-actions.md) |
+| 0447 | `v0.14.0` | [DateTimePicker physical one-shot actions](migrations/0447-v0.14.0-date-time-picker-one-shot-actions.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical
