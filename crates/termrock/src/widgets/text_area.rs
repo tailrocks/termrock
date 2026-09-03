@@ -679,10 +679,11 @@ impl TextAreaState {
         if !self.accepts_input || key.is_release() {
             return TextAreaOutcome::Ignored;
         }
+        let is_press = key.is_press();
         let plain = key.modifiers.is_empty();
         if !self.editing || self.read_only {
             return match key.code {
-                KeyCode::Enter if plain && !self.read_only => {
+                KeyCode::Enter if plain && !self.read_only && is_press => {
                     self.editing = true;
                     TextAreaOutcome::Changed
                 }
@@ -734,6 +735,19 @@ impl TextAreaState {
         let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
         let alt = key.modifiers.contains(KeyModifiers::ALT);
         let shift = key.modifiers.contains(KeyModifiers::SHIFT);
+
+        // Host-facing clipboard/editor/fullscreen actions are physical
+        // one-shots. Keep ordinary text and caret repeats available.
+        let host_one_shot = (ctrl
+            && !alt
+            && matches!(
+                key.code,
+                KeyCode::Char('c' | 'C' | 'x' | 'X' | 'v' | 'V' | 'e' | 'E')
+            ))
+            || (ctrl && shift && !alt && matches!(key.code, KeyCode::Char('f' | 'F')));
+        if !is_press && host_one_shot {
+            return TextAreaOutcome::Ignored;
+        }
 
         // Host hooks / clipboard / undo (Emacs-style default adapter)
         if ctrl && !alt {
@@ -2785,6 +2799,47 @@ mod tests {
             )),
             TextAreaOutcome::FullscreenRequested
         );
+    }
+
+    #[test]
+    fn repeated_idle_entry_and_host_actions_are_ignored() {
+        let repeat = |code, modifiers| {
+            let mut key = KeyEvent::new(code, modifiers);
+            key.kind = KeyEventKind::Repeat;
+            key
+        };
+
+        let mut idle = TextAreaState::new("ab");
+        idle.set_accepts_input(true);
+        let before = idle.clone();
+        assert_eq!(
+            idle.handle_key(repeat(KeyCode::Enter, KeyModifiers::NONE)),
+            TextAreaOutcome::Ignored
+        );
+        assert_eq!(idle, before, "repeated idle Enter must not begin editing");
+
+        for (code, modifiers) in [
+            (KeyCode::Char('c'), KeyModifiers::CONTROL),
+            (KeyCode::Char('x'), KeyModifiers::CONTROL),
+            (KeyCode::Char('v'), KeyModifiers::CONTROL),
+            (KeyCode::Char('e'), KeyModifiers::CONTROL),
+            (
+                KeyCode::Char('f'),
+                KeyModifiers::CONTROL | KeyModifiers::SHIFT,
+            ),
+        ] {
+            let mut state = TextAreaState::new("abc");
+            state.set_accepts_input(true);
+            state.set_editing(true);
+            state.select_all();
+            let before = state.clone();
+            assert_eq!(
+                state.handle_key(repeat(code, modifiers)),
+                TextAreaOutcome::Ignored,
+                "repeat of {code:?} with {modifiers:?} must be ignored"
+            );
+            assert_eq!(state, before);
+        }
     }
 
     #[test]

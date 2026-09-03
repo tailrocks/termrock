@@ -449,6 +449,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0469 | `v0.14.0` | [QuickOpen physical one-shot actions](migrations/0469-v0.14.0-quick-open-one-shot-actions.md) |
 | 0470 | `v0.14.0` | [CommandPalette physical one-shot actions](migrations/0470-v0.14.0-command-palette-one-shot-actions.md) |
 | 0471 | `v0.14.0` | [PromptComposer physical one-shot actions](migrations/0471-v0.14.0-prompt-composer-one-shot-actions.md) |
+| 0472 | `v0.14.0` | [TextArea physical one-shot actions](migrations/0472-v0.14.0-text-area-one-shot-actions.md) |
 | 0464 | `v0.14.0` | [Stepper physical one-shot actions](migrations/0464-v0.14.0-stepper-one-shot-actions.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
