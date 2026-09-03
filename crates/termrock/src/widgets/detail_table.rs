@@ -1,4 +1,3 @@
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -7,11 +6,11 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind},
+    input::{KeyCode, KeyEvent},
     osc::HyperlinkRegion,
     scroll::{DialogScroll, Measured, UNCACHED_REVISION, effective_offset},
     style::DesignSystem,
-    style::{ListRowVisualState, Role, RolePalette},
+    style::{ListRowVisualState, Role},
     text::take_display_cols,
 };
 
@@ -791,6 +790,7 @@ fn affordance_width<Id>(row: &DetailRow<'_, Id>, copied: bool) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::style::RolePalette;
     use ratatui_core::{buffer::Buffer, widgets::StatefulWidget};
 
     #[test]

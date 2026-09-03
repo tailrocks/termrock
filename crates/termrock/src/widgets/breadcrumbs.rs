@@ -17,19 +17,11 @@
 //! collapses to `…` / overflow.
 //!
 //! Research: desktop breadcrumbs, terminal file managers, shadcn Breadcrumb.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
-use ratatui_core::{
-    buffer::Buffer,
-    layout::{Position, Rect},
-    style::Modifier,
-    widgets::StatefulWidget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
-    interaction::{HitRegion, SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
     style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
 };
@@ -964,6 +956,7 @@ pub fn crumbs_from_labels(labels: &[&str]) -> Vec<BreadcrumbItem<String>> {
 mod tests {
     use super::*;
     use crate::style::RolePalette;
+    use ratatui_core::layout::Position;
 
     fn sample() -> Vec<BreadcrumbItem<&'static str>> {
         vec![

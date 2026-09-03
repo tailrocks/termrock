@@ -16,7 +16,6 @@
 //! cursor/selection interaction, scroll, hit geometry, and typed outcomes.
 //!
 //! Research: junie TreeView, file explorers, broot, Yazi, VS Code trees.
-#![allow(unused_imports)] // test-only imports retained
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -26,7 +25,7 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
+    input::{KeyCode, KeyEvent, KeyModifiers},
     interaction::{CollectionItem, CollectionState, HitRegion, NavigationMove, PageMove, UiIntent},
     scroll::max_offset,
     style::{DesignSystem, Glyph, ListRowVisualState, Role, SPINNER_BRAILLE_FRAMES},

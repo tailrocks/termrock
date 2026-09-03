@@ -29,32 +29,24 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    text::Line,
-    widgets::{StatefulWidget, Widget},
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::StatefulWidget};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
+    input::{KeyCode, KeyEvent, KeyModifiers},
     interaction::Outcome,
     layout::{
         PaneConstraint, PaneGeom, PaneId, Workspace, WorkspaceAxis, WorkspaceNode, WorkspaceState,
     },
     patterns::{
         ConnectionStatus, SessionEntry, SessionPicker, SessionPickerOutcome, SessionPickerState,
-        example_sessions,
     },
-    style::{DesignSystem, PanelChrome, Role},
-    text::take_display_cols,
+    style::{DesignSystem, PanelChrome},
     widgets::{
-        EmptyAction, EmptyKind, EmptyState, EmptyStateOutcome, EmptyStateState, List, ListRow,
-        ListState, Panel, PreviewCard, PreviewCardContent, PreviewCardState, PreviewLoadState,
-        PreviewMetadata, PreviewResourceKind, QuickOpen, QuickOpenItem, QuickOpenOutcome,
-        QuickOpenProvider, QuickOpenState, SearchInput, SearchInputOutcome, SearchInputState,
-        SemanticStatus, StatusBar, StatusBarState, StatusRegion, StatusSlot,
+        EmptyAction, EmptyKind, EmptyState, EmptyStateState, List, ListRow, ListState, Panel,
+        PreviewCard, PreviewCardContent, PreviewCardState, PreviewLoadState, PreviewMetadata,
+        PreviewResourceKind, QuickOpen, QuickOpenItem, QuickOpenOutcome, QuickOpenProvider,
+        QuickOpenState, SearchInput, SearchInputOutcome, SearchInputState, SemanticStatus,
+        StatusBar, StatusBarState, StatusRegion, StatusSlot,
     },
 };
 
@@ -1642,6 +1634,7 @@ pub mod bench {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::patterns::example_sessions;
     use crate::style::DesignSystem;
 
     fn press(code: KeyCode) -> KeyEvent {

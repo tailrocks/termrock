@@ -21,26 +21,19 @@
 //! **Narrow.** Scrolling window → overflow `…` menu → Select-like trigger.
 //!
 //! Research: Radix Tabs, terminal editors, Zellij, Posting, browser tab overflow.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
-    buffer::Buffer,
-    layout::{Position, Rect},
-    style::Modifier,
-    text::Span,
-    widgets::StatefulWidget,
+    buffer::Buffer, layout::Rect, style::Modifier, text::Span, widgets::StatefulWidget,
 };
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{
         CollectionItem, CollectionOutcome, CollectionState, HitRegion, SemanticNode, SemanticRole,
         SemanticScene, SemanticState, UiIntent,
     },
     style::{DesignSystem, Role},
-    text::{display_cols, take_display_cols},
+    text::take_display_cols,
 };
 
 /// Single space between adjacent horizontal tab cells.
@@ -1558,6 +1551,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for Tabs<'_, Id> {
 mod tests {
     use super::*;
     use crate::style::RolePalette;
+    use ratatui_core::layout::Position;
     use ratatui_core::style::{Color, Style};
 
     fn sample_tabs() -> [Tab<'static, &'static str>; 4] {

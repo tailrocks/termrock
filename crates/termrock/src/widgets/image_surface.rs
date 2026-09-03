@@ -7,11 +7,10 @@
 //! bytes from [`Widget::render`]. Callers supply metadata; this widget paints a
 //! product-neutral cell fallback. Pair with [`crate::style::CapabilityPreviewHost`]
 //! for generation-safe placement planning and session commands.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{
-    style::{DesignSystem, PreviewPresentation, Role, RolePalette},
+    style::{DesignSystem, PreviewPresentation, Role},
     text::take_display_cols,
 };
 

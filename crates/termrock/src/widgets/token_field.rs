@@ -15,21 +15,17 @@
 //! empty draft removes the previous token.
 //!
 //! Research: email recipient fields, token inputs, agent attachment/mention chips.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
     style::{Modifier, Style},
     widgets::StatefulWidget,
 };
-use unicode_segmentation::UnicodeSegmentation;
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
-    style::{ControlState, DesignSystem, Role},
+    style::{ControlState, DesignSystem},
     text::{display_cols, take_display_cols},
 };
 
@@ -1264,6 +1260,7 @@ impl StatefulWidget for TokenField<'_> {
 mod tests {
     use super::*;
     use crate::style::RolePalette;
+    use unicode_segmentation::UnicodeSegmentation;
 
     #[test]
     fn add_commit_and_duplicate_reject() {

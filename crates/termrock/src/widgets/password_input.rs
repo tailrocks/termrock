@@ -13,7 +13,6 @@
 //! [`PasswordInput`] for any real credential.
 //!
 //! Research: secure CLI prompts, password managers, desktop secret fields.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::fmt;
 
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
@@ -24,13 +23,12 @@ use crate::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
-    style::{ButtonRecipeVariant, ControlState, DesignSystem, MASK_CELLS, Role},
+    style::{ButtonRecipeVariant, ControlState, DesignSystem, Role},
     text::take_display_cols,
 };
 
 use super::{
     TextInput, TextInputOutcome, TextInputParts, TextInputState, TextInputValidity, Validation,
-    edit_core,
 };
 
 // ── Policies ────────────────────────────────────────────────────────────────
@@ -991,6 +989,7 @@ impl StatefulWidget for PasswordInput<'_> {
 mod tests {
     use super::*;
     use crate::style::{MASK_CELLS, RolePalette};
+    use crate::widgets::edit_core;
 
     #[test]
     fn debug_never_contains_secret() {

@@ -14,13 +14,10 @@
 //! **vs charts/Gauge.** Domain-neutral viz; this is AI/context budget semantics.
 //!
 //! Research: Amp compaction, OpenCode context displays, AI chat token meters.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind},
     style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
 };
@@ -1047,6 +1044,7 @@ pub mod bench {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::input::KeyModifiers;
     use ratatui_core::layout::Position;
 
     #[test]

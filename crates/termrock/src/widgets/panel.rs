@@ -10,7 +10,6 @@
 //! Focus belongs to interactive *descendants* by default. Only
 //! [`PanelVariant::Interactive`] (or collapsible header) registers panel-level
 //! focus / activation.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
@@ -19,9 +18,9 @@ use ratatui_core::{
     widgets::Widget,
 };
 
-use crate::input::{KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind};
+use crate::input::{KeyEvent, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{EventResult, UiIntent, default_button_intent, default_list_intent};
-use crate::style::{DesignSystem, Elevation, GlyphSet, PanelChrome, PanelRecipe, Role};
+use crate::style::{DesignSystem, Elevation, PanelChrome, PanelRecipe, Role};
 use crate::text::{display_cols, take_display_cols};
 use crate::widgets::empty_state::EmptyState;
 use crate::widgets::error_state::ErrorState;
@@ -1570,7 +1569,7 @@ fn shrink(area: Rect, left: u16, top: u16, right: u16, bottom: u16) -> Rect {
 mod tests {
     use super::*;
     use crate::input::{KeyCode, KeyModifiers};
-    use crate::style::{BorderShape, DesignSystem, GlyphSet};
+    use crate::style::DesignSystem;
 
     #[test]
     fn overlay_panels_fill_from_the_elevated_rung() {

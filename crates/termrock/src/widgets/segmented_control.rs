@@ -33,15 +33,14 @@
 //! option menu).
 //!
 //! Research: desktop segmented controls, shadcn patterns, IDE mode selectors.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
-    layout::{Position, Rect},
+    layout::Rect,
     style::{Color, Modifier, Style},
     widgets::Widget,
 };
 
-use crate::input::{KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind};
+use crate::input::{KeyEvent, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{
     EventResult, NavigationMove, RovingEntry, RovingFocusGroup, RovingOrientation, RovingOutcome,
     SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, default_button_intent,
@@ -1156,6 +1155,7 @@ impl<'a, Id: Clone + PartialEq> Widget for &SegmentedControl<'a, Id> {
 mod tests {
     use super::*;
     use crate::input::{KeyCode, KeyModifiers};
+    use ratatui_core::layout::Position;
 
     fn sample() -> [SegmentedItem<'static, &'static str>; 4] {
         [

@@ -15,10 +15,9 @@
 //! host resolves bracketed paste / OSC 52 / system clipboard.
 //!
 //! Research: prompt-toolkit, Reedline, Textual Input, terminal line editors.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
-    layout::{Position, Rect},
+    layout::Rect,
     style::{Modifier, Style},
     widgets::StatefulWidget,
 };
@@ -26,9 +25,7 @@ use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{
         EventResult, SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent,
     },
@@ -2026,6 +2023,7 @@ mod tests {
     }
     use super::*;
     use crate::style::{MASK_CELLS, RolePalette};
+    use ratatui_core::layout::Position;
 
     #[test]
     fn keyboard_owns_edit_submit_cancel_and_validation() {

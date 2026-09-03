@@ -2,11 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Empty, loading, error, and banner feedback views.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{
-    style::{DesignSystem, Glyph, Role, RolePalette},
+    style::{DesignSystem, Glyph, Role},
     text::{display_cols, take_display_cols},
     widgets::{SemanticStatus, Severity},
 };
@@ -169,6 +168,7 @@ fn paint_centered_line(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::style::RolePalette;
     use ratatui_core::buffer::Buffer;
 
     #[test]

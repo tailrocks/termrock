@@ -10,16 +10,15 @@
 //! LogPane when a single local process/build buffer must own append+evict.
 //! Project owned lines with [`super::log_stream::log_lines_from_plain`] or map
 //! each frame into [`super::LogLine`] when severity/source are known.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::fmt::Write as _;
 
 use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::StatefulWidget};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind},
+    input::{KeyCode, KeyEvent},
     interaction::Outcome,
     scroll::{DialogScroll, TailScroll, max_offset},
-    style::{DesignSystem, Role, RolePalette},
+    style::{DesignSystem, Role},
     text::display_cols,
 };
 
@@ -354,6 +353,7 @@ mod tests {
 
     use super::*;
     use crate::input::KeyModifiers;
+    use crate::style::RolePalette;
 
     fn key(code: KeyCode) -> KeyEvent {
         KeyEvent::new(code, KeyModifiers::NONE)

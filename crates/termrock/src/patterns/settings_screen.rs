@@ -27,7 +27,6 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
@@ -35,16 +34,15 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
+    input::{KeyCode, KeyEvent, KeyModifiers},
     style::{DesignSystem, PanelChrome, Role},
     widgets::{
-        BUILTIN_THEME_PRESETS, Button, ButtonState, ButtonVariant, Callout, CalloutTone, Field,
-        FieldStatus, Fieldset, Form, FormOutcome, FormState, KeybindingRecorder,
-        KeybindingRecorderOutcome, KeybindingRecorderState, KeyboardHelp, KeyboardHelpState,
-        NavItem, Panel, SearchInput, SearchInputOutcome, SearchInputState, Sidebar, SidebarOutcome,
-        SidebarPresentation, SidebarState, StatusBar, StatusBarState, StatusSlot, ThemePicker,
-        ThemePickerOutcome, ThemePickerState, ThemePreset, any_dirty, collect_errors,
-        example_settings_nav,
+        Button, ButtonState, ButtonVariant, Callout, CalloutTone, Field, FieldStatus, Fieldset,
+        Form, FormOutcome, FormState, KeybindingRecorder, KeybindingRecorderOutcome,
+        KeybindingRecorderState, KeyboardHelp, KeyboardHelpState, NavItem, Panel, SearchInput,
+        SearchInputOutcome, SearchInputState, Sidebar, SidebarOutcome, SidebarPresentation,
+        SidebarState, StatusBar, StatusBarState, StatusSlot, ThemePicker, ThemePickerOutcome,
+        ThemePickerState, ThemePreset, any_dirty, example_settings_nav,
     },
 };
 
@@ -1089,6 +1087,8 @@ pub type SettingsShellState<SectionId> = SettingsScreenState<SectionId>;
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::widgets::BUILTIN_THEME_PRESETS;
+    use crate::widgets::collect_errors;
     use ratatui_core::backend::TestBackend;
     use ratatui_core::terminal::Terminal;
 

@@ -18,10 +18,9 @@
 //!
 //! Glyphs always respect [`GlyphSet`] (ASCII fallbacks). Color is optional;
 //! no-color themes still paint glyph contrast via roles when available.
-#![allow(unused_imports)] // test-only imports retained
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
-use crate::style::{DesignSystem, GlyphSet, Role, SpacingScale};
+use crate::style::{DesignSystem, Role, SpacingScale};
 use crate::text::{display_cols, take_display_cols};
 
 /// Axis of the rule.
@@ -459,7 +458,6 @@ fn rule_style(sep: Separator<'_>, vertical: bool) -> (&'static str, ratatui_core
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::style::GlyphSet;
 
     #[test]
     fn horizontal_quiet_fills_width() {

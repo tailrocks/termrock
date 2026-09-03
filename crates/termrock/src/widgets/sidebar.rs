@@ -18,22 +18,19 @@
 //! roving focus is independent until activation (Enter / click).
 //!
 //! Research: IDE sidebars, Yazi, Posting, OpenCode, shadcn sidebar.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
-    layout::{Position, Rect},
+    layout::Rect,
     style::Modifier,
     widgets::{StatefulWidget, Widget},
 };
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{
-        CollectionItem, CollectionOutcome, CollectionState, HitRegion, OverlayId, OverlayOutcome,
-        OverlaySize, OverlaySpec, OverlayStack, RovingOrientation, SemanticNode, SemanticRole,
-        SemanticScene, SemanticState, UiIntent,
+        CollectionItem, CollectionOutcome, CollectionState, HitRegion, OverlayOutcome, OverlaySize,
+        OverlaySpec, OverlayStack, RovingOrientation, SemanticNode, SemanticRole, SemanticScene,
+        SemanticState, UiIntent,
     },
     style::{DesignSystem, Role, VisualState},
     text::{display_cols, take_display_cols},
@@ -1613,6 +1610,7 @@ pub fn example_sectioned_sidebar_nav() -> Vec<NavItem<&'static str>> {
 mod tests {
     use super::*;
     use crate::style::RolePalette;
+    use ratatui_core::layout::Position;
 
     #[test]
     fn route_distinct_from_focus() {

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Live theme picker: select a named preset; caller re-renders with that theme.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
@@ -10,9 +9,9 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind},
+    input::{KeyEvent, MouseButton, MouseEvent, MouseEventKind},
     interaction::{EventResult, NavigationMove, OverlayRequest, UiIntent, default_list_intent},
-    style::{DesignSystem, ListRowVisualState, Role, RolePalette},
+    style::{DesignSystem, ListRowVisualState, RolePalette},
     text::take_display_cols,
     widgets::{Panel, PanelChrome, PanelVariant},
 };

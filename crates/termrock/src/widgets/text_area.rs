@@ -9,7 +9,6 @@
 //! that embeds TextArea and may own additional undo/selection layers.
 //!
 //! Research: tui-textarea, prompt-toolkit, terminal editors, agent composers.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -18,10 +17,7 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{
-        Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent,
-        MouseEventKind,
-    },
+    input::{Event, KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEventKind},
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
     style::{DesignSystem, VisualState},
     text::{display_cols, display_cols_slice_into, take_display_cols, truncate_cols},

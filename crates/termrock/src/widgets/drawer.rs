@@ -23,25 +23,17 @@
 //! as the no-motion fallback.
 //!
 //! Research: shadcn Sheet, mobile drawers, Zellij floating panes, agent task sidebars.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
-use ratatui_core::{
-    buffer::Buffer,
-    layout::{Position, Rect},
-    style::Modifier,
-    widgets::StatefulWidget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 use ratatui_widgets::borders::Borders;
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind},
     interaction::{
-        BackdropPolicy, LayerDismissPolicy, NarrowFallback, OverlayId, OverlayKind, OverlayOutcome,
+        BackdropPolicy, LayerDismissPolicy, NarrowFallback, OverlayId, OverlayOutcome,
         OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, PlacementPrefer, SemanticNode,
         SemanticRole, SemanticScene, SemanticState, UiIntent, place_overlay,
     },
-    style::{DesignSystem, MotionPolicy, Role},
+    style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
 };
 
@@ -1144,6 +1136,9 @@ impl StatefulWidget for Drawer<'_> {
 mod tests {
     use super::*;
     use crate::input::KeyModifiers;
+    use crate::interaction::OverlayKind;
+    use crate::style::MotionPolicy;
+    use ratatui_core::layout::Position;
 
     #[test]
     fn place_right_and_left_edges() {

@@ -14,18 +14,15 @@
 //! embeds it for paint and maps [`WizardStepStatus`] = [`StepStatus`].
 //!
 //! Research: Huh forms, installers, cloud CLIs, onboarding wizards.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
-    layout::{Position, Rect},
+    layout::Rect,
     style::Modifier,
     widgets::{StatefulWidget, Widget},
 };
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
     style::{ButtonRecipeVariant, ControlState, DesignSystem, Role},
     text::{display_cols, take_display_cols},
@@ -1336,6 +1333,7 @@ impl<'a> FormWizard<'a> {
 mod tests {
     use super::*;
     use crate::style::RolePalette;
+    use ratatui_core::layout::Position;
 
     fn three_steps() -> FormWizardState {
         FormWizardState::with_steps([

@@ -15,18 +15,15 @@
 //! outcomes (never I/O).
 //!
 //! Research: hex editors, xxd, binary-analysis tools.
-#![allow(unused_imports)] // test-only imports retained
 use std::collections::BTreeSet;
 
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{NavigationMove, PageMove, UiIntent},
     style::{DesignSystem, ListRowVisualState, Role},
-    text::{display_cols, take_display_cols},
+    text::take_display_cols,
     widgets::{scroll_area::ScrollAreaState, tiered_row::TieredRow},
 };
 

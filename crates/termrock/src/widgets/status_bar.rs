@@ -11,7 +11,6 @@
 //! essential persistent slots.
 //!
 //! Behavioral references: Zellij mode bar, Vim/Helix status lines, btop footers.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -21,7 +20,7 @@ use ratatui_core::{
 
 use crate::{
     interaction::{HitRegion, Outcome},
-    style::{DesignSystem, Glyph, GlyphSet, Role},
+    style::{DesignSystem, GlyphSet, Role},
     text::{display_cols, take_display_cols},
 };
 
@@ -1027,7 +1026,6 @@ fn apply_alpha(_system: &DesignSystem, style: Style, _alpha: f32) -> Style {
 mod tests {
     use super::*;
     use crate::style::RolePalette;
-    use ratatui_core::style::Color;
 
     fn slot(
         id: &'static str,

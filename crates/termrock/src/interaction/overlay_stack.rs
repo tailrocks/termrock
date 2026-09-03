@@ -2846,7 +2846,7 @@ mod tests {
 
     #[test]
     fn dim_policy_washes_the_whole_layer_not_just_the_overlay() {
-        use crate::style::{DesignSystem, Role};
+        use crate::style::DesignSystem;
         use ratatui_core::buffer::Buffer;
 
         let bounds = Rect::new(0, 0, 40, 12);

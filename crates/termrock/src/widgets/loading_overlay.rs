@@ -18,24 +18,20 @@
 //! blocking is a last resort.
 //!
 //! Research: async UI boundaries, Textual workers, agent tool execution.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
-    style::{Modifier, Style},
-    widgets::Widget,
+    style::Modifier,
 };
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{
         SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, default_button_intent,
     },
     layout::{Center, CenterAxis, center_line_x},
     runtime::{AnimationDemand, FrameTick},
-    style::{DesignSystem, GlyphSet, MotionPolicy, Role},
+    style::{DesignSystem, MotionPolicy, Role},
     text::{display_cols, take_display_cols},
     widgets::{ActivityPhase, SpinnerState},
 };
@@ -810,8 +806,11 @@ pub fn example_busy_stale(system: &DesignSystem) -> (LoadingOverlay<'_>, BusyBou
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::input::KeyEventKind;
     use ratatui_core::backend::TestBackend;
+    use ratatui_core::style::Style;
     use ratatui_core::terminal::Terminal;
+    use ratatui_core::widgets::Widget;
     use std::time::{Duration, Instant};
 
     fn system() -> DesignSystem {

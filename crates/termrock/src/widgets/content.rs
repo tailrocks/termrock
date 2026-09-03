@@ -9,11 +9,10 @@
 //!
 //! Callout / Alert: [`crate::widgets::Callout`], [`crate::widgets::Alert`].
 //! Section chrome: [`crate::widgets::Section`].
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{
-    style::{DesignSystem, GlyphSet, Role},
+    style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
     widgets::text::{SelectablePolicy, Text, TextSpan},
 };
@@ -790,7 +789,6 @@ fn advance_by_display(s: &str, cols: usize) -> &str {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::style::GlyphSet;
     use crate::text::display_cols;
 
     #[test]

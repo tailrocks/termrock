@@ -20,24 +20,16 @@
 //! live run progress.
 //!
 //! Research: CI pipelines, installers, agent task plans.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
-use ratatui_core::{
-    buffer::Buffer,
-    layout::{Position, Rect},
-    style::Modifier,
-    widgets::StatefulWidget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{
         NavigationMove, SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent,
         default_list_intent,
     },
     style::{DesignSystem, Glyph, Role},
-    text::{display_cols, take_display_cols},
+    text::take_display_cols,
     widgets::{Hint, HintBar},
 };
 
@@ -981,6 +973,7 @@ pub fn example_agent_plan_steps() -> Vec<ProgressStep> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ratatui_core::layout::Position;
 
     #[test]
     fn status_marks_are_non_color() {

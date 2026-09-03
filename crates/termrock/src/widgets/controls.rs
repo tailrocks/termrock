@@ -6,18 +6,10 @@
 //! [`Checkbox`] is the form-field boolean/tri-state control (label + description).
 //! Prefer [`crate::widgets::Toggle`] for sticky toolbar tools and
 //! [`Switch`] for settings On/Off.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
-use ratatui_core::{
-    buffer::Buffer,
-    layout::{Position, Rect},
-    style::Modifier,
-    widgets::StatefulWidget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind},
     interaction::{
         EventResult, SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent,
         default_button_intent,
@@ -2281,6 +2273,8 @@ impl<Id: Clone> StatefulWidget for &Switch<'_, Id> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::input::KeyModifiers;
+    use ratatui_core::layout::Position;
 
     #[test]
     fn checkbox_space_toggles_outcome() {

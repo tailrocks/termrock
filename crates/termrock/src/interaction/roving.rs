@@ -9,7 +9,7 @@
 //! Behavioral reference: Radix RovingFocusGroup, adapted to terminal intents
 //! and immediate-mode entry lists (including virtualized windows).
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
+    input::{KeyCode, KeyEvent, KeyModifiers},
     interaction::{NavigationMove, UiIntent},
     keymap::{KeyBinding, KeyChord, Keymap, Visibility},
 };

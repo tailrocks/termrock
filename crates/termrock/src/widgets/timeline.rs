@@ -11,20 +11,17 @@
 //! history ([`super::progress_steps`]).
 //!
 //! Research: Git history, CI timelines, observability tools, agent session views.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::collections::BTreeSet;
 
 use ratatui_core::{
     buffer::Buffer,
-    layout::{Position, Rect},
+    layout::Rect,
     style::Modifier,
     widgets::{StatefulWidget, Widget},
 };
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind},
     interaction::{NavigationMove, PageMove, UiIntent},
     style::{DesignSystem, ListRowVisualState, Role},
     text::take_display_cols,
@@ -1174,6 +1171,7 @@ impl<Id: Clone + PartialEq + Ord> StatefulWidget for Timeline<'_, Id> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::input::KeyModifiers;
 
     fn sample() -> Vec<TimelineEvent<'static, &'static str>> {
         vec![

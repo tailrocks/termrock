@@ -30,15 +30,9 @@
 //! - Exclusive options with long descriptions → RadioGroup
 //!
 //! Research: Radix Toggle/ToggleGroup, editor toolbars, terminal mode chips.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
-use ratatui_core::{
-    buffer::Buffer,
-    layout::{Position, Rect},
-    style::Modifier,
-    widgets::Widget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
 
-use crate::input::{KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind};
+use crate::input::{KeyEvent, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{
     EventResult, NavigationMove, RovingEntry, RovingFocusGroup, RovingOrientation, RovingOutcome,
     SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, default_button_intent,
@@ -1519,6 +1513,7 @@ impl<'a, Id: Clone + PartialEq> Widget for &ToggleGroup<'a, Id> {
 mod tests {
     use super::*;
     use crate::input::{KeyCode, KeyModifiers};
+    use ratatui_core::layout::Position;
 
     #[test]
     fn value_activate_cycles() {

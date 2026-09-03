@@ -8,13 +8,10 @@
 //! controls — arrows always keyboard-reachable.
 //!
 //! Research: shadcn Carousel, terminal wizards, slide decks in TUI.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind},
     style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
 };
@@ -386,6 +383,7 @@ pub fn example_carousel_slides() -> Vec<CarouselSlide> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::input::KeyModifiers;
 
     fn press(code: KeyCode) -> KeyEvent {
         KeyEvent::new(code, KeyModifiers::NONE)

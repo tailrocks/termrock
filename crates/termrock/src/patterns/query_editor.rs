@@ -32,7 +32,6 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
@@ -40,13 +39,12 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent},
+    input::{Event, KeyCode, KeyEvent, KeyModifiers, MouseEvent},
     style::{DesignSystem, Role},
-    text::take_display_cols,
     widgets::{
         CodeFrame, CodeFrameLine, CompletionMenuState, Diagnostic, DiagnosticSeverity, HelpEntry,
-        HistoryEntry, HistoryKind, SemanticStatus, SourceLabel, SourceRange, SpanStyle,
-        StatusIndicator, TextArea, TextAreaOutcome, TextAreaState, TextCursor, TextWrap,
+        HistoryEntry, HistoryKind, SemanticStatus, SourceLabel, StatusIndicator, TextArea,
+        TextAreaOutcome, TextAreaState, TextCursor, TextWrap,
     },
 };
 
@@ -1512,6 +1510,8 @@ pub mod bench {
 mod tests {
     use super::*;
     use crate::style::DesignSystem;
+    use crate::widgets::SourceRange;
+    use crate::widgets::SpanStyle;
 
     fn sample_diag() -> Diagnostic<'static> {
         static LABELS: &[SourceLabel<'static>] = &[SourceLabel {

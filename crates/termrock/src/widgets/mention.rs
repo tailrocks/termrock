@@ -19,18 +19,15 @@
 //! - Completion: [`mention_to_completion_candidate`] + [`CompletionMenu`]
 //! - Chips: [`MentionRef::to_composer_label`] / PromptComposer mention chips
 //! - Strip: project via [`mention_to_token_item`]
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent},
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseEvent},
     style::{DesignSystem, ListRowVisualState, Role},
-    text::{display_cols, take_display_cols},
+    text::take_display_cols,
     widgets::{
         completion_menu::CompletionCandidate,
-        tag_chip::{
-            Tag, TagOutcome, TagState, TokenItem, TokenPart, TokenParts, TokenStatus, remove_label,
-        },
+        tag_chip::{Tag, TagOutcome, TagState, TokenItem, TokenPart, TokenParts, TokenStatus},
     },
 };
 
@@ -1894,6 +1891,7 @@ pub mod bench {
 mod tests {
     use super::*;
     use crate::style::DesignSystem;
+    use crate::widgets::remove_label;
 
     #[test]
     fn detect_file_mention_at() {

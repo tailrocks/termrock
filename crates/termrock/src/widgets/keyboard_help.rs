@@ -14,7 +14,6 @@
 //! KeyboardHelp composes many of them into help chrome.
 //!
 //! Research: Zellij help, lazygit keybindings, Vim help, Textual bindings.
-#![allow(unused_imports)] // test-only imports retained
 
 use ratatui_core::{
     buffer::Buffer,
@@ -24,9 +23,7 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind},
     interaction::{
         CollectionItem, CollectionState, NavigationMove, OverlayId, OverlayKind, OverlayOutcome,
         OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, RovingOrientation, SemanticNode,
@@ -36,7 +33,7 @@ use crate::{
     style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
     widgets::{
-        ChordFormat, Panel, PanelChrome, PanelVariant, TextInput, TextInputOutcome, TextInputState,
+        ChordFormat, Panel, PanelChrome, PanelVariant, TextInputOutcome, TextInputState,
         format_binding,
     },
 };

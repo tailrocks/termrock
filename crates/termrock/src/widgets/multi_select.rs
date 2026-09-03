@@ -13,18 +13,15 @@
 //! popover/fullscreen list chrome (host places overlays).
 //!
 //! Research: modern multi-selects, Huh, terminal fuzzy pickers.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
-    layout::{Position, Rect},
+    layout::Rect,
     style::{Modifier, Style},
     widgets::StatefulWidget,
 };
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{
         CollectionItem, CollectionOutcome, CollectionState, SemanticNode, SemanticRole,
         SemanticScene, SemanticState, UiIntent,
@@ -1318,6 +1315,7 @@ impl<Id: Clone + PartialEq + std::fmt::Display> StatefulWidget for MultiSelect<'
 mod tests {
     use super::*;
     use crate::style::RolePalette;
+    use ratatui_core::layout::Position;
 
     fn opts() -> Vec<SelectOption<&'static str>> {
         vec![

@@ -1,5 +1,4 @@
 //! Stable-ID focus, hover, hit regions, and logical outcomes.
-#![allow(unused_imports)] // test-only imports retained
 mod collection;
 mod dismissable;
 mod event_result;

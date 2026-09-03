@@ -20,8 +20,6 @@
 //! owns chrome, follow, and control outcomes.
 //!
 //! Research: Grok Build, Amp, OpenCode, terminal emulators, CI command logs.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
-use std::collections::BTreeSet;
 
 use ratatui_core::{
     buffer::Buffer,
@@ -32,9 +30,7 @@ use ratatui_core::{
 
 use crate::{
     ansi_text::{AnsiLine, AnsiText, AnsiTextMode},
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{NavigationMove, PageMove, UiIntent},
     style::{DesignSystem, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},

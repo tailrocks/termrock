@@ -7,9 +7,7 @@
 //! across frames. No callbacks, effects, or domain policy.
 use ratatui_core::layout::{Position, Rect};
 
-use crate::input::{
-    KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-};
+use crate::input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
 
 /// Semantic role of a registered element for discovery and tooling.
 ///
@@ -1515,6 +1513,7 @@ impl<Id, Action> SemanticScene<Id, Action> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::input::KeyEventKind;
     use crate::input::KeyModifiers;
 
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

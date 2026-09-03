@@ -16,25 +16,22 @@
 //! pick ranges, or choose from a stepped time list.
 //!
 //! Research: shadcn Calendar/DatePicker, Textual DateTimeInput patterns.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
-    layout::{Position, Rect},
+    layout::Rect,
     style::Modifier,
     widgets::{StatefulWidget, Widget},
 };
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{
         CollectionItem, CollectionOutcome, CollectionState, OverlayId, OverlayOutcome, OverlaySize,
         OverlaySpec, OverlayStack, SemanticNode, SemanticRole, SemanticScene, SemanticState,
         UiIntent,
     },
     style::{ControlState, DesignSystem, ListRowVisualState, Role},
-    text::{display_cols, take_display_cols},
+    text::take_display_cols,
 };
 
 use super::{
@@ -2378,6 +2375,7 @@ pub mod guidance {
 mod tests {
     use super::*;
     use crate::style::RolePalette;
+    use ratatui_core::layout::Position;
 
     #[test]
     fn civil_date_roundtrip_iso() {

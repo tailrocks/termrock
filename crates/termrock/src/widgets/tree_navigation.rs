@@ -26,24 +26,16 @@
 //! | Typeahead | Jump focus to label prefix match |
 //!
 //! Research: VS Code trees, file explorers, Yazi, broot, DB navigators.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
-use ratatui_core::{
-    buffer::Buffer,
-    layout::{Position, Rect},
-    style::Modifier,
-    widgets::StatefulWidget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{
         CollectionItem, CollectionOutcome, CollectionState, HitRegion, RovingOrientation,
         SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent,
     },
     style::{DesignSystem, Role},
-    text::{display_cols, take_display_cols},
+    text::take_display_cols,
 };
 
 /// Indent columns per depth level (compact).
@@ -1208,6 +1200,7 @@ pub fn example_docs_tree() -> Vec<TreeNavNode<&'static str>> {
 mod tests {
     use super::*;
     use crate::style::RolePalette;
+    use ratatui_core::layout::Position;
 
     #[test]
     fn route_distinct_from_focus() {

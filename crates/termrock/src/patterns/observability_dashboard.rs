@@ -30,17 +30,15 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 #![allow(unused_variables, unused_mut)] // unit-test fixtures
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
-    style::Modifier,
     widgets::{StatefulWidget, Widget},
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
+    input::{KeyCode, KeyEvent, KeyModifiers},
     layout::{
         PaneConstraint, PaneGeom, PaneId, Workspace, WorkspaceAxis, WorkspaceNode, WorkspaceState,
     },
@@ -48,14 +46,13 @@ use crate::{
         MetricAlert, MetricAlertSeverity, MetricsDashboard, MetricsDashboardOutcome,
         MetricsDashboardState, MetricsTimeRange,
     },
-    style::{DesignSystem, PanelChrome, Role},
-    text::take_display_cols,
+    style::{DesignSystem, PanelChrome},
     widgets::{
         EmptyKind, EmptyState, EventSeverity, EventStream, EventStreamOutcome, EventStreamState,
         InspectorField, LogLevel, LogLine, LogStream, LogStreamOutcome, LogStreamState, MetricTile,
         MetricTileHealth, ObjectInspector, ObjectInspectorOutcome, ObjectInspectorState, Panel,
         SearchInput, SearchInputOutcome, SearchInputState, StatusBar, StatusBarState, StatusRegion,
-        StatusSlot, StreamEvent, StreamRowKind, filter_log_lines, filter_stream_events,
+        StatusSlot, StreamEvent, StreamRowKind,
     },
 };
 
@@ -1409,6 +1406,8 @@ pub mod bench {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::widgets::filter_log_lines;
+    use crate::widgets::filter_stream_events;
 
     fn press(code: KeyCode) -> KeyEvent {
         KeyEvent::new(code, KeyModifiers::NONE)

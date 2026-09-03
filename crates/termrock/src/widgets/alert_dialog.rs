@@ -21,17 +21,16 @@
 //!
 //! Research: Radix AlertDialog, database drop/truncate UX, cloud consoles,
 //! permission surfaces.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect, text::Text, widgets::StatefulWidget};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
+    input::{KeyCode, KeyEvent, KeyModifiers},
     interaction::{
-        HitRegion, NavigationMove, OverlayId, OverlayKind, OverlayOutcome, OverlaySize,
-        OverlayStack, SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent,
+        HitRegion, NavigationMove, OverlayId, OverlayOutcome, OverlayStack, SemanticNode,
+        SemanticRole, SemanticScene, SemanticState, UiIntent,
     },
     style::{DesignSystem, Role},
-    text::{display_cols, take_display_cols},
+    text::take_display_cols,
     widgets::Hint,
 };
 
@@ -1162,6 +1161,7 @@ pub fn dismiss_alert_dialog_overlay<FocusId: Clone>(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::interaction::OverlayKind;
     use crate::interaction::OverlayOutcome;
     use ratatui_core::layout::Position;
 

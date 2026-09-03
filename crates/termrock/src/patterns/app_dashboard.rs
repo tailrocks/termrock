@@ -26,16 +26,14 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
+    input::{KeyCode, KeyEvent, KeyModifiers},
     style::{DesignSystem, PanelChrome, Role},
     text::take_display_cols,
     widgets::{
         NavItem, Panel, PanelVariant, Sidebar, SidebarOutcome, SidebarPresentation, SidebarState,
-        filter_nav_collapsed,
     },
 };
 
@@ -501,6 +499,7 @@ pub fn render_app_dashboard<Id: Clone + PartialEq>(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::widgets::filter_nav_collapsed;
 
     fn press(c: char) -> KeyEvent {
         KeyEvent::new(KeyCode::Char(c), KeyModifiers::NONE)

@@ -16,7 +16,6 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::layout::Rect;
 
 use ratatui_core::{buffer::Buffer, widgets::StatefulWidget};
@@ -347,7 +346,7 @@ mod tests {
 // ── Resource browser state machine (example composite) ───────────────────────
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind},
+    input::KeyEvent,
     widgets::{NavItem, ScrollAreaState, SidebarOutcome, SidebarState},
 };
 

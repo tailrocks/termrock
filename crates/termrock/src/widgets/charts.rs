@@ -14,11 +14,10 @@
 //!
 //! Research: btop, bottom, gping, Ratatui charts, shadcn Recharts demos (area/
 //! bar/line/pie/radar peers), observability dashboards.
-#![allow(unused_imports)] // test-only imports retained
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
 
 use crate::{
-    style::{DesignSystem, Role, RolePalette},
+    style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
 };
 
@@ -2503,6 +2502,7 @@ pub mod bench {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::style::RolePalette;
 
     fn system() -> DesignSystem {
         DesignSystem::new(RolePalette::default())

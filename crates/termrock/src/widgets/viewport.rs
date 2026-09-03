@@ -1,4 +1,3 @@
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
@@ -10,7 +9,7 @@ use ratatui_widgets::paragraph::Paragraph;
 
 use crate::{
     scroll::{DialogScroll, UNCACHED_REVISION, max_line_width},
-    style::{DesignSystem, Role, RolePalette},
+    style::{DesignSystem, Role},
 };
 
 use super::{PanelChrome, Surface, SurfaceFill, SurfaceRecipe};

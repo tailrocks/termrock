@@ -16,18 +16,10 @@
 //! [`DropdownMenuOutcome::PreferCommandPalette`] + [`flatten_menu_nodes`].
 //!
 //! Research: Radix menus, desktop context menus, Textual, lazygit, file managers.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
-use ratatui_core::{
-    buffer::Buffer,
-    layout::{Position, Rect},
-    style::{Color, Modifier},
-    widgets::StatefulWidget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Color, widgets::StatefulWidget};
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{
         CollectionItem, CollectionState, NavigationMove, OverlayId, OverlayKind, OverlayOutcome,
         OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, RovingOrientation, SemanticNode,
@@ -1454,6 +1446,7 @@ fn format_mnemonic_label(label: &str, mnemonic: Option<char>, _ascii: bool) -> S
 mod tests {
     use super::*;
     use crate::input::KeyModifiers;
+    use ratatui_core::layout::Position;
 
     fn sample_tree() -> Vec<MenuNode<&'static str>> {
         vec![

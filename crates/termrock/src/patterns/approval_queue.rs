@@ -30,22 +30,14 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
-use ratatui_core::{
-    buffer::Buffer,
-    layout::{Position, Rect},
-    style::Modifier,
-    widgets::StatefulWidget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind},
     patterns::ActivityKind,
     patterns::task_rail::{ActivityModel, ActivityScope},
     style::{DesignSystem, ListRowVisualState, PanelChrome, Role},
-    text::{display_cols, take_display_cols},
+    text::display_cols,
     widgets::NotificationItem,
     widgets::Panel,
     widgets::PermissionRisk,
@@ -1373,6 +1365,8 @@ pub mod bench {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::input::KeyModifiers;
+    use ratatui_core::layout::Position;
 
     fn press(code: KeyCode) -> KeyEvent {
         KeyEvent::new(code, KeyModifiers::NONE)

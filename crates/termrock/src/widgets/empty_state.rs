@@ -5,17 +5,10 @@
 //!
 //! junie: centred muted title, one blank row, faint wrapped hint that names
 //! the key which fills it (`Ctrl+N creates one`). No illustration glyphs.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
-use ratatui_core::{
-    buffer::Buffer,
-    layout::{Position, Rect},
-    widgets::Widget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{
         SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, default_button_intent,
     },
@@ -596,7 +589,9 @@ pub fn example_empty_permission(system: &DesignSystem) -> EmptyState<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::input::KeyEventKind;
     use ratatui_core::backend::TestBackend;
+    use ratatui_core::layout::Position;
     use ratatui_core::terminal::Terminal;
 
     fn system() -> DesignSystem {

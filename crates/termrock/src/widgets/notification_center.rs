@@ -18,28 +18,22 @@
 //! Does not steal focus while closed. High-volume ingest uses dedup keys.
 //!
 //! Research: desktop notification centers, CI dashboards, task histories.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
-use std::time::Duration;
 
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{
         NavigationMove, OverlayId, OverlayOutcome, OverlaySize, OverlaySpec, OverlayStack,
         SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, default_list_intent,
     },
     style::{DesignSystem, Role},
-    text::{display_cols, take_display_cols},
+    text::take_display_cols,
     widgets::{Hint, HintBar},
 };
 
 use super::drawer::DRAWER_DEFAULT_WIDTH;
-use super::toast::{
-    ToastArchive, ToastArchiveReason, ToastKind, ToastPriority, ToastQueue, ToastSpec,
-};
+use super::toast::{ToastArchive, ToastKind, ToastPriority, ToastQueue, ToastSpec};
 
 /// Overlay id for notification center drawer presentation.
 pub const NOTIFICATION_CENTER_OVERLAY_ID: &str = "termrock.notification-center";
@@ -1468,6 +1462,7 @@ mod tests {
     use super::*;
     use crate::input::KeyModifiers;
     use crate::runtime::FrameTick;
+    use crate::widgets::toast::ToastArchiveReason;
     use crate::widgets::toast::{ToastLifetime, ToastSpec};
     use std::time::{Duration, Instant};
 

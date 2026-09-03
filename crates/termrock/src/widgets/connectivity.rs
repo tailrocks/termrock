@@ -11,23 +11,15 @@
 //! [`StatusBar`](super::StatusBar) and [`NotificationCenter`](super::NotificationCenter).
 //!
 //! Research: remote IDEs, database clients, SSH tools, collaborative agents.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
-use ratatui_core::{
-    buffer::Buffer,
-    layout::{Position, Rect},
-    style::Modifier,
-    widgets::Widget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{
         SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, default_button_intent,
     },
     layout::{Center, CenterAxis, FlexSize, Stack, center_line_x},
-    style::{DesignSystem, GlyphSet, Role},
+    style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
     widgets::{
         ActivityPhase, Button, ButtonState, ButtonVariant, NotificationItem, SemanticStatus,
@@ -1220,7 +1212,9 @@ pub fn example_disconnected() -> ReconnectingState {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::input::KeyEventKind;
     use ratatui_core::backend::TestBackend;
+    use ratatui_core::layout::Position;
     use ratatui_core::terminal::Terminal;
 
     fn system() -> DesignSystem {

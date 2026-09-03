@@ -10,7 +10,6 @@
 //! printable keys feed typeahead through the collection roving model.
 //!
 //! Research: lazygit, Yazi, Textual ListView, shadcn command items.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -21,12 +20,12 @@ use ratatui_core::{
 use ratatui_core::style::Modifier;
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
+    input::{KeyCode, KeyEvent, KeyModifiers},
     interaction::{
         CollectionState, HitRegion, NavigationMove, Outcome, PageMove, UiIntent,
         default_list_intent,
     },
-    style::{DesignSystem, Glyph, ListRowVisualState, Role},
+    style::{DesignSystem, ListRowVisualState, Role},
 };
 
 use super::Selection;

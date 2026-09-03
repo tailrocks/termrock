@@ -19,25 +19,15 @@
 //!
 //! Research: process trees, file trees with metadata, IDE outlines, DB schema browsers.
 //! Single-column hierarchy → [`super::Tree`]. Flat multi-column → [`super::DataTable`].
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
-use ratatui_core::{
-    buffer::Buffer,
-    layout::{Position, Rect},
-    style::Modifier,
-    widgets::StatefulWidget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{NavigationMove, PageMove, UiIntent},
     style::{DesignSystem, Glyph, ListRowVisualState, Role},
     text::take_display_cols,
     widgets::{
-        data_view::{
-            ColumnKind, ColumnModel, ColumnPin, LoadState, SelectionModel, SortSpec, VirtualWindow,
-        },
+        data_view::{ColumnModel, ColumnPin, LoadState, SelectionModel, SortSpec, VirtualWindow},
         tree::TreeNodeStatus,
     },
 };

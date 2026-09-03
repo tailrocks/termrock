@@ -27,26 +27,20 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::collections::BTreeSet;
 
-use ratatui_core::{
-    buffer::Buffer, layout::Rect, style::Modifier, text::Line, widgets::StatefulWidget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::StatefulWidget};
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     patterns::{
         ActivityItem, ActivityKind, ActivityStatusProjection, activity_status_summary,
         project_activities_for_status_bar,
     },
     style::{DesignSystem, PanelChrome, Role},
-    text::{display_cols, take_display_cols},
+    text::display_cols,
     widgets::{
-        List, ListRow, ListState, Panel, RowRole, SemanticStatus, StatusKind, StatusRegion,
-        StatusSlot,
+        List, ListRow, ListState, Panel, SemanticStatus, StatusKind, StatusRegion, StatusSlot,
     },
 };
 
@@ -1562,6 +1556,7 @@ pub mod bench {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::widgets::RowRole;
 
     #[test]
     fn needs_input_sorted_first_in_priority() {

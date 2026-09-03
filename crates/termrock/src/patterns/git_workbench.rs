@@ -30,7 +30,6 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
@@ -39,22 +38,21 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
+    input::{KeyCode, KeyEvent, KeyModifiers},
     layout::{
         ModalSpec, PaneConstraint, PaneGeom, PaneId, Workspace, WorkspaceAxis, WorkspaceNode,
         WorkspaceState, modal_rect,
     },
     style::{DesignSystem, Glyph, ListRowVisualState, PanelChrome, Role},
-    text::take_display_cols,
     widgets::{
         Checkpoint, CheckpointTimeline, CheckpointTimelineOutcome, CheckpointTimelineState,
         ConfirmFocus, ConfirmPrompt, Diagnostic, DiagnosticSeverity, DiagnosticState,
         DiagnosticView, DiffHunk, DiffLine, DiffReview, DiffReviewFileRow, DiffReviewOutcome,
-        DiffReviewState, DiffReviewUnit, DiffReviewUnitKind, FileGitStatus, FileTree,
-        FileTreeEntry, FileTreeOutcome, FileTreeState, HelpEntry, KeyboardHelp,
-        KeyboardHelpOutcome, KeyboardHelpState, Panel, StatusBar, StatusBarState, StatusRegion,
-        StatusSlot, TerminalCommandMeta, TerminalLine, TerminalOutput, TerminalOutputState,
-        TerminalRunStatus, example_checkpoints, example_help_entries,
+        DiffReviewState, DiffReviewUnit, FileGitStatus, FileTree, FileTreeEntry, FileTreeOutcome,
+        FileTreeState, HelpEntry, KeyboardHelp, KeyboardHelpOutcome, KeyboardHelpState, Panel,
+        StatusBar, StatusBarState, StatusRegion, StatusSlot, TerminalCommandMeta, TerminalLine,
+        TerminalOutput, TerminalOutputState, TerminalRunStatus, example_checkpoints,
+        example_help_entries,
     },
 };
 
@@ -1662,6 +1660,7 @@ pub mod bench {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::widgets::DiffReviewUnitKind;
 
     fn press(code: KeyCode) -> KeyEvent {
         KeyEvent::new(code, KeyModifiers::NONE)

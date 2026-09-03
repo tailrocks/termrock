@@ -13,14 +13,9 @@
 //! contraction, and redaction. Prefer KeyValueList for new settings/summary UI.
 //!
 //! Research: system-info TUIs, detail panels, shadcn DescriptionList patterns.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
-use ratatui_core::{
-    buffer::Buffer,
-    layout::{Position, Rect},
-    style::Modifier,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
 
-use crate::input::{KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind};
+use crate::input::{KeyEvent, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{
     EventResult, NavigationMove, PageMove, SemanticNode, SemanticRole, SemanticScene,
     SemanticState, UiIntent, default_list_intent,
@@ -1227,6 +1222,7 @@ fn paint_entry_chrome(
 mod tests {
     use super::*;
     use crate::input::{KeyCode, KeyModifiers};
+    use ratatui_core::layout::Position;
 
     #[test]
     fn separator_comes_from_the_shared_key_value_token() {

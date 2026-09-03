@@ -22,17 +22,15 @@
 //! - Not a widget tree or React-style context provider.
 //! - Not a replacement for `Frame` / `Buffer`.
 //! - Not domain state (messages stay in the app).
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::fmt;
 use std::hash::Hash;
-use std::time::Duration;
 
 use crate::capability::CapabilityProfile;
 use crate::capability::{CapabilityBoundary, TerminalCapabilities};
 use crate::input::KeyEvent;
 use crate::interaction::{
     FocusGraph, FocusOutcome, InteractionScene, OverlayOutcome, OverlayStack, SemanticDiagnostic,
-    SemanticScene, SemanticSnapshot, UiIntent,
+    SemanticScene, SemanticSnapshot,
 };
 use crate::keymap::{KeyChord, Keymap};
 use crate::runtime::{FrameClock, FrameTick, Instant};
@@ -523,12 +521,14 @@ pub use crate::interaction::UiIntent as ContextUiIntent;
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::interaction::UiIntent;
     use crate::interaction::{
         InteractionElement, InteractionLayer, LayerDismissPolicy, LayerKind, SemanticNode,
         SemanticRole,
     };
     use crate::style::DesignSystem;
     use ratatui_core::layout::Rect;
+    use std::time::Duration;
 
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
     enum Fid {

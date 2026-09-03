@@ -1,7 +1,6 @@
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use crate::{
-    style::{BadgeKind, DesignSystem, Role, RolePalette},
-    text::{CellAlignment, LinePlacement, display_cols, paint_line_overflow, truncate_cols},
+    style::{DesignSystem, Role},
+    text::{CellAlignment, LinePlacement, paint_line_overflow},
 };
 use ratatui_core::{
     buffer::Buffer,
@@ -10,7 +9,6 @@ use ratatui_core::{
     text::{Line, Span},
     widgets::Widget,
 };
-use ratatui_widgets::paragraph::Paragraph;
 use unicode_width::UnicodeWidthStr;
 
 /// One footer-hint span shared by terminal surfaces.

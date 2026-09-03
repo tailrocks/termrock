@@ -18,7 +18,7 @@ use std::collections::VecDeque;
 use ratatui_core::layout::{Position, Rect};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
+    input::{KeyCode, KeyEvent, KeyModifiers},
     interaction::{FocusRequest, InteractionScene, NavigationMove, UiIntent},
     style::{DesignSystem, PanelChrome, Role},
 };

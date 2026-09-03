@@ -19,7 +19,6 @@
 //! **vs Toast.** Transient overlay. Callout/Alert live in layout flow.
 //!
 //! Research: shadcn Alert, Glow quote rails, CLI warnings, system diagnostics.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 #![allow(unused_variables, unused_mut)] // unit-test fixtures
 use ratatui_core::{
     buffer::Buffer,
@@ -29,18 +28,16 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind},
     interaction::{
         EventResult, HitRegion, OverlayRequest, SemanticNode, SemanticRole, SemanticScene,
         SemanticState, UiIntent, default_button_intent, default_list_intent,
     },
-    style::{DesignSystem, GlyphSet, Role},
+    style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
 };
 
-use super::{Action, ActionVariant, Surface, SurfaceFill, SurfaceRecipe};
+use super::{Action, Surface, SurfaceFill, SurfaceRecipe};
 
 // ── Tone / recipe ───────────────────────────────────────────────────────────
 
@@ -1302,6 +1299,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Alert<'_, Id> {
 mod tests {
     use super::*;
     use crate::input::KeyModifiers;
+    use crate::widgets::action_bar::ActionVariant;
 
     #[test]
     fn callout_tones_have_distinct_glyphs() {

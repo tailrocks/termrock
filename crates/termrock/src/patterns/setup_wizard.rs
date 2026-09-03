@@ -24,24 +24,17 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    widgets::{StatefulWidget, Widget},
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
+    input::{KeyCode, KeyEvent, KeyModifiers},
     style::{DesignSystem, Role},
-    text::take_display_cols,
     widgets::{
-        BUILTIN_THEME_PRESETS, Button, ButtonState, ButtonVariant, ConfirmPrompt, EmptyKind,
-        EmptyState, Field, Fieldset, Form, FormOutcome, FormState, FormWizard, FormWizardOutcome,
-        FormWizardState, KeyValueList, KeyValueListState, KeybindingRecorderState, KvEntry,
-        KvStatus, PermissionPrompt, PermissionPromptState, StepChangeReason, ThemePicker,
-        ThemePickerOutcome, ThemePickerState, ThemePreset, WizardGate, WizardPhase, WizardProgress,
-        WizardStep,
+        Button, ButtonState, ButtonVariant, ConfirmPrompt, EmptyKind, EmptyState, Field, Fieldset,
+        Form, FormOutcome, FormState, FormWizard, FormWizardOutcome, FormWizardState, KeyValueList,
+        KeyValueListState, KeybindingRecorderState, KvEntry, KvStatus, PermissionPrompt,
+        PermissionPromptState, StepChangeReason, ThemePicker, ThemePickerOutcome, ThemePickerState,
+        ThemePreset, WizardGate, WizardPhase, WizardProgress, WizardStep,
     },
 };
 
@@ -1073,6 +1066,7 @@ pub fn setup_steps_to_wizard_steps(steps: &[SetupStep]) -> Vec<WizardStep> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::widgets::BUILTIN_THEME_PRESETS;
     use ratatui_core::backend::TestBackend;
     use ratatui_core::terminal::Terminal;
 

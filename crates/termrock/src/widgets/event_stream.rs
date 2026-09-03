@@ -15,20 +15,17 @@
 //! EventStream optimizes sustained append rates and unread/backpressure.
 //!
 //! Research: observability event consoles, k8s events, agent activity streams.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::collections::BTreeSet;
 
 use ratatui_core::{
     buffer::Buffer,
-    layout::{Position, Rect},
+    layout::Rect,
     style::{Modifier, Style},
     widgets::StatefulWidget,
 };
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind},
     interaction::{NavigationMove, PageMove, UiIntent},
     style::{DesignSystem, ListRowVisualState, Role},
     text::take_display_cols,
@@ -1232,6 +1229,7 @@ pub mod bench {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::input::KeyModifiers;
 
     fn sample() -> Vec<StreamEvent<'static, &'static str>> {
         vec![

@@ -13,7 +13,6 @@
 //! side-panel → drawer recipes.
 //!
 //! Behavioral references: desktop workbench panes, Zellij pane management.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -22,8 +21,8 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind},
-    style::{DesignSystem, GlyphSet, Role},
+    input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind},
+    style::{DesignSystem, Role},
     widgets::{SplitDirection, SplitRatio},
 };
 

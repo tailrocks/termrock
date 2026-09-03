@@ -6,24 +6,12 @@
 //! **Law:** Enter/Space or one pointer gesture activates once; disabled and
 //! loading never activate. Press confirms; Release never activates. Effects
 //! remain consumer-owned outcomes.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::Modifier,
-    widgets::{StatefulWidget, Widget},
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind},
     interaction::{HitRegion, SemanticNode, SemanticRole, SemanticScene, SemanticState},
-    runtime::FrameTick,
-    style::{
-        ButtonRecipeVariant, ControlState, DesignSystem, Glyph, GlyphSet, MotionPolicy, Role,
-        VisualState,
-    },
+    style::{ButtonRecipeVariant, ControlState, DesignSystem, Glyph, Role, VisualState},
     text::{display_cols, take_display_cols},
 };
 
@@ -1379,7 +1367,7 @@ mod tests {
     use super::*;
     use crate::input::KeyModifiers;
     use ratatui_core::layout::Position;
-    use std::time::{Duration, Instant};
+    use ratatui_core::widgets::Widget;
 
     fn press(code: KeyCode) -> KeyEvent {
         KeyEvent::new(code, KeyModifiers::NONE)

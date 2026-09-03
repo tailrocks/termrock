@@ -17,19 +17,16 @@
 //! Tiny terminals set [`SelectPresentation::Fullscreen`].
 //!
 //! Research: Radix Select, Huh select, Textual Select, terminal pickers.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
-    layout::{Margin, Position, Rect},
+    layout::{Margin, Rect},
     style::{Modifier, Style},
     widgets::{StatefulWidget, Widget},
 };
 use ratatui_widgets::{block::Block, borders::Borders};
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{
         CollectionItem, CollectionOutcome, CollectionState, SemanticNode, SemanticRole,
         SemanticScene, SemanticState, UiIntent,
@@ -1450,6 +1447,7 @@ fn paint_list_anatomy_row(
 mod tests {
     use super::*;
     use crate::style::RolePalette;
+    use ratatui_core::layout::Position;
 
     fn sample_options() -> Vec<SelectOption<&'static str>> {
         vec![

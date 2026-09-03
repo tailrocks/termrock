@@ -8,11 +8,10 @@
 //! `termrock::scroll` (scrollbar paint, `TailScroll`, dialog dual-axis) remain
 //! available; this module owns **policy**: follow/pause, anchors, chaining,
 //! visible ranges, and new-content indication.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent, MouseEventKind},
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseEvent},
     interaction::{NavigationMove, PageMove, UiIntent},
     perf::{
         FollowMode, NewContentIndicator, ScrollAnchor, ScrollAnchorKind,
@@ -824,6 +823,7 @@ impl<'a> ScrollArea<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::input::MouseEventKind;
     use crate::input::{KeyEvent, KeyModifiers};
     use crate::scroll::max_line_width;
     use ratatui_core::text::Line;

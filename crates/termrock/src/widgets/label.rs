@@ -11,12 +11,11 @@
 //! tight ([`DROP_DESCRIPTION_WIDTH`]). Compact layout prefers a single row.
 //!
 //! References: Radix/shadcn Label, accessible form labeling, terminal settings.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState};
-use crate::style::{DesignSystem, GlyphSet, Role};
-use crate::widgets::text::{Text, TextSpan};
+use crate::style::{DesignSystem, Role};
+use crate::widgets::text::Text;
 
 /// Width below which descriptions are omitted (labels may remain).
 pub const DROP_DESCRIPTION_WIDTH: u16 = 28;
@@ -969,7 +968,6 @@ pub fn line_plain(line: &ratatui_core::text::Line<'_>) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::style::GlyphSet;
     use ratatui_core::buffer::Buffer;
 
     #[test]

@@ -4,19 +4,11 @@
 //! Callers own data fetching, editing, sort/filter policy, and page models.
 //! The grid never allocates the full data set; render cost is bounded by the
 //! painted viewport.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::{Modifier, Style},
-    widgets::StatefulWidget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Style, widgets::StatefulWidget};
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
-    style::{DesignSystem, Role, RolePalette},
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    style::{DesignSystem, Role},
     text::take_display_cols,
     widgets::virtualizer::Virtualizer2D,
 };
@@ -1139,6 +1131,7 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> StatefulWidget for &VirtualGrid<'_, R
 mod tests {
     use super::*;
     use crate::input::{KeyCode, KeyEvent, KeyModifiers, MouseEventKind};
+    use crate::style::RolePalette;
     use ratatui_core::{backend::TestBackend, layout::Position, terminal::Terminal};
 
     fn columns() -> Vec<GridColumn<'static, &'static str>> {

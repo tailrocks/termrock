@@ -20,7 +20,6 @@
 //!
 //! Research: Grok Build permissions, Amp plugin prompts, browser permissions,
 //! sudo, security review UIs.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
@@ -28,12 +27,10 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{OverlayId, OverlayKind, OverlayOutcome, OverlaySize, OverlaySpec, OverlayStack},
-    style::{DesignSystem, Role, RolePalette},
-    text::{display_cols, take_display_cols},
+    style::{DesignSystem, Role},
+    text::take_display_cols,
     widgets::{Action, ActionBar, ActionBarState, ActionVariant, Panel, PanelChrome, PanelVariant},
 };
 
@@ -1825,6 +1822,7 @@ fn paint_line(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::style::RolePalette;
     use ratatui_core::layout::Position;
 
     fn press(code: KeyCode) -> KeyEvent {

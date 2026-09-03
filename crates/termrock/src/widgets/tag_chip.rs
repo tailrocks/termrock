@@ -17,10 +17,9 @@
 //! semantic label (`remove {name}`) for inspection / help.
 //!
 //! References: token inputs, Grok paste/file chips, desktop filter chips.
-#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
 
-use crate::input::{KeyCode, KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind};
+use crate::input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{
     EventResult, RovingEntry, RovingFocusGroup, RovingOrientation, RovingOutcome, SemanticNode,
     SemanticRole, SemanticScene, SemanticState, UiIntent, default_button_intent,
@@ -1929,7 +1928,6 @@ fn estimate_item_width<Id: Clone>(item: &TokenItem<'_, Id>, system: &DesignSyste
 mod tests {
     use super::*;
     use crate::input::KeyModifiers;
-    use crate::style::GlyphSet;
 
     #[test]
     fn remove_label_explicit() {
