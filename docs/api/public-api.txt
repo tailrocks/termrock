@@ -7701,7 +7701,6 @@ impl<T> either::into_either::IntoEither for termrock::layout::Breakpoint
 pub struct termrock::layout::Center
 impl termrock::layout::Center
 pub const fn termrock::layout::Center::axis(self, termrock::layout::CenterAxis) -> Self
-pub const fn termrock::layout::Center::dialog(u16, u16) -> Self
 pub const fn termrock::layout::Center::failure(u16, u16) -> Self
 pub const fn termrock::layout::Center::from_spec(termrock::layout::CenterSpec) -> Self
 pub fn termrock::layout::Center::layout(self, ratatui_core::layout::rect::Rect) -> termrock::layout::CenterLayout
@@ -7823,7 +7822,6 @@ pub termrock::layout::CenterSpec::safe_margin: bool
 pub termrock::layout::CenterSpec::width: u16
 impl termrock::layout::CenterSpec
 pub const fn termrock::layout::CenterSpec::axis(self, termrock::layout::CenterAxis) -> Self
-pub const fn termrock::layout::CenterSpec::dialog(u16, u16) -> Self
 pub const fn termrock::layout::CenterSpec::failure(u16, u16) -> Self
 pub const fn termrock::layout::CenterSpec::margin(self, u16, u16) -> Self
 pub const fn termrock::layout::CenterSpec::max(self, core::option::Option<u16>, core::option::Option<u16>) -> Self
@@ -66876,7 +66874,6 @@ pub fn termrock::widgets::DiffReviewState::decisions(&self) -> &alloc::collectio
 pub fn termrock::widgets::DiffReviewState::handle_intent(&mut self, termrock::context::ContextUiIntent, &[termrock::widgets::DiffLine<'_>], &[termrock::widgets::DiffHunk]) -> termrock::widgets::DiffReviewOutcome
 pub fn termrock::widgets::DiffReviewState::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::widgets::DiffHunk]) -> termrock::widgets::DiffReviewOutcome
 pub fn termrock::widgets::DiffReviewState::handle_key_lines(&mut self, termrock::input::KeyEvent, &[termrock::widgets::DiffLine<'_>], &[termrock::widgets::DiffHunk], &[termrock::widgets::DiffReviewFileRow<'_>]) -> termrock::widgets::DiffReviewOutcome
-pub fn termrock::widgets::DiffReviewState::handle_mouse(&mut self, termrock::input::MouseEvent, &[termrock::widgets::DiffHunk], usize) -> termrock::widgets::DiffReviewOutcome
 pub fn termrock::widgets::DiffReviewState::handle_mouse_lines(&mut self, termrock::input::MouseEvent, &[termrock::widgets::DiffLine<'_>], &[termrock::widgets::DiffHunk], &[termrock::widgets::DiffReviewFileRow<'_>]) -> termrock::widgets::DiffReviewOutcome
 pub const fn termrock::widgets::DiffReviewState::hunk_cursor(&self) -> usize
 pub const fn termrock::widgets::DiffReviewState::hunk_index(&self) -> usize
@@ -72096,8 +72093,6 @@ pub fn termrock::widgets::Kbd<'a>::paint(&self, ratatui_core::layout::rect::Rect
 pub fn termrock::widgets::Kbd<'a>::sequence(&[termrock::keymap::KeyChord], &'a termrock::style::DesignSystem) -> Self
 pub fn termrock::widgets::Kbd<'a>::text(&self) -> &str
 pub const fn termrock::widgets::Kbd<'a>::variant(self, termrock::widgets::KbdVariant) -> Self
-impl<'a> termrock::widgets::Kbd<'a>
-pub fn termrock::widgets::Kbd<'a>::from_chord_buf(termrock::keymap::KeyChord, &'a mut alloc::string::String, &'a termrock::style::DesignSystem) -> Self
 impl ratatui_core::widgets::widget::Widget for &termrock::widgets::Kbd<'_>
 pub fn &termrock::widgets::Kbd<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
 impl ratatui_core::widgets::widget::Widget for termrock::widgets::Kbd<'_>
