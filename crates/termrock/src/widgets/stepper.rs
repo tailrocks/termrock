@@ -17,7 +17,7 @@
 //! Research: shadcn-style steppers, installers, CI pipeline views.
 use ratatui_core::{
     buffer::Buffer,
-    layout::{Position, Rect},
+    layout::Rect,
     style::{Modifier, Style},
     widgets::StatefulWidget,
 };
@@ -766,17 +766,17 @@ impl StepperState {
         }
         self.focused = true;
         if matches!(self.presentation, StepperPresentation::Menu) && !self.menu_open {
-            if rect_contains(self.menu_hit, event.position) {
+            if self.menu_hit.contains(event.position) {
                 self.menu_open = true;
                 return StepperOutcome::MenuToggled { open: true };
             }
         }
         for (i, rect) in self.hits.iter().rev() {
-            if rect_contains(*rect, event.position) {
+            if rect.contains(event.position) {
                 return self.activate(*i, items);
             }
         }
-        if self.menu_open && !rect_contains(self.root, event.position) {
+        if self.menu_open && !self.root.contains(event.position) {
             self.menu_open = false;
             return StepperOutcome::MenuToggled { open: false };
         }
@@ -799,13 +799,6 @@ impl StepperState {
             StepperOutcome::Ignored
         }
     }
-}
-
-fn rect_contains(rect: Rect, pos: Position) -> bool {
-    pos.x >= rect.x
-        && pos.y >= rect.y
-        && pos.x < rect.x.saturating_add(rect.width)
-        && pos.y < rect.y.saturating_add(rect.height)
 }
 
 /// Default intent map.
@@ -1290,6 +1283,7 @@ pub fn example_onboarding_steps() -> Vec<StepItem> {
 mod tests {
     use super::*;
     use crate::input::KeyModifiers;
+    use ratatui_core::layout::Position;
 
     fn steps() -> Vec<StepItem> {
         example_onboarding_steps()

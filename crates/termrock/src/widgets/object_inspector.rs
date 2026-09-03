@@ -1330,12 +1330,7 @@ impl<'a> ObjectInspector<'a> {
         };
         // For paint we need owned projection slice — use view
         let field_count = view.len();
-        state.clamp_cursor(field_count.max(1).saturating_sub(0));
-        if field_count > 0 {
-            state.cursor = state.cursor.min(field_count - 1);
-        } else {
-            state.cursor = 0;
-        }
+        state.clamp_cursor(field_count);
         // Reconcile path against view
         if let Some(path) = state.cursor_path.as_ref() {
             if let Some(i) = view.iter().position(|f| f.path == path) {

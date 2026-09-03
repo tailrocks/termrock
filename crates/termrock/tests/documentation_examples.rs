@@ -1,4 +1,3 @@
-#![allow(unused_variables)]
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
@@ -179,7 +178,6 @@ fn handbook_command_palette_example() {
 #[test]
 fn handbook_prompt_composer_example() {
     let theme = RolePalette::default();
-    let system = DesignSystem::new(theme.clone());
     let tokens = DesignSystem::new(theme.clone());
     let mut state = PromptComposerState::new();
     state.set_placeholder("Ask anything…");
@@ -239,7 +237,6 @@ fn handbook_permission_prompt_example() {
 #[test]
 fn theme_documentation_example() {
     let theme = RolePalette::default().with_role(Role::Accent, Style::new().fg(Color::Cyan));
-    let system = DesignSystem::new(theme.clone());
     assert_eq!(theme.style(Role::Accent).fg, Some(Color::Cyan));
 }
 
