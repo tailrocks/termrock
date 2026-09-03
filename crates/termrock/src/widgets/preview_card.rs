@@ -929,7 +929,7 @@ impl PreviewCardState {
         if key.is_release() {
             return PreviewCardOutcome::Ignored;
         }
-        if !key.is_insert() {
+        if !key.is_press() {
             return PreviewCardOutcome::Ignored;
         }
         match key.code {
@@ -1333,7 +1333,7 @@ pub fn example_session_preview<'a>() -> (
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyModifiers;
+    use crate::input::{KeyEventKind, KeyModifiers};
     use crate::interaction::OverlayOutcome;
 
     #[test]
@@ -1478,6 +1478,32 @@ mod tests {
             state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
             PreviewCardOutcome::OpenRequested
         ));
+    }
+
+    #[test]
+    fn repeated_pinned_actions_are_ignored() {
+        let mut state = PreviewCardState::new();
+        let _ = state.pin();
+
+        let mut repeat_enter = KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE);
+        repeat_enter.kind = KeyEventKind::Repeat;
+        let before = state.clone();
+        assert_eq!(state.handle_key(repeat_enter), PreviewCardOutcome::Ignored);
+        assert_eq!(state, before);
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
+            PreviewCardOutcome::OpenRequested
+        );
+
+        let mut repeat_unpin = KeyEvent::new(KeyCode::Char('p'), KeyModifiers::NONE);
+        repeat_unpin.kind = KeyEventKind::Repeat;
+        let before = state.clone();
+        assert_eq!(state.handle_key(repeat_unpin), PreviewCardOutcome::Ignored);
+        assert_eq!(state, before);
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Char('p'), KeyModifiers::NONE)),
+            PreviewCardOutcome::Unpinned
+        );
     }
 
     #[test]
