@@ -304,6 +304,7 @@ pub struct TreeTableState<Id: Clone + Ord, ColId: Clone + PartialEq> {
     body_rows: u16,
     body_width: u16,
     paint_widths: Vec<(usize, u16)>,
+    paint_rects: Vec<Rect>,
     content_width: u16,
     viewport_width: u16,
     previous_index: Option<usize>,
@@ -333,6 +334,7 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
             body_rows: 0,
             body_width: 0,
             paint_widths: Vec::new(),
+            paint_rects: Vec::new(),
             content_width: 0,
             viewport_width: 0,
             previous_index: None,
@@ -1060,6 +1062,8 @@ impl<'a, Id: Clone + Ord, ColId: Clone + PartialEq> TreeTable<'a, Id, ColId> {
         state.header_regions.clear();
         state.row_regions.clear();
         if area.is_empty() {
+            state.paint_widths.clear();
+            state.paint_rects.clear();
             return;
         }
         // Input permission and scene focus are separate authorities. Neither
@@ -1080,18 +1084,39 @@ impl<'a, Id: Clone + Ord, ColId: Clone + PartialEq> TreeTable<'a, Id, ColId> {
             &mut state.paint_widths,
         );
         let gap = self.system.spacing.column_gap;
-        state.content_width = state
-            .paint_widths
-            .iter()
-            .map(|(_, w)| *w)
-            .fold(0u16, u16::saturating_add)
-            .saturating_add(gap.saturating_mul(
-                u16::try_from(state.paint_widths.len().saturating_sub(1)).unwrap_or(0),
-            ));
-        state.h_offset = state
-            .h_offset
-            .min(state.content_width.saturating_sub(col_budget));
+        let start_extent =
+            tree_column_extent(&state.paint_widths, self.columns, ColumnPin::Start, gap);
+        let end_extent = tree_column_extent(&state.paint_widths, self.columns, ColumnPin::End, gap);
+        let center_extent =
+            tree_column_extent(&state.paint_widths, self.columns, ColumnPin::None, gap);
+        let center_viewport = col_budget
+            .saturating_sub(start_extent)
+            .saturating_sub(end_extent)
+            .saturating_sub(if start_extent > 0 && center_extent > 0 {
+                gap
+            } else {
+                0
+            })
+            .saturating_sub(if end_extent > 0 && center_extent > 0 {
+                gap
+            } else {
+                0
+            });
+        let max_h_offset = center_extent.saturating_sub(center_viewport);
+        state.content_width = col_budget.saturating_add(max_h_offset);
+        state.h_offset = state.h_offset.min(max_h_offset);
         state.sync_cursor_to_paint(self.columns);
+        let origin = area.x.saturating_add(GUTTER_W);
+        let clip_right = origin.saturating_add(col_budget).min(area.right());
+        resolve_tree_column_rects(
+            &state.paint_widths,
+            self.columns,
+            origin,
+            clip_right,
+            state.h_offset,
+            gap,
+            &mut state.paint_rects,
+        );
 
         if self.sticky_header && y < area.bottom() {
             paint_header(self, area, y, buffer, state, surface_focused);
@@ -1190,6 +1215,92 @@ impl<'a, Id: Clone + Ord, ColId: Clone + PartialEq> TreeTable<'a, Id, ColId> {
     }
 }
 
+fn tree_column_extent<ColId>(
+    widths: &[(usize, u16)],
+    columns: &ColumnModel<ColId>,
+    pin: ColumnPin,
+    gap: u16,
+) -> u16 {
+    let mut width = 0u16;
+    let mut count = 0usize;
+    for &(index, column_width) in widths {
+        if columns.columns[index].pin == pin {
+            width = width.saturating_add(column_width);
+            count = count.saturating_add(1);
+        }
+    }
+    width.saturating_add(
+        gap.saturating_mul(u16::try_from(count.saturating_sub(1)).unwrap_or(u16::MAX)),
+    )
+}
+
+fn resolve_tree_column_rects<ColId>(
+    widths: &[(usize, u16)],
+    columns: &ColumnModel<ColId>,
+    origin: u16,
+    clip_right: u16,
+    h_offset: u16,
+    gap: u16,
+    out: &mut Vec<Rect>,
+) {
+    out.clear();
+    out.resize(widths.len(), Rect::new(0, 0, 0, 1));
+    if widths.is_empty() || clip_right <= origin {
+        return;
+    }
+
+    let start_extent = i64::from(tree_column_extent(widths, columns, ColumnPin::Start, gap));
+    let end_extent = i64::from(tree_column_extent(widths, columns, ColumnPin::End, gap));
+    let center_extent = i64::from(tree_column_extent(widths, columns, ColumnPin::None, gap));
+    let has_start = start_extent > 0;
+    let has_end = end_extent > 0;
+    let has_center = center_extent > 0;
+    let origin = i64::from(origin);
+    let clip_right = i64::from(clip_right);
+    let gap = i64::from(gap);
+    let center_left = origin + start_extent + if has_start && has_center { gap } else { 0 };
+    let center_right = clip_right - end_extent - if has_end && has_center { gap } else { 0 };
+    let mut start_x = origin;
+    let mut end_x = clip_right - end_extent;
+    let mut center_offset = 0i64;
+
+    for (ordinal, &(index, width)) in widths.iter().enumerate() {
+        let pin = columns.columns[index].pin;
+        let left = match pin {
+            ColumnPin::Start => {
+                let left = start_x;
+                start_x += i64::from(width) + gap;
+                left
+            }
+            ColumnPin::End => {
+                let left = end_x;
+                end_x += i64::from(width) + gap;
+                left
+            }
+            ColumnPin::None => {
+                let left = center_left + center_offset - i64::from(h_offset);
+                center_offset += i64::from(width) + gap;
+                left
+            }
+        };
+        let right = left + i64::from(width);
+        let (bounds_left, bounds_right) = match pin {
+            ColumnPin::None => (center_left, center_right),
+            ColumnPin::Start | ColumnPin::End => (origin, clip_right),
+        };
+        let visible_left = left.max(bounds_left);
+        let visible_right = right.min(bounds_right);
+        if visible_right > visible_left {
+            out[ordinal] = Rect::new(
+                u16::try_from(visible_left).unwrap_or(u16::MAX),
+                0,
+                u16::try_from(visible_right - visible_left).unwrap_or(u16::MAX),
+                1,
+            );
+        }
+    }
+}
+
 fn resolve_tree_paint_widths<ColId: Clone + PartialEq>(
     columns: &ColumnModel<ColId>,
     budget: u16,
@@ -1260,30 +1371,14 @@ fn paint_header<Id: Clone + Ord, ColId: Clone + PartialEq>(
         super::table_chrome::header_band(table.system),
     );
     buffer.set_stringn(area.x, y, "  ", usize::from(GUTTER_W), style);
-    let origin = area.x.saturating_add(GUTTER_W);
-    let clip_right = area.right();
-    let mut logical = 0i32;
-    let h_off = i32::from(state.h_offset);
-    let gap = i32::from(table.system.spacing.column_gap);
-    for (ord, &(col_idx, width)) in state.paint_widths.iter().enumerate() {
+    for (ord, &(col_idx, _)) in state.paint_widths.iter().enumerate() {
+        let rect = state.paint_rects[ord];
+        if rect.width == 0 {
+            continue;
+        }
         let col = &table.columns.columns[col_idx];
-        let pinned = col.pin != ColumnPin::None;
-        let col_left = if pinned {
-            i32::from(origin) + logical
-        } else {
-            i32::from(origin) + logical - h_off
-        };
-        let col_right = col_left + i32::from(width);
-        logical += i32::from(width) + gap;
-        if col_right <= i32::from(origin) || col_left >= i32::from(clip_right) {
-            continue;
-        }
-        let paint_x = col_left.max(i32::from(origin)) as u16;
-        let paint_end = col_right.min(i32::from(clip_right)) as u16;
-        let paint_w = paint_end.saturating_sub(paint_x);
-        if paint_w == 0 {
-            continue;
-        }
+        let paint_x = rect.x;
+        let paint_w = rect.width;
         let mut title = col.title.clone();
         if let Some(sort) = &state.sort
             && sort.column == col.id
@@ -1379,9 +1474,6 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
 
     let origin = area.x.saturating_add(GUTTER_W);
     let clip_right = area.right();
-    let h_off = i32::from(state.h_offset);
-    let gap = i32::from(table.system.spacing.column_gap);
-    let mut logical = 0i32;
     let mut disclosure_rect = None;
     if matches!(row.kind, TreeTableRowKind::Group) {
         let mark = if row.expanded { "▾ " } else { "▸ " };
@@ -1405,25 +1497,15 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
         return;
     }
 
-    for (ord, &(col_idx, width)) in state.paint_widths.iter().enumerate() {
+    for (ord, &(col_idx, _)) in state.paint_widths.iter().enumerate() {
+        let rect = state.paint_rects[ord];
+        if rect.width == 0 {
+            continue;
+        }
         let col = &table.columns.columns[col_idx];
-        let pinned = col.pin != ColumnPin::None;
-        let col_left = if pinned {
-            i32::from(origin) + logical
-        } else {
-            i32::from(origin) + logical - h_off
-        };
-        let col_right = col_left + i32::from(width);
-        logical += i32::from(width) + gap;
-        if col_right <= i32::from(origin) || col_left >= i32::from(clip_right) {
-            continue;
-        }
-        let paint_x = col_left.max(i32::from(origin)) as u16;
-        let paint_end = col_right.min(i32::from(clip_right)) as u16;
-        let paint_w = paint_end.saturating_sub(paint_x);
-        if paint_w == 0 {
-            continue;
-        }
+        let paint_x = rect.x;
+        let paint_end = rect.right();
+        let paint_w = rect.width;
 
         // The hierarchy column is the row's identity; it never drops a tier.
         let mut cell_style = if ord == 0 {
@@ -1699,6 +1781,32 @@ mod tests {
                 .collect::<Vec<_>>(),
             [0, 1]
         );
+    }
+
+    #[test]
+    fn end_pinned_header_stays_at_the_viewport_edge() {
+        let columns = ColumnModel::new(vec![
+            DataColumn::new("name", "Name", DataColumnWidth::Min(12)).priority(100),
+            DataColumn::new("cpu", "CPU", DataColumnWidth::Fixed(6)).priority(90),
+            DataColumn::new("extra", "Extra", DataColumnWidth::Fixed(6)).priority(80),
+            DataColumn::new("mem", "MEM", DataColumnWidth::Fixed(6))
+                .priority(100)
+                .pin(ColumnPin::End),
+        ]);
+        let cells: &[&str] = &["row", "1", "2", "3"];
+        let rows = [TreeTableRow::new("r", 0, cells)];
+        let system = DesignSystem::default();
+        let area = Rect::new(0, 0, 32, 6);
+        let mut state = TreeTableState::<&str, &str>::new(Some("r"));
+        state.h_offset = 4;
+        TreeTable::new(&system, &columns, &rows).render(area, &mut Buffer::empty(area), &mut state);
+
+        let region = state
+            .header_regions
+            .iter()
+            .find(|region| region.id == "mem")
+            .expect("end-pinned column has a header hit region");
+        assert_eq!(region.area.right(), area.right());
     }
 
     #[test]
