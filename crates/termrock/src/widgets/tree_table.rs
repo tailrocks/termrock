@@ -394,7 +394,7 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
         {
             self.cursor_row = idx;
             self.previous_index = Some(idx);
-            self.reveal_cursor(rows.len());
+            self.reveal_cursor();
             return;
         }
         let anchor = self.previous_index.unwrap_or(0);
@@ -412,18 +412,12 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
         self.selected = Some(rows[idx].id.clone());
         self.cursor_row = idx;
         self.previous_index = Some(idx);
-        self.reveal_cursor(rows.len());
+        self.reveal_cursor();
     }
 
-    fn reveal_cursor(&mut self, projected_len: usize) {
-        let vp = usize::from(self.window.viewport.max(1));
-        if self.cursor_row < self.window.offset as usize {
-            self.window.offset = self.cursor_row as u64;
-        } else if self.cursor_row >= self.window.offset as usize + vp {
-            self.window.offset = (self.cursor_row + 1).saturating_sub(vp) as u64;
-        }
-        let _ = projected_len;
-        self.window.clamp();
+    fn reveal_cursor(&mut self) {
+        let absolute_cursor = self.window.offset.saturating_add(self.cursor_row as u64);
+        let _ = self.window.reveal(absolute_cursor);
     }
 
     fn sync_cursor_to_paint(&mut self, columns: &ColumnModel<ColId>)
@@ -687,7 +681,7 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
                     self.cursor_row = idx;
                     self.selected = Some(child.id.clone());
                     self.previous_index = Some(idx);
-                    self.reveal_cursor(rows.len());
+                    self.reveal_cursor();
                     return TreeTableOutcome::Selected(child.id.clone());
                 }
                 return TreeTableOutcome::Ignored;
@@ -703,7 +697,7 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
                     self.cursor_row = idx;
                     self.selected = Some(parent.clone());
                     self.previous_index = Some(idx);
-                    self.reveal_cursor(rows.len());
+                    self.reveal_cursor();
                     return TreeTableOutcome::Selected(parent.clone());
                 }
             }
@@ -721,7 +715,7 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
                 self.cursor_row = idx;
                 self.selected = Some(parent.id.clone());
                 self.previous_index = Some(idx);
-                self.reveal_cursor(rows.len());
+                self.reveal_cursor();
                 return TreeTableOutcome::Selected(parent.id.clone());
             }
             TreeTableOutcome::Ignored
@@ -764,7 +758,7 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
         self.cursor_row = idx;
         self.selected = Some(rows[idx].id.clone());
         self.previous_index = Some(idx);
-        self.reveal_cursor(rows.len());
+        self.reveal_cursor();
         TreeTableOutcome::Selected(rows[idx].id.clone())
     }
 
@@ -780,7 +774,7 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
         self.cursor_row = idx;
         self.selected = Some(row.id.clone());
         self.previous_index = Some(idx);
-        self.reveal_cursor(rows.len());
+        self.reveal_cursor();
         TreeTableOutcome::Selected(row.id.clone())
     }
 
@@ -1870,6 +1864,29 @@ mod tests {
         state.window.clamp();
         let (a, b) = state.window.visible_range();
         assert_eq!(b - a, u64::from(bench::VIEWPORT_ROWS));
+    }
+
+    #[test]
+    fn reprojected_slice_reveal_preserves_absolute_window_offset() {
+        let cells: &[&str] = &["row", "", ""];
+        let rows = [
+            TreeTableRow::new(100u64, 0, cells),
+            TreeTableRow::new(101, 0, cells),
+        ];
+        let mut state = TreeTableState::<u64, &str>::new(Some(100));
+        state.set_logical_rows(1_000);
+        state.window.viewport = 2;
+        state.window.offset = 100;
+
+        state.reconcile(&rows);
+
+        assert_eq!(state.cursor_row, 0);
+        assert_eq!(state.window.offset, 100);
+        assert!(matches!(
+            state.handle_intent(&rows, &cols(), UiIntent::Move(NavigationMove::Down)),
+            TreeTableOutcome::Selected(101)
+        ));
+        assert_eq!(state.window.offset, 100);
     }
 
     #[test]
