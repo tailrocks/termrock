@@ -1445,11 +1445,6 @@ impl<'a> QuestionFlow<'a> {
             y = y.saturating_add(1);
         }
     }
-
-    /// Render alias.
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut QuestionFlowState) {
-        self.paint(area, buffer, state);
-    }
 }
 
 impl StatefulWidget for &QuestionFlow<'_> {

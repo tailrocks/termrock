@@ -1261,11 +1261,6 @@ impl<'a> ModelSelector<'a> {
         }
         hits
     }
-
-    /// Render alias.
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut ModelSelectorState) {
-        let _ = self.paint(area, buffer, state);
-    }
 }
 
 // ── AgentModeSelector ───────────────────────────────────────────────────────
@@ -1749,11 +1744,6 @@ impl<'a> AgentModeSelector<'a> {
             }
         }
         hits
-    }
-
-    /// Render alias.
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut AgentModeSelectorState) {
-        let _ = self.paint(area, buffer, state);
     }
 }
 

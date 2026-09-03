@@ -1083,11 +1083,6 @@ impl<'a> ActivityShelf<'a> {
             }
         }
     }
-
-    /// Render alias.
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut ActivityShelfState) {
-        self.paint(area, buffer, state);
-    }
 }
 
 fn chip_style(

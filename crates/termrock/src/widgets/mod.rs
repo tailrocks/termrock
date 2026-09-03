@@ -468,7 +468,7 @@ pub use highlighted_text::{
     substring_ranges_ignore_ascii_case,
 };
 pub use hint_bar::{
-    HINT_GROUP_JOIN, HINT_SEPARATOR_COLS, Hint, HintBar, HintSpan, hint_row_cols, render_hint_bar,
+    HINT_GROUP_JOIN, HINT_SEPARATOR_COLS, Hint, HintBar, HintSpan, hint_row_cols, paint_hint_bar,
     styled_hint_spans, wrapped_hint_lines,
 };
 pub use history_picker::{
@@ -682,7 +682,7 @@ pub use prompt_composer::{
 /// Composer bridge name for a queued prompt entry ([`PromptQueueItem`]).
 pub use prompt_queue_model::PromptQueueItem as QueuedPrompt;
 pub use prompt_queue_model::{AgentBusyState, PromptQueueItem, PromptQueueRef, PromptQueueStatus};
-pub use props::{Prop, render as render_props};
+pub use props::{Prop, paint as paint_props};
 pub use quick_open::{
     ParsedQuickOpenQuery, QUICK_OPEN_DEFAULT_LIMIT, QUICK_OPEN_FULLSCREEN_MAX_HEIGHT,
     QUICK_OPEN_FULLSCREEN_MAX_WIDTH, QUICK_OPEN_OVERLAY_ID, QUICK_OPEN_PROVIDER_STRIP_COMPACT_MAX,

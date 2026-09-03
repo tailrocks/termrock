@@ -1461,11 +1461,6 @@ impl<'a> TaskRail<'a> {
         }
         let _ = display_cols;
     }
-
-    /// Render alias.
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut TaskRailState) {
-        self.paint(area, buffer, state);
-    }
 }
 
 impl StatefulWidget for &TaskRail<'_> {

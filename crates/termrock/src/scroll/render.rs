@@ -106,7 +106,7 @@ pub fn scrollbar_offset_for_track_position(
 }
 
 /// Paint a line whose prefix remains fixed while its suffix scrolls.
-pub fn render_line_with_fixed_prefix_scroll(
+pub fn paint_line_with_fixed_prefix_scroll(
     frame: &mut Frame<'_>,
     area: Rect,
     row: u16,
@@ -274,7 +274,7 @@ pub fn paint_overflow_scrollbar(
 }
 
 /// Paints a themed full-cell scrollbar into an explicit track rectangle.
-pub fn render_scrollbar(
+pub fn paint_scrollbar(
     buffer: &mut Buffer,
     area: Rect,
     spec: ScrollbarSpec,
@@ -291,7 +291,7 @@ struct Scrollbar<'a> {
 
 /// Render borrowed lines into a rectangle with a vertical offset and optional
 /// list-edge scrollbar.
-pub fn render_lines_with_offset_in_area(
+pub fn paint_lines_with_offset_in_area(
     frame: &mut Frame<'_>,
     area: Rect,
     lines: &[Line<'_>],
@@ -312,7 +312,7 @@ pub fn render_lines_with_offset_in_area(
         area,
     );
     if scroll::is_scrollable(total, viewport) {
-        render_scrollbar(
+        paint_scrollbar(
             frame.buffer_mut(),
             vertical_list_scrollbar_area(area),
             ScrollbarSpec::new(

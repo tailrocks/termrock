@@ -22,7 +22,7 @@
 #![allow(unused_variables, unused_mut)] // unit-test fixtures
 use std::time::Duration;
 
-use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
+use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
@@ -470,21 +470,6 @@ impl<'a> Spinner<'a> {
         }
     }
 
-    /// Legacy paint without state (always active/visible).
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, tick: FrameTick, motion: MotionPolicy) {
-        let mut state = SpinnerState::new();
-        if let Some(p) = self.phase {
-            state.set_phase(p);
-        }
-        if self.embedded {
-            state.set_embedded_in_labeled_control(true);
-        }
-        if self.label.is_none() {
-            state.set_embedded_in_labeled_control(true); // legacy glyph-only call sites
-        }
-        self.paint(area, buffer, &state, tick, motion);
-    }
-
     /// Semantic registration.
     pub fn register_semantic<Sid, Act>(
         &self,
@@ -647,18 +632,6 @@ impl<'a> ActivityIndicator<'a> {
 
 // Widget impl for Spinner without state — paints with default state via render
 // (Stateful path uses paint with SpinnerState).
-
-impl Widget for &Spinner<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        // Static fallback when host has no tick in Widget path.
-        let tick = FrameTick::manual(
-            crate::runtime::Instant::now(),
-            Duration::ZERO,
-            Duration::ZERO,
-        );
-        self.render(area, buffer, tick, MotionPolicy::Off);
-    }
-}
 
 // ── Tests ───────────────────────────────────────────────────────────────────
 

@@ -15,8 +15,8 @@ mod render;
 pub use render::{
     SCROLLBAR_HORIZONTAL_THUMB, SCROLLBAR_TRACK, ScrollbarGeometry, ScrollbarSpec, ScrollbarStyle,
     apply_scroll_delta, apply_scroll_delta_unclamped, apply_term_width_scroll_delta,
-    clamp_scroll_offset, horizontal_scrollbar_area, paint_overflow_scrollbar,
-    render_line_with_fixed_prefix_scroll, render_lines_with_offset_in_area, render_scrollbar,
+    clamp_scroll_offset, horizontal_scrollbar_area, paint_line_with_fixed_prefix_scroll,
+    paint_lines_with_offset_in_area, paint_overflow_scrollbar, paint_scrollbar,
     scrollbar_offset_for_track_position, vertical_scrollbar_area, viewport_height, viewport_width,
 };
 
@@ -408,7 +408,7 @@ impl DialogScroll {
     }
 
     /// Render vertical and/or horizontal scrollbars on the block border.
-    pub fn render_scrollbars(
+    pub fn paint_scrollbars(
         &self,
         frame: &mut ratatui_core::terminal::Frame<'_>,
         block_area: ratatui_core::layout::Rect,
@@ -417,7 +417,7 @@ impl DialogScroll {
         system: &crate::style::DesignSystem,
     ) {
         if is_scrollable(content_height, viewport_height(block_area)) {
-            render_scrollbar(
+            paint_scrollbar(
                 frame.buffer_mut(),
                 vertical_scrollbar_area(block_area),
                 ScrollbarSpec::new(
@@ -432,7 +432,7 @@ impl DialogScroll {
             );
         }
         if is_scrollable(content_width, viewport_width(block_area)) {
-            render_scrollbar(
+            paint_scrollbar(
                 frame.buffer_mut(),
                 horizontal_scrollbar_area(block_area),
                 ScrollbarSpec::new(

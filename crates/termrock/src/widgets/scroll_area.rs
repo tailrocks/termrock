@@ -751,7 +751,7 @@ impl<'a> ScrollArea<'a> {
     }
 
     /// Paint vertical/horizontal scrollbar gutters when policy requires.
-    pub fn render_bars(&self, area: Rect, buffer: &mut Buffer, state: &ScrollAreaState) {
+    pub fn paint_bars(&self, area: Rect, buffer: &mut Buffer, state: &ScrollAreaState) {
         if area.is_empty() {
             return;
         }
@@ -765,7 +765,7 @@ impl<'a> ScrollArea<'a> {
             } else {
                 area.height
             };
-            crate::scroll::render_scrollbar(
+            crate::scroll::paint_scrollbar(
                 buffer,
                 Rect::new(area.right().saturating_sub(1), area.y, 1, bar_h),
                 crate::scroll::ScrollbarSpec::new(
@@ -788,7 +788,7 @@ impl<'a> ScrollArea<'a> {
             } else {
                 area.width
             };
-            crate::scroll::render_scrollbar(
+            crate::scroll::paint_scrollbar(
                 buffer,
                 Rect::new(area.x, area.bottom().saturating_sub(1), bar_w, 1),
                 crate::scroll::ScrollbarSpec::new(
@@ -807,7 +807,7 @@ impl<'a> ScrollArea<'a> {
     }
 
     /// Paint new-content indicator with a structural down cue and warning role.
-    pub fn render_new_content(&self, area: Rect, buffer: &mut Buffer, state: &ScrollAreaState) {
+    pub fn paint_new_content(&self, area: Rect, buffer: &mut Buffer, state: &ScrollAreaState) {
         if !self.show_new_content || !state.indicator.visible || area.height == 0 {
             return;
         }
@@ -1009,7 +1009,7 @@ mod tests {
         let mut buffer = Buffer::empty(area);
         ScrollArea::new(&system)
             .focused(true)
-            .render_bars(area, &mut buffer, &state);
+            .paint_bars(area, &mut buffer, &state);
         let gutter: Vec<&str> = (0..area.height)
             .map(|y| buffer[(area.right() - 1, y)].symbol())
             .collect();
@@ -1034,7 +1034,7 @@ mod tests {
         state.set_viewport(10, 8);
         let area = Rect::new(0, 0, 10, 8);
         let mut buffer = Buffer::empty(area);
-        ScrollArea::new(&system).render_bars(area, &mut buffer, &state);
+        ScrollArea::new(&system).paint_bars(area, &mut buffer, &state);
         for y in 0..area.height {
             assert_eq!(buffer[(area.right() - 1, y)].symbol(), " ");
         }

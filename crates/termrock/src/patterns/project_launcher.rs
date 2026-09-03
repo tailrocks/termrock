@@ -1310,7 +1310,7 @@ pub fn project_quick_open_rect(area: Rect) -> Rect {
 // ── Render ──────────────────────────────────────────────────────────────────
 
 /// Paint composed project launcher (public child widgets only).
-pub fn render_project_launcher(
+pub fn paint_project_launcher(
     buffer: &mut Buffer,
     area: Rect,
     surfaces: ProjectLauncherSurfaces<'_>,
@@ -1691,7 +1691,7 @@ mod tests {
         let area = Rect::new(0, 0, 40, 20);
         let mut buf = Buffer::empty(area);
         st.density = None;
-        render_project_launcher(
+        paint_project_launcher(
             &mut buf,
             area,
             ProjectLauncherSurfaces {
@@ -1821,7 +1821,7 @@ mod tests {
         st.focus = "projects";
         let area = Rect::new(0, 0, 120, 36);
         let mut buf = Buffer::empty(area);
-        render_project_launcher(
+        paint_project_launcher(
             &mut buf,
             area,
             ProjectLauncherSurfaces {
@@ -1839,7 +1839,7 @@ mod tests {
         );
 
         st.focus = "sessions";
-        render_project_launcher(
+        paint_project_launcher(
             &mut buf,
             area,
             ProjectLauncherSurfaces {
@@ -1910,7 +1910,7 @@ mod tests {
         let system = DesignSystem::default();
         let area = Rect::new(0, 0, 100, 28);
         let mut buf = Buffer::empty(area);
-        render_project_launcher(
+        paint_project_launcher(
             &mut buf,
             area,
             ProjectLauncherSurfaces {
@@ -2064,7 +2064,7 @@ mod tests {
         let (preview, _, _) = example_project_preview();
         let area = Rect::new(0, 0, 120, 36);
         let mut buf = Buffer::empty(area);
-        render_project_launcher(
+        paint_project_launcher(
             &mut buf,
             area,
             ProjectLauncherSurfaces {
@@ -2104,7 +2104,7 @@ mod tests {
         let mut buf = Buffer::empty(area);
         let start = std::time::Instant::now();
         for _ in 0..bench::PAINT_FRAMES {
-            render_project_launcher(
+            paint_project_launcher(
                 &mut buf,
                 area,
                 ProjectLauncherSurfaces {

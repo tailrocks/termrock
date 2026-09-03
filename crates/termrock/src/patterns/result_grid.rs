@@ -1269,7 +1269,7 @@ impl<'a> ResultGrid<'a> {
     /// ASCII.
     #[must_use]
     /// Paint status + optional stats + DataTable body.
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut ResultGridState) {
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut ResultGridState) {
         if area.is_empty() {
             return;
         }
@@ -1555,7 +1555,7 @@ mod tests {
         let mut buf = Buffer::empty(area);
         let _ = ResultGrid::new(&system, &cols, &rows)
             .title("q1")
-            .render(area, &mut buf, &mut state);
+            .paint(area, &mut buf, &mut state);
         let text: String = buf
             .content()
             .iter()
@@ -1692,7 +1692,7 @@ mod tests {
         let area = Rect::new(0, 0, 100, 30);
         let mut buf = Buffer::empty(area);
         for _ in 0..6 {
-            let _ = ResultGrid::new(&system, &cols, &rows).render(area, &mut buf, &mut state);
+            let _ = ResultGrid::new(&system, &cols, &rows).paint(area, &mut buf, &mut state);
         }
     }
 

@@ -1089,7 +1089,7 @@ impl<'a> SearchResults<'a> {
     }
 
     /// Paint.
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut SearchResultsState) {
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut SearchResultsState) {
         if area.is_empty() {
             return;
         }
@@ -1546,7 +1546,7 @@ mod tests {
         let mut buf = Buffer::empty(area);
         SearchResults::new(&groups, &items, &system)
             .title("Find")
-            .render(area, &mut buf, &mut state);
+            .paint(area, &mut buf, &mut state);
         let text: String = buf
             .content()
             .iter()
@@ -1629,7 +1629,7 @@ mod tests {
         let area = Rect::new(0, 0, 80, 24);
         let mut buf = Buffer::empty(area);
         for _ in 0..6 {
-            SearchResults::new(&groups, &items, &system).render(area, &mut buf, &mut state);
+            SearchResults::new(&groups, &items, &system).paint(area, &mut buf, &mut state);
             let flat = flatten_search_results(&groups, &items, &state.collapsed);
             let _ = state.handle_key(
                 &flat,

@@ -957,7 +957,7 @@ impl<'a> MetricsDashboard<'a> {
     /// ASCII.
     #[must_use]
     /// Paint using public Sparkline/Gauge APIs only.
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut MetricsDashboardState) {
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut MetricsDashboardState) {
         if area.is_empty() {
             return;
         }
@@ -1259,7 +1259,7 @@ mod tests {
         let mut buf = Buffer::empty(area);
         let _ = MetricsDashboard::new(&tiles, &alerts, &system)
             .title("Ops")
-            .render(area, &mut buf, &mut state);
+            .paint(area, &mut buf, &mut state);
         assert!(!state.slots.tiles.is_empty());
         let text: String = buf
             .content()
@@ -1274,7 +1274,7 @@ mod tests {
         let area_n = Rect::new(0, 0, 40, 12);
         let mut buf_n = Buffer::empty(area_n);
         let _ =
-            MetricsDashboard::new(&tiles, &alerts, &system).render(area_n, &mut buf_n, &mut state);
+            MetricsDashboard::new(&tiles, &alerts, &system).paint(area_n, &mut buf_n, &mut state);
         assert_eq!(state.layout_mode(40), MetricsDashboardLayoutMode::Summary);
     }
 
@@ -1344,7 +1344,7 @@ mod tests {
         let area = Rect::new(0, 0, 120, 36);
         let mut buf = Buffer::empty(area);
         for _ in 0..6 {
-            let _ = MetricsDashboard::new(&tiles, &[], &system).render(area, &mut buf, &mut state);
+            let _ = MetricsDashboard::new(&tiles, &[], &system).paint(area, &mut buf, &mut state);
             let _ = state.handle_key(
                 KeyEvent::new(KeyCode::Right, KeyModifiers::NONE),
                 &tiles,

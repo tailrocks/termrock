@@ -1225,7 +1225,7 @@ fn centered_modal(area: Rect) -> Rect {
 // ── Render ──────────────────────────────────────────────────────────────────
 
 /// Paint composed Git workbench (public child widgets only).
-pub fn render_git_workbench(buffer: &mut Buffer, area: Rect, surfaces: GitWorkbenchSurfaces<'_>) {
+pub fn paint_git_workbench(buffer: &mut Buffer, area: Rect, surfaces: GitWorkbenchSurfaces<'_>) {
     let GitWorkbenchSurfaces {
         system,
         state,
@@ -1274,7 +1274,7 @@ pub fn render_git_workbench(buffer: &mut Buffer, area: Rect, surfaces: GitWorkbe
         FileTree::new(files, system)
             .title("Changes")
             .focused(focused)
-            .render(inner, buffer, &mut state.files);
+            .paint(inner, buffer, &mut state.files);
     }
 
     if let Some(r) = pane_area(&panes, "diff") {
@@ -1748,7 +1748,7 @@ mod tests {
         let mut buf = Buffer::empty(area);
         st.focus = "files";
         st.history.set_focused(true); // corrupt; paint must correct via set_focused
-        render_git_workbench(
+        paint_git_workbench(
             &mut buf,
             area,
             GitWorkbenchSurfaces {
@@ -1767,10 +1767,10 @@ mod tests {
         );
         assert!(
             !st.history.focused,
-            "render_git_workbench must set history.focused from workbench focus"
+            "paint_git_workbench must set history.focused from workbench focus"
         );
         st.focus = "history";
-        render_git_workbench(
+        paint_git_workbench(
             &mut buf,
             area,
             GitWorkbenchSurfaces {
@@ -1965,7 +1965,7 @@ mod tests {
         let area = Rect::new(0, 0, 100, 28);
         let mut buf = Buffer::empty(area);
         // Clean paint
-        render_git_workbench(
+        paint_git_workbench(
             &mut buf,
             area,
             GitWorkbenchSurfaces {
@@ -1985,7 +1985,7 @@ mod tests {
         assert!(!st.last_panes().is_empty());
         // Empty repo paint
         st.repo_status = GitRepoStatus::Clean;
-        render_git_workbench(
+        paint_git_workbench(
             &mut buf,
             area,
             GitWorkbenchSurfaces {
@@ -2094,7 +2094,7 @@ mod tests {
                 GitWorkbenchDensity::Tiny => Rect::new(0, 0, 40, 16),
             };
             let mut buf = Buffer::empty(area);
-            render_git_workbench(
+            paint_git_workbench(
                 &mut buf,
                 area,
                 GitWorkbenchSurfaces {
@@ -2166,7 +2166,7 @@ mod tests {
         let mut buf = Buffer::empty(area);
         let start = std::time::Instant::now();
         for _ in 0..bench::PAINT_FRAMES {
-            render_git_workbench(
+            paint_git_workbench(
                 &mut buf,
                 area,
                 GitWorkbenchSurfaces {

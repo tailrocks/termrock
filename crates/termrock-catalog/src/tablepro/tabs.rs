@@ -22,7 +22,7 @@ use termrock::widgets::{
     DataTableNavMode, DataTableState, ListRow, ListState, LoadState, Prop, SortSpec,
     SyntaxHighlighter, Tab, Tabs, TabsState, TextAreaState, TextCursor, TextInput, TextInputState,
     TokenItem, TokenStrip, TokenStripOutcome, TokenStripState, Tree, TreeNode, TreeState,
-    render_props,
+    paint_props,
 };
 
 use super::db::{Catalog, ColType, Table as DbTable};
@@ -1151,7 +1151,7 @@ fn paint_plan(
     if let Some(w) = &info.warning {
         facts.push(Prop::new("Warning", w.clone()));
     }
-    let _ = render_props(inner, buf, t, &facts, cbg);
+    let _ = paint_props(inner, buf, t, &facts, cbg);
     // Keep the one spare row below the facts card on the canvas plane.
     let tail = Rect::new(d.x, d.bottom().saturating_sub(1), d.width, 1);
     if !tail.is_empty() {

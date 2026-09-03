@@ -91,19 +91,19 @@ mod working_state_card;
 
 pub use agent_shell::{
     AgentShellFocus, AgentShellLayout, AgentShellSlots, AgentShellView, layout_agent_shell,
-    render_agent_shell,
+    paint_agent_shell,
 };
 pub use agent_workbench::{
     AgentWorkbenchState, WorkbenchDensity, WorkbenchKeyOutcome, WorkbenchModals, WorkbenchPane,
     WorkbenchSurfaces, agent_workbench_layout, agent_workbench_layout_density, default_modes,
     dialog_modal_rect, diff_modal_rect, empty_task_row, example_agent_workbench_nav,
-    example_workbench_activities, example_workbench_tasks, permission_modal_rect,
-    register_workbench_scene, render_agent_workbench, sync_workbench_scene,
+    example_workbench_activities, example_workbench_tasks, paint_agent_workbench,
+    permission_modal_rect, register_workbench_scene, sync_workbench_scene,
 };
 pub use app_dashboard::{
     AppDashboardLayout, AppDashboardOutcome, AppDashboardPane, AppDashboardSlots,
     AppDashboardState, AppDashboardSurfaces, example_dashboard_nav, layout_app_dashboard,
-    render_app_dashboard,
+    paint_app_dashboard,
 };
 pub use app_shell::{
     AppShellConfig, AppShellLifecycle, AppShellRecipe, AppShellSlots, AppShellZone,
@@ -111,7 +111,7 @@ pub use app_shell::{
 };
 pub use auth_entry::{
     AuthEntryField, AuthEntryMode, AuthEntryOutcome, AuthEntryState, AuthEntrySurfaces,
-    AuthFieldError, auth_entry_form_width, example_auth_aside_lines, render_auth_entry,
+    AuthFieldError, auth_entry_form_width, example_auth_aside_lines, paint_auth_entry,
 };
 pub use database_workbench::bench as database_workbench_bench;
 pub use database_workbench::{
@@ -122,7 +122,7 @@ pub use database_workbench::{
     example_db_history, example_disconnected_connections, example_inspect_fields,
     example_query_tabs, example_result_columns, example_result_row_refs, example_result_rows,
     example_schema_entries, example_workbench_connections, large_result_row_data,
-    render_database_workbench,
+    paint_database_workbench,
 };
 pub use error_recovery::bench as error_recovery_bench;
 pub use error_recovery::{
@@ -130,8 +130,9 @@ pub use error_recovery::{
     ErrorRecoveryPane, ErrorRecoveryState, ErrorRecoverySurfaces, FailureClass, RecoveryActionId,
     build_redacted_crash_report, burst_crash_snapshot, error_recovery_layout,
     error_recovery_layout_density, example_crash_snapshot_with_secrets, example_recovery_snapshot,
-    example_terminal_restore_failed_snapshot, recovery_action_rows, redact_crash_report_text,
-    render_error_recovery, seed_inline_fallback, seed_partial_init, seed_terminal_restore_failed,
+    example_terminal_restore_failed_snapshot, paint_error_recovery, recovery_action_rows,
+    redact_crash_report_text, seed_inline_fallback, seed_partial_init,
+    seed_terminal_restore_failed,
 };
 pub use file_manager::bench as file_manager_bench;
 pub use file_manager::{
@@ -140,7 +141,7 @@ pub use file_manager::{
     FileManagerPane, FileManagerState, FileManagerSurfaces, FileOpItem, FileOpKind, FileOpStatus,
     burst_file_entries, default_quick_open_providers, dialog_rect, example_empty_ops,
     example_file_entries, example_file_ops, example_file_preview, example_quick_open_from_entries,
-    file_manager_layout, file_manager_layout_density, quick_open_rect, render_file_manager,
+    file_manager_layout, file_manager_layout_density, paint_file_manager, quick_open_rect,
     seed_conflict_state, seed_delete_confirm,
 };
 pub use git_workbench::bench as git_workbench_bench;
@@ -151,7 +152,7 @@ pub use git_workbench::{
     example_git_branches, example_git_commits, example_git_diff_files, example_git_diff_lines,
     example_git_files, example_git_help_entries, example_git_hunks, example_git_terminal_lines,
     example_git_terminal_meta, git_workbench_layout, git_workbench_layout_density, large_git_diff,
-    render_git_workbench,
+    paint_git_workbench,
 };
 pub use help_center::bench as help_center_bench;
 pub use help_center::{
@@ -161,7 +162,7 @@ pub use help_center::{
     diagnostics_rows, doctor_finding_rows, example_help_center_commands,
     example_help_center_entries, example_help_doctor_report, example_help_topics,
     filter_help_topics, help_center_layout, help_center_layout_density, help_topic_rows,
-    render_help_center, seed_compact_mode, seed_diagnostics_state,
+    paint_help_center, seed_compact_mode, seed_diagnostics_state,
 };
 pub use observability_dashboard::bench as observability_dashboard_bench;
 pub use observability_dashboard::{
@@ -170,11 +171,11 @@ pub use observability_dashboard::{
     ObservabilityPane, burst_observability_logs, example_log_inspect_fields,
     example_observability_alerts, example_observability_events, example_observability_logs,
     example_observability_tiles, observability_dashboard_layout,
-    observability_dashboard_layout_density, render_observability_dashboard, seed_failure_state,
+    observability_dashboard_layout_density, paint_observability_dashboard, seed_failure_state,
 };
 pub use ops_dashboard::{
     OpsDashboardLayout, OpsDashboardOutcome, OpsDashboardSlots, OpsDashboardState,
-    OpsDashboardView, OpsRegion, layout_ops_dashboard, render_ops_dashboard,
+    OpsDashboardView, OpsRegion, layout_ops_dashboard, paint_ops_dashboard,
 };
 pub use project_launcher::bench as project_launcher_bench;
 pub use project_launcher::{
@@ -182,13 +183,13 @@ pub use project_launcher::{
     ProjectLauncherMode, ProjectLauncherOutcome, ProjectLauncherPane, ProjectLauncherState,
     ProjectLauncherSurfaces, ProjectLocation, ProjectPathStatus, burst_project_entries,
     default_project_quick_open_providers, example_project_preview, example_project_quick_open,
-    example_projects, filter_project_entries, project_launcher_layout,
-    project_launcher_layout_density, project_list_rows, project_quick_open_rect,
-    render_project_launcher, seed_error_state, seed_onboarding_state, seed_stale_state,
+    example_projects, filter_project_entries, paint_project_launcher, project_launcher_layout,
+    project_launcher_layout_density, project_list_rows, project_quick_open_rect, seed_error_state,
+    seed_onboarding_state, seed_stale_state,
 };
 pub use resource_browser::{
     ResourceBrowserFocus, ResourceBrowserLayout, ResourceBrowserOutcome, ResourceBrowserSlots,
-    ResourceBrowserState, ResourceBrowserView, layout_resource_browser, render_resource_browser,
+    ResourceBrowserState, ResourceBrowserView, layout_resource_browser, paint_resource_browser,
     wire_resource_preview,
 };
 pub use settings_screen::{
@@ -196,17 +197,17 @@ pub use settings_screen::{
     SettingsScreenState, SettingsScreenSurfaces, SettingsShellOutcome, SettingsShellState,
     example_settings_appearance_fields, example_settings_categories, example_settings_help_entries,
     example_settings_keys_fields, example_settings_profile_fields, filter_settings_fieldsets,
-    filter_settings_nav, layout_settings_screen, render_settings_screen, settings_query_matches,
+    filter_settings_nav, layout_settings_screen, paint_settings_screen, settings_query_matches,
 };
 pub use setup_wizard::{
     CapabilityLine, SetupStep, SetupStepKind, SetupWizardMode, SetupWizardOutcome,
     SetupWizardSlots, SetupWizardState, SetupWizardSurfaces, example_capability_lines,
     example_onboarding_setup_steps, example_setup_account_fields, example_setup_choices_fields,
     example_setup_connection_fields, example_setup_steps, example_setup_summary_lines,
-    layout_setup_wizard, render_setup_wizard, setup_steps_to_wizard_steps,
+    layout_setup_wizard, paint_setup_wizard, setup_steps_to_wizard_steps,
 };
 pub use studio_shell::{
-    StudioShellLayout, StudioShellSlots, StudioShellView, layout_studio_shell, render_studio_shell,
+    StudioShellLayout, StudioShellSlots, StudioShellView, layout_studio_shell, paint_studio_shell,
 };
 
 // ── Example composites (from widgets) ─────────────────────────

@@ -523,11 +523,6 @@ impl<'a, Id> Checkbox<'a, Id> {
         parts
     }
 
-    /// Paint + StatefulWidget path.
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut CheckboxState) {
-        let _ = self.paint(area, buffer, state);
-    }
-
     /// Keys via widget (delegates to state with owned id).
     pub fn handle_key(&self, state: &mut CheckboxState, key: KeyEvent) -> CheckboxOutcome<Id>
     where
@@ -1252,11 +1247,6 @@ impl<'a, Id: Clone + PartialEq> RadioGroup<'a, Id> {
             style = style.patch(self.system.style(Role::Danger));
         }
         style
-    }
-
-    /// Prefer [`Self::paint`].
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut RadioState<Id>) {
-        let _ = self.paint(area, buffer, state);
     }
 
     fn commit_selected(&self, state: &mut RadioState<Id>, id: Id) -> RadioOutcome<Id> {
@@ -2180,11 +2170,6 @@ impl<'a, Id> Switch<'a, Id> {
         parts
     }
 
-    /// Paint + StatefulWidget path.
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut SwitchState) {
-        let _ = self.paint(area, buffer, state);
-    }
-
     /// Keys via widget.
     pub fn handle_key(&self, state: &mut SwitchState, key: KeyEvent) -> SwitchOutcome<Id>
     where
@@ -2816,7 +2801,7 @@ mod tests {
         let mut buffer = Buffer::empty(area);
         RadioGroup::new(&options, &system)
             .legend("Density")
-            .render(area, &mut buffer, &mut state);
+            .paint(area, &mut buffer, &mut state);
 
         let rows: Vec<String> = (0..area.height)
             .map(|y| (0..area.width).map(|x| buffer[(x, y)].symbol()).collect())

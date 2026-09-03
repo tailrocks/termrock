@@ -1067,7 +1067,7 @@ impl<'a, Id> FileTree<'a, Id> {
     }
 
     /// Paint.
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut FileTreeState<Id>)
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut FileTreeState<Id>)
     where
         Id: Clone + PartialEq + Eq,
     {
@@ -1338,7 +1338,7 @@ mod tests {
         FileTree::new(&e, &system)
             .title("Repo")
             .focused(true)
-            .render(area, &mut buf, &mut state);
+            .paint(area, &mut buf, &mut state);
         let text: String = buf
             .content()
             .iter()
@@ -1398,7 +1398,7 @@ mod tests {
         let mut buf = Buffer::empty(area);
         let view = FileTree::new(&e, &system);
         for _ in 0..30 {
-            view.render(area, &mut buf, &mut state);
+            view.paint(area, &mut buf, &mut state);
         }
     }
 }

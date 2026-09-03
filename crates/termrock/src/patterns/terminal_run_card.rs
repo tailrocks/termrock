@@ -1118,14 +1118,9 @@ impl<'a> TerminalRunCard<'a> {
             .focused(state.focused)
             .colorless(colorless)
             .show_chrome(false); // card owns command chrome; substrate owns stream
-        view.render(stream_area, buffer, &mut state.output);
+        view.paint(stream_area, buffer, &mut state.output);
 
         let _ = (display_cols, escape_raw_terminal);
-    }
-
-    /// Render alias.
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut TerminalRunCardState) {
-        self.paint(area, buffer, state);
     }
 }
 
@@ -1532,6 +1527,6 @@ mod tests {
         let mut st = TerminalOutputState::new();
         let area = Rect::new(0, 0, 40, 8);
         let mut buf = Buffer::empty(area);
-        TerminalOutput::new(&meta, &lines, &system).render(area, &mut buf, &mut st);
+        TerminalOutput::new(&meta, &lines, &system).paint(area, &mut buf, &mut st);
     }
 }

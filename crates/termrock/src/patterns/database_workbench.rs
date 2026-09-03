@@ -1454,7 +1454,7 @@ pub struct DatabaseWorkbenchSurfaces<'a> {
 }
 
 /// Paint composed database workbench (public child widgets only).
-pub fn render_database_workbench(
+pub fn paint_database_workbench(
     buffer: &mut Buffer,
     area: Rect,
     surfaces: DatabaseWorkbenchSurfaces<'_>,
@@ -1522,7 +1522,7 @@ pub fn render_database_workbench(
         let _ = SchemaBrowser::new(schema_entries, system)
             .title("Schema")
             .focused(focused)
-            .render(r, buffer, &mut state.schema);
+            .paint(r, buffer, &mut state.schema);
     }
 
     if let Some(r) = pane_area(&panes, "query") {
@@ -1567,7 +1567,7 @@ pub fn render_database_workbench(
             let _ = QueryEditor::new(system)
                 .title(tab_title.as_str())
                 .focused(focused)
-                .render(editor_area, buffer, &mut state.query);
+                .paint(editor_area, buffer, &mut state.query);
         }
     }
 
@@ -1576,7 +1576,7 @@ pub fn render_database_workbench(
         let _ = ResultGrid::new(system, result_columns, result_rows)
             .title("Results")
             .focused(focused)
-            .render(r, buffer, &mut state.results);
+            .paint(r, buffer, &mut state.results);
     }
 
     if let Some(r) = pane_area(&panes, "inspector") {
@@ -2117,7 +2117,7 @@ mod tests {
                 DatabaseWorkbenchDensity::Tiny => Rect::new(0, 0, 40, 16),
             };
             let mut buf = Buffer::empty(area);
-            render_database_workbench(
+            paint_database_workbench(
                 &mut buf,
                 area,
                 DatabaseWorkbenchSurfaces {
@@ -2205,7 +2205,7 @@ mod tests {
         let mut buf = Buffer::empty(area);
         let start = std::time::Instant::now();
         for _ in 0..bench::PAINT_FRAMES {
-            render_database_workbench(
+            paint_database_workbench(
                 &mut buf,
                 area,
                 DatabaseWorkbenchSurfaces {

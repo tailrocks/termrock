@@ -1179,7 +1179,7 @@ impl<'a> DiffView<'a> {
     }
 
     /// Paint O(visible).
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut DiffViewState) {
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut DiffViewState) {
         state.regions.clear();
         if area.is_empty() {
             state.body_rows = 0;
@@ -1727,14 +1727,14 @@ fn paint_split_line(
 impl StatefulWidget for &DiffView<'_> {
     type State = DiffViewState;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        DiffView::render(self, area, buffer, state);
+        DiffView::paint(self, area, buffer, state);
     }
 }
 
 impl StatefulWidget for DiffView<'_> {
     type State = DiffViewState;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        DiffView::render(&self, area, buffer, state);
+        DiffView::paint(&self, area, buffer, state);
     }
 }
 

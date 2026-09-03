@@ -121,7 +121,7 @@ impl<'a> HintBar<'a> {
     /// Places the hint rows against an edge of their area.
     ///
     /// This is the only alignment control for footer hints: the rich-span
-    /// painter [`render_hint_bar`] resolves through the same path.
+    /// painter [`paint_hint_bar`] resolves through the same path.
     #[must_use]
     pub const fn alignment(mut self, alignment: CellAlignment) -> Self {
         self.alignment = alignment;
@@ -256,7 +256,7 @@ impl Widget for HintBar<'_> {
 }
 
 /// Render the shared rich hint vocabulary centered in the supplied area.
-pub fn render_hint_bar(
+pub fn paint_hint_bar(
     frame: &mut ratatui_core::terminal::Frame<'_>,
     area: Rect,
     spans: &[HintSpan<'_>],

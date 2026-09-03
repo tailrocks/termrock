@@ -742,7 +742,7 @@ fn mask_placeholder() -> String {
 }
 
 /// Paint auth entry panel.
-pub fn render_auth_entry(buffer: &mut Buffer, area: Rect, surfaces: AuthEntrySurfaces<'_>) {
+pub fn paint_auth_entry(buffer: &mut Buffer, area: Rect, surfaces: AuthEntrySurfaces<'_>) {
     if area.is_empty() {
         return;
     }
@@ -1222,7 +1222,7 @@ mod tests {
         type_identity(&mut st, "a@b.c");
         let area = Rect::new(0, 0, 60, 16);
         let mut buf = Buffer::empty(area);
-        render_auth_entry(&mut buf, area, AuthEntrySurfaces::english(&system, &mut st));
+        paint_auth_entry(&mut buf, area, AuthEntrySurfaces::english(&system, &mut st));
         let mut sample = String::new();
         for y in 0..3 {
             for x in 0..16 {
@@ -1289,7 +1289,7 @@ mod tests {
         let aside = example_auth_aside_lines();
         let mut surfaces = AuthEntrySurfaces::english(&system, &mut st);
         surfaces.aside_lines = aside;
-        render_auth_entry(&mut buf, area, surfaces);
+        paint_auth_entry(&mut buf, area, surfaces);
         // title / email chrome should appear
         let mut sample = String::new();
         for y in 0..4 {

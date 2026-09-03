@@ -1237,7 +1237,7 @@ pub static PUBLIC_UI_INVENTORY: &[PublicUiInventoryEntry] = &[
         "sparkline",
         "sparkline/basic"
     ),
-    public_ui!(Spinner, Widget, Feedback, "spinner", "spinner/labeled"),
+    public_ui!(Spinner, Paint, Feedback, "spinner", "spinner/labeled"),
     public_ui!(
         SplitPane,
         Widget,
@@ -1858,7 +1858,7 @@ mod tests {
                     counts[index] += 1;
                     counts
                 });
-        assert_eq!(kind_counts, [133, 63, 6, 8]);
+        assert_eq!(kind_counts, [132, 64, 6, 8]);
         assert_eq!(
             public_ui_inventory()
                 .iter()

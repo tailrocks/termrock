@@ -1640,9 +1640,9 @@ impl<'a> PromptComposer<'a> {
         Self { system }
     }
 
-    /// Paint (same as [`StatefulWidget::render`]).
-    pub fn render(self, area: Rect, buffer: &mut Buffer, state: &mut PromptComposerState) {
-        <&Self as StatefulWidget>::render(&self, area, buffer, state);
+    /// Paint (single public entry; the [`StatefulWidget`] impls delegate here).
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut PromptComposerState) {
+        <&Self as StatefulWidget>::render(self, area, buffer, state);
     }
 }
 
@@ -2440,7 +2440,7 @@ mod tests {
         state.select_anchor = Some(TextCursor { line: 0, byte: 0 });
         assert!(state.editor.set_cursor(TextCursor { line: 0, byte: 5 }));
         let mut buf = Buffer::empty(Rect::new(0, 0, 40, 8));
-        PromptComposer::new(&system).render(Rect::new(0, 0, 40, 8), &mut buf, &mut state);
+        PromptComposer::new(&system).paint(Rect::new(0, 0, 40, 8), &mut buf, &mut state);
         let body = state.editor.body_area();
         // D8: the selection is one explicit pair, applied whole — no
         // reversal modifier anywhere in it.
@@ -2461,7 +2461,7 @@ mod tests {
         state.set_accepts_input(true);
         let area = Rect::new(0, 0, 40, 6);
         let mut buffer = Buffer::empty(area);
-        PromptComposer::new(&system).render(area, &mut buffer, &mut state);
+        PromptComposer::new(&system).paint(area, &mut buffer, &mut state);
         let body = state.editor.body_area();
         assert!(
             (body.x..body.right()).any(|x| buffer[(x, body.y)].bg == system.junie_theme().field),
@@ -2478,7 +2478,7 @@ mod tests {
         let area = Rect::new(0, 0, 22, 8);
         let mut buffer = Buffer::empty(area);
 
-        PromptComposer::new(&system).render(area, &mut buffer, &mut state);
+        PromptComposer::new(&system).paint(area, &mut buffer, &mut state);
 
         let body = state.editor.body_area();
         let painted: String = (body.x..body.right())
@@ -2544,7 +2544,7 @@ mod tests {
         let area = Rect::new(0, 0, 80, 16);
         let mut buf = Buffer::empty(area);
         for _ in 0..bench::PAINT_FRAMES {
-            PromptComposer::new(&system).render(area, &mut buf, &mut state);
+            PromptComposer::new(&system).paint(area, &mut buf, &mut state);
         }
         // repeated large pastes → chips
         let paste = "p".repeat(LARGE_PASTE_THRESHOLD);

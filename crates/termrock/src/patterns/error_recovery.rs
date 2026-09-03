@@ -1158,7 +1158,7 @@ fn pane_area(panes: &[PaneGeom], id: &str) -> Option<Rect> {
 // ── Render ──────────────────────────────────────────────────────────────────
 
 /// Paint error recovery / crash report surface.
-pub fn render_error_recovery(buffer: &mut Buffer, area: Rect, surfaces: ErrorRecoverySurfaces<'_>) {
+pub fn paint_error_recovery(buffer: &mut Buffer, area: Rect, surfaces: ErrorRecoverySurfaces<'_>) {
     let ErrorRecoverySurfaces {
         system,
         state,
@@ -1629,7 +1629,7 @@ mod tests {
         let mut st = open();
         let area = Rect::new(0, 0, 100, 36);
         let mut buf = Buffer::empty(area);
-        render_error_recovery(
+        paint_error_recovery(
             &mut buf,
             area,
             ErrorRecoverySurfaces {
@@ -1647,7 +1647,7 @@ mod tests {
 
         seed_inline_fallback(&mut st);
         let mut buf2 = Buffer::empty(area);
-        render_error_recovery(
+        paint_error_recovery(
             &mut buf2,
             area,
             ErrorRecoverySurfaces {
@@ -1675,7 +1675,7 @@ mod tests {
         let start = std::time::Instant::now();
         for _ in 0..bench::PAINT_FRAMES {
             st.invalidate_report_cache();
-            render_error_recovery(
+            paint_error_recovery(
                 &mut buf,
                 area,
                 ErrorRecoverySurfaces {

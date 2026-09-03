@@ -1210,7 +1210,7 @@ impl<'a> QueryEditor<'a> {
     /// ASCII.
     #[must_use]
     /// Paint workbench; host paints result grid into [`QueryEditorSlots::results`].
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut QueryEditorState) {
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut QueryEditorState) {
         if area.is_empty() {
             return;
         }
@@ -1466,7 +1466,7 @@ impl<'a> QueryEditor<'a> {
     }
 
     /// Optional CodeFrame for selected diagnostic over draft lines.
-    pub fn render_diagnostic_frame(
+    pub fn paint_diagnostic_frame(
         &self,
         area: Rect,
         buffer: &mut Buffer,
@@ -1482,7 +1482,7 @@ impl<'a> QueryEditor<'a> {
         let line_refs: Vec<CodeFrameLine<'_>> = lines;
         CodeFrame::new(&line_refs, self.system)
             .labels(labels)
-            .render(area, buffer);
+            .paint(area, buffer);
     }
 }
 
@@ -1677,7 +1677,7 @@ mod tests {
         let _ = QueryEditor::new(&system)
             .diagnostics(&diags)
             .title("SQL")
-            .render(area, &mut buf, &mut state);
+            .paint(area, &mut buf, &mut state);
         assert!(!state.slots.editor.is_empty());
         assert!(!state.slots.results.is_empty() || state.mode != QueryEditorMode::Normal);
         let text: String = buf
@@ -1698,7 +1698,7 @@ mod tests {
         state.mode = QueryEditorMode::Compact;
         let area = Rect::new(0, 0, 40, 10);
         let mut buf = Buffer::empty(area);
-        let _ = QueryEditor::new(&system).render(area, &mut buf, &mut state);
+        let _ = QueryEditor::new(&system).paint(area, &mut buf, &mut state);
         assert!(state.slots.results.is_empty() || state.slots.results.height == 0);
     }
 
@@ -1750,7 +1750,7 @@ mod tests {
         let area = Rect::new(0, 0, 80, 24);
         let mut buf = Buffer::empty(area);
         for _ in 0..8 {
-            let _ = QueryEditor::new(&system).render(area, &mut buf, &mut state);
+            let _ = QueryEditor::new(&system).paint(area, &mut buf, &mut state);
         }
         assert!(!state.slots.editor.is_empty());
     }

@@ -18,7 +18,7 @@ use crate::widgets::Backdrop;
 /// modal, whenever the overlay stack asks for
 /// [`BackdropPolicy`]: the widget itself only ever receives its own rect, so
 /// the backdrop belongs to the host that owns the layer.
-pub fn render_backdrop(
+pub fn paint_backdrop(
     frame: &mut Frame<'_>,
     full_area: Rect,
     system: &DesignSystem,

@@ -776,7 +776,7 @@ fn paint_facts_body(
     if body.is_empty() {
         return;
     }
-    let used = super::props::render(body, buffer, theme, facts, bg);
+    let used = super::props::paint(body, buffer, theme, facts, bg);
     if code.is_empty() {
         return;
     }

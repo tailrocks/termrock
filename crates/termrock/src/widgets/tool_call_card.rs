@@ -983,11 +983,6 @@ impl<'a> ToolCallCard<'a> {
         }
         let _ = display_cols;
     }
-
-    /// Render alias.
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut ToolCallCardState) {
-        self.paint(area, buffer, state);
-    }
 }
 
 /// Example calls for stories/tests.

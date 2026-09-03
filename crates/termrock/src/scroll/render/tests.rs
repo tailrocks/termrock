@@ -21,7 +21,7 @@ fn vertical_thumb_moves_and_keeps_length() {
     let render = |offset| {
         let mut buffer = Buffer::empty(Rect::new(0, 0, 1, 10));
         let area = buffer.area;
-        render_scrollbar(
+        paint_scrollbar(
             &mut buffer,
             area,
             ScrollbarSpec::new(
@@ -45,7 +45,7 @@ fn vertical_thumb_moves_and_keeps_length() {
 fn block_style_only_changes_vertical_thumb() {
     let mut buffer = Buffer::empty(Rect::new(0, 0, 1, 5));
     let area = buffer.area;
-    render_scrollbar(
+    paint_scrollbar(
         &mut buffer,
         area,
         ScrollbarSpec::new(
@@ -64,7 +64,7 @@ fn scrollbar_uses_semantic_theme_roles() {
     let theme = system.junie_theme();
     let mut buffer = Buffer::empty(Rect::new(0, 0, 1, 5));
     let area = buffer.area;
-    render_scrollbar(
+    paint_scrollbar(
         &mut buffer,
         area,
         ScrollbarSpec::new(
@@ -90,7 +90,7 @@ fn fixed_prefix_scroll_preserves_prefix_and_unicode_cells() {
     let mut terminal = Terminal::new(backend).unwrap();
     terminal
         .draw(|frame| {
-            render_line_with_fixed_prefix_scroll(
+            paint_line_with_fixed_prefix_scroll(
                 frame,
                 Rect::new(0, 0, 8, 1),
                 0,

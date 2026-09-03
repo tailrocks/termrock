@@ -1139,7 +1139,7 @@ impl<'a> DependencyGraph<'a> {
     /// ASCII.
     #[must_use]
     /// Paint.
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut DependencyGraphState) {
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut DependencyGraphState) {
         if area.is_empty() {
             return;
         }
@@ -1633,7 +1633,7 @@ mod tests {
         let mut buf = Buffer::empty(area);
         let _ = DependencyGraph::new(&nodes, &edges, &system)
             .title("Crates")
-            .render(area, &mut buf, &mut state);
+            .paint(area, &mut buf, &mut state);
         assert_eq!(state.effective_view, DependencyGraphView::Graph);
         let text: String = buf
             .content()
@@ -1646,7 +1646,7 @@ mod tests {
         );
 
         state.force_tree = true;
-        let _ = DependencyGraph::new(&nodes, &edges, &system).render(area, &mut buf, &mut state);
+        let _ = DependencyGraph::new(&nodes, &edges, &system).paint(area, &mut buf, &mut state);
         assert_eq!(state.effective_view, DependencyGraphView::Tree);
     }
 
@@ -1702,8 +1702,7 @@ mod tests {
         let area = Rect::new(0, 0, 100, 30);
         let mut buf = Buffer::empty(area);
         for _ in 0..8 {
-            let _ =
-                DependencyGraph::new(&nodes, &edges, &system).render(area, &mut buf, &mut state);
+            let _ = DependencyGraph::new(&nodes, &edges, &system).paint(area, &mut buf, &mut state);
             let _ = state.handle_key(
                 &nodes,
                 &edges,

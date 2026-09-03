@@ -976,11 +976,6 @@ impl<'a> ContextMeter<'a> {
         }
         let _ = display_cols;
     }
-
-    /// Render alias.
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut ContextMeterState) {
-        self.paint(area, buffer, state);
-    }
 }
 
 // ── TokenMeter bridge ───────────────────────────────────────────────────────

@@ -384,7 +384,7 @@ pub fn example_dashboard_nav() -> Vec<NavItem<&'static str>> {
 }
 
 /// Paint shell chrome + sidebar; main shows placeholder (host overlays data).
-pub fn render_app_dashboard<Id: Clone + PartialEq>(
+pub fn paint_app_dashboard<Id: Clone + PartialEq>(
     buffer: &mut Buffer,
     area: Rect,
     surfaces: AppDashboardSurfaces<'_, Id>,
@@ -651,7 +651,7 @@ mod tests {
         assert!(filter_nav_collapsed(&nav).len() < nav.len() || !nav.is_empty());
         let area = Rect::new(0, 0, 80, 24);
         let mut buf = Buffer::empty(area);
-        render_app_dashboard(
+        paint_app_dashboard(
             &mut buf,
             area,
             AppDashboardSurfaces {

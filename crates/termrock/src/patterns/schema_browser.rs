@@ -1051,7 +1051,7 @@ impl<'a, Id: Clone + PartialEq + Ord> SchemaBrowser<'a, Id> {
     /// ASCII.
     #[must_use]
     /// Paint.
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut SchemaBrowserState<Id>)
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut SchemaBrowserState<Id>)
     where
         Id: Clone + PartialEq + Eq,
     {
@@ -1313,7 +1313,7 @@ mod tests {
         let mut buf = Buffer::empty(area);
         let _ = SchemaBrowser::new(&entries, &system)
             .title("Catalog")
-            .render(area, &mut buf, &mut state);
+            .paint(area, &mut buf, &mut state);
         let text: String = buf
             .content()
             .iter()
@@ -1379,7 +1379,7 @@ mod tests {
         assert!(!vis.is_empty());
         let area = Rect::new(0, 0, 48, 24);
         let mut buf = Buffer::empty(area);
-        let _ = SchemaBrowser::new(&entries, &system).render(area, &mut buf, &mut state);
+        let _ = SchemaBrowser::new(&entries, &system).paint(area, &mut buf, &mut state);
     }
 
     #[test]

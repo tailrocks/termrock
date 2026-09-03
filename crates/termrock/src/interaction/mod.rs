@@ -40,7 +40,7 @@ pub use intent::{
 };
 pub use keymap_bridge::dispatch_keymap_action;
 /// Paint a dim/occlude wash when [`OverlayStack::backdrop_policy`] requests it.
-pub use modal::render_backdrop;
+pub use modal::paint_backdrop;
 pub use overlay_stack::{
     BackdropPolicy, NarrowFallback, OpenMode, OverlayFit, OverlayId, OverlayKind, OverlayOutcome,
     OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, PlacementPrefer, PlacementResult,

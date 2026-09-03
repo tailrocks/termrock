@@ -1508,7 +1508,7 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
     }
 
     /// Paint O(visible) rows only.
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut DataTableState<RowId, ColId>)
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut DataTableState<RowId, ColId>)
     where
         ColId: Clone,
     {
@@ -2256,7 +2256,7 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> StatefulWidget
     type State = DataTableState<RowId, ColId>;
 
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        DataTable::render(&self, area, buffer, state);
+        DataTable::paint(&self, area, buffer, state);
     }
 }
 
@@ -2266,7 +2266,7 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> StatefulWidget
     type State = DataTableState<RowId, ColId>;
 
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        DataTable::render(self, area, buffer, state);
+        DataTable::paint(self, area, buffer, state);
     }
 }
 

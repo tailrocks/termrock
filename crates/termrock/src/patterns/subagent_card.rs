@@ -1073,11 +1073,6 @@ impl<'a> SubagentCard<'a> {
             );
         state.header_hit = area;
     }
-
-    /// Render alias.
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut SubagentCardState) {
-        self.paint(area, buffer, state);
-    }
 }
 
 // ── Examples ────────────────────────────────────────────────────────────────

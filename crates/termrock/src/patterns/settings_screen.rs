@@ -664,7 +664,7 @@ pub struct SettingsScreenSurfaces<'a, SectionId: Clone + PartialEq> {
 }
 
 /// Paints a composed settings screen from public widgets only.
-pub fn render_settings_screen<SectionId: Clone + PartialEq>(
+pub fn paint_settings_screen<SectionId: Clone + PartialEq>(
     buffer: &mut Buffer,
     area: Rect,
     surfaces: SettingsScreenSurfaces<'_, SectionId>,
@@ -1253,7 +1253,7 @@ mod tests {
         let mut sstate = StatusBarState::default();
         let area = Rect::new(0, 0, 100, 28);
         let mut buf = Buffer::empty(area);
-        render_settings_screen(
+        paint_settings_screen(
             &mut buf,
             area,
             SettingsScreenSurfaces {
@@ -1283,7 +1283,7 @@ mod tests {
 
         st.body_mode = SettingsBodyMode::Theme;
         let mut buf = Buffer::empty(area);
-        render_settings_screen(
+        paint_settings_screen(
             &mut buf,
             area,
             SettingsScreenSurfaces {
@@ -1310,7 +1310,7 @@ mod tests {
         let mut sstate = StatusBarState::default();
         let area = Rect::new(0, 0, 80, 20);
         let mut buf = Buffer::empty(area);
-        render_settings_screen(
+        paint_settings_screen(
             &mut buf,
             area,
             SettingsScreenSurfaces {
@@ -1329,7 +1329,7 @@ mod tests {
         st.body_mode = SettingsBodyMode::NoResults;
         st.search.set_query("zzzz");
         let mut buf = Buffer::empty(area);
-        render_settings_screen(
+        paint_settings_screen(
             &mut buf,
             area,
             SettingsScreenSurfaces {
@@ -1424,7 +1424,7 @@ mod tests {
         terminal
             .draw(|f| {
                 let area = f.area();
-                render_settings_screen(
+                paint_settings_screen(
                     f.buffer_mut(),
                     area,
                     SettingsScreenSurfaces {

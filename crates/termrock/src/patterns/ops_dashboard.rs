@@ -133,7 +133,7 @@ mod tests {
         let mut state = OpsDashboardState::<u64, &str>::new();
         let area = Rect::new(0, 0, 80, 24);
         let mut buffer = Buffer::empty(area);
-        let slots = render_ops_dashboard(
+        let slots = paint_ops_dashboard(
             area,
             &mut buffer,
             &system,
@@ -161,7 +161,7 @@ mod tests {
         let mut moved = OpsDashboardState::<u64, &str>::new();
         moved.region = OpsRegion::Log;
         let mut other = Buffer::empty(area);
-        render_ops_dashboard(
+        paint_ops_dashboard(
             area,
             &mut other,
             &system,
@@ -337,7 +337,7 @@ pub struct OpsDashboardView<'a, RowId, ColId> {
 /// This is the example: a host that wants a different assembly copies it and
 /// changes the widgets, and a host that only wants the geometry keeps calling
 /// [`layout_ops_dashboard`] and paints its own panes.
-pub fn render_ops_dashboard<RowId: Clone + Ord, ColId: Clone + PartialEq>(
+pub fn paint_ops_dashboard<RowId: Clone + Ord, ColId: Clone + PartialEq>(
     area: Rect,
     buffer: &mut Buffer,
     system: &DesignSystem,

@@ -1345,11 +1345,6 @@ impl<'a> BackgroundTaskPanel<'a> {
             .render(out_area, buffer, &mut state.output);
         let _ = (display_cols, TerminalPaintMode::Ansi, Modifier::BOLD);
     }
-
-    /// Render alias.
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut BackgroundTaskPanelState) {
-        self.paint(area, buffer, state);
-    }
 }
 
 impl StatefulWidget for &BackgroundTaskPanel<'_> {

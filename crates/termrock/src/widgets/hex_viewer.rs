@@ -1182,7 +1182,7 @@ impl<'a> HexViewer<'a> {
     }
 
     /// Paint O(visible rows).
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut HexViewerState) {
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut HexViewerState) {
         state.regions.clear();
         if area.is_empty() {
             state.body_rows = 0;
@@ -1465,14 +1465,14 @@ fn paint_hex_row(
 impl StatefulWidget for &HexViewer<'_> {
     type State = HexViewerState;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        HexViewer::render(self, area, buffer, state);
+        HexViewer::paint(self, area, buffer, state);
     }
 }
 
 impl StatefulWidget for HexViewer<'_> {
     type State = HexViewerState;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        HexViewer::render(&self, area, buffer, state);
+        HexViewer::paint(&self, area, buffer, state);
     }
 }
 

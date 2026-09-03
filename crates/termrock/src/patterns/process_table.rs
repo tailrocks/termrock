@@ -1216,7 +1216,7 @@ impl<'a> ProcessTable<'a> {
     /// ASCII.
     #[must_use]
     /// Paint.
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut ProcessTableState) {
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut ProcessTableState) {
         if area.is_empty() {
             return;
         }
@@ -1546,7 +1546,7 @@ mod tests {
         let mut buf = Buffer::empty(area);
         let _ = ProcessTable::new(&rows, &system)
             .title("Procs")
-            .render(area, &mut buf, &mut state);
+            .paint(area, &mut buf, &mut state);
         let text: String = buf
             .content()
             .iter()
@@ -1558,7 +1558,7 @@ mod tests {
         );
 
         state.view_mode = ProcessViewMode::Tree;
-        let _ = ProcessTable::new(&rows, &system).render(area, &mut buf, &mut state);
+        let _ = ProcessTable::new(&rows, &system).paint(area, &mut buf, &mut state);
     }
 
     #[test]
@@ -1630,7 +1630,7 @@ mod tests {
         let area = Rect::new(0, 0, 100, 30);
         let mut buf = Buffer::empty(area);
         for _ in 0..8 {
-            let _ = ProcessTable::new(&rows, &system).render(area, &mut buf, &mut state);
+            let _ = ProcessTable::new(&rows, &system).paint(area, &mut buf, &mut state);
             let _ = state.handle_key(&rows, KeyEvent::new(KeyCode::Down, KeyModifiers::NONE));
         }
     }
@@ -1673,7 +1673,7 @@ mod tests {
         let mut state = ProcessTableState::new();
         let area = Rect::new(0, 0, 72, 12);
         let mut buf = Buffer::empty(area);
-        let _ = ProcessTable::new(&rows, &system).render(area, &mut buf, &mut state);
+        let _ = ProcessTable::new(&rows, &system).paint(area, &mut buf, &mut state);
         let row_text = |y: u16| -> String {
             (0..area.width)
                 .map(|x| buf[(x, y)].symbol().to_string())

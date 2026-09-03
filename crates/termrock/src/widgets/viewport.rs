@@ -647,8 +647,8 @@ impl<'a> Viewport<'a> {
         }
     }
 
-    /// Renders the viewport without consuming the reusable interaction state.
-    pub fn render(
+    /// Paint without consuming the reusable interaction state.
+    pub fn paint(
         &self,
         area: Rect,
         buffer: &mut ratatui_core::buffer::Buffer,

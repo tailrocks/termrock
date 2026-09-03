@@ -37,11 +37,11 @@ fn large_viewport_allocations_scale_with_visible_rows() {
     let mut state = ViewportState::default();
     state.scroll.scroll_y = 5_000;
 
-    viewport.render(area, &mut buffer, &mut state);
+    viewport.paint(area, &mut buffer, &mut state);
 
     let allocations = Region::new(GLOBAL);
     for _ in 0..SAMPLES {
-        viewport.render(area, black_box(&mut buffer), black_box(&mut state));
+        viewport.paint(area, black_box(&mut buffer), black_box(&mut state));
     }
     let change = allocations.change();
 
@@ -67,7 +67,7 @@ fn viewport_fixture() -> (Viewport<'static>, DesignSystem, ViewportState) {
     let system = DesignSystem::default();
     let mut state = ViewportState::default();
     let viewport = Viewport::new(lines, Box::leak(Box::new(system.clone())));
-    viewport.render(
+    viewport.paint(
         Rect::new(0, 0, 24, 6),
         &mut Buffer::empty(Rect::new(0, 0, 24, 6)),
         &mut state,
@@ -80,7 +80,7 @@ fn mouse_drag_selects_multiline_text_and_paints_popover_selection() {
     let (viewport, system, mut state) = viewport_fixture();
     let area = Rect::new(0, 0, 24, 6);
     let mut buffer = Buffer::empty(area);
-    viewport.render(area, &mut buffer, &mut state);
+    viewport.paint(area, &mut buffer, &mut state);
 
     assert_eq!(
         viewport.on_mouse(
@@ -109,7 +109,7 @@ fn mouse_drag_selects_multiline_text_and_paints_popover_selection() {
         Some("alpha beta\nsecond")
     );
 
-    viewport.render(area, &mut buffer, &mut state);
+    viewport.paint(area, &mut buffer, &mut state);
     let selection_bg = system
         .style(Role::Selection)
         .bg
@@ -122,7 +122,7 @@ fn mouse_drag_selects_multiline_text_and_paints_popover_selection() {
 fn double_click_word_copy_and_escape_are_typed_outcomes() {
     let (viewport, _system, mut state) = viewport_fixture();
     let area = Rect::new(0, 0, 24, 6);
-    viewport.render(area, &mut Buffer::empty(area), &mut state);
+    viewport.paint(area, &mut Buffer::empty(area), &mut state);
 
     assert_eq!(
         viewport.select_word_at(&mut state, Position::new(7, 1)),
@@ -157,10 +157,10 @@ fn drag_auto_scroll_is_applied_to_dialog_scroll_on_render() {
     let viewport = Viewport::new(lines, Box::leak(Box::new(system)));
     let area = Rect::new(0, 0, 24, 5);
     let mut state = ViewportState::default();
-    viewport.render(area, &mut Buffer::empty(area), &mut state);
+    viewport.paint(area, &mut Buffer::empty(area), &mut state);
     viewport.on_click(&mut state, Position::new(1, 1));
     viewport.on_drag(&mut state, Position::new(1, 8));
-    viewport.render(area, &mut Buffer::empty(area), &mut state);
+    viewport.paint(area, &mut Buffer::empty(area), &mut state);
     assert_eq!(state.scroll.scroll_y, 1);
 }
 
@@ -173,7 +173,7 @@ fn selection_state_survives_repaint_and_rejects_outside_pointer_events() {
     let mut state = ViewportState::default();
     let area = Rect::new(0, 0, 24, 6);
 
-    viewport.render(area, &mut Buffer::empty(area), &mut state);
+    viewport.paint(area, &mut Buffer::empty(area), &mut state);
     assert_eq!(
         viewport.on_mouse(
             &mut state,
@@ -193,7 +193,7 @@ fn selection_state_survives_repaint_and_rejects_outside_pointer_events() {
     );
 
     let fresh_viewport = Viewport::new(lines, system);
-    fresh_viewport.render(area, &mut Buffer::empty(area), &mut state);
+    fresh_viewport.paint(area, &mut Buffer::empty(area), &mut state);
 
     assert_eq!(
         fresh_viewport.selected_text(&state).as_deref(),
@@ -213,7 +213,7 @@ fn scrollbar_pointer_changes_persistent_scroll_state() {
     let viewport = Viewport::new(lines, system);
     let mut state = ViewportState::default();
     let area = Rect::new(0, 0, 24, 5);
-    viewport.render(area, &mut Buffer::empty(area), &mut state);
+    viewport.paint(area, &mut Buffer::empty(area), &mut state);
     // Surface leaves the trailing border column as the scrollbar gutter.
     let scrollbar_x = area.right().saturating_sub(1);
     let before = state.scroll.scroll_y;
@@ -238,7 +238,7 @@ fn selectable_cells_preserve_tabs_wide_graphemes_and_trailing_spaces() {
     let viewport = Viewport::new(lines, system);
     let mut state = ViewportState::default();
     let area = Rect::new(0, 0, 20, 4);
-    viewport.render(area, &mut Buffer::empty(area), &mut state);
+    viewport.paint(area, &mut Buffer::empty(area), &mut state);
 
     viewport.on_click(&mut state, Position::new(1, 1));
     viewport.on_drag(&mut state, Position::new(10, 1));

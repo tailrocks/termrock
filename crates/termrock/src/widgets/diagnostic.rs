@@ -682,11 +682,11 @@ impl<'a> CodeFrame<'a> {
     }
 
     /// Paint. Returns rows used.
-    pub fn render(&self, area: Rect, buffer: &mut Buffer) -> u16 {
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer) -> u16 {
         if !self.colorless && self.system.mono() {
             let mut effective = self.clone();
             effective.colorless |= self.system.mono();
-            return effective.render(area, buffer);
+            return effective.paint(area, buffer);
         }
         if area.is_empty() {
             return 0;
@@ -1327,7 +1327,7 @@ impl<'a> DiagnosticView<'a> {
     }
 
     /// Paint.
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut DiagnosticState) {
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut DiagnosticState) {
         state.regions.clear();
         if area.is_empty() {
             return;
@@ -1551,7 +1551,7 @@ fn paint_list_item(
                 .colorless(colorless)
                 .truncated_above(true)
                 .truncated_below(true)
-                .render(
+                .paint(
                     Rect::new(area.x, y, area.width, area.bottom().saturating_sub(y)),
                     buffer,
                 );
@@ -1659,14 +1659,14 @@ fn paint_list_item(
 impl StatefulWidget for &DiagnosticView<'_> {
     type State = DiagnosticState;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        DiagnosticView::render(self, area, buffer, state);
+        DiagnosticView::paint(self, area, buffer, state);
     }
 }
 
 impl StatefulWidget for DiagnosticView<'_> {
     type State = DiagnosticState;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        DiagnosticView::render(&self, area, buffer, state);
+        DiagnosticView::paint(&self, area, buffer, state);
     }
 }
 
@@ -1894,7 +1894,7 @@ mod tests {
             .file("src/main.rs");
         let area = Rect::new(0, 0, 48, 12);
         let mut buf = Buffer::empty(area);
-        let used = frame.render(area, &mut buf);
+        let used = frame.paint(area, &mut buf);
         assert!(used >= 3);
         let text: String = buf
             .content()
@@ -1929,7 +1929,7 @@ mod tests {
         let frame = CodeFrame::new(&lines, &system).labels(&labels);
         let area = Rect::new(0, 0, 40, 16);
         let mut buf = Buffer::empty(area);
-        let _ = frame.render(area, &mut buf);
+        let _ = frame.paint(area, &mut buf);
     }
 
     #[test]
@@ -2025,7 +2025,7 @@ mod tests {
         let frame = CodeFrame::new(&lines, &system).labels(&labels);
         let area = Rect::new(0, 0, 24, 4);
         let mut buf = Buffer::empty(area);
-        let _ = frame.render(area, &mut buf);
+        let _ = frame.paint(area, &mut buf);
     }
 
     #[test]

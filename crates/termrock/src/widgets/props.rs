@@ -56,7 +56,7 @@ impl Prop {
 
 /// Paints each label at `area.x` and each value at `area.x + max_label + 2`.
 /// Gap cells are not written. Returns rows used.
-pub fn render(area: Rect, buf: &mut Buffer, t: &JunieTheme, props: &[Prop], bg: Color) -> u16 {
+pub fn paint(area: Rect, buf: &mut Buffer, t: &JunieTheme, props: &[Prop], bg: Color) -> u16 {
     let area = area.intersection(*buf.area());
     if area.is_empty() {
         return 0;
@@ -133,7 +133,7 @@ mod tests {
                 .set_char(' ')
                 .set_style(Style::new().fg(faint).bg(bg));
         }
-        let used = render(area, &mut buf, &t, &[Prop::new("Statements", "2")], bg);
+        let used = paint(area, &mut buf, &t, &[Prop::new("Statements", "2")], bg);
         assert_eq!(used, 1);
         assert_eq!(buf[(0, 0)].symbol(), "S");
         assert_eq!(buf[(10, 0)].symbol(), " ");

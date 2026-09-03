@@ -1489,7 +1489,7 @@ impl<'a> DiffReview<'a> {
     }
 
     /// Paint.
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut DiffReviewState) {
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut DiffReviewState) {
         state.file_regions.clear();
         if area.is_empty() {
             return;
@@ -1776,14 +1776,14 @@ fn display_width_u16(s: &str) -> u16 {
 impl StatefulWidget for &DiffReview<'_> {
     type State = DiffReviewState;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        DiffReview::render(self, area, buffer, state);
+        DiffReview::paint(self, area, buffer, state);
     }
 }
 
 impl StatefulWidget for DiffReview<'_> {
     type State = DiffReviewState;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        DiffReview::render(&self, area, buffer, state);
+        DiffReview::paint(&self, area, buffer, state);
     }
 }
 

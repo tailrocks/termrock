@@ -1052,7 +1052,7 @@ impl<'a> TerminalOutput<'a> {
     }
 
     /// Paint.
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut TerminalOutputState) {
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut TerminalOutputState) {
         state.regions.clear();
         if area.is_empty() {
             state.body_rows = 0;
@@ -1456,14 +1456,14 @@ fn paint_stream_line(
 impl StatefulWidget for &TerminalOutput<'_> {
     type State = TerminalOutputState;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        TerminalOutput::render(self, area, buffer, state);
+        TerminalOutput::paint(self, area, buffer, state);
     }
 }
 
 impl StatefulWidget for TerminalOutput<'_> {
     type State = TerminalOutputState;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        TerminalOutput::render(&self, area, buffer, state);
+        TerminalOutput::paint(&self, area, buffer, state);
     }
 }
 

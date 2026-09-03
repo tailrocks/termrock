@@ -158,7 +158,7 @@ pub enum ResourceBrowserFocus {
 /// The rail is a [`Tree`], the detail pane a [`DetailTable`], the preview a
 /// [`Panel`] body, and the footer a [`StatusBar`] — no chrome is invented
 /// here. Hosts wanting a different assembly copy this and swap the widgets.
-pub fn render_resource_browser<NodeId: Clone + Eq, RowId: Clone + Eq>(
+pub fn paint_resource_browser<NodeId: Clone + Eq, RowId: Clone + Eq>(
     area: Rect,
     buffer: &mut Buffer,
     system: &DesignSystem,
@@ -252,7 +252,7 @@ mod tests {
             preview_width: 24,
             ..ResourceBrowserLayout::default()
         };
-        let slots = render_resource_browser(
+        let slots = paint_resource_browser(
             area,
             &mut buffer,
             &system,

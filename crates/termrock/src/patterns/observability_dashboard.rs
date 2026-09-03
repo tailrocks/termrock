@@ -1099,7 +1099,7 @@ fn pane_area(panes: &[PaneGeom], id: &str) -> Option<Rect> {
 // ── Render ──────────────────────────────────────────────────────────────────
 
 /// Paint composed observability dashboard (public child widgets only).
-pub fn render_observability_dashboard(
+pub fn paint_observability_dashboard(
     buffer: &mut Buffer,
     area: Rect,
     surfaces: ObservabilityDashboardSurfaces<'_>,
@@ -1175,7 +1175,7 @@ pub fn render_observability_dashboard(
             .focused(focused)
             // The shell's status bar is the frame's one hint row.
             .hints(false)
-            .render(r, buffer, &mut state.metrics);
+            .paint(r, buffer, &mut state.metrics);
     }
 
     if let Some(r) = pane_area(&panes, "logs") {
@@ -1527,7 +1527,7 @@ mod tests {
         let inspect = example_log_inspect_fields();
         let area = Rect::new(0, 0, 120, 36);
         let mut buf = Buffer::empty(area);
-        render_observability_dashboard(
+        paint_observability_dashboard(
             &mut buf,
             area,
             ObservabilityDashboardSurfaces {
@@ -1588,7 +1588,7 @@ mod tests {
         let mut buf = Buffer::empty(area);
         // Clear any prior transient so we prove paint path sets it
         st.status.transient = None;
-        render_observability_dashboard(
+        paint_observability_dashboard(
             &mut buf,
             area,
             ObservabilityDashboardSurfaces {
@@ -1847,7 +1847,7 @@ mod tests {
                 ObservabilityDensity::Tiny => Rect::new(0, 0, 40, 16),
             };
             let mut buf = Buffer::empty(area);
-            render_observability_dashboard(
+            paint_observability_dashboard(
                 &mut buf,
                 area,
                 ObservabilityDashboardSurfaces {
@@ -1867,7 +1867,7 @@ mod tests {
         seed_failure_state(&mut st);
         let area = Rect::new(0, 0, 100, 28);
         let mut buf = Buffer::empty(area);
-        render_observability_dashboard(
+        paint_observability_dashboard(
             &mut buf,
             area,
             ObservabilityDashboardSurfaces {
@@ -1934,7 +1934,7 @@ mod tests {
         let mut buf = Buffer::empty(area);
         let start = std::time::Instant::now();
         for _ in 0..bench::PAINT_FRAMES {
-            render_observability_dashboard(
+            paint_observability_dashboard(
                 &mut buf,
                 area,
                 ObservabilityDashboardSurfaces {

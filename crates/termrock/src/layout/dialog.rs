@@ -10,7 +10,7 @@ use crate::{
 
 /// Minimal dialog shell: clear area, paint bordered block, return inner area.
 #[must_use]
-pub fn render_dialog_shell(
+pub fn paint_dialog_shell(
     frame: &mut Frame<'_>,
     area: Rect,
     title: Option<&str>,
@@ -31,7 +31,7 @@ pub fn render_dialog_shell(
 }
 
 /// Render a dialog body with both-axis scroll and border scrollbars.
-pub fn render_scrollable_dialog_body(
+pub fn paint_scrollable_dialog_body(
     frame: &mut Frame<'_>,
     block_area: Rect,
     content_area: Rect,
@@ -58,7 +58,7 @@ pub fn render_scrollable_dialog_body(
         .scroll((0, eff_x))
         .style(system.style(Role::Text))
         .render(content_area, frame.buffer_mut());
-    scroll.render_scrollbars(frame, block_area, content_height, content_width, system);
+    scroll.paint_scrollbars(frame, block_area, content_height, content_width, system);
     (content_width, content_height)
 }
 
@@ -82,7 +82,7 @@ mod tests {
             terminal
                 .draw(|frame| {
                     let _ =
-                        render_dialog_shell(frame, frame.area(), Some("Test"), emphasis, &system);
+                        paint_dialog_shell(frame, frame.area(), Some("Test"), emphasis, &system);
                 })
                 .unwrap();
             assert_eq!(terminal.backend().buffer()[(0, 0)].fg, expected);

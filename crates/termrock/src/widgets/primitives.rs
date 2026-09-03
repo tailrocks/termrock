@@ -1290,11 +1290,6 @@ impl<'a> IconButton<'a> {
         }
     }
 
-    /// Paint and update hit geometry.
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut IconButtonState) {
-        let _ = self.paint(area, buffer, state);
-    }
-
     /// Semantic registration (label = accessible name).
     pub fn register_semantic<Id, Action>(
         &self,
@@ -1671,7 +1666,7 @@ mod tests {
         state.activation.set_accepts_input(true);
         let area = Rect::new(0, 0, 4, 1);
         let mut buffer = Buffer::empty(area);
-        IconButton::new("×", "Close", &system).render(area, &mut buffer, &mut state);
+        IconButton::new("×", "Close", &system).paint(area, &mut buffer, &mut state);
         assert_eq!(IconButton::new("×", "Close", &system).a11y_name(), "Close");
         assert!(state.hit.map(|r| r.width >= 3).unwrap_or(false));
     }

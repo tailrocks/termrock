@@ -135,7 +135,7 @@ pub struct StudioShellView<'a> {
 /// The preview pane is a [`Panel`] the host paints a story into (the returned
 /// slots carry its inner rect), the inspector is [`DesignInspector`], and the
 /// footer is a [`StatusBar`].
-pub fn render_studio_shell(
+pub fn paint_studio_shell(
     area: Rect,
     buffer: &mut Buffer,
     system: &DesignSystem,
@@ -208,7 +208,7 @@ mod tests {
         };
         let area = Rect::new(0, 0, 100, 24);
         let mut buffer = Buffer::empty(area);
-        let slots = render_studio_shell(
+        let slots = paint_studio_shell(
             area,
             &mut buffer,
             &system,

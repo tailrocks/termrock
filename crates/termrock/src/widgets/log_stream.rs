@@ -962,7 +962,7 @@ impl<'a> LogStream<'a> {
     }
 
     /// Paint O(visible).
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut LogStreamState) {
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut LogStreamState) {
         state.regions.clear();
         if area.is_empty() {
             state.body_rows = 0;
@@ -1337,14 +1337,14 @@ impl<'a> LogStream<'a> {
 impl StatefulWidget for &LogStream<'_> {
     type State = LogStreamState;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        LogStream::render(self, area, buffer, state);
+        LogStream::paint(self, area, buffer, state);
     }
 }
 
 impl StatefulWidget for LogStream<'_> {
     type State = LogStreamState;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        LogStream::render(&self, area, buffer, state);
+        LogStream::paint(&self, area, buffer, state);
     }
 }
 

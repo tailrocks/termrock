@@ -1129,7 +1129,7 @@ impl<'a, Id: Clone + Ord, ColId: Clone + PartialEq> TreeTable<'a, Id, ColId> {
     }
 
     /// Paint O(projected) only.
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut TreeTableState<Id, ColId>)
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut TreeTableState<Id, ColId>)
     where
         ColId: Clone,
     {
@@ -1687,14 +1687,14 @@ fn paint_checked_marker(system: &DesignSystem, buffer: &mut Buffer, row: Rect, c
 impl<'a, Id: Clone + Ord, ColId: Clone + PartialEq> StatefulWidget for TreeTable<'a, Id, ColId> {
     type State = TreeTableState<Id, ColId>;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        TreeTable::render(&self, area, buffer, state);
+        TreeTable::paint(&self, area, buffer, state);
     }
 }
 
 impl<'a, Id: Clone + Ord, ColId: Clone + PartialEq> StatefulWidget for &TreeTable<'a, Id, ColId> {
     type State = TreeTableState<Id, ColId>;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        TreeTable::render(self, area, buffer, state);
+        TreeTable::paint(self, area, buffer, state);
     }
 }
 

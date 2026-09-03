@@ -398,7 +398,7 @@ pub fn component_inspect_rows(ids: &[String]) -> Vec<ListRow<'_, String>> {
 
 /// **Single list for paint + handle_key:** findings then component inspect rows.
 ///
-/// Must stay identical in `render_help_center` and `handle_diagnostics_key` so
+/// Must stay identical in `paint_help_center` and `handle_diagnostics_key` so
 /// keyboard navigation can reach painted component ids when both are present.
 #[must_use]
 pub fn diagnostics_rows<'a>(
@@ -1380,7 +1380,7 @@ fn pane_area(panes: &[PaneGeom], id: &str) -> Option<Rect> {
 // ── Render ──────────────────────────────────────────────────────────────────
 
 /// Paint help center (public children only; shortcuts from HelpEntry SoT).
-pub fn render_help_center(buffer: &mut Buffer, area: Rect, surfaces: HelpCenterSurfaces<'_>) {
+pub fn paint_help_center(buffer: &mut Buffer, area: Rect, surfaces: HelpCenterSurfaces<'_>) {
     let HelpCenterSurfaces {
         system,
         state,
@@ -1774,7 +1774,7 @@ mod tests {
         let area = Rect::new(0, 0, 40, 20);
         let mut buf = Buffer::empty(area);
         st.density = None;
-        render_help_center(
+        paint_help_center(
             &mut buf,
             area,
             HelpCenterSurfaces {
@@ -2033,7 +2033,7 @@ mod tests {
         let doctor = example_help_doctor_report();
         let area = Rect::new(0, 0, 120, 40);
         let mut buf = Buffer::empty(area);
-        render_help_center(
+        paint_help_center(
             &mut buf,
             area,
             HelpCenterSurfaces {
@@ -2083,7 +2083,7 @@ mod tests {
         let area = Rect::new(0, 0, 120, 40);
         let mut buf = Buffer::empty(area);
         st.focus = "keyboard";
-        render_help_center(
+        paint_help_center(
             &mut buf,
             area,
             HelpCenterSurfaces {
@@ -2304,7 +2304,7 @@ mod tests {
         let mut buf = Buffer::empty(area);
         let start = std::time::Instant::now();
         for _ in 0..bench::PAINT_FRAMES {
-            render_help_center(
+            paint_help_center(
                 &mut buf,
                 area,
                 HelpCenterSurfaces {

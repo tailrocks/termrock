@@ -1012,7 +1012,7 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
     }
 
     /// Paint O(viewport) display rows.
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut KeyValueTableState<Id>) {
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut KeyValueTableState<Id>) {
         state.regions.clear();
         state.painted = area;
         if area.is_empty() {
@@ -1559,14 +1559,14 @@ fn paint_line(
 impl<'a, Id: Clone + PartialEq + Ord> StatefulWidget for KeyValueTable<'a, Id> {
     type State = KeyValueTableState<Id>;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        KeyValueTable::render(&self, area, buffer, state);
+        KeyValueTable::paint(&self, area, buffer, state);
     }
 }
 
 impl<'a, Id: Clone + PartialEq + Ord> StatefulWidget for &KeyValueTable<'a, Id> {
     type State = KeyValueTableState<Id>;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        KeyValueTable::render(self, area, buffer, state);
+        KeyValueTable::paint(self, area, buffer, state);
     }
 }
 

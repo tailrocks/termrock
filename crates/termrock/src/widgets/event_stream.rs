@@ -929,7 +929,7 @@ impl<'a, Id: Clone + PartialEq + Ord> EventStream<'a, Id> {
     }
 
     /// Paint O(visible).
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut EventStreamState<Id>) {
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut EventStreamState<Id>) {
         state.regions.clear();
         if area.is_empty() {
             state.body_rows = 0;
@@ -1201,14 +1201,14 @@ impl<'a, Id: Clone + PartialEq + Ord> EventStream<'a, Id> {
 impl<'a, Id: Clone + PartialEq + Ord> StatefulWidget for &EventStream<'a, Id> {
     type State = EventStreamState<Id>;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        EventStream::render(self, area, buffer, state);
+        EventStream::paint(self, area, buffer, state);
     }
 }
 
 impl<'a, Id: Clone + PartialEq + Ord> StatefulWidget for EventStream<'a, Id> {
     type State = EventStreamState<Id>;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        EventStream::render(&self, area, buffer, state);
+        EventStream::paint(&self, area, buffer, state);
     }
 }
 

@@ -883,11 +883,7 @@ pub struct WorkbenchSurfaces<'a, 'b> {
 }
 
 /// Paints a composed workbench frame from borrowed public surfaces.
-pub fn render_agent_workbench(
-    buffer: &mut Buffer,
-    area: Rect,
-    surfaces: WorkbenchSurfaces<'_, '_>,
-) {
+pub fn paint_agent_workbench(buffer: &mut Buffer, area: Rect, surfaces: WorkbenchSurfaces<'_, '_>) {
     let WorkbenchSurfaces {
         system,
         state,
@@ -1182,7 +1178,7 @@ mod tests {
         terminal
             .draw(|f| {
                 let area = f.area();
-                render_agent_workbench(
+                paint_agent_workbench(
                     f.buffer_mut(),
                     area,
                     WorkbenchSurfaces {
@@ -1455,7 +1451,7 @@ mod tests {
         let tasks: [ListRow<'_, &str>; 0] = [];
         let area = Rect::new(0, 0, 100, 28);
         let mut buf = Buffer::empty(area);
-        render_agent_workbench(
+        paint_agent_workbench(
             &mut buf,
             area,
             WorkbenchSurfaces {
@@ -1508,7 +1504,7 @@ mod tests {
         let tasks: [ListRow<'_, &str>; 0] = [];
         let area = Rect::new(0, 0, 80, 24);
         let mut buf = Buffer::empty(area);
-        render_agent_workbench(
+        paint_agent_workbench(
             &mut buf,
             area,
             WorkbenchSurfaces {
@@ -1556,7 +1552,7 @@ mod tests {
         let tasks: [ListRow<'_, &str>; 0] = [];
         let area = Rect::new(0, 0, 90, 28);
         let mut buf = Buffer::empty(area);
-        render_agent_workbench(
+        paint_agent_workbench(
             &mut buf,
             area,
             WorkbenchSurfaces {
@@ -1645,7 +1641,7 @@ mod tests {
         let tasks: [ListRow<'_, &str>; 0] = [];
         let area = Rect::new(0, 0, 100, 28);
         let mut buf = Buffer::empty(area);
-        render_agent_workbench(
+        paint_agent_workbench(
             &mut buf,
             area,
             WorkbenchSurfaces {
@@ -1695,7 +1691,7 @@ mod tests {
         let tasks: [ListRow<'_, &str>; 0] = [];
         let area = Rect::new(0, 0, 80, 24);
         let mut buf = Buffer::empty(area);
-        render_agent_workbench(
+        paint_agent_workbench(
             &mut buf,
             area,
             WorkbenchSurfaces {

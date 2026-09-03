@@ -640,7 +640,7 @@ pub struct SetupWizardSurfaces<'a> {
 }
 
 /// Paint setup wizard chrome + body content from public widgets.
-pub fn render_setup_wizard(buffer: &mut Buffer, area: Rect, surfaces: SetupWizardSurfaces<'_>) {
+pub fn paint_setup_wizard(buffer: &mut Buffer, area: Rect, surfaces: SetupWizardSurfaces<'_>) {
     let SetupWizardSurfaces {
         system,
         state,
@@ -1181,7 +1181,7 @@ mod tests {
         let mut st = SetupWizardState::from_steps(example_setup_steps()).with_title("First run");
         let area = Rect::new(0, 0, 80, 24);
         let mut buf = Buffer::empty(area);
-        render_setup_wizard(
+        paint_setup_wizard(
             &mut buf,
             area,
             SetupWizardSurfaces {
@@ -1219,7 +1219,7 @@ mod tests {
             }
         }
         let mut buf = Buffer::empty(area);
-        render_setup_wizard(
+        paint_setup_wizard(
             &mut buf,
             area,
             SetupWizardSurfaces {
@@ -1245,7 +1245,7 @@ mod tests {
             .with_title("Inline setup");
         let area = Rect::new(0, 0, 48, 14);
         let mut buf = Buffer::empty(area);
-        render_setup_wizard(
+        paint_setup_wizard(
             &mut buf,
             area,
             SetupWizardSurfaces {
@@ -1271,7 +1271,7 @@ mod tests {
         assert_eq!(st.current_kind(), SetupStepKind::Recovery);
         let area = Rect::new(0, 0, 60, 16);
         let mut buf = Buffer::empty(area);
-        render_setup_wizard(
+        paint_setup_wizard(
             &mut buf,
             area,
             SetupWizardSurfaces {
@@ -1307,7 +1307,7 @@ mod tests {
         terminal
             .draw(|f| {
                 let area = f.area();
-                render_setup_wizard(
+                paint_setup_wizard(
                     f.buffer_mut(),
                     area,
                     SetupWizardSurfaces {

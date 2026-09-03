@@ -35,7 +35,7 @@ use ratatui_core::widgets::{StatefulWidget, Widget};
 use termrock::runtime::{FrameTick, Instant};
 use termrock::scroll::{
     SCROLLBAR_TRACK, ScrollAxis, ScrollbarGeometry, ScrollbarSpec, ScrollbarStyle,
-    paint_overflow_scrollbar, render_scrollbar,
+    paint_overflow_scrollbar, paint_scrollbar,
 };
 use termrock::style::{
     ACTION_FLASH_MS, AccentUsage, ActionFlash, BadgeKind, BorderShape, ButtonKind,
@@ -2770,7 +2770,7 @@ fn priority_pattern_frames(system: &DesignSystem) -> Vec<(&'static str, Buffer)>
         (
             "database_workbench",
             painted(wide, |buffer| {
-                render_database_workbench(
+                paint_database_workbench(
                     buffer,
                     wide,
                     DatabaseWorkbenchSurfaces {
@@ -2789,7 +2789,7 @@ fn priority_pattern_frames(system: &DesignSystem) -> Vec<(&'static str, Buffer)>
         (
             "observability_dashboard",
             painted(wide, |buffer| {
-                render_observability_dashboard(
+                paint_observability_dashboard(
                     buffer,
                     wide,
                     ObservabilityDashboardSurfaces {
@@ -2922,7 +2922,7 @@ fn data_rows_have_ladder() {
     frames.push((
         "TraceWaterfall",
         painted(area, |buffer| {
-            let _ = TraceWaterfall::new(&spans, &system).focused(true).render(
+            let _ = TraceWaterfall::new(&spans, &system).focused(true).paint(
                 area,
                 buffer,
                 &mut trace_state,
@@ -3229,7 +3229,7 @@ fn modal_geometry_never_escapes_its_terminal() {
 #[test]
 fn workbench_overlays_survive_tiny_and_random_geometry() {
     use termrock::patterns::{
-        AgentWorkbenchState, WorkbenchSurfaces, default_modes, render_agent_workbench,
+        AgentWorkbenchState, WorkbenchSurfaces, default_modes, paint_agent_workbench,
     };
     use termrock::widgets::{
         ListRow, PermissionPrompt, PermissionPromptState, PermissionRequest, PromptComposer,
@@ -3268,7 +3268,7 @@ fn workbench_overlays_survive_tiny_and_random_geometry() {
         let tasks: [ListRow<'_, &'static str>; 0] = [];
 
         let _ = painted(area, |buffer| {
-            render_agent_workbench(
+            paint_agent_workbench(
                 buffer,
                 area,
                 WorkbenchSurfaces {
@@ -3335,7 +3335,7 @@ fn a_scrolled_region_says_it_continues() {
     // shared painter, both in the scroll roles.
     let area = Rect::new(0, 0, 1, 5);
     let buffer = painted(area, |buffer| {
-        render_scrollbar(
+        paint_scrollbar(
             buffer,
             area,
             ScrollbarSpec::new(ScrollAxis::Vertical, ScrollbarGeometry::new(20, 5, 2)),
@@ -3410,7 +3410,7 @@ fn a_scrolled_region_says_it_continues() {
             .to_string_lossy()
             .to_string();
         let paints_bar = source.lines.iter().any(|(_, line)| {
-            line.contains("paint_overflow_scrollbar(") || line.contains("render_scrollbar(")
+            line.contains("paint_overflow_scrollbar(") || line.contains("paint_scrollbar(")
         });
         let goes_through_the_authority = source
             .lines
@@ -3858,6 +3858,6 @@ use termrock::patterns::{
     example_observability_alerts, example_observability_events, example_observability_logs,
     example_observability_tiles, example_plan_document, example_result_columns,
     example_result_row_refs, example_result_rows, example_schema_entries, example_sessions,
-    render_database_workbench, render_observability_dashboard,
+    paint_database_workbench, paint_observability_dashboard,
 };
 use termrock::widgets::{Panel, Tab, Tabs, TabsState};

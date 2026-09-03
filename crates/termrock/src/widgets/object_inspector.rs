@@ -1284,7 +1284,7 @@ impl<'a> ObjectInspector<'a> {
     }
 
     /// Paint.
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut ObjectInspectorState) {
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut ObjectInspectorState) {
         state.regions.clear();
         if area.is_empty() {
             state.body_rows = 0;
@@ -1560,14 +1560,14 @@ impl<'a> ObjectInspector<'a> {
 impl StatefulWidget for ObjectInspector<'_> {
     type State = ObjectInspectorState;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        ObjectInspector::render(&self, area, buffer, state);
+        ObjectInspector::paint(&self, area, buffer, state);
     }
 }
 
 impl StatefulWidget for &ObjectInspector<'_> {
     type State = ObjectInspectorState;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        ObjectInspector::render(self, area, buffer, state);
+        ObjectInspector::paint(self, area, buffer, state);
     }
 }
 

@@ -1516,7 +1516,7 @@ fn pane_area(panes: &[PaneGeom], id: &str) -> Option<Rect> {
 // ── Render ──────────────────────────────────────────────────────────────────
 
 /// Paint composed file manager (public child widgets only).
-pub fn render_file_manager(buffer: &mut Buffer, area: Rect, surfaces: FileManagerSurfaces<'_>) {
+pub fn paint_file_manager(buffer: &mut Buffer, area: Rect, surfaces: FileManagerSurfaces<'_>) {
     let FileManagerSurfaces {
         system,
         state,
@@ -1578,7 +1578,7 @@ pub fn render_file_manager(buffer: &mut Buffer, area: Rect, surfaces: FileManage
             .title("Files")
             .focused(focused)
             .show_filter_chrome(false)
-            .render(r, buffer, &mut state.tree);
+            .paint(r, buffer, &mut state.tree);
     }
 
     // Preview
@@ -1884,7 +1884,7 @@ mod tests {
         let mut buf = Buffer::empty(area);
         st.density = None;
         st.drawer_open = false;
-        render_file_manager(
+        paint_file_manager(
             &mut buf,
             area,
             FileManagerSurfaces {
@@ -2247,7 +2247,7 @@ mod tests {
         let (preview, _, _) = example_file_preview();
         let area = Rect::new(0, 0, 120, 36);
         let mut buf = Buffer::empty(area);
-        render_file_manager(
+        paint_file_manager(
             &mut buf,
             area,
             FileManagerSurfaces {
@@ -2298,7 +2298,7 @@ mod tests {
         let mut buf = Buffer::empty(area);
         let start = std::time::Instant::now();
         for _ in 0..bench::PAINT_FRAMES {
-            render_file_manager(
+            paint_file_manager(
                 &mut buf,
                 area,
                 FileManagerSurfaces {

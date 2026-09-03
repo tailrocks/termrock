@@ -618,7 +618,7 @@ impl ConnectionsScreen {
         }
         facts.push(Prop::new("SSL / SSH", format!("{ssl} / {ssh}")).tone(Tone::Secondary));
         facts.push(Prop::new("Last used", c.last_used.clone()).tone(Tone::Muted));
-        let used = termrock::widgets::render_props(
+        let used = termrock::widgets::paint_props(
             Rect::new(
                 inner.x,
                 inner.y,

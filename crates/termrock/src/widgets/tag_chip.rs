@@ -293,7 +293,6 @@ impl TagState {
 
 impl<'a, Id: Clone> Tag<'a, Id> {
     /// Paint; updates state geometry.
-    /// Paint; updates state geometry.
     pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut TagState) -> TokenParts {
         state.parts = None;
         if area.is_empty() {
@@ -1064,21 +1063,6 @@ impl<'a, Id: Clone> Chip<'a, Id> {
             ChipOutcome::Ignored => EventResult::ignored(),
             other => EventResult::emit(other),
         }
-    }
-}
-
-// Legacy paint entry points used by older call sites.
-impl<Id: Clone> Tag<'_, Id> {
-    /// Paint (legacy name).
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut TagState) {
-        let _ = self.paint(area, buffer, state);
-    }
-}
-
-impl<Id: Clone> Chip<'_, Id> {
-    /// Paint (legacy name).
-    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut ChipState) {
-        let _ = self.paint(area, buffer, state);
     }
 }
 
