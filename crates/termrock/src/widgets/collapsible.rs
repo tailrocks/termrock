@@ -144,24 +144,6 @@ pub struct CollapsibleState {
 }
 
 impl CollapsibleState {
-    /// Records a toggle so the next frames can reveal the body gradually.
-    pub const fn mark_toggled_at(&mut self, elapsed_ms: u64) {
-        self.toggled_at_ms = elapsed_ms;
-    }
-
-    /// How far the reveal has run at `elapsed_ms` (`1.0` settled).
-    #[must_use]
-    pub fn reveal_fraction(&self, elapsed_ms: u64, duration_ms: u64) -> f32 {
-        if duration_ms == 0 {
-            return 1.0;
-        }
-        let since = elapsed_ms.saturating_sub(self.toggled_at_ms);
-        if since >= duration_ms {
-            return 1.0;
-        }
-        since as f32 / duration_ms as f32
-    }
-
     /// Closed, unfocused.
     #[must_use]
     pub const fn new() -> Self {

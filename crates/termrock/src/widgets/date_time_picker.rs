@@ -986,14 +986,6 @@ impl DateTimePickerState {
         self.sync_draft_from_value();
         self.refresh_validity();
     }
-
-    /// Set committed time.
-    pub fn set_time(&mut self, t: Option<CivilTime>) {
-        self.value_time = t;
-        self.sync_draft_from_value();
-        self.refresh_validity();
-    }
-
     /// Set range.
     pub fn set_range(&mut self, range: Option<CivilDateRange>) {
         if let Some(r) = range {

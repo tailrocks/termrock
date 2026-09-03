@@ -91,16 +91,6 @@ impl<'a> DesignInspector<'a> {
         self.panel = panel;
         self
     }
-
-    /// Convenience from a design system.
-    #[must_use]
-    pub fn from_system(system: &'a DesignSystem, frame: DesignInspectorFrame<'a>) -> Self {
-        Self {
-            frame,
-            system,
-            panel: InspectorPanel::Focus,
-        }
-    }
 }
 
 impl DesignInspector<'_> {

@@ -13,7 +13,7 @@
 //! Delete+Replace every frame.
 use ratatui_core::layout::Rect;
 
-use super::{ColorCapability, DesignSystem, RolePalette};
+use super::{ColorCapability, DesignSystem};
 
 /// Kind of capability-aware preview surface (media/resource host).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -156,12 +156,6 @@ impl CapabilityPreviewHost {
         self.iterm2 = iterm2;
         self.sixel = sixel;
         self
-    }
-
-    /// Theme resolved for the active capability.
-    #[must_use]
-    pub fn projected_theme(&self) -> RolePalette {
-        self.system.palette().quantized(self.capability)
     }
     /// Bumps generation (call when selection/content identity changes).
     pub fn bump_generation(&mut self) -> u64 {

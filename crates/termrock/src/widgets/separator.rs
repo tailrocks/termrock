@@ -20,7 +20,7 @@
 //! no-color themes still paint glyph contrast via roles when available.
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
-use crate::style::{DesignSystem, Role, SpacingScale};
+use crate::style::{DesignSystem, Role};
 use crate::text::{display_cols, take_display_cols};
 
 /// Axis of the rule.
@@ -106,8 +106,6 @@ pub struct Separator<'a> {
     variant: SeparatorVariant,
     label: Option<&'a str>,
     thickness: SeparatorThickness,
-    /// Optional spacing scale for section-break padding (defaults density gap).
-    spacing: Option<SpacingScale>,
 }
 
 impl<'a> Separator<'a> {
@@ -120,7 +118,6 @@ impl<'a> Separator<'a> {
             variant: SeparatorVariant::Quiet,
             label: None,
             thickness: SeparatorThickness::Thin,
-            spacing: None,
         }
     }
 
@@ -133,7 +130,6 @@ impl<'a> Separator<'a> {
             variant: SeparatorVariant::Quiet,
             label: None,
             thickness: SeparatorThickness::Thin,
-            spacing: None,
         }
     }
 
@@ -199,14 +195,6 @@ impl<'a> Separator<'a> {
         self.thickness = thickness;
         self
     }
-
-    /// Explicit spacing scale.
-    #[must_use]
-    pub const fn with_spacing(mut self, spacing: SpacingScale) -> Self {
-        self.spacing = Some(spacing);
-        self
-    }
-
     /// Cells hosts should reserve on the axis perpendicular to the rule.
     #[must_use]
     pub const fn preferred_cross_size(self) -> u16 {

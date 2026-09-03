@@ -17,8 +17,6 @@
 //! is set for Studio and hosts.
 use ratatui_core::layout::Rect;
 
-use crate::style::SpacingScale;
-
 /// Soft cap for stack-allocated main-size scratch (above → heap `Vec`).
 const INLINE_SCRATCH: usize = 64;
 
@@ -240,16 +238,6 @@ impl StackSpec {
             overflow: OverflowPolicy::ShrinkFromEnd,
         }
     }
-
-    /// Spacing scale from design system.
-    #[must_use]
-    pub const fn with_spacing(mut self, spacing: SpacingScale) -> Self {
-        self.gap = spacing.gap;
-        self.pad_x = spacing.card_inset;
-        self.pad_y = 1;
-        self
-    }
-
     /// Responsive direction from outer width.
     #[must_use]
     pub const fn responsive(mut self, width: u16, inline_min_width: u16) -> Self {

@@ -299,12 +299,6 @@ impl<'a, Id> Label<'a, Id> {
     pub const fn tone_of(&self) -> LabelTone {
         self.tone
     }
-    /// Layout mode.
-    #[must_use]
-    pub const fn layout_of(&self) -> CaptionLayout {
-        self.layout
-    }
-
     /// Whether marks should paint for this width / layout.
     #[must_use]
     pub fn show_mark(&self, width: u16) -> bool {

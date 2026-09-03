@@ -278,15 +278,6 @@ impl<Id> FocusGraph<Id> {
     {
         self.focused.as_ref() == Some(id)
     }
-
-    /// Whether `id` should paint as keyboard owner (Panel chrome).
-    #[must_use]
-    pub fn owns_keyboard(&self, id: &Id) -> bool
-    where
-        Id: PartialEq,
-    {
-        self.is_focused(id)
-    }
     /// Active modal trap root.
     #[must_use]
     pub const fn trap_root(&self) -> Option<&Id> {
