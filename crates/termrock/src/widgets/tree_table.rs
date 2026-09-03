@@ -556,8 +556,12 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
             UiIntent::Toggle => {
                 if self.multi {
                     let id = rows[self.cursor_row].id.clone();
-                    self.selection.toggle_row(id.clone());
-                    TreeTableOutcome::CheckToggled(id)
+                    if rows[self.cursor_row].enabled {
+                        self.selection.toggle_row(id.clone());
+                        TreeTableOutcome::CheckToggled(id)
+                    } else {
+                        TreeTableOutcome::Ignored
+                    }
                 } else {
                     self.hierarchy_step(rows, true)
                 }
@@ -1768,6 +1772,20 @@ mod tests {
         );
         assert!(matches!(out, TreeTableOutcome::CheckToggled("r")));
         assert!(state.selection.is_row_selected(&"r"));
+    }
+
+    #[test]
+    fn multi_select_toggle_intent_ignores_disabled_row() {
+        let cells: &[&str] = &["disabled", "", ""];
+        let rows = [TreeTableRow::new("r", 0, cells).disabled()];
+        let columns = cols();
+        let mut state = TreeTableState::<&str, &str>::new(Some("r"));
+        state.enable_multi_select();
+
+        let out = state.handle_intent(&rows, &columns, UiIntent::Toggle);
+
+        assert!(matches!(out, TreeTableOutcome::Ignored));
+        assert!(!state.selection.is_row_selected(&"r"));
     }
 
     #[test]
