@@ -723,7 +723,7 @@ impl<'a> PromptQueue<'a> {
         let indicator = StatusIndicator::new(semantic, self.system)
             .label(&summary)
             .colorless(self.colorless);
-        indicator.paint(Rect::new(area.x, area.y, area.width, 1), buffer);
+        indicator.paint(Rect::new(area.x, area.y, area.width, 1), buffer, None);
         state.compact_hit = Some(Rect {
             x: area.x,
             y: area.y,
@@ -858,6 +858,7 @@ impl<'a> PromptQueue<'a> {
                             1,
                         ),
                         buffer,
+                        None,
                     );
                 }
                 state.row_hits.push((

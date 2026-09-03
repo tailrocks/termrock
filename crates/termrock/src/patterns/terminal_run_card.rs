@@ -947,7 +947,11 @@ impl<'a> TerminalRunCard<'a> {
             );
             StatusIndicator::compact(semantic, self.system)
                 .colorless(colorless)
-                .paint(Rect::new(inner.x, inner.y, inner.width.min(1), 1), buffer);
+                .paint(
+                    Rect::new(inner.x, inner.y, inner.width.min(1), 1),
+                    buffer,
+                    None,
+                );
             state.header_hit = Rect::new(area.x, area.y, area.width, 1);
             return;
         }
@@ -1073,7 +1077,7 @@ impl<'a> TerminalRunCard<'a> {
             StatusIndicator::new(SemanticStatus::Waiting, self.system)
                 .label("permission required · p")
                 .colorless(colorless)
-                .paint(Rect::new(body.x, y, body.width, 1), buffer);
+                .paint(Rect::new(body.x, y, body.width, 1), buffer, None);
             y = y.saturating_add(1);
         }
         if let Some(e) = &run.egress {
@@ -1082,7 +1086,7 @@ impl<'a> TerminalRunCard<'a> {
                 StatusIndicator::new(SemanticStatus::Warning, self.system)
                     .label(&warning)
                     .colorless(colorless)
-                    .paint(Rect::new(body.x, y, body.width, 1), buffer);
+                    .paint(Rect::new(body.x, y, body.width, 1), buffer, None);
                 y = y.saturating_add(1);
             }
         }

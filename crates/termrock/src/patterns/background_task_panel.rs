@@ -1228,7 +1228,7 @@ impl<'a> BackgroundTaskPanel<'a> {
             .label(task.status.id())
             .colorless(self.colorless);
         let status_width = status.measure_width(None).min(area.width);
-        status.paint(Rect::new(area.x, y, status_width, 1), buffer);
+        status.paint(Rect::new(area.x, y, status_width, 1), buffer, None);
         let command_x = area
             .x
             .saturating_add(status_width)
@@ -1279,7 +1279,7 @@ impl<'a> BackgroundTaskPanel<'a> {
                 StatusIndicator::new(SemanticStatus::Warning, self.system)
                     .label(&banner)
                     .colorless(self.colorless)
-                    .paint(Rect::new(area.x, y, area.width, 1), buffer);
+                    .paint(Rect::new(area.x, y, area.width, 1), buffer, None);
                 y = y.saturating_add(1);
             }
         }
@@ -1299,7 +1299,7 @@ impl<'a> BackgroundTaskPanel<'a> {
             StatusIndicator::new(task.status.semantic(), self.system)
                 .label(note)
                 .colorless(self.colorless)
-                .paint(Rect::new(area.x, y, area.width, 1), buffer);
+                .paint(Rect::new(area.x, y, area.width, 1), buffer, None);
             y = y.saturating_add(1);
         }
 

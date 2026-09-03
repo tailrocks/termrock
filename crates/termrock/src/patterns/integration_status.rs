@@ -1074,7 +1074,7 @@ impl<'a> IntegrationStatus<'a> {
         StatusIndicator::new(semantic, self.system)
             .label(&text)
             .colorless(self.colorless)
-            .paint(Rect::new(area.x, area.y, area.width, 1), buffer);
+            .paint(Rect::new(area.x, area.y, area.width, 1), buffer, None);
     }
 
     fn paint_list(&self, area: Rect, buffer: &mut Buffer, state: &mut IntegrationStatusState) {
@@ -1154,6 +1154,7 @@ impl<'a> IntegrationStatus<'a> {
                         1,
                     ),
                     buffer,
+                    None,
                 );
             }
             state.row_hits.push((
@@ -1249,7 +1250,7 @@ impl<'a> IntegrationStatus<'a> {
                 StatusIndicator::new(SemanticStatus::Warning, self.system)
                     .label(&warning)
                     .colorless(self.colorless)
-                    .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
+                    .paint(Rect::new(inner.x, y, inner.width, 1), buffer, None);
                 y = y.saturating_add(1);
             }
         }
@@ -1261,7 +1262,7 @@ impl<'a> IntegrationStatus<'a> {
                     StatusIndicator::new(e.health.semantic(), self.system)
                         .label(e.health.label())
                         .colorless(self.colorless)
-                        .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
+                        .paint(Rect::new(inner.x, y, inner.width, 1), buffer, None);
                     y = y.saturating_add(1);
                 }
                 let lines = [
@@ -1292,7 +1293,7 @@ impl<'a> IntegrationStatus<'a> {
                     StatusIndicator::new(SemanticStatus::Failed, self.system)
                         .label(&failure)
                         .colorless(self.colorless)
-                        .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
+                        .paint(Rect::new(inner.x, y, inner.width, 1), buffer, None);
                 }
             }
             IntegrationDetailTab::Capabilities => {

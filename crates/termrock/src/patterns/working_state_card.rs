@@ -792,7 +792,11 @@ impl<'a> WorkingStateCard<'a> {
                 );
                 StatusIndicator::compact(semantic, self.system)
                     .colorless(self.colorless)
-                    .paint(Rect::new(inner.x, inner.y, inner.width.min(1), 1), buffer);
+                    .paint(
+                        Rect::new(inner.x, inner.y, inner.width.min(1), 1),
+                        buffer,
+                        None,
+                    );
             }
             return;
         };
@@ -841,7 +845,11 @@ impl<'a> WorkingStateCard<'a> {
         );
         StatusIndicator::compact(semantic, self.system)
             .colorless(self.colorless)
-            .paint(Rect::new(inner.x, inner.y, inner.width.min(1), 1), buffer);
+            .paint(
+                Rect::new(inner.x, inner.y, inner.width.min(1), 1),
+                buffer,
+                None,
+            );
         state.header_hit = Some(Rect {
             x: inner.x,
             y: inner.y,
@@ -906,7 +914,7 @@ impl<'a> WorkingStateCard<'a> {
             );
             StatusIndicator::compact(semantic, self.system)
                 .colorless(self.colorless)
-                .paint(Rect::new(inner.x, y, inner.width.min(1), 1), buffer);
+                .paint(Rect::new(inner.x, y, inner.width.min(1), 1), buffer, None);
             state.header_hit = Some(Rect {
                 x: inner.x,
                 y,

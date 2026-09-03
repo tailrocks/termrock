@@ -16,7 +16,7 @@
 //! For compiler/build diagnostics, project into [`super::Diagnostic`] /
 //! [`super::CodeFrame`] and feed plain text via
 //! [`super::format_diagnostics_plain`] into recovery copy-diagnostics.
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
@@ -669,14 +669,8 @@ impl<'a> ErrorState<'a> {
         self.kind.default_retry_safety()
     }
 
-    /// Passive paint.
-    pub fn paint(&self, area: Rect, buffer: &mut Buffer) {
-        let mut state = ErrorStateState::new();
-        self.paint_with_state(area, buffer, &mut state);
-    }
-
-    /// Paint with disclosure/focus state.
-    pub fn paint_with_state(&self, area: Rect, buffer: &mut Buffer, state: &mut ErrorStateState) {
+    /// Paint; disclosure/focus state comes from `state`.
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut ErrorStateState) {
         if area.is_empty() {
             return;
         }
@@ -1128,22 +1122,6 @@ impl<'a> ErrorState<'a> {
     }
 }
 
-impl Widget for &ErrorState<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        self.paint(area, buffer);
-    }
-}
-
-impl Widget for ErrorState<'_> {
-    #[expect(
-        clippy::needless_borrows_for_generic_args,
-        reason = "explicitly delegate the owned contract to the borrowed renderer"
-    )]
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        <&Self as Widget>::render(&self, area, buffer);
-    }
-}
-
 // ── Recipes ─────────────────────────────────────────────────────────────────
 
 /// Network failure pane with safe retry.
@@ -1318,7 +1296,7 @@ mod tests {
         let text = painted(Rect::new(0, 0, 40, 5), |a, b| {
             ErrorState::new("Failed", &system)
                 .explanation("Timed out")
-                .paint(a, b);
+                .paint(a, b, &mut ErrorStateState::new());
         });
         assert!(text.contains("Failed"), "{text}");
         assert!(text.contains("Timed out"), "{text}");
@@ -1334,7 +1312,9 @@ mod tests {
         let e = ErrorState::new("Err", &system)
             .technical("secret stack trace XYZ")
             .explanation("human msg");
-        let collapsed = painted(Rect::new(0, 0, 48, 10), |a, b| e.paint(a, b));
+        let collapsed = painted(Rect::new(0, 0, 48, 10), |a, b| {
+            e.paint(a, b, &mut ErrorStateState::new())
+        });
         assert!(
             !collapsed.contains("secret stack"),
             "collapsed leaked tech: {collapsed}"
@@ -1347,7 +1327,7 @@ mod tests {
         let mut st = ErrorStateState::new();
         st.set_details_expanded(true);
         let expanded = painted(Rect::new(0, 0, 48, 12), |a, b| {
-            e.paint_with_state(a, b, &mut st);
+            e.paint(a, b, &mut st);
         });
         assert!(expanded.contains("secret stack"), "{expanded}");
     }
@@ -1373,7 +1353,9 @@ mod tests {
         let system = system();
         let e = example_error_network(&system);
         assert_eq!(e.retry_safety(), RetrySafety::Safe);
-        let text = painted(Rect::new(0, 0, 50, 14), |a, b| e.paint(a, b));
+        let text = painted(Rect::new(0, 0, 50, 14), |a, b| {
+            e.paint(a, b, &mut ErrorStateState::new())
+        });
         assert!(
             text.contains("retry safe") || text.contains("Retry"),
             "{text}"
@@ -1432,12 +1414,12 @@ mod tests {
     fn recipes_inline_dialog_fullscreen() {
         let system = system();
         let inline = painted(Rect::new(0, 0, 24, 2), |a, b| {
-            example_error_unsupported(&system).paint(a, b);
+            example_error_unsupported(&system).paint(a, b, &mut ErrorStateState::new());
         });
         assert!(!inline.trim().is_empty(), "{inline}");
 
         let dialog = painted(Rect::new(0, 0, 48, 12), |a, b| {
-            example_error_dialog(&system).paint(a, b);
+            example_error_dialog(&system).paint(a, b, &mut ErrorStateState::new());
         });
         assert!(
             dialog.contains("Request") || dialog.contains("failed"),
@@ -1445,7 +1427,7 @@ mod tests {
         );
 
         let full = painted(Rect::new(0, 0, 60, 16), |a, b| {
-            example_error_crash(&system).paint(a, b);
+            example_error_crash(&system).paint(a, b, &mut ErrorStateState::new());
         });
         assert!(
             full.contains("Unexpected") || full.contains("error"),
@@ -1465,7 +1447,9 @@ mod tests {
             example_error_crash(&system),
             example_error_unsupported(&system),
         ] {
-            let t = painted(Rect::new(0, 0, 52, 14), |a, b| e.paint(a, b));
+            let t = painted(Rect::new(0, 0, 52, 14), |a, b| {
+                e.paint(a, b, &mut ErrorStateState::new())
+            });
             assert!(!t.trim().is_empty(), "kind={}", e.kind.id());
         }
     }
@@ -1501,8 +1485,16 @@ mod tests {
     fn tiny_and_empty_safe() {
         let system = system();
         let mut buf = Buffer::empty(Rect::new(0, 0, 8, 2));
-        ErrorState::new("E", &system).paint(Rect::new(0, 0, 1, 1), &mut buf);
-        ErrorState::new("E", &system).paint(Rect::new(0, 0, 0, 0), &mut buf);
+        ErrorState::new("E", &system).paint(
+            Rect::new(0, 0, 1, 1),
+            &mut buf,
+            &mut ErrorStateState::new(),
+        );
+        ErrorState::new("E", &system).paint(
+            Rect::new(0, 0, 0, 0),
+            &mut buf,
+            &mut ErrorStateState::new(),
+        );
     }
 
     #[test]
@@ -1553,7 +1545,7 @@ mod tests {
             if seed % 5 == 0 {
                 st.set_details_expanded(true);
             }
-            e.paint_with_state(area, &mut buf, &mut st);
+            e.paint(area, &mut buf, &mut st);
         }
     }
 
@@ -1563,7 +1555,11 @@ mod tests {
         let paint = || {
             let mut t = Terminal::new(TestBackend::new(48, 12)).unwrap();
             t.draw(|f| {
-                example_error_network(&system).paint(f.area(), f.buffer_mut());
+                example_error_network(&system).paint(
+                    f.area(),
+                    f.buffer_mut(),
+                    &mut ErrorStateState::new(),
+                );
             })
             .unwrap();
             t.backend()
@@ -1584,7 +1580,11 @@ mod tests {
         for _ in 0..100 {
             terminal
                 .draw(|f| {
-                    example_error_network(&system).paint(f.area(), f.buffer_mut());
+                    example_error_network(&system).paint(
+                        f.area(),
+                        f.buffer_mut(),
+                        &mut ErrorStateState::new(),
+                    );
                 })
                 .unwrap();
         }

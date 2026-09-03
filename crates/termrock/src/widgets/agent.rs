@@ -77,7 +77,7 @@ impl Widget for &TokenMeter<'_> {
         if let Some(label) = warning {
             let status = StatusIndicator::new(SemanticStatus::Warning, self.system).label(label);
             let status_width = status.measure_width(None).min(area.width);
-            Widget::render(&status, Rect::new(area.x, area.y, status_width, 1), buffer);
+            status.paint(Rect::new(area.x, area.y, status_width, 1), buffer, None);
             let x = area.x.saturating_add(status_width.saturating_add(1));
             let width = area.right().saturating_sub(x);
             if width > 0 {

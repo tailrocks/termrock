@@ -1277,7 +1277,8 @@ impl<'a> Panel<'a> {
                     if let Some(d) = self.slots.body_detail {
                         err = err.explanation(d);
                     }
-                    Widget::render(&err, parts.body, buffer);
+                    let mut error_state = crate::widgets::ErrorStateState::new();
+                    err.paint(parts.body, buffer, &mut error_state);
                 }
             }
         } else if collapsed {

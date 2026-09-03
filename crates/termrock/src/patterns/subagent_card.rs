@@ -937,7 +937,7 @@ impl<'a> SubagentCard<'a> {
             StatusIndicator::new(run.status, self.system)
                 .label(verb)
                 .colorless(self.colorless)
-                .paint(Rect::new(body.x, y, body.width, 1), buffer);
+                .paint(Rect::new(body.x, y, body.width, 1), buffer, None);
             y = y.saturating_add(1);
         }
 
@@ -1069,6 +1069,7 @@ impl<'a> SubagentCard<'a> {
                     1,
                 ),
                 buffer,
+                None,
             );
         state.header_hit = area;
     }

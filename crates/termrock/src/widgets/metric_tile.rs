@@ -344,6 +344,7 @@ impl<'a> MetricTileView<'a> {
                     1,
                 ),
                 buffer,
+                None,
             );
         }
     }
@@ -379,7 +380,7 @@ impl<'a> MetricTileView<'a> {
             system.style(Role::TextStrong),
         );
         title.paint_tiers(buffer, Rect::new(inner_x, area.y, inner_w, 1), 0);
-        status.paint(Rect::new(inner_x, area.y, inner_w, 1), buffer);
+        status.paint(Rect::new(inner_x, area.y, inner_w, 1), buffer, None);
 
         let mut y = area.y.saturating_add(1);
         if y < area.bottom() {

@@ -807,7 +807,7 @@ impl<'a> OfflineBanner<'a> {
             usize::from(area.width),
             self.system.style(Role::Text),
         );
-        status.paint(Rect::new(area.x, area.y, area.width, 1), buffer);
+        status.paint(Rect::new(area.x, area.y, area.width, 1), buffer, None);
     }
 
     /// Semantic.
@@ -972,6 +972,7 @@ impl<'a> OfflineSurface<'a> {
                     status.paint(
                         Rect::new(x, r.y, row_area.right().saturating_sub(x), 1),
                         buffer,
+                        None,
                     );
                 } else {
                     let mut style = self.system.style(*role);

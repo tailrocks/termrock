@@ -1078,6 +1078,7 @@ impl<'a> MetricsDashboard<'a> {
                             1,
                         ),
                         buffer,
+                        None,
                     );
                 }
                 y = y.saturating_add(1);

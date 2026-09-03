@@ -1779,7 +1779,7 @@ impl<'a> ConnectionManager<'a> {
                 StatusIndicator::new(c.status.semantic(), self.system)
                     .label(&line)
                     .colorless(self.colorless)
-                    .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
+                    .paint(Rect::new(inner.x, y, inner.width, 1), buffer, None);
                 y = y.saturating_add(1);
             }
         }
@@ -2008,6 +2008,7 @@ impl<'a> ConnectionManager<'a> {
                 indicator.paint(
                     Rect::new(status_x, y, area.right().saturating_sub(status_x), 1),
                     buffer,
+                    None,
                 );
             }
             state.row_hits.push((
@@ -2110,7 +2111,7 @@ impl<'a> ConnectionManager<'a> {
                 StatusIndicator::new(semantic, self.system)
                     .label(&label)
                     .colorless(self.colorless)
-                    .paint(Rect::new(area.x, y, area.width, 1), buffer);
+                    .paint(Rect::new(area.x, y, area.width, 1), buffer, None);
             }
             y = y.saturating_add(1);
         }
@@ -2237,7 +2238,7 @@ impl<'a> ConnectionManager<'a> {
         StatusIndicator::new(SemanticStatus::Warning, self.system)
             .label(&warning)
             .colorless(self.colorless)
-            .paint(Rect::new(area.x, y, area.width, 1), buffer);
+            .paint(Rect::new(area.x, y, area.width, 1), buffer, None);
         let bar_y = area.bottom().saturating_sub(1);
         let cancel = if !state.confirm_proceed_focused {
             "[Cancel]"

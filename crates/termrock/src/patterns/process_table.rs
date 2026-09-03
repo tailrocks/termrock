@@ -1351,6 +1351,7 @@ impl<'a> ProcessTable<'a> {
                             1,
                         ),
                         buffer,
+                        None,
                     );
                 }
                 state.row_regions.push((
@@ -1375,7 +1376,7 @@ impl<'a> ProcessTable<'a> {
             );
             StatusIndicator::new(SemanticStatus::Warning, self.system)
                 .label(&msg)
-                .paint(Rect::new(area.x, cy, area.width, 1), buffer);
+                .paint(Rect::new(area.x, cy, area.width, 1), buffer, None);
         }
     }
 }

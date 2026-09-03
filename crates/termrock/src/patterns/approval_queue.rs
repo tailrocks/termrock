@@ -964,7 +964,7 @@ impl<'a> ApprovalQueue<'a> {
         StatusIndicator::new(semantic, self.system)
             .label(&text)
             .colorless(self.colorless)
-            .paint(Rect::new(area.x, area.y, area.width, 1), buffer);
+            .paint(Rect::new(area.x, area.y, area.width, 1), buffer, None);
     }
 
     fn paint_list(&self, area: Rect, buffer: &mut Buffer, state: &mut ApprovalQueueState) {

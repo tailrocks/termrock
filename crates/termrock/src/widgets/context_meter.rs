@@ -756,7 +756,7 @@ impl<'a> ContextMeter<'a> {
             .label(verb)
             .colorless(self.colorless);
         let indicator_width = indicator.measure_width(None).min(area.width);
-        indicator.paint(Rect::new(area.x, area.y, indicator_width, 1), buffer);
+        indicator.paint(Rect::new(area.x, area.y, indicator_width, 1), buffer, None);
         let metadata_x = area
             .x
             .saturating_add(indicator_width)

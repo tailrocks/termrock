@@ -740,7 +740,7 @@ pub static PUBLIC_UI_INVENTORY: &[PublicUiInventoryEntry] = &[
     ),
     public_ui!(
         ErrorState,
-        Widget,
+        Paint,
         Feedback,
         "error-state",
         "error-state/network"
@@ -1255,7 +1255,7 @@ pub static PUBLIC_UI_INVENTORY: &[PublicUiInventoryEntry] = &[
     ),
     public_ui!(
         StatusIndicator,
-        Widget,
+        Paint,
         Feedback,
         "status-indicator",
         "status-indicator/catalog"
@@ -1858,7 +1858,7 @@ mod tests {
                     counts[index] += 1;
                     counts
                 });
-        assert_eq!(kind_counts, [140, 56, 6, 8]);
+        assert_eq!(kind_counts, [138, 58, 6, 8]);
         assert_eq!(
             public_ui_inventory()
                 .iter()

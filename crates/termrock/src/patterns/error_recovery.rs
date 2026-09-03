@@ -1179,7 +1179,7 @@ pub fn render_error_recovery(buffer: &mut Buffer, area: Rect, surfaces: ErrorRec
     // Summary — ErrorState
     if let Some(r) = pane_area(&panes, "summary") {
         let view = build_error_state_view(snapshot, state, system);
-        view.paint_with_state(r, buffer, &mut state.error);
+        view.paint(r, buffer, &mut state.error);
     }
 
     // Preserved work strip

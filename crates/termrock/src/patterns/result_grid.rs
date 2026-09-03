@@ -29,7 +29,7 @@
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
-    widgets::{StatefulWidget, Widget},
+    widgets::StatefulWidget,
 };
 
 use crate::{
@@ -1303,7 +1303,7 @@ impl<'a> ResultGrid<'a> {
             let status = StatusIndicator::new(state.status.semantic(), self.system)
                 .label(state.status.verb());
             let status_width = status.measure_width(None).min(area.width);
-            Widget::render(&status, Rect::new(area.x, y, status_width, 1), buffer);
+            status.paint(Rect::new(area.x, y, status_width, 1), buffer, None);
             let metadata_x = area.x.saturating_add(status_width.saturating_add(1));
             let metadata_width = area.right().saturating_sub(metadata_x);
             if metadata_width > 0 {

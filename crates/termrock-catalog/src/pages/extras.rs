@@ -130,7 +130,7 @@ fn paint_demo(
             Separator::new(system).paint(inner, buf);
         }
         PublicUiId::StatusIndicator => {
-            StatusIndicator::new(SemanticStatus::Success, system).paint(inner, buf);
+            StatusIndicator::new(SemanticStatus::Success, system).paint(inner, buf, None);
         }
         PublicUiId::Spinner => {
             let st = SpinnerState::new();

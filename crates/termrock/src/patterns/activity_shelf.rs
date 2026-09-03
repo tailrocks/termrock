@@ -937,7 +937,7 @@ impl<'a> ActivityShelf<'a> {
                     .label(&label)
                     .colorless(self.colorless)
                     .strong(state.focused)
-                    .paint(Rect::new(area.x, area.y, area.width, 1), buffer);
+                    .paint(Rect::new(area.x, area.y, area.width, 1), buffer, None);
             }
             ActivityShelfPresentation::Summary => {
                 let counts = activity_counts(self.items);
@@ -946,7 +946,7 @@ impl<'a> ActivityShelf<'a> {
                     .label(&label)
                     .colorless(self.colorless)
                     .strong(state.focused)
-                    .paint(Rect::new(area.x, area.y, area.width, 1), buffer);
+                    .paint(Rect::new(area.x, area.y, area.width, 1), buffer, None);
             }
             ActivityShelfPresentation::Chips | ActivityShelfPresentation::IconsOnly => {
                 self.paint_chips(area, buffer, state, &sorted, &plan, false);
@@ -998,7 +998,7 @@ impl<'a> ActivityShelf<'a> {
                 StatusIndicator::new(activity_item_semantic(item), self.system)
                     .label(activity_item_verb(item))
                     .colorless(self.colorless)
-                    .paint(rect, buffer);
+                    .paint(rect, buffer, None);
                 state.hits.push((item.id.clone(), rect));
                 y = y.saturating_add(1);
             } else {
@@ -1032,6 +1032,7 @@ impl<'a> ActivityShelf<'a> {
                                 1,
                             ),
                             buffer,
+                            None,
                         );
                 }
                 state.hits.push((item.id.clone(), rect));

@@ -1262,7 +1262,7 @@ impl<'a> SessionPicker<'a> {
             StatusIndicator::new(SemanticStatus::Running, self.system)
                 .label(m)
                 .colorless(self.colorless)
-                .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
+                .paint(Rect::new(inner.x, y, inner.width, 1), buffer, None);
             y = y.saturating_add(1);
         }
         if matches!(state.load_state, SessionLoadState::Error) && y < max_y {
@@ -1273,7 +1273,7 @@ impl<'a> SessionPicker<'a> {
             StatusIndicator::new(SemanticStatus::Failed, self.system)
                 .label(msg)
                 .colorless(self.colorless)
-                .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
+                .paint(Rect::new(inner.x, y, inner.width, 1), buffer, None);
             y = y.saturating_add(1);
         }
 
@@ -1429,6 +1429,7 @@ impl<'a> SessionPicker<'a> {
                 indicator.paint(
                     Rect::new(area.x.saturating_add(2), y, area.width.saturating_sub(2), 1),
                     buffer,
+                    None,
                 );
             }
             state.row_hits.push((
@@ -1565,7 +1566,7 @@ impl<'a> SessionPicker<'a> {
                 StatusIndicator::new(semantic, self.system)
                     .label(s.status.id())
                     .colorless(self.colorless)
-                    .paint(Rect::new(area.x, y, area.width, 1), buffer);
+                    .paint(Rect::new(area.x, y, area.width, 1), buffer, None);
             }
             y = y.saturating_add(1);
         }
