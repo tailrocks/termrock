@@ -448,7 +448,7 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
                     // drop unless we already emitted something
                 }
                 SelectRowKind::Option => {
-                    if o.label.to_ascii_lowercase().contains(&q) {
+                    if crate::text::contains_lower(&o.label, &q) {
                         if let Some(g) = pending_group.take() {
                             out.push(g);
                         }

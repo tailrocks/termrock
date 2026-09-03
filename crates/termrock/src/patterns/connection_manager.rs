@@ -528,7 +528,7 @@ impl ConnectionEntry {
             return true;
         }
         let q = q.to_ascii_lowercase();
-        let hit = |s: &str| s.to_ascii_lowercase().contains(&q);
+        let hit = |s: &str| crate::text::contains_lower(&s, &q);
         hit(&self.name)
             || hit(&self.target)
             || hit(&self.environment)

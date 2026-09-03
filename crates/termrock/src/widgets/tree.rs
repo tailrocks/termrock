@@ -273,12 +273,7 @@ impl<'a, Id> TreeNode<'a, Id> {
     /// Plain label for typeahead / filter.
     #[must_use]
     pub fn plain_label(&self) -> String {
-        self.label
-            .spans
-            .iter()
-            .map(|s| s.content.as_ref())
-            .collect::<Vec<_>>()
-            .join("")
+        crate::widgets::line_plain(&self.label)
     }
 
     /// Projects hierarchy chrome + label into shared composed anatomy.
@@ -311,7 +306,7 @@ pub fn filter_tree_with_ancestors<'a, Id: Clone + PartialEq>(
     }
     let mut keep = vec![false; nodes.len()];
     for (i, n) in nodes.iter().enumerate() {
-        if n.plain_label().to_ascii_lowercase().contains(&q) {
+        if crate::text::contains_lower(&n.plain_label(), &q) {
             keep[i] = true;
             // Mark ancestors by walking up depth.
             let mut depth = n.depth;

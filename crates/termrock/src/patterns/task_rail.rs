@@ -508,21 +508,21 @@ pub fn filter_activity_models<'a>(
     items
         .iter()
         .filter(|i| {
-            i.title.to_ascii_lowercase().contains(&q)
+            crate::text::contains_lower(&i.title, &q)
                 || i.actor
                     .as_ref()
-                    .is_some_and(|a| a.to_ascii_lowercase().contains(&q))
+                    .is_some_and(|a| crate::text::contains_lower(&a, &q))
                 || i.detail
                     .as_ref()
-                    .is_some_and(|d| d.to_ascii_lowercase().contains(&q))
+                    .is_some_and(|d| crate::text::contains_lower(&d, &q))
                 || i.waiting_reason
                     .as_ref()
-                    .is_some_and(|w| w.to_ascii_lowercase().contains(&q))
+                    .is_some_and(|w| crate::text::contains_lower(&w, &q))
                 || i.scope.id().contains(q.as_str())
                 || i.kind.id().contains(q.as_str())
                 || i.dependencies
                     .iter()
-                    .any(|d| d.label.to_ascii_lowercase().contains(&q) || d.id.contains(&q))
+                    .any(|d| crate::text::contains_lower(&d.label, &q) || d.id.contains(&q))
         })
         .collect()
 }

@@ -574,7 +574,7 @@ pub fn filter_argument_values(values: &[String], prefix: &str) -> Vec<String> {
     }
     values
         .iter()
-        .filter(|v| v.to_ascii_lowercase().contains(&q))
+        .filter(|v| crate::text::contains_lower(&v, &q))
         .cloned()
         .collect()
 }

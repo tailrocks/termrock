@@ -890,23 +890,19 @@ fn paint_no_results(
 
 /// One field's case-insensitive hit (label, searchable value, description).
 fn settings_field_matches(field: &Field<'_, &'static str>, q: &str) -> bool {
-    field.label.to_ascii_lowercase().contains(q)
-        || field
-            .value
-            .searchable_text()
-            .to_ascii_lowercase()
-            .contains(q)
+    crate::text::contains_lower(&field.label, q)
+        || crate::text::contains_lower(field.value.searchable_text(), q)
         || field
             .description
-            .is_some_and(|d| d.to_ascii_lowercase().contains(q))
+            .is_some_and(|d| crate::text::contains_lower(&d, q))
 }
 
 /// One fieldset's case-insensitive hit (legend, description, any field).
 fn settings_fieldset_matches(fs: &Fieldset<'_, &'static str>, q: &str) -> bool {
-    fs.legend.to_ascii_lowercase().contains(q)
+    crate::text::contains_lower(&fs.legend, q)
         || fs
             .description
-            .is_some_and(|d| d.to_ascii_lowercase().contains(q))
+            .is_some_and(|d| crate::text::contains_lower(&d, q))
         || fs.fields.iter().any(|f| settings_field_matches(f, q))
 }
 
@@ -920,15 +916,15 @@ pub fn filter_settings_nav<'a, SectionId: Clone>(
     items
         .iter()
         .filter(|item| {
-            item.label.to_ascii_lowercase().contains(&q)
+            crate::text::contains_lower(&item.label, &q)
                 || item
                     .command
                     .as_ref()
-                    .is_some_and(|c| c.to_ascii_lowercase().contains(&q))
+                    .is_some_and(|c| crate::text::contains_lower(&c, &q))
                 || item
                     .badge
                     .as_ref()
-                    .is_some_and(|b| b.to_ascii_lowercase().contains(&q))
+                    .is_some_and(|b| crate::text::contains_lower(&b, &q))
         })
         .collect()
 }

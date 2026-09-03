@@ -1347,8 +1347,7 @@ pub fn log_lines_from_plain<'a>(
     text_buf.clear();
     for (i, line) in owned.iter().enumerate() {
         id_buf.push(i.to_string());
-        let t: String = line.spans.iter().map(|s| s.content.as_ref()).collect();
-        text_buf.push(t);
+        text_buf.push(crate::widgets::line_plain(line));
     }
     id_buf
         .iter()

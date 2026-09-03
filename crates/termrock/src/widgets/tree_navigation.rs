@@ -455,7 +455,7 @@ impl<Id> TreeNavigationState<Id> {
         }
         nodes
             .iter()
-            .filter(|n| n.label.to_ascii_lowercase().contains(&q))
+            .filter(|n| crate::text::contains_lower(&n.label, &q))
             .collect()
     }
 

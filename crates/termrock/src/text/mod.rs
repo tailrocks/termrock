@@ -17,6 +17,17 @@ pub fn is_terminal_control_char(c: char) -> bool {
     code < 0x20 || c == '\x7f' || (0x80..0xa0).contains(&code)
 }
 
+/// Case-folded substring test: `hay` is ASCII-lowercased and tested for
+/// `needle_lower`.
+///
+/// `needle_lower` must already be ASCII-lowercase — filters fold the query
+/// once, then test every row. This is the crate's single definition of what a
+/// case-insensitive text filter match means.
+#[must_use]
+pub fn contains_lower(hay: &str, needle_lower: &str) -> bool {
+    hay.to_ascii_lowercase().contains(needle_lower)
+}
+
 /// Display-column width of `s`, excluding terminal control bytes.
 #[must_use]
 pub fn display_cols(s: &str) -> usize {

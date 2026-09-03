@@ -368,6 +368,10 @@ where
     Id: Clone + PartialEq + std::fmt::Display,
     Action: Clone + std::fmt::Debug,
 {
+    let label_lower = filter
+        .label_contains
+        .as_deref()
+        .map(str::to_ascii_lowercase);
     let mut out = Vec::new();
     for node in scene.nodes() {
         if !filter.include_hidden && node.hidden {
@@ -395,11 +399,8 @@ where
             }
         }
         let display_label = node.label.clone().unwrap_or_else(|| node.id.to_string());
-        if let Some(lc) = &filter.label_contains {
-            if !display_label
-                .to_ascii_lowercase()
-                .contains(&lc.to_ascii_lowercase())
-            {
+        if let Some(lc) = &label_lower {
+            if !crate::text::contains_lower(&display_label, lc) {
                 continue;
             }
         }

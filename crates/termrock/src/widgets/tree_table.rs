@@ -1711,7 +1711,7 @@ pub fn filter_tree_table_with_ancestors<'a, Id: Clone + PartialEq>(
     let mut keep = vec![false; rows.len()];
     for (i, r) in rows.iter().enumerate() {
         let label = r.cells.first().copied().unwrap_or("");
-        if label.to_ascii_lowercase().contains(&q) {
+        if crate::text::contains_lower(&label, &q) {
             keep[i] = true;
             let mut depth = r.depth;
             let mut j = i;

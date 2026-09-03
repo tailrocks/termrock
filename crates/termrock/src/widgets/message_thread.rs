@@ -422,7 +422,7 @@ fn project_message_thread_profile(
 
     for e in entries {
         if let Some(ref qq) = q {
-            if !e.haystack().to_ascii_lowercase().contains(qq) {
+            if !crate::text::contains_lower(&e.haystack(), qq) {
                 continue;
             }
         }
@@ -698,7 +698,7 @@ pub fn filter_entries<'a>(entries: &'a [MessageEntry], query: &str) -> Vec<&'a M
     }
     entries
         .iter()
-        .filter(|e| e.haystack().to_ascii_lowercase().contains(&q))
+        .filter(|e| crate::text::contains_lower(&e.haystack(), &q))
         .collect()
 }
 

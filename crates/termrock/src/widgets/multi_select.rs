@@ -352,7 +352,7 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
                 SelectRowKind::Group => pending_group = Some(option),
                 SelectRowKind::Separator => {}
                 SelectRowKind::Option => {
-                    if option.label.to_ascii_lowercase().contains(&q) {
+                    if crate::text::contains_lower(&option.label, &q) {
                         if let Some(group) = pending_group.take() {
                             out.push(group);
                         }

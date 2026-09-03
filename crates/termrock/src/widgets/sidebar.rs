@@ -306,11 +306,11 @@ fn filter_nav_query<'a, Id>(items: Vec<&'a NavItem<Id>>, query: &str) -> Vec<&'a
     items
         .into_iter()
         .filter(|item| {
-            item.label.to_ascii_lowercase().contains(&query)
+            crate::text::contains_lower(&item.label, &query)
                 || item
                     .command
                     .as_ref()
-                    .is_some_and(|command| command.to_ascii_lowercase().contains(&query))
+                    .is_some_and(|command| crate::text::contains_lower(&command, &query))
         })
         .collect()
 }

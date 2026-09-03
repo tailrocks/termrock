@@ -911,7 +911,7 @@ impl FilePickerState {
         }
         if !self.name_filter.is_empty() {
             let q = self.name_filter.to_ascii_lowercase();
-            entries.retain(|e| e.name.to_ascii_lowercase().contains(&q));
+            entries.retain(|e| crate::text::contains_lower(&e.name, &q));
         }
         // mode: non-selectable files in directory-only mode still shown for nav? dirs always nav
         for e in &mut entries {

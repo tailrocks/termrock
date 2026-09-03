@@ -257,16 +257,8 @@ impl<'a, Id> ListRow<'a, Id> {
     /// Plain text for typeahead / search (primary spans).
     #[must_use]
     pub fn plain_label(&self) -> String {
-        line_plain(&self.label)
+        crate::widgets::line_plain(&self.label)
     }
-}
-
-/// Plain text from a ratatui [`Line`].
-fn line_plain(line: &Line<'_>) -> String {
-    line.spans
-        .iter()
-        .map(|span| span.content.as_ref())
-        .collect()
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -994,7 +986,7 @@ pub fn filter_list_rows<'a, Id: Clone>(
             if matches!(r.role, RowRole::GroupHeader | RowRole::Separator) {
                 return true; // keep structure; host may post-process empty groups
             }
-            r.plain_label().to_ascii_lowercase().contains(&q)
+            crate::text::contains_lower(&r.plain_label(), &q)
         })
         .collect()
 }

@@ -492,17 +492,17 @@ pub fn merge_help_entries(parts: impl IntoIterator<Item = Vec<HelpEntry>>) -> Ve
 /// One entry's case-insensitive hit (category, action, chord, zone, mouse).
 #[must_use]
 pub fn help_entry_matches(entry: &HelpEntry, q: &str) -> bool {
-    entry.action.to_ascii_lowercase().contains(q)
-        || entry.chord.to_ascii_lowercase().contains(q)
-        || entry.category.to_ascii_lowercase().contains(q)
+    crate::text::contains_lower(&entry.action, q)
+        || crate::text::contains_lower(&entry.chord, q)
+        || crate::text::contains_lower(&entry.category, q)
         || entry
             .zone
             .as_ref()
-            .is_some_and(|z| z.to_ascii_lowercase().contains(q))
+            .is_some_and(|z| crate::text::contains_lower(&z, q))
         || entry
             .mouse
             .as_ref()
-            .is_some_and(|m| m.to_ascii_lowercase().contains(q))
+            .is_some_and(|m| crate::text::contains_lower(&m, q))
 }
 
 /// Filter entries by search query (category, action, chord, zone).
