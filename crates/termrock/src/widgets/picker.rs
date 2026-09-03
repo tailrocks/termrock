@@ -295,6 +295,18 @@ impl<Id: Clone + PartialEq> PickerState<Id> {
         }
         let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
         let alt = key.modifiers.contains(KeyModifiers::ALT);
+        // Activation, cancellation, scope handoff, secondary actions, and
+        // query clearing are one-shot. Consume repeats before they can reach
+        // the picker state machine; text editing and navigation stay held-key
+        // repeatable below.
+        if !key.is_press()
+            && (matches!(
+                key.code,
+                KeyCode::Esc | KeyCode::Enter | KeyCode::Tab | KeyCode::Delete
+            ) || (ctrl && self.searchable && matches!(key.code, KeyCode::Char('u'))))
+        {
+            return PickerOutcome::Ignored;
+        }
         match key.code {
             KeyCode::Esc => self.handle_intent(visible, UiIntent::Cancel),
             KeyCode::Enter if alt => self.activate(visible, true),
@@ -1094,6 +1106,39 @@ mod tests {
             ),
             PickerOutcome::Ignored
         );
+        assert_eq!(state.list().selected(), Some(&"alpha"));
+    }
+
+    #[test]
+    fn repeated_one_shot_actions_are_ignored() {
+        let visible = rows(&["alpha", "beta"]);
+        let mut state = PickerState::new(Some("alpha"));
+        assert_eq!(
+            state.handle_key(
+                &visible,
+                KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE)
+            ),
+            PickerOutcome::QueryChanged
+        );
+
+        for (code, modifiers) in [
+            (KeyCode::Esc, KeyModifiers::NONE),
+            (KeyCode::Enter, KeyModifiers::NONE),
+            (KeyCode::Enter, KeyModifiers::ALT),
+            (KeyCode::Tab, KeyModifiers::NONE),
+            (KeyCode::Delete, KeyModifiers::NONE),
+            (KeyCode::Char('u'), KeyModifiers::CONTROL),
+        ] {
+            let mut repeat = KeyEvent::new(code, modifiers);
+            repeat.kind = KeyEventKind::Repeat;
+            assert_eq!(
+                state.handle_key(&visible, repeat),
+                PickerOutcome::Ignored,
+                "repeat of {code:?} with {modifiers:?} must not fire a one-shot action"
+            );
+        }
+
+        assert_eq!(state.query_text(), "x");
         assert_eq!(state.list().selected(), Some(&"alpha"));
     }
 
