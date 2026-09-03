@@ -20,7 +20,7 @@ const forbiddenEditorial = [
   /^## Common mistakes$/mu,
   /^## Test recipe$/mu,
   /^## Stories$/mu,
-  /Lookbook coverage for this component/u,
+  /Catalog coverage for this component/u,
   /exact mounted Rust story/u,
   /The Code view above and this source excerpt/u,
 ] as const
