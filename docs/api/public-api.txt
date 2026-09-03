@@ -1684,7 +1684,6 @@ pub termrock::input::KeyReleaseReporting::PressOnly
 pub termrock::input::KeyReleaseReporting::Reported
 impl termrock::input::KeyReleaseReporting
 pub const fn termrock::input::KeyReleaseReporting::can_wait_for_release(self) -> bool
-pub const fn termrock::input::KeyReleaseReporting::id(self) -> &'static str
 impl core::clone::Clone for termrock::input::KeyReleaseReporting
 pub fn termrock::input::KeyReleaseReporting::clone(&self) -> termrock::input::KeyReleaseReporting
 impl core::cmp::Eq for termrock::input::KeyReleaseReporting
