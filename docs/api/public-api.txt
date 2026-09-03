@@ -76481,7 +76481,6 @@ pub struct termrock::widgets::OfflineSurface<'a>
 impl<'a> termrock::widgets::OfflineSurface<'a>
 pub const fn termrock::widgets::OfflineSurface<'a>::new(&'a termrock::style::DesignSystem) -> Self
 pub fn termrock::widgets::OfflineSurface<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::ReconnectingState)
-pub fn termrock::widgets::OfflineSurface<'a>::register_semantic<Sid, Act>(&self, &mut termrock::interaction::SemanticScene<Sid, Act>, Sid, ratatui_core::layout::rect::Rect, &termrock::widgets::ReconnectingState) where Sid: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Act: core::clone::Clone
 impl<'a> core::clone::Clone for termrock::widgets::OfflineSurface<'a>
 pub fn termrock::widgets::OfflineSurface<'a>::clone(&self) -> termrock::widgets::OfflineSurface<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::OfflineSurface<'a>
