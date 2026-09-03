@@ -581,11 +581,72 @@ impl TokenFieldState<String> {
         if key.is_release() || !self.enabled {
             return TokenFieldOutcome::Ignored;
         }
-        self.sync_draft_focus();
-
         let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
         let alt = key.modifiers.contains(KeyModifiers::ALT);
         let shift = key.modifiers.contains(KeyModifiers::SHIFT);
+
+        // TokenField owns lifecycle, completion, and token-membership
+        // mutations while wrapping a TextInput draft. Reject repeated
+        // one-shot paths before draft synchronization; ordinary draft text,
+        // cursor motion, and deletion repeats remain supported.
+        let one_shot = matches!(
+            key.code,
+            KeyCode::Enter
+                | KeyCode::Tab
+                | KeyCode::BackTab
+                | KeyCode::Esc
+                | KeyCode::Char(
+                    'c' | 'C'
+                        | 'k'
+                        | 'K'
+                        | 'm'
+                        | 'M'
+                        | 'u'
+                        | 'U'
+                        | 'v'
+                        | 'V'
+                        | 'w'
+                        | 'W'
+                        | 'x'
+                        | 'X',
+                )
+        );
+        let membership_mutation = match self.zone {
+            TokenFieldZone::Draft => {
+                (matches!(key.code, KeyCode::Backspace)
+                    && self.draft.value().is_empty()
+                    && self.tokens.last().is_some_and(|token| token.removable))
+                    || matches!(
+                        key.code,
+                        KeyCode::Char(character)
+                            if !ctrl
+                                && !self.draft.value().trim().is_empty()
+                                && self.separators.contains(character)
+                    )
+            }
+            TokenFieldZone::Token { index, .. } => {
+                let removable = self.tokens.get(index).is_some_and(|token| token.removable);
+                (!self.read_only
+                    && removable
+                    && matches!(key.code, KeyCode::Backspace | KeyCode::Delete))
+                    || (self.multi_select && !ctrl && matches!(key.code, KeyCode::Char(' ')))
+                    || (!self.read_only
+                        && alt
+                        && !ctrl
+                        && matches!(key.code, KeyCode::Left | KeyCode::Right))
+            }
+        };
+        if !key.is_press()
+            && (matches!(
+                key.code,
+                KeyCode::Enter | KeyCode::Tab | KeyCode::BackTab | KeyCode::Esc
+            ) || (ctrl && one_shot)
+                || membership_mutation)
+        {
+            return TokenFieldOutcome::Ignored;
+        }
+
+        self.sync_draft_focus();
 
         // Completion Tab when draft focused
         if matches!(self.zone, TokenFieldZone::Draft)
@@ -1201,6 +1262,7 @@ impl StatefulWidget for TokenField<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::input::KeyEventKind;
     use crate::style::RolePalette;
     use unicode_segmentation::UnicodeSegmentation;
 
@@ -1317,6 +1379,83 @@ mod tests {
             state.handle_key(KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE)),
             TokenFieldOutcome::CompletionRequested { query: "fi".into() }
         );
+    }
+
+    #[test]
+    fn repeated_draft_one_shots_are_ignored_but_text_repeats() {
+        let mut state = TokenFieldState::new().with_separators(CommitSeparators::email());
+        state.set_focused(true);
+        let _ = state.draft.insert_str("alice");
+        state.draft.begin_edit();
+        let actions = [
+            (KeyCode::Enter, KeyModifiers::NONE),
+            (KeyCode::Tab, KeyModifiers::NONE),
+            (KeyCode::BackTab, KeyModifiers::NONE),
+            (KeyCode::Esc, KeyModifiers::NONE),
+            (KeyCode::Char(','), KeyModifiers::NONE),
+            (KeyCode::Char('m'), KeyModifiers::CONTROL),
+            (
+                KeyCode::Char('m'),
+                KeyModifiers::CONTROL | KeyModifiers::ALT,
+            ),
+            (KeyCode::Char('c'), KeyModifiers::CONTROL),
+            (KeyCode::Char('v'), KeyModifiers::CONTROL),
+            (KeyCode::Char('x'), KeyModifiers::CONTROL),
+            (KeyCode::Char('u'), KeyModifiers::CONTROL),
+            (KeyCode::Char('k'), KeyModifiers::CONTROL),
+            (KeyCode::Char('w'), KeyModifiers::CONTROL),
+        ];
+        for (code, modifiers) in actions {
+            let before = state.clone();
+            let mut key = KeyEvent::new(code, modifiers);
+            key.kind = KeyEventKind::Repeat;
+            assert_eq!(state.handle_key(key), TokenFieldOutcome::Ignored);
+            assert_eq!(state, before, "{code:?} repeat mutated draft state");
+        }
+
+        let mut repeat_text = KeyEvent::new(KeyCode::Char('!'), KeyModifiers::NONE);
+        repeat_text.kind = KeyEventKind::Repeat;
+        assert_eq!(
+            state.handle_key(repeat_text),
+            TokenFieldOutcome::DraftChanged,
+            "ordinary draft text repeats remain supported"
+        );
+        assert_eq!(state.draft(), "alice!");
+        assert!(state.tokens().is_empty());
+
+        let mut repeat_backspace = KeyEvent::new(KeyCode::Backspace, KeyModifiers::NONE);
+        repeat_backspace.kind = KeyEventKind::Repeat;
+        assert_eq!(
+            state.handle_key(repeat_backspace),
+            TokenFieldOutcome::DraftChanged,
+            "ordinary draft deletion repeats remain supported"
+        );
+        assert_eq!(state.draft(), "alice");
+    }
+
+    #[test]
+    fn repeated_token_membership_actions_are_ignored() {
+        let mut state = TokenFieldState::new().with_multi_select(true);
+        state.set_focused(true);
+        assert!(state.push_token(FieldToken::new("1".into(), "alice")));
+        assert!(state.push_token(FieldToken::new("2".into(), "bob")));
+        state.focus_token(1);
+        let actions = [
+            (KeyCode::Backspace, KeyModifiers::NONE),
+            (KeyCode::Delete, KeyModifiers::NONE),
+            (KeyCode::Enter, KeyModifiers::NONE),
+            (KeyCode::Char(' '), KeyModifiers::NONE),
+            (KeyCode::Left, KeyModifiers::ALT),
+            (KeyCode::Right, KeyModifiers::ALT),
+        ];
+        for (code, modifiers) in actions {
+            let before = state.clone();
+            let mut key = KeyEvent::new(code, modifiers);
+            key.kind = KeyEventKind::Repeat;
+            assert_eq!(state.handle_key(key), TokenFieldOutcome::Ignored);
+            assert_eq!(state, before, "{code:?} repeat mutated token state");
+        }
+        assert_eq!(state.labels(), vec!["alice", "bob"]);
     }
 
     #[test]
