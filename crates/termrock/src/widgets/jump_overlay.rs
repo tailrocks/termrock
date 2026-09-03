@@ -571,6 +571,9 @@ impl JumpOverlayState {
         if !self.open || !self.accepts_input || key.is_release() {
             return JumpOutcome::Ignored;
         }
+        if !key.is_press() {
+            return JumpOutcome::Ignored;
+        }
         match key.code {
             KeyCode::Esc => {
                 if !self.prefix.is_empty() {
@@ -850,8 +853,9 @@ pub fn replay_jump_keys<Id: Clone>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyModifiers;
+    use crate::input::{KeyEventKind, KeyModifiers};
     use crate::interaction::{SemanticNode, SemanticRole, SemanticScene};
+    use crate::widgets::tests::key_with_kind;
 
     #[test]
     fn generate_labels_deterministic_and_unique() {
@@ -938,6 +942,69 @@ mod tests {
             state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE), &targets),
             JumpOutcome::Dismissed
         ));
+    }
+
+    #[test]
+    fn repeated_jump_actions_are_ignored() {
+        let repeat = |code| key_with_kind(code, KeyModifiers::NONE, KeyEventKind::Repeat);
+        let labels = generate_jump_labels(28);
+        let targets: Vec<_> = labels
+            .iter()
+            .enumerate()
+            .map(|(i, k)| JumpTarget::new(i, Rect::new(0, 0, 2, 1), k.clone()))
+            .collect();
+        let multi = targets
+            .iter()
+            .find(|target| target.keys.len() >= 2)
+            .unwrap();
+        let mut keys = multi.keys.chars();
+        let first = keys.next().unwrap();
+        let second = keys.next().unwrap();
+
+        let mut state = JumpOverlayState::new();
+        state.open();
+        assert_eq!(
+            state.handle_key(repeat(KeyCode::Char(first)), &targets),
+            JumpOutcome::Ignored
+        );
+        assert!(state.prefix().is_empty());
+        assert!(state.is_open());
+
+        assert!(matches!(
+            state.handle_key(
+                KeyEvent::new(KeyCode::Char(first), KeyModifiers::NONE),
+                &targets
+            ),
+            JumpOutcome::Prefix { .. }
+        ));
+        let prefix = state.prefix().to_owned();
+        assert_eq!(
+            state.handle_key(repeat(KeyCode::Char(second)), &targets),
+            JumpOutcome::Ignored
+        );
+        assert_eq!(state.prefix(), prefix);
+        assert!(state.is_open());
+        assert_eq!(
+            state.handle_key(repeat(KeyCode::Esc), &targets),
+            JumpOutcome::Ignored
+        );
+        assert_eq!(state.prefix(), prefix);
+        assert!(state.is_open());
+
+        assert!(matches!(
+            state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE), &targets),
+            JumpOutcome::Prefix { .. }
+        ));
+        assert!(state.prefix().is_empty());
+        assert_eq!(
+            state.handle_key(repeat(KeyCode::Esc), &targets),
+            JumpOutcome::Ignored
+        );
+        assert!(state.is_open());
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE), &targets),
+            JumpOutcome::Dismissed
+        );
     }
 
     #[test]
