@@ -704,15 +704,55 @@ impl<Id: Clone + PartialEq> CompletionMenuState<Id> {
             return;
         };
         let height = self.viewport_height.max(1);
-        if index < self.offset {
-            self.offset = index;
-        } else if index >= self.offset.saturating_add(height) {
-            self.offset = index.saturating_add(1).saturating_sub(height);
+        let start = self.offset.min(index);
+        if Self::candidate_is_visible(candidates, start, index, height) {
+            self.offset = start;
+            return;
         }
-        let max_offset = candidates.len().saturating_sub(height);
-        if self.offset > max_offset {
-            self.offset = max_offset;
+
+        // Group headers consume painted rows but not candidate indexes. Move
+        // the candidate start forward until the selected row is actually in
+        // the painted viewport rather than trusting row-count arithmetic.
+        for offset in start..=index {
+            if Self::candidate_is_visible(candidates, offset, index, height) {
+                self.offset = offset;
+                return;
+            }
         }
+        self.offset = index;
+    }
+
+    fn candidate_is_visible(
+        candidates: &[CompletionCandidate<'_, Id>],
+        offset: usize,
+        target: usize,
+        height: usize,
+    ) -> bool {
+        let mut y = 0usize;
+        let mut index = offset.min(candidates.len());
+        let mut last_group = index
+            .checked_sub(1)
+            .and_then(|i| candidates.get(i))
+            .and_then(|c| c.group);
+
+        while y < height {
+            let Some(candidate) = candidates.get(index) else {
+                return false;
+            };
+            if candidate.group.is_some()
+                && candidate.group != last_group
+                && y.saturating_add(1) < height
+            {
+                y = y.saturating_add(1);
+            }
+            last_group = candidate.group;
+            if index == target {
+                return true;
+            }
+            y = y.saturating_add(1);
+            index = index.saturating_add(1);
+        }
+        false
     }
 
     /// Move selection by `delta` enabled candidates.
@@ -1195,10 +1235,7 @@ impl<'a, Id> CompletionMenu<'a, Id> {
         }
 
         // Group-aware paint: reserve header rows by walking from offset.
-        let max_offset = self
-            .candidates
-            .len()
-            .saturating_sub(usize::from(list_body.height.max(1)));
+        let max_offset = self.candidates.len().saturating_sub(1);
         if state.offset > max_offset {
             state.offset = max_offset;
         }
@@ -1216,26 +1253,24 @@ impl<'a, Id> CompletionMenu<'a, Id> {
         while y < list_body.bottom() && i < self.candidates.len() {
             let candidate = &self.candidates[i];
             // Group header when group changes
-            if let Some(g) = candidate.group {
-                if last_group != Some(g) {
-                    let header =
-                        take_display_cols(g, usize::from(list_body.width.saturating_sub(2)));
-                    buffer.set_stringn(
-                        list_body.x.saturating_add(1),
-                        y,
-                        header,
-                        usize::from(list_body.width.saturating_sub(2)),
-                        self.system.style(Role::TextMuted),
-                    );
-                    y = y.saturating_add(1);
-                    last_group = Some(g);
-                    if y >= list_body.bottom() {
-                        break;
-                    }
+            if let Some(g) = candidate.group
+                && last_group != Some(g)
+                && y.saturating_add(1) < list_body.bottom()
+            {
+                let header = take_display_cols(g, usize::from(list_body.width.saturating_sub(2)));
+                buffer.set_stringn(
+                    list_body.x.saturating_add(1),
+                    y,
+                    header,
+                    usize::from(list_body.width.saturating_sub(2)),
+                    self.system.style(Role::TextMuted),
+                );
+                y = y.saturating_add(1);
+                if y >= list_body.bottom() {
+                    break;
                 }
-            } else {
-                last_group = None;
             }
+            last_group = candidate.group;
 
             let row_rect = Rect::new(list_body.x, y, list_body.width, 1);
             // Hit region includes the frame column so a click on `▎` commits.
@@ -1820,6 +1855,33 @@ mod tests {
             "{text}"
         );
         assert!(!state.slots().list.is_empty());
+    }
+
+    #[test]
+    fn grouped_selection_is_painted_and_hittable() {
+        let system = DesignSystem::default();
+        let items = [
+            CompletionCandidate::new("a", "alpha").group("First"),
+            CompletionCandidate::new("b", "beta").group("First"),
+            CompletionCandidate::new("c", "gamma").group("Second"),
+        ];
+        let mut state = CompletionMenuState::new(Some("c"));
+        state.set_show_docs(false);
+        let area = Rect::new(0, 0, 60, 12);
+        let mut buf = Buffer::empty(area);
+        CompletionMenu::new(&items, &system, area, Rect::new(2, 1, 1, 1))
+            .preferred_size(CompletionMenuSize {
+                width: 40,
+                height: 8,
+            })
+            .paint(area, &mut buf, &mut state);
+
+        assert_eq!(state.selected().copied(), Some("c"));
+        assert!(
+            state.hits.iter().any(|(id, _)| *id == "c"),
+            "selected grouped candidate must have a painted hit region: {:?}",
+            state.hits
+        );
     }
 
     #[test]
