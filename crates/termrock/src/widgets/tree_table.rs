@@ -747,12 +747,20 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
             Ok(cur_pos) if delta >= 0 => (cur_pos + delta as usize).min(enabled.len() - 1),
             Ok(cur_pos) => cur_pos.saturating_sub((-delta) as usize),
             Err(insertion) if delta >= 0 && insertion == enabled.len() => {
+                if self.window.scroll_by(delta) {
+                    return TreeTableOutcome::Scrolled;
+                }
                 return TreeTableOutcome::Ignored;
             }
             Err(insertion) if delta >= 0 => insertion
                 .saturating_add((delta as usize).saturating_sub(1))
                 .min(enabled.len() - 1),
-            Err(0) => return TreeTableOutcome::Ignored,
+            Err(0) => {
+                if self.window.scroll_by(delta) {
+                    return TreeTableOutcome::Scrolled;
+                }
+                return TreeTableOutcome::Ignored;
+            }
             Err(insertion) => insertion.saturating_sub((-delta) as usize),
         };
         let idx = enabled[next_pos];
@@ -1817,10 +1825,33 @@ mod tests {
         let columns = cols();
         let mut state = TreeTableState::<&str, &str>::new(Some("off-window"));
         state.set_logical_rows(100);
+        state.window.viewport = 2;
 
         let out = state.handle_intent(&rows, &columns, UiIntent::Move(NavigationMove::Up));
 
         assert!(matches!(out, TreeTableOutcome::Ignored));
+        assert_eq!(state.selected(), Some(&"off-window"));
+        assert_eq!(state.cursor_row, 0);
+    }
+
+    #[test]
+    fn move_up_from_leading_nonselectable_row_scrolls_virtual_window() {
+        let group_cells: &[&str] = &["group", "", ""];
+        let first_cells: &[&str] = &["first", "", ""];
+        let rows = [
+            TreeTableRow::new("group", 0, group_cells).group(),
+            TreeTableRow::new("first", 0, first_cells),
+        ];
+        let columns = cols();
+        let mut state = TreeTableState::<&str, &str>::new(Some("off-window"));
+        state.set_logical_rows(100);
+        state.window.viewport = 2;
+        state.window.offset = 10;
+
+        let out = state.handle_intent(&rows, &columns, UiIntent::Move(NavigationMove::Up));
+
+        assert!(matches!(out, TreeTableOutcome::Scrolled));
+        assert_eq!(state.window.offset, 9);
         assert_eq!(state.selected(), Some(&"off-window"));
         assert_eq!(state.cursor_row, 0);
     }
@@ -1836,11 +1867,36 @@ mod tests {
         let columns = cols();
         let mut state = TreeTableState::<&str, &str>::new(Some("off-window"));
         state.set_logical_rows(100);
+        state.window.viewport = 2;
+        state.window.offset = 98;
         state.cursor_row = 1;
 
         let out = state.handle_intent(&rows, &columns, UiIntent::Move(NavigationMove::Down));
 
         assert!(matches!(out, TreeTableOutcome::Ignored));
+        assert_eq!(state.selected(), Some(&"off-window"));
+        assert_eq!(state.cursor_row, 1);
+    }
+
+    #[test]
+    fn move_down_from_trailing_nonselectable_row_scrolls_virtual_window() {
+        let first_cells: &[&str] = &["first", "", ""];
+        let group_cells: &[&str] = &["group", "", ""];
+        let rows = [
+            TreeTableRow::new("first", 0, first_cells),
+            TreeTableRow::new("group", 0, group_cells).group(),
+        ];
+        let columns = cols();
+        let mut state = TreeTableState::<&str, &str>::new(Some("off-window"));
+        state.set_logical_rows(100);
+        state.window.viewport = 2;
+        state.window.offset = 10;
+        state.cursor_row = 1;
+
+        let out = state.handle_intent(&rows, &columns, UiIntent::Move(NavigationMove::Down));
+
+        assert!(matches!(out, TreeTableOutcome::Scrolled));
+        assert_eq!(state.window.offset, 11);
         assert_eq!(state.selected(), Some(&"off-window"));
         assert_eq!(state.cursor_row, 1);
     }
