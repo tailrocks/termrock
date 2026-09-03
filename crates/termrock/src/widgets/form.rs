@@ -990,7 +990,6 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Form<'_, Id> {
             state.scrollbar_region = Some(scrollbar);
             crate::scroll::paint_scrolled_region(
                 buffer,
-                area,
                 scrollbar,
                 content_height,
                 state.viewport_height,

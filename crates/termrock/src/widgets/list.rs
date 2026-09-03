@@ -921,22 +921,31 @@ impl<Id: Clone + PartialEq> ListState<Id> {
         Outcome::CheckToggled(to.clone())
     }
 
-    /// Projects list rows into headless collection items and reconciles active id.
-    pub fn reconcile_collection(&mut self, rows: &[ListRow<'_, Id>]) {
+    fn reconcile_rows(&mut self, rows: &[ListRow<'_, Id>], viewport_height: usize) {
         let items = collection_items_from_rows(rows);
-        let vp = self.collection.viewport_len().max(1);
+        let total = if self.virtual_total > 0 {
+            self.virtual_total
+        } else {
+            rows.len()
+        };
         if self.virtual_total > 0 {
             let _ = self.collection.reconcile_window(
                 &items,
                 self.virtual_window_start,
-                self.virtual_total,
-                vp,
+                total,
+                viewport_height,
             );
         } else {
             self.collection
-                .set_viewport(self.collection.offset(), vp, items.len());
+                .set_viewport(self.collection.offset(), viewport_height, total);
             let _ = self.collection.reconcile(&items);
         }
+    }
+
+    /// Projects list rows into headless collection items and reconciles active id.
+    pub fn reconcile_collection(&mut self, rows: &[ListRow<'_, Id>]) {
+        let vp = self.collection.viewport_len().max(1);
+        self.reconcile_rows(rows, vp);
     }
 
     /// Sync vertical offset into a [`crate::widgets::ScrollAreaState`] (bars only).
@@ -1126,20 +1135,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
         } else {
             self.rows.len()
         };
-        let items = collection_items_from_rows(self.rows);
-        if state.virtual_total > 0 {
-            let _ = state.collection.reconcile_window(
-                &items,
-                state.virtual_window_start,
-                total,
-                viewport_height,
-            );
-        } else {
-            state
-                .collection
-                .set_viewport(state.collection.offset(), viewport_height, total);
-            let _ = state.collection.reconcile(&items);
-        }
+        state.reconcile_rows(self.rows, viewport_height);
         ensure_list_active_visible(state, self.rows, viewport_height);
         if self.rows.is_empty() {
             let fallback = Line::from("Nothing here yet");

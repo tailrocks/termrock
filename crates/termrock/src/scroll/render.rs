@@ -301,7 +301,7 @@ pub fn paint_overflow_scrollbar(
     }
 }
 
-/// Paints one scrolled region: faded cut edges plus the gutter scrollbar.
+/// Paints the list-style scrollbar for a scrolled region.
 ///
 /// Subcell `tui-scrollbar` rounding ([`crate::scroll::full_cell_thumb`]).
 /// Line widgets that must match junie `ScrollState::thumb` call
@@ -309,14 +309,12 @@ pub fn paint_overflow_scrollbar(
 /// select).
 pub fn paint_scrolled_region(
     buffer: &mut Buffer,
-    content: Rect,
     gutter: Rect,
     total: usize,
     viewport: usize,
     offset: u16,
     system: &DesignSystem,
 ) {
-    let _ = (content, system);
     paint_list_scrollbar(buffer, gutter, total, viewport, offset, system);
 }
 

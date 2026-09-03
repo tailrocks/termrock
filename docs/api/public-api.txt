@@ -29472,7 +29472,7 @@ pub fn termrock::scroll::offset_for_track_position_u16(usize, usize, usize, usiz
 pub const fn termrock::scroll::overflow_thumb(usize, usize, usize, usize) -> core::option::Option<(usize, usize)>
 pub fn termrock::scroll::paint_list_scrollbar(&mut ratatui_core::buffer::buffer::Buffer, ratatui_core::layout::rect::Rect, usize, usize, u16, &termrock::style::DesignSystem)
 pub fn termrock::scroll::paint_overflow_scrollbar(&mut ratatui_core::buffer::buffer::Buffer, ratatui_core::layout::rect::Rect, usize, usize, u16, bool, &termrock::style::DesignSystem)
-pub fn termrock::scroll::paint_scrolled_region(&mut ratatui_core::buffer::buffer::Buffer, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, usize, usize, u16, &termrock::style::DesignSystem)
+pub fn termrock::scroll::paint_scrolled_region(&mut ratatui_core::buffer::buffer::Buffer, ratatui_core::layout::rect::Rect, usize, usize, u16, &termrock::style::DesignSystem)
 pub fn termrock::scroll::render_line_with_fixed_prefix_scroll(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, u16, ratatui_core::text::line::Line<'static>, usize, usize)
 pub fn termrock::scroll::render_lines_with_offset_in_area(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, &[ratatui_core::text::line::Line<'_>], u16, &termrock::style::DesignSystem)
 pub fn termrock::scroll::render_scrollbar(&mut ratatui_core::buffer::buffer::Buffer, ratatui_core::layout::rect::Rect, termrock::scroll::ScrollbarSpec, &termrock::style::DesignSystem)
@@ -72941,6 +72941,7 @@ impl<T> either::into_either::IntoEither for termrock::widgets::LabelParts
 pub struct termrock::widgets::LineSegment<'a>
 impl<'a> termrock::widgets::LineSegment<'a>
 pub const fn termrock::widgets::LineSegment<'a>::bold(self) -> Self
+pub const fn termrock::widgets::LineSegment<'a>::clickable(self) -> Self
 pub const fn termrock::widgets::LineSegment<'a>::new(&'a str) -> Self
 pub const fn termrock::widgets::LineSegment<'a>::priority(self, u8) -> Self
 pub const fn termrock::widgets::LineSegment<'a>::tone(self, termrock::style::Role) -> Self
