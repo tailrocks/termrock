@@ -22,16 +22,17 @@ use termrock::interaction::{InteractionLayer, InteractionScene, LayerDismissPoli
 use termrock::runtime::FrameTick;
 use termrock::style::{ColorCapability, DesignSystem, JunieTheme, Role};
 use termrock::widgets::{
-    ButtonState, ButtonVariant, LineSegment, List, ListRow, ListState, TextInput, TextInputState,
-    paint_line_segments,
+    ActivationOutcome, ButtonState, ButtonVariant, LineSegment, List, ListRow, ListState, Select,
+    SelectOption, SelectOutcome, SelectRecipe, SelectState, TextInput, TextInputOutcome,
+    TextInputState, paint_line_segments,
 };
 
 use super::connections::{ConnEvent, ConnectionsScreen};
-use super::db::{Catalog, Environment, SafeMode, connections};
+use super::db::{Catalog, ColType, Environment, SafeMode, connections};
 use super::model::{History, SwitchItem, SwitchTarget, SwitcherIndex};
 use super::paint;
 use super::sql::{self, Decision};
-use super::tabs::{TABLE_GRID, TABLE_MODE};
+use super::tabs::{Filter, FilterOp, TABLE_GRID, TABLE_MODE};
 use super::text::truncate_middle;
 use super::workbench::{EXPLORER, WorkTab, Workbench};
 use crate::ctx::{Interaction, LayerId, RenderCtx};
@@ -53,6 +54,12 @@ const SWITCHER_LIST: WidgetId = WidgetId::of("switcher.list");
 const CONFIRM_OK: WidgetId = WidgetId::of("dialog.confirm.ok");
 const CONFIRM_CANCEL: WidgetId = WidgetId::of("dialog.confirm.cancel");
 const CONFIRM_ACK: WidgetId = WidgetId::of("dialog.confirm.ack");
+const FILTER_EDITOR: WidgetId = WidgetId::of("dialog.filter");
+const FILTER_COLUMN: WidgetId = FILTER_EDITOR.sub("column");
+const FILTER_OPERATOR: WidgetId = FILTER_EDITOR.sub("operator");
+const FILTER_VALUE: WidgetId = FILTER_EDITOR.sub("value");
+const FILTER_APPLY: WidgetId = FILTER_EDITOR.sub("apply");
+const FILTER_CANCEL: WidgetId = FILTER_EDITOR.sub("cancel");
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Screen {
@@ -82,11 +89,23 @@ enum ConfirmAction {
     DeleteConnection(usize),
 }
 
+struct FilterEditor {
+    index: Option<usize>,
+    columns: Vec<(String, ColType)>,
+    column: SelectState<usize>,
+    operator: SelectState<usize>,
+    value: TextInputState,
+    apply: ButtonState,
+    cancel: ButtonState,
+    return_focus: Option<WidgetId>,
+}
+
 enum Overlay {
     None,
     Help,
     Confirm(Box<ConfirmOverlay>),
     Switcher,
+    Filter(Box<FilterEditor>),
 }
 
 struct Host {
@@ -421,6 +440,10 @@ impl App {
 
     fn draw_overlay(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx<'_>) {
         let t = ctx.theme;
+        if let Overlay::Filter(editor) = &mut self.overlay {
+            Self::draw_filter_editor(editor, area, buf, ctx);
+            return;
+        }
         match &self.overlay {
             Overlay::Help => {
                 let w = area.width.min(64).max(40);
@@ -630,7 +653,133 @@ impl App {
                 ctx.control(SWITCHER_LIST, list_r, false);
             }
             Overlay::None => {}
+            Overlay::Filter(_) => unreachable!("filter overlay handled above"),
         }
+    }
+
+    fn draw_filter_editor(
+        editor: &mut FilterEditor,
+        screen: Rect,
+        buf: &mut Buffer,
+        ctx: &mut RenderCtx<'_>,
+    ) {
+        let width = screen.width.saturating_sub(4).min(68).max(40);
+        let height = screen.height.saturating_sub(2).min(15).max(11);
+        let x = screen.x + screen.width.saturating_sub(width) / 2;
+        let y = screen.y + screen.height.saturating_sub(height) / 2;
+        let (inner, bg) = layout::card(
+            Rect::new(x, y, width, height),
+            buf,
+            ctx.theme,
+            Some(if editor.index.is_some() {
+                "Edit filter"
+            } else {
+                "Add filter"
+            }),
+            None,
+            true,
+        );
+        let gap = 2;
+        let left_width = inner.width.saturating_sub(gap) / 2;
+        let left = Rect::new(inner.x, inner.y, left_width, 2);
+        let right = Rect::new(
+            inner.x.saturating_add(left_width).saturating_add(gap),
+            inner.y,
+            inner.width.saturating_sub(left_width).saturating_sub(gap),
+            2,
+        );
+        let columns = Self::filter_column_options(editor);
+        let operators = Self::filter_operator_options(editor);
+        editor
+            .column
+            .set_focused(ctx.interaction.focused(FILTER_COLUMN));
+        Select::new(&columns, ctx.system).label("Column").paint(
+            left,
+            Rect::default(),
+            buf,
+            &mut editor.column,
+        );
+        ctx.control(FILTER_COLUMN, left, false);
+        editor
+            .operator
+            .set_focused(ctx.interaction.focused(FILTER_OPERATOR));
+        Select::new(&operators, ctx.system).label("Operator").paint(
+            right,
+            Rect::default(),
+            buf,
+            &mut editor.operator,
+        );
+        ctx.control(FILTER_OPERATOR, right, false);
+
+        let selected_column = editor.column.value().copied().unwrap_or(0);
+        let selected_ops = FilterOp::ordered_for(editor.columns[selected_column].1);
+        let selected_op_index = editor
+            .operator
+            .value()
+            .copied()
+            .unwrap_or(0)
+            .min(selected_ops.len().saturating_sub(1));
+        let selected_op = selected_ops[selected_op_index];
+        let value_area = Rect::new(inner.x, inner.y.saturating_add(3), inner.width, 2);
+        if selected_op.needs_value() {
+            editor
+                .value
+                .set_focused(ctx.interaction.focused(FILTER_VALUE));
+            TextInput::new("Value", ctx.system)
+                .placeholder("value")
+                .paint(value_area, buf, &mut editor.value);
+            ctx.control(FILTER_VALUE, value_area, false);
+        } else {
+            buf.set_string(
+                inner.x,
+                value_area.y,
+                "Value not required for this operator",
+                ctx.theme.muted().bg(bg),
+            );
+        }
+        let preview = Filter {
+            column: editor.columns[selected_column].0.clone(),
+            op: selected_op,
+            value: editor.value.trimmed_value().to_owned(),
+            enabled: true,
+        };
+        buf.set_string(
+            inner.x,
+            inner.y.saturating_add(6),
+            &format!("WHERE {}", preview.to_sql()),
+            ctx.theme.secondary().bg(bg),
+        );
+        let footer = Rect::new(inner.x, inner.bottom().saturating_sub(1), inner.width, 1);
+        let cancel_width = paint::button_width("Cancel");
+        let apply_label = if editor.index.is_some() {
+            "Update filter"
+        } else {
+            "Add filter"
+        };
+        let apply_width = paint::button_width(apply_label);
+        let buttons = layout::row_layout_right(footer, &[cancel_width, apply_width], 2);
+        paint::button(
+            "Cancel",
+            ButtonVariant::Quiet,
+            FILTER_CANCEL,
+            buttons[0],
+            buf,
+            ctx,
+            &mut editor.cancel,
+            false,
+            bg,
+        );
+        paint::button(
+            apply_label,
+            ButtonVariant::Primary,
+            FILTER_APPLY,
+            buttons[1],
+            buf,
+            ctx,
+            &mut editor.apply,
+            selected_op.needs_value() && editor.value.trimmed_value().is_empty(),
+            bg,
+        );
     }
 
     pub fn handle_surface(&mut self, ev: &PageEvent, cx: &mut PageCtx<'_>) -> Route {
@@ -707,7 +856,7 @@ impl App {
             let Some(wb) = self.workbench.as_mut() else {
                 return Route::Ignored;
             };
-            let route = wb.handle(ev, cx, &self.history);
+            let route = wb.handle(ev, cx, &self.history, &self.system);
             let close_request = wb.take_close_request();
             (route, close_request)
         };
@@ -827,6 +976,347 @@ impl App {
         self.host.focus = Some(SWITCHER_INPUT);
         self.overlay = Overlay::Switcher;
         self.refresh_switcher();
+    }
+
+    /// Open the shared table filter editor requested by either host.
+    pub(crate) fn open_table_filter(
+        &mut self,
+        index: Option<usize>,
+        requested_column: Option<usize>,
+        prefill: Option<(String, bool)>,
+    ) {
+        let Some(wb) = self.workbench.as_ref() else {
+            return;
+        };
+        let Some(WorkTab::Table(table)) = wb.active_tab() else {
+            self.set_status("Filters apply to table tabs".into());
+            return;
+        };
+        if table.grid.columns.is_empty() {
+            return;
+        }
+
+        let columns = table.grid.columns.clone();
+        let existing = index.and_then(|i| table.filters.get(i)).cloned();
+        let column = existing
+            .as_ref()
+            .and_then(|filter| columns.iter().position(|(name, _)| name == &filter.column))
+            .or(requested_column)
+            .unwrap_or(table.grid.cursor_col)
+            .min(columns.len().saturating_sub(1));
+        let (operator, value) = match existing.as_ref() {
+            Some(filter) => (filter.op, filter.value.clone()),
+            None => match prefill {
+                Some((value, true)) => (FilterOp::IsNull, value),
+                Some((value, false)) => (FilterOp::Eq, value),
+                None => (FilterOp::Eq, String::new()),
+            },
+        };
+        let operators = FilterOp::ordered_for(columns[column].1);
+        let operator = operators.iter().position(|op| *op == operator).unwrap_or(0);
+        let value_empty = value.is_empty();
+        let mut column_state = SelectState::new()
+            .with_value(column)
+            .with_recipe(SelectRecipe::Form);
+        column_state.set_focused(false);
+        let mut operator_state = SelectState::new()
+            .with_value(operator)
+            .with_recipe(SelectRecipe::Form);
+        operator_state.set_focused(false);
+        let return_focus = self.host.focus;
+        self.overlay = Overlay::Filter(Box::new(FilterEditor {
+            index,
+            columns,
+            column: column_state,
+            operator: operator_state,
+            value: TextInputState::new(value).with_allow_empty(true),
+            apply: ButtonState::new(),
+            cancel: ButtonState::new(),
+            return_focus,
+        }));
+        // The editor focus is modal focus; retain the grid only as the return
+        // target after the modal closes.
+        if let Overlay::Filter(editor) = &mut self.overlay {
+            editor.return_focus = return_focus;
+        }
+        self.host.focus = Some(if value_empty {
+            FILTER_VALUE
+        } else {
+            FILTER_APPLY
+        });
+    }
+
+    fn filter_column_options(editor: &FilterEditor) -> Vec<SelectOption<usize>> {
+        editor
+            .columns
+            .iter()
+            .enumerate()
+            .map(|(i, (name, _))| SelectOption::option(i, name.clone()))
+            .collect()
+    }
+
+    fn filter_operator_options(editor: &FilterEditor) -> Vec<SelectOption<usize>> {
+        let column = editor.column.value().copied().unwrap_or(0);
+        FilterOp::ordered_for(editor.columns[column].1)
+            .into_iter()
+            .enumerate()
+            .map(|(i, op)| SelectOption::option(i, op.label()))
+            .collect()
+    }
+
+    fn reset_filter_operator(editor: &mut FilterEditor) {
+        let column = editor.column.value().copied().unwrap_or(0);
+        editor.operator = SelectState::new()
+            .with_value(0)
+            .with_recipe(SelectRecipe::Form);
+        if column >= editor.columns.len() {
+            editor.column.set_value(Some(0));
+        }
+    }
+
+    fn close_table_filter(&mut self) {
+        let return_focus = match &self.overlay {
+            Overlay::Filter(editor) => editor.return_focus,
+            _ => None,
+        };
+        self.overlay = Overlay::None;
+        self.host.focus = return_focus
+            .or_else(|| self.workbench.as_ref().and_then(Workbench::primary_focus))
+            .or(Some(EXPLORER));
+    }
+
+    fn apply_table_filter(&mut self, cx: &mut PageCtx<'_>) -> Route {
+        let (index, filter) = {
+            let Overlay::Filter(editor) = &mut self.overlay else {
+                return Route::Ignored;
+            };
+            if editor.value.is_editing() {
+                editor.value.commit();
+            }
+            let column = editor.column.value().copied().unwrap_or(0);
+            let operators = FilterOp::ordered_for(editor.columns[column].1);
+            let op_index = editor
+                .operator
+                .value()
+                .copied()
+                .unwrap_or(0)
+                .min(operators.len().saturating_sub(1));
+            let op = operators[op_index];
+            if op.needs_value() && editor.value.trimmed_value().is_empty() {
+                cx.set_focus(FILTER_VALUE);
+                cx.status("A value is required for this operator");
+                return Route::Changed;
+            }
+            (
+                editor.index,
+                Filter {
+                    column: editor.columns[column].0.clone(),
+                    op,
+                    value: editor.value.trimmed_value().to_owned(),
+                    enabled: true,
+                },
+            )
+        };
+
+        let Some(wb) = self.workbench.as_mut() else {
+            self.close_table_filter();
+            return Route::Changed;
+        };
+        let cat = wb.catalog.clone();
+        let Some(WorkTab::Table(table)) = wb.tabs.get_mut(wb.active) else {
+            self.close_table_filter();
+            return Route::Changed;
+        };
+        if !table.grid.pending.is_empty() {
+            cx.status("Cannot change filters while pending changes exist");
+            return Route::Changed;
+        }
+        match index {
+            Some(i) if i < table.filters.len() => table.filters[i] = filter,
+            _ => table.filters.push(filter),
+        }
+        table.load(&cat);
+        let count = table.active_filter_count();
+        self.close_table_filter();
+        cx.set_focus(TABLE_GRID);
+        cx.status(format!(
+            "{count} filter{} applied",
+            if count == 1 { "" } else { "s" }
+        ));
+        Route::Changed
+    }
+
+    fn handle_table_filter(&mut self, ev: &PageEvent, cx: &mut PageCtx<'_>) -> Route {
+        let bounds = Rect::new(0, 0, self.size.0, self.size.1);
+        match ev {
+            PageEvent::Key(key) if key.kind != KeyEventKind::Release => {
+                if key.code == KeyCode::Esc {
+                    let handled_by_field = match &mut self.overlay {
+                        Overlay::Filter(editor) if editor.value.is_editing() => {
+                            editor.value.cancel_edit();
+                            true
+                        }
+                        Overlay::Filter(editor)
+                            if editor.column.is_open() || editor.operator.is_open() =>
+                        {
+                            let options = Self::filter_column_options(editor);
+                            let _ = editor.column.handle_key(*key, &options, bounds);
+                            let options = Self::filter_operator_options(editor);
+                            let _ = editor.operator.handle_key(*key, &options, bounds);
+                            true
+                        }
+                        _ => false,
+                    };
+                    if handled_by_field {
+                        return Route::Changed;
+                    }
+                    self.close_table_filter();
+                    return Route::Changed;
+                }
+                let focused = cx.focus_id();
+                if matches!(focused, Some(FILTER_COLUMN) | Some(FILTER_OPERATOR))
+                    && (self.overlay_is_select_open())
+                {
+                    // Open selects own arrows and Enter; traversal remains
+                    // host-owned once the list is closed.
+                } else if matches!(key.code, KeyCode::Tab | KeyCode::BackTab) {
+                    if key.code == KeyCode::BackTab || key.modifiers.contains(KeyModifiers::SHIFT) {
+                        cx.focus_prev();
+                    } else {
+                        cx.focus_next();
+                    }
+                    return Route::Changed;
+                }
+
+                match focused {
+                    Some(FILTER_COLUMN) => {
+                        let outcome = if let Overlay::Filter(editor) = &mut self.overlay {
+                            let options = Self::filter_column_options(editor);
+                            let outcome = editor.column.handle_key(*key, &options, bounds);
+                            if matches!(outcome, SelectOutcome::ValueChanged { .. }) {
+                                Self::reset_filter_operator(editor);
+                            }
+                            outcome
+                        } else {
+                            SelectOutcome::Ignored
+                        };
+                        return if matches!(outcome, SelectOutcome::Ignored) {
+                            Route::Consumed
+                        } else {
+                            Route::Changed
+                        };
+                    }
+                    Some(FILTER_OPERATOR) => {
+                        let outcome = if let Overlay::Filter(editor) = &mut self.overlay {
+                            let options = Self::filter_operator_options(editor);
+                            editor.operator.handle_key(*key, &options, bounds)
+                        } else {
+                            SelectOutcome::Ignored
+                        };
+                        return if matches!(outcome, SelectOutcome::Ignored) {
+                            Route::Consumed
+                        } else {
+                            Route::Changed
+                        };
+                    }
+                    Some(FILTER_VALUE) => {
+                        let outcome = if let Overlay::Filter(editor) = &mut self.overlay {
+                            editor.value.handle_key(*key)
+                        } else {
+                            TextInputOutcome::Ignored
+                        };
+                        if matches!(outcome, TextInputOutcome::Submitted(_)) {
+                            return self.apply_table_filter(cx);
+                        }
+                        return if matches!(outcome, TextInputOutcome::Ignored) {
+                            Route::Consumed
+                        } else {
+                            Route::Changed
+                        };
+                    }
+                    Some(FILTER_APPLY) => {
+                        let outcome = if let Overlay::Filter(editor) = &mut self.overlay {
+                            editor.apply.handle_key(*key)
+                        } else {
+                            ActivationOutcome::Ignored
+                        };
+                        if matches!(outcome, ActivationOutcome::Activated) {
+                            return self.apply_table_filter(cx);
+                        }
+                        return Route::Changed;
+                    }
+                    Some(FILTER_CANCEL) => {
+                        let outcome = if let Overlay::Filter(editor) = &mut self.overlay {
+                            editor.cancel.handle_key(*key)
+                        } else {
+                            ActivationOutcome::Ignored
+                        };
+                        if matches!(outcome, ActivationOutcome::Activated) {
+                            self.close_table_filter();
+                        }
+                        return Route::Changed;
+                    }
+                    _ => return Route::Consumed,
+                }
+            }
+            PageEvent::Paste(text) if cx.focus_id() == Some(FILTER_VALUE) => {
+                if let Overlay::Filter(editor) = &mut self.overlay {
+                    editor.value.begin_edit();
+                    return if matches!(editor.value.insert_str(text), TextInputOutcome::Ignored) {
+                        Route::Consumed
+                    } else {
+                        Route::Changed
+                    };
+                }
+                Route::Consumed
+            }
+            PageEvent::Click { id, pos } => {
+                if *id == FILTER_APPLY {
+                    return self.apply_table_filter(cx);
+                }
+                if *id == FILTER_CANCEL {
+                    self.close_table_filter();
+                    return Route::Changed;
+                }
+                if *id == FILTER_VALUE {
+                    cx.set_focus(FILTER_VALUE);
+                    if let Overlay::Filter(editor) = &mut self.overlay {
+                        editor.value.begin_edit();
+                    }
+                    return Route::Changed;
+                }
+                if *id == FILTER_COLUMN || *id == FILTER_OPERATOR {
+                    cx.set_focus(*id);
+                    if let Overlay::Filter(editor) = &mut self.overlay {
+                        let options = if *id == FILTER_COLUMN {
+                            Self::filter_column_options(editor)
+                        } else {
+                            Self::filter_operator_options(editor)
+                        };
+                        let event = MouseEvent {
+                            kind: MouseEventKind::Down(MouseButton::Left),
+                            position: *pos,
+                            modifiers: KeyModifiers::NONE,
+                        };
+                        if *id == FILTER_COLUMN {
+                            let outcome = editor.column.handle_mouse(event, &options, bounds);
+                            if matches!(outcome, SelectOutcome::ValueChanged { .. }) {
+                                Self::reset_filter_operator(editor);
+                            }
+                        } else {
+                            let _ = editor.operator.handle_mouse(event, &options, bounds);
+                        }
+                    }
+                    return Route::Changed;
+                }
+                Route::Consumed
+            }
+            _ => Route::Consumed,
+        }
+    }
+
+    fn overlay_is_select_open(&self) -> bool {
+        matches!(&self.overlay, Overlay::Filter(editor) if editor.column.is_open() || editor.operator.is_open())
     }
 
     fn switcher_scope_name(&self) -> &'static str {
@@ -1054,6 +1544,9 @@ impl App {
     }
 
     fn handle_overlay(&mut self, ev: &PageEvent, cx: &mut PageCtx<'_>) -> Route {
+        if matches!(self.overlay, Overlay::Filter(_)) {
+            return self.handle_table_filter(ev, cx);
+        }
         match ev {
             PageEvent::Key(key)
                 if key.kind != KeyEventKind::Release
@@ -1546,7 +2039,9 @@ impl App {
                     }
                     return ControlFlow::Continue(());
                 }
-                if matches!(self.overlay, Overlay::Switcher) && matches!(key.code, KeyCode::Tab) {
+                if matches!(self.overlay, Overlay::Switcher | Overlay::Filter(_))
+                    && matches!(key.code, KeyCode::Tab | KeyCode::BackTab)
+                {
                     self.dispatch(PageEvent::Key(key));
                     return ControlFlow::Continue(());
                 }
@@ -1590,6 +2085,11 @@ impl App {
                 crate::page::Request::Status(s) => self.set_status(s),
                 crate::page::Request::FocusNext => self.focus_step(false),
                 crate::page::Request::FocusPrev => self.focus_step(true),
+                crate::page::Request::OpenTableFilter {
+                    index,
+                    column,
+                    value,
+                } => self.open_table_filter(index, column, value),
             }
         }
     }

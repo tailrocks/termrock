@@ -14,6 +14,7 @@ use termrock_catalog::catalog::{CatalogProfile, PageId};
 use termrock_catalog::shell::App as CatalogApp;
 use termrock_catalog::tablepro::db::Catalog;
 use termrock_catalog::tablepro::grid::CellValue;
+use termrock_catalog::tablepro::tabs::FilterOp;
 use termrock_catalog::tablepro::workbench::WorkTab;
 use termrock_catalog::tablepro::workbench::Workbench;
 use termrock_catalog::tablepro::{App, ParseError, Screen, connections, help_text, parse_args};
@@ -125,6 +126,98 @@ fn key_navigation_sorts_orders_and_marks_header() {
     );
     assert!(!table.table_state.header_regions.is_empty());
     assert!(h.text().contains("created_at"), "{}", h.text());
+}
+
+#[test]
+fn f_filter_applies_rows_and_cancel_discards_draft() {
+    let mut h = Harness::connected(120, 40);
+    open_orders(&mut h);
+    for _ in 0..4 {
+        h.key(KeyCode::Right, KeyModifiers::NONE);
+    }
+    let before = match h.app.workbench.as_ref().unwrap().active_tab() {
+        Some(WorkTab::Table(table)) => table.grid.rows.len(),
+        _ => unreachable!(),
+    };
+
+    h.key(KeyCode::Char('f'), KeyModifiers::NONE);
+    assert!(h.text().contains("Add filter"), "{}", h.text());
+    h.key(KeyCode::BackTab, KeyModifiers::NONE);
+    h.key(KeyCode::BackTab, KeyModifiers::NONE);
+    h.key(KeyCode::Enter, KeyModifiers::NONE);
+    h.key(KeyCode::Char('l'), KeyModifiers::CONTROL);
+    h.type_text("pending");
+    h.key(KeyCode::Enter, KeyModifiers::NONE);
+
+    let table = match h.app.workbench.as_ref().unwrap().active_tab() {
+        Some(WorkTab::Table(table)) => table,
+        _ => unreachable!(),
+    };
+    assert_eq!(table.filters.len(), 1);
+    assert_eq!(table.filters[0].column, "status");
+    assert_eq!(table.filters[0].op, FilterOp::Eq);
+    assert_eq!(table.filters[0].value, "pending");
+    assert!(table.grid.rows.len() < before);
+    assert!(
+        table
+            .grid
+            .rows
+            .iter()
+            .all(|row| row[4].display() == "pending")
+    );
+    assert!(h.text().contains("filtered (1)"), "{}", h.text());
+    assert!(h.text().contains("status = 'pending'"), "{}", h.text());
+    let filtered_rows = match h.app.workbench.as_ref().unwrap().active_tab() {
+        Some(WorkTab::Table(table)) => table.grid.rows.len(),
+        _ => unreachable!(),
+    };
+
+    h.key(KeyCode::Char('f'), KeyModifiers::NONE);
+    h.key(KeyCode::BackTab, KeyModifiers::NONE);
+    h.key(KeyCode::BackTab, KeyModifiers::NONE);
+    h.key(KeyCode::Enter, KeyModifiers::NONE);
+    h.key(KeyCode::Char('l'), KeyModifiers::CONTROL);
+    h.type_text("shipped");
+    h.key(KeyCode::Esc, KeyModifiers::NONE);
+    h.key(KeyCode::Esc, KeyModifiers::NONE);
+    let table = match h.app.workbench.as_ref().unwrap().active_tab() {
+        Some(WorkTab::Table(table)) => table,
+        _ => unreachable!(),
+    };
+    assert_eq!(table.filters[0].value, "pending");
+    assert_eq!(table.grid.rows.len(), filtered_rows);
+}
+
+#[test]
+fn filter_apply_does_not_replace_pending_grid_edits() {
+    let mut h = Harness::connected(120, 40);
+    open_orders(&mut h);
+    {
+        let wb = h.app.workbench.as_mut().unwrap();
+        let active = wb.active;
+        let table = match wb.tabs.get_mut(active) {
+            Some(WorkTab::Table(table)) => table,
+            _ => unreachable!(),
+        };
+        table
+            .grid
+            .record_cell(0, 4, CellValue::Text("paid".to_owned()));
+    }
+    for _ in 0..4 {
+        h.key(KeyCode::Right, KeyModifiers::NONE);
+    }
+    h.key(KeyCode::Char('f'), KeyModifiers::NONE);
+    h.key(KeyCode::Enter, KeyModifiers::NONE);
+
+    let table = match h.app.workbench.as_ref().unwrap().active_tab() {
+        Some(WorkTab::Table(table)) => table,
+        _ => unreachable!(),
+    };
+    assert!(table.filters.is_empty());
+    assert_eq!(table.grid.pending.count(), 1);
+    assert_eq!(table.grid.cell(0, 4), CellValue::Text("paid".to_owned()));
+    assert!(h.text().contains("Cannot change filters"), "{}", h.text());
+    h.key(KeyCode::Esc, KeyModifiers::NONE);
 }
 
 #[test]

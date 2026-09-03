@@ -14,7 +14,7 @@ use ratatui::layout::Rect;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::StatefulWidget;
 use termrock::input::{KeyCode, KeyEventKind};
-use termrock::style::PanelChrome;
+use termrock::style::{DesignSystem, PanelChrome};
 use termrock::widgets::{
     Panel, PanelVariant, Tab, Tabs, TabsOutcome, TabsState, TextInput, TextInputState, Tree,
     TreeNode, TreeOutcome, TreeState,
@@ -550,7 +550,13 @@ impl Workbench {
         ctx.scrollable(EXPLORER, tree_area);
     }
 
-    pub fn handle(&mut self, ev: &PageEvent, cx: &mut PageCtx<'_>, history: &History) -> Route {
+    pub fn handle(
+        &mut self,
+        ev: &PageEvent,
+        cx: &mut PageCtx<'_>,
+        history: &History,
+        system: &DesignSystem,
+    ) -> Route {
         let _ = history;
         match ev {
             PageEvent::Key(key) if key.kind != KeyEventKind::Release => {
@@ -597,7 +603,7 @@ impl Workbench {
                     Some(WorkTab::Table(_)) => {
                         let cat = self.catalog.clone();
                         if let Some(WorkTab::Table(tt)) = self.tabs.get_mut(self.active) {
-                            return handle_table(tt, ev, cx, &cat);
+                            return handle_table(tt, ev, cx, &cat, system);
                         }
                     }
                     Some(WorkTab::History(_)) => {
@@ -633,7 +639,7 @@ impl Workbench {
                     Some(WorkTab::Table(_)) => {
                         let cat = self.catalog.clone();
                         if let Some(WorkTab::Table(tt)) = self.tabs.get_mut(self.active) {
-                            return handle_table(tt, ev, cx, &cat);
+                            return handle_table(tt, ev, cx, &cat, system);
                         }
                     }
                     Some(WorkTab::History(_)) => {
@@ -660,7 +666,7 @@ impl Workbench {
                 Some(WorkTab::Table(_)) => {
                     let cat = self.catalog.clone();
                     if let Some(WorkTab::Table(tt)) = self.tabs.get_mut(self.active) {
-                        return handle_table(tt, ev, cx, &cat);
+                        return handle_table(tt, ev, cx, &cat, system);
                     }
                     Route::Ignored
                 }

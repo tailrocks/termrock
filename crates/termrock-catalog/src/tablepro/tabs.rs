@@ -13,13 +13,16 @@ use ratatui::layout::{Position, Rect};
 use ratatui::style::{Modifier, Style};
 use ratatui::text::Line;
 use ratatui::widgets::StatefulWidget;
-use termrock::input::{KeyCode, KeyEventKind, KeyModifiers};
+use termrock::input::{
+    KeyCode, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+};
 use termrock::style::{DesignSystem, SyntaxTone, Tone};
 use termrock::widgets::{
     CodeBlock, CodeBlockState, ColumnKind, ColumnModel, DataColumn, DataColumnWidth, DataTable,
     DataTableNavMode, DataTableState, ListRow, ListState, LoadState, Prop, SortSpec,
     SyntaxHighlighter, Tab, Tabs, TabsState, TextAreaState, TextCursor, TextInput, TextInputState,
-    Tree, TreeNode, TreeState, render_props,
+    TokenItem, TokenStrip, TokenStripOutcome, TokenStripState, Tree, TreeNode, TreeState,
+    render_props,
 };
 
 use super::db::{Catalog, ColType, Table as DbTable};
@@ -38,6 +41,7 @@ const RESULTS: WidgetId = WidgetId::of("workbench.results");
 const RESULT_TABS: WidgetId = WidgetId::of("workbench.result-tabs");
 const PLAN: WidgetId = WidgetId::of("workbench.plan");
 pub(crate) const TABLE_GRID: WidgetId = WidgetId::of("workbench.table");
+pub(crate) const TABLE_FILTERS: WidgetId = WidgetId::of("workbench.table-filters");
 pub(crate) const TABLE_MODE: WidgetId = WidgetId::of("workbench.table-mode");
 const HIST_SEARCH: WidgetId = WidgetId::of("workbench.history-search");
 pub(crate) const HIST_LIST: WidgetId = WidgetId::of("workbench.history-list");
@@ -53,6 +57,15 @@ pub enum FilterOp {
 }
 
 impl FilterOp {
+    pub const ALL: [Self; 6] = [
+        Self::Eq,
+        Self::Contains,
+        Self::Gt,
+        Self::Lt,
+        Self::IsNull,
+        Self::IsNotNull,
+    ];
+
     pub fn label(self) -> &'static str {
         match self {
             Self::Eq => "=",
@@ -63,13 +76,91 @@ impl FilterOp {
             Self::IsNotNull => "is not NULL",
         }
     }
+
+    #[must_use]
+    pub const fn needs_value(self) -> bool {
+        !matches!(self, Self::IsNull | Self::IsNotNull)
+    }
+
+    #[must_use]
+    pub fn ordered_for(ty: ColType) -> Vec<Self> {
+        let first: &[Self] = match ty {
+            ColType::Int | ColType::Numeric | ColType::Timestamp | ColType::Date => {
+                &[Self::Eq, Self::Gt, Self::Lt, Self::IsNull, Self::IsNotNull]
+            }
+            _ => &[Self::Eq, Self::Contains, Self::IsNull, Self::IsNotNull],
+        };
+        let mut out = first.to_vec();
+        for op in Self::ALL {
+            if !out.contains(&op) {
+                out.push(op);
+            }
+        }
+        out
+    }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Filter {
     pub column: String,
     pub op: FilterOp,
     pub value: String,
+    pub enabled: bool,
+}
+
+impl Filter {
+    #[must_use]
+    pub fn chip_label(&self) -> String {
+        if !self.op.needs_value() {
+            return format!("{} {}", self.column, self.op.label());
+        }
+        format!(
+            "{} {} {}",
+            self.column,
+            self.op.label(),
+            filter_literal(&self.value)
+        )
+    }
+
+    #[must_use]
+    pub fn to_sql(&self) -> String {
+        let c = &self.column;
+        let v = &self.value;
+        match self.op {
+            FilterOp::Eq => format!("{c} = {}", filter_literal(v)),
+            FilterOp::Contains => format!("{c} LIKE '%{v}%'"),
+            FilterOp::Gt => format!("{c} > {}", filter_literal(v)),
+            FilterOp::Lt => format!("{c} < {}", filter_literal(v)),
+            FilterOp::IsNull => format!("{c} IS NULL"),
+            FilterOp::IsNotNull => format!("{c} IS NOT NULL"),
+        }
+    }
+
+    #[must_use]
+    pub fn predicates(&self) -> Vec<sql::Predicate> {
+        use sql::Cmp;
+        let predicate = |cmp: Cmp, value: &str| sql::Predicate {
+            column: self.column.clone(),
+            cmp,
+            value: value.to_owned(),
+        };
+        match self.op {
+            FilterOp::Eq => vec![predicate(Cmp::Eq, &self.value)],
+            FilterOp::Contains => vec![predicate(Cmp::Like, &format!("%{}%", self.value))],
+            FilterOp::Gt => vec![predicate(Cmp::Gt, &self.value)],
+            FilterOp::Lt => vec![predicate(Cmp::Lt, &self.value)],
+            FilterOp::IsNull => vec![predicate(Cmp::IsNull, "")],
+            FilterOp::IsNotNull => vec![predicate(Cmp::IsNotNull, "")],
+        }
+    }
+}
+
+fn filter_literal(value: &str) -> String {
+    if value.parse::<f64>().is_ok() || matches!(value, "true" | "false") {
+        value.to_owned()
+    } else {
+        format!("'{value}'")
+    }
 }
 
 pub enum ResultBody {
@@ -301,6 +392,8 @@ pub struct TableTab {
     pub mode: TabsState<u8>,
     pub grid: ResultGrid,
     pub table_state: DataTableState<usize, usize>,
+    pub filters: Vec<Filter>,
+    pub filter_strip: TokenStripState<usize>,
     pub offset: usize,
     pub page: usize,
 }
@@ -330,6 +423,8 @@ impl TableTab {
             mode,
             grid,
             table_state,
+            filters: Vec::new(),
+            filter_strip: TokenStripState::new(),
             offset: 0,
             page: 0,
         }
@@ -362,7 +457,12 @@ impl TableTab {
             columns: vec!["*".into()],
             schema: Some(self.schema.clone()),
             table: self.name.clone(),
-            predicates: vec![],
+            predicates: self
+                .filters
+                .iter()
+                .filter(|filter| filter.enabled)
+                .flat_map(Filter::predicates)
+                .collect(),
             order,
             limit: Some(sql::ROW_CAP),
             count_only: false,
@@ -385,6 +485,20 @@ impl TableTab {
         grid.cursor_row = cursor_row.min(grid.len().saturating_sub(1));
         grid.cursor_col = cursor_col.min(grid.columns.len().saturating_sub(1));
         self.grid = grid;
+    }
+
+    #[must_use]
+    pub fn filter_items(&self) -> Vec<(usize, String, bool)> {
+        self.filters
+            .iter()
+            .enumerate()
+            .map(|(i, filter)| (i, filter.chip_label(), filter.enabled))
+            .collect()
+    }
+
+    #[must_use]
+    pub fn active_filter_count(&self) -> usize {
+        self.filters.iter().filter(|filter| filter.enabled).count()
     }
 
     #[must_use]
@@ -1201,7 +1315,40 @@ pub fn render_table(
         render_structure(table, body, buf, ctx);
         return;
     }
-    let grid_area = Rect::new(body.x, body.y, body.width, body.height.saturating_sub(1));
+    let mut grid_y = body.y;
+    if !tab.filters.is_empty() || ctx.interaction.focused(TABLE_FILTERS) {
+        let snapshot = tab.filter_items();
+        let items: Vec<TokenItem<'_, usize>> = snapshot
+            .iter()
+            .map(|(i, label, enabled)| {
+                TokenItem::chip(*i, label.as_str())
+                    .removable(true)
+                    .selected(*enabled)
+            })
+            .collect();
+        tab.filter_strip
+            .set_surface_focused(ctx.interaction.focused(TABLE_FILTERS));
+        tab.filter_strip.show_chip_cursor = ctx.interaction.focused(TABLE_FILTERS);
+        TokenStrip::new(&items, ctx.system)
+            .add_label(Some("+ Add filter"))
+            .paint(
+                Rect::new(body.x, grid_y, body.width, 1),
+                buf,
+                &mut tab.filter_strip,
+            );
+        ctx.control(
+            TABLE_FILTERS,
+            Rect::new(body.x, grid_y, body.width, 1),
+            false,
+        );
+        grid_y = grid_y.saturating_add(2);
+    }
+    let grid_area = Rect::new(
+        body.x,
+        grid_y,
+        body.width,
+        body.bottom().saturating_sub(grid_y + 1),
+    );
     paint_grid(
         &tab.grid,
         grid_area,
@@ -1218,6 +1365,10 @@ pub fn render_table(
         if let Some((name, _)) = tab.grid.columns.get(c) {
             parts.push(format!("sort {name} {}", if asc { "▴" } else { "▾" }));
         }
+    }
+    let active_filters = tab.active_filter_count();
+    if active_filters > 0 {
+        parts.push(format!("filtered ({active_filters})"));
     }
     if tab.grid.more {
         parts.push(format!(
@@ -1487,6 +1638,7 @@ pub fn handle_table(
     ev: &PageEvent,
     cx: &mut PageCtx<'_>,
     cat: &Catalog,
+    system: &DesignSystem,
 ) -> Route {
     match ev {
         PageEvent::Key(key) if key.kind != KeyEventKind::Release => {
@@ -1496,6 +1648,9 @@ pub fn handle_table(
                     termrock::widgets::TabsOutcome::Ignored => Route::Ignored,
                     _ => Route::Changed,
                 };
+            }
+            if *cx.focus == Some(TABLE_FILTERS) {
+                return handle_filter_strip(tab, PageEvent::Key(*key), cx, cat, system);
             }
             if *cx.focus == Some(TABLE_GRID) {
                 let viewport = tab.table_state.header_regions.len().max(1);
@@ -1543,6 +1698,15 @@ pub fn handle_table(
                         }
                         return Route::Changed;
                     }
+                    KeyCode::Char('f') if key.modifiers.is_empty() => {
+                        let column = tab.grid.cursor_col;
+                        let value = match tab.grid.cell(tab.grid.cursor_row, column) {
+                            super::grid::CellValue::Null => Some((String::new(), true)),
+                            value => Some((value.display(), false)),
+                        };
+                        cx.open_table_filter(None, Some(column), value);
+                        return Route::Changed;
+                    }
                     _ => return Route::Ignored,
                 }
             }
@@ -1556,7 +1720,73 @@ pub fn handle_table(
             cx.set_focus(TABLE_GRID);
             Route::Changed
         }
+        PageEvent::Click { id, .. } if *id == TABLE_FILTERS => {
+            handle_filter_strip(tab, ev.clone(), cx, cat, system)
+        }
         _ => Route::Ignored,
+    }
+}
+
+fn handle_filter_strip(
+    tab: &mut TableTab,
+    ev: PageEvent,
+    cx: &mut PageCtx<'_>,
+    cat: &Catalog,
+    system: &DesignSystem,
+) -> Route {
+    let snapshot = tab.filter_items();
+    let items: Vec<TokenItem<'_, usize>> = snapshot
+        .iter()
+        .map(|(i, label, enabled)| {
+            TokenItem::chip(*i, label.as_str())
+                .removable(true)
+                .selected(*enabled)
+        })
+        .collect();
+    let strip = TokenStrip::new(&items, system).add_label(Some("+ Add filter"));
+    let outcome = match ev {
+        PageEvent::Key(key) => strip.handle_key(&mut tab.filter_strip, key),
+        PageEvent::Click { pos, .. } => strip.handle_mouse(
+            &mut tab.filter_strip,
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: pos,
+                modifiers: KeyModifiers::NONE,
+            },
+        ),
+        _ => TokenStripOutcome::Ignored,
+    };
+    match outcome {
+        TokenStripOutcome::Activated(i) => cx.open_table_filter(Some(i), None, None),
+        TokenStripOutcome::Add => {
+            cx.open_table_filter(None, Some(tab.grid.cursor_col), None);
+        }
+        TokenStripOutcome::Selected(i) | TokenStripOutcome::Unselected(i) => {
+            if tab.grid.pending.is_empty() {
+                if let Some(filter) = tab.filters.get_mut(i) {
+                    filter.enabled = matches!(outcome, TokenStripOutcome::Selected(_));
+                }
+                tab.load(cat);
+            } else {
+                cx.status("Cannot change filters while pending changes exist");
+            }
+        }
+        TokenStripOutcome::Remove(i) => {
+            if tab.grid.pending.is_empty() {
+                if i < tab.filters.len() {
+                    tab.filters.remove(i);
+                    tab.load(cat);
+                }
+            } else {
+                cx.status("Cannot change filters while pending changes exist");
+            }
+        }
+        _ => {}
+    }
+    if matches!(outcome, TokenStripOutcome::Ignored) {
+        Route::Ignored
+    } else {
+        Route::Changed
     }
 }
 

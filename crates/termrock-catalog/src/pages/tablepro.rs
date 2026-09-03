@@ -13,7 +13,7 @@ use termrock::style::ColorCapability;
 use crate::ctx::RenderCtx;
 use crate::id::WidgetId;
 use crate::outcome::Route;
-use crate::page::{Hint, Page, PageCtx, PageEvent};
+use crate::page::{Hint, Page, PageCtx, PageEvent, Request};
 use crate::tablepro::App as TableProApp;
 
 pub struct TableProPage {
@@ -44,6 +44,19 @@ impl Page for TableProPage {
 
     fn handle(&mut self, ev: &PageEvent, cx: &mut PageCtx<'_>) -> Route {
         self.app.handle_surface(ev, cx)
+    }
+
+    fn handle_request(&mut self, request: &Request) -> bool {
+        let Request::OpenTableFilter {
+            index,
+            column,
+            value,
+        } = request
+        else {
+            return false;
+        };
+        self.app.open_table_filter(*index, *column, value.clone());
+        true
     }
 
     fn hints(&self, focus: Option<WidgetId>) -> Vec<Hint> {

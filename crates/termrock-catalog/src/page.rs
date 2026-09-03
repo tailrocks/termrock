@@ -45,6 +45,11 @@ pub enum Request {
     Status(String),
     FocusNext,
     FocusPrev,
+    OpenTableFilter {
+        index: Option<usize>,
+        column: Option<usize>,
+        value: Option<(String, bool)>,
+    },
 }
 
 /// Mutable page context during event handling.
@@ -69,6 +74,18 @@ impl PageCtx<'_> {
     pub fn focus_prev(&mut self) {
         self.requests.push(Request::FocusPrev);
     }
+    pub fn open_table_filter(
+        &mut self,
+        index: Option<usize>,
+        column: Option<usize>,
+        value: Option<(String, bool)>,
+    ) {
+        self.requests.push(Request::OpenTableFilter {
+            index,
+            column,
+            value,
+        });
+    }
 }
 
 pub type Hint = (&'static str, &'static str);
@@ -83,6 +100,11 @@ pub trait Page {
     }
     fn render(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx<'_>);
     fn handle(&mut self, ev: &PageEvent, cx: &mut PageCtx<'_>) -> Route;
+    /// Consume requests owned by a mounted page before the shell applies its
+    /// global requests.
+    fn handle_request(&mut self, _request: &Request) -> bool {
+        false
+    }
     fn hints(&self, focus: Option<WidgetId>) -> Vec<Hint>;
     fn editing(&self) -> bool {
         false

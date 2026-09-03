@@ -286,10 +286,14 @@ impl App {
         let out = self.pages[i].handle(&ev, &mut cx);
         let requests = std::mem::take(&mut cx.requests);
         for r in requests {
+            if self.pages[i].handle_request(&r) {
+                continue;
+            }
             match r {
                 Request::Status(s) => self.set_status(s),
                 Request::FocusNext => self.focus_next(),
                 Request::FocusPrev => self.focus_prev(),
+                Request::OpenTableFilter { .. } => {}
             }
         }
         out
