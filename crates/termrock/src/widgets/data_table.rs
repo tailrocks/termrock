@@ -400,11 +400,7 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
         }
         self.cursor_row = self.cursor_row.min(visible_rows.len() - 1);
 
-        let vis_n = columns.visible().count();
-        if vis_n > 0 {
-            self.cursor_col = self.cursor_col.min(vis_n - 1);
-        }
-        self.sync_cursor_focus();
+        self.sync_cursor_focus_to_columns(columns);
 
         // Mode cycle (Tab with no modifiers while table owns input — VisiData-ish layer)
         if is_press && matches!(key.code, KeyCode::Char('\\')) {
@@ -576,6 +572,13 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
     fn sync_cursor_focus(&mut self) {
         self.selection.focus_row = self.window.offset.saturating_add(self.cursor_row as u64);
         self.selection.focus_col = self.cursor_col;
+    }
+
+    fn sync_cursor_focus_to_columns(&mut self, columns: &ColumnModel<ColId>) {
+        self.cursor_col = self
+            .cursor_col
+            .min(columns.visible().count().saturating_sub(1));
+        self.sync_cursor_focus();
     }
 
     fn request_sort(&mut self, columns: &ColumnModel<ColId>) -> DataTableOutcome<RowId, ColId>
@@ -813,11 +816,7 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
             return DataTableOutcome::Ignored;
         }
         self.cursor_row = self.cursor_row.min(visible_rows.len() - 1);
-        let vis_n = columns.visible().count();
-        if vis_n > 0 {
-            self.cursor_col = self.cursor_col.min(vis_n - 1);
-        }
-        self.sync_cursor_focus();
+        self.sync_cursor_focus_to_columns(columns);
         match intent {
             UiIntent::Move(NavigationMove::Next) | UiIntent::Move(NavigationMove::Down) => {
                 self.move_cursor_row(1, visible_rows.len())
@@ -1242,7 +1241,7 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
             + u16::from(has_footer);
         state.window.viewport = area.height.saturating_sub(chrome_rows).max(1);
         state.window.clamp();
-        state.sync_cursor_focus();
+        state.sync_cursor_focus_to_columns(self.columns);
 
         let mut y = area.y;
         if let Some(tb) = self.toolbar
@@ -2133,6 +2132,34 @@ mod tests {
         assert_eq!(state.window.viewport, 3);
         assert_eq!(state.window.offset, 97);
         assert_eq!(state.selection.focus_row, 99);
+    }
+
+    #[test]
+    fn zero_visible_columns_reset_cursor_focus_across_visibility_transition() {
+        let system = DesignSystem::default();
+        let mut cols = ColumnModel::new(vec![
+            DataColumn::new("a", "A", DataColumnWidth::Min(8)),
+            DataColumn::new("b", "B", DataColumnWidth::Min(8)),
+        ]);
+        let cells: &[&str] = &["a", "b"];
+        let rows = [(1u64, cells)];
+        let mut state = DataTableState::<u64, &str>::new();
+        state.cursor_col = 1;
+        state.selection.focus_col = 1;
+        let area = Rect::new(0, 0, 24, 4);
+        let mut buffer = Buffer::empty(area);
+
+        cols.columns
+            .iter_mut()
+            .for_each(|column| column.visible = false);
+        DataTable::new(&system, &cols, &rows).render(area, &mut buffer, &mut state);
+        assert_eq!(state.cursor_col, 0);
+        assert_eq!(state.selection.focus_col, 0);
+
+        cols.columns[0].visible = true;
+        DataTable::new(&system, &cols, &rows).render(area, &mut buffer, &mut state);
+        assert_eq!(state.cursor_col, 0);
+        assert_eq!(state.selection.focus_col, 0);
     }
 
     #[test]
