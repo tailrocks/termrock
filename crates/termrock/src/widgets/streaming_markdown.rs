@@ -1046,9 +1046,9 @@ mod tests {
                 let view = crate::widgets::MarkdownView::new(blocks, &system);
                 for width in [12u16, 24, 80] {
                     assert_eq!(
-                        usize::from(view.measure_height(width)),
-                        view.row_map(width).len(),
-                        "row map drifted from the measured height at {width} cols"
+                        view.measure_height(width),
+                        view.block_start_row(usize::MAX, width),
+                        "row count drifted between the two measure paths at {width} cols"
                     );
                 }
             });

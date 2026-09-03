@@ -682,17 +682,29 @@ impl<'a> MarkdownView<'a> {
             .fold(0u16, |a, h| a.saturating_add(h))
     }
 
-    /// Build row map: each display row → (block_index, sub_row).
-    #[must_use]
-    pub fn row_map(&self, width: u16) -> Vec<(usize, u16)> {
-        let mut map = Vec::new();
+    /// Heights of every block at `width`, in document order.
+    ///
+    /// Paint measures once per frame and derives row positions
+    /// arithmetically; materializing one entry per display row allocated a
+    /// full-document vector on every frame and every click.
+    fn block_heights(&self, width: u16) -> Vec<u16> {
+        self.blocks
+            .iter()
+            .map(|b| self.measure_block_height(b, width))
+            .collect()
+    }
+
+    /// Block containing absolute display row `doc_row`.
+    fn block_at_row(&self, doc_row: usize, width: u16) -> Option<usize> {
+        let mut seen = 0usize;
         for (bi, block) in self.blocks.iter().enumerate() {
-            let h = self.measure_block_height(block, width);
-            for sub in 0..h {
-                map.push((bi, sub));
+            let h = usize::from(self.measure_block_height(block, width));
+            if doc_row < seen.saturating_add(h) {
+                return Some(bi);
             }
+            seen = seen.saturating_add(h);
         }
-        map
+        None
     }
 
     /// First display row index of `first_block` (for Widget migration).
@@ -703,6 +715,19 @@ impl<'a> MarkdownView<'a> {
             .take(block_index)
             .map(|b| self.measure_block_height(b, width))
             .fold(0u16, |a, h| a.saturating_add(h))
+    }
+
+    /// Absolute display row `idx` as `(block, sub_row)`, from block heights.
+    fn walk_rows(heights: &[u16], idx: usize) -> Option<(usize, u16)> {
+        let mut seen = 0usize;
+        for (bi, h) in heights.iter().enumerate() {
+            let h = usize::from(*h);
+            if idx < seen.saturating_add(h) {
+                return Some((bi, u16::try_from(idx - seen).unwrap_or(u16::MAX)));
+            }
+            seen = seen.saturating_add(h);
+        }
+        None
     }
 
     /// Plain text for selection / full doc.
@@ -753,8 +778,8 @@ impl<'a> MarkdownView<'a> {
         }
 
         let width = area.width;
-        let map = self.row_map(width);
-        let total = u16::try_from(map.len()).unwrap_or(u16::MAX);
+        let heights = self.block_heights(width);
+        let total = heights.iter().fold(0u16, |a, h| a.saturating_add(*h));
         state.total_rows = total;
         state.viewport_rows = area.height;
         // Seed scroll from first_block once when unset path
@@ -770,7 +795,7 @@ impl<'a> MarkdownView<'a> {
 
         for row in 0..area.height {
             let idx = first.saturating_add(usize::from(row));
-            let Some(&(bi, sub)) = map.get(idx) else {
+            let Some((bi, sub)) = Self::walk_rows(&heights, idx) else {
                 break;
             };
             let block = &self.blocks[bi];
@@ -1293,8 +1318,7 @@ impl<'a> MarkdownView<'a> {
                 let row = event.position.y.saturating_sub(parts.root.y);
                 let doc_row = parts.first_row.saturating_add(row);
                 let width = parts.root.width;
-                let map = self.row_map(width);
-                if let Some(&(bi, _)) = map.get(usize::from(doc_row)) {
+                if let Some(bi) = self.block_at_row(usize::from(doc_row), width) {
                     state.focused = true;
                     state.cursor_block = Some(bi);
                     state.selection = Some((bi, bi.saturating_add(1)));

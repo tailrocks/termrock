@@ -580,15 +580,14 @@ impl<'a, Id: Clone + PartialEq> KeyValueList<'a, Id> {
             KvLayout::Columns
         };
 
-        // Build row map: (entry_index, sub_row)
-        let mut row_map: Vec<(usize, u16)> = Vec::new();
-        for (ei, entry) in self.entries.iter().enumerate() {
-            let h = self.measure_entry_height(entry, area.width, paint_layout, state);
-            for sub in 0..h {
-                row_map.push((ei, sub));
-            }
-        }
-        let total = u16::try_from(row_map.len()).unwrap_or(u16::MAX);
+        // Entry heights in document order; row positions derive
+        // arithmetically instead of materializing a per-row map each frame.
+        let heights: Vec<u16> = self
+            .entries
+            .iter()
+            .map(|entry| self.measure_entry_height(entry, area.width, paint_layout, state))
+            .collect();
+        let total = heights.iter().fold(0u16, |a, h| a.saturating_add(*h));
         state.total_rows = total;
         state.viewport_rows = area.height;
         state.clamp();
@@ -601,7 +600,7 @@ impl<'a, Id: Clone + PartialEq> KeyValueList<'a, Id> {
 
         for row in 0..area.height {
             let idx = first.saturating_add(usize::from(row));
-            let Some(&(ei, sub)) = row_map.get(idx) else {
+            let Some((ei, sub)) = walk_entry_rows(&heights, idx) else {
                 break;
             };
             let y = area.y.saturating_add(row);
@@ -1197,6 +1196,19 @@ impl<'a, Id: Clone + PartialEq> KeyValueList<'a, Id> {
                 }),
         );
     }
+}
+
+/// Absolute display row `idx` as `(entry, sub_row)`, from entry heights.
+fn walk_entry_rows(heights: &[u16], idx: usize) -> Option<(usize, u16)> {
+    let mut seen = 0usize;
+    for (ei, h) in heights.iter().enumerate() {
+        let h = usize::from(*h);
+        if idx < seen.saturating_add(h) {
+            return Some((ei, u16::try_from(idx - seen).unwrap_or(u16::MAX)));
+        }
+        seen = seen.saturating_add(h);
+    }
+    None
 }
 
 fn paint_entry_chrome(

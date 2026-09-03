@@ -35,13 +35,23 @@ use crate::{
     },
 };
 
+/// Decimal digit count of `n` (at least one digit). Paint calls the chrome
+/// width several times per frame; `to_string().len()` would allocate each time.
+fn decimal_digits(n: usize) -> u16 {
+    let mut n = n.max(1);
+    let mut digits = 1u16;
+    while n >= 10 {
+        n /= 10;
+        digits += 1;
+    }
+    digits
+}
+
 /// Junie grid chrome: `▎` + select `✓` + change slot + optional row numbers
 /// + a pad column. Matches `junie-tui` `gutter_w = 3 + num_w + row_numbers`.
 fn grid_chrome_width(row_count: usize, row_numbers: bool) -> u16 {
     let num_w = if row_numbers {
-        u16::try_from(row_count.max(1).to_string().len())
-            .unwrap_or(2)
-            .max(2)
+        decimal_digits(row_count).max(2)
     } else {
         0
     };
