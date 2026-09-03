@@ -742,14 +742,13 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
         if enabled.is_empty() {
             return TreeTableOutcome::Ignored;
         }
-        let cur_pos = enabled
-            .iter()
-            .position(|&i| i == self.cursor_row)
-            .unwrap_or(0);
-        let next_pos = if delta >= 0 {
-            (cur_pos + delta as usize).min(enabled.len() - 1)
-        } else {
-            cur_pos.saturating_sub((-delta) as usize)
+        let next_pos = match enabled.binary_search(&self.cursor_row) {
+            Ok(cur_pos) if delta >= 0 => (cur_pos + delta as usize).min(enabled.len() - 1),
+            Ok(cur_pos) => cur_pos.saturating_sub((-delta) as usize),
+            Err(insertion) if delta >= 0 => insertion
+                .saturating_add((delta as usize).saturating_sub(1))
+                .min(enabled.len() - 1),
+            Err(insertion) => insertion.saturating_sub((-delta) as usize),
         };
         let idx = enabled[next_pos];
         if idx == self.cursor_row {
@@ -1776,6 +1775,25 @@ mod tests {
         assert!(matches!(out, TreeTableOutcome::Selected("child")));
         assert_eq!(state.selected(), Some(&"child"));
         assert_eq!(state.cursor_row, 2);
+    }
+
+    #[test]
+    fn move_down_from_leading_group_selects_first_valid_row() {
+        let group_cells: &[&str] = &["group", "", ""];
+        let first_cells: &[&str] = &["first", "", ""];
+        let second_cells: &[&str] = &["second", "", ""];
+        let rows = [
+            TreeTableRow::new("group", 0, group_cells).group(),
+            TreeTableRow::new("first", 0, first_cells),
+            TreeTableRow::new("second", 0, second_cells),
+        ];
+        let columns = cols();
+        let mut state = TreeTableState::<&str, &str>::new(Some("group"));
+
+        let out = state.handle_intent(&rows, &columns, UiIntent::Move(NavigationMove::Down));
+
+        assert!(matches!(out, TreeTableOutcome::Selected("first")));
+        assert_eq!(state.cursor_row, 1);
     }
 
     #[test]
