@@ -1918,12 +1918,13 @@ impl<'a> Dialog<'a> {
         };
         if !state.slots.body.is_empty() {
             if self.facts.is_empty() && self.code.is_empty() {
-                Paragraph::new(self.body.clone())
-                    .style(if self.muted_body {
-                        theme.muted().bg(bg)
-                    } else {
-                        theme.secondary().bg(bg)
-                    })
+                let body = self.body.clone().style(if self.muted_body {
+                    theme.muted().bg(bg)
+                } else {
+                    theme.secondary().bg(bg)
+                });
+                Paragraph::new(body)
+                    .style(Style::new().bg(bg))
                     .wrap(ratatui_widgets::paragraph::Wrap { trim: false })
                     .scroll((state.scroll.scroll_y, state.scroll.scroll_x))
                     .render(state.slots.body, buffer);
@@ -3378,6 +3379,50 @@ mod backdrop_tests {
         assert_eq!(
             footer(&Dialog::prompt("Edit", Text::from("Value"), &system)),
             " Enter Confirm  Esc Cancel"
+        );
+    }
+
+    #[test]
+    fn dialog_body_preserves_dimmed_blank_foreground_and_span_style() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let screen = Rect::new(0, 0, 80, 24);
+        let mut buffer = Buffer::empty(screen);
+        buffer.set_style(screen, system.style(Role::Text));
+        let body = Text::from(vec![ratatui_core::text::Line::from(vec![
+            ratatui_core::text::Span::styled(
+                "Delete",
+                Style::new().fg(Color::Green).add_modifier(Modifier::BOLD),
+            ),
+            ratatui_core::text::Span::raw(" branch?"),
+        ])]);
+        let mut state = DialogState::<()>::new();
+
+        Dialog::new("Confirm", body, &system)
+            .preferred_size(DialogSize {
+                width: 50,
+                height: 10,
+            })
+            .paint_modal(screen, &mut buffer, &mut state, &[]);
+
+        let body_area = state.slots().body;
+        assert_eq!(buffer[(body_area.x, body_area.y)].fg, Color::Green);
+        assert!(
+            buffer[(body_area.x, body_area.y)]
+                .modifier
+                .contains(Modifier::BOLD)
+        );
+        assert_eq!(
+            buffer[(body_area.x + 7, body_area.y)].fg,
+            theme.text_secondary
+        );
+        assert_eq!(
+            buffer[(body_area.right() - 1, body_area.y)].fg,
+            theme.text_muted
+        );
+        assert_eq!(
+            buffer[(body_area.right() - 1, body_area.y)].bg,
+            theme.surface_elevated
         );
     }
 
