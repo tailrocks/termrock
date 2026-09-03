@@ -620,6 +620,9 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
             KeyCode::Enter | KeyCode::Char(' ')
                 if key.modifiers.is_empty() || key.modifiers == KeyModifiers::NONE =>
             {
+                if !key.is_press() {
+                    return SelectOutcome::Ignored;
+                }
                 self.open(bounds, options)
             }
             KeyCode::Down | KeyCode::Right if key.modifiers.is_empty() => {
@@ -637,6 +640,9 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
                     && !key.modifiers.contains(KeyModifiers::CONTROL)
                     && !key.modifiers.contains(KeyModifiers::ALT) =>
             {
+                if !key.is_press() {
+                    return SelectOutcome::Ignored;
+                }
                 let out = self.open(bounds, options);
                 if self.searchable {
                     let _ = self.search.insert_str(&c.to_string());
@@ -660,13 +666,33 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
         options: &[SelectOption<Id>],
         bounds: Rect,
     ) -> SelectOutcome<Id> {
+        // Keep one-shot actions out of the search and collection fallbacks.
+        // Searchable Ctrl+M submits through TextInputState; non-searchable
+        // Space commits after CollectionState sees the event.
+        if !key.is_press()
+            && ((self.searchable
+                && key.modifiers.contains(KeyModifiers::CONTROL)
+                && matches!(key.code, KeyCode::Char('m' | 'M')))
+                || (!self.searchable
+                    && key.modifiers.is_empty()
+                    && matches!(key.code, KeyCode::Char(' '))))
+        {
+            return SelectOutcome::Ignored;
+        }
+
         // Esc close
         if key.code == KeyCode::Esc && key.modifiers.is_empty() {
+            if !key.is_press() {
+                return SelectOutcome::Ignored;
+            }
             return self.close();
         }
 
         // Enter commit
         if key.code == KeyCode::Enter && key.modifiers.is_empty() {
+            if !key.is_press() {
+                return SelectOutcome::Ignored;
+            }
             return self.commit_highlight();
         }
 
@@ -728,6 +754,9 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
             CollectionOutcome::Ignored => {
                 // Space commits like Enter when open
                 if matches!(key.code, KeyCode::Char(' ')) && key.modifiers.is_empty() {
+                    if !key.is_press() {
+                        return SelectOutcome::Ignored;
+                    }
                     return self.commit_highlight();
                 }
                 SelectOutcome::Ignored
@@ -1464,6 +1493,7 @@ fn paint_list_anatomy_row(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::input::KeyEventKind;
     use crate::style::RolePalette;
     use ratatui_core::layout::Position;
 
@@ -1631,6 +1661,65 @@ mod tests {
             SelectOutcome::ValueChanged { id: "banana" }
         );
         assert_eq!(state.value(), Some(&"banana"));
+    }
+
+    #[test]
+    fn repeated_open_close_and_commit_triggers_are_ignored() {
+        let opts = sample_options();
+        let bounds = Rect::new(0, 0, 80, 24);
+
+        for kind in [KeyEventKind::Repeat, KeyEventKind::Release] {
+            for code in [KeyCode::Enter, KeyCode::Char(' '), KeyCode::Char('a')] {
+                let mut state = SelectState::new().with_value("apple");
+                state.set_focused(true);
+                let mut non_press = KeyEvent::new(code, KeyModifiers::NONE);
+                non_press.kind = kind;
+                assert_eq!(
+                    state.handle_key(non_press, &opts, bounds),
+                    SelectOutcome::Ignored,
+                    "{kind:?} of {code:?} must not open a closed select"
+                );
+                assert!(!state.is_open());
+            }
+
+            for code in [KeyCode::Esc, KeyCode::Enter, KeyCode::Char(' ')] {
+                let mut state = SelectState::new().with_value("apple");
+                state.set_focused(true);
+                let _ = state.open(bounds, &opts);
+                let mut non_press = KeyEvent::new(code, KeyModifiers::NONE);
+                non_press.kind = kind;
+                assert_eq!(
+                    state.handle_key(non_press, &opts, bounds),
+                    SelectOutcome::Ignored,
+                    "{kind:?} of {code:?} must not close or commit an open select"
+                );
+                assert!(state.is_open());
+                assert_eq!(state.value(), Some(&"apple"));
+            }
+        }
+
+        let mut searchable = SelectState::new().with_searchable(true);
+        searchable.set_focused(true);
+        let _ = searchable.open(bounds, &opts);
+        let mut repeat_text = KeyEvent::new(KeyCode::Char('a'), KeyModifiers::NONE);
+        repeat_text.kind = KeyEventKind::Repeat;
+        assert_eq!(
+            searchable.handle_key(repeat_text, &opts, bounds),
+            SelectOutcome::SearchChanged {
+                query: "a".to_owned()
+            }
+        );
+        assert!(searchable.is_open());
+
+        let mut repeat_submit = KeyEvent::new(KeyCode::Char('m'), KeyModifiers::CONTROL);
+        repeat_submit.kind = KeyEventKind::Repeat;
+        assert_eq!(
+            searchable.handle_key(repeat_submit, &opts, bounds),
+            SelectOutcome::Ignored
+        );
+        assert!(searchable.is_open());
+        assert!(searchable.search.is_editing());
+        assert_eq!(searchable.search.value(), "a");
     }
 
     #[test]
