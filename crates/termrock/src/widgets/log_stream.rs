@@ -304,8 +304,15 @@ pub struct LogStreamState {
     pub reconnect_message: Option<String>,
     /// Burst batched count (chrome).
     pub batched: u64,
-    /// Content width estimate for h-scroll.
-    content_width: u16,
+    /// Widest filtered line in display columns (h-scroll bound is this plus
+    /// the 40-column chrome pad).
+    content_cols: u16,
+    /// Scan memo `(line_count, search, level_floor)` for `content_cols`.
+    /// The filtered projection is append-only while the filter is stable, so
+    /// a longer projection rescans only the appended tail; a shorter one
+    /// (bounded-history truncation) or a changed filter forces a full rescan.
+    /// Without the memo, paint rescanned every line every frame.
+    content_width_memo: (usize, Option<String>, LogLevel),
     /// Hit regions.
     pub regions: Vec<LogStreamRegion>,
     /// Prefer no-color paint (letter marks; or set on the widget).
@@ -344,7 +351,8 @@ impl LogStreamState {
             dropped: 0,
             reconnect_message: None,
             batched: 0,
-            content_width: 0,
+            content_cols: 0,
+            content_width_memo: (0, None, LogLevel::Trace),
             regions: Vec::new(),
             colorless: false,
             anchor_id: None,
@@ -544,7 +552,7 @@ impl LogStreamState {
             }
         }
         if is_press && matches!(key.code, KeyCode::Right | KeyCode::Char('l' | 'L')) {
-            let max = self.content_width.saturating_sub(40);
+            let max = self.content_cols;
             if self.h_offset < max {
                 self.h_offset = self.h_offset.saturating_add(4).min(max);
                 return LogStreamOutcome::HScrolled {
@@ -967,16 +975,29 @@ impl<'a> LogStream<'a> {
         state.area_rows = area.height;
 
         let view = state.filtered(self.lines);
-        // Content width for h-scroll
-        state.content_width = view
-            .iter()
-            .map(|l| u16::try_from(display_cols(l.text)).unwrap_or(u16::MAX))
-            .max()
-            .unwrap_or(0)
-            .saturating_add(40);
-        state.h_offset = state
-            .h_offset
-            .min(state.content_width.saturating_sub(area.width.max(1)));
+        // Content width for h-scroll, memoized per (count, filter). Scanning
+        // every line every frame dominated paint on hot logs.
+        let width_of = |l: &&LogLine<'_>| u16::try_from(display_cols(l.text)).unwrap_or(u16::MAX);
+        if state.content_width_memo.1.as_deref() != state.search.as_deref()
+            || state.content_width_memo.2 != state.level_floor
+            || view.len() < state.content_width_memo.0
+        {
+            state.content_cols = view.iter().map(width_of).max().unwrap_or(0);
+        } else if view.len() > state.content_width_memo.0 {
+            let tail_max = view[state.content_width_memo.0..]
+                .iter()
+                .map(width_of)
+                .max()
+                .unwrap_or(0);
+            state.content_cols = state.content_cols.max(tail_max);
+        }
+        state.content_width_memo = (view.len(), state.search.clone(), state.level_floor);
+        state.h_offset = state.h_offset.min(
+            state
+                .content_cols
+                .saturating_add(40)
+                .saturating_sub(area.width.max(1)),
+        );
 
         let following = state.scroll.is_following();
         let unread = state.unread();
