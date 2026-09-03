@@ -313,8 +313,6 @@ pub struct IntegrationProvenance {
     pub source: Option<String>,
     /// Version string.
     pub version: Option<String>,
-    /// Trust note (`signed`, `unsigned`, `local path`).
-    pub trust_note: Option<String>,
     /// Whether third-party (not first-party host).
     pub third_party: bool,
 }
@@ -327,7 +325,6 @@ impl IntegrationProvenance {
             publisher: Some("host".into()),
             source: None,
             version: Some(version.into()),
-            trust_note: Some("first-party".into()),
             third_party: false,
         }
     }
@@ -343,16 +340,8 @@ impl IntegrationProvenance {
             publisher: Some(publisher.into()),
             source: Some(source.into()),
             version: Some(version.into()),
-            trust_note: Some("third-party — review permissions".into()),
             third_party: true,
         }
-    }
-
-    /// Trust note.
-    #[must_use]
-    pub fn trust_note(mut self, n: impl Into<String>) -> Self {
-        self.trust_note = Some(n.into());
-        self
     }
 
     /// One-line provenance chrome.
@@ -1537,10 +1526,11 @@ pub fn example_integrations() -> Vec<IntegrationEntry> {
             .logs(["awaiting permission"]),
         IntegrationEntry::new("plug-lint", "lint-helper", IntegrationKind::Plugin)
             .health(IntegrationHealth::Degraded)
-            .provenance(
-                IntegrationProvenance::third_party("acme", "https://plugins.example/lint", "2.0.0")
-                    .trust_note("unsigned package — review before enable"),
-            )
+            .provenance(IntegrationProvenance::third_party(
+                "acme",
+                "https://plugins.example/lint",
+                "2.0.0",
+            ))
             .summary("Partial: rules pack failed to load")
             .last_error("ruleset v3 missing")
             .capabilities(vec![IntegrationCapability::new("lint/run", "Run linter")])
