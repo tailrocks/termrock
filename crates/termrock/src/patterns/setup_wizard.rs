@@ -404,9 +404,13 @@ impl SetupWizardState {
         if key.is_release() {
             return SetupWizardOutcome::Ignored;
         }
+        let is_press = key.is_press();
 
         // Safe cancel confirmation layer
         if self.cancel_confirm {
+            if !is_press {
+                return SetupWizardOutcome::Ignored;
+            }
             match key.code {
                 KeyCode::Esc | KeyCode::Char('n') | KeyCode::Char('N') => {
                     return self.dismiss_cancel_confirm();
@@ -419,12 +423,13 @@ impl SetupWizardState {
         }
 
         // Esc → safe cancel (never one-shot leave)
-        if matches!(key.code, KeyCode::Esc) {
+        if is_press && matches!(key.code, KeyCode::Esc) {
             return self.request_cancel();
         }
 
         // Review step: `a` opens the values the diet held back.
-        if matches!(self.current_kind(), SetupStepKind::Summary)
+        if is_press
+            && matches!(self.current_kind(), SetupStepKind::Summary)
             && key.modifiers.is_empty()
             && matches!(key.code, KeyCode::Char('a' | 'A'))
         {
@@ -435,7 +440,10 @@ impl SetupWizardState {
         }
 
         // Ctrl+S progress save (wizard)
-        if key.code == KeyCode::Char('s') && key.modifiers.contains(KeyModifiers::CONTROL) {
+        if is_press
+            && key.code == KeyCode::Char('s')
+            && key.modifiers.contains(KeyModifiers::CONTROL)
+        {
             let out = self.wizard.save_progress();
             return SetupWizardOutcome::Wizard(out);
         }
@@ -1043,7 +1051,9 @@ pub fn setup_steps_to_wizard_steps(steps: &[SetupStep]) -> Vec<StepItem> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::input::KeyEventKind;
     use crate::widgets::BUILTIN_THEME_PRESETS;
+    use crate::widgets::tests::key_with_kind;
     use ratatui_core::backend::TestBackend;
     use ratatui_core::terminal::Terminal;
 
@@ -1092,6 +1102,101 @@ mod tests {
             BUILTIN_THEME_PRESETS,
         );
         assert!(matches!(out, SetupWizardOutcome::CancelConfirmOpen));
+    }
+
+    #[test]
+    fn repeated_setup_wizard_one_shot_actions_are_ignored() {
+        let repeat = |code, modifiers| key_with_kind(code, modifiers, KeyEventKind::Repeat);
+        let fields = example_setup_account_fields();
+        let sets = [Fieldset::new("Account", &fields)];
+        let mut state = SetupWizardState::from_steps(example_setup_steps());
+
+        assert_eq!(
+            state.handle_key(
+                repeat(KeyCode::Esc, KeyModifiers::NONE),
+                &sets,
+                BUILTIN_THEME_PRESETS
+            ),
+            SetupWizardOutcome::Ignored
+        );
+        assert!(!state.cancel_confirm);
+        assert!(matches!(
+            state.handle_key(
+                KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE),
+                &sets,
+                BUILTIN_THEME_PRESETS
+            ),
+            SetupWizardOutcome::CancelConfirmOpen
+        ));
+        assert_eq!(
+            state.handle_key(
+                repeat(KeyCode::Enter, KeyModifiers::NONE),
+                &sets,
+                BUILTIN_THEME_PRESETS
+            ),
+            SetupWizardOutcome::Ignored
+        );
+        assert!(state.cancel_confirm);
+        assert_eq!(
+            state.handle_key(
+                repeat(KeyCode::Esc, KeyModifiers::NONE),
+                &sets,
+                BUILTIN_THEME_PRESETS
+            ),
+            SetupWizardOutcome::Ignored
+        );
+        assert!(state.cancel_confirm);
+        assert!(matches!(
+            state.handle_key(
+                KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE),
+                &sets,
+                BUILTIN_THEME_PRESETS
+            ),
+            SetupWizardOutcome::CancelConfirmDismissed
+        ));
+
+        assert_eq!(
+            state.handle_key(
+                repeat(KeyCode::Char('s'), KeyModifiers::CONTROL),
+                &sets,
+                BUILTIN_THEME_PRESETS
+            ),
+            SetupWizardOutcome::Ignored
+        );
+        assert!(matches!(
+            state.handle_key(
+                key_with_kind(
+                    KeyCode::Char('s'),
+                    KeyModifiers::CONTROL,
+                    KeyEventKind::Press
+                ),
+                &sets,
+                BUILTIN_THEME_PRESETS
+            ),
+            SetupWizardOutcome::Wizard(FormWizardOutcome::ProgressSaved { .. })
+        ));
+
+        while !matches!(state.wizard.phase(), WizardPhase::Review) {
+            state.set_gate(WizardGate::Valid);
+            let _ = state.wizard.next();
+        }
+        assert_eq!(state.current_kind(), SetupStepKind::Summary);
+        assert_eq!(
+            state.handle_key(
+                repeat(KeyCode::Char('a'), KeyModifiers::NONE),
+                &[],
+                BUILTIN_THEME_PRESETS
+            ),
+            SetupWizardOutcome::Ignored
+        );
+        assert!(matches!(
+            state.handle_key(
+                KeyEvent::new(KeyCode::Char('a'), KeyModifiers::NONE),
+                &[],
+                BUILTIN_THEME_PRESETS
+            ),
+            SetupWizardOutcome::SummaryDetailToggled { .. }
+        ));
     }
 
     #[test]
