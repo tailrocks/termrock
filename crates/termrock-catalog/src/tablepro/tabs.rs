@@ -86,7 +86,7 @@ pub enum ResultBody {
         root: sql::PlanNode,
         planning_ms: f64,
         execution_ms: Option<f64>,
-        tree: TreeState<usize>,
+        tree: Box<TreeState<usize>>,
     },
 }
 
@@ -499,7 +499,7 @@ fn execute(
                                 root: plan,
                                 planning_ms: planning,
                                 execution_ms: exec,
-                                tree: TreeState::new(Some(0)),
+                                tree: Box::new(TreeState::new(Some(0))),
                             },
                         },
                         entry,

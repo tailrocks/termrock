@@ -51,6 +51,7 @@ const SWITCHER_INPUT: WidgetId = WidgetId::of("switcher.input");
 const SWITCHER_LIST: WidgetId = WidgetId::of("switcher.list");
 const CONFIRM_OK: WidgetId = WidgetId::of("dialog.confirm.ok");
 const CONFIRM_CANCEL: WidgetId = WidgetId::of("dialog.confirm.cancel");
+const CONFIRM_ACK: WidgetId = WidgetId::of("dialog.confirm.ack");
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Screen {
@@ -58,15 +59,23 @@ pub enum Screen {
     Workbench,
 }
 
+struct ConfirmOverlay {
+    title: String,
+    action: String,
+    target: String,
+    scope: String,
+    risk: String,
+    reversible: String,
+    safe_mode: String,
+    sql: Vec<String>,
+    token: Option<String>,
+    dangerous: bool,
+}
+
 enum Overlay {
     None,
     Help,
-    Confirm {
-        title: String,
-        body: String,
-        ok: String,
-        _deliberate: bool,
-    },
+    Confirm(Box<ConfirmOverlay>),
     Switcher,
 }
 
@@ -114,6 +123,7 @@ pub struct App {
     switcher_q: TextInputState,
     switcher_list: ListState<usize>,
     switcher_items: Vec<SwitchItem>,
+    confirm_ack: TextInputState,
     confirm_ok: ButtonState,
     confirm_cancel: ButtonState,
     help_close: ButtonState,
@@ -145,6 +155,7 @@ impl App {
             switcher_q,
             switcher_list: ListState::new(Some(0)),
             switcher_items: vec![],
+            confirm_ack: TextInputState::new("").with_allow_empty(true),
             confirm_ok: ButtonState::new(),
             confirm_cancel: ButtonState::new(),
             help_close: ButtonState::new(),
@@ -444,24 +455,85 @@ impl App {
                     bg,
                 );
             }
-            Overlay::Confirm {
-                title, body, ok, ..
-            } => {
-                let w = area.width.min(56).max(32);
-                let h = 10;
+            Overlay::Confirm(confirm) => {
+                let ConfirmOverlay {
+                    title,
+                    action,
+                    target,
+                    scope,
+                    risk,
+                    reversible,
+                    safe_mode,
+                    sql,
+                    token,
+                    dangerous,
+                } = confirm.as_ref();
+                let w = area.width.min(74).max(32);
+                let content_width = usize::from(w.saturating_sub(8).max(1));
+                let scope_lines = crate::text::wrap(scope, content_width);
+                let risk_lines = crate::text::wrap(risk, content_width);
+                let reversible_lines = crate::text::wrap(reversible, content_width);
+                let sql_lines: Vec<String> = sql
+                    .iter()
+                    .flat_map(|line| crate::text::wrap(line, content_width))
+                    .collect();
+                let content_height = 4
+                    + scope_lines.len()
+                    + risk_lines.len()
+                    + reversible_lines.len()
+                    + sql_lines.len().max(1)
+                    + if token.is_some() { 3 } else { 0 };
+                let h = u16::try_from(content_height.saturating_add(5))
+                    .unwrap_or(u16::MAX)
+                    .min(area.height.max(1));
                 let x = area.x + area.width.saturating_sub(w) / 2;
                 let y = area.y + area.height.saturating_sub(h) / 2;
                 let (inner, bg) =
                     layout::card(Rect::new(x, y, w, h), buf, t, Some(title), None, true);
-                for (i, line) in crate::text::wrap(body, inner.width as usize)
-                    .iter()
-                    .take(4)
-                    .enumerate()
-                {
-                    buf.set_string(inner.x, inner.y + i as u16, line, t.secondary().bg(bg));
+                let mut row = inner.y;
+                let mut fact = |label: &str, lines: &[String]| {
+                    for (i, line) in lines.iter().enumerate() {
+                        if i == 0 {
+                            buf.set_string(inner.x, row, &format!("{label:<12}"), t.muted().bg(bg));
+                            buf.set_string(inner.x + 12, row, line, t.secondary().bg(bg));
+                        } else {
+                            buf.set_string(inner.x + 12, row, line, t.secondary().bg(bg));
+                        }
+                        row = row.saturating_add(1);
+                    }
+                };
+                fact("Action", std::slice::from_ref(action));
+                fact("Target", std::slice::from_ref(target));
+                fact("Scope", &scope_lines);
+                fact("Risk", &risk_lines);
+                fact("Reversible", &reversible_lines);
+                fact("Safe Mode", std::slice::from_ref(safe_mode));
+                row = row.saturating_add(1);
+                for line in sql_lines.iter().take(4) {
+                    buf.set_string(inner.x, row, line, t.primary().bg(bg));
+                    row = row.saturating_add(1);
+                }
+                if let Some(token) = token {
+                    row = row.saturating_add(1);
+                    buf.set_string(
+                        inner.x,
+                        row,
+                        &format!("Type {token} to confirm"),
+                        t.secondary().bg(bg),
+                    );
+                    row = row.saturating_add(1);
+                    let ack = Rect::new(inner.x, row, inner.width, 1);
+                    self.confirm_ack
+                        .set_focused(ctx.interaction.focused(CONFIRM_ACK));
+                    TextInput::new("", ctx.system).placeholder(token).paint(
+                        ack,
+                        buf,
+                        &mut self.confirm_ack,
+                    );
+                    ctx.control(CONFIRM_ACK, ack, false);
                 }
                 let ay = inner.bottom().saturating_sub(1);
-                let ok_w = paint::button_width(ok);
+                let ok_w = paint::button_width("Execute");
                 let cancel_w = paint::button_width("Cancel");
                 let rects = layout::row_layout_right(
                     Rect::new(inner.x, ay, inner.width, 1),
@@ -480,14 +552,20 @@ impl App {
                     bg,
                 );
                 paint::button(
-                    ok,
-                    ButtonVariant::Primary,
+                    "Execute",
+                    if *dangerous {
+                        ButtonVariant::Destructive
+                    } else {
+                        ButtonVariant::Primary
+                    },
                     CONFIRM_OK,
                     rects[1],
                     buf,
                     ctx,
                     &mut self.confirm_ok,
-                    false,
+                    token
+                        .as_ref()
+                        .is_some_and(|required| self.confirm_ack.value() != required),
                     bg,
                 );
             }
@@ -756,22 +834,56 @@ impl App {
             Decision::Confirm { deliberate } => {
                 let table = w.catalog.find(None, stmt.target().unwrap_or(""));
                 let risk = sql::assess(&stmt, table);
-                w.pending_run = Some((tab_index, statements, all, explain));
-                let title = if sql::is_dangerous(&stmt) {
+                let dangerous = sql::is_dangerous(&stmt);
+                w.pending_run = Some((tab_index, statements.clone(), all, explain));
+                let title = if dangerous {
                     "This query may permanently modify or delete data"
+                } else if risk.tier == sql::Tier::Safe {
+                    "Execute query?"
                 } else {
                     "Execute write query?"
                 };
-                self.overlay = Overlay::Confirm {
-                    title: title.into(),
-                    body: format!("{} — {}", risk.action, risk.scope),
-                    ok: if deliberate {
-                        "Type name to confirm".into()
+                let target_name = stmt.target().unwrap_or("yes").to_owned();
+                let target = format!(
+                    "{} · {} · {} · {}",
+                    w.connection.name,
+                    w.connection.environment.label(),
+                    w.catalog.database,
+                    target_name
+                );
+                let safe_mode = format!(
+                    "{} · {}",
+                    level.label(),
+                    if deliberate {
+                        "deliberate confirmation required"
                     } else {
-                        "Run".into()
-                    },
-                    _deliberate: deliberate,
+                        "confirmation required"
+                    }
+                );
+                let sql_lines = statements
+                    .iter()
+                    .flat_map(|(text, _)| text.lines().map(ToOwned::to_owned))
+                    .collect();
+                let token = if deliberate
+                    || (dangerous && w.connection.environment == Environment::Production)
+                {
+                    Some(target_name)
+                } else {
+                    None
                 };
+                self.confirm_ack = TextInputState::new("").with_allow_empty(true);
+                self.overlay = Overlay::Confirm(Box::new(ConfirmOverlay {
+                    title: title.into(),
+                    action: risk.action,
+                    target,
+                    scope: risk.scope,
+                    risk: risk.risk,
+                    reversible: risk.reversible.to_owned(),
+                    safe_mode,
+                    sql: sql_lines,
+                    token,
+                    dangerous,
+                }));
             }
         }
     }
@@ -789,18 +901,70 @@ impl App {
                 Route::Changed
             }
             PageEvent::Click { id, .. }
-                if matches!(self.overlay, Overlay::Confirm { .. }) && *id == CONFIRM_OK =>
+                if matches!(&self.overlay, Overlay::Confirm(_)) && *id == CONFIRM_OK =>
             {
                 self.confirm_run(cx);
                 Route::Changed
             }
+            PageEvent::Click { id, .. }
+                if matches!(&self.overlay, Overlay::Confirm(confirm) if confirm.token.is_some())
+                    && *id == CONFIRM_ACK =>
+            {
+                cx.set_focus(CONFIRM_ACK);
+                self.confirm_ack.begin_edit();
+                Route::Changed
+            }
+            PageEvent::Paste(text)
+                if matches!(&self.overlay, Overlay::Confirm(confirm) if confirm.token.is_some())
+                    && cx.focus_id() == Some(CONFIRM_ACK) =>
+            {
+                self.confirm_ack.begin_edit();
+                if matches!(
+                    self.confirm_ack.insert_str(text),
+                    termrock::widgets::TextInputOutcome::Ignored
+                ) {
+                    Route::Consumed
+                } else {
+                    Route::Changed
+                }
+            }
             PageEvent::Key(key)
-                if matches!(self.overlay, Overlay::Confirm { .. })
+                if matches!(&self.overlay, Overlay::Confirm(_))
                     && key.kind != KeyEventKind::Release
                     && matches!(key.code, KeyCode::Enter | KeyCode::Char(' ')) =>
             {
+                if matches!(&self.overlay, Overlay::Confirm(confirm) if confirm.token.is_some())
+                    && cx.focus_id() == Some(CONFIRM_ACK)
+                {
+                    let outcome = self.confirm_ack.handle_key(*key);
+                    if matches!(outcome, termrock::widgets::TextInputOutcome::Submitted(_)) {
+                        self.confirm_ack.commit();
+                        cx.set_focus(CONFIRM_CANCEL);
+                    }
+                    return if matches!(outcome, termrock::widgets::TextInputOutcome::Ignored) {
+                        Route::Consumed
+                    } else {
+                        Route::Changed
+                    };
+                }
                 self.confirm_run(cx);
                 Route::Changed
+            }
+            PageEvent::Key(key)
+                if matches!(&self.overlay, Overlay::Confirm(confirm) if confirm.token.is_some())
+                    && key.kind != KeyEventKind::Release
+                    && cx.focus_id() == Some(CONFIRM_ACK) =>
+            {
+                let outcome = self.confirm_ack.handle_key(*key);
+                if matches!(outcome, termrock::widgets::TextInputOutcome::Submitted(_)) {
+                    self.confirm_ack.commit();
+                    cx.set_focus(CONFIRM_CANCEL);
+                }
+                if matches!(outcome, termrock::widgets::TextInputOutcome::Ignored) {
+                    Route::Consumed
+                } else {
+                    Route::Changed
+                }
             }
             PageEvent::Key(key) if matches!(self.overlay, Overlay::Switcher) => {
                 if key.kind == KeyEventKind::Release {
@@ -865,6 +1029,16 @@ impl App {
     }
 
     fn confirm_run(&mut self, cx: &mut PageCtx<'_>) {
+        let authorized = match &self.overlay {
+            Overlay::Confirm(confirm) => confirm
+                .token
+                .as_deref()
+                .is_none_or(|token| self.confirm_ack.value() == token),
+            _ => false,
+        };
+        if !authorized {
+            return;
+        }
         self.overlay = Overlay::None;
         let Some(w) = self.workbench.as_mut() else {
             return;

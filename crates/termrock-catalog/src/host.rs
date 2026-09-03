@@ -231,16 +231,16 @@ impl CatalogSession {
     }
 
     pub fn dispatch(&mut self, event: DemoEvent) -> Result<DemoUpdate, String> {
+        if let DemoEvent::Tick { elapsed_ms } = &event {
+            self.elapsed_ms = *elapsed_ms;
+        }
         let tick = FrameTick::manual(
             termrock::runtime::Instant::now(),
             std::time::Duration::from_millis(self.elapsed_ms),
             std::time::Duration::from_millis(16),
         );
         match event {
-            DemoEvent::Tick { elapsed_ms } => {
-                self.elapsed_ms = elapsed_ms;
-                self.app.on_tick(tick);
-            }
+            DemoEvent::Tick { .. } => self.app.on_tick(tick),
             DemoEvent::Resize { cols, rows } => {
                 self.cols = cols.max(8);
                 self.rows = rows.max(4);
@@ -268,8 +268,11 @@ impl CatalogSession {
                     if ctrl {
                         mods = mods.with_ctrl();
                     }
-                    if alt || meta {
+                    if alt {
                         mods = mods.with_alt();
+                    }
+                    if meta {
+                        mods = mods.with_ctrl();
                     }
                     if shift {
                         mods = mods.with_shift();
@@ -311,22 +314,51 @@ impl CatalogSession {
                     tick,
                 );
             }
-            DemoEvent::Wheel { delta_y, x, y, .. } => {
-                let mk = if delta_y < 0 {
-                    MouseEventKind::ScrollUp
-                } else {
-                    MouseEventKind::ScrollDown
-                };
-                let _ = self.app.handle_event(
-                    Event::Mouse(MouseEvent {
-                        kind: mk,
-                        position: Position { x, y },
-                        modifiers: KeyModifiers::NONE,
-                    }),
-                    tick,
-                );
+            DemoEvent::Wheel {
+                delta_x,
+                delta_y,
+                x,
+                y,
+            } => {
+                if delta_x != 0 {
+                    let kind = if delta_x < 0 {
+                        MouseEventKind::ScrollLeft
+                    } else {
+                        MouseEventKind::ScrollRight
+                    };
+                    let _ = self.app.handle_event(
+                        Event::Mouse(MouseEvent {
+                            kind,
+                            position: Position { x, y },
+                            modifiers: KeyModifiers::NONE,
+                        }),
+                        tick,
+                    );
+                }
+                if delta_y != 0 {
+                    let kind = if delta_y < 0 {
+                        MouseEventKind::ScrollUp
+                    } else {
+                        MouseEventKind::ScrollDown
+                    };
+                    let _ = self.app.handle_event(
+                        Event::Mouse(MouseEvent {
+                            kind,
+                            position: Position { x, y },
+                            modifiers: KeyModifiers::NONE,
+                        }),
+                        tick,
+                    );
+                }
             }
-            DemoEvent::Focus { .. } => {}
+            DemoEvent::Focus { focused } => {
+                let event = if focused {
+                    Event::FocusGained
+                } else {
+                    Event::FocusLost
+                };
+                let _ = self.app.handle_event(event, tick);
+            }
         }
         self.semantic_revision = self.semantic_revision.saturating_add(1);
         Ok(self.update(true))
@@ -358,20 +390,24 @@ impl CatalogSession {
         let cells = snap
             .cells
             .iter()
-            .map(|c| FrameCell {
-                ch: if c.glyph.is_empty() {
-                    " ".into()
-                } else {
-                    c.glyph.clone()
-                },
-                fg: color_to_rgb(c.fg, true),
-                bg: color_to_rgb(c.bg, false),
-                bold: c.modifier.contains(ratatui::style::Modifier::BOLD),
-                dim: c.modifier.contains(ratatui::style::Modifier::DIM),
-                underline: c.modifier.contains(ratatui::style::Modifier::UNDERLINED),
-                reversed: c.modifier.contains(ratatui::style::Modifier::REVERSED),
-                italic: c.modifier.contains(ratatui::style::Modifier::ITALIC),
-                strike: c.modifier.contains(ratatui::style::Modifier::CROSSED_OUT),
+            .map(|c| {
+                let reversed = c.modifier.contains(ratatui::style::Modifier::REVERSED);
+                let mut fg = color_to_rgb(c.fg, true);
+                let mut bg = color_to_rgb(c.bg, false);
+                if reversed {
+                    std::mem::swap(&mut fg, &mut bg);
+                }
+                FrameCell {
+                    ch: c.glyph.clone(),
+                    fg,
+                    bg,
+                    bold: c.modifier.contains(ratatui::style::Modifier::BOLD),
+                    dim: c.modifier.contains(ratatui::style::Modifier::DIM),
+                    underline: c.modifier.contains(ratatui::style::Modifier::UNDERLINED),
+                    reversed,
+                    italic: c.modifier.contains(ratatui::style::Modifier::ITALIC),
+                    strike: c.modifier.contains(ratatui::style::Modifier::CROSSED_OUT),
+                }
             })
             .collect();
         let entry = nav_entries(CatalogProfile::TermRock)

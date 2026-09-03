@@ -7,6 +7,7 @@
 
 use ratatui::Terminal;
 use ratatui::backend::TestBackend;
+use termrock::input::{Event, KeyCode, KeyEvent, KeyModifiers};
 use termrock::runtime::FrameTick;
 use termrock::style::ColorCapability;
 use termrock_catalog::catalog::{CatalogProfile, PageId};
@@ -46,6 +47,18 @@ impl Harness {
     fn draw(&mut self) {
         let t = tick();
         self.term.draw(|f| self.app.render(f, t)).unwrap();
+    }
+
+    fn key(&mut self, code: KeyCode, modifiers: KeyModifiers) {
+        let _ = self
+            .app
+            .handle_event(Event::Key(KeyEvent::new(code, modifiers)), tick());
+        self.draw();
+    }
+
+    fn paste(&mut self, text: &str) {
+        let _ = self.app.handle_event(Event::Paste(text.to_owned()), tick());
+        self.draw();
     }
 
     fn text(&self) -> String {
@@ -220,4 +233,68 @@ fn termrock_profile_shows_extensions_and_identity() {
         "Applications after source prefix:\n{s}"
     );
     assert!(s.contains("Applications"), "{s}");
+}
+
+#[test]
+fn safety_acknowledgement_renders_facts_and_refuses_wrong_token() {
+    let mut h = Harness::connected(120, 40);
+    h.app.seed_active_query("DELETE FROM orders");
+    h.key(KeyCode::Char('r'), KeyModifiers::CONTROL);
+
+    let dialog = h.text();
+    for fact in [
+        "Action",
+        "Target",
+        "Scope",
+        "Risk",
+        "Reversible",
+        "Safe Mode",
+        "DELETE FROM orders",
+        "Type orders to confirm",
+    ] {
+        assert!(
+            dialog.contains(fact),
+            "missing {fact:?} in dialog:\n{dialog}"
+        );
+    }
+    assert!(!h.app.workbench.as_ref().unwrap().running().is_some());
+
+    // Enter starts the acknowledgement editor; it must not activate Execute.
+    h.key(KeyCode::Enter, KeyModifiers::NONE);
+    assert!(h.app.workbench.as_ref().unwrap().running().is_none());
+    h.paste("wrong");
+    h.key(KeyCode::Enter, KeyModifiers::NONE);
+    h.key(KeyCode::Enter, KeyModifiers::NONE);
+    assert!(
+        h.text().contains("Type orders to confirm"),
+        "wrong token must leave the dialog open:\n{}",
+        h.text()
+    );
+    assert!(h.app.workbench.as_ref().unwrap().running().is_none());
+}
+
+#[test]
+fn safety_acknowledgement_exact_token_executes_query() {
+    let mut h = Harness::connected(120, 40);
+    h.app
+        .seed_active_query("UPDATE orders SET status = 'paid' WHERE id = 'x'");
+    h.key(KeyCode::Char('r'), KeyModifiers::CONTROL);
+    assert!(h.text().contains("Type orders to confirm"));
+
+    h.key(KeyCode::Enter, KeyModifiers::NONE);
+    for character in ['o', 'r', 'd', 'e', 'r', 'x'] {
+        h.key(KeyCode::Char(character), KeyModifiers::NONE);
+    }
+    h.key(KeyCode::Backspace, KeyModifiers::NONE);
+    h.key(KeyCode::Char('s'), KeyModifiers::NONE);
+    h.key(KeyCode::Enter, KeyModifiers::NONE);
+    h.key(KeyCode::Right, KeyModifiers::NONE);
+    h.key(KeyCode::Enter, KeyModifiers::NONE);
+
+    assert!(
+        h.app.workbench.as_ref().unwrap().running().is_some(),
+        "exact target token must start the query:\n{}",
+        h.text()
+    );
+    assert!(!h.text().contains("Type orders to confirm"));
 }

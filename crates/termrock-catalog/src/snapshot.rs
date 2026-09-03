@@ -82,7 +82,7 @@ impl Snapshot {
     pub fn to_ansi(&self) -> String {
         use termrock::style::color_to_rgb;
         let mut out = String::new();
-        let mut prev: Option<([u8; 3], [u8; 3], bool, bool, bool, bool, bool)> = None;
+        let mut prev: Option<([u8; 3], [u8; 3], bool, bool, bool, bool, bool, bool)> = None;
         for y in 0..self.rows {
             for x in 0..self.cols {
                 let i = usize::from(y) * usize::from(self.cols) + usize::from(x);
@@ -97,7 +97,8 @@ impl Snapshot {
                 let ul = c.modifier.contains(Modifier::UNDERLINED);
                 let italic = c.modifier.contains(Modifier::ITALIC);
                 let strike = c.modifier.contains(Modifier::CROSSED_OUT);
-                let style = (fg, bg, bold, dim, ul, italic, strike);
+                let reverse = c.modifier.contains(Modifier::REVERSED);
+                let style = (fg, bg, bold, dim, ul, italic, strike, reverse);
                 if prev != Some(style) {
                     out.push_str("\u{1b}[0m");
                     out.push_str(&format!("\u{1b}[38;2;{};{};{}m", fg[0], fg[1], fg[2]));
@@ -116,6 +117,9 @@ impl Snapshot {
                     }
                     if strike {
                         out.push_str("\u{1b}[9m");
+                    }
+                    if reverse {
+                        out.push_str("\u{1b}[7m");
                     }
                     prev = Some(style);
                 }
@@ -145,6 +149,8 @@ impl Snapshot {
                 };
                 let fg = color_to_rgb(c.fg, true);
                 let bg = color_to_rgb(c.bg, false);
+                let reverse = c.modifier.contains(Modifier::REVERSED);
+                let (fg, bg) = if reverse { (bg, fg) } else { (fg, bg) };
                 let glyph = if c.glyph.is_empty() {
                     " "
                 } else {
@@ -167,11 +173,14 @@ impl Snapshot {
                 if c.modifier.contains(Modifier::DIM) {
                     css.push_str(";opacity:0.6");
                 }
-                if c.modifier.contains(Modifier::UNDERLINED) {
-                    css.push_str(";text-decoration:underline");
-                }
-                if c.modifier.contains(Modifier::CROSSED_OUT) {
-                    css.push_str(";text-decoration:line-through");
+                match (
+                    c.modifier.contains(Modifier::UNDERLINED),
+                    c.modifier.contains(Modifier::CROSSED_OUT),
+                ) {
+                    (true, true) => css.push_str(";text-decoration:underline line-through"),
+                    (true, false) => css.push_str(";text-decoration:underline"),
+                    (false, true) => css.push_str(";text-decoration:line-through"),
+                    (false, false) => {}
                 }
                 body.push_str(&format!("<span style=\"{css}\">{escaped}</span>"));
             }
@@ -193,5 +202,81 @@ impl Snapshot {
             .collect::<Vec<_>>()
             .join("\n")
             + "\n"
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Cell, Snapshot};
+    use ratatui::layout::Position;
+    use ratatui::style::{Color, Modifier};
+
+    fn styled_snapshot(modifier: Modifier, cursor: Option<Position>) -> Snapshot {
+        Snapshot {
+            cols: 1,
+            rows: 1,
+            cells: vec![Cell {
+                glyph: "A".to_owned(),
+                fg: Color::Rgb(0x12, 0x34, 0x56),
+                bg: Color::Rgb(0xa1, 0xb2, 0xc3),
+                modifier,
+            }],
+            cursor,
+            cursor_visible: cursor.is_some(),
+        }
+    }
+
+    #[test]
+    fn ansi_serializes_reverse_and_all_source_modifiers() {
+        let modifier = Modifier::REVERSED
+            | Modifier::BOLD
+            | Modifier::DIM
+            | Modifier::UNDERLINED
+            | Modifier::ITALIC
+            | Modifier::CROSSED_OUT;
+        let ansi = styled_snapshot(modifier, None).to_ansi();
+
+        assert!(ansi.contains("\u{1b}[38;2;18;52;86m"));
+        assert!(ansi.contains("\u{1b}[48;2;161;178;195m"));
+        for sgr in ["[1m", "[2m", "[3m", "[4m", "[9m", "[7m"] {
+            assert!(ansi.contains(&format!("\u{1b}{sgr}")), "missing SGR {sgr}");
+        }
+        assert!(ansi.ends_with("A\u{1b}[0m\n"));
+    }
+
+    #[test]
+    fn html_resolves_reverse_and_keeps_both_decorations() {
+        let modifier = Modifier::REVERSED
+            | Modifier::BOLD
+            | Modifier::DIM
+            | Modifier::UNDERLINED
+            | Modifier::ITALIC
+            | Modifier::CROSSED_OUT;
+        let html = styled_snapshot(modifier, None).to_html();
+
+        assert!(html.contains("color:#a1b2c3;background:#123456"));
+        assert!(html.contains("font-weight:700"));
+        assert!(html.contains("font-style:italic"));
+        assert!(html.contains("opacity:0.6"));
+        assert!(html.contains("text-decoration:underline line-through"));
+    }
+
+    #[test]
+    fn ansi_and_html_dimensions_do_not_depend_on_cursor() {
+        let without_cursor = styled_snapshot(Modifier::empty(), None);
+        let with_cursor = styled_snapshot(Modifier::empty(), Some(Position::new(9, 7)));
+
+        assert_eq!(without_cursor.to_ansi(), with_cursor.to_ansi());
+        assert_eq!(without_cursor.to_html(), with_cursor.to_html());
+    }
+
+    #[test]
+    fn non_reversed_ansi_output_remains_unchanged() {
+        let snapshot = styled_snapshot(Modifier::BOLD, None);
+
+        assert_eq!(
+            snapshot.to_ansi(),
+            "\u{1b}[0m\u{1b}[38;2;18;52;86m\u{1b}[48;2;161;178;195m\u{1b}[1mA\u{1b}[0m\n"
+        );
     }
 }
