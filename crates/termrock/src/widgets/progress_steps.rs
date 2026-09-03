@@ -505,6 +505,15 @@ impl ProgressStepsState {
             return ProgressStepsOutcome::Ignored;
         }
 
+        if !key.is_press()
+            && matches!(
+                key.code,
+                KeyCode::Esc | KeyCode::Enter | KeyCode::Char('r' | 'R')
+            )
+        {
+            return ProgressStepsOutcome::Ignored;
+        }
+
         if matches!(key.code, KeyCode::Esc) && key.modifiers.is_empty() {
             self.focused = false;
             return ProgressStepsOutcome::Blurred;
@@ -939,7 +948,8 @@ pub fn example_agent_plan_steps() -> Vec<ProgressStep> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::widgets::tests::click;
+    use crate::input::KeyEventKind;
+    use crate::widgets::tests::{click, key_with_kind};
 
     #[test]
     fn status_marks_are_non_color() {
@@ -1035,6 +1045,24 @@ mod tests {
             state.handle_key(&steps, KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
             ProgressStepsOutcome::Blurred
         ));
+    }
+
+    #[test]
+    fn repeated_lifecycle_actions_are_ignored() {
+        let steps = example_agent_plan_steps();
+        for code in [KeyCode::Esc, KeyCode::Enter, KeyCode::Char('r')] {
+            for kind in [KeyEventKind::Repeat, KeyEventKind::Release] {
+                let mut state = ProgressStepsState::interactive();
+                state.set_cursor(Some("build".into()));
+                assert_eq!(
+                    state.handle_key(&steps, key_with_kind(code, KeyModifiers::NONE, kind)),
+                    ProgressStepsOutcome::Ignored,
+                    "{kind:?} {code:?} must not repeat a lifecycle action"
+                );
+                assert!(state.focused);
+                assert_eq!(state.cursor(), Some("build"));
+            }
+        }
     }
 
     #[test]

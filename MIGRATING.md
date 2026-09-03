@@ -439,6 +439,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0459 | `v0.14.0` | [MessageThread physical one-shot actions](migrations/0459-v0.14.0-message-thread-one-shot-actions.md) |
 | 0460 | `v0.14.0` | [PreviewCard physical one-shot actions](migrations/0460-v0.14.0-preview-card-one-shot-actions.md) |
 | 0461 | `v0.14.0` | [Sidebar physical one-shot actions](migrations/0461-v0.14.0-sidebar-one-shot-actions.md) |
+| 0462 | `v0.14.0` | [ProgressSteps physical one-shot actions](migrations/0462-v0.14.0-progress-steps-one-shot-actions.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical
