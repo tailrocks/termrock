@@ -145,30 +145,6 @@ pub fn place_popover(bounds: Rect, anchor: Rect, size: OverlaySize) -> Rect {
     )
 }
 
-/// Place using modality-specific policy.
-#[must_use]
-pub fn place_popover_with_modality(
-    bounds: Rect,
-    anchor: Option<Rect>,
-    size: OverlaySize,
-    modality: PopoverModality,
-    presentation: PopoverPresentation,
-) -> Rect {
-    if bounds.is_empty() {
-        return Rect::default();
-    }
-    match presentation {
-        PopoverPresentation::Fullscreen => bounds,
-        PopoverPresentation::Drawer => place_overlay(
-            bounds,
-            None,
-            size,
-            OverlayPolicy::for_kind(OverlayKind::Drawer),
-        ),
-        PopoverPresentation::Anchored => place_overlay(bounds, anchor, size, modality.policy()),
-    }
-}
-
 /// Opens an anchored non-modal popover on the stack (default).
 pub fn open_popover_overlay<FocusId: Clone>(
     stack: &mut OverlayStack<FocusId>,

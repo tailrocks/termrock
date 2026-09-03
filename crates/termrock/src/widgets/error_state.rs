@@ -15,7 +15,7 @@
 //! Prefer [`ErrorState`] for hard failures; [`super::EmptyState`] for zero-data.
 //! For compiler/build diagnostics, project into [`super::Diagnostic`] /
 //! [`super::CodeFrame`] and feed plain text via
-//! [`super::format_diagnostics_plain`] into recovery copy-diagnostics.
+//! diagnostics text into recovery copy-diagnostics.
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
 
 use crate::{

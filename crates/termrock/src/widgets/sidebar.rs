@@ -1549,8 +1549,6 @@ impl<Id: Clone + PartialEq> StatefulWidget for Sidebar<'_, Id> {
 
 // ── Example projectors (Studio stories) ─────────────────────────────────────
 
-// `example_database_nav` / `example_agent_workbench_nav` live in termrock::patterns.
-
 /// Settings nav sample.
 #[must_use]
 pub fn example_settings_nav() -> Vec<NavItem<&'static str>> {

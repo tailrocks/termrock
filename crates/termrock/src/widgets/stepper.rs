@@ -1259,16 +1259,6 @@ impl StatefulWidget for Stepper<'_> {
 
 // ── Helpers for FormWizard / plans ──────────────────────────────────────────
 
-/// Project FormWizard-style steps into [`StepItem`] (identity copy).
-#[must_use]
-pub fn step_items_from_titles(titles: &[&str]) -> Vec<StepItem> {
-    titles
-        .iter()
-        .enumerate()
-        .map(|(i, t)| StepItem::new(format!("step-{i}"), *t))
-        .collect()
-}
-
 /// Sample onboarding steps.
 #[must_use]
 pub fn example_onboarding_steps() -> Vec<StepItem> {

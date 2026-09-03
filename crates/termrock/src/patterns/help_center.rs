@@ -1142,18 +1142,6 @@ impl HelpCenterState {
 /// Search strip height.
 pub const HELP_CENTER_SEARCH_HEIGHT: u16 = 3;
 
-/// Width-derived layout.
-#[must_use]
-pub fn help_center_layout(area: Rect, state: &WorkspaceState) -> Vec<PaneGeom> {
-    help_center_layout_density(
-        area,
-        state,
-        HelpCenterDensity::for_width(area.width),
-        HelpCenterMode::Full,
-        true,
-    )
-}
-
 /// Explicit density + mode layout.
 #[must_use]
 pub fn help_center_layout_density(
@@ -1628,12 +1616,6 @@ pub fn example_help_center_entries() -> Vec<HelpEntry> {
     example_help_entries()
 }
 
-/// Commands derived from help entries (same chords).
-#[must_use]
-pub fn example_help_center_commands() -> Vec<CommandEntry<String>> {
-    command_entries_from_help(&example_help_entries())
-}
-
 /// Sample doctor report for projection (real build_doctor_report over a pure
 /// fixture detection — never the process environment, so renders are portable).
 #[must_use]
@@ -1669,18 +1651,6 @@ pub fn burst_help_topics(n: usize) -> Vec<HelpTopic> {
             .anchors([format!("a-{i}")])
         })
         .collect()
-}
-
-/// Seed compact overlay mode.
-pub fn seed_compact_mode(state: &mut HelpCenterState) {
-    let _ = state.set_mode(HelpCenterMode::Compact);
-}
-
-/// Seed diagnostics-visible story.
-pub fn seed_diagnostics_state(state: &mut HelpCenterState) {
-    state.show_diagnostics = true;
-    state.mode = HelpCenterMode::Full;
-    state.context_label = Some("focus: editor".into());
 }
 
 // ── Bench ───────────────────────────────────────────────────────────────────

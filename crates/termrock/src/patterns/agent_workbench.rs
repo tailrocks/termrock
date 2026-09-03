@@ -534,12 +534,6 @@ impl AgentWorkbenchState {
 
 // ── Layout ──────────────────────────────────────────────────────────────────
 
-/// Resolves workbench geometry for the current area and density.
-#[must_use]
-pub fn agent_workbench_layout(area: Rect, state: &WorkspaceState) -> Vec<PaneGeom> {
-    agent_workbench_layout_density(area, state, WorkbenchDensity::for_width(area.width))
-}
-
 /// Layout with explicit density (stories / tests).
 #[must_use]
 pub fn agent_workbench_layout_density(
@@ -779,14 +773,6 @@ pub fn sync_workbench_scene(
         }
     }
     scene.reconcile();
-}
-
-/// Registers workbench panes (prefer [`sync_workbench_scene`] with owned state).
-pub fn register_workbench_scene(
-    scene: &mut InteractionScene<&'static str, &'static str, ()>,
-    panes: &[PaneGeom],
-) {
-    sync_workbench_scene(scene, panes, WorkbenchModals::default());
 }
 
 // ── Surfaces ────────────────────────────────────────────────────────────────
@@ -1655,26 +1641,4 @@ mod tests {
             assert!(r.width >= 1 && r.height >= 1);
         }
     }
-}
-
-/// Agent workbench nav sample.
-#[must_use]
-pub fn example_agent_workbench_nav() -> Vec<crate::widgets::NavItem<&'static str>> {
-    use crate::widgets::{NavItem, NavItemStatus};
-
-    vec![
-        NavItem::new("chat", "Chat").icon("💬").command("wb.chat"),
-        NavItem::new("plan", "Plan")
-            .icon("📋")
-            .status(NavItemStatus::Running)
-            .command("wb.plan"),
-        NavItem::new("files", "Files")
-            .icon("📁")
-            .command("wb.files"),
-        NavItem::separator("sep1"),
-        NavItem::new("sessions", "Sessions")
-            .badge("2")
-            .command("wb.sessions"),
-        NavItem::new("settings", "Settings").command("wb.settings"),
-    ]
 }

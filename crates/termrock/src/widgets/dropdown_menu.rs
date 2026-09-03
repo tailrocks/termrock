@@ -238,20 +238,6 @@ pub fn measure_menu_panel<Id>(items: &[MenuNode<Id>]) -> OverlaySize {
 
 // ── Overlay helpers ─────────────────────────────────────────────────────────
 
-/// Place dropdown below/start-aligned to anchor.
-#[must_use]
-pub fn place_dropdown_menu(bounds: Rect, anchor: Rect, size: OverlaySize) -> Rect {
-    if bounds.is_empty() || size.width == 0 || size.height == 0 {
-        return Rect::default();
-    }
-    place_overlay(
-        bounds,
-        Some(anchor),
-        size,
-        OverlayPolicy::for_kind(OverlayKind::Menu),
-    )
-}
-
 /// Place context menu at origin (pointer / context key).
 #[must_use]
 pub fn place_context_menu(bounds: Rect, origin: Rect, size: OverlaySize) -> Rect {

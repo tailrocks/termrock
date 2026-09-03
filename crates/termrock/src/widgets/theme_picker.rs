@@ -7,7 +7,7 @@ use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
 use crate::{
     input::{KeyEvent, MouseButton, MouseEvent, MouseEventKind},
     interaction::{EventResult, NavigationMove, OverlayRequest, UiIntent, default_list_intent},
-    style::{DesignSystem, ListRowVisualState, RolePalette},
+    style::{DesignSystem, ListRowVisualState},
     text::take_display_cols,
     widgets::{Panel, PanelChrome, PanelVariant},
 };
@@ -29,13 +29,6 @@ pub const BUILTIN_THEME_PRESETS: &[ThemePreset] = &[ThemePreset {
     label: "Junie",
     requires_truecolor: true,
 }];
-
-/// Resolves a built-in theme by preset id. There are no aliases: only the
-/// canonical id `junie` resolves; anything else returns `None`.
-#[must_use]
-pub fn theme_from_preset_id(id: &str) -> Option<RolePalette> {
-    system_from_preset_id(id).map(|system| system.palette)
-}
 
 /// Resolves a full [`DesignSystem`] for a preset id. There are no aliases:
 /// only the canonical id `junie` resolves; anything else returns `None`.

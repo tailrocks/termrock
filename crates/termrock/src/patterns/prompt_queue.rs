@@ -49,23 +49,6 @@ pub const PROMPT_QUEUE_SUMMARY_PREVIEW: usize = 28;
 // Domain model lives in widgets (PromptComposer must not depend on patterns).
 pub use crate::widgets::{AgentBusyState, PromptQueueItem, PromptQueueRef, PromptQueueStatus};
 
-/// Project a composer FIFO + busy flags into [`PromptQueueState`] for the management surface.
-#[must_use]
-pub fn project_prompt_queue_from_items(
-    items: impl IntoIterator<Item = PromptQueueItem>,
-    agent_busy: bool,
-    composer_busy: bool,
-) -> PromptQueueState {
-    let mut st = PromptQueueState::new();
-    st.set_items(items.into_iter().collect());
-    st.set_agent(if agent_busy || composer_busy {
-        AgentBusyState::Busy
-    } else {
-        AgentBusyState::Idle
-    });
-    st
-}
-
 // ── Presentation ────────────────────────────────────────────────────────────
 
 /// Compact strip vs expanded manager.
@@ -951,15 +934,6 @@ pub fn queue_item_from_composer(
     PromptQueueItem::new(id, text)
         .attachments(attachments)
         .mentions(mentions)
-}
-
-/// Count pending for composer status chrome.
-#[must_use]
-pub fn pending_queue_len(items: &[PromptQueueItem]) -> usize {
-    items
-        .iter()
-        .filter(|i| i.status.counts_as_pending())
-        .count()
 }
 
 // ── Examples ────────────────────────────────────────────────────────────────

@@ -685,19 +685,6 @@ impl BusyBoundary {
 
 // ── Examples / recipes ──────────────────────────────────────────────────────
 
-/// Non-blocking pane busy (short refresh).
-#[must_use]
-pub fn example_busy_non_blocking(system: &DesignSystem) -> (LoadingOverlay<'_>, BusyBoundaryState) {
-    let mut st = BusyBoundaryState::new();
-    let _ = st.begin(BusyMode::NonBlocking, "Refreshing");
-    st.set_elapsed_ms(200);
-    st.set_expected_ms(Some(100)); // short op
-    (
-        LoadingOverlay::new("Refreshing", system).mode(BusyMode::NonBlocking),
-        st,
-    )
-}
-
 /// Blocking pane load.
 #[must_use]
 pub fn example_busy_blocking(system: &DesignSystem) -> (LoadingOverlay<'_>, BusyBoundaryState) {

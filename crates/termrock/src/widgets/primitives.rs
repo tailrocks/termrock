@@ -10,7 +10,7 @@ use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::State
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind},
-    interaction::{HitRegion, SemanticNode, SemanticRole, SemanticScene, SemanticState},
+    interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
     style::{ButtonRecipeVariant, ControlState, DesignSystem, Glyph, Role, VisualState},
     text::{display_cols, take_display_cols},
 };
@@ -1070,7 +1070,7 @@ impl IconButtonState {
         self.pressed = on;
     }
 
-    /// Compat: region = hit (for [`button_hit`] / older hosts).
+    /// Compat: region = hit (older hosts mirror [`ActivationState`]).
     #[must_use]
     pub const fn region(&self) -> Option<Rect> {
         self.hit
@@ -1296,12 +1296,6 @@ pub fn toolbar_icon_action<'a, Id>(
 // Separator lives in `widgets/separator.rs` (variants, labels, ASCII glyphs).
 
 // Spinner: `widgets/spinner.rs`.
-
-/// Hit helper for button registration.
-#[must_use]
-pub fn button_hit<Id: Clone>(id: Id, state: &ButtonState) -> Option<HitRegion<Id>> {
-    state.region.map(|area| HitRegion { id, area })
-}
 
 #[cfg(test)]
 mod tests {

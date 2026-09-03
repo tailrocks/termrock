@@ -957,40 +957,6 @@ pub fn substring_ranges(source: &str, query: &str) -> MatchRanges {
     ranges.prepare(source)
 }
 
-/// Case-insensitive substring matches (Unicode-aware via per-char `char::to_lowercase`).
-#[must_use]
-pub fn substring_ranges_ignore_ascii_case(source: &str, query: &str) -> MatchRanges {
-    if query.is_empty() {
-        return MatchRanges::new();
-    }
-    let q: String = query.chars().flat_map(char::to_lowercase).collect();
-    let lower: String = source.chars().flat_map(char::to_lowercase).collect();
-    // Fold once, then map each lowercased byte offset back to its source byte
-    // offset so match ranges address the original string exactly.
-    let mut map = Vec::with_capacity(lower.len() + 1);
-    let mut si = 0usize;
-    for c in source.chars() {
-        for _ in c.to_lowercase() {
-            map.push(si);
-        }
-        si += c.len_utf8();
-    }
-    map.push(source.len());
-    let mut ranges = MatchRanges::new();
-    let mut start = 0usize;
-    while let Some(rel) = lower[start..].find(&q) {
-        let abs_l = start + rel;
-        let abs = map[abs_l];
-        let end = map[abs_l + q.len()];
-        ranges.push(MatchRange::new(abs, end).snap_graphemes(source));
-        start = abs_l + q.len().max(1);
-        if start >= lower.len() {
-            break;
-        }
-    }
-    ranges.prepare(source)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

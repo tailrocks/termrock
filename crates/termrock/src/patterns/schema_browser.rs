@@ -589,18 +589,6 @@ pub fn schema_to_quick_open_items<Id: Clone>(
         .collect()
 }
 
-/// Collect expanded branch ids from projection (host may merge into preserve set).
-#[must_use]
-pub fn expanded_ids_from_entries<Id: Clone + Ord>(
-    entries: &[SchemaBrowserEntry<'_, Id>],
-) -> BTreeSet<Id> {
-    entries
-        .iter()
-        .filter(|e| e.expanded && e.branch)
-        .map(|e| e.id.clone())
-        .collect()
-}
-
 /// Apply preserved expansion to a mutable host list (ids present become expanded).
 pub fn apply_expanded_set<Id: Clone + PartialEq + Ord>(
     entries: &mut [SchemaBrowserEntry<'_, Id>],

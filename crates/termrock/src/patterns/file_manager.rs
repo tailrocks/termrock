@@ -1318,17 +1318,6 @@ pub const FILE_MANAGER_BREADCRUMBS_HEIGHT: u16 = 1;
 /// Search strip height (panel + input).
 pub const FILE_MANAGER_SEARCH_HEIGHT: u16 = 3;
 
-/// Width-derived layout.
-#[must_use]
-pub fn file_manager_layout(area: Rect, state: &WorkspaceState) -> Vec<PaneGeom> {
-    file_manager_layout_density(
-        area,
-        state,
-        FileManagerDensity::for_width(area.width),
-        false,
-    )
-}
-
 /// Explicit density layout.
 #[must_use]
 pub fn file_manager_layout_density(

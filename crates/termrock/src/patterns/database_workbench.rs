@@ -1201,17 +1201,6 @@ impl DatabaseWorkbenchState {
 
 // ── Layout ──────────────────────────────────────────────────────────────────
 
-/// Layout with width-derived density.
-#[must_use]
-pub fn database_workbench_layout(area: Rect, state: &WorkspaceState) -> Vec<PaneGeom> {
-    database_workbench_layout_density(
-        area,
-        state,
-        DatabaseWorkbenchDensity::for_width(area.width),
-        DatabaseWorkbenchPanes::default(),
-    )
-}
-
 /// Which consult-panes share the default frame.
 ///
 /// Everything here is off by default: the frame states the nav, the work and
@@ -1756,12 +1745,6 @@ pub fn example_db_history() -> Vec<HistoryEntry<&'static str>> {
             .recency(100),
     );
     h
-}
-
-/// Connected example connection list for stories.
-#[must_use]
-pub fn example_workbench_connections() -> Vec<ConnectionEntry> {
-    example_connections()
 }
 
 /// Disconnected-only catalog for gate stories.
@@ -2451,36 +2434,4 @@ mod tests {
             assert!(!t.id().is_empty());
         }
     }
-}
-
-/// Database explorer sample projection.
-#[must_use]
-pub fn example_database_nav() -> Vec<crate::widgets::NavItem<&'static str>> {
-    use crate::widgets::{NavItem, NavItemStatus};
-
-    vec![
-        NavItem::section("conn", "Connections").icon("⬡"),
-        NavItem::new("prod", "production")
-            .depth(1)
-            .icon("●")
-            .status(NavItemStatus::Success)
-            .command("nav.db.prod"),
-        NavItem::new("staging", "staging")
-            .depth(1)
-            .icon("○")
-            .command("nav.db.staging"),
-        NavItem::section("schema", "Schema"),
-        NavItem::group("tables", "Tables")
-            .depth(1)
-            .expanded(true)
-            .has_children(true),
-        NavItem::new("users", "users")
-            .depth(2)
-            .badge("12")
-            .command("nav.db.users"),
-        NavItem::new("orders", "orders")
-            .depth(2)
-            .command("nav.db.orders"),
-        NavItem::new("disabled", "legacy").depth(2).enabled(false),
-    ]
 }

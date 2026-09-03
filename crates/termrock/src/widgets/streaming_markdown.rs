@@ -850,21 +850,6 @@ impl<'a> StreamingMarkdown<'a> {
 
 // ── Public helpers ──────────────────────────────────────────────────────────
 
-/// Re-export stable boundary for tests.
-#[must_use]
-pub fn streaming_stable_prefix_len(committed: &str, tail: &str) -> usize {
-    let mut c = committed.to_string();
-    let mut t = tail.to_string();
-    while let Some(split) = find_stable_boundary(&c, &t) {
-        if split == 0 || split > t.len() {
-            break;
-        }
-        c.push_str(&t[..split]);
-        t = t[split..].to_string();
-    }
-    c.len()
-}
-
 /// Whether open fence is present.
 #[must_use]
 pub fn has_open_fence(text: &str) -> bool {

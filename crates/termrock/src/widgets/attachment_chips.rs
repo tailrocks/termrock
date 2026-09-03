@@ -18,7 +18,6 @@
 //! **Buckets**
 //! - Domain model: [`AttachmentItem`] / [`PastePayload`] (host projects)
 //! - Paint: [`AttachmentChip`] / [`PasteChip`] (compose [`Tag`])
-//! - Strip: [`attachment_token_items`] + [`TokenStrip`]
 //! - Bridges: convert to/from composer chips in `prompt_composer` (avoids cycle)
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
@@ -617,45 +616,6 @@ pub fn paste_preview_from(body: &str) -> String {
 }
 
 // ── TokenStrip projection ───────────────────────────────────────────────────
-
-/// Build [`TokenItem`] rows for strip paint (ids borrowed from items).
-///
-/// `label_bufs` must outlive returned items (same length as attachments+pastes).
-pub fn attachment_token_items<'a>(
-    attachments: &'a [AttachmentItem],
-    pastes: &'a [PastePayload],
-    label_bufs: &'a [String],
-) -> Vec<TokenItem<'a, &'a str>> {
-    let mut out = Vec::with_capacity(attachments.len() + pastes.len());
-    let mut i = 0usize;
-    for a in attachments {
-        let label = label_bufs
-            .get(i)
-            .map(String::as_str)
-            .unwrap_or(a.name.as_str());
-        i = i.saturating_add(1);
-        out.push(
-            TokenItem::tag(a.id.as_str(), label)
-                .removable(a.removable)
-                .status(a.status.token_status())
-                .disabled(false),
-        );
-    }
-    for p in pastes {
-        let label = label_bufs
-            .get(i)
-            .map(String::as_str)
-            .unwrap_or(p.preview.as_str());
-        i = i.saturating_add(1);
-        out.push(
-            TokenItem::tag(p.id.as_str(), label)
-                .removable(p.removable)
-                .status(p.status.token_status())
-                .disabled(false),
-        );
-    }
-    out
-}
 
 /// Fill display labels for strip (ascii).
 pub fn fill_attachment_strip_labels(

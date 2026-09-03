@@ -972,17 +972,6 @@ fn build_error_state_view<'a>(
 
 // ── Layout ──────────────────────────────────────────────────────────────────
 
-/// Width-derived layout.
-#[must_use]
-pub fn error_recovery_layout(area: Rect, state: &WorkspaceState) -> Vec<PaneGeom> {
-    error_recovery_layout_density(
-        area,
-        state,
-        ErrorRecoveryDensity::for_width(area.width),
-        ErrorRecoveryMode::Full,
-    )
-}
-
 /// Explicit density + mode.
 #[must_use]
 pub fn error_recovery_layout_density(
@@ -1297,26 +1286,6 @@ pub fn example_recovery_snapshot() -> CrashReportSnapshot {
         capabilities_text: String::new(),
         class: FailureClass::Network,
     }
-}
-
-/// Terminal restore failure fixture.
-#[must_use]
-pub fn example_terminal_restore_failed_snapshot() -> CrashReportSnapshot {
-    let mut s = example_crash_snapshot_with_secrets();
-    s.class = FailureClass::TerminalRestoreFailed;
-    s.summary = "Terminal state may be inconsistent".into();
-    s
-}
-
-/// Seed terminal restore failed chrome.
-pub fn seed_terminal_restore_failed(state: &mut ErrorRecoveryState) {
-    state.terminal_restore_failed = true;
-    state.mode = ErrorRecoveryMode::Full;
-}
-
-/// Seed partial init.
-pub fn seed_partial_init(state: &mut ErrorRecoveryState) {
-    state.partial_init = true;
 }
 
 /// Seed inline fallback.

@@ -940,19 +940,6 @@ pub fn filter_settings_nav<'a, SectionId: Clone>(
         .collect()
 }
 
-/// Filter fieldsets by query (legend, description, any field hit).
-#[must_use]
-pub fn filter_settings_fieldsets<'a>(
-    fieldsets: &'a [Fieldset<'a, &'static str>],
-    query: &str,
-) -> Vec<&'a Fieldset<'a, &'static str>> {
-    let q = query.trim().to_ascii_lowercase();
-    fieldsets
-        .iter()
-        .filter(|fs| settings_fieldset_matches(fs, &q))
-        .collect()
-}
-
 /// Whether query matches any field in fieldsets.
 #[must_use]
 pub fn settings_query_matches(fieldsets: &[Fieldset<'_, &'static str>], query: &str) -> bool {

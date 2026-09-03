@@ -1258,21 +1258,6 @@ pub fn approval_items_to_activity_models(items: &[ApprovalItem]) -> Vec<Activity
         .collect()
 }
 
-/// Count badge for StatusBar / header.
-#[must_use]
-pub fn approval_queue_badge(items: &[ApprovalItem]) -> String {
-    let n = items.len();
-    if n == 0 {
-        return String::new();
-    }
-    let hi = items.iter().filter(|i| i.risk.is_destructive()).count();
-    if hi > 0 {
-        format!("approvals:{n} high:{hi}")
-    } else {
-        format!("approvals:{n}")
-    }
-}
-
 // ── Examples ────────────────────────────────────────────────────────────────
 
 /// Demo mixed decision queue (protocol perms first).

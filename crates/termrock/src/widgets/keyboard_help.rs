@@ -20,9 +20,9 @@ use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::State
 use crate::{
     input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind},
     interaction::{
-        CollectionItem, CollectionState, NavigationMove, OverlayKind, OverlayOutcome,
-        OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, RovingOrientation, SemanticNode,
-        SemanticRole, SemanticScene, SemanticState, UiIntent, place_overlay,
+        CollectionItem, CollectionState, NavigationMove, OverlayOutcome, OverlaySize, OverlaySpec,
+        OverlayStack, RovingOrientation, SemanticNode, SemanticRole, SemanticScene, SemanticState,
+        UiIntent,
     },
     keymap::{KeyBinding, Keymap, Visibility},
     style::{DesignSystem, Role},
@@ -73,20 +73,6 @@ impl From<KeyboardHelpSize> for OverlaySize {
             max_height: 0,
         }
     }
-}
-
-/// Place centered help modal (may fullscreen-promote via CommandPalette policy).
-#[must_use]
-pub fn place_keyboard_help(bounds: Rect, preferred: KeyboardHelpSize) -> Rect {
-    if bounds.is_empty() {
-        return Rect::default();
-    }
-    place_overlay(
-        bounds,
-        None,
-        OverlaySize::from(preferred),
-        OverlayPolicy::for_kind(OverlayKind::CommandPalette),
-    )
 }
 
 /// Open modal help on the stack.
@@ -410,48 +396,6 @@ pub fn help_entries_from_overlays<FocusId>(stack: &OverlayStack<FocusId>) -> Vec
     out
 }
 
-/// Semantic scene actions / help lines (focusable nodes).
-#[must_use]
-pub fn help_entries_from_semantics<Id, Action>(
-    scene: &SemanticScene<Id, Action>,
-    zone: Option<&str>,
-) -> Vec<HelpEntry>
-where
-    Id: Clone + std::fmt::Display,
-    Action: Clone + std::fmt::Debug,
-{
-    let mut out = Vec::new();
-    for (i, node) in scene.nodes().iter().enumerate() {
-        if node.hidden || node.disabled || !node.focusable {
-            continue;
-        }
-        let label = node.label.clone().unwrap_or_else(|| node.id.to_string());
-        if node.actions.is_empty() {
-            out.push(
-                HelpEntry::new(format!("sem-{i}"), "Focus", "·", label)
-                    .priority(80)
-                    .source(HelpEntrySource::Semantic)
-                    .zone(zone.unwrap_or("focus")),
-            );
-        } else {
-            for (j, act) in node.actions.iter().enumerate() {
-                out.push(
-                    HelpEntry::new(
-                        format!("sem-{i}-{j}"),
-                        "Actions",
-                        "·",
-                        format!("{label}: {act:?}"),
-                    )
-                    .priority(40)
-                    .source(HelpEntrySource::Semantic)
-                    .zone(zone.unwrap_or("focus")),
-                );
-            }
-        }
-    }
-    out
-}
-
 /// Merge multiple sources; stable sort by category then priority then action.
 #[must_use]
 pub fn merge_help_entries(parts: impl IntoIterator<Item = Vec<HelpEntry>>) -> Vec<HelpEntry> {
@@ -502,25 +446,6 @@ pub fn contract_help_entries<'a>(entries: &[&'a HelpEntry], max: usize) -> Vec<&
     v.sort_by_key(|e| e.priority);
     v.truncate(max);
     v
-}
-
-/// Convert help entries to [`Hint`] for [`HintBar`] footer paint (borrowed chords).
-///
-/// Caller must keep `entries` alive for the same frame as the returned `Hint`s
-/// — this helper clones into owned strings via a side buffer pattern; prefer
-/// [`KeyboardHelp::paint`] which owns the conversion.
-#[must_use]
-pub fn help_entries_to_hints<'a>(
-    entries: &'a [HelpEntry],
-    max: usize,
-) -> Vec<(&'a str, &'a str, u8)> {
-    let mut sorted: Vec<_> = entries.iter().collect();
-    sorted.sort_by_key(|e| e.priority);
-    sorted
-        .into_iter()
-        .take(max)
-        .map(|e| (e.chord.as_str(), e.action.as_str(), e.priority))
-        .collect()
 }
 
 // ── Outcomes / state ────────────────────────────────────────────────────────

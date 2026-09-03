@@ -148,44 +148,6 @@ impl ComposerChip {
     }
 }
 
-/// Project attachment into composer chip list model.
-#[must_use]
-pub fn attachment_to_composer_chip(item: &crate::widgets::AttachmentItem) -> ComposerChip {
-    use crate::widgets::AttachmentType;
-    let kind = match item.kind {
-        AttachmentType::File => ChipKind::File,
-        AttachmentType::Image => ChipKind::Media,
-        AttachmentType::Code => ChipKind::Mention,
-        AttachmentType::Url | AttachmentType::Document | AttachmentType::Other => ChipKind::Other,
-    };
-    ComposerChip {
-        id: item.id.clone(),
-        kind,
-        label: item.name.clone(),
-        meta: item.meta.clone().or_else(|| {
-            item.bytes.map(|b| {
-                if b < 1024 {
-                    format!("{b} B")
-                } else {
-                    format!("{} KB", b / 1024)
-                }
-            })
-        }),
-        bytes: item.bytes.map(|b| b as usize),
-        payload: None,
-    }
-}
-
-/// Project paste payload into composer chip (body in payload when present).
-#[must_use]
-pub fn paste_to_composer_chip(paste: &crate::widgets::PastePayload) -> ComposerChip {
-    if let Some(body) = &paste.body {
-        ComposerChip::paste_with_body(paste.id.clone(), paste.preview.clone(), body.clone())
-    } else {
-        ComposerChip::paste(paste.id.clone(), paste.preview.clone(), paste.bytes)
-    }
-}
-
 /// Best-effort upgrade of a composer chip into an attachment (non-paste).
 #[must_use]
 pub fn composer_chip_to_attachment(chip: &ComposerChip) -> Option<crate::widgets::AttachmentItem> {

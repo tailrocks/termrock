@@ -950,23 +950,6 @@ impl<Id: Clone + PartialEq> StatefulWidget for VirtualList<'_, Id> {
     }
 }
 
-// ── Projection helpers ──────────────────────────────────────────────────────
-
-/// Build projected items for fixed-extent demos: `row {index}` labels.
-#[must_use]
-pub fn project_index_window<'a>(indices: &[u64], id_prefix: &'a str) -> Vec<(u64, String, String)> {
-    // Returns (index, id, label) owned — host maps to VirtualListItem.
-    indices
-        .iter()
-        .map(|&i| (i, format!("{id_prefix}{i}"), format!("row {i:>9}")))
-        .collect()
-}
-
-/// Example: project sticky + measure window for a million-row universe.
-pub fn example_project_million(state: &VirtualListState<&'static str>, out_indices: &mut Vec<u64>) {
-    state.projection_indices(out_indices);
-}
-
 // ── Tests ───────────────────────────────────────────────────────────────────
 
 #[cfg(test)]

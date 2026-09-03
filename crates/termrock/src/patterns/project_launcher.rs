@@ -1076,18 +1076,6 @@ impl ProjectLauncherState {
 /// Search strip height.
 pub const PROJECT_LAUNCHER_SEARCH_HEIGHT: u16 = 3;
 
-/// Width-derived layout (home, drawer closed).
-#[must_use]
-pub fn project_launcher_layout(area: Rect, state: &WorkspaceState) -> Vec<PaneGeom> {
-    project_launcher_layout_density(
-        area,
-        state,
-        ProjectLauncherDensity::for_width(area.width),
-        ProjectLauncherMode::Home,
-        false,
-    )
-}
-
 /// Explicit density + mode layout.
 #[must_use]
 pub fn project_launcher_layout_density(
@@ -1597,12 +1585,6 @@ pub fn seed_stale_state(state: &mut ProjectLauncherState) {
     state.host_error = None;
     state.connection = ConnectionStatus::Offline;
     state.mode = ProjectLauncherMode::Home;
-}
-
-/// Seed discovery error story.
-pub fn seed_error_state(state: &mut ProjectLauncherState) {
-    state.host_error = Some("history store unavailable".into());
-    state.connection = ConnectionStatus::Error;
 }
 
 /// Seed empty + onboarding.

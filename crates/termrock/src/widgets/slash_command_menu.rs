@@ -610,19 +610,6 @@ pub fn slash_commands_to_candidates(
         .collect()
 }
 
-/// Project argument values to candidates.
-#[must_use]
-pub fn argument_values_to_candidates(values: &[String]) -> Vec<CompletionCandidate<'_, String>> {
-    values
-        .iter()
-        .map(|v| {
-            CompletionCandidate::new(v.clone(), v.as_str())
-                .kind("arg")
-                .enabled(true)
-        })
-        .collect()
-}
-
 /// Bridge global [`CommandEntry`] rows into slash commands (composer may merge).
 #[must_use]
 pub fn slash_commands_from_command_entries<Id: ToString>(

@@ -980,12 +980,6 @@ pub fn example_setup_steps() -> Vec<SetupStep> {
     ]
 }
 
-/// Alias for product docs that say "onboarding".
-#[must_use]
-pub fn example_onboarding_setup_steps() -> Vec<SetupStep> {
-    example_setup_steps()
-}
-
 /// Demo capability rows.
 #[must_use]
 pub fn example_capability_lines() -> Vec<CapabilityLine<'static>> {
@@ -1009,26 +1003,6 @@ pub fn example_setup_account_fields() -> [Field<'static, &'static str>; 2] {
     ]
 }
 
-/// Demo connection fields.
-#[must_use]
-pub fn example_setup_connection_fields() -> [Field<'static, &'static str>; 2] {
-    [
-        Field::new("endpoint", "Endpoint", "https://api.example")
-            .required(true)
-            .dirty(true),
-        Field::new("token", "Token", "••••••••").required(true),
-    ]
-}
-
-/// Demo choices fields.
-#[must_use]
-pub fn example_setup_choices_fields() -> [Field<'static, &'static str>; 2] {
-    [
-        Field::new("region", "Region", "us-east").dirty(true),
-        Field::new("plan", "Plan", "hobby"),
-    ]
-}
-
 /// Demo summary lines.
 #[must_use]
 pub fn example_setup_summary_lines() -> Vec<SetupSummaryLine<'static>> {
@@ -1038,12 +1012,6 @@ pub fn example_setup_summary_lines() -> Vec<SetupSummaryLine<'static>> {
         SetupSummaryLine::untouched("Theme", "junie"),
         SetupSummaryLine::untouched("Trust", "default-deny tools"),
     ]
-}
-
-/// Build StepItem list only (for hosts that only need FormWizard).
-#[must_use]
-pub fn setup_steps_to_wizard_steps(steps: &[SetupStep]) -> Vec<StepItem> {
-    steps.iter().map(|s| s.step.clone()).collect()
 }
 
 // ── Tests ───────────────────────────────────────────────────────────────────

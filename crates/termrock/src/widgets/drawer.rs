@@ -236,27 +236,6 @@ pub fn place_drawer_on_edge(
     place_overlay(bounds, None, size, policy)
 }
 
-/// Opens a drawer (default right / modal / default id).
-pub fn open_drawer_overlay<FocusId: Clone>(
-    stack: &mut OverlayStack<FocusId>,
-    bounds: Rect,
-    id: impl Into<OverlayId>,
-    size: OverlaySize,
-    opener_focus: Option<FocusId>,
-) -> OverlayOutcome<FocusId> {
-    open_drawer_configured(
-        stack,
-        bounds,
-        id,
-        size,
-        opener_focus,
-        DrawerEdge::Right,
-        DrawerModality::Modal,
-        None,
-        None,
-    )
-}
-
 /// Full configuration open.
 pub fn open_drawer_configured<FocusId: Clone>(
     stack: &mut OverlayStack<FocusId>,

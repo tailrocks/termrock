@@ -393,22 +393,6 @@ pub fn place_dialog(bounds: Rect, preferred: DialogSize) -> Rect {
     )
 }
 
-/// Place with recipe (fullscreen fills bounds).
-#[must_use]
-pub fn place_dialog_recipe(bounds: Rect, recipe: DialogRecipe) -> Rect {
-    let recipe = dialog_recipe_for_bounds(bounds, recipe);
-    match recipe {
-        DialogRecipe::Fullscreen => {
-            if bounds.is_empty() {
-                Rect::default()
-            } else {
-                bounds
-            }
-        }
-        other => place_dialog(bounds, DialogSize::for_recipe(other)),
-    }
-}
-
 /// Opens (or replaces) a dismissible dialog overlay.
 pub fn open_dialog_overlay<FocusId: Clone>(
     stack: &mut OverlayStack<FocusId>,

@@ -878,17 +878,6 @@ impl ObservabilityDashboardState {
 
 // ── Layout ──────────────────────────────────────────────────────────────────
 
-/// Width-derived layout.
-#[must_use]
-pub fn observability_dashboard_layout(area: Rect, state: &WorkspaceState) -> Vec<PaneGeom> {
-    observability_dashboard_layout_density(
-        area,
-        state,
-        ObservabilityDensity::for_width(area.width),
-        ObservabilityPanes::default(),
-    )
-}
-
 /// Which streams share the default frame beside the metrics.
 ///
 /// A dashboard answers "is it healthy" first; the log and event streams are

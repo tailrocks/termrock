@@ -1033,12 +1033,6 @@ impl StatefulWidget for WorkingStateCard<'_> {
 
 // ── Bridges ─────────────────────────────────────────────────────────────────
 
-/// Project working state into a one-item shelf list for collapse composition.
-#[must_use]
-pub fn working_state_to_shelf_items(work: &WorkingState) -> Vec<ActivityItem> {
-    vec![work.to_activity_item()]
-}
-
 /// Merge working state into existing shelf items (replace same id or push).
 pub fn merge_working_into_shelf(items: &mut Vec<ActivityItem>, work: &WorkingState) {
     let next = work.to_activity_item();

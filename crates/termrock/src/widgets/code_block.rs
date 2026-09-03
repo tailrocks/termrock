@@ -1982,31 +1982,6 @@ fn tokenize_code_part<'a>(line: &'a str, keywords: &[&str]) -> Vec<(&'a str, Cod
 
 // ── Role-aware token paint helper for hosts ─────────────────────────────────
 
-/// Map a token kind's [`Role`] through `theme.syntax()` (weight + ladder, no hue).
-///
-/// Call from custom highlighters when building segments with [`Role`].
-#[must_use]
-pub fn syntax_role_style(system: &DesignSystem, role: Role) -> Style {
-    let theme = system.junie_theme();
-    let tone = match role {
-        Role::SyntaxKeyword => SyntaxTone::Keyword,
-        Role::SyntaxString => SyntaxTone::Str,
-        Role::SyntaxNumber => SyntaxTone::Number,
-        Role::SyntaxComment => SyntaxTone::Comment,
-        Role::SyntaxFunction => SyntaxTone::Ident,
-        Role::TextMuted => SyntaxTone::Operator,
-        _ => SyntaxTone::Plain,
-    };
-    let mut style = theme.syntax(tone);
-    style = Style { bg: None, ..style };
-    if matches!(system.capability, crate::style::ColorCapability::Monochrome)
-        && matches!(tone, SyntaxTone::Keyword)
-    {
-        style = style.add_modifier(Modifier::BOLD);
-    }
-    style
-}
-
 /// Role-based token highlighter (uses DesignSystem colors / mono fallbacks).
 #[derive(Debug, Clone, Copy)]
 pub struct RoleTokenSyntax<'a> {

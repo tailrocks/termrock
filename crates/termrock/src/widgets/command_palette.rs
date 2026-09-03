@@ -524,46 +524,6 @@ pub fn filter_command_entries<'a, Id>(
     out
 }
 
-/// Project keymap bindings into command entries (host supplies id + label).
-///
-/// `map` receives the action and returns `(id, label, optional group)`.
-#[must_use]
-pub fn entries_from_keymap<A, Id, F>(
-    keymap: &crate::keymap::Keymap<A>,
-    mut map: F,
-) -> Vec<CommandEntry<Id>>
-where
-    A: Clone + Copy + PartialEq + 'static,
-    F: FnMut(&A, &crate::keymap::KeyBinding<A>) -> (Id, String, Option<String>),
-{
-    let mut out = Vec::new();
-    for binding in keymap.bindings() {
-        // Skip internal widget keys; include Shown and HiddenAlias.
-        if matches!(binding.visibility(), crate::keymap::Visibility::Internal) {
-            continue;
-        }
-        let (id, label, group) = map(binding.action(), binding);
-        let mut e = CommandEntry::new(id, label);
-        if let Some(g) = group {
-            e = e.group(g);
-        }
-        if let Some(hint) = binding.hint() {
-            e = e.preview(hint.to_string());
-        }
-        let glyph = binding.glyph().map(|s| s.to_string()).or_else(|| {
-            binding
-                .chords()
-                .first()
-                .map(|c| crate::keymap::chord_glyph(Some(*c)).to_string())
-        });
-        if let Some(sc) = glyph {
-            e = e.shortcut(sc);
-        }
-        out.push(e);
-    }
-    out
-}
-
 // ── State ───────────────────────────────────────────────────────────────────
 
 /// Interaction phase.

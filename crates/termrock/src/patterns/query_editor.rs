@@ -38,9 +38,9 @@ use crate::{
     input::{Event, KeyCode, KeyEvent, KeyModifiers, MouseEvent},
     style::{DesignSystem, Role},
     widgets::{
-        CodeFrameLine, CompletionMenuState, Diagnostic, DiagnosticSeverity, HelpEntry,
-        HistoryEntry, HistoryKind, SemanticStatus, StatusIndicator, TextArea, TextAreaOutcome,
-        TextAreaState, TextCursor, TextWrap,
+        CompletionMenuState, Diagnostic, DiagnosticSeverity, HelpEntry, HistoryEntry, HistoryKind,
+        SemanticStatus, StatusIndicator, TextArea, TextAreaOutcome, TextAreaState, TextCursor,
+        TextWrap,
     },
 };
 
@@ -1082,16 +1082,6 @@ pub fn token_at_cursor(editor: &TextAreaState) -> (String, TextCursor) {
         .unwrap_or(0);
     let token = before[start..].to_string();
     (token, cursor)
-}
-
-/// Map diagnostics into CodeFrame lines from the draft (host may pass richer windows).
-#[must_use]
-pub fn draft_code_frame_lines(editor: &TextAreaState) -> Vec<CodeFrameLine<'_>> {
-    editor
-        .lines()
-        .enumerate()
-        .map(|(i, text)| CodeFrameLine::new((i + 1) as u32, text))
-        .collect()
 }
 
 /// Default keyboard help entries for QueryEditor (host merges with live Keymap).

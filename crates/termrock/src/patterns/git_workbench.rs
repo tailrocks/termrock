@@ -1032,18 +1032,6 @@ impl GitWorkbenchState {
 
 // ── Layout ──────────────────────────────────────────────────────────────────
 
-/// Layout width-derived.
-#[must_use]
-pub fn git_workbench_layout(area: Rect, state: &WorkspaceState) -> Vec<PaneGeom> {
-    git_workbench_layout_density(
-        area,
-        state,
-        GitWorkbenchDensity::for_width(area.width),
-        false,
-        false,
-    )
-}
-
 fn south_stack(include_diagnostics: bool, include_output: bool) -> WorkspaceNode {
     let status = WorkspaceNode::Leaf {
         id: PaneId::from_static(GitWorkbenchPane::Status.id()),
@@ -1470,18 +1458,6 @@ pub fn example_git_files() -> Vec<FileTreeEntry<'static, &'static str>> {
             .git(FileGitStatus::Conflict),
         FileTreeEntry::file("README.md", "README.md", "README.md", 0).git(FileGitStatus::Untracked),
         FileTreeEntry::file("gone.rs", "gone.rs", "gone.rs", 0).git(FileGitStatus::Deleted),
-    ]
-}
-
-/// Conflict-only file list.
-#[must_use]
-pub fn example_conflict_files() -> Vec<FileTreeEntry<'static, &'static str>> {
-    vec![
-        FileTreeEntry::file("src/auth.rs", "auth.rs", "src/auth.rs", 0)
-            .file_type("rs")
-            .git(FileGitStatus::Conflict),
-        FileTreeEntry::file("Cargo.lock", "Cargo.lock", "Cargo.lock", 0)
-            .git(FileGitStatus::Conflict),
     ]
 }
 

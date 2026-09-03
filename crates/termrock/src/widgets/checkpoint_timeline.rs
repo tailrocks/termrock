@@ -19,8 +19,6 @@
 //!
 //! Research: Grok Build rewind, IDE local history, Git reflog, notebook
 //! checkpoints. Uses Timeline substrate for list paint projection.
-use std::collections::BTreeMap;
-
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
 
 use crate::{
@@ -30,8 +28,7 @@ use crate::{
     widgets::panel::Panel,
     widgets::tiered_row::TieredRow,
     widgets::timeline::{
-        Timeline, TimelineEvent, TimelineOutcome, TimelineRecipe, TimelineRowKind, TimelineState,
-        TimelineStatus,
+        Timeline, TimelineEvent, TimelineOutcome, TimelineRecipe, TimelineState, TimelineStatus,
     },
 };
 
@@ -1479,42 +1476,6 @@ impl StatefulWidget for CheckpointTimeline<'_> {
 
 // ── Projection helpers ──────────────────────────────────────────────────────
 
-/// Project a checkpoint to a Timeline event (owned id).
-#[must_use]
-pub fn checkpoint_to_timeline_event(cp: &Checkpoint) -> TimelineEvent<'_, String> {
-    let status = if cp.is_head {
-        TimelineStatus::Running
-    } else if cp.boundary.blocks_restore() {
-        TimelineStatus::Failed
-    } else if cp.boundary.needs_warning() {
-        TimelineStatus::Warning
-    } else {
-        TimelineStatus::Success
-    };
-    let mut ev = TimelineEvent::checkpoint(cp.id.clone(), cp.when.as_str(), cp.label.as_str())
-        .status(status);
-    if let Some(a) = cp.actor.as_deref() {
-        ev = ev.actor(a);
-    }
-    if let Some(r) = cp.relative.as_deref() {
-        ev = ev.relative(r);
-    }
-    if cp.is_head {
-        ev = ev.active();
-    }
-    if let Some(s) = cp.summary.as_deref() {
-        ev = ev.detail(s);
-    }
-    let _ = TimelineRowKind::Checkpoint;
-    ev
-}
-
-/// Index checkpoints by id.
-#[must_use]
-pub fn checkpoint_index(cps: &[Checkpoint]) -> BTreeMap<&str, &Checkpoint> {
-    cps.iter().map(|c| (c.id.as_str(), c)).collect()
-}
-
 // ── Examples ────────────────────────────────────────────────────────────────
 
 /// Demo session history with branch, dirty, and irreversible boundaries.
@@ -1593,6 +1554,7 @@ mod tests {
     use super::*;
     use crate::input::KeyModifiers;
     use crate::widgets::tests::click;
+    use crate::widgets::timeline::TimelineRowKind;
 
     fn press(code: KeyCode) -> KeyEvent {
         KeyEvent::new(code, KeyModifiers::NONE)

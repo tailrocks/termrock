@@ -95,10 +95,9 @@ pub use agent_shell::{
 };
 pub use agent_workbench::{
     AgentWorkbenchState, WorkbenchDensity, WorkbenchKeyOutcome, WorkbenchModals, WorkbenchPane,
-    WorkbenchSurfaces, agent_workbench_layout, agent_workbench_layout_density, default_modes,
-    dialog_modal_rect, diff_modal_rect, example_agent_workbench_nav, example_workbench_activities,
-    example_workbench_tasks, paint_agent_workbench, permission_modal_rect,
-    register_workbench_scene, sync_workbench_scene,
+    WorkbenchSurfaces, agent_workbench_layout_density, default_modes, dialog_modal_rect,
+    diff_modal_rect, example_workbench_activities, example_workbench_tasks, paint_agent_workbench,
+    permission_modal_rect, sync_workbench_scene,
 };
 pub use app_dashboard::{
     AppDashboardLayout, AppDashboardOutcome, AppDashboardPane, AppDashboardSlots,
@@ -117,22 +116,18 @@ pub use database_workbench::bench as database_workbench_bench;
 pub use database_workbench::{
     DatabaseConnGate, DatabaseQueryTab, DatabaseRunBlockReason, DatabaseTxStatus,
     DatabaseWorkbenchDensity, DatabaseWorkbenchOutcome, DatabaseWorkbenchPane,
-    DatabaseWorkbenchState, DatabaseWorkbenchSurfaces, database_workbench_layout,
-    database_workbench_layout_density, example_database_nav, example_db_commands,
-    example_db_history, example_disconnected_connections, example_inspect_fields,
-    example_query_tabs, example_result_columns, example_result_row_refs, example_result_rows,
-    example_schema_entries, example_workbench_connections, large_result_row_data,
-    paint_database_workbench,
+    DatabaseWorkbenchState, DatabaseWorkbenchSurfaces, database_workbench_layout_density,
+    example_db_commands, example_db_history, example_disconnected_connections,
+    example_inspect_fields, example_query_tabs, example_result_columns, example_result_row_refs,
+    example_result_rows, example_schema_entries, large_result_row_data, paint_database_workbench,
 };
 pub use error_recovery::bench as error_recovery_bench;
 pub use error_recovery::{
     CrashReportSnapshot, ErrorRecoveryDensity, ErrorRecoveryMode, ErrorRecoveryOutcome,
     ErrorRecoveryPane, ErrorRecoveryState, ErrorRecoverySurfaces, FailureClass, RecoveryActionId,
-    build_redacted_crash_report, burst_crash_snapshot, error_recovery_layout,
-    error_recovery_layout_density, example_crash_snapshot_with_secrets, example_recovery_snapshot,
-    example_terminal_restore_failed_snapshot, paint_error_recovery, recovery_action_rows,
-    redact_crash_report_text, seed_inline_fallback, seed_partial_init,
-    seed_terminal_restore_failed,
+    build_redacted_crash_report, burst_crash_snapshot, error_recovery_layout_density,
+    example_crash_snapshot_with_secrets, example_recovery_snapshot, paint_error_recovery,
+    recovery_action_rows, redact_crash_report_text, seed_inline_fallback,
 };
 pub use file_manager::bench as file_manager_bench;
 pub use file_manager::{
@@ -141,28 +136,26 @@ pub use file_manager::{
     FileManagerPane, FileManagerState, FileManagerSurfaces, FileOpItem, FileOpKind, FileOpStatus,
     burst_file_entries, default_quick_open_providers, dialog_rect, example_empty_ops,
     example_file_entries, example_file_ops, example_file_preview, example_quick_open_from_entries,
-    file_manager_layout, file_manager_layout_density, paint_file_manager, quick_open_rect,
-    seed_conflict_state, seed_delete_confirm,
+    file_manager_layout_density, paint_file_manager, quick_open_rect, seed_conflict_state,
+    seed_delete_confirm,
 };
 pub use git_workbench::bench as git_workbench_bench;
 pub use git_workbench::{
     GitBranch, GitDestructiveKind, GitRepoStatus, GitWorkbenchDensity, GitWorkbenchOutcome,
     GitWorkbenchPane, GitWorkbenchState, GitWorkbenchSurfaces, example_clean_files,
-    example_conflict_diagnostics, example_conflict_files, example_empty_files,
-    example_git_branches, example_git_commits, example_git_diff_files, example_git_diff_lines,
-    example_git_files, example_git_help_entries, example_git_hunks, example_git_terminal_lines,
-    example_git_terminal_meta, git_workbench_layout, git_workbench_layout_density, large_git_diff,
-    paint_git_workbench,
+    example_conflict_diagnostics, example_empty_files, example_git_branches, example_git_commits,
+    example_git_diff_files, example_git_diff_lines, example_git_files, example_git_help_entries,
+    example_git_hunks, example_git_terminal_lines, example_git_terminal_meta,
+    git_workbench_layout_density, large_git_diff, paint_git_workbench,
 };
 pub use help_center::bench as help_center_bench;
 pub use help_center::{
     HELP_CENTER_SEARCH_HEIGHT, HelpCenterDensity, HelpCenterMode, HelpCenterOutcome,
     HelpCenterPane, HelpCenterState, HelpCenterSurfaces, HelpTopic, HelpTopicGroup,
     burst_help_topics, command_entries_from_help, command_list_rows, component_inspect_rows,
-    diagnostics_rows, doctor_finding_rows, example_help_center_commands,
-    example_help_center_entries, example_help_doctor_report, example_help_topics,
-    filter_help_topics, help_center_layout, help_center_layout_density, help_topic_rows,
-    paint_help_center, seed_compact_mode, seed_diagnostics_state,
+    diagnostics_rows, doctor_finding_rows, example_help_center_entries, example_help_doctor_report,
+    example_help_topics, filter_help_topics, help_center_layout_density, help_topic_rows,
+    paint_help_center,
 };
 pub use observability_dashboard::bench as observability_dashboard_bench;
 pub use observability_dashboard::{
@@ -170,8 +163,8 @@ pub use observability_dashboard::{
     ObservabilityDashboardSurfaces, ObservabilityDensity, ObservabilityLiveState,
     ObservabilityPane, burst_observability_logs, example_log_inspect_fields,
     example_observability_alerts, example_observability_events, example_observability_logs,
-    example_observability_tiles, observability_dashboard_layout,
-    observability_dashboard_layout_density, paint_observability_dashboard, seed_failure_state,
+    example_observability_tiles, observability_dashboard_layout_density,
+    paint_observability_dashboard, seed_failure_state,
 };
 pub use ops_dashboard::{
     OpsDashboardLayout, OpsDashboardOutcome, OpsDashboardSlots, OpsDashboardState,
@@ -183,8 +176,8 @@ pub use project_launcher::{
     ProjectLauncherMode, ProjectLauncherOutcome, ProjectLauncherPane, ProjectLauncherState,
     ProjectLauncherSurfaces, ProjectLocation, ProjectPathStatus, burst_project_entries,
     default_project_quick_open_providers, example_project_preview, example_project_quick_open,
-    example_projects, filter_project_entries, paint_project_launcher, project_launcher_layout,
-    project_launcher_layout_density, project_list_rows, project_quick_open_rect, seed_error_state,
+    example_projects, filter_project_entries, paint_project_launcher,
+    project_launcher_layout_density, project_list_rows, project_quick_open_rect,
     seed_onboarding_state, seed_stale_state,
 };
 pub use resource_browser::{
@@ -196,15 +189,14 @@ pub use settings_screen::{
     SettingsBodyMode, SettingsDensity, SettingsRegion, SettingsScreenOutcome, SettingsScreenSlots,
     SettingsScreenState, SettingsScreenSurfaces, example_settings_appearance_fields,
     example_settings_categories, example_settings_help_entries, example_settings_keys_fields,
-    example_settings_profile_fields, filter_settings_fieldsets, filter_settings_nav,
-    layout_settings_screen, paint_settings_screen, settings_query_matches,
+    example_settings_profile_fields, filter_settings_nav, layout_settings_screen,
+    paint_settings_screen, settings_query_matches,
 };
 pub use setup_wizard::{
     CapabilityLine, SetupStep, SetupStepKind, SetupWizardMode, SetupWizardOutcome,
     SetupWizardSlots, SetupWizardState, SetupWizardSurfaces, example_capability_lines,
-    example_onboarding_setup_steps, example_setup_account_fields, example_setup_choices_fields,
-    example_setup_connection_fields, example_setup_steps, example_setup_summary_lines,
-    layout_setup_wizard, paint_setup_wizard, setup_steps_to_wizard_steps,
+    example_setup_account_fields, example_setup_steps, example_setup_summary_lines,
+    layout_setup_wizard, paint_setup_wizard,
 };
 pub use studio_shell::{
     StudioShellLayout, StudioShellSlots, StudioShellView, layout_studio_shell, paint_studio_shell,
@@ -233,8 +225,7 @@ pub use approval_queue::{
     APPROVAL_QUEUE_DRAWER_OVERLAY_ID, APPROVAL_QUEUE_OVERLAY_ID, APPROVAL_QUEUE_WINDOW,
     ApprovalAction, ApprovalBlocking, ApprovalItem, ApprovalKind, ApprovalQueue,
     ApprovalQueueOutcome, ApprovalQueuePresentation, ApprovalQueueState,
-    approval_items_to_activity_models, approval_items_to_notifications, approval_queue_badge,
-    example_approval_queue,
+    approval_items_to_activity_models, approval_items_to_notifications, example_approval_queue,
 };
 pub use background_task_panel::bench as background_task_panel_bench;
 pub use background_task_panel::{
@@ -291,15 +282,14 @@ pub use prompt_queue::bench as prompt_queue_bench;
 pub use prompt_queue::{
     AgentBusyState, PROMPT_QUEUE_OVERLAY_ID, PROMPT_QUEUE_SUMMARY_PREVIEW, PROMPT_QUEUE_WINDOW,
     PromptQueue, PromptQueueItem, PromptQueueOutcome, PromptQueuePhase, PromptQueuePresentation,
-    PromptQueueRef, PromptQueueState, PromptQueueStatus, example_prompt_queue, pending_queue_len,
-    project_prompt_queue_from_items, queue_item_from_composer,
+    PromptQueueRef, PromptQueueState, PromptQueueStatus, example_prompt_queue,
+    queue_item_from_composer,
 };
 pub use query_editor::bench as query_editor_bench;
 pub use query_editor::{
     QueryEditor, QueryEditorMode, QueryEditorOutcome, QueryEditorSlots, QueryEditorState,
     QueryFocus, QueryLanguage, QueryParameter, QueryResultSummary, QueryRunStatus, SavedQuery,
-    diagnostic_summary, draft_code_frame_lines, query_editor_help_entries,
-    saved_queries_to_history, token_at_cursor,
+    diagnostic_summary, query_editor_help_entries, saved_queries_to_history, token_at_cursor,
 };
 pub use result_grid::bench as result_grid_bench;
 pub use result_grid::{
@@ -313,8 +303,8 @@ pub use schema_browser::bench as schema_browser_bench;
 pub use schema_browser::{
     SchemaBrowser, SchemaBrowserEntry, SchemaBrowserOutcome, SchemaBrowserPresentation,
     SchemaBrowserState, SchemaConnStatus, SchemaContextAction, SchemaNodeKind, apply_expanded_set,
-    expanded_ids_from_entries, filter_schema_entries, schema_breadcrumbs_from_path,
-    schema_entries_to_tree_nodes, schema_to_quick_open_items,
+    filter_schema_entries, schema_breadcrumbs_from_path, schema_entries_to_tree_nodes,
+    schema_to_quick_open_items,
 };
 pub use session_picker::bench as session_picker_bench;
 pub use session_picker::{
@@ -353,5 +343,5 @@ pub use working_state_card::{
     WORKING_STATE_FILE_WINDOW, WORKING_STATE_OVERLAY_ID, WorkingAction, WorkingPhase,
     WorkingResource, WorkingState, WorkingStateCard, WorkingStateCardState, WorkingStateOutcome,
     WorkingStatePresentation, example_working_state, example_working_waiting,
-    merge_working_into_shelf, working_state_to_shelf_items,
+    merge_working_into_shelf,
 };

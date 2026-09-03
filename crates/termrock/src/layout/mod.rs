@@ -18,7 +18,7 @@ pub use center::{
     Center, CenterAxis, CenterLayout, CenterSpec, ModalSpec, center_block_y, center_line_x,
     layout_center, modal_rect,
 };
-pub use dialog::{paint_dialog_shell, paint_scrollable_dialog_body};
+pub use dialog::paint_dialog_shell;
 pub use grid::{
     Grid, GridAutoFlow, GridItem, GridLayout, GridSpec, TrackSize, auto_flow_items,
     dashboard_grid_template, form_grid_template, grid_neighbor, grid_neighbor_2d,

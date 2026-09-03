@@ -415,16 +415,6 @@ pub fn collect_match_targets(items: &[SearchResultItem<'_>]) -> Vec<(usize, bool
     out
 }
 
-/// Match-preserving snippet truncation for paint width.
-#[must_use]
-pub fn truncate_snippet_keep_match(
-    snippet: &str,
-    matches: Option<&[MatchRange]>,
-    max_cols: usize,
-) -> String {
-    keep_first_match_slice(snippet, matches.unwrap_or(&[]), max_cols)
-}
-
 /// Core keep-first-match window in display columns.
 #[must_use]
 pub fn keep_first_match_slice(source: &str, matches: &[MatchRange], max_cols: usize) -> String {

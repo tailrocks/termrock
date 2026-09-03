@@ -26,9 +26,7 @@ use crate::{
     style::{DesignSystem, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
     widgets::{
-        link::{DestinationDisplay, Link},
-        markdown::SourceAnchor,
-        streaming_markdown::StreamCitation,
+        link::DestinationDisplay, markdown::SourceAnchor, streaming_markdown::StreamCitation,
     },
 };
 
@@ -503,27 +501,6 @@ pub fn citation_to_stream(c: &CitationSource) -> StreamCitation {
         s = s.source(a);
     }
     s
-}
-
-/// Build a [`Link`] for a citation destination (host keeps label/dest storage).
-#[must_use]
-pub fn citation_link<'a>(
-    label: &'a str,
-    destination: &'a str,
-    system: &'a DesignSystem,
-    hyperlinks: bool,
-) -> Link<'a> {
-    let mut link = if destination.starts_with("http://") || destination.starts_with("https://") {
-        Link::url(label, destination, system)
-    } else {
-        Link::app_route(label, destination, system)
-    };
-    // A citation is a link: the link role already carries the rule.
-    link = link.hyperlinks(hyperlinks);
-    if !hyperlinks {
-        link = link.always_show_destination();
-    }
-    link
 }
 
 // ── Outcomes ────────────────────────────────────────────────────────────────

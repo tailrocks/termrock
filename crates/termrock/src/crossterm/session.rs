@@ -1,7 +1,5 @@
 use std::io::{self, Write};
 
-use crate::input::KeyReleaseReporting;
-
 use crossterm::{
     cursor::{Hide, Show},
     event::{DisableBracketedPaste, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture},
@@ -39,22 +37,6 @@ impl Default for SessionOptions {
             hide_cursor: true,
             disable_line_wrap: true,
         }
-    }
-}
-
-/// Whether this terminal reports key releases.
-///
-/// A control that arms on Space-press and fires on Space-release needs to know
-/// the answer: on a terminal that reports presses only, that control would arm
-/// forever. Ask once at session start and hand the answer to the widgets
-/// (plans/021 Step 2).
-#[must_use]
-pub fn key_release_reporting() -> KeyReleaseReporting {
-    match crossterm::terminal::supports_keyboard_enhancement() {
-        Ok(true) => KeyReleaseReporting::Reported,
-        // A detection failure is not evidence of support: assume the
-        // conservative terminal, where Space fires on press.
-        Ok(false) | Err(_) => KeyReleaseReporting::PressOnly,
     }
 }
 

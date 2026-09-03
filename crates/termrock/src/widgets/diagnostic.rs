@@ -1674,16 +1674,6 @@ pub fn format_diagnostic_plain(d: &Diagnostic<'_>) -> String {
     out
 }
 
-/// Format many diagnostics for ErrorState `details` / copy-all.
-#[must_use]
-pub fn format_diagnostics_plain(items: &[Diagnostic<'_>]) -> String {
-    items
-        .iter()
-        .map(format_diagnostic_plain)
-        .collect::<Vec<_>>()
-        .join("\n\n")
-}
-
 /// Map diagnostics into [`CodeHighlight`] overlays (0-based lines).
 #[must_use]
 pub fn diagnostics_to_highlights(items: &[Diagnostic<'_>]) -> Vec<CodeHighlight> {

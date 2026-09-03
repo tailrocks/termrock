@@ -22,10 +22,9 @@ use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::State
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{
-        CollectionItem, CollectionState, NavigationMove, OverlayKind, OverlayOutcome,
-        OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, PageMove, RovingOrientation,
-        SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, default_palette_intent,
-        place_overlay,
+        CollectionItem, CollectionState, NavigationMove, OverlayOutcome, OverlaySize, OverlaySpec,
+        OverlayStack, PageMove, RovingOrientation, SemanticNode, SemanticRole, SemanticScene,
+        SemanticState, UiIntent, default_palette_intent,
     },
     style::{DesignSystem, Glyph, ListRowVisualState, MASK_CELLS, Role},
     text::{display_cols, take_display_cols},
@@ -108,56 +107,6 @@ pub fn history_picker_presentation_for_bounds(bounds: Rect) -> HistoryPickerPres
     } else {
         HistoryPickerPresentation::Popover
     }
-}
-
-/// Place as centered palette-class overlay (upper third).
-#[must_use]
-pub fn place_history_picker(bounds: Rect, preferred: HistoryPickerSize) -> Rect {
-    if bounds.is_empty() {
-        return Rect::default();
-    }
-    if bounds.width <= HISTORY_PICKER_FULLSCREEN_MAX_WIDTH
-        || bounds.height <= HISTORY_PICKER_FULLSCREEN_MAX_HEIGHT
-    {
-        return place_overlay(
-            bounds,
-            None,
-            OverlaySize::from(preferred),
-            OverlayPolicy::for_kind(OverlayKind::CommandPalette),
-        );
-    }
-    let width = preferred.width.min(bounds.width.saturating_sub(4)).max(24);
-    let height = preferred.height.min(bounds.height.saturating_sub(2)).max(6);
-    let x = bounds
-        .x
-        .saturating_add(bounds.width.saturating_sub(width) / 2);
-    let y = bounds
-        .y
-        .saturating_add((bounds.height.saturating_sub(height) / 3).max(1));
-    Rect::new(
-        x,
-        y.min(bounds.bottom().saturating_sub(height)),
-        width,
-        height,
-    )
-}
-
-/// Place as anchored popover under `anchor`.
-#[must_use]
-pub fn place_history_picker_popover(
-    bounds: Rect,
-    anchor: Rect,
-    preferred: HistoryPickerSize,
-) -> Rect {
-    if bounds.is_empty() {
-        return Rect::default();
-    }
-    place_overlay(
-        bounds,
-        Some(anchor),
-        OverlaySize::from(preferred),
-        OverlayPolicy::for_kind(OverlayKind::Popover),
-    )
 }
 
 /// Open centered / fullscreen-promoting overlay.

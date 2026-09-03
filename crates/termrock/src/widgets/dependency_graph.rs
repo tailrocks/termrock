@@ -23,10 +23,7 @@ use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     style::{DesignSystem, ListRowVisualState, Role},
     text::{contains_lower_all, take_display_cols},
-    widgets::{
-        data_view::{ColumnModel, DataColumn, DataColumnWidth},
-        object_inspector::{InspectKind, InspectorField},
-    },
+    widgets::object_inspector::{InspectKind, InspectorField},
 };
 
 /// Max nodes for graph view before auto tree fallback (host may override).
@@ -512,22 +509,6 @@ pub fn layout_dependency_layers(
     out
 }
 
-/// Content size of layout in cells.
-#[must_use]
-pub fn layout_content_size(layout: &[DepLayoutNode]) -> (u16, u16) {
-    let w = layout
-        .iter()
-        .map(|n| n.x.saturating_add(DEP_GRAPH_CELL_W))
-        .max()
-        .unwrap_or(0);
-    let h = layout
-        .iter()
-        .map(|n| n.y.saturating_add(DEP_GRAPH_CELL_H))
-        .max()
-        .unwrap_or(0);
-    (w, h)
-}
-
 /// Filter nodes by query (label/id/group/kind).
 #[must_use]
 pub fn filter_dep_nodes<'a>(nodes: &'a [DepNode<'a>], query: &str) -> Vec<&'a DepNode<'a>> {
@@ -675,17 +656,6 @@ pub fn project_dep_tree_rows(
         }
     }
     meta
-}
-
-/// Column model for tree/list fallback.
-#[must_use]
-pub fn dependency_tree_column_model() -> ColumnModel<&'static str> {
-    ColumnModel::new(vec![
-        DataColumn::new("name", "Name", DataColumnWidth::Min(12)).priority(100),
-        DataColumn::new("kind", "Kind", DataColumnWidth::Fixed(8)).priority(80),
-        DataColumn::new("status", "Status", DataColumnWidth::Fixed(8)).priority(70),
-        DataColumn::new("detail", "Detail", DataColumnWidth::Min(8)).priority(40),
-    ])
 }
 
 /// ObjectInspector fields for a node.

@@ -18,7 +18,6 @@
 //! - Draft model: [`MentionDraft`] atomic segments
 //! - Completion: [`mention_to_completion_candidate`] + [`CompletionMenu`]
 //! - Chips: [`MentionRef::to_composer_label`] / PromptComposer mention chips
-//! - Strip: project via [`mention_to_token_item`]
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
@@ -27,7 +26,7 @@ use crate::{
     text::{contains_lower_all, take_display_cols},
     widgets::{
         completion_menu::CompletionCandidate,
-        tag_chip::{Tag, TagOutcome, TagState, TokenItem, TokenPart, TokenParts, TokenStatus},
+        tag_chip::{Tag, TagOutcome, TagState, TokenPart, TokenParts, TokenStatus},
     },
 };
 
@@ -801,18 +800,6 @@ pub fn mention_to_completion_candidate(c: &MentionCandidate) -> CompletionCandid
     cand
 }
 
-/// Build completion rows; host must keep `candidates` alive for label borrows…
-/// Prefer mapping in host loop with owned labels — this helper clones ids.
-#[must_use]
-pub fn mention_candidates_as_completion(
-    candidates: &[MentionCandidate],
-) -> Vec<CompletionCandidate<'_, String>> {
-    candidates
-        .iter()
-        .map(mention_to_completion_candidate)
-        .collect()
-}
-
 /// Filter candidates by query (case-insensitive label/canonical/id contains).
 #[must_use]
 pub fn filter_mention_candidates<'a>(
@@ -1541,14 +1528,6 @@ impl<'a> InlineMention<'a> {
 }
 
 // ── TokenStrip / semantic helpers ───────────────────────────────────────────
-
-/// Project mention to strip item (label must outlive).
-#[must_use]
-pub fn mention_to_token_item<'a>(m: &'a MentionRef, label: &'a str) -> TokenItem<'a, &'a str> {
-    TokenItem::tag(m.id.as_str(), label)
-        .removable(m.removable)
-        .status(m.validity.token_status())
-}
 
 /// Parse `@[kind:id|label]` markup into a mention (best-effort).
 #[must_use]
