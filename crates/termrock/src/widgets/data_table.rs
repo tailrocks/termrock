@@ -1179,7 +1179,9 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
         if area.is_empty() {
             return;
         }
-        let surface_focused = self.focused || state.accepts_input;
+        // Input permission and scene focus are separate authorities. Neither
+        // one alone may paint active focus chrome.
+        let surface_focused = self.focused && state.accepts_input;
         let has_toolbar = self.toolbar.is_some();
         let has_footer = self.show_footer;
         let chrome_rows = 1u16 // header
@@ -1805,7 +1807,7 @@ fn paint_data_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
             state.nav_mode,
             DataTableNavMode::Cell | DataTableNavMode::Range
         );
-        let cell_focused = cell_nav && cursor && table.focused && state.cursor_col == paint_ord;
+        let cell_focused = cell_nav && cursor && surface_focused && state.cursor_col == paint_ord;
         let cell_selected = state.selection.is_cell_selected(CellCoord {
             row: logical_row,
             col: paint_ord,
@@ -2083,6 +2085,46 @@ mod tests {
             &cols,
         );
         assert!(matches!(out, DataTableOutcome::Ignored));
+    }
+
+    #[test]
+    fn visual_focus_requires_scene_focus_and_input_authority() {
+        use ratatui_core::buffer::Buffer;
+        use ratatui_core::layout::Rect;
+
+        let system = DesignSystem::junie();
+        let columns = ColumnModel::new(vec![DataColumn::new(
+            "name",
+            "Name",
+            DataColumnWidth::Fixed(8),
+        )]);
+        let cells: &[&str] = &["alpha"];
+        let rows = [(1u64, cells)];
+        let area = Rect::new(0, 0, 24, 4);
+
+        let mut focused_state = DataTableState::<u64, &str>::new();
+        focused_state.set_accepts_input(true);
+        let mut focused = Buffer::empty(area);
+        DataTable::new(&system, &columns, &rows)
+            .focused(true)
+            .render(area, &mut focused, &mut focused_state);
+
+        let mut scene_unfocused_state = DataTableState::<u64, &str>::new();
+        scene_unfocused_state.set_accepts_input(true);
+        let mut scene_unfocused = Buffer::empty(area);
+        DataTable::new(&system, &columns, &rows)
+            .focused(false)
+            .render(area, &mut scene_unfocused, &mut scene_unfocused_state);
+
+        let mut input_disabled_state = DataTableState::<u64, &str>::new();
+        input_disabled_state.set_accepts_input(false);
+        let mut input_disabled = Buffer::empty(area);
+        DataTable::new(&system, &columns, &rows)
+            .focused(true)
+            .render(area, &mut input_disabled, &mut input_disabled_state);
+
+        assert_ne!(focused.content(), scene_unfocused.content());
+        assert_eq!(scene_unfocused.content(), input_disabled.content());
     }
 
     #[test]
