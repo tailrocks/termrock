@@ -334,6 +334,7 @@ pub static ALL: &[Scenario] = &[
         30,
         Some("Production"),
         &[
+            Step::Char('0'),
             Step::Down,
             Step::Down,
             Step::Down,
@@ -349,6 +350,7 @@ pub static ALL: &[Scenario] = &[
         50,
         Some("Production"),
         &[
+            Step::Char('0'),
             Step::Down,
             Step::Down,
             Step::Down,
@@ -363,7 +365,7 @@ pub static ALL: &[Scenario] = &[
         80,
         24,
         Some("Production"),
-        &[Step::Char('b')],
+        &[Step::Ctrl('b')],
     ),
     tp("t_80_query", 80, 24, Some("Production"), &[Step::Tab]),
     tp(

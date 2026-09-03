@@ -613,6 +613,7 @@ impl Workbench {
             let schema = parts[1].to_owned();
             let name = parts[3].to_owned();
             self.open_table(&schema, &name);
+            cx.set_focus(super::tabs::TABLE_GRID);
             cx.status(format!("Opened {schema}.{name}"));
             return Route::Changed;
         }

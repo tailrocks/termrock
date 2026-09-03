@@ -17,8 +17,8 @@ use termrock::input::{KeyCode, KeyEventKind};
 use termrock::style::{DesignSystem, SyntaxTone};
 use termrock::widgets::{
     CodeBlock, CodeBlockState, ColumnKind, ColumnModel, DataColumn, DataColumnWidth, DataTable,
-    DataTableNavMode, DataTableState, ListRow, ListState, LoadState, SyntaxHighlighter, Tab,
-    TableState, Tabs, TabsState, TextAreaState, TextCursor, TextInput, TextInputState,
+    DataTableNavMode, DataTableState, ListRow, ListState, LoadState, SyntaxHighlighter, Tab, Tabs,
+    TabsState, TextAreaState, TextCursor, TextInput, TextInputState,
 };
 
 use super::db::{Catalog, ColType, Table as DbTable};
@@ -273,7 +273,7 @@ pub struct TableTab {
     pub name: String,
     pub mode: TabsState<u8>,
     pub grid: ResultGrid,
-    pub table_state: TableState<usize, usize>,
+    pub table_state: DataTableState<usize, usize>,
     pub offset: usize,
     pub page: usize,
 }
@@ -286,19 +286,23 @@ impl TableTab {
             .iter()
             .map(|c| (c.name.clone(), c.ty))
             .collect();
-        let n = 40.min(table.row_count);
+        let n = sql::ROW_CAP.min(table.row_count);
         let rows = super::db::rows(table, 0, n);
         let mut grid = ResultGrid::from_values(cols, rows, table.row_count, true);
         grid.more = table.row_count > n;
         grid.annotate(table);
         let mut mode = TabsState::new();
         mode.set_selected(Some(0));
+        let mut table_state = DataTableState::new();
+        table_state.nav_mode = DataTableNavMode::Cell;
+        table_state.striped = false;
+        table_state.set_logical_rows(n as u64);
         Self {
             schema: table.schema.clone(),
             name: table.name.clone(),
             mode,
             grid,
-            table_state: TableState::new(Some(0)),
+            table_state,
             offset: 0,
             page: 0,
         }
@@ -711,7 +715,10 @@ fn render_result(rs: &mut QueryResult, area: Rect, buf: &mut Buffer, ctx: &mut R
     let t = ctx.theme;
     match &mut rs.body {
         ResultBody::Rows(grid) => {
-            paint_grid(grid, area, buf, ctx, RESULTS);
+            let mut state = DataTableState::new();
+            state.nav_mode = DataTableNavMode::Cell;
+            state.striped = false;
+            paint_grid(grid, area, buf, ctx, RESULTS, &mut state);
         }
         ResultBody::Message { text, detail } => {
             let (inner, bg) = layout::card(area, buf, t, Some(&rs.label), None, false);
@@ -757,6 +764,7 @@ fn paint_grid(
     buf: &mut Buffer,
     ctx: &mut RenderCtx<'_>,
     id: WidgetId,
+    mut state: &mut DataTableState<usize, usize>,
 ) {
     let t = ctx.theme;
     let focused = ctx.interaction.focused(id);
@@ -807,7 +815,6 @@ fn paint_grid(
         .map(|(r, cells)| (*r, cells.iter().map(String::as_str).collect()))
         .collect();
     let projected: Vec<(usize, &[&str])> = refs.iter().map(|(r, c)| (*r, c.as_slice())).collect();
-    let mut state = DataTableState::new();
     state.nav_mode = DataTableNavMode::Cell;
     state.striped = false;
     state.set_logical_rows(grid.len() as u64);
@@ -886,14 +893,47 @@ pub fn render_table(
         render_structure(table, body, buf, ctx);
         return;
     }
-    let meta = format!(
-        "{}–{} of {}",
-        tab.offset + 1,
-        tab.offset + tab.grid.len(),
-        sql::fmt_rows(tab.grid.total)
+    let grid_area = Rect::new(body.x, body.y, body.width, body.height.saturating_sub(1));
+    paint_grid(
+        &tab.grid,
+        grid_area,
+        buf,
+        ctx,
+        TABLE_GRID,
+        &mut tab.table_state,
     );
-    let (inner, _bg) = layout::card(body, buf, t, Some(&tab.name), Some(&meta), false);
-    paint_grid(&tab.grid, inner, buf, ctx, TABLE_GRID);
+    let shown = tab.table_state.window.viewport.max(1);
+    let last = (tab.offset + usize::from(shown)).min(tab.grid.len()).max(1);
+    let total = tab.grid.total;
+    let status = if tab.grid.more {
+        format!(
+            "rows {}–{} of {} loaded · {} total",
+            tab.offset + 1,
+            last,
+            tab.grid.len(),
+            thousands(total)
+        )
+    } else {
+        format!("rows {}–{} of {}", tab.offset + 1, last, thousands(total))
+    };
+    buf.set_string(
+        body.x.saturating_add(1),
+        body.bottom().saturating_sub(1),
+        ttext::truncate(&status, body.width.saturating_sub(2) as usize),
+        t.muted(),
+    );
+}
+
+fn thousands(n: usize) -> String {
+    let s = n.to_string();
+    let mut out = String::new();
+    for (i, ch) in s.chars().enumerate() {
+        if i > 0 && (s.len() - i).is_multiple_of(3) {
+            out.push(',');
+        }
+        out.push(ch);
+    }
+    out
 }
 
 fn render_structure(table: &DbTable, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx<'_>) {

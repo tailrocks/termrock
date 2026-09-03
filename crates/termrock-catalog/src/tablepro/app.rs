@@ -233,12 +233,6 @@ impl App {
         }
         let t = ctx.theme;
         fill(buf, area, t.base());
-        if area.width.saturating_sub(2) < 100 && self.host.focus == Some(EXPLORER) {
-            if let Some(id) = self.workbench.as_ref().and_then(Workbench::primary_focus) {
-                self.host.focus = Some(id);
-                ctx.interaction.focus = Some(id);
-            }
-        }
         if area.width < MIN_WIDTH || area.height < MIN_HEIGHT {
             let msg = format!("Need {MIN_WIDTH}×{MIN_HEIGHT}");
             buf.set_string(area.x, area.y, "TablePro", t.title());
@@ -647,6 +641,28 @@ impl App {
         }
         if ctrl && matches!(key.code, KeyCode::Char('r') | KeyCode::Char('R')) {
             self.run_active(false, None, cx);
+            return true;
+        }
+        if key.modifiers.is_empty()
+            && matches!(key.code, KeyCode::Char('0'))
+            && self.screen == Screen::Workbench
+        {
+            if let Some(wb) = self.workbench.as_mut() {
+                wb.explorer_visible = true;
+                wb.maximized = false;
+            }
+            cx.set_focus(EXPLORER);
+            return true;
+        }
+        if ctrl && matches!(key.code, KeyCode::Char('b') | KeyCode::Char('B')) {
+            if let Some(wb) = self.workbench.as_mut() {
+                wb.explorer_visible = !wb.explorer_visible;
+                if wb.explorer_visible {
+                    cx.set_focus(EXPLORER);
+                } else if let Some(id) = wb.primary_focus() {
+                    cx.set_focus(id);
+                }
+            }
             return true;
         }
         if key.modifiers.is_empty() && matches!(key.code, KeyCode::Char('?')) {
