@@ -403,6 +403,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0421 | `v0.14.0` | [HistoryPicker Escape cancellation is one-shot](migrations/0421-v0.14.0-history-picker-one-shot-cancel.md) |
 | 0422 | `v0.14.0` | [DatabaseWorkbench preserves the HistoryPicker lifecycle](migrations/0422-v0.14.0-database-workbench-history-lifecycle.md) |
 | 0423 | `v0.14.0` | [FilePicker one-shot raw-key actions](migrations/0423-v0.14.0-file-picker-one-shot-confirm.md) |
+| 0424 | `v0.14.0` | [Lockup is the reusable brand widget](migrations/0424-v0.14.0-lockup-brand-widget.md) |
 | 0425 | `v0.14.0` | [Extended key modifiers are preserved](migrations/0425-v0.14.0-preserve-extended-key-modifiers.md) |
 | 0426 | `v0.14.0` | [Validated layer focus restoration](migrations/0426-v0.14.0-validated-layer-focus-return.md) |
 | 0427 | `v0.14.0` | [CommandPalette one-shot actions](migrations/0427-v0.14.0-command-palette-one-shot-actions.md) |

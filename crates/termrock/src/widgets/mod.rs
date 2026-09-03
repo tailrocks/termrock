@@ -25,6 +25,7 @@ mod alert_dialog;
 mod attachment_chips;
 mod badge;
 mod blocks;
+mod brand;
 mod breadcrumbs;
 mod button_group;
 mod callout;
@@ -298,6 +299,7 @@ pub use attachment_chips::{
     paste_semantic_summary,
 };
 pub use badge::{Badge, BadgeCount, BadgeFill, BadgeOutcome, BadgeParts, BadgeState, BadgeVariant};
+pub use brand::{Lockup, LockupParts, LockupState};
 pub use breadcrumbs::{
     BREADCRUMBS_COLLAPSE_MAX_WIDTH, BreadcrumbHit, BreadcrumbItem, BreadcrumbSeparator,
     BreadcrumbStatus, Breadcrumbs, BreadcrumbsMode, BreadcrumbsOutcome, BreadcrumbsPresentation,
