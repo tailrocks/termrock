@@ -479,7 +479,16 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
             self.load,
             LoadState::Empty { .. } | LoadState::Error { .. } | LoadState::Loading { .. }
         ) {
-            if is_press && matches!(key.code, KeyCode::Char('r' | 'R') | KeyCode::Enter) {
+            if is_press
+                && matches!(key.code, KeyCode::Char('r' | 'R') | KeyCode::Enter)
+                && !matches!(
+                    self.load,
+                    LoadState::Error {
+                        retryable: false,
+                        ..
+                    }
+                )
+            {
                 return TreeTableOutcome::RetryLoad;
             }
             return TreeTableOutcome::Ignored;
@@ -2375,6 +2384,47 @@ mod tests {
             })
             .contains("✗ failed")
         );
+    }
+
+    #[test]
+    fn non_retryable_error_does_not_emit_retry_load() {
+        let columns = cols();
+        let rows: [TreeTableRow<'_, &str>; 0] = [];
+        let mut state = TreeTableState::<&str, &str>::new(None);
+        state.load = LoadState::Error {
+            message: "failed".into(),
+            retryable: false,
+        };
+
+        assert!(matches!(
+            state.handle_key(
+                &rows,
+                &columns,
+                KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
+            ),
+            TreeTableOutcome::Ignored
+        ));
+        assert!(matches!(
+            state.handle_key(
+                &rows,
+                &columns,
+                KeyEvent::new(KeyCode::Char('r'), KeyModifiers::NONE),
+            ),
+            TreeTableOutcome::Ignored
+        ));
+
+        state.load = LoadState::Error {
+            message: "failed".into(),
+            retryable: true,
+        };
+        assert!(matches!(
+            state.handle_key(
+                &rows,
+                &columns,
+                KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
+            ),
+            TreeTableOutcome::RetryLoad
+        ));
     }
 
     #[test]
