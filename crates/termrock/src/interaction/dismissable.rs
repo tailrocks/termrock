@@ -54,16 +54,6 @@ impl DismissAction {
             LayerDismissPolicy::Ignore => Self::Bubble,
         }
     }
-
-    /// Inverse map for hosts that still store [`LayerDismissPolicy`].
-    #[must_use]
-    pub const fn to_layer(self) -> LayerDismissPolicy {
-        match self {
-            Self::Dismiss => LayerDismissPolicy::Dismissible,
-            Self::Trap => LayerDismissPolicy::Trap,
-            Self::Bubble => LayerDismissPolicy::Ignore,
-        }
-    }
 }
 
 /// Full policy bundle (Radix-like knobs, terminal-shaped).
@@ -530,16 +520,6 @@ pub fn evaluate_escape_stack(
     }
 }
 
-/// Top-first outside click on nested rects (only the topmost outside-test runs).
-pub fn evaluate_outside_top(
-    top: &mut DismissableLayer,
-    pos: Position,
-    guard: &mut DismissGuard,
-    event: DismissEventId,
-) -> DismissDecision {
-    top.on_outside_click(pos, guard, event)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -681,10 +661,10 @@ mod tests {
     }
 
     #[test]
-    fn layer_policy_roundtrip() {
+    fn layer_policy_maps_to_actions() {
         assert_eq!(
-            DismissAction::from_layer(LayerDismissPolicy::Trap).to_layer(),
-            LayerDismissPolicy::Trap
+            DismissAction::from_layer(LayerDismissPolicy::Trap),
+            DismissAction::Trap
         );
         let p = DismissPolicy::from_layer_pair(
             LayerDismissPolicy::Dismissible,
