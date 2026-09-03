@@ -616,10 +616,14 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
         let one_shot_space = key.modifiers.is_empty()
             && matches!(key.code, KeyCode::Char(' '))
             && (!self.searchable || self.search.value().is_empty());
+        let one_shot_search_edit = self.searchable
+            && key.modifiers.contains(KeyModifiers::CONTROL)
+            && matches!(key.code, KeyCode::Char('u' | 'U'));
         if !key.is_press()
             && (key.code == KeyCode::Esc && key.modifiers.is_empty()
                 || key.code == KeyCode::Enter && key.modifiers.is_empty()
                 || one_shot_space
+                || one_shot_search_edit
                 || key.modifiers.contains(KeyModifiers::CONTROL)
                     && matches!(
                         key.code,
@@ -1575,6 +1579,34 @@ mod tests {
         ));
         assert_eq!(searchable.search_query(), "r ");
         assert!(searchable.is_open());
+
+        let mut kill_to_start = MultiSelectState::new();
+        kill_to_start.set_focused(true);
+        let _ = kill_to_start.open(bounds, &options);
+        let _ = kill_to_start.search.insert_str("abc");
+        for kind in [KeyEventKind::Repeat, KeyEventKind::Release] {
+            assert_eq!(
+                kill_to_start.handle_key(
+                    key_with_kind(KeyCode::Char('u'), KeyModifiers::CONTROL, kind,),
+                    &options,
+                    bounds,
+                ),
+                MultiSelectOutcome::Ignored
+            );
+            assert_eq!(kill_to_start.search_query(), "abc");
+        }
+        assert!(matches!(
+            kill_to_start.handle_key(
+                key_with_kind(
+                    KeyCode::Char('u'),
+                    KeyModifiers::CONTROL,
+                    KeyEventKind::Press,
+                ),
+                &options,
+                bounds,
+            ),
+            MultiSelectOutcome::SearchChanged { query } if query.is_empty()
+        ));
     }
 
     #[test]
