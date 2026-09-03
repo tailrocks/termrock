@@ -12,7 +12,9 @@ use termrock::runtime::FrameTick;
 use termrock::style::ColorCapability;
 use termrock_catalog::catalog::{CatalogProfile, PageId};
 use termrock_catalog::shell::App as CatalogApp;
+use termrock_catalog::tablepro::db::Catalog;
 use termrock_catalog::tablepro::workbench::WorkTab;
+use termrock_catalog::tablepro::workbench::Workbench;
 use termrock_catalog::tablepro::{App, ParseError, Screen, connections, help_text, parse_args};
 
 fn tick() -> FrameTick {
@@ -59,6 +61,12 @@ impl Harness {
     fn paste(&mut self, text: &str) {
         let _ = self.app.handle_event(Event::Paste(text.to_owned()), tick());
         self.draw();
+    }
+
+    fn type_text(&mut self, text: &str) {
+        for ch in text.chars() {
+            self.key(KeyCode::Char(ch), KeyModifiers::NONE);
+        }
     }
 
     fn text(&self) -> String {
@@ -188,6 +196,66 @@ fn new_query_and_history_tabs() {
 }
 
 #[test]
+fn quick_switcher_matches_source_query_clear_and_navigation() {
+    let mut h = Harness::connected(120, 40);
+
+    h.key(KeyCode::Char('o'), KeyModifiers::CONTROL);
+    assert!(h.text().contains("Open quickly"), "{}", h.text());
+    assert!(h.text().contains("All · Tab scope"), "{}", h.text());
+
+    h.type_text("cust");
+    assert!(h.text().contains("customers"), "{}", h.text());
+    h.key(KeyCode::Enter, KeyModifiers::NONE);
+    assert!(matches!(
+        h.app.workbench.as_ref().unwrap().active_tab(),
+        Some(WorkTab::Table(t)) if t.name == "customers"
+    ));
+
+    h.key(KeyCode::Char('o'), KeyModifiers::CONTROL);
+    h.type_text("x");
+    h.key(KeyCode::Esc, KeyModifiers::NONE);
+    assert!(
+        h.text().contains("Filter tables, tabs, queries"),
+        "{}",
+        h.text()
+    );
+    h.key(KeyCode::Esc, KeyModifiers::NONE);
+    assert!(!h.text().contains("Open quickly"), "{}", h.text());
+
+    h.key(KeyCode::Char('o'), KeyModifiers::CONTROL);
+    h.type_text("ord");
+    h.key(KeyCode::Down, KeyModifiers::NONE);
+    h.key(KeyCode::Enter, KeyModifiers::NONE);
+    let active = h
+        .app
+        .workbench
+        .as_ref()
+        .unwrap()
+        .active_tab()
+        .map(WorkTab::label);
+    assert_eq!(
+        active.as_deref(),
+        Some("orders"),
+        "active={active:?}\n{}",
+        h.text()
+    );
+}
+
+#[test]
+fn quick_switcher_tab_cycles_source_scope() {
+    let mut h = Harness::connected(120, 40);
+    h.key(KeyCode::Char('o'), KeyModifiers::CONTROL);
+    h.key(KeyCode::Tab, KeyModifiers::NONE);
+    assert!(h.text().contains("Tables · Tab scope"), "{}", h.text());
+    h.type_text("cust");
+    assert!(h.text().contains("customers"), "{}", h.text());
+    h.key(KeyCode::Esc, KeyModifiers::NONE);
+    h.key(KeyCode::Esc, KeyModifiers::NONE);
+    h.key(KeyCode::Char('o'), KeyModifiers::CONTROL);
+    assert!(h.text().contains("All · Tab scope"), "{}", h.text());
+}
+
+#[test]
 fn catalog_applications_mounts_same_workbench() {
     let mut app = CatalogApp::new(CatalogProfile::TermRock, ColorCapability::Truecolor);
     app.goto(PageId::TABLEPRO);
@@ -297,4 +365,135 @@ fn safety_acknowledgement_exact_token_executes_query() {
         h.text()
     );
     assert!(!h.text().contains("Type orders to confirm"));
+}
+
+#[test]
+fn render_does_not_advance_query_ticks() {
+    let mut h = Harness::connected(120, 40);
+    h.app.seed_active_query("SELECT * FROM orders");
+    h.key(KeyCode::Char('r'), KeyModifiers::CONTROL);
+    assert!(h.app.workbench.as_ref().unwrap().running().is_some());
+
+    h.draw();
+    assert!(
+        h.app.workbench.as_ref().unwrap().running().is_some(),
+        "render must not consume a query tick"
+    );
+
+    h.app.on_tick(tick());
+    h.draw();
+    assert!(h.app.workbench.as_ref().unwrap().running().is_some());
+    h.app.on_tick(tick());
+    h.draw();
+    assert!(h.app.workbench.as_ref().unwrap().running().is_none());
+}
+
+#[test]
+fn ctrl_c_cancels_running_query_before_quit() {
+    let mut h = Harness::connected(120, 40);
+    h.app.seed_active_query("SELECT * FROM orders");
+    h.key(KeyCode::Char('r'), KeyModifiers::CONTROL);
+    assert!(h.app.workbench.as_ref().unwrap().running().is_some());
+
+    let flow = h.app.handle_event(
+        Event::Key(KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL)),
+        tick(),
+    );
+    assert!(matches!(flow, std::ops::ControlFlow::Continue(())));
+    assert!(!h.app.quit);
+    assert!(h.app.workbench.as_ref().unwrap().running().is_none());
+
+    let flow = h.app.handle_event(
+        Event::Key(KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL)),
+        tick(),
+    );
+    assert!(matches!(flow, std::ops::ControlFlow::Break(())));
+    assert!(h.app.quit);
+}
+
+#[test]
+fn dirty_quit_requires_confirmation() {
+    let mut h = Harness::connected(120, 40);
+    let query = h
+        .app
+        .workbench
+        .as_mut()
+        .unwrap()
+        .active_query_mut()
+        .unwrap();
+    query.editor.set_editing(true);
+    query
+        .editor
+        .set_text("SELECT * FROM orders WHERE status = 'pending'");
+    query.editor.set_editing(false);
+    assert!(query.dirty());
+
+    h.key(KeyCode::Char('q'), KeyModifiers::NONE);
+    assert!(!h.app.quit);
+    assert!(h.text().contains("Quit TablePro?"), "{}", h.text());
+    assert!(h.text().contains("unsaved query"), "{}", h.text());
+
+    h.key(KeyCode::Esc, KeyModifiers::NONE);
+    assert!(!h.app.quit);
+    h.key(KeyCode::Char('q'), KeyModifiers::NONE);
+    h.key(KeyCode::Enter, KeyModifiers::NONE);
+    assert!(h.app.quit);
+}
+
+#[test]
+fn dirty_close_tab_requires_confirmation() {
+    let mut h = Harness::connected(120, 40);
+    {
+        let wb = h.app.workbench.as_mut().unwrap();
+        wb.new_query("SELECT 1");
+        wb.new_query("SELECT 2");
+        let query = wb.active_query_mut().unwrap();
+        query.editor.set_editing(true);
+        query.editor.set_text("SELECT 2 -- changed");
+        query.editor.set_editing(false);
+    }
+    let tab_count = h.app.workbench.as_ref().unwrap().tabs.len();
+
+    h.key(KeyCode::Char('w'), KeyModifiers::CONTROL);
+    assert_eq!(h.app.workbench.as_ref().unwrap().tabs.len(), tab_count);
+    assert!(
+        h.text().contains("Close tab with unsaved work?"),
+        "{}",
+        h.text()
+    );
+
+    h.key(KeyCode::Enter, KeyModifiers::NONE);
+    assert_eq!(h.app.workbench.as_ref().unwrap().tabs.len(), tab_count - 1);
+}
+
+#[test]
+fn close_tab_before_active_tab_preserves_active_tab() {
+    let connection = connections().into_iter().next().unwrap();
+    let mut wb = Workbench::new(connection, Catalog::acme_prod());
+    wb.new_query("SELECT 1");
+    wb.new_query("SELECT 2");
+    wb.new_query("SELECT 3");
+    wb.active = 2;
+
+    wb.close_tab(0);
+
+    assert_eq!(wb.active, 1);
+    assert_eq!(wb.active_tab().unwrap().label(), "Query 3");
+}
+
+#[test]
+fn deleting_connection_requires_confirmation() {
+    let mut h = Harness::new(120, 40);
+    let count = h.app.connections.connections.len();
+    // Initial focus is the tree. The connection detail buttons follow it in
+    // the focus ring: Connect, Edit, Duplicate, Delete.
+    for _ in 0..4 {
+        h.key(KeyCode::Tab, KeyModifiers::NONE);
+    }
+    h.key(KeyCode::Enter, KeyModifiers::NONE);
+    assert_eq!(h.app.connections.connections.len(), count);
+    assert!(h.text().contains("Delete connection?"), "{}", h.text());
+
+    h.key(KeyCode::Enter, KeyModifiers::NONE);
+    assert_eq!(h.app.connections.connections.len(), count - 1);
 }

@@ -120,6 +120,7 @@ pub struct QueryTab {
     running: Option<(Vec<(String, Range<usize>)>, u32, Option<bool>)>,
     pub split: u16,
     pub last_duration: Option<u32>,
+    saved_text: String,
 }
 
 impl QueryTab {
@@ -135,6 +136,7 @@ impl QueryTab {
             running: None,
             split: 12,
             last_duration: None,
+            saved_text: String::new(),
         };
         tab.set_sql(sql);
         tab
@@ -152,11 +154,12 @@ impl QueryTab {
         self.editor = editor;
         self.code.set_cursor_line(Some(0));
         self.code.set_cursor_col(first.len());
+        self.saved_text = sql.to_owned();
     }
 
     #[must_use]
     pub fn dirty(&self) -> bool {
-        !self.editor.text().trim().is_empty() && self.results.is_empty()
+        self.editor.text() != self.saved_text
     }
 
     #[must_use]
@@ -167,6 +170,11 @@ impl QueryTab {
     #[must_use]
     pub fn is_running(&self) -> bool {
         self.running.is_some()
+    }
+
+    /// Cancel the active simulated query, matching Junie's Ctrl-C path.
+    pub fn cancel(&mut self) -> bool {
+        self.running.take().is_some()
     }
 
     pub fn statements_to_run(&self, all: bool) -> Vec<(String, Range<usize>)> {

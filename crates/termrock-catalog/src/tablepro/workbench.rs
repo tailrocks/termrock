@@ -86,6 +86,7 @@ pub struct Workbench {
     pub active: usize,
     pub query_counter: usize,
     pub pending_run: Option<PendingRun>,
+    pending_close: Option<usize>,
 }
 
 fn kind_glyph(k: ObjectKind) -> &'static str {
@@ -121,6 +122,7 @@ impl Workbench {
             active: 0,
             query_counter: 0,
             pending_run: None,
+            pending_close: None,
         };
         wb.explorer = TreeState::new(Some(format!("{}/public", wb.catalog.database)));
         wb
@@ -579,7 +581,7 @@ impl Workbench {
                             return Route::Changed;
                         }
                         TabsOutcome::CloseRequested { id } => {
-                            self.close_tab(id);
+                            let _ = self.request_close_tab(id);
                             return Route::Changed;
                         }
                         TabsOutcome::Ignored => return Route::Ignored,
@@ -744,13 +746,32 @@ impl Workbench {
         Route::Changed
     }
 
-    fn close_tab(&mut self, id: usize) {
+    pub fn request_close_tab(&mut self, id: usize) -> bool {
+        if id >= self.tabs.len() {
+            return false;
+        }
+        if self.tabs[id].dirty() {
+            self.pending_close = Some(id);
+            true
+        } else {
+            self.close_tab(id);
+            false
+        }
+    }
+
+    pub fn take_close_request(&mut self) -> Option<usize> {
+        self.pending_close.take()
+    }
+
+    pub fn close_tab(&mut self, id: usize) {
         if id >= self.tabs.len() {
             return;
         }
         self.tabs.remove(id);
         if self.active >= self.tabs.len() {
             self.active = self.tabs.len().saturating_sub(1);
+        } else if self.active > id {
+            self.active -= 1;
         }
         self.sync_strip();
     }

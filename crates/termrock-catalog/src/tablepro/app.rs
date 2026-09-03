@@ -60,6 +60,7 @@ pub enum Screen {
 }
 
 struct ConfirmOverlay {
+    kind: ConfirmAction,
     title: String,
     action: String,
     target: String,
@@ -70,6 +71,14 @@ struct ConfirmOverlay {
     sql: Vec<String>,
     token: Option<String>,
     dangerous: bool,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ConfirmAction {
+    RunQuery,
+    Quit,
+    CloseTab(usize),
+    DeleteConnection(usize),
 }
 
 enum Overlay {
@@ -123,6 +132,8 @@ pub struct App {
     switcher_q: TextInputState,
     switcher_list: ListState<usize>,
     switcher_items: Vec<SwitchItem>,
+    switcher_scope: usize,
+    switcher_return_focus: Option<WidgetId>,
     confirm_ack: TextInputState,
     confirm_ok: ButtonState,
     confirm_cancel: ButtonState,
@@ -155,6 +166,8 @@ impl App {
             switcher_q,
             switcher_list: ListState::new(Some(0)),
             switcher_items: vec![],
+            switcher_scope: 0,
+            switcher_return_focus: None,
             confirm_ack: TextInputState::new("").with_allow_empty(true),
             confirm_ok: ButtonState::new(),
             confirm_cancel: ButtonState::new(),
@@ -234,16 +247,6 @@ impl App {
 
     /// Shared surface used by the catalog page and the standalone host.
     pub fn render_surface(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx<'_>) {
-        if self.connections.animating() || self.workbench.as_ref().is_some_and(Workbench::animating)
-        {
-            self.tick = self.tick.wrapping_add(1);
-            if let Some(ConnEvent::Connected(i)) = self.connections.tick() {
-                self.connect(i);
-            }
-            if let Some(wb) = self.workbench.as_mut() {
-                let _ = wb.tick(&mut self.history);
-            }
-        }
         let t = ctx.theme;
         fill(buf, area, t.base());
         if area.width < MIN_WIDTH || area.height < MIN_HEIGHT {
@@ -467,6 +470,7 @@ impl App {
                     sql,
                     token,
                     dangerous,
+                    ..
                 } = confirm.as_ref();
                 let w = area.width.min(74).max(32);
                 let content_width = usize::from(w.saturating_sub(8).max(1));
@@ -574,7 +578,7 @@ impl App {
                 let h = area.height.min(18).max(10);
                 let x = area.x + area.width.saturating_sub(w) / 2;
                 let y = area.y + area.height.saturating_sub(h) / 2;
-                let (inner, _bg) = layout::card(
+                let (inner, bg) = layout::card(
                     Rect::new(x, y, w, h),
                     buf,
                     t,
@@ -582,6 +586,11 @@ impl App {
                     None,
                     true,
                 );
+                let scope = format!("{} · Tab scope", self.switcher_scope_name());
+                let scope_x = inner
+                    .right()
+                    .saturating_sub(u16::try_from(scope.len()).unwrap_or(u16::MAX));
+                buf.set_string(scope_x, inner.y, &scope, t.muted().bg(bg));
                 self.switcher_q
                     .set_focused(ctx.interaction.focused(SWITCHER_INPUT));
                 TextInput::new("", ctx.system)
@@ -654,21 +663,8 @@ impl App {
                     return Route::Changed;
                 }
                 match self.screen {
-                    Screen::Connections => {
-                        let (route, ev) = self.connections.handle(&PageEvent::Key(*key), cx);
-                        if let Some(ConnEvent::Connected(i)) = ev {
-                            self.connect(i);
-                            return Route::Changed;
-                        }
-                        route
-                    }
-                    Screen::Workbench => {
-                        if let Some(wb) = self.workbench.as_mut() {
-                            wb.handle(&PageEvent::Key(*key), cx, &self.history)
-                        } else {
-                            Route::Ignored
-                        }
-                    }
+                    Screen::Connections => self.handle_connections_event(&PageEvent::Key(*key), cx),
+                    Screen::Workbench => self.handle_workbench_event(&PageEvent::Key(*key), cx),
                 }
             }
             PageEvent::Click { id, .. } if *id == STRIP_HELP => {
@@ -683,21 +679,41 @@ impl App {
                 Route::Changed
             }
             other => match self.screen {
-                Screen::Connections => {
-                    let (route, ev) = self.connections.handle(other, cx);
-                    if let Some(ConnEvent::Connected(i)) = ev {
-                        self.connect(i);
-                        return Route::Changed;
-                    }
-                    route
-                }
-                Screen::Workbench => self
-                    .workbench
-                    .as_mut()
-                    .map(|wb| wb.handle(other, cx, &self.history))
-                    .unwrap_or(Route::Ignored),
+                Screen::Connections => self.handle_connections_event(other, cx),
+                Screen::Workbench => self.handle_workbench_event(other, cx),
             },
         }
+    }
+
+    fn handle_connections_event(&mut self, ev: &PageEvent, cx: &mut PageCtx<'_>) -> Route {
+        let (route, connection_event, delete_request) = {
+            let (route, connection_event) = self.connections.handle(ev, cx);
+            let delete_request = self.connections.take_delete_request();
+            (route, connection_event, delete_request)
+        };
+        if let Some(index) = delete_request {
+            self.open_delete_connection_confirmation(index);
+        }
+        if let Some(ConnEvent::Connected(index)) = connection_event {
+            self.connect(index);
+            return Route::Changed;
+        }
+        route
+    }
+
+    fn handle_workbench_event(&mut self, ev: &PageEvent, cx: &mut PageCtx<'_>) -> Route {
+        let (route, close_request) = {
+            let Some(wb) = self.workbench.as_mut() else {
+                return Route::Ignored;
+            };
+            let route = wb.handle(ev, cx, &self.history);
+            let close_request = wb.take_close_request();
+            (route, close_request)
+        };
+        if let Some(index) = close_request {
+            self.open_close_tab_confirmation(index);
+        }
+        route
     }
 
     fn handle_chords(&mut self, key: &KeyEvent, cx: &mut PageCtx<'_>) -> bool {
@@ -712,6 +728,22 @@ impl App {
         if ctrl && matches!(key.code, KeyCode::Char('y') | KeyCode::Char('Y')) {
             if let Some(wb) = self.workbench.as_mut() {
                 wb.open_history();
+            }
+            return true;
+        }
+        if ctrl
+            && matches!(key.code, KeyCode::Char('w') | KeyCode::Char('W'))
+            && self.screen == Screen::Workbench
+            && !self.editing()
+        {
+            let close_request = self.workbench.as_mut().and_then(|wb| {
+                let index = wb.active;
+                wb.request_close_tab(index).then_some(index)
+            });
+            if let Some(index) = close_request {
+                self.open_close_tab_confirmation(index);
+            } else if let Some(wb) = self.workbench.as_ref() {
+                cx.set_focus(wb.primary_focus().unwrap_or(EXPLORER));
             }
             return true;
         }
@@ -774,10 +806,129 @@ impl App {
             .collect();
         let idx = SwitcherIndex::build(&wb.catalog, &wb.connection.name, &open, &self.history);
         self.switcher_items = idx.query("");
+        self.switcher_return_focus = self.host.focus;
+        self.switcher_scope = 0;
         self.switcher_q = TextInputState::new("").with_allow_empty(true);
         self.switcher_q.set_editing(true);
         self.switcher_list = ListState::new(Some(0));
+        self.host.focus = Some(SWITCHER_INPUT);
         self.overlay = Overlay::Switcher;
+        self.refresh_switcher();
+    }
+
+    fn switcher_scope_name(&self) -> &'static str {
+        match self.switcher_scope {
+            1 => "Tables",
+            2 => "Schemas",
+            3 => "Queries",
+            _ => "All",
+        }
+    }
+
+    fn refresh_switcher(&mut self) {
+        let Some(wb) = self.workbench.as_ref() else {
+            self.switcher_items.clear();
+            self.switcher_list.select(None);
+            return;
+        };
+        let open: Vec<(usize, String)> = wb
+            .tabs
+            .iter()
+            .enumerate()
+            .map(|(i, t)| (i, t.label()))
+            .collect();
+        let idx = SwitcherIndex::build(&wb.catalog, &wb.connection.name, &open, &self.history);
+        let mut items = idx.query(self.switcher_q.value());
+        items.retain(|item| match self.switcher_scope {
+            1 => matches!(item.group, "Tables" | "Views"),
+            2 => matches!(item.group, "Schemas" | "Databases"),
+            3 => item.group == "Recent queries",
+            _ => true,
+        });
+        self.switcher_items = items;
+        self.switcher_list
+            .select((!self.switcher_items.is_empty()).then_some(0));
+    }
+
+    fn close_switcher(&mut self) {
+        self.overlay = Overlay::None;
+        self.switcher_q.commit();
+        self.host.focus = self
+            .switcher_return_focus
+            .take()
+            .or_else(|| self.workbench.as_ref().and_then(Workbench::primary_focus))
+            .or(Some(EXPLORER));
+    }
+
+    fn move_switcher(&mut self, delta: isize) {
+        let Some(current) = self.switcher_list.selected().copied() else {
+            return;
+        };
+        let last = self.switcher_items.len().saturating_sub(1);
+        let next = if delta.is_negative() {
+            current.saturating_sub(delta.unsigned_abs())
+        } else {
+            current.saturating_add(delta as usize).min(last)
+        };
+        self.switcher_list.select(Some(next));
+    }
+
+    fn handle_switcher_key(&mut self, key: KeyEvent, cx: &mut PageCtx<'_>) -> Route {
+        match key.code {
+            KeyCode::Esc => {
+                if !self.switcher_q.value().is_empty() {
+                    self.switcher_q.clear();
+                    self.refresh_switcher();
+                    return Route::Changed;
+                }
+                self.close_switcher();
+                Route::Changed
+            }
+            KeyCode::Enter => {
+                self.apply_switcher(cx);
+                Route::Changed
+            }
+            KeyCode::Down | KeyCode::Char('j') if key.modifiers.is_empty() => {
+                self.move_switcher(1);
+                Route::Changed
+            }
+            KeyCode::Up | KeyCode::Char('k') if key.modifiers.is_empty() => {
+                self.move_switcher(-1);
+                Route::Changed
+            }
+            KeyCode::Char('n') | KeyCode::Char('j')
+                if key.modifiers.contains(KeyModifiers::CONTROL) =>
+            {
+                self.move_switcher(1);
+                Route::Changed
+            }
+            KeyCode::Char('p') | KeyCode::Char('k')
+                if key.modifiers.contains(KeyModifiers::CONTROL) =>
+            {
+                self.move_switcher(-1);
+                Route::Changed
+            }
+            KeyCode::PageDown => {
+                self.move_switcher(12);
+                Route::Changed
+            }
+            KeyCode::PageUp => {
+                self.move_switcher(-12);
+                Route::Changed
+            }
+            KeyCode::Tab => {
+                self.switcher_scope = (self.switcher_scope + 1) % 4;
+                self.refresh_switcher();
+                Route::Changed
+            }
+            _ => {
+                let outcome = self.switcher_q.handle_key(key);
+                if !matches!(outcome, termrock::widgets::TextInputOutcome::Ignored) {
+                    self.refresh_switcher();
+                }
+                Route::Changed
+            }
+        }
     }
 
     fn run_active(&mut self, all: bool, explain: Option<bool>, cx: &mut PageCtx<'_>) {
@@ -873,6 +1024,7 @@ impl App {
                 };
                 self.confirm_ack = TextInputState::new("").with_allow_empty(true);
                 self.overlay = Overlay::Confirm(Box::new(ConfirmOverlay {
+                    kind: ConfirmAction::RunQuery,
                     title: title.into(),
                     action: risk.action,
                     target,
@@ -891,6 +1043,12 @@ impl App {
     fn handle_overlay(&mut self, ev: &PageEvent, cx: &mut PageCtx<'_>) -> Route {
         match ev {
             PageEvent::Key(key)
+                if key.kind != KeyEventKind::Release
+                    && matches!(self.overlay, Overlay::Switcher) =>
+            {
+                self.handle_switcher_key(*key, cx)
+            }
+            PageEvent::Key(key)
                 if key.kind != KeyEventKind::Release && key.code == KeyCode::Esc =>
             {
                 self.overlay = Overlay::None;
@@ -903,7 +1061,7 @@ impl App {
             PageEvent::Click { id, .. }
                 if matches!(&self.overlay, Overlay::Confirm(_)) && *id == CONFIRM_OK =>
             {
-                self.confirm_run(cx);
+                self.confirm_action(cx);
                 Route::Changed
             }
             PageEvent::Click { id, .. }
@@ -947,7 +1105,7 @@ impl App {
                         Route::Changed
                     };
                 }
-                self.confirm_run(cx);
+                self.confirm_action(cx);
                 Route::Changed
             }
             PageEvent::Key(key)
@@ -965,53 +1123,6 @@ impl App {
                 } else {
                     Route::Changed
                 }
-            }
-            PageEvent::Key(key) if matches!(self.overlay, Overlay::Switcher) => {
-                if key.kind == KeyEventKind::Release {
-                    return Route::Consumed;
-                }
-                if key.code == KeyCode::Enter {
-                    self.apply_switcher(cx);
-                    return Route::Changed;
-                }
-                if *cx.focus == Some(SWITCHER_LIST) {
-                    let n = self.switcher_items.len();
-                    match key.code {
-                        KeyCode::Down | KeyCode::Char('j') => {
-                            if let Some(&i) = self.switcher_list.selected() {
-                                self.switcher_list
-                                    .select(Some((i + 1).min(n.saturating_sub(1))));
-                            }
-                            return Route::Changed;
-                        }
-                        KeyCode::Up | KeyCode::Char('k') => {
-                            if let Some(&i) = self.switcher_list.selected() {
-                                self.switcher_list.select(Some(i.saturating_sub(1)));
-                            }
-                            return Route::Changed;
-                        }
-                        _ => {}
-                    }
-                }
-                let o = self.switcher_q.handle_key(*key);
-                if !matches!(o, termrock::widgets::TextInputOutcome::Ignored)
-                    && let Some(wb) = self.workbench.as_ref()
-                {
-                    let open: Vec<(usize, String)> = wb
-                        .tabs
-                        .iter()
-                        .enumerate()
-                        .map(|(i, t)| (i, t.label()))
-                        .collect();
-                    let idx = SwitcherIndex::build(
-                        &wb.catalog,
-                        &wb.connection.name,
-                        &open,
-                        &self.history,
-                    );
-                    self.switcher_items = idx.query(self.switcher_q.value());
-                }
-                Route::Changed
             }
             PageEvent::Key(key)
                 if matches!(self.overlay, Overlay::Help)
@@ -1053,39 +1164,74 @@ impl App {
         }
     }
 
+    fn confirm_action(&mut self, cx: &mut PageCtx<'_>) {
+        let Some(kind) = (match &self.overlay {
+            Overlay::Confirm(confirm) => Some(confirm.kind),
+            _ => None,
+        }) else {
+            return;
+        };
+        match kind {
+            ConfirmAction::RunQuery => self.confirm_run(cx),
+            ConfirmAction::Quit => {
+                self.overlay = Overlay::None;
+                self.quit = true;
+            }
+            ConfirmAction::CloseTab(index) => {
+                self.overlay = Overlay::None;
+                if let Some(wb) = self.workbench.as_mut() {
+                    wb.close_tab(index);
+                    cx.set_focus(wb.primary_focus().unwrap_or(EXPLORER));
+                }
+            }
+            ConfirmAction::DeleteConnection(index) => {
+                self.overlay = Overlay::None;
+                if let Some(name) = self.connections.delete_at(index) {
+                    cx.status(format!("Deleted {name}"));
+                }
+            }
+        }
+    }
+
     fn apply_switcher(&mut self, cx: &mut PageCtx<'_>) {
         let Some(&i) = self.switcher_list.selected() else {
-            self.overlay = Overlay::None;
+            self.close_switcher();
             return;
         };
         let Some(item) = self.switcher_items.get(i).cloned() else {
-            self.overlay = Overlay::None;
+            self.close_switcher();
             return;
         };
-        self.overlay = Overlay::None;
+        self.close_switcher();
         let Some(wb) = self.workbench.as_mut() else {
             return;
         };
         match item.target {
             SwitchTarget::Table { schema, name } | SwitchTarget::View { schema, name } => {
                 wb.open_table(&schema, &name);
+                self.host.focus = Some(super::tabs::TABLE_GRID);
                 cx.status(format!("Opened {schema}.{name}"));
             }
             SwitchTarget::OpenTab(i) => {
                 if i < wb.tabs.len() {
                     wb.active = i;
+                    self.host.focus = wb.primary_focus().or(Some(EXPLORER));
                 }
             }
             SwitchTarget::RecentQuery(id) => {
                 if let Some(e) = self.history.entries.iter().find(|e| e.id == id) {
                     let sql = e.sql.clone();
                     wb.new_query(&sql);
+                    self.host.focus = Some(super::tabs::EDITOR);
                 }
             }
             SwitchTarget::Schema(s) => {
                 wb.schema = s;
+                self.host.focus = Some(EXPLORER);
             }
-            SwitchTarget::Database(_) => {}
+            SwitchTarget::Database(_) => {
+                self.host.focus = Some(EXPLORER);
+            }
         }
     }
 
@@ -1123,6 +1269,121 @@ impl App {
         } else {
             None
         }
+    }
+
+    /// Request quit, preserving unsaved work behind a destructive confirmation.
+    fn request_quit(&mut self) -> bool {
+        let Some(wb) = self.workbench.as_ref() else {
+            self.quit = true;
+            return true;
+        };
+        let pending = wb.pending_total();
+        let dirty_queries = wb.tabs.iter().filter(|tab| tab.dirty()).count();
+        if pending == 0 && dirty_queries == 0 {
+            self.quit = true;
+            return true;
+        }
+        let mut lost = Vec::new();
+        if pending > 0 {
+            lost.push(format!(
+                "{pending} pending row change{}",
+                if pending == 1 { "" } else { "s" }
+            ));
+        }
+        if dirty_queries > 0 {
+            lost.push(format!(
+                "{dirty_queries} unsaved quer{}",
+                if dirty_queries == 1 { "y" } else { "ies" }
+            ));
+        }
+        self.open_confirmation(
+            ConfirmAction::Quit,
+            "Quit TablePro?",
+            "Quit",
+            "TablePro",
+            "Current work will be lost.",
+            &format!("{} will be lost.", lost.join(" and ")),
+            "No",
+            "Not applicable",
+            Vec::new(),
+            true,
+        );
+        false
+    }
+
+    fn open_confirmation(
+        &mut self,
+        kind: ConfirmAction,
+        title: &str,
+        action: &str,
+        target: &str,
+        scope: &str,
+        risk: &str,
+        reversible: &str,
+        safe_mode: &str,
+        sql: Vec<String>,
+        dangerous: bool,
+    ) {
+        self.confirm_ack = TextInputState::new("").with_allow_empty(true);
+        self.overlay = Overlay::Confirm(Box::new(ConfirmOverlay {
+            kind,
+            title: title.to_owned(),
+            action: action.to_owned(),
+            target: target.to_owned(),
+            scope: scope.to_owned(),
+            risk: risk.to_owned(),
+            reversible: reversible.to_owned(),
+            safe_mode: safe_mode.to_owned(),
+            sql,
+            token: None,
+            dangerous,
+        }));
+    }
+
+    fn open_close_tab_confirmation(&mut self, index: usize) {
+        let Some(wb) = self.workbench.as_ref() else {
+            return;
+        };
+        let Some(tab) = wb.tabs.get(index) else {
+            return;
+        };
+        let target = tab.label();
+        let scope = format!("{} · {}", wb.connection.name, wb.catalog.database);
+        self.open_confirmation(
+            ConfirmAction::CloseTab(index),
+            "Close tab with unsaved work?",
+            "Close tab",
+            &target,
+            &scope,
+            "Unsaved query text or pending row edits will be lost.",
+            "No",
+            "Not applicable",
+            Vec::new(),
+            true,
+        );
+    }
+
+    fn open_delete_connection_confirmation(&mut self, index: usize) {
+        let Some(connection) = self.connections.connections.get(index) else {
+            return;
+        };
+        let target = connection.name.clone();
+        let detail = format!(
+            "{target} ({}@{}) will be removed from the saved connections.",
+            connection.user, connection.host
+        );
+        self.open_confirmation(
+            ConfirmAction::DeleteConnection(index),
+            "Delete connection?",
+            "Delete",
+            &target,
+            "Saved connection",
+            &detail,
+            "No",
+            "Not applicable",
+            Vec::new(),
+            true,
+        );
     }
 
     /// Standalone frame.
@@ -1240,8 +1501,19 @@ impl App {
                     return ControlFlow::Continue(());
                 }
                 if key.code == KeyCode::Char('c') && key.modifiers.contains(KeyModifiers::CONTROL) {
-                    self.quit = true;
-                    return ControlFlow::Break(());
+                    let cancelled = self
+                        .workbench
+                        .as_mut()
+                        .and_then(Workbench::active_query_mut)
+                        .is_some_and(|query| query.cancel());
+                    if cancelled {
+                        self.set_status("Query cancelled".into());
+                        return ControlFlow::Continue(());
+                    }
+                    if self.request_quit() {
+                        return ControlFlow::Break(());
+                    }
+                    return ControlFlow::Continue(());
                 }
                 self.host.hover_suppressed = true;
                 if self.size.0 < MIN_WIDTH || self.size.1 < MIN_HEIGHT {
@@ -1256,8 +1528,14 @@ impl App {
                     && !self.editing()
                     && matches!(self.overlay, Overlay::None)
                 {
-                    self.quit = true;
-                    return ControlFlow::Break(());
+                    if self.request_quit() {
+                        return ControlFlow::Break(());
+                    }
+                    return ControlFlow::Continue(());
+                }
+                if matches!(self.overlay, Overlay::Switcher) && matches!(key.code, KeyCode::Tab) {
+                    self.dispatch(PageEvent::Key(key));
+                    return ControlFlow::Continue(());
                 }
                 if key.code == KeyCode::Tab {
                     self.focus_step(key.modifiers.contains(KeyModifiers::SHIFT));

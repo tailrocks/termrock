@@ -13,10 +13,10 @@ use ratatui::layout::Rect;
 use ratatui::text::Line;
 use ratatui::widgets::StatefulWidget;
 use termrock::input::{KeyCode, KeyEventKind};
+use termrock::style::Tone;
 use termrock::widgets::{
-    ButtonState, ButtonVariant, KeyValueList, KeyValueListState, KvEntry, KvStatus, ProgressBar,
-    ProgressKind, RadioGroup, RadioOption, RadioState, Tab, Tabs, TabsState, TextInput,
-    TextInputState, Tree, TreeNode, TreeOutcome, TreeState,
+    ButtonState, ButtonVariant, Prop, RadioGroup, RadioOption, RadioState, Spinner, SpinnerState,
+    Tab, Tabs, TabsState, TextInput, TextInputState, Tree, TreeNode, TreeOutcome, TreeState,
 };
 
 use super::db::{ConnectOutcome, Connection, Engine, Environment, SafeMode};
@@ -34,7 +34,6 @@ const CONNECT: WidgetId = ID.sub("connect");
 const EDIT: WidgetId = ID.sub("edit");
 const DUP: WidgetId = ID.sub("dup");
 const DEL: WidgetId = ID.sub("del");
-const RETRY: WidgetId = ID.sub("retry");
 const FORM_SAVE: WidgetId = ID.sub("form-save");
 const FORM_CANCEL: WidgetId = ID.sub("form-cancel");
 const FORM_CONNECT: WidgetId = ID.sub("form-saveconnect");
@@ -81,13 +80,12 @@ pub struct ConnectionsScreen {
     filter: TextInputState,
     pub selected: Option<usize>,
     pub state: ConnState,
+    pending_delete: Option<usize>,
     connect_btn: ButtonState,
     edit_btn: ButtonState,
     dup_btn: ButtonState,
     del_btn: ButtonState,
-    retry_btn: ButtonState,
     form: Option<ConnForm>,
-    kv: KeyValueListState<u8>,
 }
 
 impl ConnectionsScreen {
@@ -106,13 +104,12 @@ impl ConnectionsScreen {
             filter,
             selected: Some(0),
             state: ConnState::Idle,
+            pending_delete: None,
             connect_btn: ButtonState::new(),
             edit_btn: ButtonState::new(),
             dup_btn: ButtonState::new(),
             del_btn: ButtonState::new(),
-            retry_btn: ButtonState::new(),
             form: None,
-            kv: KeyValueListState::new(),
         };
         if let Some(c) = s.connections.first() {
             s.tree = TreeState::new(Some(c.name.clone()));
@@ -283,7 +280,20 @@ impl ConnectionsScreen {
             return;
         }
         let t = ctx.theme;
-        let (l, r) = layout::columns(area, 28, 2);
+        let list_w = (area.width / 3).clamp(26, 40);
+        let (l, r) = if area.width >= 80 {
+            (
+                Rect::new(area.x, area.y, list_w, area.height),
+                Rect::new(
+                    area.x + list_w + 2,
+                    area.y,
+                    area.width.saturating_sub(list_w + 2),
+                    area.height,
+                ),
+            )
+        } else {
+            (area, Rect::ZERO)
+        };
         let vis = self.visible();
         let nodes: Vec<TreeNode<'_, String>> = vis
             .iter()
@@ -294,90 +304,77 @@ impl ConnectionsScreen {
                     if *expanded {
                         n = n.expanded();
                     }
+                } else if let Some(c) = self.connections.iter().find(|c| c.name == *id) {
+                    let glyph = match c.environment {
+                        Environment::Production => "◆",
+                        Environment::Staging => "◇",
+                        _ => "·",
+                    };
+                    n = n
+                        .leading(Line::from(glyph))
+                        .badge(Line::from(c.engine.short()));
                 }
                 n
             })
             .collect();
-        let rows = layout::rows(l, &[2, 0]);
-        self.filter.set_focused(ctx.interaction.focused(FILTER));
-        let _ = TextInput::new("", ctx.system)
-            .placeholder("Filter connections")
-            .paint(rows[0], buf, &mut self.filter);
-        ctx.control(FILTER, rows[0], false);
 
-        let (inner, _bg) = layout::card(
-            rows[1],
-            buf,
-            t,
-            Some("Connections"),
-            None,
-            ctx.interaction.focused(TREE),
+        let focus_list = ctx.interaction.focused(TREE) || ctx.interaction.focused(FILTER);
+        let count = self.connections.len().to_string();
+        let (inner, bg) = layout::framed(l, buf, t, Some("Connections"), focus_list);
+        // `layout::framed` reserves the source's empty meta slot. Fill the
+        // same slot with the saved-connection count.
+        buf.set_string(
+            l.right().saturating_sub(5),
+            l.y,
+            &format!(" {count} "),
+            t.faint().bg(bg),
+        );
+
+        self.filter.set_focused(ctx.interaction.focused(FILTER));
+        let _ = TextInput::new(" ", ctx.system)
+            .placeholder("Filter connections")
+            .paint(
+                Rect::new(
+                    inner.x.saturating_sub(1),
+                    inner.y,
+                    inner.width.saturating_add(1),
+                    2,
+                ),
+                buf,
+                &mut self.filter,
+            );
+        ctx.control(
+            FILTER,
+            Rect::new(
+                inner.x.saturating_sub(1),
+                inner.y,
+                inner.width.saturating_add(1),
+                2,
+            ),
+            false,
+        );
+
+        let tree_area = Rect::new(
+            inner.x.saturating_sub(1),
+            inner.y + 2,
+            inner.width.saturating_add(1),
+            inner.height.saturating_sub(2),
         );
         StatefulWidget::render(
-            &Tree::new(&nodes, ctx.system).focused(ctx.interaction.focused(TREE)),
-            inner,
+            &Tree::new(&nodes, ctx.system)
+                .focused(ctx.interaction.focused(TREE))
+                .background(bg),
+            tree_area,
             buf,
             &mut self.tree,
         );
-        ctx.control(TREE, inner, false);
-        ctx.scrollable(TREE, inner);
+        ctx.control(TREE, tree_area, false);
+        ctx.scrollable(TREE, tree_area);
 
-        match &self.state {
-            ConnState::Connecting { ticks, name } => {
-                let (inner, bg) = layout::card(r, buf, t, Some("Connecting"), None, false);
-                buf.set_string(inner.x, inner.y, name, t.primary().bg(bg));
-                let phase = if *ticks < 4 {
-                    "Opening SSH tunnel"
-                } else if *ticks < 8 {
-                    "Authenticating"
-                } else {
-                    "Loading catalog"
-                };
-                buf.set_string(inner.x, inner.y + 2, phase, t.secondary().bg(bg));
-                ProgressBar::new(
-                    ProgressKind::Indeterminate {
-                        tick: ctx.interaction.tick,
-                    },
-                    ctx.system,
-                )
-                .paint(Rect::new(inner.x, inner.y + 4, inner.width.min(40), 1), buf);
-            }
-            ConnState::Failed {
-                name,
-                message,
-                detail,
-            } => {
-                let (inner, bg) = layout::card(r, buf, t, Some("Could not connect"), None, false);
-                buf.set_string(inner.x, inner.y, name, t.primary().bg(bg));
-                buf.set_string(inner.x, inner.y + 2, message, t.error_fg().bg(bg));
-                let mut y = inner.y + 4;
-                for line in crate::text::wrap(detail, inner.width as usize) {
-                    if y >= inner.bottom().saturating_sub(2) {
-                        break;
-                    }
-                    buf.set_string(inner.x, y, &line, t.secondary().bg(bg));
-                    y += 1;
-                }
-                let btn = Rect::new(
-                    inner.x,
-                    inner.bottom().saturating_sub(1),
-                    paint::button_width("Retry"),
-                    1,
-                );
-                paint::button(
-                    "Retry",
-                    ButtonVariant::Secondary,
-                    RETRY,
-                    btn,
-                    buf,
-                    ctx,
-                    &mut self.retry_btn,
-                    false,
-                    bg,
-                );
-            }
-            ConnState::Idle => self.render_detail(r, buf, ctx),
+        if r.is_empty() {
+            return;
         }
+        self.render_detail(r, buf, ctx);
     }
 
     fn render_detail(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx<'_>) {
@@ -388,46 +385,145 @@ impl ConnectionsScreen {
             return;
         };
         let title = c.name.clone();
-        let host = format!("{}:{}", c.host, c.port);
-        let engine = c.engine.label().to_owned();
-        let env = c.environment.label().to_owned();
-        let db = c.database.clone();
-        let user = c.user.clone();
-        let last = c.last_used.clone();
-        let safe = c.safe_mode.label().to_owned();
-        let (inner, bg) = layout::card(area, buf, t, Some(&title), Some(&engine), false);
-        let env_status = match c.environment {
-            Environment::Production => KvStatus::Danger,
-            Environment::Staging => KvStatus::Warning,
-            _ => KvStatus::Neutral,
-        };
-        let entries = [
-            KvEntry::pair(0, "Host", host.as_str()),
-            KvEntry::pair(1, "Database", db.as_str()),
-            KvEntry::pair(2, "User", user.as_str()),
-            KvEntry {
-                status: Some(env_status),
-                ..KvEntry::pair(3, "Environment", env.as_str())
-            },
-            KvEntry::pair(4, "Safe Mode", safe.as_str()),
-            KvEntry::pair(5, "Last used", last.as_str()),
-        ];
-        let kv_h = 8.min(inner.height.saturating_sub(2));
-        KeyValueList::new(&entries, ctx.system).paint(
-            Rect::new(inner.x, inner.y, inner.width, kv_h),
+        let card_h = 17.min(area.height);
+        let (inner, bg) = layout::card(
+            Rect::new(area.x, area.y, area.width.min(70), card_h),
             buf,
-            &mut self.kv,
+            t,
+            Some(&title),
+            None,
+            false,
         );
+        let ssl = if c.ssl { "on" } else { "off" };
+        let ssh = c.ssh.clone().unwrap_or_else(|| "off".into());
+        let safe_value = format!("{} · {}", c.safe_mode.label(), c.safe_mode.description());
+        let safe_tone = if c.safe_mode >= SafeMode::Safe {
+            Tone::Normal
+        } else {
+            Tone::Secondary
+        };
+        let value_width = usize::from(inner.width.saturating_sub(6).saturating_sub(13)).max(4);
+        let safe_lines = crate::text::wrap(&safe_value, value_width);
+        let mut facts = vec![
+            Prop::new("Engine", c.engine.label()),
+            Prop::new(
+                "Host",
+                if c.port > 0 {
+                    format!("{}:{}", c.host, c.port)
+                } else {
+                    c.host.clone()
+                },
+            ),
+            Prop::new(
+                "Database",
+                if c.database.is_empty() {
+                    "—".into()
+                } else {
+                    c.database.clone()
+                },
+            ),
+            Prop::new(
+                "User",
+                if c.user.is_empty() {
+                    "—".into()
+                } else {
+                    c.user.clone()
+                },
+            ),
+            Prop::new("Environment", c.environment.label()).tone(match c.environment {
+                Environment::Production => Tone::Normal,
+                Environment::Staging => Tone::Secondary,
+                Environment::Development => Tone::Muted,
+                Environment::Local => Tone::Faint,
+            }),
+        ];
+        facts.extend(safe_lines.iter().enumerate().map(|(i, line)| {
+            Prop::new(if i == 0 { "Safe Mode" } else { "" }, line.clone()).tone(safe_tone)
+        }));
+        let safe_end = facts.len();
+        if c.environment == Environment::Production && c.safe_mode == SafeMode::Silent {
+            facts.insert(
+                safe_end,
+                Prop::new(
+                    "",
+                    "Production with Silent safe mode: writes run without asking",
+                )
+                .tone(Tone::Warning)
+                .wrap(),
+            );
+        }
+        facts.push(Prop::new("SSL / SSH", format!("{ssl} / {ssh}")).tone(Tone::Secondary));
+        facts.push(Prop::new("Last used", c.last_used.clone()).tone(Tone::Muted));
+        let used = termrock::widgets::render_props(
+            Rect::new(
+                inner.x,
+                inner.y,
+                inner.width.saturating_sub(6),
+                inner.height.saturating_sub(3),
+            ),
+            buf,
+            t,
+            &facts,
+            bg,
+        );
+        let sy = inner.y + used + 1;
+        match &self.state {
+            ConnState::Connecting { ticks, name } if *name == c.name => {
+                let phase = if *ticks < 4 {
+                    "Opening SSH tunnel…"
+                } else if *ticks < 8 {
+                    "Authenticating…"
+                } else {
+                    "Loading schema…"
+                };
+                Spinner::labeled(phase, ctx.system).paint(
+                    Rect::new(inner.x, sy, inner.width, 1),
+                    buf,
+                    &SpinnerState::new(),
+                    paint::tick_frame(ctx.interaction.tick),
+                    termrock::style::MotionPolicy::Full,
+                );
+            }
+            ConnState::Failed {
+                name,
+                message,
+                detail,
+            } if *name == c.name => {
+                buf.set_string(
+                    inner.x,
+                    sy,
+                    "!",
+                    t.error_fg()
+                        .bg(bg)
+                        .add_modifier(ratatui::style::Modifier::BOLD),
+                );
+                buf.set_string(inner.x + 2, sy, message, t.error_fg().bg(bg));
+                for (i, line) in crate::text::wrap(detail, inner.width.saturating_sub(2) as usize)
+                    .iter()
+                    .take(2)
+                    .enumerate()
+                {
+                    buf.set_string(inner.x + 2, sy + 1 + i as u16, line, t.muted().bg(bg));
+                }
+            }
+            _ => {}
+        }
+
+        let connecting =
+            matches!(&self.state, ConnState::Connecting { name, .. } if *name == c.name);
+        let failed = matches!(&self.state, ConnState::Failed { name, .. } if *name == c.name);
+        self.connect_btn.activation.set_loading(connecting);
+        let connect_label = if failed { "Reconnect" } else { "Connect" };
         let ay = inner.bottom().saturating_sub(1);
         let widths = [
-            paint::button_width("Connect"),
+            paint::button_width(connect_label),
             paint::button_width("Edit"),
             paint::button_width("Duplicate"),
             paint::button_width("Delete…"),
         ];
         let rects = layout::row_layout(Rect::new(inner.x, ay, inner.width, 1), &widths, 2);
         paint::button(
-            "Connect",
+            connect_label,
             ButtonVariant::Primary,
             CONNECT,
             rects[0],
@@ -628,13 +724,7 @@ impl ConnectionsScreen {
                     return (Route::Changed, None);
                 }
                 if f == DEL && matches!(key.code, KeyCode::Enter | KeyCode::Char(' ')) {
-                    self.delete_selected(cx);
-                    return (Route::Changed, None);
-                }
-                if f == RETRY && matches!(key.code, KeyCode::Enter | KeyCode::Char(' ')) {
-                    if let Some(i) = self.selected {
-                        self.start_connect(i);
-                    }
+                    self.delete_selected();
                     return (Route::Changed, None);
                 }
                 if matches!(key.code, KeyCode::Enter) && f == TREE {
@@ -676,13 +766,7 @@ impl ConnectionsScreen {
                     return (Route::Changed, None);
                 }
                 if *id == DEL {
-                    self.delete_selected(cx);
-                    return (Route::Changed, None);
-                }
-                if *id == RETRY {
-                    if let Some(i) = self.selected {
-                        self.start_connect(i);
-                    }
+                    self.delete_selected();
                     return (Route::Changed, None);
                 }
                 (Route::Ignored, None)
@@ -729,16 +813,28 @@ impl ConnectionsScreen {
         cx.status("Duplicated connection");
     }
 
-    fn delete_selected(&mut self, cx: &mut PageCtx<'_>) {
+    fn delete_selected(&mut self) {
         let Some(i) = self.selected else { return };
-        let name = self.connections[i].name.clone();
+        self.pending_delete = Some(i);
+    }
+
+    pub fn take_delete_request(&mut self) -> Option<usize> {
+        self.pending_delete.take()
+    }
+
+    pub fn delete_at(&mut self, i: usize) -> Option<String> {
+        let name = self.connections.get(i)?.name.clone();
         self.connections.remove(i);
         self.selected = if self.connections.is_empty() {
             None
         } else {
             Some(i.min(self.connections.len() - 1))
         };
-        cx.status(format!("Deleted {name}"));
+        self.tree = TreeState::new(
+            self.selected_connection()
+                .map(|connection| connection.name.clone()),
+        );
+        Some(name)
     }
 
     fn handle_form(&mut self, ev: &PageEvent, cx: &mut PageCtx<'_>) -> Route {
@@ -852,10 +948,14 @@ impl ConnectionsScreen {
         if self.form.is_some() {
             return vec![("Esc", "Cancel"), ("Enter", "Edit")];
         }
-        if focus == Some(TREE) {
-            vec![("↑ ↓", "Move"), ("Enter", "Connect")]
-        } else {
-            vec![("Enter", "Connect"), ("e", "Edit")]
+        if focus == Some(FILTER) {
+            return vec![("Type", "Filter"), ("↓", "Into list"), ("Esc", "Clear")];
         }
+        vec![
+            ("↑ ↓", "Move"),
+            ("Enter", "Connect"),
+            ("/", "Filter"),
+            ("Ctrl+N", "New"),
+        ]
     }
 }
