@@ -891,16 +891,35 @@ fn paint_no_results(
 
 // ── Helpers / fixtures ──────────────────────────────────────────────────────
 
+/// One field's case-insensitive hit (label, searchable value, description).
+fn settings_field_matches(field: &Field<'_, &'static str>, q: &str) -> bool {
+    field.label.to_ascii_lowercase().contains(q)
+        || field
+            .value
+            .searchable_text()
+            .to_ascii_lowercase()
+            .contains(q)
+        || field
+            .description
+            .is_some_and(|d| d.to_ascii_lowercase().contains(q))
+}
+
+/// One fieldset's case-insensitive hit (legend, description, any field).
+fn settings_fieldset_matches(fs: &Fieldset<'_, &'static str>, q: &str) -> bool {
+    fs.legend.to_ascii_lowercase().contains(q)
+        || fs
+            .description
+            .is_some_and(|d| d.to_ascii_lowercase().contains(q))
+        || fs.fields.iter().any(|f| settings_field_matches(f, q))
+}
+
 /// Filter nav items by case-insensitive substring on label / command.
 #[must_use]
 pub fn filter_settings_nav<'a, SectionId: Clone>(
     items: &'a [NavItem<SectionId>],
     query: &str,
-) -> Vec<NavItem<SectionId>> {
+) -> Vec<&'a NavItem<SectionId>> {
     let q = query.trim().to_ascii_lowercase();
-    if q.is_empty() {
-        return items.to_vec();
-    }
     items
         .iter()
         .filter(|item| {
@@ -914,62 +933,19 @@ pub fn filter_settings_nav<'a, SectionId: Clone>(
                     .as_ref()
                     .is_some_and(|b| b.to_ascii_lowercase().contains(&q))
         })
-        .cloned()
         .collect()
 }
 
-/// Filter fieldsets / fields by query (label, value, description).
+/// Filter fieldsets by query (legend, description, any field hit).
 #[must_use]
 pub fn filter_settings_fieldsets<'a>(
     fieldsets: &'a [Fieldset<'a, &'static str>],
     query: &str,
-) -> Vec<Fieldset<'a, &'static str>> {
+) -> Vec<&'a Fieldset<'a, &'static str>> {
     let q = query.trim().to_ascii_lowercase();
-    if q.is_empty() {
-        return fieldsets.to_vec();
-    }
     fieldsets
         .iter()
-        .filter_map(|fs| {
-            let legend_hit = fs.legend.to_ascii_lowercase().contains(&q)
-                || fs
-                    .description
-                    .is_some_and(|d| d.to_ascii_lowercase().contains(&q));
-            let fields: Vec<Field<'a, &'static str>> = fs
-                .fields
-                .iter()
-                .filter(|f| {
-                    legend_hit
-                        || f.label.to_ascii_lowercase().contains(&q)
-                        || f.value.searchable_text().to_ascii_lowercase().contains(&q)
-                        || f.description
-                            .is_some_and(|d| d.to_ascii_lowercase().contains(&q))
-                })
-                .cloned()
-                .collect();
-            if fields.is_empty() && !legend_hit {
-                None
-            } else {
-                // Keep fieldset with filtered fields — use original if legend hit and empty filter
-                // Host re-borrows; for paint we rebuild Fieldset with filtered slice via leak-free approach:
-                // return only when fields non-empty
-                if fields.is_empty() {
-                    None
-                } else {
-                    // Fieldset needs &'a [Field] — can't return owned vec as ref easily.
-                    // Host should filter; this helper returns matching fieldsets wholesale when any field hits.
-                    Some(fs.clone())
-                }
-            }
-        })
-        .filter(|fs| {
-            fs.fields.iter().any(|f| {
-                f.label.to_ascii_lowercase().contains(&q)
-                    || f.value.searchable_text().to_ascii_lowercase().contains(&q)
-                    || f.description
-                        .is_some_and(|d| d.to_ascii_lowercase().contains(&q))
-            }) || fs.legend.to_ascii_lowercase().contains(&q)
-        })
+        .filter(|fs| settings_fieldset_matches(fs, &q))
         .collect()
 }
 
@@ -980,19 +956,7 @@ pub fn settings_query_matches(fieldsets: &[Fieldset<'_, &'static str>], query: &
     if q.is_empty() {
         return !fieldsets.is_empty();
     }
-    fieldsets.iter().any(|fs| {
-        fs.legend.to_ascii_lowercase().contains(&q)
-            || fs
-                .description
-                .is_some_and(|d| d.to_ascii_lowercase().contains(&q))
-            || fs.fields.iter().any(|f| {
-                f.label.to_ascii_lowercase().contains(&q)
-                    || f.value.searchable_text().to_ascii_lowercase().contains(&q)
-                    || f.description
-                        .as_ref()
-                        .is_some_and(|d| d.to_ascii_lowercase().contains(&q))
-            })
-    })
+    fieldsets.iter().any(|fs| settings_fieldset_matches(fs, &q))
 }
 
 /// Demo appearance fieldset (dirty theme + restart).
