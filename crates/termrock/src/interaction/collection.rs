@@ -203,6 +203,26 @@ impl<Id> CollectionState<Id> {
     pub fn clear_typeahead(&mut self) {
         self.roving.clear_typeahead();
     }
+
+    /// Clears virtual-window metadata before returning to a full projection.
+    pub fn clear_virtual_window(&mut self) {
+        self.window_start = None;
+        self.offset = 0;
+        self.total_len = 0;
+    }
+
+    /// Sets virtual-window metadata before the next projected reconciliation.
+    pub fn set_virtual_window(&mut self, window_start: usize, total_len: usize) {
+        if total_len == 0 {
+            self.clear_virtual_window();
+            return;
+        }
+        let max_offset = total_len.saturating_sub(self.viewport_len.min(total_len));
+        let window_start = window_start.min(max_offset);
+        self.window_start = Some(window_start);
+        self.offset = window_start;
+        self.total_len = total_len;
+    }
 }
 
 impl<Id: Clone + PartialEq> CollectionState<Id> {

@@ -405,6 +405,7 @@ impl<Id> ListState<Id> {
     pub fn set_virtual_window(&mut self, window_start: usize, total_len: usize) {
         self.virtual_window_start = window_start;
         self.virtual_total = total_len;
+        self.collection.set_virtual_window(window_start, total_len);
     }
 
     /// Sets how missing active IDs are treated during virtual reconciliation.
@@ -2301,6 +2302,33 @@ mod tests {
         assert_eq!(state.collection().offset(), 50);
         assert_eq!(state.paint_skip(), 0, "virtual window is already the slice");
         assert_eq!(state.collection().total_len(), 200);
+    }
+
+    #[test]
+    fn virtual_window_mode_switches_before_reconcile() {
+        let window = [
+            ListRow::item("50", Line::from("fifty")),
+            ListRow::item("51", Line::from("fifty-one")),
+        ];
+        let rows = [
+            ListRow::item("a", Line::from("A")),
+            ListRow::item("b", Line::from("B")),
+        ];
+        let mut state = ListState::new(Some("off-window"));
+        state.set_virtual_window(50, 200);
+        assert_eq!(
+            state.handle_intent(&window, UiIntent::Move(NavigationMove::Down)),
+            Outcome::Ignored
+        );
+
+        state.set_virtual_window(0, 0);
+
+        assert_eq!(state.collection().offset(), 0);
+        assert_eq!(
+            state.handle_intent(&rows, UiIntent::Move(NavigationMove::Down)),
+            Outcome::Changed
+        );
+        assert_eq!(state.selected(), Some(&"a"));
     }
 
     #[test]
