@@ -434,6 +434,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0453 | `v0.14.0` | [Drawer and Popover physical one-shot close actions](migrations/0453-v0.14.0-overlay-close-one-shot-actions.md) |
 | 0454 | `v0.14.0` | [Callout alert physical one-shot actions](migrations/0454-v0.14.0-callout-alert-one-shot-actions.md) |
 | 0456 | `v0.14.0` | [Breadcrumbs physical one-shot actions](migrations/0456-v0.14.0-breadcrumbs-one-shot-actions.md) |
+| 0457 | `v0.14.0` | [DetailTable physical one-shot activation](migrations/0457-v0.14.0-detail-table-one-shot-activation.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

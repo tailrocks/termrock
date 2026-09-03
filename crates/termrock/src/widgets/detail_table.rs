@@ -159,7 +159,7 @@ impl<Id: Clone + PartialEq> DetailTableState<Id> {
         match key.code {
             KeyCode::Up | KeyCode::Char('k' | 'K') => self.select_previous(rows),
             KeyCode::Down | KeyCode::Char('j' | 'J') => self.select_next(rows),
-            KeyCode::Enter => self.activate_selected(rows),
+            KeyCode::Enter if key.is_press() => self.activate_selected(rows),
             _ => DetailTableOutcome::Ignored,
         }
     }
@@ -790,6 +790,7 @@ fn affordance_width<Id>(row: &DetailRow<'_, Id>, copied: bool) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::input::{KeyEventKind, KeyModifiers};
     use crate::style::RolePalette;
     use ratatui_core::{buffer::Buffer, widgets::StatefulWidget};
 
@@ -907,6 +908,27 @@ mod tests {
         assert_eq!(
             state.click_link(log_position),
             DetailTableOutcome::ActivateLink("log")
+        );
+    }
+
+    #[test]
+    fn repeated_enter_does_not_reactivate_selected_row() {
+        let rows = rows();
+        let mut state = DetailTableState::default();
+        assert_eq!(
+            state.select_next(&rows),
+            DetailTableOutcome::Selected("run")
+        );
+
+        let mut repeat = KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE);
+        repeat.kind = KeyEventKind::Repeat;
+        let before = state.clone();
+        assert_eq!(state.handle_key(&rows, repeat), DetailTableOutcome::Ignored);
+        assert_eq!(state, before);
+
+        assert_eq!(
+            state.handle_key(&rows, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
+            DetailTableOutcome::Copy("run")
         );
     }
 
