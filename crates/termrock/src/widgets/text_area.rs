@@ -1969,7 +1969,7 @@ fn paint_textarea_footer(
             fy,
             crate::text::truncate_cols(err, msg_w, widget.system.glyphs.ellipsis()).as_ref(),
             msg_w,
-            theme.error_fg().bg(theme.canvas),
+            theme.error_fg(),
         );
     } else if let Some(help) = widget.help {
         buffer.set_stringn(
@@ -1977,7 +1977,7 @@ fn paint_textarea_footer(
             fy,
             crate::text::truncate_cols(help, msg_w, widget.system.glyphs.ellipsis()).as_ref(),
             msg_w,
-            theme.muted().bg(theme.canvas),
+            theme.muted(),
         );
     }
     if !state.scratch.is_empty() {
@@ -1985,7 +1985,7 @@ fn paint_textarea_footer(
         let px = area
             .right()
             .saturating_sub(u16::try_from(w).unwrap_or(0).saturating_add(1));
-        buffer.set_stringn(px, fy, &state.scratch, w, theme.faint().bg(theme.canvas));
+        buffer.set_stringn(px, fy, &state.scratch, w, theme.faint());
     }
 }
 
@@ -2766,6 +2766,28 @@ mod tests {
         assert_eq!(title.fg, theme.text_secondary);
         assert!(!title.modifier.contains(Modifier::BOLD));
         assert_eq!(buffer[(title_x + 11, area.y)].bg, theme.surface);
+    }
+
+    #[test]
+    fn help_footer_preserves_prefilled_owner_surface() {
+        let system = crate::style::DesignSystem::junie();
+        let theme = system.junie_theme();
+        let area = Rect::new(0, 0, 32, 4);
+        let mut buffer = Buffer::empty(area);
+        buffer.set_style(area, Style::new().bg(theme.surface));
+        let mut state = TextAreaState::new("body");
+        let help = "Optional · Markdown";
+
+        (&TextArea::new(&system).help(help)).render(area, &mut buffer, &mut state);
+
+        let footer_y = area.bottom() - 1;
+        let help_x = area.x + 2;
+        let first = &buffer[(help_x, footer_y)];
+        assert_eq!(first.symbol(), "O");
+        assert_eq!(first.bg, theme.surface);
+        assert_eq!(first.fg, theme.text_muted);
+        let trailing_x = help_x + u16::try_from(display_cols(help)).unwrap_or(0);
+        assert_eq!(buffer[(trailing_x, footer_y)].bg, theme.surface);
     }
 
     #[test]
