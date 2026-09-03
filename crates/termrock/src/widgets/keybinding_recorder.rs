@@ -641,7 +641,10 @@ impl KeybindingRecorderState {
 
     /// Key adapter.
     pub fn handle_key(&mut self, key: KeyEvent) -> KeybindingRecorderOutcome {
-        if key.is_release() || !self.enabled {
+        // Each captured chord and recorder action represents one physical
+        // key press. Repeats must not append duplicate chords or retrigger a
+        // mode transition while a key is held.
+        if !key.is_press() || !self.enabled {
             return KeybindingRecorderOutcome::Ignored;
         }
         if !self.focused {
@@ -985,6 +988,7 @@ pub fn binding_from_recorder<A: Clone + 'static>(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::input::KeyEventKind;
     use crate::style::RolePalette;
 
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -1260,5 +1264,63 @@ mod tests {
             state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
             KeybindingRecorderOutcome::RecordingStarted
         ));
+    }
+
+    #[test]
+    fn repeated_physical_events_are_ignored() {
+        let mut state = KeybindingRecorderState::new("a", "A")
+            .with_chords([KeyChord::plain(KeyCode::Char('a'))]);
+        state.reserved.clear();
+        state.set_focused(true);
+
+        let mut repeat_enter = KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE);
+        repeat_enter.kind = KeyEventKind::Repeat;
+        let before = state.clone();
+        assert_eq!(
+            state.handle_key(repeat_enter),
+            KeybindingRecorderOutcome::Ignored
+        );
+        assert_eq!(state, before);
+
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
+            KeybindingRecorderOutcome::RecordingStarted
+        );
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE)),
+            KeybindingRecorderOutcome::ChordCaptured {
+                chord: KeyChord::plain(KeyCode::Char('x')),
+                sequence: vec![KeyChord::plain(KeyCode::Char('x'))],
+            }
+        );
+
+        for (code, modifiers) in [
+            (KeyCode::Char('x'), KeyModifiers::NONE),
+            (KeyCode::Backspace, KeyModifiers::NONE),
+            (KeyCode::Enter, KeyModifiers::NONE),
+            (KeyCode::Esc, KeyModifiers::NONE),
+        ] {
+            let mut repeat = KeyEvent::new(code, modifiers);
+            repeat.kind = KeyEventKind::Repeat;
+            let before = state.clone();
+            assert_eq!(state.handle_key(repeat), KeybindingRecorderOutcome::Ignored);
+            assert_eq!(state, before, "{code:?} repeat mutated recorder state");
+        }
+
+        assert!(matches!(
+            state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
+            KeybindingRecorderOutcome::RecordingCancelled { .. }
+        ));
+        for (code, modifiers) in [
+            (KeyCode::Delete, KeyModifiers::NONE),
+            (KeyCode::Char('r'), KeyModifiers::NONE),
+            (KeyCode::Esc, KeyModifiers::NONE),
+        ] {
+            let mut repeat = KeyEvent::new(code, modifiers);
+            repeat.kind = KeyEventKind::Repeat;
+            let before = state.clone();
+            assert_eq!(state.handle_key(repeat), KeybindingRecorderOutcome::Ignored);
+            assert_eq!(state, before, "{code:?} repeat mutated idle recorder state");
+        }
     }
 }
