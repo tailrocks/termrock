@@ -30645,7 +30645,6 @@ pub termrock::style::SurfaceFamily::Field
 pub termrock::style::SurfaceFamily::Row
 pub termrock::style::SurfaceFamily::Token
 impl termrock::style::SurfaceFamily
-pub const fn termrock::style::SurfaceFamily::id(self) -> &'static str
 pub const fn termrock::style::SurfaceFamily::index(self) -> usize
 impl core::clone::Clone for termrock::style::SurfaceFamily
 pub fn termrock::style::SurfaceFamily::clone(&self) -> termrock::style::SurfaceFamily
