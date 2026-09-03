@@ -1242,6 +1242,7 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
             + u16::from(has_footer);
         state.window.viewport = area.height.saturating_sub(chrome_rows).max(1);
         state.window.clamp();
+        state.sync_cursor_focus();
 
         let mut y = area.y;
         if let Some(tb) = self.toolbar
@@ -2110,6 +2111,28 @@ mod tests {
             DataTableOutcome::CursorMoved
         ));
         assert_eq!(state.selection.focus_row, 2);
+    }
+
+    #[test]
+    fn render_window_clamp_refreshes_absolute_cursor_focus() {
+        let system = DesignSystem::default();
+        let cols = ColumnModel::new(vec![DataColumn::new("c", "C", DataColumnWidth::Min(8))]);
+        let cells: &[&str] = &["row"];
+        let rows = [(97u64, cells), (98, cells), (99, cells)];
+        let mut state = DataTableState::<u64, &str>::new();
+        state.set_logical_rows(100);
+        state.window.viewport = 2;
+        state.window.offset = 99;
+        state.cursor_row = 2;
+        state.selection.focus_row = 2;
+        let area = Rect::new(0, 0, 24, 4);
+        let mut buffer = Buffer::empty(area);
+
+        DataTable::new(&system, &cols, &rows).render(area, &mut buffer, &mut state);
+
+        assert_eq!(state.window.viewport, 3);
+        assert_eq!(state.window.offset, 97);
+        assert_eq!(state.selection.focus_row, 99);
     }
 
     #[test]
