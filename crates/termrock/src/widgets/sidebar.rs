@@ -598,6 +598,13 @@ impl<Id> NavigationListState<Id> {
         Id: Clone + PartialEq,
     {
         let projected = filter_nav_collapsed(items);
+        self.activate_focus_projected(&projected)
+    }
+
+    fn activate_focus_projected(&mut self, projected: &[NavItem<Id>]) -> NavigationListOutcome<Id>
+    where
+        Id: Clone + PartialEq,
+    {
         let Some(id) = self.collection.active().cloned() else {
             return NavigationListOutcome::Ignored;
         };
@@ -650,7 +657,7 @@ impl<Id> NavigationListState<Id> {
                 }
                 KeyCode::Enter => {
                     self.filter_active = false;
-                    return self.activate_focus(items);
+                    return self.activate_focus_projected(&projected);
                 }
                 KeyCode::Backspace => {
                     self.filter.pop();
@@ -721,12 +728,12 @@ impl<Id> NavigationListState<Id> {
         }
 
         if key.code == KeyCode::Enter && key.modifiers.is_empty() {
-            return self.activate_focus(items);
+            return self.activate_focus_projected(&projected);
         }
 
         // Space activates item without expand (if leaf)
         if matches!(key.code, KeyCode::Char(' ')) && key.modifiers.is_empty() {
-            return self.activate_focus(items);
+            return self.activate_focus_projected(&projected);
         }
 
         match self.collection.handle_key(key, &coll) {
@@ -754,7 +761,7 @@ impl<Id> NavigationListState<Id> {
         let coll = Self::collection_items(&projected);
         let _ = self.collection.reconcile(&coll);
         match intent {
-            UiIntent::Activate | UiIntent::Submit => self.activate_focus(items),
+            UiIntent::Activate | UiIntent::Submit => self.activate_focus_projected(&projected),
             UiIntent::Search => {
                 self.filter_active = true;
                 NavigationListOutcome::Changed
