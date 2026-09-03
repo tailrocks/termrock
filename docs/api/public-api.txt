@@ -2012,10 +2012,10 @@ pub termrock::input::KeyEvent::kind: termrock::input::KeyEventKind
 pub termrock::input::KeyEvent::modifiers: termrock::input::KeyModifiers
 pub termrock::input::KeyEvent::state: termrock::input::KeyEventState
 impl termrock::input::KeyEvent
-pub const fn termrock::input::KeyEvent::is_action(self) -> bool
-pub const fn termrock::input::KeyEvent::is_press(self) -> bool
-pub const fn termrock::input::KeyEvent::is_release(self) -> bool
-pub const fn termrock::input::KeyEvent::is_repeat(self) -> bool
+pub const fn termrock::input::KeyEvent::is_insert(&self) -> bool
+pub const fn termrock::input::KeyEvent::is_press(&self) -> bool
+pub const fn termrock::input::KeyEvent::is_release(&self) -> bool
+pub const fn termrock::input::KeyEvent::is_repeat(&self) -> bool
 pub const fn termrock::input::KeyEvent::new(termrock::input::KeyCode, termrock::input::KeyModifiers) -> Self
 impl core::clone::Clone for termrock::input::KeyEvent
 pub fn termrock::input::KeyEvent::clone(&self) -> termrock::input::KeyEvent
@@ -48424,6 +48424,7 @@ pub termrock::widgets::PickerOutcome::CursorMoved
 pub termrock::widgets::PickerOutcome::Ignored
 pub termrock::widgets::PickerOutcome::NextScope
 pub termrock::widgets::PickerOutcome::QueryChanged
+pub termrock::widgets::PickerOutcome::Secondary(Id)
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::PickerOutcome<Id>
 pub fn termrock::widgets::PickerOutcome<Id>::clone(&self) -> termrock::widgets::PickerOutcome<Id>
 impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::PickerOutcome<Id>
@@ -48432,13 +48433,13 @@ pub fn termrock::widgets::PickerOutcome<Id>::eq(&self, &termrock::widgets::Picke
 impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::PickerOutcome<Id>
 impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::PickerOutcome<Id>
 pub fn termrock::widgets::PickerOutcome<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<Id> core::marker::Freeze for termrock::widgets::PickerOutcome<Id> where Id: core::marker::Freeze + core::marker::Freeze
-impl<Id> core::marker::Send for termrock::widgets::PickerOutcome<Id> where Id: core::marker::Send + core::marker::Send
-impl<Id> core::marker::Sync for termrock::widgets::PickerOutcome<Id> where Id: core::marker::Sync + core::marker::Sync
-impl<Id> core::marker::Unpin for termrock::widgets::PickerOutcome<Id> where Id: core::marker::Unpin + core::marker::Unpin
-impl<Id> core::marker::UnsafeUnpin for termrock::widgets::PickerOutcome<Id> where Id: core::marker::UnsafeUnpin + core::marker::UnsafeUnpin
-impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PickerOutcome<Id> where Id: core::panic::unwind_safe::RefUnwindSafe + core::panic::unwind_safe::RefUnwindSafe
-impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::PickerOutcome<Id> where Id: core::panic::unwind_safe::UnwindSafe + core::panic::unwind_safe::UnwindSafe
+impl<Id> core::marker::Freeze for termrock::widgets::PickerOutcome<Id> where Id: core::marker::Freeze + core::marker::Freeze + core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::PickerOutcome<Id> where Id: core::marker::Send + core::marker::Send + core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::PickerOutcome<Id> where Id: core::marker::Sync + core::marker::Sync + core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::PickerOutcome<Id> where Id: core::marker::Unpin + core::marker::Unpin + core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::PickerOutcome<Id> where Id: core::marker::UnsafeUnpin + core::marker::UnsafeUnpin + core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::PickerOutcome<Id> where Id: core::panic::unwind_safe::RefUnwindSafe + core::panic::unwind_safe::RefUnwindSafe + core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::PickerOutcome<Id> where Id: core::panic::unwind_safe::UnwindSafe + core::panic::unwind_safe::UnwindSafe + core::panic::unwind_safe::UnwindSafe
 impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::PickerOutcome<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
 pub fn termrock::widgets::PickerOutcome<Id>::equivalent(&self, &K) -> bool
 impl<T, U> core::convert::Into<U> for termrock::widgets::PickerOutcome<Id> where U: core::convert::From<T>

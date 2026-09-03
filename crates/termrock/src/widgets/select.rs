@@ -271,7 +271,7 @@ impl<Id> SelectState<Id> {
         Self {
             value: None,
             presentation: SelectPresentation::Closed,
-            collection: CollectionState::new().wrap(true),
+            collection: CollectionState::new().wrap(false),
             search,
             searchable: false,
             recipe: SelectRecipe::Inline,
@@ -626,6 +626,8 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
                 self.cycle_closed_value(options, -1)
             }
             KeyCode::Esc => SelectOutcome::Ignored,
+            // junie closed select: j/k ignored (arrows cycle; Enter/Space open).
+            KeyCode::Char('j' | 'k' | 'J' | 'K') => SelectOutcome::Ignored,
             // typeahead open + first char
             KeyCode::Char(c)
                 if !c.is_control()
@@ -697,6 +699,22 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
         }
 
         let items = self.current_collection_items(options);
+
+        // junie open select: j/k move the cursor, not typeahead.
+        if !self.searchable && matches!(key.code, KeyCode::Char('j' | 'J' | 'k' | 'K')) {
+            let dir = if matches!(key.code, KeyCode::Char('j' | 'J')) {
+                1
+            } else {
+                -1
+            };
+            return match self.collection.move_by(&items, dir) {
+                CollectionOutcome::ActiveChanged { to, .. } => {
+                    SelectOutcome::HighlightChanged { id: to }
+                }
+                CollectionOutcome::Scrolled => SelectOutcome::Changed,
+                CollectionOutcome::Ignored => SelectOutcome::Ignored,
+            };
+        }
 
         // Page / arrows via collection
         match self.collection.handle_key(key, &items) {
@@ -1481,6 +1499,91 @@ mod tests {
         );
         assert_eq!(state.value(), Some(&"apple"));
         assert_eq!(state.highlight(), Some(&"banana"));
+    }
+
+    #[test]
+    fn closed_non_searchable_jk_are_ignored_plain_and_modified() {
+        let opts = sample_options();
+        let bounds = Rect::new(0, 0, 80, 24);
+        let mut state = SelectState::new().with_value("apple");
+        state.set_focused(true);
+
+        for (code, modifiers) in [
+            (KeyCode::Char('j'), KeyModifiers::NONE),
+            (KeyCode::Char('k'), KeyModifiers::SHIFT),
+            (KeyCode::Char('J'), KeyModifiers::CONTROL),
+            (KeyCode::Char('K'), KeyModifiers::ALT),
+        ] {
+            assert_eq!(
+                state.handle_key(KeyEvent::new(code, modifiers), &opts, bounds),
+                SelectOutcome::Ignored
+            );
+        }
+
+        assert!(!state.is_open());
+        assert_eq!(state.value(), Some(&"apple"));
+        assert_eq!(state.highlight(), Some(&"apple"));
+    }
+
+    #[test]
+    fn open_non_searchable_jk_move_highlight_with_bounds() {
+        let opts = sample_options();
+        let bounds = Rect::new(0, 0, 80, 24);
+        let mut state = SelectState::new().with_value("apple");
+        state.set_focused(true);
+        let _ = state.open(bounds, &opts);
+
+        assert_eq!(
+            state.handle_key(
+                KeyEvent::new(KeyCode::Char('j'), KeyModifiers::NONE),
+                &opts,
+                bounds,
+            ),
+            SelectOutcome::HighlightChanged { id: Some("banana") }
+        );
+        assert_eq!(
+            state.handle_key(
+                KeyEvent::new(KeyCode::Char('j'), KeyModifiers::NONE),
+                &opts,
+                bounds,
+            ),
+            SelectOutcome::HighlightChanged { id: Some("carrot") }
+        );
+        assert_eq!(
+            state.handle_key(
+                KeyEvent::new(KeyCode::Char('j'), KeyModifiers::NONE),
+                &opts,
+                bounds,
+            ),
+            SelectOutcome::Ignored
+        );
+        assert_eq!(state.highlight(), Some(&"carrot"));
+
+        assert_eq!(
+            state.handle_key(
+                KeyEvent::new(KeyCode::Char('k'), KeyModifiers::NONE),
+                &opts,
+                bounds,
+            ),
+            SelectOutcome::HighlightChanged { id: Some("banana") }
+        );
+        assert_eq!(
+            state.handle_key(
+                KeyEvent::new(KeyCode::Char('k'), KeyModifiers::NONE),
+                &opts,
+                bounds,
+            ),
+            SelectOutcome::HighlightChanged { id: Some("apple") }
+        );
+        assert_eq!(
+            state.handle_key(
+                KeyEvent::new(KeyCode::Char('k'), KeyModifiers::NONE),
+                &opts,
+                bounds,
+            ),
+            SelectOutcome::Ignored
+        );
+        assert_eq!(state.highlight(), Some(&"apple"));
     }
 
     #[test]

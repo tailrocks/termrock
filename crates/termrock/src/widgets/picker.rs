@@ -131,6 +131,8 @@ pub enum PickerOutcome<Id> {
     ActivatedAlt(Id),
     /// Tab: host should cycle the picker scope (junie `NextScope`).
     NextScope,
+    /// Delete: host secondary (junie `PickerEvent::Secondary`, close-tab).
+    Secondary(Id),
     /// Escape was pressed while the query was already empty.
     Cancelled,
 }
@@ -306,6 +308,10 @@ impl<Id: Clone + PartialEq> PickerState<Id> {
             KeyCode::PageDown => self.handle_intent(visible, UiIntent::Page(PageMove::Forward)),
             KeyCode::PageUp => self.handle_intent(visible, UiIntent::Page(PageMove::Backward)),
             KeyCode::Tab => PickerOutcome::NextScope,
+            KeyCode::Delete if !ctrl && !alt => match self.list.selected() {
+                Some(id) => PickerOutcome::Secondary(id.clone()),
+                None => PickerOutcome::Ignored,
+            },
             KeyCode::Backspace if self.searchable && !ctrl && !alt => self.route_query(key),
             KeyCode::Char('n' | 'j') if ctrl => {
                 self.handle_intent(visible, UiIntent::Move(NavigationMove::Next))
@@ -1345,6 +1351,17 @@ mod tests {
             state.handle_key(&visible, KeyEvent::new(KeyCode::Enter, KeyModifiers::ALT)),
             PickerOutcome::ActivatedAlt("beta")
         );
+    }
+
+    #[test]
+    fn delete_is_junie_secondary() {
+        let visible = rows(&["alpha", "beta"]);
+        let mut state = PickerState::new(Some("alpha"));
+        assert_eq!(
+            state.handle_key(&visible, KeyEvent::new(KeyCode::Delete, KeyModifiers::NONE)),
+            PickerOutcome::Secondary("alpha")
+        );
+        assert_eq!(state.list().selected(), Some(&"alpha"));
     }
 
     #[test]
