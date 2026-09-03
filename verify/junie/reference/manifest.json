@@ -12,6 +12,16 @@
     "png"
   ],
   "event_authority": "reference/manifest.json",
+  "shot_provenance": [
+    {"match": "f_*", "source_sha": "4b857a079946e2acfdcf54cf48ef92bd83766478"},
+    {"match": "s_chips|s_chips_80|s_chips_select|s_editor|s_editor_80|s_editor_complete|s_editor_running|s_grid|s_grid_80|s_grid_failed|s_grid_pending|s_grid_preview|s_pickers|s_pickers_80|s_pickers_tabs", "source_sha": "df8ac18c36fc4d006f13239c4c21ab8c9c80800d"},
+    {"match": "s_editor_diag|s_pickers_level|t_conn_form|t_safemode|t_switcher", "source_sha": "a2b6d000223dbfc72dcf9fbca4d5dd29216f6469"},
+    {"match": "t_100|t_160|t_80|t_80_drawer|t_80_query|t_complete|t_complete2|t_danger|t_dirty|t_editing_cell|t_error|t_explain|t_history|t_result|t_running|t_structure|t_structure_fk|t_tablist|t_write", "source_sha": "7c3cbb9087702038bbc942c402f241311af700a6"},
+    {"match": "t_conn_dup", "source_sha": "2a850953a0f497ed0260c9c8bf7d2c95d081b196"},
+    {"match": "t_conn_prod|t_connections", "source_sha": "65cb78d3ee0a1a1c434d05d97a22766c80ed819e"},
+    {"match": "t_conn_form_adv|t_orders|t_orders_wide|t_workbench", "source_sha": "5442f1b5c59a0328e74f0b839d50920b1b8474df"},
+    {"match": "t_sorted_filtered", "source_sha": "37c124c9ac2d3c57ac7176ab639b3baf459391cc"}
+  ],
   "scenes": {
     "f_80x24_taskrunner": {
       "bin": "showcase",
