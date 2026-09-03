@@ -416,7 +416,7 @@ impl<Id: Clone + PartialEq> RovingFocusGroup<Id> {
         }
         let from = self.active.clone();
         self.typeahead.push(ch);
-        let needle = self.typeahead.to_ascii_lowercase();
+        let needle = self.typeahead.to_lowercase();
         // Search from next after current, then wrap full list.
         let start = self.active_index(entries).map(|i| i + 1).unwrap_or(0) % entries.len().max(1);
         let n = entries.len();
@@ -426,7 +426,7 @@ impl<Id: Clone + PartialEq> RovingFocusGroup<Id> {
             if !e.enabled || e.label.is_empty() {
                 continue;
             }
-            if e.label.to_ascii_lowercase().starts_with(&needle) {
+            if e.label.to_lowercase().starts_with(&needle) {
                 self.active = Some(e.id.clone());
                 return self.outcome(from);
             }
@@ -435,12 +435,9 @@ impl<Id: Clone + PartialEq> RovingFocusGroup<Id> {
         if needle.chars().count() > 1 {
             self.typeahead.clear();
             self.typeahead.push(ch);
-            let needle = self.typeahead.to_ascii_lowercase();
+            let needle = self.typeahead.to_lowercase();
             for e in entries {
-                if e.enabled
-                    && !e.label.is_empty()
-                    && e.label.to_ascii_lowercase().starts_with(&needle)
-                {
+                if e.enabled && !e.label.is_empty() && e.label.to_lowercase().starts_with(&needle) {
                     self.active = Some(e.id.clone());
                     return self.outcome(from);
                 }
@@ -693,6 +690,19 @@ mod tests {
         assert!(g.typeahead_char('a', &e).changed());
         assert!(matches!(g.active(), Some(&"1") | Some(&"2")));
         assert!(g.typeahead_char('p', &e).changed() || g.active().is_some());
+    }
+
+    #[test]
+    fn typeahead_matches_unicode_case_insensitively() {
+        let e = vec![
+            RovingEntry::new("other", "Other"),
+            RovingEntry::new("accented", "Éclair"),
+        ];
+        let mut g = RovingFocusGroup::new();
+        let _ = g.reconcile(&e);
+
+        assert!(g.typeahead_char('é', &e).changed());
+        assert_eq!(g.active(), Some(&"accented"));
     }
 
     #[test]
