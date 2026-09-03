@@ -1370,11 +1370,10 @@ impl<'a, Id> DropdownMenu<'a, Id> {
             y = y.saturating_add(1);
         }
 
-        // The cut edges and the gutter say the same thing every other scrolled
-        // surface in the library says.
+        // The gutter says the same thing every other scrolled surface in the
+        // library says.
         crate::scroll::paint_scrolled_region(
             buffer,
-            inner,
             gutter,
             items.len(),
             viewport,

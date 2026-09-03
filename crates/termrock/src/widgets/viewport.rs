@@ -160,11 +160,9 @@ impl StatefulWidget for &Viewport<'_> {
             )
             .scroll((0, state.scroll_x))
             .render(content, buffer);
-        // The fade belongs to the content, never to the chrome: a dimmed
-        // border reads as a disabled pane, not as "there is more below".
+        // The scrollbar belongs to the reserved gutter, never to content.
         crate::scroll::paint_scrolled_region(
             buffer,
-            content,
             Rect::new(
                 area.right().saturating_sub(1),
                 area.y.saturating_add(1),

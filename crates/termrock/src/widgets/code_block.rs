@@ -1210,13 +1210,7 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
                     field_bg,
                     false,
                 );
-                buffer.set_stringn(
-                    gx,
-                    y,
-                    self.system.glyphs.selection_gutter(),
-                    1,
-                    line_gutter,
-                );
+                buffer.set_stringn(gx, y, self.system.glyphs.selection_gutter(), 1, line_gutter);
                 let bang = self.gutter_marks.iter().any(|m| m.glyph == '!');
                 let num_w = if self.show_line_numbers && parts.gutter.width > 3 {
                     parts.gutter.width.saturating_sub(4)

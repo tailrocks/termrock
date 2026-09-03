@@ -3362,7 +3362,7 @@ fn a_scrolled_region_says_it_continues() {
     // Nothing is painted when the content fits: a reserved gutter stays blank
     // rather than showing a full-height thumb.
     let quiet = painted(area, |buffer| {
-        paint_scrolled_region(buffer, area, area, 5, 5, 0, &system);
+        paint_scrolled_region(buffer, area, 5, 5, 0, &system);
     });
     assert!(
         quiet
@@ -3374,13 +3374,12 @@ fn a_scrolled_region_says_it_continues() {
 
     // No edge fade: the visible rows are identical whether or not more content
     // follows, which is the property the deleted `paint_scroll_edges` owned.
-    let viewport = Rect::new(0, 0, 8, 3);
     let gutter = Rect::new(8, 0, 1, 3);
     let with_more = painted(Rect::new(0, 0, 10, 3), |buffer| {
-        paint_scrolled_region(buffer, viewport, gutter, 9, 3, 0, &system);
+        paint_scrolled_region(buffer, gutter, 9, 3, 0, &system);
     });
     let at_end = painted(Rect::new(0, 0, 10, 3), |buffer| {
-        paint_scrolled_region(buffer, viewport, gutter, 3, 3, 0, &system);
+        paint_scrolled_region(buffer, gutter, 3, 3, 0, &system);
     });
     for y in 0..3 {
         for x in 0..8 {
