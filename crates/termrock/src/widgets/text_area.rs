@@ -728,7 +728,12 @@ impl TextAreaState {
                 _ => TextAreaOutcome::Ignored,
             };
         }
-        if key.is_press() && key.code == KeyCode::Esc {
+        if key.code == KeyCode::Esc {
+            if !key.is_press()
+                || !(key.modifiers.is_empty() || key.modifiers == KeyModifiers::SHIFT)
+            {
+                return TextAreaOutcome::Ignored;
+            }
             // junie: Esc finishes editing and keeps the document.
             self.editing = false;
             self.select_anchor = None;
@@ -2049,7 +2054,7 @@ fn parse_lines(text: &str) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyEventKind;
+    use crate::input::{KeyEventKind, KeyEventState};
     use crate::style::RolePalette;
     #[test]
     fn normalized_editing_and_goal_column_contract() {
@@ -2559,16 +2564,113 @@ mod tests {
     }
 
     #[test]
-    fn escape_cancels_without_mutating_multiline_text() {
-        let mut state = TextAreaState::new("one\ntwo");
-        state.set_accepts_input(true);
-        state.set_editing(true);
-        assert_eq!(
-            state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
-            TextAreaOutcome::Changed
-        );
-        assert!(!state.is_editing());
-        assert_eq!(state.text(), "one\ntwo");
+    fn escape_requires_a_press_and_supported_modifiers() {
+        struct Case {
+            name: &'static str,
+            kind: KeyEventKind,
+            modifiers: KeyModifiers,
+            expected_outcome: TextAreaOutcome,
+            expected_editing: bool,
+            expected_anchor: Option<TextCursor>,
+        }
+
+        let cases = [
+            Case {
+                name: "bare press",
+                kind: KeyEventKind::Press,
+                modifiers: KeyModifiers::NONE,
+                expected_outcome: TextAreaOutcome::Changed,
+                expected_editing: false,
+                expected_anchor: None,
+            },
+            Case {
+                name: "shift press",
+                kind: KeyEventKind::Press,
+                modifiers: KeyModifiers::SHIFT,
+                expected_outcome: TextAreaOutcome::Changed,
+                expected_editing: false,
+                expected_anchor: None,
+            },
+            Case {
+                name: "repeat",
+                kind: KeyEventKind::Repeat,
+                modifiers: KeyModifiers::NONE,
+                expected_outcome: TextAreaOutcome::Ignored,
+                expected_editing: true,
+                expected_anchor: Some(c(0, 0)),
+            },
+            Case {
+                name: "release",
+                kind: KeyEventKind::Release,
+                modifiers: KeyModifiers::NONE,
+                expected_outcome: TextAreaOutcome::Ignored,
+                expected_editing: true,
+                expected_anchor: Some(c(0, 0)),
+            },
+            Case {
+                name: "control press",
+                kind: KeyEventKind::Press,
+                modifiers: KeyModifiers::CONTROL,
+                expected_outcome: TextAreaOutcome::Ignored,
+                expected_editing: true,
+                expected_anchor: Some(c(0, 0)),
+            },
+            Case {
+                name: "alt press",
+                kind: KeyEventKind::Press,
+                modifiers: KeyModifiers::ALT,
+                expected_outcome: TextAreaOutcome::Ignored,
+                expected_editing: true,
+                expected_anchor: Some(c(0, 0)),
+            },
+        ];
+
+        for case in cases {
+            let mut state = TextAreaState::new("one\ntwo");
+            state.set_accepts_input(true);
+            state.set_editing(true);
+            state.select_all();
+            let initial_cursor = state.cursor();
+            let initial_text = state.text();
+            let initial_range = state.selection_range();
+
+            let outcome = state.handle_key(KeyEvent {
+                code: KeyCode::Esc,
+                modifiers: case.modifiers,
+                kind: case.kind,
+                state: KeyEventState::NONE,
+            });
+
+            assert_eq!(outcome, case.expected_outcome, "{} outcome", case.name);
+            assert_eq!(
+                state.is_editing(),
+                case.expected_editing,
+                "{} editing",
+                case.name
+            );
+            assert_eq!(state.text(), initial_text, "{} text", case.name);
+            assert_eq!(state.cursor(), initial_cursor, "{} cursor", case.name);
+            assert_eq!(
+                state.selection_anchor(),
+                case.expected_anchor,
+                "{} selection anchor",
+                case.name
+            );
+            if case.expected_editing {
+                assert_eq!(
+                    state.selection_range(),
+                    initial_range,
+                    "{} selection",
+                    case.name
+                );
+            } else {
+                assert!(
+                    state.selection_range().is_none(),
+                    "{} selection cleared",
+                    case.name
+                );
+            }
+        }
     }
 
     #[test]

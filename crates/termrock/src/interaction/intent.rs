@@ -584,6 +584,31 @@ mod tests {
     }
 
     #[test]
+    fn default_text_area_intent_cancel_is_press_only_and_preserves_modifiers() {
+        assert_eq!(
+            default_text_area_intent(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
+            Some(UiIntent::Cancel)
+        );
+
+        let mut repeat = KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE);
+        repeat.kind = KeyEventKind::Repeat;
+        assert_eq!(default_text_area_intent(repeat), None);
+
+        let mut release = KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE);
+        release.kind = KeyEventKind::Release;
+        assert_eq!(default_text_area_intent(release), None);
+
+        assert_eq!(
+            default_text_area_intent(KeyEvent::new(KeyCode::Esc, KeyModifiers::SHIFT)),
+            Some(UiIntent::Cancel)
+        );
+        assert_eq!(
+            default_text_area_intent(KeyEvent::new(KeyCode::Esc, KeyModifiers::CONTROL)),
+            None
+        );
+    }
+
+    #[test]
     fn default_button_intent_maps_activate() {
         assert_eq!(
             default_button_intent(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
