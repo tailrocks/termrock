@@ -1196,7 +1196,7 @@ pub fn example_disconnected() -> ReconnectingState {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     use crate::widgets::tests::click;
     use crate::widgets::tests::press;
     use ratatui_core::backend::TestBackend;

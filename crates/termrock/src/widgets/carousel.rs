@@ -387,7 +387,7 @@ pub fn example_carousel_slides() -> Vec<CarouselSlide> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     use crate::widgets::tests::click;
     use crate::widgets::tests::press;
 

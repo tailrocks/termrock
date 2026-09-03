@@ -1815,7 +1815,6 @@ mod tests {
 
     #[test]
     fn header_action_mouse_hit() {
-        
         let tokens = DesignSystem::default();
         let actions = [PanelAction::new("retry", "Retry")];
         let panel = Panel::new(&tokens).title("Job").header_actions(&actions);
@@ -1831,7 +1830,6 @@ mod tests {
 
     #[test]
     fn header_action_not_toggle_when_collapsible() {
-        
         let tokens = DesignSystem::default();
         let actions = [PanelAction::new("more", "More")];
         let panel = Panel::new(&tokens)

@@ -600,7 +600,7 @@ pub fn example_empty_permission(system: &DesignSystem) -> EmptyState<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     use crate::widgets::tests::click;
     use crate::widgets::tests::press;
     use ratatui_core::backend::TestBackend;

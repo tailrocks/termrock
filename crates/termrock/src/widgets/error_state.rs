@@ -1215,7 +1215,7 @@ pub fn example_error_dialog(system: &DesignSystem) -> ErrorState<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     use crate::widgets::tests::click;
     use crate::widgets::tests::press;
     use ratatui_core::backend::TestBackend;

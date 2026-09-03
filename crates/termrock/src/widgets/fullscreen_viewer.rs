@@ -1449,7 +1449,6 @@ mod tests {
     use crate::input::KeyModifiers;
     use crate::interaction::{OverlayKind, OverlayOutcome, OverlaySize};
     use crate::widgets::tests::click;
-    
 
     fn ctx(id: &'static str) -> SourceContext<&'static str> {
         SourceContext::new(id)

@@ -7,7 +7,6 @@
 //! Hosts apply redraw, focus, and overlay requests; domain `M` stays product-owned.
 //!
 //! Not an Elm/Bubble Tea runtime: no global command executor, no forced app loop.
-use crate::interaction::OverlayId;
 
 /// Whether the frame should be painted again.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -98,10 +97,6 @@ impl<Id> FocusRequest<Id> {
 pub enum OverlayRequest {
     /// Dismiss the top overlay layer.
     DismissTop,
-    /// Dismiss a named overlay.
-    Dismiss(OverlayId),
-    /// Open command-palette chrome.
-    OpenCommandPalette,
 }
 
 /// Standard result envelope for component input handlers.

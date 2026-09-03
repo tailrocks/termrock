@@ -761,7 +761,7 @@ pub fn example_busy_stale(system: &DesignSystem) -> (LoadingOverlay<'_>, BusyBou
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     use crate::widgets::tests::click;
     use crate::widgets::tests::press;
     use ratatui_core::backend::TestBackend;
