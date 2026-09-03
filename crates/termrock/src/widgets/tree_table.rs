@@ -676,7 +676,7 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
                     .iter()
                     .enumerate()
                     .skip(self.cursor_row + 1)
-                    .find(|(_, r)| r.depth > row.depth && r.enabled)
+                    .find(|(_, r)| r.depth > row.depth && selectable(r))
                 {
                     self.cursor_row = idx;
                     self.selected = Some(child.id.clone());
@@ -1718,6 +1718,33 @@ mod tests {
         );
         assert!(matches!(out, TreeTableOutcome::Selected("c")));
         assert_eq!(state.cursor_row, 1);
+    }
+
+    #[test]
+    fn right_on_expanded_skips_nonselectable_group_child() {
+        let root_cells: &[&str] = &["root", "", ""];
+        let group_cells: &[&str] = &["group", "", ""];
+        let child_cells: &[&str] = &["child", "", ""];
+        let rows = [
+            TreeTableRow::new("root", 0, root_cells)
+                .branch()
+                .expanded(),
+            TreeTableRow::new("group", 1, group_cells).group(),
+            TreeTableRow::new("child", 1, child_cells).parent("root"),
+        ];
+        let columns = cols();
+        let mut state = TreeTableState::<&str, &str>::new(Some("root"));
+        state.cursor_row = 0;
+
+        let out = state.handle_key(
+            &rows,
+            &columns,
+            KeyEvent::new(KeyCode::Right, KeyModifiers::NONE),
+        );
+
+        assert!(matches!(out, TreeTableOutcome::Selected("child")));
+        assert_eq!(state.selected(), Some(&"child"));
+        assert_eq!(state.cursor_row, 2);
     }
 
     #[test]
