@@ -440,11 +440,17 @@ impl StepperState {
     /// Enable.
     pub fn set_enabled(&mut self, on: bool) {
         self.enabled = on;
+        if !on {
+            self.menu_open = false;
+        }
     }
 
     /// Input gate.
     pub fn set_accepts_input(&mut self, on: bool) {
         self.accepts_input = on;
+        if !on {
+            self.menu_open = false;
+        }
     }
 
     /// Domain current index.
@@ -918,7 +924,10 @@ impl<'a> Stepper<'a> {
         }
     }
 
-    fn status_style(&self, status: StepStatus, base: Style) -> Style {
+    fn status_style(&self, status: StepStatus, base: Style, enabled: bool) -> Style {
+        if !enabled {
+            return base;
+        }
         if self.colorless {
             return match status {
                 StepStatus::Current | StepStatus::Complete | StepStatus::Error => {
@@ -945,9 +954,11 @@ impl<'a> Stepper<'a> {
         status: StepStatus,
         cursor: bool,
         focused: bool,
+        enabled: bool,
         interaction_enabled: bool,
     ) -> Style {
         let row_enabled = interaction_enabled && !matches!(status, StepStatus::Disabled);
+        let visual_enabled = enabled && !matches!(status, StepStatus::Disabled);
         let recipe = self.system.resolve_list_row(ListRowVisualState {
             selected: cursor,
             focused: cursor && focused && row_enabled,
@@ -960,7 +971,7 @@ impl<'a> Stepper<'a> {
         if recipe.use_tint {
             buffer.set_style(rect, recipe.tint);
         }
-        self.status_style(status, recipe.label)
+        self.status_style(status, recipe.label, visual_enabled)
     }
 
     fn paint_horizontal(&self, area: Rect, buffer: &mut Buffer, state: &mut StepperState) {
@@ -1011,6 +1022,7 @@ impl<'a> Stepper<'a> {
                 status,
                 cursor == i,
                 state.focused,
+                state.enabled,
                 interaction_enabled,
             );
             buffer.set_stringn(
@@ -1045,6 +1057,7 @@ impl<'a> Stepper<'a> {
                 status,
                 cursor == i,
                 state.focused,
+                state.enabled,
                 interaction_enabled,
             );
             buffer.set_stringn(
@@ -1072,7 +1085,11 @@ impl<'a> Stepper<'a> {
                     y,
                     &take_display_cols(&d, usize::from(area.width)),
                     usize::from(area.width),
-                    self.system.style(Role::TextMuted),
+                    if state.enabled {
+                        self.system.style(Role::TextMuted)
+                    } else {
+                        self.system.style(Role::TextDisabled)
+                    },
                 );
                 y = y.saturating_add(1);
             }
@@ -1110,7 +1127,11 @@ impl<'a> Stepper<'a> {
             self.system.junie_theme().surface,
         );
         buffer.set_style(Rect::new(area.x, area.y, area.width, 1), recipe.fill);
-        let style = self.status_style(status, recipe.label);
+        let style = self.status_style(
+            status,
+            recipe.label,
+            state.enabled && !matches!(status, StepStatus::Disabled),
+        );
         buffer.set_stringn(
             area.x,
             area.y,
@@ -1138,7 +1159,8 @@ impl<'a> Stepper<'a> {
             .copied()
             .unwrap_or(StepStatus::Current);
         let mark = status.mark();
-        let chev = if state.menu_open { "▾" } else { "▸" };
+        let menu_open = state.menu_open && state.interaction_enabled();
+        let chev = if menu_open { "▾" } else { "▸" };
         let line = format!("{mark} {cur}/{n} {title} {chev}");
         let recipe = self.system.button_recipe(
             ButtonRecipeVariant::Quiet,
@@ -1146,7 +1168,11 @@ impl<'a> Stepper<'a> {
             self.system.junie_theme().surface,
         );
         buffer.set_style(Rect::new(area.x, area.y, area.width, 1), recipe.fill);
-        let style = self.status_style(status, recipe.label);
+        let style = self.status_style(
+            status,
+            recipe.label,
+            state.enabled && !matches!(status, StepStatus::Disabled),
+        );
         buffer.set_stringn(
             area.x,
             area.y,
@@ -1157,7 +1183,7 @@ impl<'a> Stepper<'a> {
         state.menu_hit = Rect::new(area.x, area.y, area.width, 1);
         state.hits.push((selected, state.menu_hit));
 
-        if state.menu_open && area.height > 1 {
+        if menu_open && area.height > 1 {
             let mut y = area.y.saturating_add(1);
             let cursor = state.cursor();
             for (i, step) in self.items.iter().enumerate() {
@@ -1178,6 +1204,7 @@ impl<'a> Stepper<'a> {
                     st,
                     cursor == i,
                     state.focused,
+                    state.enabled,
                     state.interaction_enabled(),
                 );
                 buffer.set_stringn(
@@ -1219,11 +1246,11 @@ impl<'a> Stepper<'a> {
                 .role(SemanticRole::Control)
                 .label("stepper")
                 .description(desc)
-                .focusable(state.enabled)
+                .focusable(state.interaction_enabled())
                 .disabled(!state.enabled)
                 .state(SemanticState {
-                    selected: state.focused,
-                    expanded: state.menu_open,
+                    selected: state.interaction_enabled() && state.focused,
+                    expanded: state.interaction_enabled() && state.menu_open,
                     ..Default::default()
                 }),
         );
@@ -1287,6 +1314,24 @@ mod tests {
         s.set_focused(true);
         s.set_current(0, n, false);
         s
+    }
+
+    fn assert_disabled_cell(buffer: &Buffer, x: u16, y: u16, system: &DesignSystem, context: &str) {
+        let cell = &buffer[(x, y)];
+        assert_eq!(
+            cell.fg,
+            system.style(Role::TextDisabled).fg.unwrap(),
+            "{context}: disabled content must use the faint foreground"
+        );
+        assert!(
+            !cell.modifier.contains(Modifier::BOLD),
+            "{context}: disabled content must not retain focus/status weight"
+        );
+        assert_ne!(
+            cell.bg,
+            system.style(Role::SelectionTint).bg.unwrap(),
+            "{context}: disabled content must not retain selection tint"
+        );
     }
 
     #[test]
@@ -1798,6 +1843,210 @@ mod tests {
             s.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &items),
             StepperOutcome::Ignored
         ));
+    }
+
+    #[test]
+    fn disabled_whole_stepper_is_faint_and_not_focused_in_every_presentation() {
+        let system = DesignSystem::default();
+        let items = steps();
+        let cases = [
+            (
+                "expanded-horizontal",
+                StepperOrientation::Horizontal,
+                StepperPresentation::Expanded,
+                Rect::new(0, 0, 72, 3),
+            ),
+            (
+                "compact-horizontal",
+                StepperOrientation::Horizontal,
+                StepperPresentation::Compact,
+                Rect::new(0, 0, 40, 2),
+            ),
+            (
+                "numeric",
+                StepperOrientation::Horizontal,
+                StepperPresentation::Numeric,
+                Rect::new(0, 0, 28, 1),
+            ),
+            (
+                "menu",
+                StepperOrientation::Horizontal,
+                StepperPresentation::Menu,
+                Rect::new(0, 0, 28, 5),
+            ),
+            (
+                "expanded-vertical",
+                StepperOrientation::Vertical,
+                StepperPresentation::Expanded,
+                Rect::new(0, 0, 56, 16),
+            ),
+        ];
+
+        for (name, orientation, presentation, area) in cases {
+            let mut state = focused_linear(items.len()).policy(StepperNavPolicy::Free);
+            state.set_orientation(orientation);
+            state.set_presentation_override(Some(presentation));
+            // Error exercises the status colour path; the whole-widget
+            // disabled state must still win over danger/bold styling.
+            state.set_status(0, StepStatus::Error);
+            state.set_enabled(false);
+            state.set_focused(true);
+
+            let mut buffer = Buffer::empty(area);
+            Stepper::new(&items, &system).paint(area, &mut buffer, &mut state);
+            assert_disabled_cell(&buffer, 0, 0, &system, name);
+            if matches!(orientation, StepperOrientation::Vertical)
+                && matches!(presentation, StepperPresentation::Expanded)
+            {
+                assert_disabled_cell(&buffer, 4, 1, &system, name);
+            }
+            if matches!(presentation, StepperPresentation::Menu) {
+                assert_eq!(
+                    state.hits().len(),
+                    1,
+                    "{name}: disabled menu must stay closed"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn disabled_stepper_rejects_input_and_is_outside_semantic_focus_ring() {
+        let system = DesignSystem::default();
+        let items = steps();
+        let mut state = focused_linear(items.len()).policy(StepperNavPolicy::Host);
+        state.set_presentation_override(Some(StepperPresentation::Menu));
+        state.set_enabled(false);
+        state.set_focused(true);
+
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &items),
+            StepperOutcome::Ignored
+        );
+        assert_eq!(
+            state.handle_intent(UiIntent::Activate, &items),
+            StepperOutcome::Ignored
+        );
+        assert_eq!(
+            state.handle_mouse(
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(0, 0),
+                    modifiers: KeyModifiers::NONE,
+                },
+                &items,
+            ),
+            StepperOutcome::Ignored
+        );
+
+        let mut scene = SemanticScene::<&str, ()>::default();
+        Stepper::new(&items, &system).register_semantic(
+            &mut scene,
+            "stepper",
+            Rect::new(0, 0, 28, 1),
+            &state,
+        );
+        let node = &scene.nodes()[0];
+        assert!(!node.focusable);
+        assert!(node.disabled);
+        assert!(!node.state.selected);
+        assert!(!node.state.expanded);
+    }
+
+    #[test]
+    fn accepts_input_revocation_closes_stale_menu_and_removes_focus_state() {
+        let system = DesignSystem::default();
+        let items = steps();
+        let mut state = focused_linear(items.len()).policy(StepperNavPolicy::Host);
+        state.set_presentation_override(Some(StepperPresentation::Menu));
+
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &items),
+            StepperOutcome::MenuToggled { open: true }
+        );
+        state.set_accepts_input(false);
+        assert!(!state.menu_open(), "revoking input must close an open menu");
+
+        // Exercise the paint/semantic guards even if a stale owner restores
+        // the old open bit after input was revoked.
+        state.menu_open = true;
+        let area = Rect::new(0, 0, 28, 5);
+        let mut buffer = Buffer::empty(area);
+        Stepper::new(&items, &system).paint(area, &mut buffer, &mut state);
+        let text: String = buffer
+            .content()
+            .iter()
+            .map(|cell| cell.symbol().to_string())
+            .collect();
+        assert!(
+            text.contains("▸"),
+            "revoked input must show a closed header: {text}"
+        );
+        assert!(
+            !text.contains("▾"),
+            "revoked input must not show an open header: {text}"
+        );
+        assert_eq!(
+            state.hits().len(),
+            1,
+            "revoked input must not paint menu rows"
+        );
+
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE), &items),
+            StepperOutcome::Ignored
+        );
+        let mut scene = SemanticScene::<&str, ()>::default();
+        Stepper::new(&items, &system).register_semantic(&mut scene, "stepper", area, &state);
+        let node = &scene.nodes()[0];
+        assert!(
+            !node.focusable,
+            "input-revoked stepper is outside the focus ring"
+        );
+        assert!(
+            !node.disabled,
+            "input revocation is distinct from whole-widget disablement"
+        );
+        assert!(!node.state.selected);
+        assert!(!node.state.expanded);
+    }
+
+    #[test]
+    fn accepts_input_off_preserves_unfocused_status_colors() {
+        let system = DesignSystem::default();
+        let items = steps();
+        let mut state = focused_linear(items.len()).policy(StepperNavPolicy::Free);
+        state.set_orientation(StepperOrientation::Vertical);
+        state.set_presentation_override(Some(StepperPresentation::Expanded));
+        state.set_focused(false);
+        state.set_accepts_input(false);
+        state.set_status(0, StepStatus::Complete);
+        state.set_status(1, StepStatus::Error);
+
+        let area = Rect::new(0, 0, 60, 3);
+        let mut buffer = Buffer::empty(area);
+        Stepper::new(&items, &system)
+            .show_descriptions(false)
+            .paint(area, &mut buffer, &mut state);
+
+        assert_eq!(
+            buffer[(0, 0)].fg,
+            system.style(Role::Success).fg.unwrap(),
+            "completed status color must survive an input gate"
+        );
+        assert_eq!(
+            buffer[(0, 2)].fg,
+            system.style(Role::Danger).fg.unwrap(),
+            "error status color must survive an input gate"
+        );
+        assert_ne!(
+            buffer[(0, 0)].fg,
+            system.style(Role::TextDisabled).fg.unwrap()
+        );
+        assert_ne!(
+            buffer[(0, 2)].fg,
+            system.style(Role::TextDisabled).fg.unwrap()
+        );
     }
 
     #[test]
