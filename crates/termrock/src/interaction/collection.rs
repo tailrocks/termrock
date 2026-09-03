@@ -246,10 +246,12 @@ impl<Id: Clone + PartialEq> CollectionState<Id> {
         total_len: usize,
         viewport_len: usize,
     ) -> CollectionOutcome<Id> {
-        self.window_start = Some(window_start);
         self.total_len = total_len;
         self.viewport_len = viewport_len;
-        self.offset = window_start.min(total_len.saturating_sub(viewport_len.min(total_len)));
+        let max_offset = total_len.saturating_sub(viewport_len.min(total_len));
+        let window_start = window_start.min(max_offset);
+        self.window_start = Some(window_start);
+        self.offset = window_start;
         if total_len > 0
             && self
                 .roving
@@ -470,6 +472,19 @@ mod tests {
         assert_eq!(out, CollectionOutcome::Ignored);
         assert_eq!(c.active(), Some(&"b"));
         assert_eq!(c.offset(), 2);
+    }
+
+    #[test]
+    fn virtual_window_clamps_start_before_first_move() {
+        let window = items(&[("i", true), ("j", true)]);
+        let mut c = CollectionState::new();
+        let _ = c.reconcile_window(&window, 99, 10, 2);
+        c.set_active(Some("j"));
+
+        let _ = c.move_first(&window);
+
+        assert_eq!(c.active(), Some(&"i"));
+        assert_eq!(c.offset(), 8);
     }
 
     #[test]
