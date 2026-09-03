@@ -35029,55 +35029,6 @@ pub unsafe fn termrock::widgets::ButtonVariant::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::ButtonVariant
 pub fn termrock::widgets::ButtonVariant::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ButtonVariant
-#[non_exhaustive] pub enum termrock::widgets::CalloutOutcome<Id>
-pub termrock::widgets::CalloutOutcome::ActionActivated
-pub termrock::widgets::CalloutOutcome::ActionActivated::id: Id
-pub termrock::widgets::CalloutOutcome::DetailsToggled
-pub termrock::widgets::CalloutOutcome::DetailsToggled::open: bool
-pub termrock::widgets::CalloutOutcome::Dismissed
-pub termrock::widgets::CalloutOutcome::Ignored
-impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::CalloutOutcome<Id>
-pub fn termrock::widgets::CalloutOutcome<Id>::clone(&self) -> termrock::widgets::CalloutOutcome<Id>
-impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::CalloutOutcome<Id>
-impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::CalloutOutcome<Id>
-pub fn termrock::widgets::CalloutOutcome<Id>::eq(&self, &termrock::widgets::CalloutOutcome<Id>) -> bool
-impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::CalloutOutcome<Id>
-impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::CalloutOutcome<Id>
-pub fn termrock::widgets::CalloutOutcome<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<Id: core::hash::Hash> core::hash::Hash for termrock::widgets::CalloutOutcome<Id>
-pub fn termrock::widgets::CalloutOutcome<Id>::hash<__H: core::hash::Hasher>(&self, &mut __H)
-impl<Id> core::marker::Freeze for termrock::widgets::CalloutOutcome<Id> where Id: core::marker::Freeze
-impl<Id> core::marker::Send for termrock::widgets::CalloutOutcome<Id> where Id: core::marker::Send
-impl<Id> core::marker::Sync for termrock::widgets::CalloutOutcome<Id> where Id: core::marker::Sync
-impl<Id> core::marker::Unpin for termrock::widgets::CalloutOutcome<Id> where Id: core::marker::Unpin
-impl<Id> core::marker::UnsafeUnpin for termrock::widgets::CalloutOutcome<Id> where Id: core::marker::UnsafeUnpin
-impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::CalloutOutcome<Id> where Id: core::panic::unwind_safe::RefUnwindSafe
-impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::CalloutOutcome<Id> where Id: core::panic::unwind_safe::UnwindSafe
-impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::CalloutOutcome<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::widgets::CalloutOutcome<Id>::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::widgets::CalloutOutcome<Id> where U: core::convert::From<T>
-pub fn termrock::widgets::CalloutOutcome<Id>::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::widgets::CalloutOutcome<Id> where U: core::convert::Into<T>
-pub type termrock::widgets::CalloutOutcome<Id>::Error = never
-pub fn termrock::widgets::CalloutOutcome<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::widgets::CalloutOutcome<Id> where U: core::convert::TryFrom<T>
-pub type termrock::widgets::CalloutOutcome<Id>::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::widgets::CalloutOutcome<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::widgets::CalloutOutcome<Id> where T: core::clone::Clone
-pub type termrock::widgets::CalloutOutcome<Id>::Owned = T
-pub fn termrock::widgets::CalloutOutcome<Id>::clone_into(&self, &mut T)
-pub fn termrock::widgets::CalloutOutcome<Id>::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::widgets::CalloutOutcome<Id> where T: 'static + ?core::marker::Sized
-pub fn termrock::widgets::CalloutOutcome<Id>::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::widgets::CalloutOutcome<Id> where T: ?core::marker::Sized
-pub fn termrock::widgets::CalloutOutcome<Id>::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::widgets::CalloutOutcome<Id> where T: ?core::marker::Sized
-pub fn termrock::widgets::CalloutOutcome<Id>::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::widgets::CalloutOutcome<Id> where T: core::clone::Clone
-pub unsafe fn termrock::widgets::CalloutOutcome<Id>::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::widgets::CalloutOutcome<Id>
-pub fn termrock::widgets::CalloutOutcome<Id>::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::widgets::CalloutOutcome<Id>
 #[non_exhaustive] pub enum termrock::widgets::CalloutRecipe
 pub termrock::widgets::CalloutRecipe::Compact
 pub termrock::widgets::CalloutRecipe::Section
@@ -38113,73 +38064,6 @@ pub unsafe fn termrock::widgets::DataTableOutcome<RowId, ColId>::clone_to_uninit
 impl<T> core::convert::From<T> for termrock::widgets::DataTableOutcome<RowId, ColId>
 pub fn termrock::widgets::DataTableOutcome<RowId, ColId>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::DataTableOutcome<RowId, ColId>
-#[non_exhaustive] pub enum termrock::widgets::DataViewOutcome<RowId, ColId>
-pub termrock::widgets::DataViewOutcome::ColumnResized
-pub termrock::widgets::DataViewOutcome::ColumnResized::column: ColId
-pub termrock::widgets::DataViewOutcome::ColumnResized::width: u16
-pub termrock::widgets::DataViewOutcome::ColumnVisibility
-pub termrock::widgets::DataViewOutcome::ColumnVisibility::column: ColId
-pub termrock::widgets::DataViewOutcome::ColumnVisibility::visible: bool
-pub termrock::widgets::DataViewOutcome::ContextMenu
-pub termrock::widgets::DataViewOutcome::ContextMenu::column: core::option::Option<ColId>
-pub termrock::widgets::DataViewOutcome::ContextMenu::row: core::option::Option<RowId>
-pub termrock::widgets::DataViewOutcome::Copy(termrock::widgets::CopyPayload)
-pub termrock::widgets::DataViewOutcome::EditCancelled
-pub termrock::widgets::DataViewOutcome::EditCommitted
-pub termrock::widgets::DataViewOutcome::EditCommitted::column: ColId
-pub termrock::widgets::DataViewOutcome::EditCommitted::row: RowId
-pub termrock::widgets::DataViewOutcome::EditCommitted::text: alloc::string::String
-pub termrock::widgets::DataViewOutcome::EditStarted
-pub termrock::widgets::DataViewOutcome::EditStarted::column: ColId
-pub termrock::widgets::DataViewOutcome::EditStarted::row: RowId
-pub termrock::widgets::DataViewOutcome::ExpandToggled(RowId)
-pub termrock::widgets::DataViewOutcome::FilterChanged(termrock::widgets::FilterSpec)
-pub termrock::widgets::DataViewOutcome::FocusChanged
-pub termrock::widgets::DataViewOutcome::Ignored
-pub termrock::widgets::DataViewOutcome::RetryLoad
-pub termrock::widgets::DataViewOutcome::Scrolled
-pub termrock::widgets::DataViewOutcome::SelectionChanged
-pub termrock::widgets::DataViewOutcome::SortRequested(termrock::widgets::SortSpec<ColId>)
-impl<RowId: core::clone::Clone, ColId: core::clone::Clone> core::clone::Clone for termrock::widgets::DataViewOutcome<RowId, ColId>
-pub fn termrock::widgets::DataViewOutcome<RowId, ColId>::clone(&self) -> termrock::widgets::DataViewOutcome<RowId, ColId>
-impl<RowId: core::cmp::Eq, ColId: core::cmp::Eq> core::cmp::Eq for termrock::widgets::DataViewOutcome<RowId, ColId>
-impl<RowId: core::cmp::PartialEq, ColId: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::DataViewOutcome<RowId, ColId>
-pub fn termrock::widgets::DataViewOutcome<RowId, ColId>::eq(&self, &termrock::widgets::DataViewOutcome<RowId, ColId>) -> bool
-impl<RowId: core::cmp::PartialEq, ColId: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::DataViewOutcome<RowId, ColId>
-impl<RowId: core::fmt::Debug, ColId: core::fmt::Debug> core::fmt::Debug for termrock::widgets::DataViewOutcome<RowId, ColId>
-pub fn termrock::widgets::DataViewOutcome<RowId, ColId>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<RowId, ColId> core::marker::Freeze for termrock::widgets::DataViewOutcome<RowId, ColId> where termrock::widgets::SortSpec<ColId>: core::marker::Freeze, ColId: core::marker::Freeze + core::marker::Freeze + core::marker::Freeze + core::marker::Freeze + core::marker::Freeze, RowId: core::marker::Freeze + core::marker::Freeze + core::marker::Freeze + core::marker::Freeze + core::marker::Freeze, core::option::Option<RowId>: core::marker::Freeze, core::option::Option<ColId>: core::marker::Freeze
-impl<RowId, ColId> core::marker::Send for termrock::widgets::DataViewOutcome<RowId, ColId> where termrock::widgets::SortSpec<ColId>: core::marker::Send, ColId: core::marker::Send + core::marker::Send + core::marker::Send + core::marker::Send + core::marker::Send, RowId: core::marker::Send + core::marker::Send + core::marker::Send + core::marker::Send + core::marker::Send, core::option::Option<RowId>: core::marker::Send, core::option::Option<ColId>: core::marker::Send
-impl<RowId, ColId> core::marker::Sync for termrock::widgets::DataViewOutcome<RowId, ColId> where termrock::widgets::SortSpec<ColId>: core::marker::Sync, ColId: core::marker::Sync + core::marker::Sync + core::marker::Sync + core::marker::Sync + core::marker::Sync, RowId: core::marker::Sync + core::marker::Sync + core::marker::Sync + core::marker::Sync + core::marker::Sync, core::option::Option<RowId>: core::marker::Sync, core::option::Option<ColId>: core::marker::Sync
-impl<RowId, ColId> core::marker::Unpin for termrock::widgets::DataViewOutcome<RowId, ColId> where termrock::widgets::SortSpec<ColId>: core::marker::Unpin, ColId: core::marker::Unpin + core::marker::Unpin + core::marker::Unpin + core::marker::Unpin + core::marker::Unpin, RowId: core::marker::Unpin + core::marker::Unpin + core::marker::Unpin + core::marker::Unpin + core::marker::Unpin, core::option::Option<RowId>: core::marker::Unpin, core::option::Option<ColId>: core::marker::Unpin
-impl<RowId, ColId> core::marker::UnsafeUnpin for termrock::widgets::DataViewOutcome<RowId, ColId> where termrock::widgets::SortSpec<ColId>: core::marker::UnsafeUnpin, ColId: core::marker::UnsafeUnpin + core::marker::UnsafeUnpin + core::marker::UnsafeUnpin + core::marker::UnsafeUnpin + core::marker::UnsafeUnpin, RowId: core::marker::UnsafeUnpin + core::marker::UnsafeUnpin + core::marker::UnsafeUnpin + core::marker::UnsafeUnpin + core::marker::UnsafeUnpin, core::option::Option<RowId>: core::marker::UnsafeUnpin, core::option::Option<ColId>: core::marker::UnsafeUnpin
-impl<RowId, ColId> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DataViewOutcome<RowId, ColId> where termrock::widgets::SortSpec<ColId>: core::panic::unwind_safe::RefUnwindSafe, ColId: core::panic::unwind_safe::RefUnwindSafe + core::panic::unwind_safe::RefUnwindSafe + core::panic::unwind_safe::RefUnwindSafe + core::panic::unwind_safe::RefUnwindSafe + core::panic::unwind_safe::RefUnwindSafe, RowId: core::panic::unwind_safe::RefUnwindSafe + core::panic::unwind_safe::RefUnwindSafe + core::panic::unwind_safe::RefUnwindSafe + core::panic::unwind_safe::RefUnwindSafe + core::panic::unwind_safe::RefUnwindSafe, core::option::Option<RowId>: core::panic::unwind_safe::RefUnwindSafe, core::option::Option<ColId>: core::panic::unwind_safe::RefUnwindSafe
-impl<RowId, ColId> core::panic::unwind_safe::UnwindSafe for termrock::widgets::DataViewOutcome<RowId, ColId> where termrock::widgets::SortSpec<ColId>: core::panic::unwind_safe::UnwindSafe, ColId: core::panic::unwind_safe::UnwindSafe + core::panic::unwind_safe::UnwindSafe + core::panic::unwind_safe::UnwindSafe + core::panic::unwind_safe::UnwindSafe + core::panic::unwind_safe::UnwindSafe, RowId: core::panic::unwind_safe::UnwindSafe + core::panic::unwind_safe::UnwindSafe + core::panic::unwind_safe::UnwindSafe + core::panic::unwind_safe::UnwindSafe + core::panic::unwind_safe::UnwindSafe, core::option::Option<RowId>: core::panic::unwind_safe::UnwindSafe, core::option::Option<ColId>: core::panic::unwind_safe::UnwindSafe
-impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::DataViewOutcome<RowId, ColId> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::widgets::DataViewOutcome<RowId, ColId>::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::widgets::DataViewOutcome<RowId, ColId> where U: core::convert::From<T>
-pub fn termrock::widgets::DataViewOutcome<RowId, ColId>::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::widgets::DataViewOutcome<RowId, ColId> where U: core::convert::Into<T>
-pub type termrock::widgets::DataViewOutcome<RowId, ColId>::Error = never
-pub fn termrock::widgets::DataViewOutcome<RowId, ColId>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::widgets::DataViewOutcome<RowId, ColId> where U: core::convert::TryFrom<T>
-pub type termrock::widgets::DataViewOutcome<RowId, ColId>::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::widgets::DataViewOutcome<RowId, ColId>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::widgets::DataViewOutcome<RowId, ColId> where T: core::clone::Clone
-pub type termrock::widgets::DataViewOutcome<RowId, ColId>::Owned = T
-pub fn termrock::widgets::DataViewOutcome<RowId, ColId>::clone_into(&self, &mut T)
-pub fn termrock::widgets::DataViewOutcome<RowId, ColId>::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::widgets::DataViewOutcome<RowId, ColId> where T: 'static + ?core::marker::Sized
-pub fn termrock::widgets::DataViewOutcome<RowId, ColId>::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::widgets::DataViewOutcome<RowId, ColId> where T: ?core::marker::Sized
-pub fn termrock::widgets::DataViewOutcome<RowId, ColId>::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::widgets::DataViewOutcome<RowId, ColId> where T: ?core::marker::Sized
-pub fn termrock::widgets::DataViewOutcome<RowId, ColId>::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::widgets::DataViewOutcome<RowId, ColId> where T: core::clone::Clone
-pub unsafe fn termrock::widgets::DataViewOutcome<RowId, ColId>::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::widgets::DataViewOutcome<RowId, ColId>
-pub fn termrock::widgets::DataViewOutcome<RowId, ColId>::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::widgets::DataViewOutcome<RowId, ColId>
 #[non_exhaustive] pub enum termrock::widgets::DateDisplayFormat
 pub termrock::widgets::DateDisplayFormat::DmySlash
 pub termrock::widgets::DateDisplayFormat::Iso
@@ -53275,51 +53159,6 @@ pub unsafe fn termrock::widgets::StreamRowKind::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::StreamRowKind
 pub fn termrock::widgets::StreamRowKind::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::StreamRowKind
-#[non_exhaustive] pub enum termrock::widgets::StreamingMarkdownOutcome
-pub termrock::widgets::StreamingMarkdownOutcome::Changed
-pub termrock::widgets::StreamingMarkdownOutcome::Changed::revision: u64
-pub termrock::widgets::StreamingMarkdownOutcome::Ignored
-pub termrock::widgets::StreamingMarkdownOutcome::View(termrock::widgets::MarkdownOutcome)
-impl core::clone::Clone for termrock::widgets::StreamingMarkdownOutcome
-pub fn termrock::widgets::StreamingMarkdownOutcome::clone(&self) -> termrock::widgets::StreamingMarkdownOutcome
-impl core::cmp::Eq for termrock::widgets::StreamingMarkdownOutcome
-impl core::cmp::PartialEq for termrock::widgets::StreamingMarkdownOutcome
-pub fn termrock::widgets::StreamingMarkdownOutcome::eq(&self, &termrock::widgets::StreamingMarkdownOutcome) -> bool
-impl core::fmt::Debug for termrock::widgets::StreamingMarkdownOutcome
-pub fn termrock::widgets::StreamingMarkdownOutcome::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::StructuralPartialEq for termrock::widgets::StreamingMarkdownOutcome
-impl core::marker::Freeze for termrock::widgets::StreamingMarkdownOutcome
-impl core::marker::Send for termrock::widgets::StreamingMarkdownOutcome
-impl core::marker::Sync for termrock::widgets::StreamingMarkdownOutcome
-impl core::marker::Unpin for termrock::widgets::StreamingMarkdownOutcome
-impl core::marker::UnsafeUnpin for termrock::widgets::StreamingMarkdownOutcome
-impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::StreamingMarkdownOutcome
-impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::StreamingMarkdownOutcome
-impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::StreamingMarkdownOutcome where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::widgets::StreamingMarkdownOutcome::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::widgets::StreamingMarkdownOutcome where U: core::convert::From<T>
-pub fn termrock::widgets::StreamingMarkdownOutcome::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::widgets::StreamingMarkdownOutcome where U: core::convert::Into<T>
-pub type termrock::widgets::StreamingMarkdownOutcome::Error = never
-pub fn termrock::widgets::StreamingMarkdownOutcome::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::widgets::StreamingMarkdownOutcome where U: core::convert::TryFrom<T>
-pub type termrock::widgets::StreamingMarkdownOutcome::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::widgets::StreamingMarkdownOutcome::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::widgets::StreamingMarkdownOutcome where T: core::clone::Clone
-pub type termrock::widgets::StreamingMarkdownOutcome::Owned = T
-pub fn termrock::widgets::StreamingMarkdownOutcome::clone_into(&self, &mut T)
-pub fn termrock::widgets::StreamingMarkdownOutcome::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::widgets::StreamingMarkdownOutcome where T: 'static + ?core::marker::Sized
-pub fn termrock::widgets::StreamingMarkdownOutcome::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::widgets::StreamingMarkdownOutcome where T: ?core::marker::Sized
-pub fn termrock::widgets::StreamingMarkdownOutcome::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::widgets::StreamingMarkdownOutcome where T: ?core::marker::Sized
-pub fn termrock::widgets::StreamingMarkdownOutcome::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::widgets::StreamingMarkdownOutcome where T: core::clone::Clone
-pub unsafe fn termrock::widgets::StreamingMarkdownOutcome::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::widgets::StreamingMarkdownOutcome
-pub fn termrock::widgets::StreamingMarkdownOutcome::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::widgets::StreamingMarkdownOutcome
 #[non_exhaustive] pub enum termrock::widgets::SuggestionStatus
 pub termrock::widgets::SuggestionStatus::Empty
 pub termrock::widgets::SuggestionStatus::Error
