@@ -382,6 +382,14 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
         for row in rows.iter().filter(|row| !selectable(row)) {
             self.selection.remove_row(&row.id);
         }
+        let partial_virtual_slice = self.window.logical_len > rows.len() as u64;
+        if partial_virtual_slice
+            && let Some(sel) = self.selected.as_ref()
+            && !rows.iter().any(|row| &row.id == sel)
+        {
+            self.cursor_row = self.cursor_row.min(rows.len().saturating_sub(1));
+            return;
+        }
         if let Some(sel) = self.selected.as_ref()
             && let Some(idx) = rows.iter().position(|r| selectable(r) && &r.id == sel)
         {
@@ -1996,6 +2004,64 @@ mod tests {
             TreeTableOutcome::Selected(101)
         ));
         assert_eq!(state.window.offset, 100);
+    }
+
+    #[test]
+    fn virtual_reconcile_preserves_selected_id_outside_projected_slice() {
+        let cells: &[&str] = &["row", "", ""];
+        let first = [
+            TreeTableRow::new(100u64, 0, cells),
+            TreeTableRow::new(101, 0, cells),
+        ];
+        let second = [
+            TreeTableRow::new(200u64, 0, cells),
+            TreeTableRow::new(201, 0, cells),
+        ];
+        let mut state = TreeTableState::<u64, &str>::new(Some(100));
+        state.set_logical_rows(1_000);
+        state.window.viewport = 2;
+        state.window.offset = 100;
+        state.reconcile(&first);
+
+        state.window.offset = 200;
+        state.reconcile(&second);
+
+        assert_eq!(state.selected(), Some(&100));
+        assert_eq!(state.cursor_row, 0);
+        assert_eq!(state.window.offset, 200);
+    }
+
+    #[test]
+    fn full_reconcile_repairs_removed_selected_id() {
+        let cells: &[&str] = &["row", "", ""];
+        let rows = [TreeTableRow::new(200u64, 0, cells)];
+        let mut state = TreeTableState::<u64, &str>::new(Some(100));
+        state.set_logical_rows(rows.len() as u64);
+
+        state.reconcile(&rows);
+
+        assert_eq!(state.selected(), Some(&200));
+        assert_eq!(state.cursor_row, 0);
+    }
+
+    #[test]
+    fn virtual_reconcile_clamps_cursor_when_slice_shrinks() {
+        let cells: &[&str] = &["row", "", ""];
+        let first = [
+            TreeTableRow::new(100u64, 0, cells),
+            TreeTableRow::new(101, 0, cells),
+            TreeTableRow::new(102, 0, cells),
+        ];
+        let second = [TreeTableRow::new(200u64, 0, cells)];
+        let mut state = TreeTableState::<u64, &str>::new(Some(100));
+        state.set_logical_rows(1_000);
+        state.reconcile(&first);
+        state.cursor_row = 2;
+
+        state.reconcile(&second);
+
+        assert_eq!(state.selected(), Some(&100));
+        assert_eq!(state.cursor_row, 0);
     }
 
     #[test]
