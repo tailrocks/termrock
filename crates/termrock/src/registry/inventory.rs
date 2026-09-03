@@ -1120,7 +1120,7 @@ pub static PUBLIC_UI_INVENTORY: &[PublicUiInventoryEntry] = &[
     public_ui!(RadioGroup, Paint, Input, "radio-group", "radio-group/basic"),
     public_ui!(
         RangeSlider,
-        Widget,
+        Paint,
         Input,
         "range-slider",
         "range-slider/basic"
@@ -1222,7 +1222,7 @@ pub static PUBLIC_UI_INVENTORY: &[PublicUiInventoryEntry] = &[
         "slash-command-menu",
         "slash-command-menu/filter"
     ),
-    public_ui!(Slider, Widget, Input, "slider", "slider/basic"),
+    public_ui!(Slider, Paint, Input, "slider", "slider/basic"),
     public_ui!(
         SourceCitation,
         Paint,
@@ -1373,7 +1373,7 @@ pub static PUBLIC_UI_INVENTORY: &[PublicUiInventoryEntry] = &[
     ),
     public_ui!(ToolCard, Widget, Content, "tool-card", "tool-card/basic"),
     public_ui!(Toolbar, Widget, Action, "toolbar", "toolbar/basic"),
-    public_ui!(Tooltip, Widget, Feedback, "tooltip", "tooltip/plain"),
+    public_ui!(Tooltip, Paint, Feedback, "tooltip", "tooltip/plain"),
     public_ui!(
         TraceWaterfall,
         Paint,
@@ -1858,7 +1858,7 @@ mod tests {
                     counts[index] += 1;
                     counts
                 });
-        assert_eq!(kind_counts, [138, 58, 6, 8]);
+        assert_eq!(kind_counts, [135, 61, 6, 8]);
         assert_eq!(
             public_ui_inventory()
                 .iter()

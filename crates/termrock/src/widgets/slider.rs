@@ -19,7 +19,6 @@ use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
     style::Modifier,
-    widgets::Widget,
 };
 
 use crate::input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
@@ -1070,13 +1069,6 @@ impl<'a> Slider<'a> {
     }
 }
 
-impl Widget for &Slider<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        let mut state = SliderState::new(self.bounds.min);
-        let _ = self.paint(area, buffer, &mut state);
-    }
-}
-
 // ── RangeSlider ─────────────────────────────────────────────────────────────
 
 /// Which thumb is active for keyboard.
@@ -1681,13 +1673,6 @@ impl<'a> RangeSlider<'a> {
                     ..Default::default()
                 }),
         );
-    }
-}
-
-impl Widget for &RangeSlider<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        let mut state = RangeSliderState::new(self.bounds.min, self.bounds.max);
-        let _ = self.paint(area, buffer, &mut state);
     }
 }
 

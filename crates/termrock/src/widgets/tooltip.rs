@@ -17,7 +17,7 @@
 use std::time::Duration;
 use web_time::Instant;
 
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
 
 use crate::{
     interaction::{
@@ -633,20 +633,14 @@ impl<'a> Tooltip<'a> {
 
     /// Paint when visible (never steals focus).
     ///
-    /// Returns early if not visible, disabled, or essential-elsewhere policy fails.
+    /// Returns early if not visible, disabled, or essential-elsewhere policy
+    /// fails — the visibility gate is state-owned, so paint is the only entry
+    /// and an ungated render cannot bypass it.
     pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &TooltipState) {
         if area.is_empty() || !state.is_visible() || state.is_disabled() {
             return;
         }
         if state.enforce_essential_elsewhere && !self.content.essential_elsewhere {
-            return;
-        }
-        self.paint_always(area, buffer);
-    }
-
-    /// Paint without visibility gate (tests / host already gated).
-    pub fn paint_always(&self, area: Rect, buffer: &mut Buffer) {
-        if area.is_empty() {
             return;
         }
         // Every variant floats: a tooltip that writes bare text over live
@@ -729,20 +723,6 @@ impl<'a> Tooltip<'a> {
                 }
             }
         }
-    }
-}
-
-impl Widget for &Tooltip<'_> {
-    /// Paints body without visibility gate (host must gate). Prefer
-    /// [`Tooltip::paint`] with state.
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        self.paint_always(area, buffer);
-    }
-}
-
-impl Widget for Tooltip<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        <&Self as Widget>::render(&self, area, buffer);
     }
 }
 

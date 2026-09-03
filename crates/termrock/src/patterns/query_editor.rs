@@ -32,11 +32,7 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    widgets::StatefulWidget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
 
 use crate::{
     input::{Event, KeyCode, KeyEvent, KeyModifiers, MouseEvent},
