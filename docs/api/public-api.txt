@@ -60446,7 +60446,6 @@ pub struct termrock::widgets::ButtonGroup<'a, Id>
 impl<'a, Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::ButtonGroup<'a, Id>
 pub fn termrock::widgets::ButtonGroup<'a, Id>::activate_overflow(&self, &mut termrock::widgets::ButtonGroupState<Id>, Id) -> termrock::widgets::ButtonGroupOutcome<Id>
 pub fn termrock::widgets::ButtonGroup<'a, Id>::handle_key(&self, &mut termrock::widgets::ButtonGroupState<Id>, termrock::input::KeyEvent) -> termrock::widgets::ButtonGroupOutcome<Id>
-pub fn termrock::widgets::ButtonGroup<'a, Id>::handle_key_result(&self, &mut termrock::widgets::ButtonGroupState<Id>, termrock::input::KeyEvent) -> termrock::interaction::EventResult<termrock::widgets::ButtonGroupOutcome<Id>>
 pub fn termrock::widgets::ButtonGroup<'a, Id>::handle_mouse(&self, &mut termrock::widgets::ButtonGroupState<Id>, termrock::input::MouseEvent) -> termrock::widgets::ButtonGroupOutcome<Id>
 pub fn termrock::widgets::ButtonGroup<'a, Id>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::ButtonGroupState<Id>) -> termrock::widgets::ButtonGroupParts<Id>
 pub fn termrock::widgets::ButtonGroup<'a, Id>::plan_overflow(&self, u16) -> (alloc::vec::Vec<usize>, alloc::vec::Vec<usize>)
