@@ -420,12 +420,13 @@ impl BreadcrumbsState {
             return BreadcrumbsOutcome::Ignored;
         }
         self.reconcile_len(items.len());
+        let is_press = key.is_press();
 
         // Editable mode
         if matches!(self.mode, BreadcrumbsMode::Editable) {
             match key.code {
-                KeyCode::Esc => return self.cancel_edit(),
-                KeyCode::Enter => return self.commit_edit(),
+                KeyCode::Esc if is_press => return self.cancel_edit(),
+                KeyCode::Enter if is_press => return self.commit_edit(),
                 KeyCode::Backspace => {
                     self.draft.pop();
                     return BreadcrumbsOutcome::Changed;
@@ -444,7 +445,7 @@ impl BreadcrumbsState {
 
         // Overflow open: Esc closes
         if self.overflow_open {
-            if key.code == KeyCode::Esc {
+            if key.code == KeyCode::Esc && is_press {
                 self.overflow_open = false;
                 return BreadcrumbsOutcome::OverflowClosed;
             }
@@ -453,7 +454,11 @@ impl BreadcrumbsState {
         let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
 
         // Start edit: F2-like via Ctrl+E or when editable + Enter on current
-        if self.editable && ctrl && matches!(key.code, KeyCode::Char('e') | KeyCode::Char('E')) {
+        if self.editable
+            && is_press
+            && ctrl
+            && matches!(key.code, KeyCode::Char('e') | KeyCode::Char('E'))
+        {
             return self.start_edit(items);
         }
 
@@ -474,8 +479,10 @@ impl BreadcrumbsState {
                 self.focus_index = items.len().saturating_sub(1);
                 BreadcrumbsOutcome::Changed
             }
-            KeyCode::Enter | KeyCode::Char(' ') if key.modifiers.is_empty() => self.activate(items),
-            KeyCode::Esc => {
+            KeyCode::Enter | KeyCode::Char(' ') if is_press && key.modifiers.is_empty() => {
+                self.activate(items)
+            }
+            KeyCode::Esc if is_press => {
                 if self.overflow_open {
                     self.overflow_open = false;
                     BreadcrumbsOutcome::OverflowClosed
@@ -484,7 +491,7 @@ impl BreadcrumbsState {
                 }
             }
             // `/` start path edit when editable
-            KeyCode::Char('/') if self.editable && key.modifiers.is_empty() => {
+            KeyCode::Char('/') if is_press && self.editable && key.modifiers.is_empty() => {
                 self.start_edit(items)
             }
             _ => BreadcrumbsOutcome::Ignored,
@@ -943,6 +950,7 @@ pub fn crumbs_from_labels(labels: &[&str]) -> Vec<BreadcrumbItem<String>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::input::KeyEventKind;
     use crate::style::RolePalette;
     use ratatui_core::layout::Position;
 
@@ -1059,6 +1067,58 @@ mod tests {
             state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &items),
             BreadcrumbsOutcome::EditStarted { .. }
         ));
+    }
+
+    #[test]
+    fn repeated_one_shot_actions_are_ignored_but_draft_text_repeats() {
+        let items = sample();
+        let mut state = BreadcrumbsState::new().with_editable(true);
+        state.set_focused(true);
+        state.focus_index = 0;
+
+        for (code, modifiers) in [
+            (KeyCode::Enter, KeyModifiers::NONE),
+            (KeyCode::Char(' '), KeyModifiers::NONE),
+            (KeyCode::Esc, KeyModifiers::NONE),
+            (KeyCode::Char('/'), KeyModifiers::NONE),
+            (KeyCode::Char('e'), KeyModifiers::CONTROL),
+        ] {
+            let mut repeat = KeyEvent::new(code, modifiers);
+            repeat.kind = KeyEventKind::Repeat;
+            let before = state.clone();
+            assert_eq!(
+                state.handle_key(repeat, &items),
+                BreadcrumbsOutcome::Ignored
+            );
+            assert_eq!(state, before, "{code:?} repeat mutated breadcrumbs");
+        }
+
+        state.focus_index = items.len() - 1;
+        assert!(matches!(
+            state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &items),
+            BreadcrumbsOutcome::EditStarted { .. }
+        ));
+        for code in [KeyCode::Enter, KeyCode::Esc] {
+            let mut repeat = KeyEvent::new(code, KeyModifiers::NONE);
+            repeat.kind = KeyEventKind::Repeat;
+            let before = state.clone();
+            assert_eq!(
+                state.handle_key(repeat, &items),
+                BreadcrumbsOutcome::Ignored
+            );
+            assert_eq!(
+                state, before,
+                "{code:?} repeat mutated editable breadcrumbs"
+            );
+        }
+
+        let mut repeat_text = KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE);
+        repeat_text.kind = KeyEventKind::Repeat;
+        assert_eq!(
+            state.handle_key(repeat_text, &items),
+            BreadcrumbsOutcome::Changed
+        );
+        assert!(state.draft.ends_with('x'));
     }
 
     #[test]
