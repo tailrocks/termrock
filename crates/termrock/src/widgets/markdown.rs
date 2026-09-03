@@ -549,6 +549,16 @@ pub struct MarkdownView<'a> {
     section_gap: bool,
 }
 
+/// One document cell to paint: block, its index, and sub-row.
+struct BlockCell<'a> {
+    /// Block being painted.
+    block: &'a MarkdownBlock<'a>,
+    /// Document index of `block`.
+    block_index: usize,
+    /// Display row within `block`.
+    sub: u16,
+}
+
 impl<'a> MarkdownView<'a> {
     /// Creates a markdown view.
     #[must_use]
@@ -799,7 +809,17 @@ impl<'a> MarkdownView<'a> {
             let selected = state.selection.is_some_and(|(a, b)| bi >= a && bi < b)
                 || state.cursor_block == Some(bi) && state.focused;
 
-            self.paint_block_row(block, bi, sub, line, buffer, selected, &mut links);
+            self.paint_block_row(
+                BlockCell {
+                    block,
+                    block_index: bi,
+                    sub,
+                },
+                line,
+                buffer,
+                selected,
+                &mut links,
+            );
             painted = painted.saturating_add(1);
         }
 
@@ -815,17 +835,19 @@ impl<'a> MarkdownView<'a> {
         parts
     }
 
-    #[allow(clippy::too_many_arguments)]
     fn paint_block_row(
         &self,
-        block: &MarkdownBlock<'a>,
-        block_index: usize,
-        sub: u16,
+        cell: BlockCell<'a>,
         area: Rect,
         buffer: &mut Buffer,
         selected: bool,
         links: &mut Vec<MarkdownLinkRegion>,
     ) {
+        let BlockCell {
+            block,
+            block_index,
+            sub,
+        } = cell;
         if area.is_empty() {
             return;
         }

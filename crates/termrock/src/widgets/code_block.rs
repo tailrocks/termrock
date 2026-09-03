@@ -628,6 +628,30 @@ pub enum CodeBlockOutcome {
     },
 }
 
+/// Per-line content painted by one body row.
+struct BodyRowCells<'a> {
+    /// Visible row (wrap segment or clipped slice).
+    display_row: &'a str,
+    /// Full prepared line the highlighter tokenizes against.
+    prepared_full: &'a str,
+    /// Absolute logical line the row belongs to.
+    abs_line: usize,
+    /// Active highlight kinds for `abs_line`.
+    kinds: &'a [CodeHighlightKind],
+}
+
+/// Row paint environment: palette, base field style, horizontal clip state.
+struct BodyRowPaint {
+    /// Monochrome capability (weight cues, no hue).
+    mono: bool,
+    /// Field style the row paints through.
+    field: Style,
+    /// Prepared line exceeds the visible width → trailing ellipsis.
+    overflow: bool,
+    /// Horizontal scroll offset in display columns.
+    scroll_x: u16,
+}
+
 // ── Widget ──────────────────────────────────────────────────────────────────
 
 /// Production code listing.
@@ -1265,15 +1289,20 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
                     parts.body.x,
                     parts.body.y.saturating_add(row),
                     body_w,
-                    display_row,
-                    &prepared,
-                    abs,
-                    &kinds,
-                    mono,
-                    fs,
-                    display_cols(&prepared).saturating_sub(usize::from(state.scroll_x))
-                        > usize::from(body_w),
-                    state.scroll_x,
+                    BodyRowCells {
+                        display_row,
+                        prepared_full: &prepared,
+                        abs_line: abs,
+                        kinds: &kinds,
+                    },
+                    BodyRowPaint {
+                        mono,
+                        field: fs,
+                        overflow: display_cols(&prepared)
+                            .saturating_sub(usize::from(state.scroll_x))
+                            > usize::from(body_w),
+                        scroll_x: state.scroll_x,
+                    },
                 );
                 if wrap_i == 0 && state.editing && state.cursor_line == Some(abs) {
                     let y = parts.body.y.saturating_add(row);
@@ -1371,31 +1400,24 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
         parts
     }
 
-    #[allow(clippy::too_many_arguments)]
     fn paint_body_row(
         &self,
         buffer: &mut Buffer,
         x: u16,
         y: u16,
         width: u16,
-        display_row: &str,
-        prepared_full: &str,
-        abs_line: usize,
-        kinds: &[CodeHighlightKind],
-        mono: bool,
-        field: Style,
-        overflow: bool,
-        scroll_x: u16,
+        cells: BodyRowCells<'_>,
+        paint: BodyRowPaint,
     ) {
         if width == 0 {
             return;
         }
         // Highlight against full prepared line; paint only display_row segment styles.
-        let segments = self.highlighter.highlight_line(prepared_full);
-        let paint_segments = if display_row == prepared_full {
+        let segments = self.highlighter.highlight_line(cells.prepared_full);
+        let paint_segments = if cells.display_row == cells.prepared_full {
             segments
         } else {
-            self.highlighter.highlight_line(display_row)
+            self.highlighter.highlight_line(cells.display_row)
         };
         let unstyled = paint_segments.iter().all(|(_, s)| *s == Style::default());
         let fallback: Vec<(&str, Style)>;
@@ -1403,7 +1425,7 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
             // Fallback: language-agnostic tokens through `theme.syntax()` —
             // weight + text ladder, never historical ANSI hues.
             fallback = tokenize_line(
-                display_row,
+                cells.display_row,
                 self.meta.language,
                 keywords_for(self.meta.language),
             )
@@ -1420,11 +1442,11 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
             if style == Style::default() {
                 style = self.system.junie_theme().syntax(SyntaxTone::Plain);
             } else {
-                style = monochrome_syntax_style(style, mono);
+                style = monochrome_syntax_style(style, paint.mono);
             }
-            style = field.patch(style);
-            style = self.line_style_overlay(style, kinds);
-            if !kinds.iter().any(|k| {
+            style = paint.field.patch(style);
+            style = self.line_style_overlay(style, cells.kinds);
+            if !cells.kinds.iter().any(|k| {
                 matches!(
                     k,
                     CodeHighlightKind::Selection
@@ -1433,7 +1455,7 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
                 )
             }) {
                 style = Style {
-                    bg: field.bg,
+                    bg: paint.field.bg,
                     ..style
                 };
             }
@@ -1448,15 +1470,15 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
             buffer.set_stringn(x.saturating_add(col), y, &clipped, remaining, style);
             col = col.saturating_add(used);
         }
-        self.paint_diagnostic_underlines(buffer, x, y, width, abs_line, scroll_x);
-        if overflow && width > 0 {
+        self.paint_diagnostic_underlines(buffer, x, y, width, cells.abs_line, paint.scroll_x);
+        if paint.overflow && width > 0 {
             let theme = self.system.junie_theme();
             buffer.set_stringn(
                 x.saturating_add(width.saturating_sub(1)),
                 y,
                 self.system.glyphs.ellipsis(),
                 1,
-                field.fg(theme.text_muted),
+                paint.field.fg(theme.text_muted),
             );
         }
     }

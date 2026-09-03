@@ -93,35 +93,6 @@ where
     LayerId: Clone + Eq + Hash,
     MapAction: Clone + 'static,
 {
-    /// Builds a context from raw borrows (advanced hosts / tests).
-    #[must_use]
-    #[allow(clippy::too_many_arguments)]
-    pub fn new(
-        design: &'a DesignSystem,
-        capabilities: &'a TerminalCapabilities,
-        boundary: Option<&'a CapabilityBoundary>,
-        keymap: Option<&'a Keymap<MapAction>>,
-        scene: &'a mut InteractionScene<Id, LayerId, Action>,
-        focus: &'a mut FocusGraph<Id>,
-        overlays: &'a mut OverlayStack<Id>,
-        semantics: &'a mut SemanticScene<Id, Action>,
-        tick: FrameTick,
-        diagnostics: &'a mut UiDiagnostics,
-    ) -> Self {
-        Self {
-            design,
-            capabilities,
-            boundary,
-            keymap,
-            scene,
-            focus,
-            overlays,
-            semantics,
-            tick,
-            diagnostics,
-        }
-    }
-
     // ── read-only ──────────────────────────────────────────────────────────
 
     /// Sole paint authority for this frame.

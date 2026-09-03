@@ -1774,10 +1774,12 @@ impl StatefulWidget for &TextArea<'_> {
                             text,
                             line,
                             first + painted,
-                            a,
-                            b,
-                            offset_x,
-                            state.viewport_width,
+                            SelectionWindow {
+                                a,
+                                b,
+                                offset_x,
+                                viewport_width: state.viewport_width,
+                            },
                             y,
                             self.system.selected_text(),
                         );
@@ -1982,39 +1984,47 @@ fn paint_textarea_footer(
     }
 }
 
-#[allow(clippy::too_many_arguments)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct SelectionWindow {
+    a: TextCursor,
+    b: TextCursor,
+    offset_x: usize,
+    viewport_width: usize,
+}
+
 fn paint_selection_line(
     buffer: &mut Buffer,
     body: Rect,
     line: &str,
     line_idx: usize,
-    a: TextCursor,
-    b: TextCursor,
-    offset_x: usize,
-    viewport_width: usize,
+    window: SelectionWindow,
     y: u16,
     cursor_style: Style,
 ) {
-    if line_idx < a.line || line_idx > b.line {
+    if line_idx < window.a.line || line_idx > window.b.line {
         return;
     }
-    let start_byte = if line_idx == a.line { a.byte } else { 0 };
-    let end_byte = if line_idx == b.line {
-        b.byte.min(line.len())
+    let start_byte = if line_idx == window.a.line {
+        window.a.byte
+    } else {
+        0
+    };
+    let end_byte = if line_idx == window.b.line {
+        window.b.byte.min(line.len())
     } else {
         line.len()
     };
     if start_byte >= end_byte {
         return;
     }
-    let start_col = display_cols(&line[..start_byte]).saturating_sub(offset_x);
-    let end_col = display_cols(&line[..end_byte]).saturating_sub(offset_x);
+    let start_col = display_cols(&line[..start_byte]).saturating_sub(window.offset_x);
+    let end_col = display_cols(&line[..end_byte]).saturating_sub(window.offset_x);
     let sx = body
         .x
-        .saturating_add(u16::try_from(start_col.min(viewport_width)).unwrap_or(0));
+        .saturating_add(u16::try_from(start_col.min(window.viewport_width)).unwrap_or(0));
     let ex = body
         .x
-        .saturating_add(u16::try_from(end_col.min(viewport_width)).unwrap_or(0))
+        .saturating_add(u16::try_from(end_col.min(window.viewport_width)).unwrap_or(0))
         .min(body.right());
     if ex > sx {
         // D8: selected text is one explicit pair, applied as a whole —
