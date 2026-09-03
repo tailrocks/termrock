@@ -203,7 +203,9 @@ fn parse_frame_command(args: &[String]) -> Result<Command, ParseError> {
                 let value = iter.next().ok_or_else(|| {
                     ParseError::InvalidCommand("frame requires a scenario ID".to_owned())
                 })?;
-                if crate::catalog::scenario_by_id(value).is_none() {
+                if crate::catalog::scenario_by_id(value).is_none()
+                    && crate::scenarios::capture_scenarios().all(|scenario| scenario.id != value)
+                {
                     return Err(ParseError::UnknownPage(value.clone()));
                 }
                 scenario = Some(value.clone());

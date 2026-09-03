@@ -12,6 +12,16 @@
     "png"
   ],
   "event_authority": "reference/manifest.json",
+  "event_provenance": {
+    "status": "reconstructed",
+    "source_event_log": false,
+    "source_tests": [
+      "src/bin/showcase/app_tests.rs",
+      "src/bin/tablepro/app_tests.rs"
+    ],
+    "source_capture_tool": "tools/capture.sh",
+    "note": "The source capture tool stores rendered artifacts, not input events. Event arrays are the deterministic replay reconstruction used for these source-shot states; exact source input provenance is unavailable."
+  },
   "shot_provenance": [
     {"match": "f_*", "source_sha": "4b857a079946e2acfdcf54cf48ef92bd83766478"},
     {"match": "s_chips|s_chips_80|s_chips_select|s_editor|s_editor_80|s_editor_complete|s_editor_running|s_grid|s_grid_80|s_grid_failed|s_grid_pending|s_grid_preview|s_pickers|s_pickers_80|s_pickers_tabs", "source_sha": "df8ac18c36fc4d006f13239c4c21ab8c9c80800d"},
@@ -81,10 +91,7 @@
       "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
       "junie_commit": "e43cf67",
       "junie_dirty": false,
-      "events": [
-        "Tab x4",
-        "Enter"
-      ],
+      "events": ["Tab","Tab","Tab","Tab","Enter"],
       "evidence": "checked-in source shot",
       "sha256": {
         "ansi": "2e8175a03f138821c27acb2c1647dab0dde0d3032b4f10ff5d0e9acc04331ad9",
@@ -426,7 +433,7 @@
       "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
       "junie_commit": "e43cf67",
       "junie_dirty": false,
-      "events": [],
+      "events": ["Tab"],
       "evidence": "checked-in source shot",
       "sha256": {
         "ansi": "dde4a076cf477e8ea846d94babaab3fecc0eac11bef52a9c8690f79349b81591",
@@ -447,7 +454,7 @@
       "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
       "junie_commit": "e43cf67",
       "junie_dirty": false,
-      "events": [],
+      "events": ["Tab"],
       "evidence": "checked-in source shot",
       "sha256": {
         "ansi": "46c8b4f47445427a04386ae23e5805089e5ebc51325ceba7fbff8055f6120e7a",
@@ -468,12 +475,7 @@
       "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
       "junie_commit": "e43cf67",
       "junie_dirty": false,
-      "events": [
-        "Tab",
-        "Enter",
-        "Down",
-        "type cl"
-      ],
+      "events": ["Tab","Enter","Down","Enter","Up","type     cl"],
       "evidence": "checked-in source shot",
       "sha256": {
         "ansi": "51b97cc80785ed8db0b895dffc909012033759ac6b4235664433ccfd27bf7488",
@@ -494,7 +496,7 @@
       "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
       "junie_commit": "e43cf67",
       "junie_dirty": false,
-      "events": [],
+      "events": ["Tab","}","Ctrl-r","ticks:10"],
       "evidence": "checked-in source shot",
       "sha256": {
         "ansi": "92f84c78a911afcad875e6398988753af5a8eac7b254bb40189850a2cfadc1d3",
@@ -515,10 +517,7 @@
       "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
       "junie_commit": "e43cf67",
       "junie_dirty": false,
-      "events": [
-        "Ctrl-r",
-        "ticks:4"
-      ],
+      "events": ["Tab","}","Ctrl-r","ticks:4"],
       "evidence": "checked-in source shot",
       "sha256": {
         "ansi": "a0b97706a4046fac7d506c822d62e4e9b94da086170cdb6ec8630d6380fb5fd2",
@@ -539,7 +538,7 @@
       "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
       "junie_commit": "e43cf67",
       "junie_dirty": false,
-      "events": [],
+      "events": ["Tab"],
       "evidence": "checked-in source shot",
       "sha256": {
         "ansi": "eb9cd1b98715a3fd7cc3ed5916b973c38473cedf5e4a7cdfd8a22ad7cc07509e",
@@ -560,7 +559,7 @@
       "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
       "junie_commit": "e43cf67",
       "junie_dirty": false,
-      "events": [],
+      "events": ["Tab"],
       "evidence": "checked-in source shot",
       "sha256": {
         "ansi": "f4580d74b2482a294c3dc051e48935459c8573337b66cc48ed546ff93bccb2f9",
@@ -581,7 +580,7 @@
       "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
       "junie_commit": "e43cf67",
       "junie_dirty": false,
-      "events": [],
+      "events": ["Tab","Right","Right","Right","Enter","Backspace","type 600","Enter","Down","Enter","Backspace","Backspace","type 12","Enter","Ctrl-s","ticks:4"],
       "evidence": "checked-in source shot",
       "sha256": {
         "ansi": "15f19736af50d8dd8ff54cb4d1de983ec7fa83e8c2497d0aa7a86e92a905b1ef",
@@ -602,12 +601,7 @@
       "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
       "junie_commit": "e43cf67",
       "junie_dirty": false,
-      "events": [
-        "Tab",
-        "Enter",
-        "type x",
-        "Enter"
-      ],
+      "events": ["Tab","Right","Right","Right","Enter","Backspace","type 600","Enter","Down","Enter","Backspace","Backspace","type 12","Enter","Right"],
       "evidence": "checked-in source shot",
       "sha256": {
         "ansi": "d0c7b87708905e811993056f85ac2dcbdc6b112280c4eebb711f8c33c7995afe",
@@ -628,9 +622,7 @@
       "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
       "junie_commit": "e43cf67",
       "junie_dirty": false,
-      "events": [
-        "p"
-      ],
+      "events": ["Tab","Right","Right","Right","Enter","Backspace","type 600","Enter","Down","Enter","Backspace","Backspace","type 12","Enter","Right","p"],
       "evidence": "checked-in source shot",
       "sha256": {
         "ansi": "a9deded032a463a8524339fa7134695de04f89218d8f294cedeeb789cf76e0d9",
@@ -700,10 +692,7 @@
       "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
       "junie_commit": "e43cf67",
       "junie_dirty": false,
-      "events": [
-        "Tab x3",
-        "Enter"
-      ],
+      "events": ["Tab","Tab","Tab","Enter"],
       "evidence": "checked-in source shot",
       "sha256": {
         "ansi": "f8048c440986ee9d0a132b396f01397a290823f09caca553ff2f7c6669ee2d73",
@@ -752,7 +741,7 @@
       "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
       "junie_commit": "e43cf67",
       "junie_dirty": false,
-      "events": [],
+      "events": ["Tab","Ctrl-r","ticks:4"],
       "evidence": "checked-in source shot",
       "sha256": {
         "ansi": "c50594df108efbc0d0a8509b2a12b939005996476e03b21a6f5d7fdd2a205761",
@@ -776,10 +765,7 @@
       "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
       "junie_commit": "e43cf67",
       "junie_dirty": false,
-      "events": [
-        "Down x5",
-        "Enter"
-      ],
+      "events": ["0","Down","Down","Down","Down","Down","Enter","ticks:3","Right","Right","Right","Right","s"],
       "evidence": "checked-in source shot",
       "sha256": {
         "ansi": "c8c3fb11e2f1b11bfcb5de61ae931c77955619a07423d7b3ef61176dbe65c9b6",
@@ -803,7 +789,7 @@
       "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
       "junie_commit": "e43cf67",
       "junie_dirty": false,
-      "events": [],
+      "events": ["Alt-x","ticks:8"],
       "evidence": "checked-in source shot",
       "sha256": {
         "ansi": "bc73928131cc2086aa4a443a7731f7a08cf822d4b2fde30e90101e43837c360b",
@@ -827,10 +813,7 @@
       "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
       "junie_commit": "e43cf67",
       "junie_dirty": false,
-      "events": [
-        "Down x5",
-        "Enter"
-      ],
+      "events": ["0","Down","Down","Down","Down","Down","Enter"],
       "evidence": "checked-in source shot",
       "sha256": {
         "ansi": "bd8159d225e2a73e80027a66f55d204d1b08e116ad09949e29a1bc58079c4a4d",
@@ -854,7 +837,7 @@
       "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
       "junie_commit": "e43cf67",
       "junie_dirty": false,
-      "events": [],
+      "events": ["Tab","Ctrl-r","ticks:8"],
       "evidence": "checked-in source shot",
       "sha256": {
         "ansi": "6bbda8543650bf3047061223c18493c504d5e9f194238c36c0e4e76f9a899a25",
@@ -878,9 +861,7 @@
       "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
       "junie_commit": "e43cf67",
       "junie_dirty": false,
-      "events": [
-        "b"
-      ],
+      "events": ["Ctrl-b"],
       "evidence": "checked-in source shot",
       "sha256": {
         "ansi": "5dae8513b9efae77f690a61bc0e1f4c6a3270ea21365e12ebd9348385501122b",
@@ -904,9 +885,7 @@
       "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
       "junie_commit": "e43cf67",
       "junie_dirty": false,
-      "events": [
-        "Tab"
-      ],
+      "events": ["Tab","Ctrl-r","ticks:8"],
       "evidence": "checked-in source shot",
       "sha256": {
         "ansi": "63279000e657391a5979d60dfa46493d8a6905b417559bba2335a6b4045ab588",
@@ -1055,9 +1034,7 @@
       "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
       "junie_commit": "e43cf67",
       "junie_dirty": false,
-      "events": [
-        "Down x8"
-      ],
+      "events": ["Down","Down","Down","Down","Down","Down","Down","Down"],
       "evidence": "checked-in source shot",
       "sha256": {
         "ansi": "c64e3342cea6f9582999e79b4775364e00f2d4a5b525ab570851f3848812aee6",
@@ -1132,12 +1109,7 @@
       "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
       "junie_commit": "e43cf67",
       "junie_dirty": false,
-      "events": [
-        "Down x5",
-        "Enter",
-        "Enter",
-        "type x"
-      ],
+      "events": ["Down","Down","Down","Down","Down","Enter","Enter","type x"],
       "evidence": "checked-in source shot",
       "sha256": {
         "ansi": "9480a0c40327a9dfbf8ce703b2a820ed4e198dea84113a3b17e6e4da0154492f",
@@ -1161,11 +1133,7 @@
       "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
       "junie_commit": "e43cf67",
       "junie_dirty": false,
-      "events": [
-        "Down x5",
-        "Enter",
-        "Enter"
-      ],
+      "events": ["Down","Down","Down","Down","Down","Enter","Enter"],
       "evidence": "checked-in source shot",
       "sha256": {
         "ansi": "9413b4368a7e6aaee159df681870f996aa21619f8d2fd05d9d0c00b04fe8a46d",
@@ -1189,14 +1157,7 @@
       "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
       "junie_commit": "e43cf67",
       "junie_dirty": false,
-      "events": [
-        "Tab",
-        "i",
-        "type SELECT nope FROM orders",
-        "Esc x2",
-        "Ctrl-r",
-        "ticks:10"
-      ],
+      "events": ["Tab","i","type SELECT nope FROM orders","Esc","Esc","Ctrl-r","ticks:10"],
       "evidence": "checked-in source shot",
       "sha256": {
         "ansi": "f478e9862f6e0377f3258d1426340b62ac1b241f99a92a39e7f03a484c42f6a1",
@@ -1220,14 +1181,7 @@
       "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
       "junie_commit": "e43cf67",
       "junie_dirty": false,
-      "events": [
-        "Tab",
-        "i",
-        "type SELECT\u2026",
-        "Esc",
-        "Alt-x",
-        "ticks:10"
-      ],
+      "events": ["Tab","i","type SELECT * FROM orders WHERE notes LIKE '%gift%' ORDER BY created_at LIMIT 10","Esc","Alt-x","ticks:10"],
       "evidence": "checked-in source shot",
       "sha256": {
         "ansi": "567fe87d50c1cca6308abad8d8529d3e6b8937582dbfbe80e284edfa2d370541",
@@ -1277,10 +1231,7 @@
       "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
       "junie_commit": "e43cf67",
       "junie_dirty": false,
-      "events": [
-        "Down x5",
-        "Enter"
-      ],
+      "events": ["Down","Down","Down","Down","Down","Enter"],
       "evidence": "checked-in source shot",
       "sha256": {
         "ansi": "14cdf7222c8e1bbdce14d7857a8032aa95a6c346c07b12b67a2623bd2043cc41",
@@ -1304,10 +1255,7 @@
       "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
       "junie_commit": "e43cf67",
       "junie_dirty": false,
-      "events": [
-        "Down x5",
-        "Enter"
-      ],
+      "events": ["Down","Down","Down","Down","Down","Enter"],
       "evidence": "checked-in source shot",
       "sha256": {
         "ansi": "1ff1de8f8acccadc4684c11b989589f9b0100a8fac3078e6eb63296989503065",
@@ -1418,14 +1366,7 @@
       "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
       "junie_commit": "e43cf67",
       "junie_dirty": false,
-      "events": [
-        "Down x5",
-        "Enter",
-        "Home",
-        "Right x12",
-        "s",
-        "f"
-      ],
+      "events": ["Down","Down","Down","Down","Down","Enter","Home","Right","Right","Right","Right","Right","Right","Right","Right","Right","Right","Right","Right","s","f"],
       "evidence": "checked-in source shot",
       "sha256": {
         "ansi": "9044a8cc35e820bf43d591f79421c14f6ad793422391252ce6f9e22f9aaeb0ff",
@@ -1449,11 +1390,7 @@
       "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
       "junie_commit": "e43cf67",
       "junie_dirty": false,
-      "events": [
-        "Down x2",
-        "Enter",
-        "Ctrl-d"
-      ],
+      "events": ["Down","Down","Enter","Ctrl-d"],
       "evidence": "checked-in source shot",
       "sha256": {
         "ansi": "a1993c689897a64f33221587af3ed343d29cdc0e70fb59da89f5c65fe577c794",
@@ -1477,12 +1414,7 @@
       "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
       "junie_commit": "e43cf67",
       "junie_dirty": false,
-      "events": [
-        "Down x2",
-        "Enter",
-        "Ctrl-d",
-        "Right x2"
-      ],
+      "events": ["Down","Down","Enter","Ctrl-d","Right","Right"],
       "evidence": "checked-in source shot",
       "sha256": {
         "ansi": "c8f1bfff65ffeeff3b97e2e0c4ed395ef5a72fcbb6bd3cb94fdd7e58c9bcfa58",
@@ -1582,13 +1514,7 @@
       "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
       "junie_commit": "e43cf67",
       "junie_dirty": false,
-      "events": [
-        "Tab",
-        "i",
-        "type UPDATE\u2026",
-        "Esc",
-        "Ctrl-r"
-      ],
+      "events": ["Tab","i","type UPDATE orders SET notes = 'x' WHERE id = 1","Esc","Ctrl-r"],
       "evidence": "checked-in source shot",
       "sha256": {
         "ansi": "238ce00f6d7fa1b67f203cdd8c7b3e743ef17cd74a21461c6a25118bb7a19e76",

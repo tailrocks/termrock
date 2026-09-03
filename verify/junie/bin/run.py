@@ -250,8 +250,12 @@ def compare_scenario(sc, opts, frames_dir):
         # The catalog frame is the complete Junie page. Compare the same
         # source-defined region on both sides; legacy target-local crop metadata
         # is intentionally ignored.
-        target = tm_spec.get("page") or tm_spec.get("application")
         target_is_application = bool(tm_spec.get("application"))
+        if scene.startswith(("f_", "s_")) and not target_is_application:
+            target = scene
+        else:
+            target = tm_spec.get("page") or tm_spec.get("application")
+        target_is_scenario = not target_is_application and target == scene
         target_keys = tm_spec.get("keys", ref_spec.get("keys", []))
         target_connect = tm_spec.get("connect")
         if target_is_application and target_connect is None:
@@ -267,6 +271,7 @@ def compare_scenario(sc, opts, frames_dir):
                 frames_dir,
                 application=target_is_application,
                 connect=target_connect,
+                scenario=target_is_scenario,
             ),
             crop_box,
         )

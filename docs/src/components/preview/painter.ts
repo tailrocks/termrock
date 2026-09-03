@@ -170,6 +170,26 @@ export function paintCanvas(
       context.stroke()
     }
   }
+
+  const cursor = frame.cursor
+  if (
+    frame.cursor_visible &&
+    cursor &&
+    Number.isInteger(cursor[0]) &&
+    Number.isInteger(cursor[1]) &&
+    cursor[0] >= 0 &&
+    cursor[0] < frame.cols &&
+    cursor[1] >= 0 &&
+    cursor[1] < frame.rows
+  ) {
+    // Rust owns cursor position and visibility; the browser only paints it.
+    const previousCompositeOperation = context.globalCompositeOperation
+    context.globalAlpha = 1
+    context.globalCompositeOperation = 'difference'
+    context.fillStyle = '#ffffff'
+    context.fillRect(cursor[0] * cellW, cursor[1] * cellH, cellW, cellH)
+    context.globalCompositeOperation = previousCompositeOperation
+  }
 }
 
 export function pointerCell(
@@ -192,4 +212,3 @@ export function pointerCell(
     frame.rows,
   )
 }
-

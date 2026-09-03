@@ -20,6 +20,10 @@ export type TerminalFrame = {
   readonly story_cols: number
   readonly story_rows: number
   readonly cells: FrameCell[]
+  /** Canonical Rust hardware-cursor cell, when one is present. */
+  readonly cursor: readonly [number, number] | null
+  /** Canonical Rust hardware-cursor visibility. */
+  readonly cursor_visible: boolean
   readonly interactive: boolean
   readonly theme: string
 }

@@ -320,7 +320,12 @@ pub fn replay(scenario: &Scenario) -> Artifacts {
 }
 
 fn replay_catalog(scenario: &Scenario, page: crate::catalog::PageId) -> Artifacts {
-    let mut app = App::new(CatalogProfile::JunieReference, ColorCapability::Truecolor);
+    let nav = crate::catalog::reference_nav_for_scene(scenario.id);
+    let mut app = App::new_with_nav(
+        CatalogProfile::JunieReference,
+        ColorCapability::Truecolor,
+        nav,
+    );
     app.goto(page);
     let mut cols = scenario.cols;
     let mut rows = scenario.rows;

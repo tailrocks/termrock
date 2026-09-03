@@ -322,6 +322,30 @@ pub fn nav_entries(profile: CatalogProfile) -> &'static [NavEntry] {
     }
 }
 
+/// Return the source navigation snapshot represented by one checked-in shot.
+///
+/// The approved source fixtures are historical: the `f_*` captures predate
+/// the four later source pages, while `s_*` captures include the 20-page
+/// source prefix. This is fixture data only; both snapshots use the same
+/// shell, page implementations, and event path.
+#[must_use]
+pub fn reference_nav_for_scene(scene: &str) -> Vec<NavEntry> {
+    if scene.starts_with("f_") {
+        SOURCE_NAV
+            .iter()
+            .copied()
+            .filter(|entry| {
+                !matches!(
+                    entry.id,
+                    PageId::EDITOR | PageId::GRID | PageId::CHIPS | PageId::PICKERS
+                )
+            })
+            .collect()
+    } else {
+        SOURCE_NAV.to_vec()
+    }
+}
+
 /// Source prefix plus TermRock extensions (contiguous static storage).
 pub static TERMROCK_NAV_FULL: &[NavEntry] = &CATALOG_NAV;
 
@@ -558,6 +582,15 @@ mod tests {
                 .iter()
                 .any(|e| e.section == "Applications")
         );
+    }
+
+    #[test]
+    fn historical_source_shot_navigation_is_explicit() {
+        let legacy = reference_nav_for_scene("f_overview");
+        assert_eq!(legacy.len(), 16);
+        assert_eq!(legacy[14].id, PageId::SETTINGS);
+        assert_eq!(legacy[15].id, PageId::TASK_RUNNER);
+        assert_eq!(reference_nav_for_scene("s_editor").len(), 20);
     }
 
     #[test]

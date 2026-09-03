@@ -21,6 +21,7 @@ use crate::catalog::{
     CatalogProfile, CatalogScenario, NavEntry, PageId, catalog_scenarios, nav_entries,
     scenario_by_id,
 };
+use crate::scenarios::Host;
 use crate::shell::{App, PageMetadata};
 use crate::snapshot::Snapshot;
 use crate::tablepro::App as TableProApp;
@@ -273,6 +274,7 @@ fn frame_cells(snapshot: &Snapshot) -> Vec<FrameCell> {
 pub struct CatalogSession {
     app: App,
     profile: CatalogProfile,
+    nav: Vec<NavEntry>,
     page: PageId,
     scenario: Option<CatalogScenario>,
     cols: u16,
@@ -295,23 +297,33 @@ impl CatalogSession {
         rows: u16,
         profile: CatalogProfile,
     ) -> Result<Self, String> {
-        let (page, scenario) = if let Some(page) = PageId::from_name(id, nav_entries(profile)) {
-            (page, None)
-        } else if let Some(scenario) = scenario_by_id(id) {
+        let (page, scenario, nav) = if let Some(scenario) = scenario_by_id(id) {
             if !page_is_visible(profile, scenario.page) {
                 return Err(format!(
                     "catalog entry {id:?} is not available in the {profile:?} profile"
                 ));
             }
-            (scenario.page, Some(scenario))
+            (scenario.page, Some(scenario), nav_entries(profile).to_vec())
+        } else if let Some(page) = PageId::from_name(id, nav_entries(profile)) {
+            (page, None, nav_entries(profile).to_vec())
+        } else if profile == CatalogProfile::JunieReference {
+            if let Some(source) = crate::scenarios::capture_scenarios().find(|s| s.id == id) {
+                let Host::Catalog(page) = source.host else {
+                    return Err(format!("source scenario {id:?} is not a catalog page"));
+                };
+                (page, None, crate::catalog::reference_nav_for_scene(id))
+            } else {
+                return Err(format!("unknown catalog entry {id:?}"));
+            }
         } else {
             return Err(format!("unknown catalog entry {id:?}"));
         };
-        let mut app = App::new(profile, ColorCapability::Truecolor);
+        let mut app = App::new_with_nav(profile, ColorCapability::Truecolor, nav.clone());
         app.goto(page);
         Ok(Self {
             app,
             profile,
+            nav,
             page,
             scenario,
             cols: cols.max(8),
@@ -322,7 +334,7 @@ impl CatalogSession {
     }
 
     pub fn reset(&mut self) {
-        self.app = App::new(self.profile, ColorCapability::Truecolor);
+        self.app = App::new_with_nav(self.profile, ColorCapability::Truecolor, self.nav.clone());
         self.app.goto(self.page);
         self.elapsed_ms = 0;
         self.semantic_revision = self.semantic_revision.saturating_add(1);
@@ -526,7 +538,7 @@ impl CatalogSession {
         let cursor = term.get_cursor_position().ok();
         let snap = Snapshot::from_buffer(term.backend().buffer(), cursor, false);
         let cells = frame_cells(&snap);
-        let entry = nav_entries(self.profile).iter().find(|e| e.id == self.page);
+        let entry = self.app.nav().iter().find(|e| e.id == self.page);
         let story_id = self
             .scenario
             .map(|scenario| scenario.id.to_owned())

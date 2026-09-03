@@ -286,7 +286,7 @@ fn fail_first_shots_five_artifacts() {
 }
 
 #[test]
-fn f_80x24_taskrunner_stale_nav_is_settings_versus_code_editor() {
+fn f_80x24_taskrunner_uses_historical_source_navigation() {
     let dir = shots_dir();
     let s = scenarios::ALL
         .iter()
@@ -294,10 +294,5 @@ fn f_80x24_taskrunner_stale_nav_is_settings_versus_code_editor() {
         .expect("f_80x24_taskrunner");
     let art = capture::replay(s);
     let src = std::fs::read_to_string(dir.join("f_80x24_taskrunner.txt")).expect("src txt");
-    let Some((x, y, expected, actual)) = first_txt_diff(&art.txt(), &src) else {
-        panic!("expected stale 16-page nav diff; grids matched");
-    };
-    assert_eq!((x, y), (3, 16), "first stale-nav cell");
-    assert_eq!(expected, 'S');
-    assert_eq!(actual, 'C');
+    assert_eq!(art.txt().as_bytes(), src.as_bytes());
 }

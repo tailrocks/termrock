@@ -1,4 +1,4 @@
-import type { DemoDescriptor, DemoUpdate } from '@/components/preview/model'
+import type { DemoDescriptor, DemoUpdate, TerminalFrame } from '@/components/preview/model'
 
 export type PreviewKeyDecision =
   | { readonly kind: 'ignore' }
@@ -106,3 +106,17 @@ export type DemoEvent =
   | { readonly type: 'resize'; readonly cols: number; readonly rows: number }
   | { readonly type: 'focus'; readonly focused: boolean }
   | { readonly type: 'tick'; readonly elapsedMs: number }
+
+/**
+ * Rust has no separate browser-only pointer-cancel event. An out-of-grid move
+ * clears hover, then an out-of-grid release clears any pressed target without
+ * activating it. Both events stay on the mounted CatalogSession.
+ */
+export function pointerCleanupEvents(frame: TerminalFrame): readonly DemoEvent[] {
+  const x = frame.cols
+  const y = frame.rows
+  return [
+    { type: 'pointer', kind: 'move', x, y },
+    { type: 'pointer', kind: 'up', x, y, button: 'left' },
+  ]
+}

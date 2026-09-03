@@ -15,8 +15,10 @@ use ratatui::widgets::StatefulWidget;
 use termrock::input::{KeyCode, KeyEventKind};
 use termrock::style::Tone;
 use termrock::widgets::{
-    ButtonState, ButtonVariant, Prop, RadioGroup, RadioOption, RadioState, Spinner, SpinnerState,
-    Tab, Tabs, TabsState, TextInput, TextInputState, Tree, TreeNode, TreeOutcome, TreeState,
+    ButtonState, ButtonVariant, Checkbox, CheckboxState, PasswordInput, PasswordInputState, Prop,
+    RadioGroup, RadioOption, RadioState, Select, SelectOption, SelectRecipe, SelectState, Spinner,
+    SpinnerState, Tab, Tabs, TabsState, TextArea, TextAreaState, TextInput, TextInputState, Toggle,
+    ToggleState, ToggleValue, Tree, TreeNode, TreeOutcome, TreeState,
 };
 
 use super::db::{ConnectOutcome, Connection, Engine, Environment, SafeMode};
@@ -38,7 +40,23 @@ const FORM_SAVE: WidgetId = ID.sub("form-save");
 const FORM_CANCEL: WidgetId = ID.sub("form-cancel");
 const FORM_CONNECT: WidgetId = ID.sub("form-saveconnect");
 const FORM_NAME: WidgetId = ID.sub("form-name");
+const FORM_ENGINE: WidgetId = ID.sub("form-engine");
 const FORM_HOST: WidgetId = ID.sub("form-host");
+const FORM_PORT: WidgetId = ID.sub("form-port");
+const FORM_DATABASE: WidgetId = ID.sub("form-database");
+const FORM_USER: WidgetId = ID.sub("form-user");
+const FORM_PASSWORD: WidgetId = ID.sub("form-password");
+const FORM_PROMPT: WidgetId = ID.sub("form-prompt-password");
+const FORM_ENV: WidgetId = ID.sub("form-environment");
+const FORM_GROUP: WidgetId = ID.sub("form-group");
+const FORM_SAFE: WidgetId = ID.sub("form-safe-mode");
+const FORM_SSL: WidgetId = ID.sub("form-ssl");
+const FORM_SSH: WidgetId = ID.sub("form-ssh");
+const FORM_SSH_HOST: WidgetId = ID.sub("form-ssh-host");
+const FORM_SSH_USER: WidgetId = ID.sub("form-ssh-user");
+const FORM_STARTUP: WidgetId = ID.sub("form-startup-sql");
+const FORM_LOCAL: WidgetId = ID.sub("form-local-only");
+const FORM_TEST: WidgetId = ID.sub("form-test");
 const FORM_TABS: WidgetId = ID.sub("form-tabs");
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -53,6 +71,10 @@ pub enum ConnState {
         message: String,
         detail: String,
     },
+    Testing {
+        ticks: u32,
+    },
+    Tested(Result<String, String>),
 }
 
 pub enum ConnEvent {
@@ -63,11 +85,24 @@ struct ConnForm {
     index: Option<usize>,
     tabs: TabsState<u8>,
     name: TextInputState,
+    engine: SelectState<u8>,
     host: TextInputState,
     port: TextInputState,
     database: TextInputState,
     user: TextInputState,
+    password: PasswordInputState,
+    password_editing: bool,
+    prompt_pw: CheckboxState,
     env: RadioState<u8>,
+    group: SelectState<u8>,
+    safe: RadioState<u8>,
+    ssl: ToggleState,
+    ssh: ToggleState,
+    ssh_host: TextInputState,
+    ssh_user: TextInputState,
+    startup: TextAreaState,
+    local_only: ToggleState,
+    test: ButtonState,
     save: ButtonState,
     cancel: ButtonState,
     save_connect: ButtonState,
@@ -86,6 +121,73 @@ pub struct ConnectionsScreen {
     dup_btn: ButtonState,
     del_btn: ButtonState,
     form: Option<ConnForm>,
+}
+
+fn engine_options() -> Vec<SelectOption<u8>> {
+    vec![
+        SelectOption::option(0, "PostgreSQL"),
+        SelectOption::option(1, "MySQL"),
+        SelectOption::option(2, "SQLite"),
+    ]
+}
+
+fn group_options() -> Vec<SelectOption<u8>> {
+    vec![
+        SelectOption::option(0, "Personal"),
+        SelectOption::option(1, "Acme"),
+        SelectOption::option(2, "Clients"),
+    ]
+}
+
+fn env_options() -> [RadioOption<'static, u8>; 4] {
+    [
+        RadioOption::new(0, "local"),
+        RadioOption::new(1, "development"),
+        RadioOption::new(2, "staging"),
+        RadioOption::new(3, "production"),
+    ]
+}
+
+fn safe_options() -> [RadioOption<'static, u8>; 6] {
+    [
+        RadioOption::new(0, "Silent"),
+        RadioOption::new(1, "Alert"),
+        RadioOption::new(2, "Alert (Full)"),
+        RadioOption::new(3, "Safe Mode"),
+        RadioOption::new(4, "Safe Mode (Full)"),
+        RadioOption::new(5, "Read-Only"),
+    ]
+}
+
+fn engine_index(engine: Engine) -> u8 {
+    match engine {
+        Engine::Postgres => 0,
+        Engine::MySql => 1,
+        Engine::Sqlite => 2,
+    }
+}
+
+fn environment_index(environment: Environment) -> u8 {
+    match environment {
+        Environment::Local => 0,
+        Environment::Development => 1,
+        Environment::Staging => 2,
+        Environment::Production => 3,
+    }
+}
+
+fn safe_index(safe_mode: SafeMode) -> u8 {
+    SafeMode::ALL
+        .iter()
+        .position(|candidate| *candidate == safe_mode)
+        .unwrap_or(0) as u8
+}
+
+fn port_valid(value: &str) -> bool {
+    value.is_empty()
+        || value
+            .parse::<u32>()
+            .is_ok_and(|port| (1..=u32::from(u16::MAX)).contains(&port))
 }
 
 impl ConnectionsScreen {
@@ -127,16 +229,23 @@ impl ConnectionsScreen {
         self.filter.is_editing()
             || self.form.as_ref().is_some_and(|f| {
                 f.name.is_editing()
+                    || f.password_editing
                     || f.host.is_editing()
                     || f.port.is_editing()
                     || f.database.is_editing()
                     || f.user.is_editing()
+                    || f.ssh_host.is_editing()
+                    || f.ssh_user.is_editing()
+                    || f.startup.is_editing()
             })
     }
 
     #[must_use]
     pub fn animating(&self) -> bool {
-        matches!(self.state, ConnState::Connecting { .. })
+        matches!(
+            self.state,
+            ConnState::Connecting { .. } | ConnState::Testing { .. }
+        )
     }
 
     pub fn start_connect(&mut self, i: usize) {
@@ -151,14 +260,6 @@ impl ConnectionsScreen {
 
     pub fn open_form(&mut self, index: Option<usize>) {
         let c = index.and_then(|i| self.connections.get(i));
-        let env_i = c
-            .map(|c| match c.environment {
-                Environment::Local => 0,
-                Environment::Development => 1,
-                Environment::Staging => 2,
-                Environment::Production => 3,
-            })
-            .unwrap_or(0);
         let mut tabs = TabsState::new();
         tabs.set_selected(Some(0));
         let mut name = TextInputState::new(c.map(|c| c.name.as_str()).unwrap_or(""));
@@ -178,15 +279,46 @@ impl ConnectionsScreen {
         let mut user =
             TextInputState::new(c.map(|c| c.user.as_str()).unwrap_or("")).with_allow_empty(true);
         user.set_editing(false);
+        let mut ssh_host = TextInputState::new(c.and_then(|c| c.ssh.as_deref()).unwrap_or(""))
+            .with_allow_empty(true);
+        ssh_host.set_editing(false);
+        let mut ssh_user = TextInputState::new("deploy").with_allow_empty(true);
+        ssh_user.set_editing(false);
+        let engine = SelectState::new()
+            .with_value(c.map(|c| engine_index(c.engine)).unwrap_or(0))
+            .with_recipe(SelectRecipe::Form);
+        let group = SelectState::new()
+            .with_value(
+                c.map(|c| if c.group == "Acme" { 1 } else { 0 })
+                    .unwrap_or(0),
+            )
+            .with_recipe(SelectRecipe::Form);
+        let safe = RadioState::new(Some(c.map(|c| safe_index(c.safe_mode)).unwrap_or(0)));
+        let ssh_on = c.is_some_and(|c| c.ssh.is_some());
         self.form = Some(ConnForm {
             index,
             tabs,
             name,
+            engine,
             host,
             port,
             database,
             user,
-            env: RadioState::new(Some(env_i)),
+            password: PasswordInputState::new(),
+            password_editing: false,
+            prompt_pw: CheckboxState::new(false),
+            env: RadioState::new(Some(
+                c.map(|c| environment_index(c.environment)).unwrap_or(0),
+            )),
+            group,
+            safe,
+            ssl: ToggleState::with_value(ToggleValue::from_pressed(c.is_some_and(|c| c.ssl))),
+            ssh: ToggleState::with_value(ToggleValue::from_pressed(ssh_on)),
+            ssh_host,
+            ssh_user,
+            startup: TextAreaState::new(""),
+            local_only: ToggleState::new(),
+            test: ButtonState::new(),
             save: ButtonState::new(),
             cancel: ButtonState::new(),
             save_connect: ButtonState::new(),
@@ -195,6 +327,23 @@ impl ConnectionsScreen {
 
     pub fn tick(&mut self) -> Option<ConnEvent> {
         match &mut self.state {
+            ConnState::Testing { ticks } => {
+                *ticks += 1;
+                if *ticks >= 10 {
+                    let result = self
+                        .form
+                        .as_ref()
+                        .map(|form| {
+                            if form.host.value().contains("analytics") {
+                                Err("Connection timed out after 10 s".into())
+                            } else {
+                                Ok("Connected · PostgreSQL 16.3 · 12 ms".into())
+                            }
+                        })
+                        .unwrap_or_else(|| Err("Connection form is closed".into()));
+                    self.state = ConnState::Tested(result);
+                }
+            }
             ConnState::Connecting { ticks, name } => {
                 *ticks += 1;
                 if *ticks >= 12 {
@@ -717,6 +866,7 @@ impl ConnectionsScreen {
                 }
                 if f == EDIT && matches!(key.code, KeyCode::Enter | KeyCode::Char(' ')) {
                     self.open_form(self.selected);
+                    cx.set_focus(FORM_NAME);
                     return (Route::Changed, None);
                 }
                 if f == DUP && matches!(key.code, KeyCode::Enter | KeyCode::Char(' ')) {
@@ -759,6 +909,7 @@ impl ConnectionsScreen {
                 }
                 if *id == EDIT {
                     self.open_form(self.selected);
+                    cx.set_focus(FORM_NAME);
                     return (Route::Changed, None);
                 }
                 if *id == DUP {

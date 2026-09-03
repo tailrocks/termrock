@@ -79,6 +79,7 @@ pub struct App {
     pub profile: CatalogProfile,
     pub theme: JunieTheme,
     pub system: DesignSystem,
+    nav: Vec<NavEntry>,
     pages: Vec<Box<dyn Page>>,
     pub page: PageId,
     pub nav_cursor: usize,
@@ -108,9 +109,19 @@ impl App {
     /// Build the catalog for a profile and colour capability.
     #[must_use]
     pub fn new(profile: CatalogProfile, level: ColorCapability) -> Self {
+        Self::new_with_nav(profile, level, nav_entries(profile).to_vec())
+    }
+
+    /// Build the shared shell with an explicit deterministic navigation
+    /// snapshot used by source-shot replay.
+    #[must_use]
+    pub(crate) fn new_with_nav(
+        profile: CatalogProfile,
+        level: ColorCapability,
+        nav: Vec<NavEntry>,
+    ) -> Self {
         let theme = JunieTheme::for_level(level);
         let system = DesignSystem::junie().capability(level);
-        let nav = nav_entries(profile);
         let pages: Vec<Box<dyn Page>> = nav.iter().map(|e| pages::mount(e.id)).collect();
         let mut scene = InteractionScene::new();
         scene.ensure_root(root_layer());
@@ -119,6 +130,7 @@ impl App {
             profile,
             theme,
             system,
+            nav,
             pages,
             page: PageId::OVERVIEW,
             nav_cursor: 0,
@@ -145,8 +157,8 @@ impl App {
     }
 
     #[must_use]
-    pub fn nav(&self) -> &'static [NavEntry] {
-        nav_entries(self.profile)
+    pub fn nav(&self) -> &[NavEntry] {
+        &self.nav
     }
 
     /// Read metadata from the mounted page implementation.
@@ -278,7 +290,7 @@ impl App {
     }
 
     fn dispatch(&mut self, ev: PageEvent) -> Route {
-        let i = self.page.index(nav_entries(self.profile));
+        let i = self.page.index(self.nav());
         let mut cx = PageCtx {
             focus: &mut self.focus,
             requests: Vec::new(),

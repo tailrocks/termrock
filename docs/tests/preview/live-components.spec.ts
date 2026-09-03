@@ -54,6 +54,10 @@ test('action link hover paints real state and click emits activation', async ({ 
   )
   const hovered = await canvas.screenshot()
   expect(hovered.equals(before)).toBeFalsy()
+  await page.mouse.move(0, 0)
+  await expect(figure).toHaveAttribute('data-preview-hover', '')
+  const afterLeave = await canvas.screenshot()
+  expect(afterLeave.equals(before)).toBeTruthy()
   await canvas.click({ position: { x: 30, y: 27 } })
   await expect(figure).toHaveAttribute('data-preview-engaged', 'true')
   await expect(figure.locator('[role="application"]')).toBeFocused()
@@ -64,6 +68,41 @@ test('action link hover paints real state and click emits activation', async ({ 
   await expect
     .poll(async () => Number(await figure.getAttribute('data-preview-semantic-revision')))
     .toBeGreaterThan(Number(semanticRevision ?? 0))
+})
+
+test('outside release and pointercancel clear Rust pointer state without activation', async ({
+  page,
+}) => {
+  const figure = await preview(page, 'action-link', 'action-link/basic')
+  const canvas = figure.locator('canvas')
+  const box = await canvas.boundingBox()
+  expect(box).not.toBeNull()
+  if (!box) return
+  const point = { x: box.x + 30, y: box.y + 27 }
+
+  await page.mouse.move(point.x, point.y)
+  await page.mouse.down()
+  const pressed = await canvas.screenshot()
+  await page.mouse.move(0, 0)
+  await page.mouse.up()
+  await expect(figure).toHaveAttribute('data-preview-hover', '')
+  const afterOutsideRelease = await canvas.screenshot()
+  expect(afterOutsideRelease.equals(pressed)).toBeFalsy()
+  await expect(figure).toHaveAttribute('data-preview-outcome', '')
+
+  await page.mouse.move(point.x, point.y)
+  await page.mouse.down()
+  const pressedAgain = await canvas.screenshot()
+  await canvas.evaluate((element) => {
+    element.dispatchEvent(
+      new PointerEvent('pointercancel', { bubbles: true, pointerId: 1 }),
+    )
+  })
+  await expect(figure).toHaveAttribute('data-preview-hover', '')
+  const afterCancel = await canvas.screenshot()
+  expect(afterCancel.equals(pressedAgain)).toBeFalsy()
+  await page.mouse.up()
+  await expect(figure).toHaveAttribute('data-preview-outcome', '')
 })
 
 test('button owns activation, loading, and deterministic completion', async ({ page }) => {
@@ -400,6 +439,7 @@ test('key-value filtering and permission decisions remain real state', async ({ 
 test('passive paint does not trap page input or invent a cursor', async ({ page }) => {
   const figure = await preview(page, 'accent-rail', 'accent-rail/actors')
   await expect(figure).toHaveAttribute('data-preview-interactive', 'false')
+  await expect(figure).toHaveAttribute('data-preview-hover', '')
   await expect(figure.locator('[role="img"]')).toHaveAttribute('tabindex', '-1')
   await expect(figure.locator('[data-termrock-hints="1"]')).toContainText('No input')
 })

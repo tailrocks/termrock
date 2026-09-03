@@ -14,7 +14,11 @@ import {
 } from 'react'
 import { PreviewStatus, PreviewToolbar } from '@/components/preview/controls'
 import { PreviewDialog } from '@/components/preview/dialog'
-import { PreviewKeyAliases, decidePreviewKey } from '@/components/preview/input'
+import {
+  PreviewKeyAliases,
+  decidePreviewKey,
+  pointerCleanupEvents,
+} from '@/components/preview/input'
 import type {
   DemoDescriptor,
   DemoUpdate,
@@ -317,17 +321,27 @@ export function TerminalPreview({
     target?.focus({ preventScroll: true })
   }, [capturesTextInput, interactionActive])
 
+  const clearPointerState = useCallback((): void => {
+    dragRef.current = false
+    setHover(null)
+    if (!canInteract) return
+    const current = frameRef.current
+    if (!current) return
+    for (const event of pointerCleanupEvents(current)) dispatch(event)
+  }, [canInteract, dispatch])
+
   const exitInteraction = useCallback(
     (restoreEntryFocus: boolean): void => {
       interactionFocusRequestedRef.current = false
       keyAliasesRef.current.clear()
+      clearPointerState()
       setInteractionActive(false)
       dispatch({ type: 'focus', focused: false })
       if (restoreEntryFocus) {
         requestAnimationFrame(() => interactionButtonRef.current?.focus({ preventScroll: true }))
       }
     },
-    [dispatch],
+    [clearPointerState, dispatch],
   )
 
   const enterInteraction = useCallback((): void => {
@@ -455,7 +469,7 @@ export function TerminalPreview({
   const pointerMove = (event: ReactPointerEvent): void => {
     const cell = eventCell(event)
     if (!cell) {
-      setHover(null)
+      clearPointerState()
       return
     }
     setHover(cell)
@@ -482,7 +496,10 @@ export function TerminalPreview({
     if (!canInteract || !dragRef.current) return
     const cell = eventCell(event)
     dragRef.current = false
-    if (!cell) return
+    if (!cell) {
+      clearPointerState()
+      return
+    }
     dispatch({ type: 'pointer', kind: 'up', x: cell.x, y: cell.y })
   }
 
@@ -633,12 +650,10 @@ export function TerminalPreview({
           onKeyDown={(event) => keyEvent(event, event.repeat ? 'repeat' : 'press')}
           onKeyUp={(event) => keyEvent(event, 'release')}
           onPointerMove={pointerMove}
-          onPointerLeave={() => setHover(null)}
+          onPointerLeave={clearPointerState}
           onPointerDown={pointerDown}
           onPointerUp={pointerUp}
-          onPointerCancel={() => {
-            dragRef.current = false
-          }}
+          onPointerCancel={clearPointerState}
           onWheel={wheel}
           onFocus={() => {
             setFocused(true)
@@ -655,6 +670,7 @@ export function TerminalPreview({
             setInteractionActive(false)
             interactionFocusRequestedRef.current = false
             keyAliasesRef.current.clear()
+            clearPointerState()
             dispatch({ type: 'focus', focused: false })
           }}
           style={{ ...chrome, display: view === 'preview' ? chrome.display : 'none' }}
