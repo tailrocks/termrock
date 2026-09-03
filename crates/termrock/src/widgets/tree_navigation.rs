@@ -966,7 +966,7 @@ impl<'a, Id> TreeNavigation<'a, Id> {
 
             let depth = node.depth.min(TREE_NAV_MAX_INDENT_DEPTH);
             let indent_cols = if state.narrow {
-                depth.min(2) * 1
+                depth.min(2)
             } else {
                 depth * TREE_NAV_INDENT
             };

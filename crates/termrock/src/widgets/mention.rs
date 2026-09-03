@@ -1228,7 +1228,7 @@ impl MentionDraft {
                         if matches!(self.parts.get(prev), Some(MentionSegment::Text(_))) {
                             // if we had text at `part`, now at `prev` only if removed mention before it
                             self.cursor = MentionCursor::InText {
-                                part: prev.saturating_add(0),
+                                part: prev,
                                 byte: 0,
                             };
                             // actually text is now at prev if mention was before...

@@ -43,6 +43,8 @@ pub const SESSION_PICKER_OVERLAY_ID: &str = "termrock.session_picker";
 pub const SESSION_PICKER_POPOVER_OVERLAY_ID: &str = "termrock.session_picker_popover";
 /// Visible list window for large catalogs (virtualization).
 pub const SESSION_PICKER_WINDOW: usize = 64;
+/// Rows per PageUp/PageDown (viewport is paint-measured; page step is fixed).
+pub const SESSION_PICKER_PAGE: usize = 8;
 /// Provider-search query length hint before host should search remotely.
 pub const SESSION_PICKER_PROVIDER_SEARCH_MIN: usize = 2;
 
@@ -925,8 +927,8 @@ impl SessionPickerState {
                 }
                 self.push_query_char(c)
             }
-            KeyCode::PageDown => self.move_cursor(8),
-            KeyCode::PageUp => self.move_cursor(-8),
+            KeyCode::PageDown => self.move_cursor(SESSION_PICKER_PAGE as isize),
+            KeyCode::PageUp => self.move_cursor(-(SESSION_PICKER_PAGE as isize)),
             KeyCode::Home => {
                 self.window
                     .move_first(self.filtered.len(), SESSION_PICKER_WINDOW);

@@ -56,6 +56,8 @@ pub const CONNECTION_MANAGER_OVERLAY_ID: &str = "termrock.connection_manager";
 pub const CONNECTION_MANAGER_LAUNCHER_OVERLAY_ID: &str = "termrock.connection_manager_launcher";
 /// Visible list window for large catalogs.
 pub const CONNECTION_MANAGER_WINDOW: usize = 64;
+/// Rows per PageUp/PageDown (viewport is paint-measured; page step is fixed).
+pub const CONNECTION_MANAGER_PAGE: usize = 8;
 /// Max recent entries surfaced in Recent view (by host `recent_rank`).
 pub const CONNECTION_MANAGER_RECENT_CAP: usize = 32;
 /// Redacted paint marker for masked secrets / list chrome (never the secret).
@@ -1423,8 +1425,8 @@ impl ConnectionManagerState {
                     query: self.query.clone(),
                 }
             }
-            KeyCode::PageDown => self.move_cursor(8),
-            KeyCode::PageUp => self.move_cursor(-8),
+            KeyCode::PageDown => self.move_cursor(CONNECTION_MANAGER_PAGE as isize),
+            KeyCode::PageUp => self.move_cursor(-(CONNECTION_MANAGER_PAGE as isize)),
             KeyCode::Home => {
                 self.window
                     .move_first(self.filtered.len(), CONNECTION_MANAGER_WINDOW);

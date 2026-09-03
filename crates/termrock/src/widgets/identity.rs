@@ -832,7 +832,7 @@ impl<'a> Identity<'a> {
             };
             x = x.saturating_add(aw).saturating_add(1);
         }
-        let rest = area.width.saturating_sub(x.saturating_sub(area.x)).max(0);
+        let rest = area.width.saturating_sub(x.saturating_sub(area.x));
         let badge_w = if self.show_badge {
             let bl = self.role.badge_label();
             u16::try_from(display_cols(bl).saturating_add(2)).unwrap_or(4)
