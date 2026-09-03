@@ -497,11 +497,11 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
             self.cursor_row = self.cursor_row.min(rows.len() - 1);
             let vis_n = columns.visible().count().max(1);
             self.cursor_col = self.cursor_col.min(vis_n - 1);
+        }
 
-            if is_press && matches!(key.code, KeyCode::Char('\\')) && key.modifiers.is_empty() {
-                self.nav_mode = self.nav_mode.cycle();
-                return TreeTableOutcome::NavModeChanged(self.nav_mode);
-            }
+        if is_press && matches!(key.code, KeyCode::Char('\\')) && key.modifiers.is_empty() {
+            self.nav_mode = self.nav_mode.cycle();
+            return TreeTableOutcome::NavModeChanged(self.nav_mode);
         }
 
         // Shift+Left/Right always hierarchy when in Cell mode
@@ -1988,6 +1988,29 @@ mod tests {
         assert_eq!(state.window.offset, 12);
         assert_eq!(state.selected(), Some(&"off-window"));
         assert_eq!(state.cursor_row, 0);
+    }
+
+    #[test]
+    fn nav_mode_cycles_on_empty_virtual_projection() {
+        let columns = cols();
+        let rows: [TreeTableRow<'_, &str>; 0] = [];
+        let mut state = TreeTableState::<&str, &str>::new(Some("off-window"));
+        state.set_logical_rows(100);
+        state.window.offset = 10;
+
+        let out = state.handle_key(
+            &rows,
+            &columns,
+            KeyEvent::new(KeyCode::Char('\\'), KeyModifiers::NONE),
+        );
+
+        assert!(matches!(
+            out,
+            TreeTableOutcome::NavModeChanged(TreeTableNavMode::Cell)
+        ));
+        assert_eq!(state.nav_mode, TreeTableNavMode::Cell);
+        assert_eq!(state.window.offset, 10);
+        assert_eq!(state.selected(), Some(&"off-window"));
     }
 
     #[test]
