@@ -351,6 +351,29 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0335 | `v0.14.0` | [KeyEvent phase predicates](migrations/0335-v0.14.0-key-event-phase-predicates.md) |
 | 0336 | `v0.14.0` | [Scrolled-region gutter contract](migrations/0336-v0.14.0-scrolled-region-gutter-contract.md) |
 | 0367 | `v0.14.0` | [Stateful selectable Viewport](migrations/0367-v0.14.0-viewport-selection-state.md) |
+| 0367 | `v0.14.0` | [Collection virtual windows clamp their start](migrations/0367-v0.14.0-collection-window-start-invariant.md) |
+| 0368 | `v0.14.0` | [TreeTable loading rows reject hierarchy actions](migrations/0368-v0.14.0-tree-table-loading-hierarchy-guard.md) |
+| 0369 | `v0.14.0` | [TreeTable collapse validates parent ancestry](migrations/0369-v0.14.0-tree-table-collapse-ancestor-validation.md) |
+| 0370 | `v0.14.0` | [TreeTable movement recovers from non-selectable cursors](migrations/0370-v0.14.0-tree-table-move-from-invalid-cursor.md) |
+| 0371 | `v0.14.0` | [Roving movement repairs disabled active IDs once](migrations/0371-v0.14.0-roving-disabled-active-movement.md) |
+| 0372 | `v0.14.0` | [Roving reconciliation clears stale typeahead](migrations/0372-v0.14.0-roving-reconcile-clears-stale-typeahead.md) |
+| 0373 | `v0.14.0` | [Roving movement stops after missing-active recovery](migrations/0373-v0.14.0-roving-missing-active-recovery.md) |
+| 0374 | `v0.14.0` | [Roving typeahead folds Unicode case](migrations/0374-v0.14.0-roving-unicode-typeahead-folding.md) |
+| 0375 | `v0.14.0` | [Roving typeahead retries after the active row](migrations/0375-v0.14.0-roving-typeahead-forward-retry.md) |
+| 0376 | `v0.14.0` | [TreeTable preserves virtual selection identity](migrations/0376-v0.14.0-tree-table-virtual-selection-identity.md) |
+| 0377 | `v0.14.0` | [TreeTable activation requires selected identity](migrations/0377-v0.14.0-tree-table-virtual-activation-identity.md) |
+| 0378 | `v0.14.0` | [TreeTable invalidates stale row geometry](migrations/0378-v0.14.0-tree-table-invalidate-stale-row-geometry.md) |
+| 0379 | `v0.14.0` | [TreeTable Up stops before the first selectable row](migrations/0379-v0.14.0-tree-table-up-leading-nonselectable.md) |
+| 0380 | `v0.14.0` | [TreeTable Down stops after the last selectable row](migrations/0380-v0.14.0-tree-table-down-trailing-nonselectable.md) |
+| 0381 | `v0.14.0` | [TreeTable gap movement retains virtual scroll fallback](migrations/0381-v0.14.0-tree-table-gap-scroll-fallback.md) |
+| 0382 | `v0.14.0` | [TreeTable scrolls all-nonselectable projections](migrations/0382-v0.14.0-tree-table-empty-enabled-scroll.md) |
+| 0383 | `v0.14.0` | [TreeTable pages empty virtual projections](migrations/0383-v0.14.0-tree-table-empty-projection-page.md) |
+| 0384 | `v0.14.0` | [TreeTable routes empty virtual keys](migrations/0384-v0.14.0-tree-table-empty-key-routing.md) |
+| 0385 | `v0.14.0` | [TreeTable honors error retryability](migrations/0385-v0.14.0-tree-table-error-retryability.md) |
+| 0386 | `v0.14.0` | [TreeTable cycles nav mode on empty projections](migrations/0386-v0.14.0-tree-table-empty-nav-mode.md) |
+| 0387 | `v0.14.0` | [TreeTable key routing for empty projections](migrations/0387-v0.14.0-tree-table-key-empty-projection.md) |
+| 0388 | `v0.14.0` | [paint-only links and controls](migrations/0388-v0.14.0-paint-only-links-controls.md) |
+| 0389 | `v0.14.0` | [Timeline paint contract and Skeleton consolidation](migrations/0389-v0.14.0-paint-only-timeline-skeleton.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

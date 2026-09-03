@@ -83684,16 +83684,11 @@ pub fn termrock::widgets::Skeleton<'a>::card(u16, &'a termrock::style::DesignSys
 pub fn termrock::widgets::Skeleton<'a>::layout(termrock::widgets::SkeletonLayout, &'a termrock::style::DesignSystem) -> Self
 pub fn termrock::widgets::Skeleton<'a>::measure_height(&self) -> u16
 pub fn termrock::widgets::Skeleton<'a>::new(u16, &'a termrock::style::DesignSystem) -> Self
-pub fn termrock::widgets::Skeleton<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
-pub fn termrock::widgets::Skeleton<'a>::paint_with_state(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::widgets::SkeletonState, termrock::runtime::FrameTick, termrock::style::MotionPolicy)
+pub fn termrock::widgets::Skeleton<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::widgets::SkeletonState)
 pub fn termrock::widgets::Skeleton<'a>::recipe(termrock::widgets::SkeletonRecipe, u16, &'a termrock::style::DesignSystem) -> Self
 pub fn termrock::widgets::Skeleton<'a>::register_semantic<Sid, Act>(&self, &mut termrock::interaction::SemanticScene<Sid, Act>, Sid, ratatui_core::layout::rect::Rect, &termrock::widgets::SkeletonState) where Sid: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Act: core::clone::Clone
 pub fn termrock::widgets::Skeleton<'a>::skeleton_layout(&self) -> &termrock::widgets::SkeletonLayout
 pub fn termrock::widgets::Skeleton<'a>::table(u16, u16, &'a termrock::style::DesignSystem) -> Self
-impl ratatui_core::widgets::widget::Widget for &termrock::widgets::Skeleton<'_>
-pub fn &termrock::widgets::Skeleton<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
-impl ratatui_core::widgets::widget::Widget for termrock::widgets::Skeleton<'_>
-pub fn termrock::widgets::Skeleton<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
 impl<'a> core::clone::Clone for termrock::widgets::Skeleton<'a>
 pub fn termrock::widgets::Skeleton<'a>::clone(&self) -> termrock::widgets::Skeleton<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::Skeleton<'a>
@@ -88234,16 +88229,12 @@ pub struct termrock::widgets::Timeline<'a, Id>
 impl<'a, Id: core::clone::Clone + core::cmp::PartialEq + core::cmp::Ord> termrock::widgets::Timeline<'a, Id>
 pub const fn termrock::widgets::Timeline<'a, Id>::colorless(self, bool) -> Self
 pub const fn termrock::widgets::Timeline<'a, Id>::focused(self, bool) -> Self
+pub fn termrock::widgets::Timeline<'a, Id>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::TimelineState<Id>)
 pub const fn termrock::widgets::Timeline<'a, Id>::recipe(self, termrock::widgets::TimelineRecipe) -> Self
-pub fn termrock::widgets::Timeline<'a, Id>::render_stateful(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::TimelineState<Id>)
 pub const fn termrock::widgets::Timeline<'a, Id>::with_events(&'a [termrock::widgets::TimelineEvent<'a, Id>], &'a termrock::style::DesignSystem) -> Self
 impl<'a> termrock::widgets::Timeline<'a, ()>
 pub const fn termrock::widgets::Timeline<'a, ()>::empty_message(self, &'a str) -> Self
 pub const fn termrock::widgets::Timeline<'a, ()>::new(&'a [termrock::widgets::TimelineEvent<'a, ()>], &'a termrock::style::DesignSystem) -> Self
-impl ratatui_core::widgets::widget::Widget for &termrock::widgets::Timeline<'_, ()>
-pub fn &termrock::widgets::Timeline<'_, ()>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
-impl ratatui_core::widgets::widget::Widget for termrock::widgets::Timeline<'_, ()>
-pub fn termrock::widgets::Timeline<'_, ()>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::Timeline<'a, Id>
 pub fn termrock::widgets::Timeline<'a, Id>::clone(&self) -> termrock::widgets::Timeline<'a, Id>
 impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::Timeline<'a, Id>
@@ -92648,7 +92639,7 @@ pub fn termrock::widgets::open_slash_command_overlay<FocusId: core::clone::Clone
 pub fn termrock::widgets::open_tooltip_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::paint_attachment_strip(&[termrock::widgets::AttachmentItem], &[termrock::widgets::PastePayload], ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::style::DesignSystem, &mut termrock::widgets::TokenStripState<alloc::string::String>, termrock::widgets::TokenStripLayout, usize, bool, &[&str])
 pub fn termrock::widgets::paint_line_segments(ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::style::DesignSystem, &[termrock::widgets::LineSegment<'_>], &[termrock::widgets::LineSegment<'_>], ratatui_core::style::color::Color)
-pub fn termrock::widgets::paint_progress_steps_as_timeline(&[termrock::widgets::ProgressStep], ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::style::DesignSystem)
+pub fn termrock::widgets::paint_progress_steps_as_timeline(&[termrock::widgets::ProgressStep], ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::TimelineState<()>, &termrock::style::DesignSystem)
 pub fn termrock::widgets::parse_draft_with_mentions(&str) -> termrock::widgets::MentionDraft
 pub fn termrock::widgets::parse_lines(&str, &termrock::ansi_text::AnsiParseOptions) -> alloc::vec::Vec<termrock::ansi_text::AnsiLine>
 pub fn termrock::widgets::parse_mention_markup(&str) -> core::option::Option<termrock::widgets::MentionRef>
