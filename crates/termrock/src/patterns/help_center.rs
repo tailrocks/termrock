@@ -344,7 +344,35 @@ pub fn command_entries_from_help(entries: &[HelpEntry]) -> Vec<CommandEntry<Stri
 
 /// Command list rows from metadata-derived command entries.
 #[must_use]
-pub fn command_list_rows<'a>(commands: &'a [CommandEntry<String>]) -> Vec<ListRow<'a, String>> {
+pub fn filter_command_entries<'a>(
+    commands: &'a [CommandEntry<String>],
+    query: &str,
+) -> Vec<&'a CommandEntry<String>> {
+    let q = query.trim().to_ascii_lowercase();
+    commands
+        .iter()
+        .filter(|c| {
+            if q.is_empty() {
+                return true;
+            }
+            let hay = format!(
+                "{} {} {}",
+                c.label,
+                c.shortcut.as_deref().unwrap_or(""),
+                c.keywords.join(" ")
+            )
+            .to_ascii_lowercase();
+            hay.contains(&q)
+        })
+        .collect()
+}
+
+/// Project (filtered) commands to [`List`] rows with group headers.
+///
+/// Takes references — filtering yields references, and cloning whole
+/// [`CommandEntry`] values per frame was the old hot path.
+#[must_use]
+pub fn command_list_rows<'a>(commands: &[&'a CommandEntry<String>]) -> Vec<ListRow<'a, String>> {
     let mut rows = Vec::new();
     let mut last_group: Option<&str> = None;
     for c in commands {
@@ -943,25 +971,8 @@ impl HelpCenterState {
         key: KeyEvent,
         commands: &[CommandEntry<String>],
     ) -> HelpCenterOutcome {
-        let q = self.search.query().to_string();
-        let filtered: Vec<&CommandEntry<String>> = commands
-            .iter()
-            .filter(|c| {
-                if q.trim().is_empty() {
-                    return true;
-                }
-                let hay = format!(
-                    "{} {} {}",
-                    c.label,
-                    c.shortcut.as_deref().unwrap_or(""),
-                    c.keywords.join(" ")
-                )
-                .to_ascii_lowercase();
-                hay.contains(&q.to_ascii_lowercase())
-            })
-            .collect();
-        let owned: Vec<CommandEntry<String>> = filtered.into_iter().cloned().collect();
-        let rows = command_list_rows(&owned);
+        let filtered = filter_command_entries(commands, self.search.query());
+        let rows = command_list_rows(&filtered);
 
         if key.is_press() {
             match key.code {
@@ -970,7 +981,7 @@ impl HelpCenterState {
                         .commands
                         .selected()
                         .cloned()
-                        .or_else(|| owned.first().map(|c| c.id.clone()))
+                        .or_else(|| filtered.first().map(|c| c.id.clone()))
                     {
                         if id.starts_with("g-") {
                             return HelpCenterOutcome::Ignored;
@@ -1477,23 +1488,7 @@ pub fn paint_help_center(buffer: &mut Buffer, area: Rect, surfaces: HelpCenterSu
             .emphasis(PanelChrome::for_focus(focused))
             .paint(r, buffer, None);
         if !inner.is_empty() {
-            let filtered: Vec<CommandEntry<String>> = commands
-                .iter()
-                .filter(|c| {
-                    if query.trim().is_empty() {
-                        return true;
-                    }
-                    let hay = format!(
-                        "{} {} {}",
-                        c.label,
-                        c.shortcut.as_deref().unwrap_or(""),
-                        c.keywords.join(" ")
-                    )
-                    .to_ascii_lowercase();
-                    hay.contains(&query.to_ascii_lowercase())
-                })
-                .cloned()
-                .collect();
+            let filtered = filter_command_entries(commands, &query);
             let rows = command_list_rows(&filtered);
             if rows.is_empty() {
                 EmptyState::new("No commands", system)
