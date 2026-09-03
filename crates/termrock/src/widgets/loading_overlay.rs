@@ -297,12 +297,6 @@ impl BusyBoundaryState {
     pub const fn nest_depth(&self) -> u8 {
         self.nest_depth
     }
-
-    /// Spinner state (for host tick demand).
-    #[must_use]
-    pub fn spinner(&self) -> &SpinnerState {
-        &self.spinner
-    }
     /// Whether expected duration classifies this as a short op.
     #[must_use]
     pub fn is_short_op(&self) -> bool {

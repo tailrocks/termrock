@@ -692,18 +692,6 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
         self.applied_generation
     }
 
-    /// Stream complete?
-    #[must_use]
-    pub const fn stream_complete(&self) -> bool {
-        self.stream_complete
-    }
-
-    /// Total hint.
-    #[must_use]
-    pub const fn total_hint(&self) -> Option<u64> {
-        self.total_hint
-    }
-
     /// Query text.
     #[must_use]
     pub fn query_text(&self) -> &str {
@@ -719,12 +707,6 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
     /// Mutable query.
     pub const fn query_mut(&mut self) -> &mut TextInputState {
         &mut self.query
-    }
-
-    /// Provider index.
-    #[must_use]
-    pub const fn provider_index(&self) -> usize {
-        self.provider_index
     }
 
     /// Presentation.

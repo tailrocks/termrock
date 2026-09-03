@@ -272,13 +272,6 @@ impl WorkingState {
         self
     }
 
-    /// Inspect allowed.
-    #[must_use]
-    pub const fn can_inspect(mut self, on: bool) -> Self {
-        self.can_inspect = on;
-        self
-    }
-
     /// Actor.
     #[must_use]
     pub fn actor(mut self, a: impl Into<String>) -> Self {

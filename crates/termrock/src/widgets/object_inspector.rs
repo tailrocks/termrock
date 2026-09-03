@@ -522,12 +522,6 @@ impl ObjectInspectorState {
         self.cursor
     }
 
-    /// Sticky cursor path.
-    #[must_use]
-    pub fn cursor_path(&self) -> Option<&str> {
-        self.cursor_path.as_deref()
-    }
-
     /// Programmatic cursor by index.
     pub fn set_cursor(&mut self, index: usize) {
         self.cursor = index;

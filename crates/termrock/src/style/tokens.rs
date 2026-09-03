@@ -1281,13 +1281,6 @@ impl DesignSystem {
         matches!(self.capability, ColorCapability::Monochrome)
     }
 
-    /// Breakpoint scale.
-    #[must_use]
-    pub const fn breakpoints(mut self, breakpoints: BreakpointScale) -> Self {
-        self.breakpoints = breakpoints;
-        self
-    }
-
     /// Force monochrome capability + quantize (NO_COLOR path).
     #[must_use]
     pub fn no_color(self) -> Self {

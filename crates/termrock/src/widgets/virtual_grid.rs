@@ -295,11 +295,6 @@ impl<RowId, ColId> VirtualGridState<RowId, ColId> {
         &mut self.virt
     }
 
-    /// Caller-persisted column widths (display columns).
-    #[must_use]
-    pub fn column_widths(&self) -> &[u16] {
-        &self.column_widths
-    }
     fn clamp_cursor(&mut self) {
         match self.total_rows {
             Some(0) => self.cursor_row = 0,

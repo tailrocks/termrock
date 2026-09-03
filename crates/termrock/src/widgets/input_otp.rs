@@ -150,12 +150,6 @@ impl InputOtpState {
         self.accepts_input = on;
     }
 
-    /// Length.
-    #[must_use]
-    pub const fn length(&self) -> usize {
-        self.length
-    }
-
     /// Cursor index.
     #[must_use]
     pub const fn cursor(&self) -> usize {

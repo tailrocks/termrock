@@ -272,23 +272,6 @@ impl AgentWorkbenchState {
         self.plan_open
     }
 
-    /// Diff overlay.
-    #[must_use]
-    pub const fn diff_open(&self) -> bool {
-        self.diff_open
-    }
-
-    /// Session picker overlay.
-    #[must_use]
-    pub const fn session_open(&self) -> bool {
-        self.session_open
-    }
-
-    /// Command palette overlay flag.
-    #[must_use]
-    pub const fn command_open(&self) -> bool {
-        self.command_open
-    }
     /// Any dismissible overlay owning input.
     #[must_use]
     pub const fn any_overlay_open(&self) -> bool {

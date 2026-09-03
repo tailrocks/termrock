@@ -676,12 +676,6 @@ impl ToastQueue {
         self.missed.len()
     }
 
-    /// Borrow missed list.
-    #[must_use]
-    pub fn missed(&self) -> &[ToastArchive] {
-        &self.missed
-    }
-
     /// Drain missed into caller (NotificationCenter open).
     pub fn drain_missed(&mut self) -> Vec<ToastArchive> {
         std::mem::take(&mut self.missed)
@@ -832,18 +826,6 @@ impl ToastQueue {
         };
         self.dismiss(&id)
     }
-    /// Activate undo / action for matching id (host maps hotkey).
-    pub fn activate_action(&mut self, id: &str, action: impl Into<String>) -> ToastOutcome {
-        if self.live.iter().any(|t| t.id == id) {
-            ToastOutcome::ActionActivated {
-                id: id.to_string(),
-                action: action.into(),
-            }
-        } else {
-            ToastOutcome::Ignored
-        }
-    }
-
     /// Advance all live toasts; expire and archive.
     pub fn advance(&mut self, tick: FrameTick, motion: MotionPolicy) -> Vec<ToastOutcome> {
         let mut outs = Vec::new();
@@ -1097,8 +1079,7 @@ impl<'a> Toast<'a> {
         self
     }
 
-    /// Undo label (kind Undo). The sentence stays one row; the host owns the
-    /// hotkey that fires [`ToastQueue::activate_action`].
+    /// Undo label (kind Undo). The sentence stays one row; the host owns the hotkey.
     #[must_use]
     pub const fn undo(mut self, label: &'a str) -> Self {
         self.undo_label = Some(label);

@@ -289,12 +289,6 @@ impl SearchInputState {
         self.history.iter().map(String::as_str)
     }
 
-    /// Debounce period.
-    #[must_use]
-    pub const fn debounce(&self) -> Duration {
-        self.debounce
-    }
-
     /// Focused.
     #[must_use]
     pub const fn is_focused(&self) -> bool {
@@ -311,12 +305,6 @@ impl SearchInputState {
     #[must_use]
     pub const fn parts(&self) -> Option<&SearchInputParts> {
         self.parts.as_ref()
-    }
-
-    /// Whether a debounce emission is pending.
-    #[must_use]
-    pub const fn debounce_pending(&self) -> bool {
-        self.debounce_pending
     }
 
     /// Focus.

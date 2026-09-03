@@ -17,7 +17,7 @@ mod inventory;
 mod pattern_inventory;
 mod validate;
 
-pub use catalog::{official_contract, official_ids, official_kernel_contracts};
+pub use catalog::official_kernel_contracts;
 pub use contract::{
     AnatomyPartRef, CONTRACT_SCHEMA, CapabilityRequirements, ComponentContract,
     ContractDependencies, ContractFile, ContractFileRole, KernelRequirement, OutcomeRef,

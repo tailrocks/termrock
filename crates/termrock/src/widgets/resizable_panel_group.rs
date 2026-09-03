@@ -347,18 +347,6 @@ impl ResizablePanelGroupState {
         &self.layout
     }
 
-    /// Panel sizes in cells.
-    #[must_use]
-    pub fn sizes(&self) -> &[u16] {
-        &self.sizes
-    }
-
-    /// Focused handle.
-    #[must_use]
-    pub const fn focused_handle(&self) -> Option<usize> {
-        self.focused_handle
-    }
-
     /// Sets handle focus.
     pub fn set_focused_handle(&mut self, handle: Option<usize>) {
         self.focused_handle = handle;

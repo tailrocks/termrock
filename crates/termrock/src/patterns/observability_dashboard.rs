@@ -426,12 +426,6 @@ impl ObservabilityDashboardState {
         }
     }
 
-    /// Which streams the operator has opened.
-    #[must_use]
-    pub const fn open_panes(&self) -> ObservabilityPanes {
-        self.open_panes
-    }
-
     /// Opens or closes the log stream.
     pub fn toggle_logs(&mut self) -> ObservabilityDashboardOutcome {
         self.open_panes.logs = !self.open_panes.logs;

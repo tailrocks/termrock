@@ -950,12 +950,6 @@ impl<FocusId> OverlayStack<FocusId> {
         self.entries.is_empty()
     }
 
-    /// Current bounds used for placement.
-    #[must_use]
-    pub const fn bounds(&self) -> Rect {
-        self.bounds
-    }
-
     /// Whether `id` is currently open.
     #[must_use]
     pub fn contains(&self, id: &OverlayId) -> bool {

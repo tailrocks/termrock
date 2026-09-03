@@ -430,12 +430,6 @@ impl<Id> FormState<Id> {
         self.offset
     }
 
-    /// Columns used.
-    #[must_use]
-    pub const fn column_count(&self) -> u8 {
-        self.column_count
-    }
-
     /// Content height.
     #[must_use]
     pub const fn content_height(&self) -> usize {
@@ -659,15 +653,6 @@ impl<Id: Clone + PartialEq> FormState<Id> {
             FormOutcome::Ignored
         }
     }
-
-    /// Hit id for host scene.focus.
-    #[must_use]
-    pub fn hit_id(&self, position: Position) -> Option<&Id> {
-        self.regions
-            .iter()
-            .find(|region| region.area.contains(position))
-            .map(|region| &region.id)
-    }
 }
 
 // ── Form widget ─────────────────────────────────────────────────────────────
@@ -736,12 +721,6 @@ impl<'a, Id> Form<'a, Id> {
     pub const fn show_error_summary(mut self, on: bool) -> Self {
         self.show_error_summary = on;
         self
-    }
-
-    /// Borrowed fieldsets.
-    #[must_use]
-    pub const fn fieldsets(&self) -> &'a [Fieldset<'a, Id>] {
-        self.fieldsets
     }
 }
 

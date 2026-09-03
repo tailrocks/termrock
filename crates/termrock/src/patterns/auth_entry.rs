@@ -324,17 +324,6 @@ impl AuthEntryState {
         self.terms.is_checked()
     }
 
-    /// Field errors from last validate/submit.
-    #[must_use]
-    pub fn field_errors(&self) -> &[AuthFieldError] {
-        &self.field_errors
-    }
-
-    /// Host-set banner error (auth failure projection).
-    #[must_use]
-    pub fn host_error(&self) -> Option<&str> {
-        self.host_error.as_deref()
-    }
     /// Pending remote verify (blocks edits).
     pub fn set_pending(&mut self, on: bool) {
         self.pending = on;

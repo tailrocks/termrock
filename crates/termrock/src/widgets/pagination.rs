@@ -87,15 +87,6 @@ impl PageTotal {
             Self::AtLeast(_) => "at-least",
         }
     }
-
-    /// Exact total when known.
-    #[must_use]
-    pub const fn exact(self) -> Option<u64> {
-        match self {
-            Self::Known(n) => Some(n),
-            _ => None,
-        }
-    }
 }
 
 /// Layout density for the control.
@@ -359,11 +350,6 @@ impl PaginationState {
         self.part
     }
 
-    /// Jump draft.
-    #[must_use]
-    pub fn jump_draft(&self) -> &str {
-        &self.jump_draft
-    }
     /// Focus control.
     pub fn set_focused(&mut self, on: bool) {
         self.focused = on;

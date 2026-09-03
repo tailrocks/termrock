@@ -599,11 +599,6 @@ impl DiffReviewState {
         self.accepts_input
     }
 
-    /// Hunk cursor (DiffView).
-    #[must_use]
-    pub const fn hunk_cursor(&self) -> usize {
-        self.view.hunk_cursor
-    }
     /// Vertical offset.
     #[must_use]
     pub fn offset_y(&self) -> u16 {
@@ -631,18 +626,6 @@ impl DiffReviewState {
     #[must_use]
     pub fn selected_hunks(&self) -> &BTreeSet<String> {
         &self.selected_hunks
-    }
-
-    /// Selected line ids.
-    #[must_use]
-    pub fn selected_lines(&self) -> &BTreeSet<String> {
-        &self.selected_lines
-    }
-
-    /// Selected file ids.
-    #[must_use]
-    pub fn selected_files(&self) -> &BTreeSet<String> {
-        &self.selected_files
     }
 
     /// Derive summary.

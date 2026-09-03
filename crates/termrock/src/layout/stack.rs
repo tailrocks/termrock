@@ -40,15 +40,6 @@ impl StackDirection {
             Self::Horizontal => "horizontal",
         }
     }
-
-    /// Flip for responsive contracts (narrow → stack, wide → inline).
-    #[must_use]
-    pub const fn flipped(self) -> Self {
-        match self {
-            Self::Vertical => Self::Horizontal,
-            Self::Horizontal => Self::Vertical,
-        }
-    }
 }
 
 /// Cross-axis alignment (perpendicular to main).
@@ -111,12 +102,6 @@ impl FlexSize {
     #[must_use]
     pub const fn fixed(n: u16) -> Self {
         Self::Fixed(n)
-    }
-
-    /// Weight helper (zero treated as 1 when allocated).
-    #[must_use]
-    pub const fn weight(w: u16) -> Self {
-        Self::Weight(w)
     }
 
     /// Fill residual equally (weight 1).

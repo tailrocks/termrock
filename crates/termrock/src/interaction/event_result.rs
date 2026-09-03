@@ -151,18 +151,6 @@ impl<M, FocusId> EventResult<M, FocusId> {
         }
     }
 
-    /// Consumed with no domain message and no redraw (e.g. key arm only).
-    #[must_use]
-    pub const fn stop() -> Self {
-        Self {
-            propagation: Propagation::Stop,
-            message: None,
-            redraw: Redraw::None,
-            focus: None,
-            overlay: None,
-        }
-    }
-
     /// Consumed state change that needs paint, no domain message.
     #[must_use]
     pub const fn changed() -> Self {

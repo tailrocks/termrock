@@ -75,11 +75,6 @@ impl ThemePickerState {
         self.selected
     }
 
-    /// Last confirmed preset id, if any.
-    #[must_use]
-    pub const fn confirmed(&self) -> Option<&'static str> {
-        self.confirmed
-    }
     /// Focus-visible interaction ownership.
     pub fn set_focused(&mut self, on: bool) {
         self.focused = on && self.enabled;
@@ -178,11 +173,6 @@ impl ThemePickerState {
             }
             other => EventResult::emit(other),
         }
-    }
-
-    /// Confirms a preset id after the caller resolves index → id.
-    pub fn confirm_id(&mut self, id: &'static str) {
-        self.confirmed = Some(id);
     }
 }
 

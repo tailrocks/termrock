@@ -254,13 +254,6 @@ impl HelpEntry {
         self
     }
 
-    /// Remapped flag.
-    #[must_use]
-    pub const fn remapped(mut self, on: bool) -> Self {
-        self.remapped = on;
-        self
-    }
-
     /// Conflict flag.
     #[must_use]
     pub const fn conflict(mut self, on: bool) -> Self {

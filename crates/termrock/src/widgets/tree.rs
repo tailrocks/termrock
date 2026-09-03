@@ -468,12 +468,6 @@ impl<Id> TreeState<Id> {
         self.selected = selected;
     }
 
-    /// `*` expand-all / `-` collapse-all request. Host owns expansion.
-    #[must_use]
-    pub const fn bulk_disclosure(&self) -> Option<bool> {
-        self.bulk_disclosure
-    }
-
     /// Takes the pending `*` / `-` command (`true` = expand all).
     pub fn take_bulk_disclosure(&mut self) -> Option<bool> {
         self.bulk_disclosure.take()

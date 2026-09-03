@@ -187,13 +187,6 @@ impl Question {
         self
     }
 
-    /// Validation hint.
-    #[must_use]
-    pub fn validation_hint(mut self, h: impl Into<String>) -> Self {
-        self.validation_hint = Some(h.into());
-        self
-    }
-
     /// Help.
     #[must_use]
     pub fn help(mut self, h: impl Into<String>) -> Self {

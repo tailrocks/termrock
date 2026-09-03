@@ -182,16 +182,6 @@ impl<'a> MarkdownInline<'a> {
             href: None,
         }
     }
-
-    /// Link.
-    #[must_use]
-    pub const fn link(text: &'a str, href: &'a str) -> Self {
-        Self {
-            text,
-            kind: MarkdownInlineKind::Link,
-            href: Some(href),
-        }
-    }
 }
 
 /// One borrowed markdown block (may span multiple display rows).

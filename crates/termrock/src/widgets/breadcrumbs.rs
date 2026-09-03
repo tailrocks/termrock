@@ -323,11 +323,6 @@ impl BreadcrumbsState {
         &self.draft
     }
 
-    /// Focused on ellipsis.
-    #[must_use]
-    pub const fn focus_on_ellipsis(&self) -> bool {
-        self.focus_on_ellipsis
-    }
     /// Focus whole control (single Tab stop).
     pub fn set_focused(&mut self, on: bool) {
         self.focused = on;

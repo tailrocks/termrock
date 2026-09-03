@@ -281,13 +281,6 @@ impl ApprovalItem {
         self
     }
 
-    /// Host quick-approve opt-in (still gated by risk).
-    #[must_use]
-    pub const fn host_allows_quick_approve(mut self, on: bool) -> Self {
-        self.host_allows_quick_approve = on;
-        self
-    }
-
     /// Effective sort score (higher first) for non-protocol items.
     #[must_use]
     pub fn sort_score(&self) -> u16 {

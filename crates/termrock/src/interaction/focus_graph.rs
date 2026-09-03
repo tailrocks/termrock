@@ -258,11 +258,6 @@ impl<Id> FocusGraph<Id> {
         }
         self.nodes.push(node);
     }
-    /// Nav mode.
-    #[must_use]
-    pub const fn nav_mode(&self) -> FocusNavMode {
-        self.mode
-    }
 
     /// Currently focused id.
     #[must_use]
@@ -726,13 +721,6 @@ impl<'a, Id> FocusLens<'a, Id> {
             mode: FocusLensMode::Combined,
             colorless: false,
         }
-    }
-
-    /// Whether to paint tab-order indices.
-    #[must_use]
-    pub const fn show_order(mut self, show: bool) -> Self {
-        self.show_order = show;
-        self
     }
 
     /// Lens mode.

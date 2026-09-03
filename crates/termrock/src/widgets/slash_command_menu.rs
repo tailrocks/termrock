@@ -752,12 +752,6 @@ impl SlashCommandMenuState {
         self.menu.set_accepts_input(on);
     }
 
-    /// Recent ids.
-    #[must_use]
-    pub fn recent_ids(&self) -> &[String] {
-        &self.recent_ids
-    }
-
     /// Remember a committed command id.
     pub fn push_recent(&mut self, id: impl Into<String>) {
         let id = id.into();

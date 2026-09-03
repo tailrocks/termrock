@@ -339,12 +339,6 @@ impl NumberInputState {
         self.draft.value()
     }
 
-    /// Whether empty is allowed.
-    #[must_use]
-    pub const fn allow_empty(&self) -> bool {
-        self.allow_empty
-    }
-
     /// Focused.
     #[must_use]
     pub const fn is_focused(&self) -> bool {

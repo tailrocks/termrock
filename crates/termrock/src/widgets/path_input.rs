@@ -472,12 +472,6 @@ impl PathInputState {
         self.base.as_deref()
     }
 
-    /// FS status.
-    #[must_use]
-    pub const fn fs_status(&self) -> PathFsStatus {
-        self.fs_status
-    }
-
     /// Risk.
     #[must_use]
     pub const fn risk(&self) -> PathRisk {

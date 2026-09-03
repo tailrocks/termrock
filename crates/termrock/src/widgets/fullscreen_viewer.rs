@@ -634,12 +634,6 @@ impl<Id> FullscreenViewerState<Id> {
         }
     }
 
-    /// Zoom engine.
-    #[must_use]
-    pub fn zoom(&self) -> &SemanticZoomState<Id> {
-        &self.zoom
-    }
-
     /// Whether fullscreen chrome is open.
     #[must_use]
     pub const fn is_open(&self) -> bool {
@@ -670,12 +664,6 @@ impl<Id> FullscreenViewerState<Id> {
         &self.search_query
     }
 
-    /// Search open?
-    #[must_use]
-    pub const fn search_open(&self) -> bool {
-        self.search_open
-    }
-
     /// Help open?
     #[must_use]
     pub const fn help_open(&self) -> bool {
@@ -701,12 +689,6 @@ impl<Id> FullscreenViewerState<Id> {
     /// Host reports nested child overlay presence (or use stack query).
     pub fn set_nested_child_hint(&mut self, on: bool) {
         self.nested_child_hint = on;
-    }
-
-    /// Chrome focus band.
-    #[must_use]
-    pub const fn chrome_focus(&self) -> ViewerChromeFocus {
-        self.chrome_focus
     }
 
     /// Source context for restore.

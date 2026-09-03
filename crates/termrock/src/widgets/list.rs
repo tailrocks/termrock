@@ -393,12 +393,6 @@ impl<Id> ListState<Id> {
         self.virtual_total = total_len;
         self.collection.set_virtual_window(window_start, total_len);
     }
-    /// Current virtual active-ID reconciliation policy.
-    #[must_use]
-    pub const fn virtual_active_policy(&self) -> VirtualWindowActivePolicy {
-        self.virtual_active_policy
-    }
-
     /// Virtual total (0 means not virtualized).
     #[must_use]
     pub const fn virtual_total(&self) -> usize {
@@ -408,12 +402,6 @@ impl<Id> ListState<Id> {
     /// Configures pointer-click outcomes ([`ListClickPolicy`]).
     pub const fn set_click_policy(&mut self, policy: ListClickPolicy) {
         self.click_policy = policy;
-    }
-
-    #[must_use]
-    /// Returns the pointer-click policy.
-    pub const fn click_policy(&self) -> ListClickPolicy {
-        self.click_policy
     }
 
     /// Replace the stable selected identity.

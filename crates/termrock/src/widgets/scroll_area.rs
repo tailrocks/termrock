@@ -292,22 +292,11 @@ impl ScrollAreaState {
     }
 
     #[must_use]
-    /// Content width.
-    pub const fn content_w(&self) -> u16 {
-        self.content_w
-    }
-
-    #[must_use]
     /// Viewport height.
     pub const fn viewport_h(&self) -> u16 {
         self.viewport_h
     }
 
-    #[must_use]
-    /// Viewport width.
-    pub const fn viewport_w(&self) -> u16 {
-        self.viewport_w
-    }
     #[must_use]
     /// New-content indicator (paused + unseen).
     pub const fn new_content(&self) -> NewContentIndicator {

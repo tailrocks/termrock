@@ -470,11 +470,6 @@ impl<Id: Clone + PartialEq + Ord> EventStreamState<Id> {
         self.dropped = 0;
         self.batched = 0;
     }
-    /// Severity floor.
-    #[must_use]
-    pub const fn severity_floor(&self) -> EventSeverity {
-        self.severity_floor
-    }
     /// Capture stable anchor at current cursor (host reprojects; restore later).
     pub fn capture_anchor(&mut self, events: &[StreamEvent<'_, Id>]) {
         let view = self.filtered_view(events);

@@ -269,13 +269,6 @@ impl PlanAffectedFile {
             rename_to: None,
         }
     }
-
-    /// Rename target.
-    #[must_use]
-    pub fn rename_to(mut self, p: impl Into<String>) -> Self {
-        self.rename_to = Some(p.into());
-        self
-    }
 }
 
 /// Source / citation reference.

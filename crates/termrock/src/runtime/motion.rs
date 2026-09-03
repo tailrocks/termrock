@@ -198,12 +198,6 @@ impl Presence {
         self
     }
 
-    /// Configured exit duration.
-    #[must_use]
-    pub const fn exit_duration(self) -> Duration {
-        self.exit_duration
-    }
-
     /// Progress `0.0..=1.0` through the current timed phase.
     ///
     /// `Pending` counts toward the show delay, `Exiting` toward the exit, and

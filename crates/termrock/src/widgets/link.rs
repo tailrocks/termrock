@@ -297,12 +297,6 @@ impl<'a> Link<'a> {
         self
     }
 
-    /// Destination.
-    #[must_use]
-    pub const fn destination(&self) -> LinkDestination<'a> {
-        self.destination
-    }
-
     /// Whether destination string should paint this frame.
     #[must_use]
     pub fn shows_destination(&self) -> bool {

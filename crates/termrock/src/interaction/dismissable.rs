@@ -297,12 +297,6 @@ impl DismissableLayer {
         self.rect = rect;
     }
 
-    /// Current pointer gesture.
-    #[must_use]
-    pub const fn gesture(&self) -> PointerGesture {
-        self.gesture
-    }
-
     /// Reset gesture (layer became non-top or dismissed).
     pub fn reset_gesture(&mut self) {
         self.gesture = PointerGesture::Idle;

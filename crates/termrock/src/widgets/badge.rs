@@ -123,13 +123,6 @@ impl BadgeCount {
         }
     }
 
-    /// Custom clamp threshold.
-    #[must_use]
-    pub const fn max_display(mut self, max: u64) -> Self {
-        self.max_display = if max == 0 { 1 } else { max };
-        self
-    }
-
     /// Formatted digits (`"0"` … `"99+"`).
     #[must_use]
     pub fn format(self) -> String {

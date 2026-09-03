@@ -402,13 +402,6 @@ impl AgentStatusSnapshot {
         self
     }
 
-    /// Work label override.
-    #[must_use]
-    pub fn work_label(mut self, l: impl Into<String>) -> Self {
-        self.work_label = Some(l.into());
-        self
-    }
-
     /// Context budget.
     #[must_use]
     pub const fn context(mut self, used: u64, limit: u64) -> Self {

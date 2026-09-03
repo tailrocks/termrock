@@ -119,28 +119,6 @@ impl JumpFilter {
         self.action_contains = Some(s.into());
         self
     }
-
-    /// Label substring filter.
-    #[must_use]
-    pub fn label_contains(mut self, s: impl Into<String>) -> Self {
-        self.label_contains = Some(s.into());
-        self
-    }
-
-    /// Include disabled.
-    #[must_use]
-    pub const fn include_disabled(mut self, on: bool) -> Self {
-        self.include_disabled = on;
-        self
-    }
-
-    /// Max depth.
-    #[must_use]
-    pub const fn max_depth(mut self, d: u8) -> Self {
-        self.max_depth = Some(d);
-        self
-    }
-
     /// Only leaves.
     #[must_use]
     pub const fn only_leaves(mut self, on: bool) -> Self {

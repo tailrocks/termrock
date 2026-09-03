@@ -614,12 +614,6 @@ impl FilePickerState {
         self.status
     }
 
-    /// Generation for list requests.
-    #[must_use]
-    pub const fn listing_generation(&self) -> u64 {
-        self.listing_generation
-    }
-
     /// Applied generation.
     #[must_use]
     pub const fn applied_generation(&self) -> u64 {

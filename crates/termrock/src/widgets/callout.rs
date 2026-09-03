@@ -795,11 +795,6 @@ impl<Id> AlertState<Id> {
         self.focused = on;
     }
 
-    /// Details open?
-    #[must_use]
-    pub const fn details_open(&self) -> bool {
-        self.details_open
-    }
     /// Slots.
     #[must_use]
     pub const fn slots(&self) -> CalloutSlots {

@@ -1020,12 +1020,6 @@ impl<Id> DialogState<Id> {
         self.close_policy = p;
     }
 
-    /// Current close policy.
-    #[must_use]
-    pub const fn close_policy(&self) -> DialogClosePolicy {
-        self.close_policy
-    }
-
     /// Layout recipe (also used at open for size).
     pub fn set_recipe(&mut self, r: DialogRecipe) {
         self.recipe = r;
@@ -1102,12 +1096,6 @@ impl<Id> DialogState<Id> {
             self.initial_applied = true;
             self.require_action_focus_for_enter = true;
         }
-    }
-
-    /// Typed acknowledgement contents.
-    #[must_use]
-    pub fn typed_ack(&self) -> &str {
-        &self.typed_ack
     }
 
     /// Whether the acknowledgement matches (or none is required).

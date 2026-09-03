@@ -378,11 +378,6 @@ impl PasswordInputState {
         }
     }
 
-    /// Policy.
-    #[must_use]
-    pub const fn reveal_policy(&self) -> RevealPolicy {
-        self.reveal_policy
-    }
     /// Enabled.
     #[must_use]
     pub const fn is_enabled(&self) -> bool {

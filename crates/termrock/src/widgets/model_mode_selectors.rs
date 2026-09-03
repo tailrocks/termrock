@@ -556,13 +556,6 @@ impl AgentModeOption {
         self
     }
 
-    /// Execution policy.
-    #[must_use]
-    pub const fn execution_policy(mut self, p: ExecutionPolicyKind) -> Self {
-        self.execution_policy = Some(p);
-        self
-    }
-
     /// Whether warning role applies.
     #[must_use]
     pub fn needs_warning_role(&self) -> bool {

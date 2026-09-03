@@ -90,12 +90,6 @@ impl CommitSeparators {
         Self::new([',', ';'])
     }
 
-    /// Space commits (tags).
-    #[must_use]
-    pub fn space() -> Self {
-        Self::new([' '])
-    }
-
     /// Whether `c` commits.
     #[must_use]
     pub fn contains(&self, c: char) -> bool {

@@ -23,9 +23,8 @@ use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::State
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{
-        CollectionItem, CollectionOutcome, CollectionState, HitRegion, OverlayOutcome, OverlaySize,
-        OverlaySpec, OverlayStack, RovingOrientation, SemanticNode, SemanticRole, SemanticScene,
-        SemanticState, UiIntent,
+        CollectionItem, CollectionOutcome, CollectionState, HitRegion, RovingOrientation,
+        SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent,
     },
     style::{DesignSystem, Role, VisualState},
     text::{display_cols, take_display_cols},
@@ -1074,19 +1073,6 @@ impl<Id> SidebarState<Id> {
     {
         self.nav.accepts_input = self.accepts_input;
         self.nav.handle_mouse(event, items).into()
-    }
-
-    /// Open as drawer overlay helper.
-    pub fn open_drawer_overlay<FocusId: Clone>(
-        stack: &mut OverlayStack<FocusId>,
-        bounds: Rect,
-        size: OverlaySize,
-        opener: Option<FocusId>,
-    ) -> OverlayOutcome<FocusId> {
-        stack.open(
-            bounds,
-            OverlaySpec::drawer(SIDEBAR_DRAWER_OVERLAY_ID, size, opener),
-        )
     }
 }
 

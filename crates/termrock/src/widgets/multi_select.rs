@@ -265,12 +265,6 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
         self.recipe
     }
 
-    /// Max selected.
-    #[must_use]
-    pub const fn max_selected(&self) -> Option<usize> {
-        self.max_selected
-    }
-
     /// Selection model.
     #[must_use]
     pub const fn selection(&self) -> &SelectionModel<Id> {

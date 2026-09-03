@@ -969,12 +969,6 @@ impl PermissionPromptState {
         self.details_expanded
     }
 
-    /// Current edit buffer contents.
-    #[must_use]
-    pub fn edit_buffer(&self) -> &str {
-        &self.edit_buffer
-    }
-
     /// Generation of the head request, if any.
     #[must_use]
     pub fn head_generation(&self) -> Option<u64> {

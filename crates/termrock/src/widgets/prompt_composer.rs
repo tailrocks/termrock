@@ -611,12 +611,6 @@ impl PromptComposerState {
         &self.history
     }
 
-    /// Validation error string.
-    #[must_use]
-    pub fn validation_error(&self) -> Option<&str> {
-        self.validation_error.as_deref()
-    }
-
     /// Whether a non-empty selection is active.
     #[must_use]
     pub fn has_selection(&self) -> bool {

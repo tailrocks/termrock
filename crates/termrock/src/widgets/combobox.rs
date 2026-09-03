@@ -295,12 +295,6 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
         self.value.as_ref()
     }
 
-    /// Committed label.
-    #[must_use]
-    pub fn value_label(&self) -> Option<&str> {
-        self.value_label.as_deref()
-    }
-
     /// Active suggestion id.
     #[must_use]
     pub const fn active_suggestion(&self) -> Option<&Id> {
@@ -346,12 +340,6 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
     #[must_use]
     pub const fn is_enabled(&self) -> bool {
         self.enabled
-    }
-
-    /// Field rect (anchor).
-    #[must_use]
-    pub const fn field_area(&self) -> Rect {
-        self.field
     }
 
     /// Menu state.

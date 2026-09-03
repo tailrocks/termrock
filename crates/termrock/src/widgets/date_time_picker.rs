@@ -922,18 +922,6 @@ impl DateTimePickerState {
         self.draft.begin_edit();
     }
 
-    /// Today marker.
-    #[must_use]
-    pub const fn today(&self) -> Option<CivilDate> {
-        self.today
-    }
-
-    /// Timezone label.
-    #[must_use]
-    pub fn timezone_label(&self) -> Option<&str> {
-        self.timezone_label.as_deref()
-    }
-
     /// Focus date in calendar.
     #[must_use]
     pub const fn focus_date(&self) -> Option<CivilDate> {

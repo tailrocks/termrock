@@ -326,18 +326,6 @@ impl KeybindingRecorderState {
     }
     // ── accessors ───────────────────────────────────────────────────────────
 
-    /// Action id.
-    #[must_use]
-    pub fn action_id(&self) -> &str {
-        &self.action_id
-    }
-
-    /// Action label.
-    #[must_use]
-    pub fn action_label(&self) -> &str {
-        &self.action_label
-    }
-
     /// Committed chords.
     #[must_use]
     pub fn value(&self) -> &[KeyChord] {
@@ -359,12 +347,6 @@ impl KeybindingRecorderState {
     #[must_use]
     pub const fn is_recording(&self) -> bool {
         matches!(self.mode, KeybindingRecorderMode::Recording)
-    }
-
-    /// Last validation limit.
-    #[must_use]
-    pub const fn last_limit(&self) -> Option<&BindingLimit> {
-        self.last_limit.as_ref()
     }
 
     /// Normalized display of committed value.

@@ -292,12 +292,6 @@ impl BackgroundOutputBuffer {
         Self::new(BACKGROUND_TASK_DEFAULT_HISTORY)
     }
 
-    /// Max lines.
-    #[must_use]
-    pub const fn max_lines(&self) -> usize {
-        self.max_lines
-    }
-
     /// Current retained lines.
     #[must_use]
     pub fn len(&self) -> usize {

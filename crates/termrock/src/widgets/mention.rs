@@ -598,18 +598,6 @@ impl EntityMention {
         }
     }
 
-    /// Resource.
-    #[must_use]
-    pub fn resource(
-        id: impl Into<String>,
-        label: impl Into<String>,
-        canonical: impl Into<String>,
-    ) -> Self {
-        Self {
-            mention: MentionRef::entity(id, MentionType::Resource, label, canonical),
-        }
-    }
-
     /// Borrow.
     #[must_use]
     pub const fn as_ref(&self) -> &MentionRef {

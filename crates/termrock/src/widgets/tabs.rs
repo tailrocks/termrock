@@ -453,12 +453,6 @@ impl<Id> TabsState<Id> {
         self.collection.active()
     }
 
-    /// Activation.
-    #[must_use]
-    pub const fn activation(&self) -> TabsActivation {
-        self.activation
-    }
-
     /// Orientation.
     #[must_use]
     pub const fn orientation(&self) -> TabsOrientation {

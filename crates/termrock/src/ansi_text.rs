@@ -289,12 +289,6 @@ impl AnsiStream {
         self
     }
 
-    /// Options borrow.
-    #[must_use]
-    pub const fn options(&self) -> &AnsiParseOptions {
-        &self.options
-    }
-
     /// Completed lines (oldest first).
     #[must_use]
     pub fn lines(&self) -> &VecDeque<AnsiLine> {

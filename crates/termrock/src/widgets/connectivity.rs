@@ -403,12 +403,6 @@ impl ReconnectingState {
         self.last_success_secs = secs;
     }
 
-    /// Last success.
-    #[must_use]
-    pub const fn last_success_secs(&self) -> Option<u64> {
-        self.last_success_secs
-    }
-
     /// Max attempts.
     pub fn set_max_attempts(&mut self, max: Option<u32>) {
         self.max_attempts = max;
@@ -419,12 +413,6 @@ impl ReconnectingState {
         self.next_retry_in_secs = secs;
     }
 
-    /// Attempt.
-    #[must_use]
-    pub const fn attempt(&self) -> u32 {
-        self.attempt
-    }
-
     /// Queue replace.
     pub fn set_queued(&mut self, queued: Vec<QueuedConnectivityAction>) {
         self.queued = queued;
@@ -433,12 +421,6 @@ impl ReconnectingState {
     /// Push queued action.
     pub fn enqueue(&mut self, action: QueuedConnectivityAction) {
         self.queued.push(action);
-    }
-
-    /// Queued.
-    #[must_use]
-    pub fn queued(&self) -> &[QueuedConnectivityAction] {
-        &self.queued
     }
 
     /// Offline capabilities.

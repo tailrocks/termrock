@@ -626,12 +626,6 @@ impl DiffViewState {
     pub fn is_hunk_folded(&self, id: &str) -> bool {
         self.folded_hunks.contains(id)
     }
-    /// Folded hunk set.
-    #[must_use]
-    pub fn folded_hunks(&self) -> &BTreeSet<String> {
-        &self.folded_hunks
-    }
-
     /// Capture line + hunk anchors.
     pub fn capture_anchor(&mut self, lines: &[DiffLine<'_>], hunks: &[DiffHunk]) {
         if let Some(l) = lines.get(self.cursor) {

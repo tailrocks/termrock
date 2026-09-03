@@ -324,12 +324,6 @@ impl SetupWizardState {
         self
     }
 
-    /// Step kinds.
-    #[must_use]
-    pub fn kinds(&self) -> &[SetupStepKind] {
-        &self.kinds
-    }
-
     /// Kind of current step (or Recovery if failed phase).
     #[must_use]
     pub fn current_kind(&self) -> SetupStepKind {
