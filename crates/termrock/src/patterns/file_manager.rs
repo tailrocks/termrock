@@ -1818,10 +1818,7 @@ pub mod bench {
 mod tests {
     use super::*;
     use crate::style::DesignSystem;
-
-    fn press(code: KeyCode) -> KeyEvent {
-        KeyEvent::new(code, KeyModifiers::NONE)
-    }
+    use crate::widgets::tests::press;
 
     fn press_mod(code: KeyCode, mods: KeyModifiers) -> KeyEvent {
         KeyEvent::new(code, mods)

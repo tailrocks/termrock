@@ -1701,10 +1701,7 @@ pub mod bench {
 mod tests {
     use super::*;
     use crate::style::DesignSystem;
-
-    fn press(code: KeyCode) -> KeyEvent {
-        KeyEvent::new(code, KeyModifiers::NONE)
-    }
+    use crate::widgets::tests::press;
 
     fn open() -> HelpCenterState {
         let mut st = HelpCenterState::new();

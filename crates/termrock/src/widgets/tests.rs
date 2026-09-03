@@ -21,6 +21,11 @@ pub(crate) fn key_with_kind(
     key
 }
 
+/// Shared plain-press key factory for tests.
+pub(crate) fn press(code: KeyCode) -> KeyEvent {
+    KeyEvent::new(code, KeyModifiers::NONE)
+}
+
 #[cfg(feature = "serde")]
 #[test]
 fn persistable_states_implement_serde_contracts() {

@@ -998,11 +998,8 @@ pub mod bench {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::widgets::tests::press;
     use ratatui_core::layout::Position;
-
-    fn press(code: KeyCode) -> KeyEvent {
-        KeyEvent::new(code, KeyModifiers::NONE)
-    }
 
     fn open() -> PromptQueueState {
         let mut st = PromptQueueState::new();

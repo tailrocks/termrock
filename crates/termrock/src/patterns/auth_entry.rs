@@ -907,16 +907,13 @@ pub fn paint_auth_entry(buffer: &mut Buffer, area: Rect, surfaces: AuthEntrySurf
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    fn press(c: char) -> KeyEvent {
-        KeyEvent::new(KeyCode::Char(c), KeyModifiers::NONE)
-    }
+    use crate::widgets::tests::press;
 
     fn type_identity(st: &mut AuthEntryState, s: &str) {
         st.focus = AuthEntryField::Identity;
         st.sync_field_focus();
         for c in s.chars() {
-            let _ = st.handle_key(press(c));
+            let _ = st.handle_key(press(KeyCode::Char(c)));
         }
     }
 
@@ -924,7 +921,7 @@ mod tests {
         st.focus = AuthEntryField::Password;
         st.sync_field_focus();
         for c in s.chars() {
-            let out = st.handle_key(press(c));
+            let out = st.handle_key(press(KeyCode::Char(c)));
             assert!(
                 matches!(
                     out,
@@ -941,7 +938,7 @@ mod tests {
         st.focus = AuthEntryField::Confirm;
         st.sync_field_focus();
         for c in s.chars() {
-            let out = st.handle_key(press(c));
+            let out = st.handle_key(press(KeyCode::Char(c)));
             assert!(
                 matches!(
                     out,
@@ -1008,7 +1005,7 @@ mod tests {
         let mut st = AuthEntryState::sign_in();
         st.focus = AuthEntryField::Password;
         st.sync_field_focus();
-        let out = st.handle_key(press('s'));
+        let out = st.handle_key(press(KeyCode::Char('s')));
         match out {
             AuthEntryOutcome::FieldChanged {
                 field: AuthEntryField::Password,

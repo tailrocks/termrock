@@ -1089,11 +1089,8 @@ pub mod bench {
 mod tests {
     use super::*;
     use crate::style::MotionPolicy;
+    use crate::widgets::tests::press;
     use ratatui_core::layout::Position;
-
-    fn press(code: KeyCode) -> KeyEvent {
-        KeyEvent::new(code, KeyModifiers::NONE)
-    }
 
     fn open() -> WorkingStateCardState {
         let mut st = WorkingStateCardState::new();

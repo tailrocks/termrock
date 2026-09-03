@@ -1370,10 +1370,7 @@ pub fn burst_crash_snapshot(n_log: usize) -> CrashReportSnapshot {
 mod tests {
     use super::*;
     use crate::style::DesignSystem;
-
-    fn press(code: KeyCode) -> KeyEvent {
-        KeyEvent::new(code, KeyModifiers::NONE)
-    }
+    use crate::widgets::tests::press;
 
     fn open() -> ErrorRecoveryState {
         let mut st = ErrorRecoveryState::new();

@@ -1400,10 +1400,7 @@ mod tests {
     use super::*;
     use crate::widgets::filter_log_lines;
     use crate::widgets::filter_stream_events;
-
-    fn press(code: KeyCode) -> KeyEvent {
-        KeyEvent::new(code, KeyModifiers::NONE)
-    }
+    use crate::widgets::tests::press;
 
     /// The frame with every consult-pane asked for, for layout assertions.
     fn every_pane_open() -> ObservabilityPanes {

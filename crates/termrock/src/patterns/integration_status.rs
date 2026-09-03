@@ -1562,11 +1562,8 @@ pub mod bench {
 mod tests {
     use super::*;
     use crate::input::KeyModifiers;
+    use crate::widgets::tests::press;
     use ratatui_core::layout::Position;
-
-    fn press(code: KeyCode) -> KeyEvent {
-        KeyEvent::new(code, KeyModifiers::NONE)
-    }
 
     fn open() -> IntegrationStatusState {
         let mut st = IntegrationStatusState::new();

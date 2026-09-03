@@ -1649,10 +1649,7 @@ pub mod bench {
 mod tests {
     use super::*;
     use crate::widgets::DiffReviewUnitKind;
-
-    fn press(code: KeyCode) -> KeyEvent {
-        KeyEvent::new(code, KeyModifiers::NONE)
-    }
+    use crate::widgets::tests::press;
 
     fn ctrl(code: KeyCode) -> KeyEvent {
         KeyEvent::new(code, KeyModifiers::CONTROL)

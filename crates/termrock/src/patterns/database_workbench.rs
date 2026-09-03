@@ -1807,10 +1807,7 @@ mod tests {
     use super::*;
     use crate::input::KeyEventKind;
     use crate::patterns::ResultCell;
-
-    fn press(code: KeyCode) -> KeyEvent {
-        KeyEvent::new(code, KeyModifiers::NONE)
-    }
+    use crate::widgets::tests::press;
 
     fn ctrl(code: KeyCode) -> KeyEvent {
         KeyEvent::new(code, KeyModifiers::CONTROL)
