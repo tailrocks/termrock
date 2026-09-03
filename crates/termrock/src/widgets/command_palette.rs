@@ -955,6 +955,17 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
         if !self.live() || key.is_release() {
             return CommandPaletteOutcome::Ignored;
         }
+        // Enter, Escape, and result focus traversal are one-shot actions.
+        // Consume repeats before they reach TextInputState, whose Enter/Tab
+        // paths submit and whose Escape path cancels the active draft.
+        if !key.is_press()
+            && matches!(
+                key.code,
+                KeyCode::Enter | KeyCode::Esc | KeyCode::Tab | KeyCode::BackTab
+            )
+        {
+            return CommandPaletteOutcome::Ignored;
+        }
         let _ = self.apply_results(self.generation, visible);
 
         // Argument phase: edit draft or Esc back.
@@ -1049,6 +1060,9 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
 
     fn handle_key_argument(&mut self, key: KeyEvent) -> CommandPaletteOutcome<Id> {
         if key.code == KeyCode::Esc {
+            if !key.is_press() {
+                return CommandPaletteOutcome::Ignored;
+            }
             self.phase = CommandPalettePhase::Browse;
             self.pending_id = None;
             self.pending_command = None;
@@ -1058,6 +1072,9 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
             return CommandPaletteOutcome::ArgumentCancelled;
         }
         if key.code == KeyCode::Enter {
+            if !key.is_press() {
+                return CommandPaletteOutcome::Ignored;
+            }
             return self.submit_argument();
         }
         match self.argument.handle_key(key) {
@@ -1928,7 +1945,7 @@ pub fn example_command_catalog() -> Vec<CommandEntry<&'static str>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyModifiers;
+    use crate::input::{KeyEventKind, KeyModifiers};
 
     fn catalog() -> Vec<CommandEntry<&'static str>> {
         example_command_catalog()
@@ -2075,6 +2092,59 @@ mod tests {
             s.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE), &[]),
             CommandPaletteOutcome::Cancelled
         ));
+    }
+
+    #[test]
+    fn repeated_one_shot_keys_do_not_mutate_browse_or_argument_state() {
+        let mut s = focused();
+        let cat = catalog();
+        let vis = s.refilter(&cat);
+
+        let _ = s.handle_key(KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE), &vis);
+        let query_before = s.query_text().to_owned();
+
+        let mut repeat_escape = KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE);
+        repeat_escape.kind = KeyEventKind::Repeat;
+        assert_eq!(
+            s.handle_key(repeat_escape, &vis),
+            CommandPaletteOutcome::Ignored
+        );
+        assert_eq!(s.query_text(), query_before);
+
+        let cursor_before = s.collection.active().copied();
+        let mut repeat_tab = KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE);
+        repeat_tab.kind = KeyEventKind::Repeat;
+        assert_eq!(
+            s.handle_key(repeat_tab, &vis),
+            CommandPaletteOutcome::Ignored
+        );
+        assert_eq!(s.collection.active().copied(), cursor_before);
+
+        let idx = vis
+            .iter()
+            .position(|entry| entry.id == "goto-line")
+            .unwrap();
+        s.collection.set_active(Some(idx));
+        assert!(matches!(
+            s.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &vis),
+            CommandPaletteOutcome::NeedArguments { .. }
+        ));
+
+        let mut repeat_enter = KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE);
+        repeat_enter.kind = KeyEventKind::Repeat;
+        assert_eq!(
+            s.handle_key(repeat_enter, &vis),
+            CommandPaletteOutcome::Ignored
+        );
+        assert!(matches!(s.phase, CommandPalettePhase::Argument { .. }));
+
+        let mut repeat_escape = KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE);
+        repeat_escape.kind = KeyEventKind::Repeat;
+        assert_eq!(
+            s.handle_key(repeat_escape, &vis),
+            CommandPaletteOutcome::Ignored
+        );
+        assert!(matches!(s.phase, CommandPalettePhase::Argument { .. }));
     }
 
     #[test]
