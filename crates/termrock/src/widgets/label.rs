@@ -426,6 +426,9 @@ impl<'a, Id> Label<'a, Id> {
         // Match source label rows: fit the foreground across the whole row,
         // while retaining each cell's background and other style attributes.
         let label_style = self.label_style();
+        let backgrounds: Vec<_> = (parts.label.x..parts.label.right())
+            .map(|x| buffer[(x, parts.label.y)].bg)
+            .collect();
         if let Some(fg) = label_style.fg {
             for y in parts.label.y..parts.label.bottom() {
                 for x in parts.label.x..parts.label.right() {
@@ -462,6 +465,10 @@ impl<'a, Id> Label<'a, Id> {
                 }
                 _ => {}
             }
+        }
+        for (offset, background) in backgrounds.into_iter().enumerate() {
+            let x = parts.label.x.saturating_add(offset as u16);
+            buffer[(x, parts.label.y)].bg = background;
         }
         parts
     }
@@ -1039,6 +1046,7 @@ mod tests {
         Label::<()>::new("Name", &system).paint(area, &mut buffer);
 
         assert_eq!(buffer[(0, 0)].fg, theme.text_secondary);
+        assert_eq!(buffer[(0, 0)].bg, theme.surface);
         assert_eq!(buffer[(8, 0)].fg, theme.text_secondary);
         assert_eq!(buffer[(8, 0)].bg, theme.surface);
     }
