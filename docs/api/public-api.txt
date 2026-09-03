@@ -88334,8 +88334,6 @@ pub struct termrock::widgets::Toggle<'a>
 impl<'a> termrock::widgets::Toggle<'a>
 pub fn termrock::widgets::Toggle<'a>::a11y_name(&self) -> &'a str
 pub const fn termrock::widgets::Toggle<'a>::accessible_label(self, &'a str) -> Self
-pub const fn termrock::widgets::Toggle<'a>::colorless(self, bool) -> Self
-pub const fn termrock::widgets::Toggle<'a>::compact(self) -> Self
 pub fn termrock::widgets::Toggle<'a>::handle_key(&self, &mut termrock::widgets::ToggleState, termrock::input::KeyEvent) -> termrock::widgets::ToggleOutcome
 pub fn termrock::widgets::Toggle<'a>::handle_key_result(&self, &mut termrock::widgets::ToggleState, termrock::input::KeyEvent) -> termrock::interaction::EventResult<termrock::widgets::ToggleOutcome>
 pub fn termrock::widgets::Toggle<'a>::handle_mouse(&self, &mut termrock::widgets::ToggleState, termrock::input::MouseEvent) -> termrock::widgets::ToggleOutcome
@@ -88344,7 +88342,6 @@ pub const fn termrock::widgets::Toggle<'a>::icon(self, &'a str) -> Self
 pub const fn termrock::widgets::Toggle<'a>::new(&'a str, &'a termrock::style::DesignSystem) -> Self
 pub fn termrock::widgets::Toggle<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::ToggleState) -> termrock::widgets::ToggleParts
 pub fn termrock::widgets::Toggle<'a>::preferred_width(&self, termrock::widgets::ToggleValue) -> u16
-pub const fn termrock::widgets::Toggle<'a>::quiet(self) -> Self
 pub const fn termrock::widgets::Toggle<'a>::recipe(self, termrock::widgets::ToggleRecipe) -> Self
 pub fn termrock::widgets::Toggle<'a>::register_semantic<Id, Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, &termrock::widgets::ToggleState) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
 pub const fn termrock::widgets::Toggle<'a>::size(self, termrock::widgets::ToggleSize) -> Self
@@ -88396,8 +88393,6 @@ pub const fn termrock::widgets::ToggleGroup<'a, Id>::compact(self) -> Self
 pub const fn termrock::widgets::ToggleGroup<'a, Id>::connected(self) -> Self
 pub const fn termrock::widgets::ToggleGroup<'a, Id>::multiple(self) -> Self
 pub const fn termrock::widgets::ToggleGroup<'a, Id>::new(&'a [termrock::widgets::ToggleGroupItem<'a, Id>], &'a termrock::style::DesignSystem) -> Self
-pub const fn termrock::widgets::ToggleGroup<'a, Id>::orientation(self, termrock::widgets::ToggleGroupOrientation) -> Self
-pub const fn termrock::widgets::ToggleGroup<'a, Id>::overflow_label(self, &'a str) -> Self
 pub fn termrock::widgets::ToggleGroup<'a, Id>::plan_overflow(&self, u16) -> (alloc::vec::Vec<usize>, alloc::vec::Vec<usize>)
 pub const fn termrock::widgets::ToggleGroup<'a, Id>::single(self) -> Self
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::ToggleGroup<'a, Id>
@@ -88444,13 +88439,9 @@ pub termrock::widgets::ToggleGroupItem::label: &'a str
 pub termrock::widgets::ToggleGroupItem::priority: u8
 pub termrock::widgets::ToggleGroupItem::value: termrock::widgets::ToggleValue
 impl<'a, Id> termrock::widgets::ToggleGroupItem<'a, Id>
-pub const fn termrock::widgets::ToggleGroupItem<'a, Id>::accessible_label(self, &'a str) -> Self
-pub const fn termrock::widgets::ToggleGroupItem<'a, Id>::enabled(self, bool) -> Self
-pub const fn termrock::widgets::ToggleGroupItem<'a, Id>::icon(self, &'a str) -> Self
 pub const fn termrock::widgets::ToggleGroupItem<'a, Id>::new(Id, &'a str) -> Self
 pub const fn termrock::widgets::ToggleGroupItem<'a, Id>::pressed(self, bool) -> Self
 pub const fn termrock::widgets::ToggleGroupItem<'a, Id>::priority(self, u8) -> Self
-pub const fn termrock::widgets::ToggleGroupItem<'a, Id>::value(self, termrock::widgets::ToggleValue) -> Self
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::ToggleGroupItem<'a, Id>
 pub fn termrock::widgets::ToggleGroupItem<'a, Id>::clone(&self) -> termrock::widgets::ToggleGroupItem<'a, Id>
 impl<'a, Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::ToggleGroupItem<'a, Id>

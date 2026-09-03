@@ -467,6 +467,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0488 | `v0.14.0` | [Synchronize removed public constants](migrations/0488-v0.14.0-sync-removed-public-constants.md) |
 | 0489 | `v0.14.0` | [Synchronize removed outcome enum blocks](migrations/0489-v0.14.0-sync-removed-outcome-enums.md) |
 | 0490 | `v0.14.0` | [Synchronize removed Text and TextSpan builders](migrations/0490-v0.14.0-sync-removed-text-builders.md) |
+| 0491 | `v0.14.0` | [Synchronize removed toggle builders](migrations/0491-v0.14.0-sync-removed-toggle-builders.md) |
 | 0464 | `v0.14.0` | [Stepper physical one-shot actions](migrations/0464-v0.14.0-stepper-one-shot-actions.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
