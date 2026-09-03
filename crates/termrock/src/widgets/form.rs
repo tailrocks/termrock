@@ -986,14 +986,15 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Form<'_, Id> {
         }
 
         if show_scrollbar {
-            let scrollbar = Rect::new(area.right().saturating_sub(1), area.y, 1, area.height);
+            let scrollbar = crate::scroll::gutter_column(area);
             state.scrollbar_region = Some(scrollbar);
-            crate::scroll::paint_scrolled_region(
+            crate::scroll::paint_overflow_scrollbar(
                 buffer,
                 scrollbar,
                 content_height,
                 state.viewport_height,
                 u16::try_from(state.offset).unwrap_or(u16::MAX),
+                state.accepts_input,
                 self.system,
             );
         }

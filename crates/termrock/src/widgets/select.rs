@@ -477,6 +477,14 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
             .collect()
     }
 
+    fn current_collection_items(&self, options: &[SelectOption<Id>]) -> Vec<CollectionItem<Id>> {
+        if self.searchable {
+            Self::filtered_collection_items(options, self.search.value())
+        } else {
+            Self::collection_items(options)
+        }
+    }
+
     /// Choose presentation for terminal size.
     #[must_use]
     pub fn presentation_for_bounds(bounds: Rect, force_fullscreen: bool) -> SelectPresentation {
@@ -578,11 +586,7 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
 
     /// Reconcile after option list changes while open.
     pub fn reconcile_options(&mut self, options: &[SelectOption<Id>]) {
-        let items = if self.searchable && !self.search.value().is_empty() {
-            Self::filtered_collection_items(options, self.search.value())
-        } else {
-            Self::collection_items(options)
-        };
+        let items = self.current_collection_items(options);
         let _ = self.collection.reconcile(&items);
     }
 
@@ -695,11 +699,7 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
             }
         }
 
-        let items = if self.searchable && !self.search.value().is_empty() {
-            Self::filtered_collection_items(options, self.search.value())
-        } else {
-            Self::collection_items(options)
-        };
+        let items = self.current_collection_items(options);
 
         // Page / arrows via collection
         match self.collection.handle_key(key, &items) {
@@ -738,7 +738,7 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
                 }
             }
             other if self.is_open() => {
-                let items = Self::collection_items(options);
+                let items = self.current_collection_items(options);
                 match self.collection.handle_intent(other, &items) {
                     CollectionOutcome::ActiveChanged { to, .. } => {
                         SelectOutcome::HighlightChanged { id: to }
@@ -1147,11 +1147,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
             };
 
         // Flatten for collection viewport among options only
-        let coll_items = if state.searchable && !state.search.value().is_empty() {
-            SelectState::filtered_collection_items(self.options, state.search.value())
-        } else {
-            SelectState::collection_items(self.options)
-        };
+        let coll_items = state.current_collection_items(self.options);
         let vp = usize::from(list_area.height).max(1);
         state
             .collection
@@ -1553,6 +1549,28 @@ mod tests {
         );
         assert!(items.iter().any(|i| i.id == "carrot"));
         assert!(!items.iter().any(|i| i.id == "apple"));
+    }
+
+    #[test]
+    fn semantic_navigation_stays_inside_filtered_options() {
+        let opts = sample_options();
+        let bounds = Rect::new(0, 0, 80, 24);
+        let mut state = SelectState::new().with_searchable(true);
+        state.set_focused(true);
+        let _ = state.open(bounds, &opts);
+        let _ = state.search.insert_str("car");
+        state.reconcile_options(&opts);
+
+        assert_eq!(state.highlight(), Some(&"carrot"));
+        assert_eq!(
+            state.handle_intent(
+                UiIntent::Move(crate::interaction::NavigationMove::Next),
+                &opts,
+                bounds,
+            ),
+            SelectOutcome::Ignored
+        );
+        assert_eq!(state.highlight(), Some(&"carrot"));
     }
 
     #[test]

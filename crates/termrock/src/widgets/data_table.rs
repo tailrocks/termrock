@@ -266,6 +266,8 @@ pub struct DataTableState<RowId: Clone + Ord, ColId: Clone + PartialEq> {
     body_width: u16,
     /// Scratch: resolved (col_index, width) for paint.
     paint_widths: Vec<(usize, u16)>,
+    /// Scratch: clipped physical rect for each resolved paint column.
+    paint_rects: Vec<Rect>,
     /// Logical column count for h-scroll max.
     content_width: u16,
     /// Viewport width for columns (area − gutter).
@@ -303,6 +305,7 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
             body_rows: 0,
             body_width: 0,
             paint_widths: Vec::new(),
+            paint_rects: Vec::new(),
             content_width: 0,
             viewport_width: 0,
         }
@@ -312,6 +315,7 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
     pub fn set_logical_rows(&mut self, logical_len: u64) {
         self.window.logical_len = logical_len;
         self.window.clamp();
+        self.sync_cursor_focus();
     }
 
     /// Host surface input gate.
@@ -369,6 +373,14 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
         let is_press = key.kind == KeyEventKind::Press;
 
         if self.editing {
+            if visible_rows.is_empty()
+                || !matches!(
+                    self.load,
+                    LoadState::Ready { .. } | LoadState::Partial { .. }
+                )
+            {
+                return self.cancel_edit();
+            }
             return self.handle_edit_key(key, visible_rows, columns);
         }
 
@@ -392,6 +404,7 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
         if vis_n > 0 {
             self.cursor_col = self.cursor_col.min(vis_n - 1);
         }
+        self.sync_cursor_focus();
 
         // Mode cycle (Tab with no modifiers while table owns input — VisiData-ish layer)
         if is_press && matches!(key.code, KeyCode::Char('\\')) {
@@ -497,25 +510,8 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
             return DataTableOutcome::Ignored;
         }
         match key.code {
-            KeyCode::Esc => {
-                self.editing = false;
-                self.edit_draft.clear();
-                DataTableOutcome::EditCancelled
-            }
-            KeyCode::Enter => {
-                let Some(col) = self.cursor_column_id(columns) else {
-                    self.editing = false;
-                    return DataTableOutcome::EditCancelled;
-                };
-                let text = std::mem::take(&mut self.edit_draft);
-                self.editing = false;
-                DataTableOutcome::EditCommitted {
-                    row: visible_rows[self.cursor_row.min(visible_rows.len().saturating_sub(1))]
-                        .clone(),
-                    column: col,
-                    text,
-                }
-            }
+            KeyCode::Esc => self.cancel_edit(),
+            KeyCode::Enter => self.commit_edit(visible_rows, columns),
             KeyCode::Backspace => {
                 self.edit_draft.pop();
                 let col = self.cursor_column_id(columns);
@@ -538,6 +534,35 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
         }
     }
 
+    fn cancel_edit(&mut self) -> DataTableOutcome<RowId, ColId> {
+        self.editing = false;
+        self.edit_draft.clear();
+        DataTableOutcome::EditCancelled
+    }
+
+    fn commit_edit(
+        &mut self,
+        visible_rows: &[RowId],
+        columns: &ColumnModel<ColId>,
+    ) -> DataTableOutcome<RowId, ColId>
+    where
+        ColId: Clone,
+    {
+        let Some(row) = visible_rows.get(self.cursor_row) else {
+            return self.cancel_edit();
+        };
+        let Some(col) = self.cursor_column_id(columns) else {
+            return self.cancel_edit();
+        };
+        let text = std::mem::take(&mut self.edit_draft);
+        self.editing = false;
+        DataTableOutcome::EditCommitted {
+            row: row.clone(),
+            column: col,
+            text,
+        }
+    }
+
     fn cursor_column_id(&self, columns: &ColumnModel<ColId>) -> Option<ColId>
     where
         ColId: Clone,
@@ -546,6 +571,11 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
             .visible()
             .nth(self.cursor_col)
             .map(|(_, c)| c.id.clone())
+    }
+
+    fn sync_cursor_focus(&mut self) {
+        self.selection.focus_row = self.window.offset.saturating_add(self.cursor_row as u64);
+        self.selection.focus_col = self.cursor_col;
     }
 
     fn request_sort(&mut self, columns: &ColumnModel<ColId>) -> DataTableOutcome<RowId, ColId>
@@ -755,6 +785,21 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
         if !self.accepts_input {
             return DataTableOutcome::Ignored;
         }
+        if self.editing {
+            if visible_rows.is_empty()
+                || !matches!(
+                    self.load,
+                    LoadState::Ready { .. } | LoadState::Partial { .. }
+                )
+            {
+                return self.cancel_edit();
+            }
+            return match intent {
+                UiIntent::Submit => self.commit_edit(visible_rows, columns),
+                UiIntent::Cancel => self.cancel_edit(),
+                _ => DataTableOutcome::Ignored,
+            };
+        }
         if matches!(
             self.load,
             LoadState::Empty { .. } | LoadState::Error { .. } | LoadState::Loading { .. }
@@ -772,6 +817,7 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
         if vis_n > 0 {
             self.cursor_col = self.cursor_col.min(vis_n - 1);
         }
+        self.sync_cursor_focus();
         match intent {
             UiIntent::Move(NavigationMove::Next) | UiIntent::Move(NavigationMove::Down) => {
                 self.move_cursor_row(1, visible_rows.len())
@@ -781,10 +827,12 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
             }
             UiIntent::Move(NavigationMove::First) => {
                 self.cursor_row = 0;
+                self.sync_cursor_focus();
                 DataTableOutcome::CursorMoved
             }
             UiIntent::Move(NavigationMove::Last) => {
                 self.cursor_row = visible_rows.len().saturating_sub(1);
+                self.sync_cursor_focus();
                 DataTableOutcome::CursorMoved
             }
             UiIntent::Move(NavigationMove::Left) => self.move_horizontal(visible_rows, columns, -1),
@@ -792,6 +840,7 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
             UiIntent::Page(PageMove::Forward) => {
                 let step = i64::from(self.window.viewport.max(1));
                 if self.window.scroll_by(step) {
+                    self.sync_cursor_focus();
                     DataTableOutcome::Scrolled
                 } else {
                     self.move_cursor_row(step, visible_rows.len())
@@ -800,6 +849,7 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
             UiIntent::Page(PageMove::Backward) => {
                 let step = i64::from(self.window.viewport.max(1));
                 if self.window.scroll_by(-step) {
+                    self.sync_cursor_focus();
                     DataTableOutcome::Scrolled
                 } else {
                     self.move_cursor_row(-step, visible_rows.len())
@@ -828,11 +878,6 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
                 }
             }
             UiIntent::Cancel => {
-                if self.editing {
-                    self.editing = false;
-                    self.edit_draft.clear();
-                    return DataTableOutcome::EditCancelled;
-                }
                 self.selection.clear_selection();
                 self.range_anchor = None;
                 DataTableOutcome::SelectionChanged
@@ -866,8 +911,8 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
         let body = Rect {
             x: ox,
             y: oy,
-            width: self.body_width.max(1),
-            height: self.body_rows.max(1),
+            width: self.body_width,
+            height: self.body_rows,
         };
 
         // Resize drag in progress
@@ -908,6 +953,7 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
         match event.kind {
             MouseEventKind::ScrollUp if body.contains(event.position) => {
                 if self.window.scroll_by(-1) {
+                    self.sync_cursor_focus();
                     DataTableOutcome::Scrolled
                 } else if !visible_rows.is_empty() {
                     self.move_cursor_row(-1, visible_rows.len())
@@ -917,6 +963,7 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
             }
             MouseEventKind::ScrollDown if body.contains(event.position) => {
                 if self.window.scroll_by(1) {
+                    self.sync_cursor_focus();
                     DataTableOutcome::Scrolled
                 } else if !visible_rows.is_empty() {
                     self.move_cursor_row(1, visible_rows.len())
@@ -928,6 +975,7 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
                 if let Some(cell) = self.hit_cell(event.position) {
                     self.cursor_row = cell.row_index;
                     self.cursor_col = cell.col_index;
+                    self.sync_cursor_focus();
                     return DataTableOutcome::ContextMenu {
                         row: cell.row,
                         column: Some(cell.column),
@@ -969,6 +1017,7 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
                 if let Some(cell) = self.hit_cell(event.position) {
                     self.cursor_row = cell.row_index;
                     self.cursor_col = cell.col_index;
+                    self.sync_cursor_focus();
                     if event.modifiers.contains(KeyModifiers::SHIFT)
                         || matches!(self.nav_mode, DataTableNavMode::Range)
                     {
@@ -1003,6 +1052,7 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
                             return DataTableOutcome::Activate(visible_rows[row].clone());
                         }
                         self.cursor_row = row;
+                        self.sync_cursor_focus();
                         return DataTableOutcome::CursorMoved;
                     }
                 }
@@ -1012,6 +1062,7 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
                 if let Some(cell) = self.hit_cell(event.position) {
                     self.cursor_row = cell.row_index;
                     self.cursor_col = cell.col_index;
+                    self.sync_cursor_focus();
                     let coord = CellCoord {
                         row: self.window.offset.saturating_add(cell.row_index as u64),
                         col: cell.col_index,
@@ -1049,15 +1100,17 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
         let next = (cur + delta).clamp(0, (len as i64) - 1) as usize;
         if next == self.cursor_row {
             if delta > 0 && self.window.scroll_by(1) {
+                self.sync_cursor_focus();
                 return DataTableOutcome::Scrolled;
             }
             if delta < 0 && self.window.scroll_by(-1) {
+                self.sync_cursor_focus();
                 return DataTableOutcome::Scrolled;
             }
             return DataTableOutcome::Ignored;
         }
         self.cursor_row = next;
-        self.selection.focus_row = self.window.offset.saturating_add(next as u64);
+        self.sync_cursor_focus();
         DataTableOutcome::CursorMoved
     }
 }
@@ -1172,10 +1225,16 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
     {
         state.header_regions.clear();
         state.cell_regions.clear();
+        state.paint_rects.clear();
         if area.is_empty() {
+            state.body_origin = (0, 0);
+            state.body_rows = 0;
+            state.body_width = 0;
             return;
         }
-        let surface_focused = self.focused || state.accepts_input;
+        // Input permission and scene focus are separate authorities. Neither
+        // one alone may paint active focus chrome.
+        let surface_focused = self.focused && state.accepts_input;
         let has_toolbar = self.toolbar.is_some();
         let has_footer = self.show_footer;
         let chrome_rows = 1u16 // header
@@ -1240,16 +1299,40 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
         state.pin_start_count = pin_start;
         state.pin_end_count = pin_end;
         let gap = self.system.spacing.column_gap;
-        state.content_width = state
-            .paint_widths
-            .iter()
-            .map(|(_, w)| *w)
-            .fold(0u16, u16::saturating_add)
-            .saturating_add(gap.saturating_mul(
-                u16::try_from(state.paint_widths.len().saturating_sub(1)).unwrap_or(0),
-            ));
-        let max_h = state.content_width.saturating_sub(col_budget);
+        let start_extent = column_extent(&state.paint_widths, self.columns, ColumnPin::Start, gap);
+        let end_extent = column_extent(&state.paint_widths, self.columns, ColumnPin::End, gap);
+        let center_extent = column_extent(&state.paint_widths, self.columns, ColumnPin::None, gap);
+        let center_viewport = col_budget
+            .saturating_sub(start_extent)
+            .saturating_sub(end_extent)
+            .saturating_sub(if pin_start > 0 && center_extent > 0 {
+                gap
+            } else {
+                0
+            })
+            .saturating_sub(if pin_end > 0 && center_extent > 0 {
+                gap
+            } else {
+                0
+            });
+        let max_h = center_extent.saturating_sub(center_viewport);
+        // Keep the public viewport width as the full post-chrome budget while
+        // normalizing the scroll extent to the unpinned center strip.
+        state.content_width = col_budget.saturating_add(max_h);
         state.h_offset = state.h_offset.min(max_h);
+        let origin = area.x.saturating_add(self.chrome_width());
+        let clip_right = origin
+            .saturating_add(state.viewport_width)
+            .min(area.right());
+        resolve_column_rects(
+            &state.paint_widths,
+            self.columns,
+            origin,
+            clip_right,
+            state.h_offset,
+            gap,
+            &mut state.paint_rects,
+        );
 
         // Sticky header
         if y < area.bottom() {
@@ -1352,6 +1435,97 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
     }
 }
 
+fn column_extent<ColId>(
+    widths: &[(usize, u16)],
+    columns: &ColumnModel<ColId>,
+    pin: ColumnPin,
+    gap: u16,
+) -> u16 {
+    let mut count = 0usize;
+    let mut width = 0u16;
+    for &(index, column_width) in widths {
+        if columns.columns[index].pin == pin {
+            count += 1;
+            width = width.saturating_add(column_width);
+        }
+    }
+    width.saturating_add(
+        gap.saturating_mul(u16::try_from(count.saturating_sub(1)).unwrap_or(u16::MAX)),
+    )
+}
+
+/// Resolve one physical rect per projected column.
+///
+/// Start pins anchor to the left edge, end pins to the right edge, and only
+/// unpinned columns consume horizontal scroll. The same rects feed header and
+/// body hit regions, so pointer geometry cannot diverge from painted cells.
+fn resolve_column_rects<ColId>(
+    widths: &[(usize, u16)],
+    columns: &ColumnModel<ColId>,
+    origin: u16,
+    clip_right: u16,
+    h_offset: u16,
+    gap: u16,
+    out: &mut Vec<Rect>,
+) {
+    out.clear();
+    out.resize(widths.len(), Rect::new(0, 0, 0, 0));
+    if widths.is_empty() || clip_right <= origin {
+        return;
+    }
+
+    let start_extent = i64::from(column_extent(widths, columns, ColumnPin::Start, gap));
+    let end_extent = i64::from(column_extent(widths, columns, ColumnPin::End, gap));
+    let center_extent = i64::from(column_extent(widths, columns, ColumnPin::None, gap));
+    let has_start = start_extent > 0;
+    let has_end = end_extent > 0;
+    let has_center = center_extent > 0;
+    let origin = i64::from(origin);
+    let clip_right = i64::from(clip_right);
+    let gap = i64::from(gap);
+    let center_left = origin + start_extent + if has_start && has_center { gap } else { 0 };
+    let center_right = clip_right - end_extent - if has_end && has_center { gap } else { 0 };
+    let mut start_x = origin;
+    let mut end_x = clip_right - end_extent;
+    let mut center_offset = 0i64;
+
+    for (ordinal, &(index, width)) in widths.iter().enumerate() {
+        let pin = columns.columns[index].pin;
+        let left = match pin {
+            ColumnPin::Start => {
+                let left = start_x;
+                start_x += i64::from(width) + gap;
+                left
+            }
+            ColumnPin::End => {
+                let left = end_x;
+                end_x += i64::from(width) + gap;
+                left
+            }
+            ColumnPin::None => {
+                let left = center_left + center_offset - i64::from(h_offset);
+                center_offset += i64::from(width) + gap;
+                left
+            }
+        };
+        let right = left + i64::from(width);
+        let (bounds_left, bounds_right) = match pin {
+            ColumnPin::None => (center_left, center_right),
+            ColumnPin::Start | ColumnPin::End => (origin, clip_right),
+        };
+        let visible_left = left.max(bounds_left);
+        let visible_right = right.min(bounds_right);
+        if visible_right > visible_left {
+            out[ordinal] = Rect::new(
+                u16::try_from(visible_left).unwrap_or(u16::MAX),
+                0,
+                u16::try_from(visible_right - visible_left).unwrap_or(u16::MAX),
+                1,
+            );
+        }
+    }
+}
+
 /// Source DataGrid `fit` / `fit_right`: truncate (tail `…`) then pad.
 fn paint_plain_cell(
     buffer: &mut Buffer,
@@ -1448,55 +1622,17 @@ fn paint_header_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
         usize::from(chrome),
         super::table_chrome::header_band(table.system),
     );
-    let origin = area.x.saturating_add(chrome);
-    let clip_right = origin
-        .saturating_add(state.viewport_width)
-        .min(area.right());
-    let mut x = origin;
-    // Apply h_offset only to unpinned center columns; pin start paints first.
-    let widths = &state.paint_widths;
-    let pin_start_w: u16 = widths
-        .iter()
-        .filter(|(i, _)| table.columns.columns[*i].pin == ColumnPin::Start)
-        .map(|(_, w)| *w + 1)
-        .sum::<u16>()
-        .saturating_sub(u16::from(
-            widths
-                .iter()
-                .any(|(i, _)| table.columns.columns[*i].pin == ColumnPin::Start),
-        ));
-    let _ = pin_start_w;
-
-    let gap = i32::from(table.system.spacing.column_gap);
-    let mut logical = 0i32;
-    let h_off = i32::from(state.h_offset);
-    for (paint_ord, &(col_idx, width)) in widths.iter().enumerate() {
+    // Apply h_offset only to unpinned center columns. The physical rects are
+    // shared with body painting so header hit regions match the cells.
+    for (paint_ord, &(col_idx, _width)) in state.paint_widths.iter().enumerate() {
+        let paint_rect = state.paint_rects[paint_ord];
+        if paint_rect.width == 0 {
+            continue;
+        }
         let col = &table.columns.columns[col_idx];
-        let pinned_start = col.pin == ColumnPin::Start;
-        let pinned_end = col.pin == ColumnPin::End;
-        let skip_scroll = pinned_start || pinned_end;
-        let col_left = if skip_scroll {
-            // Pins: place at current x without h_offset
-            i32::from(x)
-        } else {
-            i32::from(origin) + logical - h_off
-        };
-        let col_right = col_left + i32::from(width);
-        if !skip_scroll {
-            logical += i32::from(width) + gap;
-        }
-        if col_right <= i32::from(origin) || col_left >= i32::from(clip_right) {
-            if skip_scroll {
-                x = (col_right as u16).min(clip_right);
-            }
-            continue;
-        }
-        let paint_x = col_left.max(i32::from(origin)) as u16;
-        let paint_end = col_right.min(i32::from(clip_right)) as u16;
-        let paint_w = paint_end.saturating_sub(paint_x);
-        if paint_w == 0 {
-            continue;
-        }
+        let paint_x = paint_rect.x;
+        let paint_w = paint_rect.width;
+        let paint_end = paint_rect.right();
         let mut title = col.title.clone();
         let sorted = state.sort.as_ref().is_some_and(|s| s.column == col.id);
         if sorted {
@@ -1558,9 +1694,6 @@ fn paint_header_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
             // never asked for (plans/021 Step 3).
             sortable: col.sortable,
         });
-        if skip_scroll {
-            x = paint_end.saturating_add(table.system.spacing.column_gap);
-        }
     }
 
     paint_clip_chevrons(table, area, y, buffer, state);
@@ -1712,45 +1845,22 @@ fn paint_data_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
         );
     }
 
-    let origin = area.x.saturating_add(gutter_w);
-    let clip_right = area.right();
-    let h_off = i32::from(state.h_offset);
-    let gap = i32::from(table.system.spacing.column_gap);
-    let mut logical = 0i32;
-    let mut x_pin = origin;
-
-    for (paint_ord, &(col_idx, width)) in state.paint_widths.iter().enumerate() {
+    for (paint_ord, &(col_idx, _width)) in state.paint_widths.iter().enumerate() {
+        let paint_rect = state.paint_rects[paint_ord];
+        if paint_rect.width == 0 {
+            continue;
+        }
         let col = &table.columns.columns[col_idx];
-        let pinned_start = col.pin == ColumnPin::Start;
-        let pinned_end = col.pin == ColumnPin::End;
-        let skip_scroll = pinned_start || pinned_end;
-        let col_left = if skip_scroll {
-            i32::from(x_pin)
-        } else {
-            i32::from(origin) + logical - h_off
-        };
-        let col_right = col_left + i32::from(width);
-        if !skip_scroll {
-            logical += i32::from(width) + gap;
-        }
-        if col_right <= i32::from(origin) || col_left >= i32::from(clip_right) {
-            if skip_scroll {
-                x_pin = (col_right as u16).min(clip_right);
-            }
-            continue;
-        }
-        let paint_x = col_left.max(i32::from(origin)) as u16;
-        let paint_end = col_right.min(i32::from(clip_right)) as u16;
-        let paint_w = paint_end.saturating_sub(paint_x);
-        if paint_w == 0 {
-            continue;
-        }
-        let cell_text = cells.get(paint_ord).copied().unwrap_or("");
+        let paint_x = paint_rect.x;
+        let paint_w = paint_rect.width;
+        // `paint_widths` is a responsive projection, so its ordinal is not
+        // necessarily the source cell index when a middle column dropped.
+        let cell_text = cells.get(col_idx).copied().unwrap_or("");
         let cell_nav = matches!(
             state.nav_mode,
             DataTableNavMode::Cell | DataTableNavMode::Range
         );
-        let cell_focused = cell_nav && cursor && table.focused && state.cursor_col == paint_ord;
+        let cell_focused = cell_nav && cursor && surface_focused && state.cursor_col == paint_ord;
         let cell_selected = state.selection.is_cell_selected(CellCoord {
             row: logical_row,
             col: paint_ord,
@@ -1816,9 +1926,6 @@ fn paint_data_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
             col_index: paint_ord,
             area: Rect::new(paint_x, y, paint_w, 1),
         });
-        if skip_scroll {
-            x_pin = paint_end.saturating_add(table.system.spacing.column_gap);
-        }
     }
 }
 
@@ -1976,6 +2083,36 @@ mod tests {
     }
 
     #[test]
+    fn virtual_window_moves_keep_selection_focus_absolute() {
+        let cols = ColumnModel::new(vec![DataColumn::new("c", "C", DataColumnWidth::Min(8))]);
+        let rows = [0u64, 1];
+        let mut state = DataTableState::<u64, &str>::new();
+        state.set_logical_rows(100);
+        state.window.viewport = 2;
+        state.cursor_row = 1;
+        state.selection.focus_row = 1;
+
+        assert!(matches!(
+            state.handle_intent(UiIntent::Move(NavigationMove::Next), &rows, &cols),
+            DataTableOutcome::Scrolled
+        ));
+        assert_eq!(state.window.offset, 1);
+        assert_eq!(state.cursor_row, 1);
+        assert_eq!(state.selection.focus_row, 2);
+
+        assert!(matches!(
+            state.handle_intent(UiIntent::Move(NavigationMove::First), &rows, &cols),
+            DataTableOutcome::CursorMoved
+        ));
+        assert_eq!(state.selection.focus_row, 1);
+        assert!(matches!(
+            state.handle_intent(UiIntent::Move(NavigationMove::Last), &rows, &cols),
+            DataTableOutcome::CursorMoved
+        ));
+        assert_eq!(state.selection.focus_row, 2);
+    }
+
+    #[test]
     fn narrow_column_contract_keeps_primary() {
         let mut cols = ColumnModel::new(vec![
             DataColumn::new("id", "ID", DataColumnWidth::Fixed(6))
@@ -2017,6 +2154,7 @@ mod tests {
         );
         assert!(matches!(out, DataTableOutcome::CursorMoved));
         assert_eq!(state.cursor_row, 1);
+        assert_eq!(state.selection.focus_row, 1);
     }
 
     #[test]
@@ -2031,6 +2169,46 @@ mod tests {
             &cols,
         );
         assert!(matches!(out, DataTableOutcome::Ignored));
+    }
+
+    #[test]
+    fn visual_focus_requires_scene_focus_and_input_authority() {
+        use ratatui_core::buffer::Buffer;
+        use ratatui_core::layout::Rect;
+
+        let system = DesignSystem::junie();
+        let columns = ColumnModel::new(vec![DataColumn::new(
+            "name",
+            "Name",
+            DataColumnWidth::Fixed(8),
+        )]);
+        let cells: &[&str] = &["alpha"];
+        let rows = [(1u64, cells)];
+        let area = Rect::new(0, 0, 24, 4);
+
+        let mut focused_state = DataTableState::<u64, &str>::new();
+        focused_state.set_accepts_input(true);
+        let mut focused = Buffer::empty(area);
+        DataTable::new(&system, &columns, &rows)
+            .focused(true)
+            .render(area, &mut focused, &mut focused_state);
+
+        let mut scene_unfocused_state = DataTableState::<u64, &str>::new();
+        scene_unfocused_state.set_accepts_input(true);
+        let mut scene_unfocused = Buffer::empty(area);
+        DataTable::new(&system, &columns, &rows)
+            .focused(false)
+            .render(area, &mut scene_unfocused, &mut scene_unfocused_state);
+
+        let mut input_disabled_state = DataTableState::<u64, &str>::new();
+        input_disabled_state.set_accepts_input(false);
+        let mut input_disabled = Buffer::empty(area);
+        DataTable::new(&system, &columns, &rows)
+            .focused(true)
+            .render(area, &mut input_disabled, &mut input_disabled_state);
+
+        assert_ne!(focused.content(), scene_unfocused.content());
+        assert_eq!(scene_unfocused.content(), input_disabled.content());
     }
 
     #[test]
@@ -2049,6 +2227,47 @@ mod tests {
         let out = state.handle_mouse(event, &rows, &cols);
         assert!(matches!(out, DataTableOutcome::CursorMoved));
         assert_eq!(state.cursor_row, 1);
+    }
+
+    #[test]
+    fn mouse_ignores_body_after_empty_or_status_paint() {
+        let system = DesignSystem::default();
+        let cols = ColumnModel::new(vec![DataColumn::new("c", "C", DataColumnWidth::Min(8))]);
+        let cells: &[&str] = &["row"];
+        let rows = [(1u64, cells)];
+        let area = Rect::new(0, 0, 24, 4);
+
+        let mut state = DataTableState::<u64, &str>::new();
+        let mut buffer = Buffer::empty(area);
+        DataTable::new(&system, &cols, &rows).render(area, &mut buffer, &mut state);
+        assert!(state.body_rows > 0);
+
+        let mut empty_buffer = Buffer::empty(Rect::new(0, 0, 0, 0));
+        DataTable::new(&system, &cols, &rows).render(
+            Rect::new(0, 0, 0, 0),
+            &mut empty_buffer,
+            &mut state,
+        );
+        let event = MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: Position { x: 1, y: 2 },
+            modifiers: KeyModifiers::NONE,
+        };
+        assert!(matches!(
+            state.handle_mouse(event, &[1], &cols),
+            DataTableOutcome::Ignored
+        ));
+
+        state.load = LoadState::Empty {
+            message: Some("no rows".into()),
+        };
+        let mut status_buffer = Buffer::empty(area);
+        DataTable::new(&system, &cols, &rows).render(area, &mut status_buffer, &mut state);
+        assert_eq!(state.body_rows, 0);
+        assert!(matches!(
+            state.handle_mouse(event, &[1], &cols),
+            DataTableOutcome::Ignored
+        ));
     }
 
     #[test]
@@ -2293,6 +2512,79 @@ mod tests {
     }
 
     #[test]
+    fn edit_mode_cancels_when_projection_loses_rows_or_columns() {
+        let cols = ColumnModel::new(vec![
+            DataColumn::new("a", "A", DataColumnWidth::Min(4)).editable(),
+        ]);
+        let mut state = DataTableState::<u64, &str>::new();
+        state.editing = true;
+        state.edit_draft = "stale".into();
+
+        let out = state.handle_key(
+            KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE),
+            &[],
+            &cols,
+        );
+        assert!(matches!(out, DataTableOutcome::EditCancelled));
+        assert!(!state.editing);
+        assert!(state.edit_draft.is_empty());
+
+        let empty_columns = ColumnModel::<&str>::new(Vec::new());
+        state.editing = true;
+        state.edit_draft = "stale".into();
+        let rows = [1u64];
+        let out = state.handle_key(
+            KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
+            &rows,
+            &empty_columns,
+        );
+        assert!(matches!(out, DataTableOutcome::EditCancelled));
+        assert!(!state.editing);
+        assert!(state.edit_draft.is_empty());
+    }
+
+    #[test]
+    fn edit_mode_owns_semantic_intents() {
+        let cols = ColumnModel::new(vec![
+            DataColumn::new("a", "A", DataColumnWidth::Min(4)).editable(),
+        ]);
+        let rows = [1u64, 2];
+        let mut state = DataTableState::<u64, &str>::new();
+        state.editing = true;
+        state.edit_draft = "draft".into();
+
+        assert!(matches!(
+            state.handle_intent(UiIntent::Move(NavigationMove::Next), &rows, &cols),
+            DataTableOutcome::Ignored
+        ));
+        assert_eq!(state.cursor_row, 0);
+        assert!(state.selection.selected_rows().is_empty());
+
+        let out = state.handle_intent(UiIntent::Submit, &rows, &cols);
+        assert!(matches!(
+            out,
+            DataTableOutcome::EditCommitted {
+                row: 1,
+                column: "a",
+                text
+            } if text == "draft"
+        ));
+        assert!(!state.editing);
+
+        state.editing = true;
+        state.edit_draft = "stale".into();
+        state.load = LoadState::Error {
+            message: "gone".into(),
+            retryable: false,
+        };
+        assert!(matches!(
+            state.handle_intent(UiIntent::Submit, &rows, &cols),
+            DataTableOutcome::EditCancelled
+        ));
+        assert!(state.edit_draft.is_empty());
+    }
+
+    #[test]
     fn fullscreen_chord() {
         let cols = ColumnModel::new(vec![DataColumn::new("c", "C", DataColumnWidth::Min(4))]);
         let mut state = DataTableState::<u64, &str>::new();
@@ -2486,6 +2778,76 @@ mod tests {
             .collect();
         assert!(text.contains("ID") || text.contains("Name"), "{text}");
         assert!(text.contains("alpha") || text.contains("beta"), "{text}");
+    }
+
+    #[test]
+    fn pinned_columns_anchor_to_opposite_edges_and_share_hit_geometry() {
+        use ratatui_core::buffer::Buffer;
+        use ratatui_core::layout::Rect;
+
+        let system = DesignSystem::default();
+        let columns = ColumnModel::new(vec![
+            DataColumn::new("start", "Start", DataColumnWidth::Fixed(4)).pin(ColumnPin::Start),
+            DataColumn::new("center", "Center", DataColumnWidth::Fixed(6)),
+            DataColumn::new("end", "End", DataColumnWidth::Fixed(4)).pin(ColumnPin::End),
+        ]);
+        let cells: &[&str] = &["S", "C", "E"];
+        let rows = [(1u64, cells)];
+        let mut state = DataTableState::<u64, &str>::new();
+        state.accepts_input = false;
+        let area = Rect::new(0, 0, 30, 4);
+        let mut buffer = Buffer::empty(area);
+
+        DataTable::new(&system, &columns, &rows)
+            .row_numbers(false)
+            .render(area, &mut buffer, &mut state);
+
+        let region = |column: &str| {
+            state
+                .cell_regions
+                .iter()
+                .find(|region| region.column == column)
+                .map(|region| region.area)
+                .expect("column is painted")
+        };
+        assert_eq!(region("start").x, 3);
+        assert_eq!(region("center").x, 9);
+        assert_eq!(region("end").x, 24);
+        assert_eq!(buffer[(region("start").x, 1)].symbol(), "S");
+        assert_eq!(buffer[(region("center").x, 1)].symbol(), "C");
+        assert_eq!(buffer[(region("end").x, 1)].symbol(), "E");
+        assert_eq!(state.header_regions[2].area.x, region("end").x);
+    }
+
+    #[test]
+    fn dropped_middle_column_does_not_shift_later_cell_values() {
+        use ratatui_core::buffer::Buffer;
+        use ratatui_core::layout::Rect;
+
+        let system = DesignSystem::default();
+        let columns = ColumnModel::new(vec![
+            DataColumn::new("left", "Left", DataColumnWidth::Fixed(4)).priority(100),
+            DataColumn::new("dropped", "Dropped", DataColumnWidth::Fixed(12)).priority(1),
+            DataColumn::new("right", "Right", DataColumnWidth::Fixed(4)).priority(100),
+        ]);
+        let cells: &[&str] = &["L", "wrong", "R"];
+        let rows = [(1u64, cells)];
+        let mut state = DataTableState::<u64, &str>::new();
+        state.accepts_input = false;
+        let area = Rect::new(0, 0, 24, 4);
+        let mut buffer = Buffer::empty(area);
+
+        DataTable::new(&system, &columns, &rows)
+            .row_numbers(false)
+            .render(area, &mut buffer, &mut state);
+
+        assert_eq!(state.paint_widths, vec![(0, 4), (2, 4)]);
+        let right = state
+            .cell_regions
+            .iter()
+            .find(|region| region.column == "right")
+            .expect("right column remains in the responsive projection");
+        assert_eq!(buffer[(right.area.x, right.area.y)].symbol(), "R");
     }
 
     #[test]

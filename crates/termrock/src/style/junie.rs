@@ -26,13 +26,15 @@
 use ratatui_core::style::{Color, Modifier, Style};
 
 use super::quantize::ColorCapability;
+use super::{Role, RolePalette, color_to_rgb};
 
 /// Raw palette. Values are the Junie references (jetbrains.com/junie computed
 /// styles): canvas `#000000`, chrome `#111111`, cards `#18181b` (zinc-900),
 /// input `#1e1e22`, popover `#3f3f46` (zinc-700); accent `#48e054` with hover
 /// at 80% over black and 10–20% alpha tints; text is an alpha ladder on white;
-/// borders are white at 10% (subtle) and 30% (strong); destructive `#e44545`,
-/// warning `#f59e09`.
+/// borders are white at 10% (subtle) and 30% (strong); anchored-menu
+/// highlights are blue/deep-red and destructive menu labels use soft rose;
+/// destructive `#e44545`, warning `#f59e09`.
 pub mod palette {
     use ratatui_core::style::Color;
 
@@ -59,6 +61,12 @@ pub mod palette {
     pub const OVERLAY: Color = rgb(0x27272a);
     /// Popover / dialog surface (zinc-700).
     pub const POPOVER: Color = rgb(0x3f3f46);
+    /// Cursor-row fill for ordinary anchored-menu commands.
+    pub const HIGHLIGHT: Color = rgb(0x2f5aa8);
+    /// Cursor-row fill for destructive anchored-menu commands.
+    pub const HIGHLIGHT_DANGER: Color = rgb(0x7a2a2a);
+    /// Resting destructive anchored-menu label.
+    pub const ERROR_SOFT: Color = rgb(0xd98a8a);
     /// Text primary — 100% white.
     pub const WHITE: Color = rgb(0xffffff);
     /// Text secondary — 70% white.
@@ -105,6 +113,12 @@ pub struct JunieTheme {
     pub field_hover: Color,
     /// Popover / dialog surface.
     pub popover: Color,
+    /// Cursor-row fill for ordinary anchored-menu commands.
+    pub highlight: Color,
+    /// Cursor-row fill for destructive anchored-menu commands.
+    pub highlight_danger: Color,
+    /// Resting destructive anchored-menu label.
+    pub error_soft: Color,
 
     /// Resting boundary.
     pub border_subtle: Color,
@@ -158,6 +172,9 @@ impl JunieTheme {
             field: INPUT,
             field_hover: INPUT_HOVER,
             popover: POPOVER,
+            highlight: HIGHLIGHT,
+            highlight_danger: HIGHLIGHT_DANGER,
+            error_soft: ERROR_SOFT,
             border_subtle: WHITE_15,
             border_strong: WHITE_30,
             text_primary: WHITE,
@@ -184,41 +201,80 @@ impl JunieTheme {
     /// quantization anywhere else in the crate.
     #[must_use]
     pub fn for_level(level: ColorCapability) -> Self {
-        let mut t = Self::junie();
-        t.level = level;
-        if level == ColorCapability::Truecolor {
-            return t;
-        }
-        macro_rules! map {
-            ($($f:ident),*) => { $( t.$f = downgrade(t.$f, level); )* };
-        }
-        map!(
-            canvas,
-            surface,
-            surface_elevated,
-            surface_overlay,
-            field,
-            field_hover,
-            popover,
-            border_subtle,
-            border_strong,
-            text_primary,
-            text_secondary,
-            text_muted,
-            text_faint,
-            text_ghost,
-            text_on_accent,
-            accent,
-            accent_hover,
-            accent_pressed,
-            accent_bg,
-            focus,
-            disabled,
-            error,
-            warning,
-            success
+        quantize_theme(Self::junie(), level)
+    }
+
+    /// Resolves the color view used by stateful recipes from the owning role
+    /// palette.
+    ///
+    /// `RolePalette` is the authored source of truth. `JunieTheme` remains the
+    /// compact color vocabulary consumed by legacy/direct callers, but its
+    /// values are now projected from the palette instead of silently restoring
+    /// the canonical Junie colors. Derived planes use the same arithmetic as
+    /// the canonical palette, preserving the default output byte-for-byte.
+    pub(crate) fn from_palette(palette: &RolePalette, level: ColorCapability) -> Self {
+        // Resolve all authored values and derived planes at truecolor first.
+        // Quantizing here, after derivation, keeps custom named/indexed colors
+        // from taking the "non-RGB => base" escape hatch.
+        let canonical = Self::junie();
+        let mut theme = canonical;
+
+        theme.canvas = palette_bg(palette, Role::Canvas, canonical.canvas);
+        theme.surface = palette_bg(palette, Role::Surface, canonical.surface);
+        theme.surface_elevated = palette_bg(palette, Role::Elevated, canonical.surface_elevated);
+        theme.field = palette_bg(
+            palette,
+            Role::Input,
+            palette_bg(palette, Role::Sunken, canonical.field),
         );
-        t
+        theme.popover = palette_bg(palette, Role::Popover, canonical.popover);
+
+        // Overlay and field-hover have no independent public roles. Derive
+        // them from the authored base plane so custom palettes do not fork the
+        // hover resolver from the palette resolver.
+        theme.surface_overlay = derived_plane(
+            theme.surface_elevated,
+            canonical.surface_elevated,
+            canonical.surface_overlay,
+            false,
+        );
+        theme.field_hover =
+            derived_plane(theme.field, canonical.field, canonical.field_hover, false);
+
+        theme.highlight = palette_bg(palette, Role::Highlight, canonical.highlight);
+        theme.highlight_danger =
+            palette_bg(palette, Role::HighlightDanger, canonical.highlight_danger);
+        theme.error_soft = palette_fg(palette, Role::ErrorSoft, canonical.error_soft);
+        theme.border_subtle = palette_fg(palette, Role::Border, canonical.border_subtle);
+        theme.border_strong = palette_fg(palette, Role::BorderFocused, canonical.border_strong);
+        theme.text_primary = palette_fg(palette, Role::Text, canonical.text_primary);
+        theme.text_secondary = palette_fg(palette, Role::TextSecondary, canonical.text_secondary);
+        theme.text_muted = palette_fg(palette, Role::TextMuted, canonical.text_muted);
+        theme.text_faint = palette_fg(palette, Role::TextFaint, canonical.text_faint);
+        theme.text_ghost = palette_fg(palette, Role::TextGhost, canonical.text_ghost);
+        theme.text_on_accent = palette_fg(palette, Role::TextOnAccent, canonical.text_on_accent);
+        theme.accent = palette_fg(palette, Role::Accent, canonical.accent);
+        theme.accent_hover = derived_scaled(
+            theme.accent,
+            canonical.accent,
+            canonical.accent_hover,
+            80,
+            true,
+        );
+        theme.accent_pressed = derived_scaled(
+            theme.accent,
+            canonical.accent,
+            canonical.accent_pressed,
+            60,
+            true,
+        );
+        theme.accent_bg = palette_bg(palette, Role::SelectionTint, canonical.accent_bg);
+        theme.focus = palette_fg(palette, Role::Focus, canonical.focus);
+        theme.disabled = palette_fg(palette, Role::TextDisabled, canonical.disabled);
+        theme.error = palette_fg(palette, Role::Danger, canonical.error);
+        theme.warning = palette_fg(palette, Role::Warning, canonical.warning);
+        theme.success = palette_fg(palette, Role::Success, canonical.success);
+        quantize_theme(theme, level)
     }
 
     // --- base styles -------------------------------------------------------
@@ -563,6 +619,100 @@ impl JunieTheme {
                 .add_modifier(Modifier::BOLD),
         }
     }
+}
+
+fn palette_fg(palette: &RolePalette, role: Role, fallback: Color) -> Color {
+    palette.style(role).fg.unwrap_or(fallback)
+}
+
+fn palette_bg(palette: &RolePalette, role: Role, fallback: Color) -> Color {
+    palette.style(role).bg.unwrap_or(fallback)
+}
+
+/// Apply a canonical plane delta to an authored color. Named and indexed colors
+/// are first resolved to RGB, so the derived plane exists before quantization.
+fn quantize_theme(mut theme: JunieTheme, level: ColorCapability) -> JunieTheme {
+    theme.level = level;
+    if level == ColorCapability::Truecolor {
+        return theme;
+    }
+    macro_rules! map {
+        ($($field:ident),* $(,)?) => {
+            $( theme.$field = downgrade(theme.$field, level); )*
+        };
+    }
+    map!(
+        canvas,
+        surface,
+        surface_elevated,
+        surface_overlay,
+        field,
+        field_hover,
+        popover,
+        highlight,
+        highlight_danger,
+        error_soft,
+        border_subtle,
+        border_strong,
+        text_primary,
+        text_secondary,
+        text_muted,
+        text_faint,
+        text_ghost,
+        text_on_accent,
+        accent,
+        accent_hover,
+        accent_pressed,
+        accent_bg,
+        focus,
+        disabled,
+        error,
+        warning,
+        success,
+    );
+    theme
+}
+
+fn derived_plane(
+    value: Color,
+    canonical_value: Color,
+    canonical_derived: Color,
+    is_fg: bool,
+) -> Color {
+    if value == canonical_value {
+        return canonical_derived;
+    }
+    let [r, g, b] = color_to_rgb(value, is_fg);
+    let [cr, cg, cb] = color_to_rgb(canonical_value, is_fg);
+    let [dr, dg, db] = color_to_rgb(canonical_derived, is_fg);
+    Color::Rgb(
+        shifted_channel(r, cr, dr),
+        shifted_channel(g, cg, dg),
+        shifted_channel(b, cb, db),
+    )
+}
+
+fn derived_scaled(
+    value: Color,
+    canonical_value: Color,
+    canonical_derived: Color,
+    percent: u16,
+    is_fg: bool,
+) -> Color {
+    if value == canonical_value {
+        return canonical_derived;
+    }
+    let [r, g, b] = color_to_rgb(value, is_fg);
+    Color::Rgb(
+        ((u16::from(r) * percent) / 100) as u8,
+        ((u16::from(g) * percent) / 100) as u8,
+        ((u16::from(b) * percent) / 100) as u8,
+    )
+}
+
+fn shifted_channel(value: u8, canonical: u8, derived: u8) -> u8 {
+    let delta = i16::from(derived) - i16::from(canonical);
+    (i16::from(value) + delta).clamp(0, i16::from(u8::MAX)) as u8
 }
 
 /// Per-control interaction facts the resolvers read.

@@ -161,17 +161,18 @@ impl StatefulWidget for &Viewport<'_> {
             .scroll((0, state.scroll_x))
             .render(content, buffer);
         // The scrollbar belongs to the reserved gutter, never to content.
-        crate::scroll::paint_scrolled_region(
+        crate::scroll::paint_overflow_scrollbar(
             buffer,
-            Rect::new(
-                area.right().saturating_sub(1),
+            crate::scroll::gutter_column(Rect::new(
+                area.x,
                 area.y.saturating_add(1),
-                1,
+                area.width,
                 area.height.saturating_sub(2),
-            ),
+            )),
             self.lines.len(),
             viewport_height,
             state.scroll_y,
+            false,
             self.system,
         );
     }

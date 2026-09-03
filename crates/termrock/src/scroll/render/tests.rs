@@ -134,12 +134,12 @@ fn overflow_gutter_uses_junie_thumb_length() {
 }
 
 #[test]
-fn list_gutter_paints_the_canonical_language_only_when_scrollable() {
+fn overflow_gutter_paints_the_canonical_language_only_when_scrollable() {
     let system = DesignSystem::default();
     let gutter = Rect::new(0, 0, 1, 4);
     let paint = |total: usize, offset: u16| {
         let mut buffer = Buffer::empty(gutter);
-        paint_list_scrollbar(&mut buffer, gutter, total, 4, offset, &system);
+        paint_overflow_scrollbar(&mut buffer, gutter, total, 4, offset, false, &system);
         (0..gutter.height)
             .map(|y| buffer[(0, y)].symbol().to_string())
             .collect::<Vec<_>>()

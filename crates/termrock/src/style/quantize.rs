@@ -176,14 +176,23 @@ pub fn quantize_color(color: Color, capability: ColorCapability) -> Color {
 }
 
 impl RolePalette {
-    /// Returns the canonical junie palette resolved for `capability`.
+    /// Projects this palette onto `capability` without discarding authored
+    /// roles, modifiers, or underline colors.
     ///
-    /// The palette is derived from [`super::JunieTheme::for_level`] rather than
-    /// quantized after the fact: one downgrade pass, applied where the tokens
-    /// are born.
+    /// Quantization is an edge projection: only color fields change. The
+    /// palette remains the source of truth for every stateful resolver after
+    /// the projection.
     #[must_use]
     pub fn quantized(&self, capability: ColorCapability) -> Self {
-        Self::junie_for(capability)
+        Self::from_fn(|role| {
+            let mut style = self.style(role);
+            style.fg = style.fg.map(|color| quantize_color(color, capability));
+            style.bg = style.bg.map(|color| quantize_color(color, capability));
+            style.underline_color = style
+                .underline_color
+                .map(|color| quantize_color(color, capability));
+            style
+        })
     }
 }
 
@@ -301,6 +310,38 @@ mod tests {
                     .contains(ratatui_core::style::Modifier::REVERSED),
                 "{role:?} grew a REVERSED substitute"
             );
+        }
+    }
+
+    #[test]
+    fn custom_roles_quantize_colors_without_losing_style_metadata() {
+        let source = ratatui_core::style::Style::new()
+            .fg(Color::Rgb(100, 150, 200))
+            .bg(Color::Rgb(10, 20, 30))
+            .underline_color(Color::Rgb(200, 100, 50))
+            .add_modifier(
+                ratatui_core::style::Modifier::BOLD | ratatui_core::style::Modifier::ITALIC,
+            )
+            .remove_modifier(ratatui_core::style::Modifier::DIM);
+        let palette = RolePalette::junie().with_role(Role::Accent, source);
+
+        for capability in [
+            ColorCapability::Truecolor,
+            ColorCapability::Indexed256,
+            ColorCapability::Ansi16,
+            ColorCapability::Monochrome,
+        ] {
+            let actual = palette.quantized(capability).style(Role::Accent);
+            assert_eq!(actual.fg, source.fg.map(|c| quantize_color(c, capability)));
+            assert_eq!(actual.bg, source.bg.map(|c| quantize_color(c, capability)));
+            assert_eq!(
+                actual.underline_color,
+                source
+                    .underline_color
+                    .map(|c| quantize_color(c, capability))
+            );
+            assert_eq!(actual.add_modifier, source.add_modifier);
+            assert_eq!(actual.sub_modifier, source.sub_modifier);
         }
     }
 

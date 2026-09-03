@@ -236,34 +236,6 @@ impl ScrollbarSpec {
     }
 }
 
-/// Paints the list-family scrollbar into a reserved gutter column.
-///
-/// Subcell-rounded list-family scrollbar (`│` track, `┃` thumb). Line widgets
-/// that must match junie `ScrollState::thumb` use [`paint_overflow_scrollbar`]
-/// instead. Nothing is painted when the content already fits, so a reserved
-/// gutter stays blank rather than showing a full-height thumb.
-pub fn paint_list_scrollbar(
-    buffer: &mut Buffer,
-    gutter: Rect,
-    total: usize,
-    viewport: usize,
-    offset: u16,
-    system: &DesignSystem,
-) {
-    if gutter.is_empty() || !scroll::is_scrollable(total, viewport) {
-        return;
-    }
-    render_scrollbar(
-        buffer,
-        gutter,
-        ScrollbarSpec::new(
-            scroll::ScrollAxis::Vertical,
-            ScrollbarGeometry::new(total, viewport, offset),
-        ),
-        system,
-    );
-}
-
 /// Paints the junie line-cell overflow scrollbar (`│` track, `┃` thumb).
 ///
 /// Geometry is [`crate::scroll::overflow_thumb`], not [`crate::scroll::full_cell_thumb`].
@@ -299,23 +271,6 @@ pub fn paint_overflow_scrollbar(
             },
         );
     }
-}
-
-/// Paints the list-style scrollbar for a scrolled region.
-///
-/// Subcell `tui-scrollbar` rounding ([`crate::scroll::full_cell_thumb`]).
-/// Line widgets that must match junie `ScrollState::thumb` call
-/// [`paint_overflow_scrollbar`] instead (list, picker, panel, tree, text area,
-/// select).
-pub fn paint_scrolled_region(
-    buffer: &mut Buffer,
-    gutter: Rect,
-    total: usize,
-    viewport: usize,
-    offset: u16,
-    system: &DesignSystem,
-) {
-    paint_list_scrollbar(buffer, gutter, total, viewport, offset, system);
 }
 
 /// Paints a themed full-cell scrollbar into an explicit track rectangle.

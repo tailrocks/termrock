@@ -29462,6 +29462,7 @@ pub fn termrock::scroll::cursor_follow_offset(usize, usize, usize, usize) -> usi
 pub const fn termrock::scroll::dialog_scroll_axes(usize, usize, ratatui_core::layout::rect::Rect) -> termrock::scroll::ScrollAxes
 pub const fn termrock::scroll::effective_offset(usize, usize, u16) -> u16
 pub fn termrock::scroll::full_cell_thumb(usize, usize, u16, usize) -> core::option::Option<termrock::scroll::FullCellThumb>
+pub const fn termrock::scroll::gutter_column(ratatui_core::layout::rect::Rect) -> ratatui_core::layout::rect::Rect
 pub const fn termrock::scroll::horizontal_scrollbar_area(ratatui_core::layout::rect::Rect) -> ratatui_core::layout::rect::Rect
 pub const fn termrock::scroll::is_scrollable(usize, usize) -> bool
 pub fn termrock::scroll::max_line_width(&[ratatui_core::text::line::Line<'_>]) -> usize
@@ -29472,9 +29473,7 @@ pub fn termrock::scroll::mouse_scroll_delta_with_step(termrock::input::MouseEven
 pub fn termrock::scroll::offset_for_track_position(usize, usize, u16, usize) -> usize
 pub fn termrock::scroll::offset_for_track_position_u16(usize, usize, usize, usize) -> u16
 pub const fn termrock::scroll::overflow_thumb(usize, usize, usize, usize) -> core::option::Option<(usize, usize)>
-pub fn termrock::scroll::paint_list_scrollbar(&mut ratatui_core::buffer::buffer::Buffer, ratatui_core::layout::rect::Rect, usize, usize, u16, &termrock::style::DesignSystem)
 pub fn termrock::scroll::paint_overflow_scrollbar(&mut ratatui_core::buffer::buffer::Buffer, ratatui_core::layout::rect::Rect, usize, usize, u16, bool, &termrock::style::DesignSystem)
-pub fn termrock::scroll::paint_scrolled_region(&mut ratatui_core::buffer::buffer::Buffer, ratatui_core::layout::rect::Rect, usize, usize, u16, &termrock::style::DesignSystem)
 pub fn termrock::scroll::render_line_with_fixed_prefix_scroll(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, u16, ratatui_core::text::line::Line<'static>, usize, usize)
 pub fn termrock::scroll::render_lines_with_offset_in_area(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, &[ratatui_core::text::line::Line<'_>], u16, &termrock::style::DesignSystem)
 pub fn termrock::scroll::render_scrollbar(&mut ratatui_core::buffer::buffer::Buffer, ratatui_core::layout::rect::Rect, termrock::scroll::ScrollbarSpec, &termrock::style::DesignSystem)
@@ -30633,7 +30632,10 @@ pub termrock::style::Role::Danger
 pub termrock::style::Role::DiffAdded
 pub termrock::style::Role::DiffRemoved
 pub termrock::style::Role::Elevated
+pub termrock::style::Role::ErrorSoft
 pub termrock::style::Role::Focus
+pub termrock::style::Role::Highlight
+pub termrock::style::Role::HighlightDanger
 pub termrock::style::Role::HintDim
 pub termrock::style::Role::HintKey
 pub termrock::style::Role::HintSeparator
@@ -31166,6 +31168,7 @@ pub const fn termrock::style::DesignSystem::kv_separator(&self) -> termrock::sty
 pub fn termrock::style::DesignSystem::lift(&self, ratatui_core::style::color::Color) -> ratatui_core::style::color::Color
 pub fn termrock::style::DesignSystem::list_row_recipe(&self, bool, bool, bool) -> termrock::style::ListRowRecipe
 pub const fn termrock::style::DesignSystem::lower_text(termrock::style::Role) -> termrock::style::Role
+pub fn termrock::style::DesignSystem::menu_row(&self, termrock::style::VisualState, bool, ratatui_core::style::color::Color) -> ratatui_core::style::Style
 pub const fn termrock::style::DesignSystem::mono(&self) -> bool
 pub const fn termrock::style::DesignSystem::motion(self, termrock::style::MotionPolicy) -> Self
 pub fn termrock::style::DesignSystem::new(termrock::style::RolePalette) -> Self
@@ -31454,9 +31457,12 @@ pub termrock::style::JunieTheme::border_subtle: ratatui_core::style::color::Colo
 pub termrock::style::JunieTheme::canvas: ratatui_core::style::color::Color
 pub termrock::style::JunieTheme::disabled: ratatui_core::style::color::Color
 pub termrock::style::JunieTheme::error: ratatui_core::style::color::Color
+pub termrock::style::JunieTheme::error_soft: ratatui_core::style::color::Color
 pub termrock::style::JunieTheme::field: ratatui_core::style::color::Color
 pub termrock::style::JunieTheme::field_hover: ratatui_core::style::color::Color
 pub termrock::style::JunieTheme::focus: ratatui_core::style::color::Color
+pub termrock::style::JunieTheme::highlight: ratatui_core::style::color::Color
+pub termrock::style::JunieTheme::highlight_danger: ratatui_core::style::color::Color
 pub termrock::style::JunieTheme::level: termrock::style::ColorCapability
 pub termrock::style::JunieTheme::popover: ratatui_core::style::color::Color
 pub termrock::style::JunieTheme::success: ratatui_core::style::color::Color
@@ -31809,7 +31815,7 @@ pub fn termrock::style::RolePalette::from_fn(impl core::ops::function::Fn(termro
 pub fn termrock::style::RolePalette::junie() -> Self
 pub fn termrock::style::RolePalette::junie_for(termrock::style::ColorCapability) -> Self
 pub fn termrock::style::RolePalette::merge(self, &Self) -> Self
-pub const fn termrock::style::RolePalette::roles() -> [termrock::style::Role; 57]
+pub const fn termrock::style::RolePalette::roles() -> [termrock::style::Role; 60]
 pub const fn termrock::style::RolePalette::style(&self, termrock::style::Role) -> ratatui_core::style::Style
 pub fn termrock::style::RolePalette::with_role(self, termrock::style::Role, ratatui_core::style::Style) -> Self
 impl termrock::style::RolePalette
@@ -53519,6 +53525,7 @@ pub termrock::widgets::SurfaceRecipe::Destructive
 pub termrock::widgets::SurfaceRecipe::Focused
 pub termrock::widgets::SurfaceRecipe::Inset
 pub termrock::widgets::SurfaceRecipe::Interactive
+pub termrock::widgets::SurfaceRecipe::MenuPopover
 pub termrock::widgets::SurfaceRecipe::Overlay
 pub termrock::widgets::SurfaceRecipe::OverlayDanger
 pub termrock::widgets::SurfaceRecipe::OverlayFocused

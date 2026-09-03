@@ -47,14 +47,16 @@ impl Default for RunOptions {
 /// Runs a synchronous Crossterm application until `update` requests exit.
 ///
 /// Time is sampled once before each draw. The same [`FrameTick`] reaches render
-/// and the event update for that poll cycle. Effects and domain messages remain
+/// and every event update in that poll cycle. Effects and domain messages remain
 /// consumer-owned. `next_deadline` returns the model's earliest timed wakeup;
 /// return `None` while no timed state is active.
 ///
 /// **Demand-driven.** A frame is drawn when input arrives, when a deadline the
 /// model reported comes due, or when a scroll flush is owed — never on a fixed
 /// cadence. An idle screen emits nothing and burns no CPU. State that changes
-/// outside of events must be announced through `next_deadline`.
+/// outside of events must be announced through `next_deadline`. At most 64
+/// ready events are applied per frame cycle so sustained input cannot starve
+/// frame advancement.
 pub fn run<Model>(
     model: &mut Model,
     options: RunOptions,
@@ -106,6 +108,14 @@ const fn is_scroll(event: &Event) -> bool {
             if matches!(mouse.kind, MouseEventKind::ScrollUp | MouseEventKind::ScrollDown)
     )
 }
+
+/// Maximum backend events applied before the loop advances to another frame.
+///
+/// A zero-time poll is useful for draining a ready batch, but an always-ready
+/// producer must not prevent rendering, deadline evaluation, or input-free
+/// animation from progressing. Events beyond this bound stay in the backend
+/// queue and are handled by the next frame cycle.
+const MAX_EVENTS_PER_FRAME: usize = 64;
 
 fn finish_with_restore(
     result: io::Result<()>,
@@ -170,14 +180,22 @@ where
             .next_wake(tick.now())
             .map_or(timeout, |wake| timeout.min(wake));
         if poll(timeout)? {
-            let event = read()?;
-            if is_scroll(&event) {
-                presenter.mark_scrolled();
-            } else {
-                presenter.mark_dirty();
-            }
-            if matches!(update(model, event, tick), ControlFlow::Break(())) {
-                return Ok(());
+            for event_index in 0..MAX_EVENTS_PER_FRAME {
+                let event = read()?;
+                if is_scroll(&event) {
+                    presenter.mark_scrolled();
+                } else {
+                    presenter.mark_dirty();
+                }
+                if matches!(update(model, event, tick), ControlFlow::Break(())) {
+                    return Ok(());
+                }
+                if event_index + 1 == MAX_EVENTS_PER_FRAME {
+                    break;
+                }
+                if !poll(Duration::ZERO)? {
+                    break;
+                }
             }
         }
     }
@@ -188,7 +206,7 @@ mod tests {
     use std::{cell::Cell, collections::VecDeque};
 
     use super::*;
-    use crate::input::{KeyModifiers, MouseEvent};
+    use crate::input::{KeyCode, KeyEvent, KeyModifiers, MouseEvent};
 
     /// Presenter without the min-draw throttle, so tests are wall-clock free.
     fn unthrottled() -> Presenter {
@@ -206,7 +224,8 @@ mod tests {
     #[test]
     fn loop_draws_through_timeouts_and_stops_on_break_event() {
         let mut model = (0_u8, 0_u8);
-        let mut polls = VecDeque::from([false, true, true]);
+        let mut polls = VecDeque::from([false, true, false, true]);
+        let mut observed_polls = Vec::new();
         let start = std::time::Instant::now();
         let mut clock = FrameClock::from_start(start);
 
@@ -220,7 +239,7 @@ mod tests {
                 Ok(())
             },
             |timeout| {
-                assert_eq!(timeout, Duration::from_millis(7));
+                observed_polls.push(timeout);
                 Ok(polls.pop_front().expect("bounded fake pump"))
             },
             || Ok(Event::Unknown),
@@ -236,9 +255,130 @@ mod tests {
         )
         .expect("runner exits cleanly");
 
-        // Three loop iterations, two frames: the middle iteration had nothing
-        // dirty to paint, which is the whole point of the presenter.
         assert_eq!(model, (2, 2));
+        assert_eq!(
+            observed_polls,
+            [
+                Duration::from_millis(7),
+                Duration::from_millis(7),
+                Duration::ZERO,
+                Duration::from_millis(7),
+            ]
+        );
+    }
+
+    #[test]
+    fn queued_events_drain_in_order_with_one_tick_and_stop_on_break() {
+        let first = Event::Key(KeyEvent::new(KeyCode::Char('a'), KeyModifiers::NONE));
+        let second = scroll_event();
+        let third = Event::Key(KeyEvent::new(KeyCode::Char('b'), KeyModifiers::NONE));
+        let expected_events = vec![first.clone(), second.clone(), third.clone()];
+        let mut events = VecDeque::from(expected_events.clone());
+        let mut polls = VecDeque::from([true, true, true]);
+        let mut observed_polls = Vec::new();
+        let mut observed_updates = Vec::new();
+        let mut drawn_ticks = Vec::new();
+        let mut clock = FrameClock::from_start(Instant::now());
+
+        drive_loop(
+            &mut (),
+            &mut clock,
+            unthrottled(),
+            Duration::from_millis(7),
+            |_: &mut (), tick| {
+                drawn_ticks.push(tick);
+                Ok(())
+            },
+            |timeout| {
+                observed_polls.push(timeout);
+                Ok(polls
+                    .pop_front()
+                    .expect("break must stop before another poll"))
+            },
+            || Ok(events.pop_front().expect("every ready poll has an event")),
+            |_, event, tick| {
+                observed_updates.push((event, tick));
+                if observed_updates.len() == expected_events.len() {
+                    ControlFlow::Break(())
+                } else {
+                    ControlFlow::Continue(())
+                }
+            },
+            |_| None,
+        )
+        .expect("queued events drain cleanly");
+
+        assert_eq!(
+            observed_updates
+                .iter()
+                .map(|(event, _)| event.clone())
+                .collect::<Vec<_>>(),
+            expected_events
+        );
+        assert_eq!(drawn_ticks.len(), 1, "the ready batch belongs to one frame");
+        assert_eq!(
+            observed_updates
+                .iter()
+                .map(|(_, tick)| *tick)
+                .collect::<Vec<_>>(),
+            vec![drawn_ticks[0]; 3]
+        );
+        assert_eq!(
+            observed_polls,
+            [Duration::from_millis(7), Duration::ZERO, Duration::ZERO]
+        );
+        assert!(
+            polls.is_empty(),
+            "ControlFlow::Break must not perform a follow-up poll"
+        );
+    }
+
+    #[test]
+    fn sustained_ready_events_yield_after_the_frame_budget() {
+        let total_events = MAX_EVENTS_PER_FRAME + 1;
+        let mut events = VecDeque::from(vec![Event::Unknown; total_events]);
+        let mut observed_polls = Vec::new();
+        let updates = Cell::new(0_usize);
+        let mut updates_at_draw = Vec::new();
+        let mut clock = FrameClock::from_start(Instant::now());
+
+        drive_loop(
+            &mut (),
+            &mut clock,
+            unthrottled(),
+            Duration::from_millis(7),
+            |_: &mut (), _| {
+                updates_at_draw.push(updates.get());
+                Ok(())
+            },
+            |timeout| {
+                observed_polls.push(timeout);
+                Ok(true)
+            },
+            || Ok(events.pop_front().expect("bounded event fixture")),
+            |_, _, _| {
+                updates.set(updates.get() + 1);
+                if updates.get() == total_events {
+                    ControlFlow::Break(())
+                } else {
+                    ControlFlow::Continue(())
+                }
+            },
+            |_| None,
+        )
+        .expect("bounded ready batch yields cleanly");
+
+        assert_eq!(updates.get(), total_events);
+        assert_eq!(updates_at_draw, [0, MAX_EVENTS_PER_FRAME]);
+        assert_eq!(observed_polls.first(), Some(&Duration::from_millis(7)));
+        assert_eq!(observed_polls.last(), Some(&Duration::from_millis(7)));
+        assert_eq!(
+            observed_polls
+                .iter()
+                .filter(|timeout| **timeout == Duration::ZERO)
+                .count(),
+            MAX_EVENTS_PER_FRAME - 1
+        );
     }
 
     #[test]

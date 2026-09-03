@@ -26,7 +26,6 @@ use crate::{
         CollectionState, HitRegion, NavigationMove, Outcome, PageMove, UiIntent,
         default_list_intent,
     },
-    scroll::max_offset,
     style::{DesignSystem, Glyph, ListRowVisualState, Role},
 };
 
@@ -269,9 +268,8 @@ impl<'a, Id> ListRow<'a, Id> {
 fn line_plain(line: &Line<'_>) -> String {
     line.spans
         .iter()
-        .map(|s| s.content.as_ref())
-        .collect::<Vec<_>>()
-        .join("")
+        .map(|span| span.content.as_ref())
+        .collect()
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1175,23 +1173,11 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
         let content_width = body.width.saturating_sub(u16::from(scrollable));
         let offset = state.paint_skip();
         let mut y = body.y;
-        let mut painted_rows = 0usize;
-        let breathing = false;
-        let mut painted_any = false;
         let mut scratch = String::new();
         for row in self.rows.iter().skip(offset) {
             if y >= body.bottom() {
                 break;
             }
-            if breathing
-                && painted_any
-                && matches!(row.role, RowRole::GroupHeader)
-                && y.saturating_add(1) < body.bottom()
-            {
-                y = y.saturating_add(1);
-            }
-            painted_any = true;
-            let _ = row.secondary.is_some();
             let rh = list_row_height();
             if y.saturating_add(rh) > body.bottom() {
                 break;
@@ -1509,9 +1495,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &List<'_, Id> {
                 });
             }
             y = y.saturating_add(rh);
-            painted_rows = painted_rows.saturating_add(1);
         }
-        let _ = painted_rows;
         if scrollable {
             crate::scroll::paint_overflow_scrollbar(
                 buffer,

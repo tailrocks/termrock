@@ -1211,13 +1211,13 @@ impl<'a> ToastStack<'a> {
 
     /// Paint the newest live notice as a footer sentence; records its region.
     pub fn paint(&self, outer: Rect, buffer: &mut Buffer, queue: &mut ToastQueue) {
+        for entry in &mut queue.live {
+            entry.region = None;
+        }
         if outer.is_empty() {
             return;
         }
         let live_count = queue.live.len();
-        for entry in queue.live.iter_mut().skip(1) {
-            entry.region = None;
-        }
         let Some(entry) = queue.live.front_mut() else {
             return;
         };
@@ -1479,6 +1479,26 @@ mod tests {
             "expired status must not paint"
         );
         assert_no_rounded_frame(&buffer);
+    }
+
+    #[test]
+    fn empty_paint_clears_stale_hit_regions() {
+        let system = DesignSystem::junie();
+        let start = Instant::now();
+        let mut q = ToastQueue::new();
+        let _ = q.push(
+            tick(start, Duration::ZERO),
+            ToastSpec::message("a", "Saved"),
+        );
+        let area = Rect::new(0, 0, 40, 5);
+        let mut buffer = Buffer::empty(area);
+        ToastStack::new(&system).paint(area, &mut buffer, &mut q);
+
+        assert!((area.x..area.right()).any(|x| { q.region_at(x, area.bottom() - 1).is_some() }));
+
+        ToastStack::new(&system).paint(Rect::default(), &mut buffer, &mut q);
+
+        assert!((area.x..area.right()).all(|x| { q.region_at(x, area.bottom() - 1).is_none() }));
     }
 
     #[test]
