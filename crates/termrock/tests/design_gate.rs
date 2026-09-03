@@ -923,7 +923,7 @@ fn glyph_vocabulary_is_the_junie_table() {
         "▾", "▸", "‹", "›", "▴", "▾", "→", "↓", // status / choice
         "✓", "•", "!", "·", "⠋", "[✓]", "[ ]", "●", "○", // action
         "×", "+", "−", // rules
-        "─", "│", "━", // selection chrome
+        "─", "│", "━", "┃", "║", // selection chrome
         "▎", "›", // meta
         "•", "·", "…", // marks
         "●", "○", "◆", "┃", "◇", "●", // slider

@@ -72,6 +72,18 @@ impl GlyphSet {
         super::glyph::Glyph::RuleV.resolve().text
     }
 
+    /// Strong vertical rule.
+    #[must_use]
+    pub const fn rule_v_strong(self) -> &'static str {
+        super::glyph::Glyph::RuleVStrong.resolve().text
+    }
+
+    /// Double vertical rule (focus zone separators).
+    #[must_use]
+    pub const fn rule_v_double(self) -> &'static str {
+        super::glyph::Glyph::RuleVDouble.resolve().text
+    }
+
     /// Checkbox well (`[✓]`). List membership is [`Glyph::Success`], not this.
     #[must_use]
     pub const fn check_on(self) -> &'static str {

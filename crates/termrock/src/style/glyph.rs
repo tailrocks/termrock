@@ -123,6 +123,10 @@ pub enum Glyph {
     RuleV,
     /// Strong horizontal rule.
     RuleHStrong,
+    /// Strong vertical rule.
+    RuleVStrong,
+    /// Double vertical rule (focus zone separators).
+    RuleVDouble,
     /// Selection gutter bar.
     SelectionGutter,
     /// Chosen-row marker (`›`); `▸`/`▾` are tree disclosure only.
@@ -193,6 +197,8 @@ impl Glyph {
             Self::RuleH => "rule-h",
             Self::RuleV => "rule-v",
             Self::RuleHStrong => "rule-h-strong",
+            Self::RuleVStrong => "rule-v-strong",
+            Self::RuleVDouble => "rule-v-double",
             Self::SelectionGutter => "selection-gutter",
             Self::SelectionMarker => "selection-marker",
             Self::Bullet => "bullet",
@@ -243,6 +249,8 @@ impl Glyph {
             Self::RuleH => "horizontal rule",
             Self::RuleV => "vertical rule",
             Self::RuleHStrong => "strong horizontal rule",
+            Self::RuleVStrong => "strong vertical rule",
+            Self::RuleVDouble => "double vertical rule",
             Self::SelectionGutter => "selected",
             Self::SelectionMarker => "selected",
             Self::Bullet => "list item",
@@ -291,6 +299,8 @@ impl Glyph {
             Self::RuleH
             | Self::RuleV
             | Self::RuleHStrong
+            | Self::RuleVStrong
+            | Self::RuleVDouble
             | Self::SelectionGutter
             | Self::SelectionMarker
             | Self::Bullet
@@ -338,6 +348,8 @@ impl Glyph {
         Self::RuleH,
         Self::RuleV,
         Self::RuleHStrong,
+        Self::RuleVStrong,
+        Self::RuleVDouble,
         Self::SelectionGutter,
         Self::SelectionMarker,
         Self::Bullet,
@@ -417,6 +429,8 @@ impl Glyph {
             Self::RuleH => "─",
             Self::RuleV => "│",
             Self::RuleHStrong => "━",
+            Self::RuleVStrong => "┃",
+            Self::RuleVDouble => "║",
             Self::SelectionGutter => "▎",
             Self::SelectionMarker => "›",
             Self::Bullet => "•",
@@ -567,6 +581,8 @@ mod tests {
             (Glyph::SelectionMarker, "›"),
             (Glyph::ChevronRight, "›"),
             (Glyph::RuleHStrong, "━"),
+            (Glyph::RuleVStrong, "┃"),
+            (Glyph::RuleVDouble, "║"),
             (Glyph::Error, "!"),
             (Glyph::Warning, "•"),
             (Glyph::Success, "✓"),

@@ -427,8 +427,7 @@ fn rule_style(sep: Separator<'_>, vertical: bool) -> (&'static str, ratatui_core
         ),
         SeparatorVariant::Strong | SeparatorVariant::SectionBreak => (
             if vertical {
-                // Heavy vertical rule; the glyph table has no RuleVStrong.
-                "┃"
+                glyphs.rule_v_strong()
             } else {
                 glyphs.rule_strong()
             },
@@ -445,8 +444,7 @@ fn rule_style(sep: Separator<'_>, vertical: bool) -> (&'static str, ratatui_core
         // Focus zone: a heavier rule without BorderFocused (focus ≠ chrome).
         SeparatorVariant::FocusZone => (
             if vertical {
-                // Double vertical rule; the glyph table has no RuleVDouble.
-                "║"
+                glyphs.rule_v_double()
             } else {
                 glyphs.rule_strong()
             },
