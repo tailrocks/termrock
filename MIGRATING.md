@@ -427,6 +427,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0446 | `v0.14.0` | [TokenField physical one-shot actions](migrations/0446-v0.14.0-token-field-one-shot-actions.md) |
 | 0447 | `v0.14.0` | [DateTimePicker physical one-shot actions](migrations/0447-v0.14.0-date-time-picker-one-shot-actions.md) |
 | 0448 | `v0.14.0` | [FormWizard physical one-shot actions](migrations/0448-v0.14.0-form-wizard-one-shot-actions.md) |
+| 0449 | `v0.14.0` | [ProgressBar buffer clipping](migrations/0449-v0.14.0-progress-buffer-clipping.md) |
 | 0450 | `v0.14.0` | [Attachment chip physical one-shot actions](migrations/0450-v0.14.0-attachment-chip-one-shot-actions.md) |
 | 0451 | `v0.14.0` | [KeybindingRecorder physical one-shot actions](migrations/0451-v0.14.0-keybinding-recorder-one-shot-actions.md) |
 

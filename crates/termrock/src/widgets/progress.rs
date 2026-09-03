@@ -729,6 +729,7 @@ impl<'a> ProgressBar<'a> {
         tick: FrameTick,
         motion: MotionPolicy,
     ) {
+        let area = area.intersection(*buffer.area());
         if area.is_empty() || !state.visible {
             return;
         }
@@ -764,6 +765,7 @@ impl<'a> ProgressBar<'a> {
 
     /// Paint using builders on this widget.
     pub fn paint(&self, area: Rect, buffer: &mut Buffer) {
+        let area = area.intersection(*buffer.area());
         if area.is_empty() {
             return;
         }
@@ -1053,6 +1055,41 @@ mod tests {
         buffer.content().iter().map(|cell| cell.symbol()).collect()
     }
 
+    fn assert_only_intersection_changed(before: &Buffer, after: &Buffer, intersection: Rect) {
+        let buffer_area = *before.area();
+        let mut changed_inside = false;
+        for y in buffer_area.y..buffer_area.bottom() {
+            for x in buffer_area.x..buffer_area.right() {
+                if before[(x, y)] != after[(x, y)] {
+                    assert!(
+                        x >= intersection.x
+                            && x < intersection.right()
+                            && y >= intersection.y
+                            && y < intersection.bottom(),
+                        "paint escaped clipped area at ({x}, {y}); intersection={intersection:?}"
+                    );
+                    changed_inside = true;
+                }
+            }
+        }
+        assert!(
+            changed_inside,
+            "expected the non-empty intersection to receive progress output"
+        );
+    }
+
+    fn assert_unchanged_after_paint(bar: &ProgressBar<'_>, area: Rect, buffer: &mut Buffer) {
+        let before = buffer.clone();
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            bar.paint(area, buffer);
+        }));
+        assert!(
+            result.is_ok(),
+            "out-of-buffer progress paint must not panic"
+        );
+        assert_eq!(buffer, &before, "an empty intersection must not paint");
+    }
+
     fn determinate(fraction: f64, width: u16) -> Buffer {
         let area = Rect::new(0, 0, width, 1);
         let mut buffer = Buffer::empty(area);
@@ -1316,6 +1353,123 @@ mod tests {
             (&ProgressBar::new(ProgressKind::Indeterminate { tick: 2 }, &system))
                 .render(area, &mut sweep);
         }
+    }
+
+    #[test]
+    fn determinate_paint_clips_to_partial_offset_buffer() {
+        let system = system();
+        let bar = ProgressBar::new(ProgressKind::Determinate { fraction: 0.5 }, &system);
+        let buffer_area = Rect::new(10, 10, 12, 4);
+        let requested = Rect::new(8, 9, 16, 3);
+        let mut buffer = Buffer::filled(buffer_area, ratatui_core::buffer::Cell::new("·"));
+        let before = buffer.clone();
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            bar.paint(requested, &mut buffer);
+        }));
+
+        assert!(result.is_ok(), "partial determinate paint must not panic");
+        assert_only_intersection_changed(&before, &buffer, requested.intersection(buffer_area));
+    }
+
+    #[test]
+    fn indeterminate_paint_clips_to_partial_offset_buffer() {
+        let system = system();
+        let bar = ProgressBar::new(ProgressKind::Indeterminate { tick: 3 }, &system);
+        let buffer_area = Rect::new(10, 10, 12, 4);
+        let requested = Rect::new(8, 9, 16, 3);
+        let mut buffer = Buffer::filled(buffer_area, ratatui_core::buffer::Cell::new("·"));
+        let before = buffer.clone();
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            bar.paint(requested, &mut buffer);
+        }));
+
+        assert!(result.is_ok(), "partial indeterminate paint must not panic");
+        assert_only_intersection_changed(&before, &buffer, requested.intersection(buffer_area));
+    }
+
+    #[test]
+    fn multiline_paint_clips_title_track_and_meta_rows() {
+        let system = system();
+        let bar = ProgressBar::new(ProgressKind::Determinate { fraction: 0.5 }, &system)
+            .label("Download")
+            .recipe(ProgressRecipe::MultiLine)
+            .meta("phase · ETA 9s");
+        let buffer_area = Rect::new(10, 10, 12, 4);
+        let requested = Rect::new(8, 9, 16, 4);
+        let mut buffer = Buffer::filled(buffer_area, ratatui_core::buffer::Cell::new("·"));
+        let before = buffer.clone();
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            bar.paint(requested, &mut buffer);
+        }));
+
+        assert!(result.is_ok(), "partial multiline paint must not panic");
+        assert_only_intersection_changed(&before, &buffer, requested.intersection(buffer_area));
+        assert_ne!(buffer[(10, 10)].symbol(), "·", "title row is clipped in");
+        assert_ne!(buffer[(10, 11)].symbol(), "·", "track row is clipped in");
+        assert_ne!(buffer[(10, 12)].symbol(), "·", "meta row is clipped in");
+    }
+
+    #[test]
+    fn paint_ignores_empty_and_wholly_out_of_buffer_areas() {
+        let system = system();
+        let bar = ProgressBar::new(ProgressKind::Indeterminate { tick: 3 }, &system);
+        let buffer_area = Rect::new(10, 10, 12, 4);
+        let mut buffer = Buffer::filled(buffer_area, ratatui_core::buffer::Cell::new("·"));
+
+        for area in [
+            Rect::new(12, 12, 0, 1),
+            Rect::new(22, 14, 2, 2),
+            Rect::new(0, 0, 4, 1),
+        ] {
+            assert_unchanged_after_paint(&bar, area, &mut buffer);
+        }
+    }
+
+    #[test]
+    fn paint_state_clips_before_projection_and_dirty_marking() {
+        let system = system();
+        let buffer_area = Rect::new(10, 10, 16, 3);
+        let partial = Rect::new(8, 9, 20, 2);
+        let mut state = ProgressBarState::transfer(128, 1024);
+        state.set_label("Download");
+        assert!(state.needs_paint());
+        let mut buffer = Buffer::filled(buffer_area, ratatui_core::buffer::Cell::new("·"));
+        let before = buffer.clone();
+        let tick = FrameTick::manual(Instant::now(), Duration::ZERO, Duration::ZERO);
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            ProgressBar::paint_state(
+                &system,
+                partial,
+                &mut buffer,
+                &mut state,
+                tick,
+                MotionPolicy::Off,
+            );
+        }));
+
+        assert!(result.is_ok(), "partial state paint must not panic");
+        assert_only_intersection_changed(&before, &buffer, partial.intersection(buffer_area));
+        assert!(
+            !state.needs_paint(),
+            "a visible state paint is acknowledged"
+        );
+
+        state.set_value(256.0);
+        assert!(state.needs_paint());
+        let before = buffer.clone();
+        ProgressBar::paint_state(
+            &system,
+            Rect::new(0, 0, 4, 1),
+            &mut buffer,
+            &mut state,
+            tick,
+            MotionPolicy::Off,
+        );
+        assert_eq!(buffer, before, "a disjoint state paint must not write");
+        assert!(
+            state.needs_paint(),
+            "a disjoint state paint must not acknowledge the state"
+        );
     }
 
     #[test]
