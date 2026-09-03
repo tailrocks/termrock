@@ -59674,7 +59674,6 @@ pub const fn termrock::widgets::Badge<'a>::disabled(self, bool) -> Self
 pub const fn termrock::widgets::Badge<'a>::fill(self, termrock::widgets::BadgeFill) -> Self
 pub fn termrock::widgets::Badge<'a>::handle_intent(&self, &mut termrock::widgets::BadgeState, termrock::context::ContextUiIntent) -> termrock::widgets::BadgeOutcome
 pub fn termrock::widgets::Badge<'a>::handle_key(&self, &mut termrock::widgets::BadgeState, termrock::input::KeyEvent) -> termrock::widgets::BadgeOutcome
-pub fn termrock::widgets::Badge<'a>::handle_key_result(&self, &mut termrock::widgets::BadgeState, termrock::input::KeyEvent) -> termrock::interaction::EventResult<termrock::widgets::BadgeOutcome>
 pub fn termrock::widgets::Badge<'a>::handle_mouse(&self, &mut termrock::widgets::BadgeState, termrock::input::MouseEvent) -> termrock::widgets::BadgeOutcome
 pub const fn termrock::widgets::Badge<'a>::info(self) -> Self
 pub const fn termrock::widgets::Badge<'a>::interactive(self, bool) -> Self

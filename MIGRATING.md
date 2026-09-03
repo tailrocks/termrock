@@ -470,6 +470,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0491 | `v0.14.0` | [Synchronize removed toggle builders](migrations/0491-v0.14.0-sync-removed-toggle-builders.md) |
 | 0492 | `v0.14.0` | [Synchronize removed toggle protocol methods](migrations/0492-v0.14.0-sync-removed-toggle-protocol-methods.md) |
 | 0493 | `v0.14.0` | [Synchronize removed ButtonGroup protocol method](migrations/0493-v0.14.0-sync-removed-button-group-method.md) |
+| 0494 | `v0.14.0` | [Synchronize removed Badge protocol method](migrations/0494-v0.14.0-sync-removed-badge-method.md) |
 | 0464 | `v0.14.0` | [Stepper physical one-shot actions](migrations/0464-v0.14.0-stepper-one-shot-actions.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
