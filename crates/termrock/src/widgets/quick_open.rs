@@ -715,14 +715,6 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
         self.presentation
     }
 
-    /// Override presentation.
-    pub fn set_presentation_override(&mut self, p: Option<QuickOpenPresentation>) {
-        self.presentation_override = p;
-        if let Some(p) = p {
-            self.presentation = p;
-        }
-    }
-
     /// Cursor index into visible window.
     #[must_use]
     pub fn cursor_index(&self) -> usize {
@@ -1285,14 +1277,6 @@ impl<'a, Id> QuickOpen<'a, Id> {
     #[must_use]
     pub const fn focused(mut self, on: bool) -> Self {
         self.focused = on;
-        self
-    }
-
-    /// ASCII.
-    #[must_use]
-    /// Colorless.
-    pub const fn colorless(mut self, on: bool) -> Self {
-        self.colorless = on;
         self
     }
 

@@ -25,7 +25,7 @@ use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{
         HitRegion, OverlayId, OverlayOutcome, OverlaySpec, OverlayStack, SemanticRole,
-        SemanticScene, UiIntent,
+        SemanticScene,
     },
     style::{DesignSystem, Role},
     text::take_display_cols,
@@ -486,15 +486,6 @@ impl JumpOverlayState {
         open_jump_overlay(stack, bounds, opener_focus)
     }
 
-    /// Closes jump mode and dismisses the stack entry when present.
-    pub fn close_on_stack<FocusId: Clone>(
-        &mut self,
-        stack: &mut OverlayStack<FocusId>,
-    ) -> OverlayOutcome<FocusId> {
-        self.close();
-        dismiss_jump_overlay(stack)
-    }
-
     /// Whether jump mode is active.
     #[must_use]
     pub const fn is_open(&self) -> bool {
@@ -602,32 +593,6 @@ impl JumpOverlayState {
                 JumpOutcome::Prefix {
                     keys: self.prefix.clone(),
                     remaining: matches.len(),
-                }
-            }
-            _ => JumpOutcome::Ignored,
-        }
-    }
-
-    /// Intent path (Cancel → dismiss / clear prefix).
-    pub fn handle_intent<Id: Clone>(
-        &mut self,
-        intent: UiIntent,
-        targets: &[JumpTarget<Id>],
-    ) -> JumpOutcome<Id> {
-        if !self.open || !self.accepts_input {
-            return JumpOutcome::Ignored;
-        }
-        match intent {
-            UiIntent::Cancel | UiIntent::Close => {
-                if !self.prefix.is_empty() {
-                    self.prefix.clear();
-                    JumpOutcome::Prefix {
-                        keys: String::new(),
-                        remaining: targets.len(),
-                    }
-                } else {
-                    self.close();
-                    JumpOutcome::Dismissed
                 }
             }
             _ => JumpOutcome::Ignored,

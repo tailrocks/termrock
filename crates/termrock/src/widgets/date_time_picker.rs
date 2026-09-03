@@ -23,7 +23,6 @@ use crate::{
     interaction::{
         CollectionItem, CollectionOutcome, CollectionState, OverlayId, OverlayOutcome, OverlaySize,
         OverlaySpec, OverlayStack, SemanticNode, SemanticRole, SemanticScene, SemanticState,
-        UiIntent,
     },
     style::{ControlState, DesignSystem, ListRowVisualState, Role},
     text::take_display_cols,
@@ -1628,37 +1627,6 @@ impl DateTimePickerState {
             .add_months(delta);
         self.view_year = d.year;
         self.view_month = d.month;
-    }
-
-    /// Intent path.
-    pub fn handle_intent(&mut self, intent: UiIntent) -> DateTimePickerOutcome {
-        if !self.enabled || !self.focused {
-            return DateTimePickerOutcome::Ignored;
-        }
-        match intent {
-            UiIntent::Cancel | UiIntent::Close => {
-                if self.open {
-                    self.close()
-                } else {
-                    DateTimePickerOutcome::Cancelled
-                }
-            }
-            UiIntent::Submit | UiIntent::Activate => {
-                if self.open && matches!(self.view, DateTimePickerView::Calendar) {
-                    if let Some(d) = self.focus_date {
-                        return self.select_date(d);
-                    }
-                }
-                self.commit_draft()
-            }
-            UiIntent::Fullscreen => {
-                self.presentation = DateTimePickerPresentation::Fullscreen;
-                DateTimePickerOutcome::PresentationChanged {
-                    presentation: DateTimePickerPresentation::Fullscreen,
-                }
-            }
-            _ => DateTimePickerOutcome::Ignored,
-        }
     }
 
     /// Mouse.

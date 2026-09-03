@@ -1059,7 +1059,6 @@ impl QuestionFlowState {
 #[derive(Debug, Clone, Copy)]
 pub struct QuestionFlow<'a> {
     system: &'a DesignSystem,
-    colorless: bool,
 }
 
 /// Footer chords for the question flow, painted through [`HintBar`].
@@ -1100,18 +1099,7 @@ impl<'a> QuestionFlow<'a> {
     /// System only — questions live in state.
     #[must_use]
     pub const fn new(system: &'a DesignSystem) -> Self {
-        Self {
-            system,
-            colorless: false,
-        }
-    }
-
-    /// ASCII.
-    #[must_use]
-    /// Colorless.
-    pub const fn colorless(mut self, on: bool) -> Self {
-        self.colorless = on;
-        self
+        Self { system }
     }
 
     /// Paint.

@@ -19,7 +19,7 @@ use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::State
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
-    interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
+    interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
     style::{ButtonRecipeVariant, ControlState, DesignSystem, Glyph, Role},
     text::take_display_cols,
 };
@@ -756,31 +756,6 @@ impl PathInputState {
                 PathInputOutcome::ClipboardCopy { text }
             }
             TextInputOutcome::Ignored => PathInputOutcome::Ignored,
-        }
-    }
-
-    /// Intent path.
-    pub fn handle_intent(&mut self, intent: UiIntent) -> PathInputOutcome {
-        if !self.enabled {
-            return PathInputOutcome::Ignored;
-        }
-        match intent {
-            UiIntent::Submit | UiIntent::Activate => {
-                let path = self.path.value().to_owned();
-                self.push_history(path.clone());
-                PathInputOutcome::Submitted { path }
-            }
-            UiIntent::Cancel | UiIntent::Close => PathInputOutcome::Cancelled,
-            other => match self.path.handle_intent(other) {
-                TextInputOutcome::Changed => {
-                    self.fs_status = PathFsStatus::Pending;
-                    PathInputOutcome::Changed
-                }
-                TextInputOutcome::Submitted(path) => PathInputOutcome::Submitted { path },
-                TextInputOutcome::Cancelled => PathInputOutcome::Cancelled,
-                TextInputOutcome::Cleared => PathInputOutcome::Cleared,
-                _ => PathInputOutcome::Ignored,
-            },
         }
     }
 

@@ -1006,42 +1006,6 @@ impl CitationListState {
             _ => CitationListOutcome::Ignored,
         }
     }
-
-    /// Mouse.
-    pub fn handle_mouse(
-        &mut self,
-        event: MouseEvent,
-        sources: &[CitationSource],
-    ) -> CitationListOutcome {
-        if !self.accepts_input || event.kind != MouseEventKind::Down(MouseButton::Left) {
-            return CitationListOutcome::Ignored;
-        }
-        if !self.expanded {
-            self.expanded = true;
-            return CitationListOutcome::ExpandChanged { expanded: true };
-        }
-        for (i, (id, rect)) in self.row_hits.iter().enumerate() {
-            if rect.contains(event.position) {
-                self.cursor = i;
-                if let Some(src) = sources.iter().find(|s| s.id == *id) {
-                    let avail = effective_availability(src, self.offline);
-                    if avail.can_open() && !src.sensitive {
-                        return CitationListOutcome::Citation(
-                            SourceCitationOutcome::OpenRequested {
-                                id: src.id.clone(),
-                                destination: src.destination.clone(),
-                                external: src.external,
-                            },
-                        );
-                    }
-                    return CitationListOutcome::Citation(
-                        SourceCitationOutcome::PreviewRequested { id: src.id.clone() },
-                    );
-                }
-            }
-        }
-        CitationListOutcome::Ignored
-    }
 }
 
 /// Citation list paint.

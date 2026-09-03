@@ -507,18 +507,6 @@ impl PopoverState {
         PopoverOutcome::CloseRequested
     }
 
-    /// Sync local open with stack presence.
-    pub fn sync_with_stack<F>(&mut self, stack: &OverlayStack<F>, id: &OverlayId) {
-        let on_stack = stack.contains(id);
-        self.open = on_stack;
-        if on_stack {
-            self.accepts_input = stack.top_owns_input() && stack.top().is_some_and(|t| &t.id == id);
-        } else {
-            self.focused = false;
-            self.accepts_input = false;
-        }
-    }
-
     /// Sync presentation from bounds.
     pub fn sync_presentation(&mut self, bounds: Rect, preferred: OverlaySize) -> PopoverOutcome {
         if self.presentation_override.is_some() {

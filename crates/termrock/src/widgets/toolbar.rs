@@ -311,7 +311,6 @@ pub struct Toolbar<'a, Id> {
     variant: ToolbarVariant,
     /// Synthetic id for the overflow "More" chip (required for overflow UX).
     overflow_id: Option<Id>,
-    colorless: bool,
 }
 
 impl<'a, Id> Toolbar<'a, Id> {
@@ -327,7 +326,6 @@ impl<'a, Id> Toolbar<'a, Id> {
             // Seeded from the system: a widget that defaults to false is
             // claiming the terminal has Unicode and colour before anyone
             // asked it. Builders below still force either way.
-            colorless: system.mono(),
         }
     }
 
@@ -363,14 +361,6 @@ impl<'a, Id> Toolbar<'a, Id> {
     #[must_use]
     pub fn overflow_id(mut self, id: Id) -> Self {
         self.overflow_id = Some(id);
-        self
-    }
-
-    /// ASCII cursor brackets.
-    #[must_use]
-    /// No-color emphasis (strong text instead of ActionFocused bg).
-    pub const fn colorless(mut self, colorless: bool) -> Self {
-        self.colorless = colorless;
         self
     }
 }
@@ -429,39 +419,6 @@ impl<Id: Clone + PartialEq> Toolbar<'_, Id> {
         match state.roving.handle_key(key, &entries) {
             RovingOutcome::Ignored => ToolbarOutcome::Ignored,
             RovingOutcome::ActiveChanged { from, to } => ToolbarOutcome::CursorMoved { from, to },
-        }
-    }
-
-    /// Intent path when host already mapped keys.
-    pub fn handle_intent(
-        &self,
-        state: &mut ToolbarState<Id>,
-        intent: UiIntent,
-        area: Rect,
-    ) -> ToolbarOutcome<Id> {
-        if !state.surface_focused {
-            return ToolbarOutcome::Ignored;
-        }
-        let plan = self.plan(area);
-        let entries = ToolbarState::roving_entries(
-            self.items,
-            &plan.visible,
-            self.overflow_id.as_ref(),
-            plan.has_overflow,
-        );
-        let _ = state.roving.reconcile(&entries);
-        match intent {
-            UiIntent::Activate | UiIntent::Submit => self.activate_cursor(state),
-            UiIntent::Cancel | UiIntent::Close if state.overflow_open => {
-                state.overflow_open = false;
-                ToolbarOutcome::OverflowClosed
-            }
-            other => match state.roving.handle_intent(other, &entries) {
-                RovingOutcome::Ignored => ToolbarOutcome::Ignored,
-                RovingOutcome::ActiveChanged { from, to } => {
-                    ToolbarOutcome::CursorMoved { from, to }
-                }
-            },
         }
     }
 

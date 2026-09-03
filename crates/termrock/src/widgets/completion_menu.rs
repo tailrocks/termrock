@@ -938,34 +938,6 @@ impl<Id: Clone + PartialEq> CompletionMenuState<Id> {
             .find(|(_, rect)| rect.contains(position))
             .map(|(id, _)| id.clone())
     }
-
-    /// Open on stack helper.
-    pub fn open_on_stack<F: Clone>(
-        &mut self,
-        stack: &mut OverlayStack<F>,
-        bounds: Rect,
-        anchor: Rect,
-        preferred: CompletionMenuSize,
-        opener_focus: Option<F>,
-    ) -> OverlayOutcome<F> {
-        self.open = true;
-        let _ = self.sync_presentation(bounds);
-        open_completion_configured(
-            stack,
-            bounds,
-            anchor,
-            preferred,
-            opener_focus,
-            self.presentation_override.or(Some(self.presentation)),
-            None,
-        )
-    }
-
-    /// Close on stack.
-    pub fn close_on_stack<F: Clone>(&mut self, stack: &mut OverlayStack<F>) -> OverlayOutcome<F> {
-        self.set_open(false);
-        dismiss_completion_overlay(stack)
-    }
 }
 
 // ── Widget ──────────────────────────────────────────────────────────────────
@@ -1032,13 +1004,6 @@ impl<'a, Id> CompletionMenu<'a, Id> {
     /// border.
     pub const fn focused(mut self, focused: bool) -> Self {
         self.focused = focused;
-        self
-    }
-
-    /// Reduced-color roles.
-    #[must_use]
-    pub const fn colorless(mut self, on: bool) -> Self {
-        self.colorless = on;
         self
     }
 

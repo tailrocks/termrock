@@ -593,13 +593,6 @@ impl<Id: Clone + PartialEq> HistoryPickerState<Id> {
     pub const fn redaction(&self) -> HistoryRedaction {
         self.redaction
     }
-    /// Presentation override.
-    pub fn set_presentation_override(&mut self, p: Option<HistoryPickerPresentation>) {
-        self.presentation_override = p;
-        if let Some(p) = p {
-            self.presentation = p;
-        }
-    }
 
     /// Presentation.
     #[must_use]

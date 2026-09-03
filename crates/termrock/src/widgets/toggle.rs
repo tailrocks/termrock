@@ -353,31 +353,10 @@ impl<'a> Toggle<'a> {
         self
     }
 
-    /// Compact toolbar density.
-    #[must_use]
-    pub const fn compact(mut self) -> Self {
-        self.size = ToggleSize::Compact;
-        self
-    }
-
     /// Recipe.
     #[must_use]
     pub const fn recipe(mut self, recipe: ToggleRecipe) -> Self {
         self.recipe = recipe;
-        self
-    }
-
-    /// Quiet recipe.
-    #[must_use]
-    pub const fn quiet(mut self) -> Self {
-        self.recipe = ToggleRecipe::Quiet;
-        self
-    }
-
-    /// Colorless emphasis.
-    #[must_use]
-    pub const fn colorless(mut self, on: bool) -> Self {
-        self.colorless = on;
         self
     }
 
@@ -687,34 +666,6 @@ impl<'a, Id> ToggleGroupItem<'a, Id> {
         self
     }
 
-    /// Explicit value.
-    #[must_use]
-    pub const fn value(mut self, value: ToggleValue) -> Self {
-        self.value = value;
-        self
-    }
-
-    /// Icon.
-    #[must_use]
-    pub const fn icon(mut self, icon: &'a str) -> Self {
-        self.icon = Some(icon);
-        self
-    }
-
-    /// A11y name.
-    #[must_use]
-    pub const fn accessible_label(mut self, name: &'a str) -> Self {
-        self.accessible_label = Some(name);
-        self
-    }
-
-    /// Enabled.
-    #[must_use]
-    pub const fn enabled(mut self, on: bool) -> Self {
-        self.enabled = on;
-        self
-    }
-
     /// Priority.
     #[must_use]
     pub const fn priority(mut self, priority: u8) -> Self {
@@ -892,24 +843,10 @@ impl<'a, Id> ToggleGroup<'a, Id> {
         self
     }
 
-    /// Orientation.
-    #[must_use]
-    pub const fn orientation(mut self, o: ToggleGroupOrientation) -> Self {
-        self.orientation = o;
-        self
-    }
-
     /// Compact toolbar density.
     #[must_use]
     pub const fn compact(mut self) -> Self {
         self.size = ToggleSize::Compact;
-        self
-    }
-
-    /// Overflow label.
-    #[must_use]
-    pub const fn overflow_label(mut self, label: &'a str) -> Self {
-        self.overflow_label = label;
         self
     }
 

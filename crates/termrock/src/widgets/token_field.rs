@@ -24,7 +24,7 @@ use ratatui_core::{
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
-    interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
+    interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
     style::{ControlState, DesignSystem},
     text::{display_cols, take_display_cols},
 };
@@ -839,28 +839,6 @@ impl TokenFieldState<String> {
         }
 
         TokenFieldOutcome::Ignored
-    }
-
-    /// Intent path.
-    pub fn handle_intent(&mut self, intent: UiIntent) -> TokenFieldOutcome<String> {
-        if !self.enabled {
-            return TokenFieldOutcome::Ignored;
-        }
-        match intent {
-            UiIntent::Submit | UiIntent::Activate => {
-                if matches!(self.zone, TokenFieldZone::Draft) {
-                    if self.draft.value().trim().is_empty() {
-                        TokenFieldOutcome::Submitted
-                    } else {
-                        self.commit_draft()
-                    }
-                } else {
-                    TokenFieldOutcome::Ignored
-                }
-            }
-            UiIntent::Cancel | UiIntent::Close => TokenFieldOutcome::Cancelled,
-            _ => TokenFieldOutcome::Ignored,
-        }
     }
 
     /// Mouse.

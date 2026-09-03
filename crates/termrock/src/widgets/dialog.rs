@@ -1137,34 +1137,6 @@ impl<Id> DialogState<Id> {
             self.initial_applied = true;
         }
     }
-
-    /// Open on OverlayStack with opener restoration.
-    pub fn open_on_stack<F: Clone>(
-        &mut self,
-        stack: &mut OverlayStack<F>,
-        bounds: Rect,
-        preferred: DialogSize,
-        opener_focus: Option<F>,
-    ) -> OverlayOutcome<F> {
-        self.open = true;
-        self.initial_applied = false;
-        self.ensure_initial_focus();
-        open_dialog_configured(
-            stack,
-            bounds,
-            preferred,
-            opener_focus,
-            self.close_policy,
-            Some(self.recipe),
-            None,
-        )
-    }
-
-    /// Dismiss stack entry (opener restore).
-    pub fn close_on_stack<F: Clone>(&mut self, stack: &mut OverlayStack<F>) -> OverlayOutcome<F> {
-        self.open = false;
-        dismiss_dialog_overlay(stack)
-    }
 }
 
 impl<Id: Clone + PartialEq> DialogState<Id> {
@@ -2290,14 +2262,6 @@ impl<'a, Id> ChoiceDialog<'a, Id> {
     #[must_use]
     pub const fn gap(mut self, gap: &'a str) -> Self {
         self.gap = gap;
-        self
-    }
-
-    /// ASCII action marks.
-    #[must_use]
-    /// Reduced-color action paint.
-    pub const fn colorless(mut self, colorless: bool) -> Self {
-        self.colorless = colorless;
         self
     }
 }

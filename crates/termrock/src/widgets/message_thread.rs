@@ -22,7 +22,7 @@ use std::collections::BTreeSet;
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers, MouseEvent},
+    input::{KeyCode, KeyEvent, KeyModifiers},
     style::DesignSystem,
     text::take_display_cols,
     widgets::transcript::{
@@ -1018,19 +1018,6 @@ impl MessageThreadState {
             TranscriptOutcome::Cancelled => MessageThreadOutcome::Cancelled,
         }
     }
-
-    /// Mouse.
-    pub fn handle_mouse(
-        &mut self,
-        event: MouseEvent,
-        blocks: &[TranscriptBlock<'_, String>],
-    ) -> MessageThreadOutcome {
-        if !self.accepts_input {
-            return MessageThreadOutcome::Ignored;
-        }
-        let out = self.transcript.handle_mouse(event, blocks);
-        self.map_transcript_outcome(out)
-    }
 }
 
 // ── Widget ──────────────────────────────────────────────────────────────────
@@ -1054,14 +1041,6 @@ impl<'a> MessageThread<'a> {
             colorless: false,
             focused: true,
         }
-    }
-
-    /// ASCII prefixes.
-    #[must_use]
-    /// Colorless.
-    pub const fn colorless(mut self, on: bool) -> Self {
-        self.colorless = on;
-        self
     }
 
     /// Focused chrome.

@@ -324,31 +324,10 @@ impl<'a> Sparkline<'a> {
         }
     }
 
-    /// Scale mode.
-    #[must_use]
-    pub const fn scale(mut self, scale: ScaleMode) -> Self {
-        self.scale = scale;
-        self
-    }
-
-    /// Glyph set.
-    #[must_use]
-    pub const fn glyphs(mut self, glyphs: VizGlyphSet) -> Self {
-        self.glyphs = glyphs;
-        self
-    }
-
     /// Threshold in domain units.
     #[must_use]
     pub const fn threshold(mut self, t: f64) -> Self {
         self.threshold = Some(t);
-        self
-    }
-
-    /// Selected absolute index.
-    #[must_use]
-    pub const fn selected(mut self, index: usize) -> Self {
-        self.selected = Some(index);
         self
     }
 
@@ -604,55 +583,6 @@ impl<'a> Chart<'a> {
         self.fill = ChartFill::Area;
         self
     }
-    /// Explicit fill mode.
-    #[must_use]
-    pub const fn fill(mut self, fill: ChartFill) -> Self {
-        self.fill = fill;
-        self
-    }
-
-    /// Step hold between samples (shadcn chart-line-step peer).
-    #[must_use]
-    pub const fn step(mut self) -> Self {
-        self.interpolation = ChartInterpolation::Step;
-        self
-    }
-
-    /// Scale.
-    #[must_use]
-    pub const fn scale(mut self, scale: ScaleMode) -> Self {
-        self.scale = scale;
-        self
-    }
-
-    /// Glyphs.
-    #[must_use]
-    pub const fn glyphs(mut self, glyphs: VizGlyphSet) -> Self {
-        self.glyphs = glyphs;
-        self
-    }
-
-    /// Thresholds in domain units.
-    #[must_use]
-    pub const fn thresholds(mut self, t: &'a [f64]) -> Self {
-        self.thresholds = t;
-        self
-    }
-
-    /// Selected series index.
-    #[must_use]
-    pub const fn selected_series(mut self, i: usize) -> Self {
-        self.selected_series = Some(i);
-        self
-    }
-
-    /// Selected sample index (into each series / window).
-    #[must_use]
-    pub const fn selected_index(mut self, i: usize) -> Self {
-        self.selected_index = Some(i);
-        self
-    }
-
     /// Legend row.
     #[must_use]
     pub const fn show_legend(mut self, on: bool) -> Self {
@@ -664,20 +594,6 @@ impl<'a> Chart<'a> {
     #[must_use]
     pub const fn show_axes(mut self, on: bool) -> Self {
         self.show_axes = on;
-        self
-    }
-
-    /// Streaming window.
-    #[must_use]
-    pub const fn window(mut self, n: usize) -> Self {
-        self.window = n;
-        self
-    }
-
-    /// Title.
-    #[must_use]
-    pub const fn title(mut self, title: &'a str) -> Self {
-        self.title = Some(title);
         self
     }
 }
@@ -1123,24 +1039,10 @@ impl<'a> Gauge<'a> {
         self
     }
 
-    /// Glyphs.
-    #[must_use]
-    pub const fn glyphs(mut self, glyphs: VizGlyphSet) -> Self {
-        self.glyphs = glyphs;
-        self
-    }
-
     /// Label.
     #[must_use]
     pub const fn label(mut self, label: &'a str) -> Self {
         self.label = Some(label);
-        self
-    }
-
-    /// Unit suffix.
-    #[must_use]
-    pub const fn unit(mut self, unit: &'a str) -> Self {
-        self.unit = Some(unit);
         self
     }
 
@@ -1347,20 +1249,6 @@ impl<'a> Histogram<'a> {
         }
     }
 
-    /// Scale for counts.
-    #[must_use]
-    pub const fn scale(mut self, scale: ScaleMode) -> Self {
-        self.scale = scale;
-        self
-    }
-
-    /// Glyphs.
-    #[must_use]
-    pub const fn glyphs(mut self, glyphs: VizGlyphSet) -> Self {
-        self.glyphs = glyphs;
-        self
-    }
-
     /// Vertical columns (default) vs horizontal bars.
     #[must_use]
     pub const fn vertical(mut self, on: bool) -> Self {
@@ -1561,38 +1449,6 @@ pub struct BarDatum<'a> {
 }
 
 impl<'a> BarDatum<'a> {
-    /// Normalized solid bar (0..=1).
-    #[must_use]
-    pub const fn new(label: &'a str, fraction: f64) -> Self {
-        Self {
-            label,
-            fraction,
-            segments: &[],
-        }
-    }
-
-    /// Raw solid value (pair with [`BarSeries::scale`]).
-    #[must_use]
-    pub const fn value(label: &'a str, value: f64) -> Self {
-        Self {
-            label,
-            fraction: value,
-            segments: &[],
-        }
-    }
-
-    /// Stacked bar: segment weights (shadcn `chart-bar-stacked` peer).
-    ///
-    /// Segments should be non-negative; domain uses sum (and baseline 0).
-    #[must_use]
-    pub const fn stacked(label: &'a str, segments: &'a [f64]) -> Self {
-        Self {
-            label,
-            fraction: 0.0,
-            segments,
-        }
-    }
-
     /// Whether this bar uses multi-segment stack paint.
     #[must_use]
     pub const fn is_stacked(self) -> bool {
@@ -1609,43 +1465,6 @@ pub struct BarSeries<'a> {
     glyphs: VizGlyphSet,
     selected: Option<usize>,
     pre_normalized: bool,
-}
-
-impl<'a> BarSeries<'a> {
-    /// Creates a bar series (default: values treated as fractions 0..=1).
-    #[must_use]
-    pub const fn new(bars: &'a [BarDatum<'a>], system: &'a DesignSystem) -> Self {
-        Self {
-            bars,
-            system,
-            scale: ScaleMode::Fixed { min: 0.0, max: 1.0 },
-            glyphs: VizGlyphSet::Auto,
-            selected: None,
-            pre_normalized: true,
-        }
-    }
-
-    /// Treat `fraction` / segments as raw values with scale.
-    #[must_use]
-    pub const fn scale(mut self, scale: ScaleMode) -> Self {
-        self.scale = scale;
-        self.pre_normalized = false;
-        self
-    }
-
-    /// Glyphs.
-    #[must_use]
-    pub const fn glyphs(mut self, glyphs: VizGlyphSet) -> Self {
-        self.glyphs = glyphs;
-        self
-    }
-
-    /// Selected bar.
-    #[must_use]
-    pub const fn selected(mut self, i: usize) -> Self {
-        self.selected = Some(i);
-        self
-    }
 }
 
 impl BarSeries<'_> {
@@ -1945,16 +1764,6 @@ pub struct MeterSegment<'a> {
 }
 
 impl<'a> MeterSegment<'a> {
-    /// Construct.
-    #[must_use]
-    pub const fn new(label: &'a str, weight: f64, role: Role) -> Self {
-        Self {
-            label,
-            weight,
-            role,
-        }
-    }
-
     /// Finite positive weight, else 0.
     #[must_use]
     pub fn effective_weight(self) -> f64 {
@@ -2021,43 +1830,6 @@ pub struct SegmentedMeter<'a> {
     separators: bool,
     /// Optional center caption (donut-text peer); paints on row below when height ≥ 2.
     center: Option<&'a str>,
-}
-
-impl<'a> SegmentedMeter<'a> {
-    /// Creates a segmented meter (continuous segments, no separators).
-    #[must_use]
-    pub const fn new(segments: &'a [MeterSegment<'a>], system: &'a DesignSystem) -> Self {
-        Self {
-            segments,
-            system,
-            glyphs: VizGlyphSet::Auto,
-            selected: None,
-            show_labels: false,
-            separators: false,
-            center: None,
-        }
-    }
-
-    /// Glyphs.
-    #[must_use]
-    pub const fn glyphs(mut self, glyphs: VizGlyphSet) -> Self {
-        self.glyphs = glyphs;
-        self
-    }
-
-    /// Selected / active segment (chart-pie-interactive / donut-active peer).
-    #[must_use]
-    pub const fn selected(mut self, i: usize) -> Self {
-        self.selected = Some(i);
-        self
-    }
-
-    /// Center caption under the meter (donut-text peer; needs height ≥ 2).
-    #[must_use]
-    pub const fn center(mut self, text: &'a str) -> Self {
-        self.center = Some(text);
-        self
-    }
 }
 
 impl SegmentedMeter<'_> {
@@ -2189,14 +1961,6 @@ pub struct MetricAxis<'a> {
     pub label: &'a str,
 }
 
-impl<'a> MetricAxis<'a> {
-    /// Construct.
-    #[must_use]
-    pub const fn new(label: &'a str) -> Self {
-        Self { label }
-    }
-}
-
 /// One series of values aligned with axes (len should match axis count).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct MetricSeries<'a> {
@@ -2204,14 +1968,6 @@ pub struct MetricSeries<'a> {
     pub label: &'a str,
     /// Per-axis values (non-finite = missing).
     pub values: &'a [f64],
-}
-
-impl<'a> MetricSeries<'a> {
-    /// Construct.
-    #[must_use]
-    pub const fn new(label: &'a str, values: &'a [f64]) -> Self {
-        Self { label, values }
-    }
 }
 
 /// Multi-metric / multi-axis comparison chart (shadcn **radar** job without polar theater).
@@ -2230,63 +1986,6 @@ pub struct MetricRadar<'a> {
     selected_series: Option<usize>,
     show_legend: bool,
     title: Option<&'a str>,
-}
-
-impl<'a> MetricRadar<'a> {
-    /// Axes + series + design system.
-    #[must_use]
-    pub const fn new(
-        axes: &'a [MetricAxis<'a>],
-        series: &'a [MetricSeries<'a>],
-        system: &'a DesignSystem,
-    ) -> Self {
-        Self {
-            axes,
-            series,
-            system,
-            scale: ScaleMode::Auto,
-            glyphs: VizGlyphSet::Auto,
-            selected_axis: None,
-            selected_series: None,
-            show_legend: true,
-            title: None,
-        }
-    }
-
-    /// Scale (Auto fits finite values across all series; Fixed for unit scores).
-    #[must_use]
-    pub const fn scale(mut self, scale: ScaleMode) -> Self {
-        self.scale = scale;
-        self
-    }
-
-    /// Glyphs.
-    #[must_use]
-    pub const fn glyphs(mut self, glyphs: VizGlyphSet) -> Self {
-        self.glyphs = glyphs;
-        self
-    }
-
-    /// Highlight series (emphasizes that series' bars).
-    #[must_use]
-    pub const fn selected_series(mut self, i: usize) -> Self {
-        self.selected_series = Some(i);
-        self
-    }
-
-    /// Legend row under title.
-    #[must_use]
-    pub const fn show_legend(mut self, on: bool) -> Self {
-        self.show_legend = on;
-        self
-    }
-
-    /// Title.
-    #[must_use]
-    pub const fn title(mut self, title: &'a str) -> Self {
-        self.title = Some(title);
-        self
-    }
 }
 
 impl MetricRadar<'_> {

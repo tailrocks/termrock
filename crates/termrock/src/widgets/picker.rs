@@ -532,14 +532,6 @@ impl<'a, Id> Picker<'a, Id> {
         self.focused = focused;
         self
     }
-
-    /// ASCII empty / list recipes.
-    #[must_use]
-    /// Reduced-color paint.
-    pub const fn colorless(mut self, colorless: bool) -> Self {
-        self.colorless = colorless;
-        self
-    }
 }
 
 impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {

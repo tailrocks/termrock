@@ -18,7 +18,7 @@ use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::State
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
-    interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
+    interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
     style::{ButtonRecipeVariant, ControlState, DesignSystem, Role},
     text::{display_cols, take_display_cols},
 };
@@ -799,18 +799,6 @@ impl FormWizardState {
                 KeyCode::Char('s') | KeyCode::Char('S') if ctrl => self.save_progress(),
                 _ => FormWizardOutcome::Ignored,
             },
-        }
-    }
-
-    /// Intent path.
-    pub fn handle_intent(&mut self, intent: UiIntent) -> FormWizardOutcome {
-        if !self.enabled || !self.focused {
-            return FormWizardOutcome::Ignored;
-        }
-        match intent {
-            UiIntent::Cancel | UiIntent::Close => self.cancel(),
-            UiIntent::Submit | UiIntent::Activate => self.next(),
-            _ => FormWizardOutcome::Ignored,
         }
     }
 

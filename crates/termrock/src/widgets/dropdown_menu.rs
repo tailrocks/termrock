@@ -694,33 +694,6 @@ impl DropdownMenuState {
         self.open_with_trigger(root, bounds, MenuOpenTrigger::ContextKey)
     }
 
-    /// Open on OverlayStack after successful local open.
-    pub fn open_on_stack<F: Clone, Id>(
-        &self,
-        stack: &mut OverlayStack<F>,
-        bounds: Rect,
-        anchor_or_origin: Rect,
-        root: &[MenuNode<Id>],
-        opener_focus: Option<F>,
-    ) -> OverlayOutcome<F> {
-        let size = measure_menu_panel(root);
-        if self.context_mode {
-            open_context_menu_overlay(stack, bounds, anchor_or_origin, size, opener_focus)
-        } else {
-            open_dropdown_menu_overlay(stack, bounds, anchor_or_origin, size, opener_focus)
-        }
-    }
-
-    /// Close on stack (restores opener).
-    pub fn close_on_stack<F: Clone>(&mut self, stack: &mut OverlayStack<F>) -> OverlayOutcome<F> {
-        self.close_all();
-        if self.context_mode {
-            dismiss_context_menu_overlays(stack)
-        } else {
-            dismiss_dropdown_menu_overlays(stack)
-        }
-    }
-
     fn open_submenu_under_cursor<Id: Clone>(
         &mut self,
         root: &[MenuNode<Id>],
@@ -1098,13 +1071,6 @@ impl<'a, Id> DropdownMenu<'a, Id> {
             colorless: false,
             depth: 0,
         }
-    }
-
-    /// Reduced-color roles.
-    #[must_use]
-    pub const fn colorless(mut self, on: bool) -> Self {
-        self.colorless = on;
-        self
     }
 
     /// Paint cascade depth (0 = root panel of open path).

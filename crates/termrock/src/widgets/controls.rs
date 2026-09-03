@@ -332,8 +332,6 @@ pub struct Checkbox<'a, Id> {
     label: &'a str,
     description: Option<&'a str>,
     system: &'a DesignSystem,
-    /// Force monochrome / no-color emphasis.
-    colorless: bool,
 }
 
 impl<'a, Id> Checkbox<'a, Id> {
@@ -345,7 +343,6 @@ impl<'a, Id> Checkbox<'a, Id> {
             label,
             description: None,
             system,
-            colorless: false,
         }
     }
 
@@ -353,13 +350,6 @@ impl<'a, Id> Checkbox<'a, Id> {
     #[must_use]
     pub const fn description(mut self, description: &'a str) -> Self {
         self.description = Some(description);
-        self
-    }
-
-    /// Colorless emphasis (brackets always from glyph ASCII path when mono).
-    #[must_use]
-    pub const fn colorless(mut self, on: bool) -> Self {
-        self.colorless = on;
         self
     }
 
@@ -878,7 +868,6 @@ pub struct RadioGroup<'a, Id> {
     orientation: RadioGroupOrientation,
     /// Auto-vertical when width &lt; this (0 = never). Default 28.
     stack_below: u16,
-    colorless: bool,
 }
 
 impl<'a, Id> RadioGroup<'a, Id> {
@@ -891,7 +880,6 @@ impl<'a, Id> RadioGroup<'a, Id> {
             legend: None,
             orientation: RadioGroupOrientation::Vertical,
             stack_below: 28,
-            colorless: false,
         }
     }
 
@@ -927,13 +915,6 @@ impl<'a, Id> RadioGroup<'a, Id> {
     #[must_use]
     pub const fn stack_below(mut self, cols: u16) -> Self {
         self.stack_below = cols;
-        self
-    }
-
-    /// Force ASCII-style marks.
-    #[must_use]
-    pub const fn colorless(mut self, on: bool) -> Self {
-        self.colorless = on;
         self
     }
 
@@ -1331,33 +1312,6 @@ impl<'a, Id: Clone + PartialEq> RadioGroup<'a, Id> {
         }
     }
 
-    /// Intent path.
-    pub fn handle_intent(&self, state: &mut RadioState<Id>, intent: UiIntent) -> RadioOutcome<Id> {
-        if !state.enabled || self.options.is_empty() {
-            return RadioOutcome::Ignored;
-        }
-        let items = self.collection_items();
-        let _ = state.collection.reconcile(&items);
-        match intent {
-            UiIntent::Activate | UiIntent::Submit | UiIntent::Toggle => {
-                if let Some(id) = state.collection.active().cloned() {
-                    self.commit_selected(state, id)
-                } else {
-                    RadioOutcome::Ignored
-                }
-            }
-            other => {
-                let before = state.collection.active().cloned();
-                let _ = state.collection.handle_intent(other, &items);
-                if state.collection.active() != before.as_ref() {
-                    self.after_cursor_move(state)
-                } else {
-                    RadioOutcome::Ignored
-                }
-            }
-        }
-    }
-
     /// Mouse: click option → select + focus.
     pub fn handle_mouse(&self, state: &mut RadioState<Id>, event: MouseEvent) -> RadioOutcome<Id> {
         if !state.enabled {
@@ -1504,44 +1458,6 @@ impl<Id: Clone + PartialEq> RadioState<Id> {
             }
         }
         RadioOutcome::Ignored
-    }
-
-    /// Intent path (headless ids).
-    pub fn handle_intent(&mut self, intent: UiIntent, options: &[Id]) -> RadioOutcome<Id> {
-        if !self.enabled || options.is_empty() {
-            return RadioOutcome::Ignored;
-        }
-        self.surface_focused = true;
-        let items = Self::collection_items(options);
-        let _ = self.collection.reconcile(&items);
-        match intent {
-            UiIntent::Activate | UiIntent::Submit | UiIntent::Toggle => {
-                if let Some(id) = self.collection.active().cloned() {
-                    self.selected = Some(id.clone());
-                    RadioOutcome::Selected(id)
-                } else {
-                    RadioOutcome::Ignored
-                }
-            }
-            other => {
-                let before = self.collection.active().cloned();
-                let _ = self.collection.handle_intent(other, &items);
-                if self.collection.active() != before.as_ref() {
-                    if let Some(id) = self.collection.active().cloned() {
-                        return match self.policy {
-                            RadioSelectionPolicy::FollowFocus => {
-                                self.selected = Some(id.clone());
-                                RadioOutcome::Selected(id)
-                            }
-                            RadioSelectionPolicy::ActivateToSelect => {
-                                RadioOutcome::CursorMoved { id }
-                            }
-                        };
-                    }
-                }
-                RadioOutcome::Ignored
-            }
-        }
     }
 }
 
@@ -1818,8 +1734,6 @@ pub struct Switch<'a, Id> {
     description: Option<&'a str>,
     system: &'a DesignSystem,
     recipe: SwitchRecipe,
-    /// Paint explicit ON/OFF (or On/Off) text in the track (default true).
-    colorless: bool,
 }
 
 impl<'a, Id> Switch<'a, Id> {
@@ -1832,7 +1746,6 @@ impl<'a, Id> Switch<'a, Id> {
             description: None,
             system,
             recipe: SwitchRecipe::SettingsRow,
-            colorless: false,
         }
     }
 
@@ -1861,13 +1774,6 @@ impl<'a, Id> Switch<'a, Id> {
     #[must_use]
     pub const fn settings_row(mut self) -> Self {
         self.recipe = SwitchRecipe::SettingsRow;
-        self
-    }
-
-    /// Force monochrome / ASCII track emphasis.
-    #[must_use]
-    pub const fn colorless(mut self, on: bool) -> Self {
-        self.colorless = on;
         self
     }
 

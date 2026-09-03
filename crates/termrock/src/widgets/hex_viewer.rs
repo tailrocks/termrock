@@ -1173,14 +1173,6 @@ impl<'a> HexViewer<'a> {
         self
     }
 
-    /// ASCII chrome.
-    #[must_use]
-    /// Colorless.
-    pub const fn colorless(mut self, colorless: bool) -> Self {
-        self.colorless = colorless;
-        self
-    }
-
     /// Paint O(visible rows).
     pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut HexViewerState) {
         state.regions.clear();

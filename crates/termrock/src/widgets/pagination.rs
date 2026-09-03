@@ -19,7 +19,7 @@ use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::State
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
-    interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
+    interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
     style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
 };
@@ -717,49 +717,6 @@ impl PaginationState {
                 PaginationPart::Prev => PaginationPart::First,
                 PaginationPart::First => PaginationPart::Jump,
             },
-        }
-    }
-
-    /// Intent.
-    pub fn handle_intent(&mut self, intent: UiIntent) -> PaginationOutcome {
-        if !self.enabled || !self.focused {
-            return PaginationOutcome::Ignored;
-        }
-        match intent {
-            UiIntent::Activate | UiIntent::Submit => self.activate_part(),
-            UiIntent::Page(p) => {
-                use crate::interaction::PageMove;
-                match p {
-                    PageMove::Forward => self.next(),
-                    PageMove::Backward => self.prev(),
-                }
-            }
-            UiIntent::Move(m) => {
-                use crate::interaction::NavigationMove;
-                match m {
-                    NavigationMove::Next => {
-                        self.part = self.next_part();
-                        PaginationOutcome::Changed
-                    }
-                    NavigationMove::Previous => {
-                        self.part = self.prev_part();
-                        PaginationOutcome::Changed
-                    }
-                    NavigationMove::First => self.first(),
-                    NavigationMove::Last => self.last(),
-                    _ => PaginationOutcome::Ignored,
-                }
-            }
-            UiIntent::Cancel | UiIntent::Close => {
-                if self.jump_active {
-                    self.jump_active = false;
-                    self.jump_draft.clear();
-                    PaginationOutcome::JumpCancelled
-                } else {
-                    PaginationOutcome::Ignored
-                }
-            }
-            _ => PaginationOutcome::Ignored,
         }
     }
 

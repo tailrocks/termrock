@@ -1313,14 +1313,6 @@ impl<'a, Id> MenuBar<'a, Id> {
         }
     }
 
-    /// ASCII glyphs.
-    #[must_use]
-    /// Reduced-color roles.
-    pub const fn colorless(mut self, on: bool) -> Self {
-        self.colorless = on;
-        self
-    }
-
     /// Paint bar into `area` (typically one row). Updates hits on `state`.
     pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut MenuBarState)
     where

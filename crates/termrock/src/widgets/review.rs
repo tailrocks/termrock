@@ -25,7 +25,6 @@ use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::State
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers},
-    interaction::UiIntent,
     style::{DesignSystem, ListRowVisualState, Role},
     text::take_display_cols,
     widgets::diff::{DiffFile, DiffHunk, DiffLine, DiffView, DiffViewOutcome, DiffViewState},
@@ -1134,21 +1133,6 @@ impl DiffReviewState {
     /// Keys without files (hunks only).
     pub fn handle_key(&mut self, key: KeyEvent, hunks: &[DiffHunk]) -> DiffReviewOutcome {
         self.handle_key_lines(key, &[], hunks, &[])
-    }
-
-    /// Intent routing.
-    pub fn handle_intent(
-        &mut self,
-        intent: UiIntent,
-        lines: &[DiffLine<'_>],
-        hunks: &[DiffHunk],
-    ) -> DiffReviewOutcome {
-        if !self.accepts_input {
-            return DiffReviewOutcome::Ignored;
-        }
-        let refs: Vec<&DiffLine<'_>> = lines.iter().collect();
-        let out = self.view.handle_intent(intent, &refs, hunks);
-        self.map_view(out)
     }
 
     fn handle_file_tree_key(

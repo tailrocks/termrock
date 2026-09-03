@@ -30,7 +30,7 @@ use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{
         CollectionItem, CollectionOutcome, CollectionState, HitRegion, SemanticNode, SemanticRole,
-        SemanticScene, SemanticState, UiIntent,
+        SemanticScene, SemanticState,
     },
     style::{DesignSystem, Role},
     text::take_display_cols,
@@ -710,41 +710,6 @@ impl<Id> TabsState<Id> {
         // keep scroll window covering focus (simple: offset = idx if ahead)
         if idx < self.scroll_offset {
             self.scroll_offset = idx;
-        }
-    }
-
-    /// Intent path.
-    pub fn handle_intent(&mut self, intent: UiIntent, tabs: &[Tab<'_, Id>]) -> TabsOutcome<Id>
-    where
-        Id: Clone + PartialEq,
-    {
-        if !self.enabled || !self.focused {
-            return TabsOutcome::Ignored;
-        }
-        let items = Self::items_from_tabs(tabs);
-        match intent {
-            UiIntent::Activate | UiIntent::Submit => {
-                if let Some(id) = self.collection.active().cloned() {
-                    return self.activate(id, tabs);
-                }
-                TabsOutcome::Ignored
-            }
-            UiIntent::Close => {
-                if self.overflow_open {
-                    self.overflow_open = false;
-                    return TabsOutcome::OverflowClosed;
-                }
-                if let Some(id) = self.collection.active().cloned() {
-                    if tabs.iter().any(|t| t.id == id && t.closable) {
-                        return TabsOutcome::CloseRequested { id };
-                    }
-                }
-                TabsOutcome::Ignored
-            }
-            other => {
-                let out = self.collection.handle_intent(other, &items);
-                self.after_focus_move(out, tabs)
-            }
         }
     }
 

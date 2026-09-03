@@ -25,7 +25,7 @@ use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::State
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
-    interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
+    interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
     runtime::FrameTick,
     style::{ButtonRecipeVariant, ControlState, DesignSystem, Glyph, Role},
     text::{display_cols, take_display_cols},
@@ -565,40 +565,6 @@ impl SearchInputState {
                 SearchInputOutcome::ClipboardCopy { text }
             }
             TextInputOutcome::Ignored => SearchInputOutcome::Ignored,
-        }
-    }
-
-    /// Intent path.
-    pub fn handle_intent(&mut self, intent: UiIntent) -> SearchInputOutcome {
-        if !self.enabled {
-            return SearchInputOutcome::Ignored;
-        }
-        match intent {
-            UiIntent::Submit | UiIntent::Activate => {
-                let q = self.query.value().to_owned();
-                self.push_history(q.clone());
-                self.debounce_pending = false;
-                self.last_emitted = Some(q.clone());
-                SearchInputOutcome::Submitted { query: q }
-            }
-            UiIntent::Cancel | UiIntent::Close => {
-                if !self.query.value().is_empty() {
-                    let _ = self.clear();
-                    SearchInputOutcome::Cleared
-                } else {
-                    SearchInputOutcome::Cancelled
-                }
-            }
-            other => match self.query.handle_intent(other) {
-                TextInputOutcome::Changed => {
-                    self.mark_edited(None);
-                    SearchInputOutcome::Changed
-                }
-                TextInputOutcome::Submitted(q) => SearchInputOutcome::Submitted { query: q },
-                TextInputOutcome::Cancelled => SearchInputOutcome::Cancelled,
-                TextInputOutcome::Cleared => SearchInputOutcome::Cleared,
-                _ => SearchInputOutcome::Ignored,
-            },
         }
     }
 

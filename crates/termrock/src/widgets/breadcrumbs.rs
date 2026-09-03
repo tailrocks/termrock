@@ -21,7 +21,7 @@ use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::State
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
-    interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
+    interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
     style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
 };
@@ -557,50 +557,6 @@ impl BreadcrumbsState {
             return BreadcrumbsOutcome::Ignored;
         }
         BreadcrumbsOutcome::Navigate(item.id.clone())
-    }
-
-    /// Intent path.
-    pub fn handle_intent<Id: Clone>(
-        &mut self,
-        intent: UiIntent,
-        items: &[BreadcrumbItem<Id>],
-    ) -> BreadcrumbsOutcome<Id> {
-        if !self.enabled || !self.focused {
-            return BreadcrumbsOutcome::Ignored;
-        }
-        match intent {
-            UiIntent::Activate | UiIntent::Submit => self.activate(items),
-            UiIntent::Cancel | UiIntent::Close => {
-                if matches!(self.mode, BreadcrumbsMode::Editable) {
-                    self.cancel_edit()
-                } else if self.overflow_open {
-                    self.overflow_open = false;
-                    BreadcrumbsOutcome::OverflowClosed
-                } else {
-                    BreadcrumbsOutcome::Blurred
-                }
-            }
-            UiIntent::Edit if self.editable => self.start_edit(items),
-            UiIntent::Move(m) => {
-                use crate::interaction::NavigationMove;
-                match m {
-                    NavigationMove::Previous => self.move_focus(-1, items),
-                    NavigationMove::Next => self.move_focus(1, items),
-                    NavigationMove::First => {
-                        self.focus_on_ellipsis = false;
-                        self.focus_index = 0;
-                        BreadcrumbsOutcome::Changed
-                    }
-                    NavigationMove::Last => {
-                        self.focus_on_ellipsis = false;
-                        self.focus_index = items.len().saturating_sub(1);
-                        BreadcrumbsOutcome::Changed
-                    }
-                    _ => BreadcrumbsOutcome::Ignored,
-                }
-            }
-            _ => BreadcrumbsOutcome::Ignored,
-        }
     }
 
     /// Mouse — click segment or ellipsis.

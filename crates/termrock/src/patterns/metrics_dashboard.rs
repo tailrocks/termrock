@@ -24,7 +24,7 @@
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{KeyCode, KeyEvent, KeyModifiers},
     style::{DesignSystem, Role},
     widgets::{
         CommandEntry, LoadState, MetricTile, MetricTileHealth, MetricTilePresentation,
@@ -835,47 +835,6 @@ impl MetricsDashboardState {
             },
             _ => MetricsDashboardOutcome::Ignored,
         }
-    }
-
-    /// Mouse click tiles/alerts.
-    pub fn handle_mouse(
-        &mut self,
-        event: MouseEvent,
-        tiles: &[MetricTile<'_>],
-        alerts: &[MetricAlert<'_>],
-    ) -> MetricsDashboardOutcome {
-        if !self.accepts_input {
-            return MetricsDashboardOutcome::Ignored;
-        }
-        if !matches!(event.kind, MouseEventKind::Down(MouseButton::Left)) {
-            return MetricsDashboardOutcome::Ignored;
-        }
-        let pos = event.position;
-        if !self.slots.toolbar.is_empty() && self.slots.toolbar.contains(pos) {
-            self.focus = MetricsFocus::Toolbar;
-            return MetricsDashboardOutcome::ToolbarFocused;
-        }
-        if !self.slots.alerts.is_empty() && self.slots.alerts.contains(pos) {
-            self.focus = MetricsFocus::Alerts;
-            // row by y
-            let rel = pos.y.saturating_sub(self.slots.alerts.y) as usize;
-            if rel < alerts.len() {
-                self.focus_alert = rel;
-            }
-            return MetricsDashboardOutcome::AlertsFocused;
-        }
-        for (i, rect) in self.slots.tiles.iter().enumerate() {
-            if rect.contains(pos) {
-                self.focus = MetricsFocus::Tiles;
-                self.focus_tile = i;
-                if let Some(t) = tiles.get(i) {
-                    return MetricsDashboardOutcome::TileFocused {
-                        id: t.id.to_string(),
-                    };
-                }
-            }
-        }
-        MetricsDashboardOutcome::Ignored
     }
 }
 

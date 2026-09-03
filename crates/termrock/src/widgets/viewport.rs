@@ -292,7 +292,6 @@ pub struct Viewport<'a> {
     title: Option<&'a str>,
     emphasis: PanelChrome,
     system: &'a DesignSystem,
-    content_style: Option<Style>,
     content_revision: u64,
     padded_content: bool,
 }
@@ -306,7 +305,6 @@ impl<'a> Viewport<'a> {
             title: None,
             emphasis: PanelChrome::Normal,
             system,
-            content_style: None,
             content_revision: UNCACHED_REVISION,
             padded_content: false,
         }
@@ -350,8 +348,7 @@ impl<'a> Viewport<'a> {
     }
 
     fn base_content_style(&self) -> Style {
-        self.content_style
-            .unwrap_or_else(|| self.system.style(Role::Text))
+        self.system.style(Role::Text)
     }
 
     fn ensure_interaction_layout(&self, state: &mut ViewportState) {

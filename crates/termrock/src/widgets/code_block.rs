@@ -21,7 +21,7 @@ use ratatui_core::{
     style::{Modifier, Style},
 };
 
-use crate::input::{KeyEvent, MouseButton, MouseEvent, MouseEventKind};
+use crate::input::KeyEvent;
 use crate::interaction::{
     EventResult, NavigationMove, PageMove, SemanticNode, SemanticRole, SemanticScene,
     SemanticState, UiIntent, default_list_intent,
@@ -1637,64 +1637,6 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
         state.cursor_line = Some(next);
         state.reveal_line(next, doc);
         CodeBlockOutcome::CursorMoved { line: next }
-    }
-
-    /// Mouse: wheel scroll, click select line.
-    pub fn handle_mouse(&self, state: &mut CodeBlockState, event: MouseEvent) -> CodeBlockOutcome {
-        let Some(parts) = state.parts.clone() else {
-            return CodeBlockOutcome::Ignored;
-        };
-        let doc = self.document_len();
-        match event.kind {
-            MouseEventKind::ScrollUp => {
-                if state.scroll_by_lines(-3, doc) {
-                    return CodeBlockOutcome::Scrolled {
-                        scroll_y: state.scroll_y,
-                        scroll_x: state.scroll_x,
-                    };
-                }
-            }
-            MouseEventKind::ScrollDown => {
-                if state.scroll_by_lines(3, doc) {
-                    return CodeBlockOutcome::Scrolled {
-                        scroll_y: state.scroll_y,
-                        scroll_x: state.scroll_x,
-                    };
-                }
-            }
-            MouseEventKind::ScrollLeft => {
-                if matches!(self.wrap, CodeWrap::Clip) && state.scroll_by_cols(-4) {
-                    return CodeBlockOutcome::Scrolled {
-                        scroll_y: state.scroll_y,
-                        scroll_x: state.scroll_x,
-                    };
-                }
-            }
-            MouseEventKind::ScrollRight => {
-                if matches!(self.wrap, CodeWrap::Clip) && state.scroll_by_cols(4) {
-                    return CodeBlockOutcome::Scrolled {
-                        scroll_y: state.scroll_y,
-                        scroll_x: state.scroll_x,
-                    };
-                }
-            }
-            MouseEventKind::Down(MouseButton::Left) => {
-                if parts.body.contains(event.position) || parts.gutter.contains(event.position) {
-                    let row = event.position.y.saturating_sub(parts.body.y);
-                    let line = parts.first_line.saturating_add(usize::from(row));
-                    if line < doc {
-                        state.focused = true;
-                        state.cursor_line = Some(line);
-                        state.selection = Some((line, line.saturating_add(1)));
-                        return CodeBlockOutcome::SelectionChanged {
-                            range: (line, line.saturating_add(1)),
-                        };
-                    }
-                }
-            }
-            _ => {}
-        }
-        CodeBlockOutcome::Ignored
     }
 
     /// EventResult wrapper.

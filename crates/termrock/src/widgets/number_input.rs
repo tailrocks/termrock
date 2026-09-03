@@ -14,7 +14,7 @@
 //! Research: shadcn numeric inputs, Textual numeric fields, desktop form UX.
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
-    interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
+    interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
     style::{ButtonRecipeVariant, ControlState, DesignSystem},
     text::{display_cols, take_display_cols},
 };
@@ -702,45 +702,6 @@ impl NumberInputState {
                     TextInputOutcome::Ignored => NumberInputOutcome::Ignored,
                 }
             }
-        }
-    }
-
-    /// Intent path (step / submit).
-    pub fn handle_intent(&mut self, intent: UiIntent) -> NumberInputOutcome {
-        if !self.enabled {
-            return NumberInputOutcome::Ignored;
-        }
-        match intent {
-            UiIntent::Submit | UiIntent::Activate => {
-                if self.commit_draft() || self.can_commit() {
-                    NumberInputOutcome::Submitted { value: self.value }
-                } else {
-                    NumberInputOutcome::Ignored
-                }
-            }
-            UiIntent::Cancel | UiIntent::Close => {
-                self.cancel_edit();
-                NumberInputOutcome::Cancelled
-            }
-            UiIntent::Page(crate::interaction::PageMove::Forward) => self.page_by(true),
-            UiIntent::Page(crate::interaction::PageMove::Backward) => self.page_by(false),
-            UiIntent::Move(crate::interaction::NavigationMove::Next)
-            | UiIntent::Move(crate::interaction::NavigationMove::Right) => {
-                self.begin_edit();
-                match self.draft.handle_intent(intent) {
-                    TextInputOutcome::Changed => NumberInputOutcome::Changed,
-                    _ => NumberInputOutcome::Ignored,
-                }
-            }
-            UiIntent::Move(crate::interaction::NavigationMove::Previous)
-            | UiIntent::Move(crate::interaction::NavigationMove::Left) => {
-                self.begin_edit();
-                match self.draft.handle_intent(intent) {
-                    TextInputOutcome::Changed => NumberInputOutcome::Changed,
-                    _ => NumberInputOutcome::Ignored,
-                }
-            }
-            _ => NumberInputOutcome::Ignored,
         }
     }
 

@@ -33,8 +33,7 @@ use crate::{
     input::{KeyCode, KeyEvent},
     interaction::{
         OverlayId, OverlayKind, OverlayOutcome, OverlayPolicy, OverlaySize, OverlaySpec,
-        OverlayStack, SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent,
-        place_overlay,
+        OverlayStack, SemanticNode, SemanticRole, SemanticScene, SemanticState, place_overlay,
     },
     runtime::{FrameTick, Presence},
     style::{DesignSystem, MotionPolicy, Role},
@@ -937,28 +936,6 @@ impl PreviewCardState {
             KeyCode::Enter if key.modifiers.is_empty() => PreviewCardOutcome::OpenRequested,
             KeyCode::Char('p' | 'P') if key.modifiers.is_empty() => self.unpin(),
             _ => PreviewCardOutcome::Ignored,
-        }
-    }
-
-    /// Intent routing (pinned only).
-    pub fn handle_intent(&mut self, intent: UiIntent) -> PreviewCardOutcome {
-        if !self.pinned || self.disabled {
-            return PreviewCardOutcome::Ignored;
-        }
-        match intent {
-            UiIntent::Cancel | UiIntent::Close => self.unpin(),
-            UiIntent::Activate | UiIntent::Submit => PreviewCardOutcome::OpenRequested,
-            _ => PreviewCardOutcome::Ignored,
-        }
-    }
-
-    /// Sync visibility with stack presence.
-    pub fn sync_with_stack<F>(&mut self, stack: &OverlayStack<F>) {
-        let id = OverlayId::from_static(PREVIEW_CARD_OVERLAY_ID);
-        if !stack.contains(&id) && !self.pinned {
-            self.was_visible = false;
-            self.show_requested = false;
-            self.presence.force_hide();
         }
     }
 }

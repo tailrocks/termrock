@@ -897,11 +897,6 @@ impl<Id: Clone + PartialEq> AlertState<Id> {
         }
     }
 
-    /// Semantic intent path (no actions).
-    pub fn handle_intent(&mut self, intent: UiIntent) -> AlertOutcome<Id> {
-        self.handle_intent_with(intent, &[], true)
-    }
-
     /// Intent routing with actions.
     pub fn handle_intent_with(
         &mut self,

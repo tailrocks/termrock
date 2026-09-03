@@ -29,7 +29,7 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers, MouseEvent},
+    input::{KeyCode, KeyEvent, KeyModifiers},
     patterns::QueryResultSummary,
     style::{DesignSystem, Role},
     text::take_display_cols,
@@ -1082,20 +1082,6 @@ impl ResultGridState {
         }
 
         let out = self.table.handle_key(key, row_ids, columns);
-        map_table_outcome(out)
-    }
-
-    /// Mouse.
-    pub fn handle_mouse(
-        &mut self,
-        event: MouseEvent,
-        columns: &mut ColumnModel<String>,
-        row_ids: &[u64],
-    ) -> ResultGridOutcome {
-        if !self.accepts_input {
-            return ResultGridOutcome::Ignored;
-        }
-        let out = self.table.handle_mouse(event, row_ids, columns);
         map_table_outcome(out)
     }
 

@@ -359,13 +359,6 @@ impl<'a> Spinner<'a> {
         self
     }
 
-    /// Remove hue without changing glyph capability.
-    #[must_use]
-    pub const fn colorless(mut self, on: bool) -> Self {
-        self.colorless = on;
-        self
-    }
-
     /// Frame glyph (legacy API preserved).
     #[must_use]
     pub fn frame_glyph(&self, tick: FrameTick, motion: MotionPolicy) -> &'static str {

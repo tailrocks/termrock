@@ -29,7 +29,7 @@ use std::collections::BTreeSet;
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{KeyCode, KeyEvent, KeyModifiers},
     style::{DesignSystem, Role},
     text::take_display_cols,
     widgets::ColumnModel,
@@ -1088,54 +1088,6 @@ impl ProcessTableState {
                 } else {
                     ProcessTableOutcome::Ignored
                 }
-            }
-            _ => ProcessTableOutcome::Ignored,
-        }
-    }
-    /// Mouse: click row to select; wheel scroll.
-    pub fn handle_mouse(
-        &mut self,
-        processes: &[ProcessRow<'_>],
-        event: MouseEvent,
-    ) -> ProcessTableOutcome {
-        if !self.accepts_input {
-            return ProcessTableOutcome::Ignored;
-        }
-        match event.kind {
-            MouseEventKind::ScrollDown => {
-                let before = self.window.offset;
-                let _ = self.window.scroll_by(3);
-                if self.window.offset != before {
-                    ProcessTableOutcome::Scrolled
-                } else {
-                    ProcessTableOutcome::Ignored
-                }
-            }
-            MouseEventKind::ScrollUp => {
-                let before = self.window.offset;
-                let _ = self.window.scroll_by(-3);
-                if self.window.offset != before {
-                    ProcessTableOutcome::Scrolled
-                } else {
-                    ProcessTableOutcome::Ignored
-                }
-            }
-            MouseEventKind::Down(MouseButton::Left) => {
-                for (key, rect) in &self.row_regions {
-                    if rect.contains(event.position) {
-                        let k = *key;
-                        self.selected = Some(k);
-                        if let Some(idx) = self
-                            .visible_processes(processes)
-                            .iter()
-                            .position(|p| p.key == k)
-                        {
-                            self.reveal_index(idx);
-                        }
-                        return ProcessTableOutcome::SelectionChanged(k);
-                    }
-                }
-                ProcessTableOutcome::Ignored
             }
             _ => ProcessTableOutcome::Ignored,
         }

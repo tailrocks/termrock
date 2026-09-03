@@ -173,31 +173,10 @@ impl<'a> TextSpan<'a> {
         }
     }
 
-    /// Borrowed content helper.
-    #[must_use]
-    pub const fn borrowed(content: &'a str) -> Self {
-        Self {
-            content: Cow::Borrowed(content),
-            role: Role::Text,
-            emphasis: TextEmphasis::Normal,
-            underline: false,
-            reverse: false,
-            annotation: None,
-            highlight: false,
-        }
-    }
-
     /// Semantic role.
     #[must_use]
     pub const fn role(mut self, role: Role) -> Self {
         self.role = role;
-        self
-    }
-
-    /// Emphasis.
-    #[must_use]
-    pub const fn emphasis(mut self, emphasis: TextEmphasis) -> Self {
-        self.emphasis = emphasis;
         self
     }
 
@@ -378,24 +357,6 @@ impl<'a> Text<'a> {
         self
     }
 
-    /// Strong first span.
-    #[must_use]
-    pub fn strong(self) -> Self {
-        self.emphasis(TextEmphasis::Strong)
-    }
-
-    /// Dim first span.
-    #[must_use]
-    pub fn dim(self) -> Self {
-        self.emphasis(TextEmphasis::Dim)
-    }
-
-    /// Muted role on first span.
-    #[must_use]
-    pub fn muted(self) -> Self {
-        self.role(Role::TextMuted)
-    }
-
     /// Soft wrap.
     #[must_use]
     pub const fn wrap(mut self) -> Self {
@@ -414,13 +375,6 @@ impl<'a> Text<'a> {
     #[must_use]
     pub const fn truncate(mut self) -> Self {
         self.overflow = TextOverflow::Truncate;
-        self
-    }
-
-    /// Alignment.
-    #[must_use]
-    pub const fn align(mut self, align: TextAlign) -> Self {
-        self.align = align;
         self
     }
 
@@ -449,20 +403,6 @@ impl<'a> Text<'a> {
     #[must_use]
     pub const fn preserve_bg(mut self, preserve: bool) -> Self {
         self.preserve_bg = preserve;
-        self
-    }
-
-    /// Tab stop width.
-    #[must_use]
-    pub const fn tab_width(mut self, width: usize) -> Self {
-        self.tab_width = if width == 0 { 4 } else { width };
-        self
-    }
-
-    /// Ellipsis string (e.g. `"..."` for ASCII).
-    #[must_use]
-    pub fn ellipsis(mut self, ellipsis: impl Into<Cow<'a, str>>) -> Self {
-        self.ellipsis = ellipsis.into();
         self
     }
 

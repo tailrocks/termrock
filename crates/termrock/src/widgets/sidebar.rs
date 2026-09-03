@@ -1044,28 +1044,6 @@ impl<Id> SidebarState<Id> {
         self.nav.handle_key(key, items).into()
     }
 
-    /// Intent.
-    pub fn handle_intent(&mut self, intent: UiIntent, items: &[NavItem<Id>]) -> SidebarOutcome<Id>
-    where
-        Id: Clone + PartialEq,
-    {
-        self.nav.accepts_input = self.accepts_input;
-        if !self.accepts_input {
-            return SidebarOutcome::Ignored;
-        }
-        if !self.nav.focused {
-            self.nav.focused = true;
-        }
-        match intent {
-            UiIntent::Cancel | UiIntent::Close => SidebarOutcome::Blurred,
-            UiIntent::Help | UiIntent::Search => {
-                self.nav.filter_active = true;
-                SidebarOutcome::Changed
-            }
-            other => self.nav.handle_intent(other, items).into(),
-        }
-    }
-
     /// Mouse.
     pub fn handle_mouse(&mut self, event: MouseEvent, items: &[NavItem<Id>]) -> SidebarOutcome<Id>
     where

@@ -36,7 +36,7 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{KeyCode, KeyEvent, KeyModifiers},
     patterns::{ActivityKind, ActivityModel, ActivityScope},
     style::{DesignSystem, PanelChrome, Role},
     text::{display_cols, take_display_cols},
@@ -927,65 +927,6 @@ impl BackgroundTaskPanelState {
                 BackgroundTaskPanelOutcome::Ignored
             }
         }
-    }
-
-    /// Mouse.
-    pub fn handle_mouse(
-        &mut self,
-        event: MouseEvent,
-        tasks: &[BackgroundTask],
-    ) -> BackgroundTaskPanelOutcome {
-        if !self.accepts_input || !self.open {
-            return BackgroundTaskPanelOutcome::Ignored;
-        }
-        if event.kind != MouseEventKind::Down(MouseButton::Left)
-            && !matches!(
-                event.kind,
-                MouseEventKind::ScrollUp | MouseEventKind::ScrollDown
-            )
-        {
-            return BackgroundTaskPanelOutcome::Ignored;
-        }
-        if event.kind == MouseEventKind::Down(MouseButton::Left) {
-            use crate::interaction::Outcome;
-            match self.list.click(event.position) {
-                Outcome::Activated(id) => return BackgroundTaskPanelOutcome::Opened { id },
-                Outcome::Changed => {
-                    if let Some(id) = self.list.selected() {
-                        return BackgroundTaskPanelOutcome::Selected { id: id.clone() };
-                    }
-                }
-                _ => {}
-            }
-        }
-        // output scroll
-        if let Some(task) = self
-            .selected_id()
-            .and_then(|id| tasks.iter().find(|t| t.id == id))
-        {
-            let term_owned = task.output.as_terminal_lines();
-            let term_lines: Vec<TerminalLine<'_>> = term_owned
-                .iter()
-                .map(|(id, stream, text)| TerminalLine {
-                    id: id.as_str(),
-                    stream: *stream,
-                    text: text.as_str(),
-                    ansi: None,
-                })
-                .collect();
-            let out = self.output.handle_mouse(event, &term_lines);
-            use crate::widgets::TerminalOutputOutcome;
-            match out {
-                TerminalOutputOutcome::Detach => {
-                    return BackgroundTaskPanelOutcome::ScrollDetached;
-                }
-                TerminalOutputOutcome::Follow => {
-                    return BackgroundTaskPanelOutcome::FollowChanged { following: true };
-                }
-                _ => {}
-            }
-        }
-        BackgroundTaskPanelOutcome::Ignored
     }
 }
 

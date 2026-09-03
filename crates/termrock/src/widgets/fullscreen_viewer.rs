@@ -1113,14 +1113,6 @@ impl<'a, Id> FullscreenViewer<'a, Id> {
         }
     }
 
-    /// ASCII chrome.
-    #[must_use]
-    /// Colorless.
-    pub const fn colorless(mut self, on: bool) -> Self {
-        self.colorless = on;
-        self
-    }
-
     /// Paint chrome; host follows with content in `state.body_area()`.
     pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut FullscreenViewerState<Id>)
     where

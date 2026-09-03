@@ -712,14 +712,6 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
         self.presentation
     }
 
-    /// Force presentation.
-    pub fn set_presentation_override(&mut self, p: Option<CommandPalettePresentation>) {
-        self.presentation_override = p;
-        if let Some(p) = p {
-            self.presentation = p;
-        }
-    }
-
     /// Cursor index into visible flat list.
     #[must_use]
     pub fn cursor_index(&self) -> usize {
@@ -1268,14 +1260,6 @@ impl<'a, Id> CommandPalette<'a, Id> {
     #[must_use]
     pub const fn focused(mut self, focused: bool) -> Self {
         self.focused = focused;
-        self
-    }
-
-    /// ASCII glyphs.
-    #[must_use]
-    /// Reduced color.
-    pub const fn colorless(mut self, colorless: bool) -> Self {
-        self.colorless = colorless;
         self
     }
 

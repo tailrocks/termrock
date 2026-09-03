@@ -725,14 +725,6 @@ impl<'a> StreamingMarkdown<'a> {
         }
     }
 
-    /// ASCII.
-    #[must_use]
-    /// Colorless.
-    pub const fn colorless(mut self, on: bool) -> Self {
-        self.colorless = on;
-        self
-    }
-
     /// Runs `f` over the blocks this stream currently projects.
     ///
     /// The projection borrows buffers that only live for the call, so the

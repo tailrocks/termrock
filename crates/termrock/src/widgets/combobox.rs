@@ -30,9 +30,7 @@ use ratatui_core::{
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
-    interaction::{
-        OverlayStack, SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent,
-    },
+    interaction::{OverlayStack, SemanticNode, SemanticRole, SemanticScene, SemanticState},
     style::{DesignSystem, Role},
     text::take_display_cols,
 };
@@ -688,61 +686,6 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
                 }
             }
             TextInputOutcome::Ignored => ComboboxOutcome::Ignored,
-        }
-    }
-
-    /// Intent path.
-    pub fn handle_intent(
-        &mut self,
-        intent: UiIntent,
-        candidates: &[CompletionCandidate<'_, Id>],
-    ) -> ComboboxOutcome<Id> {
-        if !self.enabled || !self.focused {
-            return ComboboxOutcome::Ignored;
-        }
-        match intent {
-            UiIntent::Activate | UiIntent::Submit => {
-                if !self.draft.is_editing() {
-                    self.draft.begin_edit();
-                    ComboboxOutcome::Ignored
-                } else if self.menu.is_open() && self.menu.selected().is_some() {
-                    self.commit_active(candidates)
-                } else if self.creatable {
-                    self.commit_created()
-                } else {
-                    ComboboxOutcome::Ignored
-                }
-            }
-            UiIntent::Cancel | UiIntent::Close => {
-                if self.menu.is_open() {
-                    self.close_menu()
-                } else {
-                    ComboboxOutcome::Dismissed
-                }
-            }
-            other => match self.menu.handle_intent(candidates, other) {
-                CompletionMenuOutcome::SelectionChanged => ComboboxOutcome::HighlightChanged {
-                    id: self.menu.selected().cloned(),
-                },
-                CompletionMenuOutcome::Committed(id)
-                | CompletionMenuOutcome::CommitWithChar { id, .. } => {
-                    let label = candidates
-                        .iter()
-                        .find(|c| c.id == id)
-                        .map(|c| c.label.to_owned())
-                        .unwrap_or_default();
-                    self.value = Some(id.clone());
-                    self.value_label = Some(label.clone());
-                    self.set_draft(label.clone());
-                    self.menu.set_open(false);
-                    ComboboxOutcome::Committed { id, label }
-                }
-                CompletionMenuOutcome::Dismissed => self.close_menu(),
-                CompletionMenuOutcome::Ignored
-                | CompletionMenuOutcome::StatusChanged { .. }
-                | CompletionMenuOutcome::PresentationChanged { .. }
-                | CompletionMenuOutcome::GenerationStale { .. } => ComboboxOutcome::Ignored,
-            },
         }
     }
 

@@ -32,7 +32,7 @@ use std::collections::BTreeSet;
 use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::StatefulWidget};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{KeyCode, KeyEvent, KeyModifiers},
     patterns::{
         ActivityItem, ActivityKind, ActivityStatusProjection, activity_status_summary,
         project_activities_for_status_bar,
@@ -1277,37 +1277,6 @@ impl TaskRailState {
             true
         };
         TaskRailOutcome::GroupToggled { scope, collapsed }
-    }
-
-    /// Mouse via list hits after paint (call after `paint` so regions exist).
-    pub fn handle_mouse(&mut self, event: MouseEvent, _items: &[ActivityModel]) -> TaskRailOutcome {
-        if !self.accepts_input || event.kind != MouseEventKind::Down(MouseButton::Left) {
-            return TaskRailOutcome::Ignored;
-        }
-        use crate::interaction::Outcome;
-        match self.list.click(event.position) {
-            Outcome::Activated(id) => {
-                if let Some(scope_id) = id.strip_prefix("g:") {
-                    if let Some(scope) = scope_from_id(scope_id) {
-                        return self.toggle_scope(scope);
-                    }
-                    return TaskRailOutcome::Ignored;
-                }
-                TaskRailOutcome::Activated { id }
-            }
-            Outcome::Changed => {
-                if let Some(id) = self.list.selected() {
-                    if id.starts_with("g:") {
-                        TaskRailOutcome::Ignored
-                    } else {
-                        TaskRailOutcome::Selected { id: id.clone() }
-                    }
-                } else {
-                    TaskRailOutcome::Ignored
-                }
-            }
-            _ => TaskRailOutcome::Ignored,
-        }
     }
 }
 

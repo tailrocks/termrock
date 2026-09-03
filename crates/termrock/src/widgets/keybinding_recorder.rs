@@ -21,7 +21,7 @@ use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::State
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers},
-    interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
+    interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
     keymap::{KeyBinding, KeyChord, Keymap, Visibility, raw_bytes_to_chord},
     style::{ControlState, DesignSystem, Role},
     text::take_display_cols,
@@ -668,30 +668,6 @@ impl KeybindingRecorderState {
                 self.restore_default()
             }
             KeyCode::Esc if key.modifiers.is_empty() => KeybindingRecorderOutcome::Blurred,
-            _ => KeybindingRecorderOutcome::Ignored,
-        }
-    }
-
-    /// Intent path.
-    pub fn handle_intent(&mut self, intent: UiIntent) -> KeybindingRecorderOutcome {
-        if !self.enabled || !self.focused {
-            return KeybindingRecorderOutcome::Ignored;
-        }
-        match intent {
-            UiIntent::Cancel | UiIntent::Close => {
-                if self.is_recording() {
-                    self.cancel_recording()
-                } else {
-                    KeybindingRecorderOutcome::Blurred
-                }
-            }
-            UiIntent::Submit | UiIntent::Activate => {
-                if self.is_recording() {
-                    self.commit()
-                } else {
-                    self.start_recording()
-                }
-            }
             _ => KeybindingRecorderOutcome::Ignored,
         }
     }

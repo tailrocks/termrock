@@ -1207,12 +1207,6 @@ impl PromptComposerState {
         )
     }
 
-    /// Dismisses completion overlay.
-    pub fn dismiss_completion_overlay<FocusId: Clone>(
-        stack: &mut OverlayStack<FocusId>,
-    ) -> OverlayOutcome<FocusId> {
-        stack.dismiss(&OverlayId::from_static(PROMPT_COMPLETION_OVERLAY_ID))
-    }
     // —— internals ——
 
     fn try_submit_or_queue(&mut self) -> PromptComposerOutcome {

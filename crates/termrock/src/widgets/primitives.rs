@@ -959,13 +959,6 @@ impl<'a> IconButton<'a> {
         self
     }
 
-    /// Reduced-color paint.
-    #[must_use]
-    pub const fn colorless(mut self, colorless: bool) -> Self {
-        self.colorless = colorless;
-        self
-    }
-
     /// Accessible name (always the constructor label).
     #[must_use]
     pub const fn a11y_name(&self) -> &'a str {

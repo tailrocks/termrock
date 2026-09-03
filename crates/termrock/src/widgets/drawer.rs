@@ -484,14 +484,6 @@ impl DrawerState {
         self.presentation
     }
 
-    /// Force presentation.
-    pub fn set_presentation_override(&mut self, p: Option<DrawerPresentation>) {
-        self.presentation_override = p;
-        if let Some(p) = p {
-            self.presentation = p;
-        }
-    }
-
     /// Preferred depth.
     #[must_use]
     pub const fn depth(&self) -> u16 {
@@ -591,44 +583,6 @@ impl DrawerState {
         self.focused = false;
         self.resizing = false;
         DrawerOutcome::Closed
-    }
-
-    /// Sync with stack presence.
-    pub fn sync_with_stack<F>(&mut self, stack: &OverlayStack<F>, id: &OverlayId) {
-        let on = stack.contains(id);
-        self.open = on;
-        if on {
-            self.accepts_input = stack.top_owns_input()
-                && stack
-                    .top()
-                    .is_some_and(|t| &t.id == id || t.id.0.starts_with(&id.0));
-            if let Some(top) = stack.top() {
-                if top.id == *id || top.id.0.starts_with(DRAWER_OVERLAY_ID) {
-                    if self.edge.is_horizontal() {
-                        self.depth = top.rect.width.clamp(self.min_depth, self.max_depth);
-                    } else {
-                        self.depth = top.rect.height.clamp(self.min_depth, self.max_depth);
-                    }
-                }
-            }
-        } else {
-            self.focused = false;
-            self.accepts_input = false;
-        }
-    }
-
-    /// Sync presentation from bounds.
-    pub fn sync_presentation(&mut self, bounds: Rect) -> DrawerOutcome {
-        if self.presentation_override.is_some() {
-            return DrawerOutcome::Ignored;
-        }
-        let next = drawer_presentation_for(bounds, self.edge, self.depth);
-        if next != self.presentation {
-            self.presentation = next;
-            DrawerOutcome::PresentationChanged { presentation: next }
-        } else {
-            DrawerOutcome::Ignored
-        }
     }
 
     /// Open on stack with opener restoration.
@@ -797,14 +751,6 @@ impl<'a> Drawer<'a> {
     #[must_use]
     pub const fn footer(mut self, f: Option<&'a str>) -> Self {
         self.footer = f;
-        self
-    }
-
-    /// ASCII / no-motion handle glyphs.
-    #[must_use]
-    /// Colorless roles.
-    pub const fn colorless(mut self, on: bool) -> Self {
-        self.colorless = on;
         self
     }
 

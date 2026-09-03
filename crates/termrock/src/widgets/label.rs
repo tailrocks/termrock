@@ -518,39 +518,10 @@ impl<'a, Id> Description<'a, Id> {
         }
     }
 
-    /// Warning description.
-    #[must_use]
-    pub const fn warning(text: &'a str, system: &'a DesignSystem) -> Self {
-        Self {
-            text,
-            for_id: None,
-            kind: DescriptionKind::Warning,
-            system,
-        }
-    }
-
-    /// Meta description.
-    #[must_use]
-    pub const fn meta(text: &'a str, system: &'a DesignSystem) -> Self {
-        Self {
-            text,
-            for_id: None,
-            kind: DescriptionKind::Meta,
-            system,
-        }
-    }
-
     /// Associate with control id.
     #[must_use]
     pub fn for_id(mut self, id: Id) -> Self {
         self.for_id = Some(id);
-        self
-    }
-
-    /// Kind.
-    #[must_use]
-    pub const fn kind(mut self, kind: DescriptionKind) -> Self {
-        self.kind = kind;
         self
     }
 
@@ -740,34 +711,6 @@ impl<'a, Id: Clone> FieldCaption<'a, Id> {
         self
     }
 
-    /// Optional mark.
-    #[must_use]
-    pub fn optional(mut self) -> Self {
-        self.label = self.label.optional();
-        self
-    }
-
-    /// Disabled.
-    #[must_use]
-    pub fn disabled(mut self) -> Self {
-        self.label = self.label.disabled();
-        self
-    }
-
-    /// Focused label.
-    #[must_use]
-    pub fn focused(mut self) -> Self {
-        self.label = self.label.focused();
-        self
-    }
-
-    /// Warning label tone.
-    #[must_use]
-    pub fn warning(mut self) -> Self {
-        self.label = self.label.warning();
-        self
-    }
-
     /// Layout recipe.
     #[must_use]
     pub fn layout_mode(mut self, layout: CaptionLayout) -> Self {
@@ -780,18 +723,6 @@ impl<'a, Id: Clone> FieldCaption<'a, Id> {
     #[must_use]
     pub fn compact(self) -> Self {
         self.layout_mode(CaptionLayout::Compact)
-    }
-
-    /// Inline.
-    #[must_use]
-    pub fn inline(self) -> Self {
-        self.layout_mode(CaptionLayout::Inline)
-    }
-
-    /// Stacked.
-    #[must_use]
-    pub fn stacked(self) -> Self {
-        self.layout_mode(CaptionLayout::Stacked)
     }
 
     /// Label borrow.

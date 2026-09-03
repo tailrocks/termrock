@@ -445,13 +445,6 @@ impl<'a> Slider<'a> {
         self
     }
 
-    /// Monochrome emphasis.
-    #[must_use]
-    pub const fn colorless(mut self, on: bool) -> Self {
-        self.colorless = on;
-        self
-    }
-
     fn page(&self) -> f64 {
         self.page_step
             .filter(|s| s.is_finite() && *s > 0.0)
@@ -1254,13 +1247,6 @@ impl<'a> RangeSlider<'a> {
     #[must_use]
     pub const fn page_step(mut self, step: f64) -> Self {
         self.page_step = Some(step);
-        self
-    }
-
-    /// Colorless.
-    #[must_use]
-    pub const fn colorless(mut self, on: bool) -> Self {
-        self.colorless = on;
         self
     }
 

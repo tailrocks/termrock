@@ -999,17 +999,6 @@ impl SlashCommandMenuState {
             }
         }
     }
-
-    /// Overlay helpers.
-    pub fn open_on_stack<FocusId: Clone>(
-        &self,
-        stack: &mut OverlayStack<FocusId>,
-        bounds: Rect,
-        anchor: Rect,
-        opener: Option<FocusId>,
-    ) -> OverlayOutcome<FocusId> {
-        open_slash_command_overlay(stack, bounds, anchor, opener)
-    }
 }
 
 // ── Overlay ─────────────────────────────────────────────────────────────────

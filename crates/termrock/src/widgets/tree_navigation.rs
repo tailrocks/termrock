@@ -32,7 +32,7 @@ use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{
         CollectionItem, CollectionOutcome, CollectionState, HitRegion, RovingOrientation,
-        SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent,
+        SemanticNode, SemanticRole, SemanticScene, SemanticState,
     },
     style::{DesignSystem, Role},
     text::take_display_cols,
@@ -746,42 +746,6 @@ impl<Id> TreeNavigationState<Id> {
             };
         }
         TreeNavigationOutcome::Ignored
-    }
-
-    /// Intent path.
-    pub fn handle_intent(
-        &mut self,
-        intent: UiIntent,
-        nodes: &[TreeNavNode<Id>],
-    ) -> TreeNavigationOutcome<Id>
-    where
-        Id: Clone + PartialEq,
-    {
-        if !self.enabled || !self.focused {
-            return TreeNavigationOutcome::Ignored;
-        }
-        let coll = Self::collection_items(nodes);
-        match self.collection.reconcile(&coll) {
-            CollectionOutcome::ActiveChanged { to, .. } => {
-                return TreeNavigationOutcome::FocusChanged { id: to };
-            }
-            CollectionOutcome::Scrolled => return TreeNavigationOutcome::Changed,
-            CollectionOutcome::Ignored => {}
-        }
-        match intent {
-            UiIntent::Activate | UiIntent::Submit => self.activate_focus(nodes),
-            UiIntent::Expand => self.expand_or_child(nodes),
-            UiIntent::Collapse => self.collapse_or_parent(nodes),
-            UiIntent::Cancel | UiIntent::Close => TreeNavigationOutcome::Cancelled,
-            UiIntent::Search => {
-                self.filter_active = true;
-                TreeNavigationOutcome::Changed
-            }
-            other => {
-                let out = self.collection.handle_intent(other, &coll);
-                Self::map_focus(out)
-            }
-        }
     }
 
     /// Mouse.

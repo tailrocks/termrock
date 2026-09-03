@@ -1090,15 +1090,6 @@ impl NotificationCenterState {
         (out, stack_out)
     }
 
-    /// Sync open flag with stack.
-    pub fn sync_with_stack<F>(&mut self, stack: &OverlayStack<F>) {
-        let id = OverlayId::from_static(NOTIFICATION_CENTER_OVERLAY_ID);
-        self.open = stack.contains(&id);
-        if !self.open {
-            self.focused = false;
-        }
-    }
-
     /// Accessibility: unread badge text.
     #[must_use]
     pub fn status_line(&self) -> String {
@@ -1128,14 +1119,6 @@ impl<'a> NotificationCenter<'a> {
             system,
             colorless: false,
         }
-    }
-
-    /// ASCII.
-    #[must_use]
-    /// Colorless.
-    pub const fn colorless(mut self, on: bool) -> Self {
-        self.colorless = on;
-        self
     }
 
     /// Paint when open.

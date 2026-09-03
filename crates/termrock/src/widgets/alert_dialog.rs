@@ -799,14 +799,6 @@ impl<'a, Id> AlertDialog<'a, Id> {
         }
     }
 
-    /// ASCII markers.
-    #[must_use]
-    /// Reduced color.
-    pub const fn colorless(mut self, on: bool) -> Self {
-        self.colorless = on;
-        self
-    }
-
     /// Paint full alert.
     pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut AlertDialogState<Id>)
     where

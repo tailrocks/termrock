@@ -334,13 +334,6 @@ impl<'a, Id> SegmentedControl<'a, Id> {
         self
     }
 
-    /// Force monochrome emphasis.
-    #[must_use]
-    pub const fn colorless(mut self, on: bool) -> Self {
-        self.colorless = on;
-        self
-    }
-
     fn mono(&self) -> bool {
         self.colorless || self.system.mono()
     }

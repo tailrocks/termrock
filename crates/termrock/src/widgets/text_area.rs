@@ -1541,14 +1541,6 @@ impl<'a> TextArea<'a> {
         self.rows.saturating_add(2)
     }
 
-    /// ASCII scrollbar / empty cues.
-    #[must_use]
-    /// Reduced-color caret/chrome.
-    pub const fn colorless(mut self, colorless: bool) -> Self {
-        self.colorless = colorless;
-        self
-    }
-
     /// Gutter line numbers.
     #[must_use]
     pub const fn line_numbers(mut self, on: bool) -> Self {
