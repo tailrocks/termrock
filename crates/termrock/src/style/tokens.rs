@@ -1739,7 +1739,6 @@ impl DesignSystem {
             check_on: self.glyphs.check_on(),
             check_off: self.glyphs.check_off(),
             loading_glyph: self.glyphs.loading(),
-            show_gutter_slot: true,
             checked: state.checked,
             loading: state.loading,
             // Law P6: a row's actions appear when the row is the one you are
@@ -1787,8 +1786,6 @@ pub struct ListRowRecipe {
     pub check_off: &'static str,
     /// Loading leading glyph.
     pub loading_glyph: &'static str,
-    /// Reserve leading gutter columns even when unselected (stable alignment).
-    pub show_gutter_slot: bool,
     /// Multi-select membership for check paint.
     pub checked: bool,
     /// Loading flag for leading glyph override.

@@ -31596,7 +31596,6 @@ pub termrock::style::ListRowRecipe::pad_x: u16
 pub termrock::style::ListRowRecipe::secondary: ratatui_core::style::Style
 pub termrock::style::ListRowRecipe::shortcut: ratatui_core::style::Style
 pub termrock::style::ListRowRecipe::show_actions: bool
-pub termrock::style::ListRowRecipe::show_gutter_slot: bool
 pub termrock::style::ListRowRecipe::tint: ratatui_core::style::Style
 pub termrock::style::ListRowRecipe::use_tint: bool
 impl core::clone::Clone for termrock::style::ListRowRecipe
@@ -66647,7 +66646,7 @@ pub termrock::widgets::DiffLine::kind: termrock::widgets::DiffKind
 pub termrock::widgets::DiffLine::new_no: core::option::Option<u32>
 pub termrock::widgets::DiffLine::old_no: core::option::Option<u32>
 pub termrock::widgets::DiffLine::pair_text: core::option::Option<&'a str>
-pub termrock::widgets::DiffLine::syntax: core::option::Option<&'a [termrock::widgets::DiffSyntaxSpan<'a>]>
+pub termrock::widgets::DiffLine::syntax: core::option::Option<&'a [termrock::widgets::DiffSyntaxSpan]>
 pub termrock::widgets::DiffLine::text: &'a str
 pub termrock::widgets::DiffLine::trailing_ws: bool
 pub termrock::widgets::DiffLine::words: core::option::Option<&'a [termrock::widgets::DiffWordSpan<'a>]>
@@ -66664,7 +66663,7 @@ pub const fn termrock::widgets::DiffLine<'a>::new_no(self, u32) -> Self
 pub const fn termrock::widgets::DiffLine<'a>::old_no(self, u32) -> Self
 pub const fn termrock::widgets::DiffLine<'a>::pair_text(self, &'a str) -> Self
 pub const fn termrock::widgets::DiffLine<'a>::removed(&'a str, &'a str) -> Self
-pub const fn termrock::widgets::DiffLine<'a>::syntax(self, &'a [termrock::widgets::DiffSyntaxSpan<'a>]) -> Self
+pub const fn termrock::widgets::DiffLine<'a>::syntax(self, &'a [termrock::widgets::DiffSyntaxSpan]) -> Self
 pub const fn termrock::widgets::DiffLine<'a>::trailing_ws(self, bool) -> Self
 pub const fn termrock::widgets::DiffLine<'a>::words(self, &'a [termrock::widgets::DiffWordSpan<'a>]) -> Self
 impl<'a> core::clone::Clone for termrock::widgets::DiffLine<'a>
@@ -67038,54 +67037,53 @@ pub unsafe fn termrock::widgets::DiffReviewUnit::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::widgets::DiffReviewUnit
 pub fn termrock::widgets::DiffReviewUnit::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::DiffReviewUnit
-pub struct termrock::widgets::DiffSyntaxSpan<'a>
-pub termrock::widgets::DiffSyntaxSpan::_tag: core::option::Option<&'a str>
+pub struct termrock::widgets::DiffSyntaxSpan
 pub termrock::widgets::DiffSyntaxSpan::end: usize
 pub termrock::widgets::DiffSyntaxSpan::role: termrock::style::Role
 pub termrock::widgets::DiffSyntaxSpan::start: usize
-impl<'a> termrock::widgets::DiffSyntaxSpan<'a>
-pub const fn termrock::widgets::DiffSyntaxSpan<'a>::new(usize, usize, termrock::style::Role) -> Self
-impl<'a> core::clone::Clone for termrock::widgets::DiffSyntaxSpan<'a>
-pub fn termrock::widgets::DiffSyntaxSpan<'a>::clone(&self) -> termrock::widgets::DiffSyntaxSpan<'a>
-impl<'a> core::cmp::Eq for termrock::widgets::DiffSyntaxSpan<'a>
-impl<'a> core::cmp::PartialEq for termrock::widgets::DiffSyntaxSpan<'a>
-pub fn termrock::widgets::DiffSyntaxSpan<'a>::eq(&self, &termrock::widgets::DiffSyntaxSpan<'a>) -> bool
-impl<'a> core::fmt::Debug for termrock::widgets::DiffSyntaxSpan<'a>
-pub fn termrock::widgets::DiffSyntaxSpan<'a>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<'a> core::marker::Copy for termrock::widgets::DiffSyntaxSpan<'a>
-impl<'a> core::marker::StructuralPartialEq for termrock::widgets::DiffSyntaxSpan<'a>
-impl<'a> core::marker::Freeze for termrock::widgets::DiffSyntaxSpan<'a>
-impl<'a> core::marker::Send for termrock::widgets::DiffSyntaxSpan<'a>
-impl<'a> core::marker::Sync for termrock::widgets::DiffSyntaxSpan<'a>
-impl<'a> core::marker::Unpin for termrock::widgets::DiffSyntaxSpan<'a>
-impl<'a> core::marker::UnsafeUnpin for termrock::widgets::DiffSyntaxSpan<'a>
-impl<'a> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DiffSyntaxSpan<'a>
-impl<'a> core::panic::unwind_safe::UnwindSafe for termrock::widgets::DiffSyntaxSpan<'a>
-impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::DiffSyntaxSpan<'a> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::widgets::DiffSyntaxSpan<'a>::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::widgets::DiffSyntaxSpan<'a> where U: core::convert::From<T>
-pub fn termrock::widgets::DiffSyntaxSpan<'a>::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::widgets::DiffSyntaxSpan<'a> where U: core::convert::Into<T>
-pub type termrock::widgets::DiffSyntaxSpan<'a>::Error = never
-pub fn termrock::widgets::DiffSyntaxSpan<'a>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::widgets::DiffSyntaxSpan<'a> where U: core::convert::TryFrom<T>
-pub type termrock::widgets::DiffSyntaxSpan<'a>::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::widgets::DiffSyntaxSpan<'a>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::widgets::DiffSyntaxSpan<'a> where T: core::clone::Clone
-pub type termrock::widgets::DiffSyntaxSpan<'a>::Owned = T
-pub fn termrock::widgets::DiffSyntaxSpan<'a>::clone_into(&self, &mut T)
-pub fn termrock::widgets::DiffSyntaxSpan<'a>::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::widgets::DiffSyntaxSpan<'a> where T: 'static + ?core::marker::Sized
-pub fn termrock::widgets::DiffSyntaxSpan<'a>::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::widgets::DiffSyntaxSpan<'a> where T: ?core::marker::Sized
-pub fn termrock::widgets::DiffSyntaxSpan<'a>::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::widgets::DiffSyntaxSpan<'a> where T: ?core::marker::Sized
-pub fn termrock::widgets::DiffSyntaxSpan<'a>::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::widgets::DiffSyntaxSpan<'a> where T: core::clone::Clone
-pub unsafe fn termrock::widgets::DiffSyntaxSpan<'a>::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::widgets::DiffSyntaxSpan<'a>
-pub fn termrock::widgets::DiffSyntaxSpan<'a>::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::widgets::DiffSyntaxSpan<'a>
+impl termrock::widgets::DiffSyntaxSpan
+pub const fn termrock::widgets::DiffSyntaxSpan::new(usize, usize, termrock::style::Role) -> Self
+impl core::clone::Clone for termrock::widgets::DiffSyntaxSpan
+pub fn termrock::widgets::DiffSyntaxSpan::clone(&self) -> termrock::widgets::DiffSyntaxSpan
+impl core::cmp::Eq for termrock::widgets::DiffSyntaxSpan
+impl core::cmp::PartialEq for termrock::widgets::DiffSyntaxSpan
+pub fn termrock::widgets::DiffSyntaxSpan::eq(&self, &termrock::widgets::DiffSyntaxSpan) -> bool
+impl core::fmt::Debug for termrock::widgets::DiffSyntaxSpan
+pub fn termrock::widgets::DiffSyntaxSpan::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for termrock::widgets::DiffSyntaxSpan
+impl core::marker::StructuralPartialEq for termrock::widgets::DiffSyntaxSpan
+impl core::marker::Freeze for termrock::widgets::DiffSyntaxSpan
+impl core::marker::Send for termrock::widgets::DiffSyntaxSpan
+impl core::marker::Sync for termrock::widgets::DiffSyntaxSpan
+impl core::marker::Unpin for termrock::widgets::DiffSyntaxSpan
+impl core::marker::UnsafeUnpin for termrock::widgets::DiffSyntaxSpan
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::DiffSyntaxSpan
+impl core::panic::unwind_safe::UnwindSafe for termrock::widgets::DiffSyntaxSpan
+impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::DiffSyntaxSpan where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::widgets::DiffSyntaxSpan::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::widgets::DiffSyntaxSpan where U: core::convert::From<T>
+pub fn termrock::widgets::DiffSyntaxSpan::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::widgets::DiffSyntaxSpan where U: core::convert::Into<T>
+pub type termrock::widgets::DiffSyntaxSpan::Error = never
+pub fn termrock::widgets::DiffSyntaxSpan::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::widgets::DiffSyntaxSpan where U: core::convert::TryFrom<T>
+pub type termrock::widgets::DiffSyntaxSpan::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::widgets::DiffSyntaxSpan::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::widgets::DiffSyntaxSpan where T: core::clone::Clone
+pub type termrock::widgets::DiffSyntaxSpan::Owned = T
+pub fn termrock::widgets::DiffSyntaxSpan::clone_into(&self, &mut T)
+pub fn termrock::widgets::DiffSyntaxSpan::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::widgets::DiffSyntaxSpan where T: 'static + ?core::marker::Sized
+pub fn termrock::widgets::DiffSyntaxSpan::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::widgets::DiffSyntaxSpan where T: ?core::marker::Sized
+pub fn termrock::widgets::DiffSyntaxSpan::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::widgets::DiffSyntaxSpan where T: ?core::marker::Sized
+pub fn termrock::widgets::DiffSyntaxSpan::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::widgets::DiffSyntaxSpan where T: core::clone::Clone
+pub unsafe fn termrock::widgets::DiffSyntaxSpan::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::widgets::DiffSyntaxSpan
+pub fn termrock::widgets::DiffSyntaxSpan::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::widgets::DiffSyntaxSpan
 pub struct termrock::widgets::DiffView<'a>
 impl<'a> termrock::widgets::DiffView<'a>
 pub const fn termrock::widgets::DiffView<'a>::colorless(self, bool) -> Self

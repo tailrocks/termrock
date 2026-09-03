@@ -147,27 +147,20 @@ impl<'a> DiffWordSpan<'a> {
 
 /// Optional syntax highlight span (host lexer; TermRock paints styles).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct DiffSyntaxSpan<'a> {
+pub struct DiffSyntaxSpan {
     /// Byte/char range start in line text (char index).
     pub start: usize,
     /// Exclusive end char index.
     pub end: usize,
     /// Semantic role override (e.g. keyword, string).
     pub role: Role,
-    /// Borrowed label for diagnostics (unused in paint).
-    pub _tag: Option<&'a str>,
 }
 
-impl<'a> DiffSyntaxSpan<'a> {
+impl DiffSyntaxSpan {
     /// Construct span.
     #[must_use]
     pub const fn new(start: usize, end: usize, role: Role) -> Self {
-        Self {
-            start,
-            end,
-            role,
-            _tag: None,
-        }
+        Self { start, end, role }
     }
 }
 
@@ -329,7 +322,7 @@ pub struct DiffLine<'a> {
     /// Word-level spans (when host provides).
     pub words: Option<&'a [DiffWordSpan<'a>]>,
     /// Syntax spans (when host provides).
-    pub syntax: Option<&'a [DiffSyntaxSpan<'a>]>,
+    pub syntax: Option<&'a [DiffSyntaxSpan]>,
     /// Trailing whitespace present (marker when enabled).
     pub trailing_ws: bool,
     /// Owning file id.
@@ -418,7 +411,7 @@ impl<'a> DiffLine<'a> {
 
     /// Syntax spans.
     #[must_use]
-    pub const fn syntax(mut self, spans: &'a [DiffSyntaxSpan<'a>]) -> Self {
+    pub const fn syntax(mut self, spans: &'a [DiffSyntaxSpan]) -> Self {
         self.syntax = Some(spans);
         self
     }
