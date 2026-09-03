@@ -2238,6 +2238,7 @@ impl<Id: Clone> StatefulWidget for &Switch<'_, Id> {
 mod tests {
     use super::*;
     use crate::input::KeyModifiers;
+    use crate::widgets::tests::click;
     use ratatui_core::layout::Position;
 
     #[test]
@@ -2347,17 +2348,7 @@ mod tests {
         let mut state = CheckboxState::new(false);
         let mut buf = Buffer::empty(Rect::new(0, 0, 24, 1));
         let parts = cb.paint(Rect::new(0, 0, 24, 1), &mut buf, &mut state);
-        let out = cb.handle_mouse(
-            &mut state,
-            MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: Position {
-                    x: parts.root.x,
-                    y: parts.root.y,
-                },
-                modifiers: KeyModifiers::NONE,
-            },
-        );
+        let out = cb.handle_mouse(&mut state, click(parts.root.x, parts.root.y));
         assert!(matches!(
             out,
             CheckboxOutcome::ValueChanged {
@@ -2484,17 +2475,7 @@ mod tests {
         assert!(parts.legend.is_some());
         assert!(parts.options.len() >= 2);
         let b = parts.options.iter().find(|o| o.id == "b").unwrap();
-        let out = g.handle_mouse(
-            &mut state,
-            MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: Position {
-                    x: b.area.x,
-                    y: b.area.y,
-                },
-                modifiers: KeyModifiers::NONE,
-            },
-        );
+        let out = g.handle_mouse(&mut state, click(b.area.x, b.area.y));
         assert_eq!(out, RadioOutcome::Selected("b"));
     }
 

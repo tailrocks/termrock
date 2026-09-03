@@ -2268,6 +2268,7 @@ mod tests {
     use crate::widgets::data_view::{
         ColumnKind, ColumnPin, DataColumn, DataColumnWidth, LoadState, bench,
     };
+    use crate::widgets::tests::click;
     use ratatui_core::layout::Position;
 
     #[test]
@@ -2581,11 +2582,7 @@ mod tests {
         state.body_origin = (0, 2);
         state.body_rows = 3;
         state.body_width = 40;
-        let event = MouseEvent {
-            kind: MouseEventKind::Down(MouseButton::Left),
-            position: Position { x: 0, y: 3 },
-            modifiers: KeyModifiers::NONE,
-        };
+        let event = click(0, 3);
         let out = state.handle_mouse(event, &rows, &cols);
         assert!(matches!(out, DataTableOutcome::CursorMoved));
         assert_eq!(state.cursor_row, 1);
@@ -2677,11 +2674,7 @@ mod tests {
             &mut empty_buffer,
             &mut state,
         );
-        let event = MouseEvent {
-            kind: MouseEventKind::Down(MouseButton::Left),
-            position: Position { x: 1, y: 2 },
-            modifiers: KeyModifiers::NONE,
-        };
+        let event = click(1, 2);
         assert!(matches!(
             state.handle_mouse(event, &[1], &cols),
             DataTableOutcome::Ignored
@@ -3325,18 +3318,7 @@ mod tests {
             .find(|region| region.column == "right")
             .expect("right cell is painted");
         assert_eq!(right.col_index, 2);
-        let out = state.handle_mouse(
-            MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: Position {
-                    x: right.area.x,
-                    y: right.area.y,
-                },
-                modifiers: KeyModifiers::NONE,
-            },
-            &[1],
-            &columns,
-        );
+        let out = state.handle_mouse(click(right.area.x, right.area.y), &[1], &columns);
         assert!(matches!(out, DataTableOutcome::CursorMoved));
         assert_eq!(state.cursor_col, 2);
         assert_eq!(state.selection.focus_col, 2);
@@ -3402,14 +3384,7 @@ mod tests {
             .iter()
             .find(|region| region.column == "right")
             .expect("right cell is painted");
-        let click = MouseEvent {
-            kind: MouseEventKind::Down(MouseButton::Left),
-            position: Position {
-                x: right.area.x,
-                y: right.area.y,
-            },
-            modifiers: KeyModifiers::NONE,
-        };
+        let click = click(right.area.x, right.area.y);
         assert!(matches!(
             state.handle_mouse(click, &[1], &columns),
             DataTableOutcome::CursorMoved
@@ -3448,14 +3423,7 @@ mod tests {
         let mut buffer = Buffer::empty(area);
         table.render(area, &mut buffer, &mut state);
         let header = state.header_regions[0].area;
-        let event = MouseEvent {
-            kind: MouseEventKind::Down(MouseButton::Left),
-            position: Position {
-                x: header.x,
-                y: header.y,
-            },
-            modifiers: KeyModifiers::NONE,
-        };
+        let event = click(header.x, header.y);
         let out = state.handle_mouse(event, &[1u64], &cols);
         assert!(matches!(out, DataTableOutcome::SortSpec(_)));
     }

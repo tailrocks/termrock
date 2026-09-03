@@ -1118,6 +1118,7 @@ mod tests {
     use super::*;
     use crate::input::{KeyCode, KeyEvent, KeyModifiers, MouseEventKind};
     use crate::style::RolePalette;
+    use crate::widgets::tests::click;
     use ratatui_core::{backend::TestBackend, layout::Position, terminal::Terminal};
 
     fn columns() -> Vec<GridColumn<'static, &'static str>> {
@@ -1385,18 +1386,7 @@ mod tests {
             .unwrap();
         assert!(!state.cell_regions.is_empty());
         let target = state.cell_regions[0].area;
-        let outcome = state.handle_mouse(
-            MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: Position {
-                    x: target.x,
-                    y: target.y,
-                },
-                modifiers: KeyModifiers::NONE,
-            },
-            &columns,
-            &rows,
-        );
+        let outcome = state.handle_mouse(click(target.x, target.y), &columns, &rows);
         assert!(matches!(
             outcome,
             VirtualGridOutcome::CursorMoved {
@@ -1634,14 +1624,7 @@ mod tests {
             .find(|region| region.row_index == 1)
             .expect("disabled row painted");
         let click = state.handle_mouse(
-            MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: Position {
-                    x: disabled_region.area.x,
-                    y: disabled_region.area.y,
-                },
-                modifiers: KeyModifiers::NONE,
-            },
+            click(disabled_region.area.x, disabled_region.area.y),
             &columns,
             &rows,
         );

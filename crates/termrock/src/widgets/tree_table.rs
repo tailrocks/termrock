@@ -1734,6 +1734,7 @@ mod tests {
     use super::*;
     use crate::input::KeyEventKind;
     use crate::widgets::data_view::{ColumnKind, DataColumn, DataColumnWidth, bench};
+    use crate::widgets::tests::click;
     use ratatui_core::layout::Position;
 
     fn cols() -> ColumnModel<&'static str> {
@@ -2258,18 +2259,7 @@ mod tests {
         let disclosure = state.row_regions[0]
             .disclosure
             .expect("branch has disclosure");
-        let pointer_out = state.handle_mouse(
-            MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: Position {
-                    x: disclosure.x,
-                    y: disclosure.y,
-                },
-                modifiers: KeyModifiers::NONE,
-            },
-            &rows,
-            &columns,
-        );
+        let pointer_out = state.handle_mouse(click(disclosure.x, disclosure.y), &rows, &columns);
         assert!(matches!(pointer_out, TreeTableOutcome::Ignored));
     }
 
@@ -2429,18 +2419,7 @@ mod tests {
 
         state.reconcile(&leaf_rows);
 
-        let out = state.handle_mouse(
-            MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: Position {
-                    x: disclosure.x,
-                    y: disclosure.y,
-                },
-                modifiers: KeyModifiers::NONE,
-            },
-            &leaf_rows,
-            &columns,
-        );
+        let out = state.handle_mouse(click(disclosure.x, disclosure.y), &leaf_rows, &columns);
         assert!(matches!(out, TreeTableOutcome::Ignored));
     }
 
@@ -2558,18 +2537,7 @@ mod tests {
         let disc = state.row_regions[0]
             .disclosure
             .expect("branch has disclosure");
-        let out = state.handle_mouse(
-            MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: Position {
-                    x: disc.x,
-                    y: disc.y,
-                },
-                modifiers: KeyModifiers::NONE,
-            },
-            &rows,
-            &columns,
-        );
+        let out = state.handle_mouse(click(disc.x, disc.y), &rows, &columns);
         assert!(matches!(out, TreeTableOutcome::ExpandToggled("r")));
     }
 
@@ -2751,14 +2719,7 @@ mod tests {
         TreeTable::new(&system, &columns, &rows).render(area, &mut Buffer::empty(area), &mut state);
         let group = &state.row_regions[0];
         let out = state.handle_mouse(
-            MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: Position {
-                    x: group.area.x.saturating_add(8),
-                    y: group.area.y,
-                },
-                modifiers: KeyModifiers::NONE,
-            },
+            click(group.area.x.saturating_add(8), group.area.y),
             &rows,
             &columns,
         );
@@ -2825,15 +2786,7 @@ mod tests {
         );
         let old = state.row_regions[0].area;
 
-        let out = state.handle_mouse(
-            MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: Position { x: old.x, y: old.y },
-                modifiers: KeyModifiers::NONE,
-            },
-            &new_rows,
-            &columns,
-        );
+        let out = state.handle_mouse(click(old.x, old.y), &new_rows, &columns);
         assert!(matches!(out, TreeTableOutcome::Ignored));
         assert_eq!(state.selected(), None);
     }
@@ -2865,18 +2818,7 @@ mod tests {
             .expect("old cpu header has a hit region")
             .area;
 
-        let out = state.handle_mouse(
-            MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: Position {
-                    x: header.x,
-                    y: header.y,
-                },
-                modifiers: KeyModifiers::NONE,
-            },
-            &rows,
-            &new_columns,
-        );
+        let out = state.handle_mouse(click(header.x, header.y), &rows, &new_columns);
 
         assert!(matches!(out, TreeTableOutcome::Ignored));
         assert_eq!(state.sort, None);

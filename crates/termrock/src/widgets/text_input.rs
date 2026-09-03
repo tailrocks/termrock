@@ -2043,11 +2043,7 @@ mod tests {
         let mut buf = Buffer::empty(area);
         let input = TextInput::new("", &system);
         let _ = input.paint(area, &mut buf, &mut state);
-        let down = MouseEvent {
-            kind: MouseEventKind::Down(MouseButton::Left),
-            position: Position { x: 4, y: 0 },
-            modifiers: KeyModifiers::NONE,
-        };
+        let down = click(4, 0);
         assert_eq!(
             input.handle_mouse(&mut state, down),
             TextInputOutcome::Changed
@@ -2098,7 +2094,7 @@ mod tests {
     }
     use super::*;
     use crate::style::{MASK_CELLS, RolePalette};
-    use ratatui_core::layout::Position;
+    use crate::widgets::tests::click;
 
     #[test]
     fn keyboard_owns_edit_submit_cancel_and_validation() {
@@ -2266,14 +2262,7 @@ mod tests {
         let mut buf = Buffer::empty(Rect::new(0, 0, 20, 1));
         let parts = TextInput::new("", &system).paint(Rect::new(0, 0, 20, 1), &mut buf, &mut state);
         let out = state.handle_mouse(
-            MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: Position {
-                    x: parts.field.x.saturating_add(2),
-                    y: parts.field.y,
-                },
-                modifiers: KeyModifiers::NONE,
-            },
+            click(parts.field.x.saturating_add(2), parts.field.y),
             parts.field,
         );
         assert!(matches!(out, TextInputOutcome::Changed));
