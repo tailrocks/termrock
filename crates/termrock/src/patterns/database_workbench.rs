@@ -1825,6 +1825,7 @@ pub mod bench {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::input::KeyEventKind;
     use crate::patterns::ResultCell;
 
     fn press(code: KeyCode) -> KeyEvent {
