@@ -459,6 +459,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0480 | `v0.14.0` | [Remove the orphan Link destination convenience builder](migrations/0480-v0.14.0-remove-link-always-show-destination.md) |
 | 0481 | `v0.14.0` | [Remove the orphan DialogScroll painter](migrations/0481-v0.14.0-remove-dialog-scroll-painter.md) |
 | 0482 | `v0.14.0` | [Remove write-only row and diff fields](migrations/0482-v0.14.0-remove-write-only-row-diff-fields.md) |
+| 0483 | `v0.14.0` | [Remove workspace-orphan builder methods](migrations/0483-v0.14.0-remove-workspace-orphan-builders.md) |
 | 0464 | `v0.14.0` | [Stepper physical one-shot actions](migrations/0464-v0.14.0-stepper-one-shot-actions.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an

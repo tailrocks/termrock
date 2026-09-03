@@ -23638,7 +23638,6 @@ pub const fn termrock::patterns::ResultCell<'a>::null() -> Self
 pub const fn termrock::patterns::ResultCell<'a>::secret(self) -> Self
 pub const fn termrock::patterns::ResultCell<'a>::secret_value(&'a str) -> Self
 pub const fn termrock::patterns::ResultCell<'a>::text(&'a str) -> Self
-pub const fn termrock::patterns::ResultCell<'a>::truncated(self) -> Self
 impl<'a> core::clone::Clone for termrock::patterns::ResultCell<'a>
 pub fn termrock::patterns::ResultCell<'a>::clone(&self) -> termrock::patterns::ResultCell<'a>
 impl<'a> core::cmp::Eq for termrock::patterns::ResultCell<'a>
@@ -58571,7 +58570,6 @@ pub fn termrock::widgets::Action<'a, Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::Action<'a, Id>
 pub struct termrock::widgets::ActionBar<'a, Id>
 impl<'a, Id> termrock::widgets::ActionBar<'a, Id>
-pub const fn termrock::widgets::ActionBar<'a, Id>::centered(self, bool) -> Self
 pub const fn termrock::widgets::ActionBar<'a, Id>::colorless(self, bool) -> Self
 pub const fn termrock::widgets::ActionBar<'a, Id>::gap(self, &'a str) -> Self
 pub const fn termrock::widgets::ActionBar<'a, Id>::new(&'a [termrock::widgets::Action<'a, Id>], &'a termrock::style::DesignSystem) -> Self
@@ -59810,7 +59808,6 @@ impl<T> either::into_either::IntoEither for termrock::widgets::AttachmentItem
 pub struct termrock::widgets::AvatarGlyph<'a>
 impl<'a> termrock::widgets::AvatarGlyph<'a>
 pub const fn termrock::widgets::AvatarGlyph<'a>::body_cols(&self) -> u16
-pub const fn termrock::widgets::AvatarGlyph<'a>::bracketed(self, bool) -> Self
 pub const fn termrock::widgets::AvatarGlyph<'a>::compact(self) -> Self
 pub const fn termrock::widgets::AvatarGlyph<'a>::face(self, termrock::widgets::AvatarFace) -> Self
 pub fn termrock::widgets::AvatarGlyph<'a>::face_role(&self) -> termrock::style::Role
@@ -59978,13 +59975,11 @@ pub const fn termrock::widgets::Badge<'a>::is_interactive(&self) -> bool
 pub fn termrock::widgets::Badge<'a>::layout(&self, ratatui_core::layout::rect::Rect, core::option::Option<&termrock::widgets::BadgeState>) -> termrock::widgets::BadgeParts
 pub const fn termrock::widgets::Badge<'a>::max_cols(self, u16) -> Self
 pub fn termrock::widgets::Badge<'a>::measure_width(&self, core::option::Option<&termrock::widgets::BadgeState>) -> u16
-pub const fn termrock::widgets::Badge<'a>::neutral(self) -> Self
 pub const fn termrock::widgets::Badge<'a>::new(&'a str, &'a termrock::style::DesignSystem) -> Self
 pub const fn termrock::widgets::Badge<'a>::outline(self) -> Self
 pub fn termrock::widgets::Badge<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, core::option::Option<&mut termrock::widgets::BadgeState>) -> termrock::widgets::BadgeParts
 pub fn termrock::widgets::Badge<'a>::plain(&self) -> alloc::string::String
 pub fn termrock::widgets::Badge<'a>::register_semantic<Id, Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, core::option::Option<&termrock::widgets::BadgeState>) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
-pub const fn termrock::widgets::Badge<'a>::show_glyph(self, bool) -> Self
 pub const fn termrock::widgets::Badge<'a>::soft(self) -> Self
 pub const fn termrock::widgets::Badge<'a>::success(self) -> Self
 pub const fn termrock::widgets::Badge<'a>::variant(self, termrock::widgets::BadgeVariant) -> Self
@@ -61115,7 +61110,6 @@ pub fn termrock::widgets::Callout<'a, Id>::paint(&self, ratatui_core::layout::re
 pub const fn termrock::widgets::Callout<'a, Id>::recipe(self, termrock::widgets::CalloutRecipe) -> Self
 pub fn termrock::widgets::Callout<'a, Id>::register_semantic<Sid, Act>(&self, &mut termrock::interaction::SemanticScene<Sid, Act>, Sid, ratatui_core::layout::rect::Rect) where Sid: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Act: core::clone::Clone
 pub const fn termrock::widgets::Callout<'a, Id>::section(self) -> Self
-pub const fn termrock::widgets::Callout<'a, Id>::show_details(self, bool) -> Self
 pub const fn termrock::widgets::Callout<'a, Id>::source(self, &'a str) -> Self
 pub const fn termrock::widgets::Callout<'a, Id>::tone(self, termrock::widgets::CalloutTone) -> Self
 impl<'a> termrock::widgets::Callout<'a, ()>
@@ -61572,8 +61566,6 @@ pub const fn termrock::widgets::Chart<'a>::area(self) -> Self
 pub const fn termrock::widgets::Chart<'a>::area_stacked(self) -> Self
 pub const fn termrock::widgets::Chart<'a>::fill(self, termrock::widgets::ChartFill) -> Self
 pub const fn termrock::widgets::Chart<'a>::glyphs(self, termrock::widgets::VizGlyphSet) -> Self
-pub const fn termrock::widgets::Chart<'a>::interpolation(self, termrock::widgets::ChartInterpolation) -> Self
-pub const fn termrock::widgets::Chart<'a>::linear(self) -> Self
 pub const fn termrock::widgets::Chart<'a>::new(&'a [termrock::widgets::ChartSeries<'a>], &'a termrock::style::DesignSystem) -> Self
 pub const fn termrock::widgets::Chart<'a>::scale(self, termrock::widgets::ScaleMode) -> Self
 pub const fn termrock::widgets::Chart<'a>::selected_index(self, usize) -> Self
@@ -62249,7 +62241,6 @@ impl termrock::widgets::ChordFormat
 pub const fn termrock::widgets::ChordFormat::docs() -> Self
 pub const fn termrock::widgets::ChordFormat::footer() -> Self
 pub const fn termrock::widgets::ChordFormat::from_glyphs(termrock::style::GlyphSet) -> Self
-pub const fn termrock::widgets::ChordFormat::modifiers(self, termrock::widgets::ModifierStyle) -> Self
 pub const fn termrock::widgets::ChordFormat::platform(self, termrock::widgets::Platform) -> Self
 impl core::clone::Clone for termrock::widgets::ChordFormat
 pub fn termrock::widgets::ChordFormat::clone(&self) -> termrock::widgets::ChordFormat
@@ -62832,7 +62823,6 @@ pub fn termrock::widgets::CivilTime::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::CivilTime
 pub struct termrock::widgets::CodeBlock<'a, H: termrock::widgets::SyntaxHighlighter>
 impl<'a, H: termrock::widgets::SyntaxHighlighter> termrock::widgets::CodeBlock<'a, H>
-pub const fn termrock::widgets::CodeBlock<'a, H>::controls(self, termrock::widgets::ControlRender) -> Self
 pub fn termrock::widgets::CodeBlock<'a, H>::copy_range(&self, usize, usize) -> alloc::string::String
 pub fn termrock::widgets::CodeBlock<'a, H>::copy_text(&self, &termrock::widgets::CodeBlockState) -> alloc::string::String
 pub const fn termrock::widgets::CodeBlock<'a, H>::current_block(self, usize, usize) -> Self
@@ -63016,7 +63006,6 @@ pub const fn termrock::widgets::CodeFrame<'a>::file(self, &'a str) -> Self
 pub const fn termrock::widgets::CodeFrame<'a>::labels(self, &'a [termrock::widgets::SourceLabel<'a>]) -> Self
 pub const fn termrock::widgets::CodeFrame<'a>::new(&'a [termrock::widgets::CodeFrameLine<'a>], &'a termrock::style::DesignSystem) -> Self
 pub fn termrock::widgets::CodeFrame<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer) -> u16
-pub const fn termrock::widgets::CodeFrame<'a>::tab_stop(self, usize) -> Self
 pub const fn termrock::widgets::CodeFrame<'a>::truncated_above(self, bool) -> Self
 pub const fn termrock::widgets::CodeFrame<'a>::truncated_below(self, bool) -> Self
 impl<'a> core::clone::Clone for termrock::widgets::CodeFrame<'a>
@@ -63204,7 +63193,6 @@ impl<'a> termrock::widgets::CodeSourceMeta<'a>
 pub fn termrock::widgets::CodeSourceMeta<'a>::header_text(&self) -> alloc::string::String
 pub const fn termrock::widgets::CodeSourceMeta<'a>::language(&'a str) -> Self
 pub const fn termrock::widgets::CodeSourceMeta<'a>::new() -> Self
-pub const fn termrock::widgets::CodeSourceMeta<'a>::start_line_number(self, usize) -> Self
 pub const fn termrock::widgets::CodeSourceMeta<'a>::with_path(self, &'a str) -> Self
 impl<'a> core::clone::Clone for termrock::widgets::CodeSourceMeta<'a>
 pub fn termrock::widgets::CodeSourceMeta<'a>::clone(&self) -> termrock::widgets::CodeSourceMeta<'a>
@@ -64933,7 +64921,6 @@ impl<'a, RowId: core::clone::Clone + core::cmp::Ord, ColId: core::clone::Clone +
 pub const fn termrock::widgets::DataTable<'a, RowId, ColId>::datagrid(self, bool) -> Self
 pub const fn termrock::widgets::DataTable<'a, RowId, ColId>::focused(self, bool) -> Self
 pub const fn termrock::widgets::DataTable<'a, RowId, ColId>::footer(self, bool) -> Self
-pub const fn termrock::widgets::DataTable<'a, RowId, ColId>::fullscreen_hint(self, bool) -> Self
 pub const fn termrock::widgets::DataTable<'a, RowId, ColId>::groups(self, &'a [termrock::widgets::GroupHeader<RowId>]) -> Self
 pub const fn termrock::widgets::DataTable<'a, RowId, ColId>::new(&'a termrock::style::DesignSystem, &'a termrock::widgets::ColumnModel<ColId>, &'a [(RowId, &'a [&'a str])]) -> Self
 pub fn termrock::widgets::DataTable<'a, RowId, ColId>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::DataTableState<RowId, ColId>) where ColId: core::clone::Clone
@@ -65191,7 +65178,6 @@ pub const fn termrock::widgets::DateTimePicker<'a>::label(self, &'a str) -> Self
 pub const fn termrock::widgets::DateTimePicker<'a>::new(&'a termrock::style::DesignSystem) -> Self
 pub fn termrock::widgets::DateTimePicker<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::DateTimePickerState)
 pub fn termrock::widgets::DateTimePicker<'a>::register_semantic<Id, Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, &termrock::widgets::DateTimePickerState) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
-pub const fn termrock::widgets::DateTimePicker<'a>::show_timezone(self, bool) -> Self
 impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::DateTimePicker<'_>
 pub type &termrock::widgets::DateTimePicker<'_>::State = termrock::widgets::DateTimePickerState
 pub fn &termrock::widgets::DateTimePicker<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
@@ -65943,15 +65929,12 @@ pub termrock::widgets::Diagnostic::severity: termrock::widgets::DiagnosticSeveri
 pub termrock::widgets::Diagnostic::source: core::option::Option<&'a str>
 impl<'a> termrock::widgets::Diagnostic<'a>
 pub const fn termrock::widgets::Diagnostic<'a>::code(self, &'a str) -> Self
-pub const fn termrock::widgets::Diagnostic<'a>::docs_url(self, &'a str) -> Self
 pub const fn termrock::widgets::Diagnostic<'a>::file(self, &'a str) -> Self
 pub const fn termrock::widgets::Diagnostic<'a>::fixes(self, &'a [termrock::widgets::SuggestedFix<'a>]) -> Self
 pub const fn termrock::widgets::Diagnostic<'a>::help(self, &'a str) -> Self
 pub const fn termrock::widgets::Diagnostic<'a>::labels(self, &'a [termrock::widgets::SourceLabel<'a>]) -> Self
 pub const fn termrock::widgets::Diagnostic<'a>::new(&'a str, termrock::widgets::DiagnosticSeverity, &'a str) -> Self
-pub const fn termrock::widgets::Diagnostic<'a>::notes(self, &'a [termrock::widgets::DiagnosticNote<'a>]) -> Self
 pub fn termrock::widgets::Diagnostic<'a>::primary_range(&self) -> core::option::Option<termrock::widgets::SourceRange>
-pub const fn termrock::widgets::Diagnostic<'a>::related(self, &'a [termrock::widgets::RelatedLocation<'a>]) -> Self
 pub const fn termrock::widgets::Diagnostic<'a>::source(self, &'a str) -> Self
 impl<'a> core::clone::Clone for termrock::widgets::Diagnostic<'a>
 pub fn termrock::widgets::Diagnostic<'a>::clone(&self) -> termrock::widgets::Diagnostic<'a>
@@ -66661,7 +66644,6 @@ pub const fn termrock::widgets::DiffLine<'a>::modified(&'a str, &'a str) -> Self
 pub const fn termrock::widgets::DiffLine<'a>::new(&'a str, termrock::widgets::DiffKind, &'a str) -> Self
 pub const fn termrock::widgets::DiffLine<'a>::new_no(self, u32) -> Self
 pub const fn termrock::widgets::DiffLine<'a>::old_no(self, u32) -> Self
-pub const fn termrock::widgets::DiffLine<'a>::pair_text(self, &'a str) -> Self
 pub const fn termrock::widgets::DiffLine<'a>::removed(&'a str, &'a str) -> Self
 pub const fn termrock::widgets::DiffLine<'a>::syntax(self, &'a [termrock::widgets::DiffSyntaxSpan]) -> Self
 pub const fn termrock::widgets::DiffLine<'a>::trailing_ws(self, bool) -> Self
@@ -66753,7 +66735,6 @@ impl<T> either::into_either::IntoEither for termrock::widgets::DiffRegion
 pub struct termrock::widgets::DiffReview<'a>
 impl<'a> termrock::widgets::DiffReview<'a>
 pub const fn termrock::widgets::DiffReview<'a>::colorless(self, bool) -> Self
-pub const fn termrock::widgets::DiffReview<'a>::diff_files(self, &'a [termrock::widgets::DiffFile<'a>]) -> Self
 pub const fn termrock::widgets::DiffReview<'a>::files(self, &'a [termrock::widgets::DiffReviewFileRow<'a>]) -> Self
 pub const fn termrock::widgets::DiffReview<'a>::focused(self, bool) -> Self
 pub const fn termrock::widgets::DiffReview<'a>::hunks(self, &'a [termrock::widgets::DiffHunk]) -> Self
@@ -68187,7 +68168,6 @@ pub fn termrock::widgets::Field<'a, Id>::masked(self, usize) -> Self
 pub const fn termrock::widgets::Field<'a, Id>::new(Id, &'a str, &'a str) -> Self
 pub const fn termrock::widgets::Field<'a, Id>::optional(self, bool) -> Self
 pub const fn termrock::widgets::Field<'a, Id>::pending(self, &'a str) -> Self
-pub const fn termrock::widgets::Field<'a, Id>::read_only(self, bool) -> Self
 pub const fn termrock::widgets::Field<'a, Id>::required(self, bool) -> Self
 pub const fn termrock::widgets::Field<'a, Id>::status(self, termrock::widgets::FieldStatus<'a>) -> Self
 pub const fn termrock::widgets::Field<'a, Id>::touched(self, bool) -> Self
@@ -69314,7 +69294,6 @@ impl<'a> termrock::widgets::FormWizard<'a>
 pub const fn termrock::widgets::FormWizard<'a>::new(&'a termrock::style::DesignSystem) -> Self
 pub fn termrock::widgets::FormWizard<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::FormWizardState)
 pub fn termrock::widgets::FormWizard<'a>::register_semantic<Id, Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, &termrock::widgets::FormWizardState) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
-pub const fn termrock::widgets::FormWizard<'a>::show_nav(self, bool) -> Self
 pub const fn termrock::widgets::FormWizard<'a>::show_stepper(self, bool) -> Self
 pub const fn termrock::widgets::FormWizard<'a>::title(self, &'a str) -> Self
 pub const fn termrock::widgets::FormWizard<'a>::with_label(&'a termrock::style::DesignSystem, &'a str) -> Self
@@ -70372,7 +70351,6 @@ pub fn termrock::widgets::HexWindow<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::HexWindow<'a>
 pub struct termrock::widgets::HighlightedText<'a>
 impl<'a> termrock::widgets::HighlightedText<'a>
-pub const fn termrock::widgets::HighlightedText<'a>::base_role(self, termrock::style::Role) -> Self
 pub const fn termrock::widgets::HighlightedText<'a>::focused_index(self, core::option::Option<usize>) -> Self
 pub const fn termrock::widgets::HighlightedText<'a>::new(&'a str, &'a [termrock::widgets::MatchRange], &'a termrock::style::DesignSystem) -> Self
 pub fn termrock::widgets::HighlightedText<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer) -> termrock::widgets::HighlightedTextParts
@@ -70947,7 +70925,6 @@ pub const fn termrock::widgets::IconButton<'a>::new(&'a str, &'a str, &'a termro
 pub fn termrock::widgets::IconButton<'a>::preferred_visual_width(&self) -> u16
 pub const fn termrock::widgets::IconButton<'a>::quiet(self) -> Self
 pub const fn termrock::widgets::IconButton<'a>::size(self, termrock::widgets::IconButtonSize) -> Self
-pub const fn termrock::widgets::IconButton<'a>::text_fallback(self, &'a str) -> Self
 pub const fn termrock::widgets::IconButton<'a>::toggle(self, bool) -> Self
 pub const fn termrock::widgets::IconButton<'a>::variant(self, termrock::widgets::ButtonVariant) -> Self
 impl<'a> termrock::widgets::IconButton<'a>
@@ -71147,7 +71124,6 @@ pub fn termrock::widgets::IconParts::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::IconParts
 pub struct termrock::widgets::Identity<'a>
 impl<'a> termrock::widgets::Identity<'a>
-pub const fn termrock::widgets::Identity<'a>::avatar(self, bool) -> Self
 pub fn termrock::widgets::Identity<'a>::avatar_glyph(&self) -> termrock::widgets::AvatarGlyph<'a>
 pub const fn termrock::widgets::Identity<'a>::badge(self, bool) -> Self
 pub const fn termrock::widgets::Identity<'a>::compact(self) -> Self
@@ -71161,7 +71137,6 @@ pub fn termrock::widgets::Identity<'a>::plain(&self) -> alloc::string::String
 pub const fn termrock::widgets::Identity<'a>::presence(self, termrock::widgets::PresenceStatus) -> Self
 pub const fn termrock::widgets::Identity<'a>::role(self, termrock::widgets::IdentityRole) -> Self
 pub const fn termrock::widgets::Identity<'a>::secondary(self, &'a str) -> Self
-pub const fn termrock::widgets::Identity<'a>::seed(self, &'a str) -> Self
 pub const fn termrock::widgets::Identity<'a>::size(self, termrock::widgets::AvatarSize) -> Self
 impl ratatui_core::widgets::widget::Widget for &termrock::widgets::Identity<'_>
 pub fn &termrock::widgets::Identity<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
@@ -72081,7 +72056,6 @@ pub const fn termrock::widgets::Kbd<'a>::keycap(self) -> Self
 pub fn termrock::widgets::Kbd<'a>::measure_width(&self) -> u16
 pub fn termrock::widgets::Kbd<'a>::new(impl core::convert::Into<alloc::borrow::Cow<'a, str>>, &'a termrock::style::DesignSystem) -> Self
 pub fn termrock::widgets::Kbd<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
-pub fn termrock::widgets::Kbd<'a>::sequence(&[termrock::keymap::KeyChord], &'a termrock::style::DesignSystem) -> Self
 pub fn termrock::widgets::Kbd<'a>::text(&self) -> &str
 pub const fn termrock::widgets::Kbd<'a>::variant(self, termrock::widgets::KbdVariant) -> Self
 impl ratatui_core::widgets::widget::Widget for &termrock::widgets::Kbd<'_>
@@ -72291,8 +72265,6 @@ pub const fn termrock::widgets::KeyValueTable<'a, Id>::key_width(self, u16) -> S
 pub const fn termrock::widgets::KeyValueTable<'a, Id>::new(&'a [termrock::widgets::KvtField<'a, Id>], &'a termrock::style::DesignSystem) -> Self
 pub fn termrock::widgets::KeyValueTable<'a, Id>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::KeyValueTableState<Id>)
 pub const fn termrock::widgets::KeyValueTable<'a, Id>::separator(self, &'a str) -> Self
-pub const fn termrock::widgets::KeyValueTable<'a, Id>::show_source(self, bool) -> Self
-pub const fn termrock::widgets::KeyValueTable<'a, Id>::show_type(self, bool) -> Self
 impl<'a, Id: core::clone::Clone + core::cmp::PartialEq + core::cmp::Ord> ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::KeyValueTable<'a, Id>
 pub type &termrock::widgets::KeyValueTable<'a, Id>::State = termrock::widgets::KeyValueTableState<Id>
 pub fn &termrock::widgets::KeyValueTable<'a, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
@@ -72401,8 +72373,6 @@ impl<'a> termrock::widgets::KeybindingRecorder<'a>
 pub const fn termrock::widgets::KeybindingRecorder<'a>::new(&'a termrock::style::DesignSystem) -> Self
 pub fn termrock::widgets::KeybindingRecorder<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::KeybindingRecorderState)
 pub fn termrock::widgets::KeybindingRecorder<'a>::register_semantic<Id, Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, &termrock::widgets::KeybindingRecorderState) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
-pub const fn termrock::widgets::KeybindingRecorder<'a>::show_hints(self, bool) -> Self
-pub const fn termrock::widgets::KeybindingRecorder<'a>::show_limits(self, bool) -> Self
 impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::KeybindingRecorder<'_>
 pub type &termrock::widgets::KeybindingRecorder<'_>::State = termrock::widgets::KeybindingRecorderState
 pub fn &termrock::widgets::KeybindingRecorder<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
@@ -74062,10 +74032,8 @@ pub struct termrock::widgets::MarkdownView<'a>
 impl<'a> termrock::widgets::MarkdownView<'a>
 pub fn termrock::widgets::MarkdownView<'a>::activate_link(&self, &termrock::widgets::MarkdownViewState, usize) -> termrock::widgets::MarkdownOutcome
 pub fn termrock::widgets::MarkdownView<'a>::block_start_row(&self, usize, u16) -> u16
-pub const fn termrock::widgets::MarkdownView<'a>::compact_headings(self, bool) -> Self
 pub fn termrock::widgets::MarkdownView<'a>::copy_range(&self, usize, usize) -> alloc::string::String
 pub fn termrock::widgets::MarkdownView<'a>::copy_text(&self, &termrock::widgets::MarkdownViewState) -> alloc::string::String
-pub const fn termrock::widgets::MarkdownView<'a>::fence_line_numbers(self, bool) -> Self
 pub const fn termrock::widgets::MarkdownView<'a>::first(self, usize) -> Self
 pub fn termrock::widgets::MarkdownView<'a>::handle_intent(&self, &mut termrock::widgets::MarkdownViewState, termrock::context::ContextUiIntent) -> termrock::widgets::MarkdownOutcome
 pub fn termrock::widgets::MarkdownView<'a>::handle_key(&self, &mut termrock::widgets::MarkdownViewState, termrock::input::KeyEvent) -> termrock::widgets::MarkdownOutcome
@@ -75252,7 +75220,6 @@ impl<'a> termrock::widgets::MetricRadar<'a>
 pub const fn termrock::widgets::MetricRadar<'a>::glyphs(self, termrock::widgets::VizGlyphSet) -> Self
 pub const fn termrock::widgets::MetricRadar<'a>::new(&'a [termrock::widgets::MetricAxis<'a>], &'a [termrock::widgets::MetricSeries<'a>], &'a termrock::style::DesignSystem) -> Self
 pub const fn termrock::widgets::MetricRadar<'a>::scale(self, termrock::widgets::ScaleMode) -> Self
-pub const fn termrock::widgets::MetricRadar<'a>::selected_axis(self, usize) -> Self
 pub const fn termrock::widgets::MetricRadar<'a>::selected_series(self, usize) -> Self
 pub const fn termrock::widgets::MetricRadar<'a>::show_legend(self, bool) -> Self
 pub const fn termrock::widgets::MetricRadar<'a>::title(self, &'a str) -> Self
@@ -75743,7 +75710,6 @@ impl<'a> termrock::widgets::ModelSelector<'a>
 pub fn termrock::widgets::ModelSelector<'a>::compact_status(&self, &termrock::widgets::ModelSelectorState) -> alloc::string::String
 pub const fn termrock::widgets::ModelSelector<'a>::new(&'a [termrock::widgets::ModelOption], &'a termrock::style::DesignSystem) -> Self
 pub fn termrock::widgets::ModelSelector<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::ModelSelectorState) -> alloc::vec::Vec<(alloc::string::String, ratatui_core::layout::rect::Rect)>
-pub const fn termrock::widgets::ModelSelector<'a>::show_reasoning(self, bool) -> Self
 impl<'a> core::clone::Clone for termrock::widgets::ModelSelector<'a>
 pub fn termrock::widgets::ModelSelector<'a>::clone(&self) -> termrock::widgets::ModelSelector<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::ModelSelector<'a>
@@ -76450,7 +76416,6 @@ pub const fn termrock::widgets::NumberInput<'a>::new(&'a str, &'a termrock::styl
 pub fn termrock::widgets::NumberInput<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::NumberInputState) -> termrock::widgets::NumberInputParts
 pub const fn termrock::widgets::NumberInput<'a>::placeholder(self, &'a str) -> Self
 pub fn termrock::widgets::NumberInput<'a>::register_semantic<Id, Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, &termrock::widgets::NumberInputState) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
-pub const fn termrock::widgets::NumberInput<'a>::show_steppers(self, bool) -> Self
 pub const fn termrock::widgets::NumberInput<'a>::unit(self, &'a str) -> Self
 pub const fn termrock::widgets::NumberInput<'a>::validation(self, termrock::widgets::Validation<'a>) -> Self
 impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::NumberInput<'_>
@@ -76623,7 +76588,6 @@ pub const fn termrock::widgets::ObjectInspector<'a>::focused(self, bool) -> Self
 pub const fn termrock::widgets::ObjectInspector<'a>::new(&'a [termrock::widgets::InspectorField<'a>], &'a termrock::style::DesignSystem) -> Self
 pub fn termrock::widgets::ObjectInspector<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::ObjectInspectorState)
 pub const fn termrock::widgets::ObjectInspector<'a>::presentation(self, termrock::widgets::InspectPresentation) -> Self
-pub const fn termrock::widgets::ObjectInspector<'a>::show_types(self, bool) -> Self
 impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::ObjectInspector<'_>
 pub type &termrock::widgets::ObjectInspector<'_>::State = termrock::widgets::ObjectInspectorState
 pub fn &termrock::widgets::ObjectInspector<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
@@ -76952,7 +76916,6 @@ impl<'a> termrock::widgets::Pagination<'a>
 pub const fn termrock::widgets::Pagination<'a>::new(&'a termrock::style::DesignSystem) -> Self
 pub fn termrock::widgets::Pagination<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::PaginationState)
 pub fn termrock::widgets::Pagination<'a>::register_semantic<Id, Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, &termrock::widgets::PaginationState) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
-pub const fn termrock::widgets::Pagination<'a>::show_page_size(self, bool) -> Self
 pub const fn termrock::widgets::Pagination<'a>::show_summary(self, bool) -> Self
 impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::Pagination<'_>
 pub type &termrock::widgets::Pagination<'_>::State = termrock::widgets::PaginationState
@@ -77098,7 +77061,6 @@ pub const fn termrock::widgets::Panel<'a>::quiet(&'a termrock::style::DesignSyst
 pub fn termrock::widgets::Panel<'a>::recipe(&self) -> termrock::style::PanelRecipe
 pub fn termrock::widgets::Panel<'a>::register_semantic<Id, Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, core::option::Option<&termrock::widgets::PanelState>) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
 pub const fn termrock::widgets::Panel<'a>::resolved_chrome(&self) -> termrock::style::PanelChrome
-pub const fn termrock::widgets::Panel<'a>::scroll_offset(self, u16) -> Self
 pub const fn termrock::widgets::Panel<'a>::scrolled_content_area(ratatui_core::layout::rect::Rect) -> ratatui_core::layout::rect::Rect
 pub const fn termrock::widgets::Panel<'a>::slots(self, termrock::widgets::PanelSlots<'a>) -> Self
 pub fn termrock::widgets::Panel<'a>::slots_for_width(&self, u16) -> termrock::widgets::PanelSlots<'a>
@@ -77572,12 +77534,10 @@ pub struct termrock::widgets::Paragraph<'a>
 impl<'a> termrock::widgets::Paragraph<'a>
 pub const fn termrock::widgets::Paragraph<'a>::compact(self) -> Self
 pub const fn termrock::widgets::Paragraph<'a>::copyable(self) -> Self
-pub const fn termrock::widgets::Paragraph<'a>::hanging(self, bool) -> Self
 pub const fn termrock::widgets::Paragraph<'a>::indent(self, u16) -> Self
 pub const fn termrock::widgets::Paragraph<'a>::kind(self, termrock::widgets::ParagraphKind) -> Self
 pub const fn termrock::widgets::Paragraph<'a>::kind_of(&self) -> termrock::widgets::ParagraphKind
 pub fn termrock::widgets::Paragraph<'a>::layout(&self, ratatui_core::layout::rect::Rect) -> termrock::widgets::ParagraphParts
-pub const fn termrock::widgets::Paragraph<'a>::list_index(self, u32) -> Self
 pub const fn termrock::widgets::Paragraph<'a>::list_item(&'a str, &'a termrock::style::DesignSystem) -> Self
 pub fn termrock::widgets::Paragraph<'a>::measure_height(&self, u16) -> u16
 pub const fn termrock::widgets::Paragraph<'a>::muted(self, bool) -> Self
@@ -77779,7 +77739,6 @@ pub const fn termrock::widgets::PasswordInput<'a>::new(&'a str, &'a termrock::st
 pub fn termrock::widgets::PasswordInput<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::PasswordInputState) -> termrock::widgets::PasswordInputParts
 pub const fn termrock::widgets::PasswordInput<'a>::placeholder(self, &'a str) -> Self
 pub fn termrock::widgets::PasswordInput<'a>::register_semantic<Id, Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, &termrock::widgets::PasswordInputState) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
-pub const fn termrock::widgets::PasswordInput<'a>::show_reveal(self, bool) -> Self
 pub const fn termrock::widgets::PasswordInput<'a>::strength(self, termrock::widgets::PasswordStrengthHint) -> Self
 pub const fn termrock::widgets::PasswordInput<'a>::validation(self, termrock::widgets::Validation<'a>) -> Self
 impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::PasswordInput<'_>
@@ -78153,7 +78112,6 @@ pub const fn termrock::widgets::PathInput<'a>::new(&'a termrock::style::DesignSy
 pub fn termrock::widgets::PathInput<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::PathInputState) -> termrock::widgets::PathInputParts
 pub const fn termrock::widgets::PathInput<'a>::placeholder(self, &'a str) -> Self
 pub fn termrock::widgets::PathInput<'a>::register_semantic<Id, Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, &termrock::widgets::PathInputState) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
-pub const fn termrock::widgets::PathInput<'a>::show_base(self, bool) -> Self
 pub const fn termrock::widgets::PathInput<'a>::show_browse(self, bool) -> Self
 pub const fn termrock::widgets::PathInput<'a>::show_clear(self, bool) -> Self
 pub const fn termrock::widgets::PathInput<'a>::status_message(self, &'a str) -> Self
@@ -82062,7 +82020,6 @@ pub fn termrock::widgets::ScrollAnchor::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ScrollAnchor
 pub struct termrock::widgets::ScrollArea<'a>
 impl<'a> termrock::widgets::ScrollArea<'a>
-pub const fn termrock::widgets::ScrollArea<'a>::bar(self, termrock::widgets::ScrollBarVisibility) -> Self
 pub fn termrock::widgets::ScrollArea<'a>::body_area(&self, ratatui_core::layout::rect::Rect, &termrock::widgets::ScrollAreaState) -> ratatui_core::layout::rect::Rect
 pub const fn termrock::widgets::ScrollArea<'a>::focused(self, bool) -> Self
 pub const fn termrock::widgets::ScrollArea<'a>::hovered(self, bool) -> Self
@@ -82252,7 +82209,6 @@ pub fn termrock::widgets::SearchInput<'a>::paint(&self, ratatui_core::layout::re
 pub const fn termrock::widgets::SearchInput<'a>::placeholder(self, &'a str) -> Self
 pub fn termrock::widgets::SearchInput<'a>::register_semantic<Id, Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, &termrock::widgets::SearchInputState) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
 pub const fn termrock::widgets::SearchInput<'a>::show_clear(self, bool) -> Self
-pub const fn termrock::widgets::SearchInput<'a>::show_leading_icon(self, bool) -> Self
 pub const fn termrock::widgets::SearchInput<'a>::status(self, termrock::widgets::SearchStatus) -> Self
 pub const fn termrock::widgets::SearchInput<'a>::status_message(self, &'a str) -> Self
 pub const fn termrock::widgets::SearchInput<'a>::validation(self, termrock::widgets::Validation<'a>) -> Self
@@ -82640,7 +82596,6 @@ pub const fn termrock::widgets::Section<'a>::collapsible(self, bool) -> Self
 pub const fn termrock::widgets::Section<'a>::depth(self, u8) -> Self
 pub const fn termrock::widgets::Section<'a>::description(self, &'a str) -> Self
 pub const fn termrock::widgets::Section<'a>::description_visible(u16) -> bool
-pub const fn termrock::widgets::Section<'a>::divider(self, bool) -> Self
 pub const fn termrock::widgets::Section<'a>::emphasized(self) -> Self
 pub const fn termrock::widgets::Section<'a>::indent(self, u16) -> Self
 pub const fn termrock::widgets::Section<'a>::is_focusable(&self) -> bool
@@ -83060,8 +83015,6 @@ pub const fn termrock::widgets::SegmentedMeter<'a>::center(self, &'a str) -> Sel
 pub const fn termrock::widgets::SegmentedMeter<'a>::glyphs(self, termrock::widgets::VizGlyphSet) -> Self
 pub const fn termrock::widgets::SegmentedMeter<'a>::new(&'a [termrock::widgets::MeterSegment<'a>], &'a termrock::style::DesignSystem) -> Self
 pub const fn termrock::widgets::SegmentedMeter<'a>::selected(self, usize) -> Self
-pub const fn termrock::widgets::SegmentedMeter<'a>::separators(self, bool) -> Self
-pub const fn termrock::widgets::SegmentedMeter<'a>::show_labels(self, bool) -> Self
 impl ratatui_core::widgets::widget::Widget for &termrock::widgets::SegmentedMeter<'_>
 pub fn &termrock::widgets::SegmentedMeter<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
 impl ratatui_core::widgets::widget::Widget for termrock::widgets::SegmentedMeter<'_>
@@ -83457,7 +83410,6 @@ pub const fn termrock::widgets::Separator<'a>::quiet(self) -> Self
 pub fn termrock::widgets::Separator<'a>::register_semantic_if_labeled<Id, Action>(self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
 pub const fn termrock::widgets::Separator<'a>::section_break(self) -> Self
 pub const fn termrock::widgets::Separator<'a>::strong(self) -> Self
-pub const fn termrock::widgets::Separator<'a>::thickness(self, termrock::widgets::SeparatorThickness) -> Self
 pub const fn termrock::widgets::Separator<'a>::variant(self, termrock::widgets::SeparatorVariant) -> Self
 pub const fn termrock::widgets::Separator<'a>::vertical(&'a termrock::style::DesignSystem) -> Self
 pub const fn termrock::widgets::Separator<'a>::with_spacing(self, termrock::style::SpacingScale) -> Self
@@ -83506,7 +83458,6 @@ pub fn termrock::widgets::ShortcutHint<'a>::chord(&self) -> &str
 pub fn termrock::widgets::ShortcutHint<'a>::command(&self) -> &str
 pub const fn termrock::widgets::ShortcutHint<'a>::footer(self) -> Self
 pub fn termrock::widgets::ShortcutHint<'a>::for_action<A: core::clone::Clone + core::marker::Copy + core::cmp::PartialEq + 'static>(&termrock::keymap::Keymap<A>, A, &'a termrock::style::DesignSystem) -> core::option::Option<Self>
-pub const fn termrock::widgets::ShortcutHint<'a>::form(self, termrock::widgets::ShortcutForm) -> Self
 pub fn termrock::widgets::ShortcutHint<'a>::from_binding<A: core::clone::Clone + 'static>(&termrock::keymap::KeyBinding<A>, &'a termrock::style::DesignSystem) -> Self
 pub fn termrock::widgets::ShortcutHint<'a>::from_chords(&[termrock::keymap::KeyChord], impl core::convert::Into<alloc::borrow::Cow<'a, str>>, &'a termrock::style::DesignSystem) -> Self
 pub const fn termrock::widgets::ShortcutHint<'a>::inline_doc(self) -> Self
@@ -84421,7 +84372,6 @@ pub fn termrock::widgets::SourceCitation<'a>::handle_key(&self, &mut termrock::w
 pub fn termrock::widgets::SourceCitation<'a>::handle_mouse(&self, &mut termrock::widgets::SourceCitationState, termrock::input::MouseEvent) -> termrock::widgets::SourceCitationOutcome
 pub fn termrock::widgets::SourceCitation<'a>::measure_width(&self) -> u16
 pub const fn termrock::widgets::SourceCitation<'a>::new(&'a termrock::widgets::CitationSource, &'a termrock::style::DesignSystem) -> Self
-pub const fn termrock::widgets::SourceCitation<'a>::no_hyperlink(self, bool) -> Self
 pub const fn termrock::widgets::SourceCitation<'a>::offline(self, bool) -> Self
 pub fn termrock::widgets::SourceCitation<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::SourceCitationState)
 pub const fn termrock::widgets::SourceCitation<'a>::show_destination(self, termrock::widgets::DestinationDisplay) -> Self
@@ -86037,7 +85987,6 @@ pub const fn termrock::widgets::Surface<'a>::bordered(self, bool) -> Self
 pub const fn termrock::widgets::Surface<'a>::borders(self, ratatui_widgets::borders::Borders) -> Self
 pub const fn termrock::widgets::Surface<'a>::content_inset(self) -> Self
 pub const fn termrock::widgets::Surface<'a>::fill(self, termrock::widgets::SurfaceFill) -> Self
-pub const fn termrock::widgets::Surface<'a>::hit_full(self, bool) -> Self
 pub fn termrock::widgets::Surface<'a>::hit_test(&self, ratatui_core::layout::rect::Rect, u16, u16) -> bool
 pub fn termrock::widgets::Surface<'a>::layout(&self, ratatui_core::layout::rect::Rect) -> termrock::widgets::SurfaceParts
 pub const fn termrock::widgets::Surface<'a>::new(&'a termrock::style::DesignSystem) -> Self
@@ -86199,7 +86148,6 @@ pub fn termrock::widgets::Switch<'a, Id>::preferred_height(&self) -> u16
 pub const fn termrock::widgets::Switch<'a, Id>::recipe(self, termrock::widgets::SwitchRecipe) -> Self
 pub fn termrock::widgets::Switch<'a, Id>::register_semantic<Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, ratatui_core::layout::rect::Rect, &termrock::widgets::SwitchState) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
 pub const fn termrock::widgets::Switch<'a, Id>::settings_row(self) -> Self
-pub const fn termrock::widgets::Switch<'a, Id>::show_value_text(self, bool) -> Self
 pub fn termrock::widgets::Switch<'a, Id>::track_width(&self, &termrock::widgets::SwitchState) -> u16
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::Switch<'a, Id>
 pub fn termrock::widgets::Switch<'a, Id>::clone(&self) -> termrock::widgets::Switch<'a, Id>
@@ -87404,7 +87352,6 @@ pub const fn termrock::widgets::TextArea<'a>::placeholder(self, &'a str) -> Self
 pub fn termrock::widgets::TextArea<'a>::register_semantic<Id, Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, &termrock::widgets::TextAreaState) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
 pub const fn termrock::widgets::TextArea<'a>::review(self) -> Self
 pub const fn termrock::widgets::TextArea<'a>::rows(self, u16) -> Self
-pub const fn termrock::widgets::TextArea<'a>::soft_wrap(self) -> Self
 pub const fn termrock::widgets::TextArea<'a>::title(self, &'a str) -> Self
 pub const fn termrock::widgets::TextArea<'a>::variant(self, termrock::widgets::TextAreaVariant) -> Self
 pub const fn termrock::widgets::TextArea<'a>::wrap(self, termrock::widgets::TextWrap) -> Self
@@ -88819,8 +88766,6 @@ pub fn termrock::widgets::ToggleGroup<'a, Id>::register_semantic<Action>(&self, 
 impl<'a, Id> termrock::widgets::ToggleGroup<'a, Id>
 pub const fn termrock::widgets::ToggleGroup<'a, Id>::compact(self) -> Self
 pub const fn termrock::widgets::ToggleGroup<'a, Id>::connected(self) -> Self
-pub const fn termrock::widgets::ToggleGroup<'a, Id>::face_recipe(self, termrock::widgets::ToggleRecipe) -> Self
-pub const fn termrock::widgets::ToggleGroup<'a, Id>::group_type(self, termrock::widgets::ToggleGroupType) -> Self
 pub const fn termrock::widgets::ToggleGroup<'a, Id>::multiple(self) -> Self
 pub const fn termrock::widgets::ToggleGroup<'a, Id>::new(&'a [termrock::widgets::ToggleGroupItem<'a, Id>], &'a termrock::style::DesignSystem) -> Self
 pub const fn termrock::widgets::ToggleGroup<'a, Id>::orientation(self, termrock::widgets::ToggleGroupOrientation) -> Self
@@ -91253,7 +91198,6 @@ pub struct termrock::widgets::Viewport<'a>
 impl<'a> termrock::widgets::Viewport<'a>
 pub fn termrock::widgets::Viewport<'a>::clear_selection(&self, &mut termrock::widgets::ViewportState) -> termrock::interaction::Outcome<()>
 pub const fn termrock::widgets::Viewport<'a>::content_revision(self, u64) -> Self
-pub const fn termrock::widgets::Viewport<'a>::content_style(self, ratatui_core::style::Style) -> Self
 pub fn termrock::widgets::Viewport<'a>::copy_selection(&self, &termrock::widgets::ViewportState) -> core::option::Option<alloc::string::String>
 pub const fn termrock::widgets::Viewport<'a>::emphasis(self, termrock::style::PanelChrome) -> Self
 pub fn termrock::widgets::Viewport<'a>::has_anchor(&self, &termrock::widgets::ViewportState) -> bool
