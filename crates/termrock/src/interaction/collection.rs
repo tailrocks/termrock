@@ -238,6 +238,7 @@ impl<Id: Clone + PartialEq> CollectionState<Id> {
 
     /// Updates virtualization numbers (clamps offset).
     pub fn set_viewport(&mut self, offset: usize, viewport_len: usize, total_len: usize) {
+        self.window_start = None;
         self.viewport_len = viewport_len;
         self.total_len = total_len;
         let max = total_len.saturating_sub(viewport_len.min(total_len));
@@ -686,6 +687,36 @@ mod tests {
             }
         );
         assert_eq!(invalidated.active(), None);
+    }
+
+    #[test]
+    fn set_viewport_switches_full_projection_before_virtual_mode_returns() {
+        let full = items(&[("a", true), ("b", true), ("c", true), ("d", true)]);
+        let window = items(&[("c", true), ("d", true)]);
+        let mut c = CollectionState::new();
+        c.set_active(Some("b"));
+        c.set_virtual_window(2, 4);
+
+        assert_eq!(c.move_next(&window), CollectionOutcome::Ignored);
+        assert_eq!(c.active(), Some(&"b"));
+
+        c.set_viewport(0, 2, 4);
+        assert_eq!(
+            c.move_next(&full),
+            CollectionOutcome::ActiveChanged {
+                from: Some("b"),
+                to: Some("c"),
+            }
+        );
+
+        c.set_virtual_window(2, 4);
+        assert_eq!(
+            c.move_next(&window),
+            CollectionOutcome::ActiveChanged {
+                from: Some("c"),
+                to: Some("d"),
+            }
+        );
     }
 
     #[test]
