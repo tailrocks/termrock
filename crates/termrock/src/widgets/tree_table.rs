@@ -874,6 +874,29 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
                     .iter()
                     .find(|r| r.sortable && r.area.contains(event.position))
                 {
+                    let Some((_, (current_index, _))) =
+                        columns
+                            .visible()
+                            .enumerate()
+                            .find(|(ordinal, (_, column))| {
+                                *ordinal > 0 && column.sortable && column.id == h.id
+                            })
+                    else {
+                        return TreeTableOutcome::Ignored;
+                    };
+                    let Some(paint_ordinal) = self
+                        .paint_widths
+                        .iter()
+                        .position(|(index, _)| *index == current_index)
+                    else {
+                        return TreeTableOutcome::Ignored;
+                    };
+                    let Some(painted) = self.paint_rects.get(paint_ordinal) else {
+                        return TreeTableOutcome::Ignored;
+                    };
+                    if painted.x != h.area.x || painted.width != h.area.width {
+                        return TreeTableOutcome::Ignored;
+                    }
                     let col = h.id.clone();
                     let ascending = match &self.sort {
                         Some(s) if s.column == col => !s.ascending,
@@ -1726,9 +1749,7 @@ mod tests {
         let group_cells: &[&str] = &["group", "", ""];
         let child_cells: &[&str] = &["child", "", ""];
         let rows = [
-            TreeTableRow::new("root", 0, root_cells)
-                .branch()
-                .expanded(),
+            TreeTableRow::new("root", 0, root_cells).branch().expanded(),
             TreeTableRow::new("group", 1, group_cells).group(),
             TreeTableRow::new("child", 1, child_cells).parent("root"),
         ];
@@ -2192,6 +2213,50 @@ mod tests {
         );
         assert!(matches!(out, TreeTableOutcome::Ignored));
         assert_eq!(state.selected(), None);
+    }
+
+    #[test]
+    fn stale_header_hit_geometry_cannot_target_a_reordered_column() {
+        let cells: &[&str] = &["row", "1", "2"];
+        let rows = [TreeTableRow::new("row", 0, cells)];
+        let old_columns = cols();
+        let new_columns = ColumnModel::new(vec![
+            DataColumn::new("name", "Name", DataColumnWidth::Min(12)).priority(100),
+            DataColumn::new("mem", "MEM", DataColumnWidth::Fixed(6)).priority(40),
+            DataColumn::new("cpu", "CPU", DataColumnWidth::Fixed(6))
+                .priority(80)
+                .sortable(),
+        ]);
+        let system = DesignSystem::default();
+        let area = Rect::new(0, 0, 40, 6);
+        let mut state = TreeTableState::<&str, &str>::new(None);
+        TreeTable::new(&system, &old_columns, &rows).render(
+            area,
+            &mut Buffer::empty(area),
+            &mut state,
+        );
+        let header = state
+            .header_regions
+            .iter()
+            .find(|region| region.id == "cpu")
+            .expect("old cpu header has a hit region")
+            .area;
+
+        let out = state.handle_mouse(
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: Position {
+                    x: header.x,
+                    y: header.y,
+                },
+                modifiers: KeyModifiers::NONE,
+            },
+            &rows,
+            &new_columns,
+        );
+
+        assert!(matches!(out, TreeTableOutcome::Ignored));
+        assert_eq!(state.sort, None);
     }
 
     #[test]
