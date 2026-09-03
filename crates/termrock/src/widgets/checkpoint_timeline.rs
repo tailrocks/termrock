@@ -1592,7 +1592,7 @@ pub mod bench {
 mod tests {
     use super::*;
     use crate::input::KeyModifiers;
-    use ratatui_core::layout::Position;
+    use crate::widgets::tests::click;
 
     fn press(code: KeyCode) -> KeyEvent {
         KeyEvent::new(code, KeyModifiers::NONE)
@@ -1916,11 +1916,7 @@ mod tests {
         CheckpointTimeline::new(&system).paint(area, &mut buf, &mut st);
         assert!(!st.row_hits.is_empty());
         let (id, r) = st.row_hits[0].clone();
-        let out = st.handle_mouse(MouseEvent {
-            kind: MouseEventKind::Down(MouseButton::Left),
-            position: Position { x: r.x, y: r.y },
-            modifiers: KeyModifiers::NONE,
-        });
+        let out = st.handle_mouse(click(r.x, r.y));
         assert!(
             matches!(
                 out,

@@ -1353,8 +1353,8 @@ mod tests {
     use super::*;
     use crate::input::KeyEventKind;
     use crate::style::RolePalette;
+    use crate::widgets::tests::click;
     use crate::widgets::tests::key_with_kind;
-    use ratatui_core::layout::Position;
 
     fn opts() -> Vec<SelectOption<&'static str>> {
         vec![
@@ -1646,11 +1646,7 @@ mod tests {
         let (id, rect) = state.option_regions[0].clone();
         assert!(matches!(
             state.handle_mouse(
-                MouseEvent {
-                    kind: MouseEventKind::Down(MouseButton::Left),
-                    position: Position::new(rect.x, rect.y),
-                    modifiers: KeyModifiers::NONE,
-                },
+                click(rect.x, rect.y),
                 &options,
                 area,
             ),
@@ -1705,11 +1701,7 @@ mod tests {
         assert!(painted_row_text(&buffer, group_row).contains("Lang"));
         assert!(matches!(
             state.handle_mouse(
-                MouseEvent {
-                    kind: MouseEventKind::Down(MouseButton::Left),
-                    position: Position::new(rect.x, rect.y),
-                    modifiers: KeyModifiers::NONE,
-                },
+                click(rect.x, rect.y),
                 &options,
                 area,
             ),
@@ -1795,11 +1787,7 @@ mod tests {
         assert!(painted_row_text(&buf, rect).contains("Rust"));
         assert!(matches!(
             state.handle_mouse(
-                MouseEvent {
-                    kind: MouseEventKind::Down(MouseButton::Left),
-                    position: Position::new(rect.x, rect.y),
-                    modifiers: KeyModifiers::NONE,
-                },
+                click(rect.x, rect.y),
                 &options,
                 bounds,
             ),

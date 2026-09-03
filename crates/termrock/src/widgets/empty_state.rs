@@ -601,8 +601,9 @@ pub fn example_empty_permission(system: &DesignSystem) -> EmptyState<'_> {
 mod tests {
     use super::*;
     use crate::input::KeyEventKind;
+    use crate::widgets::tests::click;
     use ratatui_core::backend::TestBackend;
-    use ratatui_core::layout::Position;
+
     use ratatui_core::terminal::Terminal;
 
     fn system() -> DesignSystem {
@@ -1002,11 +1003,7 @@ mod tests {
         let e = EmptyState::new("Hi", &system).primary(EmptyAction::new("Go"));
         let mut st = EmptyStateState::new();
         let area = Rect::new(0, 0, 40, 6);
-        let mouse = MouseEvent {
-            kind: MouseEventKind::Down(MouseButton::Left),
-            position: Position { x: 5, y: 5 },
-            modifiers: KeyModifiers::NONE,
-        };
+        let mouse = click(5, 5);
         assert_eq!(
             e.handle_mouse(mouse, area, &mut st),
             EmptyStateOutcome::PrimaryActivated

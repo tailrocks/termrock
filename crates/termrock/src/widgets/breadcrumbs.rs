@@ -952,7 +952,7 @@ mod tests {
     use super::*;
     use crate::input::KeyEventKind;
     use crate::style::RolePalette;
-    use ratatui_core::layout::Position;
+    use crate::widgets::tests::click;
 
     fn sample() -> Vec<BreadcrumbItem<&'static str>> {
         vec![
@@ -1168,15 +1168,7 @@ mod tests {
             .find(|(h, _)| matches!(h, BreadcrumbHit::Item { index: 1, .. }))
             .expect("projects");
         assert!(matches!(
-            state.handle_mouse(
-                MouseEvent {
-                    kind: MouseEventKind::Down(MouseButton::Left),
-                    position: Position::new(rect.x, rect.y),
-                    modifiers: KeyModifiers::NONE,
-                },
-                &items,
-                &[(hit.clone(), *rect)],
-            ),
+            state.handle_mouse(click(rect.x, rect.y), &items, &[(hit.clone(), *rect)],),
             BreadcrumbsOutcome::Navigate("a")
         ));
     }

@@ -1035,6 +1035,7 @@ pub mod bench {
 mod tests {
     use super::*;
     use crate::style::DesignSystem;
+    use crate::widgets::tests::click;
 
     #[test]
     fn expand_collapse_outcomes() {
@@ -1242,19 +1243,13 @@ mod tests {
 
     #[test]
     fn mouse_header_toggles_expand() {
-        use crate::input::{MouseButton, MouseEvent, MouseEventKind};
-        use ratatui_core::layout::Position;
         let call = ToolCall::new("t", "bash", "x");
         let system = DesignSystem::default();
         let mut st = ToolCallCardState::new();
         let area = Rect::new(0, 0, 40, 6);
         let mut buf = Buffer::empty(area);
         ToolCallCard::new(&call, &system).paint(area, &mut buf, &mut st);
-        let ev = MouseEvent {
-            kind: MouseEventKind::Down(MouseButton::Left),
-            position: Position::new(st.header_hit.x, st.header_hit.y),
-            modifiers: KeyModifiers::NONE,
-        };
+        let ev = click(st.header_hit.x, st.header_hit.y);
         let out = st.handle_mouse(ev, &call);
         assert!(matches!(out, ToolCallCardOutcome::Expanded { .. }));
     }

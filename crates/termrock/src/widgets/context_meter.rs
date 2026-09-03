@@ -1039,7 +1039,7 @@ pub mod bench {
 mod tests {
     use super::*;
     use crate::input::KeyModifiers;
-    use ratatui_core::layout::Position;
+    use crate::widgets::tests::click;
 
     #[test]
     fn never_100_percent_without_limit() {
@@ -1185,11 +1185,7 @@ mod tests {
         let area = Rect::new(0, 0, 20, 1);
         let mut buf = Buffer::empty(area);
         ContextMeter::new(&b, &system).paint(area, &mut buf, &mut st);
-        let ev = MouseEvent {
-            kind: MouseEventKind::Down(MouseButton::Left),
-            position: Position::new(area.x, area.y),
-            modifiers: KeyModifiers::NONE,
-        };
+        let ev = click(area.x, area.y);
         assert!(matches!(
             st.handle_mouse(ev),
             ContextMeterOutcome::Activated

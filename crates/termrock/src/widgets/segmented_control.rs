@@ -1145,7 +1145,7 @@ impl<'a, Id: Clone + PartialEq> SegmentedControl<'a, Id> {
 mod tests {
     use super::*;
     use crate::input::{KeyCode, KeyModifiers};
-    use ratatui_core::layout::Position;
+    use crate::widgets::tests::click;
 
     fn sample() -> [SegmentedItem<'static, &'static str>; 4] {
         [
@@ -1205,17 +1205,7 @@ mod tests {
         let mut buf = Buffer::empty(Rect::new(0, 0, 60, 1));
         let parts = g.paint(Rect::new(0, 0, 60, 1), &mut buf, &mut state);
         let grid = parts.items.iter().find(|i| i.id == "grid").unwrap();
-        let out = g.handle_mouse(
-            &mut state,
-            MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: Position {
-                    x: grid.area.x,
-                    y: grid.area.y,
-                },
-                modifiers: KeyModifiers::NONE,
-            },
-        );
+        let out = g.handle_mouse(&mut state, click(grid.area.x, grid.area.y));
         assert!(matches!(
             out,
             SegmentedControlOutcome::Selected { id: "grid" }

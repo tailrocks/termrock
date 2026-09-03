@@ -2318,8 +2318,8 @@ pub mod bench {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::widgets::tests::click;
     use crate::widgets::tests::press;
-    use ratatui_core::layout::Position;
 
     #[test]
     fn default_focus_never_grants() {
@@ -2708,11 +2708,7 @@ mod tests {
         assert!(!st.action_regions.is_empty());
         let (action, r) = st.action_regions[0];
         assert_eq!(action, PlanAction::Abandon);
-        let ev = MouseEvent {
-            kind: MouseEventKind::Down(MouseButton::Left),
-            position: Position { x: r.x, y: r.y },
-            modifiers: KeyModifiers::NONE,
-        };
+        let ev = click(r.x, r.y);
         let out = st.handle_mouse(ev);
         assert!(matches!(out, PlanReviewOutcome::Abandoned));
     }

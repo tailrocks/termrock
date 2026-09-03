@@ -1185,7 +1185,7 @@ pub fn example_docs_tree() -> Vec<TreeNavNode<&'static str>> {
 mod tests {
     use super::*;
     use crate::style::RolePalette;
-    use ratatui_core::layout::Position;
+    use crate::widgets::tests::click;
 
     #[test]
     fn route_distinct_from_focus() {
@@ -1385,14 +1385,7 @@ mod tests {
         assert!(!state.regions.is_empty());
         if let Some(hit) = state.regions.iter().find(|r| r.id == "events") {
             assert!(matches!(
-                state.handle_mouse(
-                    MouseEvent {
-                        kind: MouseEventKind::Down(MouseButton::Left),
-                        position: Position::new(hit.area.x, hit.area.y),
-                        modifiers: KeyModifiers::NONE,
-                    },
-                    &nodes
-                ),
+                state.handle_mouse(click(hit.area.x, hit.area.y), &nodes),
                 TreeNavigationOutcome::RouteChanged { id: "events" }
             ));
         }

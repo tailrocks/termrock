@@ -1894,8 +1894,9 @@ mod tests {
     use super::*;
     use crate::input::KeyEventKind;
     use crate::style::RolePalette;
+    use crate::widgets::tests::click;
     use ratatui_core::backend::TestBackend;
-    use ratatui_core::layout::Position;
+
     use ratatui_core::terminal::Terminal;
 
     fn menus() -> Vec<MenuBarMenu<&'static str>> {
@@ -2423,14 +2424,7 @@ mod tests {
         let mut state = MenuBarState::new();
         state.bar_hits = vec![(0, Rect::new(1, 1, 6, 1))];
         assert!(matches!(
-            state.handle_mouse(
-                MouseEvent {
-                    kind: MouseEventKind::Down(MouseButton::Left),
-                    position: Position::new(1, 1),
-                    modifiers: KeyModifiers::NONE,
-                },
-                &menus,
-            ),
+            state.handle_mouse(click(1, 1), &menus,),
             MenuBarOutcome::Opened { menu_id: "file" }
         ));
     }

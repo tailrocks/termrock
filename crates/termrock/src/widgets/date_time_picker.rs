@@ -2316,7 +2316,7 @@ mod tests {
     use super::*;
     use crate::input::KeyEventKind;
     use crate::style::RolePalette;
-    use ratatui_core::layout::Position;
+    use crate::widgets::tests::click;
 
     #[test]
     fn civil_date_roundtrip_iso() {
@@ -2625,11 +2625,7 @@ mod tests {
             .cloned()
             .expect("day 12 cell");
         assert!(matches!(
-            state.handle_mouse(MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: Position::new(rect.x, rect.y),
-                modifiers: KeyModifiers::NONE,
-            }),
+            state.handle_mouse(click(rect.x, rect.y)),
             DateTimePickerOutcome::DateChanged { date } if date == d
         ));
     }

@@ -1926,7 +1926,7 @@ pub fn example_command_catalog() -> Vec<CommandEntry<&'static str>> {
 mod tests {
     use super::*;
     use crate::input::{KeyEventKind, KeyModifiers};
-    use ratatui_core::layout::Position;
+    use crate::widgets::tests::click;
 
     fn catalog() -> Vec<CommandEntry<&'static str>> {
         example_command_catalog()
@@ -2212,14 +2212,7 @@ mod tests {
         let visible = vec![CommandMatch::new(&run, 10, None)];
         let mut state = focused();
         state.hits = vec![(0, Rect::new(4, 3, 8, 1))];
-        let out = state.handle_mouse(
-            MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: Position::new(4, 3),
-                modifiers: KeyModifiers::NONE,
-            },
-            &visible,
-        );
+        let out = state.handle_mouse(click(4, 3), &visible);
         assert!(matches!(
             out,
             CommandPaletteOutcome::Activated { id: "run", .. }
@@ -2228,14 +2221,7 @@ mod tests {
         let dis = CommandEntry::new("run", "Run").enabled(false);
         let disabled = vec![CommandMatch::new(&dis, 10, None)];
         assert_eq!(
-            state.handle_mouse(
-                MouseEvent {
-                    kind: MouseEventKind::Down(MouseButton::Left),
-                    position: Position::new(4, 3),
-                    modifiers: KeyModifiers::NONE,
-                },
-                &disabled,
-            ),
+            state.handle_mouse(click(4, 3), &disabled,),
             CommandPaletteOutcome::Ignored
         );
     }

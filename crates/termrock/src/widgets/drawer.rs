@@ -1093,6 +1093,7 @@ mod tests {
     use crate::input::{KeyEventKind, KeyModifiers};
     use crate::interaction::OverlayKind;
     use crate::style::MotionPolicy;
+    use crate::widgets::tests::click;
     use ratatui_core::layout::Position;
 
     #[test]
@@ -1304,11 +1305,7 @@ mod tests {
         Drawer::new(&system).paint(area, &mut buffer, &mut state);
         let handle = state.slots.handle;
         assert!(!handle.is_empty());
-        let down = MouseEvent {
-            kind: MouseEventKind::Down(MouseButton::Left),
-            position: Position::new(handle.x, handle.y),
-            modifiers: KeyModifiers::NONE,
-        };
+        let down = click(handle.x, handle.y);
         assert_eq!(state.handle_mouse(down), DrawerOutcome::Ignored);
         assert!(state.resizing);
 

@@ -1652,6 +1652,7 @@ impl<'a> RangeSlider<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::widgets::tests::click;
 
     #[test]
     fn bounds_snap_and_fraction() {
@@ -1754,14 +1755,7 @@ mod tests {
             x: track.x.saturating_add(track.width.saturating_sub(1)),
             y: track.y,
         };
-        let out = s.handle_mouse(
-            &mut state,
-            MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: pos,
-                modifiers: KeyModifiers::NONE,
-            },
-        );
+        let out = s.handle_mouse(&mut state, click(pos.x, pos.y));
         assert!(matches!(out, SliderOutcome::ValueChanged { .. }));
         assert!(state.value > 50.0);
     }
@@ -1824,14 +1818,7 @@ mod tests {
         let end = parts.end_handle.expect("end handle");
 
         assert!(matches!(
-            slider.handle_mouse(
-                &mut state,
-                MouseEvent {
-                    kind: MouseEventKind::Down(MouseButton::Left),
-                    position: Position::new(end.x, end.y),
-                    modifiers: KeyModifiers::NONE,
-                },
-            ),
+            slider.handle_mouse(&mut state, click(end.x, end.y),),
             RangeSliderOutcome::ValueChanged { .. }
         ));
         assert_eq!(state.active_thumb, RangeThumb::End);

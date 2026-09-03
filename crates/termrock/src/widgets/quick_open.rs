@@ -1949,7 +1949,7 @@ pub fn example_quick_open_symbols() -> Vec<QuickOpenItem<&'static str>> {
 mod tests {
     use super::*;
     use crate::input::{KeyEventKind, KeyModifiers};
-    use ratatui_core::layout::Position;
+    use crate::widgets::tests::click;
 
     fn providers() -> Vec<QuickOpenProvider> {
         example_quick_open_providers()
@@ -2309,11 +2309,7 @@ mod tests {
         state.hits = vec![(0, Rect::new(5, 6, 20, 1))];
         assert!(matches!(
             state.handle_mouse(
-                MouseEvent {
-                    kind: MouseEventKind::Down(MouseButton::Left),
-                    position: Position::new(5, 6),
-                    modifiers: KeyModifiers::NONE,
-                },
+                click(5, 6),
                 &providers,
                 &visible,
             ),

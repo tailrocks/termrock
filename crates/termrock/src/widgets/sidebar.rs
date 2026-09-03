@@ -1587,7 +1587,7 @@ pub fn example_sectioned_sidebar_nav() -> Vec<NavItem<&'static str>> {
 mod tests {
     use super::*;
     use crate::style::RolePalette;
-    use ratatui_core::layout::Position;
+    use crate::widgets::tests::click;
 
     #[test]
     fn route_distinct_from_focus() {
@@ -2071,14 +2071,7 @@ mod tests {
         Sidebar::new(&items, &system).paint(area, &mut buf, &mut state);
         let hit = state.nav.regions.iter().find(|r| r.id == "b").expect("b");
         assert!(matches!(
-            state.handle_mouse(
-                MouseEvent {
-                    kind: MouseEventKind::Down(MouseButton::Left),
-                    position: Position::new(hit.area.x, hit.area.y),
-                    modifiers: KeyModifiers::NONE,
-                },
-                &items
-            ),
+            state.handle_mouse(click(hit.area.x, hit.area.y), &items),
             SidebarOutcome::RouteChanged { id: "b" }
         ));
     }

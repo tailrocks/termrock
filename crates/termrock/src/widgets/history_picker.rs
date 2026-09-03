@@ -1505,8 +1505,8 @@ pub fn example_history_entries() -> Vec<HistoryEntry<&'static str>> {
 mod tests {
     use super::*;
     use crate::input::{KeyEventKind, KeyModifiers};
+    use crate::widgets::tests::click;
     use crate::widgets::tests::key_with_kind;
-    use ratatui_core::layout::Position;
 
     fn catalog() -> Vec<HistoryEntry<&'static str>> {
         example_history_entries()
@@ -1837,14 +1837,7 @@ mod tests {
             cat.iter().map(|e| HistoryMatch::new(e, None)).collect();
         let mut state = open_state();
         state.hits = vec![(0, Rect::new(3, 4, 20, 1))];
-        let out = state.handle_mouse(
-            MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: Position::new(3, 4),
-                modifiers: KeyModifiers::NONE,
-            },
-            &visible,
-        );
+        let out = state.handle_mouse(click(3, 4), &visible);
         assert!(matches!(
             out,
             HistoryPickerOutcome::Selected { ref id, .. } if id == &visible[0].id

@@ -1572,7 +1572,7 @@ impl<'a, Id: Clone + PartialEq + Ord> StatefulWidget for &KeyValueTable<'a, Id> 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ratatui_core::layout::Position;
+    use crate::widgets::tests::click;
 
     #[test]
     fn separator_comes_from_the_shared_key_value_token() {
@@ -1778,14 +1778,7 @@ mod tests {
             .first()
             .map(|r| (r.area.x, r.area.y))
             .expect("region");
-        let out = table.handle_mouse(
-            &mut state,
-            MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: Position { x: rx, y: ry },
-                modifiers: KeyModifiers::NONE,
-            },
-        );
+        let out = table.handle_mouse(&mut state, click(rx, ry));
         assert!(matches!(out, KeyValueTableOutcome::Selected(_)));
     }
 

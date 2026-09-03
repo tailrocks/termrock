@@ -1185,7 +1185,7 @@ impl StatefulWidget for Pagination<'_> {
 mod tests {
     use super::*;
     use crate::style::RolePalette;
-    use ratatui_core::layout::Position;
+    use crate::widgets::tests::click;
 
     #[test]
     fn page_request_offset() {
@@ -1316,11 +1316,7 @@ mod tests {
             PaginationOutcome::Ignored
         );
         assert_eq!(
-            state.handle_mouse(MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: Position::new(next.x, next.y),
-                modifiers: KeyModifiers::NONE,
-            }),
+            state.handle_mouse(click(next.x, next.y)),
             PaginationOutcome::Ignored
         );
 
@@ -1385,11 +1381,7 @@ mod tests {
             .find(|(p, _)| matches!(p, PaginationPart::Next))
         {
             assert!(matches!(
-                state.handle_mouse(MouseEvent {
-                    kind: MouseEventKind::Down(MouseButton::Left),
-                    position: Position::new(rect.x, rect.y),
-                    modifiers: KeyModifiers::NONE,
-                }),
+                state.handle_mouse(click(rect.x, rect.y)),
                 PaginationOutcome::PageRequested {
                     request: PageRequest { page: 4, .. }
                 }

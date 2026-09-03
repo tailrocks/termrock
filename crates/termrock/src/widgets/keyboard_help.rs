@@ -1430,7 +1430,7 @@ mod tests {
     use crate::input::KeyEventKind;
     use crate::input::KeyModifiers;
     use crate::keymap::{KeyBinding, KeyChord, Visibility};
-    use ratatui_core::layout::Position;
+    use crate::widgets::tests::click;
 
     fn refs(v: &[HelpEntry]) -> Vec<&HelpEntry> {
         v.iter().collect()
@@ -1585,14 +1585,7 @@ mod tests {
         let (index, rect) = state.hits[0];
         assert_eq!(index, 0);
         assert_eq!(
-            state.handle_mouse(
-                MouseEvent {
-                    kind: MouseEventKind::Down(MouseButton::Left),
-                    position: Position::new(rect.x, rect.y),
-                    modifiers: KeyModifiers::NONE,
-                },
-                &refs(&entries),
-            ),
+            state.handle_mouse(click(rect.x, rect.y), &refs(&entries),),
             KeyboardHelpOutcome::CursorMoved { index: 0 }
         );
         assert_eq!(state.cursor_index(), 0);
@@ -1757,14 +1750,7 @@ mod tests {
         let mut state = KeyboardHelpState::modal();
         state.hits = vec![(1, Rect::new(2, 3, 18, 1))];
         assert_eq!(
-            state.handle_mouse(
-                MouseEvent {
-                    kind: MouseEventKind::Down(MouseButton::Left),
-                    position: Position::new(2, 3),
-                    modifiers: KeyModifiers::NONE,
-                },
-                &refs(&entries),
-            ),
+            state.handle_mouse(click(2, 3), &refs(&entries),),
             KeyboardHelpOutcome::CursorMoved { index: 1 }
         );
     }

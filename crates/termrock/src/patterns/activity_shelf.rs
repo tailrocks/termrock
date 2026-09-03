@@ -1154,7 +1154,7 @@ pub mod bench {
 mod tests {
     use super::*;
     use crate::input::KeyModifiers;
-    use ratatui_core::layout::Position;
+    use crate::widgets::tests::click;
 
     #[test]
     fn sort_prioritizes_action_and_blocked() {
@@ -1314,11 +1314,7 @@ mod tests {
         assert!(!st.hits.is_empty());
         let id = st.hits[0].0.clone();
         let rect = st.hits[0].1;
-        let ev = MouseEvent {
-            kind: MouseEventKind::Down(MouseButton::Left),
-            position: Position::new(rect.x, rect.y),
-            modifiers: KeyModifiers::NONE,
-        };
+        let ev = click(rect.x, rect.y);
         let out = st.handle_mouse(ev, &items);
         match out {
             ActivityShelfOutcome::Activated { id: aid } => assert_eq!(aid, id),

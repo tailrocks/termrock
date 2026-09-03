@@ -1215,7 +1215,7 @@ fn paint_entry_chrome(
 mod tests {
     use super::*;
     use crate::input::{KeyCode, KeyModifiers};
-    use ratatui_core::layout::Position;
+    use crate::widgets::tests::click;
 
     #[test]
     fn separator_comes_from_the_shared_key_value_token() {
@@ -1414,14 +1414,7 @@ mod tests {
         let mut state = KeyValueListState::new();
         let mut buf = Buffer::empty(Rect::new(0, 0, 40, 3));
         let _ = list.paint(Rect::new(0, 0, 40, 3), &mut buf, &mut state);
-        let out = list.handle_mouse(
-            &mut state,
-            MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: Position { x: 5, y: 0 },
-                modifiers: KeyModifiers::NONE,
-            },
-        );
+        let out = list.handle_mouse(&mut state, click(5, 0));
         assert!(matches!(out, KeyValueListOutcome::Copy { id: "name", .. }));
     }
 }

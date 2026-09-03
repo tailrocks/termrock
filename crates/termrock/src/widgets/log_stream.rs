@@ -1369,6 +1369,7 @@ pub mod bench {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::widgets::tests::click;
 
     fn sample() -> Vec<LogLine<'static>> {
         vec![
@@ -1620,11 +1621,7 @@ mod tests {
             LogStreamOutcome::Detach
         ));
         let chip_y = area.bottom().saturating_sub(1);
-        let click = MouseEvent {
-            kind: MouseEventKind::Down(MouseButton::Left),
-            position: Position::new(0, chip_y),
-            modifiers: KeyModifiers::NONE,
-        };
+        let click = click(0, chip_y);
         assert!(matches!(
             state.handle_mouse(click, &lines),
             LogStreamOutcome::Follow

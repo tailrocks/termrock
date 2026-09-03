@@ -1527,6 +1527,7 @@ mod tests {
     use super::*;
     use crate::input::KeyEventKind;
     use crate::input::KeyModifiers;
+    use crate::widgets::tests::click;
 
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
     enum Layer {
@@ -1682,21 +1683,10 @@ mod tests {
             .unwrap();
 
         assert!(scene.hit_test(Position::new(0, 0)).is_none());
-        assert_eq!(
-            scene.handle_mouse(MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: Position::new(0, 0),
-                modifiers: KeyModifiers::NONE,
-            }),
-            InteractionOutcome::Ignored
-        );
+        assert_eq!(scene.handle_mouse(click(0, 0)), InteractionOutcome::Ignored);
         assert_eq!(scene.focused(), Some(&"main"));
         assert_eq!(
-            scene.handle_mouse(MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: Position::new(10, 0),
-                modifiers: KeyModifiers::NONE,
-            }),
+            scene.handle_mouse(click(10, 0)),
             InteractionOutcome::FocusChanged {
                 from: Some("main"),
                 to: Some("dialog"),
@@ -1811,11 +1801,7 @@ mod tests {
             .unwrap();
         scene.reconcile();
 
-        let outside = MouseEvent {
-            kind: MouseEventKind::Down(MouseButton::Left),
-            position: Position::new(9, 9),
-            modifiers: KeyModifiers::NONE,
-        };
+        let outside = click(9, 9);
         assert!(matches!(
             scene.handle_mouse(outside),
             InteractionOutcome::LayerDismissed {
@@ -1980,11 +1966,7 @@ mod tests {
                 Rect::new(0, 0, 2, 1),
             ))
             .unwrap();
-        let outside = MouseEvent {
-            kind: MouseEventKind::Down(MouseButton::Left),
-            position: Position::new(9, 9),
-            modifiers: KeyModifiers::NONE,
-        };
+        let outside = click(9, 9);
         assert!(matches!(
             scene.handle_mouse(outside),
             InteractionOutcome::LayerDismissed {

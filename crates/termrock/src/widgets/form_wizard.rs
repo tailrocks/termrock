@@ -1302,7 +1302,7 @@ mod tests {
     use super::*;
     use crate::input::KeyEventKind;
     use crate::style::RolePalette;
-    use ratatui_core::layout::Position;
+    use crate::widgets::tests::click;
 
     fn three_steps() -> FormWizardState {
         FormWizardState::with_steps([
@@ -1532,11 +1532,7 @@ mod tests {
         // click next
         let nr = state.nav_next;
         assert!(matches!(
-            state.handle_mouse(MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: Position::new(nr.x, nr.y),
-                modifiers: KeyModifiers::NONE,
-            }),
+            state.handle_mouse(click(nr.x, nr.y)),
             FormWizardOutcome::StepChanged { .. }
         ));
     }

@@ -1424,6 +1424,7 @@ fn format_mnemonic_label(label: &str, mnemonic: Option<char>) -> String {
 mod tests {
     use super::*;
     use crate::input::{KeyEventKind, KeyModifiers};
+    use crate::widgets::tests::click;
     use crate::widgets::tests::key_with_kind;
     use ratatui_core::layout::Position;
 
@@ -2138,14 +2139,7 @@ mod tests {
         let _ = state.open_from_keyboard(&root, Rect::new(0, 0, 80, 24));
         state.panel_hits = vec![(0, 0, Rect::new(4, 5, 20, 1))];
         assert!(matches!(
-            state.handle_mouse(
-                MouseEvent {
-                    kind: MouseEventKind::Down(MouseButton::Left),
-                    position: Position::new(4, 5),
-                    modifiers: KeyModifiers::NONE,
-                },
-                &root,
-            ),
+            state.handle_mouse(click(4, 5), &root,),
             DropdownMenuOutcome::Activated { .. }
                 | DropdownMenuOutcome::CheckToggled { .. }
                 | DropdownMenuOutcome::RadioSelected { .. }
@@ -2156,14 +2150,7 @@ mod tests {
         let _ = disabled_state.open_from_keyboard(&disabled, Rect::new(0, 0, 80, 24));
         disabled_state.panel_hits = vec![(0, 0, Rect::new(4, 5, 20, 1))];
         assert_eq!(
-            disabled_state.handle_mouse(
-                MouseEvent {
-                    kind: MouseEventKind::Down(MouseButton::Left),
-                    position: Position::new(4, 5),
-                    modifiers: KeyModifiers::NONE,
-                },
-                &disabled,
-            ),
+            disabled_state.handle_mouse(click(4, 5), &disabled,),
             DropdownMenuOutcome::CursorMoved
         );
     }

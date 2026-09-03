@@ -1819,7 +1819,7 @@ fn paint_line(
 mod tests {
     use super::*;
     use crate::style::RolePalette;
-    use ratatui_core::layout::Position;
+    use crate::widgets::tests::click;
 
     fn press(code: KeyCode) -> KeyEvent {
         KeyEvent::new(code, KeyModifiers::NONE)
@@ -2164,14 +2164,7 @@ mod tests {
             .find(|r| r.action == PermissionAction::Deny)
             .unwrap()
             .area;
-        let event = MouseEvent {
-            kind: MouseEventKind::Down(MouseButton::Left),
-            position: Position {
-                x: deny.x,
-                y: deny.y,
-            },
-            modifiers: KeyModifiers::NONE,
-        };
+        let event = click(deny.x, deny.y);
         let out = state.handle_mouse(event);
         assert!(matches!(
             out,

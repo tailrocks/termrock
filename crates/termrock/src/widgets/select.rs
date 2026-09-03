@@ -1487,7 +1487,7 @@ mod tests {
     use super::*;
     use crate::input::KeyEventKind;
     use crate::style::RolePalette;
-    use ratatui_core::layout::Position;
+    use crate::widgets::tests::click;
 
     fn sample_options() -> Vec<SelectOption<&'static str>> {
         vec![
@@ -1802,15 +1802,7 @@ mod tests {
         assert!(!state.option_regions.is_empty());
         let (id, rect) = state.option_regions[0].clone();
         assert_eq!(
-            state.handle_mouse(
-                MouseEvent {
-                    kind: MouseEventKind::Down(MouseButton::Left),
-                    position: Position::new(rect.x, rect.y),
-                    modifiers: KeyModifiers::NONE,
-                },
-                &opts,
-                area,
-            ),
+            state.handle_mouse(click(rect.x, rect.y), &opts, area,),
             SelectOutcome::ValueChanged { id }
         );
     }
@@ -2103,15 +2095,7 @@ mod tests {
             "open disclosure: {field:?}"
         );
         assert_eq!(
-            state.handle_mouse(
-                MouseEvent {
-                    kind: MouseEventKind::Down(MouseButton::Left),
-                    position: Position::new(80, 40),
-                    modifiers: KeyModifiers::NONE,
-                },
-                &opts,
-                area,
-            ),
+            state.handle_mouse(click(80, 40), &opts, area,),
             SelectOutcome::Closed
         );
         assert!(!state.is_open());

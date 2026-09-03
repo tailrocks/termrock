@@ -1489,7 +1489,7 @@ pub mod bench {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ratatui_core::layout::Position;
+    use crate::widgets::tests::click;
 
     fn sample_data() -> Vec<u8> {
         let mut v = Vec::new();
@@ -1669,11 +1669,7 @@ mod tests {
         HexViewer::new(win, &system).render(area, &mut buf, &mut state);
         assert!(!state.regions.is_empty());
         let r = &state.regions[0];
-        let click = MouseEvent {
-            kind: MouseEventKind::Down(MouseButton::Left),
-            position: Position::new(r.area.x.saturating_add(12), r.area.y),
-            modifiers: KeyModifiers::NONE,
-        };
+        let click = click(r.area.x.saturating_add(12), r.area.y);
         let out = state.handle_mouse(click, &win);
         assert!(matches!(
             out,

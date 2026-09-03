@@ -1197,8 +1197,9 @@ pub fn example_disconnected() -> ReconnectingState {
 mod tests {
     use super::*;
     use crate::input::KeyEventKind;
+    use crate::widgets::tests::click;
     use ratatui_core::backend::TestBackend;
-    use ratatui_core::layout::Position;
+
     use ratatui_core::terminal::Terminal;
 
     fn system() -> DesignSystem {
@@ -1485,11 +1486,7 @@ mod tests {
     fn mouse_retry_on_banner() {
         let mut s = example_disconnected();
         let area = Rect::new(0, 0, 40, 1);
-        let mouse = MouseEvent {
-            kind: MouseEventKind::Down(MouseButton::Left),
-            position: Position { x: 2, y: 0 },
-            modifiers: KeyModifiers::NONE,
-        };
+        let mouse = click(2, 0);
         assert_eq!(s.handle_mouse(mouse, area), ConnectivityOutcome::RetryNow);
     }
 

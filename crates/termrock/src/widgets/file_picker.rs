@@ -1699,6 +1699,7 @@ mod tests {
     use super::*;
     use crate::input::KeyEventKind;
     use crate::style::RolePalette;
+    use crate::widgets::tests::click;
     use crate::widgets::tests::key_with_kind;
     use ratatui_core::layout::Position;
 
@@ -1871,22 +1872,14 @@ mod tests {
         let FilePickerOutcome::PreviewRequested {
             generation: file_generation,
             ..
-        } = state.handle_mouse(MouseEvent {
-            kind: MouseEventKind::Down(MouseButton::Left),
-            position: file_position,
-            modifiers: KeyModifiers::NONE,
-        })
+        } = state.handle_mouse(click(file_position.x, file_position.y))
         else {
             panic!("expected file preview request");
         };
         let FilePickerOutcome::PreviewRequested {
             path: directory_path,
             generation: directory_generation,
-        } = state.handle_mouse(MouseEvent {
-            kind: MouseEventKind::Down(MouseButton::Left),
-            position: directory_position,
-            modifiers: KeyModifiers::NONE,
-        })
+        } = state.handle_mouse(click(directory_position.x, directory_position.y))
         else {
             panic!("expected directory preview request");
         };
@@ -1920,12 +1913,8 @@ mod tests {
             .map(|(_, rect)| Position::new(rect.x, rect.y))
             .expect("file hit");
 
-        let FilePickerOutcome::SelectionChangedAndPreviewRequested { path, generation } = state
-            .handle_mouse(MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: file_position,
-                modifiers: KeyModifiers::NONE,
-            })
+        let FilePickerOutcome::SelectionChangedAndPreviewRequested { path, generation } =
+            state.handle_mouse(click(file_position.x, file_position.y))
         else {
             panic!("expected selection and preview request");
         };
@@ -2041,14 +2030,7 @@ mod tests {
             state.handle_intent(UiIntent::Activate),
             FilePickerOutcome::Ignored
         );
-        assert_eq!(
-            state.handle_mouse(MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: Position::new(1, 0),
-                modifiers: KeyModifiers::NONE,
-            }),
-            FilePickerOutcome::Ignored
-        );
+        assert_eq!(state.handle_mouse(click(1, 0)), FilePickerOutcome::Ignored);
     }
 
     #[test]
@@ -2513,11 +2495,7 @@ mod tests {
         assert!(!state.breadcrumb_hits.is_empty());
         let (path, rect) = state.breadcrumb_hits[0].clone();
         assert!(matches!(
-            state.handle_mouse(MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: Position::new(rect.x, rect.y),
-                modifiers: KeyModifiers::NONE,
-            }),
+            state.handle_mouse(click(rect.x, rect.y)),
             FilePickerOutcome::ListRequested { path: p, .. } if p == path
         ));
     }

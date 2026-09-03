@@ -839,6 +839,7 @@ impl<'a> ActionLink<'a> {
 mod tests {
     use super::*;
     use crate::input::{KeyCode, KeyModifiers};
+    use crate::widgets::tests::click;
 
     #[test]
     fn external_always_shows_destination_or_cue() {
@@ -1016,22 +1017,12 @@ mod tests {
 
     #[test]
     fn mouse_click_activates() {
-        use crate::input::{MouseButton, MouseEvent, MouseEventKind};
-        use ratatui_core::layout::Position;
-
         let system = DesignSystem::default();
         let link = Link::url("docs", "https://example.invalid", &system);
         let mut state = LinkState::new();
         let mut buf = Buffer::empty(Rect::new(0, 0, 40, 1));
         let _ = link.paint(Rect::new(0, 0, 40, 1), &mut buf, &mut state);
-        let out = link.handle_mouse(
-            &mut state,
-            MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: Position { x: 1, y: 0 },
-                modifiers: KeyModifiers::NONE,
-            },
-        );
+        let out = link.handle_mouse(&mut state, click(1, 0));
         assert!(matches!(out, LinkOutcome::Activated { external: true, .. }));
         assert!(state.visited);
         assert!(state.focused);

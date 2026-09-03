@@ -1863,9 +1863,9 @@ fn paint_table_row(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::{KeyCode, KeyModifiers, MouseEventKind};
+    use crate::input::{KeyCode, KeyModifiers};
     use crate::style::RolePalette;
-    use ratatui_core::layout::Position;
+    use crate::widgets::tests::click;
 
     #[test]
     fn project_plain_lines_classifies_common_markers() {
@@ -2034,14 +2034,7 @@ fn x() {}
         let mut state = MarkdownViewState::new();
         let mut buf = Buffer::empty(Rect::new(0, 0, 20, 4));
         let _ = view.paint(Rect::new(0, 0, 20, 4), &mut buf, &mut state);
-        let out = view.handle_mouse(
-            &mut state,
-            MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: Position { x: 0, y: 1 },
-                modifiers: KeyModifiers::NONE,
-            },
-        );
+        let out = view.handle_mouse(&mut state, click(0, 1));
         assert!(matches!(out, MarkdownOutcome::SelectionChanged { .. }));
     }
 

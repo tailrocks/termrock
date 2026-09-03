@@ -1089,8 +1089,8 @@ pub mod bench {
 mod tests {
     use super::*;
     use crate::style::MotionPolicy;
+    use crate::widgets::tests::click;
     use crate::widgets::tests::press;
-    use ratatui_core::layout::Position;
 
     fn open() -> WorkingStateCardState {
         let mut st = WorkingStateCardState::new();
@@ -1310,11 +1310,7 @@ mod tests {
         let mut buf = Buffer::empty(area);
         WorkingStateCard::new(&system).paint(area, &mut buf, &mut st);
         if let Some(h) = st.header_hit {
-            let out = st.handle_mouse(MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: Position { x: h.x, y: h.y },
-                modifiers: KeyModifiers::NONE,
-            });
+            let out = st.handle_mouse(click(h.x, h.y));
             assert!(matches!(out, WorkingStateOutcome::Collapsed));
         }
     }

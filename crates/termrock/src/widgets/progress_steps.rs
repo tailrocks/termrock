@@ -942,7 +942,7 @@ pub fn example_agent_plan_steps() -> Vec<ProgressStep> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ratatui_core::layout::Position;
+    use crate::widgets::tests::click;
 
     #[test]
     fn status_marks_are_non_color() {
@@ -1064,16 +1064,7 @@ mod tests {
             ProgressStepsOutcome::Ignored
         );
         assert_eq!(
-            state.handle_mouse(
-                &steps,
-                MouseEvent {
-                    kind: MouseEventKind::Down(MouseButton::Left),
-                    position: Position::new(0, 1),
-                    modifiers: KeyModifiers::NONE,
-                },
-                Rect::new(0, 0, 20, 4),
-                1,
-            ),
+            state.handle_mouse(&steps, click(0, 1), Rect::new(0, 0, 20, 4), 1,),
             ProgressStepsOutcome::Ignored
         );
         assert_eq!(state.cursor(), Some("compile"));
@@ -1088,16 +1079,7 @@ mod tests {
         state.accepts_input = false;
 
         assert_eq!(
-            state.handle_mouse(
-                &steps,
-                MouseEvent {
-                    kind: MouseEventKind::Down(MouseButton::Left),
-                    position: Position::new(0, 1),
-                    modifiers: KeyModifiers::NONE,
-                },
-                Rect::new(0, 0, 20, 4),
-                1,
-            ),
+            state.handle_mouse(&steps, click(0, 1), Rect::new(0, 0, 20, 4), 1,),
             ProgressStepsOutcome::Ignored
         );
         assert_eq!(

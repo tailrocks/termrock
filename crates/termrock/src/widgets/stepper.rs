@@ -1283,7 +1283,7 @@ pub fn example_onboarding_steps() -> Vec<StepItem> {
 mod tests {
     use super::*;
     use crate::input::KeyModifiers;
-    use ratatui_core::layout::Position;
+    use crate::widgets::tests::click;
 
     fn steps() -> Vec<StepItem> {
         example_onboarding_steps()
@@ -1456,14 +1456,7 @@ mod tests {
         assert_eq!(state.hits()[0].0, 1);
         let hit = state.hits()[0].1;
         assert_eq!(
-            state.handle_mouse(
-                MouseEvent {
-                    kind: MouseEventKind::Down(MouseButton::Left),
-                    position: Position::new(hit.x, hit.y),
-                    modifiers: KeyModifiers::NONE,
-                },
-                &items,
-            ),
+            state.handle_mouse(click(hit.x, hit.y), &items,),
             StepperOutcome::StepActivated {
                 index: 1,
                 id: items[1].id.clone(),
@@ -1500,14 +1493,7 @@ mod tests {
         assert_eq!(state.hits()[0].0, 1);
         let hit = state.hits()[0].1;
         assert_eq!(
-            state.handle_mouse(
-                MouseEvent {
-                    kind: MouseEventKind::Down(MouseButton::Left),
-                    position: Position::new(hit.x, hit.y),
-                    modifiers: KeyModifiers::NONE,
-                },
-                &items,
-            ),
+            state.handle_mouse(click(hit.x, hit.y), &items,),
             StepperOutcome::StepActivated {
                 index: 1,
                 id: items[1].id.clone(),
@@ -1710,14 +1696,7 @@ mod tests {
             .collect();
         assert!(text.contains("Review"), "{text}");
         assert!(matches!(
-            state.handle_mouse(
-                MouseEvent {
-                    kind: MouseEventKind::Down(MouseButton::Left),
-                    position: Position::new(hit.x, hit.y),
-                    modifiers: KeyModifiers::NONE,
-                },
-                &items,
-            ),
+            state.handle_mouse(click(hit.x, hit.y), &items,),
             StepperOutcome::StepActivated { index: 3, .. }
         ));
     }
@@ -1733,14 +1712,7 @@ mod tests {
         let (index, hit) = state.hits[1];
 
         assert_eq!(
-            state.handle_mouse(
-                MouseEvent {
-                    kind: MouseEventKind::Down(MouseButton::Left),
-                    position: Position::new(hit.x, hit.y),
-                    modifiers: KeyModifiers::NONE,
-                },
-                &items,
-            ),
+            state.handle_mouse(click(hit.x, hit.y), &items,),
             StepperOutcome::StepActivated {
                 index,
                 id: items[index].id.clone()
@@ -1908,14 +1880,7 @@ mod tests {
             StepperOutcome::Ignored
         );
         assert_eq!(
-            state.handle_mouse(
-                MouseEvent {
-                    kind: MouseEventKind::Down(MouseButton::Left),
-                    position: Position::new(0, 0),
-                    modifiers: KeyModifiers::NONE,
-                },
-                &items,
-            ),
+            state.handle_mouse(click(0, 0), &items,),
             StepperOutcome::Ignored
         );
 

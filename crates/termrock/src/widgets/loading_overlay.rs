@@ -762,8 +762,9 @@ pub fn example_busy_stale(system: &DesignSystem) -> (LoadingOverlay<'_>, BusyBou
 mod tests {
     use super::*;
     use crate::input::KeyEventKind;
+    use crate::widgets::tests::click;
     use ratatui_core::backend::TestBackend;
-    use ratatui_core::layout::Position;
+
     use ratatui_core::style::Style;
     use ratatui_core::terminal::Terminal;
     use ratatui_core::widgets::Widget;
@@ -982,11 +983,7 @@ mod tests {
         let mut st = BusyBoundaryState::new();
         let _ = st.begin(BusyMode::Blocking, "X");
         let region = Rect::new(0, 0, 10, 5);
-        let mouse = MouseEvent {
-            kind: MouseEventKind::Down(MouseButton::Left),
-            position: Position { x: 50, y: 50 },
-            modifiers: KeyModifiers::NONE,
-        };
+        let mouse = click(50, 50);
         assert_eq!(st.route_pointer(mouse, region), BusyRoute::Outside);
     }
 

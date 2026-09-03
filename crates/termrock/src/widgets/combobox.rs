@@ -1148,6 +1148,7 @@ mod tests {
     use super::*;
     use crate::input::KeyEventKind;
     use crate::style::RolePalette;
+    use crate::widgets::tests::click;
     use crate::widgets::tests::key_with_kind;
 
     fn cands() -> Vec<CompletionCandidate<'static, &'static str>> {
@@ -1481,11 +1482,7 @@ mod tests {
         Combobox::new(&system).paint_with_menu(area, &mut buffer, &mut state, &candidates);
 
         let outcome = state.handle_mouse(
-            MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: Position::new(state.field.x, state.field.y),
-                modifiers: KeyModifiers::NONE,
-            },
+            click(state.field.x, state.field.y),
             &candidates,
             Rect::default(),
         );

@@ -1487,7 +1487,7 @@ impl<'a, Id: Clone + PartialEq> ToggleGroup<'a, Id> {
 mod tests {
     use super::*;
     use crate::input::{KeyCode, KeyModifiers};
-    use ratatui_core::layout::Position;
+    use crate::widgets::tests::click;
 
     #[test]
     fn value_activate_cycles() {
@@ -1555,17 +1555,7 @@ mod tests {
         let mut state = ToggleState::new();
         let mut buf = Buffer::empty(Rect::new(0, 0, 10, 1));
         let parts = t.paint(Rect::new(0, 0, 10, 1), &mut buf, &mut state);
-        let out = t.handle_mouse(
-            &mut state,
-            MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: Position {
-                    x: parts.root.x,
-                    y: parts.root.y,
-                },
-                modifiers: KeyModifiers::NONE,
-            },
-        );
+        let out = t.handle_mouse(&mut state, click(parts.root.x, parts.root.y));
         assert!(matches!(
             out,
             ToggleOutcome::ValueChanged {

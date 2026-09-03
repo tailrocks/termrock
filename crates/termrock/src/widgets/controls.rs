@@ -2644,14 +2644,7 @@ mod tests {
             y: parts.track.y,
         };
         // Down only arms
-        let out = sw.handle_mouse(
-            &mut state,
-            MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: pos,
-                modifiers: KeyModifiers::NONE,
-            },
-        );
+        let out = sw.handle_mouse(&mut state, click(pos.x, pos.y));
         assert!(matches!(out, SwitchOutcome::Ignored));
         assert!(!state.is_on());
         // Up in region toggles
@@ -2691,14 +2684,7 @@ mod tests {
                 .saturating_add(2),
             y: parts.root.y,
         };
-        let _ = sw.handle_mouse(
-            &mut state,
-            MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: inside,
-                modifiers: KeyModifiers::NONE,
-            },
-        );
+        let _ = sw.handle_mouse(&mut state, click(inside.x, inside.y));
         let _ = sw.handle_mouse(
             &mut state,
             MouseEvent {

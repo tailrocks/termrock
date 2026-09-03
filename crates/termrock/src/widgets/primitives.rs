@@ -1307,6 +1307,7 @@ pub fn button_hit<Id: Clone>(id: Id, state: &ButtonState) -> Option<HitRegion<Id
 mod tests {
     use super::*;
     use crate::input::KeyModifiers;
+    use crate::widgets::tests::click;
     use ratatui_core::layout::Position;
     use ratatui_core::widgets::Widget;
 
@@ -1491,11 +1492,7 @@ mod tests {
         state.activation.set_accepts_input(true);
         state.activation.set_enabled(true);
         state.region = Some(Rect::new(0, 0, 8, 1));
-        let down = MouseEvent {
-            kind: MouseEventKind::Down(MouseButton::Left),
-            position: Position::new(1, 0),
-            modifiers: KeyModifiers::NONE,
-        };
+        let down = click(1, 0);
         assert_eq!(state.handle_mouse(down), ActivationOutcome::Pressed);
         let up = MouseEvent {
             kind: MouseEventKind::Up(MouseButton::Left),
@@ -1578,11 +1575,7 @@ mod tests {
         let mut state = ButtonState::new();
         state.activation.set_accepts_input(true);
         state.region = Some(Rect::new(0, 0, 8, 1));
-        let down = MouseEvent {
-            kind: MouseEventKind::Down(MouseButton::Left),
-            position: Position::new(1, 0),
-            modifiers: KeyModifiers::NONE,
-        };
+        let down = click(1, 0);
         assert_eq!(state.handle_mouse(down), ActivationOutcome::Pressed);
         let up = MouseEvent {
             kind: MouseEventKind::Up(MouseButton::Left),
@@ -1665,11 +1658,7 @@ mod tests {
         // Click on slop cell (right of visual if centered)
         let hit = state.hit.unwrap();
         let pos = Position::new(hit.x.saturating_add(hit.width.saturating_sub(1)), hit.y);
-        let down = MouseEvent {
-            kind: MouseEventKind::Down(MouseButton::Left),
-            position: pos,
-            modifiers: KeyModifiers::NONE,
-        };
+        let down = click(pos.x, pos.y);
         assert_eq!(state.handle_mouse(down), ActivationOutcome::Pressed);
         let up = MouseEvent {
             kind: MouseEventKind::Up(MouseButton::Left),

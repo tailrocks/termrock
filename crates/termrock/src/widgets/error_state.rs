@@ -1216,8 +1216,9 @@ pub fn example_error_dialog(system: &DesignSystem) -> ErrorState<'_> {
 mod tests {
     use super::*;
     use crate::input::KeyEventKind;
+    use crate::widgets::tests::click;
     use ratatui_core::backend::TestBackend;
-    use ratatui_core::layout::Position;
+
     use ratatui_core::terminal::Terminal;
 
     fn system() -> DesignSystem {
@@ -1562,11 +1563,7 @@ mod tests {
         let e = example_error_network(&system);
         let mut st = ErrorStateState::new();
         let area = Rect::new(0, 0, 40, 12);
-        let mouse = MouseEvent {
-            kind: MouseEventKind::Down(MouseButton::Left),
-            position: Position { x: 5, y: 11 },
-            modifiers: KeyModifiers::NONE,
-        };
+        let mouse = click(5, 11);
         let out = e.handle_mouse(mouse, area, &mut st);
         assert!(
             matches!(

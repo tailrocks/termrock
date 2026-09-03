@@ -1010,7 +1010,7 @@ impl<'a, Id: Clone + PartialEq> ButtonGroup<'a, Id> {
 mod tests {
     use super::*;
     use crate::input::{KeyCode, KeyModifiers};
-    use ratatui_core::layout::Position;
+    use crate::widgets::tests::click;
 
     fn sample() -> [ButtonGroupItem<'static, &'static str>; 4] {
         [
@@ -1113,17 +1113,7 @@ mod tests {
         let mut buf = Buffer::empty(Rect::new(0, 0, 40, 1));
         let parts = g.paint(Rect::new(0, 0, 40, 1), &mut buf, &mut state);
         let area = parts.items.iter().find(|i| i.id == "b").unwrap().area;
-        let out = g.handle_mouse(
-            &mut state,
-            MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: Position {
-                    x: area.x,
-                    y: area.y,
-                },
-                modifiers: KeyModifiers::NONE,
-            },
-        );
+        let out = g.handle_mouse(&mut state, click(area.x, area.y));
         assert!(matches!(out, ButtonGroupOutcome::Activated { id: "b" }));
     }
 

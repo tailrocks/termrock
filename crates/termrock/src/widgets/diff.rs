@@ -1706,7 +1706,7 @@ pub mod bench {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ratatui_core::layout::Position;
+    use crate::widgets::tests::click;
 
     fn sample_lines() -> Vec<DiffLine<'static>> {
         vec![
@@ -2021,11 +2021,7 @@ mod tests {
         (&view).render(area, &mut buf, &mut state);
         assert!(!state.regions.is_empty());
         let r = &state.regions[0];
-        let click = MouseEvent {
-            kind: MouseEventKind::Down(MouseButton::Left),
-            position: Position::new(r.area.x, r.area.y),
-            modifiers: KeyModifiers::NONE,
-        };
+        let click = click(r.area.x, r.area.y);
         assert!(matches!(
             state.handle_mouse(click, &lines, &hunks),
             DiffViewOutcome::CursorMoved { .. }

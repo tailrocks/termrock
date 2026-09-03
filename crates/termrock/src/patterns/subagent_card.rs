@@ -1144,7 +1144,7 @@ mod tests {
     use super::*;
     use crate::input::KeyModifiers;
     use crate::style::MotionPolicy;
-    use ratatui_core::layout::Position;
+    use crate::widgets::tests::click;
 
     #[test]
     fn phase_live_vs_artifact() {
@@ -1298,11 +1298,7 @@ mod tests {
         let area = Rect::new(0, 0, 48, 10);
         let mut buf = Buffer::empty(area);
         SubagentCard::new(&run, &system).paint(area, &mut buf, &mut st);
-        let ev = MouseEvent {
-            kind: MouseEventKind::Down(MouseButton::Left),
-            position: Position::new(st.header_hit.x, st.header_hit.y),
-            modifiers: KeyModifiers::NONE,
-        };
+        let ev = click(st.header_hit.x, st.header_hit.y);
         assert!(matches!(
             st.handle_mouse(ev, &run),
             SubagentCardOutcome::Collapsed { .. }

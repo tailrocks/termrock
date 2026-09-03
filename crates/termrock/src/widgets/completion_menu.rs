@@ -1566,6 +1566,7 @@ fn paint_matched_label(
 mod tests {
     use super::*;
     use crate::input::KeyModifiers;
+    use crate::widgets::tests::click;
 
     fn rect_intersects(a: Rect, b: Rect) -> bool {
         let a_x2 = a.x.saturating_add(a.width);
@@ -1783,11 +1784,7 @@ mod tests {
             ("one", Rect::new(0, 0, 20, 1)),
             ("two", Rect::new(0, 1, 20, 1)),
         ];
-        let event = MouseEvent {
-            kind: MouseEventKind::Down(MouseButton::Left),
-            position: Position { x: 2, y: 1 },
-            modifiers: KeyModifiers::NONE,
-        };
+        let event = click(2, 1);
         assert_eq!(
             state.handle_mouse(event, &items),
             CompletionMenuOutcome::Committed("two")

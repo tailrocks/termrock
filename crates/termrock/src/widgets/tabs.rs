@@ -1495,6 +1495,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for Tabs<'_, Id> {
 mod tests {
     use super::*;
     use crate::style::RolePalette;
+    use crate::widgets::tests::click;
     use ratatui_core::layout::Position;
     use ratatui_core::style::{Color, Style};
 
@@ -1891,14 +1892,7 @@ mod tests {
             .find(|r| r.id == "details")
             .expect("details hit");
         assert!(matches!(
-            state.handle_mouse(
-                MouseEvent {
-                    kind: MouseEventKind::Down(MouseButton::Left),
-                    position: Position::new(details.area.x, details.area.y),
-                    modifiers: KeyModifiers::NONE,
-                },
-                &tabs
-            ),
+            state.handle_mouse(click(details.area.x, details.area.y), &tabs),
             TabsOutcome::SelectionChanged { id: "details" }
         ));
     }
@@ -1919,14 +1913,7 @@ mod tests {
             TabsOutcome::Ignored
         );
         assert_eq!(
-            state.handle_mouse(
-                MouseEvent {
-                    kind: MouseEventKind::Down(MouseButton::Left),
-                    position: Position::new(0, 0),
-                    modifiers: KeyModifiers::NONE,
-                },
-                &tabs,
-            ),
+            state.handle_mouse(click(0, 0), &tabs,),
             TabsOutcome::Ignored
         );
     }

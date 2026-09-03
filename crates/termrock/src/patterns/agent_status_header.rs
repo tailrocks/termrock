@@ -1203,9 +1203,9 @@ pub mod bench {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyModifiers;
+
+    use crate::widgets::tests::click;
     use crate::widgets::tests::press;
-    use ratatui_core::layout::Position;
 
     fn open_action() -> AgentStatusHeaderState {
         let mut st = AgentStatusHeaderState::new();
@@ -1390,11 +1390,7 @@ mod tests {
         let mut buf = Buffer::empty(area);
         AgentStatusHeader::new(&system).paint(area, &mut buf, &mut st);
         if let Some((action, r)) = st.action_hits.first().copied() {
-            let out = st.handle_mouse(MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: Position { x: r.x, y: r.y },
-                modifiers: KeyModifiers::NONE,
-            });
+            let out = st.handle_mouse(click(r.x, r.y));
             assert!(matches!(
                 out,
                 AgentStatusHeaderOutcome::Action(a) if a == action

@@ -1479,7 +1479,7 @@ pub mod bench {
 mod tests {
     use super::*;
     use crate::ansi_text::{AnsiParseOptions, parse_to_line};
-    use ratatui_core::layout::Position;
+    use crate::widgets::tests::click;
 
     fn sample_meta() -> TerminalCommandMeta<'static> {
         TerminalCommandMeta::new("cargo test -p termrock")
@@ -1692,11 +1692,7 @@ mod tests {
         );
         assert!(!state.is_following());
         let chip_y = area.bottom().saturating_sub(1);
-        let click = MouseEvent {
-            kind: MouseEventKind::Down(MouseButton::Left),
-            position: Position::new(0, chip_y),
-            modifiers: KeyModifiers::NONE,
-        };
+        let click = click(0, chip_y);
         assert!(matches!(
             state.handle_mouse(click, &lines),
             TerminalOutputOutcome::Follow
