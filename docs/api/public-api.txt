@@ -88784,7 +88784,6 @@ pub const fn termrock::widgets::Toggle<'a>::quiet(self) -> Self
 pub const fn termrock::widgets::Toggle<'a>::recipe(self, termrock::widgets::ToggleRecipe) -> Self
 pub fn termrock::widgets::Toggle<'a>::register_semantic<Id, Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, &termrock::widgets::ToggleState) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
 pub const fn termrock::widgets::Toggle<'a>::size(self, termrock::widgets::ToggleSize) -> Self
-pub const fn termrock::widgets::Toggle<'a>::solid(self) -> Self
 impl<'a> core::clone::Clone for termrock::widgets::Toggle<'a>
 pub fn termrock::widgets::Toggle<'a>::clone(&self) -> termrock::widgets::Toggle<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::Toggle<'a>
