@@ -330,17 +330,6 @@ pub enum DateDisplayFormat {
 }
 
 impl DateDisplayFormat {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Iso => "iso",
-            Self::YmdSlash => "ymd-slash",
-            Self::MdySlash => "mdy-slash",
-            Self::DmySlash => "dmy-slash",
-        }
-    }
-
     /// Format date.
     #[must_use]
     pub fn format(self, d: CivilDate) -> String {
@@ -400,16 +389,6 @@ pub enum TimeDisplayFormat {
 }
 
 impl TimeDisplayFormat {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Hm24 => "hm24",
-            Self::Hms24 => "hms24",
-            Self::Hm12 => "hm12",
-        }
-    }
-
     /// Format time.
     #[must_use]
     pub fn format(self, t: CivilTime) -> String {
@@ -565,18 +544,6 @@ pub enum DateTimePickerPresentation {
     Fullscreen,
 }
 
-impl DateTimePickerPresentation {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Embedded => "embedded",
-            Self::Modal => "modal",
-            Self::Fullscreen => "fullscreen",
-        }
-    }
-}
-
 /// First day of week for grid headers.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -589,15 +556,6 @@ pub enum WeekStart {
 }
 
 impl WeekStart {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Monday => "monday",
-            Self::Sunday => "sunday",
-        }
-    }
-
     /// Header labels (ASCII).
     #[must_use]
     pub const fn headers(self) -> [&'static str; 7] {

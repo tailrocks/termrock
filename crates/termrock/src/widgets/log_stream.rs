@@ -52,18 +52,6 @@ pub enum LogLevel {
 }
 
 impl LogLevel {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Trace => "trace",
-            Self::Debug => "debug",
-            Self::Info => "info",
-            Self::Warn => "warn",
-            Self::Error => "error",
-        }
-    }
-
     #[must_use]
     fn role(self) -> Role {
         match self {
@@ -110,17 +98,6 @@ pub enum LogLineRecipe {
     Detailed,
 }
 
-impl LogLineRecipe {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Compact => "compact",
-            Self::Detailed => "detailed",
-        }
-    }
-}
-
 /// How body text fits the cell width.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -130,17 +107,6 @@ pub enum LogWrap {
     Clip,
     /// Soft-wrap to multiple viewport rows (virtual height grows).
     Wrap,
-}
-
-impl LogWrap {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Clip => "clip",
-            Self::Wrap => "wrap",
-        }
-    }
 }
 
 /// One projected log line.
@@ -362,12 +328,6 @@ impl LogStreamState {
     /// Host input gate.
     pub fn set_accepts_input(&mut self, accepts: bool) {
         self.accepts_input = accepts;
-    }
-
-    /// Whether host granted input.
-    #[must_use]
-    pub const fn accepts_input(&self) -> bool {
-        self.accepts_input
     }
 
     /// Following tail.

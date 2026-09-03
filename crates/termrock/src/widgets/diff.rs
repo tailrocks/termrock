@@ -577,12 +577,6 @@ impl DiffViewState {
         self.accepts_input = accepts;
     }
 
-    /// Whether host granted input.
-    #[must_use]
-    pub const fn accepts_input(&self) -> bool {
-        self.accepts_input
-    }
-
     /// Vertical offset.
     #[must_use]
     pub const fn offset(&self) -> u16 {

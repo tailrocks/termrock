@@ -166,19 +166,6 @@ pub enum FocusEmphasis {
 }
 
 impl FocusEmphasis {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::BrightBorder => "bright-border",
-            Self::SelectionFill => "selection-fill",
-            Self::FocusTint => "focus-tint",
-            Self::Reversed => "reversed",
-            Self::BoldKey => "bold-key",
-            Self::PillGlyph => "pill-glyph",
-        }
-    }
-
     /// The cue a surface family wears by default.
     #[must_use]
     pub const fn for_family(family: SurfaceFamily) -> Self {
@@ -222,19 +209,6 @@ impl SurfaceFamily {
             Self::Cell => 3,
             Self::Token => 4,
             Self::Chord => 5,
-        }
-    }
-
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Container => "container",
-            Self::Field => "field",
-            Self::Row => "row",
-            Self::Cell => "cell",
-            Self::Token => "token",
-            Self::Chord => "chord",
         }
     }
 }

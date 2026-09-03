@@ -37,17 +37,6 @@ pub enum InputAddonSide {
     Suffix,
 }
 
-impl InputAddonSide {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Prefix => "prefix",
-            Self::Suffix => "suffix",
-        }
-    }
-}
-
 /// One addon fragment.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct InputAddon {

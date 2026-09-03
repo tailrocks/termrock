@@ -48,18 +48,6 @@ pub enum DuplicatePolicy {
     RejectId,
 }
 
-impl DuplicatePolicy {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Allow => "allow",
-            Self::RejectLabel => "reject-label",
-            Self::RejectId => "reject-id",
-        }
-    }
-}
-
 /// Characters that commit the draft into a token (in addition to Enter).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CommitSeparators {
@@ -341,18 +329,6 @@ impl<Id> TokenFieldState<Id> {
     #[must_use]
     pub const fn zone(&self) -> TokenFieldZone {
         self.zone
-    }
-
-    /// Focused.
-    #[must_use]
-    pub const fn is_focused(&self) -> bool {
-        self.focused
-    }
-
-    /// Enabled.
-    #[must_use]
-    pub const fn is_enabled(&self) -> bool {
-        self.enabled
     }
 
     /// Parts.

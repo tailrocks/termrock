@@ -102,18 +102,6 @@ pub enum PaginationPresentation {
     Minimal,
 }
 
-impl PaginationPresentation {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Full => "full",
-            Self::Compact => "compact",
-            Self::Minimal => "minimal",
-        }
-    }
-}
-
 /// Focusable part inside the control (single host Tab stop).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -133,22 +121,6 @@ pub enum PaginationPart {
     PageSize,
     /// Jump-to-page field.
     Jump,
-}
-
-impl PaginationPart {
-    /// Stable id.
-    #[must_use]
-    pub fn id(self) -> String {
-        match self {
-            Self::First => "first".into(),
-            Self::Prev => "prev".into(),
-            Self::PageButton(i) => format!("page-{i}"),
-            Self::Next => "next".into(),
-            Self::Last => "last".into(),
-            Self::PageSize => "page-size".into(),
-            Self::Jump => "jump".into(),
-        }
-    }
 }
 
 /// Outcomes — **no fetch** inside TermRock.

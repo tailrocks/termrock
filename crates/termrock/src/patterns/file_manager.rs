@@ -128,16 +128,6 @@ impl FileManagerDensity {
             Self::Normal
         }
     }
-
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Normal => "normal",
-            Self::Narrow => "narrow",
-            Self::Tiny => "tiny",
-        }
-    }
 }
 
 // ── Domain / operations ─────────────────────────────────────────────────────
@@ -161,19 +151,6 @@ pub enum FileOpKind {
 }
 
 impl FileOpKind {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Copy => "copy",
-            Self::Move => "move",
-            Self::Delete => "delete",
-            Self::Rename => "rename",
-            Self::NewFile => "new-file",
-            Self::NewDir => "new-dir",
-        }
-    }
-
     /// Label.
     #[must_use]
     pub const fn label(self) -> &'static str {
@@ -314,19 +291,6 @@ pub enum FileConflictResolution {
     Rename,
     /// Cancel whole op.
     Cancel,
-}
-
-impl FileConflictResolution {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Overwrite => "overwrite",
-            Self::Skip => "skip",
-            Self::Rename => "rename",
-            Self::Cancel => "cancel",
-        }
-    }
 }
 
 /// Dialog / overlay mode projected by workbench (host may set conflict).

@@ -302,17 +302,6 @@ pub enum AgentBusyState {
 }
 
 impl AgentBusyState {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Idle => "idle",
-            Self::Busy => "busy",
-            Self::WaitingUser => "waiting_user",
-            Self::Interrupting => "interrupting",
-        }
-    }
-
     /// Human label.
     #[must_use]
     pub const fn label(self) -> &'static str {

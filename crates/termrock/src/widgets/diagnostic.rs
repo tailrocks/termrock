@@ -470,18 +470,6 @@ pub enum DiagnosticRecipe {
     Full,
 }
 
-impl DiagnosticRecipe {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::List => "list",
-            Self::Inline => "inline",
-            Self::Full => "full",
-        }
-    }
-}
-
 // ── CodeFrame ───────────────────────────────────────────────────────────────
 
 /// Default tab stop for source display columns.
@@ -920,12 +908,6 @@ impl DiagnosticState {
     /// Host input gate.
     pub fn set_accepts_input(&mut self, accepts: bool) {
         self.accepts_input = accepts;
-    }
-
-    /// Accepts input.
-    #[must_use]
-    pub const fn accepts_input(&self) -> bool {
-        self.accepts_input
     }
 
     /// Offset.

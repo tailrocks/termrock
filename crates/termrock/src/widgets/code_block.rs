@@ -144,17 +144,6 @@ pub enum CodeWrap {
     Wrap,
 }
 
-impl CodeWrap {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Clip => "clip",
-            Self::Wrap => "wrap",
-        }
-    }
-}
-
 /// How tabs and control characters become display cells.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -166,18 +155,6 @@ pub enum ControlRender {
     ExpandTabs,
     /// Expand tabs; replace other controls with `·` (U+00B7).
     Placeholder,
-}
-
-impl ControlRender {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Visible => "visible",
-            Self::ExpandTabs => "expand-tabs",
-            Self::Placeholder => "placeholder",
-        }
-    }
 }
 
 /// Kind of line / column highlight overlay.
@@ -201,19 +178,6 @@ pub enum CodeHighlightKind {
 }
 
 impl CodeHighlightKind {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Selection => "selection",
-            Self::Search => "search",
-            Self::Diagnostic => "diagnostic",
-            Self::Emphasis => "emphasis",
-            Self::DiffAdd => "diff-add",
-            Self::DiffRemove => "diff-remove",
-        }
-    }
-
     fn role(self) -> Role {
         match self {
             // A selected range washes; the code keeps its syntax tones.

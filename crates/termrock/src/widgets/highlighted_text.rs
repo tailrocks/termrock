@@ -390,18 +390,6 @@ pub enum HighlightVisual {
     Inactive,
 }
 
-impl HighlightVisual {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Normal => "normal",
-            Self::Selected => "selected",
-            Self::Inactive => "inactive",
-        }
-    }
-}
-
 /// Truncation policy for match-aware clipping.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -415,19 +403,6 @@ pub enum MatchTruncate {
     KeepFocusedMatch,
     /// Middle ellipsis when both ends matter (long paths).
     Middle,
-}
-
-impl MatchTruncate {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::End => "end",
-            Self::KeepFirstMatch => "keep-first",
-            Self::KeepFocusedMatch => "keep-focused",
-            Self::Middle => "middle",
-        }
-    }
 }
 
 /// Painted geometry.

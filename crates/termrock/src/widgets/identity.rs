@@ -122,19 +122,6 @@ pub enum PresenceStatus {
 }
 
 impl PresenceStatus {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::None => "none",
-            Self::Online => "online",
-            Self::Away => "away",
-            Self::Busy => "busy",
-            Self::Offline => "offline",
-            Self::Error => "error",
-        }
-    }
-
     /// Shared vocabulary projection (`None` → [`SemanticStatus::Unknown`]).
     #[must_use]
     pub const fn semantic(self) -> SemanticStatus {
@@ -194,16 +181,6 @@ pub enum AvatarSize {
 }
 
 impl AvatarSize {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Compact => "compact",
-            Self::Normal => "normal",
-            Self::Presence => "presence",
-        }
-    }
-
     /// Avatar body width in cells (not including presence).
     #[must_use]
     pub const fn body_cols(self) -> u16 {
@@ -225,18 +202,6 @@ pub enum AvatarFace {
     RoleGlyph,
     /// Explicit catalog glyph.
     Glyph(Glyph),
-}
-
-impl AvatarFace {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Initials => "initials",
-            Self::RoleGlyph => "role-glyph",
-            Self::Glyph(_) => "glyph",
-        }
-    }
 }
 
 // ── Initials / hash ─────────────────────────────────────────────────────────

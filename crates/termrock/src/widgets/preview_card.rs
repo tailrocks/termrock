@@ -151,18 +151,6 @@ pub enum PreviewTrigger {
 }
 
 impl PreviewTrigger {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Pointer => "pointer",
-            Self::Focus => "focus",
-            Self::Selection => "selection",
-            Self::Hover => "hover",
-            Self::Any => "any",
-        }
-    }
-
     fn armed(self, pointer: bool, focus: bool, selection: bool) -> bool {
         match self {
             Self::Pointer => pointer,

@@ -59,19 +59,6 @@ pub enum StreamPhase {
     Failed,
 }
 
-impl StreamPhase {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Idle => "idle",
-            Self::Streaming => "streaming",
-            Self::Done => "done",
-            Self::Failed => "failed",
-        }
-    }
-}
-
 /// Host-injected non-markdown insertion (tool/status) at a stream offset.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StreamInsertion {

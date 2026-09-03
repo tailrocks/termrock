@@ -58,18 +58,6 @@ pub enum FieldStatus<'a> {
 }
 
 impl<'a> FieldStatus<'a> {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::None => "none",
-            Self::Help(_) => "help",
-            Self::Warning(_) => "warning",
-            Self::Error(_) => "error",
-            Self::Pending(_) => "pending",
-        }
-    }
-
     /// Message text if any.
     #[must_use]
     pub const fn message(self) -> Option<&'a str> {
@@ -298,17 +286,6 @@ pub enum FormLayout {
 }
 
 impl FormLayout {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Responsive => "responsive",
-            Self::Stacked => "stacked",
-            Self::Compact => "compact",
-            Self::Inline => "inline",
-        }
-    }
-
     /// Every layout stacks fields three rows apart.
     const FIELD_ROW_HEIGHT: usize = 3;
 
@@ -399,12 +376,6 @@ impl<Id> FormState<Id> {
     #[must_use]
     pub const fn hovered(&self) -> Option<&Id> {
         self.hovered.as_ref()
-    }
-
-    /// Accepts interaction.
-    #[must_use]
-    pub const fn accepts_input(&self) -> bool {
-        self.accepts_input
     }
 
     /// Enable/disable surface.

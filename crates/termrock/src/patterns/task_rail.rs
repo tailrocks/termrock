@@ -153,19 +153,6 @@ pub enum ActivityActionKind {
 }
 
 impl ActivityActionKind {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Open => "open",
-            Self::Cancel => "cancel",
-            Self::Retry => "retry",
-            Self::FocusTranscript => "focus-transcript",
-            Self::InspectDeps => "inspect-deps",
-            Self::Promote => "promote",
-        }
-    }
-
     /// Chord hint.
     #[must_use]
     pub const fn chord(self) -> &'static str {
@@ -894,15 +881,6 @@ pub enum TaskRailZoom {
 }
 
 impl TaskRailZoom {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Compact => "compact",
-            Self::Detail => "detail",
-        }
-    }
-
     /// Auto from width.
     #[must_use]
     pub const fn for_width(width: u16) -> Self {
@@ -928,16 +906,6 @@ pub enum TaskRailPresentation {
 }
 
 impl TaskRailPresentation {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Panel => "panel",
-            Self::Drawer => "drawer",
-            Self::StatusSummary => "status-summary",
-        }
-    }
-
     /// Responsive recommendation.
     #[must_use]
     pub const fn for_width(width: u16) -> Self {

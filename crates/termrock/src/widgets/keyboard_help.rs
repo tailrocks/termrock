@@ -171,20 +171,6 @@ pub enum HelpEntrySource {
     Context,
 }
 
-impl HelpEntrySource {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Keymap => "keymap",
-            Self::Semantic => "semantic",
-            Self::Overlay => "overlay",
-            Self::Conflict => "conflict",
-            Self::Context => "context",
-        }
-    }
-}
-
 /// One generated help row (always from live data — host rebuilds each frame).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HelpEntry {

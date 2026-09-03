@@ -111,17 +111,6 @@ pub enum ToggleSize {
     Compact,
 }
 
-impl ToggleSize {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Default => "default",
-            Self::Compact => "compact",
-        }
-    }
-}
-
 /// Face chrome recipe.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -135,18 +124,6 @@ pub enum ToggleRecipe {
     Solid,
 }
 
-impl ToggleRecipe {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Outline => "outline",
-            Self::Quiet => "quiet",
-            Self::Solid => "solid",
-        }
-    }
-}
-
 /// Group selection policy.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -156,17 +133,6 @@ pub enum ToggleGroupType {
     Single,
     /// Independent pressed flags (bold + italic).
     Multiple,
-}
-
-impl ToggleGroupType {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Single => "single",
-            Self::Multiple => "multiple",
-        }
-    }
 }
 
 /// Visual connection in a group.
@@ -181,15 +147,6 @@ pub enum ToggleGroupRecipe {
 }
 
 impl ToggleGroupRecipe {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Connected => "connected",
-            Self::Separated => "separated",
-        }
-    }
-
     fn inter_cols(self) -> u16 {
         1
     }
@@ -211,17 +168,6 @@ pub enum ToggleGroupOrientation {
     Horizontal,
     /// Stacked rows.
     Vertical,
-}
-
-impl ToggleGroupOrientation {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Horizontal => "horizontal",
-            Self::Vertical => "vertical",
-        }
-    }
 }
 
 // ── Single Toggle ───────────────────────────────────────────────────────────

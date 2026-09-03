@@ -263,21 +263,6 @@ pub enum AgentStatusAction {
 }
 
 impl AgentStatusAction {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Sessions => "sessions",
-            Self::Model => "model",
-            Self::Mode => "mode",
-            Self::Tasks => "tasks",
-            Self::Help => "help",
-            Self::Context => "context",
-            Self::Project => "project",
-            Self::Acknowledge => "acknowledge",
-        }
-    }
-
     /// Chip label.
     #[must_use]
     pub const fn label(self) -> &'static str {
@@ -494,15 +479,6 @@ pub enum AgentStatusPresentation {
 }
 
 impl AgentStatusPresentation {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Header => "header",
-            Self::StatusBar => "status_bar",
-        }
-    }
-
     /// Auto-select from width.
     #[must_use]
     pub const fn for_width(width: u16) -> Self {

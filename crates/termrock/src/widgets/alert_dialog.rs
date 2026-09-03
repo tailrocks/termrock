@@ -128,16 +128,6 @@ pub enum AlertReversibility {
 }
 
 impl AlertReversibility {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Irreversible => "irreversible",
-            Self::Recoverable => "recoverable",
-            Self::Reversible => "reversible",
-        }
-    }
-
     /// User-facing line.
     #[must_use]
     pub const fn label(self) -> &'static str {

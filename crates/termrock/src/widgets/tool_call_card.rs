@@ -108,22 +108,6 @@ pub enum ToolCallAction {
 }
 
 impl ToolCallAction {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::ToggleExpand => "toggle-expand",
-            Self::Cancel => "cancel",
-            Self::Retry => "retry",
-            Self::OpenDiff => "open-diff",
-            Self::OpenLog => "open-log",
-            Self::PermissionFocus => "permission-focus",
-            Self::CopyArgs => "copy-args",
-            Self::CopyResult => "copy-result",
-            Self::Fullscreen => "fullscreen",
-        }
-    }
-
     /// Chord hint.
     #[must_use]
     pub const fn chord(self) -> &'static str {
@@ -448,18 +432,6 @@ pub enum ToolCallPresentation {
     Expanded,
     /// Fullscreen (host overlay; card paints dense).
     Fullscreen,
-}
-
-impl ToolCallPresentation {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Compact => "compact",
-            Self::Expanded => "expanded",
-            Self::Fullscreen => "fullscreen",
-        }
-    }
 }
 
 /// Interactive tool call card state.

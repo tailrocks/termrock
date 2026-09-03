@@ -158,18 +158,6 @@ pub enum DepEdgeKind {
 }
 
 impl DepEdgeKind {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::DependsOn => "depends",
-            Self::Imports => "imports",
-            Self::Calls => "calls",
-            Self::Contains => "contains",
-            Self::Blocks => "blocks",
-        }
-    }
-
     /// Connector glyph preference.
     #[must_use]
     pub const fn arrow(self) -> &'static str {
@@ -784,12 +772,6 @@ impl DependencyGraphState {
         self.accepts_input = on;
     }
 
-    /// Accepts input.
-    #[must_use]
-    pub const fn accepts_input(&self) -> bool {
-        self.accepts_input
-    }
-
     /// Selected.
     #[must_use]
     pub fn selected(&self) -> Option<&str> {
@@ -1059,13 +1041,6 @@ impl<'a> DependencyGraph<'a> {
     #[must_use]
     pub const fn title(mut self, t: &'a str) -> Self {
         self.title = Some(t);
-        self
-    }
-
-    /// Focus.
-    #[must_use]
-    pub const fn focused(mut self, on: bool) -> Self {
-        self.focused = on;
         self
     }
 

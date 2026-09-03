@@ -30,18 +30,6 @@ pub enum CenterAxis {
     Both,
 }
 
-impl CenterAxis {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Horizontal => "horizontal",
-            Self::Vertical => "vertical",
-            Self::Both => "both",
-        }
-    }
-}
-
 /// Constraints for resolving the child rectangle.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct CenterSpec {

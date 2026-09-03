@@ -162,18 +162,6 @@ pub enum DiffReviewUnitKind {
     LineRange,
 }
 
-impl DiffReviewUnitKind {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::File => "file",
-            Self::Hunk => "hunk",
-            Self::LineRange => "line_range",
-        }
-    }
-}
-
 /// Stable unit key (`file:…`, `hunk:…`, `range:…`).
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct DiffReviewUnit {
@@ -590,12 +578,6 @@ impl DiffReviewState {
     pub fn set_accepts_input(&mut self, accepts: bool) {
         self.accepts_input = accepts;
         self.view.set_accepts_input(accepts);
-    }
-
-    /// Whether host granted input.
-    #[must_use]
-    pub const fn accepts_input(&self) -> bool {
-        self.accepts_input
     }
 
     /// Vertical offset.

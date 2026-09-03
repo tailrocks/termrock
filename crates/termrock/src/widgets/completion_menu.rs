@@ -995,18 +995,6 @@ impl<'a, Id> CompletionMenu<'a, Id> {
         self
     }
 
-    /// ASCII glyphs.
-    #[must_use]
-    /// Whether the menu itself owns focus.
-    ///
-    /// Defaults to `false`: a completion menu floats under an editor that
-    /// keeps the keyboard, and only the interaction owner wears the focused
-    /// border.
-    pub const fn focused(mut self, focused: bool) -> Self {
-        self.focused = focused;
-        self
-    }
-
     /// Paint into a pre-placed rect (from OverlayStack).
     #[must_use]
     pub const fn force_area(mut self, area: Rect) -> Self {

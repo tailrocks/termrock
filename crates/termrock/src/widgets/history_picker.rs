@@ -86,17 +86,6 @@ pub enum HistoryPickerPresentation {
     Fullscreen,
 }
 
-impl HistoryPickerPresentation {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Popover => "popover",
-            Self::Fullscreen => "fullscreen",
-        }
-    }
-}
-
 /// Derive presentation from bounds.
 #[must_use]
 pub fn history_picker_presentation_for_bounds(bounds: Rect) -> HistoryPickerPresentation {
@@ -228,19 +217,6 @@ pub enum HistoryKind {
 }
 
 impl HistoryKind {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Command => "command",
-            Self::Prompt => "prompt",
-            Self::Search => "search",
-            Self::Session => "session",
-            Self::Value => "value",
-            Self::Custom => "custom",
-        }
-    }
-
     /// Short badge.
     #[must_use]
     pub const fn badge(self, ascii: bool) -> &'static str {

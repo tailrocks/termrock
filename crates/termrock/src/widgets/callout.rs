@@ -777,12 +777,6 @@ impl<Id> AlertState<Id> {
         self.visible
     }
 
-    /// Focused?
-    #[must_use]
-    pub const fn is_focused(&self) -> bool {
-        self.focused
-    }
-
     /// Set focus (host / scene).
     pub fn set_focused(&mut self, on: bool) {
         self.focused = on;

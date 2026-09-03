@@ -51,18 +51,6 @@ pub enum GlyphGroup {
 }
 
 impl GlyphGroup {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Directional => "directional",
-            Self::Status => "status",
-            Self::Action => "action",
-            Self::Disclosure => "disclosure",
-            Self::Chrome => "chrome",
-        }
-    }
-
     /// All groups in catalog order.
     pub const ALL: [Self; 5] = [
         Self::Directional,

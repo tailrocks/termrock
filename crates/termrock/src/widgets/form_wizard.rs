@@ -104,18 +104,6 @@ pub enum FormWizardPresentation {
     Compact,
 }
 
-impl FormWizardPresentation {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Full => "full",
-            Self::Narrow => "narrow",
-            Self::Compact => "compact",
-        }
-    }
-}
-
 /// Why the step index changed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]

@@ -79,17 +79,6 @@ pub enum TreeNodeStatus {
 }
 
 impl TreeNodeStatus {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Ready => "ready",
-            Self::Loading => "loading",
-            Self::Error => "error",
-            Self::Lazy => "lazy",
-        }
-    }
-
     /// Whether keyboard should skip this node.
     #[must_use]
     pub const fn skips_navigation(self) -> bool {

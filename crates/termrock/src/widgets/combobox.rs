@@ -334,12 +334,6 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
         self.focused
     }
 
-    /// Enabled.
-    #[must_use]
-    pub const fn is_enabled(&self) -> bool {
-        self.enabled
-    }
-
     /// Menu state.
     #[must_use]
     pub const fn menu(&self) -> &CompletionMenuState<Id> {

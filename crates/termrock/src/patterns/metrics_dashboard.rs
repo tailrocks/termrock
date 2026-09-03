@@ -137,17 +137,6 @@ pub enum MetricsComparison {
 }
 
 impl MetricsComparison {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::None => "none",
-            Self::PreviousPeriod => "prev",
-            Self::DayOverDay => "dod",
-            Self::WeekOverWeek => "wow",
-        }
-    }
-
     /// Short label.
     #[must_use]
     pub const fn label(self) -> &'static str {
@@ -255,15 +244,6 @@ pub enum MetricsDashboardLayoutMode {
 }
 
 impl MetricsDashboardLayoutMode {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Grid => "grid",
-            Self::Summary => "summary",
-        }
-    }
-
     /// From width.
     #[must_use]
     pub const fn for_width(width: u16) -> Self {
@@ -628,12 +608,6 @@ impl MetricsDashboardState {
     /// Host input gate.
     pub fn set_accepts_input(&mut self, on: bool) {
         self.accepts_input = on;
-    }
-
-    /// Accepts input.
-    #[must_use]
-    pub const fn accepts_input(&self) -> bool {
-        self.accepts_input
     }
 
     /// Effective layout mode.

@@ -149,21 +149,6 @@ pub enum SearchResultsStatus {
 }
 
 impl SearchResultsStatus {
-    /// Stable id.
-    #[must_use]
-    pub fn id(&self) -> &'static str {
-        match self {
-            Self::Idle => "idle",
-            Self::Loading { .. } => "loading",
-            Self::Partial { .. } => "partial",
-            Self::Ready { .. } => "ready",
-            Self::Empty { .. } => "empty",
-            Self::Error { .. } => "error",
-            Self::Stale { .. } => "stale",
-            Self::Cancelled => "cancelled",
-        }
-    }
-
     /// Status line for chrome.
     #[must_use]
     pub fn summary_line(&self, visible: usize) -> String {
@@ -609,12 +594,6 @@ impl SearchResultsState {
         self.accepts_input = on;
     }
 
-    /// Accepts input.
-    #[must_use]
-    pub const fn accepts_input(&self) -> bool {
-        self.accepts_input
-    }
-
     /// Enable multi-check.
     pub fn enable_multi_select(&mut self) {
         self.multi = true;
@@ -1057,13 +1036,6 @@ impl<'a> SearchResults<'a> {
     #[must_use]
     pub const fn title(mut self, title: &'a str) -> Self {
         self.title = Some(title);
-        self
-    }
-
-    /// Focus.
-    #[must_use]
-    pub const fn focused(mut self, on: bool) -> Self {
-        self.focused = on;
         self
     }
 

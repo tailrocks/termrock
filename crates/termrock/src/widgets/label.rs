@@ -60,18 +60,6 @@ pub enum LabelMark {
     Optional,
 }
 
-impl LabelMark {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::None => "none",
-            Self::Required => "required",
-            Self::Optional => "optional",
-        }
-    }
-}
-
 /// Visual / semantic tone of the label.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]

@@ -526,18 +526,6 @@ pub enum SubagentPresentation {
     Fullscreen,
 }
 
-impl SubagentPresentation {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::CompactRow => "compact-row",
-            Self::Card => "card",
-            Self::Fullscreen => "fullscreen",
-        }
-    }
-}
-
 /// Outcomes — **requests only**.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]

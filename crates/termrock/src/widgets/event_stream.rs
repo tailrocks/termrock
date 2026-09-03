@@ -66,19 +66,6 @@ pub enum EventSeverity {
 }
 
 impl EventSeverity {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Trace => "trace",
-            Self::Debug => "debug",
-            Self::Info => "info",
-            Self::Warn => "warn",
-            Self::Error => "error",
-            Self::Critical => "critical",
-        }
-    }
-
     /// No-color letter.
     #[must_use]
     pub const fn letter(self) -> char {

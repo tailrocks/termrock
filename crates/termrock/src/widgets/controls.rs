@@ -601,17 +601,6 @@ pub enum RadioGroupOrientation {
     Horizontal,
 }
 
-impl RadioGroupOrientation {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Vertical => "vertical",
-            Self::Horizontal => "horizontal",
-        }
-    }
-}
-
 /// One option in a [`RadioGroup`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct RadioOption<'a, Id> {
@@ -1435,17 +1424,6 @@ pub enum SwitchRecipe {
     SettingsRow,
     /// Compact: track + label on one tight line (leading track).
     Compact,
-}
-
-impl SwitchRecipe {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::SettingsRow => "settings-row",
-            Self::Compact => "compact",
-        }
-    }
 }
 
 /// Switch outcome (controlled: host applies `on`).

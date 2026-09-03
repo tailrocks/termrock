@@ -93,17 +93,6 @@ pub enum CommandPalettePresentation {
     Fullscreen,
 }
 
-impl CommandPalettePresentation {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Centered => "centered",
-            Self::Fullscreen => "fullscreen",
-        }
-    }
-}
-
 /// Derive presentation from terminal bounds.
 #[must_use]
 pub fn command_palette_presentation_for_bounds(bounds: Rect) -> CommandPalettePresentation {
@@ -630,12 +619,6 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
     /// Surface focus chrome.
     pub fn set_focused(&mut self, on: bool) {
         self.focused = on;
-    }
-
-    /// Focused.
-    #[must_use]
-    pub const fn is_focused(&self) -> bool {
-        self.focused
     }
 
     /// Loading flag (async).
@@ -1254,13 +1237,6 @@ impl<'a, Id> CommandPalette<'a, Id> {
             loading_message: COMMAND_PALETTE_LOADING,
             show_preview: true,
         }
-    }
-
-    /// Surface focus.
-    #[must_use]
-    pub const fn focused(mut self, focused: bool) -> Self {
-        self.focused = focused;
-        self
     }
 
     /// Footer hint.

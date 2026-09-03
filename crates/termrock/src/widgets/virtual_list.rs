@@ -53,17 +53,6 @@ pub enum VirtualListFollow {
     Tail,
 }
 
-impl VirtualListFollow {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Off => "off",
-            Self::Tail => "tail",
-        }
-    }
-}
-
 /// Async page-loading status for the measure window.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -593,13 +582,6 @@ impl<'a, Id> VirtualList<'a, Id> {
             show_diagnostics: false,
             focused: true,
         }
-    }
-
-    /// Focused surface.
-    #[must_use]
-    pub const fn focused(mut self, on: bool) -> Self {
-        self.focused = on;
-        self
     }
 
     /// Empty universe message.

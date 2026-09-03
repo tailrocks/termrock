@@ -85,17 +85,6 @@ pub enum LinkVariant {
     Bracketed,
 }
 
-impl LinkVariant {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Plain => "plain",
-            Self::Bracketed => "bracketed",
-        }
-    }
-}
-
 /// When a link draws the underline.
 ///
 /// How to show the destination string.
@@ -109,18 +98,6 @@ pub enum DestinationDisplay {
     Always,
     /// Never append destination text; external URLs still get a risk cue.
     Never,
-}
-
-impl DestinationDisplay {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Auto => "auto",
-            Self::Always => "always",
-            Self::Never => "never",
-        }
-    }
 }
 
 /// Painted geometry + optional OSC region.

@@ -57,20 +57,6 @@ pub enum CitationSourceType {
 }
 
 impl CitationSourceType {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::File => "file",
-            Self::Url => "url",
-            Self::Docs => "docs",
-            Self::Issue => "issue",
-            Self::Paper => "paper",
-            Self::Message => "message",
-            Self::Other => "other",
-        }
-    }
-
     /// ASCII letter.
     #[must_use]
     pub const fn letter(self) -> char {

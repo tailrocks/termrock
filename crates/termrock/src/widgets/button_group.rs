@@ -49,15 +49,6 @@ pub enum ButtonGroupRecipe {
 }
 
 impl ButtonGroupRecipe {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Connected => "connected",
-            Self::Separated => "separated",
-        }
-    }
-
     /// Columns between faces: connected uses a 1-col separator glyph; separated uses a gap.
     fn inter_cols(self) -> u16 {
         1
@@ -80,17 +71,6 @@ pub enum ButtonGroupOrientation {
     Horizontal,
     /// One action per row (very narrow).
     Vertical,
-}
-
-impl ButtonGroupOrientation {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Horizontal => "horizontal",
-            Self::Vertical => "vertical",
-        }
-    }
 }
 
 // ── Items ───────────────────────────────────────────────────────────────────

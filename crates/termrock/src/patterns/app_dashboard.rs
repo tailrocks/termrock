@@ -52,18 +52,6 @@ pub enum AppDashboardPane {
     Metrics,
 }
 
-impl AppDashboardPane {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Sidebar => "sidebar",
-            Self::Main => "main",
-            Self::Metrics => "metrics",
-        }
-    }
-}
-
 /// Host-facing outcomes.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]

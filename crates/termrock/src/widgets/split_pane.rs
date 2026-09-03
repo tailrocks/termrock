@@ -152,12 +152,6 @@ impl SplitPaneState {
         self.collapsed = None;
     }
 
-    #[must_use]
-    /// Returns whether the divider owns keyboard focus.
-    pub const fn is_focused(&self) -> bool {
-        self.focused
-    }
-
     /// Updates divider focus, cancelling an active drag when focus leaves.
     pub const fn set_focused(&mut self, focused: bool) {
         self.focused = focused;

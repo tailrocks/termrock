@@ -639,12 +639,6 @@ impl QueryEditorState {
         self.sync_editor_input();
     }
 
-    /// Whether workbench accepts input.
-    #[must_use]
-    pub const fn accepts_input(&self) -> bool {
-        self.accepts_input
-    }
-
     /// Sync TextArea accepts_input from focus + gate.
     fn sync_editor_input(&mut self) {
         let on =

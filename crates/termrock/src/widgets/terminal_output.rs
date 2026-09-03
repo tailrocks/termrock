@@ -53,16 +53,6 @@ pub enum TerminalStream {
 }
 
 impl TerminalStream {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Stdout => "stdout",
-            Self::Stderr => "stderr",
-            Self::System => "system",
-        }
-    }
-
     /// No-color prefix.
     #[must_use]
     pub const fn prefix(self) -> &'static str {
@@ -390,18 +380,6 @@ pub enum TerminalOutputRecipe {
     Fullscreen,
 }
 
-impl TerminalOutputRecipe {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Compact => "compact",
-            Self::Pane => "pane",
-            Self::Fullscreen => "fullscreen",
-        }
-    }
-}
-
 /// How body text is painted.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -570,12 +548,6 @@ impl TerminalOutputState {
     /// Host input gate.
     pub fn set_accepts_input(&mut self, accepts: bool) {
         self.accepts_input = accepts;
-    }
-
-    /// Accepts input.
-    #[must_use]
-    pub const fn accepts_input(&self) -> bool {
-        self.accepts_input
     }
 
     /// Following tail.

@@ -51,17 +51,6 @@ pub enum SetupWizardMode {
     Inline,
 }
 
-impl SetupWizardMode {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Fullscreen => "fullscreen",
-            Self::Inline => "inline",
-        }
-    }
-}
-
 /// Semantic kind for an onboarding step (drives body paint + defaults).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
@@ -91,24 +80,6 @@ pub enum SetupStepKind {
 }
 
 impl SetupStepKind {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Welcome => "welcome",
-            Self::Capability => "capability",
-            Self::Account => "account",
-            Self::Connection => "connection",
-            Self::Choices => "choices",
-            Self::Validation => "validation",
-            Self::Permission => "permission",
-            Self::Theme => "theme",
-            Self::Summary => "summary",
-            Self::Recovery => "recovery",
-            Self::Custom => "custom",
-        }
-    }
-
     /// Default wizard gate when entering the step (host may override).
     #[must_use]
     pub const fn default_gate(self) -> WizardGate {

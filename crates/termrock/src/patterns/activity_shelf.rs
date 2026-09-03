@@ -452,17 +452,6 @@ pub enum ActivityShelfPresentation {
 }
 
 impl ActivityShelfPresentation {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Chips => "chips",
-            Self::IconsOnly => "icons",
-            Self::Summary => "summary",
-            Self::Badge => "badge",
-        }
-    }
-
     /// Auto from width when host does not force.
     #[must_use]
     pub const fn for_width(width: u16) -> Self {
@@ -487,17 +476,6 @@ pub enum ActivityShelfOrientation {
     Horizontal,
     /// Vertical thin column (east/west dock).
     Vertical,
-}
-
-impl ActivityShelfOrientation {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Horizontal => "horizontal",
-            Self::Vertical => "vertical",
-        }
-    }
 }
 
 /// Plan visible chips for width (sorted items).

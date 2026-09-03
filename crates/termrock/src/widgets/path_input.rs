@@ -61,15 +61,6 @@ impl PathStyle {
             Self::Windows => '\\',
         }
     }
-
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Unix => "unix",
-            Self::Windows => "windows",
-        }
-    }
 }
 
 /// Normalize separators toward `style` (does not touch `\\?\` prefix body carefully).
@@ -476,18 +467,6 @@ impl PathInputState {
     #[must_use]
     pub const fn risk(&self) -> PathRisk {
         self.risk
-    }
-
-    /// Focused.
-    #[must_use]
-    pub const fn is_focused(&self) -> bool {
-        self.focused
-    }
-
-    /// Enabled.
-    #[must_use]
-    pub const fn is_enabled(&self) -> bool {
-        self.enabled
     }
 
     /// Parts.

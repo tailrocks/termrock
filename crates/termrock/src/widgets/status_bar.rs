@@ -42,18 +42,6 @@ pub enum StatusRegion {
     Right,
 }
 
-impl StatusRegion {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Left => "left",
-            Self::Center => "center",
-            Self::Right => "right",
-        }
-    }
-}
-
 /// Semantic meaning of a slot (drives default glyph / role).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]

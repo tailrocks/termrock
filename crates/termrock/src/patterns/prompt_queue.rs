@@ -62,17 +62,6 @@ pub enum PromptQueuePresentation {
     Expanded,
 }
 
-impl PromptQueuePresentation {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Compact => "compact",
-            Self::Expanded => "expanded",
-        }
-    }
-}
-
 /// Edit phase for one item.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 #[non_exhaustive]

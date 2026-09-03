@@ -144,16 +144,6 @@ pub enum ApprovalBlocking {
 }
 
 impl ApprovalBlocking {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::NonBlocking => "non_blocking",
-            Self::Blocking => "blocking",
-            Self::HardGate => "hard_gate",
-        }
-    }
-
     /// Label.
     #[must_use]
     pub const fn label(self) -> &'static str {
@@ -321,18 +311,6 @@ pub enum ApprovalQueuePresentation {
     /// Full management view.
     #[default]
     Full,
-}
-
-impl ApprovalQueuePresentation {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Badge => "badge",
-            Self::Drawer => "drawer",
-            Self::Full => "full",
-        }
-    }
 }
 
 // ── Outcomes ────────────────────────────────────────────────────────────────

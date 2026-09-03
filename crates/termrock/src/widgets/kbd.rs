@@ -38,16 +38,6 @@ pub enum Platform {
 }
 
 impl Platform {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Auto => "auto",
-            Self::Mac => "mac",
-            Self::Other => "other",
-        }
-    }
-
     /// Resolved platform (Auto → Mac/Other).
     #[must_use]
     pub const fn resolve(self) -> Self {
@@ -77,18 +67,6 @@ pub enum ModifierStyle {
     Symbols,
 }
 
-impl ModifierStyle {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Emacs => "emacs",
-            Self::Spelled => "spelled",
-            Self::Symbols => "symbols",
-        }
-    }
-}
-
 /// Visual form of a keycap / chord paint.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -102,18 +80,6 @@ pub enum KbdVariant {
     Inline,
 }
 
-impl KbdVariant {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Compact => "compact",
-            Self::Keycap => "keycap",
-            Self::Inline => "inline",
-        }
-    }
-}
-
 /// How a shortcut pair is laid out.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -125,18 +91,6 @@ pub enum ShortcutForm {
     InlineDoc,
     /// Keycap-heavy: `[C-s] Save`.
     Keycap,
-}
-
-impl ShortcutForm {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Footer => "footer",
-            Self::InlineDoc => "inline-doc",
-            Self::Keycap => "keycap",
-        }
-    }
 }
 
 // ── Chord formatting ────────────────────────────────────────────────────────

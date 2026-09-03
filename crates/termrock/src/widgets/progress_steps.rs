@@ -294,16 +294,6 @@ pub enum ProgressStepsPresentation {
 }
 
 impl ProgressStepsPresentation {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Expanded => "expanded",
-            Self::Compact => "compact",
-            Self::Summary => "summary",
-        }
-    }
-
     /// Choose from width.
     #[must_use]
     pub const fn for_width(width: u16) -> Self {

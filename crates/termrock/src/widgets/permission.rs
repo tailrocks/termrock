@@ -1412,13 +1412,6 @@ impl<'a> PermissionPrompt<'a> {
         self.colorless = colorless;
         self
     }
-
-    /// Surface focus chrome (action cursor is separate).
-    #[must_use]
-    pub const fn focused(mut self, focused: bool) -> Self {
-        self.focused = focused;
-        self
-    }
 }
 
 impl StatefulWidget for &PermissionPrompt<'_> {

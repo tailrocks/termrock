@@ -2109,12 +2109,6 @@ impl<Id: Clone + PartialEq> ChoiceDialogState<Id> {
         self.dialog.set_accepts_input(accepts);
     }
 
-    /// Whether host granted input.
-    #[must_use]
-    pub const fn accepts_input(&self) -> bool {
-        self.accepts_input
-    }
-
     /// Async loading (blocks activation).
     pub fn set_loading(&mut self, loading: bool) {
         self.loading = loading;

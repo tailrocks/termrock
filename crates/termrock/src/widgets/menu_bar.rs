@@ -72,21 +72,6 @@ pub enum MenuRowKind {
 }
 
 impl MenuRowKind {
-    /// Stable id for diagnostics.
-    #[must_use]
-    pub fn id(&self) -> &'static str {
-        match self {
-            Self::Command => "command",
-            Self::Checkbox { .. } => "checkbox",
-            Self::Radio { .. } => "radio",
-            Self::Submenu => "submenu",
-            Self::Separator => "separator",
-            Self::Section => "section",
-            Self::Loading => "loading",
-            Self::CustomPreview => "custom-preview",
-        }
-    }
-
     /// Whether the row can receive keyboard cursor / activation.
     #[must_use]
     pub const fn is_interactive(&self) -> bool {
@@ -494,12 +479,6 @@ impl MenuBarState {
             bar_size: (0, 0),
             opener_focus_hint: None,
         }
-    }
-
-    /// Whether the bar owns keyboard.
-    #[must_use]
-    pub const fn is_focused(&self) -> bool {
-        self.focused
     }
 
     /// Whether any menu panel is open.

@@ -381,16 +381,6 @@ pub enum CheckpointTimelineMode {
 }
 
 impl CheckpointTimelineMode {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Browse => "browse",
-            Self::Preview => "preview",
-            Self::Confirm => "confirm",
-        }
-    }
-
     /// Whether this mode mutates session (always false in-widget; host acts).
     #[must_use]
     pub const fn is_mutating_request(self) -> bool {
@@ -440,15 +430,6 @@ pub enum CheckpointTimelineRecipe {
 }
 
 impl CheckpointTimelineRecipe {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Rail => "rail",
-            Self::Detailed => "detailed",
-        }
-    }
-
     fn to_timeline(self) -> TimelineRecipe {
         match self {
             Self::Rail => TimelineRecipe::Rail,

@@ -40,17 +40,6 @@ pub enum TokenPart {
     Remove,
 }
 
-impl TokenPart {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Body => "body",
-            Self::Remove => "remove",
-        }
-    }
-}
-
 /// Visual / semantic status for chips and tags.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -62,18 +51,6 @@ pub enum TokenStatus {
     Error,
     /// Loading / pending.
     Loading,
-}
-
-impl TokenStatus {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Default => "default",
-            Self::Error => "error",
-            Self::Loading => "loading",
-        }
-    }
 }
 
 /// Geometry for one painted token.
@@ -411,15 +388,6 @@ pub enum BracketStyle {
 }
 
 impl BracketStyle {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Angle => "angle",
-            Self::Square => "square",
-        }
-    }
-
     /// Opening and closing brackets under the active glyph profile.
     #[must_use]
     pub const fn pair(self, ascii: bool) -> (&'static str, &'static str) {
@@ -814,12 +782,6 @@ impl ChipState {
         }
     }
 
-    /// Focused.
-    #[must_use]
-    pub const fn is_focused(&self) -> bool {
-        self.focused
-    }
-
     /// Part.
     #[must_use]
     pub const fn part(&self) -> TokenPart {
@@ -972,17 +934,6 @@ pub enum TokenStripLayout {
     Scroll,
     /// Wrap to next rows.
     Wrap,
-}
-
-impl TokenStripLayout {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Scroll => "scroll",
-            Self::Wrap => "wrap",
-        }
-    }
 }
 
 /// One strip entry (tag or chip projection).

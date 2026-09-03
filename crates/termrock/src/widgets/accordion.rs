@@ -40,17 +40,6 @@ pub enum AccordionMode {
     Multiple,
 }
 
-impl AccordionMode {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Single => "single",
-            Self::Multiple => "multiple",
-        }
-    }
-}
-
 /// Visual / product recipes for common surfaces.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]

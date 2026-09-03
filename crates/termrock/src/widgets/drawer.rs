@@ -516,12 +516,6 @@ impl DrawerState {
         self.slots.body
     }
 
-    /// Focused?
-    #[must_use]
-    pub const fn is_focused(&self) -> bool {
-        self.focused
-    }
-
     /// Enable.
     pub fn set_enabled(&mut self, on: bool) {
         self.enabled = on;

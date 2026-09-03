@@ -46,17 +46,6 @@ pub enum SliderOrientation {
     Vertical,
 }
 
-impl SliderOrientation {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Horizontal => "horizontal",
-            Self::Vertical => "vertical",
-        }
-    }
-}
-
 /// Inclusive bounds + step.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SliderBounds {
@@ -1042,15 +1031,6 @@ pub enum RangeThumb {
 }
 
 impl RangeThumb {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Start => "start",
-            Self::End => "end",
-        }
-    }
-
     /// Toggle.
     #[must_use]
     pub const fn other(self) -> Self {

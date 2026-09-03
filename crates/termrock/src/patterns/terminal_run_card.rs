@@ -546,16 +546,6 @@ pub enum TerminalRunPresentation {
 }
 
 impl TerminalRunPresentation {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Compact => "compact",
-            Self::Expanded => "expanded",
-            Self::Fullscreen => "fullscreen",
-        }
-    }
-
     fn to_recipe(self) -> TerminalOutputRecipe {
         match self {
             Self::Compact => TerminalOutputRecipe::Compact,

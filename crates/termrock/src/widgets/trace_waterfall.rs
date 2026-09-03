@@ -560,12 +560,6 @@ impl TraceWaterfallState {
         self.accepts_input = on;
     }
 
-    /// Accepts input.
-    #[must_use]
-    pub const fn accepts_input(&self) -> bool {
-        self.accepts_input
-    }
-
     /// Selected id.
     #[must_use]
     pub fn selected(&self) -> Option<&str> {

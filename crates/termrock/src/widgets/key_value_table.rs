@@ -49,16 +49,6 @@ pub enum KvtValidation {
 }
 
 impl KvtValidation {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Ok => "ok",
-            Self::Warning => "warning",
-            Self::Error => "error",
-        }
-    }
-
     fn role(self) -> Option<Role> {
         match self {
             Self::Ok => None,

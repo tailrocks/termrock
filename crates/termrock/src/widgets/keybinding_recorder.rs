@@ -63,18 +63,6 @@ pub enum BindingLimit {
 }
 
 impl BindingLimit {
-    /// Stable id.
-    #[must_use]
-    pub fn id(&self) -> &'static str {
-        match self {
-            Self::Reserved { .. } => "reserved",
-            Self::Conflict { .. } => "conflict",
-            Self::Protocol { .. } => "protocol",
-            Self::Empty => "empty",
-            Self::Intermediate => "intermediate",
-        }
-    }
-
     /// Display message.
     #[must_use]
     pub fn message(&self) -> String {

@@ -206,19 +206,6 @@ pub enum SessionLoadState {
     Error,
 }
 
-impl SessionLoadState {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Ready => "ready",
-            Self::Loading => "loading",
-            Self::Searching => "searching",
-            Self::Error => "error",
-        }
-    }
-}
-
 /// One agent session projection (host-owned data).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SessionEntry {
@@ -412,18 +399,6 @@ pub enum SessionPickerPresentation {
     Popover,
     /// Fullscreen host overlay.
     Fullscreen,
-}
-
-impl SessionPickerPresentation {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Dialog => "dialog",
-            Self::Popover => "popover",
-            Self::Fullscreen => "fullscreen",
-        }
-    }
 }
 
 /// Interaction phase.

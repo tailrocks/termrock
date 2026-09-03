@@ -518,18 +518,6 @@ pub enum IntegrationStatusPresentation {
     Panel,
 }
 
-impl IntegrationStatusPresentation {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Badge => "badge",
-            Self::CompactList => "compact_list",
-            Self::Panel => "panel",
-        }
-    }
-}
-
 /// Detail sub-pane inside Panel.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]

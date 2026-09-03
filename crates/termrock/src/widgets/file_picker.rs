@@ -285,19 +285,6 @@ pub enum FileSortKey {
     Kind,
 }
 
-impl FileSortKey {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Name => "name",
-            Self::Size => "size",
-            Self::Modified => "modified",
-            Self::Kind => "kind",
-        }
-    }
-}
-
 /// Listing fetch status.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -337,18 +324,6 @@ pub enum FilePickerPresentation {
     Modal,
     /// Fullscreen (tiny terminal / host force).
     Fullscreen,
-}
-
-impl FilePickerPresentation {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Embedded => "embedded",
-            Self::Modal => "modal",
-            Self::Fullscreen => "fullscreen",
-        }
-    }
 }
 
 /// Focused pane inside the picker.

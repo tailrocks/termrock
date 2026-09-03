@@ -46,15 +46,6 @@ impl NumberKind {
             max_fraction_digits: 2,
         }
     }
-
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Integer => "integer",
-            Self::Decimal { .. } => "decimal",
-        }
-    }
 }
 
 /// Min / max / step (locale-independent `f64` storage).
@@ -337,18 +328,6 @@ impl NumberInputState {
     #[must_use]
     pub fn draft_text(&self) -> &str {
         self.draft.value()
-    }
-
-    /// Focused.
-    #[must_use]
-    pub const fn is_focused(&self) -> bool {
-        self.focused
-    }
-
-    /// Enabled.
-    #[must_use]
-    pub const fn is_enabled(&self) -> bool {
-        self.enabled
     }
 
     /// Editing draft (vs idle display of committed).

@@ -64,17 +64,6 @@ pub enum SlashCommandSource {
 }
 
 impl SlashCommandSource {
-    /// Stable id.
-    #[must_use]
-    pub fn id(&self) -> &str {
-        match self {
-            Self::Builtin => "builtin",
-            Self::Global => "global",
-            Self::Composer => "composer",
-            Self::Plugin { id } => id.as_str(),
-        }
-    }
-
     /// Group header label.
     #[must_use]
     pub fn group_label(&self) -> &str {
@@ -309,17 +298,6 @@ pub enum SlashMenuPhase {
         /// Already committed argument values (before current).
         prior_args: Vec<String>,
     },
-}
-
-impl SlashMenuPhase {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(&self) -> &'static str {
-        match self {
-            Self::Command { .. } => "command",
-            Self::Argument { .. } => "argument",
-        }
-    }
 }
 
 /// Detected slash query span in a plain draft (byte offsets).
@@ -738,12 +716,6 @@ impl SlashCommandMenuState {
     #[must_use]
     pub const fn is_open(&self) -> bool {
         self.open
-    }
-
-    /// Accepts input.
-    #[must_use]
-    pub const fn accepts_input(&self) -> bool {
-        self.accepts_input
     }
 
     /// Host gate — **does not** clear draft or query history.

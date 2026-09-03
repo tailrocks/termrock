@@ -52,18 +52,6 @@ pub enum ListSelectionMode {
     Range,
 }
 
-impl ListSelectionMode {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Single => "single",
-            Self::Multi => "multi",
-            Self::Range => "range",
-        }
-    }
-}
-
 const fn list_row_height() -> u16 {
     1
 }

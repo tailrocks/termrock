@@ -123,17 +123,6 @@ pub enum TextWrap {
     Soft,
 }
 
-impl TextWrap {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::None => "none",
-            Self::Soft => "soft",
-        }
-    }
-}
-
 /// Visual / product recipe.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]

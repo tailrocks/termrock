@@ -247,18 +247,6 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
         }
     }
 
-    /// Focused.
-    #[must_use]
-    pub const fn is_focused(&self) -> bool {
-        self.focused
-    }
-
-    /// Enabled.
-    #[must_use]
-    pub const fn is_enabled(&self) -> bool {
-        self.enabled
-    }
-
     /// Recipe.
     #[must_use]
     pub const fn recipe(&self) -> SelectRecipe {

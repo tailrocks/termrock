@@ -97,16 +97,6 @@ pub enum SelectablePolicy {
 }
 
 impl SelectablePolicy {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::None => "none",
-            Self::Copyable => "copyable",
-            Self::Selectable => "selectable",
-        }
-    }
-
     /// Whether plain text is intended for copy.
     #[must_use]
     pub const fn copyable(self) -> bool {

@@ -129,16 +129,6 @@ impl DatabaseWorkbenchDensity {
             Self::Normal
         }
     }
-
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Normal => "normal",
-            Self::Narrow => "narrow",
-            Self::Tiny => "tiny",
-        }
-    }
 }
 
 // ── Application messages ────────────────────────────────────────────────────
@@ -287,20 +277,6 @@ pub enum DatabaseRunBlockReason {
     Error,
     /// Empty query.
     EmptyQuery,
-}
-
-impl DatabaseRunBlockReason {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Disconnected => "disconnected",
-            Self::Offline => "offline",
-            Self::AuthRequired => "auth_required",
-            Self::Error => "error",
-            Self::EmptyQuery => "empty_query",
-        }
-    }
 }
 
 /// Workbench key / action outcomes — requests only.

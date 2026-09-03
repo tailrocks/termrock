@@ -871,13 +871,6 @@ impl<'a, RowId, ColId> VirtualGrid<'a, RowId, ColId> {
         self
     }
 
-    /// Whether this surface owns keyboard focus this frame (host / scene).
-    #[must_use]
-    pub const fn focused(mut self, focused: bool) -> Self {
-        self.focused = focused;
-        self
-    }
-
     /// Declares a known total row count (unknown totals omit this).
     #[must_use]
     pub const fn total_rows(mut self, total: u64) -> Self {

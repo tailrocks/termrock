@@ -48,17 +48,6 @@ pub enum TableRecipe {
 }
 
 impl TableRecipe {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Quiet => "quiet",
-            Self::Bordered => "bordered",
-            Self::Striped => "striped",
-            Self::Compact => "compact",
-        }
-    }
-
     /// Default inter-column gap.
     #[must_use]
     pub const fn default_gap(self) -> u16 {
@@ -80,18 +69,6 @@ pub enum TableBodyState {
     Loading,
     /// Body error placeholder.
     Error,
-}
-
-impl TableBodyState {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Ready => "ready",
-            Self::Loading => "loading",
-            Self::Error => "error",
-        }
-    }
 }
 
 /// Width policy for one table column.

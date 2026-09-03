@@ -28,17 +28,6 @@ pub enum ConfirmFocus {
     Confirm,
 }
 
-impl ConfirmFocus {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Cancel => "cancel",
-            Self::Confirm => "confirm",
-        }
-    }
-}
-
 /// Painted hit regions, for hosts that route pointer input.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct ConfirmPromptHits {

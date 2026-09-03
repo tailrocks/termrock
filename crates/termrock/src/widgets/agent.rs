@@ -258,24 +258,6 @@ pub enum ToolStatus {
 }
 
 impl ToolStatus {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Queued => "queued",
-            Self::Preparing => "preparing",
-            Self::Running => "running",
-            Self::WaitingInput => "waiting-input",
-            Self::WaitingPermission => "waiting-permission",
-            Self::Streaming => "streaming",
-            Self::Success => "success",
-            Self::Warning => "warning",
-            Self::Failed => "failed",
-            Self::Cancelled => "cancelled",
-            Self::Detached => "detached",
-        }
-    }
-
     /// Short badge label.
     #[must_use]
     pub const fn badge(self) -> &'static str {

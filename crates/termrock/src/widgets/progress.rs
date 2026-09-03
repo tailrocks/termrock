@@ -223,19 +223,6 @@ pub enum ProgressUnit {
     Custom,
 }
 
-impl ProgressUnit {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::None => "none",
-            Self::Bytes => "bytes",
-            Self::Items => "items",
-            Self::Custom => "custom",
-        }
-    }
-}
-
 // ── State ───────────────────────────────────────────────────────────────────
 
 /// Host-driven progress model (task / transfer projection).

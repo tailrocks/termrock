@@ -741,12 +741,6 @@ impl AttachmentChipState {
     pub const fn set_focused(&mut self, on: bool) {
         self.tag.set_focused(on);
     }
-
-    /// Focused.
-    #[must_use]
-    pub const fn is_focused(&self) -> bool {
-        self.tag.focused
-    }
 }
 
 /// Single attachment chip paint (file / image / URL / code).

@@ -59,17 +59,6 @@ pub enum Severity {
 }
 
 impl Severity {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Info => "info",
-            Self::Success => "success",
-            Self::Warning => "warning",
-            Self::Error => "error",
-        }
-    }
-
     /// Footer-status paint role.
     #[must_use]
     pub const fn role(self) -> Role {
@@ -118,17 +107,6 @@ pub enum Anchor {
 }
 
 impl Anchor {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::TopLeft => "top-left",
-            Self::TopRight => "top-right",
-            Self::BottomLeft => "bottom-left",
-            Self::BottomRight => "bottom-right",
-        }
-    }
-
     /// Whether the sentence sits on the right edge of the footer.
     #[must_use]
     pub const fn is_right(self) -> bool {
@@ -177,19 +155,6 @@ pub enum ToastKind {
 }
 
 impl ToastKind {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Info => "info",
-            Self::Success => "success",
-            Self::Warning => "warning",
-            Self::Error => "error",
-            Self::Progress => "progress",
-            Self::Undo => "undo",
-        }
-    }
-
     /// From classic severity.
     #[must_use]
     pub const fn from_severity(s: Severity) -> Self {
@@ -247,19 +212,6 @@ pub enum ToastPriority {
     High,
     /// Always keep; may archive lower when full.
     Critical,
-}
-
-impl ToastPriority {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Low => "low",
-            Self::Normal => "normal",
-            Self::High => "high",
-            Self::Critical => "critical",
-        }
-    }
 }
 
 /// Host coordination for a single toast or queue.

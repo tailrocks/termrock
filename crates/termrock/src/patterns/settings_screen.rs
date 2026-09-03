@@ -60,17 +60,6 @@ pub enum SettingsRegion {
 }
 
 impl SettingsRegion {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Search => "search",
-            Self::Nav => "nav",
-            Self::Body => "body",
-            Self::Footer => "footer",
-        }
-    }
-
     /// Tab cycle order.
     #[must_use]
     pub fn focus_order() -> &'static [SettingsRegion] {
@@ -101,16 +90,6 @@ impl SettingsDensity {
             Self::Narrow
         } else {
             Self::Normal
-        }
-    }
-
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Normal => "normal",
-            Self::Narrow => "narrow",
-            Self::Tiny => "tiny",
         }
     }
 }

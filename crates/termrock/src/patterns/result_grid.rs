@@ -72,24 +72,6 @@ pub enum ResultCellKind {
 }
 
 impl ResultCellKind {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Null => "null",
-            Self::Bool => "bool",
-            Self::Integer => "integer",
-            Self::Float => "float",
-            Self::Text => "text",
-            Self::Binary => "binary",
-            Self::Json => "json",
-            Self::Timestamp => "timestamp",
-            Self::Uuid => "uuid",
-            Self::Secret => "secret",
-            Self::Other => "other",
-        }
-    }
-
     /// Map to object-inspector kind.
     #[must_use]
     pub const fn to_inspect_kind(self) -> InspectKind {
@@ -393,18 +375,6 @@ pub enum ResultQueryStatus {
 }
 
 impl ResultQueryStatus {
-    /// Stable id.
-    #[must_use]
-    pub fn id(&self) -> &'static str {
-        match self {
-            Self::Idle => "idle",
-            Self::Streaming { .. } => "streaming",
-            Self::Ready { .. } => "ready",
-            Self::Failed { .. } => "failed",
-            Self::Cancelled => "cancelled",
-        }
-    }
-
     /// Operator-facing lifecycle verb.
     #[must_use]
     pub fn verb(&self) -> &'static str {
@@ -562,19 +532,6 @@ pub enum ResultExportFormat {
     Json,
     /// Markdown table.
     Markdown,
-}
-
-impl ResultExportFormat {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Csv => "csv",
-            Self::Tsv => "tsv",
-            Self::Json => "json",
-            Self::Markdown => "markdown",
-        }
-    }
 }
 
 /// Redaction policy for secrets/binary.
@@ -972,11 +929,6 @@ impl ResultGridState {
         self.table.set_accepts_input(on);
     }
 
-    /// Accepts input.
-    #[must_use]
-    pub const fn accepts_input(&self) -> bool {
-        self.accepts_input
-    }
     /// Set status + sync load chrome.
     pub fn set_status(&mut self, status: ResultQueryStatus, projected_len: usize) {
         self.table.load = status.to_load_state(projected_len);

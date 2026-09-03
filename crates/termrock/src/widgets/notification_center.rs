@@ -544,12 +544,6 @@ impl NotificationCenterState {
         self.open
     }
 
-    /// Focused.
-    #[must_use]
-    pub const fn is_focused(&self) -> bool {
-        self.focused
-    }
-
     /// Recipe.
     #[must_use]
     pub const fn recipe(&self) -> NotificationRecipe {

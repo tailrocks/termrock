@@ -40,18 +40,6 @@ pub enum KvLayout {
     Stacked,
 }
 
-impl KvLayout {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Auto => "auto",
-            Self::Columns => "columns",
-            Self::Stacked => "stacked",
-        }
-    }
-}
-
 /// Status tone for value emphasis.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -70,18 +58,6 @@ pub enum KvStatus {
 }
 
 impl KvStatus {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Neutral => "neutral",
-            Self::Success => "success",
-            Self::Warning => "warning",
-            Self::Danger => "danger",
-            Self::Info => "info",
-        }
-    }
-
     fn role(self) -> Role {
         match self {
             Self::Neutral => Role::Text,

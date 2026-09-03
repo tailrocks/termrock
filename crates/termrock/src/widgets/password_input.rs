@@ -45,18 +45,6 @@ pub enum RevealPolicy {
     Hold,
 }
 
-impl RevealPolicy {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Never => "never",
-            Self::Explicit => "explicit",
-            Self::Hold => "hold",
-        }
-    }
-}
-
 /// Clipboard / OSC-52 policy for secrets.
 ///
 /// **Default [`PasteOnly`](Self::PasteOnly):** paste may request host paste;
@@ -72,18 +60,6 @@ pub enum ClipboardPolicy {
     /// Host may copy via `secret()` after a denied outcome probe — still never
     /// embeds the secret in an outcome. Prefer avoiding this.
     AllowHostCopy,
-}
-
-impl ClipboardPolicy {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::DenyAll => "deny-all",
-            Self::PasteOnly => "paste-only",
-            Self::AllowHostCopy => "allow-host-copy",
-        }
-    }
 }
 
 /// Host-owned strength / quality cue (never derived by logging the secret).
@@ -164,20 +140,6 @@ impl PasswordStrengthHint {
             Self::Good => "good",
             Self::Strong => "strong",
             Self::Pending => "checking…",
-        }
-    }
-
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::None => "none",
-            Self::Empty => "empty",
-            Self::Weak => "weak",
-            Self::Fair => "fair",
-            Self::Good => "good",
-            Self::Strong => "strong",
-            Self::Pending => "pending",
         }
     }
 }
@@ -378,22 +340,10 @@ impl PasswordInputState {
         }
     }
 
-    /// Enabled.
-    #[must_use]
-    pub const fn is_enabled(&self) -> bool {
-        self.enabled
-    }
-
     /// Pending.
     #[must_use]
     pub const fn is_pending(&self) -> bool {
         self.pending
-    }
-
-    /// Focused.
-    #[must_use]
-    pub const fn is_focused(&self) -> bool {
-        self.focused
     }
 
     /// Whether edits allowed.

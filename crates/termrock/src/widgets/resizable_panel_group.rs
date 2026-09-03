@@ -66,18 +66,6 @@ pub enum PanelDock {
     End,
 }
 
-impl PanelDock {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Main => "main",
-            Self::Start => "start",
-            Self::End => "end",
-        }
-    }
-}
-
 /// One panel specification (content remains host-owned).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ResizablePanelSpec {
@@ -205,19 +193,6 @@ pub enum PanelGroupRecipe {
     Workbench,
     /// Dashboard: top metrics strip not used here — horizontal main+log style.
     Dashboard,
-}
-
-impl PanelGroupRecipe {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Fixed => "fixed",
-            Self::SideDrawers => "side-drawers",
-            Self::Workbench => "workbench",
-            Self::Dashboard => "dashboard",
-        }
-    }
 }
 
 /// One resolved panel rectangle.

@@ -47,17 +47,6 @@ pub enum BreadcrumbStatus {
 }
 
 impl BreadcrumbStatus {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::None => "none",
-            Self::Loading => "loading",
-            Self::Warning => "warning",
-            Self::Error => "error",
-        }
-    }
-
     /// Mark.
     #[must_use]
     pub const fn mark(self, ascii: bool) -> Option<&'static str> {

@@ -31,18 +31,6 @@ pub enum SectionVariant {
     Divided,
 }
 
-impl SectionVariant {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Quiet => "quiet",
-            Self::Emphasized => "emphasized",
-            Self::Divided => "divided",
-        }
-    }
-}
-
 /// Header action (stable id + label). Same shape as panel header actions.
 pub type SectionAction<'a> = PanelAction<'a>;
 

@@ -35,17 +35,6 @@ pub enum ToolbarOrientation {
     Vertical,
 }
 
-impl ToolbarOrientation {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Horizontal => "horizontal",
-            Self::Vertical => "vertical",
-        }
-    }
-}
-
 /// Visual density recipe.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -55,17 +44,6 @@ pub enum ToolbarVariant {
     Default,
     /// Compact: tighter padding, prefer icons when present.
     Compact,
-}
-
-impl ToolbarVariant {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Default => "default",
-            Self::Compact => "compact",
-        }
-    }
 }
 
 /// Kind of one toolbar slot.

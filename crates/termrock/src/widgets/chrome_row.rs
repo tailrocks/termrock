@@ -27,18 +27,6 @@ pub enum ChromeRowKind {
     Notice,
 }
 
-impl ChromeRowKind {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Query => "query",
-            Self::Mode => "mode",
-            Self::Notice => "notice",
-        }
-    }
-}
-
 /// One line of inline pane chrome.
 #[derive(Debug, Clone, Copy)]
 pub struct ChromeRow<'a> {

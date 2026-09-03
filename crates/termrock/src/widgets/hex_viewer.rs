@@ -140,16 +140,6 @@ pub enum HexAsciiMode {
 }
 
 impl HexAsciiMode {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Ascii => "ascii",
-            Self::Unicode => "unicode",
-            Self::Dots => "dots",
-        }
-    }
-
     /// Cycle.
     #[must_use]
     pub const fn next(self) -> Self {
@@ -612,12 +602,6 @@ impl HexViewerState {
     /// Host input gate.
     pub fn set_accepts_input(&mut self, accepts: bool) {
         self.accepts_input = accepts;
-    }
-
-    /// Accepts input.
-    #[must_use]
-    pub const fn accepts_input(&self) -> bool {
-        self.accepts_input
     }
 
     /// Vertical row offset.

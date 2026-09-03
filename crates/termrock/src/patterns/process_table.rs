@@ -266,23 +266,6 @@ pub enum ProcessSignal {
 }
 
 impl ProcessSignal {
-    /// Stable id.
-    #[must_use]
-    pub fn id(self) -> String {
-        match self {
-            Self::Term => "TERM".into(),
-            Self::Kill => "KILL".into(),
-            Self::Int => "INT".into(),
-            Self::Hup => "HUP".into(),
-            Self::Quit => "QUIT".into(),
-            Self::Stop => "STOP".into(),
-            Self::Cont => "CONT".into(),
-            Self::Usr1 => "USR1".into(),
-            Self::Usr2 => "USR2".into(),
-            Self::Custom(n) => format!("SIG{n}"),
-        }
-    }
-
     /// Safe confirm verb (no “destroy” / casual “kill all”).
     #[must_use]
     pub const fn safe_verb(self) -> &'static str {
@@ -727,12 +710,6 @@ impl ProcessTableState {
         self.accepts_input = on;
     }
 
-    /// Accepts input.
-    #[must_use]
-    pub const fn accepts_input(&self) -> bool {
-        self.accepts_input
-    }
-
     /// Selected process key.
     #[must_use]
     pub const fn selected(&self) -> Option<ProcessKey> {
@@ -1121,13 +1098,6 @@ impl<'a> ProcessTable<'a> {
     #[must_use]
     pub const fn title(mut self, title: &'a str) -> Self {
         self.title = Some(title);
-        self
-    }
-
-    /// Focus.
-    #[must_use]
-    pub const fn focused(mut self, on: bool) -> Self {
-        self.focused = on;
         self
     }
 

@@ -349,19 +349,6 @@ pub enum ParagraphKind {
     OrderedItem,
 }
 
-impl ParagraphKind {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Body => "body",
-            Self::Quote => "quote",
-            Self::ListItem => "list-item",
-            Self::OrderedItem => "ordered-item",
-        }
-    }
-}
-
 /// Editorial density for paragraphs.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -371,17 +358,6 @@ pub enum ParagraphRecipe {
     Compact,
     /// Reading mode: quote/list hanging indents, slightly wider breathing.
     Reading,
-}
-
-impl ParagraphRecipe {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Compact => "compact",
-            Self::Reading => "reading",
-        }
-    }
 }
 
 /// Named geometry for a paragraph.

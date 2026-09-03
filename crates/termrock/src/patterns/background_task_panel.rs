@@ -591,16 +591,6 @@ pub enum BackgroundTaskPresentation {
 }
 
 impl BackgroundTaskPresentation {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::CompactRail => "compact-rail",
-            Self::Pane => "pane",
-            Self::Fullscreen => "fullscreen",
-        }
-    }
-
     /// Auto.
     #[must_use]
     pub const fn for_width(width: u16) -> Self {

@@ -418,18 +418,6 @@ pub enum QuestionFlowPresentation {
     Fullscreen,
 }
 
-impl QuestionFlowPresentation {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Steps => "steps",
-            Self::Tabs => "tabs",
-            Self::Fullscreen => "fullscreen",
-        }
-    }
-}
-
 /// Flow phase.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]

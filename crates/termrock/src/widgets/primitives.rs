@@ -317,15 +317,6 @@ pub enum ButtonSize {
 }
 
 impl ButtonSize {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Compact => "compact",
-            Self::Normal => "normal",
-        }
-    }
-
     /// junie has exactly one density: the leading pad cell **is** the `▎`
     /// gutter column and one air cell trails, so a button is `label + 2`
     /// wide. Both names resolve to it; the knob survives only because
@@ -765,17 +756,6 @@ pub enum IconButtonSize {
     /// Toolbar / panel header recipe (default).
     #[default]
     Toolbar,
-}
-
-impl IconButtonSize {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Compact => "compact",
-            Self::Toolbar => "toolbar",
-        }
-    }
 }
 
 /// Painted vs hit geometry for [`IconButton`].

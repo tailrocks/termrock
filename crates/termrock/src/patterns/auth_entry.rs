@@ -63,16 +63,6 @@ pub enum AuthEntryMode {
 }
 
 impl AuthEntryMode {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::SignUp => "sign-up",
-            Self::SignIn => "sign-in",
-            Self::EmailOnly => "email-only",
-        }
-    }
-
     /// Title chrome.
     #[must_use]
     pub const fn title(self) -> &'static str {
@@ -122,19 +112,6 @@ pub enum AuthEntryField {
     Confirm,
     /// Accept terms (sign-up when required).
     Terms,
-}
-
-impl AuthEntryField {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Identity => "identity",
-            Self::Password => "password",
-            Self::Confirm => "confirm",
-            Self::Terms => "terms",
-        }
-    }
 }
 
 /// Field-level validation message (no secrets).

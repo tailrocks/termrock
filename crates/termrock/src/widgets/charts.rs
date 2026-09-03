@@ -444,18 +444,6 @@ pub enum ChartFill {
     AreaStacked,
 }
 
-impl ChartFill {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::None => "none",
-            Self::Area => "area",
-            Self::AreaStacked => "area-stacked",
-        }
-    }
-}
-
 /// How multi-column samples map along X (shadcn line linear/step peer).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -470,16 +458,6 @@ pub enum ChartInterpolation {
 }
 
 impl ChartInterpolation {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Nearest => "nearest",
-            Self::Linear => "linear",
-            Self::Step => "step",
-        }
-    }
-
     /// Sample value at column `col` of `width` for `samples` (non-empty).
     #[must_use]
     pub fn sample_at(self, samples: &[f64], col: usize, width: usize) -> f64 {

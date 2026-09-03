@@ -61,21 +61,6 @@ pub enum MessageKind {
 }
 
 impl MessageKind {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::User => "user",
-            Self::Assistant => "assistant",
-            Self::System => "system",
-            Self::Tool => "tool",
-            Self::Status => "status",
-            Self::Event => "event",
-            Self::Error => "error",
-            Self::Thinking => "thinking",
-        }
-    }
-
     /// Map to transcript kind chrome.
     #[must_use]
     pub const fn transcript_kind(self) -> TranscriptKind {
@@ -795,12 +780,6 @@ impl MessageThreadState {
         }
     }
 
-    /// Accepts input.
-    #[must_use]
-    pub const fn accepts_input(&self) -> bool {
-        self.accepts_input
-    }
-
     /// Gate (does not clear selection / unread).
     pub fn set_accepts_input(&mut self, on: bool) {
         self.accepts_input = on;
@@ -1036,13 +1015,6 @@ impl<'a> MessageThread<'a> {
             colorless: false,
             focused: true,
         }
-    }
-
-    /// Focused chrome.
-    #[must_use]
-    pub const fn focused(mut self, on: bool) -> Self {
-        self.focused = on;
-        self
     }
 
     /// Paint thread. Host should call [`MessageThreadState::on_entries_len`] after appends.

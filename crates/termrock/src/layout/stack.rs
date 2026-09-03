@@ -31,17 +31,6 @@ pub enum StackDirection {
     Horizontal,
 }
 
-impl StackDirection {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Vertical => "vertical",
-            Self::Horizontal => "horizontal",
-        }
-    }
-}
-
 /// Cross-axis alignment (perpendicular to main).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -143,18 +132,6 @@ pub enum OverflowPolicy {
     ClipTail,
     /// Reduce fixed/preferred toward min, from the end, one cell at a time.
     EqualShare,
-}
-
-impl OverflowPolicy {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::ShrinkFromEnd => "shrink-from-end",
-            Self::ClipTail => "clip-tail",
-            Self::EqualShare => "equal-share",
-        }
-    }
 }
 
 /// Layout knobs for [`layout_stack`] / builders.

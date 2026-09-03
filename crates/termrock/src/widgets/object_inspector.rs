@@ -102,19 +102,6 @@ pub enum InspectNodeStatus {
     Error,
 }
 
-impl InspectNodeStatus {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Ready => "ready",
-            Self::Lazy => "lazy",
-            Self::Loading => "loading",
-            Self::Error => "error",
-        }
-    }
-}
-
 /// Presentation mode.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -146,17 +133,6 @@ pub enum InspectPresentation {
     Compact,
     /// Fullscreen / dedicated pane affordances.
     Fullscreen,
-}
-
-impl InspectPresentation {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Compact => "compact",
-            Self::Fullscreen => "fullscreen",
-        }
-    }
 }
 
 /// One flattened projected inspector node (host projects visible expanded tree).
@@ -541,12 +517,6 @@ impl ObjectInspectorState {
     /// Host input gate.
     pub fn set_accepts_input(&mut self, accepts: bool) {
         self.accepts_input = accepts;
-    }
-
-    /// Whether host granted input.
-    #[must_use]
-    pub const fn accepts_input(&self) -> bool {
-        self.accepts_input
     }
 
     /// Whether path is expanded.

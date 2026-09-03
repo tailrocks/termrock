@@ -114,18 +114,6 @@ pub enum ReasoningEffort {
 }
 
 impl ReasoningEffort {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Default => "default",
-            Self::Low => "low",
-            Self::Medium => "medium",
-            Self::High => "high",
-            Self::Max => "max",
-        }
-    }
-
     /// Compact status token.
     #[must_use]
     pub const fn short(self) -> &'static str {
@@ -433,18 +421,6 @@ pub enum ExecutionPolicyKind {
 }
 
 impl ExecutionPolicyKind {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Default => "default",
-            Self::ReadOnly => "read-only",
-            Self::WorkspaceWrite => "workspace-write",
-            Self::Network => "network",
-            Self::Unrestricted => "unrestricted",
-        }
-    }
-
     /// Warning chrome.
     #[must_use]
     pub const fn is_warning(self) -> bool {
@@ -699,17 +675,6 @@ pub enum ModelSelectorPresentation {
     Expanded,
 }
 
-impl ModelSelectorPresentation {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Compact => "compact",
-            Self::Expanded => "expanded",
-        }
-    }
-}
-
 /// Model selector state.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ModelSelectorState {
@@ -774,12 +739,6 @@ impl ModelSelectorState {
     #[must_use]
     pub fn highlight(&self) -> Option<&str> {
         self.highlight.as_deref()
-    }
-
-    /// Accepts input.
-    #[must_use]
-    pub const fn accepts_input(&self) -> bool {
-        self.accepts_input
     }
 
     /// Gate (does not clear selection).
@@ -1243,18 +1202,6 @@ pub enum AgentModePresentation {
     Ribbon,
     /// Expandable list menu.
     Menu,
-}
-
-impl AgentModePresentation {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Compact => "compact",
-            Self::Ribbon => "ribbon",
-            Self::Menu => "menu",
-        }
-    }
 }
 
 /// Agent mode selector state.

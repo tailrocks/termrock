@@ -684,18 +684,6 @@ pub enum FocusLensMode {
     Combined,
 }
 
-impl FocusLensMode {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::TabOrder => "tab-order",
-            Self::FocusedOnly => "focused-only",
-            Self::Combined => "combined",
-        }
-    }
-}
-
 /// Focus Lens: paints tab-order markers and focused outline for Studio debug.
 ///
 /// Complements JumpMode: lens is **inspection** (order / focus), jump is

@@ -122,17 +122,6 @@ pub enum SpinnerVariant {
     CompactInline,
 }
 
-impl SpinnerVariant {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Labeled => "labeled",
-            Self::CompactInline => "compact-inline",
-        }
-    }
-}
-
 // ── State ───────────────────────────────────────────────────────────────────
 
 /// Activity / spinner runtime: active + visible gates stop redraw demand.

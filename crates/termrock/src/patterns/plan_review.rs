@@ -105,17 +105,6 @@ pub enum PlanTaskStatus {
 }
 
 impl PlanTaskStatus {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Pending => "pending",
-            Self::InProgress => "in_progress",
-            Self::Done => "done",
-            Self::Blocked => "blocked",
-        }
-    }
-
     /// Glyph.
     #[must_use]
     pub const fn glyph(self) -> &'static str {

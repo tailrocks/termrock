@@ -347,17 +347,6 @@ pub enum WorkingStatePresentation {
     Collapsed,
 }
 
-impl WorkingStatePresentation {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Expanded => "expanded",
-            Self::Collapsed => "collapsed",
-        }
-    }
-}
-
 /// Outcomes — requests only.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]

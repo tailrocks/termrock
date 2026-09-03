@@ -90,20 +90,6 @@ pub enum ContractFileRole {
 }
 
 impl ContractFileRole {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Primary => "primary",
-            Self::Support => "support",
-            Self::Story => "story",
-            Self::Fixture => "fixture",
-            Self::Docs => "docs",
-            Self::Migration => "migration",
-            Self::Other => "other",
-        }
-    }
-
     /// Parse.
     #[must_use]
     pub fn parse(s: &str) -> Option<Self> {

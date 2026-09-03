@@ -849,18 +849,6 @@ pub enum AnsiTextMode {
     Plain,
 }
 
-impl AnsiTextMode {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Color => "color",
-            Self::NoColor => "no-color",
-            Self::Plain => "plain",
-        }
-    }
-}
-
 /// Interaction state for multi-line ANSI views.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct AnsiTextState {

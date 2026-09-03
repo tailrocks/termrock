@@ -115,22 +115,6 @@ pub enum FileGitStatus {
 }
 
 impl FileGitStatus {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Clean => "clean",
-            Self::Modified => "modified",
-            Self::Added => "added",
-            Self::Deleted => "deleted",
-            Self::Renamed => "renamed",
-            Self::Untracked => "untracked",
-            Self::Ignored => "ignored",
-            Self::Conflict => "conflict",
-            Self::Unknown => "unknown",
-        }
-    }
-
     /// Single-letter status (lazygit/VS Code class).
     #[must_use]
     pub const fn letter(self) -> char {
@@ -676,12 +660,6 @@ impl<Id: Clone + PartialEq> FileTreeState<Id> {
     /// Host input gate.
     pub fn set_accepts_input(&mut self, on: bool) {
         self.accepts_input = on;
-    }
-
-    /// Accepts input.
-    #[must_use]
-    pub const fn accepts_input(&self) -> bool {
-        self.accepts_input
     }
 
     /// Selected id.

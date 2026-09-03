@@ -60,26 +60,6 @@ pub enum MarkdownBlockKind {
     Blank,
 }
 
-impl MarkdownBlockKind {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Paragraph => "paragraph",
-            Self::Heading => "heading",
-            Self::Code => "code",
-            Self::Fence => "fence",
-            Self::Quote => "quote",
-            Self::ListItem => "list-item",
-            Self::OrderedItem => "ordered-item",
-            Self::TaskItem => "task-item",
-            Self::Rule => "rule",
-            Self::Table => "table",
-            Self::Blank => "blank",
-        }
-    }
-}
-
 /// Source map into the original markdown buffer (line numbers, 1-based).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub struct SourceAnchor {

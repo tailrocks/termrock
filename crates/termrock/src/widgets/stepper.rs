@@ -154,17 +154,6 @@ pub enum StepperOrientation {
     Vertical,
 }
 
-impl StepperOrientation {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Horizontal => "horizontal",
-            Self::Vertical => "vertical",
-        }
-    }
-}
-
 /// Responsive presentation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -412,12 +401,6 @@ impl StepperState {
     /// Focus.
     pub fn set_focused(&mut self, on: bool) {
         self.focused = on;
-    }
-
-    /// Focused?
-    #[must_use]
-    pub const fn is_focused(&self) -> bool {
-        self.focused
     }
 
     /// Enable.

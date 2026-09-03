@@ -33,15 +33,6 @@ pub enum OtpCharset {
 }
 
 impl OtpCharset {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Digits => "digits",
-            Self::Alphanumeric => "alphanumeric",
-        }
-    }
-
     /// Whether `c` is accepted.
     #[must_use]
     pub fn accepts(self, c: char) -> bool {

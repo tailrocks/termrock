@@ -540,17 +540,6 @@ pub enum ConnectionManagerPresentation {
     Full,
 }
 
-impl ConnectionManagerPresentation {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Launcher => "launcher",
-            Self::Full => "full",
-        }
-    }
-}
-
 /// List scope filter.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -567,17 +556,6 @@ pub enum ConnectionListView {
 }
 
 impl ConnectionListView {
-    /// Stable id.
-    #[must_use]
-    pub fn id(&self) -> String {
-        match self {
-            Self::All => "all".into(),
-            Self::Favorites => "favorites".into(),
-            Self::Recent => "recent".into(),
-            Self::Group(g) => format!("group:{g}"),
-        }
-    }
-
     /// Chrome label.
     #[must_use]
     pub fn label(&self) -> String {
@@ -607,20 +585,6 @@ pub enum ConnectionManagerPhase {
     ConfirmDelete,
 }
 
-impl ConnectionManagerPhase {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Browse => "browse",
-            Self::Add => "add",
-            Self::Edit => "edit",
-            Self::TestBusy => "test_busy",
-            Self::ConfirmDelete => "confirm_delete",
-        }
-    }
-}
-
 /// Which form field is focused in add/edit.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -641,19 +605,6 @@ pub enum ConnectionFormField {
 }
 
 impl ConnectionFormField {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Name => "name",
-            Self::Protocol => "protocol",
-            Self::Target => "target",
-            Self::Environment => "environment",
-            Self::Group => "group",
-            Self::Secret => "secret",
-        }
-    }
-
     fn next(self) -> Self {
         match self {
             Self::Name => Self::Protocol,

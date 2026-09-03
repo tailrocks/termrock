@@ -175,12 +175,6 @@ impl<Id: Clone + PartialEq> PickerState<Id> {
         self.accepts_input = accepts;
     }
 
-    /// Whether host granted input.
-    #[must_use]
-    pub const fn accepts_input(&self) -> bool {
-        self.accepts_input
-    }
-
     /// Whether printable keys edit the query (junie `searchable`; default true).
     ///
     /// When false, `j`/`k` move the list. [`Picker::searchable`] copies this

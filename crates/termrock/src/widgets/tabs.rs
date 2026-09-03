@@ -120,17 +120,6 @@ pub enum TabsActivation {
     Manual,
 }
 
-impl TabsActivation {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Automatic => "automatic",
-            Self::Manual => "manual",
-        }
-    }
-}
-
 /// Layout presentation under width pressure.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -179,19 +168,6 @@ pub enum TabStatus {
 }
 
 impl TabStatus {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::None => "none",
-            Self::Running => "running",
-            Self::Success => "success",
-            Self::Warning => "warning",
-            Self::Error => "error",
-            Self::Dirty => "dirty",
-        }
-    }
-
     /// ASCII / unicode mark.
     #[must_use]
     pub const fn mark(self, ascii: bool) -> Option<&'static str> {
@@ -812,19 +788,6 @@ pub enum TabsActiveCue {
     /// the ordinary border role while the strip is unfocused.
     #[default]
     Rule,
-}
-
-impl TabsActiveCue {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::AccentPill => "accent-pill",
-            Self::Connected => "connected",
-            Self::Marker => "marker",
-            Self::Rule => "rule",
-        }
-    }
 }
 
 /// Keyboard- and pointer-navigable tab strip.

@@ -28,18 +28,6 @@ pub enum MetricViz {
     ValueOnly,
 }
 
-impl MetricViz {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Sparkline => "sparkline",
-            Self::Gauge => "gauge",
-            Self::ValueOnly => "value",
-        }
-    }
-}
-
 /// Health of one tile (partial failure support).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]

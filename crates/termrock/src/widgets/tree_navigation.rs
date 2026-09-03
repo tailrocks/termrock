@@ -65,18 +65,6 @@ pub enum TreeNavStatus {
 }
 
 impl TreeNavStatus {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Ready => "ready",
-            Self::Loading => "loading",
-            Self::Error => "error",
-            Self::Dirty => "dirty",
-            Self::Warning => "warning",
-        }
-    }
-
     /// Non-color mark.
     #[must_use]
     pub const fn mark(self, ascii: bool) -> Option<&'static str> {

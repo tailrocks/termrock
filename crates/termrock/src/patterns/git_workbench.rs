@@ -127,16 +127,6 @@ impl GitWorkbenchDensity {
             Self::Normal
         }
     }
-
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Normal => "normal",
-            Self::Narrow => "narrow",
-            Self::Tiny => "tiny",
-        }
-    }
 }
 
 // ── Domain projections (host-owned truth) ───────────────────────────────────

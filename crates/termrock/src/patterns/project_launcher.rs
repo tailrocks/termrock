@@ -144,16 +144,6 @@ impl ProjectLauncherDensity {
             Self::Normal
         }
     }
-
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Normal => "normal",
-            Self::Narrow => "narrow",
-            Self::Tiny => "tiny",
-        }
-    }
 }
 
 // ── Domain projections (host-owned) ─────────────────────────────────────────
@@ -219,17 +209,6 @@ pub enum ProjectPathStatus {
 }
 
 impl ProjectPathStatus {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Ok => "ok",
-            Self::Missing => "missing",
-            Self::Stale => "stale",
-            Self::Error => "error",
-        }
-    }
-
     /// Label.
     #[must_use]
     pub const fn label(self) -> &'static str {
@@ -267,17 +246,6 @@ pub enum ProjectLocation {
     Local,
     /// Remote / cloud workspace.
     Remote,
-}
-
-impl ProjectLocation {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Local => "local",
-            Self::Remote => "remote",
-        }
-    }
 }
 
 /// Host-projected project / workspace row.

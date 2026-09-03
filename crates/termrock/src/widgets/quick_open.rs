@@ -102,17 +102,6 @@ pub enum QuickOpenPresentation {
     Fullscreen,
 }
 
-impl QuickOpenPresentation {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Centered => "centered",
-            Self::Fullscreen => "fullscreen",
-        }
-    }
-}
-
 /// Derive presentation from bounds.
 #[must_use]
 pub fn quick_open_presentation_for_bounds(bounds: Rect) -> QuickOpenPresentation {
@@ -660,11 +649,6 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
         self.focused = on;
     }
 
-    /// Focused.
-    #[must_use]
-    pub const fn is_focused(&self) -> bool {
-        self.focused
-    }
     /// Loading.
     pub fn set_loading(&mut self, loading: bool) -> QuickOpenOutcome<Id> {
         if self.loading == loading {
@@ -1270,13 +1254,6 @@ impl<'a, Id> QuickOpen<'a, Id> {
     #[must_use]
     pub const fn title(mut self, t: &'a str) -> Self {
         self.title = t;
-        self
-    }
-
-    /// Focused chrome.
-    #[must_use]
-    pub const fn focused(mut self, on: bool) -> Self {
-        self.focused = on;
         self
     }
 

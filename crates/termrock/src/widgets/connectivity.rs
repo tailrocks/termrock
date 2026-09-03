@@ -164,17 +164,6 @@ pub enum ConnectivityPresentation {
     Full,
 }
 
-impl ConnectivityPresentation {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Banner => "banner",
-            Self::Full => "full",
-        }
-    }
-}
-
 // ── Queued / capabilities ───────────────────────────────────────────────────
 
 /// One action waiting for connectivity (host-owned id/label).

@@ -173,12 +173,6 @@ impl CollapsibleState {
         self.focused = focused;
     }
 
-    /// Whether focused.
-    #[must_use]
-    pub const fn is_focused(&self) -> bool {
-        self.focused
-    }
-
     fn apply_open(&mut self, open: bool) -> CollapsibleOutcome {
         if self.open == open {
             return CollapsibleOutcome::Ignored;

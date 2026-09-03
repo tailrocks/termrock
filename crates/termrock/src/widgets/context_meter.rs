@@ -121,19 +121,6 @@ pub enum ContextSourceKind {
 }
 
 impl ContextSourceKind {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Message => "message",
-            Self::Tool => "tool",
-            Self::Attachment => "attachment",
-            Self::Cache => "cache",
-            Self::System => "system",
-            Self::Other => "other",
-        }
-    }
-
     /// Letter.
     #[must_use]
     pub const fn letter(self) -> char {
@@ -512,18 +499,6 @@ pub enum ContextMeterPresentation {
     Expanded,
     /// Popover-dense detail (host places in overlay).
     Popover,
-}
-
-impl ContextMeterPresentation {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Compact => "compact",
-            Self::Expanded => "expanded",
-            Self::Popover => "popover",
-        }
-    }
 }
 
 /// Outcomes.

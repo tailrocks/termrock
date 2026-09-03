@@ -61,19 +61,6 @@ pub enum NavItemStatus {
 }
 
 impl NavItemStatus {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::None => "none",
-            Self::Running => "running",
-            Self::Success => "success",
-            Self::Warning => "warning",
-            Self::Error => "error",
-            Self::Dirty => "dirty",
-        }
-    }
-
     /// Non-color mark.
     #[must_use]
     pub const fn mark(self, ascii: bool) -> Option<&'static str> {
@@ -109,17 +96,6 @@ pub enum NavItemKind {
 }
 
 impl NavItemKind {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Item => "item",
-            Self::Section => "section",
-            Self::Group => "group",
-            Self::Separator => "separator",
-        }
-    }
-
     /// Participates in focus / activation.
     #[must_use]
     pub const fn is_focusable(self) -> bool {

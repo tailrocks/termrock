@@ -295,12 +295,6 @@ impl SearchInputState {
         self.focused
     }
 
-    /// Enabled.
-    #[must_use]
-    pub const fn is_enabled(&self) -> bool {
-        self.enabled
-    }
-
     /// Paint parts.
     #[must_use]
     pub const fn parts(&self) -> Option<&SearchInputParts> {

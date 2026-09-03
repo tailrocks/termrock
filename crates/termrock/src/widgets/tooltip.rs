@@ -49,17 +49,6 @@ pub enum TooltipPrefer {
     Below,
 }
 
-impl TooltipPrefer {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Above => "above",
-            Self::Below => "below",
-        }
-    }
-}
-
 /// Places a tooltip relative to `anchor` (may hide on tiny terminals via policy).
 #[must_use]
 pub fn place_tooltip(bounds: Rect, anchor: Rect, size: OverlaySize) -> Rect {
@@ -122,18 +111,6 @@ pub enum TooltipVariant {
     Rich,
 }
 
-impl TooltipVariant {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Plain => "plain",
-            Self::Shortcut => "shortcut",
-            Self::Rich => "rich",
-        }
-    }
-}
-
 /// What arms the show delay.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -148,16 +125,6 @@ pub enum TooltipTrigger {
 }
 
 impl TooltipTrigger {
-    /// Stable id.
-    #[must_use]
-    pub const fn id(self) -> &'static str {
-        match self {
-            Self::Pointer => "pointer",
-            Self::Focus => "focus",
-            Self::Both => "both",
-        }
-    }
-
     fn armed(self, pointer: bool, focus: bool) -> bool {
         match self {
             Self::Pointer => pointer,
