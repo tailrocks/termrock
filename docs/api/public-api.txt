@@ -204,7 +204,6 @@ pub fn termrock::ansi_text::AnsiStream::has_partial(&self) -> bool
 pub fn termrock::ansi_text::AnsiStream::into_lines(self) -> alloc::vec::Vec<termrock::ansi_text::AnsiLine>
 pub fn termrock::ansi_text::AnsiStream::lines(&self) -> &alloc::collections::vec_deque::VecDeque<termrock::ansi_text::AnsiLine>
 pub fn termrock::ansi_text::AnsiStream::new(termrock::ansi_text::AnsiParseOptions) -> Self
-pub const fn termrock::ansi_text::AnsiStream::options(&self) -> &termrock::ansi_text::AnsiParseOptions
 pub fn termrock::ansi_text::AnsiStream::pending_plain(&self) -> alloc::string::String
 pub fn termrock::ansi_text::AnsiStream::plain(&self) -> alloc::string::String
 pub fn termrock::ansi_text::AnsiStream::reset_style(&mut self)
@@ -4661,7 +4660,6 @@ impl<T> either::into_either::IntoEither for termrock::interaction::DismissPolicy
 pub struct termrock::interaction::DismissableLayer
 impl termrock::interaction::DismissableLayer
 pub const fn termrock::interaction::DismissableLayer::from_layer_policies(termrock::interaction::LayerDismissPolicy, termrock::interaction::LayerDismissPolicy) -> Self
-pub const fn termrock::interaction::DismissableLayer::gesture(&self) -> termrock::interaction::PointerGesture
 pub fn termrock::interaction::DismissableLayer::is_outside(&self, ratatui_core::layout::position::Position) -> bool
 pub const fn termrock::interaction::DismissableLayer::new(termrock::interaction::DismissPolicy) -> Self
 pub fn termrock::interaction::DismissableLayer::on_escape(&mut self, &mut termrock::interaction::DismissGuard, termrock::interaction::DismissEventId) -> termrock::interaction::DismissDecision
@@ -4734,7 +4732,6 @@ pub fn termrock::interaction::EventResult<M, FocusId>::or_else(self, impl core::
 pub const fn termrock::interaction::EventResult<M, FocusId>::overlay(&self) -> core::option::Option<&termrock::interaction::OverlayRequest>
 pub const fn termrock::interaction::EventResult<M, FocusId>::propagation(&self) -> termrock::interaction::Propagation
 pub const fn termrock::interaction::EventResult<M, FocusId>::redraw(&self) -> termrock::interaction::Redraw
-pub const fn termrock::interaction::EventResult<M, FocusId>::stop() -> Self
 pub fn termrock::interaction::EventResult<M, FocusId>::take_message(&mut self) -> core::option::Option<M>
 pub fn termrock::interaction::EventResult<M, FocusId>::with_focus(self, termrock::interaction::FocusRequest<FocusId>) -> Self
 pub fn termrock::interaction::EventResult<M, FocusId>::with_message(self, M) -> Self
@@ -4861,7 +4858,6 @@ pub const fn termrock::interaction::FocusGraph<Id>::focused(&self) -> core::opti
 pub fn termrock::interaction::FocusGraph<Id>::history(&self) -> impl core::iter::traits::iterator::Iterator<Item = &Id>
 pub fn termrock::interaction::FocusGraph<Id>::is_focused(&self, &Id) -> bool where Id: core::cmp::PartialEq
 pub const fn termrock::interaction::FocusGraph<Id>::mode(self, termrock::interaction::FocusNavMode) -> Self
-pub const fn termrock::interaction::FocusGraph<Id>::nav_mode(&self) -> termrock::interaction::FocusNavMode
 pub fn termrock::interaction::FocusGraph<Id>::new() -> Self
 pub fn termrock::interaction::FocusGraph<Id>::nodes(&self) -> &[termrock::interaction::FocusNode<Id>]
 pub fn termrock::interaction::FocusGraph<Id>::owns_keyboard(&self, &Id) -> bool where Id: core::cmp::PartialEq
@@ -4916,7 +4912,6 @@ impl<'a, Id> termrock::interaction::FocusLens<'a, Id>
 pub const fn termrock::interaction::FocusLens<'a, Id>::colorless(self, bool) -> Self
 pub const fn termrock::interaction::FocusLens<'a, Id>::mode(self, termrock::interaction::FocusLensMode) -> Self
 pub const fn termrock::interaction::FocusLens<'a, Id>::new(&'a termrock::interaction::FocusGraph<Id>, &'a termrock::style::DesignSystem) -> Self
-pub const fn termrock::interaction::FocusLens<'a, Id>::show_order(self, bool) -> Self
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::interaction::FocusLens<'a, Id>
 pub fn termrock::interaction::FocusLens<'a, Id>::clone(&self) -> termrock::interaction::FocusLens<'a, Id>
 impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::interaction::FocusLens<'a, Id>
@@ -5528,7 +5523,6 @@ pub fn termrock::interaction::OverlayStack<FocusId>::sync_scene_layers<Id, Actio
 pub const fn termrock::interaction::OverlayStack<FocusId>::top_dismissable(&self) -> &termrock::interaction::DismissableLayer
 impl<FocusId> termrock::interaction::OverlayStack<FocusId>
 pub fn termrock::interaction::OverlayStack<FocusId>::backdrop_policy(&self) -> termrock::interaction::BackdropPolicy
-pub const fn termrock::interaction::OverlayStack<FocusId>::bounds(&self) -> ratatui_core::layout::rect::Rect
 pub fn termrock::interaction::OverlayStack<FocusId>::clear(&mut self)
 pub fn termrock::interaction::OverlayStack<FocusId>::contains(&self, &termrock::interaction::OverlayId) -> bool
 pub fn termrock::interaction::OverlayStack<FocusId>::is_empty(&self) -> bool
@@ -6715,7 +6709,6 @@ pub const fn termrock::layout::FlexSize::ideal_main(self) -> u16
 pub const fn termrock::layout::FlexSize::max_main(self) -> core::option::Option<u16>
 pub const fn termrock::layout::FlexSize::min_main(self) -> u16
 pub const fn termrock::layout::FlexSize::preferred(u16, u16, u16) -> Self
-pub const fn termrock::layout::FlexSize::weight(u16) -> Self
 impl core::clone::Clone for termrock::layout::FlexSize
 pub fn termrock::layout::FlexSize::clone(&self) -> termrock::layout::FlexSize
 impl core::cmp::Eq for termrock::layout::FlexSize
@@ -7265,7 +7258,6 @@ impl<T> either::into_either::IntoEither for termrock::layout::ShrinkPolicy
 pub termrock::layout::StackDirection::Horizontal
 pub termrock::layout::StackDirection::Vertical
 impl termrock::layout::StackDirection
-pub const fn termrock::layout::StackDirection::flipped(self) -> Self
 pub const fn termrock::layout::StackDirection::id(self) -> &'static str
 impl core::clone::Clone for termrock::layout::StackDirection
 pub fn termrock::layout::StackDirection::clone(&self) -> termrock::layout::StackDirection
@@ -18896,7 +18888,6 @@ pub const fn termrock::patterns::AgentStatusSnapshot::queue_depth(self, u32) -> 
 pub fn termrock::patterns::AgentStatusSnapshot::session(self, impl core::convert::Into<alloc::string::String>) -> Self
 pub const fn termrock::patterns::AgentStatusSnapshot::tasks_needing_input(self, u32) -> Self
 pub const fn termrock::patterns::AgentStatusSnapshot::work(self, termrock::patterns::AgentWorkStatus) -> Self
-pub fn termrock::patterns::AgentStatusSnapshot::work_label(self, impl core::convert::Into<alloc::string::String>) -> Self
 pub fn termrock::patterns::AgentStatusSnapshot::work_text(&self) -> alloc::string::String
 impl core::clone::Clone for termrock::patterns::AgentStatusSnapshot
 pub fn termrock::patterns::AgentStatusSnapshot::clone(&self) -> termrock::patterns::AgentStatusSnapshot
@@ -18955,9 +18946,7 @@ pub termrock::patterns::AgentWorkbenchState::working: termrock::patterns::Workin
 pub termrock::patterns::AgentWorkbenchState::workspace: termrock::layout::WorkspaceState
 impl termrock::patterns::AgentWorkbenchState
 pub const fn termrock::patterns::AgentWorkbenchState::any_overlay_open(&self) -> bool
-pub const fn termrock::patterns::AgentWorkbenchState::command_open(&self) -> bool
 pub fn termrock::patterns::AgentWorkbenchState::cycle_focus(&mut self, bool) -> termrock::patterns::WorkbenchKeyOutcome
-pub const fn termrock::patterns::AgentWorkbenchState::diff_open(&self) -> bool
 pub fn termrock::patterns::AgentWorkbenchState::focus_pane(&mut self, termrock::patterns::WorkbenchPane)
 pub fn termrock::patterns::AgentWorkbenchState::focused_pane(&self) -> core::option::Option<&'static str>
 pub fn termrock::patterns::AgentWorkbenchState::handle_escape(&mut self) -> termrock::interaction::InteractionOutcome<&'static str, &'static str, ()>
@@ -18966,7 +18955,6 @@ pub fn termrock::patterns::AgentWorkbenchState::new() -> Self
 pub const fn termrock::patterns::AgentWorkbenchState::permission_open(&self) -> bool
 pub const fn termrock::patterns::AgentWorkbenchState::plan_open(&self) -> bool
 pub const fn termrock::patterns::AgentWorkbenchState::question_open(&self) -> bool
-pub const fn termrock::patterns::AgentWorkbenchState::session_open(&self) -> bool
 pub const fn termrock::patterns::AgentWorkbenchState::set_command_open(&mut self, bool)
 pub const fn termrock::patterns::AgentWorkbenchState::set_diff_open(&mut self, bool)
 pub const fn termrock::patterns::AgentWorkbenchState::set_plan_open(&mut self, bool)
@@ -19315,7 +19303,6 @@ pub const fn termrock::patterns::ApprovalItem::allows_bulk_approve(&self) -> boo
 pub const fn termrock::patterns::ApprovalItem::allows_quick_approve(&self) -> bool
 pub const fn termrock::patterns::ApprovalItem::blocking(self, termrock::patterns::ApprovalBlocking) -> Self
 pub const fn termrock::patterns::ApprovalItem::generation(self, u64) -> Self
-pub const fn termrock::patterns::ApprovalItem::host_allows_quick_approve(self, bool) -> Self
 pub fn termrock::patterns::ApprovalItem::new(impl core::convert::Into<alloc::string::String>, termrock::patterns::ApprovalKind, impl core::convert::Into<alloc::string::String>, termrock::widgets::PermissionRisk) -> Self
 pub fn termrock::patterns::ApprovalItem::preview(self, impl core::convert::Into<alloc::string::String>) -> Self
 pub fn termrock::patterns::ApprovalItem::priority(self, u8) -> Self
@@ -19480,11 +19467,9 @@ impl termrock::patterns::AuthEntryState
 pub fn termrock::patterns::AuthEntryState::clear_host_error(&mut self)
 pub fn termrock::patterns::AuthEntryState::confirm_secret(&self) -> &str
 pub fn termrock::patterns::AuthEntryState::email_only() -> Self
-pub fn termrock::patterns::AuthEntryState::field_errors(&self) -> &[termrock::patterns::AuthFieldError]
 pub fn termrock::patterns::AuthEntryState::field_order(&self) -> alloc::vec::Vec<termrock::patterns::AuthEntryField>
 pub const fn termrock::patterns::AuthEntryState::focus(&self) -> termrock::patterns::AuthEntryField
 pub fn termrock::patterns::AuthEntryState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::patterns::AuthEntryOutcome
-pub fn termrock::patterns::AuthEntryState::host_error(&self) -> core::option::Option<&str>
 pub fn termrock::patterns::AuthEntryState::identity(&self) -> &str
 pub const fn termrock::patterns::AuthEntryState::is_passwordless(&self) -> bool
 pub const fn termrock::patterns::AuthEntryState::mode(&self) -> termrock::patterns::AuthEntryMode
@@ -19636,7 +19621,6 @@ pub fn termrock::patterns::BackgroundOutputBuffer::dropped_banner(&self, bool) -
 pub fn termrock::patterns::BackgroundOutputBuffer::is_empty(&self) -> bool
 pub fn termrock::patterns::BackgroundOutputBuffer::len(&self) -> usize
 pub fn termrock::patterns::BackgroundOutputBuffer::lines(&self) -> &alloc::collections::vec_deque::VecDeque<termrock::patterns::BackgroundOutputLine>
-pub const fn termrock::patterns::BackgroundOutputBuffer::max_lines(&self) -> usize
 pub fn termrock::patterns::BackgroundOutputBuffer::new(usize) -> Self
 impl core::clone::Clone for termrock::patterns::BackgroundOutputBuffer
 pub fn termrock::patterns::BackgroundOutputBuffer::clone(&self) -> termrock::patterns::BackgroundOutputBuffer
@@ -21592,7 +21576,6 @@ pub fn termrock::patterns::ObservabilityDashboardState::handle_key(&mut self, te
 pub fn termrock::patterns::ObservabilityDashboardState::last_panes(&self) -> &[termrock::layout::PaneGeom]
 pub fn termrock::patterns::ObservabilityDashboardState::layout(&mut self, ratatui_core::layout::rect::Rect) -> alloc::vec::Vec<termrock::layout::PaneGeom>
 pub fn termrock::patterns::ObservabilityDashboardState::new() -> Self
-pub const fn termrock::patterns::ObservabilityDashboardState::open_panes(&self) -> termrock::patterns::observability_dashboard::ObservabilityPanes
 pub fn termrock::patterns::ObservabilityDashboardState::set_drill_down(&mut self, impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> termrock::patterns::ObservabilityDashboardOutcome
 pub fn termrock::patterns::ObservabilityDashboardState::set_focus(&mut self, termrock::patterns::ObservabilityPane) -> termrock::patterns::ObservabilityDashboardOutcome
 pub fn termrock::patterns::ObservabilityDashboardState::set_live(&mut self)
@@ -21853,7 +21836,6 @@ pub termrock::patterns::PlanAffectedFile::path: alloc::string::String
 pub termrock::patterns::PlanAffectedFile::rename_to: core::option::Option<alloc::string::String>
 impl termrock::patterns::PlanAffectedFile
 pub fn termrock::patterns::PlanAffectedFile::new(impl core::convert::Into<alloc::string::String>, termrock::patterns::PlanFileChange) -> Self
-pub fn termrock::patterns::PlanAffectedFile::rename_to(self, impl core::convert::Into<alloc::string::String>) -> Self
 impl core::clone::Clone for termrock::patterns::PlanAffectedFile
 pub fn termrock::patterns::PlanAffectedFile::clone(&self) -> termrock::patterns::PlanAffectedFile
 impl core::cmp::Eq for termrock::patterns::PlanAffectedFile
@@ -24626,7 +24608,6 @@ pub fn termrock::patterns::SetupWizardState::current_kind(&self) -> termrock::pa
 pub fn termrock::patterns::SetupWizardState::dismiss_cancel_confirm(&mut self) -> termrock::patterns::SetupWizardOutcome
 pub fn termrock::patterns::SetupWizardState::from_steps(impl core::iter::traits::collect::IntoIterator<Item = termrock::patterns::SetupStep>) -> Self
 pub fn termrock::patterns::SetupWizardState::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::widgets::Fieldset<'_, &'static str>], &[termrock::widgets::ThemePreset]) -> termrock::patterns::SetupWizardOutcome
-pub fn termrock::patterns::SetupWizardState::kinds(&self) -> &[termrock::patterns::SetupStepKind]
 pub fn termrock::patterns::SetupWizardState::new(usize) -> Self
 pub fn termrock::patterns::SetupWizardState::progress(&self) -> termrock::widgets::WizardProgress
 pub fn termrock::patterns::SetupWizardState::request_cancel(&mut self) -> termrock::patterns::SetupWizardOutcome
@@ -25535,7 +25516,6 @@ pub termrock::patterns::WorkingState::waiting_reason: core::option::Option<alloc
 impl termrock::patterns::WorkingState
 pub fn termrock::patterns::WorkingState::actor(self, impl core::convert::Into<alloc::string::String>) -> Self
 pub const fn termrock::patterns::WorkingState::can_cancel(self, bool) -> Self
-pub const fn termrock::patterns::WorkingState::can_inspect(self, bool) -> Self
 pub fn termrock::patterns::WorkingState::compact_line(&self, bool, usize) -> alloc::string::String
 pub fn termrock::patterns::WorkingState::elapsed(self, impl core::convert::Into<alloc::string::String>) -> Self
 pub fn termrock::patterns::WorkingState::new(impl core::convert::Into<alloc::string::String>, termrock::patterns::WorkingPhase, impl core::convert::Into<alloc::string::String>) -> Self
@@ -28152,8 +28132,6 @@ impl<T> serde_core::de::DeserializeOwned for termrock::registry::VariantRef wher
 pub const termrock::registry::CONTRACT_SCHEMA: u32
 pub static termrock::registry::PUBLIC_PATTERN_INVENTORY: &[termrock::registry::PatternInventoryEntry]
 pub static termrock::registry::PUBLIC_UI_INVENTORY: &[termrock::registry::PublicUiInventoryEntry]
-pub fn termrock::registry::official_contract(&str) -> core::option::Option<termrock::registry::ComponentContract>
-pub fn termrock::registry::official_ids() -> alloc::vec::Vec<alloc::string::String>
 pub fn termrock::registry::official_kernel_contracts() -> alloc::vec::Vec<termrock::registry::ComponentContract>
 pub fn termrock::registry::pattern_by_id(&str) -> core::option::Option<&'static termrock::registry::PatternInventoryEntry>
 pub const fn termrock::registry::pattern_inventory() -> &'static [termrock::registry::PatternInventoryEntry]
@@ -28424,7 +28402,6 @@ pub struct termrock::runtime::FrameClock
 impl termrock::runtime::FrameClock
 pub const fn termrock::runtime::FrameClock::from_start(std::time::Instant) -> Self
 pub fn termrock::runtime::FrameClock::start() -> Self
-pub const fn termrock::runtime::FrameClock::started_at(&self) -> std::time::Instant
 pub fn termrock::runtime::FrameClock::tick(&mut self) -> termrock::runtime::FrameTick
 pub fn termrock::runtime::FrameClock::tick_at(&mut self, std::time::Instant) -> termrock::runtime::FrameTick
 impl core::clone::Clone for termrock::runtime::FrameClock
@@ -28470,7 +28447,6 @@ impl<T> either::into_either::IntoEither for termrock::runtime::FrameClock
 pub struct termrock::runtime::FrameTick
 impl termrock::runtime::FrameTick
 pub const fn termrock::runtime::FrameTick::delta(self) -> core::time::Duration
-pub fn termrock::runtime::FrameTick::delta_ms(self) -> u64
 pub const fn termrock::runtime::FrameTick::elapsed(self) -> core::time::Duration
 pub fn termrock::runtime::FrameTick::elapsed_ms(self) -> u64
 pub const fn termrock::runtime::FrameTick::manual(std::time::Instant, core::time::Duration, core::time::Duration) -> Self
@@ -28524,7 +28500,6 @@ impl termrock::runtime::Presence
 pub fn termrock::runtime::Presence::advance(&mut self, termrock::runtime::FrameTick, termrock::style::MotionPolicy) -> termrock::runtime::PresenceChange
 pub fn termrock::runtime::Presence::demand(self) -> termrock::runtime::AnimationDemand
 pub fn termrock::runtime::Presence::exit_alpha(self, termrock::runtime::FrameTick) -> f32
-pub const fn termrock::runtime::Presence::exit_duration(self) -> core::time::Duration
 pub const fn termrock::runtime::Presence::force_hide(&mut self)
 pub const fn termrock::runtime::Presence::immediate() -> Self
 pub const fn termrock::runtime::Presence::is_focusable(self) -> bool
@@ -31121,7 +31096,6 @@ pub fn termrock::style::DesignSystem::adaptive() -> Self
 pub const fn termrock::style::DesignSystem::at(self, termrock::runtime::FrameTick) -> Self
 pub fn termrock::style::DesignSystem::badge(&self, termrock::style::BadgeKind) -> ratatui_core::style::Style
 pub const fn termrock::style::DesignSystem::border_set(&self) -> ratatui_core::symbols::border::Set<'static>
-pub const fn termrock::style::DesignSystem::breakpoints(self, termrock::style::BreakpointScale) -> Self
 pub fn termrock::style::DesignSystem::button_recipe(&self, termrock::style::ButtonRecipeVariant, termrock::style::ControlState, ratatui_core::style::color::Color) -> termrock::style::ButtonRecipe
 pub const fn termrock::style::DesignSystem::capability(self, termrock::style::ColorCapability) -> Self
 pub const fn termrock::style::DesignSystem::content_inset(&self, bool) -> termrock::style::ContentInset
@@ -32416,7 +32390,6 @@ pub fn termrock::ansi_text::AnsiStream::has_partial(&self) -> bool
 pub fn termrock::ansi_text::AnsiStream::into_lines(self) -> alloc::vec::Vec<termrock::ansi_text::AnsiLine>
 pub fn termrock::ansi_text::AnsiStream::lines(&self) -> &alloc::collections::vec_deque::VecDeque<termrock::ansi_text::AnsiLine>
 pub fn termrock::ansi_text::AnsiStream::new(termrock::ansi_text::AnsiParseOptions) -> Self
-pub const fn termrock::ansi_text::AnsiStream::options(&self) -> &termrock::ansi_text::AnsiParseOptions
 pub fn termrock::ansi_text::AnsiStream::pending_plain(&self) -> alloc::string::String
 pub fn termrock::ansi_text::AnsiStream::plain(&self) -> alloc::string::String
 pub fn termrock::ansi_text::AnsiStream::reset_style(&mut self)
@@ -37429,7 +37402,6 @@ pub termrock::widgets::ConfirmFocus::Cancel
 pub termrock::widgets::ConfirmFocus::Confirm
 impl termrock::widgets::ConfirmFocus
 pub const fn termrock::widgets::ConfirmFocus::id(self) -> &'static str
-pub const fn termrock::widgets::ConfirmFocus::toggled(self) -> Self
 impl core::clone::Clone for termrock::widgets::ConfirmFocus
 pub fn termrock::widgets::ConfirmFocus::clone(&self) -> termrock::widgets::ConfirmFocus
 impl core::cmp::Eq for termrock::widgets::ConfirmFocus
@@ -47043,7 +47015,6 @@ pub termrock::widgets::PageTotal::AtLeast(u64)
 pub termrock::widgets::PageTotal::Known(u64)
 pub termrock::widgets::PageTotal::Unknown
 impl termrock::widgets::PageTotal
-pub const fn termrock::widgets::PageTotal::exact(self) -> core::option::Option<u64>
 pub const fn termrock::widgets::PageTotal::id(self) -> &'static str
 impl core::clone::Clone for termrock::widgets::PageTotal
 pub fn termrock::widgets::PageTotal::clone(&self) -> termrock::widgets::PageTotal
@@ -58753,7 +58724,6 @@ impl termrock::widgets::AgentModeOption
 pub fn termrock::widgets::AgentModeOption::consequence(self, impl core::convert::Into<alloc::string::String>) -> Self
 pub fn termrock::widgets::AgentModeOption::custom(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
 pub const fn termrock::widgets::AgentModeOption::enabled(self, bool) -> Self
-pub const fn termrock::widgets::AgentModeOption::execution_policy(self, termrock::widgets::ExecutionPolicyKind) -> Self
 pub fn termrock::widgets::AgentModeOption::from_kind(termrock::widgets::AgentModeKind) -> Self
 pub fn termrock::widgets::AgentModeOption::needs_warning_role(&self) -> bool
 pub fn termrock::widgets::AgentModeOption::status_text(&self) -> alloc::string::String
@@ -59191,7 +59161,6 @@ pub fn termrock::widgets::AlertState<Id>::handle_key_with(&mut self, termrock::i
 pub fn termrock::widgets::AlertState<Id>::handle_mouse(&mut self, termrock::input::MouseEvent, &[termrock::widgets::Action<'_, Id>], bool) -> termrock::widgets::AlertOutcome<Id>
 impl<Id> termrock::widgets::AlertState<Id>
 pub fn termrock::widgets::AlertState<Id>::action_cursor(&self) -> core::option::Option<&Id>
-pub const fn termrock::widgets::AlertState<Id>::details_open(&self) -> bool
 pub fn termrock::widgets::AlertState<Id>::dismiss(&mut self)
 pub const fn termrock::widgets::AlertState<Id>::is_focused(&self) -> bool
 pub const fn termrock::widgets::AlertState<Id>::is_visible(&self) -> bool
@@ -59398,7 +59367,6 @@ pub fn termrock::ansi_text::AnsiStream::has_partial(&self) -> bool
 pub fn termrock::ansi_text::AnsiStream::into_lines(self) -> alloc::vec::Vec<termrock::ansi_text::AnsiLine>
 pub fn termrock::ansi_text::AnsiStream::lines(&self) -> &alloc::collections::vec_deque::VecDeque<termrock::ansi_text::AnsiLine>
 pub fn termrock::ansi_text::AnsiStream::new(termrock::ansi_text::AnsiParseOptions) -> Self
-pub const fn termrock::ansi_text::AnsiStream::options(&self) -> &termrock::ansi_text::AnsiParseOptions
 pub fn termrock::ansi_text::AnsiStream::pending_plain(&self) -> alloc::string::String
 pub fn termrock::ansi_text::AnsiStream::plain(&self) -> alloc::string::String
 pub fn termrock::ansi_text::AnsiStream::reset_style(&mut self)
@@ -59956,7 +59924,6 @@ pub termrock::widgets::BadgeCount::max_display: u64
 pub termrock::widgets::BadgeCount::value: u64
 impl termrock::widgets::BadgeCount
 pub fn termrock::widgets::BadgeCount::format(self) -> alloc::string::String
-pub const fn termrock::widgets::BadgeCount::max_display(self, u64) -> Self
 pub const fn termrock::widgets::BadgeCount::new(u64) -> Self
 impl core::clone::Clone for termrock::widgets::BadgeCount
 pub fn termrock::widgets::BadgeCount::clone(&self) -> termrock::widgets::BadgeCount
@@ -60379,7 +60346,6 @@ pub fn termrock::widgets::BreadcrumbsState::cancel_edit<Id: core::clone::Clone>(
 pub fn termrock::widgets::BreadcrumbsState::commit_edit<Id: core::clone::Clone>(&mut self) -> termrock::widgets::BreadcrumbsOutcome<Id>
 pub fn termrock::widgets::BreadcrumbsState::draft(&self) -> &str
 pub const fn termrock::widgets::BreadcrumbsState::focus_index(&self) -> usize
-pub const fn termrock::widgets::BreadcrumbsState::focus_on_ellipsis(&self) -> bool
 pub fn termrock::widgets::BreadcrumbsState::handle_intent<Id: core::clone::Clone>(&mut self, termrock::context::ContextUiIntent, &[termrock::widgets::BreadcrumbItem<Id>]) -> termrock::widgets::BreadcrumbsOutcome<Id>
 pub fn termrock::widgets::BreadcrumbsState::handle_key<Id: core::clone::Clone>(&mut self, termrock::input::KeyEvent, &[termrock::widgets::BreadcrumbItem<Id>]) -> termrock::widgets::BreadcrumbsOutcome<Id>
 pub fn termrock::widgets::BreadcrumbsState::handle_mouse<Id: core::clone::Clone>(&mut self, termrock::input::MouseEvent, &[termrock::widgets::BreadcrumbItem<Id>], &[(termrock::widgets::BreadcrumbHit<Id>, ratatui_core::layout::rect::Rect)]) -> termrock::widgets::BreadcrumbsOutcome<Id>
@@ -60556,7 +60522,6 @@ pub fn termrock::widgets::BusyBoundaryState::set_expected_ms(&mut self, core::op
 pub fn termrock::widgets::BusyBoundaryState::set_unavailable(&mut self, core::option::Option<impl core::convert::Into<alloc::string::String>>)
 pub fn termrock::widgets::BusyBoundaryState::should_show_chrome(&self) -> bool
 pub fn termrock::widgets::BusyBoundaryState::should_show_wash(&self) -> bool
-pub fn termrock::widgets::BusyBoundaryState::spinner(&self) -> &termrock::widgets::SpinnerState
 pub fn termrock::widgets::BusyBoundaryState::spinner_mut(&mut self) -> &mut termrock::widgets::SpinnerState
 pub fn termrock::widgets::BusyBoundaryState::unavailable(&self) -> core::option::Option<&str>
 impl core::clone::Clone for termrock::widgets::BusyBoundaryState
@@ -63504,7 +63469,6 @@ pub fn termrock::widgets::ComboboxState<Id>::commit_created(&mut self) -> termro
 pub fn termrock::widgets::ComboboxState<Id>::dismiss_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::ComboboxState<Id>::draft(&self) -> &str
 pub fn termrock::widgets::ComboboxState<Id>::draft_matches_candidate(&self, &[termrock::widgets::CompletionCandidate<'_, Id>]) -> core::option::Option<Id>
-pub const fn termrock::widgets::ComboboxState<Id>::field_area(&self) -> ratatui_core::layout::rect::Rect
 pub fn termrock::widgets::ComboboxState<Id>::handle_intent(&mut self, termrock::context::ContextUiIntent, &[termrock::widgets::CompletionCandidate<'_, Id>]) -> termrock::widgets::ComboboxOutcome<Id>
 pub fn termrock::widgets::ComboboxState<Id>::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::widgets::CompletionCandidate<'_, Id>]) -> termrock::widgets::ComboboxOutcome<Id>
 pub fn termrock::widgets::ComboboxState<Id>::handle_mouse(&mut self, termrock::input::MouseEvent, &[termrock::widgets::CompletionCandidate<'_, Id>], ratatui_core::layout::rect::Rect) -> termrock::widgets::ComboboxOutcome<Id>
@@ -63531,7 +63495,6 @@ pub fn termrock::widgets::ComboboxState<Id>::set_value(&mut self, core::option::
 pub const fn termrock::widgets::ComboboxState<Id>::suggestion_generation(&self) -> u64
 pub const fn termrock::widgets::ComboboxState<Id>::suggestion_status(&self) -> termrock::widgets::SuggestionStatus
 pub const fn termrock::widgets::ComboboxState<Id>::value(&self) -> core::option::Option<&Id>
-pub fn termrock::widgets::ComboboxState<Id>::value_label(&self) -> core::option::Option<&str>
 pub const fn termrock::widgets::ComboboxState<Id>::with_creatable(self, bool) -> Self
 pub fn termrock::widgets::ComboboxState<Id>::with_draft(self, impl core::convert::Into<alloc::string::String>) -> Self
 pub fn termrock::widgets::ComboboxState<Id>::with_editing(self) -> Self
@@ -63833,7 +63796,6 @@ impl termrock::widgets::CommitSeparators
 pub fn termrock::widgets::CommitSeparators::contains(&self, char) -> bool
 pub fn termrock::widgets::CommitSeparators::email() -> Self
 pub fn termrock::widgets::CommitSeparators::new(impl core::iter::traits::collect::IntoIterator<Item = char>) -> Self
-pub fn termrock::widgets::CommitSeparators::space() -> Self
 impl core::clone::Clone for termrock::widgets::CommitSeparators
 pub fn termrock::widgets::CommitSeparators::clone(&self) -> termrock::widgets::CommitSeparators
 impl core::cmp::Eq for termrock::widgets::CommitSeparators
@@ -65180,8 +65142,6 @@ pub fn termrock::widgets::DateTimePickerState::set_time(&mut self, core::option:
 pub fn termrock::widgets::DateTimePickerState::set_timezone_label(&mut self, core::option::Option<alloc::string::String>)
 pub fn termrock::widgets::DateTimePickerState::set_today(&mut self, termrock::widgets::CivilDate)
 pub const fn termrock::widgets::DateTimePickerState::time(&self) -> core::option::Option<termrock::widgets::CivilTime>
-pub fn termrock::widgets::DateTimePickerState::timezone_label(&self) -> core::option::Option<&str>
-pub const fn termrock::widgets::DateTimePickerState::today(&self) -> core::option::Option<termrock::widgets::CivilDate>
 pub const fn termrock::widgets::DateTimePickerState::validity(&self) -> termrock::widgets::DateTimeValidity
 pub const fn termrock::widgets::DateTimePickerState::view(&self) -> termrock::widgets::DateTimePickerView
 pub const fn termrock::widgets::DateTimePickerState::with_allow_empty(self, bool) -> Self
@@ -66277,7 +66237,6 @@ pub fn termrock::widgets::DialogState<Id>::action_regions(&self) -> &[termrock::
 pub fn termrock::widgets::DialogState<Id>::alert() -> Self
 pub fn termrock::widgets::DialogState<Id>::cancel_action(&self) -> core::option::Option<&Id>
 pub fn termrock::widgets::DialogState<Id>::close_on_stack<F: core::clone::Clone>(&mut self, &mut termrock::interaction::OverlayStack<F>) -> termrock::interaction::OverlayOutcome<F>
-pub const fn termrock::widgets::DialogState<Id>::close_policy(&self) -> termrock::widgets::DialogClosePolicy
 pub fn termrock::widgets::DialogState<Id>::confirm(Id, Id) -> Self where Id: core::clone::Clone
 pub fn termrock::widgets::DialogState<Id>::default_action(&self) -> core::option::Option<&Id>
 pub fn termrock::widgets::DialogState<Id>::destructive(Id, Id) -> Self where Id: core::clone::Clone
@@ -66305,7 +66264,6 @@ pub fn termrock::widgets::DialogState<Id>::set_recipe(&mut self, termrock::widge
 pub fn termrock::widgets::DialogState<Id>::set_require_action_focus_for_enter(&mut self, bool)
 pub fn termrock::widgets::DialogState<Id>::set_validation_message(&mut self, core::option::Option<alloc::string::String>)
 pub const fn termrock::widgets::DialogState<Id>::slots(&self) -> termrock::widgets::DialogSlots
-pub fn termrock::widgets::DialogState<Id>::typed_ack(&self) -> &str
 pub fn termrock::widgets::DialogState<Id>::validation_message(&self) -> core::option::Option<&str>
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::DialogState<Id>
 pub fn termrock::widgets::DialogState<Id>::clone(&self) -> termrock::widgets::DialogState<Id>
@@ -66775,7 +66733,6 @@ pub fn termrock::widgets::DiffReviewState::handle_intent(&mut self, termrock::co
 pub fn termrock::widgets::DiffReviewState::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::widgets::DiffHunk]) -> termrock::widgets::DiffReviewOutcome
 pub fn termrock::widgets::DiffReviewState::handle_key_lines(&mut self, termrock::input::KeyEvent, &[termrock::widgets::DiffLine<'_>], &[termrock::widgets::DiffHunk], &[termrock::widgets::DiffReviewFileRow<'_>]) -> termrock::widgets::DiffReviewOutcome
 pub fn termrock::widgets::DiffReviewState::handle_mouse_lines(&mut self, termrock::input::MouseEvent, &[termrock::widgets::DiffLine<'_>], &[termrock::widgets::DiffHunk], &[termrock::widgets::DiffReviewFileRow<'_>]) -> termrock::widgets::DiffReviewOutcome
-pub const fn termrock::widgets::DiffReviewState::hunk_cursor(&self) -> usize
 pub const fn termrock::widgets::DiffReviewState::hunk_index(&self) -> usize
 pub fn termrock::widgets::DiffReviewState::hydrate_decision(&mut self, termrock::widgets::DiffReviewUnit, termrock::widgets::DiffDecision)
 pub const fn termrock::widgets::DiffReviewState::is_split(&self) -> bool
@@ -66783,9 +66740,7 @@ pub fn termrock::widgets::DiffReviewState::new() -> Self
 pub fn termrock::widgets::DiffReviewState::offset_y(&self) -> u16
 pub const fn termrock::widgets::DiffReviewState::prefers_split(&self) -> bool
 pub fn termrock::widgets::DiffReviewState::redo(&mut self) -> bool
-pub fn termrock::widgets::DiffReviewState::selected_files(&self) -> &alloc::collections::btree::set::BTreeSet<alloc::string::String>
 pub fn termrock::widgets::DiffReviewState::selected_hunks(&self) -> &alloc::collections::btree::set::BTreeSet<alloc::string::String>
-pub fn termrock::widgets::DiffReviewState::selected_lines(&self) -> &alloc::collections::btree::set::BTreeSet<alloc::string::String>
 pub fn termrock::widgets::DiffReviewState::set_accepts_input(&mut self, bool)
 pub fn termrock::widgets::DiffReviewState::set_comments(&mut self, alloc::vec::Vec<termrock::widgets::DiffComment>)
 pub fn termrock::widgets::DiffReviewState::set_hunk_cursor(&mut self, usize)
@@ -67056,7 +67011,6 @@ impl termrock::widgets::DiffViewState
 pub const fn termrock::widgets::DiffViewState::accepts_input(&self) -> bool
 pub fn termrock::widgets::DiffViewState::capture_anchor(&mut self, &[termrock::widgets::DiffLine<'_>], &[termrock::widgets::DiffHunk])
 pub fn termrock::widgets::DiffViewState::effective_mode(&self, u16) -> termrock::widgets::DiffEffectiveMode
-pub fn termrock::widgets::DiffViewState::folded_hunks(&self) -> &alloc::collections::btree::set::BTreeSet<alloc::string::String>
 pub fn termrock::widgets::DiffViewState::handle_intent(&mut self, termrock::context::ContextUiIntent, &[&termrock::widgets::DiffLine<'_>], &[termrock::widgets::DiffHunk]) -> termrock::widgets::DiffViewOutcome
 pub fn termrock::widgets::DiffViewState::handle_key(&mut self, termrock::input::KeyEvent, &[termrock::widgets::DiffLine<'_>], &[termrock::widgets::DiffHunk]) -> termrock::widgets::DiffViewOutcome
 pub fn termrock::widgets::DiffViewState::handle_mouse(&mut self, termrock::input::MouseEvent, &[termrock::widgets::DiffLine<'_>], &[termrock::widgets::DiffHunk]) -> termrock::widgets::DiffViewOutcome
@@ -67611,7 +67565,6 @@ impl termrock::widgets::EntityMention
 pub fn termrock::widgets::EntityMention::agent(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
 pub const fn termrock::widgets::EntityMention::as_mut(&mut self) -> &mut termrock::widgets::MentionRef
 pub const fn termrock::widgets::EntityMention::as_ref(&self) -> &termrock::widgets::MentionRef
-pub fn termrock::widgets::EntityMention::resource(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
 pub fn termrock::widgets::EntityMention::session(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
 pub fn termrock::widgets::EntityMention::tool(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
 impl core::clone::Clone for termrock::widgets::EntityMention
@@ -67934,7 +67887,6 @@ pub const fn termrock::widgets::EventStreamState<Id>::selected(&self) -> core::o
 pub fn termrock::widgets::EventStreamState<Id>::set_accepts_input(&mut self, bool)
 pub fn termrock::widgets::EventStreamState<Id>::set_following(&mut self, bool)
 pub fn termrock::widgets::EventStreamState<Id>::set_severity_floor(&mut self, termrock::widgets::EventSeverity)
-pub const fn termrock::widgets::EventStreamState<Id>::severity_floor(&self) -> termrock::widgets::EventSeverity
 pub fn termrock::widgets::EventStreamState<Id>::toggle_type_filter(&mut self, &str) -> bool
 pub fn termrock::widgets::EventStreamState<Id>::unread(&self) -> u64
 impl<Id: core::clone::Clone + core::clone::Clone + core::cmp::PartialEq + core::cmp::Ord> core::clone::Clone for termrock::widgets::EventStreamState<Id>
@@ -68624,7 +68576,6 @@ pub fn termrock::widgets::FilePickerState::handle_key(&mut self, termrock::input
 pub fn termrock::widgets::FilePickerState::handle_mouse(&mut self, termrock::input::MouseEvent) -> termrock::widgets::FilePickerOutcome
 pub fn termrock::widgets::FilePickerState::highlight(&self) -> core::option::Option<&termrock::widgets::FileEntry>
 pub const fn termrock::widgets::FilePickerState::is_multi(&self) -> bool
-pub const fn termrock::widgets::FilePickerState::listing_generation(&self) -> u64
 pub const fn termrock::widgets::FilePickerState::listing_status(&self) -> termrock::widgets::FileListingStatus
 pub const fn termrock::widgets::FilePickerState::mode(&self) -> termrock::widgets::FilePickerMode
 pub fn termrock::widgets::FilePickerState::new(impl core::convert::Into<alloc::string::String>) -> Self
@@ -69055,7 +69006,6 @@ impl<T> either::into_either::IntoEither for termrock::widgets::FilterSpec
 pub struct termrock::widgets::Form<'a, Id>
 impl<'a, Id> termrock::widgets::Form<'a, Id>
 pub const fn termrock::widgets::Form<'a, Id>::compact(self) -> Self
-pub const fn termrock::widgets::Form<'a, Id>::fieldsets(&self) -> &'a [termrock::widgets::Fieldset<'a, Id>]
 pub const fn termrock::widgets::Form<'a, Id>::focused_field(self, core::option::Option<&'a Id>) -> Self
 pub const fn termrock::widgets::Form<'a, Id>::inline(self) -> Self
 pub const fn termrock::widgets::Form<'a, Id>::layout(self, termrock::widgets::FormLayout) -> Self
@@ -69155,11 +69105,9 @@ pub fn termrock::widgets::FormState<Id>::click(&mut self, ratatui_core::layout::
 pub fn termrock::widgets::FormState<Id>::focus_first_invalid(&mut self, &[termrock::widgets::Fieldset<'_, Id>]) -> core::option::Option<Id>
 pub fn termrock::widgets::FormState<Id>::handle_intent(&mut self, &[termrock::widgets::Fieldset<'_, Id>], termrock::context::ContextUiIntent, core::option::Option<&Id>) -> termrock::widgets::FormOutcome<Id>
 pub fn termrock::widgets::FormState<Id>::handle_key(&mut self, &[termrock::widgets::Fieldset<'_, Id>], termrock::input::KeyEvent, core::option::Option<&Id>) -> termrock::widgets::FormOutcome<Id>
-pub fn termrock::widgets::FormState<Id>::hit_id(&self, ratatui_core::layout::position::Position) -> core::option::Option<&Id>
 pub fn termrock::widgets::FormState<Id>::hover(&mut self, ratatui_core::layout::position::Position) -> core::option::Option<&Id>
 impl<Id> termrock::widgets::FormState<Id>
 pub const fn termrock::widgets::FormState<Id>::accepts_input(&self) -> bool
-pub const fn termrock::widgets::FormState<Id>::column_count(&self) -> u8
 pub const fn termrock::widgets::FormState<Id>::content_height(&self) -> usize
 pub fn termrock::widgets::FormState<Id>::ensure_visible(&mut self, core::option::Option<Id>)
 pub const fn termrock::widgets::FormState<Id>::error_summary_count(&self) -> usize
@@ -69461,12 +69409,10 @@ pub fn termrock::widgets::FullscreenViewerState<Id>::promote(&mut self, termrock
 pub fn termrock::widgets::FullscreenViewerState<Id>::sync_with_stack<F>(&mut self, &termrock::interaction::OverlayStack<F>)
 impl<Id> termrock::widgets::FullscreenViewerState<Id>
 pub const fn termrock::widgets::FullscreenViewerState<Id>::body_area(&self) -> ratatui_core::layout::rect::Rect
-pub const fn termrock::widgets::FullscreenViewerState<Id>::chrome_focus(&self) -> termrock::widgets::ViewerChromeFocus
 pub const fn termrock::widgets::FullscreenViewerState<Id>::help_open(&self) -> bool
 pub const fn termrock::widgets::FullscreenViewerState<Id>::is_open(&self) -> bool
 pub const fn termrock::widgets::FullscreenViewerState<Id>::level(&self) -> termrock::widgets::ZoomLevel
 pub fn termrock::widgets::FullscreenViewerState<Id>::new() -> Self
-pub const fn termrock::widgets::FullscreenViewerState<Id>::search_open(&self) -> bool
 pub fn termrock::widgets::FullscreenViewerState<Id>::search_query(&self) -> &str
 pub fn termrock::widgets::FullscreenViewerState<Id>::set_accepts_input(&mut self, bool)
 pub fn termrock::widgets::FullscreenViewerState<Id>::set_enabled(&mut self, bool)
@@ -69474,7 +69420,6 @@ pub fn termrock::widgets::FullscreenViewerState<Id>::set_nested_child_hint(&mut 
 pub fn termrock::widgets::FullscreenViewerState<Id>::set_title(&mut self, impl core::convert::Into<alloc::string::String>)
 pub const fn termrock::widgets::FullscreenViewerState<Id>::slots(&self) -> termrock::widgets::FullscreenViewerSlots
 pub fn termrock::widgets::FullscreenViewerState<Id>::source(&self) -> core::option::Option<&termrock::widgets::SourceContext<Id>>
-pub fn termrock::widgets::FullscreenViewerState<Id>::zoom(&self) -> &termrock::widgets::SemanticZoomState<Id>
 pub fn termrock::widgets::FullscreenViewerState<Id>::zoom_mut(&mut self) -> &mut termrock::widgets::SemanticZoomState<Id>
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::FullscreenViewerState<Id>
 pub fn termrock::widgets::FullscreenViewerState<Id>::clone(&self) -> termrock::widgets::FullscreenViewerState<Id>
@@ -69974,7 +69919,6 @@ pub const fn termrock::widgets::HelpEntry::conflict(self, bool) -> Self
 pub fn termrock::widgets::HelpEntry::mouse(self, impl core::convert::Into<alloc::string::String>) -> Self
 pub fn termrock::widgets::HelpEntry::new(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
 pub const fn termrock::widgets::HelpEntry::priority(self, u8) -> Self
-pub const fn termrock::widgets::HelpEntry::remapped(self, bool) -> Self
 pub const fn termrock::widgets::HelpEntry::source(self, termrock::widgets::HelpEntrySource) -> Self
 pub fn termrock::widgets::HelpEntry::zone(self, impl core::convert::Into<alloc::string::String>) -> Self
 impl core::clone::Clone for termrock::widgets::HelpEntry
@@ -71535,7 +71479,6 @@ pub fn termrock::widgets::InputOtpState::filled(&self) -> usize
 pub fn termrock::widgets::InputOtpState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::InputOtpOutcome
 pub fn termrock::widgets::InputOtpState::is_complete(&self) -> bool
 pub const fn termrock::widgets::InputOtpState::is_enabled(&self) -> bool
-pub const fn termrock::widgets::InputOtpState::length(&self) -> usize
 pub fn termrock::widgets::InputOtpState::new(usize) -> Self
 pub fn termrock::widgets::InputOtpState::paste(&mut self, &str) -> termrock::widgets::InputOtpOutcome
 pub fn termrock::widgets::InputOtpState::set_accepts_input(&mut self, bool)
@@ -71760,9 +71703,6 @@ pub termrock::widgets::JumpFilter::only_leaves: bool
 pub termrock::widgets::JumpFilter::roles: core::option::Option<alloc::vec::Vec<termrock::interaction::SemanticRole>>
 impl termrock::widgets::JumpFilter
 pub fn termrock::widgets::JumpFilter::action_contains(self, impl core::convert::Into<alloc::string::String>) -> Self
-pub const fn termrock::widgets::JumpFilter::include_disabled(self, bool) -> Self
-pub fn termrock::widgets::JumpFilter::label_contains(self, impl core::convert::Into<alloc::string::String>) -> Self
-pub const fn termrock::widgets::JumpFilter::max_depth(self, u8) -> Self
 pub fn termrock::widgets::JumpFilter::new() -> Self
 pub const fn termrock::widgets::JumpFilter::only_leaves(self, bool) -> Self
 pub fn termrock::widgets::JumpFilter::roles(self, impl core::iter::traits::collect::IntoIterator<Item = termrock::interaction::SemanticRole>) -> Self
@@ -72342,8 +72282,6 @@ pub fn termrock::widgets::KeybindingRecorder<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::KeybindingRecorder<'a>
 pub struct termrock::widgets::KeybindingRecorderState
 impl termrock::widgets::KeybindingRecorderState
-pub fn termrock::widgets::KeybindingRecorderState::action_id(&self) -> &str
-pub fn termrock::widgets::KeybindingRecorderState::action_label(&self) -> &str
 pub fn termrock::widgets::KeybindingRecorderState::apply_to_keymap<A>(&self, &mut termrock::keymap::Keymap<A>, A) -> bool where A: core::clone::Clone + core::marker::Copy + core::cmp::PartialEq + 'static
 pub fn termrock::widgets::KeybindingRecorderState::cancel_recording(&mut self) -> termrock::widgets::KeybindingRecorderOutcome
 pub fn termrock::widgets::KeybindingRecorderState::capture_bytes(&mut self, &[u8]) -> termrock::widgets::KeybindingRecorderOutcome
@@ -72358,7 +72296,6 @@ pub fn termrock::widgets::KeybindingRecorderState::handle_intent(&mut self, term
 pub fn termrock::widgets::KeybindingRecorderState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::KeybindingRecorderOutcome
 pub const fn termrock::widgets::KeybindingRecorderState::is_recording(&self) -> bool
 pub fn termrock::widgets::KeybindingRecorderState::keymap_conflicts<'a, A>(&'a termrock::keymap::Keymap<A>) -> alloc::vec::Vec<termrock::keymap::Conflict<'a, A>> where A: core::clone::Clone + core::marker::Copy + core::cmp::PartialEq + 'static
-pub const fn termrock::widgets::KeybindingRecorderState::last_limit(&self) -> core::option::Option<&termrock::widgets::BindingLimit>
 pub fn termrock::widgets::KeybindingRecorderState::load_from_binding<A: core::clone::Clone + 'static>(&mut self, &termrock::keymap::KeyBinding<A>)
 pub fn termrock::widgets::KeybindingRecorderState::load_occupied_from_keymap<A>(&mut self, &termrock::keymap::Keymap<A>, A, impl core::ops::function::Fn(&A) -> alloc::string::String) where A: core::clone::Clone + core::marker::Copy + core::cmp::PartialEq + 'static
 pub const fn termrock::widgets::KeybindingRecorderState::mode(&self) -> termrock::widgets::KeybindingRecorderMode
@@ -72979,7 +72916,6 @@ impl<'a> termrock::widgets::Link<'a>
 pub const fn termrock::widgets::Link<'a>::app_route(&'a str, &'a str, &'a termrock::style::DesignSystem) -> Self
 pub fn termrock::widgets::Link<'a>::copy_text(&self) -> alloc::string::String
 pub fn termrock::widgets::Link<'a>::decorated(&self, &termrock::widgets::LinkState) -> alloc::string::String
-pub const fn termrock::widgets::Link<'a>::destination(&self) -> termrock::widgets::LinkDestination<'a>
 pub const fn termrock::widgets::Link<'a>::destination_display(self, termrock::widgets::DestinationDisplay) -> Self
 pub fn termrock::widgets::Link<'a>::encode_osc_close() -> alloc::vec::Vec<u8>
 pub fn termrock::widgets::Link<'a>::encode_osc_open(&self, &termrock::widgets::LinkState) -> alloc::vec::Vec<u8>
@@ -73270,7 +73206,6 @@ impl<Id> termrock::widgets::ListState<Id>
 pub const fn termrock::widgets::ListState<Id>::chosen(&self) -> core::option::Option<&Id>
 pub fn termrock::widgets::ListState<Id>::clear_hit_regions(&mut self)
 pub fn termrock::widgets::ListState<Id>::clear_typeahead(&mut self)
-pub const fn termrock::widgets::ListState<Id>::click_policy(&self) -> termrock::widgets::ListClickPolicy
 pub const fn termrock::widgets::ListState<Id>::collection(&self) -> &termrock::interaction::CollectionState<Id>
 pub const fn termrock::widgets::ListState<Id>::collection_mut(&mut self) -> &mut termrock::interaction::CollectionState<Id>
 pub fn termrock::widgets::ListState<Id>::disable_multi_select(&mut self)
@@ -73293,7 +73228,6 @@ pub fn termrock::widgets::ListState<Id>::set_selection_mode(&mut self, termrock:
 pub fn termrock::widgets::ListState<Id>::set_virtual_active_policy(&mut self, termrock::interaction::VirtualWindowActivePolicy)
 pub fn termrock::widgets::ListState<Id>::set_virtual_window(&mut self, usize, usize)
 pub fn termrock::widgets::ListState<Id>::typeahead_buffer(&self) -> &str
-pub const fn termrock::widgets::ListState<Id>::virtual_active_policy(&self) -> termrock::interaction::VirtualWindowActivePolicy
 pub const fn termrock::widgets::ListState<Id>::virtual_total(&self) -> usize
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::ListState<Id>
 pub fn termrock::widgets::ListState<Id>::clone(&self) -> termrock::widgets::ListState<Id>
@@ -73818,7 +73752,6 @@ pub termrock::widgets::MarkdownInline::text: &'a str
 impl<'a> termrock::widgets::MarkdownInline<'a>
 pub const fn termrock::widgets::MarkdownInline<'a>::code(&'a str) -> Self
 pub const fn termrock::widgets::MarkdownInline<'a>::emphasis(&'a str) -> Self
-pub const fn termrock::widgets::MarkdownInline<'a>::link(&'a str, &'a str) -> Self
 pub const fn termrock::widgets::MarkdownInline<'a>::strong(&'a str) -> Self
 pub const fn termrock::widgets::MarkdownInline<'a>::text(&'a str) -> Self
 impl<'a> core::clone::Clone for termrock::widgets::MarkdownInline<'a>
@@ -75799,7 +75732,6 @@ pub fn termrock::widgets::MultiSelectState<Id>::is_checked(&self, &Id) -> bool
 pub const fn termrock::widgets::MultiSelectState<Id>::is_enabled(&self) -> bool
 pub const fn termrock::widgets::MultiSelectState<Id>::is_focused(&self) -> bool
 pub const fn termrock::widgets::MultiSelectState<Id>::is_open(&self) -> bool
-pub const fn termrock::widgets::MultiSelectState<Id>::max_selected(&self) -> core::option::Option<usize>
 pub fn termrock::widgets::MultiSelectState<Id>::new() -> Self
 pub fn termrock::widgets::MultiSelectState<Id>::open(&mut self, ratatui_core::layout::rect::Rect, &[termrock::widgets::SelectOption<Id>]) -> termrock::widgets::MultiSelectOutcome<Id>
 pub const fn termrock::widgets::MultiSelectState<Id>::panel_area(&self) -> ratatui_core::layout::rect::Rect
@@ -76434,7 +76366,6 @@ pub fn termrock::widgets::NumberInputParts::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::NumberInputParts
 pub struct termrock::widgets::NumberInputState
 impl termrock::widgets::NumberInputState
-pub const fn termrock::widgets::NumberInputState::allow_empty(&self) -> bool
 pub fn termrock::widgets::NumberInputState::can_commit(&self) -> bool
 pub fn termrock::widgets::NumberInputState::cancel_edit(&mut self)
 pub fn termrock::widgets::NumberInputState::commit_draft(&mut self) -> bool
@@ -76568,7 +76499,6 @@ pub termrock::widgets::ObjectInspectorState::window_start: u64
 impl termrock::widgets::ObjectInspectorState
 pub const fn termrock::widgets::ObjectInspectorState::accepts_input(&self) -> bool
 pub const fn termrock::widgets::ObjectInspectorState::cursor(&self) -> usize
-pub fn termrock::widgets::ObjectInspectorState::cursor_path(&self) -> core::option::Option<&str>
 pub fn termrock::widgets::ObjectInspectorState::expanded_paths(&self) -> &alloc::collections::btree::set::BTreeSet<alloc::string::String>
 pub const fn termrock::widgets::ObjectInspectorState::focus(&self) -> usize
 pub fn termrock::widgets::ObjectInspectorState::handle_intent(&mut self, termrock::context::ContextUiIntent, &[termrock::widgets::InspectorField<'_>]) -> termrock::widgets::ObjectInspectorOutcome
@@ -76898,7 +76828,6 @@ pub fn termrock::widgets::PaginationState::handle_key(&mut self, termrock::input
 pub fn termrock::widgets::PaginationState::handle_mouse(&mut self, termrock::input::MouseEvent) -> termrock::widgets::PaginationOutcome
 pub const fn termrock::widgets::PaginationState::is_jump_active(&self) -> bool
 pub const fn termrock::widgets::PaginationState::is_loading(&self) -> bool
-pub fn termrock::widgets::PaginationState::jump_draft(&self) -> &str
 pub fn termrock::widgets::PaginationState::last(&mut self) -> termrock::widgets::PaginationOutcome
 pub fn termrock::widgets::PaginationState::new(u32, u32, termrock::widgets::PageTotal) -> Self
 pub fn termrock::widgets::PaginationState::next(&mut self) -> termrock::widgets::PaginationOutcome
@@ -77771,7 +77700,6 @@ pub const fn termrock::widgets::PasswordInputState::is_pending(&self) -> bool
 pub const fn termrock::widgets::PasswordInputState::is_revealed(&self) -> bool
 pub fn termrock::widgets::PasswordInputState::new() -> Self
 pub fn termrock::widgets::PasswordInputState::parts(&self) -> core::option::Option<&termrock::widgets::TextInputParts>
-pub const fn termrock::widgets::PasswordInputState::reveal_policy(&self) -> termrock::widgets::RevealPolicy
 pub fn termrock::widgets::PasswordInputState::secret(&self) -> &str
 pub fn termrock::widgets::PasswordInputState::secrets_equal(&self, &str) -> bool
 pub fn termrock::widgets::PasswordInputState::secure_clear(&mut self)
@@ -78140,7 +78068,6 @@ pub fn termrock::widgets::PathInputState::clear(&mut self) -> bool
 pub fn termrock::widgets::PathInputState::completion_prefix(&self) -> termrock::widgets::PathCompletionPrefix
 pub fn termrock::widgets::PathInputState::expanded_tilde(&self) -> alloc::string::String
 pub const fn termrock::widgets::PathInputState::expect(&self) -> termrock::widgets::PathExpect
-pub const fn termrock::widgets::PathInputState::fs_status(&self) -> termrock::widgets::PathFsStatus
 pub fn termrock::widgets::PathInputState::handle_intent(&mut self, termrock::context::ContextUiIntent) -> termrock::widgets::PathInputOutcome
 pub fn termrock::widgets::PathInputState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::PathInputOutcome
 pub fn termrock::widgets::PathInputState::handle_mouse(&mut self, termrock::input::MouseEvent) -> termrock::widgets::PathInputOutcome
@@ -78360,7 +78287,6 @@ pub const fn termrock::widgets::PermissionPromptState::accepts_input(&self) -> b
 pub fn termrock::widgets::PermissionPromptState::action_cursor(&self) -> termrock::widgets::PermissionAction
 pub const fn termrock::widgets::PermissionPromptState::details_expanded(&self) -> bool
 pub fn termrock::widgets::PermissionPromptState::dismiss_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
-pub fn termrock::widgets::PermissionPromptState::edit_buffer(&self) -> &str
 pub fn termrock::widgets::PermissionPromptState::enqueue(&mut self, termrock::widgets::PermissionRequest) -> u64
 pub fn termrock::widgets::PermissionPromptState::handle_intent(&mut self, termrock::context::ContextUiIntent) -> termrock::widgets::PermissionOutcome
 pub fn termrock::widgets::PermissionPromptState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::PermissionOutcome
@@ -79848,7 +79774,6 @@ pub fn termrock::widgets::PromptComposerState::set_presentation(&mut self, termr
 pub fn termrock::widgets::PromptComposerState::set_text(&mut self, &str)
 pub fn termrock::widgets::PromptComposerState::submit_history(&self) -> &[alloc::string::String]
 pub fn termrock::widgets::PromptComposerState::text(&self) -> alloc::string::String
-pub fn termrock::widgets::PromptComposerState::validation_error(&self) -> core::option::Option<&str>
 impl termrock::widgets::PromptComposerState
 pub fn termrock::widgets::PromptComposerState::layout_in(&self, ratatui_core::layout::rect::Rect) -> termrock::widgets::PromptComposerLayout
 impl core::clone::Clone for termrock::widgets::PromptComposerState
@@ -80114,7 +80039,6 @@ pub const fn termrock::widgets::Question::optional(self) -> Self
 pub const fn termrock::widgets::Question::required(self, bool) -> Self
 pub fn termrock::widgets::Question::single(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, alloc::vec::Vec<termrock::widgets::QuestionOption>) -> Self
 pub fn termrock::widgets::Question::text(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
-pub fn termrock::widgets::Question::validation_hint(self, impl core::convert::Into<alloc::string::String>) -> Self
 impl core::clone::Clone for termrock::widgets::Question
 pub fn termrock::widgets::Question::clone(&self) -> termrock::widgets::Question
 impl core::cmp::Eq for termrock::widgets::Question
@@ -80893,7 +80817,6 @@ pub const fn termrock::widgets::QuickOpenState<Id>::is_loading(&self) -> bool
 pub fn termrock::widgets::QuickOpenState<Id>::new() -> Self
 pub fn termrock::widgets::QuickOpenState<Id>::note_stream_progress(&mut self, u64, bool) -> bool
 pub const fn termrock::widgets::QuickOpenState<Id>::presentation(&self) -> termrock::widgets::QuickOpenPresentation
-pub const fn termrock::widgets::QuickOpenState<Id>::provider_index(&self) -> usize
 pub const fn termrock::widgets::QuickOpenState<Id>::query(&self) -> &termrock::widgets::TextInputState
 pub const fn termrock::widgets::QuickOpenState<Id>::query_mut(&mut self) -> &mut termrock::widgets::TextInputState
 pub fn termrock::widgets::QuickOpenState<Id>::query_text(&self) -> &str
@@ -80905,9 +80828,7 @@ pub fn termrock::widgets::QuickOpenState<Id>::set_loading(&mut self, bool) -> te
 pub fn termrock::widgets::QuickOpenState<Id>::set_presentation_override(&mut self, core::option::Option<termrock::widgets::QuickOpenPresentation>)
 pub fn termrock::widgets::QuickOpenState<Id>::set_provider(&mut self, &[termrock::widgets::QuickOpenProvider], usize, &[termrock::widgets::QuickOpenItem<Id>]) -> termrock::widgets::QuickOpenOutcome<Id>
 pub fn termrock::widgets::QuickOpenState<Id>::set_show_preview(&mut self, bool)
-pub const fn termrock::widgets::QuickOpenState<Id>::stream_complete(&self) -> bool
 pub fn termrock::widgets::QuickOpenState<Id>::sync_presentation_from_bounds(&mut self, ratatui_core::layout::rect::Rect) -> termrock::widgets::QuickOpenOutcome<Id>
-pub const fn termrock::widgets::QuickOpenState<Id>::total_hint(&self) -> core::option::Option<u64>
 impl<Id: core::clone::Clone + core::cmp::PartialEq> core::default::Default for termrock::widgets::QuickOpenState<Id>
 pub fn termrock::widgets::QuickOpenState<Id>::default() -> Self
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::QuickOpenState<Id>
@@ -81349,7 +81270,6 @@ pub fn termrock::widgets::RangeSliderState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::RangeSliderState
 pub struct termrock::widgets::ReconnectingState
 impl termrock::widgets::ReconnectingState
-pub const fn termrock::widgets::ReconnectingState::attempt(&self) -> u32
 pub const fn termrock::widgets::ReconnectingState::banner_dismissed(&self) -> bool
 pub fn termrock::widgets::ReconnectingState::banner_line(&self, bool) -> alloc::string::String
 pub fn termrock::widgets::ReconnectingState::begin_reconnect(&mut self, u32)
@@ -81359,7 +81279,6 @@ pub const fn termrock::widgets::ReconnectingState::focus(&self) -> termrock::wid
 pub fn termrock::widgets::ReconnectingState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::ConnectivityOutcome
 pub fn termrock::widgets::ReconnectingState::handle_mouse(&mut self, termrock::input::MouseEvent, ratatui_core::layout::rect::Rect) -> termrock::widgets::ConnectivityOutcome
 pub fn termrock::widgets::ReconnectingState::last_success_label(&self) -> core::option::Option<alloc::string::String>
-pub const fn termrock::widgets::ReconnectingState::last_success_secs(&self) -> core::option::Option<u64>
 pub fn termrock::widgets::ReconnectingState::mark_disconnected(&mut self)
 pub fn termrock::widgets::ReconnectingState::mark_online(&mut self, u64)
 pub fn termrock::widgets::ReconnectingState::mark_server_unavailable(&mut self)
@@ -81367,7 +81286,6 @@ pub fn termrock::widgets::ReconnectingState::new(impl core::convert::Into<alloc:
 pub fn termrock::widgets::ReconnectingState::offline_capabilities(&self) -> &[termrock::widgets::OfflineCapability]
 pub const fn termrock::widgets::ReconnectingState::phase(&self) -> termrock::widgets::ConnectivityPhase
 pub const fn termrock::widgets::ReconnectingState::presentation(&self) -> termrock::widgets::ConnectivityPresentation
-pub fn termrock::widgets::ReconnectingState::queued(&self) -> &[termrock::widgets::QueuedConnectivityAction]
 pub fn termrock::widgets::ReconnectingState::require_auth(&mut self)
 pub const fn termrock::widgets::ReconnectingState::selection_preserved(&self) -> bool
 pub const fn termrock::widgets::ReconnectingState::semantic_status(&self) -> termrock::widgets::SemanticStatus
@@ -81699,7 +81617,6 @@ impl<T> either::into_either::IntoEither for termrock::widgets::ResizablePanelGro
 pub struct termrock::widgets::ResizablePanelGroupState
 impl termrock::widgets::ResizablePanelGroupState
 pub fn termrock::widgets::ResizablePanelGroupState::drawer_ids(&self) -> &[termrock::widgets::PanelId]
-pub const fn termrock::widgets::ResizablePanelGroupState::focused_handle(&self) -> core::option::Option<usize>
 pub fn termrock::widgets::ResizablePanelGroupState::is_collapsed(&self, usize) -> bool
 pub fn termrock::widgets::ResizablePanelGroupState::layout(&self) -> &termrock::widgets::ResizablePanelGroupLayout
 pub fn termrock::widgets::ResizablePanelGroupState::new() -> Self
@@ -81707,7 +81624,6 @@ pub fn termrock::widgets::ResizablePanelGroupState::preset_names(&self) -> alloc
 pub fn termrock::widgets::ResizablePanelGroupState::save_preset(&mut self, impl core::convert::Into<alloc::string::String>)
 pub fn termrock::widgets::ResizablePanelGroupState::set_focused_handle(&mut self, core::option::Option<usize>)
 pub fn termrock::widgets::ResizablePanelGroupState::set_sizes_cells(&mut self, &[u16])
-pub fn termrock::widgets::ResizablePanelGroupState::sizes(&self) -> &[u16]
 pub fn termrock::widgets::ResizablePanelGroupState::to_basis_points(&self) -> alloc::vec::Vec<u16>
 impl core::clone::Clone for termrock::widgets::ResizablePanelGroupState
 pub fn termrock::widgets::ResizablePanelGroupState::clone(&self) -> termrock::widgets::ResizablePanelGroupState
@@ -82003,7 +81919,6 @@ pub const fn termrock::widgets::ScrollAreaState::chain(self, termrock::widgets::
 pub const fn termrock::widgets::ScrollAreaState::chain_policy(&self) -> termrock::widgets::ScrollChain
 pub fn termrock::widgets::ScrollAreaState::clamp(&mut self)
 pub const fn termrock::widgets::ScrollAreaState::content_h(&self) -> u16
-pub const fn termrock::widgets::ScrollAreaState::content_w(&self) -> u16
 pub fn termrock::widgets::ScrollAreaState::end(&mut self) -> termrock::widgets::ScrollOutcome
 pub const fn termrock::widgets::ScrollAreaState::follow_mode(&self) -> termrock::perf::FollowMode
 pub fn termrock::widgets::ScrollAreaState::follow_tail(&mut self)
@@ -82032,7 +81947,6 @@ pub fn termrock::widgets::ScrollAreaState::set_offset_y(&mut self, u16)
 pub fn termrock::widgets::ScrollAreaState::set_offset_y_quiet(&mut self, u16)
 pub fn termrock::widgets::ScrollAreaState::set_viewport(&mut self, u16, u16)
 pub const fn termrock::widgets::ScrollAreaState::viewport_h(&self) -> u16
-pub const fn termrock::widgets::ScrollAreaState::viewport_w(&self) -> u16
 pub fn termrock::widgets::ScrollAreaState::visible_range_x(&self) -> termrock::widgets::VisibleRange
 pub fn termrock::widgets::ScrollAreaState::visible_range_y(&self) -> termrock::widgets::VisibleRange
 pub fn termrock::widgets::ScrollAreaState::wheel_steps(self, u16, u16) -> Self
@@ -82232,8 +82146,6 @@ impl termrock::widgets::SearchInputState
 pub fn termrock::widgets::SearchInputState::begin_edit(&mut self)
 pub fn termrock::widgets::SearchInputState::clear(&mut self) -> bool
 pub fn termrock::widgets::SearchInputState::commit_to_history(&mut self)
-pub const fn termrock::widgets::SearchInputState::debounce(&self) -> core::time::Duration
-pub const fn termrock::widgets::SearchInputState::debounce_pending(&self) -> bool
 pub fn termrock::widgets::SearchInputState::flush_debounce(&mut self) -> termrock::widgets::SearchInputOutcome
 pub fn termrock::widgets::SearchInputState::handle_intent(&mut self, termrock::context::ContextUiIntent) -> termrock::widgets::SearchInputOutcome
 pub fn termrock::widgets::SearchInputState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::widgets::SearchInputOutcome
@@ -83491,7 +83403,6 @@ pub fn termrock::widgets::SidebarState<Id>::handle_key(&mut self, termrock::inpu
 pub fn termrock::widgets::SidebarState<Id>::handle_mouse(&mut self, termrock::input::MouseEvent, &[termrock::widgets::NavItem<Id>]) -> termrock::widgets::SidebarOutcome<Id> where Id: core::clone::Clone + core::cmp::PartialEq
 pub const fn termrock::widgets::SidebarState<Id>::is_expanded(&self) -> bool
 pub fn termrock::widgets::SidebarState<Id>::new(core::option::Option<Id>) -> Self
-pub fn termrock::widgets::SidebarState<Id>::open_drawer_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub const fn termrock::widgets::SidebarState<Id>::presentation(&self) -> termrock::widgets::SidebarPresentation
 pub const fn termrock::widgets::SidebarState<Id>::route(&self) -> core::option::Option<&Id>
 pub fn termrock::widgets::SidebarState<Id>::set_accepts_input(&mut self, bool)
@@ -83861,7 +83772,6 @@ pub fn termrock::widgets::SlashCommandMenuState::new() -> Self
 pub fn termrock::widgets::SlashCommandMenuState::open_on_stack<FocusId: core::clone::Clone>(&self, &mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::SlashCommandMenuState::open_with_query(&mut self, termrock::widgets::SlashQuery)
 pub fn termrock::widgets::SlashCommandMenuState::push_recent(&mut self, impl core::convert::Into<alloc::string::String>)
-pub fn termrock::widgets::SlashCommandMenuState::recent_ids(&self) -> &[alloc::string::String]
 pub fn termrock::widgets::SlashCommandMenuState::set_accepts_input(&mut self, bool)
 pub fn termrock::widgets::SlashCommandMenuState::set_status(&mut self, termrock::widgets::CompletionStatus)
 pub fn termrock::widgets::SlashCommandMenuState::sync_from_draft(&mut self, &str, usize) -> bool
@@ -86638,7 +86548,6 @@ pub termrock::widgets::TabsState::overflow_trigger: core::option::Option<ratatui
 pub termrock::widgets::TabsState::regions: alloc::vec::Vec<termrock::interaction::HitRegion<Id>>
 pub termrock::widgets::TabsState::selected: core::option::Option<Id>
 impl<Id> termrock::widgets::TabsState<Id>
-pub const fn termrock::widgets::TabsState<Id>::activation(&self) -> termrock::widgets::TabsActivation
 pub fn termrock::widgets::TabsState<Id>::blend_fraction(&self, u64, u64) -> f32
 pub fn termrock::widgets::TabsState<Id>::focused_tab(&self) -> core::option::Option<&Id>
 pub fn termrock::widgets::TabsState<Id>::handle_intent(&mut self, termrock::context::ContextUiIntent, &[termrock::widgets::Tab<'_, Id>]) -> termrock::widgets::TabsOutcome<Id> where Id: core::clone::Clone + core::cmp::PartialEq
@@ -88399,7 +88308,6 @@ pub fn termrock::widgets::ToastArchive::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::ToastArchive
 pub struct termrock::widgets::ToastQueue
 impl termrock::widgets::ToastQueue
-pub fn termrock::widgets::ToastQueue::activate_action(&mut self, &str, impl core::convert::Into<alloc::string::String>) -> termrock::widgets::ToastOutcome
 pub fn termrock::widgets::ToastQueue::advance(&mut self, termrock::runtime::FrameTick, termrock::style::MotionPolicy) -> alloc::vec::Vec<termrock::widgets::ToastOutcome>
 pub const fn termrock::widgets::ToastQueue::anchor(&self) -> termrock::widgets::Anchor
 pub fn termrock::widgets::ToastQueue::dismiss(&mut self, &str) -> termrock::widgets::ToastOutcome
@@ -88411,7 +88319,6 @@ pub const fn termrock::widgets::ToastQueue::is_paused(&self) -> bool
 pub fn termrock::widgets::ToastQueue::latest_announcement(&self) -> core::option::Option<&str>
 pub fn termrock::widgets::ToastQueue::len(&self) -> usize
 pub fn termrock::widgets::ToastQueue::live_ids(&self) -> impl core::iter::traits::iterator::Iterator<Item = &str>
-pub fn termrock::widgets::ToastQueue::missed(&self) -> &[termrock::widgets::ToastArchive]
 pub fn termrock::widgets::ToastQueue::missed_len(&self) -> usize
 pub fn termrock::widgets::ToastQueue::new() -> Self
 pub fn termrock::widgets::ToastQueue::next_deadline(&self) -> core::option::Option<std::time::Instant>
@@ -90781,7 +90688,6 @@ pub fn termrock::widgets::TreeState<Id>::handle_intent(&mut self, &[termrock::wi
 pub fn termrock::widgets::TreeState<Id>::handle_key(&mut self, &[termrock::widgets::TreeNode<'_, Id>], termrock::input::KeyEvent) -> termrock::widgets::TreeOutcome<Id>
 pub fn termrock::widgets::TreeState<Id>::hover(&mut self, ratatui_core::layout::position::Position) -> core::option::Option<&Id>
 impl<Id> termrock::widgets::TreeState<Id>
-pub const fn termrock::widgets::TreeState<Id>::bulk_disclosure(&self) -> core::option::Option<bool>
 pub fn termrock::widgets::TreeState<Id>::capture_scroll_anchor(&mut self)
 pub fn termrock::widgets::TreeState<Id>::clear_typeahead(&mut self)
 pub const fn termrock::widgets::TreeState<Id>::cursor(&self) -> core::option::Option<&Id>
@@ -91378,7 +91284,6 @@ pub termrock::widgets::VirtualGridState::header_regions: alloc::vec::Vec<termroc
 impl<RowId, ColId> termrock::widgets::VirtualGridState<RowId, ColId>
 pub const fn termrock::widgets::VirtualGridState<RowId, ColId>::anchor(&self) -> core::option::Option<(u64, usize)>
 pub fn termrock::widgets::VirtualGridState<RowId, ColId>::clear_anchor(&mut self)
-pub fn termrock::widgets::VirtualGridState<RowId, ColId>::column_widths(&self) -> &[u16]
 pub const fn termrock::widgets::VirtualGridState<RowId, ColId>::cursor_col(&self) -> usize
 pub const fn termrock::widgets::VirtualGridState<RowId, ColId>::cursor_row(&self) -> u64
 pub const fn termrock::widgets::VirtualGridState<RowId, ColId>::first_col(&self) -> usize
@@ -91595,7 +91500,6 @@ pub fn termrock::widgets::VirtualListState<Id>::million_fixed() -> Self
 pub fn termrock::widgets::VirtualListState<Id>::new() -> Self
 pub fn termrock::widgets::VirtualListState<Id>::note_measured(&mut self, u64, u16)
 pub const fn termrock::widgets::VirtualListState<Id>::offset(&self) -> u64
-pub const fn termrock::widgets::VirtualListState<Id>::page_status(&self) -> termrock::widgets::VirtualPageStatus
 pub fn termrock::widgets::VirtualListState<Id>::projection_indices(&self, &mut alloc::vec::Vec<u64>)
 pub fn termrock::widgets::VirtualListState<Id>::regions(&self) -> &[termrock::interaction::HitRegion<Id>]
 pub fn termrock::widgets::VirtualListState<Id>::restore_anchor(&mut self, impl core::ops::function::FnOnce(&str) -> core::option::Option<u64>)
