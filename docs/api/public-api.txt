@@ -4236,6 +4236,54 @@ pub unsafe fn termrock::context::ContextUiIntent::clone_to_uninit(&self, *mut u8
 impl<T> core::convert::From<T> for termrock::context::ContextUiIntent
 pub fn termrock::context::ContextUiIntent::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::context::ContextUiIntent
+#[non_exhaustive] pub enum termrock::interaction::VirtualWindowActivePolicy
+pub termrock::interaction::VirtualWindowActivePolicy::InvalidateMissing
+pub termrock::interaction::VirtualWindowActivePolicy::PreserveMissing
+impl core::clone::Clone for termrock::interaction::VirtualWindowActivePolicy
+pub fn termrock::interaction::VirtualWindowActivePolicy::clone(&self) -> termrock::interaction::VirtualWindowActivePolicy
+impl core::cmp::Eq for termrock::interaction::VirtualWindowActivePolicy
+impl core::cmp::PartialEq for termrock::interaction::VirtualWindowActivePolicy
+pub fn termrock::interaction::VirtualWindowActivePolicy::eq(&self, &termrock::interaction::VirtualWindowActivePolicy) -> bool
+impl core::default::Default for termrock::interaction::VirtualWindowActivePolicy
+pub fn termrock::interaction::VirtualWindowActivePolicy::default() -> termrock::interaction::VirtualWindowActivePolicy
+impl core::fmt::Debug for termrock::interaction::VirtualWindowActivePolicy
+pub fn termrock::interaction::VirtualWindowActivePolicy::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for termrock::interaction::VirtualWindowActivePolicy
+pub fn termrock::interaction::VirtualWindowActivePolicy::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for termrock::interaction::VirtualWindowActivePolicy
+impl core::marker::StructuralPartialEq for termrock::interaction::VirtualWindowActivePolicy
+impl core::marker::Freeze for termrock::interaction::VirtualWindowActivePolicy
+impl core::marker::Send for termrock::interaction::VirtualWindowActivePolicy
+impl core::marker::Sync for termrock::interaction::VirtualWindowActivePolicy
+impl core::marker::Unpin for termrock::interaction::VirtualWindowActivePolicy
+impl core::marker::UnsafeUnpin for termrock::interaction::VirtualWindowActivePolicy
+impl core::panic::unwind_safe::RefUnwindSafe for termrock::interaction::VirtualWindowActivePolicy
+impl core::panic::unwind_safe::UnwindSafe for termrock::interaction::VirtualWindowActivePolicy
+impl<Q, K> equivalent::Equivalent<K> for termrock::interaction::VirtualWindowActivePolicy where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
+pub fn termrock::interaction::VirtualWindowActivePolicy::equivalent(&self, &K) -> bool
+impl<T, U> core::convert::Into<U> for termrock::interaction::VirtualWindowActivePolicy where U: core::convert::From<T>
+pub fn termrock::interaction::VirtualWindowActivePolicy::into(self) -> U
+impl<T, U> core::convert::TryFrom<U> for termrock::interaction::VirtualWindowActivePolicy where U: core::convert::Into<T>
+pub type termrock::interaction::VirtualWindowActivePolicy::Error = never
+pub fn termrock::interaction::VirtualWindowActivePolicy::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
+impl<T, U> core::convert::TryInto<U> for termrock::interaction::VirtualWindowActivePolicy where U: core::convert::TryFrom<T>
+pub type termrock::interaction::VirtualWindowActivePolicy::Error = <U as core::convert::TryFrom<T>>::Error
+pub fn termrock::interaction::VirtualWindowActivePolicy::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
+impl<T> alloc::borrow::ToOwned for termrock::interaction::VirtualWindowActivePolicy where T: core::clone::Clone
+pub type termrock::interaction::VirtualWindowActivePolicy::Owned = T
+pub fn termrock::interaction::VirtualWindowActivePolicy::clone_into(&self, &mut T)
+pub fn termrock::interaction::VirtualWindowActivePolicy::to_owned(&self) -> T
+impl<T> core::any::Any for termrock::interaction::VirtualWindowActivePolicy where T: 'static + ?core::marker::Sized
+pub fn termrock::interaction::VirtualWindowActivePolicy::type_id(&self) -> core::any::TypeId
+impl<T> core::borrow::Borrow<T> for termrock::interaction::VirtualWindowActivePolicy where T: ?core::marker::Sized
+pub fn termrock::interaction::VirtualWindowActivePolicy::borrow(&self) -> &T
+impl<T> core::borrow::BorrowMut<T> for termrock::interaction::VirtualWindowActivePolicy where T: ?core::marker::Sized
+pub fn termrock::interaction::VirtualWindowActivePolicy::borrow_mut(&mut self) -> &mut T
+impl<T> core::clone::CloneToUninit for termrock::interaction::VirtualWindowActivePolicy where T: core::clone::Clone
+pub unsafe fn termrock::interaction::VirtualWindowActivePolicy::clone_to_uninit(&self, *mut u8)
+impl<T> core::convert::From<T> for termrock::interaction::VirtualWindowActivePolicy
+pub fn termrock::interaction::VirtualWindowActivePolicy::from(T) -> T
+impl<T> either::into_either::IntoEither for termrock::interaction::VirtualWindowActivePolicy
 pub struct termrock::interaction::CellCoord
 pub termrock::interaction::CellCoord::col: usize
 pub termrock::interaction::CellCoord::row: u64
@@ -4412,7 +4460,7 @@ pub fn termrock::interaction::CollectionState<Id>::move_next(&mut self, &[termro
 pub fn termrock::interaction::CollectionState<Id>::move_page(&mut self, &[termrock::interaction::CollectionItem<Id>], isize) -> termrock::interaction::CollectionOutcome<Id>
 pub fn termrock::interaction::CollectionState<Id>::move_previous(&mut self, &[termrock::interaction::CollectionItem<Id>]) -> termrock::interaction::CollectionOutcome<Id>
 pub fn termrock::interaction::CollectionState<Id>::reconcile(&mut self, &[termrock::interaction::CollectionItem<Id>]) -> termrock::interaction::CollectionOutcome<Id>
-pub fn termrock::interaction::CollectionState<Id>::reconcile_window(&mut self, &[termrock::interaction::CollectionItem<Id>], usize, usize, usize) -> termrock::interaction::CollectionOutcome<Id>
+pub fn termrock::interaction::CollectionState<Id>::reconcile_window(&mut self, &[termrock::interaction::CollectionItem<Id>], usize, usize, usize, termrock::interaction::VirtualWindowActivePolicy) -> termrock::interaction::CollectionOutcome<Id>
 pub fn termrock::interaction::CollectionState<Id>::scroll_by(&mut self, isize) -> termrock::interaction::CollectionOutcome<Id>
 pub fn termrock::interaction::CollectionState<Id>::set_active(&mut self, core::option::Option<Id>)
 pub fn termrock::interaction::CollectionState<Id>::set_current(&mut self, core::option::Option<Id>)
@@ -4426,6 +4474,7 @@ pub const fn termrock::interaction::CollectionState<Id>::new() -> Self
 pub const fn termrock::interaction::CollectionState<Id>::offset(&self) -> usize
 pub fn termrock::interaction::CollectionState<Id>::orientation(self, termrock::interaction::RovingOrientation) -> Self
 pub const fn termrock::interaction::CollectionState<Id>::roving(&self) -> &termrock::interaction::RovingFocusGroup<Id>
+pub const fn termrock::interaction::CollectionState<Id>::set_wrap(&mut self, bool)
 pub const fn termrock::interaction::CollectionState<Id>::total_len(&self) -> usize
 pub const fn termrock::interaction::CollectionState<Id>::viewport_len(&self) -> usize
 pub fn termrock::interaction::CollectionState<Id>::wrap(self, bool) -> Self
@@ -5676,6 +5725,7 @@ pub fn termrock::interaction::RovingFocusGroup<Id>::clear_typeahead(&mut self)
 pub const fn termrock::interaction::RovingFocusGroup<Id>::new() -> Self
 pub const fn termrock::interaction::RovingFocusGroup<Id>::orientation(self, termrock::interaction::RovingOrientation) -> Self
 pub const fn termrock::interaction::RovingFocusGroup<Id>::orientation_mode(&self) -> termrock::interaction::RovingOrientation
+pub const fn termrock::interaction::RovingFocusGroup<Id>::set_wrap(&mut self, bool)
 pub fn termrock::interaction::RovingFocusGroup<Id>::typeahead_buffer(&self) -> &str
 pub const fn termrock::interaction::RovingFocusGroup<Id>::wrap(self, bool) -> Self
 pub const fn termrock::interaction::RovingFocusGroup<Id>::wraps(&self) -> bool
@@ -6110,9 +6160,9 @@ pub fn termrock::interaction::deselect_subtree<Id: core::clone::Clone + core::cm
 pub fn termrock::interaction::dispatch_keymap_action<Id, LayerId, Action>(&termrock::interaction::InteractionScene<Id, LayerId, Action>, &termrock::keymap::Keymap<Action>, termrock::input::KeyEvent) -> termrock::interaction::InteractionOutcome<Id, LayerId, Action> where Id: core::clone::Clone + core::cmp::PartialEq, LayerId: core::cmp::PartialEq, Action: core::clone::Clone + core::marker::Copy + core::cmp::PartialEq + 'static
 pub fn termrock::interaction::evaluate_escape_stack(&mut [termrock::interaction::DismissableLayer], &mut termrock::interaction::DismissGuard, termrock::interaction::DismissEventId, termrock::interaction::DismissPhase) -> core::option::Option<(usize, termrock::interaction::DismissDecision)>
 pub const fn termrock::interaction::kind_blocks_queue(termrock::interaction::OverlayKind) -> bool
+pub fn termrock::interaction::paint_backdrop(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, &termrock::style::DesignSystem, termrock::interaction::BackdropPolicy)
 pub fn termrock::interaction::place_overlay(ratatui_core::layout::rect::Rect, core::option::Option<ratatui_core::layout::rect::Rect>, termrock::interaction::OverlaySize, termrock::interaction::OverlayPolicy) -> ratatui_core::layout::rect::Rect
 pub fn termrock::interaction::place_overlay_detailed(ratatui_core::layout::rect::Rect, core::option::Option<ratatui_core::layout::rect::Rect>, termrock::interaction::OverlaySize, termrock::interaction::OverlayPolicy) -> termrock::interaction::PlacementResult
-pub fn termrock::interaction::render_backdrop(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, &termrock::style::DesignSystem, termrock::interaction::BackdropPolicy)
 pub fn termrock::interaction::roving_hint_keymap(termrock::interaction::RovingOrientation) -> termrock::keymap::Keymap<&'static str>
 pub fn termrock::interaction::roving_hint_keymap_horizontal() -> termrock::keymap::Keymap<&'static str>
 pub fn termrock::interaction::roving_hint_keymap_vertical() -> termrock::keymap::Keymap<&'static str>
@@ -9185,10 +9235,10 @@ pub fn termrock::layout::layout_stack_into(ratatui_core::layout::rect::Rect, &te
 pub fn termrock::layout::layout_stack_into_cross(ratatui_core::layout::rect::Rect, &termrock::layout::StackSpec, &[termrock::layout::FlexSize], core::option::Option<&[u16]>, &mut alloc::vec::Vec<ratatui_core::layout::rect::Rect>)
 pub fn termrock::layout::layout_stack_with_cross(ratatui_core::layout::rect::Rect, &termrock::layout::StackSpec, &[termrock::layout::FlexSize], core::option::Option<&[u16]>) -> termrock::layout::StackLayout
 pub fn termrock::layout::modal_rect(ratatui_core::layout::rect::Rect, termrock::layout::ModalSpec) -> ratatui_core::layout::rect::Rect
+pub fn termrock::layout::paint_dialog_shell(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, core::option::Option<&str>, termrock::style::PanelChrome, &termrock::style::DesignSystem) -> ratatui_core::layout::rect::Rect
+pub fn termrock::layout::paint_scrollable_dialog_body(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, &[ratatui_core::text::line::Line<'_>], &mut termrock::scroll::DialogScroll, &termrock::style::DesignSystem) -> (usize, usize)
 pub fn termrock::layout::panel_stack(ratatui_core::layout::rect::Rect, &[termrock::layout::PanelStackBlock], u16) -> alloc::vec::Vec<core::option::Option<ratatui_core::layout::rect::Rect>>
 pub fn termrock::layout::panel_stack_with_policy(ratatui_core::layout::rect::Rect, &[termrock::layout::PanelStackBlock], u16, termrock::layout::ShrinkPolicy) -> alloc::vec::Vec<core::option::Option<ratatui_core::layout::rect::Rect>>
-pub fn termrock::layout::render_dialog_shell(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, core::option::Option<&str>, termrock::style::PanelChrome, &termrock::style::DesignSystem) -> ratatui_core::layout::rect::Rect
-pub fn termrock::layout::render_scrollable_dialog_body(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, &[ratatui_core::text::line::Line<'_>], &mut termrock::scroll::DialogScroll, &termrock::style::DesignSystem) -> (usize, usize)
 pub fn termrock::layout::resolve_dialog(ratatui_core::layout::rect::Rect, termrock::layout::DialogSpec) -> ratatui_core::layout::rect::Rect
 pub fn termrock::layout::responsive_columns(u16, u16, u16, u16) -> termrock::layout::GridSpec
 pub fn termrock::layout::settings_grid_template(u16, u16, u16) -> termrock::layout::GridSpec
@@ -18414,7 +18464,6 @@ impl<'a> termrock::patterns::ActivityShelf<'a>
 pub const fn termrock::patterns::ActivityShelf<'a>::colorless(self, bool) -> Self
 pub const fn termrock::patterns::ActivityShelf<'a>::new(&'a [termrock::patterns::ActivityItem], &'a termrock::style::DesignSystem) -> Self
 pub fn termrock::patterns::ActivityShelf<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::patterns::ActivityShelfState)
-pub fn termrock::patterns::ActivityShelf<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::patterns::ActivityShelfState)
 impl<'a> core::clone::Clone for termrock::patterns::ActivityShelf<'a>
 pub fn termrock::patterns::ActivityShelf<'a>::clone(&self) -> termrock::patterns::ActivityShelf<'a>
 impl<'a> core::fmt::Debug for termrock::patterns::ActivityShelf<'a>
@@ -19785,7 +19834,6 @@ impl<'a> termrock::patterns::BackgroundTaskPanel<'a>
 pub const fn termrock::patterns::BackgroundTaskPanel<'a>::colorless(self, bool) -> Self
 pub const fn termrock::patterns::BackgroundTaskPanel<'a>::new(&'a [termrock::patterns::BackgroundTask], &'a termrock::style::DesignSystem) -> Self
 pub fn termrock::patterns::BackgroundTaskPanel<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::patterns::BackgroundTaskPanelState)
-pub fn termrock::patterns::BackgroundTaskPanel<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::patterns::BackgroundTaskPanelState)
 pub const fn termrock::patterns::BackgroundTaskPanel<'a>::title(self, &'a str) -> Self
 impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::patterns::BackgroundTaskPanel<'_>
 pub type &termrock::patterns::BackgroundTaskPanel<'_>::State = termrock::patterns::BackgroundTaskPanelState
@@ -21403,7 +21451,7 @@ impl<'a> termrock::patterns::MetricsDashboard<'a>
 pub const fn termrock::patterns::MetricsDashboard<'a>::focused(self, bool) -> Self
 pub const fn termrock::patterns::MetricsDashboard<'a>::hints(self, bool) -> Self
 pub const fn termrock::patterns::MetricsDashboard<'a>::new(&'a [termrock::widgets::MetricTile<'a>], &'a [termrock::patterns::MetricAlert<'a>], &'a termrock::style::DesignSystem) -> Self
-pub fn termrock::patterns::MetricsDashboard<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::patterns::MetricsDashboardState)
+pub fn termrock::patterns::MetricsDashboard<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::patterns::MetricsDashboardState)
 pub const fn termrock::patterns::MetricsDashboard<'a>::title(self, &'a str) -> Self
 impl<'a> core::clone::Clone for termrock::patterns::MetricsDashboard<'a>
 pub fn termrock::patterns::MetricsDashboard<'a>::clone(&self) -> termrock::patterns::MetricsDashboard<'a>
@@ -22518,7 +22566,7 @@ pub struct termrock::patterns::ProcessTable<'a>
 impl<'a> termrock::patterns::ProcessTable<'a>
 pub const fn termrock::patterns::ProcessTable<'a>::focused(self, bool) -> Self
 pub const fn termrock::patterns::ProcessTable<'a>::new(&'a [termrock::patterns::ProcessRow<'a>], &'a termrock::style::DesignSystem) -> Self
-pub fn termrock::patterns::ProcessTable<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::patterns::ProcessTableState)
+pub fn termrock::patterns::ProcessTable<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::patterns::ProcessTableState)
 pub const fn termrock::patterns::ProcessTable<'a>::title(self, &'a str) -> Self
 impl<'a> core::clone::Clone for termrock::patterns::ProcessTable<'a>
 pub fn termrock::patterns::ProcessTable<'a>::clone(&self) -> termrock::patterns::ProcessTable<'a>
@@ -23011,8 +23059,8 @@ impl<'a> termrock::patterns::QueryEditor<'a>
 pub const fn termrock::patterns::QueryEditor<'a>::diagnostics(self, &'a [termrock::widgets::Diagnostic<'a>]) -> Self
 pub const fn termrock::patterns::QueryEditor<'a>::focused(self, bool) -> Self
 pub const fn termrock::patterns::QueryEditor<'a>::new(&'a termrock::style::DesignSystem) -> Self
-pub fn termrock::patterns::QueryEditor<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::patterns::QueryEditorState)
-pub fn termrock::patterns::QueryEditor<'a>::render_diagnostic_frame(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::patterns::QueryEditorState, &[termrock::widgets::SourceLabel<'a>])
+pub fn termrock::patterns::QueryEditor<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::patterns::QueryEditorState)
+pub fn termrock::patterns::QueryEditor<'a>::paint_diagnostic_frame(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::patterns::QueryEditorState, &[termrock::widgets::SourceLabel<'a>])
 pub const fn termrock::patterns::QueryEditor<'a>::title(self, &'a str) -> Self
 impl<'a> core::clone::Clone for termrock::patterns::QueryEditor<'a>
 pub fn termrock::patterns::QueryEditor<'a>::clone(&self) -> termrock::patterns::QueryEditor<'a>
@@ -23749,7 +23797,7 @@ pub struct termrock::patterns::ResultGrid<'a>
 impl<'a> termrock::patterns::ResultGrid<'a>
 pub const fn termrock::patterns::ResultGrid<'a>::focused(self, bool) -> Self
 pub const fn termrock::patterns::ResultGrid<'a>::new(&'a termrock::style::DesignSystem, &'a [termrock::patterns::ResultColumn], &'a [termrock::patterns::ResultRow<'a>]) -> Self
-pub fn termrock::patterns::ResultGrid<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::patterns::ResultGridState)
+pub fn termrock::patterns::ResultGrid<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::patterns::ResultGridState)
 pub const fn termrock::patterns::ResultGrid<'a>::title(self, &'a str) -> Self
 impl<'a> core::clone::Clone for termrock::patterns::ResultGrid<'a>
 pub fn termrock::patterns::ResultGrid<'a>::clone(&self) -> termrock::patterns::ResultGrid<'a>
@@ -23947,7 +23995,7 @@ pub struct termrock::patterns::SchemaBrowser<'a, Id>
 impl<'a, Id: core::clone::Clone + core::cmp::PartialEq + core::cmp::Ord> termrock::patterns::SchemaBrowser<'a, Id>
 pub const fn termrock::patterns::SchemaBrowser<'a, Id>::focused(self, bool) -> Self
 pub const fn termrock::patterns::SchemaBrowser<'a, Id>::new(&'a [termrock::patterns::SchemaBrowserEntry<'a, Id>], &'a termrock::style::DesignSystem) -> Self
-pub fn termrock::patterns::SchemaBrowser<'a, Id>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::patterns::SchemaBrowserState<Id>) where Id: core::clone::Clone + core::cmp::PartialEq + core::cmp::Eq
+pub fn termrock::patterns::SchemaBrowser<'a, Id>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::patterns::SchemaBrowserState<Id>) where Id: core::clone::Clone + core::cmp::PartialEq + core::cmp::Eq
 pub const fn termrock::patterns::SchemaBrowser<'a, Id>::title(self, &'a str) -> Self
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::patterns::SchemaBrowser<'a, Id>
 pub fn termrock::patterns::SchemaBrowser<'a, Id>::clone(&self) -> termrock::patterns::SchemaBrowser<'a, Id>
@@ -24819,7 +24867,6 @@ impl<'a> termrock::patterns::SubagentCard<'a>
 pub const fn termrock::patterns::SubagentCard<'a>::colorless(self, bool) -> Self
 pub const fn termrock::patterns::SubagentCard<'a>::new(&'a termrock::patterns::SubagentRun, &'a termrock::style::DesignSystem) -> Self
 pub fn termrock::patterns::SubagentCard<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::patterns::SubagentCardState)
-pub fn termrock::patterns::SubagentCard<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::patterns::SubagentCardState)
 pub const fn termrock::patterns::SubagentCard<'a>::tick(self, u64) -> Self
 impl<'a> core::clone::Clone for termrock::patterns::SubagentCard<'a>
 pub fn termrock::patterns::SubagentCard<'a>::clone(&self) -> termrock::patterns::SubagentCard<'a>
@@ -24998,7 +25045,6 @@ impl<'a> termrock::patterns::TaskRail<'a>
 pub const fn termrock::patterns::TaskRail<'a>::colorless(self, bool) -> Self
 pub const fn termrock::patterns::TaskRail<'a>::new(&'a [termrock::patterns::ActivityModel], &'a termrock::style::DesignSystem) -> Self
 pub fn termrock::patterns::TaskRail<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::patterns::TaskRailState)
-pub fn termrock::patterns::TaskRail<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::patterns::TaskRailState)
 pub const fn termrock::patterns::TaskRail<'a>::title(self, &'a str) -> Self
 impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::patterns::TaskRail<'_>
 pub type &termrock::patterns::TaskRail<'_>::State = termrock::patterns::TaskRailState
@@ -25232,7 +25278,6 @@ impl<'a> termrock::patterns::TerminalRunCard<'a>
 pub const fn termrock::patterns::TerminalRunCard<'a>::colorless(self, bool) -> Self
 pub const fn termrock::patterns::TerminalRunCard<'a>::new(&'a termrock::patterns::TerminalRun, &'a [termrock::widgets::TerminalLine<'a>], &'a termrock::style::DesignSystem) -> Self
 pub fn termrock::patterns::TerminalRunCard<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::patterns::TerminalRunCardState)
-pub fn termrock::patterns::TerminalRunCard<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::patterns::TerminalRunCardState)
 pub const fn termrock::patterns::TerminalRunCard<'a>::tick(self, u64) -> Self
 impl<'a> core::clone::Clone for termrock::patterns::TerminalRunCard<'a>
 pub fn termrock::patterns::TerminalRunCard<'a>::clone(&self) -> termrock::patterns::TerminalRunCard<'a>
@@ -25902,6 +25947,22 @@ pub fn termrock::patterns::merge_working_into_shelf(&mut alloc::vec::Vec<termroc
 pub fn termrock::patterns::metrics_dashboard_commands() -> alloc::vec::Vec<termrock::widgets::CommandEntry<&'static str>>
 pub fn termrock::patterns::observability_dashboard_layout(ratatui_core::layout::rect::Rect, &termrock::layout::WorkspaceState) -> alloc::vec::Vec<termrock::layout::PaneGeom>
 pub fn termrock::patterns::observability_dashboard_layout_density(ratatui_core::layout::rect::Rect, &termrock::layout::WorkspaceState, termrock::patterns::ObservabilityDensity, termrock::patterns::observability_dashboard::ObservabilityPanes) -> alloc::vec::Vec<termrock::layout::PaneGeom>
+pub fn termrock::patterns::paint_agent_shell<BlockId: core::clone::Clone + core::cmp::Eq, NodeId: core::clone::Clone + core::cmp::Eq>(ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::style::DesignSystem, termrock::patterns::AgentShellLayout, termrock::patterns::AgentShellView<'_, BlockId, NodeId>, termrock::patterns::AgentShellFocus, &mut termrock::widgets::TreeState<NodeId>, &mut termrock::widgets::TranscriptState<BlockId>, &mut termrock::widgets::PromptComposerState) -> termrock::patterns::AgentShellSlots
+pub fn termrock::patterns::paint_agent_workbench(&mut ratatui_core::buffer::buffer::Buffer, ratatui_core::layout::rect::Rect, termrock::patterns::WorkbenchSurfaces<'_, '_>)
+pub fn termrock::patterns::paint_app_dashboard<Id: core::clone::Clone + core::cmp::PartialEq>(&mut ratatui_core::buffer::buffer::Buffer, ratatui_core::layout::rect::Rect, termrock::patterns::AppDashboardSurfaces<'_, Id>)
+pub fn termrock::patterns::paint_auth_entry(&mut ratatui_core::buffer::buffer::Buffer, ratatui_core::layout::rect::Rect, termrock::patterns::AuthEntrySurfaces<'_>)
+pub fn termrock::patterns::paint_database_workbench(&mut ratatui_core::buffer::buffer::Buffer, ratatui_core::layout::rect::Rect, termrock::patterns::DatabaseWorkbenchSurfaces<'_>)
+pub fn termrock::patterns::paint_error_recovery(&mut ratatui_core::buffer::buffer::Buffer, ratatui_core::layout::rect::Rect, termrock::patterns::ErrorRecoverySurfaces<'_>)
+pub fn termrock::patterns::paint_file_manager(&mut ratatui_core::buffer::buffer::Buffer, ratatui_core::layout::rect::Rect, termrock::patterns::FileManagerSurfaces<'_>)
+pub fn termrock::patterns::paint_git_workbench(&mut ratatui_core::buffer::buffer::Buffer, ratatui_core::layout::rect::Rect, termrock::patterns::GitWorkbenchSurfaces<'_>)
+pub fn termrock::patterns::paint_help_center(&mut ratatui_core::buffer::buffer::Buffer, ratatui_core::layout::rect::Rect, termrock::patterns::HelpCenterSurfaces<'_>)
+pub fn termrock::patterns::paint_observability_dashboard(&mut ratatui_core::buffer::buffer::Buffer, ratatui_core::layout::rect::Rect, termrock::patterns::ObservabilityDashboardSurfaces<'_>)
+pub fn termrock::patterns::paint_ops_dashboard<RowId: core::clone::Clone + core::cmp::Ord, ColId: core::clone::Clone + core::cmp::PartialEq>(ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::style::DesignSystem, termrock::patterns::OpsDashboardLayout, termrock::patterns::OpsDashboardView<'_, RowId, ColId>, &mut termrock::patterns::OpsDashboardState<RowId, ColId>) -> termrock::patterns::OpsDashboardSlots
+pub fn termrock::patterns::paint_project_launcher(&mut ratatui_core::buffer::buffer::Buffer, ratatui_core::layout::rect::Rect, termrock::patterns::ProjectLauncherSurfaces<'_>)
+pub fn termrock::patterns::paint_resource_browser<NodeId: core::clone::Clone + core::cmp::Eq, RowId: core::clone::Clone + core::cmp::Eq>(ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::style::DesignSystem, termrock::patterns::ResourceBrowserLayout, termrock::patterns::ResourceBrowserView<'_, NodeId, RowId>, termrock::patterns::ResourceBrowserFocus, &mut termrock::widgets::TreeState<NodeId>, &mut termrock::widgets::DetailTableState<RowId>) -> termrock::patterns::ResourceBrowserSlots
+pub fn termrock::patterns::paint_settings_screen<SectionId: core::clone::Clone + core::cmp::PartialEq>(&mut ratatui_core::buffer::buffer::Buffer, ratatui_core::layout::rect::Rect, termrock::patterns::SettingsScreenSurfaces<'_, SectionId>)
+pub fn termrock::patterns::paint_setup_wizard(&mut ratatui_core::buffer::buffer::Buffer, ratatui_core::layout::rect::Rect, termrock::patterns::SetupWizardSurfaces<'_>)
+pub fn termrock::patterns::paint_studio_shell(ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::style::DesignSystem, termrock::patterns::StudioShellLayout, termrock::patterns::StudioShellView<'_>, bool) -> termrock::patterns::StudioShellSlots
 pub fn termrock::patterns::pending_queue_len(&[termrock::patterns::QueuedPrompt]) -> usize
 pub fn termrock::patterns::permission_modal_rect(ratatui_core::layout::rect::Rect) -> ratatui_core::layout::rect::Rect
 pub fn termrock::patterns::plan_activity_shelf(&[&termrock::patterns::ActivityItem], u16, termrock::patterns::ActivityShelfPresentation, bool) -> termrock::patterns::ActivityShelfPlan
@@ -25924,22 +25985,6 @@ pub fn termrock::patterns::recovery_action_rows(&[termrock::patterns::RecoveryAc
 pub fn termrock::patterns::redact_crash_report_text(&str) -> alloc::string::String
 pub fn termrock::patterns::register_workbench_scene(&mut termrock::interaction::InteractionScene<&'static str, &'static str, ()>, &[termrock::layout::PaneGeom])
 pub fn termrock::patterns::remap_plan_comments(&[termrock::patterns::PlanComment], &termrock::patterns::PlanDocument) -> alloc::vec::Vec<termrock::patterns::PlanComment>
-pub fn termrock::patterns::render_agent_shell<BlockId: core::clone::Clone + core::cmp::Eq, NodeId: core::clone::Clone + core::cmp::Eq>(ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::style::DesignSystem, termrock::patterns::AgentShellLayout, termrock::patterns::AgentShellView<'_, BlockId, NodeId>, termrock::patterns::AgentShellFocus, &mut termrock::widgets::TreeState<NodeId>, &mut termrock::widgets::TranscriptState<BlockId>, &mut termrock::widgets::PromptComposerState) -> termrock::patterns::AgentShellSlots
-pub fn termrock::patterns::render_agent_workbench(&mut ratatui_core::buffer::buffer::Buffer, ratatui_core::layout::rect::Rect, termrock::patterns::WorkbenchSurfaces<'_, '_>)
-pub fn termrock::patterns::render_app_dashboard<Id: core::clone::Clone + core::cmp::PartialEq>(&mut ratatui_core::buffer::buffer::Buffer, ratatui_core::layout::rect::Rect, termrock::patterns::AppDashboardSurfaces<'_, Id>)
-pub fn termrock::patterns::render_auth_entry(&mut ratatui_core::buffer::buffer::Buffer, ratatui_core::layout::rect::Rect, termrock::patterns::AuthEntrySurfaces<'_>)
-pub fn termrock::patterns::render_database_workbench(&mut ratatui_core::buffer::buffer::Buffer, ratatui_core::layout::rect::Rect, termrock::patterns::DatabaseWorkbenchSurfaces<'_>)
-pub fn termrock::patterns::render_error_recovery(&mut ratatui_core::buffer::buffer::Buffer, ratatui_core::layout::rect::Rect, termrock::patterns::ErrorRecoverySurfaces<'_>)
-pub fn termrock::patterns::render_file_manager(&mut ratatui_core::buffer::buffer::Buffer, ratatui_core::layout::rect::Rect, termrock::patterns::FileManagerSurfaces<'_>)
-pub fn termrock::patterns::render_git_workbench(&mut ratatui_core::buffer::buffer::Buffer, ratatui_core::layout::rect::Rect, termrock::patterns::GitWorkbenchSurfaces<'_>)
-pub fn termrock::patterns::render_help_center(&mut ratatui_core::buffer::buffer::Buffer, ratatui_core::layout::rect::Rect, termrock::patterns::HelpCenterSurfaces<'_>)
-pub fn termrock::patterns::render_observability_dashboard(&mut ratatui_core::buffer::buffer::Buffer, ratatui_core::layout::rect::Rect, termrock::patterns::ObservabilityDashboardSurfaces<'_>)
-pub fn termrock::patterns::render_ops_dashboard<RowId: core::clone::Clone + core::cmp::Ord, ColId: core::clone::Clone + core::cmp::PartialEq>(ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::style::DesignSystem, termrock::patterns::OpsDashboardLayout, termrock::patterns::OpsDashboardView<'_, RowId, ColId>, &mut termrock::patterns::OpsDashboardState<RowId, ColId>) -> termrock::patterns::OpsDashboardSlots
-pub fn termrock::patterns::render_project_launcher(&mut ratatui_core::buffer::buffer::Buffer, ratatui_core::layout::rect::Rect, termrock::patterns::ProjectLauncherSurfaces<'_>)
-pub fn termrock::patterns::render_resource_browser<NodeId: core::clone::Clone + core::cmp::Eq, RowId: core::clone::Clone + core::cmp::Eq>(ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::style::DesignSystem, termrock::patterns::ResourceBrowserLayout, termrock::patterns::ResourceBrowserView<'_, NodeId, RowId>, termrock::patterns::ResourceBrowserFocus, &mut termrock::widgets::TreeState<NodeId>, &mut termrock::widgets::DetailTableState<RowId>) -> termrock::patterns::ResourceBrowserSlots
-pub fn termrock::patterns::render_settings_screen<SectionId: core::clone::Clone + core::cmp::PartialEq>(&mut ratatui_core::buffer::buffer::Buffer, ratatui_core::layout::rect::Rect, termrock::patterns::SettingsScreenSurfaces<'_, SectionId>)
-pub fn termrock::patterns::render_setup_wizard(&mut ratatui_core::buffer::buffer::Buffer, ratatui_core::layout::rect::Rect, termrock::patterns::SetupWizardSurfaces<'_>)
-pub fn termrock::patterns::render_studio_shell(ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::style::DesignSystem, termrock::patterns::StudioShellLayout, termrock::patterns::StudioShellView<'_>, bool) -> termrock::patterns::StudioShellSlots
 pub fn termrock::patterns::result_column_model(&[termrock::patterns::ResultColumn], bool) -> termrock::widgets::ColumnModel<alloc::string::String>
 pub fn termrock::patterns::result_row_to_inspector_fields<'a>(&'a [termrock::patterns::ResultColumn], &termrock::patterns::ResultRow<'a>, termrock::patterns::ResultRedaction, bool) -> alloc::vec::Vec<termrock::widgets::InspectorField<'a>>
 pub fn termrock::patterns::saved_queries_to_history(&[termrock::patterns::SavedQuery]) -> alloc::vec::Vec<termrock::widgets::HistoryEntry<alloc::string::String>>
@@ -29026,7 +29071,7 @@ pub fn termrock::scroll::DialogScroll::handle_key(&mut self, termrock::input::Ke
 pub fn termrock::scroll::DialogScroll::handle_key_for_axes(&mut self, termrock::input::KeyEvent, usize, usize, usize, usize, termrock::scroll::ScrollAxes) -> bool
 pub fn termrock::scroll::DialogScroll::handle_mouse(&mut self, termrock::input::MouseEventKind, termrock::input::KeyModifiers, termrock::scroll::ScrollAxes) -> bool
 pub const fn termrock::scroll::DialogScroll::new() -> Self
-pub fn termrock::scroll::DialogScroll::render_scrollbars(&self, &mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, usize, usize, &termrock::style::DesignSystem)
+pub fn termrock::scroll::DialogScroll::paint_scrollbars(&self, &mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, usize, usize, &termrock::style::DesignSystem)
 impl core::clone::Clone for termrock::scroll::DialogScroll
 pub fn termrock::scroll::DialogScroll::clone(&self) -> termrock::scroll::DialogScroll
 impl core::cmp::Eq for termrock::scroll::DialogScroll
@@ -29469,10 +29514,10 @@ pub fn termrock::scroll::mouse_scroll_delta_with_step(termrock::input::MouseEven
 pub fn termrock::scroll::offset_for_track_position(usize, usize, u16, usize) -> usize
 pub fn termrock::scroll::offset_for_track_position_u16(usize, usize, usize, usize) -> u16
 pub const fn termrock::scroll::overflow_thumb(usize, usize, usize, usize) -> core::option::Option<(usize, usize)>
+pub fn termrock::scroll::paint_line_with_fixed_prefix_scroll(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, u16, ratatui_core::text::line::Line<'static>, usize, usize)
+pub fn termrock::scroll::paint_lines_with_offset_in_area(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, &[ratatui_core::text::line::Line<'_>], u16, &termrock::style::DesignSystem)
 pub fn termrock::scroll::paint_overflow_scrollbar(&mut ratatui_core::buffer::buffer::Buffer, ratatui_core::layout::rect::Rect, usize, usize, u16, bool, &termrock::style::DesignSystem)
-pub fn termrock::scroll::render_line_with_fixed_prefix_scroll(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, u16, ratatui_core::text::line::Line<'static>, usize, usize)
-pub fn termrock::scroll::render_lines_with_offset_in_area(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, &[ratatui_core::text::line::Line<'_>], u16, &termrock::style::DesignSystem)
-pub fn termrock::scroll::render_scrollbar(&mut ratatui_core::buffer::buffer::Buffer, ratatui_core::layout::rect::Rect, termrock::scroll::ScrollbarSpec, &termrock::style::DesignSystem)
+pub fn termrock::scroll::paint_scrollbar(&mut ratatui_core::buffer::buffer::Buffer, ratatui_core::layout::rect::Rect, termrock::scroll::ScrollbarSpec, &termrock::style::DesignSystem)
 pub fn termrock::scroll::scroll_hint_spans(termrock::scroll::ScrollAxes) -> alloc::vec::Vec<termrock::widgets::HintSpan<'static>>
 pub fn termrock::scroll::scroll_selectable_list(&mut usize, &mut u16, usize, usize, isize) -> bool
 pub fn termrock::scroll::scrollbar_offset_for_track_position(usize, usize, usize, usize) -> u16
@@ -58843,7 +58888,6 @@ impl<'a> termrock::widgets::AgentModeSelector<'a>
 pub fn termrock::widgets::AgentModeSelector<'a>::compact_status(&self, &termrock::widgets::AgentModeSelectorState) -> alloc::string::String
 pub const fn termrock::widgets::AgentModeSelector<'a>::new(&'a [termrock::widgets::AgentModeOption], &'a termrock::style::DesignSystem) -> Self
 pub fn termrock::widgets::AgentModeSelector<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::AgentModeSelectorState) -> alloc::vec::Vec<(alloc::string::String, ratatui_core::layout::rect::Rect)>
-pub fn termrock::widgets::AgentModeSelector<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::AgentModeSelectorState)
 impl<'a> core::clone::Clone for termrock::widgets::AgentModeSelector<'a>
 pub fn termrock::widgets::AgentModeSelector<'a>::clone(&self) -> termrock::widgets::AgentModeSelector<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::AgentModeSelector<'a>
@@ -61648,7 +61692,6 @@ pub fn termrock::widgets::Checkbox<'a, Id>::paint(&self, ratatui_core::layout::r
 pub fn termrock::widgets::Checkbox<'a, Id>::preferred_height(&self) -> u16
 pub fn termrock::widgets::Checkbox<'a, Id>::preferred_width(&self, &termrock::widgets::CheckboxState) -> u16
 pub fn termrock::widgets::Checkbox<'a, Id>::register_semantic<Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, ratatui_core::layout::rect::Rect, &termrock::widgets::CheckboxState) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
-pub fn termrock::widgets::Checkbox<'a, Id>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::CheckboxState)
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::Checkbox<'a, Id>
 pub fn termrock::widgets::Checkbox<'a, Id>::clone(&self) -> termrock::widgets::Checkbox<'a, Id>
 impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::Checkbox<'a, Id>
@@ -62019,8 +62062,6 @@ pub const fn termrock::widgets::Chip<'a, Id>::removable(self, bool) -> Self
 pub fn termrock::widgets::Chip<'a, Id>::remove_action_label(&self) -> alloc::string::String
 pub const fn termrock::widgets::Chip<'a, Id>::static_chip(Id, &'a str, &'a termrock::style::DesignSystem) -> Self
 pub const fn termrock::widgets::Chip<'a, Id>::status(self, termrock::widgets::TokenStatus) -> Self
-impl<Id: core::clone::Clone> termrock::widgets::Chip<'_, Id>
-pub fn termrock::widgets::Chip<'_, Id>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::ChipState)
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::Chip<'a, Id>
 pub fn termrock::widgets::Chip<'a, Id>::clone(&self) -> termrock::widgets::Chip<'a, Id>
 impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::Chip<'a, Id>
@@ -62987,7 +63028,7 @@ pub const fn termrock::widgets::CodeFrame<'a>::colorless(self, bool) -> Self
 pub const fn termrock::widgets::CodeFrame<'a>::file(self, &'a str) -> Self
 pub const fn termrock::widgets::CodeFrame<'a>::labels(self, &'a [termrock::widgets::SourceLabel<'a>]) -> Self
 pub const fn termrock::widgets::CodeFrame<'a>::new(&'a [termrock::widgets::CodeFrameLine<'a>], &'a termrock::style::DesignSystem) -> Self
-pub fn termrock::widgets::CodeFrame<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer) -> u16
+pub fn termrock::widgets::CodeFrame<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer) -> u16
 pub const fn termrock::widgets::CodeFrame<'a>::tab_stop(self, usize) -> Self
 pub const fn termrock::widgets::CodeFrame<'a>::truncated_above(self, bool) -> Self
 pub const fn termrock::widgets::CodeFrame<'a>::truncated_below(self, bool) -> Self
@@ -64658,7 +64699,6 @@ pub const fn termrock::widgets::ContextMeter<'a>::colorless(self, bool) -> Self
 pub const fn termrock::widgets::ContextMeter<'a>::mono(self, bool) -> Self
 pub const fn termrock::widgets::ContextMeter<'a>::new(&'a termrock::widgets::ContextBudget, &'a termrock::style::DesignSystem) -> Self
 pub fn termrock::widgets::ContextMeter<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::ContextMeterState)
-pub fn termrock::widgets::ContextMeter<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::ContextMeterState)
 impl<'a> core::clone::Clone for termrock::widgets::ContextMeter<'a>
 pub fn termrock::widgets::ContextMeter<'a>::clone(&self) -> termrock::widgets::ContextMeter<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::ContextMeter<'a>
@@ -64909,7 +64949,7 @@ pub const fn termrock::widgets::DataTable<'a, RowId, ColId>::footer(self, bool) 
 pub const fn termrock::widgets::DataTable<'a, RowId, ColId>::fullscreen_hint(self, bool) -> Self
 pub const fn termrock::widgets::DataTable<'a, RowId, ColId>::groups(self, &'a [termrock::widgets::GroupHeader<RowId>]) -> Self
 pub const fn termrock::widgets::DataTable<'a, RowId, ColId>::new(&'a termrock::style::DesignSystem, &'a termrock::widgets::ColumnModel<ColId>, &'a [(RowId, &'a [&'a str])]) -> Self
-pub fn termrock::widgets::DataTable<'a, RowId, ColId>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::DataTableState<RowId, ColId>) where ColId: core::clone::Clone
+pub fn termrock::widgets::DataTable<'a, RowId, ColId>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::DataTableState<RowId, ColId>) where ColId: core::clone::Clone
 pub const fn termrock::widgets::DataTable<'a, RowId, ColId>::row_numbers(self, bool) -> Self
 pub const fn termrock::widgets::DataTable<'a, RowId, ColId>::toolbar(self, &'a termrock::widgets::DataTableToolbar<'a>) -> Self
 impl<'a, RowId: core::clone::Clone + core::cmp::Ord, ColId: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::DataTable<'a, RowId, ColId>
@@ -65454,7 +65494,7 @@ pub struct termrock::widgets::DependencyGraph<'a>
 impl<'a> termrock::widgets::DependencyGraph<'a>
 pub const fn termrock::widgets::DependencyGraph<'a>::focused(self, bool) -> Self
 pub const fn termrock::widgets::DependencyGraph<'a>::new(&'a [termrock::widgets::DepNode<'a>], &'a [termrock::widgets::DepEdge<'a>], &'a termrock::style::DesignSystem) -> Self
-pub fn termrock::widgets::DependencyGraph<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::DependencyGraphState)
+pub fn termrock::widgets::DependencyGraph<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::DependencyGraphState)
 pub const fn termrock::widgets::DependencyGraph<'a>::title(self, &'a str) -> Self
 impl<'a> core::clone::Clone for termrock::widgets::DependencyGraph<'a>
 pub fn termrock::widgets::DependencyGraph<'a>::clone(&self) -> termrock::widgets::DependencyGraph<'a>
@@ -66121,8 +66161,8 @@ impl<'a> termrock::widgets::DiagnosticView<'a>
 pub const fn termrock::widgets::DiagnosticView<'a>::colorless(self, bool) -> Self
 pub const fn termrock::widgets::DiagnosticView<'a>::focused(self, bool) -> Self
 pub const fn termrock::widgets::DiagnosticView<'a>::new(&'a [termrock::widgets::Diagnostic<'a>], &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::DiagnosticView<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::DiagnosticState)
 pub const fn termrock::widgets::DiagnosticView<'a>::recipe(self, termrock::widgets::DiagnosticRecipe) -> Self
-pub fn termrock::widgets::DiagnosticView<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::DiagnosticState)
 pub const fn termrock::widgets::DiagnosticView<'a>::source_lines(self, &'a [termrock::widgets::CodeFrameLine<'a>]) -> Self
 pub const fn termrock::widgets::DiagnosticView<'a>::title(self, &'a str) -> Self
 impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::DiagnosticView<'_>
@@ -66731,7 +66771,7 @@ pub const fn termrock::widgets::DiffReview<'a>::files(self, &'a [termrock::widge
 pub const fn termrock::widgets::DiffReview<'a>::focused(self, bool) -> Self
 pub const fn termrock::widgets::DiffReview<'a>::hunks(self, &'a [termrock::widgets::DiffHunk]) -> Self
 pub const fn termrock::widgets::DiffReview<'a>::new(&'a [termrock::widgets::DiffLine<'a>], &'a termrock::style::DesignSystem) -> Self
-pub fn termrock::widgets::DiffReview<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::DiffReviewState)
+pub fn termrock::widgets::DiffReview<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::DiffReviewState)
 pub const fn termrock::widgets::DiffReview<'a>::show_summary(self, bool) -> Self
 pub const fn termrock::widgets::DiffReview<'a>::show_tree(self, bool) -> Self
 pub const fn termrock::widgets::DiffReview<'a>::title(self, &'a str) -> Self
@@ -67066,7 +67106,7 @@ pub const fn termrock::widgets::DiffView<'a>::files(self, &'a [termrock::widgets
 pub const fn termrock::widgets::DiffView<'a>::focused(self, bool) -> Self
 pub const fn termrock::widgets::DiffView<'a>::hunks(self, &'a [termrock::widgets::DiffHunk]) -> Self
 pub const fn termrock::widgets::DiffView<'a>::new(&'a [termrock::widgets::DiffLine<'a>], &'a termrock::style::DesignSystem) -> Self
-pub fn termrock::widgets::DiffView<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::DiffViewState)
+pub fn termrock::widgets::DiffView<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::DiffViewState)
 pub const fn termrock::widgets::DiffView<'a>::title(self, &'a str) -> Self
 impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::DiffView<'_>
 pub type &termrock::widgets::DiffView<'_>::State = termrock::widgets::DiffViewState
@@ -67886,7 +67926,7 @@ pub struct termrock::widgets::EventStream<'a, Id>
 impl<'a, Id: core::clone::Clone + core::cmp::PartialEq + core::cmp::Ord> termrock::widgets::EventStream<'a, Id>
 pub const fn termrock::widgets::EventStream<'a, Id>::colorless(self, bool) -> Self
 pub const fn termrock::widgets::EventStream<'a, Id>::focused(self, bool) -> Self
-pub fn termrock::widgets::EventStream<'a, Id>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::EventStreamState<Id>)
+pub fn termrock::widgets::EventStream<'a, Id>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::EventStreamState<Id>)
 pub const fn termrock::widgets::EventStream<'a, Id>::with_events(&'a [termrock::widgets::StreamEvent<'a, Id>], &'a termrock::style::DesignSystem) -> Self
 impl<'a> termrock::widgets::EventStream<'a, ()>
 pub const fn termrock::widgets::EventStream<'a, ()>::new(&'a [termrock::widgets::StreamEvent<'a, ()>], &'a termrock::style::DesignSystem) -> Self
@@ -68817,7 +68857,7 @@ pub struct termrock::widgets::FileTree<'a, Id>
 impl<'a, Id> termrock::widgets::FileTree<'a, Id>
 pub const fn termrock::widgets::FileTree<'a, Id>::focused(self, bool) -> Self
 pub const fn termrock::widgets::FileTree<'a, Id>::new(&'a [termrock::widgets::FileTreeEntry<'a, Id>], &'a termrock::style::DesignSystem) -> Self
-pub fn termrock::widgets::FileTree<'a, Id>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::FileTreeState<Id>) where Id: core::clone::Clone + core::cmp::PartialEq + core::cmp::Eq
+pub fn termrock::widgets::FileTree<'a, Id>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::FileTreeState<Id>) where Id: core::clone::Clone + core::cmp::PartialEq + core::cmp::Eq
 pub const fn termrock::widgets::FileTree<'a, Id>::show_filter_chrome(self, bool) -> Self
 pub const fn termrock::widgets::FileTree<'a, Id>::title(self, &'a str) -> Self
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::FileTree<'a, Id>
@@ -70187,7 +70227,7 @@ impl<'a> termrock::widgets::HexViewer<'a>
 pub const fn termrock::widgets::HexViewer<'a>::colorless(self, bool) -> Self
 pub const fn termrock::widgets::HexViewer<'a>::focused(self, bool) -> Self
 pub const fn termrock::widgets::HexViewer<'a>::new(termrock::widgets::HexWindow<'a>, &'a termrock::style::DesignSystem) -> Self
-pub fn termrock::widgets::HexViewer<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::HexViewerState)
+pub fn termrock::widgets::HexViewer<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::HexViewerState)
 pub const fn termrock::widgets::HexViewer<'a>::title(self, &'a str) -> Self
 impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::HexViewer<'_>
 pub type &termrock::widgets::HexViewer<'_>::State = termrock::widgets::HexViewerState
@@ -70929,7 +70969,6 @@ pub const fn termrock::widgets::IconButton<'a>::variant(self, termrock::widgets:
 impl<'a> termrock::widgets::IconButton<'a>
 pub fn termrock::widgets::IconButton<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::IconButtonState) -> termrock::widgets::IconButtonParts
 pub fn termrock::widgets::IconButton<'a>::register_semantic<Id, Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, &termrock::widgets::IconButtonState) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
-pub fn termrock::widgets::IconButton<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::IconButtonState)
 pub const fn termrock::widgets::IconButton<'a>::to_toolbar_label(&self) -> &'a str
 impl<'a> core::clone::Clone for termrock::widgets::IconButton<'a>
 pub fn termrock::widgets::IconButton<'a>::clone(&self) -> termrock::widgets::IconButton<'a>
@@ -72268,7 +72307,7 @@ pub fn termrock::widgets::KeyValueTable<'a, Id>::handle_key(&self, &mut termrock
 pub fn termrock::widgets::KeyValueTable<'a, Id>::handle_mouse(&self, &mut termrock::widgets::KeyValueTableState<Id>, termrock::input::MouseEvent) -> termrock::widgets::KeyValueTableOutcome<Id>
 pub const fn termrock::widgets::KeyValueTable<'a, Id>::key_width(self, u16) -> Self
 pub const fn termrock::widgets::KeyValueTable<'a, Id>::new(&'a [termrock::widgets::KvtField<'a, Id>], &'a termrock::style::DesignSystem) -> Self
-pub fn termrock::widgets::KeyValueTable<'a, Id>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::KeyValueTableState<Id>)
+pub fn termrock::widgets::KeyValueTable<'a, Id>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::KeyValueTableState<Id>)
 pub const fn termrock::widgets::KeyValueTable<'a, Id>::separator(self, &'a str) -> Self
 pub const fn termrock::widgets::KeyValueTable<'a, Id>::show_source(self, bool) -> Self
 pub const fn termrock::widgets::KeyValueTable<'a, Id>::show_type(self, bool) -> Self
@@ -73374,8 +73413,10 @@ pub fn termrock::widgets::ListState<Id>::selection_mut(&mut self) -> core::optio
 pub const fn termrock::widgets::ListState<Id>::set_click_policy(&mut self, termrock::widgets::ListClickPolicy)
 pub fn termrock::widgets::ListState<Id>::set_search_query(&mut self, core::option::Option<alloc::string::String>)
 pub fn termrock::widgets::ListState<Id>::set_selection_mode(&mut self, termrock::widgets::ListSelectionMode) where Id: core::clone::Clone + core::cmp::PartialEq
+pub fn termrock::widgets::ListState<Id>::set_virtual_active_policy(&mut self, termrock::interaction::VirtualWindowActivePolicy)
 pub fn termrock::widgets::ListState<Id>::set_virtual_window(&mut self, usize, usize)
 pub fn termrock::widgets::ListState<Id>::typeahead_buffer(&self) -> &str
+pub const fn termrock::widgets::ListState<Id>::virtual_active_policy(&self) -> termrock::interaction::VirtualWindowActivePolicy
 pub const fn termrock::widgets::ListState<Id>::virtual_total(&self) -> usize
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::ListState<Id>
 pub fn termrock::widgets::ListState<Id>::clone(&self) -> termrock::widgets::ListState<Id>
@@ -73667,7 +73708,7 @@ impl<'a> termrock::widgets::LogStream<'a>
 pub const fn termrock::widgets::LogStream<'a>::colorless(self, bool) -> Self
 pub const fn termrock::widgets::LogStream<'a>::focused(self, bool) -> Self
 pub const fn termrock::widgets::LogStream<'a>::new(&'a [termrock::widgets::LogLine<'a>], &'a termrock::style::DesignSystem) -> Self
-pub fn termrock::widgets::LogStream<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::LogStreamState)
+pub fn termrock::widgets::LogStream<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::LogStreamState)
 pub const fn termrock::widgets::LogStream<'a>::title(self, &'a str) -> Self
 impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::LogStream<'_>
 pub type &termrock::widgets::LogStream<'_>::State = termrock::widgets::LogStreamState
@@ -75724,7 +75765,6 @@ impl<'a> termrock::widgets::ModelSelector<'a>
 pub fn termrock::widgets::ModelSelector<'a>::compact_status(&self, &termrock::widgets::ModelSelectorState) -> alloc::string::String
 pub const fn termrock::widgets::ModelSelector<'a>::new(&'a [termrock::widgets::ModelOption], &'a termrock::style::DesignSystem) -> Self
 pub fn termrock::widgets::ModelSelector<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::ModelSelectorState) -> alloc::vec::Vec<(alloc::string::String, ratatui_core::layout::rect::Rect)>
-pub fn termrock::widgets::ModelSelector<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::ModelSelectorState)
 pub const fn termrock::widgets::ModelSelector<'a>::show_reasoning(self, bool) -> Self
 impl<'a> core::clone::Clone for termrock::widgets::ModelSelector<'a>
 pub fn termrock::widgets::ModelSelector<'a>::clone(&self) -> termrock::widgets::ModelSelector<'a>
@@ -76604,8 +76644,8 @@ pub const fn termrock::widgets::ObjectInspector<'a>::colorless(self, bool) -> Se
 pub fn termrock::widgets::ObjectInspector<'a>::display_value(&self, &termrock::widgets::InspectorField<'a>, &termrock::widgets::ObjectInspectorState) -> alloc::string::String
 pub const fn termrock::widgets::ObjectInspector<'a>::focused(self, bool) -> Self
 pub const fn termrock::widgets::ObjectInspector<'a>::new(&'a [termrock::widgets::InspectorField<'a>], &'a termrock::style::DesignSystem) -> Self
+pub fn termrock::widgets::ObjectInspector<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::ObjectInspectorState)
 pub const fn termrock::widgets::ObjectInspector<'a>::presentation(self, termrock::widgets::InspectPresentation) -> Self
-pub fn termrock::widgets::ObjectInspector<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::ObjectInspectorState)
 pub const fn termrock::widgets::ObjectInspector<'a>::show_types(self, bool) -> Self
 impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::ObjectInspector<'_>
 pub type &termrock::widgets::ObjectInspector<'_>::State = termrock::widgets::ObjectInspectorState
@@ -79801,7 +79841,7 @@ impl<T> either::into_either::IntoEither for termrock::widgets::ProjectedEntryMet
 pub struct termrock::widgets::PromptComposer<'a>
 impl<'a> termrock::widgets::PromptComposer<'a>
 pub const fn termrock::widgets::PromptComposer<'a>::new(&'a termrock::style::DesignSystem) -> Self
-pub fn termrock::widgets::PromptComposer<'a>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::PromptComposerState)
+pub fn termrock::widgets::PromptComposer<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::PromptComposerState)
 impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::PromptComposer<'_>
 pub type &termrock::widgets::PromptComposer<'_>::State = termrock::widgets::PromptComposerState
 pub fn &termrock::widgets::PromptComposer<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
@@ -80315,7 +80355,6 @@ impl<'a> termrock::widgets::QuestionFlow<'a>
 pub const fn termrock::widgets::QuestionFlow<'a>::colorless(self, bool) -> Self
 pub const fn termrock::widgets::QuestionFlow<'a>::new(&'a termrock::style::DesignSystem) -> Self
 pub fn termrock::widgets::QuestionFlow<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::QuestionFlowState)
-pub fn termrock::widgets::QuestionFlow<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::QuestionFlowState)
 impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::QuestionFlow<'_>
 pub type &termrock::widgets::QuestionFlow<'_>::State = termrock::widgets::QuestionFlowState
 pub fn &termrock::widgets::QuestionFlow<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut Self::State)
@@ -81066,7 +81105,6 @@ pub fn termrock::widgets::RadioGroup<'a, Id>::handle_key_result(&self, &mut term
 pub fn termrock::widgets::RadioGroup<'a, Id>::handle_mouse(&self, &mut termrock::widgets::RadioState<Id>, termrock::input::MouseEvent) -> termrock::widgets::RadioOutcome<Id>
 pub fn termrock::widgets::RadioGroup<'a, Id>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::RadioState<Id>) -> termrock::widgets::RadioGroupParts<Id>
 pub fn termrock::widgets::RadioGroup<'a, Id>::register_semantic<Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, &termrock::widgets::RadioState<Id>) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
-pub fn termrock::widgets::RadioGroup<'a, Id>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::RadioState<Id>)
 impl<'a, Id> termrock::widgets::RadioGroup<'a, Id>
 pub const fn termrock::widgets::RadioGroup<'a, Id>::colorless(self, bool) -> Self
 pub const fn termrock::widgets::RadioGroup<'a, Id>::horizontal(self) -> Self
@@ -82060,8 +82098,8 @@ pub fn termrock::widgets::ScrollArea<'a>::body_area(&self, ratatui_core::layout:
 pub const fn termrock::widgets::ScrollArea<'a>::focused(self, bool) -> Self
 pub const fn termrock::widgets::ScrollArea<'a>::hovered(self, bool) -> Self
 pub const fn termrock::widgets::ScrollArea<'a>::new(&'a termrock::style::DesignSystem) -> Self
-pub fn termrock::widgets::ScrollArea<'a>::render_bars(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::widgets::ScrollAreaState)
-pub fn termrock::widgets::ScrollArea<'a>::render_new_content(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::widgets::ScrollAreaState)
+pub fn termrock::widgets::ScrollArea<'a>::paint_bars(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::widgets::ScrollAreaState)
+pub fn termrock::widgets::ScrollArea<'a>::paint_new_content(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::widgets::ScrollAreaState)
 pub const fn termrock::widgets::ScrollArea<'a>::show_new_content(self, bool) -> Self
 impl<'a> core::clone::Clone for termrock::widgets::ScrollArea<'a>
 pub fn termrock::widgets::ScrollArea<'a>::clone(&self) -> termrock::widgets::ScrollArea<'a>
@@ -82528,7 +82566,7 @@ impl<'a> termrock::widgets::SearchResults<'a>
 pub const fn termrock::widgets::SearchResults<'a>::compact(self) -> Self
 pub const fn termrock::widgets::SearchResults<'a>::focused(self, bool) -> Self
 pub const fn termrock::widgets::SearchResults<'a>::new(&'a [termrock::widgets::SearchResultGroup], &'a [termrock::widgets::SearchResultItem<'a>], &'a termrock::style::DesignSystem) -> Self
-pub fn termrock::widgets::SearchResults<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::SearchResultsState)
+pub fn termrock::widgets::SearchResults<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::SearchResultsState)
 pub const fn termrock::widgets::SearchResults<'a>::title(self, &'a str) -> Self
 impl<'a> core::clone::Clone for termrock::widgets::SearchResults<'a>
 pub fn termrock::widgets::SearchResults<'a>::clone(&self) -> termrock::widgets::SearchResults<'a>
@@ -84721,11 +84759,8 @@ pub const fn termrock::widgets::Spinner<'a>::new(&'a termrock::style::DesignSyst
 pub fn termrock::widgets::Spinner<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::widgets::SpinnerState, termrock::runtime::FrameTick, termrock::style::MotionPolicy)
 pub const fn termrock::widgets::Spinner<'a>::phase(self, termrock::widgets::ActivityPhase) -> Self
 pub fn termrock::widgets::Spinner<'a>::register_semantic<Sid, Act>(&self, &mut termrock::interaction::SemanticScene<Sid, Act>, Sid, ratatui_core::layout::rect::Rect, &termrock::widgets::SpinnerState) where Sid: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Act: core::clone::Clone
-pub fn termrock::widgets::Spinner<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, termrock::runtime::FrameTick, termrock::style::MotionPolicy)
 pub fn termrock::widgets::Spinner<'a>::resolved_label(&self, &termrock::widgets::SpinnerState) -> &'a str
 pub const fn termrock::widgets::Spinner<'a>::variant(self, termrock::widgets::SpinnerVariant) -> Self
-impl ratatui_core::widgets::widget::Widget for &termrock::widgets::Spinner<'_>
-pub fn &termrock::widgets::Spinner<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
 impl<'a> core::clone::Clone for termrock::widgets::Spinner<'a>
 pub fn termrock::widgets::Spinner<'a>::clone(&self) -> termrock::widgets::Spinner<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::Spinner<'a>
@@ -86195,7 +86230,6 @@ pub fn termrock::widgets::Switch<'a, Id>::paint(&self, ratatui_core::layout::rec
 pub fn termrock::widgets::Switch<'a, Id>::preferred_height(&self) -> u16
 pub const fn termrock::widgets::Switch<'a, Id>::recipe(self, termrock::widgets::SwitchRecipe) -> Self
 pub fn termrock::widgets::Switch<'a, Id>::register_semantic<Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, ratatui_core::layout::rect::Rect, &termrock::widgets::SwitchState) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
-pub fn termrock::widgets::Switch<'a, Id>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::SwitchState)
 pub const fn termrock::widgets::Switch<'a, Id>::settings_row(self) -> Self
 pub const fn termrock::widgets::Switch<'a, Id>::show_value_text(self, bool) -> Self
 pub fn termrock::widgets::Switch<'a, Id>::track_width(&self, &termrock::widgets::SwitchState) -> u16
@@ -86844,8 +86878,6 @@ pub const fn termrock::widgets::Tag<'a, Id>::removable(self, bool) -> Self
 pub const fn termrock::widgets::Tag<'a, Id>::removable_tag(Id, &'a str, &'a termrock::style::DesignSystem) -> Self
 pub fn termrock::widgets::Tag<'a, Id>::remove_action_label(&self) -> alloc::string::String
 pub const fn termrock::widgets::Tag<'a, Id>::status(self, termrock::widgets::TokenStatus) -> Self
-impl<Id: core::clone::Clone> termrock::widgets::Tag<'_, Id>
-pub fn termrock::widgets::Tag<'_, Id>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::TagState)
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::Tag<'a, Id>
 pub fn termrock::widgets::Tag<'a, Id>::clone(&self) -> termrock::widgets::Tag<'a, Id>
 impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::Tag<'a, Id>
@@ -87174,7 +87206,7 @@ impl<'a> termrock::widgets::TerminalOutput<'a>
 pub const fn termrock::widgets::TerminalOutput<'a>::colorless(self, bool) -> Self
 pub const fn termrock::widgets::TerminalOutput<'a>::focused(self, bool) -> Self
 pub const fn termrock::widgets::TerminalOutput<'a>::new(&'a termrock::widgets::TerminalCommandMeta<'a>, &'a [termrock::widgets::TerminalLine<'a>], &'a termrock::style::DesignSystem) -> Self
-pub fn termrock::widgets::TerminalOutput<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::TerminalOutputState)
+pub fn termrock::widgets::TerminalOutput<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::TerminalOutputState)
 pub const fn termrock::widgets::TerminalOutput<'a>::show_chrome(self, bool) -> Self
 pub const fn termrock::widgets::TerminalOutput<'a>::title(self, &'a str) -> Self
 impl ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::TerminalOutput<'_>
@@ -89669,7 +89701,6 @@ impl<'a> termrock::widgets::ToolCallCard<'a>
 pub const fn termrock::widgets::ToolCallCard<'a>::colorless(self, bool) -> Self
 pub const fn termrock::widgets::ToolCallCard<'a>::new(&'a termrock::widgets::ToolCall, &'a termrock::style::DesignSystem) -> Self
 pub fn termrock::widgets::ToolCallCard<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::ToolCallCardState)
-pub fn termrock::widgets::ToolCallCard<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::ToolCallCardState)
 pub const fn termrock::widgets::ToolCallCard<'a>::tick(self, u64) -> Self
 impl<'a> core::clone::Clone for termrock::widgets::ToolCallCard<'a>
 pub fn termrock::widgets::ToolCallCard<'a>::clone(&self) -> termrock::widgets::ToolCallCard<'a>
@@ -90260,7 +90291,7 @@ pub struct termrock::widgets::TraceWaterfall<'a>
 impl<'a> termrock::widgets::TraceWaterfall<'a>
 pub const fn termrock::widgets::TraceWaterfall<'a>::focused(self, bool) -> Self
 pub const fn termrock::widgets::TraceWaterfall<'a>::new(&'a [termrock::widgets::TraceSpan<'a>], &'a termrock::style::DesignSystem) -> Self
-pub fn termrock::widgets::TraceWaterfall<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::TraceWaterfallState)
+pub fn termrock::widgets::TraceWaterfall<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::TraceWaterfallState)
 pub const fn termrock::widgets::TraceWaterfall<'a>::title(self, &'a str) -> Self
 impl<'a> core::clone::Clone for termrock::widgets::TraceWaterfall<'a>
 pub fn termrock::widgets::TraceWaterfall<'a>::clone(&self) -> termrock::widgets::TraceWaterfall<'a>
@@ -90993,7 +91024,7 @@ pub const fn termrock::widgets::TreeTable<'a, Id, ColId>::compact_indent(self, b
 pub const fn termrock::widgets::TreeTable<'a, Id, ColId>::empty_message(self, &'a str) -> Self
 pub const fn termrock::widgets::TreeTable<'a, Id, ColId>::focused(self, bool) -> Self
 pub const fn termrock::widgets::TreeTable<'a, Id, ColId>::new(&'a termrock::style::DesignSystem, &'a termrock::widgets::ColumnModel<ColId>, &'a [termrock::widgets::TreeTableRow<'a, Id>]) -> Self
-pub fn termrock::widgets::TreeTable<'a, Id, ColId>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::TreeTableState<Id, ColId>) where ColId: core::clone::Clone
+pub fn termrock::widgets::TreeTable<'a, Id, ColId>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::TreeTableState<Id, ColId>) where ColId: core::clone::Clone
 pub const fn termrock::widgets::TreeTable<'a, Id, ColId>::sticky_header(self, bool) -> Self
 impl<'a, Id: core::clone::Clone + core::cmp::Ord, ColId: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::stateful_widget::StatefulWidget for &termrock::widgets::TreeTable<'a, Id, ColId>
 pub type &termrock::widgets::TreeTable<'a, Id, ColId>::State = termrock::widgets::TreeTableState<Id, ColId>
@@ -91269,8 +91300,8 @@ pub fn termrock::widgets::Viewport<'a>::on_drag(&self, &mut termrock::widgets::V
 pub fn termrock::widgets::Viewport<'a>::on_key(&self, &mut termrock::widgets::ViewportState, termrock::input::KeyEvent) -> (termrock::interaction::Outcome<()>, core::option::Option<termrock::widgets::ViewportEvent>)
 pub fn termrock::widgets::Viewport<'a>::on_mouse(&self, &mut termrock::widgets::ViewportState, termrock::input::MouseEvent) -> termrock::interaction::Outcome<()>
 pub const fn termrock::widgets::Viewport<'a>::padded_content(self) -> Self
+pub fn termrock::widgets::Viewport<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::ViewportState)
 pub fn termrock::widgets::Viewport<'a>::pos_at(&self, &termrock::widgets::ViewportState, ratatui_core::layout::position::Position) -> core::option::Option<termrock::widgets::CellPos>
-pub fn termrock::widgets::Viewport<'a>::render(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::ViewportState)
 pub fn termrock::widgets::Viewport<'a>::select_word_at(&self, &mut termrock::widgets::ViewportState, ratatui_core::layout::position::Position) -> termrock::interaction::Outcome<()>
 pub fn termrock::widgets::Viewport<'a>::selected_text(&self, &termrock::widgets::ViewportState) -> core::option::Option<alloc::string::String>
 pub fn termrock::widgets::Viewport<'a>::selection(&self, &termrock::widgets::ViewportState) -> core::option::Option<(termrock::widgets::CellPos, termrock::widgets::CellPos)>
@@ -92603,8 +92634,10 @@ pub fn termrock::widgets::open_quick_open_overlay<FocusId: core::clone::Clone>(&
 pub fn termrock::widgets::open_slash_command_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::open_tooltip_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>, ratatui_core::layout::rect::Rect, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySize, core::option::Option<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::paint_attachment_strip(&[termrock::widgets::AttachmentItem], &[termrock::widgets::PastePayload], ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::style::DesignSystem, &mut termrock::widgets::TokenStripState<alloc::string::String>, termrock::widgets::TokenStripLayout, usize, bool, &[&str])
+pub fn termrock::widgets::paint_hint_bar(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, &[termrock::widgets::HintSpan<'_>], &termrock::style::DesignSystem)
 pub fn termrock::widgets::paint_line_segments(ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::style::DesignSystem, &[termrock::widgets::LineSegment<'_>], &[termrock::widgets::LineSegment<'_>], ratatui_core::style::color::Color)
 pub fn termrock::widgets::paint_progress_steps_as_timeline(&[termrock::widgets::ProgressStep], ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::TimelineState<()>, &termrock::style::DesignSystem)
+pub fn termrock::widgets::paint_props(ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::style::JunieTheme, &[termrock::widgets::Prop], ratatui_core::style::color::Color) -> u16
 pub fn termrock::widgets::parse_draft_with_mentions(&str) -> termrock::widgets::MentionDraft
 pub fn termrock::widgets::parse_lines(&str, &termrock::ansi_text::AnsiParseOptions) -> alloc::vec::Vec<termrock::ansi_text::AnsiLine>
 pub fn termrock::widgets::parse_mention_markup(&str) -> core::option::Option<termrock::widgets::MentionRef>
@@ -92656,8 +92689,6 @@ pub fn termrock::widgets::redact_env_value(&str, &str) -> (alloc::string::String
 pub fn termrock::widgets::redact_history_text(&str, termrock::widgets::HistoryRedaction) -> alloc::string::String
 pub fn termrock::widgets::redact_tool_secrets(&str) -> alloc::string::String
 pub fn termrock::widgets::remove_label(&str) -> alloc::string::String
-pub fn termrock::widgets::render_hint_bar(&mut ratatui_core::terminal::frame::Frame<'_>, ratatui_core::layout::rect::Rect, &[termrock::widgets::HintSpan<'_>], &termrock::style::DesignSystem)
-pub fn termrock::widgets::render_props(ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::style::JunieTheme, &[termrock::widgets::Prop], ratatui_core::style::color::Color) -> u16
 pub fn termrock::widgets::replay_jump_keys<Id: core::clone::Clone>(&mut termrock::widgets::JumpOverlayState, &[termrock::widgets::JumpTarget<Id>], &str) -> termrock::widgets::JumpOutcome<Id>
 pub fn termrock::widgets::required_filled<Id>(&[termrock::widgets::Fieldset<'_, Id>]) -> bool
 pub fn termrock::widgets::resolve_domain(termrock::widgets::ScaleMode, impl core::iter::traits::iterator::Iterator<Item = f64>) -> termrock::widgets::ScaleDomain

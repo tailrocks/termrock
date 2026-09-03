@@ -374,14 +374,18 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0387 | `v0.14.0` | [TreeTable key routing for empty projections](migrations/0387-v0.14.0-tree-table-key-empty-projection.md) |
 | 0388 | `v0.14.0` | [TreeTable routes shifted page keys](migrations/0388-v0.14.0-tree-table-shifted-page-routing.md) |
 | 0389 | `v0.14.0` | [List one-shot intents reject key repeats](migrations/0389-v0.14.0-list-intent-repeat-gates.md) |
-| 0390 | `v0.14.0` | [paint-only Accordion](migrations/0390-v0.14.0-paint-only-accordion.md) |
-| 0391 | `v0.14.0` | [paint-only ButtonGroup](migrations/0391-v0.14.0-paint-only-button-group.md) |
-| 0392 | `v0.14.0` | [paint-only links and controls](migrations/0392-v0.14.0-paint-only-links-controls.md) |
-| 0393 | `v0.14.0` | [Timeline paint contract and Skeleton consolidation](migrations/0393-v0.14.0-paint-only-timeline-skeleton.md) |
-| 0394 | `v0.14.0` | [EmptyState uses one stateful paint path](migrations/0394-v0.14.0-paint-only-empty-state.md) |
-| 0395 | `v0.14.0` | [ErrorState and StatusIndicator use one paint path](migrations/0395-v0.14.0-paint-only-error-status.md) |
-| 0396 | `v0.14.0` | [Slider family and Tooltip are paint-only](migrations/0396-v0.14.0-paint-only-slider-tooltip.md) |
-| 0397 | `v0.14.0` | [SegmentedControl and ToggleGroup are paint-only](migrations/0397-v0.14.0-paint-only-segmented-toggle.md) |
+| 0390 | `v0.14.0` | [Virtual windows preserve active identity](migrations/0390-v0.14.0-virtual-window-active-identity.md) |
+| 0391 | `v0.14.0` | [Collection full-window reconciliation repairs stale active IDs](migrations/0391-v0.14.0-collection-full-window-reconcile.md) |
+| 0392 | `v0.14.0` | [Partial collection windows expose active-ID policy](migrations/0392-v0.14.0-collection-partial-active-policy.md) |
+| 0398 | `v0.14.0` | [paint-only Accordion](migrations/0398-v0.14.0-paint-only-accordion.md) |
+| 0399 | `v0.14.0` | [paint-only ButtonGroup](migrations/0399-v0.14.0-paint-only-button-group.md) |
+| 0400 | `v0.14.0` | [paint-only links and controls](migrations/0400-v0.14.0-paint-only-links-controls.md) |
+| 0401 | `v0.14.0` | [Timeline paint contract and Skeleton consolidation](migrations/0401-v0.14.0-paint-only-timeline-skeleton.md) |
+| 0402 | `v0.14.0` | [EmptyState uses one stateful paint path](migrations/0402-v0.14.0-paint-only-empty-state.md) |
+| 0403 | `v0.14.0` | [ErrorState and StatusIndicator use one paint path](migrations/0403-v0.14.0-paint-only-error-status.md) |
+| 0404 | `v0.14.0` | [Slider family and Tooltip are paint-only](migrations/0404-v0.14.0-paint-only-slider-tooltip.md) |
+| 0405 | `v0.14.0` | [SegmentedControl and ToggleGroup are paint-only](migrations/0405-v0.14.0-paint-only-segmented-toggle.md) |
+| 0406 | `v0.14.0` | [Stateful paint vocabulary replaces render aliases](migrations/0406-v0.14.0-unify-stateful-paint-vocabulary.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical
