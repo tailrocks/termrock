@@ -398,6 +398,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0416 | `v0.14.0` | [SearchResults ignores stale completions](migrations/0416-v0.14.0-search-results-ignore-stale-completions.md) |
 | 0417 | `v0.14.0` | [Text-area Escape cancel is one-shot](migrations/0417-v0.14.0-one-shot-cancel-intent.md) |
 | 0418 | `v0.14.0` | [Keymap resolution uses canonical key events](migrations/0418-v0.14.0-canonical-keymap-resolution.md) |
+| 0419 | `v0.14.0` | [Nested focus traps restore their outer boundary](migrations/0419-v0.14.0-nested-focus-trap-restoration.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

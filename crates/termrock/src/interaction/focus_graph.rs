@@ -203,8 +203,8 @@ pub struct FocusGraph<Id> {
     nodes: Vec<FocusNode<Id>>,
     focused: Option<Id>,
     trap_root: Option<Id>,
-    /// Openers under traps (bottom → top).
-    restore_stack: Vec<Option<Id>>,
+    /// Openers and roots under traps (bottom → top).
+    restore_stack: Vec<(Option<Id>, Id)>,
     history: VecDeque<Id>,
     mode: FocusNavMode,
     max_history: usize,
@@ -522,7 +522,7 @@ impl<Id: Clone + PartialEq> FocusGraph<Id> {
     /// Pushes a modal trap; only `root` subtree participates until [`Self::pop_trap`].
     pub fn push_trap(&mut self, root: Id, opener: Option<Id>) {
         self.restore_stack
-            .push(opener.or_else(|| self.focused.clone()));
+            .push((opener.or_else(|| self.focused.clone()), root.clone()));
         self.trap_root = Some(root.clone());
         // Prefer focusing trap root if focusable, else first eligible under trap.
         if self
@@ -538,18 +538,13 @@ impl<Id: Clone + PartialEq> FocusGraph<Id> {
 
     /// Pops trap and restores opener when possible.
     pub fn pop_trap(&mut self) -> FocusOutcome<Id> {
-        let opener = self.restore_stack.pop().flatten();
-        self.trap_root = if self.restore_stack.is_empty() {
-            None
-        } else {
-            // Nested traps: keep prior trap if host re-pushed; simple model clears.
-            None
-        };
+        let opener = self.restore_stack.pop().and_then(|(opener, _)| opener);
+        self.trap_root = self.restore_stack.last().map(|(_, root)| root.clone());
         if let Some(id) = opener {
             if self
                 .nodes
                 .iter()
-                .any(|n| n.id == id && n.focusable && n.enabled)
+                .any(|n| n.id == id && n.focusable && n.enabled && self.in_trap(n))
             {
                 return self.set_focused(Some(id));
             }
@@ -880,7 +875,9 @@ mod tests {
         List,
         Editor,
         Dialog,
+        InnerDialog,
         Ok,
+        InnerOk,
         Cancel,
     }
 
@@ -967,6 +964,55 @@ mod tests {
         assert!(matches!(g.focused(), Some(&Id::Dialog) | Some(&Id::Ok)));
         let _ = g.pop_trap();
         assert_eq!(g.focused(), Some(&Id::Editor));
+    }
+
+    #[test]
+    fn nested_trap_restores_outer_boundary() {
+        let mut g = FocusGraph::new();
+        g.register(FocusNode::leaf(Id::Sidebar, Rect::new(0, 0, 10, 5)).tab_index(0));
+        g.register(FocusNode::leaf(Id::Dialog, Rect::new(5, 5, 30, 8)).tab_index(10));
+        g.register(
+            FocusNode::leaf(Id::Ok, Rect::new(6, 10, 4, 1))
+                .parent(Id::Dialog)
+                .tab_index(11),
+        );
+        g.register(
+            FocusNode::leaf(Id::InnerDialog, Rect::new(8, 7, 20, 5))
+                .parent(Id::Dialog)
+                .tab_index(12),
+        );
+        g.register(
+            FocusNode::leaf(Id::InnerOk, Rect::new(9, 9, 5, 1))
+                .parent(Id::InnerDialog)
+                .tab_index(13),
+        );
+        let _ = g.request_focus(Id::Sidebar);
+
+        g.push_trap(Id::Dialog, None);
+        g.push_trap(Id::InnerDialog, Some(Id::Dialog));
+        assert_eq!(g.trap_root(), Some(&Id::InnerDialog));
+        assert_eq!(g.focused(), Some(&Id::InnerDialog));
+        assert_eq!(g.tab_order(), vec![&Id::InnerDialog, &Id::InnerOk]);
+        assert_eq!(g.request_focus(Id::Ok), FocusOutcome::Ignored);
+
+        let _ = g.pop_trap();
+        assert_eq!(g.trap_root(), Some(&Id::Dialog));
+        assert_eq!(g.focused(), Some(&Id::Dialog));
+        assert_eq!(g.request_focus(Id::Sidebar), FocusOutcome::Ignored);
+        assert!(g.handle_key(key(KeyCode::Tab)).changed());
+        assert!(matches!(g.focused(), Some(&Id::Dialog) | Some(&Id::Ok)));
+
+        g.push_trap(Id::InnerDialog, Some(Id::Sidebar));
+        let _ = g.pop_trap();
+        assert_eq!(g.trap_root(), Some(&Id::Dialog));
+        assert_ne!(g.focused(), Some(&Id::Sidebar));
+
+        let _ = g.pop_trap();
+        assert_eq!(g.trap_root(), None);
+        assert_eq!(g.focused(), Some(&Id::Sidebar));
+        let _ = g.pop_trap();
+        assert_eq!(g.trap_root(), None);
+        assert_eq!(g.focused(), Some(&Id::Sidebar));
     }
 
     #[test]
