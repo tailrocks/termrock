@@ -272,7 +272,15 @@ impl Presence {
 
     /// Request hide (instant or Exiting).
     pub fn request_hide(&mut self, tick: FrameTick, motion: MotionPolicy) {
-        if matches!(self.phase, PresencePhase::Hidden) {
+        if matches!(
+            self.phase,
+            PresencePhase::Hidden | PresencePhase::Pending { .. }
+        ) {
+            // A surface that never became visible has no painted transition
+            // to animate. Cancellation must stay hidden, including when an
+            // exit duration is configured.
+            self.phase = PresencePhase::Hidden;
+            self.paused_since = None;
             return;
         }
         // Exits are transitions, not spinners: `Basic` still fades.
@@ -544,6 +552,21 @@ mod tests {
         off.request_show(tick_at(&mut clock, start, 0));
         off.request_hide(tick_at(&mut clock, start, 1), MotionPolicy::Off);
         assert_eq!(off.phase(), PresencePhase::Hidden);
+    }
+
+    #[test]
+    fn cancelling_pending_presence_never_paints_exit() {
+        let start = Instant::now();
+        let mut clock = FrameClock::from_start(start);
+        let mut presence =
+            Presence::tooltip(Duration::from_millis(400)).with_exit(Duration::from_millis(120));
+
+        presence.request_show(tick_at(&mut clock, start, 0));
+        presence.request_hide(tick_at(&mut clock, start, 100), MotionPolicy::Full);
+
+        assert_eq!(presence.phase(), PresencePhase::Hidden);
+        assert!(!presence.is_visible());
+        assert_eq!(presence.next_deadline(), None);
     }
 
     #[test]
