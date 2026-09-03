@@ -17,7 +17,6 @@
 //! Recipes: section, settings, logs, FAQ.
 //!
 //! References: Radix Accordion, mutual collapsibles, settings/help TUIs.
-#![allow(unused_variables, unused_mut)] // unit-test fixtures
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind};
@@ -1008,9 +1007,7 @@ mod tests {
 
     #[test]
     fn disabled_not_activated() {
-        let system = DesignSystem::default();
         let items = items();
-        let acc = Accordion::section(&items, &system);
         let mut state = AccordionState::new();
         state.set_surface_focused(true);
         state.set_cursor(Some("d"));

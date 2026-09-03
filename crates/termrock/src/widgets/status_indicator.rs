@@ -11,7 +11,6 @@
 //! into [`SemanticStatus`] so components do not invent private status sets.
 //!
 //! Research: btop, process monitors, collaboration presence, agent status.
-#![allow(unused_variables, unused_mut)] // unit-test fixtures
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
 
 use crate::{

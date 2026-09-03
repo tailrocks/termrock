@@ -310,16 +310,12 @@ impl HelpEntry {
 /// Only non-[`Visibility::Internal`] bindings are included. Chord text always
 /// comes from [`format_binding`] on the live binding (including remaps).
 #[must_use]
-pub fn help_entries_from_keymap<A, F>(
-    map: &Keymap<A>,
-    system: &DesignSystem,
-    mut describe: F,
-) -> Vec<HelpEntry>
+pub fn help_entries_from_keymap<A, F>(map: &Keymap<A>, mut describe: F) -> Vec<HelpEntry>
 where
     A: Clone + Copy + PartialEq + 'static,
     F: FnMut(&A, &KeyBinding<A>) -> (String, String, String, Option<String>, Option<String>, u8),
 {
-    let fmt = ChordFormat::from_glyphs(system.glyphs);
+    let fmt = ChordFormat::new();
     let conflict_chords: Vec<_> = map.conflicts().into_iter().map(|c| c.chord).collect();
     let mut out = Vec::new();
     for binding in map.bindings() {
@@ -377,16 +373,12 @@ pub fn mark_remapped_help_entries(entries: &mut [HelpEntry], remapped_ids: &[&st
 
 /// Build conflict-only entries from a live keymap.
 #[must_use]
-pub fn help_entries_from_conflicts<A, F>(
-    map: &Keymap<A>,
-    system: &DesignSystem,
-    mut label_action: F,
-) -> Vec<HelpEntry>
+pub fn help_entries_from_conflicts<A, F>(map: &Keymap<A>, mut label_action: F) -> Vec<HelpEntry>
 where
     A: Clone + Copy + PartialEq + 'static,
     F: FnMut(&A) -> String,
 {
-    let fmt = ChordFormat::from_glyphs(system.glyphs);
+    let fmt = ChordFormat::new();
     let mut out = Vec::new();
     for (i, c) in map.conflicts().into_iter().enumerate() {
         let chord = crate::widgets::format_chord(c.chord, fmt);
@@ -1411,9 +1403,9 @@ pub fn example_help_keymap() -> Keymap<DemoHelpAction> {
 
 /// Generate demo help entries from the example keymap (live format).
 #[must_use]
-pub fn example_help_entries(system: &DesignSystem) -> Vec<HelpEntry> {
+pub fn example_help_entries() -> Vec<HelpEntry> {
     let map = example_help_keymap();
-    let mut entries = help_entries_from_keymap(&map, system, |a, _b| {
+    let mut entries = help_entries_from_keymap(&map, |a, _b| {
         let (cat, pri) = match a {
             DemoHelpAction::Quit | DemoHelpAction::Save => ("App", 10),
             DemoHelpAction::Help => ("Help", 5),
@@ -1441,7 +1433,7 @@ pub fn example_help_entries(system: &DesignSystem) -> Vec<HelpEntry> {
             pri,
         )
     });
-    let conflicts = help_entries_from_conflicts(&map, system, |a| format!("{a:?}"));
+    let conflicts = help_entries_from_conflicts(&map, |a| format!("{a:?}"));
     // No conflict if same action aliases — conflicts() only different actions.
     // Add a host context row still sourced live:
     entries = merge_help_entries([entries, conflicts]);
@@ -1467,9 +1459,8 @@ mod tests {
 
     #[test]
     fn entries_from_live_keymap_not_empty_chords() {
-        let sys = system();
         let map = example_help_keymap();
-        let entries = help_entries_from_keymap(&map, &sys, |a, _| {
+        let entries = help_entries_from_keymap(&map, |a, _| {
             (
                 format!("{a:?}"),
                 "Gen".into(),
@@ -1490,9 +1481,8 @@ mod tests {
 
     #[test]
     fn remap_changes_chord_text() {
-        let sys = system();
         let mut map = example_help_keymap();
-        let before = help_entries_from_keymap(&map, &sys, |a, _| {
+        let before = help_entries_from_keymap(&map, |a, _| {
             (format!("{a:?}"), "App".into(), String::new(), None, None, 1)
         });
         let save_before = before
@@ -1507,7 +1497,7 @@ mod tests {
                 mods: KeyModifiers::CONTROL,
             }]
         ));
-        let after = help_entries_from_keymap(&map, &sys, |a, _| {
+        let after = help_entries_from_keymap(&map, |a, _| {
             (format!("{a:?}"), "App".into(), String::new(), None, None, 1)
         });
         let save_after = after
@@ -1521,7 +1511,6 @@ mod tests {
 
     #[test]
     fn conflicts_reported() {
-        let sys = system();
         let map = Keymap::from_owned(vec![
             KeyBinding::owned(
                 vec![KeyChord {
@@ -1544,7 +1533,7 @@ mod tests {
                 None,
             ),
         ]);
-        let c = help_entries_from_conflicts(&map, &sys, |a| format!("{a:?}"));
+        let c = help_entries_from_conflicts(&map, |a| format!("{a:?}"));
         assert_eq!(c.len(), 1);
         assert!(c[0].conflict);
         assert_eq!(c[0].source, HelpEntrySource::Conflict);
@@ -1552,8 +1541,7 @@ mod tests {
 
     #[test]
     fn filter_and_contract() {
-        let sys = system();
-        let e = example_help_entries(&sys);
+        let e = example_help_entries();
         let f = filter_help_entries(&e, "save");
         assert!(
             f.iter()
@@ -1653,7 +1641,7 @@ mod tests {
     #[test]
     fn footer_and_modal_paint() {
         let sys = system();
-        let e = example_help_entries(&sys);
+        let e = example_help_entries();
         let mut st = KeyboardHelpState::new();
         let area = Rect::new(0, 0, 60, 1);
         let mut buf = Buffer::empty(area);
@@ -1683,7 +1671,7 @@ mod tests {
     #[test]
     fn modal_esc_closes() {
         let mut st = KeyboardHelpState::modal();
-        let e = example_help_entries(&system());
+        let e = example_help_entries();
         assert!(matches!(
             st.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE), &refs(&e)),
             KeyboardHelpOutcome::Closed
@@ -1747,7 +1735,7 @@ mod tests {
     #[test]
     fn colorless_footer() {
         let sys = system();
-        let e = example_help_entries(&sys);
+        let e = example_help_entries();
         let mut st = KeyboardHelpState::new();
         let area = Rect::new(0, 0, 40, 1);
         let mut buf = Buffer::empty(area);
@@ -1758,7 +1746,7 @@ mod tests {
 
     #[test]
     fn mouse_hit_moves_the_modal_help_cursor() {
-        let entries = example_help_entries(&system());
+        let entries = example_help_entries();
         let mut state = KeyboardHelpState::modal();
         state.hits = vec![(1, Rect::new(2, 3, 18, 1))];
         assert_eq!(
@@ -1776,7 +1764,7 @@ mod tests {
 
     #[test]
     fn fuzz_modal_keys() {
-        let e = example_help_entries(&system());
+        let e = example_help_entries();
         let mut st = KeyboardHelpState::modal();
         let keys = [
             KeyCode::Down,
@@ -1818,10 +1806,9 @@ mod tests {
     #[test]
     fn generators_use_live_bindings_only() {
         // Chords on keymap-sourced entries must equal format_binding output.
-        let sys = system();
         let map = example_help_keymap();
-        let fmt = ChordFormat::from_glyphs(sys.glyphs);
-        let entries = help_entries_from_keymap(&map, &sys, |a, _| {
+        let fmt = ChordFormat::new();
+        let entries = help_entries_from_keymap(&map, |a, _| {
             (format!("{a:?}"), "T".into(), String::new(), None, None, 1)
         });
         for e in &entries {

@@ -18,7 +18,6 @@
 //! should fire product effects.
 //!
 //! Research: delta, lazygit, GitUI, review tools, TermRock DiffView/DiffReview.
-#![allow(unused_variables, unused_mut)] // unit-test fixtures
 use std::collections::BTreeSet;
 
 use ratatui_core::{
@@ -1092,7 +1091,7 @@ pub fn escape_diff_text(raw: &str) -> String {
 }
 
 /// Visible whitespace marker for trailing spaces/tabs.
-fn ws_marker(ascii: bool) -> &'static str {
+fn ws_marker() -> &'static str {
     "·"
 }
 
@@ -1259,7 +1258,6 @@ impl<'a> DiffView<'a> {
                             state,
                             self.system,
                             surface,
-                            false,
                             colorless,
                             tiny,
                             narrow,
@@ -1275,7 +1273,6 @@ impl<'a> DiffView<'a> {
                             state,
                             self.system,
                             surface,
-                            false,
                             colorless,
                             cursor,
                             in_hunk,
@@ -1403,7 +1400,6 @@ fn paint_unified_line(
     state: &DiffViewState,
     system: &DesignSystem,
     surface: bool,
-    ascii: bool,
     colorless: bool,
     tiny: bool,
     narrow: bool,
@@ -1466,7 +1462,7 @@ fn paint_unified_line(
 
     let mut composed = format!("{gutter}{nums}{prefix}{body}");
     if state.show_whitespace && line.trailing_ws {
-        composed.push_str(ws_marker(false));
+        composed.push_str(ws_marker());
     }
 
     // Word-level: paint base then overlay is complex without multi-span set_string;
@@ -1479,7 +1475,7 @@ fn paint_unified_line(
                     composed.push_str(&escape_diff_text(w.text));
                 }
                 if state.show_whitespace && line.trailing_ws {
-                    composed.push_str(ws_marker(false));
+                    composed.push_str(ws_marker());
                 }
             }
         }
@@ -1499,10 +1495,8 @@ fn paint_unified_line(
                     words,
                     system,
                     colorless,
-                    surface,
                     style,
                     line.trailing_ws && state.show_whitespace,
-                    false,
                 );
                 chrome.paint(buffer, area);
                 return;
@@ -1522,10 +1516,8 @@ fn paint_word_line(
     words: &[DiffWordSpan<'_>],
     system: &DesignSystem,
     colorless: bool,
-    surface: bool,
     base: Style,
     trailing_ws: bool,
-    ascii: bool,
 ) {
     let mut x = area.x;
     let max_x = area.x.saturating_add(area.width);
@@ -1561,10 +1553,9 @@ fn paint_word_line(
         let wcols = display_cols(t.as_ref()) as u16;
         buffer.set_stringn(x, area.y, t.as_ref(), usize::from(remain), st);
         x = x.saturating_add(wcols);
-        let _ = surface;
     }
     if trailing_ws && x < max_x {
-        let m = ws_marker(false);
+        let m = ws_marker();
         buffer.set_stringn(x, area.y, m, 1, system.style(Role::Warning));
     }
 }
@@ -1576,7 +1567,6 @@ fn paint_split_line(
     state: &DiffViewState,
     system: &DesignSystem,
     surface: bool,
-    ascii: bool,
     colorless: bool,
     cursor: bool,
     in_hunk: bool,
@@ -1633,7 +1623,7 @@ fn paint_split_line(
         DiffKind::FileHeader | DiffKind::HunkHeader | DiffKind::Meta => {
             // Span full width in split for headers
             paint_unified_line(
-                buffer, area, line, state, system, surface, false, colorless, false, false, cursor,
+                buffer, area, line, state, system, surface, colorless, false, false, cursor,
                 in_hunk,
             );
             return;
@@ -1988,13 +1978,6 @@ mod tests {
 
     #[test]
     fn word_diff_paint() {
-        let words = [
-            DiffWordSpan::new(DiffWordKind::Equal, "let x = "),
-            DiffWordSpan::new(DiffWordKind::Delete, "1"),
-            DiffWordSpan::new(DiffWordKind::Insert, "2"),
-            DiffWordSpan::new(DiffWordKind::Equal, ";"),
-        ];
-        // static words need static - use separate
         let words = [
             DiffWordSpan::new(DiffWordKind::Equal, "let x = "),
             DiffWordSpan::new(DiffWordKind::Insert, "2"),

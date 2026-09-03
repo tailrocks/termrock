@@ -19,7 +19,6 @@
 //! **vs Toast.** Transient overlay. Callout/Alert live in layout flow.
 //!
 //! Research: shadcn Alert, Glow quote rails, CLI warnings, system diagnostics.
-#![allow(unused_variables, unused_mut)] // unit-test fixtures
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
@@ -1433,7 +1432,7 @@ mod tests {
         let system = DesignSystem::default();
         let mut scene = SemanticScene::<&str, ()>::default();
         Callout::new("Hi", &system).register_semantic(&mut scene, "c", Rect::new(0, 0, 20, 2));
-        let mut state = AlertState::<()>::new();
+        let state = AlertState::<()>::new();
         Alert::new("A", &system).register_semantic(&mut scene, "a", Rect::new(0, 2, 20, 3), &state);
         assert!(
             scene

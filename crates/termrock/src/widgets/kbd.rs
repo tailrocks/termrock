@@ -13,14 +13,13 @@
 //! with ASCII and narrow contraction.
 //!
 //! References: shadcn Kbd, editor shortcut UIs, Textual bindings, Zellij help.
-#![allow(unused_variables, unused_mut)] // unit-test fixtures
 use std::borrow::Cow;
 
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
 
 use crate::input::{KeyCode, KeyModifiers};
 use crate::keymap::{KeyBinding, KeyChord, Keymap, chord_glyph};
-use crate::style::{DesignSystem, GlyphSet, Role};
+use crate::style::{DesignSystem, Role};
 use crate::text::{display_cols, take_display_cols};
 
 // ── Platform / format style ─────────────────────────────────────────────────
@@ -179,9 +178,9 @@ impl ChordFormat {
         }
     }
 
-    /// From glyph set (ASCII profile → ascii format).
+    /// Default format (auto platform, Emacs modifiers).
     #[must_use]
-    pub const fn from_glyphs(glyphs: GlyphSet) -> Self {
+    pub const fn new() -> Self {
         Self {
             platform: Platform::Auto,
             modifiers: ModifierStyle::Emacs,
@@ -372,7 +371,7 @@ impl<'a> Kbd<'a> {
     /// From one chord.
     #[must_use]
     pub fn from_chord(chord: KeyChord, system: &'a DesignSystem) -> Self {
-        let fmt = ChordFormat::from_glyphs(system.glyphs);
+        let fmt = ChordFormat::new();
         Self {
             label: Cow::Owned(format_chord(chord, fmt)),
             system,
@@ -393,7 +392,7 @@ impl<'a> Kbd<'a> {
     /// Sequence of chords.
     #[must_use]
     pub fn sequence(chords: &[KeyChord], system: &'a DesignSystem) -> Self {
-        let fmt = ChordFormat::from_glyphs(system.glyphs);
+        let fmt = ChordFormat::new();
         Self {
             label: Cow::Owned(format_sequence(chords, fmt, " ")),
             system,
@@ -404,7 +403,7 @@ impl<'a> Kbd<'a> {
     /// Alternative chords for one command.
     #[must_use]
     pub fn alternatives(chords: &[KeyChord], system: &'a DesignSystem) -> Self {
-        let fmt = ChordFormat::from_glyphs(system.glyphs);
+        let fmt = ChordFormat::new();
         Self {
             label: Cow::Owned(format_alternatives(chords, fmt)),
             system,
@@ -418,7 +417,7 @@ impl<'a> Kbd<'a> {
         binding: &KeyBinding<A>,
         system: &'a DesignSystem,
     ) -> Self {
-        let fmt = ChordFormat::from_glyphs(system.glyphs);
+        let fmt = ChordFormat::new();
         Self {
             label: Cow::Owned(format_binding(binding, fmt)),
             system,
@@ -563,7 +562,7 @@ impl<'a> ShortcutHint<'a> {
         command: impl Into<Cow<'a, str>>,
         system: &'a DesignSystem,
     ) -> Self {
-        let fmt = ChordFormat::from_glyphs(system.glyphs);
+        let fmt = ChordFormat::new();
         let chord = if chords.len() <= 1 {
             chords
                 .first()
@@ -587,7 +586,7 @@ impl<'a> ShortcutHint<'a> {
         binding: &KeyBinding<A>,
         system: &'a DesignSystem,
     ) -> Self {
-        let fmt = ChordFormat::from_glyphs(system.glyphs);
+        let fmt = ChordFormat::new();
         let chord = format_binding(binding, fmt);
         let command = binding.hint().unwrap_or("").to_string();
         Self {
@@ -863,7 +862,6 @@ mod tests {
 
     #[test]
     fn layout_is_cheap() {
-        let system = DesignSystem::default();
         let chord = KeyChord::ctrl(KeyCode::Char('q'));
         for _ in 0..20_000 {
             let _ = format_chord(chord, ChordFormat::footer());

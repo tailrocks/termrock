@@ -19,7 +19,6 @@
 //! pre-resolved frame string; prefer Spinner for tick-driven frames.
 //!
 //! Research: terminal spinners, Textual loading, polished AI tool states.
-#![allow(unused_variables, unused_mut)] // unit-test fixtures
 use std::time::Duration;
 
 use ratatui_core::{buffer::Buffer, layout::Rect};
@@ -562,7 +561,7 @@ impl<'a> ActivityIndicator<'a> {
         if area.is_empty() || !state.is_visible() {
             return;
         }
-        let mut local = state.clone();
+        let local = state.clone();
         let glyph = local.frame_glyph(tick, motion);
         let theme = self.system.junie_theme();
         let glyph_style = if self.colorless {
@@ -780,7 +779,7 @@ mod tests {
     #[test]
     fn labeled_paint_includes_verb() {
         let system = DesignSystem::default();
-        let mut state = SpinnerState::new();
+        let state = SpinnerState::new();
         let area = Rect::new(0, 0, 24, 1);
         let mut buf = Buffer::empty(area);
         Spinner::labeled("Fetching", &system).paint(
@@ -821,7 +820,7 @@ mod tests {
         let system = DesignSystem::default();
         let label = "検索 Cafe\u{301}";
         for _ in 0..2 {
-            let mut state = SpinnerState::new();
+            let state = SpinnerState::new();
             for (width, height) in [(32, 2), (12, 1), (1, 1), (0, 0)] {
                 let area = Rect::new(0, 0, width, height);
                 let mut spinner = Buffer::empty(area);

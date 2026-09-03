@@ -30,7 +30,6 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-#![allow(unused_variables, unused_mut)] // unit-test fixtures
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
 
 use crate::{
@@ -1745,7 +1744,6 @@ mod tests {
         let mut st = open();
         st.focus = "events";
         st.events.set_accepts_input(true);
-        let events = example_observability_events();
         // Select/activate via Enter if possible
         st.events.selected = Some("e2");
         let out = st.set_drill_down("event", "e2");

@@ -1631,14 +1631,14 @@ pub fn example_help_topics() -> Vec<HelpTopic> {
 
 /// Live help entries from example keymap (SoT for stories/tests).
 #[must_use]
-pub fn example_help_center_entries(system: &DesignSystem) -> Vec<HelpEntry> {
-    example_help_entries(system)
+pub fn example_help_center_entries() -> Vec<HelpEntry> {
+    example_help_entries()
 }
 
 /// Commands derived from help entries (same chords).
 #[must_use]
-pub fn example_help_center_commands(system: &DesignSystem) -> Vec<CommandEntry<String>> {
-    command_entries_from_help(&example_help_entries(system))
+pub fn example_help_center_commands() -> Vec<CommandEntry<String>> {
+    command_entries_from_help(&example_help_entries())
 }
 
 /// Sample doctor report for projection (real build_doctor_report over a pure
@@ -1723,9 +1723,8 @@ mod tests {
     #[test]
     fn focus_cycle_visits_visible_panes_only() {
         let mut st = open();
-        let system = DesignSystem::default();
         let topics = example_help_topics();
-        let help = example_help_center_entries(&system);
+        let help = example_help_center_entries();
         let cmds = command_entries_from_help(&help);
         let doctor = example_help_doctor_report();
         st.focus = "nav";
@@ -1755,7 +1754,7 @@ mod tests {
         let mut st = open();
         let system = DesignSystem::default();
         let topics = example_help_topics();
-        let help = example_help_center_entries(&system);
+        let help = example_help_center_entries();
         let cmds = command_entries_from_help(&help);
         st.density = Some(HelpCenterDensity::Tiny);
         st.focus = "keyboard";
@@ -1834,9 +1833,8 @@ mod tests {
     #[test]
     fn topic_open_and_filter() {
         let mut st = open();
-        let system = DesignSystem::default();
         let topics = example_help_topics();
-        let help = example_help_center_entries(&system);
+        let help = example_help_center_entries();
         let cmds = command_entries_from_help(&help);
         st.focus = "nav";
         st.nav = ListState::new(Some("getting-started".into()));
@@ -1867,9 +1865,8 @@ mod tests {
     #[test]
     fn command_run_from_metadata_help_entries() {
         let mut st = open();
-        let system = DesignSystem::default();
         let topics = example_help_topics();
-        let help = example_help_center_entries(&system);
+        let help = example_help_center_entries();
         let cmds = command_entries_from_help(&help);
         assert!(!cmds.is_empty(), "commands must derive from HelpEntry");
         // Every command shortcut must match a HelpEntry chord (SoT)
@@ -1897,8 +1894,7 @@ mod tests {
 
     #[test]
     fn keyboard_map_from_live_help_entries_not_static_table() {
-        let system = DesignSystem::default();
-        let help = example_help_center_entries(&system);
+        let help = example_help_center_entries();
         // example_help_entries uses help_entries_from_keymap — chords are formatted live
         assert!(!help.is_empty());
         for e in &help {
@@ -1929,9 +1925,8 @@ mod tests {
     #[test]
     fn link_and_anchor_outcomes() {
         let mut st = open();
-        let system = DesignSystem::default();
         let topics = example_help_topics();
-        let help = example_help_center_entries(&system);
+        let help = example_help_center_entries();
         let cmds = command_entries_from_help(&help);
         st.selected_topic = Some("getting-started".into());
         st.focus = "body";
@@ -1950,9 +1945,8 @@ mod tests {
     #[test]
     fn doctor_and_inspect_outcomes() {
         let mut st = open();
-        let system = DesignSystem::default();
         let topics = example_help_topics();
-        let help = example_help_center_entries(&system);
+        let help = example_help_center_entries();
         let cmds = command_entries_from_help(&help);
         let doctor = example_help_doctor_report();
         let components = vec!["keyboard-help".into(), "command-palette".into()];
@@ -2023,7 +2017,7 @@ mod tests {
         let system = DesignSystem::default();
         let mut st = open();
         let topics = example_help_topics();
-        let help = example_help_center_entries(&system);
+        let help = example_help_center_entries();
         let cmds = command_entries_from_help(&help);
         let doctor = example_help_doctor_report();
         let area = Rect::new(0, 0, 120, 40);
@@ -2072,7 +2066,7 @@ mod tests {
         );
 
         let topics = example_help_topics();
-        let help = example_help_center_entries(&system);
+        let help = example_help_center_entries();
         assert!(!help.is_empty(), "need HelpEntry content");
         let cmds = command_entries_from_help(&help);
         let area = Rect::new(0, 0, 120, 40);
@@ -2146,9 +2140,8 @@ mod tests {
     #[test]
     fn diagnostics_tab_not_when_unpainted() {
         let mut st = open();
-        let system = DesignSystem::default();
         let topics = example_help_topics();
-        let help = example_help_center_entries(&system);
+        let help = example_help_center_entries();
         let cmds = command_entries_from_help(&help);
         // No doctor findings, no components → diagnostics not live
         st.show_diagnostics = true;
@@ -2175,9 +2168,8 @@ mod tests {
     #[test]
     fn inspect_only_for_component_ids_not_findings() {
         let mut st = open();
-        let system = DesignSystem::default();
         let topics = example_help_topics();
-        let help = example_help_center_entries(&system);
+        let help = example_help_center_entries();
         let cmds = command_entries_from_help(&help);
         let doctor = example_help_doctor_report();
         let components = vec!["keyboard-help".into()];
@@ -2222,9 +2214,8 @@ mod tests {
     #[test]
     fn diagnostics_down_reaches_component_when_findings_present() {
         let mut st = open();
-        let system = DesignSystem::default();
         let topics = example_help_topics();
-        let help = example_help_center_entries(&system);
+        let help = example_help_center_entries();
         let cmds = command_entries_from_help(&help);
         let doctor = example_help_doctor_report();
         assert!(
@@ -2293,7 +2284,7 @@ mod tests {
         let mut st = open();
         st.density = Some(HelpCenterDensity::Normal);
         let topics = burst_help_topics(bench::BURST_TOPICS);
-        let help = example_help_center_entries(&system);
+        let help = example_help_center_entries();
         let cmds = command_entries_from_help(&help);
         let area = Rect::new(0, 0, bench::VIEWPORT.0, bench::VIEWPORT.1);
         let mut buf = Buffer::empty(area);

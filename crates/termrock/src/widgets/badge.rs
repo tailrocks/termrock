@@ -12,7 +12,6 @@
 //! wells. Count is numeric `(n)`. Outline is padded inner + Border role.
 //!
 //! References: shadcn Badge, issue labels, btop indicators, agent task status.
-#![allow(unused_variables, unused_mut)] // unit-test fixtures
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
 
 use crate::input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind};
@@ -877,7 +876,7 @@ mod tests {
         assert!(!scene.nodes()[0].focusable);
 
         let bi = Badge::new("tag", &system).interactive(true);
-        let mut state = BadgeState::new();
+        let state = BadgeState::new();
         bi.register_semantic(&mut scene, "b2", Rect::new(0, 1, 20, 1), Some(&state));
         assert!(scene.nodes().iter().any(|n| n.focusable));
         let _ = state;

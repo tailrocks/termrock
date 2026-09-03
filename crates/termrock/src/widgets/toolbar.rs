@@ -14,7 +14,6 @@
 //!
 //! Behavioral references: desktop toolbars, Radix Toolbar (roving), adapted to
 //! terminal cells and [`UiIntent`].
-#![allow(unused_variables, unused_mut)] // unit-test fixtures
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
 
 use crate::input::{KeyEvent, MouseButton, MouseEvent, MouseEventKind};
@@ -1392,9 +1391,6 @@ mod tests {
     #[test]
     fn content_selection_independent_of_cursor() {
         // Document contract: surface_focused false means keys ignored even if cursor set.
-        let system = DesignSystem::default();
-        let items = [ToolbarItem::action("a", "A")];
-        let tb = Toolbar::new(&items, &system);
         let mut state = ToolbarState::horizontal();
         state.set_cursor(Some("a"));
         // content selection would live elsewhere — toolbar does not clear it.

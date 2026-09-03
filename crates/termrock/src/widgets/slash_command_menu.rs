@@ -19,7 +19,6 @@
 //! **vs [`CommandPalette`](crate::widgets::CommandPalette).** Palette is a global
 //! centered command surface. SlashCommandMenu is **caret-anchored**, draft-aware,
 //! and `/`-token scoped for PromptComposer.
-#![allow(unused_variables, unused_mut)] // unit-test fixtures
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
@@ -1240,11 +1239,6 @@ mod tests {
 
     #[test]
     fn apply_insert_preserves_surrounding_draft() {
-        let draft = "pre /pl post";
-        // cursor after pl
-        let q = detect_slash_query("pre /pl", 7).unwrap();
-        let next = apply_slash_insert(draft, &q, "/plan ");
-        // only replaces within draft slice used for detect — use consistent draft
         let draft = "pre /pl post";
         let q = SlashQuery {
             phase: SlashMenuPhase::Command {

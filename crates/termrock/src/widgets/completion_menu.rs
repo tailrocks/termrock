@@ -20,7 +20,6 @@
 //!
 //! Research: LSP completion UIs, prompt-toolkit, terminal editors, Grok Build
 //! prompt completion.
-#![allow(unused_variables, unused_mut)] // unit-test fixtures
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -1356,7 +1355,6 @@ impl<'a, Id> CompletionMenu<'a, Id> {
                 label_x,
                 y,
                 &shown,
-                candidate.label,
                 candidate.match_ranges.unwrap_or(&[]),
                 style,
                 cursor,
@@ -1555,13 +1553,11 @@ fn paint_matched_label(
     mut x: u16,
     y: u16,
     shown: &str,
-    full: &str,
     ranges: &[crate::widgets::MatchRange],
     style: Style,
     selected: bool,
 ) {
     // Byte indices in `shown` match `full` while we truncate from the end.
-    let _ = full;
     for (bi, ch) in shown.char_indices() {
         let mut cs = style;
         let matched = ranges.iter().any(|r| bi >= r.start && bi < r.end);
@@ -1885,7 +1881,7 @@ mod tests {
         assert!(policy.owns_input); // can route keys when host grants
         let system = DesignSystem::default();
         let items = candidates(&["a"]);
-        let mut state = CompletionMenuState::new(Some("a"));
+        let state = CompletionMenuState::new(Some("a"));
         let mut scene = SemanticScene::<&str, ()>::default();
         CompletionMenu::new(
             &items,

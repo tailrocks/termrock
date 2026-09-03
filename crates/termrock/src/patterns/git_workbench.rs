@@ -1608,8 +1608,8 @@ pub fn example_git_terminal_lines() -> Vec<TerminalLine<'static>> {
 
 /// Git-oriented help entries (extends generic help).
 #[must_use]
-pub fn example_git_help_entries(system: &DesignSystem) -> Vec<HelpEntry> {
-    let mut e = example_help_entries(system);
+pub fn example_git_help_entries() -> Vec<HelpEntry> {
+    let mut e = example_help_entries();
     e.push(HelpEntry::new("stage", "Git", "t", "Stage selection (DiffReview)").priority(15));
     e.push(HelpEntry::new("unstage", "Git", "T", "Unstage selection").priority(15));
     e.push(HelpEntry::new("discard", "Git", "x", "Discard path (confirm)").priority(16));
@@ -1738,7 +1738,7 @@ mod tests {
         let diags = example_conflict_diagnostics();
         let meta = example_git_terminal_meta();
         let tlines = example_git_terminal_lines();
-        let help = example_git_help_entries(&system);
+        let help = example_git_help_entries();
         let help_refs: Vec<&HelpEntry> = help.iter().collect();
         let area = Rect::new(0, 0, 120, 36);
         let mut buf = Buffer::empty(area);
@@ -1957,7 +1957,7 @@ mod tests {
         let diags: Vec<Diagnostic<'static>> = Vec::new();
         let meta = example_git_terminal_meta();
         let tlines = example_git_terminal_lines();
-        let help = example_git_help_entries(&system);
+        let help = example_git_help_entries();
         let help_refs: Vec<&HelpEntry> = help.iter().collect();
         let area = Rect::new(0, 0, 100, 28);
         let mut buf = Buffer::empty(area);
@@ -2076,7 +2076,7 @@ mod tests {
         let diags = example_conflict_diagnostics();
         let meta = example_git_terminal_meta();
         let tlines = example_git_terminal_lines();
-        let help = example_git_help_entries(&system);
+        let help = example_git_help_entries();
         let help_refs: Vec<&HelpEntry> = help.iter().collect();
 
         for d in [
@@ -2159,7 +2159,7 @@ mod tests {
         let diags = example_conflict_diagnostics();
         let meta = example_git_terminal_meta();
         let tlines = example_git_terminal_lines();
-        let help = example_git_help_entries(&system);
+        let help = example_git_help_entries();
         let help_refs: Vec<&HelpEntry> = help.iter().collect();
         let area = Rect::new(0, 0, 120, 40);
         let mut buf = Buffer::empty(area);
@@ -2190,7 +2190,7 @@ mod tests {
     #[test]
     fn help_and_refresh() {
         let mut st = open();
-        let help = example_git_help_entries(&DesignSystem::default());
+        let help = example_git_help_entries();
         let help_refs: Vec<&HelpEntry> = help.iter().collect();
         let out = hk_help(&mut st, press(KeyCode::Char('?')), &help_refs);
         assert!(matches!(out, GitWorkbenchOutcome::OpenHelp));

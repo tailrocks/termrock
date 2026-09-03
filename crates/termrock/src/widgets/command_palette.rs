@@ -14,7 +14,6 @@
 //! pages, loading/empty/no-result chrome, keymap/scene projection helpers.
 //!
 //! Research: VS Code palette, Textual, Posting, Zellij, television, agent TUIs.
-#![allow(unused_variables, unused_mut)] // unit-test fixtures
 use std::collections::VecDeque;
 
 use ratatui_core::{
@@ -2054,7 +2053,7 @@ mod tests {
     fn argument_phase() {
         let mut s = focused();
         let cat = catalog();
-        let mut vis = s.refilter(&cat);
+        let vis = s.refilter(&cat);
         let idx = vis.iter().position(|e| e.id == "goto-line").unwrap();
         s.collection.set_active(Some(idx));
         assert!(matches!(
