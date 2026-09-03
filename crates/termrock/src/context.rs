@@ -451,17 +451,19 @@ where
 
 /// Map a physical key through optional keymap to a cloned app action.
 ///
-/// Adapter: does not replace widget-local intent maps; use for global chords.
+/// Release events are ignored; repeat events remain dispatchable for actions
+/// that intentionally support held keys. This adapter does not replace
+/// widget-local intent maps; use it for global chords.
 #[must_use]
 pub fn resolve_keymap_action<A: Clone + Copy + 'static>(
     keymap: Option<&Keymap<A>>,
     key: KeyEvent,
 ) -> Option<A> {
     let map = keymap?;
-    let chord = KeyChord {
-        key: key.code,
-        mods: key.modifiers,
-    };
+    if key.is_release() {
+        return None;
+    }
+    let chord = KeyChord::from(key);
     map.dispatch(chord)
 }
 
@@ -521,11 +523,13 @@ pub use crate::interaction::UiIntent as ContextUiIntent;
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::input::{KeyCode, KeyEventKind, KeyModifiers};
     use crate::interaction::UiIntent;
     use crate::interaction::{
         InteractionElement, InteractionLayer, LayerDismissPolicy, LayerKind, SemanticNode,
         SemanticRole,
     };
+    use crate::keymap::{KeyBinding, Visibility};
     use crate::style::DesignSystem;
     use ratatui_core::layout::Rect;
     use std::time::Duration;
@@ -671,6 +675,38 @@ mod tests {
         );
         assert!(ctx.handle_overlay_escape().is_dismissed());
         assert_eq!(ctx.overlays().len(), 1, "Esc peels exactly one layer");
+    }
+
+    #[test]
+    fn resolve_keymap_action_uses_canonical_key_event_conversion() {
+        #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+        enum Action {
+            Uppercase,
+        }
+
+        let keymap = Keymap::from_owned(vec![KeyBinding::owned(
+            vec![KeyChord::plain(KeyCode::Char('Q'))],
+            Action::Uppercase,
+            Some("uppercase".to_owned()),
+            Visibility::Shown,
+            None,
+        )]);
+        let shifted_q = KeyEvent::new(KeyCode::Char('Q'), KeyModifiers::SHIFT);
+        assert_eq!(
+            resolve_keymap_action(Some(&keymap), shifted_q),
+            Some(Action::Uppercase)
+        );
+
+        let mut repeat = shifted_q;
+        repeat.kind = KeyEventKind::Repeat;
+        assert_eq!(
+            resolve_keymap_action(Some(&keymap), repeat),
+            Some(Action::Uppercase)
+        );
+
+        let mut release = KeyEvent::new(KeyCode::Char('Q'), KeyModifiers::NONE);
+        release.kind = KeyEventKind::Release;
+        assert_eq!(resolve_keymap_action(Some(&keymap), release), None);
     }
 
     #[test]

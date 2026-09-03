@@ -397,6 +397,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0415 | `v0.14.0` | [CommandPalette keeps keyword ranges out of label highlights](migrations/0415-v0.14.0-command-palette-keyword-highlight-ranges.md) |
 | 0416 | `v0.14.0` | [SearchResults ignores stale completions](migrations/0416-v0.14.0-search-results-ignore-stale-completions.md) |
 | 0417 | `v0.14.0` | [Escape cancellation is press-only](migrations/0417-v0.14.0-one-shot-cancel-intent.md) |
+| 0418 | `v0.14.0` | [Keymap resolution uses canonical key events](migrations/0418-v0.14.0-canonical-keymap-resolution.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical
