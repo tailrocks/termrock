@@ -32741,7 +32741,6 @@ pub const termrock::widgets::trace_waterfall_bench::VIEWPORT: u16
 pub termrock::widgets::AccordionMode::Multiple
 pub termrock::widgets::AccordionMode::Single
 impl termrock::widgets::AccordionMode
-pub const fn termrock::widgets::AccordionMode::id(self) -> &'static str
 impl core::clone::Clone for termrock::widgets::AccordionMode
 pub fn termrock::widgets::AccordionMode::clone(&self) -> termrock::widgets::AccordionMode
 impl core::cmp::Eq for termrock::widgets::AccordionMode
