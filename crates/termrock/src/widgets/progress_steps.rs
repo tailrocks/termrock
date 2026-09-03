@@ -885,11 +885,11 @@ pub fn paint_progress_steps_as_timeline(
     steps: &[ProgressStep],
     area: Rect,
     buffer: &mut Buffer,
+    state: &mut crate::widgets::TimelineState<()>,
     system: &DesignSystem,
 ) {
-    use ratatui_core::widgets::Widget;
     let events = progress_steps_as_timeline_events(steps);
-    Widget::render(&Timeline::new(&events, system), area, buffer);
+    Timeline::new(&events, system).paint(area, buffer, state);
 }
 
 /// Project to list rows for List / legacy rail hosts (prefer [`ActivityModel`](super::ActivityModel) + TaskRail).
@@ -1190,7 +1190,8 @@ mod tests {
         let steps = example_build_pipeline();
         let area = Rect::new(0, 0, 40, 6);
         let mut buf = Buffer::empty(area);
-        paint_progress_steps_as_timeline(&steps, area, &mut buf, &system);
+        let mut state = crate::widgets::TimelineState::new();
+        paint_progress_steps_as_timeline(&steps, area, &mut buf, &mut state, &system);
         let text: String = buf
             .content()
             .iter()

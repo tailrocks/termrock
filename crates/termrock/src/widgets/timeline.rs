@@ -13,12 +13,7 @@
 //! Research: Git history, CI timelines, observability tools, agent session views.
 use std::collections::BTreeSet;
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::Modifier,
-    widgets::{StatefulWidget, Widget},
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
     input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind},
@@ -895,7 +890,7 @@ impl<'a, Id: Clone + PartialEq + Ord> Timeline<'a, Id> {
     }
 
     /// Stateful paint.
-    pub fn render_stateful(&self, area: Rect, buffer: &mut Buffer, state: &mut TimelineState<Id>) {
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut TimelineState<Id>) {
         state.regions.clear();
         state.painted = area;
         if area.is_empty() {
@@ -1134,34 +1129,17 @@ impl<'a, Id: Clone + PartialEq + Ord> Timeline<'a, Id> {
     }
 }
 
-// ── Stateless Widget for progress_steps / simple paint ──────────────────────
-
-impl Widget for &Timeline<'_, ()> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        let mut state: TimelineState<()> = TimelineState::new();
-        state.following = false;
-        // Stateless: show from start; footer still paints when height allows.
-        Timeline::render_stateful(self, area, buffer, &mut state);
-    }
-}
-
-impl Widget for Timeline<'_, ()> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        Widget::render(&self, area, buffer);
-    }
-}
-
 impl<Id: Clone + PartialEq + Ord> StatefulWidget for &Timeline<'_, Id> {
     type State = TimelineState<Id>;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        Timeline::render_stateful(self, area, buffer, state);
+        Timeline::paint(self, area, buffer, state);
     }
 }
 
 impl<Id: Clone + PartialEq + Ord> StatefulWidget for Timeline<'_, Id> {
     type State = TimelineState<Id>;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        Timeline::render_stateful(&self, area, buffer, state);
+        Timeline::paint(&self, area, buffer, state);
     }
 }
 
@@ -1262,7 +1240,7 @@ mod tests {
                 .focused(true);
             let area = Rect::new(0, 0, 64, 10);
             let mut buf = Buffer::empty(area);
-            t.render_stateful(area, &mut buf, &mut state);
+            t.paint(area, &mut buf, &mut state);
             assert!(!state.regions.is_empty() || recipe == TimelineRecipe::Rail);
             let text: String = buf
                 .content()
@@ -1277,27 +1255,6 @@ mod tests {
     }
 
     #[test]
-    fn stateless_widget_compat() {
-        let system = DesignSystem::default();
-        let events = [
-            TimelineEvent::new("12:01", "Started"),
-            TimelineEvent::new("12:02", "Running").active(),
-        ];
-        let area = Rect::new(0, 0, 40, 4);
-        let mut buf = Buffer::empty(area);
-        Widget::render(&Timeline::new(&events, &system), area, &mut buf);
-        let text: String = buf
-            .content()
-            .iter()
-            .map(|c| c.symbol().to_string())
-            .collect();
-        assert!(
-            text.contains("Started") || text.contains("Running"),
-            "{text}"
-        );
-    }
-
-    #[test]
     fn colorless_uses_letters() {
         let system = DesignSystem::default();
         let events = sample();
@@ -1307,7 +1264,7 @@ mod tests {
         let t = Timeline::with_events(&events, &system).colorless(true);
         let area = Rect::new(0, 0, 56, 8);
         let mut buf = Buffer::empty(area);
-        t.render_stateful(area, &mut buf, &mut state);
+        t.paint(area, &mut buf, &mut state);
         let text: String = buf
             .content()
             .iter()

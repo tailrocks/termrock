@@ -1437,7 +1437,7 @@ impl<'a> CheckpointTimeline<'a> {
             .recipe(state.recipe.to_timeline())
             .focused(state.focused)
             .colorless(self.colorless);
-        t.render_stateful(area, buffer, &mut state.timeline);
+        t.paint(area, buffer, &mut state.timeline);
         // Map TimelineOutcome-style selection back if needed
         if let Some(sel) = state.timeline.selected().cloned() {
             state.selected = Some(sel);

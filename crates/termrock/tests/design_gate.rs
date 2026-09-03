@@ -1129,7 +1129,8 @@ fn collections_share_one_gutter_glyph() {
         TimelineEvent::new("12:02", "Running"),
     ];
     let mut timeline_buffer = Buffer::empty(area);
-    Widget::render(&Timeline::new(&events, &system), area, &mut timeline_buffer);
+    let mut timeline_state = termrock::widgets::TimelineState::new();
+    Timeline::new(&events, &system).paint(area, &mut timeline_buffer, &mut timeline_state);
     assert_eq!(
         timeline_buffer[(area.x, area.y)].symbol(),
         gutter,
