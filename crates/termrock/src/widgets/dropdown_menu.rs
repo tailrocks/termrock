@@ -1203,7 +1203,7 @@ impl<'a, Id> DropdownMenu<'a, Id> {
         }
 
         let cursor = state.panel_cursor(depth).unwrap_or(0);
-        let surface_focus = state.focused && state.accepts_input;
+        let surface_focus = state.live();
 
         // A menu longer than its panel used to paint until it ran out of rows
         // and drop the rest in silence — including the row the cursor was on,
@@ -1676,6 +1676,33 @@ mod tests {
             root[cur].id
         );
         assert_ne!(root[cur].id, "delete");
+    }
+
+    #[test]
+    fn disabled_menu_does_not_paint_active_cursor() {
+        let system = DesignSystem::junie();
+        let root = vec![MenuNode::command("off", "Unavailable")];
+        let mut state = DropdownMenuState::new();
+        let _ = state.open_from_keyboard(&root, Rect::new(0, 0, 80, 24));
+        state.set_enabled(false);
+
+        let area = Rect::new(0, 0, 32, 8);
+        let mut buffer = Buffer::empty(area);
+        DropdownMenu::new(&root, &system).paint(area, &mut buffer, &mut state);
+
+        let row = state
+            .panel_hits()
+            .iter()
+            .find(|(_, index, _)| *index == 0)
+            .map(|(_, _, rect)| *rect)
+            .expect("disabled row hit");
+        let text: String = (row.x..row.right())
+            .map(|x| buffer[(x, row.y)].symbol().to_string())
+            .collect();
+        assert!(
+            !text.contains('›'),
+            "disabled menu cannot paint cursor: {text:?}"
+        );
     }
 
     #[test]
