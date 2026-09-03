@@ -67,8 +67,8 @@ pub const fn clamp_scroll_offset(content_len: usize, viewport: usize, offset: &m
 }
 
 /// Apply an unclamped signed delta.
-pub const fn apply_scroll_delta_unclamped(value: &mut u16, delta: i16) {
-    scroll::apply_delta_unclamped_u16(value, delta);
+pub fn apply_scroll_delta_unclamped(value: &mut u16, delta: i16) {
+    scroll::apply_delta_unclamped_u16(value, i32::from(delta));
 }
 
 /// Apply a signed delta and clamp to content.

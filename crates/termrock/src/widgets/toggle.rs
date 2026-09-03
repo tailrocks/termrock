@@ -201,9 +201,9 @@ impl ToggleGroupRecipe {
         1
     }
 
-    fn separator_glyph(self, ascii: bool) -> Option<&'static str> {
+    fn separator_glyph(self) -> Option<&'static str> {
         match self {
-            Self::Connected => Some(if ascii { "|" } else { "│" }),
+            Self::Connected => Some("│"),
             Self::Separated => None,
         }
     }
@@ -1128,7 +1128,7 @@ impl<'a, Id: Clone + PartialEq> ToggleGroup<'a, Id> {
             }
             ToggleGroupOrientation::Horizontal => {
                 let gap = self.recipe.inter_cols();
-                let sep = self.recipe.separator_glyph(false);
+                let sep = self.recipe.separator_glyph();
                 let mut x = area.x;
                 let mut first = true;
                 for &idx in &visible {

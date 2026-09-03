@@ -20,6 +20,7 @@ use crate::interaction::{
     EventResult, NavigationMove, PageMove, SemanticNode, SemanticRole, SemanticScene,
     SemanticState, UiIntent, default_list_intent,
 };
+use crate::scroll;
 use crate::style::{DesignSystem, Role};
 use crate::text::{display_cols, take_display_cols, wrap_display_cols};
 
@@ -324,15 +325,7 @@ impl<Id: Clone + PartialEq> KeyValueListState<Id> {
     /// Scroll by display rows.
     pub fn scroll_by(&mut self, delta: i32) -> bool {
         let before = self.scroll_y;
-        if delta >= 0 {
-            self.scroll_y = self
-                .scroll_y
-                .saturating_add(u16::try_from(delta).unwrap_or(u16::MAX));
-        } else {
-            self.scroll_y = self
-                .scroll_y
-                .saturating_sub(u16::try_from(-delta).unwrap_or(u16::MAX));
-        }
+        scroll::apply_delta_unclamped_u16(&mut self.scroll_y, delta);
         self.clamp();
         before != self.scroll_y
     }

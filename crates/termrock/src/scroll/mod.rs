@@ -385,8 +385,12 @@ impl DialogScroll {
             return false;
         };
         match delta.axis {
-            ScrollAxis::Vertical => apply_delta_unclamped_u16(&mut self.scroll_y, delta.amount),
-            ScrollAxis::Horizontal => apply_delta_unclamped_u16(&mut self.scroll_x, delta.amount),
+            ScrollAxis::Vertical => {
+                apply_delta_unclamped_u16(&mut self.scroll_y, i32::from(delta.amount))
+            }
+            ScrollAxis::Horizontal => {
+                apply_delta_unclamped_u16(&mut self.scroll_x, i32::from(delta.amount))
+            }
         }
         true
     }
@@ -684,11 +688,16 @@ pub const fn clamp_offset_u16(content_len: usize, viewport_len: usize, offset: &
 }
 
 /// No upper clamp: render paths that know viewport/content clamp later.
-pub const fn apply_delta_unclamped_u16(offset: &mut u16, delta: i16) {
+///
+/// Accepts `i32` so surfaces scrolling by page (viewport-height deltas) or by
+/// an unbounded host value share one offset stepper; magnitudes beyond the
+/// `u16` offset space saturate.
+pub fn apply_delta_unclamped_u16(offset: &mut u16, delta: i32) {
+    let mag = u16::try_from(delta.unsigned_abs()).unwrap_or(u16::MAX);
     *offset = if delta.is_negative() {
-        offset.saturating_sub(delta.unsigned_abs())
+        offset.saturating_sub(mag)
     } else {
-        offset.saturating_add(delta.unsigned_abs())
+        offset.saturating_add(mag)
     };
 }
 
