@@ -1561,6 +1561,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "termrock-catalog-web"
+version = "0.11.0"
+dependencies = [
+ "serde_json",
+ "termrock-catalog",
+ "wasm-bindgen",
+]
+
+[[package]]
 name = "termrock-cli"
 version = "0.11.0"
 dependencies = [
@@ -1581,15 +1590,6 @@ dependencies = [
  "termrock",
  "termrock-catalog",
  "termrock-raster",
-]
-
-[[package]]
-name = "termrock-lookbook-web"
-version = "0.11.0"
-dependencies = [
- "serde_json",
- "termrock-catalog",
- "wasm-bindgen",
 ]
 
 [[package]]

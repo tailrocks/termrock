@@ -1,7 +1,7 @@
 import type { DemoDescriptor, DemoUpdate, TerminalFrame } from '@/components/preview/model'
 
 export type PreviewRuntime = typeof import(
-  '@/generated/termrock-preview/termrock_lookbook_web.js'
+  '@/generated/termrock-preview/termrock_catalog_web.js'
 )
 
 let runtimePromise: Promise<PreviewRuntime> | undefined
@@ -10,7 +10,7 @@ let demoCodePromise: Promise<Record<string, string>> | undefined
 /** WASM import stays cold until an explicit live or interaction action requests it. */
 export function loadPreviewRuntime(): Promise<PreviewRuntime> {
   runtimePromise ??= import(
-    '@/generated/termrock-preview/termrock_lookbook_web.js'
+    '@/generated/termrock-preview/termrock_catalog_web.js'
   ).then(async (runtime) => {
     await runtime.default()
     return runtime

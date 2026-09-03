@@ -270,7 +270,7 @@ test('landing and detail stay poster-only until explicit live activation', async
   page.on('request', (request) => {
     const requestPath = new URL(request.url()).pathname
     if (
-      requestPath.includes('termrock_lookbook_web_bg') &&
+      requestPath.includes('termrock_catalog_web_bg') &&
       requestPath.endsWith('.wasm')
     ) {
       runtimeRequests.push(request.url())
@@ -293,7 +293,7 @@ test('landing and detail stay poster-only until explicit live activation', async
   const runtimeRequest = page.waitForRequest((request) => {
     const requestPath = new URL(request.url()).pathname
     return (
-      requestPath.includes('termrock_lookbook_web_bg') &&
+      requestPath.includes('termrock_catalog_web_bg') &&
       requestPath.endsWith('.wasm')
     )
   })

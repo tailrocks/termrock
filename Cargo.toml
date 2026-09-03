@@ -3,7 +3,7 @@ members = [
     "crates/termrock",
     "crates/termrock-catalog",
     "crates/termrock-lookbook",
-    "crates/termrock-lookbook-web",
+    "crates/termrock-catalog-web",
     "crates/termrock-cli",
     "crates/termrock-raster",
 ]

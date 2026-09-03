@@ -6,7 +6,7 @@
     "postinstall": "bunx --bun fumadocs-mdx",
     "dev": "bun run generate:catalog && bunx --bun vite dev",
     "preview": "bunx --bun vite preview",
-    "build:preview-runtime": "wasm-pack build ../crates/termrock-lookbook-web --target web --out-dir ../../docs/src/generated/termrock-preview --release",
+    "build:preview-runtime": "wasm-pack build ../crates/termrock-catalog-web --target web --out-dir ../../docs/src/generated/termrock-preview --release",
     "build:preview-posters": "bun run scripts/export-preview-posters.ts",
     "check:preview-posters": "bun run scripts/export-preview-posters.ts --check",
     "generate:catalog": "bun run scripts/generate-catalog.ts",

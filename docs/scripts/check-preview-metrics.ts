@@ -6,7 +6,7 @@ import init, {
   dispatch_demo,
   mount_demo,
   unmount_demo,
-} from '../src/generated/termrock-preview/termrock_lookbook_web.js'
+} from '../src/generated/termrock-preview/termrock_catalog_web.js'
 import {
   baselineForCell,
   boldFontWeight,
@@ -134,7 +134,7 @@ assert(
 
 const wasm = await Bun.file(
   new URL(
-    '../src/generated/termrock-preview/termrock_lookbook_web_bg.wasm',
+    '../src/generated/termrock-preview/termrock_catalog_web_bg.wasm',
     import.meta.url,
   ),
 ).arrayBuffer()

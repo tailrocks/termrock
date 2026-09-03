@@ -352,14 +352,22 @@ impl CatalogSession {
 
     fn update(&self, changed: bool) -> DemoUpdate {
         let metadata = self.app.page_metadata();
+        let functional_deadline = self.app.flash.is_some() || self.app.status.is_some();
+        let deadline_kind = if functional_deadline {
+            Some("functional")
+        } else if metadata.animating {
+            Some("visual-motion")
+        } else {
+            None
+        };
         DemoUpdate {
             changed,
             outcome: None,
             hints: metadata.hints.iter().map(|(key, _)| *key).collect(),
             interactive: metadata.interactive,
             captures_text_input: metadata.captures_text_input,
-            next_deadline_ms: metadata.animating.then_some(80),
-            deadline_kind: metadata.animating.then_some("visual-motion"),
+            next_deadline_ms: deadline_kind.map(|_| 80),
+            deadline_kind,
             semantic_revision: self.semantic_revision,
         }
     }
@@ -411,7 +419,7 @@ impl CatalogSession {
             story_cols: snap.cols,
             story_rows: snap.rows,
             cells,
-            interactive: true,
+            interactive: self.app.page_metadata().interactive,
             theme: "junie".into(),
         }
     }
