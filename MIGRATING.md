@@ -410,6 +410,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0429 | `v0.14.0` | [MenuBar one-shot actions](migrations/0429-v0.14.0-menu-bar-one-shot-actions.md) |
 | 0430 | `v0.14.0` | [KeyboardHelp one-shot actions](migrations/0430-v0.14.0-keyboard-help-one-shot-actions.md) |
 | 0431 | `v0.14.0` | [Picker one-shot actions](migrations/0431-v0.14.0-picker-one-shot-actions.md) |
+| 0432 | `v0.14.0` | [HistoryPicker one-shot actions](migrations/0432-v0.14.0-history-picker-mutation-actions.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

@@ -821,6 +821,8 @@ impl<Id: Clone + PartialEq> HistoryPickerState<Id> {
             return HistoryPickerOutcome::Ignored;
         }
 
+        let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
+
         // Escape is a one-shot cancellation action. Check its phase before
         // reconciliation so a held or released Escape cannot mutate picker
         // state on its way to being ignored.
@@ -832,20 +834,27 @@ impl<Id: Clone + PartialEq> HistoryPickerState<Id> {
             return HistoryPickerOutcome::Cancelled;
         }
 
+        // Submission and host mutations are one-shot. The query editor accepts
+        // Enter, Tab, BackTab, and Ctrl+M as submit shortcuts; Ctrl+D/P emit
+        // host mutations. Gate them before reconciliation so a held key is a
+        // complete no-op, including for cursor and scroll state.
+        if !key.is_press()
+            && (matches!(key.code, KeyCode::Enter | KeyCode::Tab | KeyCode::BackTab)
+                || (ctrl && matches!(key.code, KeyCode::Char('d' | 'D' | 'm' | 'M' | 'p' | 'P'))))
+        {
+            return HistoryPickerOutcome::Ignored;
+        }
+
         if key.is_release() {
             return HistoryPickerOutcome::Ignored;
         }
         self.reconcile(visible);
 
         // Ctrl+D delete, Ctrl+P pin
-        if key.modifiers.contains(KeyModifiers::CONTROL)
-            && matches!(key.code, KeyCode::Char('d' | 'D'))
-        {
+        if ctrl && matches!(key.code, KeyCode::Char('d' | 'D')) {
             return self.delete_cursor(visible);
         }
-        if key.modifiers.contains(KeyModifiers::CONTROL)
-            && matches!(key.code, KeyCode::Char('p' | 'P'))
-        {
+        if ctrl && matches!(key.code, KeyCode::Char('p' | 'P')) {
             return self.toggle_pin_cursor(visible);
         }
 
@@ -858,8 +867,7 @@ impl<Id: Clone + PartialEq> HistoryPickerState<Id> {
                 | KeyCode::Home
                 | KeyCode::End
                 | KeyCode::Enter
-        ) || (key.modifiers.contains(KeyModifiers::CONTROL)
-            && matches!(key.code, KeyCode::Char('j' | 'k' | 'J' | 'K')))
+        ) || (ctrl && matches!(key.code, KeyCode::Char('j' | 'k' | 'J' | 'K')))
         {
             if let Some(intent) = default_palette_intent(key) {
                 let out = self.handle_intent(intent, visible);
@@ -1730,6 +1738,43 @@ mod tests {
                 pinned: false
             }
         ));
+    }
+
+    #[test]
+    fn repeated_delete_and_pin_are_ignored() {
+        let cat = catalog();
+        let vis = filter_history_entries(&cat, "");
+
+        for code in [KeyCode::Char('d'), KeyCode::Char('p')] {
+            let mut s = open_state();
+            s.reconcile(&vis);
+            let mut repeat = KeyEvent::new(code, KeyModifiers::CONTROL);
+            repeat.kind = KeyEventKind::Repeat;
+            assert_eq!(
+                s.handle_key(repeat, &vis),
+                HistoryPickerOutcome::Ignored,
+                "repeat of Ctrl+{code:?} must not repeat a history mutation"
+            );
+            assert!(s.is_open());
+        }
+
+        for (code, modifiers) in [
+            (KeyCode::Enter, KeyModifiers::NONE),
+            (KeyCode::Tab, KeyModifiers::NONE),
+            (KeyCode::BackTab, KeyModifiers::NONE),
+            (KeyCode::Char('m'), KeyModifiers::CONTROL),
+        ] {
+            let mut s = open_state();
+            s.reconcile(&vis);
+            let mut repeat = KeyEvent::new(code, modifiers);
+            repeat.kind = KeyEventKind::Repeat;
+            assert_eq!(
+                s.handle_key(repeat, &vis),
+                HistoryPickerOutcome::Ignored,
+                "repeat of {code:?} with {modifiers:?} must not submit history"
+            );
+            assert!(s.is_open());
+        }
     }
 
     #[test]
