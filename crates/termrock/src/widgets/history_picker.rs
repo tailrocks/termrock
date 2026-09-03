@@ -377,8 +377,6 @@ pub struct HistoryEntry<Id> {
     pub kind: HistoryKind,
     /// Recency rank (lower = newer); host sets; used for sort.
     pub recency: u64,
-    /// Fuzzy ranges into display.
-    pub match_ranges: Option<MatchRanges>,
 }
 
 impl<Id> HistoryEntry<Id> {
@@ -397,7 +395,6 @@ impl<Id> HistoryEntry<Id> {
             sensitive: false,
             kind: HistoryKind::Value,
             recency: 0,
-            match_ranges: None,
         }
     }
 
@@ -476,20 +473,50 @@ impl<Id> HistoryEntry<Id> {
     }
 }
 
+/// One scored filter match: the borrowed entry plus the highlight ranges
+/// computed for the current query (empty query yields `None`).
+///
+/// Filtering used to clone every matching [`HistoryEntry`] per keystroke; the
+/// projection now borrows the entry and carries only the ranges.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HistoryMatch<'a, Id> {
+    /// The matched entry.
+    pub entry: &'a HistoryEntry<Id>,
+    /// Fuzzy ranges into [`HistoryEntry::display`] (byte offsets).
+    pub match_ranges: Option<MatchRanges>,
+}
+
+impl<'a, Id> HistoryMatch<'a, Id> {
+    /// Wrap an entry with match ranges.
+    #[must_use]
+    pub const fn new(entry: &'a HistoryEntry<Id>, match_ranges: Option<MatchRanges>) -> Self {
+        Self {
+            entry,
+            match_ranges,
+        }
+    }
+}
+
+impl<Id> std::ops::Deref for HistoryMatch<'_, Id> {
+    type Target = HistoryEntry<Id>;
+
+    fn deref(&self) -> &Self::Target {
+        self.entry
+    }
+}
+
 /// Filter + sort for host catalogs (sync path).
 #[must_use]
-pub fn filter_history_entries<Id: Clone>(
-    entries: &[HistoryEntry<Id>],
+pub fn filter_history_entries<'a, Id>(
+    entries: &'a [HistoryEntry<Id>],
     query: &str,
-) -> Vec<HistoryEntry<Id>> {
+) -> Vec<HistoryMatch<'a, Id>> {
     let q = query.trim();
-    let mut out: Vec<HistoryEntry<Id>> = entries
+    let mut out: Vec<HistoryMatch<'a, Id>> = entries
         .iter()
         .filter_map(|e| {
             if q.is_empty() {
-                let mut c = e.clone();
-                c.match_ranges = None;
-                return Some(c);
+                return Some(HistoryMatch::new(e, None));
             }
             let hay = format!(
                 "{} {} {}",
@@ -497,15 +524,10 @@ pub fn filter_history_entries<Id: Clone>(
                 e.value,
                 e.meta.as_deref().unwrap_or("")
             );
-            fuzzy_match_label(q, &hay).map(|(score, ranges)| {
-                let mut c = e.clone();
-                // Prefer ranges on display if match there
-                c.match_ranges = fuzzy_match_label(q, &e.display)
-                    .map(|(_, r)| r)
-                    .or(Some(ranges));
-                let _ = score;
-                c
-            })
+            // Prefer ranges on display if the match is there
+            fuzzy_match_label(q, &e.display)
+                .or_else(|| fuzzy_match_label(q, &hay))
+                .map(|(_, ranges)| HistoryMatch::new(e, Some(ranges)))
         })
         .collect();
     out.sort_by(|a, b| {
@@ -734,7 +756,7 @@ impl<Id: Clone + PartialEq> HistoryPickerState<Id> {
         self.accepts_input && self.focused
     }
 
-    fn entries(visible: &[HistoryEntry<Id>]) -> Vec<CollectionItem<usize>> {
+    fn entries(visible: &[HistoryMatch<'_, Id>]) -> Vec<CollectionItem<usize>> {
         visible
             .iter()
             .enumerate()
@@ -748,14 +770,14 @@ impl<Id: Clone + PartialEq> HistoryPickerState<Id> {
     }
 
     /// Reconcile cursor after host rebuilds visible list.
-    pub fn reconcile(&mut self, visible: &[HistoryEntry<Id>]) {
+    pub fn reconcile(&mut self, visible: &[HistoryMatch<'_, Id>]) {
         let entries = Self::entries(visible);
         let _ = self.collection.reconcile(&entries);
         self.scroll = self.scroll.min(visible.len().saturating_sub(1));
     }
 
     /// Select cursor entry.
-    pub fn select_cursor(&mut self, visible: &[HistoryEntry<Id>]) -> HistoryPickerOutcome<Id> {
+    pub fn select_cursor(&mut self, visible: &[HistoryMatch<'_, Id>]) -> HistoryPickerOutcome<Id> {
         let idx = self.cursor_index();
         let Some(e) = visible.get(idx) else {
             return HistoryPickerOutcome::Ignored;
@@ -768,7 +790,7 @@ impl<Id: Clone + PartialEq> HistoryPickerState<Id> {
     }
 
     /// Delete cursor (host removes from store then refreshes).
-    pub fn delete_cursor(&mut self, visible: &[HistoryEntry<Id>]) -> HistoryPickerOutcome<Id> {
+    pub fn delete_cursor(&mut self, visible: &[HistoryMatch<'_, Id>]) -> HistoryPickerOutcome<Id> {
         let idx = self.cursor_index();
         let Some(e) = visible.get(idx) else {
             return HistoryPickerOutcome::Ignored;
@@ -777,7 +799,10 @@ impl<Id: Clone + PartialEq> HistoryPickerState<Id> {
     }
 
     /// Toggle pin on cursor.
-    pub fn toggle_pin_cursor(&mut self, visible: &[HistoryEntry<Id>]) -> HistoryPickerOutcome<Id> {
+    pub fn toggle_pin_cursor(
+        &mut self,
+        visible: &[HistoryMatch<'_, Id>],
+    ) -> HistoryPickerOutcome<Id> {
         let idx = self.cursor_index();
         let Some(e) = visible.get(idx) else {
             return HistoryPickerOutcome::Ignored;
@@ -792,7 +817,7 @@ impl<Id: Clone + PartialEq> HistoryPickerState<Id> {
     pub fn handle_key(
         &mut self,
         key: KeyEvent,
-        visible: &[HistoryEntry<Id>],
+        visible: &[HistoryMatch<'_, Id>],
     ) -> HistoryPickerOutcome<Id> {
         if !self.live() || key.is_release() {
             return HistoryPickerOutcome::Ignored;
@@ -860,7 +885,7 @@ impl<Id: Clone + PartialEq> HistoryPickerState<Id> {
     pub fn handle_intent(
         &mut self,
         intent: UiIntent,
-        visible: &[HistoryEntry<Id>],
+        visible: &[HistoryMatch<'_, Id>],
     ) -> HistoryPickerOutcome<Id> {
         if !self.live() {
             return HistoryPickerOutcome::Ignored;
@@ -907,7 +932,7 @@ impl<Id: Clone + PartialEq> HistoryPickerState<Id> {
     pub fn handle_mouse(
         &mut self,
         event: MouseEvent,
-        visible: &[HistoryEntry<Id>],
+        visible: &[HistoryMatch<'_, Id>],
     ) -> HistoryPickerOutcome<Id> {
         if !self.live() {
             return HistoryPickerOutcome::Ignored;
@@ -974,7 +999,7 @@ fn rect_contains(rect: Rect, pos: Position) -> bool {
 /// History picker paint.
 #[derive(Debug, Clone, Copy)]
 pub struct HistoryPicker<'a, Id> {
-    entries: &'a [HistoryEntry<Id>],
+    entries: &'a [HistoryMatch<'a, Id>],
     system: &'a DesignSystem,
     title: &'a str,
     colorless: bool,
@@ -1022,7 +1047,7 @@ const HISTORY_PICKER_HINTS: &[Hint<'static>] = &[
 impl<'a, Id> HistoryPicker<'a, Id> {
     /// Visible entries + design system.
     #[must_use]
-    pub const fn new(entries: &'a [HistoryEntry<Id>], system: &'a DesignSystem) -> Self {
+    pub const fn new(entries: &'a [HistoryMatch<'a, Id>], system: &'a DesignSystem) -> Self {
         Self {
             entries,
             system,
@@ -1553,10 +1578,11 @@ mod tests {
         use ratatui_core::buffer::Buffer;
         let system = DesignSystem::default();
         let entries = catalog();
+        let matches = filter_history_entries(&entries, "");
         let mut state = open_state();
         let area = Rect::new(0, 0, 60, 16);
         let mut buffer = Buffer::empty(area);
-        HistoryPicker::new(&entries, &system).paint(area, &mut buffer, &mut state);
+        HistoryPicker::new(&matches, &system).paint(area, &mut buffer, &mut state);
 
         // A pinned row and an unpinned row must agree on where their kind
         // badge starts: the pin slot is reserved either way.
@@ -1607,7 +1633,8 @@ mod tests {
     fn draft_preserved_on_cancel() {
         let mut s = open_state();
         assert_eq!(s.draft(), Some("draft text"));
-        let vis = filter_history_entries(&catalog(), "");
+        let cat = catalog();
+        let vis = filter_history_entries(&cat, "");
         assert!(matches!(
             s.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE), &vis),
             HistoryPickerOutcome::Cancelled
@@ -1619,7 +1646,8 @@ mod tests {
     #[test]
     fn select_applies_value_and_discards_draft() {
         let mut s = open_state();
-        let vis = filter_history_entries(&catalog(), "");
+        let cat = catalog();
+        let vis = filter_history_entries(&cat, "");
         s.reconcile(&vis);
         assert!(matches!(
             s.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &vis),
@@ -1632,7 +1660,8 @@ mod tests {
     #[test]
     fn delete_and_pin_outcomes() {
         let mut s = open_state();
-        let vis = filter_history_entries(&catalog(), "");
+        let cat = catalog();
+        let vis = filter_history_entries(&cat, "");
         s.reconcile(&vis);
         assert!(matches!(
             s.handle_key(
@@ -1664,7 +1693,7 @@ mod tests {
     #[test]
     fn sensitive_redacted_on_paint() {
         let system = DesignSystem::default();
-        let mut entries = catalog();
+        let entries = catalog();
         // apply policy via state
         let mut s = open_state();
         s.set_redaction(history_redaction_secret());
@@ -1681,7 +1710,6 @@ mod tests {
             !text.contains("sk-live-secret-example-value"),
             "secret leaked: {text}"
         );
-        let _ = &mut entries;
     }
 
     #[test]
@@ -1719,7 +1747,8 @@ mod tests {
     #[test]
     fn fuzz_keys() {
         let mut s = open_state();
-        let vis = filter_history_entries(&catalog(), "");
+        let cat = catalog();
+        let vis = filter_history_entries(&cat, "");
         s.reconcile(&vis);
         let keys = [
             KeyCode::Down,
@@ -1769,7 +1798,8 @@ mod tests {
     fn accepts_input_gate() {
         let mut s = open_state();
         s.set_accepts_input(false);
-        let vis = filter_history_entries(&catalog(), "");
+        let cat = catalog();
+        let vis = filter_history_entries(&cat, "");
         assert!(matches!(
             s.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &vis),
             HistoryPickerOutcome::Ignored
@@ -1778,7 +1808,9 @@ mod tests {
 
     #[test]
     fn mouse_hit_selects_the_painted_history_entry() {
-        let visible = catalog();
+        let cat = catalog();
+        let visible: Vec<HistoryMatch<'_, &'static str>> =
+            cat.iter().map(|e| HistoryMatch::new(e, None)).collect();
         let mut state = open_state();
         state.hits = vec![(0, Rect::new(3, 4, 20, 1))];
         let out = state.handle_mouse(

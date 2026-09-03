@@ -49,10 +49,10 @@ use crate::{
     style::{DesignSystem, PanelChrome, Role},
     widgets::{
         CommandEntry, CommandMatch, CommandPalette, CommandPaletteOutcome, CommandPaletteState,
-        HistoryEntry, HistoryKind, HistoryPicker, HistoryPickerOutcome, HistoryPickerState,
-        InspectorField, ObjectInspector, ObjectInspectorOutcome, ObjectInspectorState, Panel,
-        StatusBar, StatusBarState, StatusRegion, StatusSlot, example_command_catalog,
-        example_history_entries,
+        HistoryEntry, HistoryKind, HistoryMatch, HistoryPicker, HistoryPickerOutcome,
+        HistoryPickerState, InspectorField, ObjectInspector, ObjectInspectorOutcome,
+        ObjectInspectorState, Panel, StatusBar, StatusBarState, StatusRegion, StatusSlot,
+        example_command_catalog, example_history_entries,
     },
 };
 
@@ -851,7 +851,7 @@ impl DatabaseWorkbenchState {
         &mut self,
         key: KeyEvent,
         schema_entries: &[SchemaBrowserEntry<'_, &'static str>],
-        history_entries: &[HistoryEntry<&'static str>],
+        history_entries: &[HistoryMatch<'_, &'static str>],
         commands: &[CommandMatch<'_, &'static str>],
         result_rows_len: usize,
         inspect_fields: &[InspectorField<'_>],
@@ -1444,7 +1444,7 @@ pub struct DatabaseWorkbenchSurfaces<'a> {
     /// Inspector fields for selection.
     pub inspect_fields: &'a [InspectorField<'a>],
     /// History catalog.
-    pub history: &'a [HistoryEntry<&'static str>],
+    pub history: &'a [HistoryMatch<'a, &'static str>],
     /// Command catalog.
     pub commands: &'a [CommandMatch<'a, &'static str>],
 }
@@ -2099,6 +2099,8 @@ mod tests {
         let rows = example_result_row_refs(&data, &mut cell_store);
         let inspect = example_inspect_fields();
         let history = example_db_history();
+        let history_matches: Vec<HistoryMatch<'_, &'static str>> =
+            history.iter().map(|e| HistoryMatch::new(e, None)).collect();
         let commands = example_db_commands();
         let command_matches: Vec<CommandMatch<'_, &'static str>> = commands
             .iter()
@@ -2127,7 +2129,7 @@ mod tests {
                     result_columns: &cols,
                     result_rows: &rows,
                     inspect_fields: &inspect,
-                    history: &history,
+                    history: &history_matches,
                     commands: &command_matches,
                 },
             );
@@ -2200,6 +2202,8 @@ mod tests {
             .collect();
         let inspect = example_inspect_fields();
         let history = example_db_history();
+        let history_matches: Vec<HistoryMatch<'_, &'static str>> =
+            history.iter().map(|e| HistoryMatch::new(e, None)).collect();
         let commands = example_db_commands();
         let command_matches: Vec<CommandMatch<'_, &'static str>> = commands
             .iter()
@@ -2219,7 +2223,7 @@ mod tests {
                     result_columns: &cols,
                     result_rows: &rows,
                     inspect_fields: &inspect,
-                    history: &history,
+                    history: &history_matches,
                     commands: &command_matches,
                 },
             );
@@ -2254,14 +2258,37 @@ mod tests {
         let cmd_matches: Vec<CommandMatch<'_, &'static str>> =
             cmds.iter().map(|c| CommandMatch::new(c, 0, None)).collect();
         let hist = example_db_history();
-        let out = st.handle_key(ctrl(KeyCode::Char('p')), &[], &hist, &cmd_matches, 0, &[]);
+        let hist_matches: Vec<HistoryMatch<'_, &'static str>> =
+            hist.iter().map(|e| HistoryMatch::new(e, None)).collect();
+        let out = st.handle_key(
+            ctrl(KeyCode::Char('p')),
+            &[],
+            &hist_matches,
+            &cmd_matches,
+            0,
+            &[],
+        );
         assert!(matches!(out, DatabaseWorkbenchOutcome::OpenPalette));
         assert!(st.palette_open());
-        let out = st.handle_key(press(KeyCode::Esc), &[], &hist, &cmd_matches, 0, &[]);
+        let out = st.handle_key(
+            press(KeyCode::Esc),
+            &[],
+            &hist_matches,
+            &cmd_matches,
+            0,
+            &[],
+        );
         assert!(matches!(out, DatabaseWorkbenchOutcome::Palette { .. }));
         assert!(!st.palette_open());
 
-        let out = st.handle_key(ctrl(KeyCode::Char('h')), &[], &hist, &cmd_matches, 0, &[]);
+        let out = st.handle_key(
+            ctrl(KeyCode::Char('h')),
+            &[],
+            &hist_matches,
+            &cmd_matches,
+            0,
+            &[],
+        );
         assert!(matches!(out, DatabaseWorkbenchOutcome::OpenHistory));
         assert!(st.history_open());
     }

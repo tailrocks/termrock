@@ -473,10 +473,10 @@ pub use hint_bar::{
 };
 pub use history_picker::{
     HISTORY_PICKER_FULLSCREEN_MAX_HEIGHT, HISTORY_PICKER_FULLSCREEN_MAX_WIDTH,
-    HISTORY_PICKER_OVERLAY_ID, HistoryEntry, HistoryKind, HistoryPicker, HistoryPickerOutcome,
-    HistoryPickerPresentation, HistoryPickerSize, HistoryPickerState, HistoryRedaction,
-    dismiss_history_picker_overlay, example_history_entries, filter_history_entries,
-    history_picker_presentation_for_bounds, history_redaction_secret,
+    HISTORY_PICKER_OVERLAY_ID, HistoryEntry, HistoryKind, HistoryMatch, HistoryPicker,
+    HistoryPickerOutcome, HistoryPickerPresentation, HistoryPickerSize, HistoryPickerState,
+    HistoryRedaction, dismiss_history_picker_overlay, example_history_entries,
+    filter_history_entries, history_picker_presentation_for_bounds, history_redaction_secret,
     open_history_picker_fullscreen, open_history_picker_overlay,
     open_history_picker_popover_overlay, place_history_picker, place_history_picker_popover,
     redact_history_text,

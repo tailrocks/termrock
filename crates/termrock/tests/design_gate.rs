@@ -2727,6 +2727,10 @@ fn priority_pattern_frames(system: &DesignSystem) -> Vec<(&'static str, Buffer)>
     let rows = example_result_row_refs(&raw_rows, &mut cell_store);
     let db_fields = example_inspect_fields();
     let history = example_db_history();
+    let history_matches: Vec<termrock::widgets::HistoryMatch<'_, &'static str>> = history
+        .iter()
+        .map(|e| termrock::widgets::HistoryMatch::new(e, None))
+        .collect();
     let commands = example_db_commands();
     let command_matches: Vec<termrock::widgets::CommandMatch<'_, &'static str>> = commands
         .iter()
@@ -2784,7 +2788,7 @@ fn priority_pattern_frames(system: &DesignSystem) -> Vec<(&'static str, Buffer)>
                         result_columns: &columns,
                         result_rows: &rows,
                         inspect_fields: &db_fields,
-                        history: &history,
+                        history: &history_matches,
                         commands: &command_matches,
                     },
                 );
