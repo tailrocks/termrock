@@ -393,6 +393,7 @@ pub struct Button<'a> {
     variant: ButtonVariant,
     size: ButtonSize,
     leading: Option<&'a str>,
+    leading_role: Option<Role>,
     trailing: Option<&'a str>,
     full_width: bool,
     /// Required when label is empty (icon-only).
@@ -413,6 +414,7 @@ impl<'a> Button<'a> {
             variant: ButtonVariant::Secondary,
             size: ButtonSize::Normal,
             leading: None,
+            leading_role: None,
             trailing: None,
             full_width: false,
             accessible_label: None,
@@ -482,6 +484,14 @@ impl<'a> Button<'a> {
     #[must_use]
     pub const fn leading(mut self, glyph: &'a str) -> Self {
         self.leading = Some(glyph);
+        self
+    }
+
+    /// Semantic role for the leading glyph foreground (for example, muted
+    /// when a toggle is off and accent when it is on).
+    #[must_use]
+    pub const fn leading_role(mut self, role: Role) -> Self {
+        self.leading_role = Some(role);
         self
     }
 
@@ -746,6 +756,23 @@ impl Button<'_> {
             usize::from(paint_w),
             style.bg(fill_bg),
         );
+        if !loading
+            && show_leading
+            && let (Some(glyph), Some(role)) = (self.leading, self.leading_role)
+            && let Some(fg) = theme.style(role).fg
+            && let Some(x) = area.x.checked_add(u16::try_from(pad).unwrap_or(u16::MAX))
+            && x < area.right()
+        {
+            // The role owns only the marker's foreground. Keep the resolved
+            // button face for its background and interaction modifiers.
+            buffer.set_stringn(
+                x,
+                area.y,
+                glyph,
+                usize::from(paint_w.saturating_sub(u16::try_from(pad).unwrap_or(u16::MAX))),
+                style.fg(fg).bg(fill_bg),
+            );
+        }
         let theme_t = theme.junie_theme();
         let on_accent =
             matches!(recipe_variant, ButtonRecipeVariant::Primary) && !disabled && !loading;
@@ -1597,6 +1624,41 @@ mod tests {
         let mut tbuf = Buffer::empty(tiny);
         Button::new("SaveChanges", &system).render(tiny, &mut tbuf, &mut state);
         assert!(state.region.is_some());
+    }
+
+    #[test]
+    fn leading_role_survives_button_face_paint() {
+        let system = DesignSystem::junie();
+        let area = Rect::new(0, 0, 20, 1);
+
+        let mut off = Buffer::empty(area);
+        let mut off_state = ButtonState::new();
+        Button::new("Auto-approve", &system)
+            .leading("○")
+            .leading_role(Role::TextMuted)
+            .paint(area, &mut off, &mut off_state);
+        assert_eq!(
+            off[(1, 0)].fg,
+            system.style(Role::TextMuted).fg.unwrap(),
+            "off marker keeps its semantic muted foreground"
+        );
+        assert_eq!(
+            off[(3, 0)].fg,
+            system.style(Role::Text).fg.unwrap(),
+            "button label keeps the resolved face foreground"
+        );
+
+        let mut on = Buffer::empty(area);
+        let mut on_state = ButtonState::new();
+        Button::new("Verbose", &system)
+            .leading("●")
+            .leading_role(Role::Accent)
+            .paint(area, &mut on, &mut on_state);
+        assert_eq!(
+            on[(1, 0)].fg,
+            system.style(Role::Accent).fg.unwrap(),
+            "on marker keeps its semantic accent foreground"
+        );
     }
 
     #[test]
