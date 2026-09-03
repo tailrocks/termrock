@@ -685,8 +685,8 @@ pub use props::{Prop, paint as paint_props};
 pub use quick_open::{
     ParsedQuickOpenQuery, QUICK_OPEN_DEFAULT_LIMIT, QUICK_OPEN_FULLSCREEN_MAX_HEIGHT,
     QUICK_OPEN_FULLSCREEN_MAX_WIDTH, QUICK_OPEN_OVERLAY_ID, QUICK_OPEN_PROVIDER_STRIP_COMPACT_MAX,
-    QuickOpen, QuickOpenItem, QuickOpenOutcome, QuickOpenPresentation, QuickOpenPreview,
-    QuickOpenProvider, QuickOpenSearchRequest, QuickOpenSize, QuickOpenState,
+    QuickOpen, QuickOpenItem, QuickOpenMatch, QuickOpenOutcome, QuickOpenPresentation,
+    QuickOpenPreview, QuickOpenProvider, QuickOpenSearchRequest, QuickOpenSize, QuickOpenState,
     dismiss_quick_open_overlay, example_quick_open_files, example_quick_open_providers,
     example_quick_open_symbols, filter_quick_open_items, open_quick_open_fullscreen,
     open_quick_open_overlay, parse_quick_open_query, place_quick_open, quick_open_jump_targets,

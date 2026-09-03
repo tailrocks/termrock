@@ -43,9 +43,9 @@ use crate::{
         Breadcrumbs, BreadcrumbsOutcome, BreadcrumbsState, EmptyKind, EmptyState, FileTree,
         FileTreeEntry, FileTreeOutcome, FileTreeState, List, ListRow, ListState, Panel,
         PreviewCard, PreviewCardContent, PreviewCardState, PreviewLoadState, PreviewMetadata,
-        PreviewResourceKind, QuickOpen, QuickOpenItem, QuickOpenOutcome, QuickOpenProvider,
-        QuickOpenState, SearchInput, SearchInputOutcome, SearchInputState, StatusBar,
-        StatusBarState, StatusRegion, StatusSlot, breadcrumbs_from_path,
+        PreviewResourceKind, QuickOpen, QuickOpenItem, QuickOpenMatch, QuickOpenOutcome,
+        QuickOpenProvider, QuickOpenState, SearchInput, SearchInputOutcome, SearchInputState,
+        StatusBar, StatusBarState, StatusRegion, StatusSlot, breadcrumbs_from_path,
         file_tree_to_quick_open_items, normalize_path_display,
     },
 };
@@ -508,7 +508,7 @@ pub struct FileManagerSurfaces<'a> {
     /// Host-projected preview content (selection-based).
     pub preview: Option<PreviewCardContent<'a>>,
     /// Quick-open items (when palette open).
-    pub quick_open_items: &'a [QuickOpenItem<String>],
+    pub quick_open_items: &'a [QuickOpenMatch<'a, String>],
 }
 
 // ── State ───────────────────────────────────────────────────────────────────
@@ -909,7 +909,7 @@ impl FileManagerState {
         key: KeyEvent,
         entries: &[FileTreeEntry<'_, String>],
         ops: &[FileOpItem],
-        quick_open_items: &[QuickOpenItem<String>],
+        quick_open_items: &[QuickOpenMatch<'_, String>],
     ) -> FileManagerOutcome {
         if key.is_release() {
             return FileManagerOutcome::Ignored;
@@ -2128,7 +2128,8 @@ mod tests {
         let mut st = open();
         let entries = example_file_entries();
         let ops = example_empty_ops();
-        let qo = example_quick_open_from_entries(&entries);
+        let qo_items = example_quick_open_from_entries(&entries);
+        let qo: Vec<QuickOpenMatch<'_, String>> = qo_items.iter().map(QuickOpenMatch::of).collect();
         st.focus = "tree";
         st.apply_focus_gates();
         let out = st.handle_key(

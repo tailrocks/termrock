@@ -44,9 +44,9 @@ use crate::{
     widgets::{
         EmptyAction, EmptyKind, EmptyState, EmptyStateState, List, ListRow, ListState, Panel,
         PreviewCard, PreviewCardContent, PreviewCardState, PreviewLoadState, PreviewMetadata,
-        PreviewResourceKind, QuickOpen, QuickOpenItem, QuickOpenOutcome, QuickOpenProvider,
-        QuickOpenState, SearchInput, SearchInputOutcome, SearchInputState, SemanticStatus,
-        StatusBar, StatusBarState, StatusRegion, StatusSlot,
+        PreviewResourceKind, QuickOpen, QuickOpenItem, QuickOpenMatch, QuickOpenOutcome,
+        QuickOpenProvider, QuickOpenState, SearchInput, SearchInputOutcome, SearchInputState,
+        SemanticStatus, StatusBar, StatusBarState, StatusRegion, StatusSlot,
     },
 };
 
@@ -553,7 +553,7 @@ pub struct ProjectLauncherSurfaces<'a> {
     /// Host-projected preview for current selection.
     pub preview: Option<PreviewCardContent<'a>>,
     /// Quick-open items (when palette open).
-    pub quick_open_items: &'a [QuickOpenItem<String>],
+    pub quick_open_items: &'a [QuickOpenMatch<'a, String>],
 }
 
 // ── State ───────────────────────────────────────────────────────────────────
@@ -838,7 +838,7 @@ impl ProjectLauncherState {
         key: KeyEvent,
         projects: &[ProjectEntry],
         sessions: &[SessionEntry],
-        quick_open_items: &[QuickOpenItem<String>],
+        quick_open_items: &[QuickOpenMatch<'_, String>],
     ) -> ProjectLauncherOutcome {
         if key.is_release() {
             return ProjectLauncherOutcome::Ignored;
@@ -1953,7 +1953,8 @@ mod tests {
         let mut st = open();
         let projects = example_projects();
         let sessions = example_sessions();
-        let qo = example_project_quick_open(&projects);
+        let qo_items = example_project_quick_open(&projects);
+        let qo: Vec<QuickOpenMatch<'_, String>> = qo_items.iter().map(QuickOpenMatch::of).collect();
         let out = st.handle_key(
             press_mod(KeyCode::Char('o'), KeyModifiers::CONTROL),
             &projects,
