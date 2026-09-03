@@ -393,6 +393,16 @@ pub struct ProjectedEntryMeta {
     pub line_buf_index: usize,
 }
 
+/// Canonical search-query fold: `None` when absent or whitespace-only,
+/// otherwise the ASCII-lowercased needle for [`crate::text::contains_lower`].
+#[must_use]
+fn fold_search_query(query: Option<&str>) -> Option<String> {
+    query
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(str::to_ascii_lowercase)
+}
+
 /// Filter + project entries for the current zoom / search / collapse overrides.
 #[must_use]
 pub fn project_message_thread(
@@ -412,9 +422,7 @@ fn project_message_thread_profile(
     expanded_ids: &BTreeSet<String>,
     force_collapsed: &BTreeSet<String>,
 ) -> (Vec<ProjectedEntryMeta>, Vec<Vec<String>>) {
-    let q = search
-        .map(|s| s.trim().to_ascii_lowercase())
-        .filter(|s| !s.is_empty());
+    let q = fold_search_query(search);
     let mut meta = Vec::new();
     let mut bufs = Vec::new();
     let mut last_group: Option<&str> = None;
@@ -675,13 +683,12 @@ pub fn compact_entries(entries: &[MessageEntry], keep_recent: usize) -> Vec<Mess
 /// Filter entries by search query.
 #[must_use]
 pub fn filter_entries<'a>(entries: &'a [MessageEntry], query: &str) -> Vec<&'a MessageEntry> {
-    let q = query.trim().to_ascii_lowercase();
-    if q.is_empty() {
+    let Some(ref q) = fold_search_query(Some(query)) else {
         return entries.iter().collect();
-    }
+    };
     entries
         .iter()
-        .filter(|e| crate::text::contains_lower(&e.haystack(), &q))
+        .filter(|e| crate::text::contains_lower(&e.haystack(), q))
         .collect()
 }
 

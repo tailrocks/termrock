@@ -32,7 +32,7 @@ use crate::{
 
 use super::{
     SELECT_FULLSCREEN_MAX_HEIGHT, SELECT_FULLSCREEN_MAX_WIDTH, SelectOption, SelectPresentation,
-    SelectRecipe, SelectRowKind, Surface, SurfaceRecipe, TextInput, TextInputOutcome,
+    SelectRecipe, SelectRowKind, SelectState, Surface, SurfaceRecipe, TextInput, TextInputOutcome,
     TextInputState, Validation,
 };
 
@@ -328,34 +328,6 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
         self.presentation = presentation;
     }
 
-    fn filtered_options<'a>(
-        options: &'a [SelectOption<Id>],
-        query: &str,
-    ) -> Vec<&'a SelectOption<Id>> {
-        let q = query.trim().to_ascii_lowercase();
-        if q.is_empty() {
-            return options.iter().collect();
-        }
-
-        let mut out = Vec::new();
-        let mut pending_group: Option<&SelectOption<Id>> = None;
-        for option in options {
-            match option.kind {
-                SelectRowKind::Group => pending_group = Some(option),
-                SelectRowKind::Separator => {}
-                SelectRowKind::Option => {
-                    if crate::text::contains_lower(&option.label, &q) {
-                        if let Some(group) = pending_group.take() {
-                            out.push(group);
-                        }
-                        out.push(option);
-                    }
-                }
-            }
-        }
-        out
-    }
-
     fn collection_items_from_projection<'a>(
         options: &[&'a SelectOption<Id>],
     ) -> Vec<CollectionItem<'a, Id>> {
@@ -370,7 +342,7 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
         options: &'a [SelectOption<Id>],
         query: &str,
     ) -> Vec<CollectionItem<'a, Id>> {
-        let visible = Self::filtered_options(options, query);
+        let visible = SelectState::filter_options(options, query);
         Self::collection_items_from_projection(&visible)
     }
 
@@ -1144,7 +1116,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
         }
 
         let query = state.effective_query().to_owned();
-        let visible = MultiSelectState::filtered_options(self.options, &query);
+        let visible = SelectState::filter_options(self.options, &query);
 
         let coll_items = MultiSelectState::collection_items_from_projection(&visible);
         let vp = usize::from(list_area.height).max(1);
