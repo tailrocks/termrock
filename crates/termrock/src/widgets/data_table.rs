@@ -268,6 +268,10 @@ pub struct DataTableState<RowId: Clone + Ord, ColId: Clone + PartialEq> {
     paint_widths: Vec<(usize, u16)>,
     /// Scratch: clipped physical rect for each resolved paint column.
     paint_rects: Vec<Rect>,
+    /// Last host-column identities, used to remap cell coordinates after reorder.
+    last_column_ids: Vec<ColId>,
+    /// Last visible-column identities, used to preserve cursor identity.
+    last_visible_column_ids: Vec<ColId>,
     /// Logical column count for h-scroll max.
     content_width: u16,
     /// Viewport width for columns (area − gutter).
@@ -306,6 +310,8 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
             body_width: 0,
             paint_widths: Vec::new(),
             paint_rects: Vec::new(),
+            last_column_ids: Vec::new(),
+            last_visible_column_ids: Vec::new(),
             content_width: 0,
             viewport_width: 0,
         }
@@ -575,10 +581,59 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
     }
 
     fn sync_cursor_focus_to_columns(&mut self, columns: &ColumnModel<ColId>) {
-        self.cursor_col = self
-            .cursor_col
-            .min(columns.visible().count().saturating_sub(1));
+        let old_cursor_column = self.last_visible_column_ids.get(self.cursor_col).cloned();
+        let columns_changed = self.last_column_ids.len() != columns.columns.len()
+            || self
+                .last_column_ids
+                .iter()
+                .zip(&columns.columns)
+                .any(|(old, current)| old != &current.id);
+        if columns_changed && !self.last_column_ids.is_empty() {
+            remap_cell_selection_columns(
+                &mut self.selection,
+                &mut self.range_anchor,
+                &self.last_column_ids,
+                columns,
+            );
+        }
+
+        let visible_count = columns.visible().count();
+        let visible_columns_changed = self.last_visible_column_ids.len() != visible_count
+            || self
+                .last_visible_column_ids
+                .iter()
+                .zip(columns.visible())
+                .any(|(old, (_, current))| old != &current.id);
+        if let Some(old_id) = old_cursor_column
+            && visible_columns_changed
+            && let Some(next) = columns
+                .visible()
+                .position(|(_, column)| column.id == old_id)
+        {
+            self.cursor_col = next;
+        } else {
+            self.cursor_col = self.cursor_col.min(visible_count.saturating_sub(1));
+        }
+
+        if columns_changed {
+            self.last_column_ids.clear();
+            self.last_column_ids
+                .extend(columns.columns.iter().map(|column| column.id.clone()));
+        }
+        if visible_columns_changed {
+            self.last_visible_column_ids.clear();
+            self.last_visible_column_ids
+                .extend(columns.visible().map(|(_, column)| column.id.clone()));
+        }
+        self.cursor_col = self.cursor_col.min(visible_count.saturating_sub(1));
         self.sync_cursor_focus();
+    }
+
+    fn cursor_column_index(&self, columns: &ColumnModel<ColId>) -> Option<usize> {
+        columns
+            .visible()
+            .nth(self.cursor_col)
+            .map(|(index, _)| index)
     }
 
     fn request_sort(&mut self, columns: &ColumnModel<ColId>) -> DataTableOutcome<RowId, ColId>
@@ -739,7 +794,9 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
         if matches!(self.nav_mode, DataTableNavMode::Range)
             || matches!(self.selection.mode, SelectionMode::CellRange)
         {
-            let vis_n = columns.visible().count().max(1);
+            let Some(column_index) = self.cursor_column_index(columns) else {
+                return DataTableOutcome::Ignored;
+            };
             if d_row != 0 {
                 let _ = self.move_cursor_row(i64::from(d_row), visible_rows.len());
             }
@@ -747,23 +804,25 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
                 let next = if d_col < 0 {
                     self.cursor_col.saturating_sub(1)
                 } else {
-                    (self.cursor_col + 1).min(vis_n - 1)
+                    (self.cursor_col + 1).min(columns.visible().count() - 1)
                 };
                 self.cursor_col = next;
             }
+            let column_index = self.cursor_column_index(columns).unwrap_or(column_index);
             let cell = CellCoord {
                 row: self.window.offset.saturating_add(self.cursor_row as u64),
-                col: self.cursor_col,
+                col: column_index,
             };
             if self.range_anchor.is_none() {
                 self.range_anchor = Some(CellCoord {
                     row: self.window.offset.saturating_add(self.cursor_row as u64),
-                    col: self.cursor_col,
+                    col: column_index,
                 });
                 self.selection.select_cell(cell);
             } else {
                 self.selection.extend_cell(cell);
             }
+            self.sync_cursor_focus();
             return DataTableOutcome::SelectionChanged;
         }
         // Default: expand/collapse detail
@@ -1014,6 +1073,9 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
                 }
                 // Body cell
                 if let Some(cell) = self.hit_cell(event.position) {
+                    let Some(column_index) = columns.index_of(&cell.column) else {
+                        return DataTableOutcome::Ignored;
+                    };
                     self.cursor_row = cell.row_index;
                     self.cursor_col = cell.col_index;
                     self.sync_cursor_focus();
@@ -1022,7 +1084,7 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
                     {
                         let coord = CellCoord {
                             row: self.window.offset.saturating_add(cell.row_index as u64),
-                            col: cell.col_index,
+                            col: column_index,
                         };
                         if self.range_anchor.is_none() {
                             self.range_anchor = Some(coord);
@@ -1030,6 +1092,7 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
                         } else {
                             self.selection.extend_cell(coord);
                         }
+                        self.sync_cursor_focus();
                         return DataTableOutcome::SelectionChanged;
                     }
                     if matches!(
@@ -1038,8 +1101,9 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
                     ) {
                         self.selection.select_cell(CellCoord {
                             row: self.window.offset.saturating_add(cell.row_index as u64),
-                            col: cell.col_index,
+                            col: column_index,
                         });
+                        self.sync_cursor_focus();
                     }
                     return DataTableOutcome::CursorMoved;
                 }
@@ -1059,12 +1123,15 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
             }
             MouseEventKind::Drag(MouseButton::Left) => {
                 if let Some(cell) = self.hit_cell(event.position) {
+                    let Some(column_index) = columns.index_of(&cell.column) else {
+                        return DataTableOutcome::Ignored;
+                    };
                     self.cursor_row = cell.row_index;
                     self.cursor_col = cell.col_index;
                     self.sync_cursor_focus();
                     let coord = CellCoord {
                         row: self.window.offset.saturating_add(cell.row_index as u64),
-                        col: cell.col_index,
+                        col: column_index,
                     };
                     if self.range_anchor.is_none() {
                         self.range_anchor = Some(coord);
@@ -1072,6 +1139,7 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
                     } else {
                         self.selection.extend_cell(coord);
                     }
+                    self.sync_cursor_focus();
                     return DataTableOutcome::SelectionChanged;
                 }
                 DataTableOutcome::Ignored
@@ -1112,6 +1180,62 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
         self.sync_cursor_focus();
         DataTableOutcome::CursorMoved
     }
+}
+
+fn remap_cell_coord<ColId: PartialEq>(
+    cell: CellCoord,
+    old_column_ids: &[ColId],
+    columns: &ColumnModel<ColId>,
+) -> Option<CellCoord> {
+    let old_id = old_column_ids.get(cell.col)?;
+    let col = columns.index_of(old_id)?;
+    Some(CellCoord { row: cell.row, col })
+}
+
+fn remap_cell_selection_columns<RowId: Clone + Ord, ColId: Clone + PartialEq>(
+    selection: &mut SelectionModel<RowId>,
+    range_anchor: &mut Option<CellCoord>,
+    old_column_ids: &[ColId],
+    columns: &ColumnModel<ColId>,
+) {
+    let active = selection.cells.active();
+    let anchor = selection.cells.anchor();
+    let extent = selection.cells.extent();
+    let mapped_active = active.and_then(|cell| remap_cell_coord(cell, old_column_ids, columns));
+    let mapped_anchor = anchor.and_then(|cell| remap_cell_coord(cell, old_column_ids, columns));
+    let mapped_extent = extent.and_then(|cell| remap_cell_coord(cell, old_column_ids, columns));
+    let cell_coords_are_valid = active.is_none_or(|_| mapped_active.is_some())
+        && anchor.is_none_or(|_| mapped_anchor.is_some())
+        && extent.is_none_or(|_| mapped_extent.is_some());
+    let mapped_range_anchor = range_anchor
+        .as_ref()
+        .and_then(|cell| remap_cell_coord(*cell, old_column_ids, columns));
+
+    if !cell_coords_are_valid {
+        selection.cells.clear();
+        *range_anchor = None;
+        return;
+    }
+
+    match selection.cells.mode() {
+        crate::interaction::CellSelectionMode::None => {}
+        crate::interaction::CellSelectionMode::Single => {
+            selection.cells.clear();
+            if let Some(cell) = mapped_active {
+                selection.cells.select_cell(cell);
+            }
+        }
+        crate::interaction::CellSelectionMode::Range => {
+            selection.cells.clear();
+            if let Some(start) = mapped_anchor.or(mapped_active) {
+                selection.cells.select_cell(start);
+                if let Some(end) = mapped_extent.or(mapped_active) {
+                    selection.cells.extend_to(end);
+                }
+            }
+        }
+    }
+    *range_anchor = mapped_range_anchor;
 }
 
 impl<RowId: Clone + Ord, ColId: Clone + PartialEq> Default for DataTableState<RowId, ColId> {
@@ -1863,7 +1987,7 @@ fn paint_data_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
         let cell_focused = cell_nav && cursor && surface_focused && state.cursor_col == paint_ord;
         let cell_selected = state.selection.is_cell_selected(CellCoord {
             row: logical_row,
-            col: paint_ord,
+            col: col_idx,
         });
         let mut cell_style = if table.datagrid {
             if col.primary && !(cursor && surface_focused) {
@@ -2898,6 +3022,62 @@ mod tests {
             .find(|region| region.column == "right")
             .expect("right column remains in the responsive projection");
         assert_eq!(buffer[(right.area.x, right.area.y)].symbol(), "R");
+    }
+
+    #[test]
+    fn cell_selection_tracks_column_identity_across_visibility_and_reorder() {
+        let system = DesignSystem::default();
+        let mut columns = ColumnModel::new(vec![
+            DataColumn::new("left", "Left", DataColumnWidth::Fixed(6)),
+            DataColumn::new("middle", "Middle", DataColumnWidth::Fixed(6)),
+            DataColumn::new("right", "Right", DataColumnWidth::Fixed(6)),
+        ]);
+        let cells: &[&str] = &["L", "M", "R"];
+        let rows = [(1u64, cells)];
+        let mut state = DataTableState::<u64, &str>::new();
+        state.nav_mode = DataTableNavMode::Cell;
+        state.selection = SelectionModel::cell();
+        let area = Rect::new(0, 0, 40, 4);
+        let mut buffer = Buffer::empty(area);
+
+        DataTable::new(&system, &columns, &rows)
+            .focused(true)
+            .row_numbers(false)
+            .render(area, &mut buffer, &mut state);
+        let right = state
+            .cell_regions
+            .iter()
+            .find(|region| region.column == "right")
+            .expect("right cell is painted");
+        let click = MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: Position {
+                x: right.area.x,
+                y: right.area.y,
+            },
+            modifiers: KeyModifiers::NONE,
+        };
+        assert!(matches!(
+            state.handle_mouse(click, &[1], &columns),
+            DataTableOutcome::CursorMoved
+        ));
+        assert_eq!(state.selection.cells.active(), Some(CellCoord::new(0, 2)));
+
+        assert!(columns.set_visible(&"middle", false));
+        DataTable::new(&system, &columns, &rows)
+            .focused(true)
+            .row_numbers(false)
+            .render(area, &mut buffer, &mut state);
+        assert_eq!(state.selection.cells.active(), Some(CellCoord::new(0, 2)));
+        assert!(state.selection.is_cell_selected(CellCoord::new(0, 2)));
+
+        assert!(columns.move_column(2, 0));
+        DataTable::new(&system, &columns, &rows)
+            .focused(true)
+            .row_numbers(false)
+            .render(area, &mut buffer, &mut state);
+        assert_eq!(state.selection.cells.active(), Some(CellCoord::new(0, 0)));
+        assert_eq!(state.selection.focus_col, 0);
     }
 
     #[test]
