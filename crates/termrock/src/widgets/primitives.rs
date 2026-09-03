@@ -1123,11 +1123,8 @@ impl IconButtonState {
 
     /// Key routing.
     pub fn handle_key(&mut self, key: KeyEvent) -> ActivationOutcome {
-        let out = self.activation.handle_key(key);
-        if matches!(out, ActivationOutcome::Activated) {
-            // Host may flip toggle; we do not auto-toggle (caller owns domain).
-        }
-        out
+        // No auto-toggle: the caller owns the domain value.
+        self.activation.handle_key(key)
     }
 
     /// Intent routing.

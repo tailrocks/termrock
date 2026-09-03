@@ -690,9 +690,7 @@ impl<'a> HighlightedText<'a> {
             MatchTruncate::Middle => t.overflow(TextOverflow::Clip),
             _ => t.overflow(TextOverflow::Clip),
         };
-        if matches!(self.visual, HighlightVisual::Selected) {
-            // selection chrome is host row bg; we strengthen match styles already
-        }
+        // Selection chrome is the host row background; matches are styled above.
         let _ = t.paint(area, buffer);
         HighlightedTextParts {
             root: Rect {

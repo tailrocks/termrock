@@ -624,9 +624,8 @@ pub fn apply_expanded_set<Id: Clone + PartialEq + Ord>(
     for e in entries {
         if e.branch && expanded.contains(&e.id) {
             e.expanded = true;
-            if matches!(e.status, TreeNodeStatus::Lazy) {
-                // stay lazy until host loads; expanded+lazy means "pending open"
-            }
+            // Lazy nodes stay lazy until the host loads them; expanded+lazy
+            // reads as "pending open".
         }
     }
 }

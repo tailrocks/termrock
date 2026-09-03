@@ -1281,9 +1281,8 @@ impl<'a> Panel<'a> {
                     err.paint(parts.body, buffer, &mut error_state);
                 }
             }
-        } else if collapsed {
-            // nothing in body
         }
+        // A collapsed panel has no body.
 
         // Tiny non-color cue: selected gutter when Selected variant.
         if matches!(self.variant, PanelVariant::Selected) && area.width > 0 && area.height > 0 {

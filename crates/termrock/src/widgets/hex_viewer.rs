@@ -1382,8 +1382,6 @@ fn paint_hex_row(
             } else {
                 s.push(' ');
             }
-        } else if is_cursor {
-            // already pushed hex
         }
     }
 

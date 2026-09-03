@@ -628,11 +628,7 @@ impl<'a> Slider<'a> {
             buffer.set_stringn(track.x.saturating_add(i), track.y, ch, 1, style);
         }
 
-        // Bracket ends for no-color structure
-        if track_w >= 2 && mono(self.system, self.colorless) {
-            // already using =/-/* which is clear
-        }
-
+        // No-color tracks stay readable via the =/-/* glyphs alone.
         let mut value_area = None;
         if !value_str.is_empty() && track.right() < area.right() {
             let vx = track

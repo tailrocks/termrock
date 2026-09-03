@@ -466,8 +466,6 @@ impl<Id> HistoryEntry<Id> {
             self.display = redact_history_text(&self.value, policy);
         } else if matches!(policy, HistoryRedaction::HostProvided) {
             // leave display
-        } else if !self.sensitive && matches!(policy, HistoryRedaction::None) {
-            // leave
         }
         self
     }

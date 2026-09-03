@@ -1139,9 +1139,9 @@ impl OfflineChrome {
             OfflineSurface::new(system).paint(area, buffer, state);
         } else if state.should_show_banner() {
             OfflineBanner::new(state, system).paint(area, buffer);
-        } else if state.phase.is_offline_like() && state.banner_dismissed {
-            // still paint nothing; StatusBar carries the cue
         }
+        // A dismissed banner on an offline-like phase paints nothing on
+        // purpose; the StatusBar carries the cue.
     }
 }
 

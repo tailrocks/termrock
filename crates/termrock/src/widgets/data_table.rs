@@ -463,6 +463,8 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
             }
             KeyCode::Char('e') if is_press => {
                 let col = self.cursor_column_id(columns);
+                // Read-only columns never enter edit mode: the host never has
+                // to defend against EditStarted on a column it cannot apply.
                 let editable = col.as_ref().is_some_and(|id| {
                     columns
                         .columns
@@ -470,8 +472,8 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
                         .find(|c| &c.id == id)
                         .is_some_and(|c| c.editable)
                 });
-                if !editable && col.is_some() {
-                    // Still emit; host may allow all columns.
+                if !editable {
+                    return DataTableOutcome::Ignored;
                 }
                 self.editing = true;
                 self.edit_draft.clear();
@@ -2900,6 +2902,22 @@ mod tests {
             out,
             DataTableOutcome::ColumnReorderRequested { from: 0, to: 1 }
         ));
+    }
+
+    #[test]
+    fn edit_never_starts_on_read_only_column() {
+        let cols = ColumnModel::new(vec![DataColumn::new("a", "A", DataColumnWidth::Min(4))]);
+        let mut state = DataTableState::<u64, &str>::new();
+        let rows = [9u64];
+        assert_eq!(
+            state.handle_key(
+                KeyEvent::new(KeyCode::Char('e'), KeyModifiers::NONE),
+                &rows,
+                &cols,
+            ),
+            DataTableOutcome::Ignored
+        );
+        assert!(!state.editing);
     }
 
     #[test]

@@ -947,10 +947,8 @@ impl PasteChipState {
 
     /// Focus.
     pub const fn set_focused(&mut self, on: bool) {
+        // Unfocusing keeps the popover expanded; only the Esc path collapses it.
         self.tag.set_focused(on);
-        if !on {
-            // keep expanded so host can paint popover; only clear on Esc path
-        }
     }
 
     /// Collapse.

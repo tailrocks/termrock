@@ -842,9 +842,6 @@ fn format_label<Id>(
     let mut s = String::new();
     if let Some(icon) = item.icon {
         s.push_str(icon);
-        if !(matches!(variant, ToolbarVariant::Compact) && !item.label.is_empty()) {
-            // keep icon
-        }
         if !item.label.is_empty()
             && !(matches!(variant, ToolbarVariant::Compact) && item.icon.is_some())
         {

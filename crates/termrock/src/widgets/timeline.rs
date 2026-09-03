@@ -1007,10 +1007,7 @@ impl<'a, Id: Clone + PartialEq + Ord> Timeline<'a, Id> {
                 });
             }
 
-            // Expanded detail line
-            if (event.expanded || state.is_expanded(&event.id)) && event.detail.is_some() {
-                // detail consumes next paint slot only if room — host should project detail as rows
-            }
+            // Detail rows are host-projected; the block itself never paints them.
             y = row_y;
         }
         let _ = y;

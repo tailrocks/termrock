@@ -326,10 +326,7 @@ where
         if matches!(binding.visibility(), Visibility::Internal) {
             continue;
         }
-        // Skip fully hidden? Include HiddenAlias for discoverability of aliases.
-        if matches!(binding.visibility(), Visibility::HiddenAlias) {
-            // still show with lower priority bump later
-        }
+        // HiddenAlias entries are included for alias discoverability.
         let (id, category, action, mouse, zone, priority) = describe(binding.action(), binding);
         let chord = if let Some(g) = binding.glyph() {
             g.to_string()

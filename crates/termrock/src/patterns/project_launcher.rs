@@ -1330,11 +1330,7 @@ pub fn paint_project_launcher(
 
     state.last_area_width = Some(area.width);
     let density = state.effective_density();
-    // Auto first-use onboarding when host left catalog empty
-    if projects.is_empty() && state.host_error.is_none() {
-        // host may still force show_onboarding=false; only auto when not already set false by host intent —
-        // keep host control: only set if still default and empty
-    }
+    // Host keeps full control of show_onboarding; the block never auto-opens.
     let panes = project_launcher_layout_density(
         area,
         &state.workspace,

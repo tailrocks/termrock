@@ -577,9 +577,6 @@ impl JumpOverlayState {
         if !self.open || !self.accepts_input || key.is_release() {
             return JumpOutcome::Ignored;
         }
-        if key.is_insert() {
-            // Allow Press primarily; ignore other.
-        }
         match key.code {
             KeyCode::Esc => {
                 if !self.prefix.is_empty() {

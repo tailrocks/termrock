@@ -1041,18 +1041,7 @@ pub fn filter_diff_lines<'a>(
 ) -> Vec<&'a DiffLine<'a>> {
     let q = query.trim().to_ascii_lowercase();
     let mut out = Vec::with_capacity(lines.len());
-    let mut skip_until: Option<usize> = None;
-    for (i, line) in lines.iter().enumerate() {
-        if let Some(end) = skip_until {
-            if i < end {
-                // Keep headers visible when folded
-                if line.kind.is_header() {
-                    out.push(line);
-                }
-                continue;
-            }
-            skip_until = None;
-        }
+    for line in lines.iter() {
         if let Some(fid) = line.file_id {
             if state.folded_files.contains(fid) && !matches!(line.kind, DiffKind::FileHeader) {
                 continue;
@@ -1063,19 +1052,11 @@ pub fn filter_diff_lines<'a>(
                 continue;
             }
         }
-        if !q.is_empty() {
-            let hay = line.text.to_ascii_lowercase();
-            if !hay.contains(&q) && !line.kind.is_header() {
-                continue;
-            }
+        if !q.is_empty() && !line.kind.is_header() && !crate::text::contains_lower(line.text, &q) {
+            continue;
         }
         out.push(line);
     }
-    // Second pass: apply hunk fold by start/len when ids match DiffHunk stored folds
-    if !state.folded_hunks.is_empty() {
-        // already handled via hunk_id on lines
-    }
-    let _ = skip_until;
     out
 }
 

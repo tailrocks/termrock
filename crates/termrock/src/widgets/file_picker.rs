@@ -1184,13 +1184,6 @@ impl FilePickerState {
         if !self.enabled {
             return FilePickerOutcome::Ignored;
         }
-        let click = matches!(
-            event.kind,
-            MouseEventKind::Down(MouseButton::Left) | MouseEventKind::Up(MouseButton::Left)
-        );
-        if !click && !matches!(event.kind, MouseEventKind::Down(MouseButton::Left)) {
-            // only left down for most
-        }
         if matches!(event.kind, MouseEventKind::Moved) {
             // Hover is stated every event, so leaving the list clears it.
             let was = self.hovered.clone();

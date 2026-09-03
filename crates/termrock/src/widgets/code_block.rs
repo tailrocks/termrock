@@ -1284,10 +1284,7 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
                 if row >= body_h {
                     break;
                 }
-                // Only number first wrap row was already painted; continuation blank gutter
-                if wrap_i > 0 && parts.gutter.width > 0 {
-                    // leave gutter as-is (already empty for this row)
-                }
+                // Continuation wrap rows leave the (already blank) gutter alone.
                 self.paint_body_row(
                     buffer,
                     parts.body.x,
