@@ -185,7 +185,7 @@ mod tests {
         }
     }
 
-    /// Every non-ASCII cell the lookbook baselines paint must resolve — the
+    /// Every non-ASCII cell the catalog baselines paint must resolve — the
     /// set that rendered tofu before the fallback chain existed.
     #[test]
     fn baseline_symbol_and_emoji_cells_are_mapped() {

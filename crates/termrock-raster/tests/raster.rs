@@ -4,15 +4,12 @@
 //! End-to-end contracts for deterministic buffer rasterization.
 
 use ratatui::{
-    Terminal,
-    backend::TestBackend,
     buffer::Buffer,
     layout::Rect,
     style::{Color, Modifier, Style},
 };
 use sha2::{Digest, Sha256};
 use termrock::style::RolePalette;
-use termrock_lookbook::frame::story_by_id;
 use termrock_raster::{PixelDiff, compare_png_pixels, render_pixmap, render_png};
 
 fn one_cell(symbol: &str, modifier: Modifier, fg: Color, bg: Color) -> Buffer {
@@ -35,23 +32,27 @@ fn pixel(pixmap: &tiny_skia::Pixmap, x: u32, y: u32) -> [u8; 4] {
 
 #[test]
 fn panel_story_png_has_exact_size_and_junie_accent() {
-    let story = story_by_id("panel/focused").expect("panel/focused story");
     let palette = RolePalette::default();
-    let backend = TestBackend::new(story.width, story.height);
-    let mut terminal = Terminal::new(backend).expect("test terminal");
-    let mut interactor = story.mount();
-    interactor.set_system(termrock_lookbook::design::lookbook_system(palette.clone()));
-    terminal
-        .draw(|frame| interactor.render(frame, frame.area()))
-        .expect("paint story");
-    let mut buffer = terminal.backend().buffer().clone();
+    let mut buffer = Buffer::empty(Rect::new(0, 0, 24, 8));
+    buffer.set_string(
+        0,
+        0,
+        "┌──────────────────────┐",
+        Style::new().fg(Color::Rgb(0xd0, 0xd0, 0xd0)),
+    );
+    buffer.set_string(
+        0,
+        7,
+        "└──────────────────────┘",
+        Style::new().fg(Color::Rgb(0xd0, 0xd0, 0xd0)),
+    );
     buffer[(1, 1)]
         .set_symbol("█")
         .set_fg(Color::Rgb(0x48, 0xe0, 0x54));
     let png = render_png(&buffer, &palette).expect("render PNG");
     let pixmap = tiny_skia::Pixmap::decode_png(&png).expect("decode PNG");
-    assert_eq!(pixmap.width(), u32::from(story.width) * 9);
-    assert_eq!(pixmap.height(), u32::from(story.height) * 18);
+    assert_eq!(pixmap.width(), 24 * 9);
+    assert_eq!(pixmap.height(), 8 * 18);
     assert!(
         pixmap
             .data()

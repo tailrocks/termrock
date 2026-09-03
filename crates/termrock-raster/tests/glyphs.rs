@@ -8,15 +8,15 @@
 //! `⧉`, `⑂`, and the emoji cells — rasterized as a `.notdef` tofu box. These
 //! tests keep that class of defect dead.
 
-use std::collections::BTreeSet;
-
 use ratatui::{
     buffer::Buffer,
     layout::Rect,
     style::{Color, Style},
 };
-use termrock::style::RolePalette;
-use termrock_lookbook::{frame::paint_story_buffer, png::subset_stories};
+use termrock::style::{
+    BLOCK_RAMP, BRAILLE_RAMP, Glyph, LEFT_BLOCK_RAMP, RolePalette, SHADE_RAMP,
+    SPINNER_BRAILLE_FRAMES,
+};
 use termrock_raster::render_pixmap;
 
 /// Two cells wide so wide (emoji) symbols are stored instead of clipped.
@@ -66,35 +66,31 @@ fn fallback_cells_paint_ink() {
     }
 }
 
-/// Every character any registered subset story paints must resolve through the
+/// Every character in the canonical catalog vocabulary must resolve through the
 /// vendored face chain, so a newly painted glyph cannot reintroduce tofu (or a
-/// silently blank cell) in the PNG baselines.
+/// silently blank cell) in the PNG output.
 #[test]
-fn every_painted_baseline_cell_resolves() {
-    let system = termrock_lookbook::design::lookbook_system(RolePalette::default());
-    let mut unresolved: BTreeSet<char> = BTreeSet::new();
-    for story in subset_stories() {
-        let buffer = paint_story_buffer(story, &system, None, None);
-        for x in 0..buffer.area.width {
-            for y in 0..buffer.area.height {
-                for character in buffer[(x, y)].symbol().chars() {
-                    if character.is_whitespace() {
-                        continue;
-                    }
-                    if !termrock_raster::is_glyph_mapped(character) {
-                        unresolved.insert(character);
-                    }
-                }
-            }
-        }
+fn every_catalog_vocabulary_cell_resolves() {
+    let mut cells = String::new();
+    for glyph in Glyph::ALL {
+        cells.push_str(glyph.resolve().text);
     }
+    let ramps: [&[char]; 4] = [BLOCK_RAMP, LEFT_BLOCK_RAMP, SHADE_RAMP, BRAILLE_RAMP];
+    for ramp in ramps {
+        cells.extend(ramp.iter().copied());
+    }
+    for frame in SPINNER_BRAILLE_FRAMES {
+        cells.push_str(frame);
+    }
+    cells.push_str("╭╮╰╯");
+    let unresolved: Vec<String> = cells
+        .chars()
+        .filter(|character| !character.is_whitespace())
+        .filter(|&character| !termrock_raster::is_glyph_mapped(character))
+        .map(|character| format!("{character} U+{:04X}", character as u32))
+        .collect();
     assert!(
         unresolved.is_empty(),
-        "cells painted by the PNG baselines that no vendored face maps: {}",
-        unresolved
-            .iter()
-            .map(|c| format!("{c} U+{:04X}", *c as u32))
-            .collect::<Vec<_>>()
-            .join(" "),
+        "unmapped catalog glyphs: {unresolved:?}"
     );
 }

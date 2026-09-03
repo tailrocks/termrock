@@ -10,7 +10,7 @@ mod tests {
     use termrock::style::xterm256_to_rgb;
 
     #[test]
-    fn named_and_reset_colors_match_lookbook() {
+    fn named_and_reset_colors_match_junie_catalog() {
         assert_eq!(color_to_rgb(Color::LightGreen, true), [0x48, 0xe0, 0x54]);
         assert_eq!(color_to_rgb(Color::Reset, true), [0xff, 0xff, 0xff]);
         assert_eq!(color_to_rgb(Color::Reset, false), [0, 0, 0]);

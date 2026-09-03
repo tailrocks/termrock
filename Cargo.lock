@@ -1601,7 +1601,6 @@ dependencies = [
  "sha2 0.11.0",
  "swash",
  "termrock",
- "termrock-lookbook",
  "tiny-skia",
  "unicode-width",
 ]
