@@ -552,8 +552,22 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
     where
         ColId: Clone,
     {
-        if !self.accepts_input || rows.is_empty() {
+        if !self.accepts_input {
             return TreeTableOutcome::Ignored;
+        }
+        if rows.is_empty() {
+            let delta = match intent {
+                UiIntent::Move(NavigationMove::Next | NavigationMove::Down) => 1,
+                UiIntent::Move(NavigationMove::Previous | NavigationMove::Up) => -1,
+                UiIntent::Page(PageMove::Forward) => i64::from(self.window.viewport.max(1)),
+                UiIntent::Page(PageMove::Backward) => -i64::from(self.window.viewport.max(1)),
+                _ => return TreeTableOutcome::Ignored,
+            };
+            return if self.window.scroll_by(delta) {
+                TreeTableOutcome::Scrolled
+            } else {
+                TreeTableOutcome::Ignored
+            };
         }
         self.cursor_row = self.cursor_row.min(rows.len() - 1);
         match intent {
@@ -1921,6 +1935,23 @@ mod tests {
 
         assert!(matches!(out, TreeTableOutcome::Scrolled));
         assert_eq!(state.window.offset, 11);
+        assert_eq!(state.selected(), Some(&"off-window"));
+        assert_eq!(state.cursor_row, 0);
+    }
+
+    #[test]
+    fn page_scrolls_empty_virtual_projection() {
+        let columns = cols();
+        let rows: [TreeTableRow<'_, &str>; 0] = [];
+        let mut state = TreeTableState::<&str, &str>::new(Some("off-window"));
+        state.set_logical_rows(100);
+        state.window.viewport = 2;
+        state.window.offset = 10;
+
+        let out = state.handle_intent(&rows, &columns, UiIntent::Page(PageMove::Forward));
+
+        assert!(matches!(out, TreeTableOutcome::Scrolled));
+        assert_eq!(state.window.offset, 12);
         assert_eq!(state.selected(), Some(&"off-window"));
         assert_eq!(state.cursor_row, 0);
     }
