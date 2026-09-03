@@ -281,7 +281,14 @@ impl<Id: Clone + PartialEq> RovingFocusGroup<Id> {
             self.typeahead.clear();
             return self.outcome(from);
         }
+        let missing_active = self
+            .active
+            .as_ref()
+            .is_some_and(|active| !entries.iter().any(|entry| &entry.id == active));
         let _ = self.reconcile(entries);
+        if missing_active {
+            return self.outcome(from);
+        }
         let from = self.active.clone().or(from);
         let enabled = Self::enabled_indices(entries);
         let cur = self
@@ -623,6 +630,22 @@ mod tests {
             g.move_previous(&e),
             RovingOutcome::ActiveChanged {
                 from: Some("b"),
+                to: Some("a"),
+            }
+        );
+        assert_eq!(g.active(), Some(&"a"));
+    }
+
+    #[test]
+    fn movement_from_missing_active_selects_first_enabled_entry() {
+        let e = entries(&[("a", true), ("b", true)]);
+        let mut g = RovingFocusGroup::new();
+        g.set_active(Some("gone"));
+
+        assert_eq!(
+            g.move_next(&e),
+            RovingOutcome::ActiveChanged {
+                from: Some("gone"),
                 to: Some("a"),
             }
         );

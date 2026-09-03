@@ -449,6 +449,22 @@ mod tests {
     }
 
     #[test]
+    fn movement_from_missing_active_selects_first_enabled_entry() {
+        let list = items(&[("a", true), ("b", true)]);
+        let mut c = CollectionState::new();
+        c.set_active(Some("gone"));
+
+        assert_eq!(
+            c.move_next(&list),
+            CollectionOutcome::ActiveChanged {
+                from: Some("gone"),
+                to: Some("a"),
+            }
+        );
+        assert_eq!(c.active(), Some(&"a"));
+    }
+
+    #[test]
     fn virtual_window_metadata() {
         let mut c = CollectionState::new();
         let window = items(&[("c", true), ("d", true)]);
