@@ -1,0 +1,40 @@
+ ▪  TablePro  Production  ◆ production  acme_prod › public  safe                             truecolor · 120×40  ? help
+
+ ▎≡ Query 1 ×   ▎T orders ×   ▎T order_items ×                                                                      +
+ ──────────────────────────────━━━━━━━━━━━━━━━━────────────────────────────────────────────────────────────────────────
+ ╭─ Explorer ─────── public ─╮ ╭─ public › order_items ────────────────────────────────────────────────────── 7 cols ─╮
+ │                           │ │  ▎Data   ▎Structure                                                                  │
+ │ ▎ Filter objects          │ │  ─━━━━━───────────────────────────────────────────────────────────────────────────── │
+ │ ▎▾ D acme_prod            │ │                                                                                      │
+ │ ▎  ▾ S public             │ │         ⚷ id                                                                    6›   │
+ │ ▎    ▾ Tables          7  │ │  ▎    1 139f9a93-4558-4d53-bb36-b349e0dd66ff                                       ┃ │
+ │ ▎      ▸ T organizations ╭──────────────────────────────────────────────────────────────╮                        │ │
+ │ ▎      ▸ T customers     │ Open tabs                                                    │                        │ │
+ │ ▎      ▸ T products  312 │ ▎ Filter tabs…                                               │                        │ │
+ │ ▎      ▸ T orders        │                                                              │                        │ │
+ │ ▎      ▸ T order_items   │ ▎≡ Query 1                                           query   │                        │ │
+ │ ▎      ▸ T payments      │ ▎T orders                             public.orders · data   │                        │ │
+ │ ▎      ▸ T subscriptions │ ▎T order_items           public.order_items · data  active   │                        │ │
+ │ ▎    ▸ Views           2 │                                                              │                        │ │
+ │ ▎    ▸ Functions       1 │ ↑↓ Move · Enter Switch · Delete Close tab · Esc Close        │                        │ │
+ │ ▎    ▸ Sequences       1 ╰──────────────────────────────────────────────────────────────╯                        │ │
+ │ ▎  ▸ S analytics          │ │  ▎   12 425929f1-c76a-4d9c-902c-6c73a25dea9f                                       │ │
+ │ ▎  ▸ S audit              │ │  ▎   13 c79767d6-3420-4532-b43f-b24511348c91                                       │ │
+ │                           │ │  ▎   14 de10f397-50b5-4095-a39e-1652d9ca9a05                                       │ │
+ │                           │ │  ▎   15 f501af39-6b7a-4469-9d02-d26936e0434f                                       │ │
+ │                           │ │  ▎   16 0c77d517-bfbd-427c-be9b-3748e3355f4f                                       │ │
+ │                           │ │  ▎   17 a01a5d75-a47f-4855-93f9-9d201b3c4cb4                                       │ │
+ │                           │ │  ▎   18 74cd735d-b149-4bf2-b4bd-142cc8eb7da6                                       │ │
+ │                           │ │  ▎   19 eb39f4c9-11f9-4ac8-9b06-a4f3346b49cd                                       │ │
+ │                           │ │  ▎   20 1721490d-7ae2-419b-8837-2285695efa4c                                       │ │
+ │                           │ │  ▎   21 27833b61-9924-416e-a6a4-839d67573a23                                       │ │
+ │                           │ │  ▎   22 35fad262-7115-4394-b03f-11499bde3fd2                                       │ │
+ │                           │ │  ▎   23 ef486cef-d5e9-4ab8-8438-3799035ec74f                                       │ │
+ │                           │ │  ▎   24 d810e6d1-0b6a-4214-b468-6bd9e9907ba0                                       │ │
+ │                           │ │  ▎   25 fbae70aa-b7f8-4d4c-b7bd-8d12d1d8a373                                       │ │
+ │                           │ │  ▎   26 3ae50e97-cbac-44c0-83df-00fe725b63ce                                       │ │
+ │                           │ │  ▎   27 57c18c1e-4b90-4086-ba93-85372406c793                                       │ │
+ │                           │ │   rows 1–27 of 500 loaded · 3,811,020 total · cols 1–1 of 7                          │
+ ╰───────────────────────────╯ ╰──────────────────────────────────────────────────────────────────────────────────────╯
+
+                                                                                                Connected to Production

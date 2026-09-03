@@ -12,7 +12,7 @@ const root = join(import.meta.dir, '..', '..')
 const contractPath = join(root, 'docs', 'api', 'component-contracts.v2.json')
 const renderEvidencePath = join(root, 'docs', 'api', 'component-render-evidence.json')
 const exhaustiveInventoryTest =
-  'crates/termrock-lookbook/src/demo.rs#typed_inventory_joins_every_representative_story'
+  'crates/termrock-catalog/src/catalog.rs#representative_scenarios_cover_component_and_pattern_registries'
 const posterCheck = 'docs/scripts/export-preview-posters.ts#validate'
 const renderAuditCheck = 'docs/scripts/audit-render-contracts.ts#runRenderAudit'
 

@@ -8,20 +8,12 @@ const storyById = new Map(catalog.stories.map((story) => [story.id, story]))
 
 function exactStorySnippet(story: Story): string {
   return [
-    'use termrock::style::RolePalette;',
-    'use termrock_lookbook::{',
-    '    design::lookbook_system,',
-    '    frame::{paint_story_frame, story_by_id},',
-    '};',
+    'use termrock_catalog::host::CatalogSession;',
     '',
-    `let story = story_by_id(${JSON.stringify(story.id)}).expect("canonical story");`,
-    `assert_eq!(story.component(), ${JSON.stringify(story.component)});`,
-    'let frame = paint_story_frame(',
-    '    story,',
-    '    &lookbook_system(RolePalette::default()),',
-    '    None,',
-    '    None,',
-    ');',
+    `let mut session = CatalogSession::mount(${JSON.stringify(story.id)}, ${story.cols}, ${story.rows})`,
+    '    .expect("canonical catalog scenario");',
+    'let frame = session.frame();',
+    `assert_eq!(frame.component, ${JSON.stringify(story.component)});`,
     `assert_eq!(frame.story_id, ${JSON.stringify(story.id)});`,
   ].join('\n')
 }

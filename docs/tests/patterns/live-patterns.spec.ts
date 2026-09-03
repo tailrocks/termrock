@@ -107,8 +107,8 @@ test('SetupWizard advances a real step and opens its cancel confirmation', async
 test('pattern Code view shows exact shared implementation and returns to live state', async ({ page }) => {
   const figure = await pattern(page, 'auth-entry', 'auth-entry/basic')
   await figure.getByRole('button', { name: 'Code' }).click()
-  await expect(figure.locator('[data-termrock-code="1"]')).toContainText('story_by_id("auth-entry/basic")')
-  await expect(figure.locator('[data-termrock-code="1"]')).toContainText('paint_story_frame')
+  await expect(figure.locator('[data-termrock-code="1"]')).toContainText('CatalogSession::mount("auth-entry/basic"')
+  await expect(figure.locator('[data-termrock-code="1"]')).toContainText('session.frame()')
   await expect(figure.locator('canvas')).toBeHidden()
   await figure.getByRole('button', { name: 'preview', exact: true }).click()
   await expect(figure.locator('canvas')).toBeVisible()

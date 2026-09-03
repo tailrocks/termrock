@@ -649,13 +649,13 @@ export async function loadRustAuthority(): Promise<Readonly<{
   stories: readonly Story[]
 }>> {
   const inventoryValue = object(await rustJson(
-    ['cargo', 'run', '-q', '-p', 'termrock-lookbook', '--', 'inventory', '--format', 'json'],
+    ['cargo', 'run', '-q', '-p', 'termrock-catalog', '--', 'authority', '--format', 'json'],
   ), 'inventory')
   return {
     publicUi: array(inventoryValue['publicUi'], 'inventory.publicUi').map(parsePublicUi),
     patterns: array(inventoryValue['patterns'], 'inventory.patterns').map(parsePattern),
     stories: array(await rustJson(
-      ['cargo', 'run', '-q', '-p', 'termrock-lookbook', '--', 'list', '--format', 'json'],
+      ['cargo', 'run', '-q', '-p', 'termrock-catalog', '--', 'scenarios', '--format', 'json'],
     ), 'stories').map(parseStory),
   }
 }
@@ -893,7 +893,10 @@ export async function loadCatalog(): Promise<Catalog> {
     if (!entry) throw new Error(`${contract.id}: missing canonical catalog entry`)
     for (const [axis, cell] of Object.entries(contract.axes)) {
       for (const story of cell.evidence.stories) {
-        if (!storyById.has(story)) throw new Error(`${contract.id}.${axis}: unknown story evidence ${story}`)
+        const [family, variant, ...extra] = story.split('/')
+        if (!family || !variant || extra.length > 0) {
+          throw new Error(`${contract.id}.${axis}: invalid canonical scenario evidence ${story}`)
+        }
       }
       for (const poster of cell.evidence.posters) {
         if (!poster.startsWith('docs/public/preview-posters/') || !poster.endsWith('.json')) {

@@ -6,7 +6,7 @@ Checkpoint prepared from the filtered donor boundary recorded in `provenance.tom
 - The `crossterm` feature contains adapters and scoped terminal ownership only.
 - Public widgets use borrowed render data, stable IDs, and typed OSC requests.
 - The donor component facade and consumer-owned widgets are absent.
-- The neutral lookbook registry has unique IDs and deterministic committed renders.
+- The canonical catalog registry has unique IDs and deterministic committed renders.
 - All post-boundary commits carry DCO sign-offs; the full-history secret and object-size scans recorded during bootstrap found no findings.
 - No tags or secondary branches are part of the first publish.
 

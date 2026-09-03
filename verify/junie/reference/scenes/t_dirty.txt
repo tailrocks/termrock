@@ -1,0 +1,40 @@
+ ▪  TablePro  Production  ◆ production  acme_prod › public  safe                • 2 pending  truecolor · 120×40  ? help
+
+ ▎≡ Query 1 ×   ▎T orders ×                                                                                         +
+ ────────────────━━━━━━━━━━━───────────────────────────────────────────────────────────────────────────────────────────
+ ╭─ Explorer ─────── public ─╮ ╭─ public › orders ────────────────────────────────────────────────────────── 14 cols ─╮
+ │                           │ │  ▎Data   ▎Structure                                                                  │
+ │ ▎ Filter objects          │ │  ─━━━━━───────────────────────────────────────────────────────────────────────────── │
+ │ ▎▾ D acme_prod            │ │                                                                                      │
+ │ ▎  ▾ S public             │ │   ‹4    status       total_amount  currency                                     7›   │
+ │ ▎    ▾ Tables          7  │ │  ▎ •  1 delivered           25.90  EUR                                             ┃ │
+ │ ▎      ▸ T organizations  │ │  ▎✓−  2 pending           1617.64  USD                                             │ │
+ │ ▎      ▸ T customers      │ │  ▎    3 pending           2236.65  EUR                                             │ │
+ │ ▎      ▸ T products  312  │ │  ▎    4 pending           2376.57  EUR                                             │ │
+ │ ▎      ▸ T orders         │ │  ▎    5 refunded          2067.52  USD                                             │ │
+ │ ▎      ▸ T order_items    │ │  ▎    6 shipped            675.78  GBP                                             │ │
+ │ ▎      ▸ T payments       │ │  ▎    7 delivered         2397.83  GBP                                             │ │
+ │ ▎      ▸ T subscriptions  │ │  ▎    8 refunded          1677.55  EUR                                             │ │
+ │ ▎    ▸ Views           2  │ │  ▎    9 pending            550.69  USD                                             │ │
+ │ ▎    ▸ Functions       1  │ │  ▎   10 pending            290.26  EUR                                             │ │
+ │ ▎    ▸ Sequences       1  │ │  ▎   11 cancelled         1050.75  USD                                             │ │
+ │ ▎  ▸ S analytics          │ │  ▎   12 refunded          1219.88  USD                                             │ │
+ │ ▎  ▸ S audit              │ │  ▎   13 refunded          1421.90  USD                                             │ │
+ │                           │ │  ▎   14 paid              1814.34  GBP                                             │ │
+ │                           │ │  ▎   15 shipped             24.67  USD                                             │ │
+ │                           │ │  ▎   16 refunded          2197.09  USD                                             │ │
+ │                           │ │  ▎   17 pending           2326.75  USD                                             │ │
+ │                           │ │  ▎   18 pending           2392.98  USD                                             │ │
+ │                           │ │  ▎   19 refunded           785.85  USD                                             │ │
+ │                           │ │  ▎   20 pending            497.22  EUR                                             │ │
+ │                           │ │  ▎   21 cancelled         2402.17  USD                                             │ │
+ │                           │ │  ▎   22 refunded          1645.69  USD                                             │ │
+ │                           │ │  ▎   23 refunded          2412.74  EUR                                             │ │
+ │                           │ │  ▎   24 delivered         1282.42  USD                                             │ │
+ │                           │ │  ▎   25 delivered         2219.60  USD                                             │ │
+ │                           │ │                                                                                      │
+ │                           │ │   • 2 pending 1 update · 1 delete                    ▎Preview SQL  ▎Discard  ▎Save   │
+ │                           │ │   rows 1–25 of 500 loaded · 1,203,338 total · cols 5–7 of 14                         │
+ ╰───────────────────────────╯ ╰──────────────────────────────────────────────────────────────────────────────────────╯
+
+ ↑↓←→ Cell  Enter Edit  s Sort  f Filter  Ctrl+S Save  Tab Next

@@ -133,8 +133,6 @@ export const ownerEvidence: readonly OwnerEvidence[] = [
     widget('toast.rs', 'single_toast_kinds_paint'),
   ], { keyboard: 'na', mouse: 'na', focus: 'na', disabled: 'na', overlay: 'na', escape: 'na' }),
   behavior('ToastStack', [
-    widget('toast.rs', 'esc_dismisses_the_newest_toast'),
-    widget('toast.rs', 'anchors_and_margins_resolve_inside_the_outer_area'),
     widget('toast.rs', 'stack_paint_and_announcement'),
     widget('toast.rs', 'never_focusable'),
   ], { mouse: 'na', focus: 'na', disabled: 'na' }),
@@ -323,7 +321,7 @@ export const ownerEvidence: readonly OwnerEvidence[] = [
   behavior('List', [
     widget('list.rs', 'keyboard_skips_non_items_and_returns_stable_ids'),
     widget('list.rs', 'render_reveals_selection_and_mouse_uses_painted_regions'),
-    widget('list.rs', 'phosphor_selection_is_a_gutter_not_neon'),
+    widget('list.rs', 'junie_selection_is_a_gutter_and_marker_not_neon'),
     widget('list.rs', 'handle_intent_moves_and_activates_without_raw_keys'),
     widget('list.rs', 'list_state_accessors_preserve_semantic_ownership'),
   ], { disabled: 'c', overlay: 'na' }),
@@ -463,7 +461,7 @@ export const ownerEvidence: readonly OwnerEvidence[] = [
     ['Select', 'select.rs', 'mouse_select_option'],
     ['Slider', 'slider.rs', 'slider_mouse_click_track'],
     ['Stepper', 'stepper.rs', 'mouse_activates_only_painted_step_hit'],
-    ['TextArea', 'text_area.rs', 'scrollbars_stay_inside_panel_and_own_press_drag_geometry'],
+    ['TextArea', 'text_area.rs', 'scrollbars_stay_inside_field_and_own_press_drag_geometry'],
     ['TextInput', 'text_input.rs', 'mouse_places_cursor'],
     ['Toggle', 'toggle.rs', 'mouse_toggles'],
     ['ToggleGroup', 'toggle.rs', 'mouse_toggles'],
@@ -529,8 +527,8 @@ export const ownerEvidence: readonly OwnerEvidence[] = [
     widget('spinner.rs', 'fuzz_phases_ticks'),
   ], { loading: 'r', streaming: 'r', error: 'na', disabled: 'na' }),
   specific('ProgressBar', [
-    widget('progress.rs', 'indeterminate_tick_is_deterministic_and_tiny_areas_are_safe'),
-    widget('progress.rs', 'status_complete_and_failed_paint'),
+    widget('progress.rs', 'indeterminate_tick_is_deterministic_and_off_parks_the_segment'),
+    widget('progress.rs', 'running_bar_is_never_green_and_complete_is'),
   ], { loading: 'r', error: 'r', streaming: 'na', disabled: 'na' }),
   specific('Skeleton', [
     widget('skeleton.rs', 'shimmer_only_full_motion'),
@@ -605,8 +603,7 @@ export const ownerEvidence: readonly OwnerEvidence[] = [
     widget('connectivity.rs', 'tiny_empty_safe'),
   ], { resize: 'r', responsive: 'r', tiny_terminal: 'r', unicode: 'r', cjk: 'r', combining: 'r', emoji: 'r', ascii_fallback: 'r' })),
   specific('ProgressBar', [
-    widget('progress.rs', 'cjk_and_combining_labels_resize_on_grapheme_boundaries'),
-    widget('progress.rs', 'indeterminate_tick_is_deterministic_and_tiny_areas_are_safe'),
+    widget('progress.rs', 'indeterminate_tick_is_deterministic_and_off_parks_the_segment'),
   ], { resize: 'r', responsive: 'r', tiny_terminal: 'r', unicode: 'r', cjk: 'r', combining: 'r', ascii_fallback: 'r' }),
   specific('Skeleton', [
     widget('skeleton.rs', 'tiny_size_safe'),
@@ -649,7 +646,7 @@ export const ownerEvidence: readonly OwnerEvidence[] = [
     ['IntegrationStatus', pattern('integration_status.rs', 'paint_all_presentations')],
     ['StatusStrip', widget('status_strip.rs', 'colorless_strips_paint_no_hue_at_all')],
     ['WorkingStateCard', pattern('working_state_card.rs', 'reference_minimum_and_below_minimum_keep_status_anatomy')],
-    ['ActivityIndicator', widget('spinner.rs', 'activity_indicator_is_rail_glyph_and_verb_in_ascii_colorless_mode')],
+    ['ActivityIndicator', widget('spinner.rs', 'activity_indicator_is_glyph_and_verb_in_ascii_colorless_mode')],
   ] as const).map(([id, test]) => specific(id, [test], { no_color: 'r' })),
   specific('StatusIndicator', [widget('status_indicator.rs', 'glyph_comes_from_the_one_vocabulary')], { no_color: 'rp' }),
   specific('ActivityShelf', [pattern('activity_shelf.rs', 'paint_presentations')], { no_color: 'rp', color_ladder: 'rp' }),

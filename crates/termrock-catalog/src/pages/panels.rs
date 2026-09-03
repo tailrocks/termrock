@@ -208,7 +208,10 @@ impl Page for PanelsPage {
         let rrows = layout::rows(r, &[r.height / 2, 0]);
         let pf = ctx.interaction.focused(PROSE);
         let mut prose_lines: Vec<String> = Vec::new();
-        let wrap_w = rrows[0].width.saturating_sub(8).max(8) as usize;
+        // The source prose wraps against the framed body width, including the
+        // one-cell terminal scrollbar gutter; this is one cell wider than the
+        // clipped text paint width.
+        let wrap_w = rrows[0].width.saturating_sub(7).max(8) as usize;
         for para in PROSE_TEXT.split('\n') {
             if para.is_empty() {
                 prose_lines.push(String::new());

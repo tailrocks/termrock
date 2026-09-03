@@ -41,10 +41,10 @@ def ref_tools_dir():
     candidates = []
     if os.environ.get("JUNIE_REPO"):
         candidates.append(Path(os.environ["JUNIE_REPO"]) / "tools")
-    candidates += [
-        Path("/Users/donbeave/Projects/terminal-components-claude/tools"),
-        Path(__file__).resolve().parents[3] / "terminal-components-claude" / "tools",
-    ]
+    resolved = Path(__file__).resolve()
+    if len(resolved.parents) > 5:
+        candidates.append(resolved.parents[5] / "terminal-components-claude" / "tools")
+    candidates.append(Path.cwd() / "terminal-components-claude" / "tools")
     for c in candidates:
         if (c / "ansi2html.py").is_file():
             return c
@@ -95,10 +95,10 @@ def parse_ansi(text, cols, rows):
     """-> (cells row-major cols*rows, notes[])"""
     notes = []
     grid = []
+    state = ansi2html.State()
     for lineno, line in enumerate(text.split("\n")[:rows]):
         # strip non-SGR escape sequences exactly like the reference converter does
         line = OTHER.sub(lambda m: m.group(0) if m.group(0).endswith("m") else "", line)
-        state = ansi2html.State()
         row = []
         pos = 0
         for m in SGR.finditer(line):

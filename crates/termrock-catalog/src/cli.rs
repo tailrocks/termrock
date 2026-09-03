@@ -23,15 +23,34 @@ pub struct Options {
 /// Canonical headless frame command options.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FrameOptions {
-    pub page: PageId,
+    pub page: Option<PageId>,
+    pub scenario: Option<String>,
     pub cols: u16,
     pub rows: u16,
+    pub keys: Vec<String>,
+}
+
+/// Headless frame options for a complete catalog application.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TableProFrameOptions {
+    pub connect: Option<String>,
+    pub cols: u16,
+    pub rows: u16,
+    pub keys: Vec<String>,
 }
 
 /// Canonical catalog render command options.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RenderOptions {
     pub out: PathBuf,
+    pub scenarios: bool,
+}
+
+/// Five-artifact replay capture options.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CaptureOptions {
+    pub out: PathBuf,
+    pub scenario: Option<String>,
 }
 
 /// A native catalog command.
@@ -39,7 +58,11 @@ pub struct RenderOptions {
 pub enum Command {
     Interactive(Options),
     Frame(FrameOptions),
+    TableProFrame(TableProFrameOptions),
     Render(RenderOptions),
+    Capture(CaptureOptions),
+    Authority,
+    Scenarios,
 }
 
 /// CLI parse failure.
@@ -74,7 +97,12 @@ pub fn help_text(profile: CatalogProfile) -> String {
         "{name} — Junie-inspired Ratatui design system laboratory\n\n\
          USAGE: {name} [--color truecolor|256|16|none] [--page NAME]\n\
          TOOLS: {name} frame --page NAME [--cols N] [--rows N]\n\
-                {name} render --out DIR\n\n\
+                {name} frame --scenario ID [--cols N] [--rows N]\n\
+                {name} frame --application tablepro --cols N --rows N [--connect NAME] [--keys KEYS]\n\
+                {name} render --out DIR [--scenarios]\n\
+                {name} capture --out DIR [--scenario ID]\n\
+                {name} authority --format json\n\
+                {name} scenarios --format json\n\n\
          Keys: Tab/Shift+Tab focus · arrows move · Enter/Space activate · Esc back · [ ] pages · ? help · q quit"
     )
 }
@@ -96,17 +124,72 @@ where
     match args.first().map(String::as_str) {
         Some("frame") => parse_frame_command(&args[1..]),
         Some("render") => parse_render_command(&args[1..]),
+        Some("capture") => parse_capture_command(&args[1..]),
+        Some("authority") => parse_json_command("authority", &args[1..], Command::Authority),
+        Some("scenarios") => parse_json_command("scenarios", &args[1..], Command::Scenarios),
         _ => parse_args(args).map(Command::Interactive),
     }
 }
 
-fn parse_frame_command(args: &[String]) -> Result<Command, ParseError> {
-    let mut page = None;
-    let mut cols = DEFAULT_FRAME_COLS;
-    let mut rows = DEFAULT_FRAME_ROWS;
+fn parse_json_command(
+    name: &str,
+    args: &[String],
+    command: Command,
+) -> Result<Command, ParseError> {
+    let mut format = None;
     let mut iter = args.iter();
     while let Some(arg) = iter.next() {
         match arg.as_str() {
+            "--format" => {
+                format = Some(iter.next().ok_or_else(|| {
+                    ParseError::InvalidCommand(format!("{name} requires --format json"))
+                })?);
+            }
+            "-h" | "--help" => return Err(ParseError::Help),
+            other => {
+                return Err(ParseError::InvalidCommand(format!(
+                    "unknown {name} option {other:?}"
+                )));
+            }
+        }
+    }
+    if format.map(String::as_str) != Some("json") {
+        return Err(ParseError::InvalidCommand(format!(
+            "{name} requires --format json"
+        )));
+    }
+    Ok(command)
+}
+
+fn parse_frame_command(args: &[String]) -> Result<Command, ParseError> {
+    let mut application = None;
+    let mut page = None;
+    let mut scenario = None;
+    let mut connect = None;
+    let mut cols = DEFAULT_FRAME_COLS;
+    let mut rows = DEFAULT_FRAME_ROWS;
+    let mut cols_supplied = false;
+    let mut rows_supplied = false;
+    let mut keys = Vec::new();
+    let mut iter = args.iter();
+    while let Some(arg) = iter.next() {
+        match arg.as_str() {
+            "--application" => {
+                if application.is_some() {
+                    return Err(ParseError::InvalidCommand(
+                        "frame accepts only one --application".to_owned(),
+                    ));
+                }
+                let value = iter.next().ok_or_else(|| {
+                    ParseError::InvalidCommand("frame --application requires a value".to_owned())
+                })?;
+                if value != "tablepro" {
+                    return Err(ParseError::InvalidCommand(format!(
+                        "unknown frame application {value:?}; use tablepro"
+                    )));
+                }
+                application = Some(value.clone());
+            }
             "--page" | "-p" => {
                 let name = iter.next().ok_or_else(|| {
                     ParseError::InvalidCommand("frame requires a page name".to_owned())
@@ -116,8 +199,46 @@ fn parse_frame_command(args: &[String]) -> Result<Command, ParseError> {
                     return Err(ParseError::UnknownPage(name.clone()));
                 }
             }
-            "--cols" => cols = parse_dimension("--cols", iter.next())?,
-            "--rows" => rows = parse_dimension("--rows", iter.next())?,
+            "--scenario" => {
+                let value = iter.next().ok_or_else(|| {
+                    ParseError::InvalidCommand("frame requires a scenario ID".to_owned())
+                })?;
+                if crate::catalog::scenario_by_id(value).is_none() {
+                    return Err(ParseError::UnknownPage(value.clone()));
+                }
+                scenario = Some(value.clone());
+            }
+            "--connect" => {
+                let value = iter.next().ok_or_else(|| {
+                    ParseError::InvalidCommand("frame --connect requires a name".to_owned())
+                })?;
+                if value.is_empty() {
+                    return Err(ParseError::InvalidCommand(
+                        "frame --connect requires a non-empty name".to_owned(),
+                    ));
+                }
+                connect = Some(value.clone());
+            }
+            "--cols" => {
+                cols = parse_dimension("--cols", iter.next())?;
+                cols_supplied = true;
+            }
+            "--rows" => {
+                rows = parse_dimension("--rows", iter.next())?;
+                rows_supplied = true;
+            }
+            "--keys" => {
+                let value = iter.next().ok_or_else(|| {
+                    ParseError::InvalidCommand(
+                        "frame requires a comma-separated key list".to_owned(),
+                    )
+                })?;
+                keys = value
+                    .split(',')
+                    .filter(|key| !key.is_empty())
+                    .map(str::to_owned)
+                    .collect();
+            }
             "-h" | "--help" => return Err(ParseError::Help),
             other => {
                 return Err(ParseError::InvalidCommand(format!(
@@ -126,13 +247,46 @@ fn parse_frame_command(args: &[String]) -> Result<Command, ParseError> {
             }
         }
     }
-    let page =
-        page.ok_or_else(|| ParseError::InvalidCommand("frame requires --page NAME".to_owned()))?;
-    Ok(Command::Frame(FrameOptions { page, cols, rows }))
+    if application.is_some() {
+        if page.is_some() || scenario.is_some() {
+            return Err(ParseError::InvalidCommand(
+                "frame --application cannot be combined with --page or --scenario".to_owned(),
+            ));
+        }
+        if !cols_supplied || !rows_supplied {
+            return Err(ParseError::InvalidCommand(
+                "frame --application tablepro requires --cols N and --rows N".to_owned(),
+            ));
+        }
+        return Ok(Command::TableProFrame(TableProFrameOptions {
+            connect,
+            cols,
+            rows,
+            keys,
+        }));
+    }
+    if connect.is_some() {
+        return Err(ParseError::InvalidCommand(
+            "frame --connect requires --application tablepro".to_owned(),
+        ));
+    }
+    if page.is_some() == scenario.is_some() {
+        return Err(ParseError::InvalidCommand(
+            "frame requires exactly one of --page NAME or --scenario ID".to_owned(),
+        ));
+    }
+    Ok(Command::Frame(FrameOptions {
+        page,
+        scenario,
+        cols,
+        rows,
+        keys,
+    }))
 }
 
 fn parse_render_command(args: &[String]) -> Result<Command, ParseError> {
     let mut out = None;
+    let mut scenarios = false;
     let mut iter = args.iter();
     while let Some(arg) = iter.next() {
         match arg.as_str() {
@@ -147,6 +301,7 @@ fn parse_render_command(args: &[String]) -> Result<Command, ParseError> {
                 }
                 out = Some(PathBuf::from(path));
             }
+            "--scenarios" => scenarios = true,
             "-h" | "--help" => return Err(ParseError::Help),
             other => {
                 return Err(ParseError::InvalidCommand(format!(
@@ -157,7 +312,55 @@ fn parse_render_command(args: &[String]) -> Result<Command, ParseError> {
     }
     let out =
         out.ok_or_else(|| ParseError::InvalidCommand("render requires --out DIR".to_owned()))?;
-    Ok(Command::Render(RenderOptions { out }))
+    Ok(Command::Render(RenderOptions { out, scenarios }))
+}
+
+fn parse_capture_command(args: &[String]) -> Result<Command, ParseError> {
+    let mut out = None;
+    let mut scenario = None;
+    let mut iter = args.iter();
+    while let Some(arg) = iter.next() {
+        match arg.as_str() {
+            "--out" => {
+                let path = iter.next().ok_or_else(|| {
+                    ParseError::InvalidCommand("capture requires an output directory".to_owned())
+                })?;
+                if path.is_empty() {
+                    return Err(ParseError::InvalidCommand(
+                        "capture requires a non-empty output directory".to_owned(),
+                    ));
+                }
+                out = Some(PathBuf::from(path));
+            }
+            "--scenario" => {
+                let id = iter.next().ok_or_else(|| {
+                    ParseError::InvalidCommand("capture requires a scenario ID".to_owned())
+                })?;
+                if crate::scenarios::capture_scenarios().all(|s| s.id != id) {
+                    return Err(ParseError::InvalidCommand(format!(
+                        "unknown capture scenario {id:?}"
+                    )));
+                }
+                scenario = Some(id.clone());
+            }
+            "--all" => {
+                if scenario.is_some() {
+                    return Err(ParseError::InvalidCommand(
+                        "capture accepts --all or --scenario, not both".to_owned(),
+                    ));
+                }
+            }
+            "-h" | "--help" => return Err(ParseError::Help),
+            other => {
+                return Err(ParseError::InvalidCommand(format!(
+                    "unknown capture option {other:?}"
+                )));
+            }
+        }
+    }
+    let out =
+        out.ok_or_else(|| ParseError::InvalidCommand("capture requires --out DIR".to_owned()))?;
+    Ok(Command::Capture(CaptureOptions { out, scenario }))
 }
 
 fn parse_dimension(flag: &str, value: Option<&String>) -> Result<u16, ParseError> {

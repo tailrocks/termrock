@@ -308,7 +308,7 @@ impl PickersPage {
     fn open(&mut self, kind: Kind) {
         self.opened += 1;
         let (title, placeholder, width, searchable, selected) = match kind {
-            Kind::Quick => ("Open quickly", "Files and tasks…", 64, true, None),
+            Kind::Quick => ("Open quickly", "Files and tasks…", 80, true, None),
             Kind::Tabs => ("Open tabs", "Filter tabs…", 48, true, None),
             Kind::Level => (
                 "Safe Mode · this connection",
@@ -568,6 +568,7 @@ impl Page for PickersPage {
             let query_rows = u16::from(searchable) * 2;
             let item_rows = u16::try_from(ranked.len().max(1)).unwrap_or(1).min(12);
             let height = (2 + 1 + query_rows + item_rows + 2).min(screen.height.saturating_sub(2));
+            let width = width.min(screen.width.saturating_sub(4).max(1));
             let placed = place_picker_modal(screen, PickerSize { width, height });
             let scope = if kind == Kind::Quick {
                 Some(self.scope_label())

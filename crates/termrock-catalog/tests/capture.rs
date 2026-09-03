@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-//! Five-artifact capture + junie-reference text parity vs source shots.
+//! Five-artifact capture + junie-reference text parity vs live source frames.
 
 use std::path::PathBuf;
 
 use termrock_catalog::capture;
 use termrock_catalog::catalog::{CatalogProfile, PageId, SOURCE_NAV};
 
-fn reference_dir() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../verify/junie/reference/scenes")
+fn source_headless_dir() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../verify/junie/source-headless")
 }
 
 fn trimmed_eq(ours: &str, src: &str) -> bool {
@@ -21,7 +21,7 @@ fn trimmed_eq(ours: &str, src: &str) -> bool {
 #[test]
 fn overview_txt_matches_source_shot() {
     let art = capture::catalog_page(CatalogProfile::JunieReference, PageId::OVERVIEW, 120, 40);
-    let src = std::fs::read_to_string(reference_dir().join("showcase_overview_120x40.txt"))
+    let src = std::fs::read_to_string(source_headless_dir().join("overview_120x40.txt"))
         .expect("source overview txt");
     assert!(
         trimmed_eq(&art.txt(), &src),
@@ -32,7 +32,7 @@ fn overview_txt_matches_source_shot() {
 #[test]
 fn buttons_txt_matches_source_shot() {
     let art = capture::catalog_page(CatalogProfile::JunieReference, PageId::BUTTONS, 120, 40);
-    let src = std::fs::read_to_string(reference_dir().join("showcase_buttons_120x40.txt"))
+    let src = std::fs::read_to_string(source_headless_dir().join("buttons_120x40.txt"))
         .expect("source buttons txt");
     assert!(
         trimmed_eq(&art.txt(), &src),

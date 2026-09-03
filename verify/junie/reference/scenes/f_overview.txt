@@ -1,0 +1,40 @@
+ ▪ Junie Design system / Foundations / Overview                              truecolor · 120×40   i Inspector   ? Help
+
+   Foundations            Overview  Tokens and principles behind every component
+▎› Overview
+                            Tokens                                          Principles
+   Components
+▎  Buttons                      ▏ canvas                      #000000       One hue
+▎  Inputs                       ▏ surface                     #111111       Green means focus, primary action or
+▎  Text areas                   ▏ surface.elevated            #18181b       selection. Everything else is achromatic.
+▎  Forms                        ▏ surface.overlay             #27272a
+▎  Lists                        ▏ field                       #1e1e22       Alpha ladder
+▎  Trees                        ▏ popover                     #3f3f46       Text and borders step down in white
+▎  Tables                       ▏ border.subtle             white 15%       opacity, never in arbitrary grays.
+▎  Editable tables              ▏ border.strong             white 30%
+▎  Panels                       ▏ text.primary                #ffffff       State is geometry
+▎  Sidebars                     ▏ text.secondary            white 70%       Hover lifts the surface, focus adds a bar,
+▎  Dialogs                      ▏ text.muted                white 50%       selection adds a marker, editing shows the
+▎  Progress                     ▏ text.faint                white 30%       cursor.
+▎  Scrolling                    ▏ accent                      #48e054
+                                ▏ accent.hover                #3ab343       Three planes
+   Screens                      ▏ accent.pressed              #2b8632       Canvas, surface, elevated. Depth comes
+▎  Settings                     ▏ accent.bg                 green 20%       from lightness, not borders.
+▎  Task runner                  ▏ error                       #e44545
+                                ▏ warning                     #f59e09       Quiet chrome
+                                ▏ info                        #8787ff       Bold is reserved for the focused control.
+                                                                            No box around a thing unless the box
+                                                                            carries meaning.
+
+
+                                                                            State language
+
+                                                                            ▎  focus
+                                                                            ░  hover lifts the surface
+                                                                            ›  current / chosen
+                                                                            ✓  checked
+                                                                            !  error
+                                                                            ▁  editing: cursor + underline
+
+
+ ↑ ↓ Move  Enter Open  Tab Into page  q Quit

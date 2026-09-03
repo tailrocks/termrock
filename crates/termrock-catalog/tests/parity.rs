@@ -57,11 +57,16 @@ fn junie_reference_120x40_matches_source_headless_fail_first() {
         let src = std::fs::read_to_string(&golden)
             .unwrap_or_else(|err| panic!("missing source golden {}: {err}", golden.display()));
         let art = capture::catalog_page(CatalogProfile::JunieReference, e.id, 120, 40);
-        if let Some((x, y, expected, actual)) = first_mismatch(&art.txt(), &src) {
+        if let Some((x, y, expected, actual)) = first_mismatch(&art.snapshot.to_txt_padded(), &src)
+        {
             panic!(
                 "first cell mismatch page {} at col {x} row {y}: expected {expected:?} actual {actual:?}\nours L{y}: {}\nsrc  L{y}: {}",
                 e.label,
-                art.txt().lines().nth(usize::from(y)).unwrap_or(""),
+                art.snapshot
+                    .to_txt_padded()
+                    .lines()
+                    .nth(usize::from(y))
+                    .unwrap_or(""),
                 src.lines().nth(usize::from(y)).unwrap_or(""),
             );
         }

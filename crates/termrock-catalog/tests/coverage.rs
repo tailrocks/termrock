@@ -10,7 +10,7 @@ use ratatui::backend::TestBackend;
 use termrock::registry::public_ui_inventory;
 use termrock::runtime::FrameTick;
 use termrock::style::ColorCapability;
-use termrock_catalog::catalog::{CatalogProfile, PageId, nav_entries};
+use termrock_catalog::catalog::{CatalogProfile, PageId, catalog_scenarios, nav_entries};
 use termrock_catalog::coverage::{BUCKETS, catalog_page_for, extras_on};
 use termrock_catalog::host::catalog;
 use termrock_catalog::shell::App;
@@ -78,12 +78,25 @@ fn catalog_nav_ids_are_unique() {
 fn native_and_web_catalog_ids_match() {
     let nav = nav_entries(CatalogProfile::TermRock);
     let web = catalog();
-    let nav_ids: Vec<String> = nav
+    let mut canonical_ids: Vec<String> = nav
         .iter()
         .map(|e| termrock_catalog::catalog::normalize(e.label))
         .collect();
+    canonical_ids.extend(
+        catalog_scenarios()
+            .into_iter()
+            .map(|scenario| scenario.id.to_owned()),
+    );
     let web_ids: Vec<String> = web.iter().map(|d| d.id.clone()).collect();
-    assert_eq!(nav_ids, web_ids, "web host catalog drifted from nav");
+    assert_eq!(
+        canonical_ids, web_ids,
+        "web host catalog drifted from registry"
+    );
+    assert_eq!(
+        web_ids.iter().collect::<BTreeSet<_>>().len(),
+        web_ids.len(),
+        "web host catalog contains duplicate IDs"
+    );
 }
 
 #[test]

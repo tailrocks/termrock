@@ -17,8 +17,8 @@ use ratatui::text::Text;
 use termrock::input::{KeyCode, KeyEventKind};
 use termrock::widgets::{
     Action, ActionVariant, Button, ButtonState, ButtonVariant, Dialog, DialogClosePolicy,
-    DialogFocusZone, DialogOutcome, DialogState, TextInput, TextInputOutcome, TextInputState,
-    Validation,
+    DialogFocusZone, DialogOutcome, DialogSize, DialogState, TextInput, TextInputOutcome,
+    TextInputState, Validation,
 };
 
 use crate::ctx::RenderCtx;
@@ -319,6 +319,15 @@ impl Page for DialogsPage {
             self.dialog.set_open(true);
             self.dialog.set_accepts_input(true);
             let actions = Self::actions(kind);
+            // Junie's modal canvas reserves the top chrome row before
+            // centering the dialog. Keep the page body and source dialog
+            // geometry on the same cell grid.
+            let modal_screen = Rect::new(
+                buf.area().x,
+                buf.area().y.saturating_add(1),
+                buf.area().width,
+                buf.area().height.saturating_sub(1),
+            );
             match kind {
                 Kind::Confirm => {
                     Dialog::confirm(
@@ -328,13 +337,17 @@ impl Page for DialogsPage {
                         ),
                         ctx.system,
                     )
-                    .paint_modal(area, buf, &mut self.dialog, &actions);
+                    .preferred_size(DialogSize {
+                        width: 54,
+                        height: 11,
+                    })
+                    .paint_modal(modal_screen, buf, &mut self.dialog, &actions);
                 }
                 Kind::Rename => {
                     let err = rename_validator(self.input.value());
                     self.dialog.set_validation_message(err.clone());
                     Dialog::prompt("Rename task", Text::from(""), ctx.system).paint_modal(
-                        area,
+                        modal_screen,
                         buf,
                         &mut self.dialog,
                         &actions,
@@ -359,7 +372,11 @@ impl Page for DialogsPage {
                         Text::from("The description was edited. Save before leaving this page?"),
                         ctx.system,
                     )
-                    .paint_modal(area, buf, &mut self.dialog, &actions);
+                    .preferred_size(DialogSize {
+                        width: 54,
+                        height: 11,
+                    })
+                    .paint_modal(modal_screen, buf, &mut self.dialog, &actions);
                 }
                 Kind::Delete => {
                     Dialog::destructive(
@@ -369,7 +386,7 @@ impl Page for DialogsPage {
                         ),
                         ctx.system,
                     )
-                    .paint_modal(area, buf, &mut self.dialog, &actions);
+                    .paint_modal(modal_screen, buf, &mut self.dialog, &actions);
                 }
             }
             ctx.control(ID.sub("modal"), area, false);

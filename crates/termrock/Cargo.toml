@@ -39,7 +39,3 @@ syn.workspace = true
 
 [lints]
 workspace = true
-
-[[example]]
-name = "showcase"
-required-features = ["crossterm"]

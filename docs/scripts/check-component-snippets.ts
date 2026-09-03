@@ -72,7 +72,7 @@ try {
     '',
     '[dependencies]',
     `termrock = { path = ${JSON.stringify(join(root, 'crates', 'termrock'))} }`,
-    `termrock-lookbook = { path = ${JSON.stringify(join(root, 'crates', 'termrock-lookbook'))}, default-features = false }`,
+    `termrock-catalog = { path = ${JSON.stringify(join(root, 'crates', 'termrock-catalog'))}, default-features = false }`,
     '',
   ].join('\n')
   await Bun.write(join(temporary, 'Cargo.toml'), manifest)

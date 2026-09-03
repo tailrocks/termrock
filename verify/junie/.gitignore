@@ -2,8 +2,7 @@
 out/
 last-report.json
 
-# Local-only advisory rasters (font/OS dependent — never CI baselines, see README).
-reference/scenes/*.png
+# Source PNGs under reference/scenes are immutable evidence and are tracked.
 
 # Local Pillow venv, created on demand by bin/diff_png.py users.
 .venv/

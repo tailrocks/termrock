@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Convert a termrock-lookbook `frame` JSON document into the canonical cell grid.
+"""Convert a termrock-catalog `frame` JSON document into the canonical cell grid.
 
-Input is whatever `cargo run -p termrock-lookbook -- frame --story <id>` prints on
+Input is whatever `cargo run -p termrock-catalog -- frame --scenario <id>` prints on
 stdout (a single TerminalFrame). Field names are mapped onto the grid vocabulary
 used by ansi2grid.py / diff_grid.py — notably `reversed` -> `reverse`.
 

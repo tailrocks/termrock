@@ -7,6 +7,4 @@ publish = false
 [workspace]
 
 [dependencies]
-ratatui-core = { version = "=0.1.2", features = ["underline-color"] }
-termrock = { path = "../../crates/termrock", default-features = false }
-termrock-lookbook = { path = "../../crates/termrock-lookbook", default-features = false }
+termrock-catalog = { path = "../../crates/termrock-catalog", default-features = false }

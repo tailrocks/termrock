@@ -30,10 +30,14 @@ TermRock mapping:
 | Footer status (no toasts) | `HintBar` + `StatusBar`; `Toast` paints as a footer sentence |
 
 Colour-capability fallbacks: `--color truecolor|256|16|none` and `NO_COLOR`.
-Visual verification: `verify/junie` cell-grid compare against fresh `junie-tui` captures.
-Current gate: 40 equivalent showcase crops PASS at `text_cells: 0` / `color_cells: 0` after wiping `verify/junie/out/frames`; 5 TablePro product-shell scenes SKIP (campaign non-goal, not a widget gap). `cargo run -p termrock-lookbook -- frame --story` is the lookbook binary; bare lookbook argv still launches the catalog TUI.
+Visual verification: `verify/junie` strict five-artifact comparison against
+fresh `junie-tui` captures. The fixture table maps the 63 source stems and five
+deterministic TablePro scenes; the checked-in source evidence contains
+`.ansi`, `.cursor`, `.txt`, `.html`, and `.png`. The canonical target frame
+command is
+`cargo run -p termrock-catalog -- frame --scenario <id>`.
 
-Shipped contracts that the lookbook must consume (no page-local forks):
+Shipped contracts that the canonical catalog must consume (no page-local forks):
 
 - Table reverse cell cursor is `TableState::cell_nav`. `focused_column` without that flag is not a cursor; Left/Right stay row-select. `cell_nav` with no column seeds the first visible column on paint (junie `cursor_col` starts at 0).
 - Line overflow thumbs (`Panel`, `Picker`, `List`, `Tree`, `TextArea`, `Select`) use `scroll::overflow_thumb` / `paint_overflow_scrollbar`: `len = (viewport * track) / content`.
@@ -50,7 +54,7 @@ The YAML token block and prose that follow are the Junie specification TermRock 
 ---
 version: alpha
 name: Junie TUI
-description: Terminal-native design system extracted from the junie-tui Ratatui implementation (design-system showcase and TablePro workbench). Tokens are exact; prose explains how the implementation uses them.
+description: Terminal-native design system extracted from the junie-tui Ratatui implementation (catalog application and TablePro workbench). Tokens are exact; prose explains how the implementation uses them.
 omitted:
   - section: typography
     reason: "The terminal emulator owns font family, size, line height and letter spacing. The application controls only modifiers (bold, italic, underline, strikethrough), tone and layout, which are specified in the Typography prose."
@@ -213,7 +217,7 @@ components:
 Junie TUI is the terminal translation of the Junie visual language: a near-black
 canvas, a small number of dark planes, white text stepped down an opacity
 ladder, and one green used only where the user's attention belongs. Two
-applications share the system, a component showcase and a database workbench
+applications share the system, a catalog application and a database workbench
 (TablePro), and both look like the same product because they share tokens,
 widgets, glyphs, and one interaction grammar.
 
@@ -444,10 +448,10 @@ counts.
 ### Shell
 
 Both applications use the same shell: a one-row header, a blank row, the
-body, a blank row, a one-row footer. The showcase body spans the full width;
+body, a blank row, a one-row footer. The catalog body spans the full width;
 TablePro's body has a one-cell margin on each side.
 
-- **Showcase**: navigation sidebar (`19` columns, `24` from `110` columns
+- **Catalog**: navigation sidebar (`19` columns, `24` from `110` columns
   wide) + `2` gap + main pane; an optional inspector (`30` columns) appears at
   `100` columns and wider. Below `25` rows the sidebar drops its section
   labels and blank rows and becomes one contiguous list.
@@ -484,7 +488,7 @@ widest label `+ 2`.
 
 ### Compositions
 
-- **Sidebar + workspace** (showcase): navigation list on the left, one page on
+- **Sidebar + workspace** (catalog): navigation list on the left, one page on
   the right. Use when the product is a set of peer screens.
 - **Explorer + tabbed workspace** (TablePro): a framed tree plus a framed tab
   body with document tabs in a strip above. Use when many objects are open at
@@ -630,7 +634,7 @@ Global keys shared by both applications:
   a row.
 - `Esc` climbs a ladder: cancel single-line editing → finish multi-line
   editing → close the popup or completion → cancel the modal → leave local
-  mode for the containing navigation (showcase: to the sidebar; TablePro:
+  mode for the containing navigation (catalog: to the sidebar; TablePro:
   cancel a running query → un-maximise → tab strip → explorer, clearing the
   explorer filter on the way).
 - `0` jumps to the navigation (sidebar or explorer). `[` `]` switch pages or
@@ -704,7 +708,7 @@ Tab still reaches them.
 | Destructive operation | `Dialog::destructive` starting on Cancel; database writes use the facts dialog (Action, Target, Scope, Risk, Reversible, Safe Mode, the SQL) with a typed target name gating the confirming button |
 | Background operation | `⠋ running` segment in the strip, `⠋ running 320 ms · Esc cancels` in the results area, `Esc` or `Ctrl+C` cancels, cancelled runs show `Cancelled` |
 | Pending changes | `•` per row, amber values, `• 2 pending · 1 update · 1 delete` bar with Preview SQL / Discard / Save, `• 2 pending` in the strip |
-| Success | footer status in text-secondary for 4 s (showcase) or 5 s (TablePro): `Saved 2 changes to public.orders`; long jobs end with `✓` |
+| Success | footer status in text-secondary for 4 s (catalog) or 5 s (TablePro): `Saved 2 changes to public.orders`; long jobs end with `✓` |
 
 ### Component catalogue
 
@@ -971,7 +975,7 @@ Tab still reaches them.
 - **Safety gate**: the facts dialog composed from the statement classifier.
 
 There is no toast, context menu, diff viewer or generic badge component. Do
-not claim one exists; add it to the showcase first if it becomes necessary.
+not claim one exists; add it to the canonical catalog first if it becomes necessary.
 
 ## Do's and Don'ts
 
@@ -1002,14 +1006,14 @@ not claim one exists; add it to the showcase first if it becomes necessary.
   focused, typed acknowledgement for irreversible writes. **Don't** confirm
   harmless navigation or paint a production screen red.
 - **Do** verify a visual change with the capture harness at `80×24`,
-  `100×30`, `120×40` and `160×50` and against the showcase baseline.
+  `100×30`, `120×40` and `160×50` and against the catalog baseline.
   **Don't** regenerate the baseline to hide an unintended change.
 - **Do** update this file when a reusable convention is added on purpose.
   **Don't** document a one-screen workaround as a system rule.
 
 ### Agent implementation guardrails
 
-1. Inspect the showcase page and the widget module for a component before
+1. Inspect the canonical catalog page and the widget module for a component before
    writing a new one; every generic component already has a page, and a new
    generic component must get one, at `120×40` and `80×24`, in the same
    change.
@@ -1033,7 +1037,7 @@ not claim one exists; add it to the showcase first if it becomes necessary.
 8. Every new state must be legible in monochrome: pair each colour with a
    glyph or modifier from the tables above.
 9. Run `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` and
-   `cargo test`; the showcase baseline must change only for the pages you
+   `cargo test`; the catalog baseline must change only for the pages you
    intended to change.
 10. Treat the rendered capture as the evidence: the harness in `tools/`
     produces the frames to compare against, and a change is not done until

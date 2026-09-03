@@ -105,7 +105,7 @@ const axes = Object.fromEntries(REQUIRED_AXES.map((axis) => [
         evidence: {
           ...emptyEvidence,
           stories: [story.id],
-          tests: ['crates/termrock-lookbook/src/demo.rs#typed_inventory_joins_every_representative_story'],
+          tests: ['crates/termrock-catalog/src/catalog.rs#representative_scenarios_cover_component_and_pattern_registries'],
           posters: [poster],
           sources: [source],
           checks: ['docs/scripts/export-preview-posters.ts#validate'],

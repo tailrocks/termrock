@@ -1,9 +1,11 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 //
-// Host event JSON shape extracted from termrock-lookbook demo.rs (Apache-2.0).
+// Host event JSON shape retained from the prior presentation adapter (Apache-2.0).
 
 //! Persistent catalog sessions for the WASM / browser host.
+
+use std::collections::BTreeSet;
 
 use ratatui::Terminal;
 use ratatui::backend::TestBackend;
@@ -15,9 +17,13 @@ use termrock::input::{
 use termrock::runtime::FrameTick;
 use termrock::style::{ColorCapability, color_to_rgb};
 
-use crate::catalog::{CatalogProfile, NavEntry, PageId, nav_entries};
+use crate::catalog::{
+    CatalogProfile, CatalogScenario, NavEntry, PageId, catalog_scenarios, nav_entries,
+    scenario_by_id,
+};
 use crate::shell::{App, PageMetadata};
 use crate::snapshot::Snapshot;
+use crate::tablepro::App as TableProApp;
 
 /// Static catalog metadata available before mounting.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -144,21 +150,80 @@ pub struct TerminalFrame {
     /// Inner story rows. Catalog frames have no outer padding.
     pub story_rows: u16,
     pub cells: Vec<FrameCell>,
+    /// Hardware cursor cell, when the mounted page is editing.
+    pub cursor: Option<[u16; 2]>,
+    /// Whether the hardware cursor is visible.
+    pub cursor_visible: bool,
     pub interactive: bool,
     pub theme: String,
 }
 
-/// Catalog pages the web host can mount.
+/// All catalog entries the web host can mount.
+///
+/// This includes page entries used by the native shell and every canonical
+/// representative scenario consumed by the documentation/poster host. Both
+/// entry kinds mount through [`CatalogSession`] and the same `App` renderer.
 #[must_use]
 pub fn catalog() -> Vec<DemoDescriptor> {
-    let mut app = App::new(CatalogProfile::TermRock, ColorCapability::Truecolor);
-    nav_entries(CatalogProfile::TermRock)
-        .iter()
-        .map(|entry| {
-            app.goto(entry.id);
-            descriptor(entry, &app.page_metadata())
-        })
-        .collect()
+    catalog_for_profile(CatalogProfile::TermRock)
+}
+
+/// Return the complete catalog namespace visible to one profile.
+#[must_use]
+pub fn catalog_for_profile(profile: CatalogProfile) -> Vec<DemoDescriptor> {
+    let mut app = App::new(profile, ColorCapability::Truecolor);
+    let scenarios = catalog_scenarios_for_profile(profile).collect::<Vec<_>>();
+    let mut entries = Vec::with_capacity(nav_entries(profile).len() + scenarios.len());
+    let mut ids = BTreeSet::new();
+
+    for entry in nav_entries(profile) {
+        app.goto(entry.id);
+        let descriptor = descriptor(entry, &app.page_metadata());
+        assert!(
+            ids.insert(descriptor.id.clone()),
+            "duplicate catalog entry id {:?}",
+            descriptor.id
+        );
+        entries.push(descriptor);
+    }
+
+    for scenario in scenarios {
+        app.goto(scenario.page);
+        let metadata = app.page_metadata();
+        let descriptor = scenario_descriptor(&scenario, &metadata);
+        assert!(
+            ids.insert(descriptor.id.clone()),
+            "duplicate catalog entry id {:?}",
+            descriptor.id
+        );
+        entries.push(descriptor);
+    }
+
+    entries
+}
+
+fn catalog_scenarios_for_profile(profile: CatalogProfile) -> impl Iterator<Item = CatalogScenario> {
+    catalog_scenarios()
+        .into_iter()
+        .filter(move |scenario| page_is_visible(profile, scenario.page))
+}
+
+fn page_is_visible(profile: CatalogProfile, page: PageId) -> bool {
+    nav_entries(profile).iter().any(|entry| entry.id == page)
+}
+
+fn scenario_descriptor(scenario: &CatalogScenario, metadata: &PageMetadata) -> DemoDescriptor {
+    DemoDescriptor {
+        id: scenario.id.to_owned(),
+        title: scenario.title,
+        component: scenario.component,
+        description: scenario.description,
+        cols: scenario.cols,
+        rows: scenario.rows,
+        interactive: scenario.interactive,
+        interaction_kind: scenario.interaction_kind,
+        hints: metadata.hints.iter().map(|(key, _)| *key).collect(),
+    }
 }
 
 fn descriptor(e: &NavEntry, metadata: &PageMetadata) -> DemoDescriptor {
@@ -175,10 +240,41 @@ fn descriptor(e: &NavEntry, metadata: &PageMetadata) -> DemoDescriptor {
     }
 }
 
+fn frame_cells(snapshot: &Snapshot) -> Vec<FrameCell> {
+    snapshot
+        .cells
+        .iter()
+        .map(|c| {
+            let reversed = c.modifier.contains(ratatui::style::Modifier::REVERSED);
+            let mut fg = match c.fg {
+                ratatui::style::Color::Reset => [0xd0, 0xd0, 0xd0],
+                color => color_to_rgb(color, true),
+            };
+            let mut bg = color_to_rgb(c.bg, false);
+            if reversed {
+                std::mem::swap(&mut fg, &mut bg);
+            }
+            FrameCell {
+                ch: c.glyph.clone(),
+                fg,
+                bg,
+                bold: c.modifier.contains(ratatui::style::Modifier::BOLD),
+                dim: c.modifier.contains(ratatui::style::Modifier::DIM),
+                underline: c.modifier.contains(ratatui::style::Modifier::UNDERLINED),
+                reversed,
+                italic: c.modifier.contains(ratatui::style::Modifier::ITALIC),
+                strike: c.modifier.contains(ratatui::style::Modifier::CROSSED_OUT),
+            }
+        })
+        .collect()
+}
+
 /// One long-lived catalog page instance.
 pub struct CatalogSession {
     app: App,
+    profile: CatalogProfile,
     page: PageId,
+    scenario: Option<CatalogScenario>,
     cols: u16,
     rows: u16,
     elapsed_ms: u64,
@@ -187,14 +283,37 @@ pub struct CatalogSession {
 
 impl CatalogSession {
     pub fn mount(id: &str, cols: u16, rows: u16) -> Result<Self, String> {
-        let profile = CatalogProfile::TermRock;
-        let page = PageId::from_name(id, nav_entries(profile))
-            .ok_or_else(|| format!("unknown catalog page {id:?}"))?;
+        Self::mount_profile(id, cols, rows, CatalogProfile::TermRock)
+    }
+
+    /// Mount an entry under an explicit catalog profile. The reference
+    /// profile exists for parity capture; it shares this session and renderer
+    /// with the default TermRock catalog.
+    pub fn mount_profile(
+        id: &str,
+        cols: u16,
+        rows: u16,
+        profile: CatalogProfile,
+    ) -> Result<Self, String> {
+        let (page, scenario) = if let Some(page) = PageId::from_name(id, nav_entries(profile)) {
+            (page, None)
+        } else if let Some(scenario) = scenario_by_id(id) {
+            if !page_is_visible(profile, scenario.page) {
+                return Err(format!(
+                    "catalog entry {id:?} is not available in the {profile:?} profile"
+                ));
+            }
+            (scenario.page, Some(scenario))
+        } else {
+            return Err(format!("unknown catalog entry {id:?}"));
+        };
         let mut app = App::new(profile, ColorCapability::Truecolor);
         app.goto(page);
         Ok(Self {
             app,
+            profile,
             page,
+            scenario,
             cols: cols.max(8),
             rows: rows.max(4),
             elapsed_ms: 0,
@@ -203,8 +322,7 @@ impl CatalogSession {
     }
 
     pub fn reset(&mut self) {
-        let profile = CatalogProfile::TermRock;
-        self.app = App::new(profile, ColorCapability::Truecolor);
+        self.app = App::new(self.profile, ColorCapability::Truecolor);
         self.app.goto(self.page);
         self.elapsed_ms = 0;
         self.semantic_revision = self.semantic_revision.saturating_add(1);
@@ -213,6 +331,14 @@ impl CatalogSession {
     pub fn dispatch(&mut self, event: DemoEvent) -> Result<DemoUpdate, String> {
         let before = self.frame();
         let before_cursor = self.app.last_cursor;
+        let is_tick = matches!(event, DemoEvent::Tick { .. });
+        let before_semantic = (
+            self.app.page,
+            self.app.focus,
+            self.app.help_open,
+            self.app.status.clone(),
+            self.app.flash,
+        );
         if let DemoEvent::Tick { elapsed_ms } = &event {
             self.elapsed_ms = *elapsed_ms;
         }
@@ -344,7 +470,19 @@ impl CatalogSession {
         }
         let after = self.frame();
         let changed = before != after || before_cursor != self.app.last_cursor;
-        if changed {
+        let after_semantic = (
+            self.app.page,
+            self.app.focus,
+            self.app.help_open,
+            self.app.status.clone(),
+            self.app.flash,
+        );
+        let semantic_changed = if is_tick {
+            before_semantic != after_semantic
+        } else {
+            changed
+        };
+        if semantic_changed {
             self.semantic_revision = self.semantic_revision.saturating_add(1);
         }
         Ok(self.update(changed))
@@ -352,6 +490,11 @@ impl CatalogSession {
 
     fn update(&self, changed: bool) -> DemoUpdate {
         let metadata = self.app.page_metadata();
+        let hints = if self.scenario.is_some_and(|scenario| !scenario.interactive) {
+            Vec::new()
+        } else {
+            metadata.hints.iter().map(|(key, _)| *key).collect()
+        };
         let functional_deadline = self.app.flash.is_some() || self.app.status.is_some();
         let deadline_kind = if functional_deadline {
             Some("functional")
@@ -363,7 +506,7 @@ impl CatalogSession {
         DemoUpdate {
             changed,
             outcome: None,
-            hints: metadata.hints.iter().map(|(key, _)| *key).collect(),
+            hints,
             interactive: metadata.interactive,
             captures_text_input: metadata.captures_text_input,
             next_deadline_ms: deadline_kind.map(|_| 80),
@@ -382,47 +525,141 @@ impl CatalogSession {
         term.draw(|f| self.app.render(f, tick)).expect("draw");
         let cursor = term.get_cursor_position().ok();
         let snap = Snapshot::from_buffer(term.backend().buffer(), cursor, false);
-        let cells = snap
-            .cells
-            .iter()
-            .map(|c| {
-                let reversed = c.modifier.contains(ratatui::style::Modifier::REVERSED);
-                let mut fg = color_to_rgb(c.fg, true);
-                let mut bg = color_to_rgb(c.bg, false);
-                if reversed {
-                    std::mem::swap(&mut fg, &mut bg);
-                }
-                FrameCell {
-                    ch: c.glyph.clone(),
-                    fg,
-                    bg,
-                    bold: c.modifier.contains(ratatui::style::Modifier::BOLD),
-                    dim: c.modifier.contains(ratatui::style::Modifier::DIM),
-                    underline: c.modifier.contains(ratatui::style::Modifier::UNDERLINED),
-                    reversed,
-                    italic: c.modifier.contains(ratatui::style::Modifier::ITALIC),
-                    strike: c.modifier.contains(ratatui::style::Modifier::CROSSED_OUT),
-                }
-            })
-            .collect();
-        let entry = nav_entries(CatalogProfile::TermRock)
-            .iter()
-            .find(|e| e.id == self.page);
+        let cells = frame_cells(&snap);
+        let entry = nav_entries(self.profile).iter().find(|e| e.id == self.page);
+        let story_id = self
+            .scenario
+            .map(|scenario| scenario.id.to_owned())
+            .or_else(|| entry.map(|e| crate::catalog::normalize(e.label)))
+            .unwrap_or_default();
+        let title = self
+            .scenario
+            .map(|scenario| scenario.title.to_owned())
+            .or_else(|| entry.map(|e| e.label.to_owned()))
+            .unwrap_or_default();
+        let component = self
+            .scenario
+            .map(|scenario| scenario.component.to_owned())
+            .or_else(|| entry.map(|e| e.section.to_owned()))
+            .unwrap_or_default();
+        let interactive = self.scenario.map_or_else(
+            || self.app.page_metadata().interactive,
+            |scenario| scenario.interactive,
+        );
         TerminalFrame {
-            story_id: entry
-                .map(|e| crate::catalog::normalize(e.label))
-                .unwrap_or_default(),
-            title: entry.map(|e| e.label.to_owned()).unwrap_or_default(),
-            component: entry.map(|e| e.section.to_owned()).unwrap_or_default(),
+            story_id,
+            title,
+            component,
             cols: snap.cols,
             rows: snap.rows,
             story_cols: snap.cols,
             story_rows: snap.rows,
             cells,
-            interactive: self.app.page_metadata().interactive,
+            cursor: self
+                .app
+                .last_cursor
+                .map(|position| [position.x, position.y]),
+            cursor_visible: self.app.last_cursor.is_some(),
+            interactive,
             theme: "junie".into(),
         }
     }
+}
+
+/// Headless adapter for the real TablePro application.
+///
+/// This owns only terminal-host concerns. Rendering and interaction remain in
+/// [`TableProApp`], the same application mounted by the catalog page and the
+/// standalone `tablepro` binary.
+pub struct TableProFrameSession {
+    app: TableProApp,
+    cols: u16,
+    rows: u16,
+    elapsed_ms: u64,
+}
+
+impl TableProFrameSession {
+    /// Mount TablePro at an exact headless terminal size.
+    pub fn mount(connect: Option<&str>, cols: u16, rows: u16) -> Result<Self, String> {
+        if cols == 0 || rows == 0 {
+            return Err("tablepro frame requires positive dimensions".to_owned());
+        }
+        let mut app = TableProApp::new(ColorCapability::Truecolor);
+        if let Some(name) = connect {
+            app.connect_named(name)?;
+        }
+        Ok(Self {
+            app,
+            cols,
+            rows,
+            elapsed_ms: 0,
+        })
+    }
+
+    /// Dispatch one CLI key token through TablePro's real event handler.
+    pub fn dispatch_key(&mut self, key: &str) -> Result<(), String> {
+        // A render registers the application's focus and hit-test scene before
+        // keyboard routing, matching the native runtime's first frame.
+        let _ = self.frame();
+        let (code, modifiers) = parse_key_with_modifiers(key)?;
+        let tick = FrameTick::manual(
+            termrock::runtime::Instant::now(),
+            std::time::Duration::from_millis(self.elapsed_ms),
+            std::time::Duration::from_millis(16),
+        );
+        let _ = self.app.handle_event(
+            Event::Key(KeyEvent {
+                code,
+                modifiers,
+                kind: KeyEventKind::Press,
+                state: Default::default(),
+            }),
+            tick,
+        );
+        Ok(())
+    }
+
+    /// Render the mounted TablePro application into the canonical frame grid.
+    #[must_use]
+    pub fn frame(&mut self) -> TerminalFrame {
+        let mut term = Terminal::new(TestBackend::new(self.cols, self.rows)).expect("backend");
+        let tick = FrameTick::manual(
+            termrock::runtime::Instant::now(),
+            std::time::Duration::from_millis(self.elapsed_ms),
+            std::time::Duration::from_millis(16),
+        );
+        term.draw(|f| self.app.render(f, tick)).expect("draw");
+        let cursor = self.app.last_cursor;
+        let snap = Snapshot::from_buffer(term.backend().buffer(), cursor, false);
+        TerminalFrame {
+            story_id: "tablepro".to_owned(),
+            title: "TablePro".to_owned(),
+            component: "Applications".to_owned(),
+            cols: snap.cols,
+            rows: snap.rows,
+            story_cols: snap.cols,
+            story_rows: snap.rows,
+            cells: frame_cells(&snap),
+            cursor: cursor.map(|position| [position.x, position.y]),
+            cursor_visible: cursor.is_some(),
+            interactive: true,
+            theme: "junie".to_owned(),
+        }
+    }
+}
+
+/// Render one real TablePro state into a serializable terminal frame.
+pub fn tablepro_frame(
+    connect: Option<&str>,
+    cols: u16,
+    rows: u16,
+    keys: &[String],
+) -> Result<TerminalFrame, String> {
+    let mut session = TableProFrameSession::mount(connect, cols, rows)?;
+    for key in keys {
+        session.dispatch_key(key)?;
+    }
+    Ok(session.frame())
 }
 
 fn parse_key_code(key: &str) -> Option<KeyCode> {
@@ -446,6 +683,26 @@ fn parse_key_code(key: &str) -> Option<KeyCode> {
     }
 }
 
+fn parse_key_with_modifiers(key: &str) -> Result<(KeyCode, KeyModifiers), String> {
+    let mut parts = key.split('+').collect::<Vec<_>>();
+    let base = parts
+        .pop()
+        .filter(|part| !part.is_empty())
+        .ok_or_else(|| format!("unknown tablepro key {key:?}"))?;
+    let mut modifiers = KeyModifiers::NONE;
+    for modifier in parts {
+        match modifier.to_ascii_lowercase().as_str() {
+            "ctrl" | "control" => modifiers = modifiers.with_ctrl(),
+            "alt" => modifiers = modifiers.with_alt(),
+            "shift" => modifiers = modifiers.with_shift(),
+            "meta" | "super" | "cmd" | "command" => modifiers = modifiers.with_ctrl(),
+            other => return Err(format!("unknown tablepro key modifier {other:?}")),
+        }
+    }
+    let code = parse_key_code(base).ok_or_else(|| format!("unknown tablepro key {key:?}"))?;
+    Ok((code, modifiers))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -465,6 +722,47 @@ mod tests {
         let json = serde_json::to_value(&c[0]).expect("descriptor json");
         assert!(json.get("interactionKind").is_some());
         assert!(json.get("interaction_kind").is_none());
+    }
+
+    #[test]
+    fn catalog_exposes_all_canonical_scenario_ids_without_duplicates() {
+        let entries = catalog();
+        let ids: BTreeSet<_> = entries.iter().map(|entry| entry.id.as_str()).collect();
+        assert_eq!(ids.len(), entries.len());
+
+        for scenario in catalog_scenarios() {
+            assert!(
+                ids.contains(scenario.id),
+                "scenario {} is missing from the host catalog",
+                scenario.id
+            );
+        }
+        assert_eq!(
+            entries.len(),
+            nav_entries(CatalogProfile::TermRock).len() + catalog_scenarios().len()
+        );
+    }
+
+    #[test]
+    fn profile_catalogs_are_scoped_and_unique() {
+        let source_pages = nav_entries(CatalogProfile::JunieReference);
+        let reference = catalog_for_profile(CatalogProfile::JunieReference);
+        let reference_ids: BTreeSet<_> = reference.iter().map(|entry| entry.id.as_str()).collect();
+        assert_eq!(reference_ids.len(), reference.len());
+        for scenario in catalog_scenarios() {
+            let source_visible = page_is_visible(CatalogProfile::JunieReference, scenario.page);
+            assert_eq!(
+                reference_ids.contains(scenario.id),
+                source_visible,
+                "scenario {} has incorrect JunieReference visibility",
+                scenario.id
+            );
+        }
+        assert_eq!(
+            reference.len(),
+            source_pages.len()
+                + catalog_scenarios_for_profile(CatalogProfile::JunieReference).count()
+        );
     }
 
     #[test]
@@ -495,5 +793,50 @@ mod tests {
         );
         let update = s.dispatch(DemoEvent::Focus { focused: true }).unwrap();
         assert!(!update.changed);
+    }
+
+    #[test]
+    fn representative_scenario_mount_uses_canonical_page_renderer() {
+        let mut session = CatalogSession::mount("button/activation", 80, 24).unwrap();
+        let frame = session.frame();
+        assert_eq!(frame.story_id, "button/activation");
+        assert_eq!(frame.component, "Button");
+        assert_eq!(frame.title, "Button");
+        assert_eq!(frame.cols, 80);
+        assert_eq!(frame.rows, 24);
+    }
+
+    #[test]
+    fn reference_profile_rejects_out_of_profile_scenarios() {
+        let extension = catalog_scenarios()
+            .into_iter()
+            .find(|scenario| !page_is_visible(CatalogProfile::JunieReference, scenario.page))
+            .expect("catalog has a TermRock-only scenario");
+        let error =
+            CatalogSession::mount_profile(extension.id, 80, 24, CatalogProfile::JunieReference)
+                .err()
+                .expect("JunieReference must reject TermRock-only scenarios");
+        assert!(error.contains("not available"), "{error}");
+        assert!(
+            CatalogSession::mount_profile(
+                "button/activation",
+                80,
+                24,
+                CatalogProfile::JunieReference,
+            )
+            .is_ok()
+        );
+    }
+
+    #[test]
+    fn reference_profile_shares_session_renderer_and_source_navigation() {
+        let mut reference =
+            CatalogSession::mount_profile("overview", 120, 40, CatalogProfile::JunieReference)
+                .unwrap();
+        let frame = reference.frame();
+        assert_eq!(frame.title, "Overview");
+        assert_eq!(frame.cursor_visible, false);
+        assert_eq!(reference.profile, CatalogProfile::JunieReference);
+        assert!(reference.app.nav().iter().all(|entry| entry.id.0 < 20));
     }
 }

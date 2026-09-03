@@ -1,0 +1,40 @@
+ ▪ Junie Design system / Components / Data grid                              truecolor · 120×40   i Inspector   ? Help
+
+   Foundations            Data grid  Typed cells, a pending-change queue, paging and local sort
+▎  Overview
+                           ▎customers                            rows 1–24 of 40 loaded · ~4,812 total · cols 1–6 of 8
+   Components
+▎  Buttons                        ⚷ id       customer                   plan          seats      mrr  acti…       2›
+▎  Inputs                   ▎ ! 1 1001       Northwind Traders          enterprise      600    57.00  true           ┃
+▎  Text areas               ▎ • 2 1002       Blue Yonder Airlines       team             12  1920.00  true           ┃
+▎  Forms                    ▎   3 1003       Contoso Pharmaceuticals    pro              12   348.00  true           ┃
+▎  Lists                    ▎   4 1004       Fabrikam Robotics          free              1     0.00  false          ┃
+▎  Trees                    ▎   5 1005       Litware Analytics          enterprise       40   760.00  true           ┃
+▎  Tables                   ▎   6 1006       Tailspin Toys              team              5   120.00  true           ┃
+▎  Editable tables          ▎   7 1007       Wide World Importers       pro             150  4350.00  true           ┃
+▎  Panels                   ▎   8 1008       Adventure Works            free             25     0.00  true           ┃
+▎  Sidebars                 ▎   9 1009       Proseware Studio           enterprise        3    57.00  false          ┃
+▎  Dialogs                  ▎  10 1010       Woodgrove Bank             team             80  1920.00  true           ┃
+▎  Progress                 ▎  11 1011       Alpine Ski House           pro              12   348.00  true           ┃
+▎  Scrolling                ▎  12 1012       Coho Winery                free              1     0.00  true           ┃
+▎  Code editor              ▎  13 1013       Lucerne Publishing         enterprise       40   760.00  true           ┃
+▎› Data grid                ▎  14 1014       Margie's Travel            team              5   120.00  false          ┃
+▎  Chips & selects          ▎  15 1015       Trey Research              pro             150  4350.00  true           │
+▎  Pickers                  ▎  16 1016       Humongous Insurance        free             25     0.00  true           │
+                            ▎  17 1017       Northwind Traders 2        enterprise        3    57.00  true           │
+   Screens                  ▎  18 1018       Blue Yonder Airlines 2     team             80  1920.00  true           │
+▎  Settings                 ▎  19 1019       Contoso Pharmaceuticals 2  pro              12   348.00  false          │
+▎  Task runner              ▎  20 1020       Fabrikam Robotics 2        free              1     0.00  true           │
+                            ▎  21 1021       Litware Analytics 2        enterprise       40   760.00  true           │
+                            ▎  22 1022       Tailspin Toys 2            team              5   120.00  true           │
+                            ▎  23 1023       Wide World Importers 2     pro             150  4350.00  true           │
+                            ▎  24 1024       Adventure Works 2          free             25     0.00  false          │
+
+                             • 2 pending 2 updates                                     ▎Preview SQL  ▎Discard  ▎Save
+
+
+                            Enter edits · Space selects · s sorts · + inserts · - deletes · p previews SQL · Ctrl+S sav…
+
+
+
+ ↑↓←→ Cell  Enter Edit  s Sort  Space Select row  + - Insert / delete  u Undo  Tab Next Save failed · the row is marked

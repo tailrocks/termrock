@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
-"""Advisory pixel layer: CIEDE2000 per cell between two rasterized grids.
+"""Diagnostic pixel layer: CIEDE2000 per cell between source and catalog rasters.
 
-This layer is ADVISORY and LOCAL-ONLY. It is never a gate. The two repos
-rasterize with different engines (Pillow+FreeType with a system font here,
-swash with vendored JetBrains Mono in termrock-raster) and different cell
-metrics, so byte or per-pixel equality is unachievable by construction:
+This layer is diagnostic and local-only. It is never a parity gate. The source
+and the canonical TermRock catalog currently rasterize with different engines
+(Pillow+FreeType with a system font here, swash with vendored JetBrains Mono in
+termrock-raster) and different cell metrics, so byte or per-pixel equality is
+not established by this helper:
 
     reference ansi2png.py : CW=9 CH=20 SIZE=15 PAD=12  -> (cols*9+24) x (rows*20+24)
     termrock raster       : CW=9 CH=18 SIZE=14 PAD=0   ->  cols*9     x  rows*18
 
-To make the images comparable at all, the reference side is re-rasterized at
-TERMROCK's metrics (--ref-ansi mode) so both PNGs are cols*9 x rows*18 and cell
-(x,y) maps to the same pixel rectangle on both sides.
+To make the images comparable at all, the source side is re-rasterized at the
+canonical catalog metrics (`--ref-ansi`) so both PNGs are cols*9 x rows*18 and
+cell (x,y) maps to the same pixel rectangle on both sides. The result is a
+visual-distance report, not proof of zero-tolerance PNG equality.
 
 Requires Pillow. Without it the script exits 3 with a clear message; run.py
 treats that as SKIP, never FAIL.
@@ -27,7 +29,7 @@ import math
 import sys
 from pathlib import Path
 
-# termrock metrics — the only ones that matter, since both images end up at them
+# Canonical catalog raster metrics: both images end up at these cell dimensions.
 CW, CH = 9, 18
 
 try:
@@ -139,7 +141,7 @@ def compare(a_path, b_path, cols, rows, threshold):
 
 
 def reraster_ansi(ansi_path, cols, rows, out_path, cursor_path=None):
-    """Rasterize a reference .ansi at termrock's metrics so a pixel diff is meaningful."""
+    """Rasterize source ANSI at catalog metrics so a pixel diff is meaningful."""
     require_pillow()
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     from ansi2grid import parse_ansi

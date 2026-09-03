@@ -53,8 +53,7 @@ Panel geometry remains plain and single-line in every theme. Focus is semantic:
 marks inactive/background containers. The default theme renders those roles in
 Junie primary green (`#48e054`) and the white ladder.
 
-Run the interactive showcase with
-`cargo run -p termrock --example showcase --features crossterm`.
+Run the interactive catalog with `cargo run --release` from the workspace root.
 
 With the `crossterm` feature, `runtime::run` owns terminal setup, neutral event
 conversion, frame cadence, and deterministic restoration. Its callbacks receive

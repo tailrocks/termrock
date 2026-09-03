@@ -1,0 +1,40 @@
+ ▪ Junie Design system / Components / Data grid                              truecolor · 120×40   i Inspector   ? Help
+
+   Foundations            Data grid  Typed cells, a pending-change queue, paging and local sort
+▎  Overview
+                            customers                            rows 1–24 of 40 loaded · ~4,812 total · cols 1–6 of 8
+   Components
+▎  Buttons                        ⚷ id       customer                   plan          seats      mrr  acti…       2›
+▎  Inputs                   ▎ • 1 1001       Northwind Traders          enterprise      600    57.00  true           ┃
+▎  Text areas               ▎ • 2 1002       Blue Yonder Airlines       team             12  1920.00  true           ┃
+▎  Forms                    ▎   3 1003       Contoso Pharmaceuticals    pro              12   348.00  true           ┃
+▎  Lists                    ▎   4 1004       Fabrikam Robotics          free              1     0.00  false          ┃
+▎  Trees                    ▎   5 1005       Litware Analytics          enterprise       40   760.00  true           ┃
+▎  Tables                   ▎   6 1006       Tailspin Toys              team              5   120.00  true           ┃
+▎  Editable tables         ╭────────────────────────────────────────────────────────────────╮4350.00  true           ┃
+▎  Panels                  │                                                                │   0.00  true           ┃
+▎  Sidebars                │  Pending changes                                               │  57.00  false          ┃
+▎  Dialogs                 │                                                                │1920.00  true           ┃
+▎  Progress                │  Statements  2                                                 │ 348.00  true           ┃
+▎  Scrolling               │  Rows        2 changed · 0 inserted · 0 deleted                │   0.00  true           ┃
+▎  Code editor             │  Target      customers                                         │ 760.00  true           ┃
+▎› Data grid               │                                                                │ 120.00  false          ┃
+▎  Chips & selects         │  UPDATE customers SET seats = 600 WHERE id = 1001;             │4350.00  true           │
+▎  Pickers                 │  UPDATE customers SET seats = 12 WHERE id = 1002;              │   0.00  true           │
+                           │                                                                │  57.00  true           │
+   Screens                 │                                              ▎Cancel  ▎Close   │1920.00  true           │
+▎  Settings                │                                                                │ 348.00  false          │
+▎  Task runner             ╰────────────────────────────────────────────────────────────────╯   0.00  true           │
+                            ▎  21 1021       Litware Analytics 2        enterprise       40   760.00  true           │
+                            ▎  22 1022       Tailspin Toys 2            team              5   120.00  true           │
+                            ▎  23 1023       Wide World Importers 2     pro             150  4350.00  true           │
+                            ▎  24 1024       Adventure Works 2          free             25     0.00  false          │
+
+                             • 2 pending 2 updates                                     ▎Preview SQL  ▎Discard  ▎Save
+
+
+                            Enter edits · Space selects · s sorts · + inserts · - deletes · p previews SQL · Ctrl+S sav…
+
+
+
+ ← → Choose  Enter Confirm  Esc Cancel                                                                        2 pending

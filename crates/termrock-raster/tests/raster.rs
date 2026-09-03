@@ -51,8 +51,8 @@ fn panel_story_png_has_exact_size_and_junie_accent() {
         .set_fg(Color::Rgb(0x48, 0xe0, 0x54));
     let png = render_png(&buffer, &palette).expect("render PNG");
     let pixmap = tiny_skia::Pixmap::decode_png(&png).expect("decode PNG");
-    assert_eq!(pixmap.width(), 24 * 9);
-    assert_eq!(pixmap.height(), 8 * 18);
+    assert_eq!(pixmap.width(), 24 * 9 + 24);
+    assert_eq!(pixmap.height(), 8 * 20 + 24);
     assert!(
         pixmap
             .data()
@@ -75,9 +75,9 @@ fn wide_grapheme_spans_two_cells_and_shadow_cell_is_ignored() {
     assert_eq!(compare_png_pixels(&png_a, &png_b), Ok(()));
     let pixmap = tiny_skia::Pixmap::decode_png(&png_a).expect("decode A");
     let mut halves_equal = true;
-    for y in 0..18 {
+    for y in 0..20 {
         for x in 0..9 {
-            halves_equal &= pixel(&pixmap, x, y) == pixel(&pixmap, x + 9, y);
+            halves_equal &= pixel(&pixmap, x + 12, y + 12) == pixel(&pixmap, x + 21, y + 12);
         }
     }
     assert!(
@@ -152,10 +152,9 @@ fn underline_paints_web_consistent_rows() {
     )
     .unwrap();
     for x in 0..9 {
-        assert_eq!(pixel(&pixmap, x, 15), [0, 255, 65, 255]);
-        assert_eq!(pixel(&pixmap, x, 16), [0, 255, 65, 255]);
-        assert_eq!(pixel(&pixmap, x, 14), [0, 0, 0, 255]);
-        assert_eq!(pixel(&pixmap, x, 17), [0, 0, 0, 255]);
+        assert_eq!(pixel(&pixmap, x + 12, 12 + 17), [0, 255, 65, 255]);
+        assert_eq!(pixel(&pixmap, x + 12, 12 + 16), [0, 0, 0, 255]);
+        assert_eq!(pixel(&pixmap, x + 12, 12 + 18), [0, 0, 0, 255]);
     }
 }
 
@@ -172,10 +171,9 @@ fn crossed_out_paints_mid_cell_rows() {
     )
     .unwrap();
     for x in 0..9 {
-        assert_eq!(pixel(&pixmap, x, 8), [0, 255, 65, 255]);
-        assert_eq!(pixel(&pixmap, x, 9), [0, 255, 65, 255]);
-        assert_eq!(pixel(&pixmap, x, 7), [0, 0, 0, 255]);
-        assert_eq!(pixel(&pixmap, x, 10), [0, 0, 0, 255]);
+        assert_eq!(pixel(&pixmap, x + 12, 12 + 10), [0, 255, 65, 255]);
+        assert_eq!(pixel(&pixmap, x + 12, 12 + 9), [0, 0, 0, 255]);
+        assert_eq!(pixel(&pixmap, x + 12, 12 + 11), [0, 0, 0, 255]);
     }
 }
 
@@ -191,12 +189,11 @@ fn reversed_swaps_fg_bg() {
         &RolePalette::default(),
     )
     .unwrap();
-    assert!(
-        pixmap
-            .data()
-            .chunks_exact(4)
-            .all(|rgba| rgba == [0, 255, 65, 255])
-    );
+    for y in 12..32 {
+        for x in 12..21 {
+            assert_eq!(pixel(&pixmap, x, y), [0, 255, 65, 255]);
+        }
+    }
 }
 
 #[test]

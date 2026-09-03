@@ -1336,22 +1336,22 @@ dependencies = [
 ]
 
 [[package]]
-name = "termrock-contract-audit"
-version = "0.0.0"
-dependencies = [
- "ratatui-core",
- "termrock",
- "termrock-lookbook",
-]
-
-[[package]]
-name = "termrock-lookbook"
+name = "termrock-catalog"
 version = "0.11.0"
 dependencies = [
  "ratatui",
  "serde",
  "serde_json",
  "termrock",
+ "unicode-segmentation",
+ "unicode-width",
+]
+
+[[package]]
+name = "termrock-contract-audit"
+version = "0.0.0"
+dependencies = [
+ "termrock-catalog",
 ]
 
 [[package]]

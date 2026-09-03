@@ -795,7 +795,15 @@ impl App {
         let mut y = area.y;
         let mut section = "";
         let nav = self.nav();
-        let sections = 3u16;
+        let sections = nav
+            .iter()
+            .fold(Vec::new(), |mut sections: Vec<&str>, entry| {
+                if !sections.contains(&entry.section) {
+                    sections.push(entry.section);
+                }
+                sections
+            })
+            .len() as u16;
         let compact = area.height < nav.len() as u16 + sections * 2 - 1;
         for (i, e) in nav.iter().enumerate() {
             if e.section != section && !compact {

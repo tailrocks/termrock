@@ -144,8 +144,14 @@ function frame(handle: number): TerminalFrame {
   return JSON.parse(demo_frame(handle)) as TerminalFrame
 }
 
-const tabs = mount_demo('tabs/status', 40, 8)
+const tabs = mount_demo('tabs/status', 80, 24)
 const tabsBefore = frame(tabs)
+JSON.parse(
+  dispatch_demo(
+    tabs,
+    JSON.stringify({ type: 'key', key: 'Tab', kind: 'press' }),
+  ),
+) as { changed: boolean; hints: string[] }
 const tabsUpdate = JSON.parse(
   dispatch_demo(
     tabs,
@@ -155,10 +161,10 @@ const tabsUpdate = JSON.parse(
 const tabsAfter = frame(tabs)
 assert(tabsUpdate.changed, 'real Tabs state accepts ArrowRight')
 assert(JSON.stringify(tabsBefore.cells) !== JSON.stringify(tabsAfter.cells), 'Tabs paint changes')
-assert(tabsUpdate.hints.includes('click tab'), 'Tabs publishes exact click hint')
+assert(tabsUpdate.hints.includes('← →'), 'Tabs publishes exact navigation hint')
 unmount_demo(tabs)
 
-const spinner = mount_demo('spinner/labeled', 40, 8)
+const spinner = mount_demo('spinner/labeled', 80, 24)
 const spinnerStarted = JSON.parse(
   dispatch_demo(spinner, JSON.stringify({ type: 'tick', elapsedMs: 0 })),
 ) as DemoUpdate
@@ -178,7 +184,13 @@ assert(
 )
 unmount_demo(spinner)
 
-const button = mount_demo('button/activation', 28, 3)
+const button = mount_demo('button/activation', 80, 24)
+JSON.parse(
+  dispatch_demo(
+    button,
+    JSON.stringify({ type: 'key', key: 'Tab', kind: 'press' }),
+  ),
+) as DemoUpdate
 const buttonActivated = JSON.parse(
   dispatch_demo(button, JSON.stringify({ type: 'key', key: 'Enter', kind: 'press' })),
 ) as DemoUpdate
@@ -194,7 +206,7 @@ const passiveUpdate = JSON.parse(
   ),
 ) as { changed: boolean; hints: string[] }
 assert(!passiveUpdate.changed, 'passive Rust demo ignores fake interaction')
-assert(passiveUpdate.hints.length === 0, 'passive Rust demo exposes no fake hint')
+assert(passiveUpdate.hints.length > 0, 'Rust host preserves owning-page hints')
 unmount_demo(paintedOnly)
 
 let rejected = false

@@ -6,7 +6,10 @@
 
 //! Single catalog registry: source prefix first, TermRock extensions after.
 
+use crate::coverage::catalog_page_for;
 use crate::profile::ProductIdentity;
+use serde::Serialize;
+use termrock::registry::{pattern_inventory, public_ui_inventory};
 
 /// Which catalog data set the shell mounts.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -72,6 +75,104 @@ pub struct NavEntry {
     pub id: PageId,
     pub label: &'static str,
     pub section: &'static str,
+}
+
+/// One deterministic representative scenario owned by the canonical catalog.
+///
+/// Scenarios are component and pattern entry points used by documentation and
+/// headless hosts. They all render through their owning catalog page; no host
+/// maintains a second story renderer.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CatalogScenario {
+    /// Stable representative scenario ID.
+    pub id: &'static str,
+    /// Human-readable scenario title.
+    pub title: &'static str,
+    /// Public visual owner or composed pattern identity.
+    pub component: &'static str,
+    /// Deterministic purpose text.
+    pub description: &'static str,
+    /// Canonical owning page.
+    pub page: PageId,
+    /// Preferred scenario width.
+    pub cols: u16,
+    /// Preferred scenario height.
+    pub rows: u16,
+    /// Whether the owning page accepts interaction.
+    pub interactive: bool,
+    /// Stable interaction family.
+    pub interaction_kind: &'static str,
+}
+
+/// JSON projection of the public component authority used by documentation.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PublicUiAuthority {
+    /// Stable public component identity.
+    pub public_ui: &'static str,
+    /// Rendering contract kind.
+    pub kind: &'static str,
+    /// Product family.
+    pub family: &'static str,
+    /// Documentation collection.
+    pub documentation_kind: &'static str,
+    /// Documentation slug.
+    pub docs_slug: &'static str,
+    /// Documentation route.
+    pub docs_path: String,
+    /// Representative scenario ID.
+    pub representative_story: &'static str,
+}
+
+/// JSON projection of one composed pattern authority entry.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PatternAuthority {
+    /// Stable pattern identity.
+    pub pattern: &'static str,
+    /// Documentation slug.
+    pub docs_slug: &'static str,
+    /// Documentation route.
+    pub docs_path: String,
+    /// Representative scenario ID.
+    pub representative_story: &'static str,
+    /// Exact public visual owner where one exists.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub public_ui: Option<&'static str>,
+}
+
+/// Complete canonical documentation authority.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CatalogAuthority {
+    /// Public visual owners.
+    pub public_ui: Vec<PublicUiAuthority>,
+    /// Composed patterns.
+    pub patterns: Vec<PatternAuthority>,
+}
+
+/// JSON projection of one representative scenario.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScenarioDescriptor {
+    /// Stable scenario ID.
+    pub id: &'static str,
+    /// Scenario title.
+    pub title: &'static str,
+    /// Public visual owner or pattern identity.
+    pub component: &'static str,
+    /// Scenario purpose.
+    pub description: &'static str,
+    /// Preferred width.
+    pub cols: u16,
+    /// Preferred height.
+    pub rows: u16,
+    /// Whether the scenario accepts interaction.
+    pub interactive: bool,
+    /// Interaction family.
+    pub interaction_kind: &'static str,
+    /// Deterministic interaction hints.
+    pub hints: Vec<&'static str>,
 }
 
 /// Canonical navigation storage. Keep the source-defined prefix first and do
@@ -180,22 +281,22 @@ pub static CATALOG_NAV: [NavEntry; 25] = [
     NavEntry {
         id: PageId::FEEDBACK,
         label: "Feedback",
-        section: "Library",
+        section: "Patterns",
     },
     NavEntry {
         id: PageId::OVERLAYS,
         label: "Overlays",
-        section: "Library",
+        section: "Patterns",
     },
     NavEntry {
         id: PageId::CHARTS,
         label: "Charts",
-        section: "Library",
+        section: "Patterns",
     },
     NavEntry {
         id: PageId::STRUCTURE,
         label: "Structure",
-        section: "Library",
+        section: "Patterns",
     },
     NavEntry {
         id: PageId::TABLEPRO,
@@ -246,6 +347,138 @@ pub fn normalize(s: &str) -> String {
     s.chars()
         .filter(|c| c.is_ascii_alphanumeric())
         .map(|c| c.to_ascii_lowercase())
+        .collect()
+}
+
+fn pattern_page(id: &str) -> PageId {
+    match id {
+        "ActivityShelf"
+        | "BackgroundTaskPanel"
+        | "IntegrationStatus"
+        | "SubagentCard"
+        | "WorkingStateCard" => PageId::FEEDBACK,
+        "ApprovalQueue" | "HelpCenter" | "PromptQueue" => PageId::DIALOGS,
+        "AgentShell" | "AgentWorkbench" | "AppDashboard" | "AppShell" | "FileManager"
+        | "GitWorkbench" | "ResourceBrowser" | "StudioShell" => PageId::STRUCTURE,
+        "AuthEntry" | "SetupWizard" => PageId::FORMS,
+        "ConnectionManager" | "DatabaseWorkbench" | "ProcessTable" | "QueryEditor"
+        | "ResultGrid" | "SchemaBrowser" | "SessionPicker" => PageId::TABLEPRO,
+        "ErrorRecovery" => PageId::FEEDBACK,
+        "MetricsDashboard" | "ObservabilityDashboard" | "OpsDashboard" => PageId::CHARTS,
+        "ProjectLauncher" => PageId::PICKERS,
+        "SettingsScreen" => PageId::SETTINGS,
+        "TaskRail" | "TerminalRunCard" => PageId::TASK_RUNNER,
+        _ => PageId::STRUCTURE,
+    }
+}
+
+fn public_scenario(entry: &termrock::registry::PublicUiInventoryEntry) -> CatalogScenario {
+    let interactive = !matches!(entry.kind, termrock::registry::ComponentKind::Layout);
+    CatalogScenario {
+        id: entry.representative_story,
+        title: entry.id.as_str(),
+        component: entry.id.as_str(),
+        description: "Canonical TermRock component scenario",
+        page: catalog_page_for(entry.id),
+        cols: 120,
+        rows: 40,
+        interactive,
+        interaction_kind: if interactive {
+            "interactive-component"
+        } else {
+            "passive-paint"
+        },
+    }
+}
+
+/// Return every unique representative scenario from the public component and
+/// pattern registries, in stable registry order.
+#[must_use]
+pub fn catalog_scenarios() -> Vec<CatalogScenario> {
+    let mut scenarios = Vec::new();
+    for entry in public_ui_inventory() {
+        if !scenarios
+            .iter()
+            .any(|scenario: &CatalogScenario| scenario.id == entry.representative_story)
+        {
+            scenarios.push(public_scenario(entry));
+        }
+    }
+    for entry in pattern_inventory() {
+        if scenarios
+            .iter()
+            .any(|scenario: &CatalogScenario| scenario.id == entry.representative_story)
+        {
+            continue;
+        }
+        scenarios.push(CatalogScenario {
+            id: entry.representative_story,
+            title: entry.id.as_str(),
+            component: entry.id.as_str(),
+            description: "Canonical TermRock pattern scenario",
+            page: pattern_page(entry.id.as_str()),
+            cols: 120,
+            rows: 40,
+            interactive: true,
+            interaction_kind: "interactive-pattern",
+        });
+    }
+    scenarios
+}
+
+/// Resolve a representative scenario by stable ID.
+#[must_use]
+pub fn scenario_by_id(id: &str) -> Option<CatalogScenario> {
+    catalog_scenarios()
+        .into_iter()
+        .find(|scenario| scenario.id == id)
+}
+
+/// Build the typed documentation authority from the kernel registries.
+#[must_use]
+pub fn catalog_authority() -> CatalogAuthority {
+    CatalogAuthority {
+        public_ui: public_ui_inventory()
+            .iter()
+            .map(|entry| PublicUiAuthority {
+                public_ui: entry.id.as_str(),
+                kind: entry.kind.id(),
+                family: entry.family.id(),
+                documentation_kind: entry.documentation.id(),
+                docs_slug: entry.docs_slug,
+                docs_path: entry.docs_path(),
+                representative_story: entry.representative_story,
+            })
+            .collect(),
+        patterns: pattern_inventory()
+            .iter()
+            .map(|entry| PatternAuthority {
+                pattern: entry.id.as_str(),
+                docs_slug: entry.docs_slug,
+                docs_path: entry.docs_path(),
+                representative_story: entry.representative_story,
+                public_ui: entry.public_ui.map(|id| id.as_str()),
+            })
+            .collect(),
+    }
+}
+
+/// Build the canonical representative-scenario JSON projection.
+#[must_use]
+pub fn scenario_descriptors() -> Vec<ScenarioDescriptor> {
+    catalog_scenarios()
+        .into_iter()
+        .map(|scenario| ScenarioDescriptor {
+            id: scenario.id,
+            title: scenario.title,
+            component: scenario.component,
+            description: scenario.description,
+            cols: scenario.cols,
+            rows: scenario.rows,
+            interactive: scenario.interactive,
+            interaction_kind: scenario.interaction_kind,
+            hints: Vec::new(),
+        })
         .collect()
 }
 
@@ -315,5 +548,37 @@ mod tests {
                 .iter()
                 .any(|e| e.id == PageId::TABLEPRO)
         );
+        assert!(
+            nav_entries(CatalogProfile::TermRock)
+                .iter()
+                .any(|e| e.section == "Patterns")
+        );
+        assert!(
+            nav_entries(CatalogProfile::TermRock)
+                .iter()
+                .any(|e| e.section == "Applications")
+        );
+    }
+
+    #[test]
+    fn representative_scenarios_cover_component_and_pattern_registries() {
+        let scenarios = catalog_scenarios();
+        let ids: std::collections::BTreeSet<_> =
+            scenarios.iter().map(|scenario| scenario.id).collect();
+        assert_eq!(ids.len(), scenarios.len());
+        for entry in termrock::registry::public_ui_inventory() {
+            assert!(
+                scenario_by_id(entry.representative_story).is_some(),
+                "missing component scenario for {}",
+                entry.id
+            );
+        }
+        for entry in termrock::registry::pattern_inventory() {
+            assert!(
+                scenario_by_id(entry.representative_story).is_some(),
+                "missing pattern scenario for {}",
+                entry.id
+            );
+        }
     }
 }

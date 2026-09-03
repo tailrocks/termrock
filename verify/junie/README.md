@@ -1,39 +1,45 @@
-# verify/junie — junie-tui ⇄ termrock fidelity harness
+# verify/junie — Junie reference ↔ canonical TermRock catalog
 
-Cross-repo cell-grid comparison. The reference is [`junie-tui`]
-(`/Users/donbeave/Projects/terminal-components-claude`, bins `showcase` +
-`tablepro`); the target is this repo's `termrock-lookbook` stories.
+Cross-repository cell-grid verification. The read-only reference is
+`/Users/donbeave/Projects/terminal-components-claude` (source binaries
+`showcase` and `tablepro`). The target is the single `termrock-catalog`
+application. There is no separate target preview entry point.
 
-Design and rationale: `research/junie-campaign/verification-infra.md`
-(§5 harness design, §6 minimal new code). This directory is the whole
-implementation: Python 3 stdlib plus a POSIX shell wrapper, no new Rust, no new
-crate, no new workflow.
+The checked-in source evidence uses all five source artifacts
+(`.ansi`, `.cursor`, `.txt`, `.html`, `.png`) for every inventoried source shot.
+`_manifest.py` records a SHA-256 for each artifact and refuses to write a scene
+entry when any artifact is missing or empty. The scenario runner remains a
+focused crop diagnostic; strict five-artifact parity uses
+`compare_artifacts.py` and never reads a tolerance or baseline.
 
 ## Layout
 
 ```
-scenarios.json5        the only hand-maintained mapping (reference page -> termrock story)
+scenarios.json5        hand-maintained source-state → catalog-scenario mapping
 reference/
-  scenes/<scene>.txt   plain text grid      (byte-stable, this is what CI compares)
-  scenes/<scene>.ansi  SGR truecolor grid   (byte-stable run-to-run on a given tmux)
-  scenes/<scene>.cursor cursor x y flag
-  manifest.json        per-scene capture provenance: junie commit, tmux version, digests
-baselines/<scene>.grid.json  blessed per-cell delta budgets (ratchet, see below)
+  scenes/<scene>.txt   source plain-text cell grid
+  scenes/<scene>.ansi  source SGR terminal capture
+  scenes/<scene>.cursor source cursor x y visibility
+  scenes/<scene>.html  source deterministic HTML export
+  scenes/<scene>.png   source raster capture
+  manifest.json        source capture provenance and digests
+baselines/<scene>.grid.json  legacy crop diagnostics only; never used by the strict comparator
 bin/
-  ref_capture.sh   reference-side tmux driver (wraps the reference's tools/capture.sh)
-  _capture_all.py  per-scene driver used by `ref_capture.sh --all`
-  _manifest.py     merges one capture into reference/manifest.json
-  ansi2grid.py     .ansi -> canonical cell grid (imports the reference's own SGR machine)
-  frame2grid.py    termrock `frame` JSON -> the same canonical cell grid
-  diff_grid.py     text + color cell diff, budgets, machine-readable report
-  diff_png.py      advisory pixel layer (CIEDE2000), needs Pillow, never a gate
-  run.py           orchestrator: report.json / report.md / last-report.json, --update-baseline
-out/               generated, gitignored
+  ref_capture.sh       source-side tmux capture driver
+  _capture_all.py      driver for ref_capture.sh --all
+  _manifest.py         capture provenance updater
+  ansi2grid.py         source ANSI → canonical cell grid
+  frame2grid.py        catalog frame JSON → canonical cell grid
+  diff_grid.py         text/color cell comparison
+  diff_png.py          raster comparison diagnostic
+  run.py               scenario runner and report writer
+  target_capture       canonical five-artifact replay output (CLI below)
+out/                   generated reports and frames; gitignored
 ```
 
-## The canonical cell grid
+## Canonical cell grid
 
-Both sides are normalized into one shape before any comparison:
+Both sides are normalized to one cell representation:
 
 ```json
 {"cols": 120, "rows": 40,
@@ -42,162 +48,159 @@ Both sides are normalized into one shape before any comparison:
             "underline": false, "reverse": false, "strike": false}]}
 ```
 
-`ansi2grid.py` produces it from `tmux capture-pane -e -p` output by importing
-`State`/`apply` from the reference repo's `tools/ansi2html.py` — the SGR table is
-never re-implemented here, so the two repos cannot disagree about what a color
-code means. `frame2grid.py` produces it from
-`cargo run -p termrock-lookbook -- frame --story <id>` (mapping termrock's
-`reversed` field to `reverse`; termrock's `FrameCell` has no italic/strike bits,
-and the grid records them as `false` rather than guessing).
-
-## The three layers
-
-| layer | compares | gate |
-|---|---|---|
-| text  | `ch` per cell, inside the compared region | **hard**, font/OS/terminal independent — this is the CI gate |
-| color | `fg`/`bg` RGB + bold/dim/italic/underline/reverse per cell | **hard** (local), catches accent-vs-error, focus bar, hover lift, backdrop dimming |
-| pixel | CIEDE2000 per cell on re-rasterized images | **advisory, local only**, auto-skipped without Pillow |
-
-The text layer compares every cell of the compared region; the color layer stops
-at each row's *extent* — the last non-blank cell on either side. Beyond that both
-sides are background, so comparing further would only measure the two apps'
-different canvas colors, which is not widget fidelity. A row where the reference
-has content and termrock has none is still measured up to the reference's last
-cell, not silently skipped.
-
-The pixel layer is not a gate by construction: the reference rasterizes with
-Pillow + FreeType using a system font (9×20 cells, 12 px padding) and termrock
-with swash using vendored JetBrains Mono (9×18 cells, no padding). `diff_png.py
---ref-ansi` re-rasterizes the reference at termrock's metrics so the two images
-at least line up cell-for-cell, then reports mean/max ΔE and how many cells
-exceed the threshold. It still only ever tells you "these glyphs look similar",
-never "these are equal".
-
-## Gating model
-
-* `status: "pending-termrock-scene"` in `scenarios.json5` — no termrock story
-  maps to this page yet. `run.py` reports **SKIP** and does not gate on it. Ports
-  fill these in.
-* Otherwise the scenario is **active**: `run.py` renders the story, crops both
-  sides and measures the text and color deltas. It **PASS**es when the deltas fit
-  the budgets, which come from the scenario's own `tolerance` block when it
-  declares one (aspirational, usually `0` — exact parity), and from
-  `baselines/<scene>.grid.json` otherwise.
-* `baselines/` is a **ratchet**: `--update-baseline` blesses the currently
-  measured deltas, and a later run may only stay equal or shrink. This is what
-  makes an honest gate possible today — no termrock story reproduces a full junie
-  app page byte-for-byte yet, so the harness records how far the port is and
-  refuses to let it drift further. When a scenario declares `tolerance`, that
-  number wins and the ratchet is ignored.
-* An active scenario with no baseline at all is **FAIL** (`unblessed`), not an
-  automatic pass. A baseline whose recorded reference digest no longer matches
-  the committed `.ansi` is **FAIL** (`stale-baseline`): the reference moved, so
-  the delta has to be re-measured. That is the structural fix for the failure
-  mode already seen twice in this repo (stale `shots/`, stale `preview-posters/`).
-
-Exit status: nonzero only when a non-pending scenario FAILs. Advisory pixel
-results never affect it.
-
-## Exact commands
+`ansi2grid.py` parses source `tmux capture-pane -e -p` output using the source
+ANSI state machine. `frame2grid.py` parses the independent JSON emitted by the
+canonical catalog:
 
 ```sh
-JUNIE=/Users/donbeave/Projects/terminal-components-claude
-TERMROCK=/Users/donbeave/Projects/tailrocks/termrock
-cd "$TERMROCK/verify/junie"
-
-# regenerate the reference side (one-time per junie commit; ~2 s per scene)
-bin/ref_capture.sh --all --out reference/scenes
-
-# one scene, by hand
-bin/ref_capture.sh --bin showcase --page Tables --cols 120 --rows 40 showcase_tables_120x40
-bin/ref_capture.sh --bin tablepro --args '["--connect","Local PostgreSQL"]' tablepro_local_120x40
-bin/ref_capture.sh --key '?' tablepro_help_120x40
-
-# compare everything
-python3 bin/run.py                                   # text + color + advisory pixel
-python3 bin/run.py --layer text                      # text only (what CI runs)
-python3 bin/run.py --only showcase_tables_120x40
-python3 bin/run.py --list-scenes                     # scene -> status
-
-# bless the current deltas (after reviewing out/*.text.diff)
-python3 bin/run.py --update-baseline
+cargo run -q -p termrock-catalog -- frame --scenario <catalog-scenario-id> \
+  --cols 120 --rows 40
 ```
 
-`run.py` prints a PASS/FAIL/SKIP table and writes `out/report.json`,
-`out/report.md` and `last-report.json`. Per-scenario diffs land in
-`out/<scene>.text.diff`.
+The catalog frame is the same deterministic rendered state used by the native
+application. The comparison layer maps the frame's `reversed` style to
+`reverse`; unsupported italic/strike bits remain false rather than being
+guessed.
 
-Existing termrock-side gates to run alongside (already wired, no new code):
+## Gates
+
+| layer | compares | current role |
+|---|---|---|
+| text | glyph in each compared cell | hard gate |
+| color | RGB and supported modifiers | hard gate when enabled |
+| pixel | decoded PNG pixels | diagnostic until raster engines are pinned identically |
+
+`run.py` skips a `pending-termrock-scene` entry because no catalog scenario is
+mapped yet. Active entries render the canonical catalog scenario, crop both
+grids, and report the focused text/color diagnostic. Its crop budgets are not a
+source-shot parity claim.
+
+The strict comparator does not turn a pending entry into a pass and does not
+use a baseline to hide a mismatch. It requires every `.ansi`, `.cursor`, `.txt`,
+`.html`, and `.png` on both sides. A pass is byte-exact for text/cursor and
+raw-ANSI framing, cell-exact for ANSI/HTML content and styles, and
+pixel-exact for decoded PNGs.
+
+`diff_png.py` re-rasterizes source ANSI at the catalog raster metrics when
+requested. Source and target currently use different raster engines, fonts, and
+cell metrics, so this helper reports visual distance only and never determines
+the harness exit status.
+
+## Capture and comparison
 
 ```sh
-cargo nextest run -p termrock-lookbook --all-features --test goldens --locked
-cargo nextest run -p termrock-lookbook --all-features --test png_baselines --locked
+JUNIE_REPO=/path/to/terminal-components-claude
+TERMROCK=/path/to/termrock-presentation
+export JUNIE_REPO
+cd "$TERMROCK/verify/junie"
+
+# Rebuild and capture all source scenarios from a temporary archive pinned to
+# reference/manifest.json:source_sha. The canonical source checkout is read-only.
+bin/ref_capture.sh --all --out reference/scenes
+
+# Capture one source state by hand.
+bin/ref_capture.sh --bin showcase --page Tables --cols 120 --rows 40 \
+  showcase_tables_120x40
+bin/ref_capture.sh --bin tablepro --args '["--connect","Local PostgreSQL"]' \
+  tablepro_local_120x40
+bin/ref_capture.sh --bin tablepro --key '?' tablepro_help_120x40
+
+# Compare active scenarios.
+python3 bin/run.py
+python3 bin/run.py --layer text
+python3 bin/run.py --only showcase_tables_120x40
+python3 bin/run.py --list-scenes
+
+# Capture target artifacts from the same app/state used by native and web hosts.
+cargo run -q -p termrock-catalog -- capture --out target_capture --scenario t_100
+cargo run -q -p termrock-catalog -- capture --out target_capture --all
+
+# Strictly compare a complete five-artifact pair. No baseline or tolerance is read.
+python3 bin/compare_artifacts.py \
+  reference/scenes/f_overview target_capture/f_overview \
+  --cols 120 --rows 40 --diff-dir out/diffs
+```
+
+`run.py` writes `out/report.json`, `out/report.md`,
+`out/<scene>.text.diff`, and `last-report.json`. It exits nonzero for a hard
+failure in an active scenario.
+
+The canonical target checks are:
+
+```sh
+cargo test -p termrock-catalog --all-features
+cargo nextest run -p termrock-catalog --all-features --locked
 cd docs && bun run check:preview-posters && bun run check:preview-metrics
 ```
 
-## Keeping the reference byte-stable
+Use `termrock-catalog` for all new headless renders and native launch checks;
+the target has one preview/catalog gate.
 
-`ref_capture.sh` exists because the reference's own `tools/capture.sh` cannot be
-driven as-is:
+## Reference capture details
 
-1. `capture.sh` defaults `BIN` to `target/debug/junie-tui`, which does not exist
-   (the crate builds `showcase` and `tablepro`). We always pass the absolute path
-   of `target/release/<bin>`.
-2. `capture.sh`'s PNG step needs `$PY` from `tools/env.sh`, a scratchpad venv path
-   that does not survive. PNGs are advisory and come from `diff_png.py` instead.
-3. `capture.sh` sets `default-terminal` **globally** on whatever tmux server it
-   finds. We put `bin/shim/tmux` first on `PATH` so every tmux call goes to a
-   private `-L jrverify` socket; the user's sessions are untouched.
-4. `capture.sh` overwrites the tracked `shots/stderr.log`; we snapshot and restore
-   it, and delete the scratch `shots/jr_cap.*`, so the reference working tree is
-   byte-clean after a capture. `PYTHONDONTWRITEBYTECODE=1` keeps
-   `tools/__pycache__` out of it too.
+`ref_capture.sh` wraps the source repository's `tools/capture.sh` because the
+source helper defaults to a binary name that is not built by the source crate.
+The wrapper archives the recorded source commit into a temporary isolated copy,
+builds and runs the absolute release binary inside that copy, and removes only
+the temporary copy after capture. It never writes or deletes in the canonical
+source checkout. It uses a private tmux socket, forces `PY=python3` (a PATH
+command, not a machine-specific interpreter path), copies all five artifacts,
+and fails if any requested artifact is absent.
 
-Env is pinned exactly as upstream does (`env -u NO_COLOR TERM=xterm-256color
-COLORTERM=truecolor`), so `ColorLevel::detect()` resolves to `TrueColor` and the
-rendered theme is `Theme::junie()`. Geometry is pinned by tmux pane size
-(`-x/-y`), never by the binary. `reference/manifest.json` records the junie
-commit, tmux version and SHA-256 of every artifact, which is how a stale capture
-is told apart from a nondeterministic one.
+The environment follows the source capture contract:
 
-## How a porting agent uses it
-
-```sh
-cd /Users/donbeave/Projects/tailrocks/termrock/verify/junie
-
-# 1. pick a pending scene (a reference page with no termrock story yet)
-python3 bin/run.py --list-scenes | grep pending
-
-# 2. look at what has to be reproduced
-sed -n '1,40p' reference/scenes/showcase_dialogs_120x40.txt
-
-# 3. implement the termrock side, then declare the scenario active in
-#    scenarios.json5: give termrock.story, and a reference.crop when the story
-#    covers a region of the page rather than the whole page (the story is then
-#    rendered at crop size minus the 1-cell story pad on each side)
-
-# 4. measure
-python3 bin/run.py --only showcase_dialogs_120x40
-$PAGER out/showcase_dialogs_120x40.text.diff     # per-line/per-cell deltas
-
-# 5. iterate on the widget until the delta stops shrinking, then
-python3 bin/run.py --only showcase_dialogs_120x40 --update-baseline
+```text
+TERM=xterm-256color
+COLORTERM=truecolor
+NO_COLOR unset
 ```
 
-Rules of thumb while porting: shrink the delta before beautifying; do not loosen
-a budget to make a scenario pass (tighten it instead, with `tolerance`); and if a
-scene is genuinely a different design decision rather than a port, say so in the
-scenario's `note` instead of leaving it at a large ratchet.
+Pane dimensions come from tmux. The capture manifest records source commit,
+tmux version, dimensions, arguments, input events, and artifact digests.
+
+## Porting a pending source state
+
+```sh
+cd /Users/donbeave/Projects/tailrocks/termrock-presentation/verify/junie
+
+python3 bin/run.py --list-scenes | grep pending
+sed -n '1,40p' reference/scenes/showcase_dialogs_120x40.txt
+
+# Inspect a canonical catalog frame.
+cargo run -q -p termrock-catalog -- frame --scenario <catalog-scenario-id> \
+  --cols 120 --rows 40
+
+# After the reusable catalog page exists, set the scenario's target mapping
+# in scenarios.json5 and compare it.
+python3 bin/run.py --only showcase_dialogs_120x40
+```
+
+Use the actual public TermRock components and the shared catalog state/event
+model. Do not add page-local widgets, palettes, shells, or static screenshot
+renderers. Resolve missing reusable capabilities in the coordination ledger;
+do not mask them in this harness.
+
+## Source-state discipline
+
+The source repository is evidence, not a writable target. Capture the selected
+source ref consistently and record its SHA in the capture manifest. Do not mix
+files from different source refs. Scenario filenames may retain the source
+binary name `showcase`; that name identifies the reference executable, not a
+second TermRock preview application.
+
+When a comparison fails, inspect the source and target independently. Report
+the scenario, source and target revisions, dimensions, ordered input events,
+first differing cell/value, and the generated diff path. Do not loosen a
+tolerance or bless a baseline merely to make the run pass.
 
 ## Known limits
 
-* `tablepro` has no `--page` flag — only `--color` and `--connect` — so its
-  screens are reached with `--connect` and `--key`. Multi-word connection names
-  survive because `ref_capture.sh` re-quotes the arg vector through `shlex`
-  before handing it to `capture.sh`'s unquoted `${ARGS}`.
-* The pixel layer needs Pillow, which is not installed in this environment's
-  `python3`; `run.py` reports `pixel: skipped: pillow-missing`. Install Pillow
-  (or point `$PATH` at an interpreter that has it) to get advisory ΔE numbers.
-* Wide glyphs occupy two cells in `ansi2grid.py` (the trailing cell is emitted as
-  an empty `ch`), so column math stays honest; the reference UI is otherwise
-  narrow-character, and no scene currently triggers a width mismatch.
+* The five TablePro scenes are mapped to the shared application adapter, but
+  remain subject to source-state and layout comparison.
+* `run.py` is intentionally a crop diagnostic. `compare_artifacts.py` is the
+  zero-tolerance HTML/PNG gate for complete source/target capture pairs.
+* The pixel helper requires Pillow and a local monospace font. Without Pillow,
+  it exits with a diagnostic skip; that does not convert a cell mismatch into a
+  pass.
+* Wide glyphs occupy two cells in `ansi2grid.py`; the trailing cell is emitted
+  with an empty glyph so column math remains explicit.

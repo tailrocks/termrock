@@ -6,7 +6,7 @@ Status: implemented architecture; continuing catalog coverage is enforced by CI.
 
 The documentation is an executable catalog, not a screenshot gallery. Every
 component and application-pattern route mounts a stable demo from the same Rust
-catalog used by native Lookbook. Interactive surfaces receive real events and
+catalog used by the native catalog. Interactive surfaces receive real events and
 mutate persistent state; passive surfaces remain honest paint.
 
 The existing Ghostty-styled canvas rendering is accepted. Ghostty VT,
@@ -31,17 +31,17 @@ interaction guidance.
 
 ## Shipped runtime
 
-- `termrock-lookbook` is a library plus a native crossterm host.
-- `termrock-lookbook-web` compiles the same catalog/session runtime to WASM.
+- `termrock-catalog` is the canonical library plus native crossterm host.
+- `termrock-catalog-web` compiles the same catalog/session runtime to WASM.
 - `TerminalPreview` mounts one handle, forwards real browser events, resizes
   the live Ratatui grid, shows current hints/outcomes, supports Reset and Full
   preview, and pauses host time offscreen.
 - One poster per embedded demo is the only static fallback.
 - Multi-frame packs, inferred cursors, tours, and slide navigation are removed.
 
-Current checked inventory: 135 public Ratatui widget implementations, 165
-canonical component routes, 35 pattern source modules/pages, 183 embedded
-primary demos, and 1,065 Lookbook stories. Inventory checks fail on drift.
+Current checked inventory is generated from the Rust authority: 210 public UI
+entries, 35 patterns, and 227 canonical catalog scenarios. Native and browser
+hosts consume those same IDs; inventory checks fail on drift.
 
 ## Experience rules
 
@@ -55,12 +55,12 @@ primary demos, and 1,065 Lookbook stories. Inventory checks fail on drift.
 6. Passive widgets never trap input or show a cursor.
 7. Pattern demos use public `patterns`/`widgets` APIs and deterministic local
    fixtures. They perform no network, process, credential, or file effect.
-8. Website and native Lookbook never own separate demo implementations.
+8. Website and native catalog never own separate demo implementations.
 
 ## Verification
 
 ```sh
-rtk cargo test -p termrock-lookbook --lib --locked
+rtk cargo test -p termrock-catalog --lib --locked
 rtk bun --cwd docs run build:preview-runtime
 rtk bun --cwd docs run check:components
 rtk bun --cwd docs run check:patterns

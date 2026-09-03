@@ -150,6 +150,35 @@ impl Grid {
         None
     }
 
+    /// First differing cell without tmux compatibility relaxations.
+    ///
+    /// This is the parity comparator. [`Self::first_diff`] remains available
+    /// for diagnostics against terminal captures whose encoder can leak SGR
+    /// weight onto spaces and border cells.
+    #[must_use]
+    pub fn first_strict_diff(&self, other: &Self) -> Option<(u16, u16, String)> {
+        if self.cols != other.cols || self.rows != other.rows {
+            return Some((
+                0,
+                0,
+                format!(
+                    "size {}x{} vs {}x{}",
+                    self.cols, self.rows, other.cols, other.rows
+                ),
+            ));
+        }
+        for y in 0..self.rows {
+            for x in 0..self.cols {
+                let a = self.at(x, y).unwrap();
+                let b = other.at(x, y).unwrap();
+                if a != b {
+                    return Some((x, y, format!("expected {a:?} got {b:?}")));
+                }
+            }
+        }
+        None
+    }
+
     /// Drop tmux SGR weight leaks so PNG matches TestBackend (same rules as
     /// [`Self::cell_eq`]).
     #[must_use]
@@ -349,11 +378,13 @@ pub fn parse_ansi(src: &str, cols: u16, rows: u16) -> Grid {
 /// Snapshot cells → grid (for compare vs parsed source ANSI).
 #[must_use]
 pub fn from_snapshot(snap: &crate::snapshot::Snapshot) -> Grid {
-    use termrock::style::color_to_rgb;
     let mut cells = Vec::with_capacity(snap.cells.len());
     for c in &snap.cells {
-        let fg = color_to_rgb(c.fg, true);
-        let bg = color_to_rgb(c.bg, false);
+        let fg = match c.fg {
+            ratatui::style::Color::Reset => DEFAULT_FG,
+            color => termrock::style::color_to_rgb(color, true),
+        };
+        let bg = termrock::style::color_to_rgb(c.bg, false);
         cells.push(GridCell {
             ch: if c.glyph.is_empty() {
                 " ".into()

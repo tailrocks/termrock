@@ -7,6 +7,79 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::Position;
 use ratatui::style::{Color, Modifier};
 
+fn export_rgb(color: Color, is_fg: bool) -> [u8; 3] {
+    match color {
+        // tmux starts a new line with the terminal default text color when no
+        // SGR is present. Keep Reset distinct from explicit White.
+        Color::Reset if is_fg => [0xd0, 0xd0, 0xd0],
+        other => termrock::style::color_to_rgb(other, is_fg),
+    }
+}
+
+fn append_modifiers(
+    out: &mut String,
+    bold: bool,
+    dim: bool,
+    italic: bool,
+    underline: bool,
+    strike: bool,
+    reverse: bool,
+) {
+    if bold {
+        out.push_str("\u{1b}[1m");
+    }
+    if dim {
+        out.push_str("\u{1b}[2m");
+    }
+    if italic {
+        out.push_str("\u{1b}[3m");
+    }
+    if underline {
+        out.push_str("\u{1b}[4m");
+    }
+    if strike {
+        out.push_str("\u{1b}[9m");
+    }
+    if reverse {
+        out.push_str("\u{1b}[7m");
+    }
+}
+
+fn append_new_modifiers(
+    out: &mut String,
+    old_bold: bool,
+    old_dim: bool,
+    old_italic: bool,
+    old_underline: bool,
+    old_strike: bool,
+    old_reverse: bool,
+    bold: bool,
+    dim: bool,
+    italic: bool,
+    underline: bool,
+    strike: bool,
+    reverse: bool,
+) {
+    if bold && !old_bold {
+        out.push_str("\u{1b}[1m");
+    }
+    if dim && !old_dim {
+        out.push_str("\u{1b}[2m");
+    }
+    if italic && !old_italic {
+        out.push_str("\u{1b}[3m");
+    }
+    if underline && !old_underline {
+        out.push_str("\u{1b}[4m");
+    }
+    if strike && !old_strike {
+        out.push_str("\u{1b}[9m");
+    }
+    if reverse && !old_reverse {
+        out.push_str("\u{1b}[7m");
+    }
+}
+
 /// One terminal cell.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Cell {
@@ -52,17 +125,39 @@ impl Snapshot {
         }
     }
 
-    /// Plain-text grid, trailing cells preserved (spaces significant).
+    /// Plain-text capture using tmux `capture-pane -p` line semantics.
+    ///
+    /// The source capture strips cells after the last painted cell on each
+    /// line. Internal spaces remain significant; only the unpainted suffix is
+    /// removed.
     #[must_use]
     pub fn to_txt(&self) -> String {
+        self.to_txt_with_padding(false)
+    }
+
+    /// Full cell-grid text, including trailing cells preserved by a
+    /// `TestBackend` frame. This is used for fixed-size headless fixtures;
+    /// terminal `capture-pane -p` output uses [`Self::to_txt`] instead.
+    #[must_use]
+    pub fn to_txt_padded(&self) -> String {
+        self.to_txt_with_padding(true)
+    }
+
+    fn to_txt_with_padding(&self, preserve_trailing: bool) -> String {
         let mut out = String::new();
         for y in 0..self.rows {
+            let mut line = String::new();
             for x in 0..self.cols {
                 let i = usize::from(y) * usize::from(self.cols) + usize::from(x);
                 match self.cells.get(i) {
-                    Some(c) if !c.glyph.is_empty() => out.push_str(&c.glyph),
-                    _ => out.push(' '),
+                    Some(c) if !c.glyph.is_empty() => line.push_str(&c.glyph),
+                    _ => line.push(' '),
                 }
+            }
+            if preserve_trailing {
+                out.push_str(&line);
+            } else {
+                out.push_str(line.trim_end());
             }
             out.push('\n');
         }
@@ -80,7 +175,6 @@ impl Snapshot {
     /// Truecolor SGR grid (tmux `capture-pane -e` shape).
     #[must_use]
     pub fn to_ansi(&self) -> String {
-        use termrock::style::color_to_rgb;
         let mut out = String::new();
         let mut prev: Option<([u8; 3], [u8; 3], bool, bool, bool, bool, bool, bool)> = None;
         for y in 0..self.rows {
@@ -90,8 +184,8 @@ impl Snapshot {
                     out.push(' ');
                     continue;
                 };
-                let fg = color_to_rgb(c.fg, true);
-                let bg = color_to_rgb(c.bg, false);
+                let fg = export_rgb(c.fg, true);
+                let bg = export_rgb(c.bg, false);
                 let bold = c.modifier.contains(Modifier::BOLD);
                 let dim = c.modifier.contains(Modifier::DIM);
                 let ul = c.modifier.contains(Modifier::UNDERLINED);
@@ -99,38 +193,46 @@ impl Snapshot {
                 let strike = c.modifier.contains(Modifier::CROSSED_OUT);
                 let reverse = c.modifier.contains(Modifier::REVERSED);
                 let style = (fg, bg, bold, dim, ul, italic, strike, reverse);
-                if prev != Some(style) {
+                let modifiers_disabled = prev.is_some_and(|old| {
+                    (old.2 && !bold)
+                        || (old.3 && !dim)
+                        || (old.4 && !ul)
+                        || (old.5 && !italic)
+                        || (old.6 && !strike)
+                        || (old.7 && !reverse)
+                });
+                if modifiers_disabled {
+                    // tmux resets the complete SGR state before reapplying
+                    // colors when a decoration changes. Color-only changes
+                    // below remain deltas, including across newlines.
                     out.push_str("\u{1b}[0m");
                     out.push_str(&format!("\u{1b}[38;2;{};{};{}m", fg[0], fg[1], fg[2]));
                     out.push_str(&format!("\u{1b}[48;2;{};{};{}m", bg[0], bg[1], bg[2]));
-                    if bold {
-                        out.push_str("\u{1b}[1m");
+                    append_modifiers(&mut out, bold, dim, italic, ul, strike, reverse);
+                } else if let Some(old) = prev {
+                    append_new_modifiers(
+                        &mut out, old.2, old.3, old.5, old.4, old.6, old.7, bold, dim, italic, ul,
+                        strike, reverse,
+                    );
+                    if old.0 != fg {
+                        out.push_str(&format!("\u{1b}[38;2;{};{};{}m", fg[0], fg[1], fg[2]));
                     }
-                    if dim {
-                        out.push_str("\u{1b}[2m");
+                    if old.1 != bg {
+                        out.push_str(&format!("\u{1b}[48;2;{};{};{}m", bg[0], bg[1], bg[2]));
                     }
-                    if italic {
-                        out.push_str("\u{1b}[3m");
-                    }
-                    if ul {
-                        out.push_str("\u{1b}[4m");
-                    }
-                    if strike {
-                        out.push_str("\u{1b}[9m");
-                    }
-                    if reverse {
-                        out.push_str("\u{1b}[7m");
-                    }
-                    prev = Some(style);
+                } else {
+                    out.push_str(&format!("\u{1b}[38;2;{};{};{}m", fg[0], fg[1], fg[2]));
+                    out.push_str(&format!("\u{1b}[48;2;{};{};{}m", bg[0], bg[1], bg[2]));
+                    append_modifiers(&mut out, bold, dim, italic, ul, strike, reverse);
                 }
+                prev = Some(style);
                 if c.glyph.is_empty() {
                     out.push(' ');
                 } else {
                     out.push_str(&c.glyph);
                 }
             }
-            out.push_str("\u{1b}[0m\n");
-            prev = None;
+            out.push('\n');
         }
         out
     }
@@ -138,58 +240,40 @@ impl Snapshot {
     /// Standalone HTML preview of the same grid.
     #[must_use]
     pub fn to_html(&self) -> String {
-        use termrock::style::color_to_rgb;
-        let mut body = String::new();
+        let mut lines = Vec::with_capacity(usize::from(self.rows));
         for y in 0..self.rows {
+            let mut line = String::new();
+            let mut run_style: Option<String> = None;
+            let mut run_text = String::new();
             for x in 0..self.cols {
                 let i = usize::from(y) * usize::from(self.cols) + usize::from(x);
                 let Some(c) = self.cells.get(i) else {
-                    body.push(' ');
                     continue;
                 };
-                let fg = color_to_rgb(c.fg, true);
-                let bg = color_to_rgb(c.bg, false);
-                let reverse = c.modifier.contains(Modifier::REVERSED);
-                let (fg, bg) = if reverse { (bg, fg) } else { (fg, bg) };
-                let glyph = if c.glyph.is_empty() {
-                    " "
-                } else {
-                    c.glyph.as_str()
-                };
-                let escaped = glyph
-                    .replace('&', "&amp;")
-                    .replace('<', "&lt;")
-                    .replace('>', "&gt;");
-                let mut css = format!(
-                    "color:#{:02x}{:02x}{:02x};background:#{:02x}{:02x}{:02x}",
-                    fg[0], fg[1], fg[2], bg[0], bg[1], bg[2]
-                );
-                if c.modifier.contains(Modifier::BOLD) {
-                    css.push_str(";font-weight:700");
+                let style = html_style(c);
+                let glyph = html_escape(if c.glyph.is_empty() { " " } else { &c.glyph });
+                if run_style.as_deref() != Some(style.as_str()) {
+                    if let Some(old_style) = run_style.take() {
+                        line.push_str(&format!("<span style=\"{old_style}\">{run_text}</span>"));
+                        run_text.clear();
+                    }
+                    run_style = Some(style);
                 }
-                if c.modifier.contains(Modifier::ITALIC) {
-                    css.push_str(";font-style:italic");
-                }
-                if c.modifier.contains(Modifier::DIM) {
-                    css.push_str(";opacity:0.6");
-                }
-                match (
-                    c.modifier.contains(Modifier::UNDERLINED),
-                    c.modifier.contains(Modifier::CROSSED_OUT),
-                ) {
-                    (true, true) => css.push_str(";text-decoration:underline line-through"),
-                    (true, false) => css.push_str(";text-decoration:underline"),
-                    (false, true) => css.push_str(";text-decoration:line-through"),
-                    (false, false) => {}
-                }
-                body.push_str(&format!("<span style=\"{css}\">{escaped}</span>"));
+                run_text.push_str(&glyph);
             }
-            body.push('\n');
+            if let Some(style) = run_style {
+                line.push_str(&format!("<span style=\"{style}\">{run_text}</span>"));
+            }
+            lines.push(line);
         }
         format!(
-            "<!doctype html><meta charset=utf-8><title>termrock-catalog</title>\
-             <body style=\"background:#000;color:#fff;font:14px/18px ui-monospace,monospace\">\
-             <pre style=\"margin:0\">{body}</pre></body>\n"
+            "<!doctype html><html><head><meta charset=\"utf-8\"><title>capture</title>\n\
+<style>\n\
+html,body{{margin:0;background:#1a1a1a}}\n\
+pre{{margin:16px;display:inline-block;font-family:\"JetBrainsMono Nerd Font Mono\",\"JetBrains Mono\",Menlo,monospace;font-size:14px;line-height:18px;white-space:pre;background:#000000}}\n\
+span{{display:inline-block;height:18px;vertical-align:top}}\n\
+</style></head><body><pre>{}</pre></body></html>",
+            lines.join("\n")
         )
     }
 
@@ -197,12 +281,46 @@ impl Snapshot {
     #[must_use]
     pub fn to_txt_trimmed(&self) -> String {
         self.to_txt()
-            .lines()
-            .map(str::trim_end)
-            .collect::<Vec<_>>()
-            .join("\n")
-            + "\n"
     }
+}
+
+fn html_escape(text: &str) -> String {
+    text.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+}
+
+fn html_style(cell: &Cell) -> String {
+    let mut fg = export_rgb(cell.fg, true);
+    let mut bg = export_rgb(cell.bg, false);
+    if cell.modifier.contains(Modifier::REVERSED) {
+        std::mem::swap(&mut fg, &mut bg);
+    }
+    let mut css = format!(
+        "color:#{:02x}{:02x}{:02x};background:#{:02x}{:02x}{:02x}",
+        fg[0], fg[1], fg[2], bg[0], bg[1], bg[2]
+    );
+    if cell.modifier.contains(Modifier::BOLD) {
+        css.push_str(";font-weight:700");
+    }
+    if cell.modifier.contains(Modifier::DIM) {
+        css.push_str(";opacity:.6");
+    }
+    if cell.modifier.contains(Modifier::ITALIC) {
+        css.push_str(";font-style:italic");
+    }
+    let mut decoration = Vec::new();
+    if cell.modifier.contains(Modifier::UNDERLINED) {
+        decoration.push("underline");
+    }
+    if cell.modifier.contains(Modifier::CROSSED_OUT) {
+        decoration.push("line-through");
+    }
+    if !decoration.is_empty() {
+        css.push_str(";text-decoration:");
+        css.push_str(&decoration.join(" "));
+    }
+    css
 }
 
 #[cfg(test)]
@@ -241,7 +359,7 @@ mod tests {
         for sgr in ["[1m", "[2m", "[3m", "[4m", "[9m", "[7m"] {
             assert!(ansi.contains(&format!("\u{1b}{sgr}")), "missing SGR {sgr}");
         }
-        assert!(ansi.ends_with("A\u{1b}[0m\n"));
+        assert!(ansi.ends_with("A\n"));
     }
 
     #[test]
@@ -257,7 +375,7 @@ mod tests {
         assert!(html.contains("color:#a1b2c3;background:#123456"));
         assert!(html.contains("font-weight:700"));
         assert!(html.contains("font-style:italic"));
-        assert!(html.contains("opacity:0.6"));
+        assert!(html.contains("opacity:.6"));
         assert!(html.contains("text-decoration:underline line-through"));
     }
 
@@ -276,7 +394,7 @@ mod tests {
 
         assert_eq!(
             snapshot.to_ansi(),
-            "\u{1b}[0m\u{1b}[38;2;18;52;86m\u{1b}[48;2;161;178;195m\u{1b}[1mA\u{1b}[0m\n"
+            "\u{1b}[38;2;18;52;86m\u{1b}[48;2;161;178;195m\u{1b}[1mA\n"
         );
     }
 }

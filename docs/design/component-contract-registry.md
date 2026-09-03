@@ -4,7 +4,7 @@
 |---|---|
 | Status | Binding |
 | Public UI authority | `termrock::registry::{public_ui_inventory, pattern_inventory}` |
-| Docs projection | `termrock-lookbook inventory --format json` |
+| Docs projection | `termrock-catalog scenarios --format json` |
 | Quality ledger | `docs/api/component-contracts.v2.json` |
 | Schema | `docs/api/component-contract.schema.json` |
 | Generated render evidence | `docs/api/component-render-evidence.json` |

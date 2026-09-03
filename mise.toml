@@ -53,7 +53,7 @@ mise run png-baselines
 cargo check -p termrock --no-default-features --locked
 cargo check --workspace --examples --locked
 cargo check --workspace --examples --features crossterm --locked
-cargo check -p termrock-lookbook-web --target wasm32-unknown-unknown --locked
+cargo check -p termrock-catalog-web --target wasm32-unknown-unknown --locked
 RUSTDOCFLAGS='-D warnings' cargo doc --workspace --all-features --no-deps --locked
 mkdir -p target
 rustup toolchain install nightly-2026-09-01 --profile minimal
@@ -68,19 +68,19 @@ cargo package -p termrock --locked --allow-dirty
 """
 
 [tasks.bless-previews]
-description = "Canonical catalog cell parity (replaces lookbook story goldens)"
+description = "Canonical catalog cell parity against source reference frames"
 run = "cargo test -p termrock-catalog --offline --test parity --locked"
 
 [tasks.preview-goldens]
-description = "Canonical catalog cell parity (replaces lookbook story goldens)"
+description = "Canonical catalog cell parity against source reference frames"
 run = "cargo test -p termrock-catalog --offline --test parity --locked"
 
 [tasks.bless-pngs]
-description = "Canonical catalog coverage (replaces lookbook PNG story baselines)"
+description = "Canonical catalog coverage and deterministic raster baselines"
 run = "cargo test -p termrock-catalog --offline --test coverage --locked"
 
 [tasks.png-baselines]
-description = "Canonical catalog coverage (replaces lookbook PNG story baselines)"
+description = "Canonical catalog coverage and deterministic raster baselines"
 run = "cargo test -p termrock-catalog --offline --test coverage --locked"
 
 [tasks.docs-quality]
@@ -107,4 +107,16 @@ bun run docs/scripts/check-contracts.ts
 description = "Export one static fallback poster for each live docs demo"
 run = """
 (cd docs && bun run build:preview-posters)
+"""
+
+[tasks.junie-capture]
+description = "Capture all five artifacts from the canonical junie-reference catalog"
+run = """
+TERMROCK_CATALOG_PROFILE=junie-reference cargo run -q -p termrock-catalog -- capture --out verify/junie/out/target-capture --all
+"""
+
+[tasks.junie-compare]
+description = "Strictly compare every target artifact with the pinned Junie evidence"
+run = """
+python3 verify/junie/bin/compare_artifacts.py --manifest verify/junie/reference/manifest.json --source-dir verify/junie/reference/scenes --target-dir verify/junie/out/target-capture --diff-dir verify/junie/out/diffs
 """

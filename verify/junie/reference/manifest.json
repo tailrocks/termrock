@@ -1,833 +1,911 @@
 {
+  "source_repo": "https://github.com/donbeave/terminal-components-claude",
+  "source_ref": "main",
+  "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+  "jackin_sha": "f0c262173c74459e21774783c7f4b0ff7e4fe8de",
+  "jackin_vs_main": "docs-only; Cargo.toml/src/tests/tools/shots identical",
+  "artifact_set": [
+    "ansi",
+    "cursor",
+    "txt",
+    "html",
+    "png"
+  ],
   "scenes": {
-    "showcase_overview_120x40": {
+    "f_80x24_taskrunner": {
       "bin": "showcase",
-      "args": [
-        "--page",
-        "Overview"
-      ],
-      "keys": [],
-      "mouse": [],
-      "cols": 120,
-      "rows": 40,
-      "junie_commit": "e43cf67",
-      "junie_dirty": false,
-      "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T04:11:54Z",
-      "sha256": {
-        "txt": "41e6d45a52ce6e562b5c18657d5b7a17b2e1346c69a2b5d05e208bbbcdb1986d",
-        "ansi": "6d5ed2aa3f5cf68a9d26cd722759de67ab3d0449be61c61ab92eda4a410c3a11"
-      }
-    },
-    "showcase_buttons_120x40": {
-      "bin": "showcase",
-      "args": [
-        "--page",
-        "Buttons"
-      ],
-      "keys": [],
-      "mouse": [],
-      "cols": 120,
-      "rows": 40,
-      "junie_commit": "e43cf67",
-      "junie_dirty": false,
-      "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T04:11:55Z",
-      "sha256": {
-        "txt": "e7fe30e04ea023a5ca35d104a53585122e24c02c03f0bb4622cf28328dac13de",
-        "ansi": "43be97ef5e5b89220bf4b438a1790c84012dbc9ea82e9d6eb7de780cc9002c49"
-      }
-    },
-    "showcase_inputs_120x40": {
-      "bin": "showcase",
-      "args": [
-        "--page",
-        "Inputs"
-      ],
-      "keys": [],
-      "mouse": [],
-      "cols": 120,
-      "rows": 40,
-      "junie_commit": "e43cf67",
-      "junie_dirty": false,
-      "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T04:11:56Z",
-      "sha256": {
-        "txt": "0c91b3ad6318ed33c1bd3bfdeb393137b284969e54993143af2b35dfd5f3dcd4",
-        "ansi": "5d143704f150fea37151d72e4e5e2fa4d613b8fcc5ec3421107b7b23890b81ed"
-      }
-    },
-    "showcase_textareas_120x40": {
-      "bin": "showcase",
-      "args": [
-        "--page",
-        "TextAreas"
-      ],
-      "keys": [],
-      "mouse": [],
-      "cols": 120,
-      "rows": 40,
-      "junie_commit": "e43cf67",
-      "junie_dirty": false,
-      "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T04:11:57Z",
-      "sha256": {
-        "txt": "d6dd12d8d5bc19298fef87b51b4297936888ae6127959ea435f2d9287617943e",
-        "ansi": "fd4ed2a19639188bf01a8438675b83a972540625d71f9bff5e8455e0b8f7b0b4"
-      }
-    },
-    "showcase_forms_120x40": {
-      "bin": "showcase",
-      "args": [
-        "--page",
-        "Forms"
-      ],
-      "keys": [],
-      "mouse": [],
-      "cols": 120,
-      "rows": 40,
-      "junie_commit": "e43cf67",
-      "junie_dirty": false,
-      "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T04:11:58Z",
-      "sha256": {
-        "txt": "b6f6600fadf4a6c56f6971b5f376a906e00347cae24acf63eac41c24bcde491b",
-        "ansi": "2e8628949f35bd33a2ae2ce9f9c069a131dbff7cc9f4d0ffcfd683c86d8a1684"
-      }
-    },
-    "showcase_lists_120x40": {
-      "bin": "showcase",
-      "args": [
-        "--page",
-        "Lists"
-      ],
-      "keys": [],
-      "mouse": [],
-      "cols": 120,
-      "rows": 40,
-      "junie_commit": "e43cf67",
-      "junie_dirty": false,
-      "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T04:11:59Z",
-      "sha256": {
-        "txt": "b84e557a1e9c7e8fd1764a79abcaf4b631a4100d67b287cf3d6381cd95580931",
-        "ansi": "1b9a891785d56d27f3a93d35932339c2721cb7f7ede81177572c4166cb3e7d97"
-      }
-    },
-    "showcase_trees_120x40": {
-      "bin": "showcase",
-      "args": [
-        "--page",
-        "Trees"
-      ],
-      "keys": [],
-      "mouse": [],
-      "cols": 120,
-      "rows": 40,
-      "junie_commit": "e43cf67",
-      "junie_dirty": false,
-      "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T04:11:59Z",
-      "sha256": {
-        "txt": "6211ce208abd7656cf32f37206707e6688b4a5b91d7d34ff10f9c9328eb51f68",
-        "ansi": "1fceefed332a89de9cdec540ce809132a47919964ed1be5f58d21284756403c2"
-      }
-    },
-    "showcase_tables_120x40": {
-      "bin": "showcase",
-      "args": [
-        "--page",
-        "Tables"
-      ],
-      "keys": [],
-      "mouse": [],
-      "cols": 120,
-      "rows": 40,
-      "junie_commit": "e43cf67",
-      "junie_dirty": false,
-      "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T04:12:00Z",
-      "sha256": {
-        "txt": "ea8856c983e998fb0f2ee95161cd529e7ce2738f9913c07d24bf1c74c195d3a5",
-        "ansi": "e4dbbae1f60448ab414082687b33152bb59ce246916dc5b580bad0aed01dde6f"
-      }
-    },
-    "showcase_editable_120x40": {
-      "bin": "showcase",
-      "args": [
-        "--page",
-        "Editable tables"
-      ],
-      "keys": [
-        "Tab"
-      ],
-      "mouse": [],
-      "cols": 120,
-      "rows": 40,
-      "junie_commit": "e43cf67",
-      "junie_dirty": false,
-      "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T15:50:38Z",
-      "sha256": {
-        "txt": "8793bec80eaf3855487942dac1f52d61eee9a41b22846805c7aa98141ed3f501",
-        "ansi": "5387511bd57e22e0c04e70c06874161ab9dc52ee653929d1028335e5333b03d8"
-      }
-    },
-    "showcase_panels_120x40": {
-      "bin": "showcase",
-      "args": [
-        "--page",
-        "Panels"
-      ],
-      "keys": [],
-      "mouse": [],
-      "cols": 120,
-      "rows": 40,
-      "junie_commit": "e43cf67",
-      "junie_dirty": false,
-      "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T04:12:02Z",
-      "sha256": {
-        "txt": "78adac7c9f96fa3c1c83b78d4f10c5ae338e0fb9b8fc710970ba09373f3c64ed",
-        "ansi": "0b88c5fb296bad636d0780212882e4acc98be54a5376793142920532a4650e50"
-      }
-    },
-    "showcase_sidebars_120x40": {
-      "bin": "showcase",
-      "args": [
-        "--page",
-        "Sidebars"
-      ],
-      "keys": [],
-      "mouse": [],
-      "cols": 120,
-      "rows": 40,
-      "junie_commit": "e43cf67",
-      "junie_dirty": false,
-      "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T04:12:03Z",
-      "sha256": {
-        "txt": "a604a24b2a4e288f592ff2410f02fd1d910f8360c3cf388f4f15f8857366c962",
-        "ansi": "e084ac02a7631df4becfd8e0dabb640a6f1667f6e2ada52b38ad34f9d4435328"
-      }
-    },
-    "showcase_dialogs_120x40": {
-      "bin": "showcase",
-      "args": [
-        "--page",
-        "Dialogs"
-      ],
-      "keys": [
-        "Tab",
-        "Enter"
-      ],
-      "mouse": [],
-      "cols": 120,
-      "rows": 40,
-      "junie_commit": "e43cf67",
-      "junie_dirty": false,
-      "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T15:04:56Z",
-      "sha256": {
-        "txt": "8d3a2a0fc5156c27381dfedfe8e676233bb5e6e85ea6f3c2dcb08b0f0a590b9e",
-        "ansi": "1c089ac98b0f1551f5cbfb5310a95e3108cdcfdc654b100c37c5aa865702b5d7"
-      }
-    },
-    "showcase_progress_120x40": {
-      "bin": "showcase",
-      "args": [
-        "--page",
-        "Progress"
-      ],
-      "keys": [],
-      "mouse": [],
-      "cols": 120,
-      "rows": 40,
-      "junie_commit": "e43cf67",
-      "junie_dirty": false,
-      "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T04:12:05Z",
-      "sha256": {
-        "txt": "4aa49881e2c840431352b123ed6a4ab0d08718c99dcac8c5994eca5f84d577d2",
-        "ansi": "25e014dd85d0c02ab6e7e2a43b342bbff5701e245db14f4fe16788c191b84af2"
-      }
-    },
-    "showcase_scrolling_120x40": {
-      "bin": "showcase",
-      "args": [
-        "--page",
-        "Scrolling"
-      ],
-      "keys": [],
-      "mouse": [],
-      "cols": 120,
-      "rows": 40,
-      "junie_commit": "e43cf67",
-      "junie_dirty": false,
-      "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T04:12:06Z",
-      "sha256": {
-        "txt": "e662d8a2466759826cd5f9a1298914db3e0d72169b7d0dfda9729b674003a40d",
-        "ansi": "3da04170fc48336e9f585f674f98b70038ac7ccf4cca7d4a1678d4be1a13f1e4"
-      }
-    },
-    "showcase_editor_120x40": {
-      "bin": "showcase",
-      "args": [
-        "--page",
-        "Code editor"
-      ],
-      "keys": [],
-      "mouse": [],
-      "cols": 120,
-      "rows": 40,
-      "junie_commit": "e43cf67",
-      "junie_dirty": false,
-      "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T13:23:22Z",
-      "sha256": {
-        "txt": "8bd89b90317a79a12000a6e00e8ae5b2da94c90bf8591df84dea6ada39ae1468",
-        "ansi": "59936a7e6f5faa5c4a4b2428a7d78bf3fba416ebbc8813ca1e75ef78d05b24fd"
-      }
-    },
-    "showcase_grid_120x40": {
-      "bin": "showcase",
-      "args": [
-        "--page",
-        "Data grid"
-      ],
-      "keys": [],
-      "mouse": [],
-      "cols": 120,
-      "rows": 40,
-      "junie_commit": "e43cf67",
-      "junie_dirty": false,
-      "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T13:23:22Z",
-      "sha256": {
-        "txt": "44658ef6a599211f09b76b6f83c98a0157c65a34aa1122b478be19c67b5e6884",
-        "ansi": "1c1ffc92ee7ed3289e339674de6141e1a6e1cc1d762537a1cfa3f68ee5b03682"
-      }
-    },
-    "showcase_chips_120x40": {
-      "bin": "showcase",
-      "args": [
-        "--page",
-        "Chips & selects"
-      ],
-      "keys": [],
-      "mouse": [],
-      "cols": 120,
-      "rows": 40,
-      "junie_commit": "e43cf67",
-      "junie_dirty": false,
-      "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T13:23:22Z",
-      "sha256": {
-        "txt": "c460394add91b648737aa6f173a86664f20b8352a46712aefa5e36ca17143e2b",
-        "ansi": "a8f1f21e68744a113c9c9dfed5b0e9844782fcf828082d74a3a30a67b316d4c0"
-      }
-    },
-    "showcase_pickers_120x40": {
-      "bin": "showcase",
-      "args": [
-        "--page",
-        "Pickers"
-      ],
-      "keys": [
-        "Tab",
-        "Enter"
-      ],
-      "mouse": [],
-      "cols": 120,
-      "rows": 40,
-      "junie_commit": "e43cf67",
-      "junie_dirty": false,
-      "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T15:04:59Z",
-      "sha256": {
-        "txt": "1aa13ec02d8e6189d590e3c24dc1cbe8a25818a9b2abc159ed370ab20185b3a9",
-        "ansi": "2331d6c0fdbc08e3b5e7702cdfbdc77bdb80905f6c29ef4d0c04d70f4e8c7bf3"
-      }
-    },
-    "showcase_settings_120x40": {
-      "bin": "showcase",
-      "args": [
-        "--page",
-        "Settings"
-      ],
-      "keys": [],
-      "mouse": [],
-      "cols": 120,
-      "rows": 40,
-      "junie_commit": "e43cf67",
-      "junie_dirty": false,
-      "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T04:12:10Z",
-      "sha256": {
-        "txt": "0263f2b5344a32ce781a9b9870ca2d2b501bac8e5eb9bce30da31328163f58c2",
-        "ansi": "118bdc926a9f55bc52ee1d0c7203246a38b47c561e7fceafbddce76cf5c240bb"
-      }
-    },
-    "showcase_taskrunner_120x40": {
-      "bin": "showcase",
-      "args": [
-        "--page",
-        "TaskRunner"
-      ],
-      "keys": [],
-      "mouse": [],
-      "cols": 120,
-      "rows": 40,
-      "junie_commit": "e43cf67",
-      "junie_dirty": false,
-      "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T04:12:11Z",
-      "sha256": {
-        "txt": "cef23423d3abc84a8c9855ba80b366c6ba668dc7d01d1c055800ba31c988debd",
-        "ansi": "53793ca0b3e0308e24a5bb1dfc73a84865618a355c9ee46188c22dcfdafe40b3"
-      }
-    },
-    "showcase_overview_80x24": {
-      "bin": "showcase",
-      "args": [
-        "--page",
-        "Overview"
-      ],
-      "keys": [],
-      "mouse": [],
-      "cols": 80,
-      "rows": 24,
-      "junie_commit": "e43cf67",
-      "junie_dirty": false,
-      "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T04:12:12Z",
-      "sha256": {
-        "txt": "0d297ed4c91dd91a918a52d3481e010076b24ff71321a09c26380a1a70fcd6a7",
-        "ansi": "31508f456871b6e468ef87af6b532a19d4ce1b3d73184fa67ca39b0d6611d6be"
-      }
-    },
-    "showcase_buttons_80x24": {
-      "bin": "showcase",
-      "args": [
-        "--page",
-        "Buttons"
-      ],
-      "keys": [],
-      "mouse": [],
-      "cols": 80,
-      "rows": 24,
-      "junie_commit": "e43cf67",
-      "junie_dirty": false,
-      "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T04:12:13Z",
-      "sha256": {
-        "txt": "51ed06a93e5f35c176131976837975f6fbe97d02dc4d9e86a32086f5fa5d1322",
-        "ansi": "94eebd2d4659e57d66593f7951f9495fc7c2ab6ba411d27e5accb4eede5e0bb3"
-      }
-    },
-    "showcase_inputs_80x24": {
-      "bin": "showcase",
-      "args": [
-        "--page",
-        "Inputs"
-      ],
-      "keys": [],
-      "mouse": [],
-      "cols": 80,
-      "rows": 24,
-      "junie_commit": "e43cf67",
-      "junie_dirty": false,
-      "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T04:12:14Z",
-      "sha256": {
-        "txt": "a08797e7321395fa1e9bfb6dbcc5a13be1b18d0f854f0682bbb4f6953367c851",
-        "ansi": "0a4f6c9b47ede3dad5f771398e7ce6315448c049dc48c8bb502bb527e85fabb5"
-      }
-    },
-    "showcase_textareas_80x24": {
-      "bin": "showcase",
-      "args": [
-        "--page",
-        "TextAreas"
-      ],
-      "keys": [],
-      "mouse": [],
-      "cols": 80,
-      "rows": 24,
-      "junie_commit": "e43cf67",
-      "junie_dirty": false,
-      "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T04:12:15Z",
-      "sha256": {
-        "txt": "13450b5d07151a742c7f94e862e42cd3a3fbbf99e93fe8bbc0545888a8a434fc",
-        "ansi": "79fd6ad5c2f665b98be3a70e430e2362c1b2639a8223afb9e22a6217a2a77e2a"
-      }
-    },
-    "showcase_forms_80x24": {
-      "bin": "showcase",
-      "args": [
-        "--page",
-        "Forms"
-      ],
-      "keys": [],
-      "mouse": [],
-      "cols": 80,
-      "rows": 24,
-      "junie_commit": "e43cf67",
-      "junie_dirty": false,
-      "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T04:12:16Z",
-      "sha256": {
-        "txt": "425e7295c524c6488dccb2b118b96d292de1e22af1d28f39801f1ea7b30df9b6",
-        "ansi": "d6335bc5a7aed38de0e0fa006f4d6a84cb4913c222968d389347abf56382482d"
-      }
-    },
-    "showcase_lists_80x24": {
-      "bin": "showcase",
-      "args": [
-        "--page",
-        "Lists"
-      ],
-      "keys": [],
-      "mouse": [],
-      "cols": 80,
-      "rows": 24,
-      "junie_commit": "e43cf67",
-      "junie_dirty": false,
-      "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T04:12:17Z",
-      "sha256": {
-        "txt": "ab264a3068ff273f24c24934c8d1b20c3e80a17740aeca3448f09bdff6e5d610",
-        "ansi": "39052300b9831bb2b06fcfa89ff2e498b517712ea12c0d0018432afe8f834998"
-      }
-    },
-    "showcase_trees_80x24": {
-      "bin": "showcase",
-      "args": [
-        "--page",
-        "Trees"
-      ],
-      "keys": [],
-      "mouse": [],
-      "cols": 80,
-      "rows": 24,
-      "junie_commit": "e43cf67",
-      "junie_dirty": false,
-      "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T04:12:17Z",
-      "sha256": {
-        "txt": "189aeddbc3328382cf322c922a5d7f8af5456ea92cef5deec1a50b4716d1cf72",
-        "ansi": "f7b3b0afede8f96c015703b47dda6af8155430042b11ea4344839f9101742694"
-      }
-    },
-    "showcase_tables_80x24": {
-      "bin": "showcase",
-      "args": [
-        "--page",
-        "Tables"
-      ],
-      "keys": [],
-      "mouse": [],
-      "cols": 80,
-      "rows": 24,
-      "junie_commit": "e43cf67",
-      "junie_dirty": false,
-      "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T04:12:18Z",
-      "sha256": {
-        "txt": "5c34b7989ee0a114e66d3ba4c185bf577824f8b91298f9983898668a8b56ed0a",
-        "ansi": "123f50e0c46401e2c4e974a9267a2ebef55f55fcc987affc89bfabedf81ea81f"
-      }
-    },
-    "showcase_editable_80x24": {
-      "bin": "showcase",
-      "args": [
-        "--page",
-        "Editable tables"
-      ],
-      "keys": [
-        "Tab"
-      ],
-      "mouse": [],
-      "cols": 80,
-      "rows": 24,
-      "junie_commit": "e43cf67",
-      "junie_dirty": false,
-      "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T15:50:39Z",
-      "sha256": {
-        "txt": "169a306d100959867cd3854e296836aff913ec2bc65056079a5604f0e03cc116",
-        "ansi": "4f27869f14e4d7354eec7c2ead539cbb06647ebf5f40fa731e67199c1b3c2f99"
-      }
-    },
-    "showcase_panels_80x24": {
-      "bin": "showcase",
-      "args": [
-        "--page",
-        "Panels"
-      ],
-      "keys": [],
-      "mouse": [],
-      "cols": 80,
-      "rows": 24,
-      "junie_commit": "e43cf67",
-      "junie_dirty": false,
-      "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T04:12:20Z",
-      "sha256": {
-        "txt": "0eec0336554b1865b3dfe606c6bef6a84bb75b03056094cc2a6d6322f8220e31",
-        "ansi": "66f030d4e07bebea3723ee7e3a6f6c64da858ed7871be311303d7047a246851b"
-      }
-    },
-    "showcase_sidebars_80x24": {
-      "bin": "showcase",
-      "args": [
-        "--page",
-        "Sidebars"
-      ],
-      "keys": [],
-      "mouse": [],
-      "cols": 80,
-      "rows": 24,
-      "junie_commit": "e43cf67",
-      "junie_dirty": false,
-      "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T04:12:21Z",
-      "sha256": {
-        "txt": "f356f543b8a25ee6234848064be5ac3857a8b61253bd04c180483a357324ceef",
-        "ansi": "001a224da8409fc48ea8bc2a87ae3f210cb64e77f50cc8182d0d6565ba8a1b00"
-      }
-    },
-    "showcase_dialogs_80x24": {
-      "bin": "showcase",
-      "args": [
-        "--page",
-        "Dialogs"
-      ],
-      "keys": [
-        "Tab",
-        "Enter"
-      ],
-      "mouse": [],
-      "cols": 80,
-      "rows": 24,
-      "junie_commit": "e43cf67",
-      "junie_dirty": false,
-      "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T15:04:57Z",
-      "sha256": {
-        "txt": "f551f2b12626d6571860fe88b90391e42ce852c9b42bc41ac22011a22e070b5b",
-        "ansi": "33275504d2135325fa4af8268a8cdc0ff0d31d7c369fc6bf662f604fcff86590"
-      }
-    },
-    "showcase_progress_80x24": {
-      "bin": "showcase",
-      "args": [
-        "--page",
-        "Progress"
-      ],
-      "keys": [],
-      "mouse": [],
-      "cols": 80,
-      "rows": 24,
-      "junie_commit": "e43cf67",
-      "junie_dirty": false,
-      "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T04:12:23Z",
-      "sha256": {
-        "txt": "c57cc47de0751151e19820ee4c57fca842763a6274af34f6dac85fafb43b2cf0",
-        "ansi": "66201c011afd32fae074dda06190ab6dd793e476d13bc4d4fe2f3bd437f158bc"
-      }
-    },
-    "showcase_scrolling_80x24": {
-      "bin": "showcase",
-      "args": [
-        "--page",
-        "Scrolling"
-      ],
-      "keys": [],
-      "mouse": [],
-      "cols": 80,
-      "rows": 24,
-      "junie_commit": "e43cf67",
-      "junie_dirty": false,
-      "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T04:12:24Z",
-      "sha256": {
-        "txt": "77ac00de061bb041b4dadd5f33b70acc1d858e7c4e31195ccbd020cf83fa2209",
-        "ansi": "a63906dbe7db114006c9020aec54950ec9905b9e4fe0db96cce828fb00bf5475"
-      }
-    },
-    "showcase_editor_80x24": {
-      "bin": "showcase",
-      "args": [
-        "--page",
-        "Code editor"
-      ],
-      "keys": [],
-      "mouse": [],
-      "cols": 80,
-      "rows": 24,
-      "junie_commit": "e43cf67",
-      "junie_dirty": false,
-      "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T13:23:22Z",
-      "sha256": {
-        "txt": "b723d7e82c8ca85e7ad61eeee55c3edc0e5cb6cbb7e4404ca3f8cc06db402bc9",
-        "ansi": "bcbb5df61756e95a2464efb5eb531aaa27d5e6d0a1f7c38eb7acec49897851e1"
-      }
-    },
-    "showcase_grid_80x24": {
-      "bin": "showcase",
-      "args": [
-        "--page",
-        "Data grid"
-      ],
-      "keys": [],
-      "mouse": [],
-      "cols": 80,
-      "rows": 24,
-      "junie_commit": "e43cf67",
-      "junie_dirty": false,
-      "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T13:23:22Z",
-      "sha256": {
-        "txt": "7624ffde9e1bc44038de4828a6b32238da0ebc8709e99d086dab04f3173e7a9b",
-        "ansi": "2f4cbd5b93181a8538d56a66aeabae21de5925a7b81374af1f7f2e31a823cf19"
-      }
-    },
-    "showcase_chips_80x24": {
-      "bin": "showcase",
-      "args": [
-        "--page",
-        "Chips & selects"
-      ],
-      "keys": [],
-      "mouse": [],
-      "cols": 80,
-      "rows": 24,
-      "junie_commit": "e43cf67",
-      "junie_dirty": false,
-      "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T13:23:22Z",
-      "sha256": {
-        "txt": "3aeef058478348e0190a9b671b82e1bc7a0a06a72243066e546cfc70c6f161bd",
-        "ansi": "452520bb8aeb465d193b2f1e1b9381bb1b425d3b7c2fddf1a01f7118ec560d58"
-      }
-    },
-    "showcase_pickers_80x24": {
-      "bin": "showcase",
-      "args": [
-        "--page",
-        "Pickers"
-      ],
-      "keys": [
-        "Tab",
-        "Enter"
-      ],
-      "mouse": [],
-      "cols": 80,
-      "rows": 24,
-      "junie_commit": "e43cf67",
-      "junie_dirty": false,
-      "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T15:05:00Z",
-      "sha256": {
-        "txt": "6b40ac83d1b1490f268945c4e23cd6076a3bcdc75f1958f164cdca6c9ca29be5",
-        "ansi": "711e42ffe5873621793fa261bcedb414e8e640f9a0bfe16f43a55a49a053aecb"
-      }
-    },
-    "showcase_settings_80x24": {
-      "bin": "showcase",
-      "args": [
-        "--page",
-        "Settings"
-      ],
-      "keys": [],
-      "mouse": [],
-      "cols": 80,
-      "rows": 24,
-      "junie_commit": "e43cf67",
-      "junie_dirty": false,
-      "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T04:12:28Z",
-      "sha256": {
-        "txt": "2a3dabfdea879a50f110dd23d158bea0a9be95b1116d8fb0876a42d7c3fb489f",
-        "ansi": "6edd00f9335b2a3e46dec2e9a2834915bbaf498662400dc681ddfca5dc67eedb"
-      }
-    },
-    "showcase_taskrunner_80x24": {
-      "bin": "showcase",
-      "args": [
-        "--page",
-        "TaskRunner"
-      ],
-      "keys": [],
-      "mouse": [],
-      "cols": 80,
-      "rows": 24,
-      "junie_commit": "e43cf67",
-      "junie_dirty": false,
-      "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T04:12:29Z",
-      "sha256": {
-        "txt": "d678479f58aca3175c293c6a98c8d9e744374222f34a938a5da9d1b0d9b3937d",
-        "ansi": "33e6bab2a7c34643f5f9329e795f892b28fc954d14aadc0a13224c8033d35329"
-      }
-    },
-    "tablepro_default_120x40": {
-      "bin": "tablepro",
-      "args": [],
-      "keys": [],
-      "mouse": [],
-      "cols": 120,
-      "rows": 40,
-      "junie_commit": "e43cf67",
-      "junie_dirty": false,
-      "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T04:12:30Z",
-      "sha256": {
-        "txt": "98f82fab3a9bdd9827496044aeddfb1746872f78e8fd87b34009d86f67a495fd",
-        "ansi": "408911dbb871f614590af9fbc978c7c853cd81251a2cd80b1b095b0bd4fa3fec"
-      }
-    },
-    "tablepro_default_80x24": {
-      "bin": "tablepro",
       "args": [],
       "keys": [],
       "mouse": [],
       "cols": 80,
       "rows": 24,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
       "junie_commit": "e43cf67",
       "junie_dirty": false,
-      "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T04:12:31Z",
+      "events": [
+        "r",
+        "ticks:19"
+      ],
+      "evidence": "checked-in source shot",
       "sha256": {
-        "txt": "7311400f3e7e3a3d254a2624793032698520fa4830349602bb7d334efd2e8d1f",
-        "ansi": "b40dbe409dcf0859f93f0cbcafddf60c73c8efd7713f1623aa7370f930bccd0e"
+        "ansi": "b69bb2cbb22fe495d091fab2249e8f79bd748599f7365e14390f10764ce7ffcd",
+        "cursor": "9399c2cf664917802faac759de508825b99ed4ec00bc5e426b3c638131445c95",
+        "txt": "4f326f22dc912c5b479f457e0c4ae58cddf4d50ec3312e1cd0c46ff0ed33cc99",
+        "html": "90d43d71da41b5604f8e4bda27622f65b8bd7a1b6fd13d733d7769018c2ff754",
+        "png": "a75bcf75f0aaa1e1e502266a933b2327de294a9bfa410a42b04f2ed840865203"
       }
     },
-    "tablepro_local_120x40": {
+    "f_buttons_hover": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [
+        "move 49,7"
+      ],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "65bacfa9a0be0925d000905733611eff934315b5bdcaddb511f53e36cef32539",
+        "cursor": "54e518de80db6756af733633b148346ee4c7f558f2409ffca4d94e9186d03e84",
+        "txt": "8d7a76dfdbd26fd99f12a57453219ea1a855fd269a40850dd79f94a8d2e63a1a",
+        "html": "f2ea2681a511a0182c0959f3ea49bfad788d01230ac719f27fcea78f44e147dd",
+        "png": "3c76c0881d36c2807cf1a4a1478a5e51f2e6269e8593339e032c9bb790fedf47"
+      }
+    },
+    "f_dialog_delete": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [
+        "Tab x4",
+        "Enter"
+      ],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "2e8175a03f138821c27acb2c1647dab0dde0d3032b4f10ff5d0e9acc04331ad9",
+        "cursor": "763678dd71f9f5e2469f127428f5cf38312070d9aa70b18be5332bf2847d4244",
+        "txt": "9b40104ca8b3f92b07ccc0daa17ce22efd186da2d443d4ad183058967b0cf587",
+        "html": "07fa76d46a82e5faf15a2f4c0c8f7ea215696ea100c4432107068980a4c516b6",
+        "png": "a694f5c98f6508904029c392257ea76eafd04de69e2d409c0bcce7cd9b6641c1"
+      }
+    },
+    "f_forms": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "edc2977be099358815573f1f328cc13822d38a939ed65f9cfb44768abe023260",
+        "cursor": "c661a7e8bc17264f3ea799f8a366208db8ec583fcd4b8671607e4b9e72ece6dc",
+        "txt": "db510de39ec663772dfc966c8168d5da2a85c76cf47b168928d942fb39325023",
+        "html": "2081e8c9154b0338470366092c77a952dea11246ee46347bd0f472010e3ba34b",
+        "png": "f5861bc696debbb68bd26dd0eb0336fa3187551fd83917c5765cc248ffc974a3"
+      }
+    },
+    "f_inputs_edit": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [
+        "Tab",
+        "Enter"
+      ],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "2092fc2e6d23ddb3e03c6561d9fac7896c4ec54ed1676d0bdc2ebd06deb96080",
+        "cursor": "94330f49a6b6e82dee0f137492730a11763d4e2a468ffd4728e82b833367f474",
+        "txt": "829014fb892dfcbd884ed7fb6ad9b4c4e6439b26551d1f699080a4c0fc3aac15",
+        "html": "568714123d8c3fff9e6441f8bed37eae99f27406454e16e9651f1c4ec18f25bb",
+        "png": "751b2e466f97df9efb591445b7c3c5834bce041c287aa134a84524e298edb7d2"
+      }
+    },
+    "f_lists_hover": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [
+        "move 86,9"
+      ],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "58aaec4c39678065f104bb97bc7c937587d8a8441e11ece865819bdc6826a037",
+        "cursor": "b970a80489ae0e516126a357fa5ba2e4cdfb54cb3f691896ac2a7ef68a82330b",
+        "txt": "841b37241548ab9543328e496547cf75b8bb096be1251c36b2a961c0bcbaf854",
+        "html": "e75a2e9bd3823a75796bf88009363575aac03871722932e9b418a0b5e7462c5b",
+        "png": "c52471c580f46d4a7390698c1de225b9a7b84b221b44c2e74b38be472ba4e14c"
+      }
+    },
+    "f_overview": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "4602060781b522c8eaa566d293fec87bf3a9ea90b54df5168f653624b453cad9",
+        "cursor": "671dbdb5b9e32b612cecba9fc1b8f217c41f5b9b05fd23c34d5325f86509222a",
+        "txt": "7dd74569eb5333a6bfb5a7a34a34696a28fcee3365892c625dfa096b85ba5efc",
+        "html": "0b1eb9f9b59ac38a60c7a17318713afb54ccbbeb9a13f3457e197a0eb051b2a1",
+        "png": "d508a023d8ab92d733f82f04a54341edc6c021ab54be5f60bb3346e892ae8e72"
+      }
+    },
+    "f_panels": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "73a28f1a2b6897cc51d9f877eac3cf14ab522ca0be8ebc88f71d549d79e00d58",
+        "cursor": "1eb4b5738d58334b5c196a944542c791ed36a3c7e0b69899b77e48423512d8df",
+        "txt": "3ade7ad0b3b66ae3f7bc13535f43805a6e9931d3ec9842e5de68d4eb3b4c0551",
+        "html": "21a20988fd5c7e7cfaa14550bff45140bff188ae639b96b5bc2c5d72a2fbe7cc",
+        "png": "26dfcbac91727600bb70d87db4d8dccd37e0abef3e89fcb9201d1c071d1a5961"
+      }
+    },
+    "f_progress": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [
+        "ticks:8"
+      ],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "f85f1768a5d2a1f6388ba2e1c60d136d7ab17bfe9c85b06755d1ad73cff8d4c4",
+        "cursor": "c6aa3cb7c23a01c6afbb1127cee63494616bfc04ca60346bd825bc2ba2a465f1",
+        "txt": "272c6999b8d353edadbeecf3b704c478c9ac84d2f6337bbb8d8b23af385fa341",
+        "html": "25a6eb5f5680e510ad5f2e2e35bd24eea068255b0a52e8f02f6d5e649010d28a",
+        "png": "c8c623e2b56eba5fdc33eceb45c40854deb6e6debe89930658d850d7a17bc8f6"
+      }
+    },
+    "f_scrolling": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "115945ea31ffb758d77884f7912faec0d3da592e918faabb33b5a8d4e6ceba8f",
+        "cursor": "cb777799c96ce486eb2dae50979af773728e9200e2490be0068da38e86ff9516",
+        "txt": "ec831142f112a14bd69b0cedbf1ad5348d101c52648f2c535ef9bdfc0cd40a9f",
+        "html": "feee0edfbf44f6d51ff524ba2ae42b847543ab728ad4e88aa65794c899f64c3f",
+        "png": "7f5b089f7e8c9a894e2b02db0de6429457400afe6fcfc202c5efc67a2f7b2cb3"
+      }
+    },
+    "f_settings_members": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [
+        "Tab",
+        "Right",
+        "Tab",
+        "Down"
+      ],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "38698865e481c06fa4fb2b52a93e7a95a9d78943da65eaaa59444d542494b16c",
+        "cursor": "82c8ee9a719be323f18c339c02f526a08f76071a8c44293535b8920591681977",
+        "txt": "d28fd569921a4504a3c5b5289840f261b70c44b610884cdc55c4f768c554c486",
+        "html": "7cc7e84a39afd881bd970150296aad33599e22356a329414709f69b7c97f9b2b",
+        "png": "44e17c93cef2d433f0cc24bcba6e969f41fc1b0c9e586ec32101e2ab57c6b11c"
+      }
+    },
+    "f_sidebars": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "d1b9a259f0c0f5958813e97a4de3dfb5115f183fa434992fc5a83d96bd318ba0",
+        "cursor": "20a1432784ff5e56243e453fc30429b847943573a3fc7c1a00a7e5e7193064a5",
+        "txt": "69b238c3daf31ddbdae9d46ff4c8022d60525a2b351f7fbf97a6043d3eea9d25",
+        "html": "84935ee3fda7564bf7bb5b26c8a995e61c8f429ba7406ee66cfd980a58fbf145",
+        "png": "7a87c065f19d2973a84db7838506bb3845d96b529bdd6344d8d6cf95cfad132e"
+      }
+    },
+    "f_tables_hover": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [
+        "move 117,9"
+      ],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "5fbafc4af17cda4f75791253166f3ee8a05cd0dc1d0dda501fc218bc01fd8053",
+        "cursor": "08ad4e246e2fd134873432970e23216dffc19587afa09f5b27b5f15fe53f78f2",
+        "txt": "9f17ad6d00b782feeca46b37981c8ed2f95d69c4edd0fa16a774a2d59dca52d8",
+        "html": "21ef1dca77a581d6d75cdbe81d913dad407fba042c0a3e3f62b1837f4e0afa9a",
+        "png": "77c52b50e40cbe4216331adb12920e26c446fca62fcf7b136d0fe0c6d0991e84"
+      }
+    },
+    "f_taskrunner_running": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [
+        "r",
+        "ticks:35"
+      ],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "9ed9b64c77da7043b1c32cc9763088ab5d3e8dee21badbcb0076f9d2619d0471",
+        "cursor": "525549c32e08990b8655b253a69c1b6627723275a376e94f94b9a3db074d86a6",
+        "txt": "1de818ada18b14e204c6241c3106973f4950950a628247fc3c6586b7c35e87d2",
+        "html": "b7eb23e5a6c503bf6b7591a002907911d7b12a65b1efb9a94ad4071e4e6f6787",
+        "png": "d26df48ea184b8b5380050cdbdd1de1875fce888426334dc3887acd896aa8264"
+      }
+    },
+    "s_chips": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [
+        "Tab",
+        "Right"
+      ],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "1f421e2e7e637c45d788707c9d8ba7847d603d247e1d308c52aea330a5bca398",
+        "cursor": "1fede8cf84ab1556b983da96a9f7bb5aba44d47ec9384e4a46c3df52bf9c754e",
+        "txt": "6b56debbcee4835eb1061bcd76d16b6a425e72f1227058ab0abfdcc3e632a107",
+        "html": "cff873fba730497e73fbbae278201f5d0f897dcd9d818bca27008c556869c4c4",
+        "png": "e851b54b813ff1b956bc358a918680463889eff873d2800dc8a3f33709188c1d"
+      }
+    },
+    "s_chips_80": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 80,
+      "rows": 24,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [
+        "Tab",
+        "Tab"
+      ],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "006f959dbd025901abca5e4ee108de3fd60fb594e508d75b85913992bb505c02",
+        "cursor": "ff3ea2cb3e97f85cebc32474fa863fb69f9dd66e90844d6c2a3a6a36528437af",
+        "txt": "1a80ff4bd6049a054d66b21a0ee1624f2f32fe7dc2259ea638dcb0d3d9e931c8",
+        "html": "156b08d215726509cb2a632413c63fbe67bd7c145d8d77db760475f7495a1b24",
+        "png": "c025c7c8bd61f3fe8236a0458b8690fa133e77a7ea7b55b40fea3b51c04db24c"
+      }
+    },
+    "s_chips_select": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [
+        "Tab",
+        "Tab",
+        "Enter"
+      ],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "65a0c47b8ab36df986018e09a88e93e768d74db88c5c2bdb6a86955f9099d7ec",
+        "cursor": "251ff3d47753e9fd2b6a0a3c8b006f46076c2bd3de46306ebcc81d38ba59da2c",
+        "txt": "033dd1bdc98671c257407fdef35bbeacf692cb07fcef4272229d9665744a60ba",
+        "html": "8208524f0868af5cb2642a76597b94a5678e448dd549caaf11a2b32b4a1fa19f",
+        "png": "3741415c1b3ab0f72da02ec75618c1301528b3617c34acb7ba6718920ffa988a"
+      }
+    },
+    "s_editor": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "dde4a076cf477e8ea846d94babaab3fecc0eac11bef52a9c8690f79349b81591",
+        "cursor": "764111a9f994478c4b32393eefd799d398e9515e71e700fa72b5b04339c05c91",
+        "txt": "f1ad7ef294a2c4b7f8296c3e7d9f00cf8279e4789d0e23020bfd4d352c54b7f4",
+        "html": "00a86a222faa90422e863315286575ad8e61692f1742cd6f1f788c7cea17c2ac",
+        "png": "fa99c6c8e1d302e053911e91b2d3afffc98870b16758134a34705d700c05fc04"
+      }
+    },
+    "s_editor_80": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 80,
+      "rows": 24,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "46c8b4f47445427a04386ae23e5805089e5ebc51325ceba7fbff8055f6120e7a",
+        "cursor": "65e68ef9d167b028c518a6ee3a4ef581b6ee56c535edbf3a07db5f96301eb0f6",
+        "txt": "dcaa143d5ecaf83a81707918f16968e18cba8198ea14f69b996c912179ece46e",
+        "html": "4f4bbff556bdc0c335c23a5888b028f8d47f25eb008bfbac16006ee871cc3115",
+        "png": "e7c7f1f7ccde0fc76bf5196feea23c83cae15f8e0cb74fcc55b47189fe60528f"
+      }
+    },
+    "s_editor_complete": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [
+        "Tab",
+        "Enter",
+        "Down",
+        "type cl"
+      ],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "51b97cc80785ed8db0b895dffc909012033759ac6b4235664433ccfd27bf7488",
+        "cursor": "9387b22a852ebbf762d9845ba5a3c394f0555d00678b898cc0222c1223650cf6",
+        "txt": "3173402a6748ef7a81dd4aca7a28583f542b1518ce74851b64547e063b6551ef",
+        "html": "ba3d1196fa92b3e4671786404ebb0da6e7464333839ddb34c8cf4e16305f3aa6",
+        "png": "cace38bbb612d5810b5e29cc1cb546392e6008b611013aab5f647f2b86b89503"
+      }
+    },
+    "s_editor_diag": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "92f84c78a911afcad875e6398988753af5a8eac7b254bb40189850a2cfadc1d3",
+        "cursor": "b7f209325d539baec80e7b7b6a5e6c7119ab0cd2756cf30d69895ab6c7fb79a9",
+        "txt": "a53fb6d42346efca5b634f6f9959c02bd6cddb4fa740fba4928fc9bc5c6380ca",
+        "html": "ba656554672574a8aadc939d377f3076ab28cdd24e7541e9eafa257178e2f226",
+        "png": "7a30df49f46907a6d24b56f9a32eba0b1d95e8e90e0b961dbb8a0e19e728f66e"
+      }
+    },
+    "s_editor_running": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [
+        "Ctrl-r",
+        "ticks:4"
+      ],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "a0b97706a4046fac7d506c822d62e4e9b94da086170cdb6ec8630d6380fb5fd2",
+        "cursor": "9442b9723a331b3ad1c31c01956d3af42fd4ffc77ece51a85d63b3171e21a97f",
+        "txt": "2960f132ea1b8d177b55ae394965e1eb374212c74e28481a75cc70feffd13f8a",
+        "html": "ae70c3926add23595126631472758a8fbeee31a3dd689042d8d22e9008e6ed9d",
+        "png": "6a973bd6fb41b4ae7cb45ea9471341fb98aac31f08b3819e8fbbc4a4ff57cdc3"
+      }
+    },
+    "s_grid": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "eb9cd1b98715a3fd7cc3ed5916b973c38473cedf5e4a7cdfd8a22ad7cc07509e",
+        "cursor": "5a28c39da117b59ad12536fc3ab05190c7fd830c019a99f57d5e8aeebf2af2c6",
+        "txt": "b961c3631d599717867f3786e772bf36ee9fdfedcda2bff08f0256ef692b54b7",
+        "html": "15b7aff9e6337a89d3e6af798a57376d7a31c78401f9f50c3bc8d753b53e7dee",
+        "png": "b5a8ad1f32d8fdf1c1ad008a7b8b12db997ef7788cc66469b67ad8d1838be0ea"
+      }
+    },
+    "s_grid_80": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 80,
+      "rows": 24,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "f4580d74b2482a294c3dc051e48935459c8573337b66cc48ed546ff93bccb2f9",
+        "cursor": "8b70034730bd8c697cbc113d68b270cb461755daaff661d40bdce863cd20c744",
+        "txt": "e990c43f93952e28758d38959d7fddad3fe047f978aac7792616132f3d1d6430",
+        "html": "82ef911c127214e98a5962ebdfb75ac26dc3a394c469c3a67161792c789dce1a",
+        "png": "79446b892b0c61a962842b923868f9764c4e56ddca6d63300a74cbe829a301ee"
+      }
+    },
+    "s_grid_failed": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "15f19736af50d8dd8ff54cb4d1de983ec7fa83e8c2497d0aa7a86e92a905b1ef",
+        "cursor": "b7f209325d539baec80e7b7b6a5e6c7119ab0cd2756cf30d69895ab6c7fb79a9",
+        "txt": "719e71e937753287325797aa335ddedd6e1353fdd7eb540e84b4afc9278b9653",
+        "html": "785a574e5f63e16f387cfbced0c36a4f519a368fb5f5afd45d7da30ef92351fd",
+        "png": "30a2523ce067afcaf8d0853a8def985290a56aa5572948b8e8c4c8fdc167adf1"
+      }
+    },
+    "s_grid_pending": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [
+        "Tab",
+        "Enter",
+        "type x",
+        "Enter"
+      ],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "d0c7b87708905e811993056f85ac2dcbdc6b112280c4eebb711f8c33c7995afe",
+        "cursor": "4a4b32bc97df68e11adf43e9514853130f567a815f5f87a1bf5ca74047ebbfe0",
+        "txt": "9536a0e9a44f3f6c54c1ab7f0b75a6728c99cc45db86c27c80e96df0bef8c126",
+        "html": "0957959946ed34f5516384cf196ad5bc349c5904954262c79f147cc5c507de33",
+        "png": "5b17908997a88918f8179f9b3161b0d22ddddb31ea16e6e17b015fe73f44ceee"
+      }
+    },
+    "s_grid_preview": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [
+        "p"
+      ],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "a9deded032a463a8524339fa7134695de04f89218d8f294cedeeb789cf76e0d9",
+        "cursor": "3e6f95e7483f10c4a59bac39ce729930b4b7c2248880e7811e2ca15f7ef156cc",
+        "txt": "c5d2c779b8fda4eb5e7b88e2e8e57157a7d75ce972fccdd0275ece31d581d013",
+        "html": "182e79daac12c1bf619923d744a77ada31941b8714087753fdfa2ea9e0c62406",
+        "png": "5336592bef067d1ac9d97b018ee92ecd665825567a386328c9fe9914b576c957"
+      }
+    },
+    "s_pickers": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [
+        "Tab",
+        "Enter",
+        "type bil"
+      ],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "4543b86702e41e3d321060cbc285ceac8718c5269a3ef6a3e98658e8bd8a7593",
+        "cursor": "152a6844768ea4d42953c05df3b355940d10542e13d675bf68d4753948f3193d",
+        "txt": "4e4c913f69a5393f61827844bc93b2c26358116645ccac9c2bec9537ad92f421",
+        "html": "96af2d665803c14adceb4c378058888b00781ad5a6ab8a11b97df78f89e65c6c",
+        "png": "5926a6872a10455d3017db158eeeaf1962d306fd3305f202c72cd9de67ce8dc8"
+      }
+    },
+    "s_pickers_80": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 80,
+      "rows": 24,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [
+        "Tab",
+        "Enter"
+      ],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "29ad9bd6a072d849724d7da7998efe1c7fd9f0b77976c02ec5d5a03335e49c22",
+        "cursor": "a67f9a2f8469e6a6c7fe62ada7c877859a45fb37d37fc1ebe4fd1eec177fb7e7",
+        "txt": "23fc933cd93d7b310fe52fbcf1165e97d9454df18ea90da49f85ccdd6f969928",
+        "html": "2ade4dc7a04d6ed06547e989b4ec36b7a18ceb4dd3eaa5148ed8d90337367a7c",
+        "png": "41a2e30cfd72115a94ed110427fbb51f7e3ec2f3e0d715ce1f80f03167bb7161"
+      }
+    },
+    "s_pickers_level": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [
+        "Tab x3",
+        "Enter"
+      ],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "f8048c440986ee9d0a132b396f01397a290823f09caca553ff2f7c6669ee2d73",
+        "cursor": "3ccedd657d215057fcc190c26236003f9757d493f71cacf30b97c54e103a890b",
+        "txt": "a7d1ea6702bb84c5b3f948e6a38b770a2f4484fc2105824327d26785c00bad2b",
+        "html": "71fa8694a9177acf4a6e152ada5bbdaf21c9b665fe8494a4e942475f2486a597",
+        "png": "fb155b2888fdc94440e83577ae10238d19e34c137070d3cfa0d121c992ffa456"
+      }
+    },
+    "s_pickers_tabs": {
+      "bin": "showcase",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [
+        "Tab",
+        "Tab",
+        "Enter"
+      ],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "8f8eedb02d890267165830306dfc5c6ba6e51a569290befe36435c79bf81ae10",
+        "cursor": "a194d0040ea384467774fa7d817b501a5c37619050c8d809fd2fe03ca7e53a4a",
+        "txt": "9142974070f342cfd9d05ee7b6c6c9e458c3a81c15a109315107b34abcb560ce",
+        "html": "3556580e89ebd1d69a95cda59ef502a4909b4b30063e5eb01bc72e338b9d4885",
+        "png": "63afdcf8ab65785aba8f48752d9a4b7d71a269a49d45d5ee3093ebac2d531bf7"
+      }
+    },
+    "t_100": {
       "bin": "tablepro",
       "args": [
         "--connect",
-        "Local PostgreSQL"
+        "Production"
       ],
       "keys": [],
       "mouse": [],
-      "cols": 120,
-      "rows": 40,
+      "cols": 100,
+      "rows": 30,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
       "junie_commit": "e43cf67",
       "junie_dirty": false,
-      "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T04:12:32Z",
+      "events": [],
+      "evidence": "checked-in source shot",
       "sha256": {
-        "txt": "6f176ba407485cb26736f4ffb66f51a26ce958c95e2e80e6c0150c7311f763a7",
-        "ansi": "909eec21f18ff6d27a80a21e3c1059606f1f767ad70a09464f6502b141593d8e"
+        "ansi": "c50594df108efbc0d0a8509b2a12b939005996476e03b21a6f5d7fdd2a205761",
+        "cursor": "59a1d3d9316b2190c7fcc42f56e5a1de5be827686dd8b6bfea2eec7605a46005",
+        "txt": "478e82a4d7b1a919720df6f27184244d935935bcf3d986f7ef1ed0c4e5269f7c",
+        "html": "e0c1769fa534900591ec8570b0e6cf854ff36466c20ea63b96f7678ccc6b6bba",
+        "png": "5520a969d9c27d782569a3b309c1363055b342c88365003d08754f1f33b9ae03"
       }
     },
-    "tablepro_production_120x40": {
+    "t_100_table": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 100,
+      "rows": 30,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [
+        "Down x5",
+        "Enter"
+      ],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "c8c3fb11e2f1b11bfcb5de61ae931c77955619a07423d7b3ef61176dbe65c9b6",
+        "cursor": "ed7ac000790384368242224d8ebf38027ad5ecefc4174f32549e19788af3a684",
+        "txt": "3f46addc6120753f6c70e88107857ad821ea27ed30f7595e822f16d2e9ee9f9f",
+        "html": "47df11e98500c5288d91b8022de67bd367106dfafb03990874ce6f5c2d6bd2d1",
+        "png": "71787762e6b171ffe8ebae5fcfbae71d23fdf92248a07c838ae5343421418837"
+      }
+    },
+    "t_160": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 160,
+      "rows": 50,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "bc73928131cc2086aa4a443a7731f7a08cf822d4b2fde30e90101e43837c360b",
+        "cursor": "26805a15ab383861d5e6f3cc0cb610b35c07504f92f5a162b9abb28342e29136",
+        "txt": "e003247df4df3406667d7f8c80c4b9619faeaa8df7397f892ba00249aea22eae",
+        "html": "e968d73e9515b791902b8a981e284ef22538279190d4804af321738c1c82f687",
+        "png": "255972db78b1f97ab0c8fc5e995c09b44a12c90dc7ea69fa99d1fd081666f529"
+      }
+    },
+    "t_160_table": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 160,
+      "rows": 50,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [
+        "Down x5",
+        "Enter"
+      ],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "bd8159d225e2a73e80027a66f55d204d1b08e116ad09949e29a1bc58079c4a4d",
+        "cursor": "cedb2e7763fcfb6717dbc93d5b591bc9976ba8044013eddb33630b49a9398827",
+        "txt": "56beee240586cb37b6370fd1843d9ef8317b9086e4ef4ebff20688432afba2c1",
+        "html": "1829eb0f1fafd3e73c58f4e82e3ad02f2d87812462e3cd5d76e6cefee692f42e",
+        "png": "722d721d5d5cba91455265c675a4c6d345953505bef262b48ddd8bfb2526994c"
+      }
+    },
+    "t_80": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 80,
+      "rows": 24,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "6bbda8543650bf3047061223c18493c504d5e9f194238c36c0e4e76f9a899a25",
+        "cursor": "392bda32757bcc2c39ff10ee1b8a6fe268409a2cec8a5c25a0e5de45b4145155",
+        "txt": "81c9c37e149de66f7bd0a08da8d85a03f5cada27ee40c4b00e09af3f5457540c",
+        "html": "ddf108f3f0e37bf8e812947862620c55b0235adbb05cf19444b2f27a0ff0e756",
+        "png": "3db076b5cd9f5b3691af44f3936cd69b6a26da04b8a3891021e7322b8edcc6dd"
+      }
+    },
+    "t_80_drawer": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 80,
+      "rows": 24,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [
+        "b"
+      ],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "5dae8513b9efae77f690a61bc0e1f4c6a3270ea21365e12ebd9348385501122b",
+        "cursor": "e15fdf0832ead1562c58d57fab37abf675497aa94ba9b0afafd60cb2f28ae98f",
+        "txt": "6312d57c9c0780e47ae9c6b649b08fc0baa28a978919b350edff43ffb0fb1964",
+        "html": "6fcd338f2af8576344923968c349e4df44905018b7c970a09c3f7284a5235bf4",
+        "png": "7c2da54d4c8b455e795d78d61729c4334655a9b00f7993f23eb22154b749a5dd"
+      }
+    },
+    "t_80_query": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 80,
+      "rows": 24,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [
+        "Tab"
+      ],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "63279000e657391a5979d60dfa46493d8a6905b417559bba2335a6b4045ab588",
+        "cursor": "f241561ab8920feafd0b97bcf61547ce6edd1609370e5ba97bf12913d12d291e",
+        "txt": "a2e95d4ff5af2233281ded209e3858161f4c40be731fb1ee98856d34756696e3",
+        "html": "d64f7b23774bd845c6d69ca3cc906fd95e6a826b8f5109221862a74bae620e6a",
+        "png": "f7c0e51ace01b0aefd36bb2be45de6ca4a203fa95616f3b7305a604ff3111924"
+      }
+    },
+    "t_complete": {
       "bin": "tablepro",
       "args": [
         "--connect",
@@ -837,35 +915,677 @@
       "mouse": [],
       "cols": 120,
       "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
       "junie_commit": "e43cf67",
       "junie_dirty": false,
-      "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T04:12:33Z",
+      "events": [
+        "Tab",
+        "i",
+        "type SEL",
+        "Ctrl-Space"
+      ],
+      "evidence": "checked-in source shot",
       "sha256": {
-        "txt": "a161d969921ceebf8409b984e1b3c0d0554ccb4425f8243357a3ebc3012b48b3",
-        "ansi": "3dcc047104ac88e6131aadb262b26ef19bc62302776b5dd3165b08ae8dbb10c2"
+        "ansi": "a4994562746d77272f6d8569a980d7dc6d0e627dd9f5549f1cd217d70f7f14a7",
+        "cursor": "5dd30ea2a5079b5542f29a3cce7a12a98d12d5d2d819a71fd92e50d74b31061d",
+        "txt": "480e9da5019d98d90f750561433c566d7193178886564ffd104b1eef3c47dfdd",
+        "html": "0e5edae2d5293a6549a62c7a7e2551d16928dc98c817c24f0267cc8a5ad6170a",
+        "png": "376ed34ad28ab1e1ea8cede9b21eb154f555a919f38bf1ae47b9faf7c5b7e7d4"
       }
     },
-    "tablepro_help_120x40": {
+    "t_complete2": {
       "bin": "tablepro",
-      "args": [],
-      "keys": [
-        "?"
+      "args": [
+        "--connect",
+        "Production"
       ],
+      "keys": [],
       "mouse": [],
       "cols": 120,
       "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
       "junie_commit": "e43cf67",
       "junie_dirty": false,
-      "tmux": "tmux 3.7c",
-      "captured_at": "2026-09-02T04:12:34Z",
+      "events": [
+        "Tab",
+        "i",
+        "type SELECT * FROM o",
+        "Ctrl-Space"
+      ],
+      "evidence": "checked-in source shot",
       "sha256": {
-        "txt": "79eb14112991c5d79368d3073b117c8ce83f90fa0e176145da89dd49bc1a717c",
-        "ansi": "5b18173f625c00952853d45b8ee926e9293632c51b1f676f4a9ed010405f3bdb"
+        "ansi": "f666c559b6612625529c682e26575c646afb23b08e1aa04585e4bffcdd280867",
+        "cursor": "6ca9a04b36d0afe59a5ccf9ea4dfafbd77c73836ac410f67c05904467768e893",
+        "txt": "140a65baa7e8a247836a150f8599a3726472f543fd9fa69dfbd2dfcbdd622705",
+        "html": "e22d3590e05c704def737013bf42b5ea2f88318922ffc7b27b942be16cf3da59",
+        "png": "5c6b12a167fdc32dc65c70a730d697da673438bb9b6438fa08ba57a78b4622fc"
+      }
+    },
+    "t_conn_dup": {
+      "bin": "tablepro",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [
+        "Ctrl-d"
+      ],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "470e1580e8eba6427e4ab2fa8578aea7852a0b8222305116d1ec0bc1bbe99059",
+        "cursor": "e281aa960ca7d2e02e2fe08e36309b9b596b5b20b8f3963b34f1d232d8f2ef1b",
+        "txt": "bd74d40ef14e6b5c7121239925d313b4b8b00087365c7fc52a1dc32e7fdac28b",
+        "html": "e7df07ca49d6a2d74262570ba831ef70a5a586607b4a1a4bb838acdaefdc761e",
+        "png": "3bf830f2f2741a63b8c604bbb9417ba0fbd9cc262eabe8433e1eb6fd3ac23d1a"
+      }
+    },
+    "t_conn_form": {
+      "bin": "tablepro",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [
+        "n"
+      ],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "a4395a0147558f933a8de50fd9a27f1bd7917c2cdb5e8728386875c78e03cbcd",
+        "cursor": "7497a555371f217a04a744316c79200ebf13d7a4b57795d5501807f0261d1281",
+        "txt": "3db3a468d319608efc5cff6f713fdf8174819a0ccd8cb3bb05a3751a1e596c4f",
+        "html": "5607c4e645863de56f996aa4eaaaf33c47dab6a3fde99e7ce9cdc81a7648be32",
+        "png": "5a8df04821a17be8487f927e2efd7d1ffff94117eeec67df01c68d675caf9818"
+      }
+    },
+    "t_conn_form_adv": {
+      "bin": "tablepro",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [
+        "n",
+        "Tab"
+      ],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "4ebc223c1ba1458d75dcc0134fe5c6b319b289b2d27db8e0311801c088ff72a6",
+        "cursor": "a80d586b99d4592b39c25468cca2b5d458ec86c4952f3e4acdf5612e556695e5",
+        "txt": "d57c21056a423217d27f6e8ac834bcef27841635600133e42999341b86264011",
+        "html": "5dfc8065548f4822da95b8c417a51ef55e86fab299aba471b1edaf121b1e05ac",
+        "png": "04e2ccf68b16d4c3adc8659a0594458ef5655149205ef29fe4d065035b94d338"
+      }
+    },
+    "t_conn_prod": {
+      "bin": "tablepro",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [
+        "Down x8"
+      ],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "c64e3342cea6f9582999e79b4775364e00f2d4a5b525ab570851f3848812aee6",
+        "cursor": "629f5ec2e923322dd3127f20e95771072f446ae142ac5792b1907a3ad87dfc28",
+        "txt": "d73633e87c77a130f70a2b057973f4f8b13558a422b94aa7df4e6e6757b02168",
+        "html": "9c673dcfa1d5fa08457cb14d9b7ccd166613e55fc0cc271dae4d4681903804fc",
+        "png": "14e29dd449f4043f15c361284fe761e779b827181bbe67ddda2a3cb5f8992122"
+      }
+    },
+    "t_connections": {
+      "bin": "tablepro",
+      "args": [],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "67d07a8ef3e65ef98055176657f40e3b73e21025031190c25e2bfd0ae793d181",
+        "cursor": "be0f70100bcb6d1c14dc527121c4a572e07d8b99d28cfe33554830408761c11f",
+        "txt": "e379d37d9c4bdd4ae42a7acb7a8f8d56e01a25ad4e2b58f66925f61702042567",
+        "html": "0276c23c16c39a3c545eb1aadfc0ceca035b8b2c30f46115dd8bacc87076a710",
+        "png": "29392bcdcffe9ec63a303718b028ce2c47e5ad3c062e7af70cd6f442d1e60c98"
+      }
+    },
+    "t_danger": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [
+        "Tab",
+        "i",
+        "type DELETE FROM orders",
+        "Esc",
+        "Ctrl-r"
+      ],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "5b0499ca2d0504dd70718c9acaa3ab96cf349d0b6f7509882f710703864b8e05",
+        "cursor": "174697e2ce425f3eb584dfb7cac0dde1b880f7556877fbf8decb44b6467985d4",
+        "txt": "512bb868b4662e27ae7f88eac7070af502d0c746727623317520ac937ad6ada3",
+        "html": "547b65d60eadeeb1c0788677d7f970c306682e26e888c184501c53d6094ec896",
+        "png": "5d1010955da7f4c273015ef84de414ce2cdf63b0d9bf484ed5b6918360172bd2"
+      }
+    },
+    "t_dirty": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [
+        "Down x5",
+        "Enter",
+        "Enter",
+        "type x"
+      ],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "9480a0c40327a9dfbf8ce703b2a820ed4e198dea84113a3b17e6e4da0154492f",
+        "cursor": "6504f051b3144bd40d90a39708c3a3abcca0c88edd65e368b5fcd28337e2187f",
+        "txt": "bff4871f05fa0c5d39aa4c4dc037ac30203644ca9dbb3115f556d91e3662f976",
+        "html": "c8650098dfc97709801072303ba9351b9c1ac50ed677151978fdfe896686cc43",
+        "png": "67ec82688ccbb18c7bede955c6d944a6f2fc70bd60b85ca7b9acffa85c9c416e"
+      }
+    },
+    "t_editing_cell": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [
+        "Down x5",
+        "Enter",
+        "Enter"
+      ],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "9413b4368a7e6aaee159df681870f996aa21619f8d2fd05d9d0c00b04fe8a46d",
+        "cursor": "e2429b3f6b52641382a91824a7f706a43cc9bdd45639407836cd40fb8e9df4c6",
+        "txt": "9cad4900417b70d4bf7e70bd6686cad6df8a8c3ab24cb10e7726b67ba4214430",
+        "html": "13cd448a0d6611a5c7967485b070e3675cb8759b675bf8df01048b314357985e",
+        "png": "cbe3feef06eb0c87c1671e05c2cf0f666e7cc65fdff496315a67eccb8e8b2d84"
+      }
+    },
+    "t_error": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [
+        "Tab",
+        "i",
+        "type SELECT nope FROM orders",
+        "Esc x2",
+        "Ctrl-r",
+        "ticks:10"
+      ],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "f478e9862f6e0377f3258d1426340b62ac1b241f99a92a39e7f03a484c42f6a1",
+        "cursor": "ba74deffcc1fd44c4724fe1e691eea4e41b0c651f138ece41c8badd31d91edf0",
+        "txt": "22c11b0183f27180dc2a3fb3c181180da64ef98690ce6b6c0ed7b23bc4f280cf",
+        "html": "1410d9a241c29b56a9c15692f6f8e144d2c4bd5a336e2bbbf9f5cd9039958cce",
+        "png": "3c798ed1241b7c223b249a55eca9f620cfb878dc518e4ceea0b2d762207d7cf9"
+      }
+    },
+    "t_explain": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [
+        "Tab",
+        "i",
+        "type SELECT\u2026",
+        "Esc",
+        "Alt-x",
+        "ticks:10"
+      ],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "567fe87d50c1cca6308abad8d8529d3e6b8937582dbfbe80e284edfa2d370541",
+        "cursor": "0c4e247cdddf6cee636be172d1ad4ad37eecd8ad21e9a3f8e5dd416fc609e2e6",
+        "txt": "8c8c661ef7507475b3fa93b32230f7fb622ff852d192ff606d97ec18c6f5f33b",
+        "html": "fcb23c75dbbcc03ba32548a45abd764f08cbe697a30c98f6ca4d1737c65f66b7",
+        "png": "ba1071d1f9d04be3878b453209cc509a3a3d9b9670650b92f44bac8488eb6085"
+      }
+    },
+    "t_history": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [
+        "Ctrl-y"
+      ],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "381f0c195eadad3dcfb2fc6dd44239ef0a3c793d89d5f005ed75a5405c5fee60",
+        "cursor": "c170be9443922608d9843d93aab7d88183c79900cf0e65c67643c3528927652f",
+        "txt": "d3e615f5e8316aee89ea4040472f228971cb432f8b7f3ef6f3526acc32105d3c",
+        "html": "490177e8b138bb062d63a31697e532de3c5394cdd81efc4b076911805c5c890d",
+        "png": "b8d662765b9f90fdbea3e8de0b83294977c4c1f9ed629f5bde8e238735475596"
+      }
+    },
+    "t_orders": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [
+        "Down x5",
+        "Enter"
+      ],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "14cdf7222c8e1bbdce14d7857a8032aa95a6c346c07b12b67a2623bd2043cc41",
+        "cursor": "3eef9f4854b5de86e848e7daab9da3b9c017e24e224133f81b4b31ed38064c82",
+        "txt": "95bc25128fc8d82f42e719211f7764222500805e8e4ee0d6a9d975f56729da41",
+        "html": "687c98eef48e5031eb7d333816a73a4d13763e90e0c9e0e7c88608172f7c90dc",
+        "png": "211646fb27fd7923cdb8980db440d6a46fb6445bc2cb2436be010fda65edd4e9"
+      }
+    },
+    "t_orders_wide": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 160,
+      "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [
+        "Down x5",
+        "Enter"
+      ],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "1ff1de8f8acccadc4684c11b989589f9b0100a8fac3078e6eb63296989503065",
+        "cursor": "f5351a26d7f325482c3981a24d8ecb9cbd4783f974cafa7b6ae3d1b9debb8062",
+        "txt": "117df6cdf9b73edbe31d708c2d56e1e9ad8a5bec0c925eca23cbd042dd439052",
+        "html": "ece123f44bb27897c3228a1fae77275aa253c17f51a4b1b96d77499531efb04f",
+        "png": "d180f143744aa0cf7bb6badffbb19d9935da2383338e81df530c5fdbe6b5837e"
+      }
+    },
+    "t_result": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [
+        "Tab",
+        "i",
+        "type SELECT * FROM orders LIMIT 25",
+        "Esc",
+        "Ctrl-r",
+        "ticks:10"
+      ],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "686dddd45ef6b4e71ddd58d7c40098ea24702b49eaf23cb6ef8a75093824ad5e",
+        "cursor": "cd3f6de4f323e5acca162fb59557d96e6e30426c12e355fff22d593907671b0b",
+        "txt": "5023b41b7471341c4563f3a79590f1da079a74d16a2ad814a0b2c82fa68070f9",
+        "html": "452c8a2a612dbe24e8969e8edfd65a2dbf64ec929b651f6f29f03a54253e5723",
+        "png": "7c35310d03e71173c4a366522de2ce8858beb85727d998237db1bb8585834901"
+      }
+    },
+    "t_running": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [
+        "Tab",
+        "i",
+        "type SELECT * FROM events",
+        "Esc",
+        "Ctrl-r"
+      ],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "b2b22a30cc03c0f856f7e50c0d0393ab646587b3441ce3da8b1d86b0d6730e9f",
+        "cursor": "98ef57600e0e00f63746b1d37a058442bdbcb2733ce4711a5989a7811f08cb1e",
+        "txt": "fc7adbd839e4827bcf681d84a887732d121f9f0a3b1315849673caf892fe347d",
+        "html": "73625fdee573751a532703be55bb68bbdb35bb4e33b3e6fe075fb0d6d6232c23",
+        "png": "d6934f08a9d6e61385c950473c4349b9007701041ddeabf5470dbbcd1eeebe12"
+      }
+    },
+    "t_safemode": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [
+        "Ctrl-l"
+      ],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "e7d6a8475906ef1b1b70f5076d4ddbc13997e8e9afcbaabb0188907f3e062dbc",
+        "cursor": "df5d8b32ffa00447867c0fe259d0d8c10956a7d896e4d38fae93950e93a12aa1",
+        "txt": "7d95fa59f74fb7719d3fba043286eacd9578802607a27f030c6fd98a39fd9eb4",
+        "html": "59568f9d22e30ec784681fccf384b5de05b18d1e6380ae489274f04099d817a6",
+        "png": "797127b93ecfe11d19b65add8215ae9603d914169576dc1cd2b3d91120d75535"
+      }
+    },
+    "t_sorted_filtered": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [
+        "Down x5",
+        "Enter",
+        "Home",
+        "Right x12",
+        "s",
+        "f"
+      ],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "9044a8cc35e820bf43d591f79421c14f6ad793422391252ce6f9e22f9aaeb0ff",
+        "cursor": "b7f209325d539baec80e7b7b6a5e6c7119ab0cd2756cf30d69895ab6c7fb79a9",
+        "txt": "fa7c3bc1cef1dc86f4626e865b3eaf632812bcde5341612e5b2442af1363355f",
+        "html": "608184936b462aaeaf386cb1afcb0220a2bebde560154d750f8cbe54942e2742",
+        "png": "a521651547d047b56161aacaa6036680154548fc4aea214e5062948567163f2e"
+      }
+    },
+    "t_structure": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [
+        "Down x2",
+        "Enter",
+        "Ctrl-d"
+      ],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "a1993c689897a64f33221587af3ed343d29cdc0e70fb59da89f5c65fe577c794",
+        "cursor": "db7c21048ceefaa095f2139d79b2e338e89eac04a36935655e543c62020a61e8",
+        "txt": "c1ea97d72dbcd54c6e36ac4ce197b4e058c9af3686f17692b4d5e9a80c3f3e80",
+        "html": "c99be50a3010d1e0c483f4d62c8a180af7cb59ecc1fad8f053fcb85aa0355efc",
+        "png": "229aca7705be54e32e589b52fa7ee5ebec0296a9d14a1d110b962181f9a61480"
+      }
+    },
+    "t_structure_fk": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [
+        "Down x2",
+        "Enter",
+        "Ctrl-d",
+        "Right x2"
+      ],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "c8f1bfff65ffeeff3b97e2e0c4ed395ef5a72fcbb6bd3cb94fdd7e58c9bcfa58",
+        "cursor": "1ca0580090dc211bfa03e6423f3cced4cfb9e49df7176195a8fc959da6aac9fa",
+        "txt": "77d3afa5225ac99472675add84a2bfc44d1c4ed828d809b7a96d4c0b325e091a",
+        "html": "bc5347e29febd3d7362a996b4d130a3a64a2396dc650e06ae371ef0ee342a68a",
+        "png": "3b80e3d63b78ee16ccf81e26f6676ee0300d3a2587e967a3ba0696aac0e0ef49"
+      }
+    },
+    "t_switcher": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [
+        "Ctrl-o"
+      ],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "02840b2524634cadec10b6f7b4ea84ce468a514c65b529f65a461da5c73f14af",
+        "cursor": "e9ada64456993f7d8668e4a669ae191e9ba81a8bd85b4cb1865d8511eeaece34",
+        "txt": "57d88955b9e7afe51ffd8ab3d9bfab95f4cfa6504f18c6679f7744a4ca876629",
+        "html": "c94908333d9b748132f71dc0e343c09bf2ac1432c52148af8e0d8a03f05843e4",
+        "png": "06b33c5bdf5b07633c891b89621f61cb724b2cea9cc6e25a406e1dd0fbd5d0bf"
+      }
+    },
+    "t_tablist": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [
+        "Ctrl-g"
+      ],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "3dcb3861cb8456b207eb9c1f780a11af23de5456f670ca26e8a075ec96afd12d",
+        "cursor": "b3c929fba2910cd97509e5bf55fcfeeb9ace0dc399f81e255f389fc53d9c534c",
+        "txt": "e7ed6e4e5e04ced09f9efb11bc050ec532413235ef44a02a1133f78a19841666",
+        "html": "2bf8c7471d423190ddb83e985c6f6763bb7e18c1de410d89306f59db33783440",
+        "png": "06bb5d10f474e4bdc61332ab054a52760035c749bf63cba04dad18017b031ff9"
+      }
+    },
+    "t_workbench": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "52648f36fc98e05c363cc17663d062fa9347732e3914246be603f12e0a8586c7",
+        "cursor": "671dbdb5b9e32b612cecba9fc1b8f217c41f5b9b05fd23c34d5325f86509222a",
+        "txt": "43ea1f9493588dafe0891106303f371746ecad25bd656e0f4315e2e09fd5428f",
+        "html": "96aeeb38b53036dfe6b4cd113a7cba605d88e7edb40d2ead6452dc8e8ed39237",
+        "png": "a41c02e02116569413729009b355c241f6d284636404b249565a790ede0976cd"
+      }
+    },
+    "t_write": {
+      "bin": "tablepro",
+      "args": [
+        "--connect",
+        "Production"
+      ],
+      "keys": [],
+      "mouse": [],
+      "cols": 120,
+      "rows": 40,
+      "source_ref": "main",
+      "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+      "junie_commit": "e43cf67",
+      "junie_dirty": false,
+      "events": [
+        "Tab",
+        "i",
+        "type UPDATE\u2026",
+        "Esc",
+        "Ctrl-r"
+      ],
+      "evidence": "checked-in source shot",
+      "sha256": {
+        "ansi": "238ce00f6d7fa1b67f203cdd8c7b3e743ef17cd74a21461c6a25118bb7a19e76",
+        "cursor": "cd3f6de4f323e5acca162fb59557d96e6e30426c12e355fff22d593907671b0b",
+        "txt": "1f19d019573b61222ac1df7885cb10c74f40ef66a9348a78d45c70ce32a1ad77",
+        "html": "9be46a4d60311fd0662f11029108578194d2be993652d730bc6fe1d215112518",
+        "png": "e39b88033f15c67cbb2cfc2e633ebfb926b5afca74ffa0f02747dc93fd7be0da"
       }
     }
-  },
-  "junie_commit": "e43cf67",
-  "tmux": "tmux 3.7c",
-  "updated_at": "2026-09-02T15:50:39Z"
+  }
 }

@@ -11,7 +11,10 @@ use swash::{
 use termrock::style::{Role, RolePalette};
 use unicode_width::UnicodeWidthStr;
 
-use crate::{BASELINE_PX, CELL_HEIGHT_PX, CELL_WIDTH_PX, FONT_SIZE_PX, color::color_to_rgb, fonts};
+use crate::{
+    BASELINE_PX, CELL_HEIGHT_PX, CELL_WIDTH_PX, FONT_SIZE_PX, PADDING_PX, color::color_to_rgb,
+    fonts,
+};
 
 /// Errors from rendering or encoding.
 #[derive(Debug)]
@@ -94,9 +97,11 @@ pub fn render_pixmap(
     let area = buffer.area;
     let width = u32::from(area.width)
         .checked_mul(CELL_WIDTH_PX)
+        .and_then(|width| width.checked_add(PADDING_PX * 2))
         .ok_or(RenderError::EmptyBuffer)?;
     let height = u32::from(area.height)
         .checked_mul(CELL_HEIGHT_PX)
+        .and_then(|height| height.checked_add(PADDING_PX * 2))
         .ok_or(RenderError::EmptyBuffer)?;
     let mut pixmap = tiny_skia::Pixmap::new(width, height).ok_or(RenderError::EmptyBuffer)?;
     let canvas = palette
@@ -116,14 +121,16 @@ pub fn render_pixmap(
                 std::mem::swap(&mut fg, &mut bg);
             }
             if cell.modifier.contains(Modifier::DIM) {
-                fg = fg.map(|channel| (u16::from(channel) * 6 / 10) as u8);
+                for (channel, background) in fg.iter_mut().zip(bg) {
+                    *channel = ((u16::from(*channel) * 6 + u16::from(background) * 4) / 10) as u8;
+                }
             }
             let symbol = cell.symbol();
             let span = UnicodeWidthStr::width(symbol)
                 .clamp(1, 2)
                 .min(usize::from(area.width - column)) as u16;
-            let left = u32::from(column) * CELL_WIDTH_PX;
-            let top = u32::from(row) * CELL_HEIGHT_PX;
+            let left = PADDING_PX + u32::from(column) * CELL_WIDTH_PX;
+            let top = PADDING_PX + u32::from(row) * CELL_HEIGHT_PX;
             let span_width = u32::from(span) * CELL_WIDTH_PX;
             fill_rect(&mut pixmap, left, top, span_width, CELL_HEIGHT_PX, bg);
 
@@ -160,10 +167,24 @@ pub fn render_pixmap(
                 }
             }
             if cell.modifier.contains(Modifier::UNDERLINED) {
-                fill_rect(&mut pixmap, left, top + 15, span_width, 2, fg);
+                fill_rect(
+                    &mut pixmap,
+                    left,
+                    top + CELL_HEIGHT_PX - 3,
+                    span_width,
+                    1,
+                    fg,
+                );
             }
             if cell.modifier.contains(Modifier::CROSSED_OUT) {
-                fill_rect(&mut pixmap, left, top + 8, span_width, 2, fg);
+                fill_rect(
+                    &mut pixmap,
+                    left,
+                    top + CELL_HEIGHT_PX / 2,
+                    span_width,
+                    1,
+                    fg,
+                );
             }
             column += span;
         }

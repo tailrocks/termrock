@@ -1,23 +1,21 @@
 #!/usr/bin/env python3
 """Orchestrator for the junie-tui -> termrock fidelity harness.
 
-    python3 bin/run.py                         # compare every scenario, print table
+    python3 bin/run.py                         # focused crop diagnostic
     python3 bin/run.py --only showcase_tables_120x40
-    python3 bin/run.py --layer text            # text layer only (what CI runs)
-    python3 bin/run.py --update-baseline       # bless current deltas as budgets
+    python3 bin/run.py --layer text            # diagnostic layer only
     python3 bin/run.py --print-capture-plan    # feed bin/ref_capture.sh --all
 
-Gating model (see research/junie-campaign/verification-infra.md):
+This command is a focused crop diagnostic for active mappings. It is useful for
+locating the first cell difference while a page is being ported, but it is not
+the source-shot acceptance gate and it never blesses a baseline. Complete
+source/target parity is checked by `compare_artifacts.py`, which requires
+byte-exact cursor/text, strict ANSI/HTML cell semantics, and zero-tolerance PNG
+pixels for every artifact in the manifest.
 
-  * A scenario with no termrock story yet is `pending-termrock-scene` and is
-    reported as SKIP. The harness gates on what exists; ports fill the rest.
-  * An active scenario is compared on the text and color cell layers. It passes
-    when the measured deltas fit the budgets, which come from the scenario's own
-    `tolerance` block when it declares one (aspirational, usually 0) and from
-    baselines/<scene>.grid.json otherwise (a ratchet blessed with
-    --update-baseline: budgets may only shrink).
-  * The pixel layer is advisory. It is skipped unless Pillow and a raster pair
-    are present, and never affects the exit status.
+Pending mappings remain visible as `pending-termrock-scene`; they are not a
+parity pass. The legacy crop budgets and baseline files are diagnostic data
+only and are never read by the strict comparator.
 
 Writes verify/junie/out/report.json, verify/junie/out/report.md and
 verify/junie/last-report.json. Exits nonzero only on hard failures of
@@ -140,21 +138,30 @@ def reference_grid(scene, cols, rows, cache={}):
     return cache[key]
 
 
-def termrock_frame(story, cols, rows, keys, out_dir):
-    """Render one lookbook story to a TerminalFrame JSON (cached on disk)."""
+def termrock_frame(target, cols, rows, keys, out_dir, application=False, connect=None):
+    """Render one canonical catalog page or application to frame JSON."""
     out_dir.mkdir(parents=True, exist_ok=True)
-    slug = re.sub(r"[^A-Za-z0-9_.-]", "_", f"{story}_{cols}x{rows}_{'-'.join(keys)}")
+    slug = re.sub(
+        r"[^A-Za-z0-9_.-]",
+        "_",
+        f"junie-reference_{target}_{'app' if application else 'page'}_"
+        f"{connect or '-'}_{cols}x{rows}_{'-'.join(keys)}_{git('rev-parse', '--short', 'HEAD')}",
+    )
     dst = out_dir / f"{slug}.frame.json"
     if not dst.exists():
-        cmd = [
-            "cargo", "run", "-q", "-p", "termrock-lookbook", "--", "frame",
-            "--story", story, "--cols", str(cols), "--rows", str(rows),
-        ]
+        cmd = ["cargo", "run", "-q", "-p", "termrock-catalog", "--", "frame"]
+        cmd += ["--application" if application else "--page", target]
+        if connect:
+            cmd += ["--connect", connect]
+        cmd += ["--cols", str(cols), "--rows", str(rows)]
         if keys:
             cmd += ["--keys", ",".join(keys)]
-        res = subprocess.run(cmd, cwd=REPO, capture_output=True, text=True)
+        env = os.environ.copy()
+        env["TERMROCK_CATALOG_PROFILE"] = "junie-reference"
+        env.pop("NO_COLOR", None)
+        res = subprocess.run(cmd, cwd=REPO, capture_output=True, text=True, env=env)
         if res.returncode != 0:
-            raise RuntimeError(f"lookbook frame {story}: {res.stderr.strip()[:400]}")
+            raise RuntimeError(f"catalog frame {target}: {res.stderr.strip()[:400]}")
         dst.write_text(res.stdout)
     import frame2grid
 
@@ -182,7 +189,11 @@ def compare_scenario(sc, opts, frames_dir):
     tm_spec = sc.get("termrock") or {}
     cols, rows = ref_spec.get("cols", 120), ref_spec.get("rows", 40)
 
-    status = sc.get("status") or ("pending-termrock-scene" if not tm_spec.get("story") else "active")
+    status = sc.get("status") or (
+        "pending-termrock-scene"
+        if not (tm_spec.get("page") or tm_spec.get("application"))
+        else "active"
+    )
     result = {
         "scene": scene,
         "status": status,
@@ -191,7 +202,7 @@ def compare_scenario(sc, opts, frames_dir):
         "reference_bin": ref_spec.get("bin"),
     }
     if status == "pending-termrock-scene":
-        result["skipped"] = f"pending-termrock-scene: no termrock story mapped yet ({tm_spec.get('wanted', 'unspecified')})"
+        result["skipped"] = f"pending-termrock-scene: no catalog target mapped yet ({tm_spec.get('wanted', 'unspecified')})"
         return result
 
     try:
@@ -201,26 +212,30 @@ def compare_scenario(sc, opts, frames_dir):
         return result
 
     crop_box = ref_spec.get("crop")
-    if crop_box:
-        w, h = crop_box[2], crop_box[3]
-        story_cols, story_rows = w - 2, h - 2          # STORY_PAD = 1 per side
-    else:
-        story_cols = tm_spec.get("cols", cols)
-        story_rows = tm_spec.get("rows", rows)
     try:
+        # The catalog frame is the complete Junie page. Compare the same
+        # source-defined region on both sides; legacy target-local crop metadata
+        # is intentionally ignored.
+        target = tm_spec.get("page") or tm_spec["application"]
+        target_keys = tm_spec.get("keys", ref_spec.get("keys", []))
         got = diff_grid.crop(
             termrock_frame(
-                tm_spec["story"], tm_spec.get("cols", story_cols), tm_spec.get("rows", story_rows),
-                tm_spec.get("keys", []), frames_dir,
+                target,
+                cols,
+                rows,
+                target_keys,
+                frames_dir,
+                application=bool(tm_spec.get("application")),
+                connect=tm_spec.get("connect"),
             ),
-            tm_spec.get("crop"),
+            crop_box,
         )
     except (RuntimeError, KeyError) as e:
         result.update(status="FAIL", failed="termrock-render-error", detail=str(e))
         return result
 
     if not opts.quiet:
-        print(f"  rendered {tm_spec['story']} -> {got['cols']}x{got['rows']} vs reference {ref['cols']}x{ref['rows']}")
+        print(f"  rendered {target} -> {got['cols']}x{got['rows']} vs reference {ref['cols']}x{ref['rows']}")
 
     ref, got = diff_grid.fit(ref, got)
     text = diff_grid.diff_text(ref, got)
@@ -393,7 +408,12 @@ def main():
 
     if opts.list_scenes:
         for s in scenarios:
-            st = s.get("status") or ("pending-termrock-scene" if not (s.get("termrock") or {}).get("story") else "active")
+            target = s.get("termrock") or {}
+            st = s.get("status") or (
+                "pending-termrock-scene"
+                if not (target.get("page") or target.get("application"))
+                else "active"
+            )
             print(f"{s['scene']:42} {st}")
         return
 

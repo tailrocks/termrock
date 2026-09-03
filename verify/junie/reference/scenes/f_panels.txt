@@ -1,0 +1,40 @@
+ ▪ Junie Design system / Components / Panels                                 truecolor · 120×40   i Inspector   ? Help
+
+   Foundations            Panels  Cards group; a frame only where a pane needs an edge; nothing boxed twice
+▎  Overview
+                            Titled card                        surface    ╭─ Framed · split pane ───────── 1–15 of 24 ─╮
+   Components                                                             │  Junie works through a task the way a    ┃ │
+▎  Buttons                  A card is a filled surface. Its title sits    │  careful engineer would: it reads the    ┃ │
+▎  Inputs                   in the top-left and metadata on the right.    │  relevant code, forms a plan, makes      ┃ │
+▎  Text areas               It never has a border.                        │  focused changes, runs the tests, and    ┃ │
+▎  Forms                                                                  │  reports back with a summary you can     ┃ │
+▎  Lists                                                                  │  review before anything is merged.       ┃ │
+▎  Trees                                                                  │                                          ┃ │
+▎  Tables                                                                 │  Each step is visible. You can pause,    ┃ │
+▎  Editable tables          Untitled card. Same surface, content          │  redirect, or take over at any point,    ┃ │
+▎› Panels                   starts at the padding edge.                   │  and every change lands as an ordinary   │ │
+▎  Sidebars                                                               │  diff in your working tree.              │ │
+▎  Dialogs                                                                │                                          │ │
+▎  Progress                                                               │  The design system in this prototype     │ │
+▎  Scrolling                                                              │  exists so that the terminal version of  │ │
+                            Nested                                        │  that experience feels as deliberate as  │ │
+   Screens                                                                ╰────────────────────────────────────────────╯
+▎  Settings                 Target
+▎  Task runner              ▎  Local                                        Card · scrollable               1–13 of 60
+                            ▎  CLI
+                            ▎  Cloud                                           0.00s  info   Resolving workspace me… ┃
+                                                                               0.37s  info   Fetching crates.io ind… ┃
+                                                                               0.74s  info   Compiling proc-macro2 … │
+                                                                               1.11s  info   Compiling serde v1.0.2… │
+                                                                               1.48s  warn   unused import: `std::f… │
+                                                                               1.85s  info   Compiling tokio v1.40.0 │
+                                                                               2.22s  info   Running unittests src/… │
+                                                                               2.59s  info   test api::auth::tests:… │
+                                                                               2.96s  info   test db::pool::tests::… │
+                                                                               3.33s  error  test checkout::places_… │
+                                                                               3.70s  info   test workers::schedule… │
+                                                                               4.07s  info   Linking target/debug/d… │
+                                                                               4.44s  info   Resolving workspace me… │
+
+
+ ↑ ↓ Scroll  PgUp PgDn Page  g G Ends  Tab Next

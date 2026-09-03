@@ -94,13 +94,13 @@ async function exportStories(directory: string): Promise<void> {
     'run',
     '-q',
     '-p',
-    'termrock-lookbook',
+    'termrock-catalog',
     '--',
-    'export-posters',
+    'render',
     '--out',
     directory,
+    '--scenarios',
   ]
-  for (const story of stories) args.push('--story', story)
   const result = Bun.spawnSync(args, { cwd: root, stdout: 'ignore', stderr: 'pipe' })
   if (result.exitCode !== 0) throw new Error(`poster export failed:\n${result.stderr.toString()}`)
   await validate(directory)

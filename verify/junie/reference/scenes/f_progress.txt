@@ -1,0 +1,40 @@
+ ▪ Junie Design system / Components / Progress                               truecolor · 120×40   i Inspector   ? Help
+
+   Foundations            Progress  Determinate, indeterminate, compact activity, terminal states
+▎  Overview
+                            Live                                                                        ticks at 80 ms
+   Components
+▎  Buttons                  Building    ━━━━━━━━───────────────────────────────────────────  16%
+▎  Inputs
+▎  Text areas               Resolving   ──────────────────━━━━━━━━────────────────────────────────
+▎  Forms
+▎  Lists                    ⠦ Waiting for the test runner
+▎  Trees                    ⠦ 3 of 12 files
+▎  Tables
+▎  Editable tables          ▎Restart   ▎Pause
+▎  Panels
+▎  Sidebars
+▎  Dialogs
+▎› Progress                 States                                                                              static
+▎  Scrolling
+                            Queued      ───────────────────────────────────────────────────   0%
+   Screens                  Halfway     ━━━━━━━━━━━━━━━━━━━━━━━━━━─────────────────────────  50%
+▎  Settings                 Completed   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% ✓
+▎  Task runner              Failed      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━──────────────────  64% !
+                            Paused      ━━━━━━━━━━━━━━━────────────────────────────────────  30% ‖
+
+                            Narrow bars keep the percentage and drop the label:
+                            ━━━────  42%
+
+
+
+
+
+
+
+
+
+
+
+
+ ↑ ↓ Move  Enter Open  Tab Into page  q Quit

@@ -1,0 +1,40 @@
+ ▪ Junie Design system / Screens / Settings                                  truecolor · 120×40   i Inspector   ? Help
+
+   Foundations            Project settings  Composed: tabs, form, editable table, list, dialogs
+▎  Overview
+                          ▎General   ▎Members   ▎Environment
+   Components             ────────────━━━━━━━━──────────────────────────────────────────────────────────────────────────
+▎  Buttons
+▎  Inputs                  ▎Members                                                                          6 members
+▎  Text areas
+▎  Forms                       Name                                        Email               Role      Last active
+▎  Lists                    ▎  Mira Okafor                                 mira@acme.dev       Owner           today
+▎  Trees                    ▎  Jonas Weber                                 jonas@acme.dev      Admin         2 h ago
+▎  Tables                   ▎  Ana Costa                                   ana@acme.dev        Member      yesterday
+▎  Editable tables          ▎  Kai Tanaka                                  kai@acme.dev        Member        3 d ago
+▎  Panels                   ▎  Sofia Rossi                                 sofia@acme.dev      Viewer          never
+▎  Sidebars                 ▎  deploy-bot                                  bot@acme.dev        Member        1 m ago
+▎  Dialogs
+▎  Progress                 ▎Invite   ▎Remove…   cursor: Jonas Weber
+▎  Scrolling
+
+   Screens
+▎› Settings
+▎  Task runner
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  EDIT   Enter Commit  Esc Cancel  Tab Next cell

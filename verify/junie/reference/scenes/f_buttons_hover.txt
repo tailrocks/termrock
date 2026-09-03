@@ -1,0 +1,40 @@
+ ▪ Junie Design system / Components / Buttons                                truecolor · 120×40   i Inspector   ? Help
+
+   Foundations            Buttons  Primary, secondary, subtle, danger, toggle, disabled, busy
+▎  Overview
+                            Playground                                             hover · click · Tab · Enter / Space
+   Components
+▎› Buttons                  Actions
+▎  Inputs                   ▎Run task   ▎Preview   ▎Cancel   ▎Delete branch
+▎  Text areas
+▎  Forms                    Toggles
+▎  Lists                    ▎○ Auto-approve   ▎● Verbose
+▎  Trees
+▎  Tables                   Disabled
+▎  Editable tables          ▎Disabled primary   ▎Disabled
+▎  Panels
+▎  Sidebars                 Busy
+▎  Dialogs                  ▎Start long job
+▎  Progress
+▎  Scrolling
+
+   Screens                  State matrix                                                           reference rendering
+▎  Settings
+▎  Task runner                             Primary        Secondary      Subtle         Danger
+                            default        ▎ Label        ▎ Label        ▎ Label        ▎ Label
+                            hover          ▎ Label        ▎ Label        ▎ Label        ▎ Label
+                            focus          ▎ Label        ▎ Label        ▎ Label        ▎ Label
+                            focus + hover  ▎ Label        ▎ Label        ▎ Label        ▎ Label
+                            pressed        ▎ Label        ▎ Label        ▎ Label        ▎ Label
+                            disabled       ▎ Label        ▎ Label        ▎ Label        ▎ Label
+
+
+
+
+
+
+
+
+
+
+ Enter / Space Activate  Tab Next

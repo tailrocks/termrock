@@ -1,0 +1,40 @@
+ ▪  TablePro  Production  ◆ production  acme_prod › public  safe                             truecolor · 120×40  ? help
+
+ ▎≡ Query 1 ×                                                                                                       +
+ ─━━━━━━━━━━━━─────────────────────────────────────────────────────────────────────────────────────────────────────────
+ ╭─ Explorer ─────── public ─╮ ╭─ Query 1 ─────────────────────────────────────────────────────────────────────────  ─╮
+ │                           │ │  ▎› 1  DELETE FROM orders                                                            │
+ │ ▎ Filter objects          │ │  ▎                                                                                   │
+ │ ▎▾ D acme_prod            │ │  ▎                                                                                   │
+ │ ▎  ▾ S public             │ │  ▎                                                                                   │
+ │ ▎    ▾ Tables          7  │ │  ▎                                                                                   │
+ │ ▎      ▸ T organizat╭────────────────────────────────────────────────────────────────────────╮                     │
+ │ ▎      ▸ T customers│                                                                        │                     │
+ │ ▎      ▸ T products │  This query may permanently modify or delete data                      │                     │
+ │ ▎      ▸ T orders   │                                                                        │                     │
+ │ ▎      ▸ T order_ite│  Action      DELETE without WHERE                                      │                     │
+ │ ▎      ▸ T payments │  Target      Production · production · acme_prod · orders              │                     │
+ │ ▎      ▸ T subscript│  Scope       every row in orders (1.2 M rows)                          │                     │
+ │ ▎    ▸ Views        │  Risk        Removes all rows; dependent rows may go with ON DELETE    │                     │
+ │ ▎    ▸ Functions    │              CASCADE.                                                  │                     │
+ │ ▎    ▸ Sequences    │  Reversible  Not reversible without a backup                           │                     │
+ │ ▎  ▸ S analytics    │  Safe Mode   Safe Mode · deliberate confirmation required              │                     │
+ │ ▎  ▸ S audit        │                                                                        │                     │
+ │                     │  DELETE FROM orders                                                    │                     │
+ │                     │                                                                        │                     │
+ │                     │   Type orders to confirm                                               │                     │
+ │                     │ ▎ orders                                                               │                     │
+ │                     │                                                                        │                     │
+ │                     │                                                    ▎Cancel  ▎Execute   │runs all             │
+ │                     │                                                                        │                     │
+ │                     ╰────────────────────────────────────────────────────────────────────────╯                     │
+ │                           │ │                                                                                      │
+ │                           │ │                                                                                      │
+ │                           │ │                                                                                      │
+ │                           │ │                                                                                      │
+ │                           │ │                                                                                      │
+ │                           │ │                                                                                      │
+ │                           │ │                                                                                      │
+ ╰───────────────────────────╯ ╰──────────────────────────────────────────────────────────────────────────────────────╯
+
+ ← → Choose  Enter Confirm  Esc Cancel                                                          Connected to Production

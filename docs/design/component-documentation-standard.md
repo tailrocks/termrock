@@ -3,7 +3,7 @@
 | Field | Rule |
 |---|---|
 | Status | Binding for every generated catalog route |
-| Public authority | `termrock-lookbook inventory --format json` |
+| Public authority | `termrock-catalog scenarios --format json` |
 | Editorial authority | One canonical MDX page per catalog entry |
 | Generated projection | `docs/src/generated/catalog.ts` |
 | Preview | One exact representative mounted Rust story |
@@ -72,10 +72,10 @@ coverage tables; the v2 contract is the machine evidence ledger.
 
 ## Preview law
 
-The website and native Lookbook mount the same `DemoSession` factory. Browser
+The website and native catalog mount the same `CatalogSession` factory. Browser
 input is normalized into backend-neutral events and sent to persistent Rust
 state. Static poster JSON is lazy fallback paint and never defines behavior;
-the poster gate rerenders every representative story and compares the full
+the poster gate rerenders every representative scenario and compares the full
 dimensions and cell frame.
 
 - Forward only supported hover, pointer, keyboard, paste, resize, focus, and time events.

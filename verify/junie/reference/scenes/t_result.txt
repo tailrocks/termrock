@@ -1,0 +1,40 @@
+ ▪  TablePro  Production  ◆ production  acme_prod › public  safe                             truecolor · 120×40  ? help
+
+ ▎≡ Query 1 ×                                                                                                       +
+ ─━━━━━━━━━━━━─────────────────────────────────────────────────────────────────────────────────────────────────────────
+ ╭─ Explorer ─────── public ─╮ ╭─ Query 1 ──────────────────────────────────────────────────────────────────── 15 ms ─╮
+ │                           │ │  ▎› 1  …ROM orders WHERE status = 'pending' ORDER BY total_amount DESC LIMIT 40      │
+ │ ▎ Filter objects          │ │  ▎                                                                                   │
+ │ ▎▾ D acme_prod            │ │  ▎                                                                                   │
+ │ ▎  ▾ S public             │ │  ▎                                                                                   │
+ │ ▎    ▾ Tables          7  │ │  ▎                                                                                   │
+ │ ▎      ▸ T organizations  │ │  ▎                                                                                   │
+ │ ▎      ▸ T customers      │ │  ▎                                                                                   │
+ │ ▎      ▸ T products  312  │ │  ▎                                                                                   │
+ │ ▎      ▸ T orders         │ │  ▎                                                                                   │
+ │ ▎      ▸ T order_items    │ │  ▎                                                                                   │
+ │ ▎      ▸ T payments       │ │                                                                     ln 1/1 · col 82  │
+ │ ▎      ▸ T subscriptions  │ │                                                                                      │
+ │ ▎    ▸ Views           2  │ │  ▎SELECT orders (40) ×                                                               │
+ │ ▎    ▸ Functions       1  │ │  ─━━━━━━━━━━━━━━━━━━━━━───────────────────────────────────────────────────────────── │
+ │ ▎    ▸ Sequences       1  │ │   40 rows · 15 ms                                                                    │
+ │ ▎  ▸ S analytics          │ │        ⚷ id                                    order_number                     12›  │
+ │ ▎  ▸ S audit              │ │  ▎   1 e15b910c-bef0-471b-9e16-75dc09b5a823           11389                        ┃ │
+ │                           │ │  ▎   2 9471eb35-d99c-44a5-93b7-3601ef5ee1e2           10590                        ┃ │
+ │                           │ │  ▎   3 ce1292dd-9179-4b74-a034-7f17324e7fad           11309                        ┃ │
+ │                           │ │  ▎   4 28d002df-92a3-4796-9c67-aa1d3c82156a           11521                        ┃ │
+ │                           │ │  ▎   5 ac12342a-4ee4-48b7-8bda-1a05be7f1bfd           11762                        ┃ │
+ │                           │ │  ▎   6 3d360c4a-cb42-4021-a0b7-f9830c14c429           10830                        ┃ │
+ │                           │ │  ▎   7 7b94d47c-ac72-49b8-94cd-8c1f67b0b68a           10924                        │ │
+ │                           │ │  ▎   8 bae8f93b-4c51-46c7-8f05-6d3af594fde9           10048                        │ │
+ │                           │ │  ▎   9 3e7d6bde-1d2d-42e2-91f3-923a8fdd5e3c           11176                        │ │
+ │                           │ │  ▎  10 edbe79e7-b0af-4bce-84b2-aba8d1f3c9cf           11140                        │ │
+ │                           │ │  ▎  11 41e19ebb-e921-4217-ade5-14f56eb9007d           10945                        │ │
+ │                           │ │  ▎  12 5b4995c9-350a-4e5b-88e5-ee9be0268e92           11747                        │ │
+ │                           │ │  ▎  13 9322015a-1ab8-44b8-8f79-e41c566e6eb7           11899                        │ │
+ │                           │ │  ▎  14 74e50de9-9222-43fe-bad5-a39a7fba640e           11074                        │ │
+ │                           │ │  ▎  15 6598d5ca-d16d-4118-ac77-369fb3bc6029           11201                        │ │
+ │                           │ │  ▎  16 a5e2e48c-041c-46fa-b266-3daf299428cd           11510                        │ │
+ ╰───────────────────────────╯ ╰──────────────────────────────────────────────────────────────────────────────────────╯
+
+ Enter Edit  Ctrl+R Run  Alt+R Run all  Ctrl+X Explain  / Find  Tab Next                        Connected to Production
