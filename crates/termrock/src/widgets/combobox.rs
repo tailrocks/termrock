@@ -963,7 +963,6 @@ impl<'a> Combobox<'a> {
             } else {
                 crate::style::ControlState::Default
             },
-            invalid,
             state.draft.is_editing(),
         );
         let mut y = area.y;

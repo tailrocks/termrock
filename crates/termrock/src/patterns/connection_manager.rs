@@ -2911,8 +2911,6 @@ mod tests {
         }
         let elapsed = start.elapsed();
         assert!(elapsed.as_secs() < 3, "{elapsed:?}");
-        // Also record-friendly: always succeed if under budget
-        let _ = elapsed;
     }
 
     #[test]

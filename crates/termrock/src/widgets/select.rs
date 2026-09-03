@@ -1016,7 +1016,6 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
         if area.is_empty() {
             return;
         }
-        let invalid = matches!(self.validation, Validation::Invalid(_));
         // The trigger is a field, so it wears the field's chrome. Swapping the
         // whole style to `Role::Focus` on focus threw away the well underneath
         // it — the box stopped looking like something you type into at the one
@@ -1028,7 +1027,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
         } else {
             ControlState::Default
         };
-        let recipe = self.system.input_recipe(control_state, invalid, false);
+        let recipe = self.system.input_recipe(control_state, false);
         buffer.set_style(area, recipe.fill);
         // Prompt column is reserved in every state so the value does not shift
         // when focus arrives. Idle paints ▎ with fg=bg; focus makes it visible.

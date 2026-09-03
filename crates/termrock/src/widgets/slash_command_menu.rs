@@ -1510,8 +1510,7 @@ mod tests {
 
     #[test]
     fn presentation_helper() {
-        let p = slash_presentation_for(Rect::new(0, 0, 30, 10));
-        let _ = p;
+        let _ = slash_presentation_for(Rect::new(0, 0, 30, 10));
         let r = place_slash_command_menu(Rect::new(0, 0, 80, 24), Rect::new(2, 20, 1, 1));
         assert!(r.width > 0);
     }

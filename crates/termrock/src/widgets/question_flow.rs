@@ -1274,7 +1274,6 @@ impl<'a> QuestionFlow<'a> {
                         } else {
                             ControlState::Default
                         },
-                        state.last_error.is_some(),
                         false,
                     );
                     let row = Rect::new(inner.x, y, inner.width, 1);
@@ -1356,7 +1355,6 @@ impl<'a> QuestionFlow<'a> {
                         } else {
                             ControlState::Default
                         },
-                        state.last_error.is_some(),
                         true,
                     );
                     let row = Rect::new(inner.x, y, inner.width, 1);

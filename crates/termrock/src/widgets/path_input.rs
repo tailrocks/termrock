@@ -1007,7 +1007,6 @@ impl<'a> PathInput<'a> {
             } else {
                 ControlState::Default
             },
-            invalid || destructive,
             state.path.is_editing(),
         );
 

@@ -63,20 +63,18 @@ const PALETTE_SHORTFALLS: &[(&str, &str)] = &[
 ];
 
 const RECIPE_SHORTFALLS: &[(&str, &str)] = &[
-    ("junie", "button Destructive/Default label"),   // 3.71
-    ("junie", "button Destructive/Focused label"),   // 3.71
-    ("junie", "button Destructive/Hovered label"),   // 2.60
-    ("junie", "button Destructive/Pressed label"),   // 4.01
-    ("junie", "button Primary/Pressed label"),       // 3.81
-    ("junie", "button Primary/Disabled label"),      // 1.76
-    ("junie", "button Secondary/Disabled label"),    // 1.76
-    ("junie", "button Outline/Disabled label"),      // 1.76
-    ("junie", "button Destructive/Disabled label"),  // 1.76
-    ("junie", "button Quiet/Disabled label"),        // 2.23
-    ("junie", "input Disabled/invalid=false value"), // 1.97
-    ("junie", "input Disabled/invalid=false placeholder"), // 1.97
-    ("junie", "input Disabled/invalid=true placeholder"), // 1.97
-    ("junie", "input Disabled/invalid=true value"),  // 1.97 — invalid says error in the underline
+    ("junie", "button Destructive/Default label"),  // 3.71
+    ("junie", "button Destructive/Focused label"),  // 3.71
+    ("junie", "button Destructive/Hovered label"),  // 2.60
+    ("junie", "button Destructive/Pressed label"),  // 4.01
+    ("junie", "button Primary/Pressed label"),      // 3.81
+    ("junie", "button Primary/Disabled label"),     // 1.76
+    ("junie", "button Secondary/Disabled label"),   // 1.76
+    ("junie", "button Outline/Disabled label"),     // 1.76
+    ("junie", "button Destructive/Disabled label"), // 1.76
+    ("junie", "button Quiet/Disabled label"),       // 2.23
+    ("junie", "input Disabled value"),              // 1.97
+    ("junie", "input Disabled placeholder"),        // 1.97
 ];
 
 /// The one palette TermRock ships, measured at truecolor where its hex values
@@ -267,30 +265,28 @@ fn recipe_pairs(system: &DesignSystem) -> Vec<Measured> {
         ControlState::Hovered,
         ControlState::Disabled,
     ] {
-        for invalid in [false, true] {
-            let recipe = system.input_recipe(state, invalid, false);
-            let ground = style_ground(palette, recipe.fill);
-            measure(
-                &mut out,
-                format!("input {state:?}/invalid={invalid} value"),
-                recipe.value.fg.and_then(Rgb::from_color),
-                ground,
-                if matches!(state, ControlState::Disabled) {
-                    2.5
-                } else {
-                    4.5
-                },
-            );
-            // junie's placeholder is muted text on the field plane: 4.2:1, a
-            // deliberately quiet answer to "what goes here".
-            measure(
-                &mut out,
-                format!("input {state:?}/invalid={invalid} placeholder"),
-                recipe.placeholder.fg.and_then(Rgb::from_color),
-                ground,
-                2.5,
-            );
-        }
+        let recipe = system.input_recipe(state, false);
+        let ground = style_ground(palette, recipe.fill);
+        measure(
+            &mut out,
+            format!("input {state:?} value"),
+            recipe.value.fg.and_then(Rgb::from_color),
+            ground,
+            if matches!(state, ControlState::Disabled) {
+                2.5
+            } else {
+                4.5
+            },
+        );
+        // junie's placeholder is muted text on the field plane: 4.2:1, a
+        // deliberately quiet answer to "what goes here".
+        measure(
+            &mut out,
+            format!("input {state:?} placeholder"),
+            recipe.placeholder.fg.and_then(Rgb::from_color),
+            ground,
+            2.5,
+        );
     }
     for selected in [false, true] {
         for focused in [false, true] {

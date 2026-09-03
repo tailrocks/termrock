@@ -1038,7 +1038,6 @@ mod tests {
 
     #[test]
     fn expand_collapse_outcomes() {
-        let call = ToolCall::new("t", "bash", "run").status(ToolStatus::Running);
         let mut st = ToolCallCardState::new();
         assert!(matches!(
             st.toggle_expand("t"),
@@ -1049,7 +1048,6 @@ mod tests {
             st.toggle_expand("t"),
             ToolCallCardOutcome::Collapsed { .. }
         ));
-        let _ = call;
     }
 
     #[test]

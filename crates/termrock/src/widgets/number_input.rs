@@ -1025,7 +1025,6 @@ impl<'a> NumberInput<'a> {
             } else {
                 ControlState::Default
             },
-            invalid,
             state.editing,
         );
 

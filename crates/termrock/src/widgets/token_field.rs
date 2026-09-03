@@ -999,7 +999,6 @@ impl<'a> TokenField<'a> {
                 overflow: None,
             };
         }
-        let invalid = matches!(self.validation, Validation::Invalid(_));
         let recipe = self.system.input_recipe(
             if !state.enabled {
                 ControlState::Disabled
@@ -1008,7 +1007,6 @@ impl<'a> TokenField<'a> {
             } else {
                 ControlState::Default
             },
-            invalid,
             state.draft.is_editing() && matches!(state.zone, TokenFieldZone::Draft),
         );
 

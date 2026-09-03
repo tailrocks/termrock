@@ -1364,8 +1364,7 @@ mod tests {
         let events: Vec<StreamEvent<'_, usize>> = owned
             .iter()
             .enumerate()
-            .map(|(i, (id, ts, sum))| {
-                let _ = id;
+            .map(|(i, (_, ts, sum))| {
                 StreamEvent::with_id(i, "Normal", ts, sum).severity(EventSeverity::Info)
             })
             .collect();

@@ -1584,16 +1584,13 @@ impl PromptComposerState {
 pub fn detect_completion(text: &str, cursor: TextCursor) -> Option<CompletionQuery> {
     // Map cursor to absolute byte in LF-joined text.
     let mut abs = 0usize;
-    let mut line_idx = 0usize;
     for (i, line) in text.split('\n').enumerate() {
         if i == cursor.line {
             abs = abs.saturating_add(cursor.byte.min(line.len()));
             break;
         }
         abs = abs.saturating_add(line.len()).saturating_add(1);
-        line_idx = i;
     }
-    let _ = line_idx;
     let abs = abs.min(text.len());
     let head = &text[..abs];
     // Find last trigger not preceded by word char.

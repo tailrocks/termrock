@@ -879,7 +879,6 @@ mod tests {
         let state = BadgeState::new();
         bi.register_semantic(&mut scene, "b2", Rect::new(0, 1, 20, 1), Some(&state));
         assert!(scene.nodes().iter().any(|n| n.focusable));
-        let _ = state;
     }
 
     #[test]

@@ -645,11 +645,10 @@ mod tests {
     fn paint_does_not_panic_on_tiny() {
         let system = DesignSystem::default();
         let mut buf = Buffer::empty(Rect::new(0, 0, 2, 1));
-        let content = Surface::new(&system)
+        // Tiny: content may be empty after border.
+        let _ = Surface::new(&system)
             .recipe(SurfaceRecipe::Focused)
             .paint(Rect::new(0, 0, 2, 1), &mut buf);
-        // Tiny: content may be empty after border.
-        let _ = content;
     }
 
     #[test]

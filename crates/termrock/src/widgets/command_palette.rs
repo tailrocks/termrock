@@ -2058,7 +2058,6 @@ mod tests {
                 ..
             } if a == "42"
         ));
-        let _ = vis;
     }
 
     #[test]
@@ -2238,8 +2237,7 @@ mod tests {
             "{text}"
         );
         assert!(!s.hits.is_empty(), "result rows must paint hit geometry");
-        let (idx, row) = s.hits[0];
-        let _ = idx;
+        let (_, row) = s.hits[0];
         let gutter = buf[(row.x, row.y)].symbol();
         assert_ne!(
             gutter, "›",

@@ -1213,8 +1213,6 @@ mod tests {
         let entries = sample();
         let mut state = SchemaBrowserState::with_selected(Some("orders"));
         // Activate lazy table
-        let nodes = schema_entries_to_tree_nodes(&entries.iter().collect::<Vec<_>>());
-        let _ = nodes;
         let out = state.handle_key(&entries, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
         assert!(
             matches!(

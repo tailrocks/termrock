@@ -224,8 +224,7 @@ mod tests {
     fn dumb_term_is_monochrome_via_color_capability() {
         // Unit-level: ColorCapability contract used by detect.
         // Full env isolation is host-specific; this locks the helper.
-        let c = ColorCapability::detect_from_env();
-        let _ = c;
+        let _ = ColorCapability::detect_from_env();
     }
 
     #[test]

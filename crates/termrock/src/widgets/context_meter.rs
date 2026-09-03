@@ -1057,14 +1057,8 @@ mod tests {
         let m = BudgetMeasure::tokens(10, 0);
         // limit 0 → fraction None
         assert!(m.fraction().is_none() || m.limit == Some(0));
-        let f = if m.limit == Some(0) {
-            None
-        } else {
-            m.fraction()
-        };
         // our tokens() sets limit Some(0); fraction returns None for limit 0
         assert!(BudgetMeasure::tokens(10, 0).fraction().is_none());
-        let _ = f;
         let s = format_budget_compact(&BudgetMeasure::tokens(10, 0));
         assert!(!s.contains("100%"));
     }

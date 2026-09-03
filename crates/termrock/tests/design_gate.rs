@@ -907,7 +907,7 @@ fn pressed_is_an_explicit_reversal() {
         assert_eq!(recipe.fill.bg, Some(WHITE), "{variant:?} pressed");
         assert!(!recipe.label.add_modifier.contains(Modifier::REVERSED));
     }
-    let input = system.input_recipe(ControlState::Focused, false, false);
+    let input = system.input_recipe(ControlState::Focused, false);
     assert_eq!(input.cursor.fg, Some(BLACK));
     assert_eq!(input.cursor.bg, Some(WHITE));
 }
@@ -1587,13 +1587,13 @@ fn a_focused_field_says_so() {
         Modifier::BOLD
     );
     assert_eq!(system.junie_theme().label(false).fg, Some(WHITE_70));
-    let recipe = system.input_recipe(ControlState::Focused, false, false);
+    let recipe = system.input_recipe(ControlState::Focused, false);
     assert!(recipe.prompt.is_some(), "the recipe ships the prompt glyph");
     assert!(
         !recipe.border.add_modifier.contains(Modifier::UNDERLINED),
         "nav-focus does not underline"
     );
-    let editing = system.input_recipe(ControlState::Focused, false, true);
+    let editing = system.input_recipe(ControlState::Focused, true);
     assert!(
         editing.border.add_modifier.contains(Modifier::UNDERLINED),
         "editing underlines"
@@ -1778,37 +1778,19 @@ fn interaction_underline_is_three_color() {
         assert_eq!(style.fg, Some(fg), "{role:?} stays on the ladder");
     }
 
-    // The field side: underline is the insert session (accent). Idle invalid
-    // is a trailing bold `!` (widget paint), not a red underline — junie
-    // `input.rs`. Nav-focus and resting do not underline. Editing wins even
-    // when the value is invalid.
-    let nav = system.input_recipe(ControlState::Focused, false, false);
+    // The field side: underline is the insert session (accent). Invalid is
+    // not a recipe concern at all — it is a trailing bold `!` painted by the
+    // widget (junie `input.rs`). Nav-focus and resting do not underline.
+    let nav = system.input_recipe(ControlState::Focused, false);
     assert!(
         !nav.border.add_modifier.contains(Modifier::UNDERLINED),
         "nav-focus does not underline"
     );
-    let editing = system.input_recipe(ControlState::Focused, false, true);
+    let editing = system.input_recipe(ControlState::Focused, true);
     assert!(editing.border.add_modifier.contains(Modifier::UNDERLINED));
-    let invalid = system.input_recipe(ControlState::Focused, true, false);
-    assert!(
-        !invalid.border.add_modifier.contains(Modifier::UNDERLINED),
-        "input_recipe(Focused, true, false) must not be UNDERLINED"
-    );
-    let editing_invalid = system.input_recipe(ControlState::Focused, true, true);
-    assert!(
-        editing_invalid
-            .border
-            .add_modifier
-            .contains(Modifier::UNDERLINED),
-        "input_recipe(Focused, true, true) is underlined: editing wins"
-    );
-    assert_eq!(
-        editing_invalid.border.underline_color, editing.border.underline_color,
-        "editing invalid stays accent, not error"
-    );
     assert!(
         !system
-            .input_recipe(ControlState::Default, false, false)
+            .input_recipe(ControlState::Default, false)
             .border
             .add_modifier
             .contains(Modifier::UNDERLINED),
@@ -1821,7 +1803,7 @@ fn interaction_underline_is_three_color() {
 #[test]
 fn editing_underline_is_accent() {
     let system = DesignSystem::junie();
-    let editing = system.input_recipe(ControlState::Focused, false, true);
+    let editing = system.input_recipe(ControlState::Focused, true);
     assert_eq!(
         editing.border.underline_color,
         Some(GREEN),
@@ -3719,7 +3701,7 @@ fn family_focus_and_selection_survive_monochrome() {
     );
 
     // Field: the prompt glyph survives the collapse.
-    let field = mono.input_recipe(ControlState::Focused, false, false);
+    let field = mono.input_recipe(ControlState::Focused, false);
     assert_eq!(
         field.prompt.expect("prompt glyph").0,
         "▎",

@@ -413,45 +413,46 @@ fn vertical_rule_col(sep: Separator<'_>, area: Rect) -> Rect {
 
 fn rule_style(sep: Separator<'_>, vertical: bool) -> (&'static str, ratatui_core::style::Style) {
     let glyphs = sep.system.glyphs;
-    let (glyph, role) = match (sep.variant, vertical, false) {
-        (SeparatorVariant::Quiet, false, false) => (glyphs.rule(), Role::Border),
-        (SeparatorVariant::Quiet, true, false) => (glyphs.rule_v(), Role::Border),
-        (SeparatorVariant::Quiet, false, true) => (glyphs.rule(), Role::Border),
-        (SeparatorVariant::Quiet, true, true) => (glyphs.rule_v(), Role::Border),
-
-        (SeparatorVariant::Strong | SeparatorVariant::SectionBreak, false, false) => {
-            ("━", Role::TextMuted)
-        }
-        (SeparatorVariant::Strong | SeparatorVariant::SectionBreak, true, false) => {
-            ("┃", Role::TextMuted)
-        }
-        (SeparatorVariant::Strong | SeparatorVariant::SectionBreak, false, true) => {
-            (glyphs.rule_strong(), Role::TextMuted)
-        }
-        (SeparatorVariant::Strong | SeparatorVariant::SectionBreak, true, true) => {
-            (glyphs.rule_v(), Role::TextMuted)
-        }
-
-        (SeparatorVariant::Labeled, false, _) => (glyphs.rule(), Role::Border),
-        (SeparatorVariant::Labeled, true, _) => (glyphs.rule_v(), Role::Border),
-
-        // Focus zone: distinct double/dash pattern without BorderFocused (focus ≠ chrome).
-        (SeparatorVariant::FocusZone, false, false) => (glyphs.rule_strong(), Role::Border),
-        (SeparatorVariant::FocusZone, true, false) => ("║", Role::Border),
-        (SeparatorVariant::FocusZone, false, true) => (glyphs.rule_strong(), Role::Border),
-        (SeparatorVariant::FocusZone, true, true) => (":", Role::Border),
+    // Quiet / Labeled / FocusZone rules are structural chrome (Border); the
+    // strong rule carries the muted text tone instead — weight through tone,
+    // not a separate focus colour.
+    let (glyph, style) = match sep.variant {
+        SeparatorVariant::Quiet => (
+            if vertical {
+                glyphs.rule_v()
+            } else {
+                glyphs.rule()
+            },
+            sep.system.style(Role::Border),
+        ),
+        SeparatorVariant::Strong | SeparatorVariant::SectionBreak => (
+            if vertical {
+                // Heavy vertical rule; the glyph table has no RuleVStrong.
+                "┃"
+            } else {
+                glyphs.rule_strong()
+            },
+            sep.system.style(Role::TextMuted),
+        ),
+        SeparatorVariant::Labeled => (
+            if vertical {
+                glyphs.rule_v()
+            } else {
+                glyphs.rule()
+            },
+            sep.system.style(Role::Border),
+        ),
+        // Focus zone: a heavier rule without BorderFocused (focus ≠ chrome).
+        SeparatorVariant::FocusZone => (
+            if vertical {
+                // Double vertical rule; the glyph table has no RuleVDouble.
+                "║"
+            } else {
+                glyphs.rule_strong()
+            },
+            sep.system.style(Role::Border),
+        ),
     };
-    // Prefer muted for quiet if palette has TextDisabled contrast for no-color
-    // terminals; still Border for structural rules.
-    let style = match sep.variant {
-        SeparatorVariant::Quiet => sep.system.style(Role::Border),
-        SeparatorVariant::Strong | SeparatorVariant::SectionBreak => {
-            sep.system.style(Role::TextMuted)
-        }
-        SeparatorVariant::Labeled => sep.system.style(Role::Border),
-        SeparatorVariant::FocusZone => sep.system.style(Role::Border),
-    };
-    let _ = role;
     (glyph, style)
 }
 

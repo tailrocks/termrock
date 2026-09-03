@@ -1576,10 +1576,10 @@ impl DesignSystem {
     ///
     /// Keyboard focus is the gutter. `editing` is the insert session: accent
     /// underline. A focused-but-not-editing field is the well plus `▎` only.
-    /// `invalid` does not change the recipe — idle invalid is a trailing bold
-    /// `!` (widget paint), not a red underline (junie `input.rs`).
+    /// Invalid state is a widget concern (the trailing bold `!`), never a
+    /// recipe input.
     #[must_use]
-    pub fn input_recipe(&self, state: ControlState, invalid: bool, editing: bool) -> InputRecipe {
+    pub fn input_recipe(&self, state: ControlState, editing: bool) -> InputRecipe {
         let theme = self.junie_theme();
         let focused = matches!(state, ControlState::Focused);
         let disabled = matches!(state, ControlState::Disabled);
@@ -1621,11 +1621,9 @@ impl DesignSystem {
             role_with_fg(&self.palette, Role::TextMuted, theme.text_muted)
         };
         // A field has no frame; the border slot carries the underline
-        // affordance. Underline ONLY while editing, always accent. Invalid
-        // does not set UNDERLINED — idle invalid border matches resting/nav.
-        // Resting is the subtle hairline. Nav-focus is the gutter, not an
-        // underline. Focus snaps; there is no cross-fade.
-        let _ = invalid;
+        // affordance. Underline ONLY while editing, always accent — never an
+        // error tone. Resting is the subtle hairline. Nav-focus is the
+        // gutter, not an underline. Focus snaps; there is no cross-fade.
         let border = if visual_editing {
             let accent = self.palette.style(Role::Accent);
             let underline = accent.underline_color.unwrap_or(theme.accent);
@@ -2110,7 +2108,7 @@ mod tests {
         assert!(primary.label.add_modifier.contains(Modifier::UNDERLINED));
         assert_eq!(primary.fill.bg, Some(Color::Rgb(100, 150, 200)));
 
-        let input = system.input_recipe(ControlState::Default, false, false);
+        let input = system.input_recipe(ControlState::Default, false);
         assert_eq!(input.value.fg, Some(Color::LightRed));
         assert_eq!(input.fill.bg, Some(Color::Rgb(10, 20, 30)));
         assert!(input.value.add_modifier.contains(Modifier::ITALIC));
@@ -2411,7 +2409,7 @@ mod tests {
     fn input_recipe_follows_the_junie_field() {
         let system = DesignSystem::junie();
         let theme = system.junie_theme();
-        let idle = system.input_recipe(ControlState::Default, false, false);
+        let idle = system.input_recipe(ControlState::Default, false);
         assert_eq!(idle.fill.bg, Some(theme.field));
         assert_eq!(idle.value.fg, Some(theme.text_primary));
         assert_eq!(idle.placeholder.fg, Some(theme.text_muted));
@@ -2423,7 +2421,7 @@ mod tests {
             "idle gutter is reserved, fg=bg"
         );
 
-        let nav = system.input_recipe(ControlState::Focused, false, false);
+        let nav = system.input_recipe(ControlState::Focused, false);
         assert!(
             !nav.border.add_modifier.contains(Modifier::UNDERLINED),
             "nav-focus does not underline"
@@ -2433,7 +2431,7 @@ mod tests {
             Some(theme.focus)
         );
 
-        let editing = system.input_recipe(ControlState::Focused, false, true);
+        let editing = system.input_recipe(ControlState::Focused, true);
         assert!(
             editing.border.add_modifier.contains(Modifier::UNDERLINED),
             "editing underlines"
@@ -2462,49 +2460,15 @@ mod tests {
                     .underline_color(custom_underline),
             ),
         );
-        let custom_editing = custom.input_recipe(ControlState::Focused, false, true);
+        let custom_editing = custom.input_recipe(ControlState::Focused, true);
         assert_eq!(custom_editing.border.fg, Some(custom_accent));
         assert_eq!(
             custom_editing.border.underline_color,
             Some(custom_underline)
         );
 
-        let hovered = system.input_recipe(ControlState::Hovered, false, false);
+        let hovered = system.input_recipe(ControlState::Hovered, false);
         assert_eq!(hovered.fill.bg, Some(theme.field_hover));
-
-        let bad = system.input_recipe(ControlState::Default, true, false);
-        assert!(
-            !bad.border.add_modifier.contains(Modifier::UNDERLINED),
-            "idle invalid does not underline"
-        );
-        assert_eq!(
-            bad.border, idle.border,
-            "idle invalid border matches resting"
-        );
-
-        let nav_bad = system.input_recipe(ControlState::Focused, true, false);
-        assert!(
-            !nav_bad.border.add_modifier.contains(Modifier::UNDERLINED),
-            "input_recipe(Focused, true, false) must not be UNDERLINED"
-        );
-        assert_eq!(
-            nav_bad.border, nav.border,
-            "idle invalid border matches nav"
-        );
-
-        let editing_bad = system.input_recipe(ControlState::Focused, true, true);
-        assert!(
-            editing_bad
-                .border
-                .add_modifier
-                .contains(Modifier::UNDERLINED),
-            "input_recipe(Focused, true, true) is underlined: editing wins"
-        );
-        assert_eq!(
-            editing_bad.border.underline_color,
-            Some(theme.accent),
-            "editing invalid stays accent, not error"
-        );
     }
 
     #[test]

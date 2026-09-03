@@ -913,7 +913,6 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
         buffer: &mut Buffer,
         state: &mut MultiSelectState<Id>,
     ) {
-        let invalid = matches!(self.validation, Validation::Invalid(_));
         let recipe = self.system.input_recipe(
             if !state.enabled {
                 ControlState::Disabled
@@ -922,7 +921,6 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
             } else {
                 ControlState::Default
             },
-            invalid,
             false,
         );
         let mut y = area.y;

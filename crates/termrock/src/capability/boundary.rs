@@ -175,8 +175,7 @@ mod tests {
     fn modern_projects_truecolor_palette() {
         let b = CapabilityBoundary::from_profile(CapabilityProfile::Modern);
         assert!(!b.colorless());
-        let q = b.project_palette(RolePalette::junie());
-        let _ = q;
+        let _ = b.project_palette(RolePalette::junie());
     }
 
     #[test]

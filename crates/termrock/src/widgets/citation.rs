@@ -343,6 +343,20 @@ impl CitationSource {
             .unwrap_or(self.destination.as_str())
     }
 
+    /// Whether the raw destination follows the label under `policy`.
+    ///
+    /// Single resolver for both the compact chip ([`SourceCitation`]) and the
+    /// expanded list rows: `Auto` falls back to external / sensitive /
+    /// no-hyperlink sources.
+    #[must_use]
+    pub fn shows_destination(&self, policy: DestinationDisplay, no_hyperlink: bool) -> bool {
+        match policy {
+            DestinationDisplay::Always => true,
+            DestinationDisplay::Never => false,
+            DestinationDisplay::Auto => self.external || self.sensitive || no_hyperlink,
+        }
+    }
+
     /// Inline label: `[1]` or `[1:title]`.
     #[must_use]
     pub fn inline_label(&self, show_title: bool) -> String {
@@ -647,9 +661,8 @@ impl<'a> SourceCitation<'a> {
         }
     }
 
-    /// ASCII glyphs.
-    #[must_use]
     /// Destination display policy.
+    #[must_use]
     pub const fn show_destination(mut self, d: DestinationDisplay) -> Self {
         self.show_destination = d;
         self
@@ -674,13 +687,9 @@ impl<'a> SourceCitation<'a> {
     pub fn decorated(&self) -> String {
         let g = self.source.kind.glyph();
         let mut s = format!("{}{}", g, self.source.inline_label(false));
-        let show_dest = match self.show_destination {
-            DestinationDisplay::Always => true,
-            DestinationDisplay::Never => false,
-            DestinationDisplay::Auto => {
-                self.source.external || self.source.sensitive || self.no_hyperlink
-            }
-        };
+        let show_dest = self
+            .source
+            .shows_destination(self.show_destination, self.no_hyperlink);
         if show_dest && !self.source.destination.is_empty() {
             s.push(' ');
             s.push_str(&truncate_dest(
@@ -1071,6 +1080,7 @@ pub struct CitationList<'a> {
     sources: &'a [CitationSource],
     system: &'a DesignSystem,
     title: Option<&'a str>,
+    show_destination: DestinationDisplay,
 }
 
 impl<'a> CitationList<'a> {
@@ -1081,11 +1091,17 @@ impl<'a> CitationList<'a> {
             sources,
             system,
             title: None,
+            show_destination: DestinationDisplay::Auto,
         }
     }
 
-    /// ASCII.
+    /// Destination display policy for expanded rows.
     #[must_use]
+    pub const fn show_destination(mut self, d: DestinationDisplay) -> Self {
+        self.show_destination = d;
+        self
+    }
+
     /// Title.
     pub const fn title(mut self, t: &'a str) -> Self {
         self.title = Some(t);
@@ -1144,13 +1160,7 @@ impl<'a> CitationList<'a> {
             let mark = " ";
             let g = src.kind.glyph();
             let mut line = format!("{mark}{} {} {}", src.inline_label(false), g, src.title);
-            // always show dest for external / no_hyperlink / sensitive
-            let show_dest = src.external
-                || src.sensitive
-                || state.no_hyperlink
-                || matches!(self.show_dest_policy(), DestinationDisplay::Always);
-            let _ = show_dest;
-            if src.external || src.sensitive || state.no_hyperlink {
+            if src.shows_destination(self.show_destination, state.no_hyperlink) {
                 line.push(' ');
                 line.push_str(&truncate_dest(
                     &src.destination,
@@ -1198,10 +1208,6 @@ impl<'a> CitationList<'a> {
             ));
             y = y.saturating_add(1);
         }
-    }
-
-    fn show_dest_policy(&self) -> DestinationDisplay {
-        DestinationDisplay::Auto
     }
 }
 

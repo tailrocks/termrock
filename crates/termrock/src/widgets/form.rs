@@ -316,10 +316,8 @@ impl FormLayout {
         }
     }
 
-    fn field_row_height(self) -> usize {
-        let _ = self; // every layout stacks fields three rows apart
-        3
-    }
+    /// Every layout stacks fields three rows apart.
+    const FIELD_ROW_HEIGHT: usize = 3;
 
     fn section_header_height(self) -> usize {
         match self {
@@ -875,7 +873,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Form<'_, Id> {
         } else {
             content_area.width
         };
-        let field_h = self.layout.field_row_height();
+        let field_h = FormLayout::FIELD_ROW_HEIGHT;
         let header_h = self.layout.section_header_height();
 
         for section in self.fieldsets {
@@ -1038,7 +1036,7 @@ fn columns_for(width: u16, layout: FormLayout) -> u8 {
 fn dimensions<Id>(fieldsets: &[Fieldset<'_, Id>], width: u16, layout: FormLayout) -> (u8, usize) {
     let columns = columns_for(width, layout);
     let header = layout.section_header_height();
-    let field_h = layout.field_row_height();
+    let field_h = FormLayout::FIELD_ROW_HEIGHT;
     let height = fieldsets.iter().fold(0usize, |height, section| {
         height.saturating_add(header).saturating_add(
             section
@@ -1059,7 +1057,7 @@ fn field_bounds<Id: PartialEq>(
     focused: &Id,
 ) -> Option<(usize, usize)> {
     let header = layout.section_header_height();
-    let field_h = layout.field_row_height();
+    let field_h = FormLayout::FIELD_ROW_HEIGHT;
     let mut content_y = summary_rows;
     for section in fieldsets {
         content_y = content_y.saturating_add(header);

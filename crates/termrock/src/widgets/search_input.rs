@@ -799,8 +799,6 @@ impl<'a> SearchInput<'a> {
                 cursor: None,
             };
         }
-        let invalid = matches!(self.status, SearchStatus::Error)
-            || matches!(self.validation, Validation::Invalid(_));
         let field_recipe = self.system.input_recipe(
             if !state.enabled {
                 ControlState::Disabled
@@ -811,7 +809,6 @@ impl<'a> SearchInput<'a> {
             } else {
                 ControlState::Default
             },
-            invalid,
             state.query.is_editing(),
         );
 

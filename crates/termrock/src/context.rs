@@ -729,13 +729,12 @@ mod tests {
             outside: LayerDismissPolicy::Ignore,
             focus_return: None,
         });
-        for i in 0..5_000 {
+        for _ in 0..5_000 {
             let mut ctx = host.begin_frame();
             let _ = ctx.scene_mut().register(
                 InteractionElement::control(Fid::A, Lid::Root, Rect::new(0, 0, 4, 1))
                     .focusable(true),
             );
-            let _ = i;
         }
         assert!(host.diagnostics.frame_index >= 5_000);
     }

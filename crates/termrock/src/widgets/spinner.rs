@@ -907,9 +907,6 @@ mod tests {
         let a = state.frame_glyph(tick_at(800), MotionPolicy::Full);
         let b = state.frame_glyph(tick_at(800), MotionPolicy::Full);
         assert_eq!(a, b);
-        let c = state.frame_glyph(tick_at(880), MotionPolicy::Full);
-        // 80ms later may advance
-        let _ = c;
     }
 
     #[test]

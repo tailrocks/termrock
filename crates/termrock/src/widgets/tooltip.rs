@@ -924,9 +924,8 @@ mod tests {
     fn place_clamps_or_hides_on_tiny() {
         let bounds = Rect::new(0, 0, 10, 5);
         let anchor = Rect::new(1, 2, 2, 1);
-        let r = place_tooltip(bounds, anchor, OverlaySize::menu(20, 1));
         // Policy may hide (empty) or clamp — both valid
-        let _ = r;
+        let _ = place_tooltip(bounds, anchor, OverlaySize::menu(20, 1));
     }
 
     #[test]

@@ -1446,7 +1446,6 @@ mod tests {
                 .iter()
                 .any(|n| n.label.as_deref() == Some("alert"))
         );
-        let _ = state;
     }
 
     #[test]

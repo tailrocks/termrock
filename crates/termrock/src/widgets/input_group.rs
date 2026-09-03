@@ -307,7 +307,6 @@ impl<'a> InputGroup<'a> {
             } else {
                 ControlState::Default
             },
-            false,
             state.field.is_editing(),
         );
         buffer.set_style(area, input_recipe.fill);

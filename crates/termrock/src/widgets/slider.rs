@@ -379,7 +379,6 @@ pub(crate) fn slider_chrome(system: &DesignSystem, enabled: bool, active: bool) 
             ControlState::Default
         },
         false,
-        false,
     );
     let thumb = if active { recipe.cursor } else { recipe.value }.add_modifier(Modifier::BOLD);
     SliderChrome {
@@ -770,7 +769,6 @@ impl<'a> Slider<'a> {
                 ControlState::Default
             },
             false,
-            false,
         );
         if state.focused {
             recipe.value.add_modifier(Modifier::BOLD)
@@ -788,7 +786,6 @@ impl<'a> Slider<'a> {
             } else {
                 ControlState::Default
             },
-            false,
             state.editing,
         );
         if state.editing || state.focused {
@@ -1313,7 +1310,6 @@ impl<'a> RangeSlider<'a> {
                     ControlState::Default
                 },
                 false,
-                false,
             );
             let style = if state.focused {
                 recipe.value.add_modifier(Modifier::BOLD)
@@ -1349,7 +1345,6 @@ impl<'a> RangeSlider<'a> {
                             } else {
                                 ControlState::Default
                             },
-                            false,
                             false,
                         )
                         .value,
@@ -1427,7 +1422,6 @@ impl<'a> RangeSlider<'a> {
                         } else {
                             ControlState::Default
                         },
-                        false,
                         false,
                     )
                     .placeholder,

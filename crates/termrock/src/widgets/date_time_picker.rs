@@ -1914,7 +1914,6 @@ impl<'a> DateTimePicker<'a> {
             } else {
                 ControlState::Default
             },
-            invalid,
             state.draft.is_editing(),
         );
         let mut y = area.y;

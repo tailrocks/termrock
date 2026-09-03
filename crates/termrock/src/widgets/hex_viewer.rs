@@ -1621,26 +1621,13 @@ mod tests {
         let mut state = HexViewerState::new();
         state.sync_metrics(10_000, 16, 8);
         state.cursor = 5000;
-        // After key that doesn't move much, still PageNeeded if outside
-        let out = state.handle_key(KeyEvent::new(KeyCode::Char('i'), KeyModifiers::NONE), &win);
-        // i toggles inspector - may be Ignored; force check
-        let _ = out;
-        assert!(state.cursor >= win.end_offset() || state.cursor < win.base_offset || true);
-        // explicit: move to far offset via G then need page
+        // Jump to far offset: the window [0, 16) no longer covers the cursor,
+        // so the state must either move the cursor into view or demand a page.
         let out = state.handle_key(KeyEvent::new(KeyCode::Char('G'), KeyModifiers::NONE), &win);
         assert!(matches!(
             out,
             HexViewerOutcome::CursorMoved { .. } | HexViewerOutcome::PageNeeded { .. }
         ));
-        // cursor at end; next handle should page
-        let out2 = state.handle_key(KeyEvent::new(KeyCode::Char('i'), KeyModifiers::NONE), &win);
-        let _ = out2;
-        if state.cursor >= win.end_offset() {
-            let out3 =
-                state.handle_key(KeyEvent::new(KeyCode::Char('b'), KeyModifiers::NONE), &win);
-            // bookmark still works; PageNeeded on ignored path at end of handle_key
-            let _ = out3;
-        }
     }
 
     #[test]

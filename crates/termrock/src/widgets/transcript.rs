@@ -333,9 +333,8 @@ impl<Id: Clone + Eq> TranscriptState<Id> {
                 return;
             }
         }
-        if let Some((id, start, height)) = starts.last() {
+        if let Some((id, _, height)) = starts.last() {
             let row = height.saturating_sub(1);
-            let _ = start;
             self.anchor = Some(TranscriptAnchor {
                 id: id.clone(),
                 row,

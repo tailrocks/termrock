@@ -1437,7 +1437,6 @@ mod tests {
         let state = DrawerState::new();
         assert!(!state.is_open());
         // Opening must not require host to pass selection — host keeps its own.
-        let _ = state;
     }
 
     #[test]

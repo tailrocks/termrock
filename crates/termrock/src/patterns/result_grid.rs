@@ -744,10 +744,6 @@ pub fn result_row_to_inspector_fields<'a>(
         .enumerate()
         .map(|(i, col)| {
             let cell = row.cells.get(i).copied().unwrap_or(ResultCell::null());
-            let display = format_result_cell(&cell, redaction);
-            // InspectorField needs &'a str for value — we only have owned display.
-            // Host should prefer raw cell.text when not redacted; we expose key/path only
-            // when text is already borrowed.
             let value = if cell.secret && !matches!(redaction, ResultRedaction::RevealSecrets) {
                 RESULT_SECRET_MASK
             } else if matches!(cell.kind, ResultCellKind::Null) {
@@ -758,7 +754,6 @@ pub fn result_row_to_inspector_fields<'a>(
             } else {
                 cell.text
             };
-            let _ = display;
             let mut f =
                 InspectorField::new(col.id.as_str(), value).kind(cell.kind.to_inspect_kind());
             if let Some(t) = col.type_name.as_deref() {
