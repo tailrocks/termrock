@@ -390,7 +390,7 @@ impl StepperState {
     #[must_use]
     pub fn orientation(mut self, o: StepperOrientation) -> Self {
         self.orientation = o;
-        self.collection = self.collection.clone().orientation(match o {
+        self.collection = std::mem::take(&mut self.collection).orientation(match o {
             StepperOrientation::Horizontal => RovingOrientation::Horizontal,
             StepperOrientation::Vertical => RovingOrientation::Vertical,
         });
@@ -400,7 +400,7 @@ impl StepperState {
     /// Set orientation.
     pub fn set_orientation(&mut self, o: StepperOrientation) {
         self.orientation = o;
-        self.collection = CollectionState::new().orientation(match o {
+        self.collection = self.collection.clone().orientation(match o {
             StepperOrientation::Horizontal => RovingOrientation::Horizontal,
             StepperOrientation::Vertical => RovingOrientation::Vertical,
         });
@@ -1351,6 +1351,21 @@ mod tests {
         assert_eq!(
             stepper_presentation_for_bounds(Rect::new(0, 0, 80, 5), StepperOrientation::Horizontal),
             StepperPresentation::Expanded
+        );
+    }
+
+    #[test]
+    fn orientation_change_preserves_cursor_for_relative_movement() {
+        let items = steps();
+        let mut state = focused_linear(items.len()).policy(StepperNavPolicy::Free);
+        state.set_current(2, items.len(), false);
+
+        state.set_orientation(StepperOrientation::Vertical);
+
+        assert_eq!(state.cursor(), 2);
+        assert_eq!(
+            state.handle_intent(UiIntent::Move(NavigationMove::Next), &items),
+            StepperOutcome::CursorMoved { index: 3 }
         );
     }
 
