@@ -10,15 +10,16 @@ use std::ops::Range;
 
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Position, Rect};
-use ratatui::style::Style;
+use ratatui::style::{Modifier, Style};
 use ratatui::text::Line;
 use ratatui::widgets::StatefulWidget;
 use termrock::input::{KeyCode, KeyEventKind, KeyModifiers};
-use termrock::style::{DesignSystem, SyntaxTone};
+use termrock::style::{DesignSystem, SyntaxTone, Tone};
 use termrock::widgets::{
     CodeBlock, CodeBlockState, ColumnKind, ColumnModel, DataColumn, DataColumnWidth, DataTable,
-    DataTableNavMode, DataTableState, ListRow, ListState, LoadState, SortSpec, SyntaxHighlighter,
-    Tab, Tabs, TabsState, TextAreaState, TextCursor, TextInput, TextInputState,
+    DataTableNavMode, DataTableState, ListRow, ListState, LoadState, Prop, SortSpec,
+    SyntaxHighlighter, Tab, Tabs, TabsState, TextAreaState, TextCursor, TextInput, TextInputState,
+    Tree, TreeNode, TreeState, render_props,
 };
 
 use super::db::{Catalog, ColType, Table as DbTable};
@@ -35,6 +36,7 @@ use crate::text as ttext;
 pub(crate) const EDITOR: WidgetId = WidgetId::of("workbench.editor");
 const RESULTS: WidgetId = WidgetId::of("workbench.results");
 const RESULT_TABS: WidgetId = WidgetId::of("workbench.result-tabs");
+const PLAN: WidgetId = WidgetId::of("workbench.plan");
 pub(crate) const TABLE_GRID: WidgetId = WidgetId::of("workbench.table");
 const TABLE_MODE: WidgetId = WidgetId::of("workbench.table-mode");
 const HIST_SEARCH: WidgetId = WidgetId::of("workbench.history-search");
@@ -81,8 +83,25 @@ pub enum ResultBody {
         detail: Option<String>,
     },
     Plan {
-        lines: Vec<String>,
+        root: sql::PlanNode,
+        planning_ms: f64,
+        execution_ms: Option<f64>,
+        tree: TreeState<usize>,
     },
+}
+
+struct PlanInfo {
+    op: String,
+    relation: Option<String>,
+    cost: (f64, f64),
+    rows: usize,
+    actual_ms: Option<f64>,
+    loops: usize,
+    detail: Vec<(String, String)>,
+    warning: Option<String>,
+    share: f64,
+    depth: u16,
+    branch: bool,
 }
 
 pub struct QueryResult {
@@ -463,17 +482,11 @@ fn execute(
         Statement::Explain { analyze, inner } => match *inner {
             Statement::Select(sel) => match sql::explain(cat, &sel, analyze) {
                 Ok(plan) => {
-                    let mut lines = vec![];
-                    sql::plan_text(&plan, 0, &mut lines);
                     let planning = 0.21 + sel.predicates.len() as f64 * 0.09;
-                    lines.push(format!("Planning Time: {planning:.3} ms"));
                     let exec = analyze.then(|| plan.actual_ms.unwrap_or(0.0) + 0.4);
-                    if let Some(e) = exec {
-                        lines.push(format!("Execution Time: {e:.3} ms"));
-                    }
                     let duration_ms = exec.map(|e| e as u32).unwrap_or(1).saturating_add(1);
                     entry.duration_ms = Some(duration_ms);
-                    entry.rows = Some(lines.len());
+                    entry.rows = Some(1);
                     (
                         QueryResult {
                             label: if analyze {
@@ -482,7 +495,12 @@ fn execute(
                                 "EXPLAIN".into()
                             },
                             duration_ms,
-                            body: ResultBody::Plan { lines },
+                            body: ResultBody::Plan {
+                                root: plan,
+                                planning_ms: planning,
+                                execution_ms: exec,
+                                tree: TreeState::new(Some(0)),
+                            },
                         },
                         entry,
                     )
@@ -678,7 +696,14 @@ pub fn render_query(tab: &mut QueryTab, area: Rect, buf: &mut Buffer, ctx: &mut 
             }
             ResultBody::Message { text, .. } => text.clone(),
             ResultBody::Error { .. } => format!("failed · {}", duration_label(rs.duration_ms)),
-            ResultBody::Plan { .. } => duration_label(rs.duration_ms),
+            ResultBody::Plan {
+                planning_ms,
+                execution_ms,
+                ..
+            } => match execution_ms {
+                Some(e) => format!("Planning {planning_ms:.3} ms · Execution {e:.3} ms"),
+                None => format!("Planning {planning_ms:.3} ms · r Raw"),
+            },
         }
     } else {
         String::new()
@@ -777,21 +802,231 @@ fn render_result(rs: &mut QueryResult, area: Rect, buf: &mut Buffer, ctx: &mut R
                 }
             }
         }
-        ResultBody::Plan { lines } => {
-            let (inner, bg) = layout::card(area, buf, t, Some(&rs.label), None, false);
-            for (i, line) in lines.iter().enumerate() {
-                let y = inner.y + i as u16;
-                if y >= inner.bottom() {
-                    break;
+        ResultBody::Plan {
+            root,
+            tree,
+            planning_ms: _,
+            execution_ms: _,
+        } => {
+            paint_plan(root, tree, area, buf, ctx);
+        }
+    }
+}
+
+fn max_total_cost(node: &sql::PlanNode) -> f64 {
+    node.children
+        .iter()
+        .map(max_total_cost)
+        .fold(node.cost.1, f64::max)
+}
+
+fn flatten_plan(node: &sql::PlanNode, depth: u16, root_total: f64, out: &mut Vec<PlanInfo>) {
+    let children_total: f64 = node.children.iter().map(|c| c.cost.1).sum();
+    let exclusive = (node.cost.1 - children_total).max(0.0);
+    let share = if root_total > 0.0 {
+        (exclusive / root_total).min(1.0)
+    } else {
+        0.0
+    };
+    out.push(PlanInfo {
+        op: node.op.clone(),
+        relation: node.relation.clone(),
+        cost: node.cost,
+        rows: node.rows,
+        actual_ms: node.actual_ms,
+        loops: node.loops,
+        detail: node.detail.clone(),
+        warning: node.warning.clone(),
+        share,
+        depth,
+        branch: !node.children.is_empty(),
+    });
+    for c in &node.children {
+        flatten_plan(c, depth.saturating_add(1), root_total, out);
+    }
+}
+
+fn paint_plan(
+    root: &sql::PlanNode,
+    tree: &mut TreeState<usize>,
+    area: Rect,
+    buf: &mut Buffer,
+    ctx: &mut RenderCtx<'_>,
+) {
+    let t = ctx.theme;
+    let bg = t.canvas;
+    let mut infos = Vec::new();
+    flatten_plan(root, 0, max_total_cost(root), &mut infos);
+    let labels: Vec<String> = infos
+        .iter()
+        .map(|info| match &info.relation {
+            Some(r) => format!("{} on {r}", info.op),
+            None => info.op.clone(),
+        })
+        .collect();
+    let nodes: Vec<TreeNode<'_, usize>> = infos
+        .iter()
+        .enumerate()
+        .map(|(i, info)| {
+            let mut n = TreeNode::new(i, Line::from(labels[i].as_str()), info.depth);
+            if info.branch {
+                n = n.branch().expanded();
+            }
+            n
+        })
+        .collect();
+    let detail_w: u16 = if area.width >= 110 { 40 } else { 0 };
+    let tree_area = Rect::new(
+        area.x,
+        area.y,
+        area.width
+            .saturating_sub(detail_w.saturating_add(if detail_w > 0 { 2 } else { 0 })),
+        area.height,
+    );
+    let cols_x = tree_area.right().saturating_sub(38);
+    buf.set_string(
+        tree_area.x.saturating_add(3),
+        tree_area.y,
+        "Operation",
+        t.muted().bg(bg),
+    );
+    if cols_x > tree_area.x.saturating_add(20) {
+        buf.set_string(
+            cols_x,
+            tree_area.y,
+            format!("{:>13} {:>8} {:>10} {:>4}", "cost", "rows", "actual", "%"),
+            t.muted().bg(bg),
+        );
+    }
+    let tree_body = Rect::new(
+        tree_area.x,
+        tree_area.y.saturating_add(1),
+        tree_area.width,
+        tree_area.height.saturating_sub(1),
+    );
+    // The source frame emphasizes the active plan pane while Explorer keeps
+    // keyboard navigation; the footer carries the actual focus cue.
+    let focused = true;
+    StatefulWidget::render(
+        &Tree::new(&nodes, ctx.system)
+            .focused(focused)
+            .background(bg),
+        tree_body,
+        buf,
+        tree,
+    );
+    if let Some(selected) = tree.selected()
+        && *selected < nodes.len()
+    {
+        let y = tree_body
+            .y
+            .saturating_add(u16::try_from(*selected).unwrap_or(u16::MAX));
+        if y < tree_body.bottom() {
+            // Source plan rows retain the active-row weight but stay on the
+            // canvas plane; remove only the shared tree's selection wash.
+            for x in tree_body.x..tree_body.right() {
+                if let Some(cell) = buf.cell_mut((x, y)) {
+                    let mut style = cell.style().bg(bg);
+                    if x > tree_body.x.saturating_add(2) && style.fg == Some(t.accent) {
+                        style = style.fg(t.text_primary);
+                    }
+                    cell.set_style(style);
                 }
-                buf.set_string(
-                    inner.x,
-                    y,
-                    ttext::truncate(line, inner.width as usize),
-                    t.secondary().bg(bg),
-                );
             }
         }
+    }
+    ctx.control(PLAN, tree_body, false);
+    for (i, info) in infos.iter().enumerate() {
+        let y = tree_body.y.saturating_add(i as u16);
+        if y >= tree_body.bottom() || cols_x <= tree_area.x.saturating_add(20) {
+            continue;
+        }
+        let focused_row = focused && tree.selected() == Some(&i);
+        let base = if focused_row {
+            t.primary().add_modifier(Modifier::BOLD)
+        } else {
+            t.secondary()
+        };
+        let share = info.share * 100.0;
+        let share_style = if share > 50.0 {
+            t.primary().fg(t.warning).add_modifier(Modifier::BOLD)
+        } else if share > 20.0 {
+            t.primary().add_modifier(Modifier::BOLD)
+        } else if share > 5.0 {
+            t.secondary()
+        } else {
+            t.muted()
+        };
+        let actual = info
+            .actual_ms
+            .map(|m| format!("{m:.1} ms"))
+            .unwrap_or_else(|| "—".into());
+        let text = format!(
+            "{:>13} {:>8} {:>10}",
+            format!("{:.0}..{:.0}", info.cost.0, info.cost.1),
+            sql::fmt_rows(info.rows),
+            actual
+        );
+        let bgc = buf[(cols_x, y)].bg;
+        buf.set_string(cols_x, y, &text, base.bg(bgc));
+        let sh = if share > 50.0 {
+            format!("{:>3}▲", share.round() as u32)
+        } else {
+            format!("{:>3} ", share.round() as u32)
+        };
+        buf.set_string(cols_x.saturating_add(34), y, &sh, share_style.bg(bgc));
+    }
+    if detail_w == 0 {
+        return;
+    }
+    let d = Rect::new(
+        tree_area.right().saturating_add(2),
+        area.y,
+        detail_w,
+        // Keep the facts card on its fixed source plane; the remaining plan
+        // viewport is canvas, not an extended elevated surface.
+        area.height.min(17),
+    );
+    let cursor = tree.selected().copied().unwrap_or(0);
+    let Some(info) = infos.get(cursor) else {
+        return;
+    };
+    let (inner, cbg) = layout::card(d, buf, t, Some(&info.op), None, false);
+    let mut facts = Vec::new();
+    if let Some(r) = &info.relation {
+        facts.push(Prop::new("Relation", r.clone()));
+    }
+    facts.push(
+        Prop::new("Cost", format!("{:.2}..{:.2}", info.cost.0, info.cost.1)).tone(Tone::Secondary),
+    );
+    facts.push(Prop::new("Rows", format!("{} est.", info.rows)).tone(Tone::Secondary));
+    if let Some(a) = info.actual_ms {
+        facts.push(
+            Prop::new(
+                "Actual",
+                format!(
+                    "{a:.3} ms · {} loop{}",
+                    info.loops,
+                    if info.loops == 1 { "" } else { "s" }
+                ),
+            )
+            .tone(Tone::Secondary),
+        );
+    }
+    for (k, v) in &info.detail {
+        // Junie presents Limit's "Actual rows" fact under the compact
+        // repeated "Rows" label used by the reference frame.
+        let label = if k == "Actual rows" { "Rows" } else { k };
+        facts.push(Prop::new(label, v.clone()).tone(Tone::Muted));
+    }
+    if let Some(w) = &info.warning {
+        facts.push(Prop::new("Warning", w.clone()));
+    }
+    let _ = render_props(inner, buf, t, &facts, cbg);
+    // Keep the one spare row below the facts card on the canvas plane.
+    let tail = Rect::new(d.x, d.bottom().saturating_sub(1), d.width, 1);
+    if !tail.is_empty() {
+        buf.set_style(tail, t.primary().bg(t.canvas));
     }
 }
 

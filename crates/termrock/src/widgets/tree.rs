@@ -20,7 +20,7 @@
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
-    style::{Modifier, Style},
+    style::{Color, Modifier, Style},
     text::Line,
     widgets::StatefulWidget,
 };
@@ -1002,6 +1002,10 @@ pub struct Tree<'a, Id> {
     empty_message: Option<&'a str>,
     /// Spinner frame index for loading disclosure (junie `spinner_frame(tick)`).
     spinner_frame: usize,
+    /// Surface beneath each row; defaults to the Junie surface plane.
+    background: Option<Color>,
+    /// Whether the active identity is painted as a semantic selection.
+    selection_visible: bool,
 }
 
 impl<'a, Id> Tree<'a, Id> {
@@ -1014,6 +1018,8 @@ impl<'a, Id> Tree<'a, Id> {
             tokens,
             empty_message: None,
             spinner_frame: 0,
+            background: None,
+            selection_visible: true,
         }
     }
 
@@ -1021,6 +1027,20 @@ impl<'a, Id> Tree<'a, Id> {
     #[must_use]
     pub const fn focused(mut self, focused: bool) -> Self {
         self.focused = focused;
+        self
+    }
+
+    /// Surface beneath rows, matching the host panel's fill.
+    #[must_use]
+    pub const fn background(mut self, background: Color) -> Self {
+        self.background = Some(background);
+        self
+    }
+
+    /// Controls whether navigation state receives selection paint.
+    #[must_use]
+    pub const fn selection_visible(mut self, visible: bool) -> Self {
+        self.selection_visible = visible;
         self
     }
 
@@ -1051,6 +1071,8 @@ fn with_row_wash(style: Style, wash: Option<ratatui_core::style::Color>) -> Styl
 
 fn paint_tree_row<Id: Clone + PartialEq>(
     tokens: &DesignSystem,
+    ground: Color,
+    selection_visible: bool,
     focused: bool,
     spinner_frame: usize,
     node: &TreeNode<'_, Id>,
@@ -1062,7 +1084,7 @@ fn paint_tree_row<Id: Clone + PartialEq>(
     if row.width == 0 {
         return;
     }
-    let selected = state.selected.as_ref() == Some(&node.id);
+    let selected = selection_visible && state.selected.as_ref() == Some(&node.id);
     let hovered = state.hovered.as_ref() == Some(&node.id);
     let checked = state
         .selection
@@ -1079,8 +1101,8 @@ fn paint_tree_row<Id: Clone + PartialEq>(
         error: matches!(node.status, TreeNodeStatus::Error),
         ..ListRowVisualState::default()
     };
-    let chrome = RowChrome::resolve(tokens, visual);
-    let recipe = tokens.resolve_list_row(visual);
+    let chrome = RowChrome::resolve_on(tokens, visual, ground);
+    let recipe = tokens.resolve_list_row_on(visual, ground);
     let mut body = match node.status {
         TreeNodeStatus::Ready if node.enabled => recipe.label.patch(tokens.style(node.tone.role())),
         TreeNodeStatus::Ready => tokens.style(Role::TextDisabled),
@@ -1399,6 +1421,9 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
             body_h = area.height.saturating_sub(1);
         }
         let body = Rect::new(area.x, body_y, area.width, body_h);
+        let ground = self
+            .background
+            .unwrap_or_else(|| self.tokens.junie_theme().surface);
         state.viewport_height = usize::from(body.height);
         state.virt.set_viewport_extent(body.height.max(1));
         if body.is_empty() {
@@ -1486,6 +1511,8 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
             let row = Rect::new(content_area.x, y, content_area.width, 1);
             paint_tree_row(
                 self.tokens,
+                ground,
+                self.selection_visible,
                 self.focused,
                 self.spinner_frame,
                 node,

@@ -161,7 +161,9 @@ impl App {
         wb.new_query("");
         self.workbench = Some(wb);
         self.screen = Screen::Workbench;
-        self.host.focus = Some(super::tabs::EDITOR);
+        // Source TablePro starts connected sessions in the explorer so the
+        // first Enter opens a table and the footer exposes tree navigation.
+        self.host.focus = Some(EXPLORER);
         self.set_status(format!(
             "Connected to {}",
             self.workbench.as_ref().unwrap().connection.name

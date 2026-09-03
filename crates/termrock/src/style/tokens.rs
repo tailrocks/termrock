@@ -1421,7 +1421,17 @@ impl DesignSystem {
     #[must_use]
     pub fn resolve_list_row(&self, state: ListRowVisualState) -> ListRowRecipe {
         let theme = self.junie_theme();
-        let ground = theme.surface;
+        self.resolve_list_row_on(state, theme.surface)
+    }
+
+    /// Resolves a row recipe on the caller's surface.
+    ///
+    /// Trees and lists can live on canvas, surface, or an overlay. Keeping the
+    /// ground explicit prevents row chrome from leaking the default surface
+    /// into a canvas-mounted tree.
+    #[must_use]
+    pub fn resolve_list_row_on(&self, state: ListRowVisualState, ground: Color) -> ListRowRecipe {
+        let theme = self.junie_theme();
         let disabled = !state.enabled;
         let hovered = state.hovered && !disabled;
         let focused = state.focused && !disabled;

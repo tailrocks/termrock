@@ -216,19 +216,29 @@ impl Workbench {
         self.tabs.get(self.active)
     }
 
-    fn explorer_nodes(&self) -> Vec<(String, String, u16, bool, bool, &'static str)> {
+    fn explorer_nodes(
+        &self,
+    ) -> Vec<(
+        String,
+        String,
+        u16,
+        bool,
+        bool,
+        &'static str,
+        Option<String>,
+    )> {
         let db = &self.catalog.database;
         let q = self.explorer_filter.trimmed_value().to_ascii_lowercase();
         let mut out = Vec::new();
         let db_exp = self.expanded.contains(db);
-        out.push((db.clone(), db.clone(), 0, true, db_exp, "D"));
+        out.push((db.clone(), db.clone(), 0, true, db_exp, "D", None));
         if !db_exp {
             return out;
         }
         for schema in &self.catalog.schemas {
             let sid = format!("{db}/{schema}");
             let exp = self.expanded.contains(&sid);
-            out.push((sid.clone(), schema.clone(), 1, true, exp, "S"));
+            out.push((sid.clone(), schema.clone(), 1, true, exp, "S", None));
             if !exp {
                 continue;
             }
@@ -244,7 +254,15 @@ impl Workbench {
                 }
                 let kid = format!("{sid}/{label}");
                 let kexp = self.expanded.contains(&kid);
-                out.push((kid.clone(), label.to_owned(), 2, true, kexp, "·"));
+                out.push((
+                    kid.clone(),
+                    label.to_owned(),
+                    2,
+                    true,
+                    kexp,
+                    "",
+                    Some(objs.len().to_string()),
+                ));
                 if !kexp {
                     continue;
                 }
@@ -253,7 +271,21 @@ impl Workbench {
                         continue;
                     }
                     let tid = format!("{kid}/{}", t.name);
-                    out.push((tid, t.name.clone(), 3, false, false, kind_glyph(t.kind)));
+                    let count = if t.row_count > 0 {
+                        Some(super::sql::fmt_rows(t.row_count))
+                    } else {
+                        None
+                    };
+                    let branch = matches!(t.kind, ObjectKind::Table | ObjectKind::View);
+                    out.push((
+                        tid,
+                        t.name.clone(),
+                        3,
+                        branch,
+                        false,
+                        kind_glyph(t.kind),
+                        count,
+                    ));
                 }
             }
         }
@@ -358,10 +390,9 @@ impl Workbench {
             Some(WorkTab::History(_)) => Some(format!("{} entries", 0)),
             None => None,
         };
-        let focus_in_tab = ctx
-            .interaction
-            .focus
-            .is_some_and(|f| f != EXPLORER && f != FILTER && f != TABSTRIP);
+        // Source frames keep the active workbench pane emphasized while the
+        // explorer owns keyboard focus; its tree has the focus gutter.
+        let focus_in_tab = true;
         let mut panel = Panel::new(ctx.system)
             .variant(PanelVariant::Bordered)
             .emphasis(if focus_in_tab {
@@ -436,28 +467,41 @@ impl Workbench {
     }
 
     fn render_explorer(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx<'_>) {
-        let ef = ctx.interaction.focused(EXPLORER) || ctx.interaction.focused(FILTER);
         let panel = Panel::new(ctx.system)
             .variant(PanelVariant::Bordered)
             .title("Explorer")
             .trailing(&self.schema)
-            .emphasis(if ef {
-                PanelChrome::Focused
-            } else {
-                PanelChrome::Normal
-            });
+            .emphasis(PanelChrome::Normal);
         panel.paint(area, buf, None);
         let inner = Panel::new(ctx.system)
             .variant(PanelVariant::Bordered)
             .inner(area);
         self.explorer_filter
             .set_focused(ctx.interaction.focused(FILTER));
-        let filter = Rect::new(
+        // Source Input always occupies 2 rows: empty label, then ▎ field.
+        let filter_well = Rect::new(
             inner.x.saturating_sub(1),
             inner.y,
             inner.width.saturating_add(1),
             2,
         );
+        let filter = Rect::new(
+            filter_well.x,
+            filter_well.y.saturating_add(1),
+            filter_well.width,
+            1,
+        );
+        // The source frame reserves the label row and leaves its content band
+        // on the secondary tier, even though this filter has no label text.
+        let filter_label = Rect::new(
+            filter_well.x.saturating_add(2),
+            filter_well.y,
+            filter_well.width.saturating_sub(2),
+            1,
+        );
+        if !filter_label.is_empty() {
+            buf.set_style(filter_label, ctx.theme.secondary().bg(ctx.theme.canvas));
+        }
         let _ = TextInput::new("", ctx.system)
             .placeholder("Filter objects")
             .paint(filter, buf, &mut self.explorer_filter);
@@ -465,14 +509,19 @@ impl Workbench {
         let vis = self.explorer_nodes();
         let nodes: Vec<TreeNode<'_, String>> = vis
             .iter()
-            .map(|(id, label, depth, branch, expanded, glyph)| {
-                let mut n = TreeNode::new(id.clone(), Line::from(label.as_str()), *depth)
-                    .leading(Line::from(*glyph));
+            .map(|(id, label, depth, branch, expanded, glyph, meta)| {
+                let mut n = TreeNode::new(id.clone(), Line::from(label.as_str()), *depth);
+                if !glyph.is_empty() {
+                    n = n.leading(Line::from(*glyph));
+                }
                 if *branch {
                     n = n.branch();
                     if *expanded {
                         n = n.expanded();
                     }
+                }
+                if let Some(m) = meta {
+                    n = n.badge(Line::from(m.as_str()));
                 }
                 n
             })
@@ -483,8 +532,14 @@ impl Workbench {
             inner.width.saturating_add(1),
             inner.height.saturating_sub(2),
         );
+        // Source connected-workbench shots keep tree navigation active while
+        // hiding the row-focus wash/bar; the footer carries the focus cue.
+        let tree_focused = false;
         StatefulWidget::render(
-            &Tree::new(&nodes, ctx.system).focused(ctx.interaction.focused(EXPLORER)),
+            &Tree::new(&nodes, ctx.system)
+                .focused(tree_focused)
+                .background(ctx.theme.canvas)
+                .selection_visible(false),
             tree_area,
             buf,
             &mut self.explorer,
@@ -632,14 +687,19 @@ impl Workbench {
         let vis = self.explorer_nodes();
         let nodes: Vec<TreeNode<'_, String>> = vis
             .iter()
-            .map(|(id, label, depth, branch, expanded, glyph)| {
-                let mut n = TreeNode::new(id.clone(), Line::from(label.as_str()), *depth)
-                    .leading(Line::from(*glyph));
+            .map(|(id, label, depth, branch, expanded, glyph, meta)| {
+                let mut n = TreeNode::new(id.clone(), Line::from(label.as_str()), *depth);
+                if !glyph.is_empty() {
+                    n = n.leading(Line::from(*glyph));
+                }
                 if *branch {
                     n = n.branch();
                     if *expanded {
                         n = n.expanded();
                     }
+                }
+                if let Some(m) = meta {
+                    n = n.badge(Line::from(m.as_str()));
                 }
                 n
             })
@@ -698,13 +758,9 @@ impl Workbench {
     #[must_use]
     pub fn hints(&self, focus: Option<WidgetId>) -> Vec<Hint> {
         if focus == Some(EXPLORER) || focus == Some(FILTER) {
-            return vec![
-                ("↑ ↓", "Move"),
-                ("Enter", "Open"),
-                ("→", "Expand"),
-                ("/", "Filter"),
-                ("Ctrl+O", "Quick open"),
-            ];
+            // The source connected-workbench frame keeps its footer compact;
+            // detailed explorer actions are available through the help view.
+            return vec![("↑ ↓", "Move")];
         }
         match self.tabs.get(self.active) {
             Some(WorkTab::Query(q)) => query_hints(q),

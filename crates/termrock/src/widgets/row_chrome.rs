@@ -71,7 +71,16 @@ impl RowChrome {
     /// `›`/`✓`/space, tint only where the tint and the keyboard agree). This
     /// type only restates the recipe's decisions in the shape the painters call.
     pub(crate) fn resolve(system: &DesignSystem, state: ListRowVisualState) -> Self {
-        let recipe = system.resolve_list_row(state);
+        Self::resolve_on(system, state, system.junie_theme().surface)
+    }
+
+    /// Resolves row chrome on the host-provided ground.
+    pub(crate) fn resolve_on(
+        system: &DesignSystem,
+        state: ListRowVisualState,
+        ground: ratatui_core::style::Color,
+    ) -> Self {
+        let recipe = system.resolve_list_row_on(state, ground);
         Self {
             recipe,
             selected: state.selected,
