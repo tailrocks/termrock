@@ -524,17 +524,31 @@ impl PasswordInputState {
         let alt = key.modifiers.contains(KeyModifiers::ALT);
         let explicit_reveal = alt && !ctrl && matches!(key.code, KeyCode::Char('r' | 'R'));
 
-        // Explicit reveal, submit/cancel, and clipboard outcomes are one-shot
-        // physical actions. Keep ordinary editor repeats and Hold reveal above.
+        // Explicit reveal, submit/cancel, clipboard outcomes, and destructive
+        // editor chords are one-shot physical actions. Keep ordinary editor
+        // repeats and Hold reveal above.
         if !key.is_press()
             && (matches!(
                 key.code,
                 KeyCode::Enter | KeyCode::Esc | KeyCode::Tab | KeyCode::BackTab
             ) || (ctrl
-                && !alt
                 && matches!(
                     key.code,
-                    KeyCode::Char('c' | 'C' | 'm' | 'M' | 'v' | 'V' | 'x' | 'X')
+                    KeyCode::Char(
+                        'c' | 'C'
+                            | 'k'
+                            | 'K'
+                            | 'm'
+                            | 'M'
+                            | 'u'
+                            | 'U'
+                            | 'v'
+                            | 'V'
+                            | 'w'
+                            | 'W'
+                            | 'x'
+                            | 'X',
+                    )
                 ))
                 || explicit_reveal)
         {
@@ -1130,6 +1144,13 @@ mod tests {
             (KeyCode::Tab, KeyModifiers::NONE),
             (KeyCode::BackTab, KeyModifiers::NONE),
             (KeyCode::Char('m'), KeyModifiers::CONTROL),
+            (
+                KeyCode::Char('m'),
+                KeyModifiers::CONTROL | KeyModifiers::ALT,
+            ),
+            (KeyCode::Char('k'), KeyModifiers::CONTROL),
+            (KeyCode::Char('u'), KeyModifiers::CONTROL),
+            (KeyCode::Char('w'), KeyModifiers::CONTROL),
             (KeyCode::Char('c'), KeyModifiers::CONTROL),
             (KeyCode::Char('x'), KeyModifiers::CONTROL),
             (KeyCode::Char('v'), KeyModifiers::CONTROL),

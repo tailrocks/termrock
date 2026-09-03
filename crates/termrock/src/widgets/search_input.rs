@@ -477,21 +477,36 @@ impl SearchInputState {
         let shift = key.modifiers.contains(KeyModifiers::SHIFT);
 
         // These branches emit host-facing lifecycle or clipboard outcomes.
-        // A held key must not clear, submit, request completion, or repeat a
-        // clipboard request before the editor is synchronized.
+        // A held key must not clear, submit, request completion, repeat a
+        // clipboard request, or repeat a destructive editor chord before the
+        // editor is synchronized.
         let one_shot = matches!(
             key.code,
             KeyCode::Enter
                 | KeyCode::Tab
                 | KeyCode::BackTab
                 | KeyCode::Esc
-                | KeyCode::Char('c' | 'C' | 'm' | 'M' | 'u' | 'U' | 'v' | 'V' | 'x' | 'X')
+                | KeyCode::Char(
+                    'c' | 'C'
+                        | 'k'
+                        | 'K'
+                        | 'm'
+                        | 'M'
+                        | 'u'
+                        | 'U'
+                        | 'v'
+                        | 'V'
+                        | 'w'
+                        | 'W'
+                        | 'x'
+                        | 'X',
+                )
         );
         if !key.is_press()
             && (matches!(
                 key.code,
                 KeyCode::Enter | KeyCode::Tab | KeyCode::BackTab | KeyCode::Esc
-            ) || (ctrl && !alt && one_shot))
+            ) || (ctrl && one_shot))
         {
             return SearchInputOutcome::Ignored;
         }
@@ -1151,6 +1166,12 @@ mod tests {
             (KeyCode::BackTab, KeyModifiers::NONE),
             (KeyCode::Char('u'), KeyModifiers::CONTROL),
             (KeyCode::Char('m'), KeyModifiers::CONTROL),
+            (
+                KeyCode::Char('m'),
+                KeyModifiers::CONTROL | KeyModifiers::ALT,
+            ),
+            (KeyCode::Char('k'), KeyModifiers::CONTROL),
+            (KeyCode::Char('w'), KeyModifiers::CONTROL),
             (KeyCode::Char('c'), KeyModifiers::CONTROL),
             (KeyCode::Char('x'), KeyModifiers::CONTROL),
             (KeyCode::Char('v'), KeyModifiers::CONTROL),
