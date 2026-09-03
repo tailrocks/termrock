@@ -1640,8 +1640,7 @@ pub mod bench {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::widgets::tests::press;
-    use ratatui_core::layout::Position;
+    use crate::widgets::tests::{click, press};
 
     fn open() -> SessionPickerState {
         let mut st = SessionPickerState::new();
@@ -1981,11 +1980,7 @@ mod tests {
         assert!(!st.row_hits.is_empty());
         let (id, r) = st.row_hits[0].clone();
         // first click select
-        let out = st.handle_mouse(MouseEvent {
-            kind: MouseEventKind::Down(MouseButton::Left),
-            position: Position { x: r.x, y: r.y },
-            modifiers: KeyModifiers::NONE,
-        });
+        let out = st.handle_mouse(click(r.x, r.y));
         assert!(
             matches!(
                 out,
@@ -1994,11 +1989,7 @@ mod tests {
             "{out:?} {id}"
         );
         // second click open
-        let out = st.handle_mouse(MouseEvent {
-            kind: MouseEventKind::Down(MouseButton::Left),
-            position: Position { x: r.x, y: r.y },
-            modifiers: KeyModifiers::NONE,
-        });
+        let out = st.handle_mouse(click(r.x, r.y));
         assert!(
             matches!(out, SessionPickerOutcome::Opened { .. }),
             "{out:?}"

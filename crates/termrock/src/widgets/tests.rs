@@ -1,13 +1,13 @@
 use ratatui_core::{
     buffer::Buffer,
-    layout::Rect,
+    layout::{Position, Rect},
     style::Style,
     text::Line,
     widgets::{StatefulWidget, Widget},
 };
 
 use super::*;
-use crate::input::{KeyCode, KeyEvent, KeyModifiers};
+use crate::input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
 use crate::style::{DesignSystem, Role, RolePalette};
 
 /// Shared press/repeat/release key factory for widget tests.
@@ -24,6 +24,20 @@ pub(crate) fn key_with_kind(
 /// Shared plain-press key factory for tests.
 pub(crate) fn press(code: KeyCode) -> KeyEvent {
     KeyEvent::new(code, KeyModifiers::NONE)
+}
+
+/// Shared pointer-event factory for tests.
+pub(crate) fn mouse(kind: MouseEventKind, x: u16, y: u16) -> MouseEvent {
+    MouseEvent {
+        kind,
+        position: Position::new(x, y),
+        modifiers: KeyModifiers::NONE,
+    }
+}
+
+/// Shared left-click factory for tests.
+pub(crate) fn click(x: u16, y: u16) -> MouseEvent {
+    mouse(MouseEventKind::Down(MouseButton::Left), x, y)
 }
 
 #[cfg(feature = "serde")]
