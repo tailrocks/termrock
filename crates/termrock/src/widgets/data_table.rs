@@ -372,10 +372,13 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
         let is_press = key.kind == KeyEventKind::Press;
 
         if self.editing {
-            if visible_rows.is_empty() {
-                self.editing = false;
-                self.edit_draft.clear();
-                return DataTableOutcome::EditCancelled;
+            if visible_rows.is_empty()
+                || !matches!(
+                    self.load,
+                    LoadState::Ready { .. } | LoadState::Partial { .. }
+                )
+            {
+                return self.cancel_edit();
             }
             return self.handle_edit_key(key, visible_rows, columns);
         }
@@ -505,26 +508,8 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
             return DataTableOutcome::Ignored;
         }
         match key.code {
-            KeyCode::Esc => {
-                self.editing = false;
-                self.edit_draft.clear();
-                DataTableOutcome::EditCancelled
-            }
-            KeyCode::Enter => {
-                let Some(col) = self.cursor_column_id(columns) else {
-                    self.editing = false;
-                    self.edit_draft.clear();
-                    return DataTableOutcome::EditCancelled;
-                };
-                let text = std::mem::take(&mut self.edit_draft);
-                self.editing = false;
-                DataTableOutcome::EditCommitted {
-                    row: visible_rows[self.cursor_row.min(visible_rows.len().saturating_sub(1))]
-                        .clone(),
-                    column: col,
-                    text,
-                }
-            }
+            KeyCode::Esc => self.cancel_edit(),
+            KeyCode::Enter => self.commit_edit(visible_rows, columns),
             KeyCode::Backspace => {
                 self.edit_draft.pop();
                 let col = self.cursor_column_id(columns);
@@ -544,6 +529,35 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
                 }
             }
             _ => DataTableOutcome::Ignored,
+        }
+    }
+
+    fn cancel_edit(&mut self) -> DataTableOutcome<RowId, ColId> {
+        self.editing = false;
+        self.edit_draft.clear();
+        DataTableOutcome::EditCancelled
+    }
+
+    fn commit_edit(
+        &mut self,
+        visible_rows: &[RowId],
+        columns: &ColumnModel<ColId>,
+    ) -> DataTableOutcome<RowId, ColId>
+    where
+        ColId: Clone,
+    {
+        let Some(row) = visible_rows.get(self.cursor_row) else {
+            return self.cancel_edit();
+        };
+        let Some(col) = self.cursor_column_id(columns) else {
+            return self.cancel_edit();
+        };
+        let text = std::mem::take(&mut self.edit_draft);
+        self.editing = false;
+        DataTableOutcome::EditCommitted {
+            row: row.clone(),
+            column: col,
+            text,
         }
     }
 
@@ -764,6 +778,21 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
         if !self.accepts_input {
             return DataTableOutcome::Ignored;
         }
+        if self.editing {
+            if visible_rows.is_empty()
+                || !matches!(
+                    self.load,
+                    LoadState::Ready { .. } | LoadState::Partial { .. }
+                )
+            {
+                return self.cancel_edit();
+            }
+            return match intent {
+                UiIntent::Submit => self.commit_edit(visible_rows, columns),
+                UiIntent::Cancel => self.cancel_edit(),
+                _ => DataTableOutcome::Ignored,
+            };
+        }
         if matches!(
             self.load,
             LoadState::Empty { .. } | LoadState::Error { .. } | LoadState::Loading { .. }
@@ -837,11 +866,6 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
                 }
             }
             UiIntent::Cancel => {
-                if self.editing {
-                    self.editing = false;
-                    self.edit_draft.clear();
-                    return DataTableOutcome::EditCancelled;
-                }
                 self.selection.clear_selection();
                 self.range_anchor = None;
                 DataTableOutcome::SelectionChanged
@@ -2465,6 +2489,47 @@ mod tests {
         );
         assert!(matches!(out, DataTableOutcome::EditCancelled));
         assert!(!state.editing);
+        assert!(state.edit_draft.is_empty());
+    }
+
+    #[test]
+    fn edit_mode_owns_semantic_intents() {
+        let cols = ColumnModel::new(vec![
+            DataColumn::new("a", "A", DataColumnWidth::Min(4)).editable(),
+        ]);
+        let rows = [1u64, 2];
+        let mut state = DataTableState::<u64, &str>::new();
+        state.editing = true;
+        state.edit_draft = "draft".into();
+
+        assert!(matches!(
+            state.handle_intent(UiIntent::Move(NavigationMove::Next), &rows, &cols),
+            DataTableOutcome::Ignored
+        ));
+        assert_eq!(state.cursor_row, 0);
+        assert!(state.selection.selected_rows().is_empty());
+
+        let out = state.handle_intent(UiIntent::Submit, &rows, &cols);
+        assert!(matches!(
+            out,
+            DataTableOutcome::EditCommitted {
+                row: 1,
+                column: "a",
+                text
+            } if text == "draft"
+        ));
+        assert!(!state.editing);
+
+        state.editing = true;
+        state.edit_draft = "stale".into();
+        state.load = LoadState::Error {
+            message: "gone".into(),
+            retryable: false,
+        };
+        assert!(matches!(
+            state.handle_intent(UiIntent::Submit, &rows, &cols),
+            DataTableOutcome::EditCancelled
+        ));
         assert!(state.edit_draft.is_empty());
     }
 
