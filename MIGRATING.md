@@ -374,6 +374,8 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0387 | `v0.14.0` | [TreeTable key routing for empty projections](migrations/0387-v0.14.0-tree-table-key-empty-projection.md) |
 | 0388 | `v0.14.0` | [paint-only links and controls](migrations/0388-v0.14.0-paint-only-links-controls.md) |
 | 0389 | `v0.14.0` | [Timeline paint contract and Skeleton consolidation](migrations/0389-v0.14.0-paint-only-timeline-skeleton.md) |
+| 0390 | `v0.14.0` | [paint-only Accordion](migrations/0390-v0.14.0-paint-only-accordion.md) |
+| 0391 | `v0.14.0` | [paint-only ButtonGroup](migrations/0391-v0.14.0-paint-only-button-group.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

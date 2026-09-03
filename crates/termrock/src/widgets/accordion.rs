@@ -18,7 +18,7 @@
 //!
 //! References: Radix Accordion, mutual collapsibles, settings/help TUIs.
 #![allow(unused_variables, unused_mut)] // unit-test fixtures
-use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
+use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{
@@ -902,22 +902,6 @@ impl<'a, Id: Clone + PartialEq> Accordion<'a, Id> {
                     }),
             );
         }
-    }
-}
-
-impl<Id: Clone + PartialEq> Widget for &Accordion<'_, Id> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        let mut state = AccordionState::new();
-        if let Some(ids) = self.controlled_open {
-            state.set_open_ids(ids.iter().cloned());
-        }
-        let _ = self.paint(area, buffer, &mut state);
-    }
-}
-
-impl<Id: Clone + PartialEq> Widget for Accordion<'_, Id> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        <&Self as Widget>::render(&self, area, buffer);
     }
 }
 

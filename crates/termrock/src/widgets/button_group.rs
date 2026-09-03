@@ -16,7 +16,7 @@
 //! command catalogs; ButtonGroup is a focused action cluster (OK/Cancel/Delete).
 //!
 //! Research: shadcn button groups, desktop dialog action bars, terminal prompt rows.
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
 
 use crate::input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{
@@ -1010,13 +1010,6 @@ impl<'a, Id: Clone + PartialEq> ButtonGroup<'a, Id> {
                 );
             }
         }
-    }
-}
-
-impl<'a, Id: Clone + PartialEq> Widget for &ButtonGroup<'a, Id> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        let mut state = ButtonGroupState::new();
-        let _ = self.paint(area, buffer, &mut state);
     }
 }
 

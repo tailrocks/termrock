@@ -58265,10 +58265,6 @@ impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::Accor
 pub fn termrock::widgets::Accordion<'a, Id>::clone(&self) -> termrock::widgets::Accordion<'a, Id>
 impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::Accordion<'a, Id>
 pub fn termrock::widgets::Accordion<'a, Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::widget::Widget for &termrock::widgets::Accordion<'_, Id>
-pub fn &termrock::widgets::Accordion<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
-impl<Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::widget::Widget for termrock::widgets::Accordion<'_, Id>
-pub fn termrock::widgets::Accordion<'_, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
 impl<'a, Id> core::marker::Freeze for termrock::widgets::Accordion<'a, Id> where &'a [termrock::widgets::AccordionItem<'a, Id>]: core::marker::Freeze, core::option::Option<&'a [Id]>: core::marker::Freeze
 impl<'a, Id> core::marker::Send for termrock::widgets::Accordion<'a, Id> where &'a [termrock::widgets::AccordionItem<'a, Id>]: core::marker::Send, core::option::Option<&'a [Id]>: core::marker::Send
 impl<'a, Id> core::marker::Sync for termrock::widgets::Accordion<'a, Id> where &'a [termrock::widgets::AccordionItem<'a, Id>]: core::marker::Sync, core::option::Option<&'a [Id]>: core::marker::Sync
@@ -60730,8 +60726,6 @@ pub const fn termrock::widgets::ButtonGroup<'a, Id>::overflow_label(self, &'a st
 pub const fn termrock::widgets::ButtonGroup<'a, Id>::recipe(self, termrock::widgets::ButtonGroupRecipe) -> Self
 pub const fn termrock::widgets::ButtonGroup<'a, Id>::separated(self) -> Self
 pub const fn termrock::widgets::ButtonGroup<'a, Id>::stack_below(self, u16) -> Self
-impl<'a, Id: core::clone::Clone + core::cmp::PartialEq> ratatui_core::widgets::widget::Widget for &termrock::widgets::ButtonGroup<'a, Id>
-pub fn &termrock::widgets::ButtonGroup<'a, Id>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::ButtonGroup<'a, Id>
 pub fn termrock::widgets::ButtonGroup<'a, Id>::clone(&self) -> termrock::widgets::ButtonGroup<'a, Id>
 impl<'a, Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::ButtonGroup<'a, Id>
