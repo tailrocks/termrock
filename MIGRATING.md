@@ -485,6 +485,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0506 | `v0.14.0` | [Synchronize removed RecipeFamily getter](migrations/0506-v0.14.0-sync-removed-recipe-family-getter.md) |
 | 0507 | `v0.14.0` | [Synchronize removed CitationSourceType letter getter](migrations/0507-v0.14.0-sync-removed-citation-source-type-letter.md) |
 | 0508 | `v0.14.0` | [Synchronize removed SourceCitation mouse handler](migrations/0508-v0.14.0-sync-removed-source-citation-mouse-handler.md) |
+| 0509 | `v0.14.0` | [Synchronize removed ApprovalQueueState emptiness getter](migrations/0509-v0.14.0-sync-removed-approval-queue-state-emptiness-getter.md) |
 | 0464 | `v0.14.0` | [Stepper physical one-shot actions](migrations/0464-v0.14.0-stepper-one-shot-actions.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an

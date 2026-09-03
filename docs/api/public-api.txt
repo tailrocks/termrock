@@ -19399,7 +19399,6 @@ pub fn termrock::patterns::ApprovalQueueState::current_id(&self) -> core::option
 pub fn termrock::patterns::ApprovalQueueState::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::patterns::ApprovalQueueOutcome
 pub fn termrock::patterns::ApprovalQueueState::handle_mouse(&mut self, termrock::input::MouseEvent) -> termrock::patterns::ApprovalQueueOutcome
 pub fn termrock::patterns::ApprovalQueueState::high_risk_count(&self) -> usize
-pub fn termrock::patterns::ApprovalQueueState::is_empty(&self) -> bool
 pub fn termrock::patterns::ApprovalQueueState::len(&self) -> usize
 pub fn termrock::patterns::ApprovalQueueState::new() -> Self
 pub fn termrock::patterns::ApprovalQueueState::push(&mut self, termrock::patterns::ApprovalItem) -> u64
