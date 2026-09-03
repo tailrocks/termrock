@@ -451,6 +451,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0471 | `v0.14.0` | [PromptComposer physical one-shot actions](migrations/0471-v0.14.0-prompt-composer-one-shot-actions.md) |
 | 0472 | `v0.14.0` | [TextArea physical one-shot actions](migrations/0472-v0.14.0-text-area-one-shot-actions.md) |
 | 0473 | `v0.14.0` | [Remove the zero-reference `Toggle::solid` builder](migrations/0473-v0.14.0-remove-toggle-solid-builder.md) |
+| 0474 | `v0.14.0` | [Remove the orphan backdrop adapter](migrations/0474-v0.14.0-remove-orphan-backdrop-adapter.md) |
 | 0464 | `v0.14.0` | [Stepper physical one-shot actions](migrations/0464-v0.14.0-stepper-one-shot-actions.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
