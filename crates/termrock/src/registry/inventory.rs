@@ -908,7 +908,7 @@ pub static PUBLIC_UI_INVENTORY: &[PublicUiInventoryEntry] = &[
     public_ui!(LogStream, Widget, Data, "log-stream", "log-stream/follow"),
     public_ui!(
         MarkdownView,
-        Widget,
+        Paint,
         Data,
         "markdown-view",
         "markdown-view/basic"
@@ -1858,7 +1858,7 @@ mod tests {
                     counts[index] += 1;
                     counts
                 });
-        assert_eq!(kind_counts, [147, 49, 6, 8]);
+        assert_eq!(kind_counts, [146, 50, 6, 8]);
         assert_eq!(
             public_ui_inventory()
                 .iter()

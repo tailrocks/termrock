@@ -18,7 +18,7 @@
 //! **Streaming.** Incomplete fences/tables set [`MarkdownBlock::incomplete`];
 //! layout measures only closed content rows + a one-row streaming cue so
 //! appending does not thrash unrelated block geometry.
-use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
+use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::input::{KeyEvent, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{
@@ -1395,27 +1395,9 @@ impl<'a> MarkdownView<'a> {
     }
 }
 
-impl Widget for &MarkdownView<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        let scroll = if self.first_block > 0 {
-            self.block_start_row(self.first_block, area.width)
-        } else {
-            0
-        };
-        let mut state = MarkdownViewState::new().with_scroll_y(scroll);
-        let _ = self.paint(area, buffer, &mut state);
-    }
-}
-
-impl Widget for MarkdownView<'_> {
-    #[expect(
-        clippy::needless_borrows_for_generic_args,
-        reason = "explicitly delegate the owned contract to the borrowed renderer"
-    )]
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        <&Self as Widget>::render(&self, area, buffer);
-    }
-}
+// MarkdownView paints only through `MarkdownView::paint(area, buffer, state)`;
+// a stateless render would rebuild MarkdownViewState per frame and lose
+// scroll, selection, and link geometry between frames.
 
 // ── Projection ──────────────────────────────────────────────────────────────
 
@@ -1969,7 +1951,8 @@ fn x() {}
         let system = crate::style::DesignSystem::new(theme.clone());
         let blocks = [MarkdownBlock::heading("Hello", HeadingLevel::H1)];
         let mut buffer = Buffer::empty(Rect::new(0, 0, 20, 2));
-        MarkdownView::new(&blocks, &system).render(Rect::new(0, 0, 20, 2), &mut buffer);
+        let mut state = MarkdownViewState::new();
+        MarkdownView::new(&blocks, &system).paint(Rect::new(0, 0, 20, 2), &mut buffer, &mut state);
         let row0: String = (0..20)
             .map(|x| buffer[(x, 0)].symbol().to_owned())
             .collect();
@@ -1991,7 +1974,8 @@ fn x() {}
             MarkdownBlock::new(MarkdownBlockKind::ListItem, "item"),
         ];
         let mut buffer = Buffer::empty(Rect::new(0, 0, 24, 2));
-        MarkdownView::new(&blocks, &system).render(Rect::new(0, 0, 24, 2), &mut buffer);
+        let mut state = MarkdownViewState::new();
+        MarkdownView::new(&blocks, &system).paint(Rect::new(0, 0, 24, 2), &mut buffer, &mut state);
         let r0: String = (0..24)
             .map(|x| buffer[(x, 0)].symbol().to_owned())
             .collect();
