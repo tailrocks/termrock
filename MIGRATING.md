@@ -432,6 +432,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0451 | `v0.14.0` | [KeybindingRecorder physical one-shot actions](migrations/0451-v0.14.0-keybinding-recorder-one-shot-actions.md) |
 | 0452 | `v0.14.0` | [NotificationCenter physical one-shot actions](migrations/0452-v0.14.0-notification-center-one-shot-actions.md) |
 | 0453 | `v0.14.0` | [Drawer and Popover physical one-shot close actions](migrations/0453-v0.14.0-overlay-close-one-shot-actions.md) |
+| 0454 | `v0.14.0` | [Callout alert physical one-shot actions](migrations/0454-v0.14.0-callout-alert-one-shot-actions.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

@@ -861,7 +861,10 @@ impl<Id: Clone + PartialEq> AlertState<Id> {
         }
         let is_insert = key.is_insert();
 
-        if matches!(key.code, KeyCode::Esc) && is_insert && key.modifiers.is_empty() && dismissible
+        if matches!(key.code, KeyCode::Esc)
+            && key.is_press()
+            && key.modifiers.is_empty()
+            && dismissible
         {
             self.dismiss();
             return AlertOutcome::Dismissed;
@@ -875,7 +878,7 @@ impl<Id: Clone + PartialEq> AlertState<Id> {
                 KeyCode::Right | KeyCode::Char('l' | 'L') if is_insert => {
                     return self.move_action(actions, 1);
                 }
-                KeyCode::Enter if is_insert && key.modifiers.is_empty() => {
+                KeyCode::Enter if key.is_press() && key.modifiers.is_empty() => {
                     if let Some(id) = self.action_cursor.clone() {
                         if actions.iter().any(|a| a.id == id && a.enabled) {
                             return AlertOutcome::ActionActivated { id };
@@ -883,7 +886,7 @@ impl<Id: Clone + PartialEq> AlertState<Id> {
                     }
                     return AlertOutcome::Acknowledged;
                 }
-                KeyCode::Char('d' | 'D') if is_insert && key.modifiers.is_empty() => {
+                KeyCode::Char('d' | 'D') if key.is_press() && key.modifiers.is_empty() => {
                     self.details_open = !self.details_open;
                     return AlertOutcome::DetailsToggled {
                         open: self.details_open,
@@ -891,7 +894,7 @@ impl<Id: Clone + PartialEq> AlertState<Id> {
                 }
                 _ => {}
             }
-        } else if matches!(key.code, KeyCode::Enter) && is_insert && key.modifiers.is_empty() {
+        } else if matches!(key.code, KeyCode::Enter) && key.is_press() && key.modifiers.is_empty() {
             return AlertOutcome::Acknowledged;
         }
 
@@ -1257,7 +1260,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Alert<'_, Id> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyModifiers;
+    use crate::input::{KeyEventKind, KeyModifiers};
     use crate::widgets::action_bar::ActionVariant;
 
     #[test]
@@ -1340,6 +1343,34 @@ mod tests {
             state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
             AlertOutcome::Acknowledged
         );
+    }
+
+    #[test]
+    fn repeated_alert_actions_are_ignored() {
+        let mut state = AlertState::<&str>::new();
+        state.set_focused(true);
+        state.action_cursor = Some("a");
+        let actions = [Action {
+            id: "a",
+            label: "A",
+            enabled: true,
+            variant: ActionVariant::Primary,
+        }];
+
+        for (code, modifiers) in [
+            (KeyCode::Esc, KeyModifiers::NONE),
+            (KeyCode::Enter, KeyModifiers::NONE),
+            (KeyCode::Char('d'), KeyModifiers::NONE),
+        ] {
+            let mut repeat = KeyEvent::new(code, modifiers);
+            repeat.kind = KeyEventKind::Repeat;
+            let before = state.clone();
+            assert_eq!(
+                state.handle_key_with(repeat, &actions, true),
+                AlertOutcome::Ignored
+            );
+            assert_eq!(state, before, "{code:?} repeat mutated alert state");
+        }
     }
 
     #[test]
