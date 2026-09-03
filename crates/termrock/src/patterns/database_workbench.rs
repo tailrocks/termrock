@@ -33,7 +33,7 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers},
+    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
     layout::{
         ModalSpec, PaneConstraint, PaneGeom, PaneId, Workspace, WorkspaceAxis, WorkspaceNode,
         WorkspaceState, modal_rect,
@@ -843,6 +843,13 @@ impl DatabaseWorkbenchState {
         DatabaseWorkbenchOutcome::CancelRequested { tab_id, run_id }
     }
 
+    fn open_history(&mut self) -> DatabaseWorkbenchOutcome {
+        let _ = self.history.open(Some(self.query.text()));
+        self.history_open = true;
+        self.apply_focus_gates();
+        DatabaseWorkbenchOutcome::OpenHistory
+    }
+
     /// Keyboard routing.
     ///
     /// `inspect_fields` is the same host projection used for paint so inspector
@@ -888,10 +895,7 @@ impl DatabaseWorkbenchState {
                                 "export-csv" => {
                                     self.export_request(ResultExportFormat::Csv, result_rows_len)
                                 }
-                                "history" => {
-                                    self.history_open = true;
-                                    DatabaseWorkbenchOutcome::OpenHistory
-                                }
+                                "history" => self.open_history(),
                                 other => DatabaseWorkbenchOutcome::Palette {
                                     kind: "activated".into(),
                                     id: Some(other.into()),
@@ -922,47 +926,38 @@ impl DatabaseWorkbenchState {
 
         // Overlay: history
         if self.history_open {
-            match key.code {
-                KeyCode::Esc => {
+            let out = self.history.handle_key(key, history_entries);
+            return match out {
+                HistoryPickerOutcome::Selected { id, value } => {
                     self.history_open = false;
+                    self.query.set_text(&value);
                     self.apply_focus_gates();
-                    return DatabaseWorkbenchOutcome::History {
-                        kind: "dismissed".into(),
+                    DatabaseWorkbenchOutcome::History {
+                        kind: "applied".into(),
+                        id: Some(id.into()),
+                    }
+                }
+                HistoryPickerOutcome::Cancelled => {
+                    self.history_open = false;
+                    if let Some(draft) = self.history.take_draft() {
+                        self.query.set_text(&draft);
+                    }
+                    self.apply_focus_gates();
+                    DatabaseWorkbenchOutcome::History {
+                        kind: "cancelled".into(),
                         id: None,
-                    };
+                    }
                 }
-                _ => {
-                    let out = self.history.handle_key(key, history_entries);
-                    return match out {
-                        HistoryPickerOutcome::Selected { id, value } => {
-                            self.history_open = false;
-                            self.query.set_text(&value);
-                            self.apply_focus_gates();
-                            DatabaseWorkbenchOutcome::History {
-                                kind: "applied".into(),
-                                id: Some(id.into()),
-                            }
-                        }
-                        HistoryPickerOutcome::Cancelled => {
-                            self.history_open = false;
-                            self.apply_focus_gates();
-                            DatabaseWorkbenchOutcome::History {
-                                kind: "cancelled".into(),
-                                id: None,
-                            }
-                        }
-                        HistoryPickerOutcome::Ignored => DatabaseWorkbenchOutcome::Ignored,
-                        other => DatabaseWorkbenchOutcome::History {
-                            kind: format!("{other:?}")
-                                .split(|c: char| c == '(' || c == ' ')
-                                .next()
-                                .unwrap_or("history")
-                                .into(),
-                            id: None,
-                        },
-                    };
-                }
-            }
+                HistoryPickerOutcome::Ignored => DatabaseWorkbenchOutcome::Ignored,
+                other => DatabaseWorkbenchOutcome::History {
+                    kind: format!("{other:?}")
+                        .split(|c: char| c == '(' || c == ' ')
+                        .next()
+                        .unwrap_or("history")
+                        .into(),
+                    id: None,
+                },
+            };
         }
 
         // Global chords
@@ -972,8 +967,7 @@ impl DatabaseWorkbenchState {
                 return DatabaseWorkbenchOutcome::OpenPalette;
             }
             KeyCode::Char('h') if key.modifiers.contains(KeyModifiers::CONTROL) => {
-                self.history_open = true;
-                return DatabaseWorkbenchOutcome::OpenHistory;
+                return self.open_history();
             }
             KeyCode::Char('b') if key.modifiers.contains(KeyModifiers::CONTROL) => {
                 return self.toggle_connections();
@@ -1093,10 +1087,7 @@ impl DatabaseWorkbenchState {
                             run_id,
                         }
                     }
-                    QueryEditorOutcome::OpenHistory => {
-                        self.history_open = true;
-                        DatabaseWorkbenchOutcome::OpenHistory
-                    }
+                    QueryEditorOutcome::OpenHistory => self.open_history(),
                     other => DatabaseWorkbenchOutcome::Query(other),
                 }
             }
@@ -2275,6 +2266,7 @@ mod tests {
         assert!(matches!(out, DatabaseWorkbenchOutcome::Palette { .. }));
         assert!(!st.palette_open());
 
+        st.query.set_text("draft sql");
         let out = st.handle_key(
             ctrl(KeyCode::Char('h')),
             &[],
@@ -2285,6 +2277,80 @@ mod tests {
         );
         assert!(matches!(out, DatabaseWorkbenchOutcome::OpenHistory));
         assert!(st.history_open());
+        assert!(st.history.is_open());
+        assert_eq!(st.history.draft(), Some("draft sql"));
+        assert_eq!(st.history.query_text(), "");
+
+        let out = st.handle_key(
+            press(KeyCode::Esc),
+            &[],
+            &hist_matches,
+            &cmd_matches,
+            0,
+            &[],
+        );
+        assert!(matches!(
+            out,
+            DatabaseWorkbenchOutcome::History { ref kind, .. } if kind == "cancelled"
+        ));
+        assert!(!st.history_open());
+        assert!(!st.history.is_open());
+        assert_eq!(st.query.text(), "draft sql");
+
+        st.query.set_text("new draft");
+        let out = st.handle_key(
+            ctrl(KeyCode::Char('h')),
+            &[],
+            &hist_matches,
+            &cmd_matches,
+            0,
+            &[],
+        );
+        assert!(matches!(out, DatabaseWorkbenchOutcome::OpenHistory));
+        assert!(st.history.is_open());
+        assert_eq!(st.history.query_text(), "");
+        assert_eq!(st.history.draft(), Some("new draft"));
+        let _ = st.handle_key(
+            press(KeyCode::Esc),
+            &[],
+            &hist_matches,
+            &cmd_matches,
+            0,
+            &[],
+        );
+        assert_eq!(st.query.text(), "new draft");
+    }
+
+    #[test]
+    fn history_repeat_escape_is_ignored() {
+        let mut st = open();
+        let cmds = example_db_commands();
+        let cmd_matches: Vec<CommandMatch<'_, &'static str>> =
+            cmds.iter().map(|c| CommandMatch::new(c, 0, None)).collect();
+        let hist = example_db_history();
+        let hist_matches: Vec<HistoryMatch<'_, &'static str>> =
+            hist.iter().map(|e| HistoryMatch::new(e, None)).collect();
+
+        st.query.set_text("draft sql");
+        let out = st.handle_key(
+            ctrl(KeyCode::Char('h')),
+            &[],
+            &hist_matches,
+            &cmd_matches,
+            0,
+            &[],
+        );
+        assert!(matches!(out, DatabaseWorkbenchOutcome::OpenHistory));
+
+        let mut repeat_escape = KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE);
+        repeat_escape.kind = KeyEventKind::Repeat;
+        let out = st.handle_key(repeat_escape, &[], &hist_matches, &cmd_matches, 0, &[]);
+        assert!(matches!(out, DatabaseWorkbenchOutcome::Ignored));
+        assert!(st.history_open());
+        assert!(st.history.is_open());
+        assert_eq!(st.history.draft(), Some("draft sql"));
+        assert_eq!(st.history.query_text(), "");
+        assert_eq!(st.query.text(), "draft sql");
     }
 
     #[test]
