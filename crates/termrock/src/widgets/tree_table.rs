@@ -2014,6 +2014,57 @@ mod tests {
     }
 
     #[test]
+    fn key_movement_scrolls_empty_virtual_projection() {
+        let columns = cols();
+        let rows: [TreeTableRow<'_, &str>; 0] = [];
+        let mut state = TreeTableState::<&str, &str>::new(Some("off-window"));
+        state.set_logical_rows(100);
+        state.window.viewport = 2;
+        state.window.offset = 10;
+
+        let down = state.handle_key(
+            &rows,
+            &columns,
+            KeyEvent::new(KeyCode::Down, KeyModifiers::NONE),
+        );
+        let up = state.handle_key(
+            &rows,
+            &columns,
+            KeyEvent::new(KeyCode::Up, KeyModifiers::NONE),
+        );
+
+        assert!(matches!(down, TreeTableOutcome::Scrolled));
+        assert!(matches!(up, TreeTableOutcome::Scrolled));
+        assert_eq!(state.window.offset, 10);
+        assert_eq!(state.selected(), Some(&"off-window"));
+    }
+
+    #[test]
+    fn key_empty_virtual_projection_boundaries_are_inert() {
+        let columns = cols();
+        let rows: [TreeTableRow<'_, &str>; 0] = [];
+        let mut state = TreeTableState::<&str, &str>::new(Some("off-window"));
+        state.set_logical_rows(100);
+        state.window.viewport = 2;
+
+        let up = state.handle_key(
+            &rows,
+            &columns,
+            KeyEvent::new(KeyCode::Up, KeyModifiers::NONE),
+        );
+        state.window.offset = 98;
+        let page_down = state.handle_key(
+            &rows,
+            &columns,
+            KeyEvent::new(KeyCode::PageDown, KeyModifiers::NONE),
+        );
+
+        assert!(matches!(up, TreeTableOutcome::Ignored));
+        assert!(matches!(page_down, TreeTableOutcome::Ignored));
+        assert_eq!(state.window.offset, 98);
+    }
+
+    #[test]
     fn cell_mode_moves_columns() {
         let c0: &[&str] = &["a", "1", "2"];
         let rows = [TreeTableRow::new("r", 0, c0)];

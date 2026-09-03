@@ -2446,7 +2446,6 @@ pub termrock::interaction::DismissAction::Dismiss
 pub termrock::interaction::DismissAction::Trap
 impl termrock::interaction::DismissAction
 pub const fn termrock::interaction::DismissAction::from_layer(termrock::interaction::LayerDismissPolicy) -> Self
-pub const fn termrock::interaction::DismissAction::to_layer(self) -> termrock::interaction::LayerDismissPolicy
 impl core::clone::Clone for termrock::interaction::DismissAction
 pub fn termrock::interaction::DismissAction::clone(&self) -> termrock::interaction::DismissAction
 impl core::cmp::Eq for termrock::interaction::DismissAction
@@ -5751,8 +5750,6 @@ pub const fn termrock::interaction::SelectionModel<Id>::new(termrock::interactio
 pub const fn termrock::interaction::SelectionModel<Id>::range() -> Self
 pub fn termrock::interaction::SelectionModel<Id>::selected(&self) -> &[Id]
 pub const fn termrock::interaction::SelectionModel<Id>::single() -> Self
-impl<Id: core::clone::Clone + core::cmp::PartialEq> core::convert::From<termrock::interaction::SelectionModel<Id>> for termrock::widgets::Selection<Id>
-pub fn termrock::widgets::Selection<Id>::from(termrock::interaction::SelectionModel<Id>) -> Self
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::interaction::SelectionModel<Id>
 pub fn termrock::interaction::SelectionModel<Id>::clone(&self) -> termrock::interaction::SelectionModel<Id>
 impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::interaction::SelectionModel<Id>
@@ -6112,7 +6109,6 @@ pub fn termrock::interaction::default_tree_intent(termrock::input::KeyEvent) -> 
 pub fn termrock::interaction::deselect_subtree<Id: core::clone::Clone + core::cmp::PartialEq>(&mut termrock::interaction::SelectionModel<Id>, &[Id]) -> termrock::interaction::SelectionDelta<Id>
 pub fn termrock::interaction::dispatch_keymap_action<Id, LayerId, Action>(&termrock::interaction::InteractionScene<Id, LayerId, Action>, &termrock::keymap::Keymap<Action>, termrock::input::KeyEvent) -> termrock::interaction::InteractionOutcome<Id, LayerId, Action> where Id: core::clone::Clone + core::cmp::PartialEq, LayerId: core::cmp::PartialEq, Action: core::clone::Clone + core::marker::Copy + core::cmp::PartialEq + 'static
 pub fn termrock::interaction::evaluate_escape_stack(&mut [termrock::interaction::DismissableLayer], &mut termrock::interaction::DismissGuard, termrock::interaction::DismissEventId, termrock::interaction::DismissPhase) -> core::option::Option<(usize, termrock::interaction::DismissDecision)>
-pub fn termrock::interaction::evaluate_outside_top(&mut termrock::interaction::DismissableLayer, ratatui_core::layout::position::Position, &mut termrock::interaction::DismissGuard, termrock::interaction::DismissEventId) -> termrock::interaction::DismissDecision
 pub const fn termrock::interaction::kind_blocks_queue(termrock::interaction::OverlayKind) -> bool
 pub fn termrock::interaction::place_overlay(ratatui_core::layout::rect::Rect, core::option::Option<ratatui_core::layout::rect::Rect>, termrock::interaction::OverlaySize, termrock::interaction::OverlayPolicy) -> ratatui_core::layout::rect::Rect
 pub fn termrock::interaction::place_overlay_detailed(ratatui_core::layout::rect::Rect, core::option::Option<ratatui_core::layout::rect::Rect>, termrock::interaction::OverlaySize, termrock::interaction::OverlayPolicy) -> termrock::interaction::PlacementResult
@@ -32698,7 +32694,7 @@ pub fn termrock::text::sanitize_terminal_title(&str) -> alloc::string::String
 pub fn termrock::text::strip_bytes(&[u8]) -> alloc::vec::Vec<u8>
 pub fn termrock::text::strip_str(&str) -> alloc::string::String
 pub fn termrock::text::styled_spans(&str, ratatui_core::style::Style) -> alloc::vec::Vec<ratatui_core::text::span::Span<'static>>
-pub fn termrock::text::take_display_cols(&str, usize) -> alloc::string::String
+pub fn termrock::text::take_display_cols(&str, usize) -> alloc::borrow::Cow<'_, str>
 pub fn termrock::text::truncate_cols<'a>(&'a str, usize, &str) -> alloc::borrow::Cow<'a, str>
 pub fn termrock::text::truncate_display_cols(&str, usize, termrock::text::TruncateMode, &str) -> alloc::string::String
 pub fn termrock::text::truncate_path<'a>(&'a str, usize, &str) -> alloc::borrow::Cow<'a, str>
@@ -58646,10 +58642,6 @@ pub fn termrock::widgets::ActionLink<'a>::plain(&self) -> alloc::string::String
 pub fn termrock::widgets::ActionLink<'a>::register_semantic<Id, Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, &termrock::widgets::LinkState) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
 pub const fn termrock::widgets::ActionLink<'a>::risk_note(self, &'a str) -> Self
 pub const fn termrock::widgets::ActionLink<'a>::variant(self, termrock::widgets::LinkVariant) -> Self
-impl ratatui_core::widgets::widget::Widget for &termrock::widgets::ActionLink<'_>
-pub fn &termrock::widgets::ActionLink<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
-impl ratatui_core::widgets::widget::Widget for termrock::widgets::ActionLink<'_>
-pub fn termrock::widgets::ActionLink<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
 impl<'a> core::clone::Clone for termrock::widgets::ActionLink<'a>
 pub fn termrock::widgets::ActionLink<'a>::clone(&self) -> termrock::widgets::ActionLink<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::ActionLink<'a>
@@ -63258,10 +63250,6 @@ pub fn termrock::widgets::Collapsible<'a>::resolved_open(&self, &termrock::widge
 pub fn termrock::widgets::Collapsible<'a>::reveal_rows(&self, &termrock::widgets::CollapsibleState, u16, u64, termrock::style::MotionPolicy) -> u16
 pub const fn termrock::widgets::Collapsible<'a>::section(self) -> Self
 pub const fn termrock::widgets::Collapsible<'a>::variant(self, termrock::widgets::CollapsibleVariant) -> Self
-impl ratatui_core::widgets::widget::Widget for &termrock::widgets::Collapsible<'_>
-pub fn &termrock::widgets::Collapsible<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
-impl ratatui_core::widgets::widget::Widget for termrock::widgets::Collapsible<'_>
-pub fn termrock::widgets::Collapsible<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
 impl<'a> core::clone::Clone for termrock::widgets::Collapsible<'a>
 pub fn termrock::widgets::Collapsible<'a>::clone(&self) -> termrock::widgets::Collapsible<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::Collapsible<'a>
@@ -73115,10 +73103,6 @@ pub fn termrock::widgets::Link<'a>::shows_destination(&self) -> bool
 pub const fn termrock::widgets::Link<'a>::url(&'a str, &'a str, &'a termrock::style::DesignSystem) -> Self
 pub fn termrock::widgets::Link<'a>::uses_osc8(&self, &termrock::widgets::LinkState) -> bool
 pub const fn termrock::widgets::Link<'a>::variant(self, termrock::widgets::LinkVariant) -> Self
-impl ratatui_core::widgets::widget::Widget for &termrock::widgets::Link<'_>
-pub fn &termrock::widgets::Link<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
-impl ratatui_core::widgets::widget::Widget for termrock::widgets::Link<'_>
-pub fn termrock::widgets::Link<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
 impl<'a> core::clone::Clone for termrock::widgets::Link<'a>
 pub fn termrock::widgets::Link<'a>::clone(&self) -> termrock::widgets::Link<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::Link<'a>
@@ -73385,6 +73369,7 @@ pub fn termrock::widgets::ListState<Id>::select_range_to(&mut self, &[termrock::
 pub fn termrock::widgets::ListState<Id>::sync_scroll_area(&self, &mut termrock::widgets::ScrollAreaState, usize, usize)
 impl<Id> termrock::widgets::ListState<Id>
 pub const fn termrock::widgets::ListState<Id>::chosen(&self) -> core::option::Option<&Id>
+pub fn termrock::widgets::ListState<Id>::clear_hit_regions(&mut self)
 pub fn termrock::widgets::ListState<Id>::clear_typeahead(&mut self)
 pub const fn termrock::widgets::ListState<Id>::click_policy(&self) -> termrock::widgets::ListClickPolicy
 pub const fn termrock::widgets::ListState<Id>::collection(&self) -> &termrock::interaction::CollectionState<Id>
@@ -73400,9 +73385,9 @@ pub fn termrock::widgets::ListState<Id>::scroll_to_position(&mut self, ratatui_c
 pub fn termrock::widgets::ListState<Id>::search_query(&self) -> core::option::Option<&str>
 pub fn termrock::widgets::ListState<Id>::select(&mut self, core::option::Option<Id>) where Id: core::clone::Clone + core::cmp::PartialEq
 pub const fn termrock::widgets::ListState<Id>::selected(&self) -> core::option::Option<&Id>
-pub const fn termrock::widgets::ListState<Id>::selection(&self) -> core::option::Option<&termrock::widgets::Selection<Id>>
+pub const fn termrock::widgets::ListState<Id>::selection(&self) -> core::option::Option<&termrock::interaction::SelectionModel<Id>>
 pub const fn termrock::widgets::ListState<Id>::selection_mode(&self) -> termrock::widgets::ListSelectionMode
-pub fn termrock::widgets::ListState<Id>::selection_mut(&mut self) -> core::option::Option<&mut termrock::widgets::Selection<Id>>
+pub fn termrock::widgets::ListState<Id>::selection_mut(&mut self) -> core::option::Option<&mut termrock::interaction::SelectionModel<Id>>
 pub const fn termrock::widgets::ListState<Id>::set_click_policy(&mut self, termrock::widgets::ListClickPolicy)
 pub fn termrock::widgets::ListState<Id>::set_search_query(&mut self, core::option::Option<alloc::string::String>)
 pub fn termrock::widgets::ListState<Id>::set_selection_mode(&mut self, termrock::widgets::ListSelectionMode) where Id: core::clone::Clone + core::cmp::PartialEq
@@ -73419,13 +73404,13 @@ impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::ListState<Id>
 pub fn termrock::widgets::ListState<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl<Id> core::default::Default for termrock::widgets::ListState<Id>
 pub fn termrock::widgets::ListState<Id>::default() -> Self
-impl<Id> core::marker::Freeze for termrock::widgets::ListState<Id> where termrock::interaction::CollectionState<Id>: core::marker::Freeze, core::option::Option<Id>: core::marker::Freeze + core::marker::Freeze, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::marker::Freeze + core::marker::Freeze, core::option::Option<termrock::widgets::Selection<Id>>: core::marker::Freeze
-impl<Id> core::marker::Send for termrock::widgets::ListState<Id> where termrock::interaction::CollectionState<Id>: core::marker::Send, core::option::Option<Id>: core::marker::Send + core::marker::Send, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::marker::Send + core::marker::Send, core::option::Option<termrock::widgets::Selection<Id>>: core::marker::Send
-impl<Id> core::marker::Sync for termrock::widgets::ListState<Id> where termrock::interaction::CollectionState<Id>: core::marker::Sync, core::option::Option<Id>: core::marker::Sync + core::marker::Sync, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::marker::Sync + core::marker::Sync, core::option::Option<termrock::widgets::Selection<Id>>: core::marker::Sync
-impl<Id> core::marker::Unpin for termrock::widgets::ListState<Id> where termrock::interaction::CollectionState<Id>: core::marker::Unpin, core::option::Option<Id>: core::marker::Unpin + core::marker::Unpin, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::marker::Unpin + core::marker::Unpin, core::option::Option<termrock::widgets::Selection<Id>>: core::marker::Unpin
-impl<Id> core::marker::UnsafeUnpin for termrock::widgets::ListState<Id> where termrock::interaction::CollectionState<Id>: core::marker::UnsafeUnpin, core::option::Option<Id>: core::marker::UnsafeUnpin + core::marker::UnsafeUnpin, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::marker::UnsafeUnpin + core::marker::UnsafeUnpin, core::option::Option<termrock::widgets::Selection<Id>>: core::marker::UnsafeUnpin
-impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ListState<Id> where termrock::interaction::CollectionState<Id>: core::panic::unwind_safe::RefUnwindSafe, core::option::Option<Id>: core::panic::unwind_safe::RefUnwindSafe + core::panic::unwind_safe::RefUnwindSafe, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::panic::unwind_safe::RefUnwindSafe + core::panic::unwind_safe::RefUnwindSafe, core::option::Option<termrock::widgets::Selection<Id>>: core::panic::unwind_safe::RefUnwindSafe
-impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::ListState<Id> where termrock::interaction::CollectionState<Id>: core::panic::unwind_safe::UnwindSafe, core::option::Option<Id>: core::panic::unwind_safe::UnwindSafe + core::panic::unwind_safe::UnwindSafe, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::panic::unwind_safe::UnwindSafe + core::panic::unwind_safe::UnwindSafe, core::option::Option<termrock::widgets::Selection<Id>>: core::panic::unwind_safe::UnwindSafe
+impl<Id> core::marker::Freeze for termrock::widgets::ListState<Id> where termrock::interaction::CollectionState<Id>: core::marker::Freeze, core::option::Option<Id>: core::marker::Freeze + core::marker::Freeze, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::marker::Freeze + core::marker::Freeze, core::option::Option<termrock::interaction::SelectionModel<Id>>: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::ListState<Id> where termrock::interaction::CollectionState<Id>: core::marker::Send, core::option::Option<Id>: core::marker::Send + core::marker::Send, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::marker::Send + core::marker::Send, core::option::Option<termrock::interaction::SelectionModel<Id>>: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::ListState<Id> where termrock::interaction::CollectionState<Id>: core::marker::Sync, core::option::Option<Id>: core::marker::Sync + core::marker::Sync, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::marker::Sync + core::marker::Sync, core::option::Option<termrock::interaction::SelectionModel<Id>>: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::ListState<Id> where termrock::interaction::CollectionState<Id>: core::marker::Unpin, core::option::Option<Id>: core::marker::Unpin + core::marker::Unpin, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::marker::Unpin + core::marker::Unpin, core::option::Option<termrock::interaction::SelectionModel<Id>>: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::ListState<Id> where termrock::interaction::CollectionState<Id>: core::marker::UnsafeUnpin, core::option::Option<Id>: core::marker::UnsafeUnpin + core::marker::UnsafeUnpin, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::marker::UnsafeUnpin + core::marker::UnsafeUnpin, core::option::Option<termrock::interaction::SelectionModel<Id>>: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::ListState<Id> where termrock::interaction::CollectionState<Id>: core::panic::unwind_safe::RefUnwindSafe, core::option::Option<Id>: core::panic::unwind_safe::RefUnwindSafe + core::panic::unwind_safe::RefUnwindSafe, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::panic::unwind_safe::RefUnwindSafe + core::panic::unwind_safe::RefUnwindSafe, core::option::Option<termrock::interaction::SelectionModel<Id>>: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::ListState<Id> where termrock::interaction::CollectionState<Id>: core::panic::unwind_safe::UnwindSafe, core::option::Option<Id>: core::panic::unwind_safe::UnwindSafe + core::panic::unwind_safe::UnwindSafe, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::panic::unwind_safe::UnwindSafe + core::panic::unwind_safe::UnwindSafe, core::option::Option<termrock::interaction::SelectionModel<Id>>: core::panic::unwind_safe::UnwindSafe
 impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::ListState<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
 pub fn termrock::widgets::ListState<Id>::equivalent(&self, &K) -> bool
 impl<T, U> core::convert::Into<U> for termrock::widgets::ListState<Id> where U: core::convert::From<T>
@@ -74093,10 +74078,6 @@ pub fn termrock::widgets::MarkdownView<'a>::paint(&self, ratatui_core::layout::r
 pub fn termrock::widgets::MarkdownView<'a>::register_semantic<Id, Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, &termrock::widgets::MarkdownViewState) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
 pub const fn termrock::widgets::MarkdownView<'a>::section_gap(self, bool) -> Self
 pub const fn termrock::widgets::MarkdownView<'a>::selectable(self, bool) -> Self
-impl ratatui_core::widgets::widget::Widget for &termrock::widgets::MarkdownView<'_>
-pub fn &termrock::widgets::MarkdownView<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
-impl ratatui_core::widgets::widget::Widget for termrock::widgets::MarkdownView<'_>
-pub fn termrock::widgets::MarkdownView<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
 impl<'a> core::clone::Clone for termrock::widgets::MarkdownView<'a>
 pub fn termrock::widgets::MarkdownView<'a>::clone(&self) -> termrock::widgets::MarkdownView<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::MarkdownView<'a>
@@ -75935,8 +75916,8 @@ pub fn termrock::widgets::MultiSelectState<Id>::reconcile_options(&mut self, &[t
 pub fn termrock::widgets::MultiSelectState<Id>::search_query(&self) -> &str
 pub fn termrock::widgets::MultiSelectState<Id>::select_all_visible(&mut self, &[termrock::widgets::SelectOption<Id>]) -> termrock::widgets::MultiSelectOutcome<Id>
 pub fn termrock::widgets::MultiSelectState<Id>::selected(&self) -> &[Id]
-pub const fn termrock::widgets::MultiSelectState<Id>::selection(&self) -> &termrock::widgets::Selection<Id>
-pub fn termrock::widgets::MultiSelectState<Id>::selection_mut(&mut self) -> &mut termrock::widgets::Selection<Id>
+pub const fn termrock::widgets::MultiSelectState<Id>::selection(&self) -> &termrock::interaction::SelectionModel<Id>
+pub fn termrock::widgets::MultiSelectState<Id>::selection_mut(&mut self) -> &mut termrock::interaction::SelectionModel<Id>
 pub const fn termrock::widgets::MultiSelectState<Id>::set_enabled(&mut self, bool)
 pub fn termrock::widgets::MultiSelectState<Id>::set_focused(&mut self, bool)
 pub const fn termrock::widgets::MultiSelectState<Id>::set_presentation(&mut self, termrock::widgets::SelectPresentation)
@@ -75958,13 +75939,13 @@ pub fn termrock::widgets::MultiSelectState<Id>::eq(&self, &termrock::widgets::Mu
 impl<Id: core::cmp::PartialEq + core::clone::Clone + core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::MultiSelectState<Id>
 impl<Id: core::fmt::Debug + core::clone::Clone + core::cmp::PartialEq> core::fmt::Debug for termrock::widgets::MultiSelectState<Id>
 pub fn termrock::widgets::MultiSelectState<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<Id> core::marker::Freeze for termrock::widgets::MultiSelectState<Id> where termrock::widgets::Selection<Id>: core::marker::Freeze, termrock::interaction::CollectionState<Id>: core::marker::Freeze, core::option::Option<Id>: core::marker::Freeze + core::marker::Freeze, alloc::vec::Vec<(Id, ratatui_core::layout::rect::Rect)>: core::marker::Freeze
-impl<Id> core::marker::Send for termrock::widgets::MultiSelectState<Id> where termrock::widgets::Selection<Id>: core::marker::Send, termrock::interaction::CollectionState<Id>: core::marker::Send, core::option::Option<Id>: core::marker::Send + core::marker::Send, alloc::vec::Vec<(Id, ratatui_core::layout::rect::Rect)>: core::marker::Send
-impl<Id> core::marker::Sync for termrock::widgets::MultiSelectState<Id> where termrock::widgets::Selection<Id>: core::marker::Sync, termrock::interaction::CollectionState<Id>: core::marker::Sync, core::option::Option<Id>: core::marker::Sync + core::marker::Sync, alloc::vec::Vec<(Id, ratatui_core::layout::rect::Rect)>: core::marker::Sync
-impl<Id> core::marker::Unpin for termrock::widgets::MultiSelectState<Id> where termrock::widgets::Selection<Id>: core::marker::Unpin, termrock::interaction::CollectionState<Id>: core::marker::Unpin, core::option::Option<Id>: core::marker::Unpin + core::marker::Unpin, alloc::vec::Vec<(Id, ratatui_core::layout::rect::Rect)>: core::marker::Unpin
-impl<Id> core::marker::UnsafeUnpin for termrock::widgets::MultiSelectState<Id> where termrock::widgets::Selection<Id>: core::marker::UnsafeUnpin, termrock::interaction::CollectionState<Id>: core::marker::UnsafeUnpin, core::option::Option<Id>: core::marker::UnsafeUnpin + core::marker::UnsafeUnpin, alloc::vec::Vec<(Id, ratatui_core::layout::rect::Rect)>: core::marker::UnsafeUnpin
-impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::MultiSelectState<Id> where termrock::widgets::Selection<Id>: core::panic::unwind_safe::RefUnwindSafe, termrock::interaction::CollectionState<Id>: core::panic::unwind_safe::RefUnwindSafe, core::option::Option<Id>: core::panic::unwind_safe::RefUnwindSafe + core::panic::unwind_safe::RefUnwindSafe, alloc::vec::Vec<(Id, ratatui_core::layout::rect::Rect)>: core::panic::unwind_safe::RefUnwindSafe
-impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::MultiSelectState<Id> where termrock::widgets::Selection<Id>: core::panic::unwind_safe::UnwindSafe, termrock::interaction::CollectionState<Id>: core::panic::unwind_safe::UnwindSafe, core::option::Option<Id>: core::panic::unwind_safe::UnwindSafe + core::panic::unwind_safe::UnwindSafe, alloc::vec::Vec<(Id, ratatui_core::layout::rect::Rect)>: core::panic::unwind_safe::UnwindSafe
+impl<Id> core::marker::Freeze for termrock::widgets::MultiSelectState<Id> where termrock::interaction::SelectionModel<Id>: core::marker::Freeze, termrock::interaction::CollectionState<Id>: core::marker::Freeze, core::option::Option<Id>: core::marker::Freeze + core::marker::Freeze, alloc::vec::Vec<(Id, ratatui_core::layout::rect::Rect)>: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::MultiSelectState<Id> where termrock::interaction::SelectionModel<Id>: core::marker::Send, termrock::interaction::CollectionState<Id>: core::marker::Send, core::option::Option<Id>: core::marker::Send + core::marker::Send, alloc::vec::Vec<(Id, ratatui_core::layout::rect::Rect)>: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::MultiSelectState<Id> where termrock::interaction::SelectionModel<Id>: core::marker::Sync, termrock::interaction::CollectionState<Id>: core::marker::Sync, core::option::Option<Id>: core::marker::Sync + core::marker::Sync, alloc::vec::Vec<(Id, ratatui_core::layout::rect::Rect)>: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::MultiSelectState<Id> where termrock::interaction::SelectionModel<Id>: core::marker::Unpin, termrock::interaction::CollectionState<Id>: core::marker::Unpin, core::option::Option<Id>: core::marker::Unpin + core::marker::Unpin, alloc::vec::Vec<(Id, ratatui_core::layout::rect::Rect)>: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::MultiSelectState<Id> where termrock::interaction::SelectionModel<Id>: core::marker::UnsafeUnpin, termrock::interaction::CollectionState<Id>: core::marker::UnsafeUnpin, core::option::Option<Id>: core::marker::UnsafeUnpin + core::marker::UnsafeUnpin, alloc::vec::Vec<(Id, ratatui_core::layout::rect::Rect)>: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::MultiSelectState<Id> where termrock::interaction::SelectionModel<Id>: core::panic::unwind_safe::RefUnwindSafe, termrock::interaction::CollectionState<Id>: core::panic::unwind_safe::RefUnwindSafe, core::option::Option<Id>: core::panic::unwind_safe::RefUnwindSafe + core::panic::unwind_safe::RefUnwindSafe, alloc::vec::Vec<(Id, ratatui_core::layout::rect::Rect)>: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::MultiSelectState<Id> where termrock::interaction::SelectionModel<Id>: core::panic::unwind_safe::UnwindSafe, termrock::interaction::CollectionState<Id>: core::panic::unwind_safe::UnwindSafe, core::option::Option<Id>: core::panic::unwind_safe::UnwindSafe + core::panic::unwind_safe::UnwindSafe, alloc::vec::Vec<(Id, ratatui_core::layout::rect::Rect)>: core::panic::unwind_safe::UnwindSafe
 impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::MultiSelectState<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
 pub fn termrock::widgets::MultiSelectState<Id>::equivalent(&self, &K) -> bool
 impl<T, U> core::convert::Into<U> for termrock::widgets::MultiSelectState<Id> where U: core::convert::From<T>
@@ -83314,63 +83295,6 @@ pub unsafe fn termrock::widgets::SelectState<Id>::clone_to_uninit(&self, *mut u8
 impl<T> core::convert::From<T> for termrock::widgets::SelectState<Id>
 pub fn termrock::widgets::SelectState<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::SelectState<Id>
-pub struct termrock::widgets::Selection<Id>
-impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::Selection<Id>
-pub fn termrock::widgets::Selection<Id>::checked(&self) -> &[Id]
-pub fn termrock::widgets::Selection<Id>::invert_visible(&mut self, &[Id])
-pub fn termrock::widgets::Selection<Id>::is_checked(&self, &Id) -> bool
-pub fn termrock::widgets::Selection<Id>::reconcile(&mut self, &[Id])
-pub fn termrock::widgets::Selection<Id>::select_all(&mut self, &[Id])
-pub fn termrock::widgets::Selection<Id>::toggle(&mut self, &Id) -> bool
-impl<Id> termrock::widgets::Selection<Id>
-pub fn termrock::widgets::Selection<Id>::clear(&mut self)
-pub const fn termrock::widgets::Selection<Id>::model(&self) -> &termrock::interaction::SelectionModel<Id>
-pub const fn termrock::widgets::Selection<Id>::model_mut(&mut self) -> &mut termrock::interaction::SelectionModel<Id>
-pub const fn termrock::widgets::Selection<Id>::new() -> Self
-impl<Id: core::clone::Clone + core::cmp::PartialEq> core::convert::From<termrock::interaction::SelectionModel<Id>> for termrock::widgets::Selection<Id>
-pub fn termrock::widgets::Selection<Id>::from(termrock::interaction::SelectionModel<Id>) -> Self
-impl<Id: core::clone::Clone> core::clone::Clone for termrock::widgets::Selection<Id>
-pub fn termrock::widgets::Selection<Id>::clone(&self) -> termrock::widgets::Selection<Id>
-impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::widgets::Selection<Id>
-impl<Id: core::cmp::PartialEq> core::cmp::PartialEq for termrock::widgets::Selection<Id>
-pub fn termrock::widgets::Selection<Id>::eq(&self, &termrock::widgets::Selection<Id>) -> bool
-impl<Id: core::cmp::PartialEq> core::marker::StructuralPartialEq for termrock::widgets::Selection<Id>
-impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::Selection<Id>
-pub fn termrock::widgets::Selection<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl<Id> core::default::Default for termrock::widgets::Selection<Id>
-pub fn termrock::widgets::Selection<Id>::default() -> Self
-impl<Id> core::marker::Freeze for termrock::widgets::Selection<Id> where termrock::interaction::SelectionModel<Id>: core::marker::Freeze
-impl<Id> core::marker::Send for termrock::widgets::Selection<Id> where termrock::interaction::SelectionModel<Id>: core::marker::Send
-impl<Id> core::marker::Sync for termrock::widgets::Selection<Id> where termrock::interaction::SelectionModel<Id>: core::marker::Sync
-impl<Id> core::marker::Unpin for termrock::widgets::Selection<Id> where termrock::interaction::SelectionModel<Id>: core::marker::Unpin
-impl<Id> core::marker::UnsafeUnpin for termrock::widgets::Selection<Id> where termrock::interaction::SelectionModel<Id>: core::marker::UnsafeUnpin
-impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::Selection<Id> where termrock::interaction::SelectionModel<Id>: core::panic::unwind_safe::RefUnwindSafe
-impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::Selection<Id> where termrock::interaction::SelectionModel<Id>: core::panic::unwind_safe::UnwindSafe
-impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::Selection<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::widgets::Selection<Id>::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::widgets::Selection<Id> where U: core::convert::From<T>
-pub fn termrock::widgets::Selection<Id>::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::widgets::Selection<Id> where U: core::convert::Into<T>
-pub type termrock::widgets::Selection<Id>::Error = never
-pub fn termrock::widgets::Selection<Id>::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::widgets::Selection<Id> where U: core::convert::TryFrom<T>
-pub type termrock::widgets::Selection<Id>::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::widgets::Selection<Id>::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::widgets::Selection<Id> where T: core::clone::Clone
-pub type termrock::widgets::Selection<Id>::Owned = T
-pub fn termrock::widgets::Selection<Id>::clone_into(&self, &mut T)
-pub fn termrock::widgets::Selection<Id>::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::widgets::Selection<Id> where T: 'static + ?core::marker::Sized
-pub fn termrock::widgets::Selection<Id>::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::widgets::Selection<Id> where T: ?core::marker::Sized
-pub fn termrock::widgets::Selection<Id>::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::widgets::Selection<Id> where T: ?core::marker::Sized
-pub fn termrock::widgets::Selection<Id>::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::widgets::Selection<Id> where T: core::clone::Clone
-pub unsafe fn termrock::widgets::Selection<Id>::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::widgets::Selection<Id>
-pub fn termrock::widgets::Selection<Id>::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::widgets::Selection<Id>
 pub struct termrock::widgets::SelectionModel<RowId: core::cmp::Ord>
 pub termrock::widgets::SelectionModel::cells: termrock::interaction::CellSelectionModel
 pub termrock::widgets::SelectionModel::focus_col: usize
@@ -88890,8 +88814,6 @@ pub const fn termrock::widgets::Toggle<'a>::recipe(self, termrock::widgets::Togg
 pub fn termrock::widgets::Toggle<'a>::register_semantic<Id, Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, &termrock::widgets::ToggleState) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
 pub const fn termrock::widgets::Toggle<'a>::size(self, termrock::widgets::ToggleSize) -> Self
 pub const fn termrock::widgets::Toggle<'a>::solid(self) -> Self
-impl ratatui_core::widgets::widget::Widget for &termrock::widgets::Toggle<'_>
-pub fn &termrock::widgets::Toggle<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
 impl<'a> core::clone::Clone for termrock::widgets::Toggle<'a>
 pub fn termrock::widgets::Toggle<'a>::clone(&self) -> termrock::widgets::Toggle<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::Toggle<'a>
@@ -91055,8 +90977,8 @@ pub fn termrock::widgets::TreeState<Id>::scroll_horizontal(&mut self, i16) -> bo
 pub fn termrock::widgets::TreeState<Id>::scroll_to_position(&mut self, ratatui_core::layout::position::Position, usize) -> bool
 pub fn termrock::widgets::TreeState<Id>::select(&mut self, core::option::Option<Id>) where Id: core::clone::Clone + core::cmp::PartialEq
 pub const fn termrock::widgets::TreeState<Id>::selected(&self) -> core::option::Option<&Id>
-pub const fn termrock::widgets::TreeState<Id>::selection(&self) -> core::option::Option<&termrock::widgets::Selection<Id>>
-pub fn termrock::widgets::TreeState<Id>::selection_mut(&mut self) -> core::option::Option<&mut termrock::widgets::Selection<Id>>
+pub const fn termrock::widgets::TreeState<Id>::selection(&self) -> core::option::Option<&termrock::interaction::SelectionModel<Id>>
+pub fn termrock::widgets::TreeState<Id>::selection_mut(&mut self) -> core::option::Option<&mut termrock::interaction::SelectionModel<Id>>
 pub const fn termrock::widgets::TreeState<Id>::semantic_selection(&self) -> core::option::Option<&Id>
 pub fn termrock::widgets::TreeState<Id>::set_filter_query(&mut self, core::option::Option<alloc::string::String>)
 pub fn termrock::widgets::TreeState<Id>::set_h_offset(&mut self, u16)
@@ -91077,13 +90999,13 @@ impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::TreeState<Id>
 pub fn termrock::widgets::TreeState<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl<Id> core::default::Default for termrock::widgets::TreeState<Id>
 pub fn termrock::widgets::TreeState<Id>::default() -> Self
-impl<Id> core::marker::Freeze for termrock::widgets::TreeState<Id> where core::option::Option<Id>: core::marker::Freeze + core::marker::Freeze + core::marker::Freeze, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::marker::Freeze + core::marker::Freeze + core::marker::Freeze, core::option::Option<termrock::widgets::Selection<Id>>: core::marker::Freeze, termrock::interaction::CollectionState<Id>: core::marker::Freeze
-impl<Id> core::marker::Send for termrock::widgets::TreeState<Id> where core::option::Option<Id>: core::marker::Send + core::marker::Send + core::marker::Send, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::marker::Send + core::marker::Send + core::marker::Send, core::option::Option<termrock::widgets::Selection<Id>>: core::marker::Send, termrock::interaction::CollectionState<Id>: core::marker::Send
-impl<Id> core::marker::Sync for termrock::widgets::TreeState<Id> where core::option::Option<Id>: core::marker::Sync + core::marker::Sync + core::marker::Sync, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::marker::Sync + core::marker::Sync + core::marker::Sync, core::option::Option<termrock::widgets::Selection<Id>>: core::marker::Sync, termrock::interaction::CollectionState<Id>: core::marker::Sync
-impl<Id> core::marker::Unpin for termrock::widgets::TreeState<Id> where core::option::Option<Id>: core::marker::Unpin + core::marker::Unpin + core::marker::Unpin, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::marker::Unpin + core::marker::Unpin + core::marker::Unpin, core::option::Option<termrock::widgets::Selection<Id>>: core::marker::Unpin, termrock::interaction::CollectionState<Id>: core::marker::Unpin
-impl<Id> core::marker::UnsafeUnpin for termrock::widgets::TreeState<Id> where core::option::Option<Id>: core::marker::UnsafeUnpin + core::marker::UnsafeUnpin + core::marker::UnsafeUnpin, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::marker::UnsafeUnpin + core::marker::UnsafeUnpin + core::marker::UnsafeUnpin, core::option::Option<termrock::widgets::Selection<Id>>: core::marker::UnsafeUnpin, termrock::interaction::CollectionState<Id>: core::marker::UnsafeUnpin
-impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TreeState<Id> where core::option::Option<Id>: core::panic::unwind_safe::RefUnwindSafe + core::panic::unwind_safe::RefUnwindSafe + core::panic::unwind_safe::RefUnwindSafe, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::panic::unwind_safe::RefUnwindSafe + core::panic::unwind_safe::RefUnwindSafe + core::panic::unwind_safe::RefUnwindSafe, core::option::Option<termrock::widgets::Selection<Id>>: core::panic::unwind_safe::RefUnwindSafe, termrock::interaction::CollectionState<Id>: core::panic::unwind_safe::RefUnwindSafe
-impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::TreeState<Id> where core::option::Option<Id>: core::panic::unwind_safe::UnwindSafe + core::panic::unwind_safe::UnwindSafe + core::panic::unwind_safe::UnwindSafe, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::panic::unwind_safe::UnwindSafe + core::panic::unwind_safe::UnwindSafe + core::panic::unwind_safe::UnwindSafe, core::option::Option<termrock::widgets::Selection<Id>>: core::panic::unwind_safe::UnwindSafe, termrock::interaction::CollectionState<Id>: core::panic::unwind_safe::UnwindSafe
+impl<Id> core::marker::Freeze for termrock::widgets::TreeState<Id> where core::option::Option<Id>: core::marker::Freeze + core::marker::Freeze + core::marker::Freeze, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::marker::Freeze + core::marker::Freeze + core::marker::Freeze, core::option::Option<termrock::interaction::SelectionModel<Id>>: core::marker::Freeze, termrock::interaction::CollectionState<Id>: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::TreeState<Id> where core::option::Option<Id>: core::marker::Send + core::marker::Send + core::marker::Send, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::marker::Send + core::marker::Send + core::marker::Send, core::option::Option<termrock::interaction::SelectionModel<Id>>: core::marker::Send, termrock::interaction::CollectionState<Id>: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::TreeState<Id> where core::option::Option<Id>: core::marker::Sync + core::marker::Sync + core::marker::Sync, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::marker::Sync + core::marker::Sync + core::marker::Sync, core::option::Option<termrock::interaction::SelectionModel<Id>>: core::marker::Sync, termrock::interaction::CollectionState<Id>: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::TreeState<Id> where core::option::Option<Id>: core::marker::Unpin + core::marker::Unpin + core::marker::Unpin, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::marker::Unpin + core::marker::Unpin + core::marker::Unpin, core::option::Option<termrock::interaction::SelectionModel<Id>>: core::marker::Unpin, termrock::interaction::CollectionState<Id>: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::TreeState<Id> where core::option::Option<Id>: core::marker::UnsafeUnpin + core::marker::UnsafeUnpin + core::marker::UnsafeUnpin, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::marker::UnsafeUnpin + core::marker::UnsafeUnpin + core::marker::UnsafeUnpin, core::option::Option<termrock::interaction::SelectionModel<Id>>: core::marker::UnsafeUnpin, termrock::interaction::CollectionState<Id>: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TreeState<Id> where core::option::Option<Id>: core::panic::unwind_safe::RefUnwindSafe + core::panic::unwind_safe::RefUnwindSafe + core::panic::unwind_safe::RefUnwindSafe, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::panic::unwind_safe::RefUnwindSafe + core::panic::unwind_safe::RefUnwindSafe + core::panic::unwind_safe::RefUnwindSafe, core::option::Option<termrock::interaction::SelectionModel<Id>>: core::panic::unwind_safe::RefUnwindSafe, termrock::interaction::CollectionState<Id>: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::TreeState<Id> where core::option::Option<Id>: core::panic::unwind_safe::UnwindSafe + core::panic::unwind_safe::UnwindSafe + core::panic::unwind_safe::UnwindSafe, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::panic::unwind_safe::UnwindSafe + core::panic::unwind_safe::UnwindSafe + core::panic::unwind_safe::UnwindSafe, core::option::Option<termrock::interaction::SelectionModel<Id>>: core::panic::unwind_safe::UnwindSafe, termrock::interaction::CollectionState<Id>: core::panic::unwind_safe::UnwindSafe
 impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::TreeState<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
 pub fn termrock::widgets::TreeState<Id>::equivalent(&self, &K) -> bool
 impl<T, U> core::convert::Into<U> for termrock::widgets::TreeState<Id> where U: core::convert::From<T>
@@ -91878,13 +91800,13 @@ impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::VirtualListSt
 pub fn termrock::widgets::VirtualListState<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl<Id> core::default::Default for termrock::widgets::VirtualListState<Id>
 pub fn termrock::widgets::VirtualListState<Id>::default() -> Self
-impl<Id> core::marker::Freeze for termrock::widgets::VirtualListState<Id> where termrock::widgets::ListState<Id>: core::marker::Freeze, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::marker::Freeze
-impl<Id> core::marker::Send for termrock::widgets::VirtualListState<Id> where termrock::widgets::ListState<Id>: core::marker::Send, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::marker::Send
-impl<Id> core::marker::Sync for termrock::widgets::VirtualListState<Id> where termrock::widgets::ListState<Id>: core::marker::Sync, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::marker::Sync
-impl<Id> core::marker::Unpin for termrock::widgets::VirtualListState<Id> where termrock::widgets::ListState<Id>: core::marker::Unpin, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::marker::Unpin
-impl<Id> core::marker::UnsafeUnpin for termrock::widgets::VirtualListState<Id> where termrock::widgets::ListState<Id>: core::marker::UnsafeUnpin, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::marker::UnsafeUnpin
-impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::VirtualListState<Id> where termrock::widgets::ListState<Id>: core::panic::unwind_safe::RefUnwindSafe, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::panic::unwind_safe::RefUnwindSafe
-impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::VirtualListState<Id> where termrock::widgets::ListState<Id>: core::panic::unwind_safe::UnwindSafe, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::panic::unwind_safe::UnwindSafe
+impl<Id> core::marker::Freeze for termrock::widgets::VirtualListState<Id> where termrock::widgets::ListState<Id>: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::VirtualListState<Id> where termrock::widgets::ListState<Id>: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::VirtualListState<Id> where termrock::widgets::ListState<Id>: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::VirtualListState<Id> where termrock::widgets::ListState<Id>: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::VirtualListState<Id> where termrock::widgets::ListState<Id>: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::VirtualListState<Id> where termrock::widgets::ListState<Id>: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::VirtualListState<Id> where termrock::widgets::ListState<Id>: core::panic::unwind_safe::UnwindSafe
 impl<T, U> core::convert::Into<U> for termrock::widgets::VirtualListState<Id> where U: core::convert::From<T>
 pub fn termrock::widgets::VirtualListState<Id>::into(self) -> U
 impl<T, U> core::convert::TryFrom<U> for termrock::widgets::VirtualListState<Id> where U: core::convert::Into<T>
