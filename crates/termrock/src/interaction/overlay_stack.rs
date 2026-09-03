@@ -778,7 +778,9 @@ pub enum PointerRoute {
         /// Index in [`OverlayStack::entries`] (always last).
         index: usize,
     },
-    /// Outside the top rect (may dismiss or trap per policy).
+    /// No input-owning overlay contains the pointer; a point inside a
+    /// tooltip-only top rectangle can therefore map here. The top entry index
+    /// is still reported so hosts can apply its outside policy.
     OutsideTop {
         /// Top entry index.
         index: usize,
@@ -1109,13 +1111,16 @@ impl<FocusId> OverlayStack<FocusId> {
             return PointerRoute::Empty;
         }
         let top_i = self.entries.len() - 1;
-        if self.entries[top_i].rect.contains(position) {
-            return PointerRoute::Top { index: top_i };
-        }
-        // Lower hits (for translucent tops / tooltips that do not own input).
-        for (index, entry) in self.entries.iter().enumerate().rev().skip(1) {
+        for (index, entry) in self.entries.iter().enumerate().rev() {
+            if !entry.policy.owns_input {
+                continue;
+            }
             if entry.rect.contains(position) {
-                return PointerRoute::Lower { index };
+                return if index == top_i {
+                    PointerRoute::Top { index }
+                } else {
+                    PointerRoute::Lower { index }
+                };
             }
         }
         PointerRoute::OutsideTop { index: top_i }
@@ -2155,6 +2160,53 @@ mod tests {
         );
         assert!(!detailed.rect.is_empty());
         assert!(detailed.flipped_vertical || detailed.rect.y + detailed.rect.height <= 20);
+    }
+
+    #[test]
+    fn non_owning_tooltips_pass_pointer_to_lower_owner() {
+        let bounds = Rect::new(0, 0, 80, 24);
+        let anchor = Rect::new(40, 12, 1, 1);
+        let mut stack = OverlayStack::<()>::new();
+        stack.open(
+            bounds,
+            OverlaySpec::dialog("dialog", OverlaySize::dialog(40, 10), None),
+        );
+        stack.open(
+            bounds,
+            OverlaySpec::tooltip("tip-1", anchor, OverlaySize::menu(12, 4), None),
+        );
+        stack.open(
+            bounds,
+            OverlaySpec::tooltip("tip-2", anchor, OverlaySize::menu(12, 4), None),
+        );
+
+        let top = stack.top_rect().expect("tooltip is open");
+        let point = Position::new(top.x, top.y);
+        assert!(stack.pointer_hits_top(point));
+        assert_eq!(stack.route_pointer(point), PointerRoute::Lower { index: 0 });
+    }
+
+    #[test]
+    fn tooltip_only_pointer_is_outside_input_stack() {
+        let bounds = Rect::new(0, 0, 80, 24);
+        let mut stack = OverlayStack::<()>::new();
+        stack.open(
+            bounds,
+            OverlaySpec::tooltip(
+                "tip",
+                Rect::new(40, 12, 1, 1),
+                OverlaySize::menu(12, 4),
+                None,
+            ),
+        );
+
+        let top = stack.top_rect().expect("tooltip is open");
+        let point = Position::new(top.x, top.y);
+        assert!(stack.pointer_hits_top(point));
+        assert_eq!(
+            stack.route_pointer(point),
+            PointerRoute::OutsideTop { index: 0 }
+        );
     }
 
     #[test]

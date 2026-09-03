@@ -399,6 +399,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0417 | `v0.14.0` | [Text-area Escape cancel is one-shot](migrations/0417-v0.14.0-one-shot-cancel-intent.md) |
 | 0418 | `v0.14.0` | [Keymap resolution uses canonical key events](migrations/0418-v0.14.0-canonical-keymap-resolution.md) |
 | 0419 | `v0.14.0` | [Nested focus traps restore their outer boundary](migrations/0419-v0.14.0-nested-focus-trap-restoration.md) |
+| 0420 | `v0.14.0` | [Overlay pointer routing honors input ownership](migrations/0420-v0.14.0-overlay-tooltip-pointer-pass-through.md) |
 | 0421 | `v0.14.0` | [HistoryPicker Escape cancellation is one-shot](migrations/0421-v0.14.0-history-picker-one-shot-cancel.md) |
 | 0422 | `v0.14.0` | [DatabaseWorkbench preserves the HistoryPicker lifecycle](migrations/0422-v0.14.0-database-workbench-history-lifecycle.md) |
 | 0423 | `v0.14.0` | [FilePicker one-shot raw-key actions](migrations/0423-v0.14.0-file-picker-one-shot-confirm.md) |
