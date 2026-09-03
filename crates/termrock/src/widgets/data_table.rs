@@ -315,6 +315,7 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
     pub fn set_logical_rows(&mut self, logical_len: u64) {
         self.window.logical_len = logical_len;
         self.window.clamp();
+        self.sync_cursor_focus();
     }
 
     /// Host surface input gate.
@@ -403,6 +404,7 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
         if vis_n > 0 {
             self.cursor_col = self.cursor_col.min(vis_n - 1);
         }
+        self.sync_cursor_focus();
 
         // Mode cycle (Tab with no modifiers while table owns input — VisiData-ish layer)
         if is_press && matches!(key.code, KeyCode::Char('\\')) {
@@ -569,6 +571,11 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
             .visible()
             .nth(self.cursor_col)
             .map(|(_, c)| c.id.clone())
+    }
+
+    fn sync_cursor_focus(&mut self) {
+        self.selection.focus_row = self.window.offset.saturating_add(self.cursor_row as u64);
+        self.selection.focus_col = self.cursor_col;
     }
 
     fn request_sort(&mut self, columns: &ColumnModel<ColId>) -> DataTableOutcome<RowId, ColId>
@@ -810,6 +817,7 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
         if vis_n > 0 {
             self.cursor_col = self.cursor_col.min(vis_n - 1);
         }
+        self.sync_cursor_focus();
         match intent {
             UiIntent::Move(NavigationMove::Next) | UiIntent::Move(NavigationMove::Down) => {
                 self.move_cursor_row(1, visible_rows.len())
@@ -819,10 +827,12 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
             }
             UiIntent::Move(NavigationMove::First) => {
                 self.cursor_row = 0;
+                self.sync_cursor_focus();
                 DataTableOutcome::CursorMoved
             }
             UiIntent::Move(NavigationMove::Last) => {
                 self.cursor_row = visible_rows.len().saturating_sub(1);
+                self.sync_cursor_focus();
                 DataTableOutcome::CursorMoved
             }
             UiIntent::Move(NavigationMove::Left) => self.move_horizontal(visible_rows, columns, -1),
@@ -830,6 +840,7 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
             UiIntent::Page(PageMove::Forward) => {
                 let step = i64::from(self.window.viewport.max(1));
                 if self.window.scroll_by(step) {
+                    self.sync_cursor_focus();
                     DataTableOutcome::Scrolled
                 } else {
                     self.move_cursor_row(step, visible_rows.len())
@@ -838,6 +849,7 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
             UiIntent::Page(PageMove::Backward) => {
                 let step = i64::from(self.window.viewport.max(1));
                 if self.window.scroll_by(-step) {
+                    self.sync_cursor_focus();
                     DataTableOutcome::Scrolled
                 } else {
                     self.move_cursor_row(-step, visible_rows.len())
@@ -941,6 +953,7 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
         match event.kind {
             MouseEventKind::ScrollUp if body.contains(event.position) => {
                 if self.window.scroll_by(-1) {
+                    self.sync_cursor_focus();
                     DataTableOutcome::Scrolled
                 } else if !visible_rows.is_empty() {
                     self.move_cursor_row(-1, visible_rows.len())
@@ -950,6 +963,7 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
             }
             MouseEventKind::ScrollDown if body.contains(event.position) => {
                 if self.window.scroll_by(1) {
+                    self.sync_cursor_focus();
                     DataTableOutcome::Scrolled
                 } else if !visible_rows.is_empty() {
                     self.move_cursor_row(1, visible_rows.len())
@@ -961,6 +975,7 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
                 if let Some(cell) = self.hit_cell(event.position) {
                     self.cursor_row = cell.row_index;
                     self.cursor_col = cell.col_index;
+                    self.sync_cursor_focus();
                     return DataTableOutcome::ContextMenu {
                         row: cell.row,
                         column: Some(cell.column),
@@ -1002,6 +1017,7 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
                 if let Some(cell) = self.hit_cell(event.position) {
                     self.cursor_row = cell.row_index;
                     self.cursor_col = cell.col_index;
+                    self.sync_cursor_focus();
                     if event.modifiers.contains(KeyModifiers::SHIFT)
                         || matches!(self.nav_mode, DataTableNavMode::Range)
                     {
@@ -1036,6 +1052,7 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
                             return DataTableOutcome::Activate(visible_rows[row].clone());
                         }
                         self.cursor_row = row;
+                        self.sync_cursor_focus();
                         return DataTableOutcome::CursorMoved;
                     }
                 }
@@ -1045,6 +1062,7 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
                 if let Some(cell) = self.hit_cell(event.position) {
                     self.cursor_row = cell.row_index;
                     self.cursor_col = cell.col_index;
+                    self.sync_cursor_focus();
                     let coord = CellCoord {
                         row: self.window.offset.saturating_add(cell.row_index as u64),
                         col: cell.col_index,
@@ -1082,15 +1100,17 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
         let next = (cur + delta).clamp(0, (len as i64) - 1) as usize;
         if next == self.cursor_row {
             if delta > 0 && self.window.scroll_by(1) {
+                self.sync_cursor_focus();
                 return DataTableOutcome::Scrolled;
             }
             if delta < 0 && self.window.scroll_by(-1) {
+                self.sync_cursor_focus();
                 return DataTableOutcome::Scrolled;
             }
             return DataTableOutcome::Ignored;
         }
         self.cursor_row = next;
-        self.selection.focus_row = self.window.offset.saturating_add(next as u64);
+        self.sync_cursor_focus();
         DataTableOutcome::CursorMoved
     }
 }
@@ -2063,6 +2083,36 @@ mod tests {
     }
 
     #[test]
+    fn virtual_window_moves_keep_selection_focus_absolute() {
+        let cols = ColumnModel::new(vec![DataColumn::new("c", "C", DataColumnWidth::Min(8))]);
+        let rows = [0u64, 1];
+        let mut state = DataTableState::<u64, &str>::new();
+        state.set_logical_rows(100);
+        state.window.viewport = 2;
+        state.cursor_row = 1;
+        state.selection.focus_row = 1;
+
+        assert!(matches!(
+            state.handle_intent(UiIntent::Move(NavigationMove::Next), &rows, &cols),
+            DataTableOutcome::Scrolled
+        ));
+        assert_eq!(state.window.offset, 1);
+        assert_eq!(state.cursor_row, 1);
+        assert_eq!(state.selection.focus_row, 2);
+
+        assert!(matches!(
+            state.handle_intent(UiIntent::Move(NavigationMove::First), &rows, &cols),
+            DataTableOutcome::CursorMoved
+        ));
+        assert_eq!(state.selection.focus_row, 1);
+        assert!(matches!(
+            state.handle_intent(UiIntent::Move(NavigationMove::Last), &rows, &cols),
+            DataTableOutcome::CursorMoved
+        ));
+        assert_eq!(state.selection.focus_row, 2);
+    }
+
+    #[test]
     fn narrow_column_contract_keeps_primary() {
         let mut cols = ColumnModel::new(vec![
             DataColumn::new("id", "ID", DataColumnWidth::Fixed(6))
@@ -2104,6 +2154,7 @@ mod tests {
         );
         assert!(matches!(out, DataTableOutcome::CursorMoved));
         assert_eq!(state.cursor_row, 1);
+        assert_eq!(state.selection.focus_row, 1);
     }
 
     #[test]
