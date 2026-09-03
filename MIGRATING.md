@@ -422,6 +422,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0440 | `v0.14.0` | [Input lifecycle actions](migrations/0440-v0.14.0-input-lifecycle-actions.md) |
 | 0442 | `v0.14.0` | [Panel default card fill](migrations/0442-v0.14.0-panel-default-card-fill.md) |
 | 0443 | `v0.14.0` | [TextInput physical one-shot actions](migrations/0443-v0.14.0-text-input-one-shot-actions.md) |
+| 0444 | `v0.14.0` | [MenuBar focused closed-bar gutter](migrations/0444-v0.14.0-menu-bar-focus-gutter.md) |
 | 0445 | `v0.14.0` | [PathInput physical one-shot actions](migrations/0445-v0.14.0-path-input-one-shot-actions.md) |
 | 0446 | `v0.14.0` | [TokenField physical one-shot actions](migrations/0446-v0.14.0-token-field-one-shot-actions.md) |
 

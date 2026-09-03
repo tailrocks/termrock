@@ -1326,6 +1326,7 @@ impl<'a, Id> MenuBar<'a, Id> {
     where
         Id: Clone,
     {
+        let area = area.intersection(*buffer.area());
         state.bar_hits.clear();
         state.bar_origin = (area.x, area.y);
         state.bar_size = (area.width, area.height);
@@ -1369,7 +1370,7 @@ impl<'a, Id> MenuBar<'a, Id> {
             }
             MenuBarPresentation::Full | MenuBarPresentation::Compact => {
                 state.ensure_bar(self.menus);
-                let mut x = area.x;
+                let mut x = area.x.saturating_add(1);
                 let bar_cursor = state.bar_cursor();
                 let surface = state.focused && state.accepts_input;
                 for (i, menu) in self.menus.iter().enumerate() {
@@ -1414,8 +1415,30 @@ impl<'a, Id> MenuBar<'a, Id> {
                     };
                     let text = take_display_cols(&pad, usize::from(w));
                     buffer.set_stringn(x, area.y, &text, usize::from(w), style);
+                    // The bar edge owns the first gutter slot; each following
+                    // gutter occupies the one-cell gap before its label.
+                    if surface && !state.is_open() && bar_cursor == i {
+                        let gutter = self.system.gutter(
+                            VisualState {
+                                focused: true,
+                                ..VisualState::default()
+                            },
+                            self.system
+                                .style(Role::Surface)
+                                .bg
+                                .unwrap_or(self.system.junie_theme().surface),
+                            false,
+                        );
+                        buffer.set_stringn(
+                            x.saturating_sub(1),
+                            area.y,
+                            self.system.glyphs.selection_gutter(),
+                            1,
+                            gutter,
+                        );
+                    }
                     state.bar_hits.push((i, Rect::new(x, area.y, w, 1)));
-                    x = x.saturating_add(w);
+                    x = x.saturating_add(w.saturating_add(1));
                 }
             }
         }
@@ -2225,6 +2248,126 @@ mod tests {
             buffer[(destructive.x + 2, destructive.y)].style().fg,
             Some(ratatui_core::style::Color::Rgb(0xd9, 0x8a, 0x8a))
         );
+    }
+
+    #[test]
+    fn closed_focused_cursor_paints_gutter_without_changing_label_geometry() {
+        let system = DesignSystem::junie();
+        let menus = vec![
+            MenuBarMenu::new("one", "One", Vec::new()),
+            MenuBarMenu::new("two", "Two", Vec::new()),
+        ];
+        let area = Rect::new(4, 2, 20, 1);
+        let mut state = focused_state();
+        state.set_presentation_override(Some(MenuBarPresentation::Full));
+        let bar = MenuBar::new(&menus, &system);
+
+        let mut closed = Buffer::empty(Rect::new(0, 0, 30, 4));
+        bar.paint(area, &mut closed, &mut state);
+        assert_eq!(
+            closed[(area.x, area.y)].symbol(),
+            system.glyphs.selection_gutter()
+        );
+        assert_eq!(closed[(area.x + 1, area.y)].symbol(), " ");
+        assert_eq!(closed[(area.x + 2, area.y)].symbol(), "O");
+        assert_eq!(closed[(area.x + 5, area.y)].symbol(), " ");
+        assert_eq!(closed[(area.x + 6, area.y)].symbol(), " ");
+        assert_eq!(closed[(area.x + 7, area.y)].symbol(), " ");
+        assert_eq!(closed[(area.x + 8, area.y)].symbol(), "T");
+        assert_eq!(
+            state.bar_hits[0],
+            (0, Rect::new(area.x + 1, area.y, 5, 1)),
+            "the hit starts at the padded label, after the gutter"
+        );
+        assert_eq!(
+            state.bar_hits[1],
+            (1, Rect::new(area.x + 7, area.y, 5, 1)),
+            "the second hit follows the one-cell inter-label gap"
+        );
+
+        assert!(matches!(
+            state.handle_key(KeyEvent::new(KeyCode::Right, KeyModifiers::NONE), &menus),
+            MenuBarOutcome::BarMoved
+        ));
+        let mut moved = Buffer::empty(Rect::new(0, 0, 30, 4));
+        bar.paint(area, &mut moved, &mut state);
+        assert_ne!(
+            moved[(area.x, area.y)].symbol(),
+            system.glyphs.selection_gutter()
+        );
+        assert_eq!(moved[(area.x + 5, area.y)].symbol(), " ");
+        assert_eq!(
+            moved[(area.x + 6, area.y)].symbol(),
+            system.glyphs.selection_gutter()
+        );
+        assert_eq!(moved[(area.x + 7, area.y)].symbol(), " ");
+        assert_eq!(moved[(area.x + 8, area.y)].symbol(), "T");
+        assert_eq!(state.bar_hits[1], (1, Rect::new(area.x + 7, area.y, 5, 1)));
+
+        let _ = state.open_menu_at(&menus, 0);
+        let mut open = Buffer::empty(Rect::new(0, 0, 30, 4));
+        bar.paint(area, &mut open, &mut state);
+        assert_ne!(
+            open[(area.x, area.y)].symbol(),
+            system.glyphs.selection_gutter(),
+            "open labels do not carry the closed-bar focus gutter"
+        );
+        assert_eq!(open[(area.x + 1, area.y)].symbol(), " ");
+        let active_style = system
+            .style(Role::TextStrong)
+            .patch(system.style(Role::SelectionTint))
+            .add_modifier(Modifier::BOLD);
+        let painted_active = open[(area.x + 2, area.y)].style();
+        assert_eq!(painted_active.fg, active_style.fg);
+        assert_eq!(painted_active.bg, active_style.bg);
+        assert_eq!(painted_active.add_modifier, active_style.add_modifier);
+
+        state.close_all();
+        state.set_focused(false);
+        let mut unfocused = Buffer::empty(Rect::new(0, 0, 30, 4));
+        bar.paint(area, &mut unfocused, &mut state);
+        assert_ne!(
+            unfocused[(area.x, area.y)].symbol(),
+            system.glyphs.selection_gutter(),
+            "unfocused labels do not carry the focus gutter"
+        );
+    }
+
+    #[test]
+    fn paint_intersects_offset_and_wholly_out_of_buffer_areas() {
+        let system = DesignSystem::junie();
+        let menus = vec![MenuBarMenu::new("one", "One", Vec::new())];
+        let bar = MenuBar::new(&menus, &system);
+
+        let mut partial_state = focused_state();
+        partial_state.set_presentation_override(Some(MenuBarPresentation::Full));
+        let mut partial = Buffer::empty(Rect::new(10, 5, 12, 2));
+        let partial_area = Rect::new(8, 4, 16, 3);
+        let partial_result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            bar.paint(partial_area, &mut partial, &mut partial_state);
+        }));
+        assert!(
+            partial_result.is_ok(),
+            "partial area must be clipped safely"
+        );
+        assert_eq!(partial_state.bar_size, (12, 2));
+        assert_eq!(partial_state.bar_origin, (10, 5));
+        assert!(partial_state.bar_hits.iter().all(|(_, hit)| {
+            hit.x >= 10 && hit.right() <= 22 && hit.y >= 5 && hit.bottom() <= 7
+        }));
+
+        let mut outside_state = focused_state();
+        outside_state.set_presentation_override(Some(MenuBarPresentation::Full));
+        let mut outside = Buffer::empty(Rect::new(10, 5, 12, 2));
+        let outside_result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            bar.paint(Rect::new(0, 0, 4, 1), &mut outside, &mut outside_state);
+        }));
+        assert!(
+            outside_result.is_ok(),
+            "outside area must be ignored safely"
+        );
+        assert!(outside_state.bar_hits.is_empty());
+        assert!(outside.content().iter().all(|cell| cell.symbol() == " "));
     }
 
     #[test]
