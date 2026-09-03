@@ -1073,7 +1073,8 @@ impl<'a, Id: Clone + Ord, ColId: Clone + PartialEq> TreeTable<'a, Id, ColId> {
         let mut y = area.y;
         let col_budget = area.width.saturating_sub(GUTTER_W);
         state.viewport_width = col_budget;
-        self.columns.resolve_paint_widths_with_gap(
+        resolve_tree_paint_widths(
+            self.columns,
             col_budget.saturating_add(state.h_offset),
             self.system.spacing.column_gap,
             &mut state.paint_widths,
@@ -1187,6 +1188,37 @@ impl<'a, Id: Clone + Ord, ColId: Clone + PartialEq> TreeTable<'a, Id, ColId> {
             );
         }
     }
+}
+
+fn resolve_tree_paint_widths<ColId: Clone + PartialEq>(
+    columns: &ColumnModel<ColId>,
+    budget: u16,
+    gap: u16,
+    out: &mut Vec<(usize, u16)>,
+) {
+    columns.resolve_paint_widths_with_gap(budget, gap, out);
+    let Some((hierarchy_index, _)) = columns.visible().next() else {
+        return;
+    };
+    if out.iter().any(|(index, _)| *index == hierarchy_index) {
+        return;
+    }
+    let Some(victim_pos) = out
+        .iter()
+        .enumerate()
+        .min_by_key(|(_, (index, _))| (columns.columns[*index].priority, usize::MAX - *index))
+        .map(|(position, _)| position)
+    else {
+        return;
+    };
+    out.remove(victim_pos);
+    let remaining_width = budget
+        .saturating_sub(gap.saturating_mul(u16::try_from(out.len()).unwrap_or(0)))
+        .saturating_sub(out.iter().map(|(_, width)| *width).sum());
+    let hierarchy_width = columns
+        .effective_width(hierarchy_index)
+        .min(remaining_width.max(1));
+    out.insert(0, (hierarchy_index, hierarchy_width));
 }
 
 fn paint_msg<Id: Clone + Ord, ColId: Clone + PartialEq>(
@@ -1635,6 +1667,30 @@ mod tests {
         TreeTable::new(&system, &columns, &rows).render(area, &mut Buffer::empty(area), &mut state);
 
         assert_eq!(state.cursor_col, 1);
+        assert_eq!(
+            state
+                .paint_widths
+                .iter()
+                .map(|(index, _)| *index)
+                .collect::<Vec<_>>(),
+            [0, 1]
+        );
+    }
+
+    #[test]
+    fn responsive_paint_keeps_the_hierarchy_column() {
+        let columns = ColumnModel::new(vec![
+            DataColumn::new("name", "Name", DataColumnWidth::Min(12)).priority(1),
+            DataColumn::new("cpu", "CPU", DataColumnWidth::Fixed(6)).priority(100),
+            DataColumn::new("mem", "MEM", DataColumnWidth::Fixed(6)).priority(90),
+        ]);
+        let cells: &[&str] = &["row", "1", "2"];
+        let rows = [TreeTableRow::new("r", 0, cells)];
+        let system = DesignSystem::default();
+        let area = Rect::new(0, 0, 22, 6);
+        let mut state = TreeTableState::<&str, &str>::new(Some("r"));
+        TreeTable::new(&system, &columns, &rows).render(area, &mut Buffer::empty(area), &mut state);
+
         assert_eq!(
             state
                 .paint_widths
