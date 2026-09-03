@@ -57983,7 +57983,6 @@ pub struct termrock::widgets::Accordion<'a, Id>
 impl<'a, Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::Accordion<'a, Id>
 pub fn termrock::widgets::Accordion<'a, Id>::handle_intent(&self, &mut termrock::widgets::AccordionState<Id>, termrock::context::ContextUiIntent) -> termrock::widgets::AccordionOutcome<Id>
 pub fn termrock::widgets::Accordion<'a, Id>::handle_key(&self, &mut termrock::widgets::AccordionState<Id>, termrock::input::KeyEvent) -> termrock::widgets::AccordionOutcome<Id>
-pub fn termrock::widgets::Accordion<'a, Id>::handle_key_result(&self, &mut termrock::widgets::AccordionState<Id>, termrock::input::KeyEvent) -> termrock::interaction::EventResult<termrock::widgets::AccordionOutcome<Id>>
 pub fn termrock::widgets::Accordion<'a, Id>::handle_mouse(&self, &mut termrock::widgets::AccordionState<Id>, termrock::input::MouseEvent) -> termrock::widgets::AccordionOutcome<Id>
 pub fn termrock::widgets::Accordion<'a, Id>::layout(&self, ratatui_core::layout::rect::Rect, &termrock::widgets::AccordionState<Id>) -> termrock::widgets::AccordionParts<Id>
 pub fn termrock::widgets::Accordion<'a, Id>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::AccordionState<Id>) -> termrock::widgets::AccordionParts<Id>
