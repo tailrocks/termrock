@@ -33481,7 +33481,6 @@ pub termrock::widgets::AlertReversibility::Irreversible
 pub termrock::widgets::AlertReversibility::Recoverable
 pub termrock::widgets::AlertReversibility::Reversible
 impl termrock::widgets::AlertReversibility
-pub const fn termrock::widgets::AlertReversibility::id(self) -> &'static str
 pub const fn termrock::widgets::AlertReversibility::label(self) -> &'static str
 impl core::clone::Clone for termrock::widgets::AlertReversibility
 pub fn termrock::widgets::AlertReversibility::clone(&self) -> termrock::widgets::AlertReversibility
