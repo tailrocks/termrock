@@ -483,6 +483,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0504 | `v0.14.0` | [Synchronize removed FocusEmphasis getter](migrations/0504-v0.14.0-sync-removed-focus-emphasis-getter.md) |
 | 0505 | `v0.14.0` | [Synchronize removed SurfaceFamily getter](migrations/0505-v0.14.0-sync-removed-surface-family-getter.md) |
 | 0506 | `v0.14.0` | [Synchronize removed RecipeFamily getter](migrations/0506-v0.14.0-sync-removed-recipe-family-getter.md) |
+| 0507 | `v0.14.0` | [Synchronize removed CitationSourceType letter getter](migrations/0507-v0.14.0-sync-removed-citation-source-type-letter.md) |
 | 0464 | `v0.14.0` | [Stepper physical one-shot actions](migrations/0464-v0.14.0-stepper-one-shot-actions.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
