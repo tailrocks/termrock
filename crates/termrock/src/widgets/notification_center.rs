@@ -788,11 +788,7 @@ impl NotificationCenterState {
         if page == 0 {
             return;
         }
-        if idx < self.scroll {
-            self.scroll = idx;
-        } else if idx >= self.scroll.saturating_add(page) {
-            self.scroll = idx.saturating_sub(page.saturating_sub(1));
-        }
+        self.scroll = crate::scroll::cursor_follow_offset(idx, self.items.len(), page, self.scroll);
     }
 
     /// Mark one read.

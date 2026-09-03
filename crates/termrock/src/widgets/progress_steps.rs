@@ -711,11 +711,8 @@ impl<'a> ProgressSteps<'a> {
             if let Some(idx) = self.steps.iter().position(|s| &s.id == c) {
                 let page = ((list_bottom.saturating_sub(y)) / row_h.max(1)) as usize;
                 let page = page.max(1);
-                if idx < state.scroll {
-                    state.scroll = idx;
-                } else if idx >= state.scroll.saturating_add(page) {
-                    state.scroll = idx.saturating_sub(page.saturating_sub(1));
-                }
+                state.scroll =
+                    crate::scroll::cursor_follow_offset(idx, self.steps.len(), page, state.scroll);
             }
         }
 
