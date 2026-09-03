@@ -891,33 +891,41 @@ impl MessageThreadState {
         if !self.accepts_input || key.is_release() {
             return MessageThreadOutcome::Ignored;
         }
+        let is_press = key.is_press();
         // Search mode
         if self.search_active {
             return self.handle_search_key(key);
         }
-        if key.code == KeyCode::Char('/') && key.modifiers.is_empty() {
+        if is_press && key.code == KeyCode::Char('/') && key.modifiers.is_empty() {
             self.search_active = true;
             self.search = Some(String::new());
             return MessageThreadOutcome::SearchChanged {
                 query: String::new(),
             };
         }
-        if key.code == KeyCode::Char('z') && key.modifiers.contains(KeyModifiers::CONTROL) {
+        if is_press
+            && key.code == KeyCode::Char('z')
+            && key.modifiers.contains(KeyModifiers::CONTROL)
+        {
             return self.cycle_zoom();
         }
-        if key.code == KeyCode::Char('n')
+        if is_press
+            && key.code == KeyCode::Char('n')
             && key.modifiers.contains(KeyModifiers::CONTROL)
             && self.show_new_content()
         {
             return self.jump_latest();
         }
-        if key.code == KeyCode::Char('c') && key.modifiers.contains(KeyModifiers::CONTROL) {
+        if is_press
+            && key.code == KeyCode::Char('c')
+            && key.modifiers.contains(KeyModifiers::CONTROL)
+        {
             if let Some(id) = self.selected().map(str::to_string) {
                 return MessageThreadOutcome::CopyRequested { id };
             }
         }
         // action chords when selected tool/error
-        if key.modifiers.is_empty() {
+        if is_press && key.modifiers.is_empty() {
             if let Some(id) = self.selected() {
                 if let Some(e) = entries.iter().find(|e| e.id == id) {
                     match key.code {
@@ -947,14 +955,14 @@ impl MessageThreadState {
 
     fn handle_search_key(&mut self, key: KeyEvent) -> MessageThreadOutcome {
         match key.code {
-            KeyCode::Esc => {
+            KeyCode::Esc if key.is_press() => {
                 self.search_active = false;
                 self.search = None;
                 MessageThreadOutcome::SearchChanged {
                     query: String::new(),
                 }
             }
-            KeyCode::Enter => {
+            KeyCode::Enter if key.is_press() => {
                 self.search_active = false;
                 MessageThreadOutcome::SearchChanged {
                     query: self.search.clone().unwrap_or_default(),
@@ -1172,6 +1180,7 @@ pub mod bench {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::input::KeyEventKind;
     use crate::style::DesignSystem;
 
     #[test]
@@ -1286,6 +1295,103 @@ mod tests {
             out,
             MessageThreadOutcome::CopyRequested { ref id } if id == "a1"
         ));
+    }
+
+    #[test]
+    fn repeated_local_actions_are_ignored_but_search_text_repeats() {
+        let entries = example_message_session();
+        let mut state = MessageThreadState::new();
+        state.set_accepts_input(true);
+        let projection = state.projection(&entries);
+        let mut ptrs = Vec::new();
+        let blocks = projection.blocks(&mut ptrs);
+
+        let mut repeat_slash = KeyEvent::new(KeyCode::Char('/'), KeyModifiers::NONE);
+        repeat_slash.kind = KeyEventKind::Repeat;
+        let before = state.clone();
+        assert_eq!(
+            state.handle_key(repeat_slash, &entries, &blocks),
+            MessageThreadOutcome::Ignored
+        );
+        assert_eq!(state, before);
+        assert_eq!(
+            state.handle_key(
+                KeyEvent::new(KeyCode::Char('/'), KeyModifiers::NONE),
+                &entries,
+                &blocks
+            ),
+            MessageThreadOutcome::SearchChanged {
+                query: String::new()
+            }
+        );
+
+        let mut repeat_text = KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE);
+        repeat_text.kind = KeyEventKind::Repeat;
+        assert_eq!(
+            state.handle_key(repeat_text, &entries, &blocks),
+            MessageThreadOutcome::SearchChanged { query: "x".into() }
+        );
+        let before = state.clone();
+        let mut repeat_enter = KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE);
+        repeat_enter.kind = KeyEventKind::Repeat;
+        assert_eq!(
+            state.handle_key(repeat_enter, &entries, &blocks),
+            MessageThreadOutcome::Ignored
+        );
+        assert_eq!(state, before);
+        assert!(matches!(
+            state.handle_key(
+                KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
+                &entries,
+                &blocks
+            ),
+            MessageThreadOutcome::SearchChanged { .. }
+        ));
+
+        state.transcript.select(Some("err1".into()));
+        let before = state.clone();
+        let mut repeat_retry = KeyEvent::new(KeyCode::Char('r'), KeyModifiers::NONE);
+        repeat_retry.kind = KeyEventKind::Repeat;
+        assert_eq!(
+            state.handle_key(repeat_retry, &entries, &blocks),
+            MessageThreadOutcome::Ignored
+        );
+        assert_eq!(state, before);
+        assert!(matches!(
+            state.handle_key(
+                KeyEvent::new(KeyCode::Char('r'), KeyModifiers::NONE),
+                &entries,
+                &blocks
+            ),
+            MessageThreadOutcome::ActionRequested { .. }
+        ));
+
+        state.transcript.select(Some("a1".into()));
+        let before = state.clone();
+        let mut repeat_copy = KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL);
+        repeat_copy.kind = KeyEventKind::Repeat;
+        assert_eq!(
+            state.handle_key(repeat_copy, &entries, &blocks),
+            MessageThreadOutcome::Ignored
+        );
+        assert_eq!(state, before);
+        assert!(matches!(
+            state.handle_key(
+                KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL),
+                &entries,
+                &blocks
+            ),
+            MessageThreadOutcome::CopyRequested { .. }
+        ));
+
+        let mut repeat_zoom = KeyEvent::new(KeyCode::Char('z'), KeyModifiers::CONTROL);
+        repeat_zoom.kind = KeyEventKind::Repeat;
+        let before = state.clone();
+        assert_eq!(
+            state.handle_key(repeat_zoom, &entries, &blocks),
+            MessageThreadOutcome::Ignored
+        );
+        assert_eq!(state, before);
     }
 
     #[test]
