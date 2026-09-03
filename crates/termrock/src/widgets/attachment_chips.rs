@@ -854,6 +854,11 @@ impl<'a> AttachmentChip<'a> {
         if key.is_release() {
             return AttachmentChipOutcome::Ignored;
         }
+        let direct_action = key.modifiers.contains(KeyModifiers::CONTROL)
+            && matches!(key.code, KeyCode::Char('o' | 'O' | 'p' | 'P' | 'r' | 'R'));
+        if !key.is_press() && direct_action {
+            return AttachmentChipOutcome::Ignored;
+        }
         // Retry on error
         if matches!(
             self.item.status,
@@ -1009,6 +1014,20 @@ impl<'a> PasteChip<'a> {
     /// Keys.
     pub fn handle_key(&self, state: &mut PasteChipState, key: KeyEvent) -> PasteChipOutcome {
         if key.is_release() {
+            return PasteChipOutcome::Ignored;
+        }
+        let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
+        let direct_activation = state.tag.part == TokenPart::Body
+            && key.modifiers.is_empty()
+            && matches!(key.code, KeyCode::Enter | KeyCode::Char(' '));
+        let direct_action = ctrl
+            && matches!(
+                key.code,
+                KeyCode::Char('c' | 'C' | 'i' | 'I' | 'p' | 'P' | 'r' | 'R')
+            );
+        if !key.is_press()
+            && ((key.code == KeyCode::Esc && state.expanded) || direct_activation || direct_action)
+        {
             return PasteChipOutcome::Ignored;
         }
         if key.code == KeyCode::Esc && state.expanded {
@@ -1255,6 +1274,7 @@ pub mod bench {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::input::KeyEventKind;
     use crate::style::DesignSystem;
 
     #[test]
@@ -1442,6 +1462,55 @@ mod tests {
                 assert_eq!(id, "p1");
             }
             other => panic!("expected CopyRequested, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn repeated_attachment_host_actions_are_ignored() {
+        let item = AttachmentItem::file("f1", "main.rs").status(AttachmentStatus::Error);
+        let system = DesignSystem::default();
+        let chip = AttachmentChip::new(&item, &system);
+        let mut state = AttachmentChipState::new();
+        state.set_focused(true);
+        for (code, modifiers) in [
+            (KeyCode::Char('r'), KeyModifiers::CONTROL),
+            (KeyCode::Char('o'), KeyModifiers::CONTROL),
+            (KeyCode::Char('p'), KeyModifiers::CONTROL),
+        ] {
+            let before = state.clone();
+            let mut key = KeyEvent::new(code, modifiers);
+            key.kind = KeyEventKind::Repeat;
+            assert_eq!(
+                chip.handle_key(&mut state, key),
+                AttachmentChipOutcome::Ignored
+            );
+            assert_eq!(state, before, "{code:?} repeat mutated attachment state");
+        }
+    }
+
+    #[test]
+    fn repeated_paste_host_actions_are_ignored_before_toggle_or_collapse() {
+        let paste = PastePayload::from_body("p1", "hello").status(AttachmentStatus::Error);
+        let system = DesignSystem::default();
+        let chip = PasteChip::new(&paste, &system);
+        let mut state = PasteChipState::new();
+        state.tag.set_focused(true);
+        state.expanded = true;
+
+        for (code, modifiers) in [
+            (KeyCode::Enter, KeyModifiers::NONE),
+            (KeyCode::Char(' '), KeyModifiers::NONE),
+            (KeyCode::Esc, KeyModifiers::NONE),
+            (KeyCode::Char('c'), KeyModifiers::CONTROL),
+            (KeyCode::Char('i'), KeyModifiers::CONTROL),
+            (KeyCode::Char('p'), KeyModifiers::CONTROL),
+            (KeyCode::Char('r'), KeyModifiers::CONTROL),
+        ] {
+            let before = state.clone();
+            let mut key = KeyEvent::new(code, modifiers);
+            key.kind = KeyEventKind::Repeat;
+            assert_eq!(chip.handle_key(&mut state, key), PasteChipOutcome::Ignored);
+            assert_eq!(state, before, "{code:?} repeat mutated paste state");
         }
     }
 
