@@ -18,8 +18,8 @@ use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
 
 use crate::input::{KeyEvent, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{
-    EventResult, HitRegion, RovingEntry, RovingFocusGroup, RovingOrientation, RovingOutcome,
-    UiIntent, default_button_intent,
+    HitRegion, RovingEntry, RovingFocusGroup, RovingOrientation, RovingOutcome, UiIntent,
+    default_button_intent,
 };
 use crate::style::{ButtonRecipeVariant, ControlState, DesignSystem, GlyphSet, RecipeFamily, Role};
 use crate::text::{display_cols, take_display_cols};
@@ -422,19 +422,6 @@ impl<Id: Clone + PartialEq> Toolbar<'_, Id> {
         }
     }
 
-    /// Key with EventResult.
-    pub fn handle_key_result(
-        &self,
-        state: &mut ToolbarState<Id>,
-        key: KeyEvent,
-        area: Rect,
-    ) -> EventResult<ToolbarOutcome<Id>> {
-        match self.handle_key(state, key, area) {
-            ToolbarOutcome::Ignored => EventResult::ignored(),
-            other => EventResult::emit(other),
-        }
-    }
-
     /// Mouse down on painted regions.
     pub fn handle_mouse(
         &self,
@@ -500,50 +487,6 @@ impl<Id: Clone + PartialEq> Toolbar<'_, Id> {
             };
         }
         ToolbarOutcome::Ignored
-    }
-
-    /// Registers toolbar surface + interactive children (when surface focused).
-    pub fn register_semantic(
-        &self,
-        scene: &mut crate::interaction::SemanticScene<Id, ()>,
-        toolbar_id: Id,
-        area: Rect,
-        state: &ToolbarState<Id>,
-    ) where
-        Id: std::fmt::Display,
-    {
-        use crate::interaction::{SemanticNode, SemanticRole, SemanticState};
-        let _ = scene.register(
-            SemanticNode::content(toolbar_id.clone(), area)
-                .role(SemanticRole::Chrome)
-                .label("toolbar")
-                .focusable(true)
-                .state(SemanticState {
-                    // Surface focus projected as pressed for Studio inspection.
-                    pressed: state.surface_focused,
-                    ..Default::default()
-                }),
-        );
-        for region in &state.regions {
-            let label = self
-                .items
-                .iter()
-                .find(|i| i.id == region.id)
-                .map(|i| i.label)
-                .unwrap_or("more");
-            let active = state.roving.active() == Some(&region.id);
-            let _ = scene.register_child(
-                toolbar_id.clone(),
-                SemanticNode::control(region.id.clone(), region.area)
-                    .role(SemanticRole::Button)
-                    .label(label)
-                    .focusable(false) // roving descendant
-                    .state(SemanticState {
-                        selected: active,
-                        ..Default::default()
-                    }),
-            );
-        }
     }
 }
 

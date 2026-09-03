@@ -313,12 +313,6 @@ impl SearchInputState {
         self.query.set_focused(on);
     }
 
-    /// Enabled.
-    pub fn set_enabled(&mut self, on: bool) {
-        self.enabled = on;
-        self.query.set_enabled(on);
-    }
-
     /// Replace query without history side effects.
     pub fn set_query(&mut self, text: impl Into<String>) {
         let text = text.into();

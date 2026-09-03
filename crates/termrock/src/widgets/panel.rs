@@ -19,7 +19,7 @@ use ratatui_core::{
 };
 
 use crate::input::{KeyEvent, MouseButton, MouseEvent, MouseEventKind};
-use crate::interaction::{EventResult, UiIntent, default_button_intent, default_list_intent};
+use crate::interaction::{UiIntent, default_button_intent, default_list_intent};
 use crate::style::{DesignSystem, Elevation, PanelChrome, PanelRecipe, Role};
 use crate::text::{display_cols, take_display_cols};
 use crate::widgets::empty_state::EmptyState;
@@ -318,19 +318,6 @@ impl PanelState {
                 }
             }
             _ => PanelOutcome::Ignored,
-        }
-    }
-
-    /// Key path with [`EventResult`].
-    pub fn handle_key_result(
-        &mut self,
-        key: KeyEvent,
-        collapsible: bool,
-        interactive: bool,
-    ) -> EventResult<PanelOutcome> {
-        match self.handle_key(key, collapsible, interactive) {
-            PanelOutcome::Ignored => EventResult::ignored(),
-            other => EventResult::emit(other),
         }
     }
 
@@ -1339,36 +1326,6 @@ impl<'a> Panel<'a> {
             state.action_hits = action_hits;
         }
         parts.body
-    }
-
-    /// Registers panel chrome into a semantic scene (optional host aid).
-    ///
-    /// Does **not** claim focus unless [`Self::is_focusable`]. Body children
-    /// remain host-registered interactive descendants.
-    pub fn register_semantic<Id, Action>(
-        &self,
-        scene: &mut crate::interaction::SemanticScene<Id, Action>,
-        id: Id,
-        area: Rect,
-        state: Option<&PanelState>,
-    ) where
-        Id: Clone + PartialEq + std::fmt::Display,
-        Action: Clone,
-    {
-        use crate::interaction::{SemanticNode, SemanticRole};
-        let label = self.slots.title.unwrap_or("panel");
-        let focusable = self.is_focusable();
-        let _ = scene.register(
-            SemanticNode::control(id, area)
-                .role(SemanticRole::Dialog)
-                .label(label)
-                .focusable(focusable)
-                .state(crate::interaction::SemanticState {
-                    expanded: !state.is_some_and(|s| s.collapsed),
-                    selected: matches!(self.variant, PanelVariant::Selected),
-                    ..Default::default()
-                }),
-        );
     }
 }
 

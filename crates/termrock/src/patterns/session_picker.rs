@@ -684,11 +684,6 @@ impl SessionPickerState {
         self.focused = on;
     }
 
-    /// Presentation.
-    pub const fn set_presentation(&mut self, p: SessionPickerPresentation) {
-        self.presentation = p;
-    }
-
     /// Current session id.
     #[must_use]
     pub fn current_id(&self) -> Option<String> {

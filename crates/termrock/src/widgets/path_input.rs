@@ -514,12 +514,6 @@ impl PathInputState {
         self.sync_editor();
     }
 
-    /// Read-only.
-    pub fn set_read_only(&mut self, on: bool) {
-        self.read_only = on;
-        self.sync_editor();
-    }
-
     fn sync_editor(&mut self) {
         self.path.set_focused(self.focused);
         self.path.set_enabled(self.enabled);

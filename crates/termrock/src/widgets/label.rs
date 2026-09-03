@@ -826,26 +826,6 @@ impl<'a, Id: Clone> FieldCaption<'a, Id> {
         }
         parts
     }
-
-    /// Register label and description semantic nodes.
-    pub fn register_semantic<Action>(
-        &self,
-        scene: &mut SemanticScene<Id, Action>,
-        label_id: Id,
-        description_id: Option<Id>,
-        area: Rect,
-    ) where
-        Id: Clone + PartialEq + std::fmt::Display,
-        Action: Clone,
-    {
-        let parts = self.layout(area);
-        self.label.register_semantic(scene, label_id, parts.label);
-        if let (Some(d), Some(did)) = (&self.description, description_id)
-            && parts.description.height > 0
-        {
-            d.register_semantic(scene, did, parts.description);
-        }
-    }
 }
 
 impl<Id: Clone> Widget for &FieldCaption<'_, Id> {

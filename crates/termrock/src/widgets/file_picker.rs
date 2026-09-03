@@ -668,20 +668,10 @@ impl FilePickerState {
             self.path.set_focused(false);
         }
     }
-
-    /// Enabled.
-    pub fn set_enabled(&mut self, on: bool) {
-        self.enabled = on;
-        self.path.set_enabled(on);
-    }
     /// Active name filter, for the pane title.
     #[must_use]
     pub fn filter_text(&self) -> &str {
         &self.name_filter
-    }
-    /// Presentation.
-    pub const fn set_presentation(&mut self, p: FilePickerPresentation) {
-        self.presentation = p;
     }
 
     /// Auto presentation from bounds.

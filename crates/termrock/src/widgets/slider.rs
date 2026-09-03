@@ -23,8 +23,7 @@ use ratatui_core::{
 
 use crate::input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{
-    EventResult, SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent,
-    default_button_intent,
+    SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, default_button_intent,
 };
 use crate::style::{ControlState, DesignSystem, Role};
 use crate::text::{display_cols, take_display_cols};
@@ -996,18 +995,6 @@ impl<'a> Slider<'a> {
         }
     }
 
-    /// EventResult wrapper.
-    pub fn handle_key_result(
-        &self,
-        state: &mut SliderState,
-        key: KeyEvent,
-    ) -> EventResult<SliderOutcome> {
-        match self.handle_key(state, key) {
-            SliderOutcome::Ignored => EventResult::ignored(),
-            other => EventResult::emit(other),
-        }
-    }
-
     /// Semantic.
     pub fn register_semantic<Id, Action>(
         &self,
@@ -1160,19 +1147,6 @@ impl RangeSliderState {
     pub fn set_focused(&mut self, on: bool) {
         self.focused = on;
         if !on {
-            self.dragging = false;
-        }
-    }
-
-    /// Enabled.
-    pub const fn set_enabled(&mut self, on: bool) {
-        self.enabled = on;
-    }
-
-    /// Read-only.
-    pub fn set_read_only(&mut self, on: bool) {
-        self.read_only = on;
-        if on {
             self.dragging = false;
         }
     }
@@ -1588,48 +1562,6 @@ impl<'a> RangeSlider<'a> {
             RangeThumb::End => state.end = v.max(state.start),
         }
         self.emit_range(state)
-    }
-
-    /// EventResult.
-    pub fn handle_key_result(
-        &self,
-        state: &mut RangeSliderState,
-        key: KeyEvent,
-    ) -> EventResult<RangeSliderOutcome> {
-        match self.handle_key(state, key) {
-            RangeSliderOutcome::Ignored => EventResult::ignored(),
-            other => EventResult::emit(other),
-        }
-    }
-
-    /// Semantic.
-    pub fn register_semantic<Id, Action>(
-        &self,
-        scene: &mut SemanticScene<Id, Action>,
-        id: Id,
-        area: Rect,
-        state: &RangeSliderState,
-    ) where
-        Id: Clone + PartialEq + std::fmt::Display,
-        Action: Clone,
-    {
-        if area.is_empty() {
-            return;
-        }
-        let desc = format!("{}–{}", format_value(state.start), format_value(state.end));
-        let _ = scene.register(
-            SemanticNode::control(id, area)
-                .role(SemanticRole::Progress)
-                .label(self.label.unwrap_or("range slider"))
-                .description(&desc)
-                .focusable(state.can_edit())
-                .disabled(!state.enabled)
-                .state(SemanticState {
-                    selected: state.focused,
-                    pressed: state.dragging,
-                    ..Default::default()
-                }),
-        );
     }
 }
 

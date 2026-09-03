@@ -13,7 +13,7 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::input::{KeyEvent, MouseButton, MouseEvent, MouseEventKind};
-use crate::interaction::{EventResult, UiIntent, default_button_intent, default_list_intent};
+use crate::interaction::{UiIntent, default_button_intent, default_list_intent};
 use crate::style::{DesignSystem, Role};
 use crate::text::{display_cols, take_display_cols};
 use crate::widgets::panel::PanelAction;
@@ -169,18 +169,6 @@ impl SectionState {
                 SectionOutcome::ToggleCollapsed { collapsed: true }
             }
             _ => SectionOutcome::Ignored,
-        }
-    }
-
-    /// Key path with [`EventResult`].
-    pub fn handle_key_result(
-        &mut self,
-        key: KeyEvent,
-        collapsible: bool,
-    ) -> EventResult<SectionOutcome> {
-        match self.handle_key(key, collapsible) {
-            SectionOutcome::Ignored => EventResult::ignored(),
-            other => EventResult::emit(other),
         }
     }
 

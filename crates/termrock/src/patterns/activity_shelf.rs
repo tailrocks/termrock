@@ -747,11 +747,6 @@ impl ActivityShelfState {
         self.accepts_input = on;
     }
 
-    /// Focus.
-    pub const fn set_focused(&mut self, on: bool) {
-        self.focused = on;
-    }
-
     fn clamp_selected(&mut self, len: usize) {
         if len == 0 {
             self.selected = 0;

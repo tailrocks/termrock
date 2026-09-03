@@ -41,8 +41,8 @@ use ratatui_core::{
 
 use crate::input::{KeyEvent, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{
-    EventResult, NavigationMove, RovingEntry, RovingFocusGroup, RovingOrientation, RovingOutcome,
-    SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, default_button_intent,
+    NavigationMove, RovingEntry, RovingFocusGroup, RovingOrientation, RovingOutcome, SemanticNode,
+    SemanticRole, SemanticScene, SemanticState, UiIntent, default_button_intent,
     default_list_intent,
 };
 use crate::style::{DesignSystem, Glyph, VisualState};
@@ -1062,18 +1062,6 @@ impl<'a, Id: Clone + PartialEq> SegmentedControl<'a, Id> {
             return self.commit(state, id);
         }
         SegmentedControlOutcome::Ignored
-    }
-
-    /// EventResult wrapper.
-    pub fn handle_key_result(
-        &self,
-        state: &mut SegmentedControlState<Id>,
-        key: KeyEvent,
-    ) -> EventResult<SegmentedControlOutcome<Id>> {
-        match self.handle_key(state, key) {
-            SegmentedControlOutcome::Ignored => EventResult::ignored(),
-            other => EventResult::emit(other),
-        }
     }
 
     /// Semantic: Tab-like list of segments.

@@ -1604,11 +1604,6 @@ impl FileMentionState {
         }
     }
 
-    /// Gate.
-    pub const fn set_accepts_input(&mut self, on: bool) {
-        self.accepts_input = on;
-    }
-
     /// Sync from draft text + cursor (host calls after edit).
     pub fn sync_from_draft(&mut self, text: &str, cursor_byte: usize) -> bool {
         if !self.accepts_input {
@@ -1657,11 +1652,6 @@ impl EntityMentionState {
             query: None,
             accepts_input: true,
         }
-    }
-
-    /// Gate.
-    pub const fn set_accepts_input(&mut self, on: bool) {
-        self.accepts_input = on;
     }
 
     /// Sync.

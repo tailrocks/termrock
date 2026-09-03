@@ -582,11 +582,6 @@ impl ContextMeterState {
         self.accepts_input = on;
     }
 
-    /// Focus.
-    pub const fn set_focused(&mut self, on: bool) {
-        self.focused = on;
-    }
-
     /// Toggle expand.
     pub fn toggle_expand(&mut self) -> ContextMeterOutcome {
         match self.presentation {

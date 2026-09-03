@@ -787,11 +787,6 @@ impl ModelSelectorState {
         self.accepts_input = on;
     }
 
-    /// Focus.
-    pub const fn set_focused(&mut self, on: bool) {
-        self.focused = on;
-    }
-
     /// Set selected without outcome.
     pub fn set_selected(&mut self, id: Option<String>) {
         self.selected = id.clone();
@@ -1316,11 +1311,6 @@ impl AgentModeSelectorState {
     /// Gate.
     pub fn set_accepts_input(&mut self, on: bool) {
         self.accepts_input = on;
-    }
-
-    /// Focus.
-    pub const fn set_focused(&mut self, on: bool) {
-        self.focused = on;
     }
 
     /// Set selected silently.

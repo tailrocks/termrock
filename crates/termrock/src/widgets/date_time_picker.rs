@@ -991,12 +991,6 @@ impl DateTimePickerState {
             .set_focused(on && matches!(self.view, DateTimePickerView::Field));
     }
 
-    /// Enabled.
-    pub fn set_enabled(&mut self, on: bool) {
-        self.enabled = on;
-        self.draft.set_enabled(on);
-    }
-
     /// Auto presentation from bounds.
     #[must_use]
     pub fn presentation_for_bounds(bounds: Rect) -> DateTimePickerPresentation {

@@ -21,8 +21,8 @@ use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
 
 use crate::input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{
-    EventResult, RovingEntry, RovingFocusGroup, RovingOrientation, RovingOutcome, SemanticNode,
-    SemanticRole, SemanticScene, SemanticState, UiIntent, default_button_intent,
+    RovingEntry, RovingFocusGroup, RovingOrientation, RovingOutcome, UiIntent,
+    default_button_intent,
 };
 use crate::style::{ButtonRecipeVariant, ControlState, DesignSystem, Glyph, Role};
 use crate::text::{display_cols, take_display_cols};
@@ -393,84 +393,6 @@ impl<'a, Id: Clone> Tag<'a, Id> {
             return TagOutcome::Activated(self.id.clone());
         }
         TagOutcome::Ignored
-    }
-
-    /// EventResult wrapper.
-    pub fn handle_key_result(
-        &self,
-        state: &mut TagState,
-        key: KeyEvent,
-    ) -> EventResult<TagOutcome<Id>> {
-        match self.handle_key(state, key) {
-            TagOutcome::Ignored => EventResult::ignored(),
-            other => EventResult::emit(other),
-        }
-    }
-
-    /// Semantic registration (body + remove when present).
-    pub fn register_semantic<Action>(
-        &self,
-        scene: &mut SemanticScene<Id, Action>,
-        area: Rect,
-        state: &TagState,
-    ) where
-        Id: Clone + PartialEq + std::fmt::Display,
-        Action: Clone,
-    {
-        let mut st = TagState {
-            focused: state.focused,
-            part: state.part,
-            hovered_remove: state.hovered_remove,
-            parts: None,
-        };
-        // layout without paint
-        let parts = {
-            let mut buf = Buffer::empty(Rect::new(0, 0, area.width.max(1), 1));
-            self.paint(
-                Rect {
-                    x: 0,
-                    y: 0,
-                    width: area.width,
-                    height: 1,
-                },
-                &mut buf,
-                &mut st,
-            )
-        };
-        let body = offset_rect(parts.body, area.x, area.y);
-        let rem = offset_rect(parts.remove, area.x, area.y);
-        let _ = scene.register(
-            SemanticNode::content(self.id.clone(), body)
-                .role(SemanticRole::Content)
-                .label(self.label)
-                .description(format!("tag; {}", self.status.id()))
-                .focusable(false),
-        );
-        if parts.has_remove() {
-            let _ = scene.register(
-                SemanticNode::control(self.id.clone(), rem)
-                    .role(SemanticRole::Button)
-                    .label(self.remove_action_label())
-                    .description("remove action")
-                    .focusable(self.is_removable())
-                    .state(SemanticState {
-                        selected: matches!(state.part, TokenPart::Remove) && state.focused,
-                        ..Default::default()
-                    }),
-            );
-        }
-    }
-}
-
-fn offset_rect(r: Rect, ox: u16, oy: u16) -> Rect {
-    if r.width == 0 || r.height == 0 {
-        return r;
-    }
-    Rect {
-        x: ox.saturating_add(r.x),
-        y: oy.saturating_add(r.y),
-        width: r.width,
-        height: r.height,
     }
 }
 
@@ -1036,18 +958,6 @@ impl<'a, Id: Clone> Chip<'a, Id> {
             return ChipOutcome::Activated(self.id.clone());
         }
         ChipOutcome::Ignored
-    }
-
-    /// EventResult.
-    pub fn handle_key_result(
-        &self,
-        state: &mut ChipState,
-        key: KeyEvent,
-    ) -> EventResult<ChipOutcome<Id>> {
-        match self.handle_key(state, key) {
-            ChipOutcome::Ignored => EventResult::ignored(),
-            other => EventResult::emit(other),
-        }
     }
 }
 

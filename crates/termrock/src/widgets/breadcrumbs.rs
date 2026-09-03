@@ -332,11 +332,6 @@ impl BreadcrumbsState {
         }
     }
 
-    /// Enabled.
-    pub fn set_enabled(&mut self, on: bool) {
-        self.enabled = on;
-    }
-
     /// Clamp focus after items change; prefer current (last).
     pub fn reconcile_len(&mut self, len: usize) {
         if len == 0 {

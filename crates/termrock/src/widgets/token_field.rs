@@ -24,7 +24,6 @@ use ratatui_core::{
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
-    interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
     style::{ControlState, DesignSystem},
     text::{display_cols, take_display_cols},
 };
@@ -382,18 +381,6 @@ impl<Id> TokenFieldState<Id> {
     pub fn set_focused(&mut self, on: bool) {
         self.focused = on;
         self.sync_draft_focus();
-    }
-
-    /// Enabled.
-    pub fn set_enabled(&mut self, on: bool) {
-        self.enabled = on;
-        self.draft.set_enabled(on);
-    }
-
-    /// Read-only (no add/remove/reorder).
-    pub fn set_read_only(&mut self, on: bool) {
-        self.read_only = on;
-        self.draft.set_read_only(on);
     }
 
     fn sync_draft_focus(&mut self) {
@@ -1118,47 +1105,6 @@ impl<'a> TokenField<'a> {
         };
         state.parts = Some(parts.clone());
         parts
-    }
-
-    /// Semantic — one focusable field.
-    pub fn register_semantic<Action>(
-        &self,
-        scene: &mut SemanticScene<&str, Action>,
-        id: &'static str,
-        area: Rect,
-        state: &TokenFieldState<String>,
-    ) where
-        Action: Clone,
-    {
-        if area.is_empty() {
-            return;
-        }
-        let desc = format!(
-            "token-field count={} zone={:?}",
-            state.tokens.len(),
-            state.zone
-        );
-        let _ = scene.register(
-            SemanticNode::control(id, area)
-                .role(SemanticRole::Input)
-                .label(if self.label.is_empty() {
-                    "tokens"
-                } else {
-                    self.label
-                })
-                .description(desc)
-                .focusable(state.enabled)
-                .disabled(!state.enabled)
-                .state(SemanticState {
-                    selected: state.focused,
-                    invalid: matches!(self.validation, Validation::Invalid(_))
-                        || state
-                            .tokens
-                            .iter()
-                            .any(|t| matches!(t.status, TokenStatus::Error)),
-                    ..Default::default()
-                }),
-        );
     }
 }
 

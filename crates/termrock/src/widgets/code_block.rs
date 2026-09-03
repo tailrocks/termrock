@@ -22,10 +22,7 @@ use ratatui_core::{
 };
 
 use crate::input::KeyEvent;
-use crate::interaction::{
-    EventResult, NavigationMove, PageMove, SemanticNode, SemanticRole, SemanticScene,
-    SemanticState, UiIntent, default_list_intent,
-};
+use crate::interaction::{NavigationMove, PageMove, UiIntent, default_list_intent};
 use crate::style::{DesignSystem, Role, SyntaxTone, VisualState};
 use crate::text::{
     display_cols, expand_tabs, is_terminal_control_char, take_display_cols, truncate_cols,
@@ -1637,51 +1634,6 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
         state.cursor_line = Some(next);
         state.reveal_line(next, doc);
         CodeBlockOutcome::CursorMoved { line: next }
-    }
-
-    /// EventResult wrapper.
-    pub fn handle_key_result(
-        &self,
-        state: &mut CodeBlockState,
-        key: KeyEvent,
-    ) -> EventResult<CodeBlockOutcome> {
-        match self.handle_key(state, key) {
-            CodeBlockOutcome::Ignored => EventResult::ignored(),
-            other => EventResult::emit(other),
-        }
-    }
-
-    /// Semantic registration (content + focusable when interactive).
-    pub fn register_semantic<Id, Action>(
-        &self,
-        scene: &mut SemanticScene<Id, Action>,
-        id: Id,
-        area: Rect,
-        state: &CodeBlockState,
-    ) where
-        Id: Clone + PartialEq + std::fmt::Display,
-        Action: Clone,
-    {
-        let parts = self.layout(area, state);
-        if parts.root.is_empty() {
-            return;
-        }
-        let desc = format!(
-            "code block {} lines{}",
-            self.document_len(),
-            if self.streaming { " streaming" } else { "" }
-        );
-        let _ = scene.register(
-            SemanticNode::control(id, parts.root)
-                .role(SemanticRole::Content)
-                .label("code")
-                .description(desc)
-                .focusable(true)
-                .state(SemanticState {
-                    selected: state.focused,
-                    ..Default::default()
-                }),
-        );
     }
 }
 

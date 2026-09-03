@@ -10,7 +10,6 @@ use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::State
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind},
-    interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
     style::{ButtonRecipeVariant, ControlState, DesignSystem, Glyph, Role, VisualState},
     text::{display_cols, take_display_cols},
 };
@@ -231,13 +230,6 @@ impl ActivationState {
         ActivationOutcome::Ignored
     }
 
-    /// Key path with [`crate::interaction::EventResult`].
-    pub fn handle_key_result(
-        &mut self,
-        key: KeyEvent,
-    ) -> crate::interaction::EventResult<ActivationOutcome> {
-        self.handle_key(key).into_event_result()
-    }
     /// Pointer activation: Down arms; Up inside region activates once.
     pub fn handle_mouse(&mut self, event: MouseEvent, region: Option<Rect>) -> ActivationOutcome {
         if !self.can_activate() {
@@ -574,14 +566,6 @@ impl ButtonState {
         }
         self.activation.handle_mouse(event, self.region)
     }
-
-    /// EventResult key path.
-    pub fn handle_key_result(
-        &mut self,
-        key: KeyEvent,
-    ) -> crate::interaction::EventResult<ActivationOutcome> {
-        self.activation.handle_key_result(key)
-    }
 }
 
 impl Button<'_> {
@@ -750,36 +734,6 @@ impl Button<'_> {
         };
         state.region = Some(root);
         ButtonParts { root, label: root }
-    }
-
-    /// Semantic registration.
-    pub fn register_semantic<Id, Action>(
-        &self,
-        scene: &mut SemanticScene<Id, Action>,
-        id: Id,
-        area: Rect,
-        state: &ButtonState,
-    ) where
-        Id: Clone + PartialEq + std::fmt::Display,
-        Action: Clone,
-    {
-        if area.is_empty() {
-            return;
-        }
-        let name = self.a11y_name();
-        let _ = scene.register(
-            SemanticNode::control(id, state.region.unwrap_or(area))
-                .role(SemanticRole::Button)
-                .label(if name.is_empty() { "button" } else { name })
-                .description(self.variant.id())
-                .focusable(state.activation.accepts_input() && state.activation.is_enabled())
-                .state(SemanticState {
-                    selected: state.activation.accepts_input(),
-                    pressed: state.activation.is_armed(),
-                    busy: state.activation.is_loading(),
-                    ..Default::default()
-                }),
-        );
     }
 }
 
@@ -1087,14 +1041,6 @@ impl IconButtonState {
         }
         self.activation.handle_mouse(event, self.hit)
     }
-
-    /// EventResult key path.
-    pub fn handle_key_result(
-        &mut self,
-        key: KeyEvent,
-    ) -> crate::interaction::EventResult<ActivationOutcome> {
-        self.activation.handle_key_result(key)
-    }
 }
 
 impl<'a> IconButton<'a> {
@@ -1225,37 +1171,6 @@ impl<'a> IconButton<'a> {
             visual,
             badge: badge_rect,
         }
-    }
-
-    /// Semantic registration (label = accessible name).
-    pub fn register_semantic<Id, Action>(
-        &self,
-        scene: &mut SemanticScene<Id, Action>,
-        id: Id,
-        area: Rect,
-        state: &IconButtonState,
-    ) where
-        Id: Clone + PartialEq + std::fmt::Display,
-        Action: Clone,
-    {
-        let hit = state.hit.unwrap_or(area);
-        if hit.is_empty() {
-            return;
-        }
-        let _ = scene.register(
-            SemanticNode::control(id, hit)
-                .role(SemanticRole::Button)
-                .label(self.accessible_label)
-                .description(self.help_text())
-                .focusable(state.activation.accepts_input() && state.activation.is_enabled())
-                .state(SemanticState {
-                    selected: state.pressed || state.activation.accepts_input(),
-                    pressed: state.activation.is_armed(),
-                    checked: state.pressed,
-                    busy: state.activation.is_loading(),
-                    ..Default::default()
-                }),
-        );
     }
 }
 

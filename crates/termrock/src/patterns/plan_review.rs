@@ -1004,11 +1004,6 @@ impl PlanReviewState {
         self.accepts_input = on;
     }
 
-    /// Focus.
-    pub const fn set_focused(&mut self, on: bool) {
-        self.focused = on;
-    }
-
     /// Action cursor.
     #[must_use]
     pub const fn action_cursor(&self) -> PlanAction {

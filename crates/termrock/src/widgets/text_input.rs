@@ -26,9 +26,7 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
-    interaction::{
-        EventResult, SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent,
-    },
+    interaction::UiIntent,
     style::{ButtonRecipeVariant, ControlState, DesignSystem, Glyph, MASK_CELLS, VisualState},
     text::{display_cols, take_display_cols, truncate_cols},
 };
@@ -1085,14 +1083,6 @@ impl TextInputState {
             // ok
         }
     }
-
-    /// EventResult wrapper.
-    pub fn handle_key_result(&mut self, key: KeyEvent) -> EventResult<TextInputOutcome> {
-        match self.handle_key(key) {
-            TextInputOutcome::Ignored => EventResult::ignored(),
-            other => EventResult::emit(other),
-        }
-    }
 }
 
 // ── Widget ──────────────────────────────────────────────────────────────────
@@ -1555,47 +1545,6 @@ impl<'a> TextInput<'a> {
             }
         }
         state.handle_mouse(event, parts.field)
-    }
-
-    /// Semantic registration.
-    pub fn register_semantic<Id, Action>(
-        &self,
-        scene: &mut SemanticScene<Id, Action>,
-        id: Id,
-        area: Rect,
-        state: &TextInputState,
-    ) where
-        Id: Clone + PartialEq + std::fmt::Display,
-        Action: Clone,
-    {
-        if area.is_empty() {
-            return;
-        }
-        let desc = if self.secret {
-            "secret"
-        } else if state.value.is_empty() {
-            self.placeholder
-        } else {
-            "text"
-        };
-        let _ = scene.register(
-            SemanticNode::control(id, area)
-                .role(SemanticRole::Input)
-                .label(if self.label.is_empty() {
-                    "text input"
-                } else {
-                    self.label
-                })
-                .description(desc)
-                .focusable(state.enabled)
-                .disabled(!state.enabled)
-                .state(SemanticState {
-                    selected: state.focused,
-                    invalid: !state.is_valid() || matches!(self.validation, Validation::Invalid(_)),
-                    busy: state.loading,
-                    ..Default::default()
-                }),
-        );
     }
 }
 

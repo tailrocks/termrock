@@ -24,10 +24,7 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
 
 use crate::input::{KeyEvent, MouseButton, MouseEvent, MouseEventKind};
-use crate::interaction::{
-    EventResult, SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent,
-    default_button_intent,
-};
+use crate::interaction::{UiIntent, default_button_intent};
 use crate::osc::{HyperlinkRegion, Request, encode_hyperlink_open};
 use crate::style::{ButtonRecipeVariant, ControlState, DesignSystem, Role};
 use crate::text::{display_cols, take_display_cols};
@@ -579,47 +576,6 @@ impl<'a> Link<'a> {
             _ => LinkOutcome::Ignored,
         }
     }
-
-    /// EventResult wrapper.
-    pub fn handle_key_result(
-        &self,
-        state: &mut LinkState,
-        key: KeyEvent,
-    ) -> EventResult<LinkOutcome> {
-        match self.handle_key(state, key) {
-            LinkOutcome::Ignored => EventResult::ignored(),
-            other => EventResult::emit(other),
-        }
-    }
-
-    /// Semantic registration.
-    pub fn register_semantic<Id, Action>(
-        &self,
-        scene: &mut SemanticScene<Id, Action>,
-        id: Id,
-        area: Rect,
-        state: &LinkState,
-    ) where
-        Id: Clone + PartialEq + std::fmt::Display,
-        Action: Clone,
-    {
-        let parts = self.layout(area, state);
-        if parts.root.is_empty() {
-            return;
-        }
-        let desc = self.plain();
-        let _ = scene.register(
-            SemanticNode::control(id, parts.root)
-                .role(SemanticRole::Button)
-                .label(self.label)
-                .description(desc)
-                .focusable(!state.disabled)
-                .state(SemanticState {
-                    selected: state.focused,
-                    ..Default::default()
-                }),
-        );
-    }
 }
 
 // ── ActionLink ──────────────────────────────────────────────────────────────
@@ -786,39 +742,6 @@ impl<'a> ActionLink<'a> {
             return ActionLinkOutcome::Activated;
         }
         ActionLinkOutcome::Ignored
-    }
-
-    /// Semantic.
-    pub fn register_semantic<Id, Action>(
-        &self,
-        scene: &mut SemanticScene<Id, Action>,
-        id: Id,
-        area: Rect,
-        state: &LinkState,
-    ) where
-        Id: Clone + PartialEq + std::fmt::Display,
-        Action: Clone,
-    {
-        let text = self.decorated();
-        let w = u16::try_from(display_cols(&text))
-            .unwrap_or(1)
-            .min(area.width);
-        let root = Rect {
-            x: area.x,
-            y: area.y,
-            width: w,
-            height: 1.min(area.height),
-        };
-        if root.is_empty() {
-            return;
-        }
-        let _ = scene.register(
-            SemanticNode::control(id, root)
-                .role(SemanticRole::Button)
-                .label(self.label)
-                .description(self.plain())
-                .focusable(!state.disabled),
-        );
     }
 }
 

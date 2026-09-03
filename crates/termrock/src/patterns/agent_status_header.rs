@@ -596,16 +596,6 @@ impl AgentStatusHeaderState {
         self.accepts_input = on;
     }
 
-    /// Focus.
-    pub const fn set_focused(&mut self, on: bool) {
-        self.focused = on;
-    }
-
-    /// Force presentation.
-    pub const fn set_presentation(&mut self, p: AgentStatusPresentation) {
-        self.presentation = p;
-        self.auto_contract = false;
-    }
     fn current_action(&self) -> Option<AgentStatusAction> {
         self.actions.get(self.action_cursor).copied()
     }

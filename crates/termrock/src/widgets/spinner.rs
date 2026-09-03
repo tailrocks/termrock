@@ -579,40 +579,6 @@ impl<'a> ActivityIndicator<'a> {
             }
         }
     }
-
-    /// Semantic registration.
-    pub fn register_semantic<Sid, Act>(
-        &self,
-        scene: &mut SemanticScene<Sid, Act>,
-        id: Sid,
-        area: Rect,
-        state: &SpinnerState,
-    ) where
-        Sid: Clone + PartialEq + std::fmt::Display,
-        Act: Clone,
-    {
-        if area.is_empty() || !state.is_visible() {
-            return;
-        }
-        let desc = format!(
-            "activity-indicator phase={} active={} label={} detail={}",
-            state.phase().id(),
-            state.is_active(),
-            self.label,
-            self.detail.unwrap_or(""),
-        );
-        let _ = scene.register(
-            SemanticNode::control(id, area)
-                .role(SemanticRole::Status)
-                .label("activity-indicator")
-                .description(desc)
-                .focusable(false)
-                .state(SemanticState {
-                    busy: state.is_active(),
-                    ..Default::default()
-                }),
-        );
-    }
 }
 
 // Widget impl for Spinner without state — paints with default state via render

@@ -16,10 +16,7 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
 
 use crate::input::{KeyEvent, MouseButton, MouseEvent, MouseEventKind};
-use crate::interaction::{
-    EventResult, NavigationMove, PageMove, SemanticNode, SemanticRole, SemanticScene,
-    SemanticState, UiIntent, default_list_intent,
-};
+use crate::interaction::{NavigationMove, PageMove, UiIntent, default_list_intent};
 use crate::scroll;
 use crate::style::{DesignSystem, Role};
 use crate::text::{display_cols, take_display_cols, wrap_display_cols};
@@ -1144,45 +1141,6 @@ impl<'a, Id: Clone + PartialEq> KeyValueList<'a, Id> {
             _ => {}
         }
         KeyValueListOutcome::Ignored
-    }
-
-    /// EventResult wrapper.
-    pub fn handle_key_result(
-        &self,
-        state: &mut KeyValueListState<Id>,
-        key: KeyEvent,
-    ) -> EventResult<KeyValueListOutcome<Id>> {
-        match self.handle_key(state, key) {
-            KeyValueListOutcome::Ignored => EventResult::ignored(),
-            other => EventResult::emit(other),
-        }
-    }
-
-    /// Semantic registration.
-    pub fn register_semantic<Action>(
-        &self,
-        scene: &mut SemanticScene<Id, Action>,
-        root_id: Id,
-        area: Rect,
-        state: &KeyValueListState<Id>,
-    ) where
-        Id: Clone + PartialEq + std::fmt::Display,
-        Action: Clone,
-    {
-        if area.is_empty() {
-            return;
-        }
-        let _ = scene.register(
-            SemanticNode::control(root_id, area)
-                .role(SemanticRole::List)
-                .label("key-value list")
-                .description(format!("{} entries", self.entries.len()))
-                .focusable(true)
-                .state(SemanticState {
-                    selected: state.focused,
-                    ..Default::default()
-                }),
-        );
     }
 }
 

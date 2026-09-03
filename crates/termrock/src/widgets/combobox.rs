@@ -360,18 +360,6 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
         }
     }
 
-    /// Enabled.
-    pub fn set_enabled(&mut self, on: bool) {
-        self.enabled = on;
-        self.draft.set_enabled(on);
-    }
-
-    /// Read-only.
-    pub fn set_read_only(&mut self, on: bool) {
-        self.read_only = on;
-        self.draft.set_read_only(on);
-    }
-
     /// Controlled draft (does not bump generation unless `notify`).
     pub fn set_draft(&mut self, text: impl Into<String>) {
         let text = text.into();

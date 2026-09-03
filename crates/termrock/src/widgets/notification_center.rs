@@ -603,16 +603,6 @@ impl NotificationCenterState {
         self.recipe = recipe;
     }
 
-    /// Focus.
-    pub fn set_focused(&mut self, on: bool) {
-        self.focused = on;
-    }
-
-    /// Input gate.
-    pub fn set_accepts_input(&mut self, on: bool) {
-        self.accepts_input = on;
-    }
-
     /// ASCII.
     /// Open center.
     pub fn open(&mut self) -> NotificationCenterOutcome {

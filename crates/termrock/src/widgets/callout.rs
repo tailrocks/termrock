@@ -805,11 +805,6 @@ impl<Id> AlertState<Id> {
         self.visible = true;
     }
 
-    /// Enable input.
-    pub fn set_accepts_input(&mut self, on: bool) {
-        self.accepts_input = on;
-    }
-
     /// Enable.
     pub fn set_enabled(&mut self, on: bool) {
         self.enabled = on;

@@ -25,7 +25,7 @@
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::input::{KeyEvent, MouseButton, MouseEvent, MouseEventKind};
-use crate::interaction::{EventResult, UiIntent, default_tree_intent};
+use crate::interaction::{UiIntent, default_tree_intent};
 use crate::style::{DesignSystem, Role};
 use crate::text::take_display_cols;
 
@@ -252,19 +252,6 @@ impl CollapsibleState {
                 self.apply_open(false)
             }
             _ => CollapsibleOutcome::Ignored,
-        }
-    }
-
-    /// Key with EventResult.
-    pub fn handle_key_result(
-        &mut self,
-        key: KeyEvent,
-        disabled: bool,
-        controlled_open: Option<bool>,
-    ) -> EventResult<CollapsibleOutcome> {
-        match self.handle_key(key, disabled, controlled_open) {
-            CollapsibleOutcome::Ignored => EventResult::ignored(),
-            other => EventResult::emit(other),
         }
     }
 

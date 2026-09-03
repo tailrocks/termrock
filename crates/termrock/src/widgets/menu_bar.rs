@@ -555,11 +555,6 @@ impl MenuBarState {
         self.focused = on;
     }
 
-    /// Master enable.
-    pub fn set_enabled(&mut self, on: bool) {
-        self.enabled = on;
-    }
-
     /// Input gate.
     pub fn set_accepts_input(&mut self, on: bool) {
         self.accepts_input = on;

@@ -687,14 +687,6 @@ impl<Id: Clone + PartialEq> ListState<Id> {
             _ => Outcome::Ignored,
         }
     }
-    /// Key path returning [`crate::interaction::EventResult`].
-    pub fn handle_key_result(
-        &mut self,
-        rows: &[ListRow<'_, Id>],
-        key: KeyEvent,
-    ) -> crate::interaction::EventResult<Outcome<Id>> {
-        self.handle_key(rows, key).into_event_result()
-    }
 
     fn toggle_all(&mut self, rows: &[ListRow<'_, Id>]) -> Outcome<Id> {
         let Some(selection) = self.selection.as_mut() else {

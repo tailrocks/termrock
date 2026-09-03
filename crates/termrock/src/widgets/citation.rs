@@ -605,11 +605,6 @@ impl SourceCitationState {
             },
         }
     }
-
-    /// Focus.
-    pub const fn set_focused(&mut self, on: bool) {
-        self.focused = on;
-    }
 }
 
 /// Compact inline citation (`[1]` / chip).

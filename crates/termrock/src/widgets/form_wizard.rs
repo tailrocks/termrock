@@ -434,11 +434,6 @@ impl FormWizardState {
         self.focused = on;
     }
 
-    /// Enabled.
-    pub fn set_enabled(&mut self, on: bool) {
-        self.enabled = on;
-    }
-
     /// Host projects gate for current step (or all via set_gates).
     pub fn set_gate(&mut self, gate: WizardGate) {
         if let Some(g) = self.gates.get_mut(self.index) {

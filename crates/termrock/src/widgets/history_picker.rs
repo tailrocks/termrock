@@ -573,11 +573,6 @@ impl<Id: Clone + PartialEq> HistoryPickerState<Id> {
         self.draft = None;
     }
 
-    /// Focus.
-    pub fn set_focused(&mut self, on: bool) {
-        self.focused = on;
-    }
-
     /// Input gate.
     pub fn set_accepts_input(&mut self, on: bool) {
         self.accepts_input = on;

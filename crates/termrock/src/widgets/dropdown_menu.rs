@@ -516,11 +516,6 @@ impl DropdownMenuState {
         &self.panel_hits
     }
 
-    /// Scene focus.
-    pub fn set_focused(&mut self, on: bool) {
-        self.focused = on;
-    }
-
     /// Enable.
     pub fn set_enabled(&mut self, on: bool) {
         self.enabled = on;

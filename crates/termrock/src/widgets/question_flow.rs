@@ -591,11 +591,6 @@ impl QuestionFlowState {
         self.enabled
     }
 
-    /// Focus.
-    pub const fn set_focused(&mut self, on: bool) {
-        self.focused = on;
-    }
-
     /// Whether a set is open.
     #[must_use]
     pub const fn is_open(&self) -> bool {

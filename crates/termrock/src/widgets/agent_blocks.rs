@@ -84,11 +84,6 @@ impl<Id: Clone + PartialEq> ModeRibbonState<Id> {
         self.selected.as_ref()
     }
 
-    /// Sets focus for keyboard routing.
-    pub const fn set_focused(&mut self, focused: bool) {
-        self.focused = focused;
-    }
-
     /// Routes left/right/enter.
     pub fn handle_key(
         &mut self,

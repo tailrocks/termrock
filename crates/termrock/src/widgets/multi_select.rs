@@ -302,11 +302,6 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
         }
     }
 
-    /// Enabled.
-    pub const fn set_enabled(&mut self, on: bool) {
-        self.enabled = on;
-    }
-
     /// Replace membership (controlled).
     pub fn set_selected(&mut self, ids: impl IntoIterator<Item = Id>) {
         self.selection.clear();
@@ -315,11 +310,6 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
                 let _ = self.selection.toggle(&id);
             }
         }
-    }
-
-    /// Force presentation.
-    pub const fn set_presentation(&mut self, presentation: SelectPresentation) {
-        self.presentation = presentation;
     }
 
     fn collection_items_from_projection<'a>(

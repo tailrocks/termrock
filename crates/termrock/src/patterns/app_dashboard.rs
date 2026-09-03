@@ -131,11 +131,6 @@ impl<Id> AppDashboardState<Id> {
     pub const fn pane(&self) -> AppDashboardPane {
         self.pane
     }
-    /// Input gate.
-    pub fn set_accepts_input(&mut self, on: bool) {
-        self.accepts_input = on;
-        self.sync_sidebar_focus();
-    }
 
     /// Focus a pane.
     pub fn set_pane(&mut self, pane: AppDashboardPane) -> AppDashboardOutcome<Id> {

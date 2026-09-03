@@ -998,41 +998,6 @@ impl<'a> OfflineSurface<'a> {
             );
         }
     }
-
-    /// Semantic.
-    pub fn register_semantic<Sid, Act>(
-        &self,
-        scene: &mut SemanticScene<Sid, Act>,
-        id: Sid,
-        area: Rect,
-        state: &ReconnectingState,
-    ) where
-        Sid: Clone + PartialEq + std::fmt::Display,
-        Act: Clone,
-    {
-        if area.is_empty() || !state.phase.is_offline_like() {
-            return;
-        }
-        let desc = format!(
-            "offline-surface phase={} target={} attempt={} queued={} presentation={}",
-            state.phase.id(),
-            state.target,
-            state.attempt,
-            state.queued.len(),
-            state.presentation.id(),
-        );
-        let _ = scene.register(
-            SemanticNode::control(id, area)
-                .role(SemanticRole::Status)
-                .label("offline-surface")
-                .description(desc)
-                .focusable(true)
-                .state(SemanticState {
-                    busy: matches!(state.phase, ConnectivityPhase::Reconnecting),
-                    ..Default::default()
-                }),
-        );
-    }
 }
 
 fn paint_centered(

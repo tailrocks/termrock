@@ -361,10 +361,6 @@ impl<Id> TreeNavigationState<Id> {
         }
     }
 
-    /// Enabled.
-    pub fn set_enabled(&mut self, on: bool) {
-        self.enabled = on;
-    }
     /// Align focus to route if present in projection.
     pub fn focus_route(&mut self, nodes: &[TreeNavNode<Id>])
     where

@@ -21,10 +21,7 @@
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::input::{KeyEvent, MouseButton, MouseEvent, MouseEventKind};
-use crate::interaction::{
-    EventResult, NavigationMove, PageMove, SemanticNode, SemanticRole, SemanticScene,
-    SemanticState, UiIntent, default_list_intent,
-};
+use crate::interaction::{NavigationMove, PageMove, UiIntent, default_list_intent};
 use crate::scroll;
 use crate::style::{DesignSystem, Glyph, Role};
 use crate::text::{display_cols, take_display_cols, wrap_display_cols};
@@ -1314,18 +1311,6 @@ impl<'a> MarkdownView<'a> {
         MarkdownOutcome::Ignored
     }
 
-    /// EventResult wrapper.
-    pub fn handle_key_result(
-        &self,
-        state: &mut MarkdownViewState,
-        key: KeyEvent,
-    ) -> EventResult<MarkdownOutcome> {
-        match self.handle_key(state, key) {
-            MarkdownOutcome::Ignored => EventResult::ignored(),
-            other => EventResult::emit(other),
-        }
-    }
-
     /// Activate a painted link by index (host / tests).
     pub fn activate_link(&self, state: &MarkdownViewState, index: usize) -> MarkdownOutcome {
         let Some(parts) = &state.parts else {
@@ -1338,42 +1323,6 @@ impl<'a> MarkdownView<'a> {
             label: link.label.clone(),
             href: link.href.clone(),
         }
-    }
-
-    /// Semantic registration.
-    pub fn register_semantic<Id, Action>(
-        &self,
-        scene: &mut SemanticScene<Id, Action>,
-        id: Id,
-        area: Rect,
-        state: &MarkdownViewState,
-    ) where
-        Id: Clone + PartialEq + std::fmt::Display,
-        Action: Clone,
-    {
-        if area.is_empty() {
-            return;
-        }
-        let desc = format!(
-            "markdown {} blocks{}",
-            self.blocks.len(),
-            if state.parts.as_ref().is_some_and(|p| p.streaming) {
-                " streaming"
-            } else {
-                ""
-            }
-        );
-        let _ = scene.register(
-            SemanticNode::control(id, area)
-                .role(SemanticRole::Content)
-                .label("markdown")
-                .description(desc)
-                .focusable(true)
-                .state(SemanticState {
-                    selected: state.focused,
-                    ..Default::default()
-                }),
-        );
     }
 }
 

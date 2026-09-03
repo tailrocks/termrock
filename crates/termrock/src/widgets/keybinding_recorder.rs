@@ -387,14 +387,6 @@ impl KeybindingRecorderState {
         self.focused = on;
     }
 
-    /// Enabled.
-    pub fn set_enabled(&mut self, on: bool) {
-        self.enabled = on;
-        if !on && self.is_recording() {
-            let _ = self.cancel_recording();
-        }
-    }
-
     /// Set committed chords without validation (host load).
     pub fn set_value(&mut self, chords: impl IntoIterator<Item = KeyChord>) {
         self.value = chords.into_iter().collect();

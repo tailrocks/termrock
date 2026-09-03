@@ -11,8 +11,7 @@ use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::State
 use crate::{
     input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind},
     interaction::{
-        EventResult, SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent,
-        default_button_intent,
+        SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, default_button_intent,
     },
     style::{
         ButtonRecipeVariant, ControlState, DesignSystem, ListRowVisualState, Role, VisualState,
@@ -305,18 +304,6 @@ impl CheckboxState {
             _ => CheckboxOutcome::Ignored,
         }
     }
-
-    /// EventResult wrapper.
-    pub fn handle_key_result<Id: Clone>(
-        &mut self,
-        key: KeyEvent,
-        id: &Id,
-    ) -> EventResult<CheckboxOutcome<Id>> {
-        match self.handle_key(key, id) {
-            CheckboxOutcome::Ignored => EventResult::ignored(),
-            other => EventResult::emit(other),
-        }
-    }
 }
 
 /// Form-field checkbox: box + label + optional description.
@@ -519,18 +506,6 @@ impl<'a, Id> Checkbox<'a, Id> {
         Id: Clone,
     {
         state.handle_mouse(event, &self.id)
-    }
-
-    /// EventResult wrapper.
-    pub fn handle_key_result(
-        &self,
-        state: &mut CheckboxState,
-        key: KeyEvent,
-    ) -> EventResult<CheckboxOutcome<Id>>
-    where
-        Id: Clone,
-    {
-        state.handle_key_result(key, &self.id)
     }
 
     /// Semantic: checkbox control with checked/mixed state.
@@ -1345,18 +1320,6 @@ impl<'a, Id: Clone + PartialEq> RadioGroup<'a, Id> {
         }
     }
 
-    /// EventResult wrapper.
-    pub fn handle_key_result(
-        &self,
-        state: &mut RadioState<Id>,
-        key: KeyEvent,
-    ) -> EventResult<RadioOutcome<Id>> {
-        match self.handle_key(state, key) {
-            RadioOutcome::Ignored => EventResult::ignored(),
-            other => EventResult::emit(other),
-        }
-    }
-
     /// Semantic: group list + each option.
     pub fn register_semantic<Action>(
         &self,
@@ -1696,18 +1659,6 @@ impl SwitchState {
                 self.pointer_armed = false;
                 SwitchOutcome::Ignored
             }
-        }
-    }
-
-    /// EventResult wrapper.
-    pub fn handle_key_result<Id: Clone>(
-        &mut self,
-        key: KeyEvent,
-        id: &Id,
-    ) -> EventResult<SwitchOutcome<Id>> {
-        match self.handle_key(key, id) {
-            SwitchOutcome::Ignored => EventResult::ignored(),
-            other => EventResult::emit(other),
         }
     }
 }
@@ -2060,18 +2011,6 @@ impl<'a, Id> Switch<'a, Id> {
         Id: Clone,
     {
         state.handle_mouse(event, &self.id)
-    }
-
-    /// EventResult wrapper.
-    pub fn handle_key_result(
-        &self,
-        state: &mut SwitchState,
-        key: KeyEvent,
-    ) -> EventResult<SwitchOutcome<Id>>
-    where
-        Id: Clone,
-    {
-        state.handle_key_result(key, &self.id)
     }
 
     /// Semantic registration.

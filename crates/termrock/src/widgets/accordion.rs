@@ -21,8 +21,8 @@ use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{
-    EventResult, HitRegion, RovingEntry, RovingFocusGroup, RovingOrientation, RovingOutcome,
-    UiIntent, default_button_intent, default_list_intent,
+    HitRegion, RovingEntry, RovingFocusGroup, RovingOrientation, RovingOutcome, UiIntent,
+    default_button_intent, default_list_intent,
 };
 use crate::style::DesignSystem;
 use crate::widgets::collapsible::{
@@ -774,18 +774,6 @@ impl<'a, Id: Clone + PartialEq> Accordion<'a, Id> {
                     AccordionOutcome::CursorMoved { from, to }
                 }
             },
-        }
-    }
-
-    /// Key with EventResult.
-    pub fn handle_key_result(
-        &self,
-        state: &mut AccordionState<Id>,
-        key: KeyEvent,
-    ) -> EventResult<AccordionOutcome<Id>> {
-        match self.handle_key(state, key) {
-            AccordionOutcome::Ignored => EventResult::ignored(),
-            other => EventResult::emit(other),
         }
     }
 

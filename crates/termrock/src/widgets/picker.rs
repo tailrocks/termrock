@@ -397,17 +397,6 @@ impl<Id: Clone + PartialEq> PickerState<Id> {
         }
     }
 
-    /// Key path with [`crate::interaction::EventResult`] envelope.
-    pub fn handle_key_result(
-        &mut self,
-        visible: &[ListRow<'_, Id>],
-        key: KeyEvent,
-    ) -> crate::interaction::EventResult<PickerOutcome<Id>> {
-        match self.handle_key(visible, key) {
-            PickerOutcome::Ignored => crate::interaction::EventResult::ignored(),
-            other => crate::interaction::EventResult::emit(other),
-        }
-    }
     /// Updates list hover from geometry painted by the latest picker render.
     pub fn hover(&mut self, position: Position) -> Option<&Id> {
         if !self.accepts_input {

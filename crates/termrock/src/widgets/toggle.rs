@@ -38,8 +38,8 @@ use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
 
 use crate::input::{KeyEvent, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{
-    EventResult, NavigationMove, RovingEntry, RovingFocusGroup, RovingOrientation, RovingOutcome,
-    SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, default_button_intent,
+    NavigationMove, RovingEntry, RovingFocusGroup, RovingOrientation, RovingOutcome, SemanticNode,
+    SemanticRole, SemanticScene, SemanticState, UiIntent, default_button_intent,
     default_list_intent,
 };
 use crate::style::{ButtonRecipeVariant, ControlState, DesignSystem, Role, VisualState};
@@ -577,18 +577,6 @@ impl<'a> Toggle<'a> {
                 }
             }
             _ => ToggleOutcome::Ignored,
-        }
-    }
-
-    /// EventResult wrapper.
-    pub fn handle_key_result(
-        &self,
-        state: &mut ToggleState,
-        key: KeyEvent,
-    ) -> EventResult<ToggleOutcome> {
-        match self.handle_key(state, key) {
-            ToggleOutcome::Ignored => EventResult::ignored(),
-            other => EventResult::emit(other),
         }
     }
 
@@ -1340,60 +1328,6 @@ impl<'a, Id: Clone + PartialEq> ToggleGroup<'a, Id> {
             return self.activate_item(state, id);
         }
         ToggleGroupOutcome::Ignored
-    }
-
-    /// EventResult wrapper.
-    pub fn handle_key_result(
-        &self,
-        state: &mut ToggleGroupState<Id>,
-        key: KeyEvent,
-    ) -> EventResult<ToggleGroupOutcome<Id>> {
-        match self.handle_key(state, key) {
-            ToggleGroupOutcome::Ignored => EventResult::ignored(),
-            other => EventResult::emit(other),
-        }
-    }
-
-    /// Semantic: group + each visible toggle.
-    pub fn register_semantic<Action>(
-        &self,
-        scene: &mut SemanticScene<Id, Action>,
-        group_id: Id,
-        area: Rect,
-        state: &ToggleGroupState<Id>,
-    ) where
-        Id: Clone + PartialEq + std::fmt::Display,
-        Action: Clone,
-    {
-        if area.is_empty() {
-            return;
-        }
-        let _ = scene.register(
-            SemanticNode::control(group_id, area)
-                .role(SemanticRole::List)
-                .label("toggle group")
-                .description(self.group_type.id())
-                .focusable(true)
-                .state(SemanticState {
-                    selected: state.surface_focused,
-                    ..Default::default()
-                }),
-        );
-        if let Some(parts) = &state.parts {
-            for it in &parts.items {
-                if it.overflowed {
-                    continue;
-                }
-                let Some(item) = self.item_by_id(&it.id) else {
-                    continue;
-                };
-                let t = self.item_toggle(item);
-                let mut ts = ToggleState::with_value(item.value);
-                ts.enabled = item.enabled;
-                ts.focused = state.surface_focused && state.cursor.as_ref() == Some(&it.id);
-                t.register_semantic(scene, it.id.clone(), it.area, &ts);
-            }
-        }
     }
 }
 

@@ -16,8 +16,7 @@ use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widge
 
 use crate::input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{
-    EventResult, SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent,
-    default_button_intent,
+    SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, default_button_intent,
 };
 use crate::style::{DesignSystem, Glyph, Role};
 use crate::text::{display_cols, take_display_cols};
@@ -533,18 +532,6 @@ impl<'a> Badge<'a> {
         match intent {
             UiIntent::Activate | UiIntent::Submit | UiIntent::Toggle => self.activate(state),
             _ => BadgeOutcome::Ignored,
-        }
-    }
-
-    /// Key with EventResult.
-    pub fn handle_key_result(
-        &self,
-        state: &mut BadgeState,
-        key: KeyEvent,
-    ) -> EventResult<BadgeOutcome> {
-        match self.handle_key(state, key) {
-            BadgeOutcome::Ignored => EventResult::ignored(),
-            other => EventResult::emit(other),
         }
     }
 

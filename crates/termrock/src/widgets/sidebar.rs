@@ -564,10 +564,6 @@ impl<Id> NavigationListState<Id> {
         }
     }
 
-    /// Enabled.
-    pub fn set_enabled(&mut self, on: bool) {
-        self.enabled = on;
-    }
     /// Set route and align focus.
     pub fn set_route_and_focus(&mut self, id: Id)
     where

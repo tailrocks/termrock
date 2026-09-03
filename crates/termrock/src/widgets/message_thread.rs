@@ -807,11 +807,6 @@ impl MessageThreadState {
         self.transcript.set_focused(on);
     }
 
-    /// Focus chrome.
-    pub fn set_focused(&mut self, on: bool) {
-        self.transcript.set_focused(on);
-    }
-
     /// Selected id.
     #[must_use]
     pub fn selected(&self) -> Option<&str> {

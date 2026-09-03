@@ -478,11 +478,6 @@ impl WorkingStateCardState {
         self.accepts_input = on;
     }
 
-    /// Focus.
-    pub const fn set_focused(&mut self, on: bool) {
-        self.focused = on;
-    }
-
     /// Force collapsed (host paints shelf).
     pub fn collapse(&mut self) {
         self.presentation = WorkingStatePresentation::Collapsed;

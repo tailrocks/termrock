@@ -734,16 +734,6 @@ impl IntegrationStatusState {
         self.accepts_input = on;
     }
 
-    /// Focus.
-    pub const fn set_focused(&mut self, on: bool) {
-        self.focused = on;
-    }
-
-    /// Presentation.
-    pub const fn set_presentation(&mut self, p: IntegrationStatusPresentation) {
-        self.presentation = p;
-    }
-
     /// Current.
     #[must_use]
     pub fn current(&self) -> Option<&IntegrationEntry> {

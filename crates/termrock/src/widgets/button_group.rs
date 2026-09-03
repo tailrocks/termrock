@@ -20,8 +20,8 @@ use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
 
 use crate::input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{
-    EventResult, NavigationMove, RovingEntry, RovingFocusGroup, RovingOrientation, RovingOutcome,
-    SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, default_button_intent,
+    NavigationMove, RovingEntry, RovingFocusGroup, RovingOrientation, RovingOutcome, SemanticNode,
+    SemanticRole, SemanticScene, SemanticState, UiIntent, default_button_intent,
 };
 use crate::style::{ButtonRecipeVariant, ControlState, DesignSystem, Role};
 use crate::text::{display_cols, take_display_cols};
@@ -942,18 +942,6 @@ impl<'a, Id: Clone + PartialEq> ButtonGroup<'a, Id> {
             return ButtonGroupOutcome::OverflowActivate { id };
         }
         ButtonGroupOutcome::Ignored
-    }
-
-    /// EventResult wrapper.
-    pub fn handle_key_result(
-        &self,
-        state: &mut ButtonGroupState<Id>,
-        key: KeyEvent,
-    ) -> EventResult<ButtonGroupOutcome<Id>> {
-        match self.handle_key(state, key) {
-            ButtonGroupOutcome::Ignored => EventResult::ignored(),
-            other => EventResult::emit(other),
-        }
     }
 
     /// Semantic: group + each visible command as Button.

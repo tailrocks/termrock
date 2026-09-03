@@ -248,12 +248,6 @@ impl StreamingMarkdownState {
         self.tail.len()
     }
 
-    /// Gate.
-    pub fn set_accepts_input(&mut self, on: bool) {
-        self.accepts_input = on;
-        self.view.focused = on;
-    }
-
     /// Push token/delta (coalesced).
     pub fn push_delta(&mut self, delta: &str) {
         if delta.is_empty() {

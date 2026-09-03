@@ -73,11 +73,6 @@ impl ThemePickerState {
         self.selected
     }
 
-    /// Focus-visible interaction ownership.
-    pub fn set_focused(&mut self, on: bool) {
-        self.focused = on && self.enabled;
-    }
-
     /// Enables navigation, confirmation, and pointer activation.
     pub fn set_enabled(&mut self, on: bool) {
         self.enabled = on;

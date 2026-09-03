@@ -363,18 +363,6 @@ impl NumberInputState {
         self.parts.as_ref()
     }
 
-    /// Enabled.
-    pub fn set_enabled(&mut self, on: bool) {
-        self.enabled = on;
-        self.sync_draft_gates();
-    }
-
-    /// Read-only.
-    pub fn set_read_only(&mut self, on: bool) {
-        self.read_only = on;
-        self.sync_draft_gates();
-    }
-
     /// Focus flag. Does not begin the draft edit session.
     pub fn set_focused(&mut self, on: bool) {
         self.focused = on;
