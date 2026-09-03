@@ -858,13 +858,12 @@ impl<Id: Clone + PartialEq> HistoryPickerState<Id> {
                 }
                 let out = self.collection.handle_intent(intent, &entries);
                 if out.active_changed() {
-                    let cur = self.cursor_index();
-                    let vis = usize::from(self.painted_rows.max(1));
-                    if cur < self.scroll {
-                        self.scroll = cur;
-                    } else if cur >= self.scroll.saturating_add(vis) {
-                        self.scroll = cur.saturating_sub(vis.saturating_sub(1));
-                    }
+                    self.scroll = crate::scroll::cursor_follow_offset(
+                        self.cursor_index(),
+                        visible.len(),
+                        usize::from(self.painted_rows),
+                        self.scroll,
+                    );
                     HistoryPickerOutcome::CursorMoved
                 } else {
                     HistoryPickerOutcome::Ignored
@@ -1196,12 +1195,12 @@ impl<'a, Id> HistoryPicker<'a, Id> {
 
         let cursor = state.cursor_index();
         let surface = state.focused && state.accepts_input;
-        let capacity = usize::from(area.height);
-        if cursor < state.scroll {
-            state.scroll = cursor;
-        } else if cursor >= state.scroll.saturating_add(capacity) {
-            state.scroll = cursor.saturating_sub(capacity.saturating_sub(1));
-        }
+        state.scroll = crate::scroll::cursor_follow_offset(
+            cursor,
+            self.entries.len(),
+            usize::from(area.height),
+            state.scroll,
+        );
 
         let mut y = area.y;
         let mut painted = 0u16;
