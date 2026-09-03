@@ -693,13 +693,16 @@ impl MenuBarState {
         Self::items_at_path(menus, top, &self.open_path)
     }
 
-    fn ensure_top_frame<Id>(&mut self, menus: &[MenuBarMenu<Id>]) {
-        if let Some(items) = self.current_items(menus) {
-            if let Some(frame) = self.cascade.last_mut() {
-                let entries = Self::panel_entries(items);
-                let _ = frame.collection.reconcile(&entries);
-            }
+    fn ensure_top_frame<Id>(
+        &mut self,
+        menus: &[MenuBarMenu<Id>],
+    ) -> Option<Vec<CollectionItem<usize>>> {
+        let items = self.current_items(menus)?;
+        let entries = Self::panel_entries(items);
+        if let Some(frame) = self.cascade.last_mut() {
+            let _ = frame.collection.reconcile(&entries);
         }
+        Some(entries)
     }
 
     fn open_submenu_under_cursor<Id: Clone>(
@@ -967,15 +970,10 @@ impl MenuBarState {
         intent: UiIntent,
         menus: &[MenuBarMenu<Id>],
     ) -> MenuBarOutcome<Id> {
-        self.ensure_top_frame(menus);
-        let items = match self.current_items(menus) {
-            Some(i) => i,
-            None => {
-                self.close_all();
-                return MenuBarOutcome::Closed;
-            }
+        let Some(entries) = self.ensure_top_frame(menus) else {
+            self.close_all();
+            return MenuBarOutcome::Closed;
         };
-        let entries = Self::panel_entries(items);
 
         match intent {
             UiIntent::Move(
