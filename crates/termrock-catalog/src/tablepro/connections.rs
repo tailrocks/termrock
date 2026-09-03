@@ -58,6 +58,8 @@ const FORM_STARTUP: WidgetId = ID.sub("form-startup-sql");
 const FORM_LOCAL: WidgetId = ID.sub("form-local-only");
 const FORM_TEST: WidgetId = ID.sub("form-test");
 const FORM_TABS: WidgetId = ID.sub("form-tabs");
+const DEFAULT_PORT: u16 = 5432;
+const INVALID_PORT_MESSAGE: &str = "Port must be between 1 and 65535";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ConnState {
@@ -190,6 +192,17 @@ fn port_valid(value: &str) -> bool {
             .is_ok_and(|port| (1..=u32::from(u16::MAX)).contains(&port))
 }
 
+fn port_value(value: &str) -> Option<u16> {
+    if !port_valid(value) {
+        return None;
+    }
+    if value.is_empty() {
+        Some(DEFAULT_PORT)
+    } else {
+        value.parse().ok()
+    }
+}
+
 impl ConnectionsScreen {
     #[must_use]
     pub fn new(connections: Vec<Connection>) -> Self {
@@ -269,7 +282,7 @@ impl ConnectionsScreen {
         host.set_editing(false);
         let mut port = TextInputState::new(
             c.map(|c| c.port.to_string())
-                .unwrap_or_else(|| "5432".into()),
+                .unwrap_or_else(|| DEFAULT_PORT.to_string()),
         )
         .with_allow_empty(true);
         port.set_editing(false);
@@ -334,7 +347,9 @@ impl ConnectionsScreen {
                         .form
                         .as_ref()
                         .map(|form| {
-                            if form.host.value().contains("analytics") {
+                            if port_value(form.port.value()).is_none() {
+                                Err(INVALID_PORT_MESSAGE.into())
+                            } else if form.host.value().contains("analytics") {
                                 Err("Connection timed out after 10 s".into())
                             } else {
                                 Ok("Connected · PostgreSQL 16.3 · 12 ms".into())
@@ -759,7 +774,8 @@ impl ConnectionsScreen {
             y = y.saturating_add(2);
 
             let engine_area = Rect::new(left.x, y, field_width, 2);
-            form.engine.set_focused(ctx.interaction.focused(FORM_ENGINE));
+            form.engine
+                .set_focused(ctx.interaction.focused(FORM_ENGINE));
             let engines = engine_options();
             Select::new(&engines, ctx.system)
                 .label("Engine")
@@ -802,8 +818,7 @@ impl ConnectionsScreen {
             if !form.database.is_focused() && form.database.is_editing() {
                 form.database.commit();
             }
-            TextInput::new("Database", ctx.system)
-                .paint(database_area, buf, &mut form.database);
+            TextInput::new("Database", ctx.system).paint(database_area, buf, &mut form.database);
             ctx.control(FORM_DATABASE, database_area, false);
             y = y.saturating_add(2);
 
@@ -812,15 +827,14 @@ impl ConnectionsScreen {
             if !form.user.is_focused() && form.user.is_editing() {
                 form.user.commit();
             }
-            TextInput::new("Username", ctx.system)
-                .paint(user_area, buf, &mut form.user);
+            TextInput::new("Username", ctx.system).paint(user_area, buf, &mut form.user);
             ctx.control(FORM_USER, user_area, false);
             y = y.saturating_add(2);
 
             let password_area = Rect::new(left.x, y, field_width, 2);
             form.password
                 .set_focused(ctx.interaction.focused(FORM_PASSWORD));
-            PasswordInput::new("Password", ctx.system)
+            let _ = PasswordInput::new("Password", ctx.system)
                 .placeholder("stored in the keychain")
                 .paint(password_area, buf, &mut form.password);
             ctx.control(FORM_PASSWORD, password_area, false);
@@ -838,7 +852,8 @@ impl ConnectionsScreen {
 
             let env = env_options();
             let env_area = Rect::new(right.x, right.y, right.width, 5);
-            form.env.set_surface_focused(ctx.interaction.focused(FORM_ENV));
+            form.env
+                .set_surface_focused(ctx.interaction.focused(FORM_ENV));
             RadioGroup::new(&env, ctx.system)
                 .legend("Environment")
                 .paint(env_area, buf, &mut form.env);
@@ -855,7 +870,8 @@ impl ConnectionsScreen {
 
             let safe_area = Rect::new(right.x, right.y.saturating_add(9), right.width, 8);
             let safe = safe_options();
-            form.safe.set_surface_focused(ctx.interaction.focused(FORM_SAFE));
+            form.safe
+                .set_surface_focused(ctx.interaction.focused(FORM_SAFE));
             RadioGroup::new(&safe, ctx.system)
                 .legend("Safe Mode")
                 .paint(safe_area, buf, &mut form.safe);
@@ -895,8 +911,7 @@ impl ConnectionsScreen {
             if !form.ssh_user.is_focused() && form.ssh_user.is_editing() {
                 form.ssh_user.commit();
             }
-            TextInput::new("SSH user", ctx.system)
-                .paint(ssh_user_area, buf, &mut form.ssh_user);
+            TextInput::new("SSH user", ctx.system).paint(ssh_user_area, buf, &mut form.ssh_user);
             ctx.control(FORM_SSH_USER, ssh_user_area, !ssh_enabled);
             y = y.saturating_add(2);
 
@@ -1220,6 +1235,10 @@ impl ConnectionsScreen {
                 self.form = None;
                 Route::Changed
             }
+            PageEvent::Click { id, .. } if *id == FORM_TEST => {
+                self.state = ConnState::Testing { ticks: 0 };
+                Route::Changed
+            }
             PageEvent::Click { id, .. } if *id == FORM_SAVE || *id == FORM_CONNECT => {
                 let connect = *id == FORM_CONNECT;
                 self.commit_form(cx, connect)
@@ -1245,6 +1264,10 @@ impl ConnectionsScreen {
             cx.status("Name required");
             return Route::Changed;
         }
+        let Some(port) = port_value(form.port.value()) else {
+            cx.status(INVALID_PORT_MESSAGE);
+            return Route::Changed;
+        };
         let env = match form.env.selected() {
             Some(&1) => Environment::Development,
             Some(&2) => Environment::Staging,
@@ -1252,7 +1275,6 @@ impl ConnectionsScreen {
             _ => Environment::Local,
         };
         let host = form.host.value().to_owned();
-        let port = form.port.value().parse().unwrap_or(5432);
         let database = form.database.value().to_owned();
         let user = form.user.value().to_owned();
         let index = form.index;
@@ -1305,5 +1327,116 @@ impl ConnectionsScreen {
             ("/", "Filter"),
             ("Ctrl+N", "New"),
         ]
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use termrock::widgets::TextInputState;
+
+    fn form_with_port(port: &str) -> ConnectionsScreen {
+        let mut screen = ConnectionsScreen::new(Vec::new());
+        screen.open_form(None);
+        let form = screen.form.as_mut().expect("form opened");
+        form.name = TextInputState::new("Example");
+        form.port = TextInputState::new(port).with_allow_empty(true);
+        screen
+    }
+
+    fn submit_form(screen: &mut ConnectionsScreen) -> Route {
+        let mut focus = None;
+        let mut cx = PageCtx {
+            focus: &mut focus,
+            requests: Vec::new(),
+        };
+        screen.commit_form(&mut cx, false)
+    }
+
+    #[test]
+    fn port_validation_accepts_empty_and_u16_range() {
+        assert_eq!(port_value(""), Some(DEFAULT_PORT));
+        assert_eq!(port_value("1"), Some(1));
+        assert_eq!(port_value("65535"), Some(u16::MAX));
+    }
+
+    #[test]
+    fn port_validation_rejects_zero_overflow_and_text() {
+        assert_eq!(port_value("0"), None);
+        assert_eq!(port_value("65536"), None);
+        assert_eq!(port_value("postgres"), None);
+    }
+
+    #[test]
+    fn invalid_port_stays_in_form() {
+        let mut screen = form_with_port("65536");
+
+        assert_eq!(submit_form(&mut screen), Route::Changed);
+        assert!(screen.form.is_some());
+        assert!(screen.connections.is_empty());
+    }
+
+    #[test]
+    fn invalid_port_fails_connection_test() {
+        let mut screen = form_with_port("65536");
+        let mut focus = None;
+        let mut cx = PageCtx {
+            focus: &mut focus,
+            requests: Vec::new(),
+        };
+        assert_eq!(
+            screen.handle_form(
+                &PageEvent::Click {
+                    id: FORM_TEST,
+                    pos: ratatui::layout::Position::new(0, 0),
+                },
+                &mut cx,
+            ),
+            Route::Changed
+        );
+
+        for _ in 0..10 {
+            assert!(screen.tick().is_none());
+        }
+        assert_eq!(
+            screen.state,
+            ConnState::Tested(Err(INVALID_PORT_MESSAGE.into()))
+        );
+    }
+
+    #[test]
+    fn valid_port_passes_connection_test() {
+        let mut screen = form_with_port("65535");
+        let mut focus = None;
+        let mut cx = PageCtx {
+            focus: &mut focus,
+            requests: Vec::new(),
+        };
+        assert_eq!(
+            screen.handle_form(
+                &PageEvent::Click {
+                    id: FORM_TEST,
+                    pos: ratatui::layout::Position::new(0, 0),
+                },
+                &mut cx,
+            ),
+            Route::Changed
+        );
+
+        for _ in 0..10 {
+            assert!(screen.tick().is_none());
+        }
+        assert_eq!(
+            screen.state,
+            ConnState::Tested(Ok("Connected · PostgreSQL 16.3 · 12 ms".into()))
+        );
+    }
+
+    #[test]
+    fn valid_port_saves_connection() {
+        let mut screen = form_with_port("65535");
+
+        assert_eq!(submit_form(&mut screen), Route::Changed);
+        assert_eq!(screen.connections[0].port, u16::MAX);
     }
 }
