@@ -1819,7 +1819,6 @@ pub struct Switch<'a, Id> {
     system: &'a DesignSystem,
     recipe: SwitchRecipe,
     /// Paint explicit ON/OFF (or On/Off) text in the track (default true).
-    show_value_text: bool,
     colorless: bool,
 }
 
@@ -1833,7 +1832,6 @@ impl<'a, Id> Switch<'a, Id> {
             description: None,
             system,
             recipe: SwitchRecipe::SettingsRow,
-            show_value_text: true,
             colorless: false,
         }
     }
@@ -1863,13 +1861,6 @@ impl<'a, Id> Switch<'a, Id> {
     #[must_use]
     pub const fn settings_row(mut self) -> Self {
         self.recipe = SwitchRecipe::SettingsRow;
-        self
-    }
-
-    /// Show explicit On/Off text in the track (default true — avoids color-only meaning).
-    #[must_use]
-    pub const fn show_value_text(mut self, on: bool) -> Self {
-        self.show_value_text = on;
         self
     }
 

@@ -215,13 +215,6 @@ impl<'a, Id> Field<'a, Id> {
         self
     }
 
-    /// Read-only.
-    #[must_use]
-    pub const fn read_only(mut self, on: bool) -> Self {
-        self.read_only = on;
-        self
-    }
-
     /// Dirty projection.
     #[must_use]
     pub const fn dirty(mut self, on: bool) -> Self {

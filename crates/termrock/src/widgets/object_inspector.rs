@@ -1217,13 +1217,6 @@ impl<'a> ObjectInspector<'a> {
         self
     }
 
-    /// Show type glyphs / labels.
-    #[must_use]
-    pub const fn show_types(mut self, on: bool) -> Self {
-        self.show_types = on;
-        self
-    }
-
     /// Display value with redaction + escape.
     #[must_use]
     pub fn display_value(

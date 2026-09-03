@@ -1799,14 +1799,6 @@ impl<'a> DateTimePicker<'a> {
         self
     }
 
-    /// ASCII glyphs for states.
-    #[must_use]
-    /// Show timezone label when present.
-    pub const fn show_timezone(mut self, on: bool) -> Self {
-        self.show_timezone = on;
-        self
-    }
-
     /// Paint.
     pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut DateTimePickerState) {
         state.cell_hits.clear();

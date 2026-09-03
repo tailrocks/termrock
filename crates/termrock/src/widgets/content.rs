@@ -496,24 +496,10 @@ impl<'a> Paragraph<'a> {
         self
     }
 
-    /// Hanging wrap after the first line (default true for quote/list).
-    #[must_use]
-    pub const fn hanging(mut self, on: bool) -> Self {
-        self.hanging = Some(on);
-        self
-    }
-
     /// Override prefix (including trailing space if desired).
     #[must_use]
     pub const fn prefix(mut self, prefix: &'a str) -> Self {
         self.prefix = Some(prefix);
-        self
-    }
-
-    /// Ordered list index (1-based).
-    #[must_use]
-    pub const fn list_index(mut self, index: u32) -> Self {
-        self.list_index = if index == 0 { 1 } else { index };
         self
     }
 

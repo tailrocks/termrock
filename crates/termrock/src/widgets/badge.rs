@@ -248,13 +248,6 @@ impl<'a> Badge<'a> {
         self
     }
 
-    /// Neutral category.
-    #[must_use]
-    pub const fn neutral(mut self) -> Self {
-        self.variant = BadgeVariant::Neutral;
-        self
-    }
-
     /// Success.
     #[must_use]
     pub const fn success(mut self) -> Self {
@@ -321,13 +314,6 @@ impl<'a> Badge<'a> {
     #[must_use]
     pub const fn disabled(mut self, on: bool) -> Self {
         self.disabled = on;
-        self
-    }
-
-    /// Toggle status glyph prefix.
-    #[must_use]
-    pub const fn show_glyph(mut self, on: bool) -> Self {
-        self.show_glyph = on;
         self
     }
 

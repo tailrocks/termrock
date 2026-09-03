@@ -1055,14 +1055,6 @@ impl<'a> ModelSelector<'a> {
         }
     }
 
-    /// ASCII.
-    #[must_use]
-    /// Include reasoning token in compact line.
-    pub const fn show_reasoning(mut self, on: bool) -> Self {
-        self.show_reasoning = on;
-        self
-    }
-
     /// Compact status string for external chrome.
     #[must_use]
     pub fn compact_status(&self, state: &ModelSelectorState) -> String {

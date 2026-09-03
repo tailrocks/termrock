@@ -1321,13 +1321,6 @@ impl<'a> DiffReview<'a> {
         self
     }
 
-    /// Diff file bands for DiffView.
-    #[must_use]
-    pub const fn diff_files(mut self, files: &'a [DiffFile<'a>]) -> Self {
-        self.diff_files = files;
-        self
-    }
-
     /// Title.
     #[must_use]
     pub const fn title(mut self, title: &'a str) -> Self {

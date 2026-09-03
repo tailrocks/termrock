@@ -718,20 +718,6 @@ impl<'a> KeybindingRecorder<'a> {
         }
     }
 
-    /// Show reserved/conflict/protocol captions.
-    #[must_use]
-    pub const fn show_limits(mut self, on: bool) -> Self {
-        self.show_limits = on;
-        self
-    }
-
-    /// Show idle key hints (Enter record · r default · Del clear).
-    #[must_use]
-    pub const fn show_hints(mut self, on: bool) -> Self {
-        self.show_hints = on;
-        self
-    }
-
     /// ASCII-only marks.
     #[must_use]
     /// Paint.

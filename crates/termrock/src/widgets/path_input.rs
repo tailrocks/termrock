@@ -930,13 +930,6 @@ impl<'a> PathInput<'a> {
         self
     }
 
-    /// Show base context when set and path is relative.
-    #[must_use]
-    pub const fn show_base(mut self, on: bool) -> Self {
-        self.show_base = on;
-        self
-    }
-
     /// ASCII glyphs.
     #[must_use]
     /// Validation projection.

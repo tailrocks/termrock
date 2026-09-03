@@ -326,13 +326,6 @@ impl<'a> Viewport<'a> {
         self
     }
 
-    #[must_use]
-    /// Sets the style applied to dialog content.
-    pub const fn content_style(mut self, content_style: Style) -> Self {
-        self.content_style = Some(content_style);
-        self
-    }
-
     /// Insets content horizontally by the density's `pad_x`.
     ///
     /// A viewport owns no rhythm rows, so the inset is horizontal only:

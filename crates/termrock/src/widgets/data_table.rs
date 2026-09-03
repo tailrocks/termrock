@@ -1469,13 +1469,6 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
         self
     }
 
-    /// Show fullscreen promotion hint in footer.
-    #[must_use]
-    pub const fn fullscreen_hint(mut self, on: bool) -> Self {
-        self.fullscreen_hint = on;
-        self
-    }
-
     /// 1-based row index column after the change slot.
     #[must_use]
     pub const fn row_numbers(mut self, on: bool) -> Self {

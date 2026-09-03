@@ -432,31 +432,10 @@ impl<'a> Diagnostic<'a> {
         self
     }
 
-    /// Related.
-    #[must_use]
-    pub const fn related(mut self, related: &'a [RelatedLocation<'a>]) -> Self {
-        self.related = related;
-        self
-    }
-
-    /// Notes.
-    #[must_use]
-    pub const fn notes(mut self, notes: &'a [DiagnosticNote<'a>]) -> Self {
-        self.notes = notes;
-        self
-    }
-
     /// Help.
     #[must_use]
     pub const fn help(mut self, help: &'a str) -> Self {
         self.help = Some(help);
-        self
-    }
-
-    /// Docs URL.
-    #[must_use]
-    pub const fn docs_url(mut self, url: &'a str) -> Self {
-        self.docs_url = Some(url);
         self
     }
 
@@ -600,18 +579,9 @@ impl<'a> CodeFrame<'a> {
         self
     }
 
-    /// ASCII underlines.
-    #[must_use]
     /// Colorless.
     pub const fn colorless(mut self, colorless: bool) -> Self {
         self.colorless = colorless;
-        self
-    }
-
-    /// Tab stop.
-    #[must_use]
-    pub const fn tab_stop(mut self, n: usize) -> Self {
-        self.tab_stop = if n == 0 { CODE_FRAME_TAB_STOP } else { n };
         self
     }
 

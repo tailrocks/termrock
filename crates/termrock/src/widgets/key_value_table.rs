@@ -529,20 +529,6 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
         self
     }
 
-    /// Show type column when width allows.
-    #[must_use]
-    pub const fn show_type(mut self, on: bool) -> Self {
-        self.show_type = on;
-        self
-    }
-
-    /// Show source column when width allows.
-    #[must_use]
-    pub const fn show_source(mut self, on: bool) -> Self {
-        self.show_source = on;
-        self
-    }
-
     /// Separator between key and value in columns mode.
     #[must_use]
     pub const fn separator(mut self, sep: &'a str) -> Self {

@@ -324,13 +324,6 @@ impl<'a> CodeSourceMeta<'a> {
         self
     }
 
-    /// 1-based starting line number for gutter.
-    #[must_use]
-    pub const fn start_line_number(mut self, n: usize) -> Self {
-        self.start_line_number = if n == 0 { 1 } else { n };
-        self
-    }
-
     /// Header text when space allows.
     #[must_use]
     pub fn header_text(&self) -> String {
@@ -783,13 +776,6 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
     #[must_use]
     pub const fn tab_width(mut self, width: u8) -> Self {
         self.tab_width = width;
-        self
-    }
-
-    /// Control-character render policy.
-    #[must_use]
-    pub const fn controls(mut self, controls: ControlRender) -> Self {
-        self.controls = controls;
         self
     }
 

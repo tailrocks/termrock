@@ -981,13 +981,6 @@ impl<'a> NumberInput<'a> {
         self
     }
 
-    /// Show +/- steppers.
-    #[must_use]
-    pub const fn show_steppers(mut self, on: bool) -> Self {
-        self.show_steppers = on;
-        self
-    }
-
     /// ASCII steppers `-` / `+`.
     #[must_use]
     /// Paint.

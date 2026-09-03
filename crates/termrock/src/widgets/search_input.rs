@@ -762,13 +762,6 @@ impl<'a> SearchInput<'a> {
         self
     }
 
-    /// Leading search glyph.
-    #[must_use]
-    pub const fn show_leading_icon(mut self, on: bool) -> Self {
-        self.show_leading_icon = on;
-        self
-    }
-
     /// ASCII glyphs.
     #[must_use]
     /// External validation.

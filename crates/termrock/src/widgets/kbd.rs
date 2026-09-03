@@ -187,14 +187,6 @@ impl ChordFormat {
         }
     }
 
-    /// ASCII forced.
-    #[must_use]
-    /// Modifier style.
-    pub const fn modifiers(mut self, style: ModifierStyle) -> Self {
-        self.modifiers = style;
-        self
-    }
-
     /// Platform.
     #[must_use]
     pub const fn platform(mut self, platform: Platform) -> Self {
@@ -363,16 +355,6 @@ impl<'a> Kbd<'a> {
     pub fn new(label: impl Into<Cow<'a, str>>, system: &'a DesignSystem) -> Self {
         Self {
             label: label.into(),
-            system,
-            variant: KbdVariant::Compact,
-        }
-    }
-    /// Sequence of chords.
-    #[must_use]
-    pub fn sequence(chords: &[KeyChord], system: &'a DesignSystem) -> Self {
-        let fmt = ChordFormat::new();
-        Self {
-            label: Cow::Owned(format_sequence(chords, fmt, " ")),
             system,
             variant: KbdVariant::Compact,
         }
@@ -548,13 +530,6 @@ impl<'a> ShortcutHint<'a> {
     ) -> Option<Self> {
         map.binding_for(action)
             .map(|b| Self::from_binding(b, system))
-    }
-
-    /// Form.
-    #[must_use]
-    pub const fn form(mut self, form: ShortcutForm) -> Self {
-        self.form = form;
-        self
     }
 
     /// Footer form.

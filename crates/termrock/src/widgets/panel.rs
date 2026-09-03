@@ -677,13 +677,6 @@ impl<'a> Panel<'a> {
         self
     }
 
-    /// Top-relative wrapped-line offset for [`Self::vertical_scroll`].
-    #[must_use]
-    pub const fn scroll_offset(mut self, offset: u16) -> Self {
-        self.scroll_offset = offset;
-        self
-    }
-
     /// Columns the host may write when [`Self::vertical_scroll`] is set.
     ///
     /// Junie `ScrollPanel` wraps at `inner.width - 2`: one column before the

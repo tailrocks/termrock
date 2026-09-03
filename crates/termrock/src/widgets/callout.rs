@@ -615,13 +615,6 @@ impl<'a, Id> Callout<'a, Id> {
         self
     }
 
-    /// Show details row.
-    #[must_use]
-    pub const fn show_details(mut self, on: bool) -> Self {
-        self.show_details = on;
-        self
-    }
-
     /// Actions.
     #[must_use]
     pub const fn actions(mut self, actions: &'a [Action<'a, Id>]) -> Self {

@@ -1563,13 +1563,6 @@ impl<'a> TextArea<'a> {
         self
     }
 
-    /// Soft wrap convenience.
-    #[must_use]
-    pub const fn soft_wrap(mut self) -> Self {
-        self.wrap = TextWrap::Soft;
-        self
-    }
-
     /// Variant recipe.
     #[must_use]
     pub const fn variant(mut self, variant: TextAreaVariant) -> Self {

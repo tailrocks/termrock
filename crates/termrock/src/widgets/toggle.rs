@@ -885,13 +885,6 @@ impl<'a, Id> ToggleGroup<'a, Id> {
         self
     }
 
-    /// Group type.
-    #[must_use]
-    pub const fn group_type(mut self, t: ToggleGroupType) -> Self {
-        self.group_type = t;
-        self
-    }
-
     /// Connected faces.
     #[must_use]
     pub const fn connected(mut self) -> Self {
@@ -910,13 +903,6 @@ impl<'a, Id> ToggleGroup<'a, Id> {
     #[must_use]
     pub const fn compact(mut self) -> Self {
         self.size = ToggleSize::Compact;
-        self
-    }
-
-    /// Face recipe.
-    #[must_use]
-    pub const fn face_recipe(mut self, recipe: ToggleRecipe) -> Self {
-        self.face_recipe = recipe;
         self
     }
 

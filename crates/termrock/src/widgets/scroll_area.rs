@@ -630,13 +630,6 @@ impl<'a> ScrollArea<'a> {
         }
     }
 
-    /// Bar policy.
-    #[must_use]
-    pub const fn bar(mut self, bar: ScrollBarVisibility) -> Self {
-        self.bar = bar;
-        self
-    }
-
     /// Whether to paint new-content indicator when paused+unseen.
     #[must_use]
     pub const fn show_new_content(mut self, show: bool) -> Self {

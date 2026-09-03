@@ -443,13 +443,6 @@ impl<'a> DiffLine<'a> {
         self.hunk_id = Some(id);
         self
     }
-
-    /// Pair text for split row.
-    #[must_use]
-    pub const fn pair_text(mut self, text: &'a str) -> Self {
-        self.pair_text = Some(text);
-        self
-    }
 }
 
 /// Hit region for a painted line.

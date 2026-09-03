@@ -571,20 +571,6 @@ impl<'a> MarkdownView<'a> {
         self
     }
 
-    /// Compact heading recipe (ASCII `#` prefixes).
-    #[must_use]
-    pub const fn compact_headings(mut self, on: bool) -> Self {
-        self.compact_headings = on;
-        self
-    }
-
-    /// Show line numbers inside fenced code.
-    #[must_use]
-    pub const fn fence_line_numbers(mut self, on: bool) -> Self {
-        self.fence_line_numbers = on;
-        self
-    }
-
     /// Copyable / selectable policy for prose.
     #[must_use]
     pub const fn selectable(mut self, on: bool) -> Self {

@@ -306,13 +306,6 @@ impl<'a> Section<'a> {
         self
     }
 
-    /// Force divider on/off (None = variant default).
-    #[must_use]
-    pub const fn divider(mut self, show: bool) -> Self {
-        self.show_divider = Some(show);
-        self
-    }
-
     /// Whether header claims focus.
     #[must_use]
     pub const fn is_focusable(&self) -> bool {

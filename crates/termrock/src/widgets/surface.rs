@@ -283,13 +283,6 @@ impl<'a> Surface<'a> {
         self
     }
 
-    /// Hit region policy: full outer rect vs content only.
-    #[must_use]
-    pub const fn hit_full(mut self, hit_full: bool) -> Self {
-        self.hit_full = Some(hit_full);
-        self
-    }
-
     /// Resolve paint plan from design system + overrides.
     #[must_use]
     pub fn plan(&self) -> SurfacePaintPlan {

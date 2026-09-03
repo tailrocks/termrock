@@ -227,13 +227,6 @@ impl<'a> ResultCell<'a> {
         self
     }
 
-    /// Truncated large text mark.
-    #[must_use]
-    pub const fn truncated(mut self) -> Self {
-        self.truncated = true;
-        self
-    }
-
     /// Secret flag.
     #[must_use]
     pub const fn secret(mut self) -> Self {

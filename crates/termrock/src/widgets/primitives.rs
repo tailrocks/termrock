@@ -938,14 +938,6 @@ impl<'a> IconButton<'a> {
         self
     }
 
-    /// Force ASCII path.
-    #[must_use]
-    /// Text fallback when glyph cannot fit (low capability / 1-col squeeze).
-    pub const fn text_fallback(mut self, text: &'a str) -> Self {
-        self.text_fallback = Some(text);
-        self
-    }
-
     /// Tooltip / help string (HintBar / [`crate::widgets::Tooltip`] host content).
     #[must_use]
     pub const fn help(mut self, help: &'a str) -> Self {

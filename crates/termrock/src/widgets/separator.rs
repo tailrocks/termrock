@@ -189,12 +189,6 @@ impl<'a> Separator<'a> {
         self
     }
 
-    /// Thickness recipe for hosts sizing a band.
-    #[must_use]
-    pub const fn thickness(mut self, thickness: SeparatorThickness) -> Self {
-        self.thickness = thickness;
-        self
-    }
     /// Cells hosts should reserve on the axis perpendicular to the rule.
     #[must_use]
     pub const fn preferred_cross_size(self) -> u16 {

@@ -897,13 +897,6 @@ impl<'a> FormWizard<'a> {
         self
     }
 
-    /// Show nav row.
-    #[must_use]
-    pub const fn show_nav(mut self, on: bool) -> Self {
-        self.show_nav = on;
-        self
-    }
-
     /// Paint chrome; updates `body_area` for host content.
     pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut FormWizardState) {
         state.stepper_hits.clear();

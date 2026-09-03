@@ -645,13 +645,6 @@ impl<'a> SourceCitation<'a> {
         self
     }
 
-    /// No OSC 8 / hyperlink capability.
-    #[must_use]
-    pub const fn no_hyperlink(mut self, on: bool) -> Self {
-        self.no_hyperlink = on;
-        self
-    }
-
     /// Offline session.
     #[must_use]
     pub const fn offline(mut self, on: bool) -> Self {

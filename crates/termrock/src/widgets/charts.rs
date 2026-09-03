@@ -611,20 +611,6 @@ impl<'a> Chart<'a> {
         self
     }
 
-    /// X-path interpolation (line linear / step peers).
-    #[must_use]
-    pub const fn interpolation(mut self, interp: ChartInterpolation) -> Self {
-        self.interpolation = interp;
-        self
-    }
-
-    /// Linear lerp between samples (shadcn chart-line-linear peer).
-    #[must_use]
-    pub const fn linear(mut self) -> Self {
-        self.interpolation = ChartInterpolation::Linear;
-        self
-    }
-
     /// Step hold between samples (shadcn chart-line-step peer).
     #[must_use]
     pub const fn step(mut self) -> Self {
@@ -2066,20 +2052,6 @@ impl<'a> SegmentedMeter<'a> {
         self
     }
 
-    /// Show per-segment labels on row under the bar when height ≥ 2.
-    #[must_use]
-    pub const fn show_labels(mut self, on: bool) -> Self {
-        self.show_labels = on;
-        self
-    }
-
-    /// 1-column gaps between segments (default off = separator-none continuous).
-    #[must_use]
-    pub const fn separators(mut self, on: bool) -> Self {
-        self.separators = on;
-        self
-    }
-
     /// Center caption under the meter (donut-text peer; needs height ≥ 2).
     #[must_use]
     pub const fn center(mut self, text: &'a str) -> Self {
@@ -2292,13 +2264,6 @@ impl<'a> MetricRadar<'a> {
     #[must_use]
     pub const fn glyphs(mut self, glyphs: VizGlyphSet) -> Self {
         self.glyphs = glyphs;
-        self
-    }
-
-    /// Highlight axis row.
-    #[must_use]
-    pub const fn selected_axis(mut self, i: usize) -> Self {
-        self.selected_axis = Some(i);
         self
     }
 

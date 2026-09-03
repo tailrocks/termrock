@@ -519,13 +519,6 @@ impl<'a> HighlightedText<'a> {
         self
     }
 
-    /// Base role for non-match runs.
-    #[must_use]
-    pub const fn base_role(mut self, role: Role) -> Self {
-        self.base_role = role;
-        self
-    }
-
     /// Original source (copy / semantics).
     #[must_use]
     pub const fn source(&self) -> &'a str {

@@ -115,13 +115,6 @@ impl<'a, Id> ActionBar<'a, Id> {
         self
     }
 
-    /// Centers the action group within the available width.
-    #[must_use]
-    pub const fn centered(mut self, centered: bool) -> Self {
-        self.centered = centered;
-        self
-    }
-
     /// Cells required to paint every action on one row without clipping.
     pub(crate) fn required_horizontal_width(&self) -> u16 {
         let labels = self.actions.iter().fold(0u16, |width, action| {

@@ -834,13 +834,6 @@ impl<'a> Pagination<'a> {
         self
     }
 
-    /// Show page-size control.
-    #[must_use]
-    pub const fn show_page_size(mut self, on: bool) -> Self {
-        self.show_page_size = on;
-        self
-    }
-
     /// Paint.
     pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut PaginationState) {
         state.hits.clear();

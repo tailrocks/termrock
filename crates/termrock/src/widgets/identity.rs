@@ -407,13 +407,6 @@ impl<'a> AvatarGlyph<'a> {
         self
     }
 
-    /// Bracket the face (`[AB]`) — stronger no-color / ASCII.
-    #[must_use]
-    pub const fn bracketed(mut self, on: bool) -> Self {
-        self.bracketed = on;
-        self
-    }
-
     /// Body width in cells (1 or 2).
     #[must_use]
     pub const fn body_cols(&self) -> u16 {
@@ -679,13 +672,6 @@ impl<'a> Identity<'a> {
         }
     }
 
-    /// Stable id seed for color (defaults to name).
-    #[must_use]
-    pub const fn seed(mut self, seed: &'a str) -> Self {
-        self.seed = Some(seed);
-        self
-    }
-
     /// Secondary line (handle, model, email).
     #[must_use]
     pub const fn secondary(mut self, text: &'a str) -> Self {
@@ -725,13 +711,6 @@ impl<'a> Identity<'a> {
     #[must_use]
     pub const fn badge(mut self, on: bool) -> Self {
         self.show_badge = on;
-        self
-    }
-
-    /// Hide avatar (name-only).
-    #[must_use]
-    pub const fn avatar(mut self, on: bool) -> Self {
-        self.show_avatar = on;
         self
     }
 

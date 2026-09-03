@@ -796,13 +796,6 @@ impl<'a> PasswordInput<'a> {
         self
     }
 
-    /// Show reveal glyph when policy is Explicit.
-    #[must_use]
-    pub const fn show_reveal(mut self, on: bool) -> Self {
-        self.show_reveal = on;
-        self
-    }
-
     /// ASCII-safe mask.
     #[must_use]
     /// Paint (masked unless revealed).
