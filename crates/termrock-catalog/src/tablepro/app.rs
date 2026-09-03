@@ -643,6 +643,16 @@ impl App {
             self.run_active(false, None, cx);
             return true;
         }
+        if key.modifiers.contains(KeyModifiers::ALT)
+            && matches!(key.code, KeyCode::Char('x') | KeyCode::Char('X'))
+        {
+            self.run_active(false, Some(true), cx);
+            return true;
+        }
+        if ctrl && matches!(key.code, KeyCode::Char('x') | KeyCode::Char('X')) {
+            self.run_active(false, Some(false), cx);
+            return true;
+        }
         if key.modifiers.is_empty()
             && matches!(key.code, KeyCode::Char('0'))
             && self.screen == Screen::Workbench

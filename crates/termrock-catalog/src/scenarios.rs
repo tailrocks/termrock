@@ -349,7 +349,14 @@ pub static ALL: &[Scenario] = &[
             Step::Char('s'),
         ],
     ),
-    tp("t_160", 160, 50, Some("Production"), &[]),
+    tp_sql(
+        "t_160",
+        160,
+        50,
+        Some("Production"),
+        "SELECT * FROM orders WHERE status = 'pending' LIMIT 30",
+        &[Step::Alt('x'), Step::Ticks(8)],
+    ),
     tp(
         "t_160_table",
         160,

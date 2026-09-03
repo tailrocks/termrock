@@ -467,10 +467,12 @@ fn execute(
                     sql::plan_text(&plan, 0, &mut lines);
                     let planning = 0.21 + sel.predicates.len() as f64 * 0.09;
                     lines.push(format!("Planning Time: {planning:.3} ms"));
-                    if let Some(e) = plan.actual_ms {
+                    let exec = analyze.then(|| plan.actual_ms.unwrap_or(0.0) + 0.4);
+                    if let Some(e) = exec {
                         lines.push(format!("Execution Time: {e:.3} ms"));
                     }
-                    entry.duration_ms = Some(1);
+                    let duration_ms = exec.map(|e| e as u32).unwrap_or(1).saturating_add(1);
+                    entry.duration_ms = Some(duration_ms);
                     entry.rows = Some(lines.len());
                     (
                         QueryResult {
@@ -479,7 +481,7 @@ fn execute(
                             } else {
                                 "EXPLAIN".into()
                             },
-                            duration_ms: 1,
+                            duration_ms,
                             body: ResultBody::Plan { lines },
                         },
                         entry,

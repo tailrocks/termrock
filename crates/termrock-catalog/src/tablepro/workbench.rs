@@ -436,14 +436,32 @@ impl Workbench {
     }
 
     fn render_explorer(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx<'_>) {
-        let t = ctx.theme;
-        let rows = layout::rows(area, &[2, 0]);
+        let ef = ctx.interaction.focused(EXPLORER) || ctx.interaction.focused(FILTER);
+        let panel = Panel::new(ctx.system)
+            .variant(PanelVariant::Bordered)
+            .title("Explorer")
+            .trailing(&self.schema)
+            .emphasis(if ef {
+                PanelChrome::Focused
+            } else {
+                PanelChrome::Normal
+            });
+        panel.paint(area, buf, None);
+        let inner = Panel::new(ctx.system)
+            .variant(PanelVariant::Bordered)
+            .inner(area);
         self.explorer_filter
             .set_focused(ctx.interaction.focused(FILTER));
+        let filter = Rect::new(
+            inner.x.saturating_sub(1),
+            inner.y,
+            inner.width.saturating_add(1),
+            2,
+        );
         let _ = TextInput::new("", ctx.system)
             .placeholder("Filter objects")
-            .paint(rows[0], buf, &mut self.explorer_filter);
-        ctx.control(FILTER, rows[0], false);
+            .paint(filter, buf, &mut self.explorer_filter);
+        ctx.control(FILTER, filter, false);
         let vis = self.explorer_nodes();
         let nodes: Vec<TreeNode<'_, String>> = vis
             .iter()
@@ -459,22 +477,20 @@ impl Workbench {
                 n
             })
             .collect();
-        let (inner, _bg) = layout::card(
-            rows[1],
-            buf,
-            t,
-            Some("Explorer"),
-            None,
-            ctx.interaction.focused(EXPLORER),
+        let tree_area = Rect::new(
+            inner.x.saturating_sub(1),
+            inner.y.saturating_add(2),
+            inner.width.saturating_add(1),
+            inner.height.saturating_sub(2),
         );
         StatefulWidget::render(
             &Tree::new(&nodes, ctx.system).focused(ctx.interaction.focused(EXPLORER)),
-            inner,
+            tree_area,
             buf,
             &mut self.explorer,
         );
-        ctx.control(EXPLORER, inner, false);
-        ctx.scrollable(EXPLORER, inner);
+        ctx.control(EXPLORER, tree_area, false);
+        ctx.scrollable(EXPLORER, tree_area);
     }
 
     pub fn handle(&mut self, ev: &PageEvent, cx: &mut PageCtx<'_>, history: &History) -> Route {
