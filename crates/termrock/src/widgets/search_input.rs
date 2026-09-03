@@ -1051,6 +1051,7 @@ mod tests {
     use super::*;
     use crate::input::KeyEventKind;
     use crate::style::RolePalette;
+    use crate::widgets::tests::click;
 
     fn tick_at(start: Instant, ms: u64) -> FrameTick {
         FrameTick::manual(
@@ -1221,14 +1222,7 @@ mod tests {
             .paint(area, &mut buf, &mut state);
         let chip = parts.filter_chips[0];
         assert_eq!(
-            state.handle_mouse(
-                MouseEvent {
-                    kind: MouseEventKind::Down(MouseButton::Left),
-                    position: ratatui_core::layout::Position::new(chip.x, chip.y),
-                    modifiers: KeyModifiers::NONE,
-                },
-                &chips,
-            ),
+            state.handle_mouse(click(chip.x, chip.y), &chips,),
             SearchInputOutcome::FilterChipActivated { id: "lang".into() }
         );
     }

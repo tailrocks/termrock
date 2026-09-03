@@ -1139,6 +1139,7 @@ mod tests {
     use super::*;
     use crate::input::{KeyCode, KeyModifiers};
     use crate::style::DesignSystem;
+    use crate::widgets::tests::click;
 
     fn sample_items() -> Vec<ToolbarItem<'static, &'static str>> {
         vec![
@@ -1236,14 +1237,7 @@ mod tests {
         StatefulWidget::render(&tb, area, &mut buf, &mut state);
         assert!(!state.regions.is_empty());
         let r = state.regions[0].area;
-        let out = tb.handle_mouse(
-            &mut state,
-            MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: ratatui_core::layout::Position { x: r.x, y: r.y },
-                modifiers: KeyModifiers::NONE,
-            },
-        );
+        let out = tb.handle_mouse(&mut state, click(r.x, r.y));
         assert!(matches!(out, ToolbarOutcome::Activated("a")));
     }
 

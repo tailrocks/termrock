@@ -1196,8 +1196,9 @@ pub fn example_disconnected() -> ReconnectingState {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyEventKind;
+    
     use crate::widgets::tests::click;
+    use crate::widgets::tests::press;
     use ratatui_core::backend::TestBackend;
 
     use ratatui_core::terminal::Terminal;
@@ -1274,12 +1275,7 @@ mod tests {
     fn banner_hidden_when_dismissed() {
         let system = system();
         let mut s = example_disconnected();
-        let esc = KeyEvent {
-            code: KeyCode::Esc,
-            modifiers: KeyModifiers::NONE,
-            kind: KeyEventKind::Press,
-            state: crate::input::KeyEventState::NONE,
-        };
+        let esc = press(KeyCode::Esc);
         assert_eq!(s.handle_key(esc), ConnectivityOutcome::Dismiss);
         assert!(s.banner_dismissed());
         assert!(!s.should_show_banner());
@@ -1316,12 +1312,7 @@ mod tests {
             OfflineSurface::new(&system).paint(a, b, &mut s);
         });
         assert!(text.contains("auth") || text.contains("Sign"), "{text}");
-        let key = KeyEvent {
-            code: KeyCode::Char('a'),
-            modifiers: KeyModifiers::NONE,
-            kind: KeyEventKind::Press,
-            state: crate::input::KeyEventState::NONE,
-        };
+        let key = press(KeyCode::Char('a'));
         assert_eq!(s.handle_key(key), ConnectivityOutcome::Authenticate);
     }
 
@@ -1330,12 +1321,7 @@ mod tests {
         let mut s = example_reconnecting_agent();
         assert!(s.drafts_preserved());
         assert!(s.selection_preserved());
-        let key = KeyEvent {
-            code: KeyCode::Char('r'),
-            modifiers: KeyModifiers::NONE,
-            kind: KeyEventKind::Press,
-            state: crate::input::KeyEventState::NONE,
-        };
+        let key = press(KeyCode::Char('r'));
         assert_eq!(s.handle_key(key), ConnectivityOutcome::RetryNow);
     }
 

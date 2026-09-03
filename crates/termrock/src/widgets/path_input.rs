@@ -1305,6 +1305,7 @@ mod tests {
     use super::*;
     use crate::input::KeyEventKind;
     use crate::style::RolePalette;
+    use crate::widgets::tests::click;
 
     #[test]
     fn separators_and_absolute() {
@@ -1494,11 +1495,7 @@ mod tests {
         let parts = PathInput::new(&system).paint(area, &mut buf, &mut state);
         let browse = parts.browse.expect("browse");
         assert_eq!(
-            state.handle_mouse(MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: ratatui_core::layout::Position::new(browse.x, browse.y),
-                modifiers: KeyModifiers::NONE,
-            }),
+            state.handle_mouse(click(browse.x, browse.y)),
             PathInputOutcome::BrowseRequested
         );
     }

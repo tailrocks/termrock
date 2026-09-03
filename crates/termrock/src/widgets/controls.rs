@@ -2639,10 +2639,7 @@ mod tests {
         let mut state = SwitchState::new(false);
         let mut buf = Buffer::empty(Rect::new(0, 0, 40, 1));
         let parts = sw.paint(Rect::new(0, 0, 40, 1), &mut buf, &mut state);
-        let pos = Position {
-            x: parts.track.x,
-            y: parts.track.y,
-        };
+        let pos = Position::new(parts.track.x, parts.track.y);
         // Down only arms
         let out = sw.handle_mouse(&mut state, click(pos.x, pos.y));
         assert!(matches!(out, SwitchOutcome::Ignored));
@@ -2668,18 +2665,15 @@ mod tests {
         let mut state = SwitchState::new(false);
         let mut buf = Buffer::empty(Rect::new(0, 0, 40, 1));
         let parts = sw.paint(Rect::new(0, 0, 40, 1), &mut buf, &mut state);
-        let inside = Position {
-            x: parts.root.x,
-            y: parts.root.y,
-        };
-        let outside = Position {
-            x: parts
+        let inside = Position::new(parts.root.x, parts.root.y);
+        let outside = Position::new(
+            parts
                 .root
                 .x
                 .saturating_add(parts.root.width)
                 .saturating_add(2),
-            y: parts.root.y,
-        };
+            parts.root.y,
+        );
         let _ = sw.handle_mouse(&mut state, click(inside.x, inside.y));
         let _ = sw.handle_mouse(
             &mut state,

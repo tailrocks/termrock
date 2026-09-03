@@ -1448,6 +1448,8 @@ mod tests {
     use super::*;
     use crate::input::KeyModifiers;
     use crate::interaction::{OverlayKind, OverlayOutcome, OverlaySize};
+    use crate::widgets::tests::click;
+    
 
     fn ctx(id: &'static str) -> SourceContext<&'static str> {
         SourceContext::new(id)
@@ -1680,11 +1682,7 @@ mod tests {
             .find(|region| region.id == "copy")
             .expect("copy action region")
             .area;
-        let event = MouseEvent {
-            kind: MouseEventKind::Down(MouseButton::Left),
-            position: ratatui_core::layout::Position::new(copy.x, copy.y),
-            modifiers: KeyModifiers::NONE,
-        };
+        let event = click(copy.x, copy.y);
         assert!(matches!(
             state.handle_mouse(event, &actions),
             FullscreenViewerOutcome::ActionActivated { id: "copy" }

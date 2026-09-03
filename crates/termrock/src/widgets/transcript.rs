@@ -908,6 +908,7 @@ impl<Id: Clone + Eq> StatefulWidget for Transcript<'_, Id> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::widgets::tests::click;
     use ratatui_core::{backend::TestBackend, terminal::Terminal};
 
     fn system() -> DesignSystem {
@@ -1214,14 +1215,7 @@ mod tests {
         assert!(!state.block_regions.is_empty());
         let (id, rect) = state.block_regions[0].clone();
         assert_eq!(id, 1);
-        let event = MouseEvent {
-            kind: MouseEventKind::Down(MouseButton::Left),
-            position: ratatui_core::layout::Position {
-                x: rect.x,
-                y: rect.y,
-            },
-            modifiers: KeyModifiers::NONE,
-        };
+        let event = click(rect.x, rect.y);
         let out = state.handle_mouse(event, &blocks);
         assert_eq!(out, TranscriptOutcome::Changed);
         assert_eq!(state.selected(), Some(&1));

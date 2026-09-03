@@ -989,6 +989,7 @@ mod tests {
     use super::*;
     use crate::style::{MASK_CELLS, RolePalette};
     use crate::widgets::edit_core;
+    use crate::widgets::tests::click;
 
     #[test]
     fn debug_never_contains_secret() {
@@ -1171,11 +1172,7 @@ mod tests {
         let reveal = Rect::new(12, 3, 2, 1);
         assert_eq!(
             state.handle_mouse(
-                MouseEvent {
-                    kind: MouseEventKind::Down(MouseButton::Left),
-                    position: ratatui_core::layout::Position::new(reveal.x, reveal.y),
-                    modifiers: KeyModifiers::NONE,
-                },
+                click(reveal.x, reveal.y),
                 Rect::new(0, 3, 12, 1),
                 Some(reveal),
             ),

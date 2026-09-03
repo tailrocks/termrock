@@ -1140,8 +1140,9 @@ pub mod bench {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
+    use crate::input::{KeyCode, KeyEvent, KeyModifiers};
     use crate::style::DesignSystem;
+    use crate::widgets::tests::click;
 
     #[test]
     fn detect_slash_command_prefix() {
@@ -1422,15 +1423,7 @@ mod tests {
 
         let mut outcome = SlashCommandMenuOutcome::Ignored;
         for y in area.y..area.bottom() {
-            let probe = state.handle_mouse(
-                MouseEvent {
-                    kind: MouseEventKind::Down(MouseButton::Left),
-                    position: ratatui_core::layout::Position::new(area.x, y),
-                    modifiers: KeyModifiers::NONE,
-                },
-                &catalog,
-                &visible,
-            );
+            let probe = state.handle_mouse(click(area.x, y), &catalog, &visible);
             if !matches!(probe, SlashCommandMenuOutcome::Ignored) {
                 outcome = probe;
                 break;

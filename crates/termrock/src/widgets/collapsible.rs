@@ -595,6 +595,7 @@ impl<'a> Collapsible<'a> {
 mod tests {
     use super::*;
     use crate::input::{KeyCode, KeyModifiers};
+    use crate::widgets::tests::click;
 
     #[test]
     fn uncontrolled_toggle_via_enter() {
@@ -680,15 +681,7 @@ mod tests {
         let mut buf = Buffer::empty(Rect::new(0, 0, 20, 4));
         let body = c.paint(Rect::new(0, 0, 20, 4), &mut buf, &mut state);
         assert_eq!(body.height, 0);
-        let out = state.handle_mouse(
-            MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: ratatui_core::layout::Position { x: 0, y: 0 },
-                modifiers: KeyModifiers::NONE,
-            },
-            true,
-            None,
-        );
+        let out = state.handle_mouse(click(0, 0), true, None);
         assert_eq!(out, CollapsibleOutcome::Ignored);
     }
 
@@ -734,15 +727,7 @@ mod tests {
         let mut state = CollapsibleState::new();
         let mut buf = Buffer::empty(Rect::new(0, 0, 24, 5));
         let _ = c.paint(Rect::new(0, 0, 24, 5), &mut buf, &mut state);
-        let out = state.handle_mouse(
-            MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: ratatui_core::layout::Position { x: 1, y: 0 },
-                modifiers: KeyModifiers::NONE,
-            },
-            false,
-            None,
-        );
+        let out = state.handle_mouse(click(1, 0), false, None);
         assert_eq!(out, CollapsibleOutcome::Opened);
     }
 

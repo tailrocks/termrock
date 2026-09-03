@@ -387,11 +387,9 @@ pub fn example_carousel_slides() -> Vec<CarouselSlide> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyModifiers;
-
-    fn press(code: KeyCode) -> KeyEvent {
-        KeyEvent::new(code, KeyModifiers::NONE)
-    }
+    
+    use crate::widgets::tests::click;
+    use crate::widgets::tests::press;
 
     #[test]
     fn next_prev_wrap_and_activate() {
@@ -455,11 +453,7 @@ mod tests {
         let mut st = CarouselState::new();
         st.set_focused(false);
 
-        let second_indicator = MouseEvent {
-            kind: MouseEventKind::Down(MouseButton::Left),
-            position: ratatui_core::layout::Position::new(2, area.bottom() - 1),
-            modifiers: KeyModifiers::NONE,
-        };
+        let second_indicator = click(2, area.bottom() - 1);
         assert!(matches!(
             st.handle_mouse(second_indicator, area, &slides),
             CarouselOutcome::Changed { index: 1, .. }

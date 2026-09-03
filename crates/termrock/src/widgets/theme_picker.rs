@@ -295,6 +295,7 @@ mod tests {
     use super::*;
     use crate::input::{KeyCode, KeyModifiers};
     use crate::interaction::{OverlayRequest, Propagation};
+    use crate::widgets::tests::click;
 
     #[test]
     fn navigation_and_confirm_index() {
@@ -341,11 +342,7 @@ mod tests {
         let mut state = ThemePickerState::new(0);
         StatefulWidget::render(&picker, area, &mut buffer, &mut state);
         let (_, row) = state.row_regions[1];
-        let click = MouseEvent {
-            kind: MouseEventKind::Down(MouseButton::Left),
-            position: ratatui_core::layout::Position::new(row.x, row.y),
-            modifiers: KeyModifiers::NONE,
-        };
+        let click = click(row.x, row.y);
 
         assert_eq!(
             state.handle_mouse(click, presets.len()),

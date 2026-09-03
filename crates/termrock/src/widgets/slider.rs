@@ -1751,10 +1751,10 @@ mod tests {
         let mut buf = Buffer::empty(Rect::new(0, 0, 30, 1));
         let parts = s.paint(Rect::new(0, 0, 30, 1), &mut buf, &mut state);
         let track = parts.track.unwrap();
-        let pos = Position {
-            x: track.x.saturating_add(track.width.saturating_sub(1)),
-            y: track.y,
-        };
+        let pos = Position::new(
+            track.x.saturating_add(track.width.saturating_sub(1)),
+            track.y,
+        );
         let out = s.handle_mouse(&mut state, click(pos.x, pos.y));
         assert!(matches!(out, SliderOutcome::ValueChanged { .. }));
         assert!(state.value > 50.0);

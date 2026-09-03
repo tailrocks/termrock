@@ -1421,6 +1421,7 @@ mod tests {
     use super::*;
     use crate::input::{KeyEventKind, KeyModifiers};
     use crate::runtime::FrameTick;
+    use crate::widgets::tests::click;
     use crate::widgets::toast::ToastArchiveReason;
     use crate::widgets::toast::{ToastLifetime, ToastSpec};
     use std::time::{Duration, Instant};
@@ -1683,11 +1684,7 @@ mod tests {
         let _ = state.open();
         state.slots.list = Rect::new(2, 3, 24, 4);
         assert_eq!(
-            state.handle_mouse(MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: ratatui_core::layout::Position::new(2, 3),
-                modifiers: KeyModifiers::NONE,
-            }),
+            state.handle_mouse(click(2, 3)),
             NotificationCenterOutcome::SelectionChanged {
                 id: Some("n1".into())
             }

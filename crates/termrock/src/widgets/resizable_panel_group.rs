@@ -1127,6 +1127,7 @@ fn intersect_rect(inner: Rect, outer: Rect) -> Rect {
 mod tests {
     use super::*;
     use crate::style::DesignSystem;
+    use crate::widgets::tests::click;
     use crate::widgets::tests::mouse;
 
     #[test]
@@ -1369,15 +1370,7 @@ mod tests {
         group.paint_handles(area, &mut buf, &mut state);
         assert!(!state.layout.handles.is_empty());
         let h = state.layout.handles[0];
-        let out = group.handle_mouse(
-            &mut state,
-            MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: Position { x: h.x, y: h.y },
-                modifiers: crate::input::KeyModifiers::NONE,
-            },
-            area,
-        );
+        let out = group.handle_mouse(&mut state, click(h.x, h.y), area);
         assert!(matches!(
             out,
             ResizablePanelOutcome::HandleFocused { handle: 0 }

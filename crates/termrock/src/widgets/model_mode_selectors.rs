@@ -1855,6 +1855,7 @@ pub mod bench {
 mod tests {
     use super::*;
     use crate::style::DesignSystem;
+    use crate::widgets::tests::click;
 
     #[test]
     fn model_filter_and_confirm() {
@@ -2026,11 +2027,7 @@ mod tests {
     fn model_and_mode_mouse_confirm_only_hit_options() {
         let models = example_model_catalog();
         let hit = Rect::new(3, 2, 10, 1);
-        let mouse = MouseEvent {
-            kind: MouseEventKind::Down(MouseButton::Left),
-            position: ratatui_core::layout::Position::new(hit.x, hit.y),
-            modifiers: KeyModifiers::NONE,
-        };
+        let mouse = click(hit.x, hit.y);
         let mut model = ModelSelectorState::new();
         model.presentation = ModelSelectorPresentation::Expanded;
         assert!(matches!(

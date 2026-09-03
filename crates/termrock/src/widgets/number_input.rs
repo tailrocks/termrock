@@ -1236,6 +1236,7 @@ mod tests {
     use crate::input::KeyEventKind;
     use crate::style::RolePalette;
     use crate::widgets::Validation;
+    use crate::widgets::tests::click;
 
     #[test]
     fn draft_separate_from_committed() {
@@ -1420,11 +1421,7 @@ mod tests {
         let parts = NumberInput::new("N", &system).paint(area, &mut buf, &mut state);
         let dec = parts.decrement.unwrap();
         assert_eq!(
-            state.handle_mouse(MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: ratatui_core::layout::Position::new(dec.x, dec.y),
-                modifiers: KeyModifiers::NONE,
-            }),
+            state.handle_mouse(click(dec.x, dec.y)),
             NumberInputOutcome::ValueChanged { value: Some(0.0) }
         );
     }

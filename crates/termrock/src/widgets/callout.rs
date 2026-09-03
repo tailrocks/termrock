@@ -1262,6 +1262,7 @@ mod tests {
     use super::*;
     use crate::input::{KeyEventKind, KeyModifiers};
     use crate::widgets::action_bar::ActionVariant;
+    use crate::widgets::tests::click;
 
     #[test]
     fn callout_tones_have_distinct_glyphs() {
@@ -1474,15 +1475,7 @@ mod tests {
 
         let dismiss = state.dismiss_region.expect("painted dismiss region");
         assert_eq!(
-            state.handle_mouse(
-                MouseEvent {
-                    kind: MouseEventKind::Down(MouseButton::Left),
-                    position: ratatui_core::layout::Position::new(dismiss.x, dismiss.y),
-                    modifiers: KeyModifiers::NONE,
-                },
-                &[],
-                true,
-            ),
+            state.handle_mouse(click(dismiss.x, dismiss.y), &[], true,),
             AlertOutcome::Dismissed
         );
         state.show();
@@ -1495,15 +1488,7 @@ mod tests {
             AlertOutcome::Ignored
         );
         assert_eq!(
-            state.handle_mouse(
-                MouseEvent {
-                    kind: MouseEventKind::Down(MouseButton::Left),
-                    position: ratatui_core::layout::Position::new(dismiss.x, dismiss.y),
-                    modifiers: KeyModifiers::NONE,
-                },
-                &[],
-                true,
-            ),
+            state.handle_mouse(click(dismiss.x, dismiss.y), &[], true,),
             AlertOutcome::Ignored
         );
 

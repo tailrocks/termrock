@@ -1379,6 +1379,7 @@ pub mod bench {
 mod tests {
     use super::*;
     use crate::style::DesignSystem;
+    use crate::widgets::tests::click;
 
     fn sample() -> (Vec<SearchResultGroup>, Vec<SearchResultItem<'static>>) {
         static T0: &[MatchRange] = &[MatchRange::new(0, 4)];
@@ -1602,11 +1603,7 @@ mod tests {
             items[0].id.to_string(),
             Rect::new(3, 4, 24, 1),
         )];
-        let event = MouseEvent {
-            kind: MouseEventKind::Down(MouseButton::Left),
-            position: ratatui_core::layout::Position::new(3, 4),
-            modifiers: KeyModifiers::NONE,
-        };
+        let event = click(3, 4);
         assert!(matches!(
             state.handle_mouse(&flat, event),
             SearchResultsOutcome::SelectionChanged { ref id, .. } if id == items[0].id

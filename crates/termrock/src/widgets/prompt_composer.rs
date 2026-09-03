@@ -1937,10 +1937,8 @@ impl StatefulWidget for PromptComposer<'_> {
 mod tests {
     use super::*;
     use crate::input::{KeyEventKind, KeyModifiers};
-
-    fn press(code: KeyCode) -> KeyEvent {
-        KeyEvent::new(code, KeyModifiers::NONE)
-    }
+    use crate::widgets::tests::click;
+    use crate::widgets::tests::press;
 
     fn escape_event(kind: KeyEventKind, modifiers: KeyModifiers) -> KeyEvent {
         let mut key = KeyEvent::new(KeyCode::Esc, modifiers);
@@ -2468,14 +2466,7 @@ mod tests {
         assert!(layout.mode_hit.is_some());
         assert!(layout.model_hit.is_some());
         let mode = layout.mode_hit.unwrap();
-        let mouse = MouseEvent {
-            kind: MouseEventKind::Down(MouseButton::Left),
-            position: ratatui_core::layout::Position {
-                x: mode.x,
-                y: mode.y,
-            },
-            modifiers: KeyModifiers::NONE,
-        };
+        let mouse = click(mode.x, mode.y);
         assert_eq!(
             state.handle_mouse_at(mouse, &layout),
             PromptComposerOutcome::ModeMenu

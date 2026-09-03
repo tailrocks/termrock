@@ -761,8 +761,9 @@ pub fn example_busy_stale(system: &DesignSystem) -> (LoadingOverlay<'_>, BusyBou
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyEventKind;
+    
     use crate::widgets::tests::click;
+    use crate::widgets::tests::press;
     use ratatui_core::backend::TestBackend;
 
     use ratatui_core::style::Style;
@@ -829,12 +830,7 @@ mod tests {
     fn non_blocking_allows_input() {
         let mut st = BusyBoundaryState::new();
         let _ = st.begin(BusyMode::NonBlocking, "Refresh");
-        let key = KeyEvent {
-            code: KeyCode::Char('j'),
-            modifiers: KeyModifiers::NONE,
-            kind: KeyEventKind::Press,
-            state: crate::input::KeyEventState::NONE,
-        };
+        let key = press(KeyCode::Char('j'));
         assert_eq!(st.route_key(key), BusyRoute::Deliver);
         assert!(!st.focus_trapped());
     }
@@ -843,12 +839,7 @@ mod tests {
     fn blocking_swallows_keys() {
         let mut st = BusyBoundaryState::new();
         let _ = st.begin(BusyMode::Blocking, "Load");
-        let key = KeyEvent {
-            code: KeyCode::Char('j'),
-            modifiers: KeyModifiers::NONE,
-            kind: KeyEventKind::Press,
-            state: crate::input::KeyEventState::NONE,
-        };
+        let key = press(KeyCode::Char('j'));
         assert_eq!(st.route_key(key), BusyRoute::Blocked);
         assert!(st.focus_trapped());
     }
@@ -857,12 +848,7 @@ mod tests {
     fn cancellable_esc_requests_cancel() {
         let mut st = BusyBoundaryState::new();
         let _ = st.begin(BusyMode::Cancellable, "Sync");
-        let key = KeyEvent {
-            code: KeyCode::Esc,
-            modifiers: KeyModifiers::NONE,
-            kind: KeyEventKind::Press,
-            state: crate::input::KeyEventState::NONE,
-        };
+        let key = press(KeyCode::Esc);
         assert_eq!(st.route_key(key), BusyRoute::Cancel);
         assert!(st.cancel_requested());
     }
@@ -880,23 +866,13 @@ mod tests {
         child.set_elapsed_ms(400);
         child.set_expected_ms(Some(5_000));
 
-        let esc = KeyEvent {
-            code: KeyCode::Esc,
-            modifiers: KeyModifiers::NONE,
-            kind: KeyEventKind::Press,
-            state: crate::input::KeyEventState::NONE,
-        };
+        let esc = press(KeyCode::Esc);
         assert_eq!(child.route_key(esc), BusyRoute::Cancel);
         assert!(child.cancel_requested());
         assert!(!parent.cancel_requested(), "parent must not auto-cancel");
 
         // Parent still blocks
-        let j = KeyEvent {
-            code: KeyCode::Char('j'),
-            modifiers: KeyModifiers::NONE,
-            kind: KeyEventKind::Press,
-            state: crate::input::KeyEventState::NONE,
-        };
+        let j = press(KeyCode::Char('j'));
         assert_eq!(parent.route_key(j), BusyRoute::Blocked);
     }
 

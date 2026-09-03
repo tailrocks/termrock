@@ -891,6 +891,7 @@ mod tests {
     use super::*;
     use crate::input::{KeyCode, KeyModifiers};
     use crate::style::DesignSystem;
+    use crate::widgets::tests::click;
 
     fn items() -> Vec<AccordionItem<'static, &'static str>> {
         vec![
@@ -1108,17 +1109,7 @@ mod tests {
         let mut buf = Buffer::empty(Rect::new(0, 0, 40, 12));
         let parts = acc.paint(Rect::new(0, 0, 40, 12), &mut buf, &mut state);
         let trigger = parts.items[1].trigger;
-        let out = acc.handle_mouse(
-            &mut state,
-            MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: ratatui_core::layout::Position {
-                    x: trigger.x,
-                    y: trigger.y,
-                },
-                modifiers: KeyModifiers::NONE,
-            },
-        );
+        let out = acc.handle_mouse(&mut state, click(trigger.x, trigger.y));
         assert!(matches!(out, AccordionOutcome::Opened { id: "b" }));
         assert_eq!(state.cursor(), Some(&"b"));
         assert!(state.surface_focused);

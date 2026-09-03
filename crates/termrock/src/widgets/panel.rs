@@ -1585,6 +1585,7 @@ mod tests {
     use super::*;
     use crate::input::{KeyCode, KeyModifiers};
     use crate::style::DesignSystem;
+    use crate::widgets::tests::click;
 
     #[test]
     fn overlay_panels_fill_from_the_elevated_rung() {
@@ -1814,7 +1815,7 @@ mod tests {
 
     #[test]
     fn header_action_mouse_hit() {
-        use crate::input::{KeyModifiers, MouseButton, MouseEventKind};
+        
         let tokens = DesignSystem::default();
         let actions = [PanelAction::new("retry", "Retry")];
         let panel = Panel::new(&tokens).title("Job").header_actions(&actions);
@@ -1824,24 +1825,13 @@ mod tests {
         assert!(!state.action_hits.is_empty());
         let (id, rect) = &state.action_hits[0];
         assert_eq!(id, "retry");
-        let out = state.handle_mouse(
-            MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: ratatui_core::layout::Position {
-                    x: rect.x,
-                    y: rect.y,
-                },
-                modifiers: KeyModifiers::NONE,
-            },
-            false,
-            false,
-        );
+        let out = state.handle_mouse(click(rect.x, rect.y), false, false);
         assert!(matches!(out, PanelOutcome::HeaderAction { id } if id == "retry"));
     }
 
     #[test]
     fn header_action_not_toggle_when_collapsible() {
-        use crate::input::{KeyModifiers, MouseButton, MouseEventKind};
+        
         let tokens = DesignSystem::default();
         let actions = [PanelAction::new("more", "More")];
         let panel = Panel::new(&tokens)
@@ -1852,18 +1842,7 @@ mod tests {
         let mut buf = Buffer::empty(Rect::new(0, 0, 48, 8));
         let _ = panel.paint(Rect::new(0, 0, 48, 8), &mut buf, Some(&mut state));
         let (_, rect) = &state.action_hits[0];
-        let out = state.handle_mouse(
-            MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: ratatui_core::layout::Position {
-                    x: rect.x,
-                    y: rect.y,
-                },
-                modifiers: KeyModifiers::NONE,
-            },
-            true,
-            false,
-        );
+        let out = state.handle_mouse(click(rect.x, rect.y), true, false);
         assert!(matches!(out, PanelOutcome::HeaderAction { id } if id == "more"));
         assert!(!state.is_collapsed());
     }

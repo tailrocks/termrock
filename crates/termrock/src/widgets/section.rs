@@ -670,6 +670,7 @@ mod tests {
     use super::*;
     use crate::input::{KeyCode, KeyModifiers};
     use crate::style::DesignSystem;
+    use crate::widgets::tests::click;
 
     #[test]
     fn quiet_layout_has_header_and_body() {
@@ -748,17 +749,7 @@ mod tests {
         assert!(!state.action_hits.is_empty());
         let (id, rect) = &state.action_hits[0];
         assert_eq!(id, "reset");
-        let out = state.handle_mouse(
-            MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: ratatui_core::layout::Position {
-                    x: rect.x,
-                    y: rect.y,
-                },
-                modifiers: KeyModifiers::NONE,
-            },
-            false,
-        );
+        let out = state.handle_mouse(click(rect.x, rect.y), false);
         assert!(matches!(out, SectionOutcome::HeaderAction { id } if id == "reset"));
     }
 

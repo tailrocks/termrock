@@ -1215,8 +1215,9 @@ pub fn example_error_dialog(system: &DesignSystem) -> ErrorState<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyEventKind;
+    
     use crate::widgets::tests::click;
+    use crate::widgets::tests::press;
     use ratatui_core::backend::TestBackend;
 
     use ratatui_core::terminal::Terminal;
@@ -1304,12 +1305,7 @@ mod tests {
         let e = ErrorState::new("Err", &system).technical("tech");
         let mut st = ErrorStateState::new();
         assert!(!st.details_expanded());
-        let key = KeyEvent {
-            code: KeyCode::Char('d'),
-            modifiers: KeyModifiers::NONE,
-            kind: KeyEventKind::Press,
-            state: crate::input::KeyEventState::NONE,
-        };
+        let key = press(KeyCode::Char('d'));
         assert_eq!(e.handle_key(key, &mut st), ErrorStateOutcome::ToggleDetails);
         assert!(st.details_expanded());
     }
@@ -1333,12 +1329,7 @@ mod tests {
 
         let mut st = ErrorStateState::new();
         st.focus_retry();
-        let key = KeyEvent {
-            code: KeyCode::Enter,
-            modifiers: KeyModifiers::NONE,
-            kind: KeyEventKind::Press,
-            state: crate::input::KeyEventState::NONE,
-        };
+        let key = press(KeyCode::Enter);
         assert_eq!(e.handle_key(key, &mut st), ErrorStateOutcome::Retry);
     }
 
@@ -1347,12 +1338,7 @@ mod tests {
         let system = system();
         let e = example_error_network(&system);
         let mut st = ErrorStateState::new();
-        let key = KeyEvent {
-            code: KeyCode::Enter,
-            modifiers: KeyModifiers::NONE,
-            kind: KeyEventKind::Press,
-            state: crate::input::KeyEventState::NONE,
-        };
+        let key = press(KeyCode::Enter);
         assert_eq!(e.handle_key(key, &mut st), ErrorStateOutcome::Retry);
     }
 
@@ -1361,12 +1347,7 @@ mod tests {
         let system = system();
         let e = example_error_network(&system);
         let mut st = ErrorStateState::new();
-        let key = KeyEvent {
-            code: KeyCode::Char('c'),
-            modifiers: KeyModifiers::NONE,
-            kind: KeyEventKind::Press,
-            state: crate::input::KeyEventState::NONE,
-        };
+        let key = press(KeyCode::Char('c'));
         assert_eq!(
             e.handle_key(key, &mut st),
             ErrorStateOutcome::CopyDiagnostics
@@ -1468,12 +1449,7 @@ mod tests {
         let system = system();
         let e = example_error_network(&system);
         let mut st = ErrorStateState::new();
-        let tab = KeyEvent {
-            code: KeyCode::Tab,
-            modifiers: KeyModifiers::NONE,
-            kind: KeyEventKind::Press,
-            state: crate::input::KeyEventState::NONE,
-        };
+        let tab = press(KeyCode::Tab);
         let _ = e.handle_key(tab, &mut st);
         assert_eq!(st.focus(), ErrorFocus::Retry);
         let _ = e.handle_key(tab, &mut st);

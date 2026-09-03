@@ -1256,10 +1256,7 @@ mod tests {
         let mut buf = Buffer::empty(area);
         VirtualList::new(&projected, &system).paint(area, &mut buf, &mut state);
         if let Some(r) = state.regions().first() {
-            let out = state.click(Position {
-                x: r.area.x,
-                y: r.area.y,
-            });
+            let out = state.click(Position::new(r.area.x, r.area.y));
             assert!(
                 matches!(out, Outcome::Activated(_)) || matches!(out, Outcome::Ignored),
                 "{out:?}"

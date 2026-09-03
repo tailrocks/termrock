@@ -4,6 +4,7 @@
 use super::*;
 use crate::scroll::ScrollAxes;
 use crate::widgets::HintSpan;
+use crate::widgets::tests::press;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -493,12 +494,7 @@ fn from_crossterm_key_event_converts_basic_keys() {
     assert_eq!(chord.key, KeyCode::Char('q'));
     assert!(chord.mods.contains(KeyModifiers::CONTROL));
 
-    let ev2 = KeyEvent {
-        code: KeyCode::Enter,
-        modifiers: KeyModifiers::NONE,
-        kind: KeyEventKind::Press,
-        state: KeyEventState::NONE,
-    };
+    let ev2 = press(KeyCode::Enter);
     assert_eq!(KeyChord::from(ev2), KeyChord::plain(KeyCode::Enter));
 }
 

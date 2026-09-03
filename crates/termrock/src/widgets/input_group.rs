@@ -410,10 +410,8 @@ pub fn example_url_input_addons() -> Vec<InputAddon> {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    fn press(c: char) -> KeyEvent {
-        KeyEvent::new(KeyCode::Char(c), KeyModifiers::NONE)
-    }
+    use crate::widgets::tests::click;
+    use crate::widgets::tests::press;
 
     #[test]
     fn field_typing_and_addon_action() {
@@ -421,13 +419,13 @@ mod tests {
         st.set_focused(true);
         st.begin_edit();
         let addons = example_url_input_addons();
-        let out = st.handle_key(press('a'), &addons);
+        let out = st.handle_key(press(KeyCode::Char('a')), &addons);
         assert!(
             matches!(out, InputGroupOutcome::Field(TextInputOutcome::Changed)),
             "{out:?}"
         );
         assert_eq!(st.value(), "a");
-        let out = st.handle_key(press('b'), &addons);
+        let out = st.handle_key(press(KeyCode::Char('b')), &addons);
         assert!(
             matches!(out, InputGroupOutcome::Field(TextInputOutcome::Changed)),
             "{out:?}"
@@ -492,7 +490,7 @@ mod tests {
         state.set_accepts_input(false);
 
         assert_eq!(
-            state.handle_key(press('a'), &addons),
+            state.handle_key(press(KeyCode::Char('a')), &addons),
             InputGroupOutcome::Ignored
         );
         assert_eq!(
@@ -513,29 +511,23 @@ mod tests {
         widget.paint(area, &mut buffer, &mut state);
         let parts = state.parts.clone().expect("painted geometry");
         let (id, addon) = parts.addon_regions[0].clone();
-        let click = |rect: Rect| MouseEvent {
-            kind: MouseEventKind::Down(MouseButton::Left),
-            position: ratatui_core::layout::Position::new(rect.x, rect.y),
-            modifiers: KeyModifiers::NONE,
-        };
-
         assert!(matches!(
-            state.handle_mouse(click(parts.field), &addons),
+            state.handle_mouse(click(parts.field.x, parts.field.y), &addons),
             InputGroupOutcome::Field(TextInputOutcome::Changed)
         ));
         assert_eq!(
-            state.handle_mouse(click(addon), &addons),
+            state.handle_mouse(click(addon.x, addon.y), &addons),
             InputGroupOutcome::AddonActivated { id }
         );
 
         state.set_enabled(false);
         assert!(!state.is_enabled());
         assert_eq!(
-            state.handle_mouse(click(addon), &addons),
+            state.handle_mouse(click(addon.x, addon.y), &addons),
             InputGroupOutcome::Ignored
         );
         assert_eq!(
-            state.handle_key(press('x'), &addons),
+            state.handle_key(press(KeyCode::Char('x')), &addons),
             InputGroupOutcome::Ignored
         );
         widget.paint(area, &mut buffer, &mut state);

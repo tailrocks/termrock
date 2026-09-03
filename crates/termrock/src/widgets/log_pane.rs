@@ -410,6 +410,7 @@ mod tests {
     use super::*;
     use crate::input::{KeyModifiers, MouseButton, MouseEventKind};
     use crate::style::RolePalette;
+    use crate::widgets::tests::click;
     use crate::widgets::tests::mouse;
 
     fn key(code: KeyCode) -> KeyEvent {
@@ -520,14 +521,7 @@ mod tests {
         (&pane).render(area, &mut Buffer::empty(area), &mut state);
 
         assert_eq!(
-            pane.handle_mouse(
-                &mut state,
-                MouseEvent {
-                    kind: MouseEventKind::Down(MouseButton::Left),
-                    position: ratatui_core::layout::Position::new(1, 1),
-                    modifiers: KeyModifiers::NONE,
-                },
-            ),
+            pane.handle_mouse(&mut state, click(1, 1),),
             Outcome::Changed
         );
         pane.handle_mouse(

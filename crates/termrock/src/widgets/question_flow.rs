@@ -1507,6 +1507,7 @@ pub mod bench {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::widgets::tests::click;
 
     #[test]
     fn single_choice_answer_and_advance() {
@@ -1678,11 +1679,7 @@ mod tests {
         QuestionFlow::new(&system).paint(area, &mut buffer, &mut state);
         let (id, hit) = state.option_hits[1].clone();
 
-        let outcome = state.handle_mouse(MouseEvent {
-            kind: MouseEventKind::Down(MouseButton::Left),
-            position: ratatui_core::layout::Position::new(hit.x, hit.y),
-            modifiers: KeyModifiers::NONE,
-        });
+        let outcome = state.handle_mouse(click(hit.x, hit.y));
 
         assert!(matches!(
             outcome,
@@ -1744,11 +1741,7 @@ mod tests {
             QuestionFlowOutcome::Ignored
         );
         assert_eq!(
-            state.handle_mouse(MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: ratatui_core::layout::Position::new(option.x, option.y),
-                modifiers: KeyModifiers::NONE,
-            }),
+            state.handle_mouse(click(option.x, option.y)),
             QuestionFlowOutcome::Ignored
         );
         assert_eq!(state.step_index, 0);

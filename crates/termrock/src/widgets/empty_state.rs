@@ -600,8 +600,9 @@ pub fn example_empty_permission(system: &DesignSystem) -> EmptyState<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyEventKind;
+    
     use crate::widgets::tests::click;
+    use crate::widgets::tests::press;
     use ratatui_core::backend::TestBackend;
 
     use ratatui_core::terminal::Terminal;
@@ -830,12 +831,7 @@ mod tests {
         let e = EmptyState::new("Hi", &system).primary(EmptyAction::new("Go"));
         let mut st = EmptyStateState::new();
         st.focus_primary();
-        let key = KeyEvent {
-            code: KeyCode::Enter,
-            modifiers: KeyModifiers::NONE,
-            kind: KeyEventKind::Press,
-            state: crate::input::KeyEventState::NONE,
-        };
+        let key = press(KeyCode::Enter);
         assert_eq!(
             e.handle_key(key, &mut st),
             EmptyStateOutcome::PrimaryActivated
@@ -849,12 +845,7 @@ mod tests {
             .primary(EmptyAction::new("Go"))
             .secondary(EmptyAction::new("Back"));
         let mut st = EmptyStateState::new();
-        let key = KeyEvent {
-            code: KeyCode::Enter,
-            modifiers: KeyModifiers::NONE,
-            kind: KeyEventKind::Press,
-            state: crate::input::KeyEventState::NONE,
-        };
+        let key = press(KeyCode::Enter);
         assert_eq!(
             e.handle_key(key, &mut st),
             EmptyStateOutcome::PrimaryActivated
@@ -868,12 +859,7 @@ mod tests {
             .primary(EmptyAction::new("A"))
             .secondary(EmptyAction::new("B"));
         let mut st = EmptyStateState::new();
-        let tab = KeyEvent {
-            code: KeyCode::Tab,
-            modifiers: KeyModifiers::NONE,
-            kind: KeyEventKind::Press,
-            state: crate::input::KeyEventState::NONE,
-        };
+        let tab = press(KeyCode::Tab);
         let _ = e.handle_key(tab, &mut st);
         assert_eq!(st.focus(), EmptyFocus::Primary);
         let _ = e.handle_key(tab, &mut st);

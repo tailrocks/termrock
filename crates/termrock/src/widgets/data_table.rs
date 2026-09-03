@@ -2634,7 +2634,7 @@ mod tests {
 
         let event = MouseEvent {
             kind: MouseEventKind::ScrollDown,
-            position: Position { x: 1, y: 1 },
+            position: Position::new(1, 1),
             modifiers: KeyModifiers::SHIFT,
         };
         assert!(matches!(

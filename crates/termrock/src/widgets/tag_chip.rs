@@ -1897,6 +1897,7 @@ fn estimate_item_width<Id: Clone>(item: &TokenItem<'_, Id>, system: &DesignSyste
 mod tests {
     use super::*;
     use crate::input::KeyModifiers;
+    use crate::widgets::tests::click;
 
     #[test]
     fn remove_label_explicit() {
@@ -1970,14 +1971,7 @@ mod tests {
         let mut tag_state = TagState::new();
         let parts = tag.paint(area, &mut buffer, &mut tag_state);
         assert!(matches!(
-            tag.handle_mouse(
-                &mut tag_state,
-                MouseEvent {
-                    kind: MouseEventKind::Down(MouseButton::Left),
-                    position: ratatui_core::layout::Position::new(parts.body.x, parts.body.y),
-                    modifiers: KeyModifiers::NONE,
-                },
-            ),
+            tag.handle_mouse(&mut tag_state, click(parts.body.x, parts.body.y),),
             TagOutcome::Activated("tag")
         ));
 
@@ -1985,14 +1979,7 @@ mod tests {
         let mut chip_state = ChipState::new(false);
         let parts = chip.paint(area, &mut buffer, &mut chip_state);
         assert!(matches!(
-            chip.handle_mouse(
-                &mut chip_state,
-                MouseEvent {
-                    kind: MouseEventKind::Down(MouseButton::Left),
-                    position: ratatui_core::layout::Position::new(parts.body.x, parts.body.y),
-                    modifiers: KeyModifiers::NONE,
-                },
-            ),
+            chip.handle_mouse(&mut chip_state, click(parts.body.x, parts.body.y),),
             ChipOutcome::Selected("chip")
         ));
 
@@ -2002,14 +1989,7 @@ mod tests {
         strip.paint(area, &mut buffer, &mut strip_state);
         let hit = strip_state.regions[0].1;
         assert!(matches!(
-            strip.handle_mouse(
-                &mut strip_state,
-                MouseEvent {
-                    kind: MouseEventKind::Down(MouseButton::Left),
-                    position: ratatui_core::layout::Position::new(hit.x, hit.y),
-                    modifiers: KeyModifiers::NONE,
-                },
-            ),
+            strip.handle_mouse(&mut strip_state, click(hit.x, hit.y),),
             TokenStripOutcome::Selected("strip")
         ));
     }

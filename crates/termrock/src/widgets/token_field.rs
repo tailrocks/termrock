@@ -1264,6 +1264,7 @@ mod tests {
     use super::*;
     use crate::input::KeyEventKind;
     use crate::style::RolePalette;
+    use crate::widgets::tests::click;
     use unicode_segmentation::UnicodeSegmentation;
 
     #[test]
@@ -1509,22 +1510,14 @@ mod tests {
         let token = parts.token_rects[0];
 
         assert!(matches!(
-            state.handle_mouse(MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: ratatui_core::layout::Position::new(token.x, token.y),
-                modifiers: KeyModifiers::NONE,
-            }),
+            state.handle_mouse(click(token.x, token.y)),
             TokenFieldOutcome::SelectionChanged {
                 id,
                 selected: true
             } if id == "1"
         ));
         assert!(matches!(
-            state.handle_mouse(MouseEvent {
-                kind: MouseEventKind::Down(MouseButton::Left),
-                position: ratatui_core::layout::Position::new(parts.draft.x, parts.draft.y),
-                modifiers: KeyModifiers::NONE,
-            }),
+            state.handle_mouse(click(parts.draft.x, parts.draft.y)),
             TokenFieldOutcome::FocusMoved | TokenFieldOutcome::DraftChanged
         ));
         assert!(matches!(state.zone(), TokenFieldZone::Draft));

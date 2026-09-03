@@ -1276,6 +1276,7 @@ mod tests {
     use super::*;
     use crate::input::KeyEventKind;
     use crate::style::DesignSystem;
+    use crate::widgets::tests::click;
 
     #[test]
     fn attachment_display_and_semantic_redacts() {
@@ -1381,11 +1382,7 @@ mod tests {
         assert!(matches!(
             chip.handle_mouse(
                 &mut attachment,
-                MouseEvent {
-                    kind: MouseEventKind::Down(MouseButton::Left),
-                    position: ratatui_core::layout::Position::new(parts.body.x, parts.body.y),
-                    modifiers: KeyModifiers::NONE,
-                },
+                click(parts.body.x, parts.body.y),
             ),
             AttachmentChipOutcome::Activated { id } if id == "f1"
         ));
@@ -1397,11 +1394,7 @@ mod tests {
         assert!(matches!(
             chip.handle_mouse(
                 &mut paste_state,
-                MouseEvent {
-                    kind: MouseEventKind::Down(MouseButton::Left),
-                    position: ratatui_core::layout::Position::new(parts.body.x, parts.body.y),
-                    modifiers: KeyModifiers::NONE,
-                },
+                click(parts.body.x, parts.body.y),
             ),
             PasteChipOutcome::Expanded { id } if id == "p1"
         ));
