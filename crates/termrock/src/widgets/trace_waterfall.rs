@@ -1111,7 +1111,7 @@ impl<'a> TraceWaterfall<'a> {
         let mut py = y;
         let bottom = y.saturating_add(h);
 
-        for (i, span) in visible.iter().enumerate().skip(start).take(end - start) {
+        for span in visible.iter().skip(start).take(end - start) {
             if py >= bottom {
                 break;
             }
@@ -1231,7 +1231,6 @@ impl<'a> TraceWaterfall<'a> {
                 }
             }
             chrome.paint(buffer, Rect::new(area.x, py, area.width, 1));
-            let _ = i;
             py = py.saturating_add(1);
         }
     }

@@ -136,8 +136,7 @@ pub fn apply_follow_after_append(
 
 /// User scroll interaction: pause follow (does not clear indicator).
 #[must_use]
-pub const fn pause_follow_on_user_scroll(follow: FollowMode) -> FollowMode {
-    let _ = follow;
+pub const fn pause_follow_on_user_scroll() -> FollowMode {
     FollowMode::Paused
 }
 
@@ -170,9 +169,6 @@ mod tests {
 
     #[test]
     fn user_scroll_pauses() {
-        assert_eq!(
-            pause_follow_on_user_scroll(FollowMode::Following),
-            FollowMode::Paused
-        );
+        assert_eq!(pause_follow_on_user_scroll(), FollowMode::Paused);
     }
 }

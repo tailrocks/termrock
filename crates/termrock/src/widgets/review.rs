@@ -1530,7 +1530,6 @@ impl<'a> DiffReview<'a> {
             buffer,
             body,
             self.lines,
-            self.hunks,
             state,
             self.system,
             false,
@@ -1687,7 +1686,6 @@ fn paint_review_marks(
     buffer: &mut Buffer,
     body: Rect,
     lines: &[DiffLine<'_>],
-    hunks: &[DiffHunk],
     state: &DiffReviewState,
     system: &DesignSystem,
     _ascii: bool,
@@ -1738,7 +1736,6 @@ fn paint_review_marks(
             system.style(Role::Accent)
         };
         buffer.set_stringn(x, region.area.y, take_display_cols(&marks, 4), 4, style);
-        let _ = hunks;
     }
 }
 

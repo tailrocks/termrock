@@ -425,19 +425,17 @@ impl<'a> Toggle<'a> {
 
     /// Preferred width for layout.
     #[must_use]
-    pub fn preferred_width(&self, value: ToggleValue) -> u16 {
+    pub fn preferred_width(&self) -> u16 {
         let inner = self.face_inner();
         let cols = display_cols(&inner).max(1);
         let chrome = match self.size {
             ToggleSize::Compact => 0,
             ToggleSize::Default => 2,
         };
-        let _ = (self.recipe, value);
         u16::try_from(cols.saturating_add(chrome).max(1)).unwrap_or(1)
     }
 
-    fn format_face(&self, value: ToggleValue) -> String {
-        let _ = value;
+    fn format_face(&self) -> String {
         let inner = self.face_inner();
         let inner = if inner.is_empty() { "·".into() } else { inner };
         match self.size {
@@ -971,7 +969,7 @@ impl<'a, Id> ToggleGroup<'a, Id> {
     }
 
     fn item_width(&self, item: &ToggleGroupItem<'a, Id>) -> u16 {
-        self.item_toggle(item).preferred_width(item.value).max(2)
+        self.item_toggle(item).preferred_width().max(2)
     }
 
     fn overflow_trigger_width(&self) -> u16 {
@@ -1244,7 +1242,7 @@ impl<'a, Id: Clone + PartialEq> ToggleGroup<'a, Id> {
         ts.hovered = state.hovered.as_ref() == Some(&item.id);
         // Toolbar group is reverse+label (no `[inner]` wells). Form switch
         // lives on standalone [`Toggle::paint`].
-        let face = t.format_face(item.value);
+        let face = t.format_face();
         let text = take_display_cols(&face, usize::from(area.width));
         let style = t.face_style(&ts);
         buffer.set_stringn(area.x, area.y, &text, usize::from(area.width), style);
@@ -1883,18 +1881,12 @@ mod tests {
     fn format_face_is_padded_inner_without_wells() {
         let system = DesignSystem::junie();
         let t = Toggle::new("B", &system);
-        for value in [
-            ToggleValue::Unpressed,
-            ToggleValue::Pressed,
-            ToggleValue::Indeterminate,
-        ] {
-            let face = t.format_face(value);
-            assert!(!face.contains('['), "well leaked: {face:?}");
-            assert!(!face.contains(']'), "well leaked: {face:?}");
-            assert!(face.contains('B'), "{face:?}");
-        }
+        let face = t.format_face();
+        assert!(!face.contains('['), "well leaked: {face:?}");
+        assert!(!face.contains(']'), "well leaked: {face:?}");
+        assert!(face.contains('B'), "{face:?}");
         let compact = Toggle::new("B", &system).size(ToggleSize::Compact);
-        assert_eq!(compact.format_face(ToggleValue::Pressed), "B");
+        assert_eq!(compact.format_face(), "B");
     }
 
     #[test]

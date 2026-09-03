@@ -796,8 +796,8 @@ impl HelpCenterState {
             )
             .priority(10),
         ];
-        if let Some(ctx) = &self.context_label {
-            let _ = ctx; // content is &'static in StatusSlot — use fixed label
+        if self.context_label.is_some() {
+            // content is &'static in StatusSlot — use fixed label
             slots.push(StatusSlot::context("ctx", "context").priority(40));
         }
         slots

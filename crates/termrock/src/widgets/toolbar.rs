@@ -451,7 +451,7 @@ impl<Id: Clone + PartialEq> Toolbar<'_, Id> {
 
         if let Some(intent) = default_button_intent(key) {
             if matches!(intent, UiIntent::Activate | UiIntent::Submit) {
-                return self.activate_cursor(state, &plan);
+                return self.activate_cursor(state);
             }
         }
 
@@ -481,7 +481,7 @@ impl<Id: Clone + PartialEq> Toolbar<'_, Id> {
         );
         let _ = state.roving.reconcile(&entries);
         match intent {
-            UiIntent::Activate | UiIntent::Submit => self.activate_cursor(state, &plan),
+            UiIntent::Activate | UiIntent::Submit => self.activate_cursor(state),
             UiIntent::Cancel | UiIntent::Close if state.overflow_open => {
                 state.overflow_open = false;
                 ToolbarOutcome::OverflowClosed
@@ -547,11 +547,7 @@ impl<Id: Clone + PartialEq> Toolbar<'_, Id> {
         ToolbarOutcome::Ignored
     }
 
-    fn activate_cursor(
-        &self,
-        state: &mut ToolbarState<Id>,
-        plan: &ToolbarPlan,
-    ) -> ToolbarOutcome<Id> {
+    fn activate_cursor(&self, state: &mut ToolbarState<Id>) -> ToolbarOutcome<Id> {
         let Some(active) = state.roving.active().cloned() else {
             return ToolbarOutcome::Ignored;
         };
@@ -576,7 +572,6 @@ impl<Id: Clone + PartialEq> Toolbar<'_, Id> {
                 _ => ToolbarOutcome::Ignored,
             };
         }
-        let _ = plan;
         ToolbarOutcome::Ignored
     }
 
@@ -591,7 +586,6 @@ impl<Id: Clone + PartialEq> Toolbar<'_, Id> {
         Id: std::fmt::Display,
     {
         use crate::interaction::{SemanticNode, SemanticRole, SemanticState};
-        let plan = self.plan(area);
         let _ = scene.register(
             SemanticNode::content(toolbar_id.clone(), area)
                 .role(SemanticRole::Chrome)
@@ -623,7 +617,6 @@ impl<Id: Clone + PartialEq> Toolbar<'_, Id> {
                     }),
             );
         }
-        let _ = plan;
     }
 }
 

@@ -1712,7 +1712,7 @@ fn place_anchored(
     };
 
     let raw = Rect::new(x, y, width, height);
-    let mut rect = clamp_rect(raw, bounds);
+    let rect = clamp_rect(raw, bounds);
     let mut clamped = rect.x != raw.x || rect.y != raw.y;
 
     if !cover_anchor && rect_intersects(rect, anchor) {
@@ -1749,7 +1749,6 @@ fn place_anchored(
         }
         clamped = true;
     }
-    let _ = &mut rect;
     (rect, flipped_v, flipped_h, clamped)
 }
 

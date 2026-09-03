@@ -1250,7 +1250,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
                             checked: is_val,
                             ..ListRowVisualState::default()
                         };
-                        paint_list_anatomy_row(buffer, rect, self.system, visual, is_val, &label);
+                        paint_list_anatomy_row(buffer, rect, self.system, visual, &label);
                     }
                     if !opt.disabled {
                         state.option_regions.push((opt.id.clone(), rect));
@@ -1440,7 +1440,6 @@ fn paint_list_anatomy_row(
     row: Rect,
     system: &DesignSystem,
     visual: ListRowVisualState,
-    chosen: bool,
     label: &str,
 ) {
     if row.is_empty() {
@@ -1450,7 +1449,6 @@ fn paint_list_anatomy_row(
     let recipe = system.resolve_list_row(visual);
     let style = chrome.label_style(recipe.label);
     chrome.paint(buffer, row);
-    let _ = chosen;
     let text_x = row.x.saturating_add(3).min(row.right());
     let text_w = row.right().saturating_sub(text_x);
     if text_w > 0 {

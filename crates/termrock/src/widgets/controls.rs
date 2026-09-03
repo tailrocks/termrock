@@ -382,8 +382,7 @@ impl<'a, Id> Checkbox<'a, Id> {
 
     /// Preferred width for box + gap + label (description not included).
     #[must_use]
-    pub fn preferred_width(&self, state: &CheckboxState) -> u16 {
-        let _ = state;
+    pub fn preferred_width(&self) -> u16 {
         // gutter + `[✓]` + space + label
         let label_w = display_cols(self.label) as u16;
         5u16.saturating_add(label_w).max(5)
@@ -968,15 +967,14 @@ impl<'a, Id> RadioGroup<'a, Id> {
     /// `○` empty → `◎` the cursor is on it but nothing is committed → `●`
     /// chosen. The middle rung existed in the model and was never painted, so
     /// a roving cursor looked identical to a made choice (plans/015 Step 5).
-    fn mark(&self, selected: bool, previewed: bool) -> &'static str {
+    fn mark(&self, selected: bool) -> &'static str {
         // junie choice.rs: `(●)` / `( )`. Preview keeps the empty form so
         // FollowFocus (move = select) is the painted truth. No ASCII profile.
-        let _ = previewed;
         if selected { "(●)" } else { "( )" }
     }
 
-    fn mark_cols(&self, selected: bool, previewed: bool) -> u16 {
-        display_cols(self.mark(selected, previewed)) as u16
+    fn mark_cols(&self, selected: bool) -> u16 {
+        display_cols(self.mark(selected)) as u16
     }
 
     fn option_label_line(&self, opt: &RadioOption<'a, Id>, max_cols: usize) -> String {
@@ -1106,7 +1104,7 @@ impl<'a, Id: Clone + PartialEq> RadioGroup<'a, Id> {
                         1,
                         self.system.gutter(visual, style.bg.unwrap_or(bg), false),
                     );
-                    let mark = self.mark(selected, focused && !selected);
+                    let mark = self.mark(selected);
                     let mark_w = 3u16.min(area.width.saturating_sub(1)).max(1);
                     let mark_area = Rect::new(area.x.saturating_add(1), y, mark_w, 1);
                     let mark_style = if !state.enabled || !opt.enabled {
@@ -1173,8 +1171,8 @@ impl<'a, Id: Clone + PartialEq> RadioGroup<'a, Id> {
                     let selected = state.selected.as_ref() == Some(&opt.id);
                     let focused = state.surface_focused && state.active() == Some(&opt.id);
                     let hovered = state.hovered.as_ref() == Some(&opt.id);
-                    let mark = self.mark(selected, focused && !selected);
-                    let mark_w = self.mark_cols(selected, focused && !selected);
+                    let mark = self.mark(selected);
+                    let mark_w = self.mark_cols(selected);
                     let label = self.option_label_line(opt, 24);
                     let label_w = display_cols(&label) as u16;
                     let w = mark_w
@@ -2046,7 +2044,6 @@ impl<'a, Id> Switch<'a, Id> {
                 } else {
                     row_style.fg(theme.text_muted)
                 };
-                let _ = track_style;
                 buffer.set_stringn(
                     track.x,
                     track.y,

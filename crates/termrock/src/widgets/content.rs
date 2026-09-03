@@ -757,8 +757,6 @@ fn advance_by_display(s: &str, cols: usize) -> &str {
     if cols == 0 || s.is_empty() {
         return s;
     }
-    let taken = take_display_cols(s, cols);
-    // Map display take back to byte length: walk chars same as take_display_cols.
     use crate::text::is_terminal_control_char;
     use unicode_width::UnicodeWidthChar;
     let mut used = 0usize;
@@ -778,7 +776,6 @@ fn advance_by_display(s: &str, cols: usize) -> &str {
             return &s[idx..];
         }
     }
-    let _ = taken;
     &s[idx..]
 }
 

@@ -24,11 +24,11 @@ use crate::{
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
     keymap::{Conflict, KeyBinding, KeyChord, Keymap, Visibility, raw_bytes_to_chord},
     style::{ControlState, DesignSystem, Role},
-    text::{display_cols, take_display_cols},
+    text::take_display_cols,
 };
 
 use super::{
-    ChordFormat, Kbd, Panel, PanelChrome, PanelVariant, Platform, Validation, format_chord,
+    ChordFormat, Panel, PanelChrome, PanelVariant, Platform, Validation, format_chord,
     format_sequence,
 };
 
@@ -901,20 +901,6 @@ impl<'a> KeybindingRecorder<'a> {
                 usize::from(value_width),
                 style,
             );
-            // Also stamp Kbd widget for first chord when idle single
-            if !state.is_recording() && state.value.len() == 1 && inner.width > 12 {
-                let kbd_area = Rect::new(
-                    inner.x.saturating_add(
-                        display_cols(&line).min(usize::from(value_width.saturating_sub(8))) as u16,
-                    ),
-                    y,
-                    8,
-                    1,
-                );
-                // keep simple string path primary; Kbd used for semantic consistency in docs
-                let _ = Kbd::from_chord(state.value[0], self.system);
-                let _ = kbd_area;
-            }
             y = y.saturating_add(1);
         }
 

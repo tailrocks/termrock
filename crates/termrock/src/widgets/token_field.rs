@@ -1092,7 +1092,6 @@ impl<'a> TokenField<'a> {
         }
 
         if !rest.is_empty() {
-            let _ = rest;
             let n = state.tokens.len().saturating_sub(token_rects.len());
             let label = format!("+{n}");
             let ow = u16::try_from(display_cols(&label).saturating_add(2)).unwrap_or(4);

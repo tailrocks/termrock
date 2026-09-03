@@ -794,7 +794,6 @@ impl<Id: Clone> StatusBar<'_, Id> {
             }
         }
         // Transient is painted separately in paint_transient (no hit region / no id).
-        let _ = has_transient;
 
         placements
     }

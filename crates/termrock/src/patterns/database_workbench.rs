@@ -1203,12 +1203,7 @@ impl DatabaseWorkbenchState {
             DatabaseTxStatus::Active => crate::widgets::SemanticStatus::Running,
             DatabaseTxStatus::Failed => crate::widgets::SemanticStatus::Failed,
         };
-        let tab = self
-            .active_tab()
-            .map(|t| t.title.as_str())
-            .unwrap_or("query");
         // StatusSlot wants 'static content — use stable static labels for gate/run/tx;
-        // tab title may not be static so use focus zone for dynamic-ish info.
         let mut slots = vec![
             StatusSlot::connection("conn", conn)
                 .semantic(conn_status)
@@ -1220,7 +1215,6 @@ impl DatabaseWorkbenchState {
             StatusSlot::focus_zone("focus", self.focus).priority(70),
             StatusSlot::shortcut("keys", "C-↵ run · C-e export · C-p cmd · tab focus").priority(10),
         ];
-        let _ = tab;
         if self.last_error.is_some() {
             slots.insert(
                 0,

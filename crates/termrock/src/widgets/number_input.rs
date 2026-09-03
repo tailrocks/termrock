@@ -1159,7 +1159,6 @@ impl<'a> NumberInput<'a> {
             cursor: ti.cursor,
         };
         state.parts = Some(parts.clone());
-        let _ = ti;
         parts
     }
 

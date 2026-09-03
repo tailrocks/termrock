@@ -1030,7 +1030,6 @@ impl<'a> OfflineSurface<'a> {
                 false,
             );
         }
-        let _ = idx;
     }
 
     /// Semantic.

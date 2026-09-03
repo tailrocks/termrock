@@ -858,7 +858,6 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
                     x = x.saturating_add(gw.max(1));
                     byte = byte.saturating_add(ch.len_utf8());
                 }
-                let _ = x;
                 let mut rx = row_rect.right();
                 if group_col > 0 {
                     rx = rx.saturating_sub(group_col.saturating_add(1));

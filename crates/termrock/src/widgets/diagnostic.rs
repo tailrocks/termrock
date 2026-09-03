@@ -1588,7 +1588,7 @@ fn paint_list_item(
             y = y.saturating_add(1);
         }
     }
-    for (i, rel) in d.related.iter().enumerate() {
+    for rel in d.related.iter() {
         if y >= area.bottom() {
             break;
         }
@@ -1605,7 +1605,6 @@ fn paint_list_item(
             system.style(Role::TextMuted),
         );
         y = y.saturating_add(1);
-        let _ = i;
     }
     for (i, fix) in d.fixes.iter().enumerate() {
         if y >= area.bottom() {

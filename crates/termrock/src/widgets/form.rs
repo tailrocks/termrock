@@ -934,7 +934,6 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Form<'_, Id> {
                     field_area,
                     field,
                     self.system,
-                    self.layout,
                     is_focused,
                     state.hovered.as_ref() == Some(&field.id),
                 );
@@ -1091,11 +1090,9 @@ fn paint_field<Id: Clone>(
     field_area: Rect,
     field: &Field<'_, Id>,
     system: &DesignSystem,
-    layout: FormLayout,
     focused: bool,
     hovered: bool,
 ) {
-    let _ = layout;
     let theme = system.junie_theme();
     let invalid = field.is_invalid();
     let enabled = field.enabled && !field.read_only;

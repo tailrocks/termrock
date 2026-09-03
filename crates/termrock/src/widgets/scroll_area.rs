@@ -467,7 +467,7 @@ impl ScrollAreaState {
     }
 
     fn pause_follow_user(&mut self) {
-        self.follow = pause_follow_on_user_scroll(self.follow);
+        self.follow = pause_follow_on_user_scroll();
     }
 
     /// Scroll by signed deltas (negative = up/left). Pauses follow on Y motion.

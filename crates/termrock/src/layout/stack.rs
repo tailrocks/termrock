@@ -786,7 +786,6 @@ fn layout_single_line(
         if residual > 0 {
             grow_preferred(children, main_sizes, &mut residual);
         }
-        let _ = residual;
     }
 
     let used_main: u16 = main_sizes.iter().copied().sum::<u16>().saturating_add(gaps);
@@ -825,7 +824,6 @@ fn layout_single_line(
                 .saturating_add(between_extra);
         }
     }
-    let _ = overflowed;
 }
 
 fn apply_overflow(

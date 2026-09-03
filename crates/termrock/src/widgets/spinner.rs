@@ -240,7 +240,6 @@ impl SpinnerState {
         if !base.needs_redraw {
             return base;
         }
-        let _ = motion;
         let scaled = Duration::from_millis(period);
         AnimationDemand {
             needs_redraw: true,

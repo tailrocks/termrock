@@ -406,20 +406,6 @@ fn paint_feedback<Id: Clone + PartialEq>(
 
     let has_actions = !args.actions.is_empty();
     let footer = has_actions || args.content.dismissible;
-    let mut rows_needed = 1u16;
-    if args.content.description.is_some() {
-        rows_needed = rows_needed.saturating_add(1);
-    }
-    if args.content.show_details && args.content.details.is_some() {
-        rows_needed = rows_needed.saturating_add(1);
-    }
-    if args.content.source.is_some() {
-        rows_needed = rows_needed.saturating_add(1);
-    }
-    if footer {
-        rows_needed = rows_needed.saturating_add(1);
-    }
-    let _ = rows_needed;
 
     let mut y = inner.y;
     let glyph = tone.glyph();

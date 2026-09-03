@@ -509,10 +509,6 @@ impl<Id> NavigationListState<Id> {
         let collection = CollectionState::new()
             .wrap(true)
             .orientation(RovingOrientation::Vertical);
-        if let Some(ref id) = route {
-            // set after first reconcile by host; store route only
-            let _ = id;
-        }
         Self {
             route,
             collection,

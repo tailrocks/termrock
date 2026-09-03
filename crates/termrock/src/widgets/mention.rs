@@ -1270,9 +1270,8 @@ impl MentionDraft {
                         };
                         // reindex: text was at part, now at prev if merged?
                         // simple: after remove, text segment index is part-1
-                        if let Some(MentionSegment::Text(t)) = self.parts.get(prev) {
+                        if matches!(self.parts.get(prev), Some(MentionSegment::Text(_))) {
                             // if we had text at `part`, now at `prev` only if removed mention before it
-                            let _ = t;
                             self.cursor = MentionCursor::InText {
                                 part: prev.saturating_add(0),
                                 byte: 0,

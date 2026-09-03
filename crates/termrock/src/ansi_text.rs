@@ -79,7 +79,7 @@ pub fn parse_to_line(input: &str, options: &AnsiParseOptions) -> AnsiLine {
         .lines()
         .back()
         .cloned()
-        .unwrap_or_else(|| AnsiLine::empty(options.default_style))
+        .unwrap_or_else(AnsiLine::empty)
 }
 
 /// Parse multi-line input into completed lines (trailing partial kept only if
@@ -197,8 +197,7 @@ pub struct AnsiLine {
 impl AnsiLine {
     /// Empty line.
     #[must_use]
-    pub fn empty(style: Style) -> Self {
-        let _ = style;
+    pub fn empty() -> Self {
         Self {
             segments: Vec::new(),
             plain: String::new(),
@@ -786,7 +785,7 @@ fn starts_with_ignore_ascii_case(hay: &[u8], prefix: &[u8]) -> bool {
 
 fn cells_to_line(cells: &[LineCell], options: &AnsiParseOptions) -> AnsiLine {
     if cells.is_empty() {
-        return AnsiLine::empty(options.default_style);
+        return AnsiLine::empty();
     }
     let mut segments = Vec::new();
     let mut plain = String::with_capacity(cells.len());

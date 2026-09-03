@@ -595,10 +595,6 @@ pub fn build_transcript_blocks<'a>(
             .revision(m.revision)
             .folded(m.folded)
             .enabled(m.enabled);
-        if let Some(s) = &m.summary {
-            // summary lives in meta — need 'a — use first line of bufs as summary if folded
-            let _ = s;
-        }
         if m.folded {
             if let Some(first) = bufs.get(m.line_buf_index).and_then(|v| v.first()) {
                 b = b.summary(first.as_str());

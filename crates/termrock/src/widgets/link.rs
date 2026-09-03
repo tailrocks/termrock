@@ -336,8 +336,7 @@ impl<'a> Link<'a> {
 
     /// Visible painted string (label + optional destination + external cue).
     #[must_use]
-    pub fn decorated(&self, state: &LinkState) -> String {
-        let _ = state;
+    pub fn decorated(&self) -> String {
         let mut s = match self.variant {
             LinkVariant::Bracketed => format!("[{}]", self.label.trim()),
             LinkVariant::Plain => self.label.trim().to_string(),
@@ -401,8 +400,8 @@ impl<'a> Link<'a> {
 
     /// Measure width.
     #[must_use]
-    pub fn measure_width(&self, state: &LinkState) -> u16 {
-        u16::try_from(display_cols(&self.decorated(state)))
+    pub fn measure_width(&self) -> u16 {
+        u16::try_from(display_cols(&self.decorated()))
             .unwrap_or(1)
             .max(1)
     }
@@ -512,7 +511,7 @@ impl<'a> Link<'a> {
                 osc8: false,
             };
         }
-        let text = self.decorated(state);
+        let text = self.decorated();
         let mut budget = usize::from(area.width);
         if self.max_cols > 0 {
             budget = budget.min(usize::from(self.max_cols));
@@ -542,7 +541,7 @@ impl<'a> Link<'a> {
         if parts.root.is_empty() {
             return parts;
         }
-        let decorated = self.decorated(state);
+        let decorated = self.decorated();
         let text = take_display_cols(&decorated, usize::from(parts.root.width));
         let style = self.style(state);
         buffer.set_stringn(
@@ -865,8 +864,7 @@ mod tests {
     fn external_always_shows_destination_or_cue() {
         let system = DesignSystem::default();
         let link = Link::url("docs", "https://example.invalid/path", &system);
-        let state = LinkState::new();
-        let d = link.decorated(&state);
+        let d = link.decorated();
         assert!(
             d.contains("example.invalid") || d.contains('↗'),
             "must not hide external dest: {d}"
@@ -878,7 +876,7 @@ mod tests {
         let system = DesignSystem::default();
         let link = Link::url("docs", "https://example.invalid", &system).hyperlinks(false);
         let state = LinkState::new();
-        assert!(link.decorated(&state).contains("example.invalid"));
+        assert!(link.decorated().contains("example.invalid"));
         assert!(!link.uses_osc8(&state));
     }
 
@@ -1007,7 +1005,7 @@ mod tests {
         let state = LinkState::new();
         for _ in 0..20_000 {
             let _ = link.layout(Rect::new(0, 0, 40, 1), &state);
-            let _ = link.decorated(&state);
+            let _ = link.decorated();
         }
     }
 
@@ -1077,9 +1075,8 @@ mod tests {
     fn unicode_label_measures() {
         let system = DesignSystem::default();
         let link = Link::url("文档 🔗", "https://example.invalid", &system);
-        let state = LinkState::new();
-        assert!(link.measure_width(&state) >= 2);
-        let d = link.decorated(&state);
+        assert!(link.measure_width() >= 2);
+        let d = link.decorated();
         assert!(d.contains('文') || d.contains("example"));
     }
 

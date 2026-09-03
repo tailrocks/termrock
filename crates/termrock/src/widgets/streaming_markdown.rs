@@ -641,8 +641,7 @@ fn find_complete_fence_in_tail(tail: &str) -> Option<usize> {
     for line in tail.split_inclusive('\n') {
         let content = line.trim_end_matches(['\n', '\r']);
         if open_ticks.is_none() {
-            if let Some(lang) = strip_fence_open(content) {
-                let _ = lang;
+            if strip_fence_open(content).is_some() {
                 open_ticks = Some(fence_tick_count(content));
             }
             offset += line.len();

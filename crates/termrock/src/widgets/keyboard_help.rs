@@ -1205,13 +1205,6 @@ impl<'a> KeyboardHelp<'a> {
                 .as_ref()
                 .map(|m| format!("  {}", take_display_cols(m, 18)))
                 .unwrap_or_default();
-            let line = format!(
-                "{:<10} {}{}{}",
-                take_display_cols(&e.chord, 10),
-                take_display_cols(&e.action, 28),
-                flags,
-                mouse
-            );
             let style = if self.colorless {
                 if active {
                     self.system
@@ -1272,7 +1265,6 @@ impl<'a> KeyboardHelp<'a> {
                     style,
                 );
             }
-            let _ = line;
             y = y.saturating_add(1);
         }
     }

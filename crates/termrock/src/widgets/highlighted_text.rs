@@ -14,7 +14,7 @@
 //! hosts only know visual columns.
 //!
 //! Research: fzf, television, command palettes.
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
+use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::style::{DesignSystem, Role};
@@ -609,10 +609,10 @@ impl<'a> HighlightedText<'a> {
             .ranges
         };
 
-        let (start_byte, end_byte, mode) = match self.truncate {
+        let (start_byte, end_byte) = match self.truncate {
             MatchTruncate::End => {
                 let s = take_display_cols(source, budget);
-                (0, s.len(), "end")
+                (0, s.len())
             }
             MatchTruncate::Middle => {
                 let half = budget / 2;
@@ -621,14 +621,13 @@ impl<'a> HighlightedText<'a> {
                 let tail = take_display_cols_end(source, tail_budget);
                 let start_tail = source.len().saturating_sub(tail.len());
                 // Represent as head + ellipsis + tail specially below
-                return middle_truncate(source, &prepared, &head, &tail, start_tail, self);
+                return middle_truncate(source, &prepared, &head, &tail, start_tail);
             }
             MatchTruncate::KeepFirstMatch | MatchTruncate::KeepFocusedMatch => {
                 let anchor = anchor_byte(self, &prepared);
                 window_around(source, anchor, budget)
             }
         };
-        let _ = mode;
 
         let visible = MatchRange::new(start_byte, end_byte).snap_graphemes(source);
         let mut text = source
@@ -735,7 +734,7 @@ fn anchor_byte(ht: &HighlightedText<'_>, prepared: &[MatchRange]) -> usize {
     prepared.first().map(|r| r.start).unwrap_or(0)
 }
 
-fn window_around(source: &str, anchor: usize, budget_cols: usize) -> (usize, usize, &'static str) {
+fn window_around(source: &str, anchor: usize, budget_cols: usize) -> (usize, usize) {
     // Find grapheme window of budget_cols containing anchor near start of window
     let anchor = anchor.min(source.len());
     // Prefer anchor near 1/3 of window so context before match exists
@@ -783,7 +782,7 @@ fn window_around(source: &str, anchor: usize, budget_cols: usize) -> (usize, usi
             used += w;
         }
     }
-    (start, end.max(start), "window")
+    (start, end.max(start))
 }
 
 fn take_display_cols_end(s: &str, max_cols: usize) -> String {
@@ -810,7 +809,6 @@ fn middle_truncate(
     head: &str,
     tail: &str,
     start_tail: usize,
-    ht: &HighlightedText<'_>,
 ) -> (String, Vec<MatchRange>, MatchRange) {
     let ellipsis = "…";
     let text = format!("{head}{ellipsis}{tail}");
@@ -828,7 +826,6 @@ fn middle_truncate(
             ));
         }
     }
-    let _ = ht;
     (
         text,
         shifted,
@@ -959,7 +956,6 @@ fn match_span<'a>(piece: &'a str, kind: MatchKind, ht: &HighlightedText<'_>) -> 
     {
         s = s.reverse(true);
     }
-    let _ = Modifier::BOLD; // style via strong
     s
 }
 
@@ -982,53 +978,34 @@ pub fn substring_ranges(source: &str, query: &str) -> MatchRanges {
     ranges.prepare(source)
 }
 
-/// Case-insensitive substring matches (ASCII-oriented; Unicode lowercases per char).
+/// Case-insensitive substring matches (Unicode-aware via per-char `char::to_lowercase`).
 #[must_use]
 pub fn substring_ranges_ignore_ascii_case(source: &str, query: &str) -> MatchRanges {
     if query.is_empty() {
         return MatchRanges::new();
     }
     let q: String = query.chars().flat_map(char::to_lowercase).collect();
+    let lower: String = source.chars().flat_map(char::to_lowercase).collect();
+    // Fold once, then map each lowercased byte offset back to its source byte
+    // offset so match ranges address the original string exactly.
+    let mut map = Vec::with_capacity(lower.len() + 1);
+    let mut si = 0usize;
+    for c in source.chars() {
+        for _ in c.to_lowercase() {
+            map.push(si);
+        }
+        si += c.len_utf8();
+    }
+    map.push(source.len());
     let mut ranges = MatchRanges::new();
-    let mut byte = 0;
-    let lower_source: String = source.chars().flat_map(char::to_lowercase).collect();
-    // Map lower_source indices carefully — for ASCII-heavy labels only.
-    // Safer approach: walk source graphemes
-    let _ = lower_source;
-    let ql = q.len();
-    while byte < source.len() {
-        let rest = &source[byte..];
-        if let Some(rel) = rest.to_lowercase().find(&q) {
-            // find byte offset: walk chars in rest
-            let mut abs = byte;
-            let mut skipped = 0usize;
-            for (i, c) in rest.char_indices() {
-                if skipped == rel {
-                    abs = byte + i;
-                    break;
-                }
-                skipped += c.to_lowercase().next().map(|x| x.len_utf8()).unwrap_or(1);
-            }
-            // end: walk query length in lower space — approximate by taking query.chars count from abs
-            let end = {
-                let mut e = abs;
-                let mut need = ql;
-                for c in source[abs..].chars() {
-                    let lw: String = c.to_lowercase().collect();
-                    if need < lw.len() {
-                        break;
-                    }
-                    need -= lw.len();
-                    e += c.len_utf8();
-                    if need == 0 {
-                        break;
-                    }
-                }
-                e
-            };
-            ranges.push(MatchRange::new(abs, end).snap_graphemes(source));
-            byte = end.max(abs + 1);
-        } else {
+    let mut start = 0usize;
+    while let Some(rel) = lower[start..].find(&q) {
+        let abs_l = start + rel;
+        let abs = map[abs_l];
+        let end = map[abs_l + q.len()];
+        ranges.push(MatchRange::new(abs, end).snap_graphemes(source));
+        start = abs_l + q.len().max(1);
+        if start >= lower.len() {
             break;
         }
     }

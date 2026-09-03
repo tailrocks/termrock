@@ -917,7 +917,6 @@ impl<'a, Id: Clone + PartialEq> SegmentedControl<'a, Id> {
         }
 
         // Movement: FollowFocus — move cursor and select
-        let before = state.cursor.clone();
         if let Some(mv) = default_list_intent(key) {
             match mv {
                 UiIntent::Move(NavigationMove::Next | NavigationMove::Right) => {
@@ -983,7 +982,6 @@ impl<'a, Id: Clone + PartialEq> SegmentedControl<'a, Id> {
             state.cursor = Some(id.clone());
             return self.commit(state, id);
         }
-        let _ = before;
         SegmentedControlOutcome::Ignored
     }
 

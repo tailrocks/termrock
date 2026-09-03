@@ -700,10 +700,6 @@ impl CheckpointTimelineState {
     fn sync_timeline_cursor(&mut self) {
         self.timeline.cursor = self.cursor;
         self.timeline.following = self.following;
-        if let Some(id) = self.selected.clone() {
-            // TimelineState selected is private — cursor drives paint selection
-            let _ = id;
-        }
     }
 
     fn select_cursor(&mut self) -> CheckpointTimelineOutcome {

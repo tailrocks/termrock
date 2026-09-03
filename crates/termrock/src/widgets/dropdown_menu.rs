@@ -196,7 +196,7 @@ fn flatten_menu_nodes_into<Id: Clone>(
 
 /// Measure preferred overlay size for a panel.
 #[must_use]
-pub fn measure_menu_panel<Id>(items: &[MenuNode<Id>], ascii: bool) -> OverlaySize {
+pub fn measure_menu_panel<Id>(items: &[MenuNode<Id>]) -> OverlaySize {
     let mut max_w = 14u16;
     let mut h = 2u16; // borders
     for item in items {
@@ -225,7 +225,6 @@ pub fn measure_menu_panel<Id>(items: &[MenuNode<Id>], ascii: bool) -> OverlaySiz
             .saturating_add(reason)
             .saturating_add(2);
         max_w = max_w.max(w);
-        let _ = ascii;
     }
     OverlaySize {
         width: max_w.min(64),
@@ -695,7 +694,7 @@ impl DropdownMenuState {
         root: &[MenuNode<Id>],
         opener_focus: Option<F>,
     ) -> OverlayOutcome<F> {
-        let size = measure_menu_panel(root, false);
+        let size = measure_menu_panel(root);
         if self.context_mode {
             open_context_menu_overlay(stack, bounds, anchor_or_origin, size, opener_focus)
         } else {
@@ -1123,7 +1122,7 @@ impl<'a, Id> DropdownMenu<'a, Id> {
                 Some(i) => i,
                 None => break,
             };
-            let size = measure_menu_panel(items, false);
+            let size = measure_menu_panel(items);
             if depth == 0 {
                 // Host usually places root; clamp to area.
                 let placed = if state.context_mode {
@@ -1544,7 +1543,7 @@ mod tests {
         let mut state = DropdownMenuState::new();
         let out = state.open_from_keyboard(&root, bounds);
         assert!(matches!(out, DropdownMenuOutcome::Opened { .. }));
-        let size = measure_menu_panel(&root, false);
+        let size = measure_menu_panel(&root);
         let o = open_dropdown_menu_overlay(&mut stack, bounds, anchor, size, Some("trigger"));
         assert!(matches!(o, OverlayOutcome::Opened { .. }));
         assert_eq!(stack.top().unwrap().kind, OverlayKind::Menu);
@@ -1558,7 +1557,7 @@ mod tests {
             DropdownMenuOutcome::SubmenuOpened { id: "export" }
         ));
         let sub_items = state.current_items(&root).unwrap();
-        let sub_size = measure_menu_panel(sub_items, false);
+        let sub_size = measure_menu_panel(sub_items);
         let sub_anchor = Rect::new(20, 8, 12, 1);
         let s1 = open_menu_submenu_overlay(
             &mut stack,
@@ -1582,7 +1581,7 @@ mod tests {
             DropdownMenuOutcome::SubmenuOpened { id: "export-img" }
         ));
         let deep = state.current_items(&root).unwrap();
-        let dsize = measure_menu_panel(deep, false);
+        let dsize = measure_menu_panel(deep);
         let s2 = open_menu_submenu_overlay(
             &mut stack,
             bounds,
@@ -1617,7 +1616,7 @@ mod tests {
         let mut stack = OverlayStack::<()>::new();
         let mut state = DropdownMenuState::context();
         let _ = state.open_from_context_pointer(&root, bounds);
-        let size = measure_menu_panel(&root, false);
+        let size = measure_menu_panel(&root);
         let _ = open_context_menu_overlay(&mut stack, bounds, origin, size, None);
         assert_eq!(stack.top().unwrap().kind, OverlayKind::ContextMenu);
         let placed = place_context_menu(bounds, origin, size);

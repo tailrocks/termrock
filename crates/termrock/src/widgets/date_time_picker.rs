@@ -1643,10 +1643,9 @@ impl DateTimePickerState {
                 let d = c.to_digit(10).unwrap_or(0);
                 let hour = d.min(9);
                 let mins = hour * 60;
-                if let Some(t) = CivilTime::from_minutes(mins) {
+                if CivilTime::from_minutes(mins).is_some() {
                     let id = mins.to_string();
                     self.time_collection.set_active(Some(id));
-                    let _ = t;
                     return DateTimePickerOutcome::Changed;
                 }
             }

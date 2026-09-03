@@ -1031,11 +1031,7 @@ impl QueryEditorState {
     }
 
     /// Mouse: click focus zones; else forward to editor when focused.
-    pub fn handle_mouse(
-        &mut self,
-        event: MouseEvent,
-        diagnostics: &[Diagnostic<'_>],
-    ) -> QueryEditorOutcome {
+    pub fn handle_mouse(&mut self, event: MouseEvent) -> QueryEditorOutcome {
         if !self.accepts_input {
             return QueryEditorOutcome::Ignored;
         }
@@ -1045,7 +1041,6 @@ impl QueryEditorState {
             return self.set_focus(QueryFocus::Results);
         }
         if !slots.diagnostics.is_empty() && slots.diagnostics.contains(pos) {
-            let _ = diagnostics;
             return self.set_focus(QueryFocus::Diagnostics);
         }
         if !slots.parameters.is_empty() && slots.parameters.contains(pos) {

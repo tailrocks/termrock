@@ -968,7 +968,6 @@ impl BackgroundTaskPanelState {
                             };
                         }
                     }
-                    let _ = term_lines;
                 }
                 BackgroundTaskPanelOutcome::Ignored
             }
@@ -1324,9 +1323,6 @@ impl<'a> BackgroundTaskPanel<'a> {
             task.command.as_deref().unwrap_or(task.title.as_str()),
         )
         .status(task.status.to_terminal_status());
-        if let Some(ms) = task.duration_ms {
-            let _ = ms;
-        }
         state.output.colorless = self.colorless;
         if state.output.is_following() {
             state

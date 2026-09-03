@@ -988,7 +988,6 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
                     self.previous_index = Some(region.index);
                     return TreeTableOutcome::Selected(region.id.clone());
                 }
-                let _ = columns;
                 TreeTableOutcome::Ignored
             }
             MouseEventKind::Down(MouseButton::Right) => {

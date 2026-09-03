@@ -1251,16 +1251,9 @@ impl<'a> NotificationCenter<'a> {
                 ToastKind::Progress => "filter: progress",
                 ToastKind::Undo => "filter: undo",
             },
-            NotificationFilter::Group(g) => {
-                // short
-                let _ = g;
-                "filter: group"
-            }
+            NotificationFilter::Group(_) => "filter: group",
             NotificationFilter::Source(_) => "filter: source",
-            NotificationFilter::Query(q) => {
-                let _ = q;
-                "filter: query"
-            }
+            NotificationFilter::Query(_) => "filter: query",
         };
         buffer.set_stringn(
             inner.x,

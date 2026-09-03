@@ -837,11 +837,8 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
             .collect()
     }
 
-    fn bump_generation(&mut self) -> u64 {
-        let prev = self.generation;
+    fn bump_generation(&mut self) {
         self.generation = self.generation.saturating_add(1);
-        let _ = prev;
-        self.generation
     }
 
     fn active_provider<'a>(
@@ -961,12 +958,12 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
         self.provider_index = index;
         let to = providers[index].id.clone();
         self.restore_memory(&to);
-        let generation = self.bump_generation();
+        self.bump_generation();
         self.loading = true;
         self.stream_complete = false;
         let request = self
             .build_request(providers, 0)
-            .unwrap_or_else(|| QuickOpenSearchRequest::new(&to, "", "", generation));
+            .unwrap_or_else(|| QuickOpenSearchRequest::new(&to, "", "", self.generation));
         QuickOpenOutcome::ProviderChanged { from, to, request }
     }
 
@@ -1003,8 +1000,7 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
                 }
             }
         }
-        let generation = self.bump_generation();
-        let _ = generation;
+        self.bump_generation();
         self.loading = true;
         self.stream_complete = false;
         match self.build_request(providers, 0) {

@@ -359,26 +359,23 @@ impl<'a> Recovery<'a> {
 
     /// Focus targets in tab order.
     fn focus_targets(self) -> [ErrorFocus; 5] {
+        let candidates = [
+            self.retry.is_some().then_some(ErrorFocus::Retry),
+            self.alternative
+                .is_some()
+                .then_some(ErrorFocus::Alternative),
+            self.copy_diagnostics.then_some(ErrorFocus::CopyDiagnostics),
+            self.report_issue
+                .is_some()
+                .then_some(ErrorFocus::ReportIssue),
+        ];
         let mut out = [ErrorFocus::None; 5];
         let mut i = 0usize;
-        if self.retry.is_some() {
-            out[i] = ErrorFocus::Retry;
-            i += 1;
-        }
-        if self.alternative.is_some() {
-            out[i] = ErrorFocus::Alternative;
-            i += 1;
-        }
-        if self.copy_diagnostics {
-            out[i] = ErrorFocus::CopyDiagnostics;
-            i += 1;
-        }
-        if self.report_issue.is_some() {
-            out[i] = ErrorFocus::ReportIssue;
+        for target in candidates.into_iter().flatten() {
+            out[i] = target;
             i += 1;
         }
         // Toggle details is always available when technical present — added by state machine
-        let _ = i;
         out
     }
 }
@@ -623,11 +620,6 @@ impl<'a> ErrorState<'a> {
     /// Resolved illustration.
     #[must_use]
     pub fn resolved_glyph(&self) -> &'static str {
-        if let Some(g) = self.illustration {
-            // Caller override may be non-static; paint path uses display string separately.
-            // For API, prefer kind glyph when override is temporary — still return kind for measure.
-            let _ = g;
-        }
         self.kind.glyph(self.use_ascii())
     }
 

@@ -1498,7 +1498,6 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
                         }
                     }
                     paint_line(buffer, x, area.y, remain, &text, value_style);
-                    let _ = remain;
                 }
             }
         }

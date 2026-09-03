@@ -347,13 +347,12 @@ impl SetupWizardState {
 
     /// Resume from saved progress (chrome only).
     pub fn resume(&mut self, progress: &WizardProgress) -> SetupWizardOutcome {
-        let out = self.wizard.restore_progress(progress);
+        let _ = self.wizard.restore_progress(progress);
         self.cancel_confirm = false;
         let step = self.wizard.step();
         if let Some(kind) = self.kinds.get(step) {
             self.wizard.set_gate(kind.default_gate());
         }
-        let _ = out;
         SetupWizardOutcome::Resumed { step }
     }
 
@@ -515,7 +514,6 @@ impl SetupWizardState {
             FormWizardOutcome::StepChanged { to, reason, .. } => {
                 if let Some(kind) = self.kinds.get(*to) {
                     // Preserve resume gates; for Next set kind default if still default
-                    let _ = reason;
                     if matches!(
                         reason,
                         StepChangeReason::Next | StepChangeReason::Back | StepChangeReason::Skip

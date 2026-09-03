@@ -857,16 +857,8 @@ impl SessionPickerState {
 
         match key.code {
             KeyCode::Esc => SessionPickerOutcome::Cancelled,
-            KeyCode::Up | KeyCode::Char('k')
-                if key.modifiers.is_empty() && !self.is_typing_search(key) =>
-            {
-                self.move_cursor(-1)
-            }
-            KeyCode::Down | KeyCode::Char('j')
-                if key.modifiers.is_empty() && !self.query_consuming_char(key) =>
-            {
-                self.move_cursor(1)
-            }
+            KeyCode::Up | KeyCode::Char('k') if key.modifiers.is_empty() => self.move_cursor(-1),
+            KeyCode::Down | KeyCode::Char('j') if key.modifiers.is_empty() => self.move_cursor(1),
             KeyCode::Enter => {
                 let Some(s) = self.current() else {
                     return SessionPickerOutcome::Ignored;
@@ -980,17 +972,6 @@ impl SessionPickerState {
             }
             _ => SessionPickerOutcome::Ignored,
         }
-    }
-
-    fn is_typing_search(&self, _key: KeyEvent) -> bool {
-        // when query non-empty, j/k still navigate (like most pickers)
-        false
-    }
-
-    fn query_consuming_char(&self, key: KeyEvent) -> bool {
-        // When query non-empty, plain j/k navigate not type — already handled
-        let _ = key;
-        false
     }
 
     fn push_query_char(&mut self, c: char) -> SessionPickerOutcome {

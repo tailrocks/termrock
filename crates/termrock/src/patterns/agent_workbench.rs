@@ -888,9 +888,8 @@ pub fn paint_agent_workbench(buffer: &mut Buffer, area: Rect, surfaces: Workbenc
         .unwrap_or_else(|| WorkbenchDensity::for_width(area.width));
     let panes = agent_workbench_layout_density(area, &state.workspace, density);
 
-    let permission_rect = permission.as_ref().and_then(|(widget, perm_state)| {
+    let permission_rect = permission.as_ref().and_then(|(_, perm_state)| {
         if perm_state.is_empty() {
-            let _ = widget;
             None
         } else {
             Some(permission_modal_rect(area))

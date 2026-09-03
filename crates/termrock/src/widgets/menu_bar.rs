@@ -1459,7 +1459,6 @@ impl<'a, Id> MenuBar<'a, Id> {
             .map(|(_, r)| *r)
             .unwrap_or(Rect::new(state.bar_origin.0, state.bar_origin.1, 8, 1));
 
-        let mut path: Vec<usize> = Vec::new();
         let mut items = menu.items.as_slice();
         let mut anchor = root_anchor;
 
@@ -1486,7 +1485,6 @@ impl<'a, Id> MenuBar<'a, Id> {
             if depth + 1 < state.cascade.len() {
                 if let Some(&idx) = state.open_path.get(depth) {
                     if let Some(node) = items.get(idx) {
-                        path.push(idx);
                         items = node.children.as_slice();
                     } else {
                         break;
@@ -1496,7 +1494,6 @@ impl<'a, Id> MenuBar<'a, Id> {
                 }
             }
         }
-        let _ = path;
     }
 
     fn paint_panel_at(

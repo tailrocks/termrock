@@ -146,11 +146,10 @@ pub fn paint_studio_shell(
     let slots = layout_studio_shell(area, config);
 
     if slots.preview.height > 0 {
-        let inner = Panel::new(system)
+        Panel::new(system)
             .title(view.preview_title)
             .emphasis(PanelChrome::for_focus(preview_focused))
             .paint(slots.preview, buffer, None);
-        let _ = inner;
     }
 
     if slots.inspector.height > 0 {

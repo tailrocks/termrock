@@ -451,8 +451,8 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
             KeyCode::Down | KeyCode::Char('j') if key.modifiers.contains(KeyModifiers::SHIFT) => {
                 self.shift_extend_or_expand(visible_rows, columns, 0, 1)
             }
-            KeyCode::Left | KeyCode::Char('h') => self.move_horizontal(visible_rows, columns, -1),
-            KeyCode::Right | KeyCode::Char('l') => self.move_horizontal(visible_rows, columns, 1),
+            KeyCode::Left | KeyCode::Char('h') => self.move_horizontal(columns, -1),
+            KeyCode::Right | KeyCode::Char('l') => self.move_horizontal(columns, 1),
             KeyCode::Char('a') if is_press && key.modifiers.contains(KeyModifiers::CONTROL) => {
                 DataTableOutcome::SelectAllRequested
             }
@@ -879,14 +879,12 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
 
     fn move_horizontal(
         &mut self,
-        visible_rows: &[RowId],
         columns: &ColumnModel<ColId>,
         delta: i16,
     ) -> DataTableOutcome<RowId, ColId>
     where
         ColId: Clone,
     {
-        let _ = visible_rows;
         let vis_n = columns.visible().count();
         if vis_n == 0 {
             return DataTableOutcome::Ignored;
@@ -1031,8 +1029,8 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
                 self.sync_cursor_focus();
                 DataTableOutcome::CursorMoved
             }
-            UiIntent::Move(NavigationMove::Left) => self.move_horizontal(visible_rows, columns, -1),
-            UiIntent::Move(NavigationMove::Right) => self.move_horizontal(visible_rows, columns, 1),
+            UiIntent::Move(NavigationMove::Left) => self.move_horizontal(columns, -1),
+            UiIntent::Move(NavigationMove::Right) => self.move_horizontal(columns, 1),
             UiIntent::Page(PageMove::Forward) => {
                 let step = i64::from(self.window.viewport.max(1));
                 if self.window.scroll_by(step) {

@@ -124,7 +124,7 @@ fn measure(
     });
 }
 
-fn palette_pairs(preset: &'static str, palette: &RolePalette) -> Vec<Measured> {
+fn palette_pairs(palette: &RolePalette) -> Vec<Measured> {
     let mut out = Vec::new();
     for surface in SURFACES {
         for role in [Role::Text, Role::TextStrong] {
@@ -222,11 +222,10 @@ fn palette_pairs(preset: &'static str, palette: &RolePalette) -> Vec<Measured> {
             1.15,
         );
     }
-    let _ = preset;
     out
 }
 
-fn recipe_pairs(preset: &'static str, system: &DesignSystem) -> Vec<Measured> {
+fn recipe_pairs(system: &DesignSystem) -> Vec<Measured> {
     let palette = &system.palette;
     let mut out = Vec::new();
     for variant in [
@@ -359,7 +358,6 @@ fn recipe_pairs(preset: &'static str, system: &DesignSystem) -> Vec<Measured> {
             1.15,
         );
     }
-    let _ = preset;
     out
 }
 
@@ -405,19 +403,15 @@ fn assert_floor_exact(measured: Vec<Measured>, shortfalls: &[(&str, &str)]) {
 
 #[test]
 fn contrast_floor_holds() {
-    let (preset, palette) = junie_palette();
-    let measured = palette_pairs(preset, &palette);
+    let (_, palette) = junie_palette();
+    let measured = palette_pairs(&palette);
     assert!(measured.len() > 45, "floor table lost its coverage");
     assert_floor_exact(measured, PALETTE_SHORTFALLS);
 }
 
 #[test]
 fn recipe_pairs_measure_their_declared_shortfalls() {
-    let (preset, _) = junie_palette();
-    assert_floor_exact(
-        recipe_pairs(preset, &DesignSystem::junie()),
-        RECIPE_SHORTFALLS,
-    );
+    assert_floor_exact(recipe_pairs(&DesignSystem::junie()), RECIPE_SHORTFALLS);
 }
 
 #[test]
@@ -425,8 +419,8 @@ fn floor_table_covers_every_text_tier() {
     // A new text tier that never reaches this table is a contrast defect
     // waiting to happen, so the table names the tiers it measures. `TextGhost`
     // is absent on purpose: it is a backdrop tier and never carries content.
-    let (preset, palette) = junie_palette();
-    let measured = palette_pairs(preset, &palette);
+    let (_, palette) = junie_palette();
+    let measured = palette_pairs(&palette);
     for tier in [
         "Text",
         "TextStrong",

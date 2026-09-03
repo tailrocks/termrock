@@ -942,12 +942,7 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
         kinds
     }
 
-    fn line_style_overlay(
-        &self,
-        base: Style,
-        kinds: &[CodeHighlightKind],
-        monochrome_syntax: bool,
-    ) -> Style {
+    fn line_style_overlay(&self, base: Style, kinds: &[CodeHighlightKind]) -> Style {
         let mut style = base;
         for kind in kinds {
             let role_style = self.system.style(kind.role());
@@ -986,11 +981,6 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
                     }
                 }
             }
-        }
-        if monochrome_syntax && style.add_modifier == Modifier::empty() {
-            // Ensure colorless path still differentiates via underline on keywords
-            // when highlighter returns Syntax roles that quantize to same gray.
-            let _ = monochrome_syntax;
         }
         style
     }
@@ -1448,7 +1438,7 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
                 style = monochrome_syntax_style(style, mono);
             }
             style = field.patch(style);
-            style = self.line_style_overlay(style, kinds, mono);
+            style = self.line_style_overlay(style, kinds);
             if !kinds.iter().any(|k| {
                 matches!(
                     k,

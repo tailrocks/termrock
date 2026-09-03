@@ -32,9 +32,7 @@ use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers},
     style::{DesignSystem, PanelChrome, Role},
     text::take_display_cols,
-    widgets::{
-        NavItem, Panel, PanelVariant, Sidebar, SidebarOutcome, SidebarPresentation, SidebarState,
-    },
+    widgets::{NavItem, Panel, PanelVariant, Sidebar, SidebarOutcome, SidebarState},
 };
 
 use super::app_shell::{AppShellConfig, AppShellRecipe, AppShellSlots, layout_app_shell};
@@ -417,7 +415,6 @@ pub fn paint_app_dashboard<Id: Clone + PartialEq>(
 
     // Sidebar
     if !slots.sidebar.is_empty() {
-        let rail = matches!(state.sidebar.presentation(), SidebarPresentation::Rail);
         let mut panel_state = crate::widgets::PanelState::default();
         let body = Panel::new(system)
             .title("Nav")
@@ -430,7 +427,6 @@ pub fn paint_app_dashboard<Id: Clone + PartialEq>(
             .paint(slots.sidebar, buffer, Some(&mut panel_state));
         // Prefer painting into body if panel carved space; else full sidebar.
         let nav_area = if body.height > 0 { body } else { slots.sidebar };
-        let _ = rail;
         Sidebar::new(surfaces.nav, system)
             .focused(state.pane == AppDashboardPane::Sidebar)
             .show_panel(false)
@@ -499,6 +495,7 @@ pub fn paint_app_dashboard<Id: Clone + PartialEq>(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::widgets::SidebarPresentation;
     use crate::widgets::filter_nav_collapsed;
 
     fn press(c: char) -> KeyEvent {

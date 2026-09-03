@@ -473,16 +473,15 @@ impl<'a> AvatarGlyph<'a> {
                 fit_glyph_text(g.text, cols, ascii)
             }
         };
-        if self.bracketed || (ascii && matches!(self.face, AvatarFace::Initials) && cols >= 2) {
-            // Bracketed 2-cell face: use [A] style for 2 cols? That is 3 cols.
-            // Keep raw for width contract; bracket only when compact uses 1 cell
-            // or when explicitly requested and we can fit in body via single-char.
-            if cols == 1 {
-                return raw;
-            }
-            // Explicit bracketed with 2 cols: first initial only centered as "A "
-            // Prefer no expand beyond cols — skip brackets to honor width guarantee.
-            let _ = ascii;
+        // Bracketed 2-cell face: use [A] style for 2 cols? That is 3 cols.
+        // Keep raw for width contract; bracket only when compact uses 1 cell
+        // or when explicitly requested and we can fit in body via single-char.
+        // Explicit bracketed with 2 cols: first initial only centered as "A "
+        // Prefer no expand beyond cols — skip brackets to honor width guarantee.
+        if (self.bracketed || (ascii && matches!(self.face, AvatarFace::Initials) && cols >= 2))
+            && cols == 1
+        {
+            return raw;
         }
         // Final clamp to exact cols
         let mut out = take_display_cols(&raw, cols).into_owned();

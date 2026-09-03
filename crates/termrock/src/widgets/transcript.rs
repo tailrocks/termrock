@@ -716,7 +716,6 @@ fn kind_style(system: &DesignSystem, kind: TranscriptKind, colorless: bool) -> S
         };
     }
     let style = system.style(kind.role());
-    let _ = kind;
     style
 }
 

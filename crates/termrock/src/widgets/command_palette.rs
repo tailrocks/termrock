@@ -863,8 +863,7 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
         self.query = TextInputState::new("")
             .with_allow_empty(true)
             .with_editing();
-        let generation = self.bump_generation();
-        let _ = generation;
+        self.bump_generation();
         CommandPaletteOutcome::PageOpened { page_id }
     }
 
@@ -1089,8 +1088,7 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
         self.query = TextInputState::new(&q)
             .with_allow_empty(true)
             .with_editing();
-        let generation = self.bump_generation();
-        let _ = generation;
+        self.bump_generation();
         CommandPaletteOutcome::HistoryApplied { query: q }
     }
 

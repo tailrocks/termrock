@@ -1337,7 +1337,6 @@ impl<Id: Clone + PartialEq> DialogState<Id> {
             DialogClosePolicy::Dismissible => {
                 // Esc dismisses the modal (opener restore via stack). Hosts that
                 // want Esc to fire a Cancel *button* set ConfirmOnly + cancel_action.
-                let _ = actions;
                 self.open = false;
                 DialogOutcome::Cancelled
             }

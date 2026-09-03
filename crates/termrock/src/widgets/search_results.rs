@@ -1213,12 +1213,7 @@ impl<'a> SearchResults<'a> {
                         item.title_matches.unwrap_or(&[]),
                         items_match_focused(self.items, item.id, state, false),
                     );
-                    let title_disp = {
-                        let ranges = MatchRanges::from_ranges(title_ranges.iter().copied())
-                            .normalized(item.title);
-                        let _ = ranges;
-                        take_display_cols(item.title, title_budget).to_string()
-                    };
+                    let title_disp = take_display_cols(item.title, title_budget).to_string();
                     // The kind rides its glyph; the title is what you read
                     // (plans/012 Step 3).
                     let mut tiers = TieredRow::with_separator("");
