@@ -31,6 +31,7 @@ use super::db::{Catalog, Environment, SafeMode, connections};
 use super::model::{History, SwitchItem, SwitchTarget, SwitcherIndex};
 use super::paint;
 use super::sql::{self, Decision};
+use super::tabs::{TABLE_GRID, TABLE_MODE};
 use super::text::truncate_middle;
 use super::workbench::{EXPLORER, WorkTab, Workbench};
 use crate::ctx::{Interaction, LayerId, RenderCtx};
@@ -749,6 +750,18 @@ impl App {
         }
         if ctrl && matches!(key.code, KeyCode::Char('o') | KeyCode::Char('O')) {
             self.open_switcher();
+            return true;
+        }
+        if ctrl && matches!(key.code, KeyCode::Char('d') | KeyCode::Char('D')) {
+            let Some(wb) = self.workbench.as_mut() else {
+                return false;
+            };
+            let Some(WorkTab::Table(tab)) = wb.tabs.get_mut(wb.active) else {
+                return false;
+            };
+            let structure = tab.mode.selected != Some(1);
+            tab.mode.set_selected(Some(u8::from(structure)));
+            cx.set_focus(if structure { TABLE_MODE } else { TABLE_GRID });
             return true;
         }
         if ctrl && matches!(key.code, KeyCode::Char('r') | KeyCode::Char('R')) {

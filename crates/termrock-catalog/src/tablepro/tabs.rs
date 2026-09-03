@@ -38,7 +38,7 @@ const RESULTS: WidgetId = WidgetId::of("workbench.results");
 const RESULT_TABS: WidgetId = WidgetId::of("workbench.result-tabs");
 const PLAN: WidgetId = WidgetId::of("workbench.plan");
 pub(crate) const TABLE_GRID: WidgetId = WidgetId::of("workbench.table");
-const TABLE_MODE: WidgetId = WidgetId::of("workbench.table-mode");
+pub(crate) const TABLE_MODE: WidgetId = WidgetId::of("workbench.table-mode");
 const HIST_SEARCH: WidgetId = WidgetId::of("workbench.history-search");
 pub(crate) const HIST_LIST: WidgetId = WidgetId::of("workbench.history-list");
 
@@ -347,6 +347,13 @@ impl TableTab {
 
     /// Re-run the table query with the current sort (source `TableTab::load`).
     pub fn load(&mut self, cat: &Catalog) {
+        // Pending cells are keyed by the loaded row index. Replacing rows
+        // while a sort/reload is pending would either drop them or attach
+        // them to a different row, so dirty tabs explicitly stay put until
+        // the caller saves or discards the changes.
+        if !self.grid.pending.is_empty() {
+            return;
+        }
         let order = self
             .grid
             .sort
@@ -1261,39 +1268,133 @@ fn thousands(n: usize) -> String {
     out
 }
 
-fn render_structure(table: &DbTable, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx<'_>) {
+fn paint_structure_card(
+    area: Rect,
+    title: &str,
+    meta: Option<&str>,
+    rows: &[(String, Style)],
+    empty: &str,
+    buf: &mut Buffer,
+    ctx: &mut RenderCtx<'_>,
+) {
     let t = ctx.theme;
-    let (inner, bg) = layout::card(area, buf, t, Some("Columns"), None, false);
-    buf.set_string(
-        inner.x,
-        inner.y,
-        format!("{:<16} {:<14} {:<8} {}", "name", "type", "null", "default"),
-        t.muted().bg(bg),
-    );
-    for (i, c) in table.columns.iter().enumerate() {
-        let y = inner.y + 1 + i as u16;
+    let (inner, bg) = layout::card(area, buf, t, Some(title), meta, false);
+    if inner.is_empty() {
+        return;
+    }
+    if rows.is_empty() {
+        buf.set_string(inner.x, inner.y, empty, t.muted().bg(bg));
+        return;
+    }
+    for (i, (row, style)) in rows.iter().enumerate() {
+        let y = inner.y.saturating_add(u16::try_from(i).unwrap_or(u16::MAX));
         if y >= inner.bottom() {
             break;
         }
-        let line = format!(
-            "{:<16} {:<14} {:<8} {}",
-            ttext::truncate(&c.name, 16),
-            c.ty.sql(),
-            if c.nullable { "yes" } else { "no" },
-            c.default.as_deref().unwrap_or("")
-        );
-        let style = if c.primary {
-            t.primary().bg(bg)
-        } else {
-            t.secondary().bg(bg)
-        };
         buf.set_string(
             inner.x,
             y,
-            ttext::truncate(&line, inner.width as usize),
-            style,
+            ttext::truncate(row, inner.width as usize),
+            style.bg(bg),
         );
     }
+}
+
+fn render_structure(table: &DbTable, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx<'_>) {
+    let t = ctx.theme;
+    let (columns_area, metadata_area) = layout::columns(area, 52, 2);
+
+    let mut columns = Vec::with_capacity(table.columns.len().saturating_add(1));
+    columns.push((
+        format!(
+            "{:<16} {:<14} {:<8} {:<22} {}",
+            "name", "type", "null", "default", "key"
+        ),
+        t.muted(),
+    ));
+    for c in &table.columns {
+        let key = if c.primary {
+            "PK"
+        } else if c.references.is_some() {
+            "FK"
+        } else {
+            ""
+        };
+        let line = format!(
+            "{:<16} {:<14} {:<8} {:<22} {}",
+            ttext::truncate(&c.name, 16),
+            ttext::truncate(c.ty.sql(), 14),
+            if c.nullable { "yes" } else { "no" },
+            ttext::truncate(c.default.as_deref().unwrap_or("—"), 22),
+            key
+        );
+        let style = if c.primary {
+            t.primary()
+        } else if c.references.is_some() {
+            t.secondary()
+        } else {
+            t.primary()
+        };
+        columns.push((line, style));
+    }
+    let column_count = format!("{} columns", table.columns.len());
+    paint_structure_card(
+        columns_area,
+        "Columns",
+        Some(&column_count),
+        &columns,
+        "No columns",
+        buf,
+        ctx,
+    );
+
+    let mut metadata = Vec::new();
+    metadata.push((
+        format!("Indexes ({})", table.indexes.len()),
+        t.primary().add_modifier(Modifier::BOLD),
+    ));
+    metadata.extend(table.indexes.iter().map(|index| {
+        (
+            format!(
+                "{} · {} · {} ({})",
+                index.name,
+                if index.unique { "unique" } else { "not unique" },
+                index.method,
+                index.columns.join(", ")
+            ),
+            t.secondary(),
+        )
+    }));
+    metadata.push((
+        format!("Constraints ({})", table.constraints.len()),
+        t.primary().add_modifier(Modifier::BOLD),
+    ));
+    metadata.extend(table.constraints.iter().map(|constraint| {
+        (
+            format!(
+                "{} · {} {}",
+                constraint.name, constraint.kind, constraint.definition
+            ),
+            t.secondary(),
+        )
+    }));
+    metadata.push((
+        format!("Triggers ({})", table.triggers.len()),
+        t.primary().add_modifier(Modifier::BOLD),
+    ));
+    metadata.extend(table.triggers.iter().map(|trigger| {
+        let (name, detail) = trigger.split_once(' ').unwrap_or((trigger.as_str(), ""));
+        (format!("{name} · {detail}"), t.secondary())
+    }));
+    paint_structure_card(
+        metadata_area,
+        "Metadata",
+        Some("catalog"),
+        &metadata,
+        "No metadata",
+        buf,
+        ctx,
+    );
 }
 
 pub fn render_history(
@@ -1418,6 +1519,10 @@ pub fn handle_table(
                         return Route::Changed;
                     }
                     KeyCode::Char('s') if !key.modifiers.contains(KeyModifiers::CONTROL) => {
+                        if !tab.grid.pending.is_empty() {
+                            cx.status("Cannot sort while pending changes exist");
+                            return Route::Changed;
+                        }
                         let c = tab.grid.cursor_col;
                         tab.grid.sort = match tab.grid.sort {
                             Some((sc, true)) if sc == c => Some((c, false)),

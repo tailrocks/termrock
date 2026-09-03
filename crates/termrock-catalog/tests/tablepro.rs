@@ -13,6 +13,7 @@ use termrock::style::ColorCapability;
 use termrock_catalog::catalog::{CatalogProfile, PageId};
 use termrock_catalog::shell::App as CatalogApp;
 use termrock_catalog::tablepro::db::Catalog;
+use termrock_catalog::tablepro::grid::CellValue;
 use termrock_catalog::tablepro::workbench::WorkTab;
 use termrock_catalog::tablepro::workbench::Workbench;
 use termrock_catalog::tablepro::{App, ParseError, Screen, connections, help_text, parse_args};
@@ -80,6 +81,125 @@ impl Harness {
         }
         s
     }
+}
+
+fn open_orders(h: &mut Harness) {
+    // Connected TablePro starts with the explorer focused: database, schema,
+    // Tables, then organizations/customers/products/orders.
+    for _ in 0..5 {
+        h.key(KeyCode::Down, KeyModifiers::NONE);
+    }
+    h.key(KeyCode::Enter, KeyModifiers::NONE);
+}
+
+#[test]
+fn key_opens_orders_from_explorer() {
+    let mut h = Harness::connected(120, 40);
+    open_orders(&mut h);
+
+    assert!(matches!(
+        h.app.workbench.as_ref().unwrap().active_tab(),
+        Some(WorkTab::Table(table)) if table.name == "orders"
+    ));
+    assert!(h.text().contains("public › orders"), "{}", h.text());
+}
+
+#[test]
+fn key_navigation_sorts_orders_and_marks_header() {
+    let mut h = Harness::connected(120, 40);
+    open_orders(&mut h);
+    for _ in 0..12 {
+        h.key(KeyCode::Right, KeyModifiers::NONE);
+    }
+    h.key(KeyCode::Char('s'), KeyModifiers::NONE);
+
+    let table = match h.app.workbench.as_ref().unwrap().active_tab() {
+        Some(WorkTab::Table(table)) => table,
+        _ => unreachable!(),
+    };
+    assert_eq!(table.grid.cursor_col, 12);
+    assert_eq!(
+        table.grid.sort,
+        Some((12, true)),
+        "created_at should sort ascending"
+    );
+    assert!(!table.table_state.header_regions.is_empty());
+    assert!(h.text().contains("created_at"), "{}", h.text());
+}
+
+#[test]
+fn ctrl_d_switches_between_data_and_structure_metadata() {
+    let mut h = Harness::connected(120, 40);
+    open_orders(&mut h);
+
+    h.key(KeyCode::Char('d'), KeyModifiers::CONTROL);
+    let table = match h.app.workbench.as_ref().unwrap().active_tab() {
+        Some(WorkTab::Table(table)) => table,
+        _ => unreachable!(),
+    };
+    assert_eq!(table.mode.selected, Some(1));
+    let structure = h.text();
+    for item in [
+        "Columns",
+        "Indexes",
+        "Constraints",
+        "Triggers",
+        "orders_customer_idx",
+        "orders_status_check",
+        "orders_audit",
+    ] {
+        assert!(structure.contains(item), "missing {item:?}:\n{structure}");
+    }
+
+    h.key(KeyCode::Char('d'), KeyModifiers::CONTROL);
+    let table = match h.app.workbench.as_ref().unwrap().active_tab() {
+        Some(WorkTab::Table(table)) => table,
+        _ => unreachable!(),
+    };
+    assert_eq!(table.mode.selected, Some(0));
+    assert!(h.text().contains("order_number"), "{}", h.text());
+}
+
+#[test]
+fn explorer_filter_is_key_driven_and_narrows_objects() {
+    let mut h = Harness::connected(120, 40);
+    h.key(KeyCode::BackTab, KeyModifiers::NONE);
+    h.type_text("ord");
+
+    let text = h.text();
+    assert!(text.contains("orders"), "{}", text);
+    assert!(!text.contains("organizations"), "{}", text);
+    assert!(!text.contains("customers"), "{}", text);
+}
+
+#[test]
+fn sort_key_guards_pending_edits_from_reload() {
+    let mut h = Harness::connected(120, 40);
+    open_orders(&mut h);
+    {
+        let wb = h.app.workbench.as_mut().unwrap();
+        let active = wb.active;
+        let table = match wb.tabs.get_mut(active) {
+            Some(WorkTab::Table(table)) => table,
+            _ => unreachable!(),
+        };
+        table
+            .grid
+            .record_cell(0, 4, CellValue::Text("paid".to_owned()));
+        table.load(&Catalog::acme_prod());
+        assert_eq!(table.grid.pending.count(), 1);
+        assert_eq!(table.grid.cell(0, 4), CellValue::Text("paid".to_owned()));
+    }
+
+    h.key(KeyCode::Char('s'), KeyModifiers::NONE);
+    let table = match h.app.workbench.as_ref().unwrap().active_tab() {
+        Some(WorkTab::Table(table)) => table,
+        _ => unreachable!(),
+    };
+    assert_eq!(table.grid.sort, None);
+    assert_eq!(table.grid.pending.count(), 1);
+    assert_eq!(table.grid.cell(0, 4), CellValue::Text("paid".to_owned()));
+    assert!(h.text().contains("pending changes"), "{}", h.text());
 }
 
 #[test]
