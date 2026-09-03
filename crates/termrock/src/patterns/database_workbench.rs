@@ -39,12 +39,13 @@ use crate::{
         WorkspaceState, modal_rect,
     },
     patterns::{
-        ConnectionEntry, ConnectionKind, ConnectionManager, ConnectionManagerOutcome,
-        ConnectionManagerPresentation, ConnectionManagerState, ConnectionStatus, QueryEditor,
-        QueryEditorOutcome, QueryEditorState, QueryRunStatus, ResultCell, ResultColumn,
-        ResultExportFormat, ResultGrid, ResultGridOutcome, ResultGridState, ResultQueryStatus,
-        ResultRow, SchemaBrowser, SchemaBrowserEntry, SchemaBrowserState, SchemaConnStatus,
-        connection_to_reconnecting_state, example_connections,
+        CONNECTION_MANAGER_WINDOW, ConnectionEntry, ConnectionKind, ConnectionManager,
+        ConnectionManagerOutcome, ConnectionManagerPresentation, ConnectionManagerState,
+        ConnectionStatus, QueryEditor, QueryEditorOutcome, QueryEditorState, QueryRunStatus,
+        ResultCell, ResultColumn, ResultExportFormat, ResultGrid, ResultGridOutcome,
+        ResultGridState, ResultQueryStatus, ResultRow, SchemaBrowser, SchemaBrowserEntry,
+        SchemaBrowserState, SchemaConnStatus, connection_to_reconnecting_state,
+        example_connections,
     },
     style::{DesignSystem, PanelChrome, Role},
     widgets::{
@@ -485,7 +486,11 @@ impl DatabaseWorkbenchState {
             .iter()
             .position(|&si| connections.connections[si].status == ConnectionStatus::Connected)
         {
-            connections.cursor = fi;
+            connections.window.set_cursor(
+                fi,
+                connections.filtered_len(),
+                CONNECTION_MANAGER_WINDOW,
+            );
         }
         let gate = connections
             .current()

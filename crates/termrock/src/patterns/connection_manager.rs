@@ -41,6 +41,7 @@ use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::State
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    interaction::CursorWindow,
     style::{DesignSystem, ListRowVisualState, PanelChrome, Role},
     text::display_cols,
     widgets::{
@@ -811,10 +812,8 @@ pub struct ConnectionManagerState {
     pub query: String,
     /// Filtered indices into `connections`.
     filtered: Vec<usize>,
-    /// Cursor into `filtered`.
-    pub cursor: usize,
-    /// Scroll offset.
-    pub scroll: usize,
+    /// Cursor + scroll window into `filtered`.
+    pub window: CursorWindow,
     /// Phase.
     pub phase: ConnectionManagerPhase,
     /// Presentation.
@@ -851,8 +850,7 @@ impl fmt::Debug for ConnectionManagerState {
             .field("connections", &self.connections)
             .field("query", &self.query)
             .field("filtered_len", &self.filtered.len())
-            .field("cursor", &self.cursor)
-            .field("scroll", &self.scroll)
+            .field("window", &self.window)
             .field("phase", &self.phase)
             .field("presentation", &self.presentation)
             .field("list_view", &self.list_view)
@@ -876,8 +874,7 @@ impl Clone for ConnectionManagerState {
             connections: self.connections.clone(),
             query: self.query.clone(),
             filtered: self.filtered.clone(),
-            cursor: self.cursor,
-            scroll: self.scroll,
+            window: self.window,
             phase: self.phase,
             presentation: self.presentation,
             list_view: self.list_view.clone(),
@@ -900,8 +897,7 @@ impl PartialEq for ConnectionManagerState {
         self.connections == other.connections
             && self.query == other.query
             && self.filtered == other.filtered
-            && self.cursor == other.cursor
-            && self.scroll == other.scroll
+            && self.window == other.window
             && self.phase == other.phase
             && self.presentation == other.presentation
             && self.list_view == other.list_view
@@ -934,8 +930,7 @@ impl ConnectionManagerState {
             connections: Vec::new(),
             query: String::new(),
             filtered: Vec::new(),
-            cursor: 0,
-            scroll: 0,
+            window: CursorWindow::new(),
             phase: ConnectionManagerPhase::Browse,
             presentation: ConnectionManagerPresentation::Full,
             list_view: ConnectionListView::All,
@@ -978,7 +973,8 @@ impl ConnectionManagerState {
                 .iter()
                 .position(|&si| self.connections.get(si).is_some_and(|c| c.id == id))
             {
-                self.cursor = fi;
+                self.window
+                    .set_cursor(fi, self.filtered.len(), CONNECTION_MANAGER_WINDOW);
             }
         }
         self.clamp_cursor();
@@ -1021,7 +1017,7 @@ impl ConnectionManagerState {
     /// Current connection.
     #[must_use]
     pub fn current(&self) -> Option<&ConnectionEntry> {
-        let si = *self.filtered.get(self.cursor)?;
+        let si = *self.filtered.get(self.window.cursor())?;
         self.connections.get(si)
     }
 
@@ -1143,18 +1139,8 @@ impl ConnectionManagerState {
     }
 
     fn clamp_cursor(&mut self) {
-        if self.filtered.is_empty() {
-            self.cursor = 0;
-            self.scroll = 0;
-            return;
-        }
-        self.cursor = self.cursor.min(self.filtered.len() - 1);
-        let window = CONNECTION_MANAGER_WINDOW;
-        if self.cursor < self.scroll {
-            self.scroll = self.cursor;
-        } else if self.cursor >= self.scroll + window {
-            self.scroll = self.cursor + 1 - window;
-        }
+        self.window
+            .clamp(self.filtered.len(), CONNECTION_MANAGER_WINDOW);
     }
 
     fn select_cursor(&mut self) -> ConnectionManagerOutcome {
@@ -1166,12 +1152,8 @@ impl ConnectionManagerState {
     }
 
     fn move_cursor(&mut self, delta: isize) -> ConnectionManagerOutcome {
-        if self.filtered.is_empty() {
-            return ConnectionManagerOutcome::Ignored;
-        }
-        let n = self.filtered.len() as isize;
-        self.cursor = (self.cursor as isize + delta).clamp(0, n - 1) as usize;
-        self.clamp_cursor();
+        self.window
+            .move_by(delta, self.filtered.len(), CONNECTION_MANAGER_WINDOW);
         self.select_cursor()
     }
 
@@ -1348,7 +1330,7 @@ impl ConnectionManagerState {
                 let Some((id, fav)) = self.current().map(|c| (c.id.clone(), !c.favorite)) else {
                     return ConnectionManagerOutcome::Ignored;
                 };
-                if let Some(si) = self.filtered.get(self.cursor).copied() {
+                if let Some(si) = self.filtered.get(self.window.cursor()).copied() {
                     if let Some(e) = self.connections.get_mut(si) {
                         e.favorite = fav;
                     }
@@ -1444,15 +1426,13 @@ impl ConnectionManagerState {
             KeyCode::PageDown => self.move_cursor(8),
             KeyCode::PageUp => self.move_cursor(-8),
             KeyCode::Home => {
-                self.cursor = 0;
-                self.clamp_cursor();
+                self.window
+                    .move_first(self.filtered.len(), CONNECTION_MANAGER_WINDOW);
                 self.select_cursor()
             }
             KeyCode::End => {
-                if !self.filtered.is_empty() {
-                    self.cursor = self.filtered.len() - 1;
-                    self.clamp_cursor();
-                }
+                self.window
+                    .move_last(self.filtered.len(), CONNECTION_MANAGER_WINDOW);
                 self.select_cursor()
             }
             _ => ConnectionManagerOutcome::Ignored,
@@ -1614,9 +1594,9 @@ impl ConnectionManagerState {
             .iter()
             .position(|&si| self.connections.get(si).is_some_and(|c| c.id == id))
         {
-            let already = self.cursor == fi;
-            self.cursor = fi;
-            self.clamp_cursor();
+            let already = self.window.cursor() == fi;
+            self.window
+                .set_cursor(fi, self.filtered.len(), CONNECTION_MANAGER_WINDOW);
             if already {
                 if let Some(c) = self.current() {
                     if c.enabled {
@@ -1902,13 +1882,11 @@ impl<'a> ConnectionManager<'a> {
             return;
         }
 
-        let mut offset = state.scroll;
-        if state.cursor < offset {
-            offset = state.cursor;
-        } else if viewport > 0 && state.cursor >= offset + viewport {
-            offset = state.cursor + 1 - viewport;
-        }
-        state.scroll = offset;
+        // Read-only projection: re-derive the visible slice against the
+        // painted viewport without mutating state during paint.
+        let mut view = state.window;
+        view.clamp(state.filtered.len(), viewport);
+        let offset = view.scroll();
 
         let narrow = area.width < 40;
         let tiny = area.width < 28;
@@ -1926,7 +1904,7 @@ impl<'a> ConnectionManager<'a> {
             let Some(c) = state.connections.get(si) else {
                 continue;
             };
-            let selected = row_i == state.cursor;
+            let selected = row_i == state.window.cursor();
             let indicator = StatusIndicator::new(c.status.semantic(), self.system)
                 .label(c.status.label())
                 .colorless(self.colorless);
@@ -2476,7 +2454,8 @@ mod tests {
             .iter()
             .position(|&si| st.connections[si].id == "c4")
             .unwrap();
-        st.cursor = i;
+        st.window
+            .set_cursor(i, st.filtered.len(), CONNECTION_MANAGER_WINDOW);
         let out = st.handle_key(press(KeyCode::Char('t')));
         assert!(matches!(
             out,
@@ -2723,7 +2702,8 @@ mod tests {
             .iter()
             .position(|&si| st.connections[si].id == "c5")
             .unwrap();
-        st.cursor = i;
+        st.window
+            .set_cursor(i, st.filtered.len(), CONNECTION_MANAGER_WINDOW);
         let rs = st.reconnecting_state_for(None).unwrap();
         assert_eq!(rs.phase(), ConnectivityPhase::Disconnected);
         assert!(rs.target().contains("Offline replica"));
@@ -2738,7 +2718,8 @@ mod tests {
             .iter()
             .position(|&si| st.connections[si].id == "c4")
             .unwrap();
-        st.cursor = i;
+        st.window
+            .set_cursor(i, st.filtered.len(), CONNECTION_MANAGER_WINDOW);
         let d = st.diagnostic_for_current().unwrap();
         assert_eq!(d.connection_id, "c4");
         assert!(d.message.contains("refused"));
@@ -2774,7 +2755,8 @@ mod tests {
             .iter()
             .position(|&si| st.connections[si].id == "c6")
             .unwrap();
-        st.cursor = i;
+        st.window
+            .set_cursor(i, st.filtered.len(), CONNECTION_MANAGER_WINDOW);
         assert!(matches!(
             st.handle_key(press(KeyCode::Enter)),
             ConnectionManagerOutcome::Ignored
@@ -2984,7 +2966,8 @@ mod tests {
     #[test]
     fn selection_stable_on_set() {
         let mut st = open();
-        st.cursor = 1;
+        st.window
+            .set_cursor(1, st.filtered.len(), CONNECTION_MANAGER_WINDOW);
         let id = st.current_id().unwrap();
         let mut next = example_connections();
         next.push(ConnectionEntry::new(

@@ -1,5 +1,6 @@
 //! Stable-ID focus, hover, hit regions, and logical outcomes.
 mod collection;
+mod cursor_window;
 mod dismissable;
 mod event_result;
 mod focus_graph;
@@ -14,6 +15,7 @@ mod selection_model;
 pub use collection::{
     CollectionItem, CollectionOutcome, CollectionState, VirtualWindowActivePolicy,
 };
+pub use cursor_window::CursorWindow;
 pub use dismissable::{
     DismissAction, DismissDecision, DismissEventId, DismissGuard, DismissPhase, DismissPolicy,
     DismissReason, DismissableLayer, PointerGesture, evaluate_escape_stack,

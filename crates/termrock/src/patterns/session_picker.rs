@@ -30,6 +30,7 @@ use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::State
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    interaction::CursorWindow,
     style::{DesignSystem, PanelChrome, Role},
     widgets::{
         ConfirmFocus, ConfirmPrompt, EmptyKind, EmptyState, Panel, SemanticStatus, StatusIndicator,
@@ -571,10 +572,8 @@ pub struct SessionPickerState {
     pub query: String,
     /// Filtered indices into `sessions` (recomputed).
     filtered: Vec<usize>,
-    /// Cursor into `filtered`.
-    pub cursor: usize,
-    /// Scroll offset into filtered window.
-    pub scroll: usize,
+    /// Cursor + scroll window into `filtered`.
+    pub window: CursorWindow,
     /// Phase.
     pub phase: SessionPickerPhase,
     /// Presentation.
@@ -621,8 +620,7 @@ impl SessionPickerState {
             total_count: None,
             query: String::new(),
             filtered: Vec::new(),
-            cursor: 0,
-            scroll: 0,
+            window: CursorWindow::new(),
             phase: SessionPickerPhase::Browse,
             presentation: SessionPickerPresentation::Dialog,
             load_state: SessionLoadState::Ready,
@@ -658,7 +656,8 @@ impl SessionPickerState {
                 .iter()
                 .position(|&si| self.sessions.get(si).is_some_and(|s| s.id == id))
             {
-                self.cursor = fi;
+                self.window
+                    .set_cursor(fi, self.filtered.len(), SESSION_PICKER_WINDOW);
             }
         }
         self.clamp_cursor();
@@ -697,7 +696,7 @@ impl SessionPickerState {
     /// Current session.
     #[must_use]
     pub fn current(&self) -> Option<&SessionEntry> {
-        let si = *self.filtered.get(self.cursor)?;
+        let si = *self.filtered.get(self.window.cursor())?;
         self.sessions.get(si)
     }
 
@@ -740,18 +739,8 @@ impl SessionPickerState {
     }
 
     fn clamp_cursor(&mut self) {
-        if self.filtered.is_empty() {
-            self.cursor = 0;
-            self.scroll = 0;
-            return;
-        }
-        self.cursor = self.cursor.min(self.filtered.len() - 1);
-        let window = SESSION_PICKER_WINDOW;
-        if self.cursor < self.scroll {
-            self.scroll = self.cursor;
-        } else if self.cursor >= self.scroll + window {
-            self.scroll = self.cursor + 1 - window;
-        }
+        self.window
+            .clamp(self.filtered.len(), SESSION_PICKER_WINDOW);
     }
 
     fn select_cursor(&mut self) -> SessionPickerOutcome {
@@ -763,15 +752,11 @@ impl SessionPickerState {
     }
 
     fn move_cursor(&mut self, delta: isize) -> SessionPickerOutcome {
-        if self.filtered.is_empty() {
-            return SessionPickerOutcome::Ignored;
-        }
-        let n = self.filtered.len() as isize;
-        self.cursor = (self.cursor as isize + delta).clamp(0, n - 1) as usize;
-        self.clamp_cursor();
+        self.window
+            .move_by(delta, self.filtered.len(), SESSION_PICKER_WINDOW);
         // Near end → ask host for more
         let out = self.select_cursor();
-        if self.cursor + 8 >= self.filtered.len() {
+        if self.window.cursor() + 8 >= self.filtered.len() {
             if let Some(total) = self.total_count {
                 if self.sessions.len() < total {
                     return SessionPickerOutcome::LoadMore {
@@ -875,7 +860,7 @@ impl SessionPickerState {
                     return SessionPickerOutcome::Ignored;
                 };
                 // Optimistic local flip
-                if let Some(si) = self.filtered.get(self.cursor).copied() {
+                if let Some(si) = self.filtered.get(self.window.cursor()).copied() {
                     if let Some(e) = self.sessions.get_mut(si) {
                         e.pinned = pinned;
                     }
@@ -943,15 +928,13 @@ impl SessionPickerState {
             KeyCode::PageDown => self.move_cursor(8),
             KeyCode::PageUp => self.move_cursor(-8),
             KeyCode::Home => {
-                self.cursor = 0;
-                self.clamp_cursor();
+                self.window
+                    .move_first(self.filtered.len(), SESSION_PICKER_WINDOW);
                 self.select_cursor()
             }
             KeyCode::End => {
-                if !self.filtered.is_empty() {
-                    self.cursor = self.filtered.len() - 1;
-                    self.clamp_cursor();
-                }
+                self.window
+                    .move_last(self.filtered.len(), SESSION_PICKER_WINDOW);
                 self.select_cursor()
             }
             _ => SessionPickerOutcome::Ignored,
@@ -1091,9 +1074,9 @@ impl SessionPickerState {
             .iter()
             .position(|&si| self.sessions.get(si).is_some_and(|s| s.id == id))
         {
-            let already = self.cursor == fi;
-            self.cursor = fi;
-            self.clamp_cursor();
+            let already = self.window.cursor() == fi;
+            self.window
+                .set_cursor(fi, self.filtered.len(), SESSION_PICKER_WINDOW);
             if already {
                 if let Some(s) = self.current() {
                     if s.enabled {
@@ -1331,13 +1314,11 @@ impl<'a> SessionPicker<'a> {
             return;
         }
 
-        let mut offset = state.scroll;
-        if state.cursor < offset {
-            offset = state.cursor;
-        } else if viewport > 0 && state.cursor >= offset + viewport {
-            offset = state.cursor + 1 - viewport;
-        }
-        state.scroll = offset;
+        // Read-only projection: re-derive the visible slice against the
+        // painted viewport without mutating state during paint.
+        let mut view = state.window;
+        view.clamp(state.filtered.len(), viewport);
+        let offset = view.scroll();
 
         for (fi, &si) in state.filtered.iter().enumerate().skip(offset) {
             if y >= max_y {
@@ -1346,7 +1327,7 @@ impl<'a> SessionPicker<'a> {
             let Some(s) = state.sessions.get(si) else {
                 continue;
             };
-            let selected = fi == state.cursor;
+            let selected = fi == state.window.cursor();
             let pin = if s.pinned { "★" } else { " " };
             let semantic = if s.action_required {
                 SemanticStatus::Waiting
@@ -1848,7 +1829,8 @@ mod tests {
             .collect();
         st.set_sessions(many);
         st.set_total_count(Some(100));
-        st.cursor = 18;
+        st.window
+            .set_cursor(18, st.filtered.len(), SESSION_PICKER_WINDOW);
         let out = st.handle_key(press(KeyCode::Down));
         assert!(
             matches!(out, SessionPickerOutcome::LoadMore { offset: 20 })
@@ -1865,7 +1847,8 @@ mod tests {
             .iter()
             .position(|&si| st.sessions[si].id == "s6")
             .unwrap();
-        st.cursor = i;
+        st.window
+            .set_cursor(i, st.filtered.len(), SESSION_PICKER_WINDOW);
         assert!(matches!(
             st.handle_key(press(KeyCode::Enter)),
             SessionPickerOutcome::Ignored
@@ -2050,7 +2033,8 @@ mod tests {
     #[test]
     fn selection_stable_on_set() {
         let mut st = open();
-        st.cursor = 1;
+        st.window
+            .set_cursor(1, st.filtered.len(), SESSION_PICKER_WINDOW);
         let id = st.current_id().unwrap();
         let mut next = example_sessions();
         next.push(SessionEntry::new("s9", "Extra"));

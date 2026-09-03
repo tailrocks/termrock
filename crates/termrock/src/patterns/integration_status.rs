@@ -32,6 +32,7 @@ use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::State
 
 use crate::{
     input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind},
+    interaction::CursorWindow,
     style::{DesignSystem, PanelChrome, Role},
     text::display_cols,
     widgets::Panel,
@@ -636,10 +637,8 @@ pub enum IntegrationStatusOutcome {
 pub struct IntegrationStatusState {
     /// Entries.
     pub entries: Vec<IntegrationEntry>,
-    /// Cursor.
-    pub cursor: usize,
-    /// Scroll.
-    pub scroll: usize,
+    /// Cursor + scroll window.
+    pub window: CursorWindow,
     /// Presentation.
     pub presentation: IntegrationStatusPresentation,
     /// Detail tab (panel).
@@ -705,8 +704,7 @@ impl IntegrationStatusState {
     pub fn new() -> Self {
         Self {
             entries: Vec::new(),
-            cursor: 0,
-            scroll: 0,
+            window: CursorWindow::new(),
             presentation: IntegrationStatusPresentation::CompactList,
             tab: IntegrationDetailTab::Overview,
             focused: true,
@@ -724,7 +722,8 @@ impl IntegrationStatusState {
         self.entries = entries;
         if let Some(id) = keep {
             if let Some(i) = self.entries.iter().position(|e| e.id == id) {
-                self.cursor = i;
+                self.window
+                    .set_cursor(i, self.entries.len(), INTEGRATION_LIST_WINDOW);
             }
         }
         self.clamp_cursor();
@@ -748,7 +747,7 @@ impl IntegrationStatusState {
     /// Current.
     #[must_use]
     pub fn current(&self) -> Option<&IntegrationEntry> {
-        self.entries.get(self.cursor)
+        self.entries.get(self.window.cursor())
     }
 
     /// Current id.
@@ -787,18 +786,8 @@ impl IntegrationStatusState {
     }
 
     fn clamp_cursor(&mut self) {
-        if self.entries.is_empty() {
-            self.cursor = 0;
-            self.scroll = 0;
-            return;
-        }
-        self.cursor = self.cursor.min(self.entries.len() - 1);
-        let window = INTEGRATION_LIST_WINDOW;
-        if self.cursor < self.scroll {
-            self.scroll = self.cursor;
-        } else if self.cursor >= self.scroll + window {
-            self.scroll = self.cursor + 1 - window;
-        }
+        self.window
+            .clamp(self.entries.len(), INTEGRATION_LIST_WINDOW);
         let actions = self.actions_for_current();
         if self.action_cursor >= actions.len() {
             self.action_cursor = actions.len().saturating_sub(1);
@@ -806,16 +795,14 @@ impl IntegrationStatusState {
     }
 
     fn move_cursor(&mut self, delta: isize) -> IntegrationStatusOutcome {
-        if self.entries.is_empty() {
-            return IntegrationStatusOutcome::Ignored;
-        }
-        let n = self.entries.len() as isize;
-        self.cursor = (self.cursor as isize + delta).clamp(0, n - 1) as usize;
+        self.window
+            .move_by(delta, self.entries.len(), INTEGRATION_LIST_WINDOW);
         self.action_cursor = 0;
         self.log_scroll = 0;
         self.clamp_cursor();
-        IntegrationStatusOutcome::Selected {
-            id: self.entries[self.cursor].id.clone(),
+        match self.entries.get(self.window.cursor()) {
+            Some(e) => IntegrationStatusOutcome::Selected { id: e.id.clone() },
+            None => IntegrationStatusOutcome::Ignored,
         }
     }
 
@@ -972,7 +959,8 @@ impl IntegrationStatusState {
             .map(|(id, _)| id.clone());
         if let Some(id) = hit {
             if let Some(i) = self.entries.iter().position(|e| e.id == id) {
-                self.cursor = i;
+                self.window
+                    .set_cursor(i, self.entries.len(), INTEGRATION_LIST_WINDOW);
                 self.action_cursor = 0;
                 return IntegrationStatusOutcome::Selected { id };
             }
@@ -1095,19 +1083,17 @@ impl<'a> IntegrationStatus<'a> {
         }
 
         let viewport = max_y.saturating_sub(y) as usize;
-        let mut offset = state.scroll;
-        if state.cursor < offset {
-            offset = state.cursor;
-        } else if viewport > 0 && state.cursor >= offset + viewport {
-            offset = state.cursor + 1 - viewport;
-        }
-        state.scroll = offset;
+        // Read-only projection: re-derive the visible slice against the
+        // painted viewport without mutating state during paint.
+        let mut view = state.window;
+        view.clamp(state.entries.len(), viewport);
+        let offset = view.scroll();
 
         for (i, e) in state.entries.iter().enumerate().skip(offset) {
             if y >= max_y {
                 break;
             }
-            let selected = i == state.cursor;
+            let selected = i == state.window.cursor();
             let mark = if selected { "›" } else { " " };
             let kg = e.kind.glyph(false);
             let indicator = StatusIndicator::new(e.health.semantic(), self.system)
@@ -1615,7 +1601,8 @@ mod tests {
     fn permission_request_for_ungranted() {
         let mut st = open();
         let i = st.entries.iter().position(|e| e.id == "mcp-web").unwrap();
-        st.cursor = i;
+        st.window
+            .set_cursor(i, st.entries.len(), INTEGRATION_LIST_WINDOW);
         let out = st.handle_key(press(KeyCode::Char('p')));
         assert!(matches!(
             out,
@@ -1635,7 +1622,8 @@ mod tests {
             IntegrationStatusOutcome::DisableRequested { ref id } if id == "mcp-fs"
         ));
         let i = st.entries.iter().position(|e| e.id == "ext-theme").unwrap();
-        st.cursor = i;
+        st.window
+            .set_cursor(i, st.entries.len(), INTEGRATION_LIST_WINDOW);
         let out = st.handle_key(press(KeyCode::Char('e')));
         assert!(matches!(
             out,
@@ -1669,7 +1657,8 @@ mod tests {
     fn egress_warning_focus() {
         let mut st = open();
         let i = st.entries.iter().position(|e| e.id == "mcp-web").unwrap();
-        st.cursor = i;
+        st.window
+            .set_cursor(i, st.entries.len(), INTEGRATION_LIST_WINDOW);
         let out = st.handle_key(press(KeyCode::Char('w')));
         assert!(matches!(
             out,
@@ -1681,7 +1670,8 @@ mod tests {
     fn update_request() {
         let mut st = open();
         let i = st.entries.iter().position(|e| e.id == "tool-fmt").unwrap();
-        st.cursor = i;
+        st.window
+            .set_cursor(i, st.entries.len(), INTEGRATION_LIST_WINDOW);
         let out = st.handle_key(press(KeyCode::Char('u')));
         assert!(matches!(
             out,
