@@ -11,6 +11,7 @@ Usage:
 """
 import argparse
 import binascii
+import hashlib
 import json
 import re
 import struct
@@ -28,6 +29,9 @@ FIELDS = ("ch", "fg", "bg", "bold", "dim", "italic", "underline", "reverse", "st
 ARTIFACTS = ("ansi", "cursor", "txt", "html", "png")
 DEFAULT_FG = [0xD0, 0xD0, 0xD0]
 DEFAULT_BG = [0, 0, 0]
+ANSI_SGR = re.compile(r"\x1b\[([0-9;:]*)m")
+ANSI_OTHER = re.compile(r"\x1b\[[0-9;?]*[A-Za-z]")
+CURSOR = re.compile(rb"\A([0-9]+) ([0-9]+) ([01])\n\Z")
 
 
 def _blank():
@@ -169,6 +173,60 @@ def _byte_diff(left, right):
     return None
 
 
+def _validate_cursor(path, cols, rows):
+    raw = path.read_bytes()
+    match = CURSOR.fullmatch(raw)
+    if match is None:
+        raise ValueError("expected '<x> <y> <visibility>\\n' with ASCII decimal fields")
+    x, y, visibility = (int(value) for value in match.groups())
+    if raw != f"{x} {y} {visibility}\n".encode("ascii"):
+        raise ValueError("cursor fields are not in canonical decimal form")
+    # tmux reports pane-width as the pending-wrap cursor position; checked-in
+    # 120x40 captures use x=120, so only x beyond that is out of bounds.
+    if x > cols or y >= rows:
+        raise ValueError(
+            f"cursor coordinate ({x}, {y}) is outside x=0..{cols}, y=0..{rows - 1} bounds"
+        )
+    return x, y, visibility
+
+
+def _ansi_row_cells(text):
+    text = ANSI_OTHER.sub(
+        lambda match: match.group(0) if match.group(0).endswith("m") else "", text
+    )
+    cells = 0
+    position = 0
+    for match in ANSI_SGR.finditer(text):
+        for ch in text[position : match.start()]:
+            width = _width(ch)
+            if width:
+                cells += width
+        position = match.end()
+    for ch in text[position:]:
+        width = _width(ch)
+        if width:
+            cells += width
+    return cells
+
+
+def _validate_ansi_geometry(text, cols, rows):
+    # Some checked-in captures declare a wider pane than their ANSI rows. Keep
+    # parser padding for that format, but never permit clipping of extra data.
+    lines = text.split("\n")
+    if lines and lines[-1] == "":
+        lines.pop()
+    if len(lines) > rows:
+        raise ValueError(f"ANSI capture has {len(lines)} rows, expected at most {rows}")
+    if not lines:
+        raise ValueError("ANSI capture has no rows")
+    for row, line in enumerate(lines):
+        cells = _ansi_row_cells(line)
+        if cells > cols:
+            raise ValueError(
+                f"ANSI row {row} has {cells} cells, expected at most {cols}"
+            )
+
+
 def _normalized_ansi(raw):
     """Normalize only CRLF framing; never discard terminal controls or cells."""
     return raw.replace(b"\r\n", b"\n")
@@ -294,8 +352,15 @@ def compare(source_stem, target_stem, cols, rows, diff_dir):
             if not target.is_file():
                 missing.append(str(target))
             failures.append(f"{ext}: missing required artifact(s): {', '.join(missing)}")
-        elif (diff := _byte_diff(source.read_bytes(), target.read_bytes())) is not None:
-            failures.append(f"{ext}: {diff}")
+        else:
+            if ext == "cursor":
+                for side, artifact in (("source", source), ("target", target)):
+                    try:
+                        _validate_cursor(artifact, cols, rows)
+                    except (OSError, ValueError) as error:
+                        failures.append(f"cursor: {side} validation failure: {error}")
+            if (diff := _byte_diff(source.read_bytes(), target.read_bytes())) is not None:
+                failures.append(f"{ext}: {diff}")
 
     source = source_stem.with_suffix(".ansi")
     target = target_stem.with_suffix(".ansi")
@@ -309,15 +374,29 @@ def compare(source_stem, target_stem, cols, rows, diff_dir):
     else:
         if (diff := _byte_diff(_normalized_ansi(source.read_bytes()), _normalized_ansi(target.read_bytes()))) is not None:
             failures.append(f"ansi: raw stream {diff}")
+        source_text = target_text = None
         try:
-            left, _ = parse_ansi(source.read_text(encoding="utf-8", errors="replace"), cols, rows)
-            right, _ = parse_ansi(target.read_text(encoding="utf-8", errors="replace"), cols, rows)
-            grid_left = {"cols": cols, "rows": rows, "cells": left}
-            grid_right = {"cols": cols, "rows": rows, "cells": right}
-            if (diff := _cell_diff(grid_left, grid_right, cols, rows)) is not None:
-                failures.append(f"ansi: cell ({diff[0]},{diff[1]}) {diff[2]}")
+            candidate = source.read_text(encoding="utf-8", errors="replace")
+            _validate_ansi_geometry(candidate, cols, rows)
+            source_text = candidate
         except (OSError, UnicodeError, ValueError, IndexError) as error:
             failures.append(f"ansi: parse failure: {error}")
+        try:
+            candidate = target.read_text(encoding="utf-8", errors="replace")
+            _validate_ansi_geometry(candidate, cols, rows)
+            target_text = candidate
+        except (OSError, UnicodeError, ValueError, IndexError) as error:
+            failures.append(f"ansi: parse failure: {error}")
+        if source_text is not None and target_text is not None:
+            try:
+                left, _ = parse_ansi(source_text, cols, rows)
+                right, _ = parse_ansi(target_text, cols, rows)
+                grid_left = {"cols": cols, "rows": rows, "cells": left}
+                grid_right = {"cols": cols, "rows": rows, "cells": right}
+                if (diff := _cell_diff(grid_left, grid_right, cols, rows)) is not None:
+                    failures.append(f"ansi: cell ({diff[0]},{diff[1]}) {diff[2]}")
+            except (OSError, UnicodeError, ValueError, IndexError) as error:
+                failures.append(f"ansi: parse failure: {error}")
 
     source = source_stem.with_suffix(".html")
     target = target_stem.with_suffix(".html")
@@ -353,18 +432,40 @@ def compare(source_stem, target_stem, cols, rows, diff_dir):
     return failures
 
 
-def _manifest_scenes(path):
+def _read_manifest(path):
     try:
         manifest = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, UnicodeError, json.JSONDecodeError) as error:
         raise ValueError(f"cannot read manifest {path}: {error}") from error
+    if not isinstance(manifest, dict):
+        raise ValueError(f"manifest {path} must contain an object")
+    artifact_set = manifest.get("artifact_set")
+    if (
+        not isinstance(artifact_set, list)
+        or len(artifact_set) != len(ARTIFACTS)
+        or not all(isinstance(artifact, str) for artifact in artifact_set)
+        or set(artifact_set) != set(ARTIFACTS)
+    ):
+        raise ValueError(
+            f"manifest {path} must declare artifact_set {list(ARTIFACTS)!r}"
+        )
+    return manifest
+
+
+def _manifest_entries(manifest, path):
     scenes = manifest.get("scenes") if isinstance(manifest, dict) else None
     if not isinstance(scenes, dict):
         raise ValueError(f"manifest {path} must contain a scenes object")
 
     result = []
     for scene_id, scene in scenes.items():
-        if not isinstance(scene_id, str) or not scene_id:
+        if (
+            not isinstance(scene_id, str)
+            or not scene_id
+            or scene_id in (".", "..")
+            or Path(scene_id).name != scene_id
+            or "\\" in scene_id
+        ):
             raise ValueError(f"manifest {path} contains an invalid scene ID")
         if not isinstance(scene, dict):
             raise ValueError(f"manifest scene {scene_id!r} must be an object")
@@ -381,12 +482,98 @@ def _manifest_scenes(path):
             raise ValueError(
                 f"manifest scene {scene_id!r} must have positive integer cols and rows"
             )
-        result.append((scene_id, cols, rows))
+        digests = scene.get("sha256")
+        if not isinstance(digests, dict) or set(digests) != set(ARTIFACTS):
+            raise ValueError(
+                f"manifest scene {scene_id!r} must have SHA-256 digests for "
+                f"{', '.join(ARTIFACTS)}"
+            )
+        for ext in ARTIFACTS:
+            digest = digests[ext]
+            if not isinstance(digest, str) or re.fullmatch(r"[0-9a-fA-F]{64}", digest) is None:
+                raise ValueError(
+                    f"manifest scene {scene_id!r} has an invalid {ext} SHA-256 digest"
+                )
+        result.append((scene_id, cols, rows, scene))
     return result
 
 
+def _manifest_scenes(path):
+    manifest = _read_manifest(path)
+    return [entry[:3] for entry in _manifest_entries(manifest, path)]
+
+
+def _inventory_failures(directory, expected, label):
+    if not directory.is_dir():
+        return [f"{label} directory is missing: {directory}"]
+    try:
+        entries = {entry.name: entry for entry in directory.iterdir()}
+    except OSError as error:
+        return [f"{label} inventory cannot be read: {error}"]
+
+    failures = []
+    missing = sorted(name for name in expected if name not in entries)
+    if missing:
+        failures.append(f"{label} inventory missing: {', '.join(missing)}")
+    non_files = []
+    for name in sorted(expected & entries.keys()):
+        try:
+            is_file = entries[name].is_file()
+        except OSError:
+            is_file = False
+        if not is_file:
+            non_files.append(name)
+    if non_files:
+        failures.append(f"{label} inventory has non-file artifact(s): {', '.join(non_files)}")
+    extra = sorted(name for name in entries if name not in expected)
+    if extra:
+        failures.append(f"{label} inventory has unexpected entry(s): {', '.join(extra)}")
+    return failures
+
+
+def _verify_source_digests(entries, source_dir):
+    failures = []
+    for scene_id, _, _, scene in entries:
+        for ext in ARTIFACTS:
+            artifact = source_dir / f"{scene_id}.{ext}"
+            try:
+                actual = hashlib.sha256(artifact.read_bytes()).hexdigest()
+            except OSError as error:
+                failures.append(
+                    f"source digest {scene_id}.{ext}: cannot read {artifact}: {error}"
+                )
+                continue
+            expected = scene["sha256"][ext].lower()
+            if actual != expected:
+                failures.append(
+                    f"source digest {scene_id}.{ext}: expected {expected}, got {actual}"
+                )
+    return failures
+
+
 def compare_manifest(manifest_path, source_dir, target_dir, diff_dir):
-    scenes = _manifest_scenes(manifest_path)
+    manifest = _read_manifest(manifest_path)
+    entries = _manifest_entries(manifest, manifest_path)
+    scenes = [entry[:3] for entry in entries]
+    expected = {f"{scene_id}.{ext}" for scene_id, _, _, _ in entries for ext in ARTIFACTS}
+    preflight_failures = []
+    preflight_failures.extend(_inventory_failures(source_dir, expected, "source"))
+    preflight_failures.extend(_inventory_failures(target_dir, expected, "target"))
+    if source_dir.is_dir():
+        preflight_failures.extend(_verify_source_digests(entries, source_dir))
+    if preflight_failures:
+        print("FAIL manifest preflight")
+        for failure in preflight_failures:
+            print(f"- {failure}")
+        print(
+            "SUMMARY "
+            f"scenes={len(scenes)} "
+            "passed=0 "
+            f"failed={max(1, len(scenes))} "
+            f"artifact_failures={len(preflight_failures)}"
+        )
+        return 1
+
     passed = 0
     failed = 0
     artifact_failures = 0
