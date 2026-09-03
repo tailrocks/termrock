@@ -30036,7 +30036,6 @@ pub termrock::style::GlyphGroup::Disclosure
 pub termrock::style::GlyphGroup::Status
 impl termrock::style::GlyphGroup
 pub const termrock::style::GlyphGroup::ALL: [Self; 5]
-pub const fn termrock::style::GlyphGroup::id(self) -> &'static str
 impl core::clone::Clone for termrock::style::GlyphGroup
 pub fn termrock::style::GlyphGroup::clone(&self) -> termrock::style::GlyphGroup
 impl core::cmp::Eq for termrock::style::GlyphGroup

@@ -478,6 +478,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0499 | `v0.14.0` | [Synchronize removed CitationSourceType getter](migrations/0499-v0.14.0-sync-removed-citation-source-type-getter.md) |
 | 0500 | `v0.14.0` | [Synchronize removed AccordionMode getter](migrations/0500-v0.14.0-sync-removed-accordion-mode-getter.md) |
 | 0501 | `v0.14.0` | [Synchronize removed AlertReversibility getter](migrations/0501-v0.14.0-sync-removed-alert-reversibility-getter.md) |
+| 0502 | `v0.14.0` | [Synchronize removed GlyphGroup getter](migrations/0502-v0.14.0-sync-removed-glyph-group-getter.md) |
 | 0464 | `v0.14.0` | [Stepper physical one-shot actions](migrations/0464-v0.14.0-stepper-one-shot-actions.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
