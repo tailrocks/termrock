@@ -29,8 +29,7 @@ use crate::capability::CapabilityProfile;
 use crate::capability::{CapabilityBoundary, TerminalCapabilities};
 use crate::input::KeyEvent;
 use crate::interaction::{
-    FocusGraph, FocusOutcome, InteractionScene, OverlayOutcome, OverlayStack, SemanticDiagnostic,
-    SemanticScene, SemanticSnapshot,
+    FocusGraph, FocusOutcome, InteractionScene, OverlayOutcome, OverlayStack, SemanticScene,
 };
 use crate::keymap::{KeyChord, Keymap};
 use crate::runtime::{FrameClock, FrameTick, Instant};
@@ -39,8 +38,6 @@ use crate::style::DesignSystem;
 /// Lightweight diagnostics collected for Studio / tests (not a retained DOM).
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct UiDiagnostics {
-    /// Semantic registration diagnostics this frame.
-    pub semantic: Vec<SemanticDiagnostic>,
     /// Free-form host notes (collision, missing focus, …).
     pub notes: Vec<String>,
     /// Frame counter (host increments via [`UiHost::begin_frame`]).
@@ -52,7 +49,6 @@ impl UiDiagnostics {
     #[must_use]
     pub const fn new() -> Self {
         Self {
-            semantic: Vec::new(),
             notes: Vec::new(),
             frame_index: 0,
         }
@@ -63,10 +59,10 @@ impl UiDiagnostics {
         self.notes.push(msg.into());
     }
 
-    /// True when any semantic diagnostic or note is present.
+    /// True when any note is present.
     #[must_use]
     pub fn has_issues(&self) -> bool {
-        !self.semantic.is_empty() || !self.notes.is_empty()
+        !self.notes.is_empty()
     }
 }
 
@@ -224,22 +220,6 @@ where
     /// Record a diagnostic note.
     pub fn note(&mut self, msg: impl Into<String>) {
         self.diagnostics.note(msg);
-    }
-
-    /// Pull semantic diagnostics into host diagnostics (call end of frame).
-    pub fn collect_semantic_diagnostics(&mut self) {
-        for d in self.semantics.diagnostics() {
-            self.diagnostics.semantic.push(d.clone());
-        }
-    }
-
-    /// Semantic snapshot for Studio / tests.
-    #[must_use]
-    pub fn semantic_snapshot(&self) -> SemanticSnapshot
-    where
-        Id: fmt::Display,
-    {
-        self.semantics.snapshot()
     }
 
     // ── event adapters ─────────────────────────────────────────────────────
@@ -405,7 +385,6 @@ where
     /// Element registration is immediate-mode each frame.
     pub fn begin_frame(&mut self) -> UiContext<'_, Id, LayerId, Action, MapAction> {
         self.diagnostics.frame_index = self.diagnostics.frame_index.saturating_add(1);
-        self.diagnostics.semantic.clear();
         self.diagnostics.notes.clear();
         self.scene.begin_frame();
         self.semantics.begin_frame();
@@ -430,7 +409,6 @@ where
         tick: FrameTick,
     ) -> UiContext<'_, Id, LayerId, Action, MapAction> {
         self.diagnostics.frame_index = self.diagnostics.frame_index.saturating_add(1);
-        self.diagnostics.semantic.clear();
         self.diagnostics.notes.clear();
         self.scene.begin_frame();
         self.semantics.begin_frame();
@@ -465,56 +443,6 @@ pub fn resolve_keymap_action<A: Clone + Copy + 'static>(
     }
     let chord = KeyChord::from(key);
     map.dispatch(chord)
-}
-
-/// Helper: document that paint still uses Ratatui `Frame`/`Buffer` directly.
-///
-/// ```ignore
-/// fn paint(frame: &mut Frame, area: Rect, ctx: &UiContext<'_, Id>) {
-///     let system = ctx.design();
-///     // Widget::render(..., frame.buffer_mut());
-/// }
-/// ```
-pub mod adapters {
-    use super::*;
-
-    /// Split context into design + tick for pure paint helpers that need no mut authorities.
-    #[must_use]
-    pub fn paint_refs<'a, Id, LayerId, Action, MapAction>(
-        ctx: &'a UiContext<'a, Id, LayerId, Action, MapAction>,
-    ) -> (&'a DesignSystem, FrameTick)
-    where
-        Id: Clone + Eq + Hash,
-        LayerId: Clone + Eq + Hash,
-        MapAction: Clone + 'static,
-    {
-        (ctx.design(), ctx.tick())
-    }
-
-    /// Standard Esc routing result (overlay first).
-    #[derive(Debug, Clone, PartialEq, Eq)]
-    pub enum RoutedEscape<Id> {
-        /// Overlay stack handled Esc (dismiss / trap / unhandled empty).
-        Overlay(OverlayOutcome<Id>),
-        /// Host should try scene layer policy.
-        Unhandled,
-    }
-
-    /// Route Esc: overlays first (one conceptual layer).
-    pub fn route_escape<Id, LayerId, Action, MapAction>(
-        ctx: &mut UiContext<'_, Id, LayerId, Action, MapAction>,
-    ) -> RoutedEscape<Id>
-    where
-        Id: Clone + Eq + Hash,
-        LayerId: Clone + Eq + Hash,
-        MapAction: Clone + 'static,
-    {
-        let outcome = ctx.handle_overlay_escape();
-        match outcome {
-            OverlayOutcome::Ignored | OverlayOutcome::UnhandledEscape => RoutedEscape::Unhandled,
-            other => RoutedEscape::Overlay(other),
-        }
-    }
 }
 
 // Re-export UiIntent at context level for discoverability in docs.
@@ -707,15 +635,6 @@ mod tests {
         let mut release = KeyEvent::new(KeyCode::Char('Q'), KeyModifiers::NONE);
         release.kind = KeyEventKind::Release;
         assert_eq!(resolve_keymap_action(Some(&keymap), release), None);
-    }
-
-    #[test]
-    fn paint_refs_adapter() {
-        let mut host = UiHost::<Fid, Lid>::test();
-        let ctx = host.begin_frame();
-        let (design, tick) = adapters::paint_refs(&ctx);
-        let _ = design.style(crate::style::Role::Text);
-        let _ = tick.delta();
     }
 
     #[test]

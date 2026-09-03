@@ -362,25 +362,6 @@ impl<A: Clone + Copy + PartialEq + 'static> Keymap<A> {
         })
     }
 
-    /// Push the `Key` (and optional `Text`) spans for `action` onto `out`,
-    /// derived from the binding. No separators are added — the caller owns
-    /// layout. Does nothing if the action is unbound. The single primitive
-    /// for building context-dependent footers from a keymap.
-    pub fn push_spans_for(&self, action: A, out: &mut Vec<HintSpan<'static>>) {
-        if let Some(binding) = self.binding_for(action) {
-            match &binding.glyph {
-                Some(Cow::Borrowed(glyph)) => out.push(HintSpan::Key(glyph)),
-                Some(Cow::Owned(glyph)) => out.push(HintSpan::DynKey(glyph.clone())),
-                None => out.push(HintSpan::Key(chord_glyph(binding.chords.first().copied()))),
-            }
-            match &binding.hint {
-                Some(Cow::Borrowed(label)) => out.push(HintSpan::Text(label)),
-                Some(Cow::Owned(label)) => out.push(HintSpan::Dyn(label.clone())),
-                None => {}
-            }
-        }
-    }
-
     /// Replaces an action's chord set and clears any now-stale explicit glyph.
     ///
     /// A static map clones only on its first successful edit. Hints immediately

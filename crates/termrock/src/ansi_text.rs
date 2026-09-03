@@ -150,14 +150,6 @@ impl AnsiParseOptions {
             ..Self::default()
         }
     }
-
-    /// Strip mode: ignore colors and hyperlinks (plain text path).
-    #[must_use]
-    pub const fn strip_only(mut self) -> Self {
-        self.no_color = true;
-        self.hyperlinks = false;
-        self
-    }
 }
 
 // ── Parsed model ────────────────────────────────────────────────────────────
@@ -315,12 +307,6 @@ impl AnsiStream {
         self.cells.iter().map(|c| c.ch).collect()
     }
 
-    /// Whether the current line has unflushed cells.
-    #[must_use]
-    pub fn has_partial(&self) -> bool {
-        !self.cells.is_empty() || !self.pending.is_empty()
-    }
-
     /// Feed raw bytes (may include partial escape at end).
     pub fn feed(&mut self, bytes: &[u8]) {
         if bytes.is_empty() {
@@ -409,21 +395,6 @@ impl AnsiStream {
     pub fn into_lines(mut self) -> Vec<AnsiLine> {
         self.finish_line();
         self.lines.into_iter().collect()
-    }
-
-    /// Take completed lines, leave stream ready for more feed.
-    pub fn drain_lines(&mut self) -> Vec<AnsiLine> {
-        self.lines.drain(..).collect()
-    }
-
-    /// Append completed lines to a LogPane-style sink via callback.
-    pub fn drain_into_lines<F>(&mut self, mut f: F)
-    where
-        F: FnMut(Line<'static>),
-    {
-        for line in self.drain_lines() {
-            f(line.to_line());
-        }
     }
 
     /// Plain history + pending for copy.
