@@ -1,4 +1,3 @@
-#![allow(unused_variables, unused_mut)] // unit-test fixtures
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
@@ -32,9 +31,8 @@ fn areas() -> [Rect; 5] {
 
 #[test]
 fn leaf_widgets_render_at_tiny_and_off_origin_areas() {
-    let theme = RolePalette::default();
-    let system = crate::style::DesignSystem::new(theme.clone());
-    let panel_tokens = DesignSystem::new(theme.clone());
+    let panel_tokens = DesignSystem::new(RolePalette::default());
+    let system = panel_tokens.clone();
     let panel = Panel::new(&panel_tokens)
         .title("Title")
         .emphasis(PanelChrome::Focused);
@@ -58,9 +56,7 @@ fn leaf_widgets_render_at_tiny_and_off_origin_areas() {
 
 #[test]
 fn focused_quiet_panel_remains_borderless() {
-    let theme = RolePalette::default();
-    let system = crate::style::DesignSystem::new(theme.clone());
-    let panel_tokens = DesignSystem::new(theme.clone());
+    let panel_tokens = DesignSystem::new(RolePalette::default());
     let area = Rect::new(0, 0, 10, 3);
     let mut buffer = Buffer::empty(area);
     let panel = Panel::new(&panel_tokens).emphasis(PanelChrome::Focused);
@@ -70,9 +66,7 @@ fn focused_quiet_panel_remains_borderless() {
 
 #[test]
 fn inactive_quiet_panel_remains_borderless() {
-    let theme = RolePalette::default();
-    let system = crate::style::DesignSystem::new(theme.clone());
-    let panel_tokens = DesignSystem::new(theme.clone());
+    let panel_tokens = DesignSystem::new(RolePalette::default());
     let area = Rect::new(0, 0, 10, 3);
     let mut buffer = Buffer::empty(area);
     Panel::new(&panel_tokens).paint(area, &mut buffer, None);
@@ -352,9 +346,7 @@ fn theme_override_reaches_active_tab_cells() {
 
 #[test]
 fn owned_panel_render_matches_borrowed_render() {
-    let theme = RolePalette::default();
-    let system = crate::style::DesignSystem::new(theme.clone());
-    let panel_tokens = DesignSystem::new(theme.clone());
+    let panel_tokens = DesignSystem::new(RolePalette::default());
     let area = Rect::new(0, 0, 12, 3);
     let mut owned = Buffer::empty(area);
     let mut borrowed = Buffer::empty(area);

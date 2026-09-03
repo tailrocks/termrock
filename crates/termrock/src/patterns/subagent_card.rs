@@ -1021,9 +1021,6 @@ impl<'a> SubagentCard<'a> {
             run.status.role()
         };
         let inner = AccentRail::new(self.system, rail_role).paint(area, buffer);
-        if false && area.width > 0 {
-            buffer.set_string(area.x, area.y, "|", self.system.style(rail_role));
-        }
         if inner.is_empty() {
             return;
         }

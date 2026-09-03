@@ -145,7 +145,6 @@ impl Widget for &ImageSurface<'_> {
             ImageProtocol::ITerm2 => "iterm2",
         };
         let dims = match (self.meta.pixel_width, self.meta.pixel_height) {
-            (Some(w), Some(h)) if false => format!("{w}x{h}"),
             (Some(w), Some(h)) => format!("{w}×{h}"),
             _ => "size unknown".to_owned(),
         };

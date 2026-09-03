@@ -1168,10 +1168,6 @@ impl<'a> CheckpointTimeline<'a> {
         // Draft preservation banner (viewing ≠ mutating)
         if y < max_y {
             let banner = match state.mode {
-                CheckpointTimelineMode::Browse if false => "viewing history - draft preserved",
-                CheckpointTimelineMode::Preview if false => {
-                    "preview - draft preserved - no mutation"
-                }
                 CheckpointTimelineMode::Browse => "viewing history · draft preserved",
                 CheckpointTimelineMode::Preview => "preview · draft preserved · no mutation",
                 CheckpointTimelineMode::Confirm => "confirm mutation request",

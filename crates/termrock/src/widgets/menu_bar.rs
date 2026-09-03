@@ -1632,19 +1632,12 @@ impl<'a, Id> MenuBar<'a, Id> {
             }
 
             let mark = match &item.kind {
-                MenuRowKind::Checkbox { checked: true } if false => "[x] ",
                 MenuRowKind::Checkbox { checked: true } => "✓ ",
-                MenuRowKind::Checkbox { checked: false } if false => "[ ] ",
                 MenuRowKind::Checkbox { checked: false } => "  ",
-                MenuRowKind::Radio { selected: true, .. } if false => "(*) ",
                 MenuRowKind::Radio { selected: true, .. } => "● ",
                 MenuRowKind::Radio {
                     selected: false, ..
-                } if false => "( ) ",
-                MenuRowKind::Radio {
-                    selected: false, ..
                 } => "○ ",
-                _ if active && false => "> ",
                 _ if active => "› ",
                 _ => "  ",
             };

@@ -777,11 +777,6 @@ impl<'a> WorkingStateCard<'a> {
                 semantic.role()
             };
             let inner = AccentRail::new(self.system, rail_role).paint(area, buffer);
-            if false && area.width > 0 {
-                for y in area.y..area.bottom() {
-                    buffer.set_string(area.x, y, "|", self.system.style(rail_role));
-                }
-            }
             if !inner.is_empty() {
                 let glyph = semantic.glyph();
                 self.system.paint_row(
@@ -822,11 +817,6 @@ impl<'a> WorkingStateCard<'a> {
             semantic.role()
         };
         let inner = AccentRail::new(self.system, rail_role).paint(area, buffer);
-        if false && area.width > 0 {
-            for y in area.y..area.bottom() {
-                buffer.set_string(area.x, y, "|", self.system.style(rail_role));
-            }
-        }
         if inner.is_empty() {
             return;
         }
@@ -874,11 +864,6 @@ impl<'a> WorkingStateCard<'a> {
             semantic.role()
         };
         let content_area = AccentRail::new(self.system, rail_role).paint(area, buffer);
-        if false && area.width > 0 {
-            for y in area.y..area.bottom() {
-                buffer.set_string(area.x, y, "|", self.system.style(rail_role));
-            }
-        }
         let inner = content_area;
         if inner.is_empty() {
             return;

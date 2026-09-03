@@ -618,14 +618,6 @@ pub fn paste_preview_from(body: &str) -> String {
 
 // ── TokenStrip projection ───────────────────────────────────────────────────
 
-/// Safe strip label buffer pair (host must retain until paint ends).
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[allow(dead_code)]
-pub struct AttachmentStripLabels {
-    /// Parallel labels for attachments then pastes.
-    pub labels: Vec<String>,
-}
-
 /// Build [`TokenItem`] rows for strip paint (ids borrowed from items).
 ///
 /// `label_bufs` must outlive returned items (same length as attachments+pastes).

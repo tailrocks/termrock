@@ -1010,7 +1010,6 @@ impl<'a> AgentStatusHeader<'a> {
         // minimum the status keeps the first row and actions keep the second.
         if area.height >= 3 && y < max_y {
             let identity = match snap.agent.as_deref() {
-                Some(agent) if false => format!("{title} / {agent}"),
                 Some(agent) => format!("{title} — {agent}"),
                 None => title,
             };

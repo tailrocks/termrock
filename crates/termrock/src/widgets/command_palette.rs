@@ -53,7 +53,6 @@ pub const COMMAND_PALETTE_HISTORY_CAP: usize = 32;
 /// Two constants rather than one gated literal so host-supplied copy survives
 /// the ASCII profile: only the *default* is swapped.
 const COMMAND_PALETTE_LOADING: &str = "Loading…";
-const COMMAND_PALETTE_LOADING_ASCII: &str = "Loading...";
 
 // ── Size / placement ────────────────────────────────────────────────────────
 
@@ -1595,11 +1594,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
         }
 
         if state.loading && self.entries.is_empty() {
-            let msg = if false && self.loading_message == COMMAND_PALETTE_LOADING {
-                COMMAND_PALETTE_LOADING_ASCII
-            } else {
-                self.loading_message
-            };
+            let msg = self.loading_message;
             let style = self.system.style(Role::TextMuted);
             buffer.set_stringn(
                 area.x,
