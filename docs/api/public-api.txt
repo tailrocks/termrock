@@ -30633,7 +30633,10 @@ pub termrock::style::Role::Danger
 pub termrock::style::Role::DiffAdded
 pub termrock::style::Role::DiffRemoved
 pub termrock::style::Role::Elevated
+pub termrock::style::Role::ErrorSoft
 pub termrock::style::Role::Focus
+pub termrock::style::Role::Highlight
+pub termrock::style::Role::HighlightDanger
 pub termrock::style::Role::HintDim
 pub termrock::style::Role::HintKey
 pub termrock::style::Role::HintSeparator
@@ -31166,6 +31169,7 @@ pub const fn termrock::style::DesignSystem::kv_separator(&self) -> termrock::sty
 pub fn termrock::style::DesignSystem::lift(&self, ratatui_core::style::color::Color) -> ratatui_core::style::color::Color
 pub fn termrock::style::DesignSystem::list_row_recipe(&self, bool, bool, bool) -> termrock::style::ListRowRecipe
 pub const fn termrock::style::DesignSystem::lower_text(termrock::style::Role) -> termrock::style::Role
+pub fn termrock::style::DesignSystem::menu_row(&self, termrock::style::VisualState, bool, ratatui_core::style::color::Color) -> ratatui_core::style::Style
 pub const fn termrock::style::DesignSystem::mono(&self) -> bool
 pub const fn termrock::style::DesignSystem::motion(self, termrock::style::MotionPolicy) -> Self
 pub fn termrock::style::DesignSystem::new(termrock::style::RolePalette) -> Self
@@ -31454,9 +31458,12 @@ pub termrock::style::JunieTheme::border_subtle: ratatui_core::style::color::Colo
 pub termrock::style::JunieTheme::canvas: ratatui_core::style::color::Color
 pub termrock::style::JunieTheme::disabled: ratatui_core::style::color::Color
 pub termrock::style::JunieTheme::error: ratatui_core::style::color::Color
+pub termrock::style::JunieTheme::error_soft: ratatui_core::style::color::Color
 pub termrock::style::JunieTheme::field: ratatui_core::style::color::Color
 pub termrock::style::JunieTheme::field_hover: ratatui_core::style::color::Color
 pub termrock::style::JunieTheme::focus: ratatui_core::style::color::Color
+pub termrock::style::JunieTheme::highlight: ratatui_core::style::color::Color
+pub termrock::style::JunieTheme::highlight_danger: ratatui_core::style::color::Color
 pub termrock::style::JunieTheme::level: termrock::style::ColorCapability
 pub termrock::style::JunieTheme::popover: ratatui_core::style::color::Color
 pub termrock::style::JunieTheme::success: ratatui_core::style::color::Color
@@ -31809,7 +31816,7 @@ pub fn termrock::style::RolePalette::from_fn(impl core::ops::function::Fn(termro
 pub fn termrock::style::RolePalette::junie() -> Self
 pub fn termrock::style::RolePalette::junie_for(termrock::style::ColorCapability) -> Self
 pub fn termrock::style::RolePalette::merge(self, &Self) -> Self
-pub const fn termrock::style::RolePalette::roles() -> [termrock::style::Role; 57]
+pub const fn termrock::style::RolePalette::roles() -> [termrock::style::Role; 60]
 pub const fn termrock::style::RolePalette::style(&self, termrock::style::Role) -> ratatui_core::style::Style
 pub fn termrock::style::RolePalette::with_role(self, termrock::style::Role, ratatui_core::style::Style) -> Self
 impl termrock::style::RolePalette
@@ -53519,6 +53526,7 @@ pub termrock::widgets::SurfaceRecipe::Destructive
 pub termrock::widgets::SurfaceRecipe::Focused
 pub termrock::widgets::SurfaceRecipe::Inset
 pub termrock::widgets::SurfaceRecipe::Interactive
+pub termrock::widgets::SurfaceRecipe::MenuPopover
 pub termrock::widgets::SurfaceRecipe::Overlay
 pub termrock::widgets::SurfaceRecipe::OverlayDanger
 pub termrock::widgets::SurfaceRecipe::OverlayFocused

@@ -250,6 +250,9 @@ const GREEN_20: Color = rgb(0x0f_2e_13);
 const ON_GREEN: Color = rgb(0x19_19_1c);
 const RED: Color = rgb(0xe4_45_45);
 const AMBER: Color = rgb(0xf5_9e_09);
+const HIGHLIGHT: Color = rgb(0x2f_5a_a8);
+const HIGHLIGHT_DANGER: Color = rgb(0x7a_2a_2a);
+const ERROR_SOFT: Color = rgb(0xd9_8a_8a);
 
 /// The 24 active junie tokens, by name and canonical hex (D2 table).
 const JUNIE_TOKEN_TABLE: &[(&str, Color)] = &[
@@ -346,6 +349,19 @@ const JUNIE_ROLE_TABLE: &[(Role, Option<Color>, Option<Color>, &[Modifier])] = &
     (Role::ChartSeries4, Some(WHITE_30), None, &[]),
     (Role::ChartAxis, Some(WHITE_50), None, &[]),
     (Role::ChartGrid, Some(WHITE_15), None, &[]),
+    (
+        Role::Highlight,
+        Some(WHITE),
+        Some(HIGHLIGHT),
+        &[Modifier::BOLD],
+    ),
+    (
+        Role::HighlightDanger,
+        Some(WHITE),
+        Some(HIGHLIGHT_DANGER),
+        &[Modifier::BOLD],
+    ),
+    (Role::ErrorSoft, Some(ERROR_SOFT), None, &[]),
 ];
 
 /// `phosphor_baseline_uses_named_ansi_only` rewritten (D9): junie is the only
