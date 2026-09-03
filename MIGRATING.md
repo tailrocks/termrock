@@ -377,6 +377,8 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0390 | `v0.14.0` | [Virtual windows preserve active identity](migrations/0390-v0.14.0-virtual-window-active-identity.md) |
 | 0391 | `v0.14.0` | [Collection full-window reconciliation repairs stale active IDs](migrations/0391-v0.14.0-collection-full-window-reconcile.md) |
 | 0392 | `v0.14.0` | [Partial collection windows expose active-ID policy](migrations/0392-v0.14.0-collection-partial-active-policy.md) |
+| 0393 | `v0.14.0` | [List virtual-window mode transitions synchronize collection metadata](migrations/0393-v0.14.0-clear-virtual-window-state.md) |
+| 0394 | `v0.14.0` | [Full collection viewport resets virtual-window metadata](migrations/0394-v0.14.0-set-viewport-clears-window.md) |
 | 0398 | `v0.14.0` | [paint-only Accordion](migrations/0398-v0.14.0-paint-only-accordion.md) |
 | 0399 | `v0.14.0` | [paint-only ButtonGroup](migrations/0399-v0.14.0-paint-only-button-group.md) |
 | 0400 | `v0.14.0` | [paint-only links and controls](migrations/0400-v0.14.0-paint-only-links-controls.md) |
@@ -386,6 +388,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0404 | `v0.14.0` | [Slider family and Tooltip are paint-only](migrations/0404-v0.14.0-paint-only-slider-tooltip.md) |
 | 0405 | `v0.14.0` | [SegmentedControl and ToggleGroup are paint-only](migrations/0405-v0.14.0-paint-only-segmented-toggle.md) |
 | 0406 | `v0.14.0` | [Stateful paint vocabulary replaces render aliases](migrations/0406-v0.14.0-unify-stateful-paint-vocabulary.md) |
+| 0407 | `v0.14.0` | [AgentWorkbench removes the legacy task-list fallback and SettingsShell aliases](migrations/0407-v0.14.0-remove-agent-workbench-task-list-fallback.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

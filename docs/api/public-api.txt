@@ -4469,11 +4469,13 @@ pub fn termrock::interaction::CollectionState<Id>::to_roving_entries(&[termrock:
 impl<Id> termrock::interaction::CollectionState<Id>
 pub const fn termrock::interaction::CollectionState<Id>::active(&self) -> core::option::Option<&Id>
 pub fn termrock::interaction::CollectionState<Id>::clear_typeahead(&mut self)
+pub fn termrock::interaction::CollectionState<Id>::clear_virtual_window(&mut self)
 pub const fn termrock::interaction::CollectionState<Id>::current(&self) -> core::option::Option<&Id>
 pub const fn termrock::interaction::CollectionState<Id>::new() -> Self
 pub const fn termrock::interaction::CollectionState<Id>::offset(&self) -> usize
 pub fn termrock::interaction::CollectionState<Id>::orientation(self, termrock::interaction::RovingOrientation) -> Self
 pub const fn termrock::interaction::CollectionState<Id>::roving(&self) -> &termrock::interaction::RovingFocusGroup<Id>
+pub fn termrock::interaction::CollectionState<Id>::set_virtual_window(&mut self, usize, usize)
 pub const fn termrock::interaction::CollectionState<Id>::set_wrap(&mut self, bool)
 pub const fn termrock::interaction::CollectionState<Id>::total_len(&self) -> usize
 pub const fn termrock::interaction::CollectionState<Id>::viewport_len(&self) -> usize
@@ -17916,7 +17918,6 @@ pub termrock::patterns::WorkbenchKeyOutcome::Question
 pub termrock::patterns::WorkbenchKeyOutcome::Scene(termrock::interaction::InteractionOutcome<&'static str, &'static str, ()>)
 pub termrock::patterns::WorkbenchKeyOutcome::Session
 pub termrock::patterns::WorkbenchKeyOutcome::Task(termrock::patterns::TaskRailOutcome)
-pub termrock::patterns::WorkbenchKeyOutcome::TaskList(termrock::interaction::Outcome<&'static str>)
 pub termrock::patterns::WorkbenchKeyOutcome::Transcript(termrock::widgets::TranscriptOutcome<&'static str>)
 pub termrock::patterns::WorkbenchKeyOutcome::Working
 impl core::clone::Clone for termrock::patterns::WorkbenchKeyOutcome
@@ -18980,7 +18981,6 @@ pub termrock::patterns::AgentWorkbenchState::plan: termrock::patterns::PlanRevie
 pub termrock::patterns::AgentWorkbenchState::question: termrock::widgets::QuestionFlowState
 pub termrock::patterns::AgentWorkbenchState::scene: termrock::interaction::InteractionScene<&'static str, &'static str, ()>
 pub termrock::patterns::AgentWorkbenchState::session: termrock::patterns::SessionPickerState
-pub termrock::patterns::AgentWorkbenchState::task_list: termrock::widgets::ListState<&'static str>
 pub termrock::patterns::AgentWorkbenchState::task_rail: termrock::patterns::TaskRailState
 pub termrock::patterns::AgentWorkbenchState::working: termrock::patterns::WorkingStateCardState
 pub termrock::patterns::AgentWorkbenchState::workspace: termrock::layout::WorkspaceState
@@ -18992,7 +18992,7 @@ pub const fn termrock::patterns::AgentWorkbenchState::diff_open(&self) -> bool
 pub fn termrock::patterns::AgentWorkbenchState::focus_pane(&mut self, termrock::patterns::WorkbenchPane)
 pub fn termrock::patterns::AgentWorkbenchState::focused_pane(&self) -> core::option::Option<&'static str>
 pub fn termrock::patterns::AgentWorkbenchState::handle_escape(&mut self) -> termrock::interaction::InteractionOutcome<&'static str, &'static str, ()>
-pub fn termrock::patterns::AgentWorkbenchState::handle_key(&mut self, termrock::input::KeyEvent, &mut termrock::widgets::PromptComposerState, &mut termrock::widgets::TranscriptState<&'static str>, &[termrock::widgets::TranscriptBlock<'_, &'static str>], core::option::Option<&mut termrock::widgets::PermissionPromptState>, core::option::Option<&[termrock::patterns::ActivityModel]>, core::option::Option<&[termrock::widgets::ListRow<'_, &'static str>]>, core::option::Option<&[termrock::patterns::ActivityItem]>, core::option::Option<&[termrock::widgets::DiffHunk]>) -> termrock::patterns::WorkbenchKeyOutcome
+pub fn termrock::patterns::AgentWorkbenchState::handle_key(&mut self, termrock::input::KeyEvent, &mut termrock::widgets::PromptComposerState, &mut termrock::widgets::TranscriptState<&'static str>, &[termrock::widgets::TranscriptBlock<'_, &'static str>], core::option::Option<&mut termrock::widgets::PermissionPromptState>, &[termrock::patterns::ActivityModel], core::option::Option<&[termrock::patterns::ActivityItem]>, core::option::Option<&[termrock::widgets::DiffHunk]>) -> termrock::patterns::WorkbenchKeyOutcome
 pub fn termrock::patterns::AgentWorkbenchState::new() -> Self
 pub const fn termrock::patterns::AgentWorkbenchState::permission_open(&self) -> bool
 pub const fn termrock::patterns::AgentWorkbenchState::plan_open(&self) -> bool
@@ -25477,8 +25477,7 @@ pub termrock::patterns::WorkbenchSurfaces::state: &'a mut termrock::patterns::Ag
 pub termrock::patterns::WorkbenchSurfaces::status_slots: &'a [termrock::widgets::StatusSlot<'a, &'b str>]
 pub termrock::patterns::WorkbenchSurfaces::status_state: &'a mut termrock::widgets::StatusBarState<&'b str>
 pub termrock::patterns::WorkbenchSurfaces::system: &'a termrock::style::DesignSystem
-pub termrock::patterns::WorkbenchSurfaces::task_models: core::option::Option<&'a [termrock::patterns::ActivityModel]>
-pub termrock::patterns::WorkbenchSurfaces::tasks: &'a [termrock::widgets::ListRow<'a, &'static str>]
+pub termrock::patterns::WorkbenchSurfaces::task_models: &'a [termrock::patterns::ActivityModel]
 pub termrock::patterns::WorkbenchSurfaces::transcript: &'a termrock::widgets::Transcript<'a, &'b str>
 pub termrock::patterns::WorkbenchSurfaces::transcript_state: &'a mut termrock::widgets::TranscriptState<&'b str>
 pub termrock::patterns::WorkbenchSurfaces::working: core::option::Option<&'a termrock::patterns::WorkingStateCard<'a>>
@@ -25828,7 +25827,6 @@ pub fn termrock::patterns::dialog_rect(ratatui_core::layout::rect::Rect) -> rata
 pub fn termrock::patterns::diff_modal_rect(ratatui_core::layout::rect::Rect) -> ratatui_core::layout::rect::Rect
 pub fn termrock::patterns::doctor_finding_rows(&[termrock::capability::DoctorFinding]) -> alloc::vec::Vec<termrock::widgets::ListRow<'_, alloc::string::String>>
 pub fn termrock::patterns::draft_code_frame_lines(&termrock::widgets::TextAreaState) -> alloc::vec::Vec<termrock::widgets::CodeFrameLine<'_>>
-pub fn termrock::patterns::empty_task_row() -> termrock::widgets::ListRow<'static, &'static str>
 pub fn termrock::patterns::error_recovery_layout(ratatui_core::layout::rect::Rect, &termrock::layout::WorkspaceState) -> alloc::vec::Vec<termrock::layout::PaneGeom>
 pub fn termrock::patterns::error_recovery_layout_density(ratatui_core::layout::rect::Rect, &termrock::layout::WorkspaceState, termrock::patterns::ErrorRecoveryDensity, termrock::patterns::ErrorRecoveryMode) -> alloc::vec::Vec<termrock::layout::PaneGeom>
 pub fn termrock::patterns::example_activities() -> alloc::vec::Vec<termrock::patterns::ActivityItem>
@@ -26019,8 +26017,6 @@ pub fn termrock::patterns::terminal_run_to_tool_call(&termrock::patterns::Termin
 pub fn termrock::patterns::token_at_cursor(&termrock::widgets::TextAreaState) -> (alloc::string::String, termrock::widgets::TextCursor)
 pub fn termrock::patterns::wire_resource_preview(&mut termrock::style::CapabilityPreviewHost, &termrock::patterns::ResourceBrowserSlots, core::option::Option<&str>, bool, bool)
 pub fn termrock::patterns::working_state_to_shelf_items(&termrock::patterns::WorkingState) -> alloc::vec::Vec<termrock::patterns::ActivityItem>
-pub type termrock::patterns::SettingsShellOutcome<SectionId> = termrock::patterns::SettingsScreenOutcome<SectionId, &'static str>
-pub type termrock::patterns::SettingsShellState<SectionId> = termrock::patterns::SettingsScreenState<SectionId>
 pub mod termrock::perf
 #[non_exhaustive] pub enum termrock::perf::BackpressureSignal
 pub termrock::perf::BackpressureSignal::Hard
