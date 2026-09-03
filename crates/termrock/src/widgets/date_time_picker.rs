@@ -1276,37 +1276,14 @@ impl DateTimePickerState {
     }
 
     fn rebuild_collections(&mut self) {
-        // time list
-        let step = self.time_step_minutes.max(1);
-        let mut times = Vec::new();
-        let mut m = 0u32;
-        while m < 24 * 60 {
-            if let Some(t) = CivilTime::from_minutes(m) {
-                let id = m.to_string();
-                times.push(CollectionItem::new(id, self.time_fmt.format(t)));
-            }
-            m = m.saturating_add(step);
-            if step == 0 {
-                break;
-            }
-        }
+        let times = self.time_list_items();
         let _ = self.time_collection.reconcile(&times);
         if let Some(t) = self.value_time {
             let id = t.minutes_since_midnight().to_string();
             self.time_collection.set_active(Some(id));
         }
 
-        // day list for current month
-        let mut days = Vec::new();
-        if let Some(dim) = days_in_month(self.view_year, self.view_month) {
-            for day in 1..=dim {
-                if let Some(d) = CivilDate::new(self.view_year, self.view_month, day) {
-                    let label = format!("{:02} {}", day, weekday_short(d));
-                    let enabled = self.is_available(d);
-                    days.push(CollectionItem::new(d.to_iso(), label).enabled(enabled));
-                }
-            }
-        }
+        let days = self.day_list_items();
         let _ = self.day_collection.reconcile(&days);
         if let Some(f) = self.focus_date {
             self.day_collection.set_active(Some(f.to_iso()));
@@ -1850,10 +1827,6 @@ fn split_range_text(s: &str) -> Option<(&str, &str)> {
         }
     }
     None
-}
-
-fn weekday_short(d: CivilDate) -> &'static str {
-    ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][d.weekday_iso() as usize]
 }
 
 fn month_name(m: u8) -> &'static str {
