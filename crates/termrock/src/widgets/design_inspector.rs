@@ -117,8 +117,9 @@ impl<'a> DesignInspector<'a> {
     }
 }
 
-impl Widget for &DesignInspector<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
+impl DesignInspector<'_> {
+    /// Paint (single public entry; the [`Widget`] impl delegates here).
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer) {
         if area.width == 0 || area.height == 0 {
             return;
         }
@@ -225,9 +226,15 @@ impl Widget for &DesignInspector<'_> {
     }
 }
 
+impl Widget for &DesignInspector<'_> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        DesignInspector::paint(self, area, buffer);
+    }
+}
+
 impl Widget for DesignInspector<'_> {
     fn render(self, area: Rect, buffer: &mut Buffer) {
-        Widget::render(&self, area, buffer);
+        DesignInspector::paint(&self, area, buffer);
     }
 }
 

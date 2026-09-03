@@ -634,13 +634,6 @@ impl DiffReviewState {
         self.view.hunk_cursor
     }
 
-    /// Deprecated name.
-    #[deprecated(note = "use hunk_cursor")]
-    #[must_use]
-    pub const fn hunk_index(&self) -> usize {
-        self.view.hunk_cursor
-    }
-
     /// Programmatic hunk cursor.
     pub fn set_hunk_cursor(&mut self, index: usize) {
         self.view.hunk_cursor = index;

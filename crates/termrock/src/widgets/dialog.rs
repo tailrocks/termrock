@@ -548,8 +548,9 @@ impl<'a> Backdrop<'a> {
     }
 }
 
-impl Widget for &Backdrop<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
+impl Backdrop<'_> {
+    /// Paint (single public entry; the [`Widget`] impl delegates here).
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer) {
         match self.policy {
             BackdropPolicy::None => {}
             BackdropPolicy::Occlude => {
@@ -577,6 +578,12 @@ impl Widget for &Backdrop<'_> {
                 }
             }
         }
+    }
+}
+
+impl Widget for &Backdrop<'_> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        self.paint(area, buffer);
     }
 }
 

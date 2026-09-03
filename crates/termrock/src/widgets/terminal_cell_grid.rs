@@ -95,8 +95,9 @@ impl<'a> TerminalCellGrid<'a> {
     }
 }
 
-impl Widget for TerminalCellGrid<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
+impl TerminalCellGrid<'_> {
+    /// Paint (single public entry; the [`Widget`] impl delegates here).
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer) {
         let (rows, columns) = self.source.size();
         for row in 0..area.height {
             for column in 0..area.width {
@@ -137,6 +138,12 @@ impl Widget for TerminalCellGrid<'_> {
                 destination.set_diff_option(diff);
             }
         }
+    }
+}
+
+impl Widget for TerminalCellGrid<'_> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        self.paint(area, buffer);
     }
 }
 

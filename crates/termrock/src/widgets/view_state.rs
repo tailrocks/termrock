@@ -32,8 +32,9 @@ impl<'a> LoadingView<'a> {
     }
 }
 
-impl Widget for &LoadingView<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
+impl LoadingView<'_> {
+    /// Paint (single public entry; the [`Widget`] impl delegates here).
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer) {
         if area.is_empty() {
             return;
         }
@@ -65,6 +66,12 @@ impl Widget for &LoadingView<'_> {
             frame,
             status_style,
         );
+    }
+}
+
+impl Widget for &LoadingView<'_> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        self.paint(area, buffer);
     }
 }
 
@@ -100,8 +107,9 @@ impl<'a> Banner<'a> {
     }
 }
 
-impl Widget for &Banner<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
+impl Banner<'_> {
+    /// Paint (single public entry; the [`Widget`] impl delegates here).
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer) {
         if area.is_empty() {
             return;
         }
@@ -135,6 +143,12 @@ impl Widget for &Banner<'_> {
             glyph,
             self.system.style(role),
         );
+    }
+}
+
+impl Widget for &Banner<'_> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        self.paint(area, buffer);
     }
 }
 

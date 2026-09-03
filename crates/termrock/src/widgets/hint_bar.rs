@@ -161,8 +161,9 @@ impl<'a> HintBar<'a> {
     }
 }
 
-impl Widget for &HintBar<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
+impl HintBar<'_> {
+    /// Paint (single public entry; the [`Widget`] impl delegates here).
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer) {
         if area.is_empty() {
             return;
         }
@@ -212,6 +213,12 @@ impl Widget for &HintBar<'_> {
             x = x.saturating_add(w);
         }
         let _ = self.alignment;
+    }
+}
+
+impl Widget for &HintBar<'_> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        self.paint(area, buffer);
     }
 }
 

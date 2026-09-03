@@ -333,8 +333,9 @@ const fn vertical_list_scrollbar_area(area: Rect) -> Rect {
     }
 }
 
-impl Widget for Scrollbar<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
+impl Scrollbar<'_> {
+    /// Paint (single public entry; the [`Widget`] impl delegates here).
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer) {
         let track_len = match self.spec.axis {
             scroll::ScrollAxis::Horizontal => usize::from(area.width),
             scroll::ScrollAxis::Vertical => usize::from(area.height),
@@ -376,6 +377,12 @@ impl Widget for Scrollbar<'_> {
                 style,
             );
         }
+    }
+}
+
+impl Widget for Scrollbar<'_> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        self.paint(area, buffer);
     }
 }
 

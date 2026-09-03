@@ -367,8 +367,9 @@ impl<'a> Sparkline<'a> {
     }
 }
 
-impl Widget for &Sparkline<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
+impl Sparkline<'_> {
+    /// Paint (single public entry; the [`Widget`] impl delegates here).
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer) {
         if area.is_empty() || self.samples.is_empty() {
             return;
         }
@@ -430,6 +431,12 @@ impl Widget for &Sparkline<'_> {
                 style,
             );
         }
+    }
+}
+
+impl Widget for &Sparkline<'_> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        self.paint(area, buffer);
     }
 }
 
@@ -697,8 +704,9 @@ impl<'a> Chart<'a> {
     }
 }
 
-impl Widget for &Chart<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
+impl Chart<'_> {
+    /// Paint (single public entry; the [`Widget`] impl delegates here).
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer) {
         if area.is_empty() || self.series.is_empty() {
             return;
         }
@@ -1040,6 +1048,12 @@ impl Widget for &Chart<'_> {
     }
 }
 
+impl Widget for &Chart<'_> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        self.paint(area, buffer);
+    }
+}
+
 impl Widget for Chart<'_> {
     #[expect(
         clippy::needless_borrows_for_generic_args,
@@ -1167,8 +1181,9 @@ impl<'a> Gauge<'a> {
     }
 }
 
-impl Widget for &Gauge<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
+impl Gauge<'_> {
+    /// Paint (single public entry; the [`Widget`] impl delegates here).
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer) {
         if area.is_empty() {
             return;
         }
@@ -1292,6 +1307,12 @@ impl Widget for &Gauge<'_> {
     }
 }
 
+impl Widget for &Gauge<'_> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        self.paint(area, buffer);
+    }
+}
+
 impl Widget for Gauge<'_> {
     #[expect(
         clippy::needless_borrows_for_generic_args,
@@ -1384,8 +1405,9 @@ impl<'a> Histogram<'a> {
     }
 }
 
-impl Widget for &Histogram<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
+impl Histogram<'_> {
+    /// Paint (single public entry; the [`Widget`] impl delegates here).
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer) {
         if area.is_empty() || self.buckets.is_empty() {
             return;
         }
@@ -1530,6 +1552,12 @@ impl Widget for &Histogram<'_> {
     }
 }
 
+impl Widget for &Histogram<'_> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        self.paint(area, buffer);
+    }
+}
+
 impl Widget for Histogram<'_> {
     #[expect(
         clippy::needless_borrows_for_generic_args,
@@ -1642,8 +1670,9 @@ impl<'a> BarSeries<'a> {
     }
 }
 
-impl Widget for &BarSeries<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
+impl BarSeries<'_> {
+    /// Paint (single public entry; the [`Widget`] impl delegates here).
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer) {
         if area.is_empty() {
             return;
         }
@@ -1908,6 +1937,12 @@ impl Widget for &BarSeries<'_> {
     }
 }
 
+impl Widget for &BarSeries<'_> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        self.paint(area, buffer);
+    }
+}
+
 impl Widget for BarSeries<'_> {
     #[expect(
         clippy::needless_borrows_for_generic_args,
@@ -2061,8 +2096,9 @@ impl<'a> SegmentedMeter<'a> {
     }
 }
 
-impl Widget for &SegmentedMeter<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
+impl SegmentedMeter<'_> {
+    /// Paint (single public entry; the [`Widget`] impl delegates here).
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer) {
         if area.is_empty() || self.segments.is_empty() {
             return;
         }
@@ -2161,6 +2197,12 @@ impl Widget for &SegmentedMeter<'_> {
                 );
             }
         }
+    }
+}
+
+impl Widget for &SegmentedMeter<'_> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        self.paint(area, buffer);
     }
 }
 
@@ -2290,8 +2332,9 @@ impl<'a> MetricRadar<'a> {
     }
 }
 
-impl Widget for &MetricRadar<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
+impl MetricRadar<'_> {
+    /// Paint (single public entry; the [`Widget`] impl delegates here).
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer) {
         if area.is_empty() || self.axes.is_empty() || self.series.is_empty() {
             return;
         }
@@ -2454,6 +2497,12 @@ impl Widget for &MetricRadar<'_> {
                 }
             }
         }
+    }
+}
+
+impl Widget for &MetricRadar<'_> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        self.paint(area, buffer);
     }
 }
 

@@ -550,13 +550,6 @@ impl ObjectInspectorState {
         self.scroll.offset_y()
     }
 
-    /// Deprecated name for [`Self::cursor`].
-    #[deprecated(note = "use cursor")]
-    #[must_use]
-    pub const fn focus(&self) -> usize {
-        self.cursor
-    }
-
     /// Host input gate.
     pub fn set_accepts_input(&mut self, accepts: bool) {
         self.accepts_input = accepts;
