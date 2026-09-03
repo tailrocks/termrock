@@ -270,13 +270,6 @@ impl<'a> Link<'a> {
         self
     }
 
-    /// Always show destination text.
-    #[must_use]
-    pub const fn always_show_destination(mut self) -> Self {
-        self.destination_display = DestinationDisplay::Always;
-        self
-    }
-
     /// Terminal supports OSC 8 this frame.
     #[must_use]
     pub const fn hyperlinks(mut self, on: bool) -> Self {

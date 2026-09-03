@@ -456,6 +456,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0476 | `v0.14.0` | [Remove the unreferenced PasswordInput read-only getter](migrations/0476-v0.14.0-remove-password-input-read-only-getter.md) |
 | 0477 | `v0.14.0` | [Remove the unreferenced PathInput read-only getter](migrations/0477-v0.14.0-remove-path-input-read-only-getter.md) |
 | 0479 | `v0.14.0` | [Remove write-only ThemePicker confirmation state](migrations/0479-v0.14.0-remove-theme-picker-confirmation-state.md) |
+| 0480 | `v0.14.0` | [Remove the orphan Link destination convenience builder](migrations/0480-v0.14.0-remove-link-always-show-destination.md) |
 | 0464 | `v0.14.0` | [Stepper physical one-shot actions](migrations/0464-v0.14.0-stepper-one-shot-actions.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an

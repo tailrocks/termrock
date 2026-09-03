@@ -73083,7 +73083,6 @@ pub fn termrock::widgets::LineSegment<'a>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::LineSegment<'a>
 pub struct termrock::widgets::Link<'a>
 impl<'a> termrock::widgets::Link<'a>
-pub const fn termrock::widgets::Link<'a>::always_show_destination(self) -> Self
 pub const fn termrock::widgets::Link<'a>::app_route(&'a str, &'a str, &'a termrock::style::DesignSystem) -> Self
 pub fn termrock::widgets::Link<'a>::copy_text(&self) -> alloc::string::String
 pub fn termrock::widgets::Link<'a>::decorated(&self, &termrock::widgets::LinkState) -> alloc::string::String
