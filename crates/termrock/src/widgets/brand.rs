@@ -12,7 +12,7 @@ use ratatui_core::{
 };
 
 use crate::{
-    interaction::{SemanticNode, SemanticRole, SemanticScene},
+    interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
     style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
 };
@@ -101,16 +101,23 @@ impl<'a> Lockup<'a> {
         style.add_modifier(Modifier::BOLD)
     }
 
-    fn parts(&self, area: Rect) -> LockupParts {
+    fn parts_for_label(area: Rect, label: &str) -> LockupParts {
+        let max_width = u16::try_from(display_cols(label))
+            .unwrap_or(u16::MAX)
+            .min(area.width);
+        let clipped = take_display_cols(label, usize::from(max_width));
+        let content_width = u16::try_from(display_cols(clipped.as_ref()))
+            .unwrap_or(u16::MAX)
+            .min(max_width);
         LockupParts {
             root: area,
-            content: Rect::new(
-                area.x,
-                area.y,
-                self.width().min(area.width),
-                1.min(area.height),
-            ),
+            content: Rect::new(area.x, area.y, content_width, 1.min(area.height)),
         }
+    }
+
+    fn parts(&self, area: Rect) -> LockupParts {
+        let label = self.label();
+        Self::parts_for_label(area, &label)
     }
 
     /// Paints a resting lockup into the supplied row.
@@ -125,11 +132,11 @@ impl<'a> Lockup<'a> {
         buffer: &mut Buffer,
         state: LockupState,
     ) -> LockupParts {
-        let parts = self.parts(area);
+        let label = self.label();
+        let parts = Self::parts_for_label(area, &label);
         if parts.content.is_empty() {
             return parts;
         }
-        let label = self.label();
         let clipped = take_display_cols(&label, usize::from(parts.content.width));
         buffer.set_stringn(
             parts.content.x,
@@ -152,6 +159,25 @@ impl<'a> Lockup<'a> {
         Id: Clone + PartialEq + std::fmt::Display,
         Action: Clone,
     {
+        self.register_semantic_with_state(scene, id, area, interactive, LockupState::default());
+    }
+
+    /// Registers the painted region with explicit visual state.
+    ///
+    /// The semantic schema exposes `pressed` but not `hovered`; hover remains
+    /// a paint-only state while the pressed flag is projected for interactive
+    /// lockups. Use [`Self::register_semantic`] for resting state.
+    pub fn register_semantic_with_state<Id, Action>(
+        &self,
+        scene: &mut SemanticScene<Id, Action>,
+        id: Id,
+        area: Rect,
+        interactive: bool,
+        state: LockupState,
+    ) where
+        Id: Clone + PartialEq + std::fmt::Display,
+        Action: Clone,
+    {
         let parts = self.parts(area);
         if parts.content.is_empty() {
             return;
@@ -162,6 +188,10 @@ impl<'a> Lockup<'a> {
                 .label(self.mark)
                 .description("application brand lockup")
                 .focusable(true)
+                .state(SemanticState {
+                    pressed: state.pressed,
+                    ..Default::default()
+                })
         } else {
             SemanticNode::content(id, parts.content)
                 .role(SemanticRole::Chrome)
@@ -241,5 +271,101 @@ mod tests {
         assert_eq!(scene.nodes().len(), 1);
         assert_eq!(scene.nodes()[0].role, SemanticRole::Control);
         assert_eq!(scene.nodes()[0].area.width, 3);
+    }
+
+    #[test]
+    fn wide_glyphs_are_not_partially_painted_or_hit_targeted() {
+        let system = DesignSystem::default();
+        let compact = Lockup::new("界", &system).compact();
+        let area = Rect::new(0, 0, 1, 1);
+        let mut buffer = Buffer::empty(area);
+
+        let parts = compact.paint(area, &mut buffer);
+        assert!(parts.content.is_empty());
+        assert_eq!(buffer[(0, 0)].symbol(), " ");
+
+        let mut scene = SemanticScene::<&str>::new();
+        compact.register_semantic(&mut scene, "wide", area, true);
+        assert!(scene.nodes().is_empty());
+
+        let padded = Lockup::new("界", &system);
+        let short = Rect::new(0, 0, 2, 1);
+        let mut buffer = Buffer::empty(short);
+        let parts = padded.paint(short, &mut buffer);
+        assert_eq!(parts.content.width, 1);
+        assert_eq!(buffer[(0, 0)].symbol(), " ");
+        assert_eq!(buffer[(1, 0)].symbol(), " ");
+    }
+
+    #[test]
+    fn ascii_truncation_keeps_painted_and_semantic_width_aligned() {
+        let system = DesignSystem::default();
+        let lockup = Lockup::new("abcd", &system).compact();
+        let area = Rect::new(0, 0, 2, 1);
+        let mut buffer = Buffer::empty(area);
+
+        let parts = lockup.paint(area, &mut buffer);
+        assert_eq!(parts.content.width, 2);
+        assert_eq!(buffer[(0, 0)].symbol(), "a");
+        assert_eq!(buffer[(1, 0)].symbol(), "b");
+
+        let mut scene = SemanticScene::<&str>::new();
+        lockup.register_semantic(&mut scene, "ascii", area, true);
+        assert_eq!(scene.nodes()[0].area, parts.content);
+    }
+
+    #[test]
+    fn zero_and_short_areas_are_safe() {
+        let system = DesignSystem::default();
+        let lockup = Lockup::new("mark", &system);
+        let buffer_area = Rect::new(0, 0, 8, 1);
+        let mut buffer = Buffer::empty(buffer_area);
+
+        let zero_width = Rect::new(0, 0, 0, 1);
+        assert!(lockup.paint(zero_width, &mut buffer).content.is_empty());
+        let zero_height = Rect::new(0, 0, 8, 0);
+        assert!(lockup.paint(zero_height, &mut buffer).content.is_empty());
+
+        let mut scene = SemanticScene::<&str>::new();
+        lockup.register_semantic(&mut scene, "zero", zero_width, true);
+        lockup.register_semantic(&mut scene, "short", zero_height, false);
+        assert!(scene.nodes().is_empty());
+    }
+
+    #[test]
+    fn static_registration_uses_chrome_semantics() {
+        let system = DesignSystem::default();
+        let lockup = Lockup::new("mark", &system);
+        let mut scene = SemanticScene::<&str>::new();
+
+        lockup.register_semantic(&mut scene, "brand", Rect::new(0, 0, 8, 1), false);
+
+        let node = &scene.nodes()[0];
+        assert_eq!(node.role, SemanticRole::Chrome);
+        assert!(!node.focusable);
+        assert!(!node.state.pressed);
+    }
+
+    #[test]
+    fn explicit_pressed_state_projects_to_interactive_semantics() {
+        let system = DesignSystem::default();
+        let lockup = Lockup::new("mark", &system);
+        let mut scene = SemanticScene::<&str>::new();
+
+        lockup.register_semantic_with_state(
+            &mut scene,
+            "brand",
+            Rect::new(0, 0, 8, 1),
+            true,
+            LockupState {
+                hovered: true,
+                pressed: true,
+            },
+        );
+
+        let node = &scene.nodes()[0];
+        assert_eq!(node.role, SemanticRole::Control);
+        assert!(node.state.pressed);
+        assert!(!node.state.selected);
     }
 }
