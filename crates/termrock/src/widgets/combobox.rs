@@ -160,6 +160,8 @@ pub enum ComboboxOutcome<Id> {
     ClipboardCut {
         /// Text removed from the draft.
         text: String,
+        /// Monotonic generation for the changed draft.
+        generation: u64,
     },
 }
 
@@ -675,10 +677,7 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
         if key.code == KeyCode::Enter && key.modifiers.is_empty() {
             if !self.draft.is_editing() {
                 self.draft.begin_edit();
-                return ComboboxOutcome::DraftChanged {
-                    text: self.draft.value().to_owned(),
-                    generation: self.generation,
-                };
+                return ComboboxOutcome::Ignored;
             }
             if self.menu.is_open() && self.menu.selected().is_some() && !candidates.is_empty() {
                 return self.commit_active(candidates);
@@ -736,7 +735,15 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
             }
             TextInputOutcome::ClipboardPasteRequest => ComboboxOutcome::ClipboardPasteRequest,
             TextInputOutcome::ClipboardCopy { text } => ComboboxOutcome::ClipboardCopy { text },
-            TextInputOutcome::ClipboardCut { text } => ComboboxOutcome::ClipboardCut { text },
+            TextInputOutcome::ClipboardCut { text } => {
+                let request_gen = self.bump_generation();
+                self.menu.set_open(true);
+                self.menu.select(None);
+                ComboboxOutcome::ClipboardCut {
+                    text,
+                    generation: request_gen,
+                }
+            }
             TextInputOutcome::Ignored => ComboboxOutcome::Ignored,
         }
     }
@@ -754,10 +761,7 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
             UiIntent::Activate | UiIntent::Submit => {
                 if !self.draft.is_editing() {
                     self.draft.begin_edit();
-                    ComboboxOutcome::DraftChanged {
-                        text: self.draft.value().to_owned(),
-                        generation: self.generation,
-                    }
+                    ComboboxOutcome::Ignored
                 } else if self.menu.is_open() && self.menu.selected().is_some() {
                     self.commit_active(candidates)
                 } else if self.creatable {
@@ -1441,10 +1445,13 @@ mod tests {
                 &candidates,
             ),
             ComboboxOutcome::ClipboardCut {
-                text: "abc".to_owned()
+                text: "abc".to_owned(),
+                generation: 1,
             }
         );
         assert_eq!(caret.draft(), "");
+        assert!(caret.is_menu_open());
+        assert_eq!(caret.suggestion_generation(), 1);
     }
 
     #[test]
