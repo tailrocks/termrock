@@ -424,6 +424,42 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
         self.window.clamp();
     }
 
+    fn sync_cursor_to_paint(&mut self, columns: &ColumnModel<ColId>)
+    where
+        ColId: Clone,
+    {
+        let visible_count = columns.visible().count();
+        if visible_count == 0 || self.paint_widths.is_empty() {
+            self.cursor_col = 0;
+            return;
+        }
+        self.cursor_col = self.cursor_col.min(visible_count - 1);
+        let target_index = columns
+            .visible()
+            .nth(self.cursor_col)
+            .map(|(index, _)| index);
+        if target_index
+            .is_some_and(|target| self.paint_widths.iter().any(|(index, _)| *index == target))
+        {
+            return;
+        }
+        let Some((_, fallback_ordinal)) = self
+            .paint_widths
+            .iter()
+            .filter_map(|(index, _)| {
+                let ordinal = columns
+                    .visible()
+                    .position(|(visible_index, _)| visible_index == *index)?;
+                Some((ordinal.abs_diff(self.cursor_col), ordinal))
+            })
+            .min_by_key(|(distance, ordinal)| (*distance, *ordinal))
+        else {
+            self.cursor_col = 0;
+            return;
+        };
+        self.cursor_col = fallback_ordinal;
+    }
+
     /// Keys over projected rows.
     pub fn handle_key(
         &mut self,
@@ -1054,6 +1090,7 @@ impl<'a, Id: Clone + Ord, ColId: Clone + PartialEq> TreeTable<'a, Id, ColId> {
         state.h_offset = state
             .h_offset
             .min(state.content_width.saturating_sub(col_budget));
+        state.sync_cursor_to_paint(self.columns);
 
         if self.sticky_header && y < area.bottom() {
             paint_header(self, area, y, buffer, state, surface_focused);
@@ -1297,6 +1334,11 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
 
     // The quiet tier for this row: same ground and weight, lower voice.
     let quiet_style = chrome.secondary_style(base_style);
+    let cursor_col_index = table
+        .columns
+        .visible()
+        .nth(state.cursor_col)
+        .map(|(index, _)| index);
 
     let row_area = Rect::new(area.x, y, area.width, 1);
     chrome.paint_wash(buffer, row_area);
@@ -1357,7 +1399,7 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
         } else {
             col.kind.cell_style(base_style, quiet_style)
         };
-        if cursor && surface_focused && state.cursor_col == ord {
+        if cursor && surface_focused && cursor_col_index == Some(col_idx) {
             // A cell cursor is a cell: it states itself with the explicit
             // reversal pair, not a modifier over the row's own colours.
             cell_style = table.system.reversed();
@@ -1574,6 +1616,33 @@ mod tests {
         );
         assert!(matches!(out, TreeTableOutcome::CursorMoved));
         assert_eq!(state.cursor_col, 1);
+    }
+
+    #[test]
+    fn cell_cursor_reanchors_when_responsive_paint_drops_a_column() {
+        let columns = ColumnModel::new(vec![
+            DataColumn::new("name", "Name", DataColumnWidth::Min(12)).priority(100),
+            DataColumn::new("cpu", "CPU", DataColumnWidth::Fixed(6)).priority(80),
+            DataColumn::new("mem", "MEM", DataColumnWidth::Fixed(6)).priority(40),
+        ]);
+        let cells: &[&str] = &["row", "1", "2"];
+        let rows = [TreeTableRow::new("r", 0, cells)];
+        let system = DesignSystem::default();
+        let area = Rect::new(0, 0, 22, 6);
+        let mut state = TreeTableState::<&str, &str>::new(Some("r"));
+        state.set_nav_mode(TreeTableNavMode::Cell);
+        state.cursor_col = 2;
+        TreeTable::new(&system, &columns, &rows).render(area, &mut Buffer::empty(area), &mut state);
+
+        assert_eq!(state.cursor_col, 1);
+        assert_eq!(
+            state
+                .paint_widths
+                .iter()
+                .map(|(index, _)| *index)
+                .collect::<Vec<_>>(),
+            [0, 1]
+        );
     }
 
     #[test]
