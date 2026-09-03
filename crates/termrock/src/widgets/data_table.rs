@@ -636,6 +636,33 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
             .map(|(index, _)| index)
     }
 
+    fn sync_cursor_focus_to_paint(&mut self, columns: &ColumnModel<ColId>) {
+        let Some(cursor_index) = self.cursor_column_index(columns) else {
+            self.cursor_col = 0;
+            self.sync_cursor_focus();
+            return;
+        };
+        if self
+            .paint_widths
+            .iter()
+            .any(|(index, _)| *index == cursor_index)
+        {
+            return;
+        }
+        let Some((next_index, _)) = self.paint_widths.iter().min_by_key(|(index, _)| {
+            let visible_index = visible_column_ordinal(columns, *index).unwrap_or(0);
+            (visible_index.abs_diff(self.cursor_col), visible_index)
+        }) else {
+            self.cursor_col = 0;
+            self.sync_cursor_focus();
+            return;
+        };
+        if let Some(next) = visible_column_ordinal(columns, *next_index) {
+            self.cursor_col = next;
+            self.sync_cursor_focus();
+        }
+    }
+
     fn request_sort(&mut self, columns: &ColumnModel<ColId>) -> DataTableOutcome<RowId, ColId>
     where
         ColId: Clone,
@@ -1192,6 +1219,15 @@ fn remap_cell_coord<ColId: PartialEq>(
     Some(CellCoord { row: cell.row, col })
 }
 
+fn visible_column_ordinal<ColId: PartialEq>(
+    columns: &ColumnModel<ColId>,
+    source_index: usize,
+) -> Option<usize> {
+    columns
+        .visible()
+        .position(|(index, _)| index == source_index)
+}
+
 fn remap_cell_selection_columns<RowId: Clone + Ord, ColId: Clone + PartialEq>(
     selection: &mut SelectionModel<RowId>,
     range_anchor: &mut Option<CellCoord>,
@@ -1410,6 +1446,7 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
             self.system.spacing.column_gap,
             &mut state.paint_widths,
         );
+        state.sync_cursor_focus_to_paint(self.columns);
         // Pin bookkeeping
         let mut pin_start = 0usize;
         let mut pin_end = 0usize;
@@ -1768,7 +1805,8 @@ fn paint_header_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
                 state.sort.as_ref().is_some_and(|s| s.ascending),
             ));
         }
-        let on_cursor = surface_focused && paint_ord == state.cursor_col;
+        let visible_ord = visible_column_ordinal(table.columns, col_idx).unwrap_or(paint_ord);
+        let on_cursor = surface_focused && visible_ord == state.cursor_col;
         let col_style = super::table_chrome::header_label_style(
             table.system,
             sorted || on_cursor,
@@ -1984,7 +2022,8 @@ fn paint_data_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
             state.nav_mode,
             DataTableNavMode::Cell | DataTableNavMode::Range
         );
-        let cell_focused = cell_nav && cursor && surface_focused && state.cursor_col == paint_ord;
+        let visible_ord = visible_column_ordinal(table.columns, col_idx).unwrap_or(paint_ord);
+        let cell_focused = cell_nav && cursor && surface_focused && state.cursor_col == visible_ord;
         let cell_selected = state.selection.is_cell_selected(CellCoord {
             row: logical_row,
             col: col_idx,
@@ -2047,7 +2086,7 @@ fn paint_data_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
             row: id.clone(),
             column: col.id.clone(),
             row_index,
-            col_index: paint_ord,
+            col_index: visible_ord,
             area: Rect::new(paint_x, y, paint_w, 1),
         });
     }
@@ -3022,6 +3061,53 @@ mod tests {
             .find(|region| region.column == "right")
             .expect("right column remains in the responsive projection");
         assert_eq!(buffer[(right.area.x, right.area.y)].symbol(), "R");
+    }
+
+    #[test]
+    fn responsive_projection_reanchors_cursor_and_hit_ordinals() {
+        let system = DesignSystem::default();
+        let columns = ColumnModel::new(vec![
+            DataColumn::new("left", "Left", DataColumnWidth::Fixed(4)).priority(100),
+            DataColumn::new("dropped", "Dropped", DataColumnWidth::Fixed(12)).priority(1),
+            DataColumn::new("right", "Right", DataColumnWidth::Fixed(4)).priority(100),
+        ]);
+        let cells: &[&str] = &["L", "wrong", "R"];
+        let rows = [(1u64, cells)];
+        let mut state = DataTableState::<u64, &str>::new();
+        state.cursor_col = 1;
+        state.selection.focus_col = 1;
+        let area = Rect::new(0, 0, 24, 4);
+        let mut buffer = Buffer::empty(area);
+
+        DataTable::new(&system, &columns, &rows)
+            .focused(true)
+            .row_numbers(false)
+            .render(area, &mut buffer, &mut state);
+
+        assert_eq!(state.paint_widths, vec![(0, 4), (2, 4)]);
+        assert_eq!(state.cursor_col, 0);
+        assert_eq!(state.selection.focus_col, 0);
+        let right = state
+            .cell_regions
+            .iter()
+            .find(|region| region.column == "right")
+            .expect("right cell is painted");
+        assert_eq!(right.col_index, 2);
+        let out = state.handle_mouse(
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: Position {
+                    x: right.area.x,
+                    y: right.area.y,
+                },
+                modifiers: KeyModifiers::NONE,
+            },
+            &[1],
+            &columns,
+        );
+        assert!(matches!(out, DataTableOutcome::CursorMoved));
+        assert_eq!(state.cursor_col, 2);
+        assert_eq!(state.selection.focus_col, 2);
     }
 
     #[test]
