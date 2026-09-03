@@ -282,8 +282,8 @@ impl<Id> NavItem<Id> {
 /// TUI-honest view for paint + focus (sidebar-02/05 collapsible submenus).
 /// Roots and siblings at or above the collapsed depth remain visible.
 #[must_use]
-pub fn filter_nav_collapsed<Id: Clone>(items: &[NavItem<Id>]) -> Vec<NavItem<Id>> {
-    let mut out = Vec::with_capacity(items.len());
+pub fn filter_nav_collapsed<Id>(items: &[NavItem<Id>]) -> Vec<&NavItem<Id>> {
+    let mut out: Vec<&NavItem<Id>> = Vec::with_capacity(items.len());
     let mut hide_deeper_than: Option<u8> = None;
     for item in items {
         if let Some(d) = hide_deeper_than {
@@ -292,7 +292,7 @@ pub fn filter_nav_collapsed<Id: Clone>(items: &[NavItem<Id>]) -> Vec<NavItem<Id>
             }
             hide_deeper_than = None;
         }
-        out.push(item.clone());
+        out.push(item);
         if matches!(item.kind, NavItemKind::Group | NavItemKind::Section)
             && item.has_children
             && !item.expanded
@@ -303,7 +303,7 @@ pub fn filter_nav_collapsed<Id: Clone>(items: &[NavItem<Id>]) -> Vec<NavItem<Id>
     out
 }
 
-fn filter_nav_query<Id>(items: Vec<NavItem<Id>>, query: &str) -> Vec<NavItem<Id>> {
+fn filter_nav_query<'a, Id>(items: Vec<&'a NavItem<Id>>, query: &str) -> Vec<&'a NavItem<Id>> {
     if query.is_empty() {
         return items;
     }
@@ -598,21 +598,18 @@ impl<Id> NavigationListState<Id> {
         self.filter = q.into();
     }
 
-    fn projected_items(&self, items: &[NavItem<Id>]) -> Vec<NavItem<Id>>
-    where
-        Id: Clone,
-    {
+    fn projected_items<'a>(&self, items: &'a [NavItem<Id>]) -> Vec<&'a NavItem<Id>> {
         filter_nav_query(filter_nav_collapsed(items), &self.filter)
     }
 
-    fn collection_items(items: &[NavItem<Id>]) -> Vec<CollectionItem<Id>>
+    fn collection_items(items: &[&NavItem<Id>]) -> Vec<CollectionItem<Id>>
     where
         Id: Clone,
     {
         focusable_items(items)
     }
 
-    fn reconcile_projected(&mut self, projected: &[NavItem<Id>]) -> Vec<CollectionItem<Id>>
+    fn reconcile_projected(&mut self, projected: &[&NavItem<Id>]) -> Vec<CollectionItem<Id>>
     where
         Id: Clone + PartialEq,
     {
@@ -649,7 +646,7 @@ impl<Id> NavigationListState<Id> {
         self.activate_focus_projected(&projected)
     }
 
-    fn activate_focus_projected(&mut self, projected: &[NavItem<Id>]) -> NavigationListOutcome<Id>
+    fn activate_focus_projected(&mut self, projected: &[&NavItem<Id>]) -> NavigationListOutcome<Id>
     where
         Id: Clone + PartialEq,
     {
@@ -887,7 +884,7 @@ impl<Id> NavigationListState<Id> {
     }
 }
 
-fn focusable_items<Id: Clone>(items: &[NavItem<Id>]) -> Vec<CollectionItem<Id>> {
+fn focusable_items<Id: Clone>(items: &[&NavItem<Id>]) -> Vec<CollectionItem<Id>> {
     // Collapse filtering is host-projected: callers pass already-filtered lists,
     // or use [`filter_nav_collapsed`]. Do not double-filter raw slices that mix
     // expanded/collapsed inconsistently — host owns projection. Filter here only
@@ -2179,9 +2176,10 @@ mod tests {
     #[test]
     fn command_on_activate() {
         let items = [NavItem::new("a", "A").command("do.a")];
+        let refs: Vec<&NavItem<&str>> = items.iter().collect();
         let mut state = NavigationListState::new(None);
         state.set_focused(true);
-        let coll = NavigationListState::<&str>::collection_items(&items);
+        let coll = NavigationListState::<&str>::collection_items(&refs);
         let _ = state.collection.reconcile(&coll);
         state.collection.set_active(Some("a"));
         assert!(matches!(
