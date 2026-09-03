@@ -422,6 +422,10 @@ impl ProgressStepsState {
         self.presentation = p;
     }
 
+    fn can_interact(&self) -> bool {
+        matches!(self.mode, ProgressStepsMode::Interactive) && self.enabled && self.accepts_input
+    }
+
     /// ASCII marks.
     /// Cursor.
     #[must_use]
@@ -500,11 +504,7 @@ impl ProgressStepsState {
 
     /// Keyboard (interactive only).
     pub fn handle_key(&mut self, steps: &[ProgressStep], key: KeyEvent) -> ProgressStepsOutcome {
-        if !matches!(self.mode, ProgressStepsMode::Interactive)
-            || !self.enabled
-            || !self.accepts_input
-            || !self.focused
-        {
+        if !self.can_interact() || !self.focused {
             return ProgressStepsOutcome::Ignored;
         }
         if key.kind == KeyEventKind::Release || steps.is_empty() {
@@ -577,10 +577,7 @@ impl ProgressStepsState {
         steps: &[ProgressStep],
         intent: UiIntent,
     ) -> ProgressStepsOutcome {
-        if !matches!(self.mode, ProgressStepsMode::Interactive)
-            || !self.focused
-            || !self.accepts_input
-        {
+        if !self.can_interact() || !self.focused {
             return ProgressStepsOutcome::Ignored;
         }
         match intent {
@@ -609,8 +606,7 @@ impl ProgressStepsState {
         list_area: Rect,
         row_height: u16,
     ) -> ProgressStepsOutcome {
-        if !matches!(self.mode, ProgressStepsMode::Interactive)
-            || !self.enabled
+        if !self.can_interact()
             || event.kind != MouseEventKind::Down(MouseButton::Left)
             || list_area.is_empty()
         {
@@ -1080,6 +1076,74 @@ mod tests {
             state.handle_key(&steps, KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
             ProgressStepsOutcome::Blurred
         ));
+    }
+
+    #[test]
+    fn disabled_state_ignores_key_intent_and_mouse() {
+        let steps = example_build_pipeline();
+        let mut state = ProgressStepsState::interactive();
+        state.set_cursor(Some("compile".into()));
+        state.enabled = false;
+
+        assert_eq!(
+            state.handle_key(&steps, KeyEvent::new(KeyCode::Down, KeyModifiers::NONE)),
+            ProgressStepsOutcome::Ignored
+        );
+        assert_eq!(
+            state.handle_intent(&steps, UiIntent::Move(NavigationMove::Next)),
+            ProgressStepsOutcome::Ignored
+        );
+        assert_eq!(
+            state.handle_intent(&steps, UiIntent::Activate),
+            ProgressStepsOutcome::Ignored
+        );
+        assert_eq!(
+            state.handle_intent(&steps, UiIntent::Cancel),
+            ProgressStepsOutcome::Ignored
+        );
+        assert_eq!(
+            state.handle_mouse(
+                &steps,
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(0, 1),
+                    modifiers: KeyModifiers::NONE,
+                },
+                Rect::new(0, 0, 20, 4),
+                1,
+            ),
+            ProgressStepsOutcome::Ignored
+        );
+        assert_eq!(state.cursor(), Some("compile"));
+        assert!(state.focused);
+    }
+
+    #[test]
+    fn accepts_input_false_ignores_mouse_and_intent() {
+        let steps = example_build_pipeline();
+        let mut state = ProgressStepsState::interactive();
+        state.set_cursor(Some("compile".into()));
+        state.accepts_input = false;
+
+        assert_eq!(
+            state.handle_mouse(
+                &steps,
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(0, 1),
+                    modifiers: KeyModifiers::NONE,
+                },
+                Rect::new(0, 0, 20, 4),
+                1,
+            ),
+            ProgressStepsOutcome::Ignored
+        );
+        assert_eq!(
+            state.handle_intent(&steps, UiIntent::Cancel),
+            ProgressStepsOutcome::Ignored
+        );
+        assert_eq!(state.cursor(), Some("compile"));
+        assert!(state.focused);
     }
 
     #[test]
