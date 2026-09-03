@@ -250,6 +250,14 @@ impl<Id: Clone + PartialEq> CollectionState<Id> {
         self.total_len = total_len;
         self.viewport_len = viewport_len;
         self.offset = window_start.min(total_len.saturating_sub(viewport_len.min(total_len)));
+        if total_len > 0
+            && self
+                .roving
+                .active()
+                .is_some_and(|active| !window.iter().any(|item| &item.id == active))
+        {
+            return CollectionOutcome::Ignored;
+        }
         let entries = Self::to_roving_entries(window);
         self.roving.reconcile(&entries).into()
     }
@@ -447,6 +455,21 @@ mod tests {
         let _ = c.move_first(&window);
         assert_eq!(c.active(), Some(&"c"));
         assert_eq!(c.offset(), 50);
+    }
+
+    #[test]
+    fn virtual_window_reconcile_preserves_off_window_active() {
+        let full = items(&[("a", true), ("b", true), ("c", true), ("d", true)]);
+        let window = items(&[("c", true), ("d", true)]);
+        let mut c = CollectionState::new();
+        let _ = c.reconcile(&full);
+        c.set_active(Some("b"));
+
+        let out = c.reconcile_window(&window, 2, 4, 2);
+
+        assert_eq!(out, CollectionOutcome::Ignored);
+        assert_eq!(c.active(), Some(&"b"));
+        assert_eq!(c.offset(), 2);
     }
 
     #[test]

@@ -286,10 +286,14 @@ pub fn interpret_byte(b: u8, mode: HexAsciiMode) -> char {
     }
 }
 
-/// Format one byte as two uppercase hex digits.
-#[must_use]
-pub fn format_byte_hex(b: u8) -> String {
-    format!("{b:02X}")
+/// Append one byte as two uppercase hex digits.
+///
+/// Paint and export call this per byte per frame; a `String` return would
+/// allocate twice per cell. Digits are pushed directly.
+pub fn push_byte_hex(out: &mut String, b: u8) {
+    const HEX: &[u8; 16] = b"0123456789ABCDEF";
+    out.push(HEX[usize::from(b >> 4)] as char);
+    out.push(HEX[usize::from(b & 0x0F)] as char);
 }
 
 // ── Inspector ───────────────────────────────────────────────────────────────
@@ -967,11 +971,13 @@ impl HexViewerState {
         if bytes.is_empty() && (start < window.base_offset || start >= window.end_offset()) {
             return HexViewerOutcome::PageNeeded { offset: start };
         }
-        let text = bytes
-            .iter()
-            .map(|b| format!("{b:02X}"))
-            .collect::<Vec<_>>()
-            .join(" ");
+        let mut text = String::with_capacity(bytes.len().saturating_mul(3));
+        for (i, b) in bytes.iter().enumerate() {
+            if i > 0 {
+                text.push(' ');
+            }
+            push_byte_hex(&mut text, *b);
+        }
         HexViewerOutcome::CopyHex { text }
     }
 
@@ -1110,7 +1116,7 @@ pub fn format_hex_dump(
             if i > 0 {
                 out.push(' ');
             }
-            out.push_str(&format_byte_hex(*b));
+            push_byte_hex(&mut out, *b);
         }
         // pad
         let missing = usize::from(bpr).saturating_sub(slice.len());
@@ -1358,9 +1364,9 @@ fn paint_hex_row(
 
         if let Some(b) = byte {
             if tiny && is_cursor {
-                s.push_str(&format_byte_hex(b));
+                push_byte_hex(&mut s, b);
             } else if !tiny {
-                s.push_str(&format_byte_hex(b));
+                push_byte_hex(&mut s, b);
             }
             ascii_col.push(interpret_byte(b, state.ascii_mode));
         } else {
@@ -1404,10 +1410,10 @@ fn paint_hex_row(
             if let Some(b) = window.get(abs) {
                 if abs == state.cursor {
                     compact.push('[');
-                    compact.push_str(&format_byte_hex(b));
+                    push_byte_hex(&mut compact, b);
                     compact.push(']');
                 } else {
-                    compact.push_str(&format_byte_hex(b));
+                    push_byte_hex(&mut compact, b);
                     compact.push(' ');
                 }
             }

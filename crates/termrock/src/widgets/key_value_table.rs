@@ -407,8 +407,6 @@ pub struct KeyValueTableState<Id: Clone + PartialEq> {
     /// Hit regions.
     pub regions: Vec<KvtRegion<Id>>,
     painted: Rect,
-    /// Map display-row → field index for scroll sync.
-    row_map_len: u16,
 }
 
 impl<Id: Clone + PartialEq + Ord> Default for KeyValueTableState<Id> {
@@ -437,7 +435,6 @@ impl<Id: Clone + PartialEq + Ord> KeyValueTableState<Id> {
             accepts_input: true,
             regions: Vec::new(),
             painted: Rect::default(),
-            row_map_len: 0,
         }
     }
 
@@ -1100,25 +1097,24 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
         let view = self.filtered(state);
         let key_w = self.key_col_w(&view.iter().map(|f| (*f).clone()).collect::<Vec<_>>());
 
-        // Build display row map
-        let mut row_map: Vec<(usize, u16)> = Vec::new();
-        for (vi, field) in view.iter().enumerate() {
-            let h = self.measure_field_h(
-                field,
-                body.width,
-                paint_layout,
-                state,
-                show_type,
-                show_source,
-                compare,
-            );
-            for sub in 0..h {
-                row_map.push((vi, sub));
-            }
-        }
-        state.total_rows = u16::try_from(row_map.len()).unwrap_or(u16::MAX);
+        // Field heights in display order; row positions derive
+        // arithmetically instead of materializing a per-row map each frame.
+        let heights: Vec<u16> = view
+            .iter()
+            .map(|field| {
+                self.measure_field_h(
+                    field,
+                    body.width,
+                    paint_layout,
+                    state,
+                    show_type,
+                    show_source,
+                    compare,
+                )
+            })
+            .collect();
+        state.total_rows = heights.iter().fold(0u16, |a, h| a.saturating_add(*h));
         state.viewport_rows = body.height;
-        state.row_map_len = state.total_rows;
         state.clamp_scroll();
 
         // Ensure cursor exists
@@ -1134,7 +1130,7 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
 
         for row in 0..body.height {
             let idx = first.saturating_add(usize::from(row));
-            let Some(&(vi, sub)) = row_map.get(idx) else {
+            let Some((vi, sub)) = walk_field_rows(&heights, idx) else {
                 break;
             };
             let y = body.y.saturating_add(row);
@@ -1514,6 +1510,19 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
         }
         paint_kv_row_chrome(&chrome, sub, buffer, area);
     }
+}
+
+/// Absolute display row `idx` as `(field, sub_row)`, from field heights.
+fn walk_field_rows(heights: &[u16], idx: usize) -> Option<(usize, u16)> {
+    let mut seen = 0usize;
+    for (vi, h) in heights.iter().enumerate() {
+        let h = usize::from(*h);
+        if idx < seen.saturating_add(h) {
+            return Some((vi, u16::try_from(idx - seen).unwrap_or(u16::MAX)));
+        }
+        seen = seen.saturating_add(h);
+    }
+    None
 }
 
 fn paint_kv_row_chrome(
