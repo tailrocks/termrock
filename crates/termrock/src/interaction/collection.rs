@@ -294,6 +294,10 @@ impl<Id: Clone + PartialEq> CollectionState<Id> {
     ) -> CollectionOutcome<Id> {
         self.total_len = total_len;
         self.viewport_len = viewport_len;
+        if total_len == 0 {
+            self.clear_virtual_window();
+            return self.roving.reconcile(&[]).into();
+        }
         let max_offset = total_len.saturating_sub(viewport_len.min(total_len));
         let window_start = window_start.min(max_offset);
         self.window_start = Some(window_start);
@@ -715,6 +719,40 @@ mod tests {
             CollectionOutcome::ActiveChanged {
                 from: Some("c"),
                 to: Some("d"),
+            }
+        );
+    }
+
+    #[test]
+    fn zero_total_window_reconcile_clears_virtual_mode_before_movement() {
+        let inconsistent = items(&[("stale", true)]);
+        let full = items(&[("a", true)]);
+        let mut c = CollectionState::new();
+        c.set_active(Some("off-window"));
+        c.set_virtual_window(20, 100);
+
+        assert_eq!(
+            c.reconcile_window(
+                &inconsistent,
+                20,
+                0,
+                2,
+                VirtualWindowActivePolicy::PreserveMissing,
+            ),
+            CollectionOutcome::ActiveChanged {
+                from: Some("off-window"),
+                to: None,
+            }
+        );
+        assert_eq!(c.offset(), 0);
+        assert_eq!(c.total_len(), 0);
+
+        c.set_active(Some("off-window"));
+        assert_eq!(
+            c.move_next(&full),
+            CollectionOutcome::ActiveChanged {
+                from: Some("off-window"),
+                to: Some("a"),
             }
         );
     }
