@@ -1745,7 +1745,9 @@ fn paint_data_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
         if paint_w == 0 {
             continue;
         }
-        let cell_text = cells.get(paint_ord).copied().unwrap_or("");
+        // `paint_widths` is a responsive projection, so its ordinal is not
+        // necessarily the source cell index when a middle column dropped.
+        let cell_text = cells.get(col_idx).copied().unwrap_or("");
         let cell_nav = matches!(
             state.nav_mode,
             DataTableNavMode::Cell | DataTableNavMode::Range
@@ -2486,6 +2488,37 @@ mod tests {
             .collect();
         assert!(text.contains("ID") || text.contains("Name"), "{text}");
         assert!(text.contains("alpha") || text.contains("beta"), "{text}");
+    }
+
+    #[test]
+    fn dropped_middle_column_does_not_shift_later_cell_values() {
+        use ratatui_core::buffer::Buffer;
+        use ratatui_core::layout::Rect;
+
+        let system = DesignSystem::default();
+        let columns = ColumnModel::new(vec![
+            DataColumn::new("left", "Left", DataColumnWidth::Fixed(4)).priority(100),
+            DataColumn::new("dropped", "Dropped", DataColumnWidth::Fixed(12)).priority(1),
+            DataColumn::new("right", "Right", DataColumnWidth::Fixed(4)).priority(100),
+        ]);
+        let cells: &[&str] = &["L", "wrong", "R"];
+        let rows = [(1u64, cells)];
+        let mut state = DataTableState::<u64, &str>::new();
+        state.accepts_input = false;
+        let area = Rect::new(0, 0, 24, 4);
+        let mut buffer = Buffer::empty(area);
+
+        DataTable::new(&system, &columns, &rows)
+            .row_numbers(false)
+            .render(area, &mut buffer, &mut state);
+
+        assert_eq!(state.paint_widths, vec![(0, 4), (2, 4)]);
+        let right = state
+            .cell_regions
+            .iter()
+            .find(|region| region.column == "right")
+            .expect("right column remains in the responsive projection");
+        assert_eq!(buffer[(right.area.x, right.area.y)].symbol(), "R");
     }
 
     #[test]
