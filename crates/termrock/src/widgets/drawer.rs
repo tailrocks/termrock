@@ -34,7 +34,7 @@ use crate::{
         SemanticRole, SemanticScene, SemanticState, UiIntent, place_overlay,
     },
     style::{DesignSystem, Role},
-    text::{display_cols, take_display_cols},
+    text::take_display_cols,
 };
 
 /// Default overlay id for drawers.
@@ -1073,7 +1073,6 @@ impl<'a> Drawer<'a> {
         } else {
             state.slots.footer = Rect::default();
         }
-        let _ = display_cols;
     }
 
     /// Semantic registration.

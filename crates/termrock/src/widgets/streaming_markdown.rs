@@ -26,7 +26,7 @@ use ratatui_core::{buffer::Buffer, layout::Rect};
 use crate::{
     input::{KeyEvent, MouseEvent},
     style::{DesignSystem, Role},
-    text::{take_display_cols, wrap_display_cols},
+    text::take_display_cols,
     widgets::markdown::{
         MarkdownBlock, MarkdownBlockKind, MarkdownOutcome, MarkdownView, MarkdownViewState,
         SourceAnchor, project_markdown,
@@ -878,7 +878,6 @@ impl<'a> StreamingMarkdown<'a> {
                 );
             }
         }
-        let _ = wrap_display_cols;
     }
 }
 

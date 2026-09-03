@@ -38,7 +38,6 @@ use crate::{
         project_activities_for_status_bar,
     },
     style::{DesignSystem, PanelChrome, Role},
-    text::display_cols,
     widgets::{
         List, ListRow, ListState, Panel, SemanticStatus, StatusKind, StatusRegion, StatusSlot,
     },
@@ -1454,7 +1453,6 @@ impl<'a> TaskRail<'a> {
                 style,
             );
         }
-        let _ = display_cols;
     }
 }
 

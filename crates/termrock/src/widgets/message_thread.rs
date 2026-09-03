@@ -24,7 +24,7 @@ use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseEvent},
     style::DesignSystem,
-    text::{display_cols, take_display_cols},
+    text::take_display_cols,
     widgets::transcript::{
         Transcript, TranscriptBlock, TranscriptKind, TranscriptOutcome, TranscriptState,
     },
@@ -1129,7 +1129,6 @@ impl<'a> MessageThread<'a> {
                 );
             }
         }
-        let _ = display_cols;
     }
 }
 

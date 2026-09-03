@@ -1011,7 +1011,6 @@ impl<'a> SubagentCard<'a> {
                 x = x.saturating_add(w);
             }
         }
-        let _ = display_cols;
     }
 
     fn paint_row(

@@ -317,7 +317,7 @@ impl FormLayout {
     }
 
     fn field_row_height(self) -> usize {
-        let _ = self;
+        let _ = self; // every layout stacks fields three rows apart
         3
     }
 

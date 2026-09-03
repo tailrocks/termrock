@@ -1387,7 +1387,6 @@ impl<'a> QuestionFlow<'a> {
                 buffer,
             );
         }
-        let _ = display_cols;
     }
 
     fn paint_review(&self, area: Rect, buffer: &mut Buffer, state: &QuestionFlowState) {

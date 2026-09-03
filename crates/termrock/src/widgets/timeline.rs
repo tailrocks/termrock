@@ -613,7 +613,6 @@ impl<Id: Clone + PartialEq + Ord> TimelineState<Id> {
                 KeyCode::Right | KeyCode::Left | KeyCode::Char('l' | 'h' | 'L' | 'H')
             )
         {
-            let expand = matches!(key.code, KeyCode::Right | KeyCode::Char('l' | 'L'));
             if let Some(e) = view.get(self.cursor) {
                 if e.expandable {
                     let id = e.id.clone();
@@ -621,7 +620,6 @@ impl<Id: Clone + PartialEq + Ord> TimelineState<Id> {
                     return TimelineOutcome::ExpandToggled(id);
                 }
             }
-            let _ = expand;
         }
 
         TimelineOutcome::Ignored
@@ -915,7 +913,7 @@ impl<'a, Id: Clone + PartialEq + Ord> Timeline<'a, Id> {
         state.reveal(len.max(1));
 
         let surface = self.focused && state.accepts_input;
-        let mut y = area.y;
+        let y = area.y;
         let start = state.offset;
         let end = (start + state.viewport).min(len);
 
@@ -947,7 +945,6 @@ impl<'a, Id: Clone + PartialEq + Ord> Timeline<'a, Id> {
 
             if matches!(event.kind, TimelineRowKind::Group) {
                 self.paint_group(area, row_y, buffer, event, false);
-                y = row_y;
                 continue;
             }
 
@@ -1008,9 +1005,7 @@ impl<'a, Id: Clone + PartialEq + Ord> Timeline<'a, Id> {
             }
 
             // Detail rows are host-projected; the block itself never paints them.
-            y = row_y;
         }
-        let _ = y;
         self.paint_footer(area, buffer, state, false);
     }
 

@@ -981,7 +981,6 @@ impl<'a> ToolCallCard<'a> {
                 }
             }
         }
-        let _ = display_cols;
     }
 }
 

@@ -19,7 +19,7 @@ use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
 use crate::{
     input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind},
     style::{DesignSystem, Role},
-    text::{display_cols, take_display_cols},
+    text::take_display_cols,
 };
 
 use super::{SemanticStatus, StatusIndicator};
@@ -974,7 +974,6 @@ impl<'a> ContextMeter<'a> {
                 );
             }
         }
-        let _ = display_cols;
     }
 }
 
