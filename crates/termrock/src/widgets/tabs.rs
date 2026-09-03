@@ -561,12 +561,14 @@ impl<Id> TabsState<Id> {
         }
 
         let items = Self::items_from_tabs(tabs);
+        let is_press = key.is_press();
         let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
         let alt = key.modifiers.contains(KeyModifiers::ALT);
 
         // Close: Ctrl+W / Delete on focused closable
-        if (ctrl && matches!(key.code, KeyCode::Char('w') | KeyCode::Char('W')))
-            || matches!(key.code, KeyCode::Delete)
+        if is_press
+            && ((ctrl && matches!(key.code, KeyCode::Char('w') | KeyCode::Char('W')))
+                || matches!(key.code, KeyCode::Delete))
         {
             if let Some(id) = self.collection.active().cloned() {
                 if tabs.iter().any(|t| t.id == id && t.closable && t.enabled) {
@@ -576,7 +578,8 @@ impl<Id> TabsState<Id> {
         }
 
         // Overflow toggle
-        if matches!(key.code, KeyCode::Char('o') | KeyCode::Char('O'))
+        if is_press
+            && matches!(key.code, KeyCode::Char('o') | KeyCode::Char('O'))
             && matches!(
                 self.presentation,
                 TabsPresentation::Overflow | TabsPresentation::Select
@@ -593,13 +596,14 @@ impl<Id> TabsState<Id> {
         }
 
         // Esc closes overflow
-        if key.code == KeyCode::Esc && self.overflow_open {
+        if is_press && key.code == KeyCode::Esc && self.overflow_open {
             self.overflow_open = false;
             return TabsOutcome::OverflowClosed;
         }
 
         // Reorder hooks: Ctrl+Left/Right or Alt+arrows
-        if (ctrl || alt)
+        if is_press
+            && (ctrl || alt)
             && matches!(
                 key.code,
                 KeyCode::Left | KeyCode::Right | KeyCode::Up | KeyCode::Down
@@ -620,7 +624,10 @@ impl<Id> TabsState<Id> {
 
         // Enter/Space activate (junie tabs.rs). Manual mode needs this;
         // Automatic already selected on move.
-        if matches!(key.code, KeyCode::Enter | KeyCode::Char(' ')) && key.modifiers.is_empty() {
+        if is_press
+            && matches!(key.code, KeyCode::Enter | KeyCode::Char(' '))
+            && key.modifiers.is_empty()
+        {
             if let Some(id) = self.collection.active().cloned() {
                 return self.activate(id, tabs);
             }
@@ -1494,8 +1501,10 @@ impl<Id: Clone + PartialEq> StatefulWidget for Tabs<'_, Id> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::input::KeyEventKind;
     use crate::style::RolePalette;
     use crate::widgets::tests::click;
+    use crate::widgets::tests::key_with_kind;
     use crate::widgets::tests::mouse;
     use ratatui_core::layout::Position;
     use ratatui_core::style::{Color, Style};
@@ -1733,6 +1742,68 @@ mod tests {
             ),
             TabsOutcome::CloseRequested { id: "logs" }
         ));
+    }
+
+    #[test]
+    fn repeated_tabs_one_shot_actions_are_ignored() {
+        let tabs = sample_tabs();
+        let repeat = |code, modifiers| key_with_kind(code, modifiers, KeyEventKind::Repeat);
+
+        let mut close_state = TabsState::new().with_selected("logs");
+        close_state.set_focused(true);
+        assert_eq!(
+            close_state.handle_key(repeat(KeyCode::Char('w'), KeyModifiers::CONTROL), &tabs),
+            TabsOutcome::Ignored
+        );
+        assert_eq!(
+            close_state.handle_key(repeat(KeyCode::Delete, KeyModifiers::NONE), &tabs),
+            TabsOutcome::Ignored
+        );
+
+        let mut overflow_state = TabsState::new().with_selected("overview");
+        overflow_state.set_focused(true);
+        overflow_state.presentation = TabsPresentation::Select;
+        assert_eq!(
+            overflow_state.handle_key(repeat(KeyCode::Char('o'), KeyModifiers::NONE), &tabs),
+            TabsOutcome::Ignored
+        );
+        assert!(!overflow_state.is_overflow_open());
+        assert!(matches!(
+            overflow_state.handle_key(KeyEvent::new(KeyCode::Char('o'), KeyModifiers::NONE), &tabs),
+            TabsOutcome::OverflowOpened { .. }
+        ));
+        assert_eq!(
+            overflow_state.handle_key(repeat(KeyCode::Esc, KeyModifiers::NONE), &tabs),
+            TabsOutcome::Ignored
+        );
+        assert!(overflow_state.is_overflow_open());
+        assert_eq!(
+            overflow_state.handle_key(repeat(KeyCode::Char('o'), KeyModifiers::NONE), &tabs),
+            TabsOutcome::Ignored
+        );
+        assert!(overflow_state.is_overflow_open());
+
+        let mut reorder_state = TabsState::new().with_selected("overview");
+        reorder_state.set_focused(true);
+        assert_eq!(
+            reorder_state.handle_key(repeat(KeyCode::Right, KeyModifiers::CONTROL), &tabs),
+            TabsOutcome::Ignored
+        );
+
+        let mut activation_state = TabsState::new()
+            .with_selected("overview")
+            .with_activation(TabsActivation::Manual);
+        activation_state.set_focused(true);
+        let _ =
+            activation_state.handle_key(KeyEvent::new(KeyCode::Right, KeyModifiers::NONE), &tabs);
+        assert_eq!(activation_state.selected(), Some(&"overview"));
+        for code in [KeyCode::Enter, KeyCode::Char(' ')] {
+            assert_eq!(
+                activation_state.handle_key(repeat(code, KeyModifiers::NONE), &tabs),
+                TabsOutcome::Ignored
+            );
+            assert_eq!(activation_state.selected(), Some(&"overview"));
+        }
     }
 
     #[test]
