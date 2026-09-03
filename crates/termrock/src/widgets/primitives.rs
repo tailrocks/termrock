@@ -234,7 +234,7 @@ impl ActivationState {
                 }
             }
         }
-        if key.kind == KeyEventKind::Release || key.kind == KeyEventKind::Repeat {
+        if !key.is_press() {
             return ActivationOutcome::Ignored;
         }
         if let Some(intent) = crate::interaction::default_button_intent(key) {

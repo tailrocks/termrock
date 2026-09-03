@@ -863,7 +863,7 @@ impl IntegrationStatusState {
 
     /// Keyboard.
     pub fn handle_key(&mut self, key: KeyEvent) -> IntegrationStatusOutcome {
-        if !self.focused || !self.accepts_input || key.kind != KeyEventKind::Press {
+        if !self.focused || !self.accepts_input || !key.is_press() {
             return IntegrationStatusOutcome::Ignored;
         }
         if self.entries.is_empty() {

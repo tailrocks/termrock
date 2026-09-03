@@ -741,7 +741,7 @@ impl TextInputState {
 
     /// Default key adapter (Emacs-style chords). Prefer keymaps → intents in hosts.
     pub fn handle_key(&mut self, key: KeyEvent) -> TextInputOutcome {
-        if key.kind == KeyEventKind::Release {
+        if key.is_release() {
             return TextInputOutcome::Ignored;
         }
         if !self.enabled {

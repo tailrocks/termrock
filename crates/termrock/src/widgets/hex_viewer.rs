@@ -703,10 +703,10 @@ impl HexViewerState {
 
     /// Keys. Host must re-project window when [`HexViewerOutcome::PageNeeded`].
     pub fn handle_key(&mut self, key: KeyEvent, window: &HexWindow<'_>) -> HexViewerOutcome {
-        if !self.accepts_input || key.kind == KeyEventKind::Release {
+        if !self.accepts_input || key.is_release() {
             return HexViewerOutcome::Ignored;
         }
-        let is_press = key.kind == KeyEventKind::Press;
+        let is_press = key.is_press();
         let bpr = self.effective_bpr.max(1);
         let total = window.total_len;
         self.total_len = total;

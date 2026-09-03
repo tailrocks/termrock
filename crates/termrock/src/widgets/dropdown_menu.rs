@@ -820,7 +820,7 @@ impl DropdownMenuState {
         key: KeyEvent,
         root: &[MenuNode<Id>],
     ) -> DropdownMenuOutcome<Id> {
-        if !self.live() || root.is_empty() || key.kind == KeyEventKind::Release {
+        if !self.live() || root.is_empty() || key.is_release() {
             return DropdownMenuOutcome::Ignored;
         }
         if !self.is_open() {

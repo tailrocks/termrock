@@ -33,7 +33,7 @@ use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::StatefulWi
 
 use crate::{
     capability::DoctorReport,
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
+    input::{KeyCode, KeyEvent, KeyModifiers},
     interaction::Outcome,
     layout::{
         PaneConstraint, PaneGeom, PaneId, Workspace, WorkspaceAxis, WorkspaceNode, WorkspaceState,
@@ -824,10 +824,10 @@ impl ErrorRecoveryState {
         key: KeyEvent,
         snap: &CrashReportSnapshot,
     ) -> ErrorRecoveryOutcome {
-        if key.kind == KeyEventKind::Release {
+        if key.is_release() {
             return ErrorRecoveryOutcome::Ignored;
         }
-        let is_press = key.kind == KeyEventKind::Press;
+        let is_press = key.is_press();
 
         if is_press {
             match key.code {
@@ -898,7 +898,7 @@ impl ErrorRecoveryState {
         match out {
             ErrorStateOutcome::Ignored => {
                 // r on summary with retry focus → restart
-                if key.kind == KeyEventKind::Press && matches!(key.code, KeyCode::Char('r')) {
+                if key.is_press() && matches!(key.code, KeyCode::Char('r')) {
                     return self.outcome_for_action(RecoveryActionId::Restart, snap);
                 }
                 ErrorRecoveryOutcome::Ignored
@@ -926,7 +926,7 @@ impl ErrorRecoveryState {
     ) -> ErrorRecoveryOutcome {
         let set = self.action_set();
         let rows = recovery_action_rows(set);
-        if key.kind == KeyEventKind::Press && key.code == KeyCode::Enter {
+        if key.is_press() && key.code == KeyCode::Enter {
             if let Some(id) = self.actions.selected().cloned() {
                 if let Some(action) = set.iter().find(|a| a.id() == id) {
                     return self.outcome_for_action(*action, snap);

@@ -25,9 +25,7 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{
         CollectionItem, CollectionState, NavigationMove, OverlayId, OverlayKind, OverlayOutcome,
         OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, PageMove, RovingOrientation,
@@ -922,7 +920,7 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
         key: KeyEvent,
         visible: &[CommandEntry<Id>],
     ) -> CommandPaletteOutcome<Id> {
-        if !self.live() || key.kind == KeyEventKind::Release {
+        if !self.live() || key.is_release() {
             return CommandPaletteOutcome::Ignored;
         }
         let _ = self.apply_results(self.generation, visible);

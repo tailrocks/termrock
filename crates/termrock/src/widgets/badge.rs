@@ -15,7 +15,7 @@
 #![allow(unused_variables, unused_mut)] // unit-test fixtures
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
 
-use crate::input::{KeyCode, KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind};
+use crate::input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{
     EventResult, SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent,
     default_button_intent,
@@ -550,7 +550,7 @@ impl<'a> Badge<'a> {
 
     /// Key path — only when interactive and not disabled.
     pub fn handle_key(&self, state: &mut BadgeState, key: KeyEvent) -> BadgeOutcome {
-        if !self.interactive || self.disabled || !state.focused || key.kind != KeyEventKind::Press {
+        if !self.interactive || self.disabled || !state.focused || !key.is_press() {
             return BadgeOutcome::Ignored;
         }
         if let Some(intent) = default_button_intent(key) {

@@ -194,7 +194,7 @@ impl<Id> AppDashboardState<Id> {
     where
         Id: Clone + PartialEq,
     {
-        if !self.accepts_input || key.kind != KeyEventKind::Press {
+        if !self.accepts_input || !key.is_press() {
             return AppDashboardOutcome::Ignored;
         }
 

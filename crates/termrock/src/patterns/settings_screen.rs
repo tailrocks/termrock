@@ -333,7 +333,7 @@ impl<SectionId: Clone + PartialEq> SettingsScreenState<SectionId> {
         fieldsets: &[Fieldset<'_, &'static str>],
         theme_presets: &[ThemePreset],
     ) -> SettingsScreenOutcome<SectionId, &'static str> {
-        if key.kind != KeyEventKind::Press && key.kind != KeyEventKind::Repeat {
+        if key.is_release() {
             return SettingsScreenOutcome::Ignored;
         }
 

@@ -24,9 +24,7 @@ use web_time::Instant;
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
     runtime::FrameTick,
     style::{ButtonRecipeVariant, ControlState, DesignSystem, Glyph, Role},
@@ -495,7 +493,7 @@ impl SearchInputState {
 
     /// Key adapter.
     pub fn handle_key(&mut self, key: KeyEvent) -> SearchInputOutcome {
-        if key.kind == KeyEventKind::Release || !self.enabled {
+        if key.is_release() || !self.enabled {
             return SearchInputOutcome::Ignored;
         }
         self.query.set_focused(self.focused);

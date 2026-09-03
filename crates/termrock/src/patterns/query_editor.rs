@@ -803,10 +803,10 @@ impl QueryEditorState {
         key: KeyEvent,
         diagnostics: &[Diagnostic<'_>],
     ) -> QueryEditorOutcome {
-        if !self.accepts_input || key.kind == KeyEventKind::Release {
+        if !self.accepts_input || key.is_release() {
             return QueryEditorOutcome::Ignored;
         }
-        let is_press = key.kind == KeyEventKind::Press;
+        let is_press = key.is_press();
         if !is_press {
             return QueryEditorOutcome::Ignored;
         }

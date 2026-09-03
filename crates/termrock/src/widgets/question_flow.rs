@@ -19,9 +19,7 @@ use std::collections::BTreeSet;
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     style::{ControlState, DesignSystem, ListRowVisualState, PanelChrome, Role},
     text::{display_cols, take_display_cols},
     widgets::panel::Panel,
@@ -767,8 +765,7 @@ impl QuestionFlowState {
 
     /// Keys.
     pub fn handle_key(&mut self, key: KeyEvent) -> QuestionFlowOutcome {
-        if !self.enabled || !self.accepts_input || !self.focused || key.kind != KeyEventKind::Press
-        {
+        if !self.enabled || !self.accepts_input || !self.focused || !key.is_press() {
             return QuestionFlowOutcome::Ignored;
         }
         if self.set.is_none() {

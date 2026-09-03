@@ -578,7 +578,7 @@ impl<'a> Toggle<'a> {
 
     /// Keys: Space/Enter flip value when focused.
     pub fn handle_key(&self, state: &mut ToggleState, key: KeyEvent) -> ToggleOutcome {
-        if !state.enabled || !state.focused || key.kind != KeyEventKind::Press {
+        if !state.enabled || !state.focused || !key.is_press() {
             return ToggleOutcome::Ignored;
         }
         if let Some(intent) = default_button_intent(key) {
@@ -1292,7 +1292,7 @@ impl<'a, Id: Clone + PartialEq> ToggleGroup<'a, Id> {
         state: &mut ToggleGroupState<Id>,
         key: KeyEvent,
     ) -> ToggleGroupOutcome<Id> {
-        if !state.surface_focused || key.kind != KeyEventKind::Press {
+        if !state.surface_focused || !key.is_press() {
             return ToggleGroupOutcome::Ignored;
         }
         if matches!(key.code, crate::input::KeyCode::Esc) && state.overflow_open {

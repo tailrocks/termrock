@@ -848,10 +848,10 @@ impl ProjectLauncherState {
         sessions: &[SessionEntry],
         quick_open_items: &[QuickOpenItem<String>],
     ) -> ProjectLauncherOutcome {
-        if key.kind == KeyEventKind::Release {
+        if key.is_release() {
             return ProjectLauncherOutcome::Ignored;
         }
-        let is_press = key.kind == KeyEventKind::Press;
+        let is_press = key.is_press();
 
         // Quick open overlay first
         if self.quick_open_open {
@@ -952,7 +952,7 @@ impl ProjectLauncherState {
         key: KeyEvent,
         projects: &[ProjectEntry],
     ) -> ProjectLauncherOutcome {
-        let is_press = key.kind == KeyEventKind::Press;
+        let is_press = key.is_press();
         let query = self.search.query().to_string();
         let filtered = filter_project_entries(projects, &query);
         let rows = project_list_rows(&filtered);
@@ -1065,7 +1065,7 @@ impl ProjectLauncherState {
     fn handle_onboarding_key(&mut self, key: KeyEvent) -> ProjectLauncherOutcome {
         // EmptyState needs the widget for handle_key — use a minimal system-free path:
         // Enter/primary → onboarding or new; secondary → import
-        if key.kind != KeyEventKind::Press {
+        if !key.is_press() {
             return ProjectLauncherOutcome::Ignored;
         }
         match key.code {

@@ -338,7 +338,7 @@ impl<'a> EmptyState<'a> {
 
     /// Handle keyboard when actions are present.
     pub fn handle_key(&self, key: KeyEvent, state: &mut EmptyStateState) -> EmptyStateOutcome {
-        if key.kind != KeyEventKind::Press {
+        if !key.is_press() {
             return EmptyStateOutcome::Ignored;
         }
         if self.primary.is_none() && self.secondary.is_none() {

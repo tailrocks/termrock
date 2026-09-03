@@ -273,7 +273,7 @@ impl PanelState {
         collapsible: bool,
         interactive: bool,
     ) -> PanelOutcome {
-        if !self.focused || key.kind != KeyEventKind::Press {
+        if !self.focused || !key.is_press() {
             return PanelOutcome::Ignored;
         }
         let Some(intent) = default_button_intent(key).or_else(|| default_list_intent(key)) else {

@@ -536,7 +536,7 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
         options: &[SelectOption<Id>],
         bounds: Rect,
     ) -> MultiSelectOutcome<Id> {
-        if key.kind == KeyEventKind::Release || !self.enabled {
+        if key.is_release() || !self.enabled {
             return MultiSelectOutcome::Ignored;
         }
         if !self.is_open() {

@@ -19,7 +19,7 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind},
+    input::{KeyCode, KeyEvent},
     interaction::{
         BackdropPolicy, LayerDismissPolicy, NarrowFallback, OverlayId, OverlayKind, OverlayOutcome,
         OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, PlacementPrefer, SemanticNode,
@@ -571,7 +571,7 @@ impl PopoverState {
         if !self.open || !self.enabled || !self.accepts_input {
             return PopoverOutcome::Ignored;
         }
-        if key.kind == KeyEventKind::Release {
+        if key.is_release() {
             return PopoverOutcome::Ignored;
         }
         if key.code == KeyCode::Esc && key.modifiers.is_empty() {

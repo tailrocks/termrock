@@ -30,7 +30,7 @@ use std::collections::BTreeSet;
 use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::StatefulWidget};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent},
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseEvent},
     style::{DesignSystem, Role},
     widgets::{
         BreadcrumbItem, EmptyKind, EmptyState, QuickOpenItem, QuickOpenPreview, SemanticStatus,
@@ -817,10 +817,10 @@ impl<Id: Clone + Ord + PartialEq> SchemaBrowserState<Id> {
     where
         Id: Clone + PartialEq + Eq,
     {
-        if !self.accepts_input || key.kind == KeyEventKind::Release {
+        if !self.accepts_input || key.is_release() {
             return SchemaBrowserOutcome::Ignored;
         }
-        let is_press = key.kind == KeyEventKind::Press;
+        let is_press = key.is_press();
 
         // Filter typing
         if let Some(q) = self.filter.as_mut()

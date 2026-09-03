@@ -679,7 +679,7 @@ impl SubagentCardState {
 
     /// Keys.
     pub fn handle_key(&mut self, key: KeyEvent, run: &SubagentRun) -> SubagentCardOutcome {
-        if !self.accepts_input || !self.focused || key.kind != KeyEventKind::Press {
+        if !self.accepts_input || !self.focused || !key.is_press() {
             return SubagentCardOutcome::Ignored;
         }
         let actions = subagent_actions_for(run);

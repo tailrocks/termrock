@@ -20,7 +20,7 @@
 #![allow(unused_variables, unused_mut)] // unit-test fixtures
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
-use crate::input::{KeyCode, KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind};
+use crate::input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{
     EventResult, HitRegion, RovingEntry, RovingFocusGroup, RovingOrientation, RovingOutcome,
     UiIntent, default_button_intent, default_list_intent,
@@ -730,7 +730,7 @@ impl<'a, Id: Clone + PartialEq> Accordion<'a, Id> {
         state: &mut AccordionState<Id>,
         key: KeyEvent,
     ) -> AccordionOutcome<Id> {
-        if !state.surface_focused || key.kind != KeyEventKind::Press {
+        if !state.surface_focused || !key.is_press() {
             return AccordionOutcome::Ignored;
         }
         state.reconcile_open(self.items);

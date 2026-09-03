@@ -603,10 +603,7 @@ impl<Id: Clone + PartialEq> AlertDialogState<Id> {
 
     /// Keyboard routing — every dismissal / focus path.
     pub fn handle_key(&mut self, key: KeyEvent) -> AlertDialogOutcome<Id> {
-        if !self.dialog.is_open()
-            || !self.dialog.accepts_input()
-            || key.kind == KeyEventKind::Release
-        {
+        if !self.dialog.is_open() || !self.dialog.accepts_input() || key.is_release() {
             return AlertDialogOutcome::Ignored;
         }
 
@@ -616,14 +613,14 @@ impl<Id: Clone + PartialEq> AlertDialogState<Id> {
             && !key.modifiers.contains(KeyModifiers::CONTROL)
         {
             match key.code {
-                KeyCode::Char(c) if !c.is_control() && key.kind == KeyEventKind::Press => {
+                KeyCode::Char(c) if !c.is_control() && key.is_press() => {
                     // Don't steal j/k when on actions without typed focus —
                     // typed buffer always accepts printable when gate present,
                     // except when user is moving actions with arrows.
                     self.typed_buffer.push(c);
                     return AlertDialogOutcome::TypedChanged;
                 }
-                KeyCode::Backspace if key.kind == KeyEventKind::Press => {
+                KeyCode::Backspace if key.is_press() => {
                     self.typed_buffer.pop();
                     return AlertDialogOutcome::TypedChanged;
                 }
@@ -632,7 +629,7 @@ impl<Id: Clone + PartialEq> AlertDialogState<Id> {
         }
 
         // Esc paths
-        if matches!(key.code, KeyCode::Esc) && key.kind == KeyEventKind::Press {
+        if matches!(key.code, KeyCode::Esc) && key.is_press() {
             return self.handle_escape();
         }
 
@@ -785,10 +782,10 @@ impl<Id: Clone + PartialEq> AlertDialogState<Id> {
 }
 
 fn alert_nav_intent(key: KeyEvent) -> Option<UiIntent> {
-    if key.kind == KeyEventKind::Release {
+    if key.is_release() {
         return None;
     }
-    let is_press = key.kind == KeyEventKind::Press;
+    let is_press = key.is_press();
     if key.modifiers.contains(KeyModifiers::CONTROL) || key.modifiers.contains(KeyModifiers::ALT) {
         return None;
     }

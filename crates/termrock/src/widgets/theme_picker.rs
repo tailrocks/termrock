@@ -119,7 +119,7 @@ impl ThemePickerState {
 
     /// Handles navigation / confirm / cancel via default list intents (no raw key match).
     pub fn handle_key(&mut self, key: KeyEvent, preset_count: usize) -> ThemePickerOutcome {
-        if !self.enabled || !self.focused || key.kind != KeyEventKind::Press || preset_count == 0 {
+        if !self.enabled || !self.focused || !key.is_press() || preset_count == 0 {
             return ThemePickerOutcome::Ignored;
         }
         match default_list_intent(key) {

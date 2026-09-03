@@ -689,7 +689,7 @@ impl TextAreaState {
     /// Routes keyboard. Idle (focused, not editing): Enter/F2 begin edit,
     /// j/k and arrows scroll. Editing: Enter inserts a newline; Esc commits.
     pub fn handle_key(&mut self, key: KeyEvent) -> TextAreaOutcome {
-        if !self.accepts_input || key.kind == KeyEventKind::Release {
+        if !self.accepts_input || key.is_release() {
             return TextAreaOutcome::Ignored;
         }
         let plain = key.modifiers.is_empty();

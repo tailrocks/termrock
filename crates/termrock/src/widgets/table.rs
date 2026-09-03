@@ -19,7 +19,7 @@ use ratatui_core::{
 
 use super::data_view::ColumnKind;
 use crate::{
-    input::{KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind},
+    input::{KeyEvent, MouseButton, MouseEvent, MouseEventKind},
     style::{DesignSystem, ListRowVisualState, Role, VisualState},
     text::{LinePlacement, paint_line_overflow},
 };
@@ -537,11 +537,11 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> TableState<RowId, ColumnId> {
         rows: &[TableRow<'_, RowId>],
         key: KeyEvent,
     ) -> TableOutcome<RowId, ColumnId> {
-        if key.kind == KeyEventKind::Release || !key.modifiers.is_empty() {
+        if key.is_release() || !key.modifiers.is_empty() {
             return TableOutcome::Ignored;
         }
         let Some(intent) = crate::interaction::default_table_intent(key) else {
-            if key.kind == KeyEventKind::Press
+            if key.is_press()
                 && key.modifiers.is_empty()
                 && matches!(key.code, crate::input::KeyCode::Char('s'))
             {
@@ -549,9 +549,7 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> TableState<RowId, ColumnId> {
             }
             return TableOutcome::Ignored;
         };
-        if matches!(intent, crate::interaction::UiIntent::Activate)
-            && key.kind != KeyEventKind::Press
-        {
+        if matches!(intent, crate::interaction::UiIntent::Activate) && !key.is_press() {
             return TableOutcome::Ignored;
         }
         self.handle_intent(rows, intent)

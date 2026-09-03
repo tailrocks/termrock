@@ -22,9 +22,7 @@ use std::collections::BTreeMap;
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     style::{DesignSystem, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
     widgets::{
@@ -772,7 +770,7 @@ impl<'a> SourceCitation<'a> {
         state: &mut SourceCitationState,
         key: KeyEvent,
     ) -> SourceCitationOutcome {
-        if !state.focused || key.kind != KeyEventKind::Press {
+        if !state.focused || !key.is_press() {
             return SourceCitationOutcome::Ignored;
         }
         match key.code {
@@ -950,7 +948,7 @@ impl CitationListState {
 
     /// Keys.
     pub fn handle_key(&mut self, key: KeyEvent, sources: &[CitationSource]) -> CitationListOutcome {
-        if !self.accepts_input || !self.focused || key.kind != KeyEventKind::Press {
+        if !self.accepts_input || !self.focused || !key.is_press() {
             return CitationListOutcome::Ignored;
         }
         if !self.expanded {

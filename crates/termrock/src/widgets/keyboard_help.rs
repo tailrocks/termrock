@@ -803,7 +803,7 @@ impl KeyboardHelpState {
 
     /// Keyboard (modal primarily; footer is mostly display).
     pub fn handle_key(&mut self, key: KeyEvent, visible: &[HelpEntry]) -> KeyboardHelpOutcome {
-        if !self.live() || key.kind == KeyEventKind::Release {
+        if !self.live() || key.is_release() {
             return KeyboardHelpOutcome::Ignored;
         }
         // ? opens modal from footer context when host routes here
@@ -949,10 +949,10 @@ fn rect_contains(rect: Rect, pos: Position) -> bool {
 /// Default intents for modal list.
 #[must_use]
 pub fn default_keyboard_help_intent(key: KeyEvent) -> Option<UiIntent> {
-    if key.kind == KeyEventKind::Release {
+    if key.is_release() {
         return None;
     }
-    let is_press = key.kind == KeyEventKind::Press;
+    let is_press = key.is_press();
     match key.code {
         KeyCode::Down | KeyCode::Char('j' | 'J') => Some(UiIntent::Move(NavigationMove::Next)),
         KeyCode::Up | KeyCode::Char('k' | 'K') => Some(UiIntent::Move(NavigationMove::Previous)),

@@ -25,9 +25,7 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{
         HitRegion, OverlayId, OverlayOutcome, OverlayStack, SemanticNode, SemanticRole,
         SemanticScene, SemanticState, UiIntent,
@@ -860,10 +858,10 @@ impl<Id: Clone + PartialEq> FullscreenViewerState<Id> {
         if !self.open || !self.enabled || !self.accepts_input {
             return FullscreenViewerOutcome::Ignored;
         }
-        if key.kind == KeyEventKind::Release {
+        if key.is_release() {
             return FullscreenViewerOutcome::Ignored;
         }
-        let is_press = key.kind == KeyEventKind::Press;
+        let is_press = key.is_press();
 
         // Esc
         if matches!(key.code, KeyCode::Esc) && is_press && key.modifiers.is_empty() {

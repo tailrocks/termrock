@@ -23,7 +23,7 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyEvent, KeyEventKind},
+    input::KeyEvent,
     interaction::{
         HitRegion, NavigationMove, Outcome, PageMove, SemanticNode, SemanticRole, SemanticScene,
         SemanticState, UiIntent, default_list_intent,
@@ -512,7 +512,7 @@ impl<Id> VirtualListState<Id> {
     where
         Id: Clone + PartialEq,
     {
-        if key.kind == KeyEventKind::Release {
+        if key.is_release() {
             return Outcome::Ignored;
         }
         if let Some(intent) = default_list_intent(key) {

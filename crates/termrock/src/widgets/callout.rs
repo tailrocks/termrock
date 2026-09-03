@@ -900,25 +900,26 @@ impl<Id: Clone + PartialEq> AlertState<Id> {
         if !self.visible || !self.enabled || !self.accepts_input || !self.focused {
             return AlertOutcome::Ignored;
         }
-        if key.kind == KeyEventKind::Release {
+        if key.is_release() {
             return AlertOutcome::Ignored;
         }
-        let is_press = matches!(key.kind, KeyEventKind::Press | KeyEventKind::Repeat);
+        let is_insert = key.is_insert();
 
-        if matches!(key.code, KeyCode::Esc) && is_press && key.modifiers.is_empty() && dismissible {
+        if matches!(key.code, KeyCode::Esc) && is_insert && key.modifiers.is_empty() && dismissible
+        {
             self.dismiss();
             return AlertOutcome::Dismissed;
         }
 
         if !actions.is_empty() {
             match key.code {
-                KeyCode::Left | KeyCode::Char('h' | 'H') if is_press => {
+                KeyCode::Left | KeyCode::Char('h' | 'H') if is_insert => {
                     return self.move_action(actions, -1);
                 }
-                KeyCode::Right | KeyCode::Char('l' | 'L') if is_press => {
+                KeyCode::Right | KeyCode::Char('l' | 'L') if is_insert => {
                     return self.move_action(actions, 1);
                 }
-                KeyCode::Enter if is_press && key.modifiers.is_empty() => {
+                KeyCode::Enter if is_insert && key.modifiers.is_empty() => {
                     if let Some(id) = self.action_cursor.clone() {
                         if actions.iter().any(|a| a.id == id && a.enabled) {
                             return AlertOutcome::ActionActivated { id };
@@ -926,7 +927,7 @@ impl<Id: Clone + PartialEq> AlertState<Id> {
                     }
                     return AlertOutcome::Acknowledged;
                 }
-                KeyCode::Char('d' | 'D') if is_press && key.modifiers.is_empty() => {
+                KeyCode::Char('d' | 'D') if is_insert && key.modifiers.is_empty() => {
                     self.details_open = !self.details_open;
                     return AlertOutcome::DetailsToggled {
                         open: self.details_open,
@@ -934,7 +935,7 @@ impl<Id: Clone + PartialEq> AlertState<Id> {
                 }
                 _ => {}
             }
-        } else if matches!(key.code, KeyCode::Enter) && is_press && key.modifiers.is_empty() {
+        } else if matches!(key.code, KeyCode::Enter) && is_insert && key.modifiers.is_empty() {
             return AlertOutcome::Acknowledged;
         }
 

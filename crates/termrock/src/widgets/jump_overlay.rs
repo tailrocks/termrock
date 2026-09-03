@@ -576,10 +576,10 @@ impl JumpOverlayState {
         key: KeyEvent,
         targets: &[JumpTarget<Id>],
     ) -> JumpOutcome<Id> {
-        if !self.open || !self.accepts_input || key.kind == KeyEventKind::Release {
+        if !self.open || !self.accepts_input || key.is_release() {
             return JumpOutcome::Ignored;
         }
-        if key.kind != KeyEventKind::Press && key.kind != KeyEventKind::Repeat {
+        if key.is_insert() {
             // Allow Press primarily; ignore other.
         }
         match key.code {

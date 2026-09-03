@@ -546,31 +546,25 @@ impl<Id: Clone + PartialEq> ListState<Id> {
     /// feed collection typeahead. Prefer [`Self::handle_intent`] when the app
     /// owns keymaps.
     pub fn handle_key(&mut self, rows: &[ListRow<'_, Id>], key: KeyEvent) -> Outcome<Id> {
-        if key.kind == KeyEventKind::Release {
+        if key.is_release() {
             return Outcome::Ignored;
         }
         // Shift+Space: range-select along visible enabled items (multi-select).
-        if key.kind == KeyEventKind::Press
+        if key.is_press()
             && matches!(key.code, KeyCode::Char(' '))
             && key.modifiers.contains(KeyModifiers::SHIFT)
         {
             return self.range_select_to_active(rows);
         }
         // Search: '/' opens filter mode (host still owns filtering projection).
-        if key.kind == KeyEventKind::Press
-            && matches!(key.code, KeyCode::Char('/'))
-            && key.modifiers.is_empty()
-        {
+        if key.is_press() && matches!(key.code, KeyCode::Char('/')) && key.modifiers.is_empty() {
             if self.search_query.is_none() {
                 self.search_query = Some(String::new());
             }
             return Outcome::Changed;
         }
         // While search query is Some, printable chars append; Backspace pops.
-        if self.search_query.is_some()
-            && key.kind == KeyEventKind::Press
-            && key.modifiers.is_empty()
-        {
+        if self.search_query.is_some() && key.is_press() && key.modifiers.is_empty() {
             match key.code {
                 KeyCode::Backspace => {
                     if let Some(q) = self.search_query.as_mut() {
@@ -594,7 +588,7 @@ impl<Id: Clone + PartialEq> ListState<Id> {
                 _ => {}
             }
         }
-        if key.kind == KeyEventKind::Press
+        if key.is_press()
             && !key.modifiers.contains(KeyModifiers::CONTROL)
             && !key.modifiers.contains(KeyModifiers::ALT)
         {
@@ -633,7 +627,7 @@ impl<Id: Clone + PartialEq> ListState<Id> {
 
     /// Typeahead jump via [`CollectionState`] / roving (labels from primary text).
     fn handle_typeahead(&mut self, rows: &[ListRow<'_, Id>], key: KeyEvent) -> Outcome<Id> {
-        if key.kind != KeyEventKind::Press {
+        if !key.is_press() {
             return Outcome::Ignored;
         }
         let KeyCode::Char(c) = key.code else {

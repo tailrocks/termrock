@@ -470,7 +470,7 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> VirtualGridState<RowId, ColId> {
         columns: &[GridColumn<'_, ColId>],
         rows: &[GridRow<'_, RowId>],
     ) -> VirtualGridOutcome<RowId, ColId> {
-        if event.kind == KeyEventKind::Release {
+        if event.is_release() {
             return VirtualGridOutcome::Ignored;
         }
         let extend = event.modifiers.contains(KeyModifiers::SHIFT);
@@ -478,9 +478,7 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> VirtualGridState<RowId, ColId> {
         let before = (self.first_row(), self.first_col());
         // Prefer universal intents for shared collection actions.
         if !control && let Some(intent) = crate::interaction::default_table_intent(event) {
-            if matches!(intent, crate::interaction::UiIntent::Activate)
-                && event.kind != KeyEventKind::Press
-            {
+            if matches!(intent, crate::interaction::UiIntent::Activate) && !event.is_press() {
                 return VirtualGridOutcome::Ignored;
             }
             // Page/Activate/Cancel/vertical Move via intent; Left/Right not in table map.

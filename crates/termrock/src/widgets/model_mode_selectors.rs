@@ -22,9 +22,7 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{NavigationMove, UiIntent, default_button_intent, default_list_intent},
     style::{ButtonRecipeVariant, ControlState, DesignSystem, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
@@ -908,7 +906,7 @@ impl ModelSelectorState {
 
     /// Keys.
     pub fn handle_key(&mut self, key: KeyEvent, options: &[ModelOption]) -> ModelSelectorOutcome {
-        if !self.accepts_input || !self.focused || key.kind != KeyEventKind::Press {
+        if !self.accepts_input || !self.focused || !key.is_press() {
             return ModelSelectorOutcome::Ignored;
         }
         match self.presentation {
@@ -1444,7 +1442,7 @@ impl AgentModeSelectorState {
         key: KeyEvent,
         modes: &[AgentModeOption],
     ) -> AgentModeSelectorOutcome {
-        if !self.accepts_input || !self.focused || key.kind != KeyEventKind::Press {
+        if !self.accepts_input || !self.focused || !key.is_press() {
             return AgentModeSelectorOutcome::Ignored;
         }
         match self.presentation {

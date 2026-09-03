@@ -466,10 +466,10 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
     where
         ColId: Clone,
     {
-        if !self.accepts_input || key.kind == KeyEventKind::Release {
+        if !self.accepts_input || key.is_release() {
             return TreeTableOutcome::Ignored;
         }
-        let is_press = key.kind == KeyEventKind::Press;
+        let is_press = key.is_press();
 
         if matches!(
             self.load,
@@ -986,7 +986,7 @@ fn selectable<Id>(row: &TreeTableRow<'_, Id>) -> bool {
 /// Intent map for TreeTable: mode-sensitive Left/Right.
 #[must_use]
 pub fn default_tree_table_intent(key: KeyEvent, mode: TreeTableNavMode) -> Option<UiIntent> {
-    if key.kind == KeyEventKind::Release {
+    if key.is_release() {
         return None;
     }
     if key.modifiers.contains(KeyModifiers::SHIFT) {

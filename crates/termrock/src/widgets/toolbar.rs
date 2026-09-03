@@ -436,7 +436,7 @@ impl<Id: Clone + PartialEq> Toolbar<'_, Id> {
         key: KeyEvent,
         area: Rect,
     ) -> ToolbarOutcome<Id> {
-        if !state.surface_focused || key.kind != KeyEventKind::Press {
+        if !state.surface_focused || !key.is_press() {
             return ToolbarOutcome::Ignored;
         }
         let plan = self.plan(area);

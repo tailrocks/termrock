@@ -545,10 +545,10 @@ impl<Id: Clone + PartialEq + Ord> TimelineState<Id> {
         key: KeyEvent,
         events: &[TimelineEvent<'_, Id>],
     ) -> TimelineOutcome<Id> {
-        if !self.accepts_input || key.kind == KeyEventKind::Release {
+        if !self.accepts_input || key.is_release() {
             return TimelineOutcome::Ignored;
         }
-        let is_press = key.kind == KeyEventKind::Press;
+        let is_press = key.is_press();
 
         // Filter
         if is_press && matches!(key.code, KeyCode::Char('/')) && key.modifiers.is_empty() {

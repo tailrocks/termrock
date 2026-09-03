@@ -548,14 +548,14 @@ impl<Id, LayerId, Action> InteractionScene<Id, LayerId, Action> {
         Id: Clone + PartialEq,
         LayerId: Clone + PartialEq,
     {
-        if key.kind == KeyEventKind::Release {
+        if key.is_release() {
             return InteractionOutcome::Ignored;
         }
         match key.code {
             KeyCode::Tab if key.modifiers.contains(KeyModifiers::SHIFT) => self.focus_move(true),
             KeyCode::Tab => self.focus_move(false),
             KeyCode::BackTab => self.focus_move(true),
-            KeyCode::Esc if key.kind == KeyEventKind::Press => self.handle_escape(),
+            KeyCode::Esc if key.is_press() => self.handle_escape(),
             _ => InteractionOutcome::Ignored,
         }
     }

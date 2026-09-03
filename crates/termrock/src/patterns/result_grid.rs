@@ -33,7 +33,7 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent},
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseEvent},
     patterns::QueryResultSummary,
     style::{DesignSystem, Role},
     text::take_display_cols,
@@ -1050,10 +1050,10 @@ impl ResultGridState {
         columns: &ColumnModel<String>,
         row_ids: &[u64],
     ) -> ResultGridOutcome {
-        if !self.accepts_input || key.kind == KeyEventKind::Release {
+        if !self.accepts_input || key.is_release() {
             return ResultGridOutcome::Ignored;
         }
-        let is_press = key.kind == KeyEventKind::Press;
+        let is_press = key.is_press();
 
         if is_press {
             // Result-specific chords before DataTable

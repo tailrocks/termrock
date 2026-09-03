@@ -200,7 +200,7 @@ mod tests {
 
 use crate::style::DesignSystem;
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
+    input::{KeyCode, KeyEvent, KeyModifiers},
     widgets::{
         ColumnModel, DataTable, DataTableOutcome, DataTableState, LogLine, LogStream,
         LogStreamOutcome, LogStreamState, MetricTile, MetricTilePresentation, ObjectInspectorState,
@@ -282,7 +282,7 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> OpsDashboardState<RowId, ColI
         visible_rows: &[RowId],
         columns: &ColumnModel<ColId>,
     ) -> OpsDashboardOutcome<RowId, ColId> {
-        if key.kind != KeyEventKind::Press {
+        if !key.is_press() {
             return OpsDashboardOutcome::Ignored;
         }
         if key.code == KeyCode::Tab && !key.modifiers.contains(KeyModifiers::SHIFT) {

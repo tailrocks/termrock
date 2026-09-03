@@ -551,7 +551,7 @@ impl PaginationState {
 
     /// Key adapter.
     pub fn handle_key(&mut self, key: KeyEvent) -> PaginationOutcome {
-        if key.kind == KeyEventKind::Release || !self.enabled {
+        if key.is_release() || !self.enabled {
             return PaginationOutcome::Ignored;
         }
         if !self.focused {

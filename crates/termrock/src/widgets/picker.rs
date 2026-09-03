@@ -7,7 +7,7 @@ use ratatui_core::{
 use ratatui_widgets::{block::Block, borders::Borders};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
+    input::{KeyCode, KeyEvent, KeyModifiers},
     interaction::{
         NavigationMove, Outcome, OverlayId, OverlayOutcome, OverlaySize, OverlaySpec, OverlayStack,
         PageMove, UiIntent, place_overlay,
@@ -288,7 +288,7 @@ impl<Id: Clone + PartialEq> PickerState<Id> {
     /// Alt+Enter is [`PickerOutcome::ActivatedAlt`]. Choice pickers
     /// (`searchable: false`) use `j`/`k` as list motion.
     pub fn handle_key(&mut self, visible: &[ListRow<'_, Id>], key: KeyEvent) -> PickerOutcome<Id> {
-        if !self.accepts_input || key.kind == KeyEventKind::Release {
+        if !self.accepts_input || key.is_release() {
             return PickerOutcome::Ignored;
         }
         let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
@@ -955,7 +955,7 @@ mod tests {
     use ratatui_core::text::Line;
 
     use super::*;
-    use crate::input::KeyModifiers;
+    use crate::input::{KeyEventKind, KeyModifiers};
 
     fn rows(ids: &[&'static str]) -> Vec<ListRow<'static, &'static str>> {
         ids.iter()

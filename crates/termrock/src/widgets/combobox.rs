@@ -29,9 +29,7 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{
         OverlayStack, SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent,
     },
@@ -561,7 +559,7 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
         key: KeyEvent,
         candidates: &[CompletionCandidate<'_, Id>],
     ) -> ComboboxOutcome<Id> {
-        if key.kind == KeyEventKind::Release || !self.enabled {
+        if key.is_release() || !self.enabled {
             return ComboboxOutcome::Ignored;
         }
         self.draft.set_focused(self.focused);

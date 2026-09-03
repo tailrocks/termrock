@@ -33,7 +33,7 @@
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
+    input::{KeyCode, KeyEvent, KeyModifiers},
     style::{DesignSystem, Glyph, PanelChrome, Role},
     widgets::{
         Button, ButtonState, ButtonVariant, Callout, CalloutTone, Checkbox, CheckboxOutcome,
@@ -531,7 +531,7 @@ impl AuthEntryState {
 
     /// Keys.
     pub fn handle_key(&mut self, key: KeyEvent) -> AuthEntryOutcome {
-        if !self.accepts_input || !self.shell_focused || key.kind != KeyEventKind::Press {
+        if !self.accepts_input || !self.shell_focused || !key.is_press() {
             return AuthEntryOutcome::Ignored;
         }
         if self.pending {

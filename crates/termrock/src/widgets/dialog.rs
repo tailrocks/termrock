@@ -28,7 +28,7 @@ use ratatui_core::{
 use ratatui_widgets::{block::Block, borders::Borders, paragraph::Paragraph};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
+    input::{KeyCode, KeyEvent, KeyModifiers},
     interaction::{
         BackdropPolicy, HitRegion, NavigationMove, Outcome, OverlayId, OverlayKind, OverlayOutcome,
         OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, SemanticNode, SemanticRole,
@@ -1212,14 +1212,14 @@ impl<Id: Clone + PartialEq> DialogState<Id> {
 
     /// Keyboard via [`default_dialog_intent`].
     pub fn handle_key(&mut self, key: KeyEvent, actions: &[Action<'_, Id>]) -> DialogOutcome<Id> {
-        if !self.open || !self.accepts_input || key.kind == KeyEventKind::Release {
+        if !self.open || !self.accepts_input || key.is_release() {
             return DialogOutcome::Ignored;
         }
         self.ensure_initial_focus();
         if self.ack_token.is_some()
             && self.focus_zone == DialogFocusZone::Body
             && key.modifiers.is_empty()
-            && key.kind == KeyEventKind::Press
+            && key.is_press()
         {
             match key.code {
                 KeyCode::Char(c) if !c.is_control() => {
@@ -1235,7 +1235,7 @@ impl<Id: Clone + PartialEq> DialogState<Id> {
         }
         if self.ack_token.is_none()
             && self.focus_zone == DialogFocusZone::Actions
-            && key.kind == KeyEventKind::Press
+            && key.is_press()
             && key.modifiers.is_empty()
         {
             match key.code {
@@ -1535,10 +1535,10 @@ impl<Id: Clone + PartialEq> DialogState<Id> {
 ///   registered focus targets (body fields, actions)
 #[must_use]
 pub fn default_dialog_intent(key: KeyEvent, zone: DialogFocusZone) -> Option<UiIntent> {
-    if key.kind == KeyEventKind::Release {
+    if key.is_release() {
         return None;
     }
-    let is_press = key.kind == KeyEventKind::Press;
+    let is_press = key.is_press();
     if key.modifiers.contains(KeyModifiers::CONTROL) || key.modifiers.contains(KeyModifiers::ALT) {
         return None;
     }
@@ -2200,7 +2200,7 @@ impl<Id: Clone + PartialEq> ChoiceDialogState<Id> {
 
     /// Routes keys via dialog engine → [`Outcome`].
     pub fn handle_key(&mut self, actions: &[Action<'_, Id>], key: KeyEvent) -> Outcome<Id> {
-        if !self.accepts_input || key.kind == KeyEventKind::Release {
+        if !self.accepts_input || key.is_release() {
             return Outcome::Ignored;
         }
         // Prefer choice-dialog intent (Left/Right for actions) when on actions.

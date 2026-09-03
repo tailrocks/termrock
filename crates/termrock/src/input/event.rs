@@ -165,28 +165,34 @@ impl KeyEvent {
         }
     }
 
+    /// A single, unrepeated press (`Press` only).
+    ///
+    /// Gates actions that must fire exactly once per physical press
+    /// (activate, submit, dismiss, mode switches). Repeat is rejected.
     #[must_use]
-    /// Returns whether this event is an initial key press.
-    pub const fn is_press(self) -> bool {
+    pub const fn is_press(&self) -> bool {
         matches!(self.kind, KeyEventKind::Press)
     }
 
+    /// A key repeat (`Repeat`).
     #[must_use]
-    /// Returns whether this event is a key repeat.
-    pub const fn is_repeat(self) -> bool {
+    pub const fn is_repeat(&self) -> bool {
         matches!(self.kind, KeyEventKind::Repeat)
     }
 
+    /// A text-entry phase (`Press` or `Repeat`).
+    ///
+    /// Gates character insertion and held-key motion: an operator holding a
+    /// key expects it to keep typing or scrolling, but never to double-submit.
     #[must_use]
-    /// Returns whether this event is a key release.
-    pub const fn is_release(self) -> bool {
-        matches!(self.kind, KeyEventKind::Release)
+    pub const fn is_insert(&self) -> bool {
+        matches!(self.kind, KeyEventKind::Press | KeyEventKind::Repeat)
     }
 
+    /// A key release (`Release`); equivalent to `!`[`Self::is_insert`].
     #[must_use]
-    /// Returns whether this event can drive ordinary repeated input.
-    pub const fn is_action(self) -> bool {
-        matches!(self.kind, KeyEventKind::Press | KeyEventKind::Repeat)
+    pub const fn is_release(&self) -> bool {
+        matches!(self.kind, KeyEventKind::Release)
     }
 }
 
@@ -379,28 +385,28 @@ mod adapter {
 }
 
 #[cfg(test)]
-mod tests {
+mod kind_predicates {
     use super::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 
+    fn key(kind: KeyEventKind) -> KeyEvent {
+        let mut event = KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE);
+        event.kind = kind;
+        event
+    }
+
     #[test]
-    fn key_event_phase_predicates_are_exhaustive() {
-        let mut key = KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE);
+    fn press_gates_actions_repeat_gates_entry() {
+        assert!(key(KeyEventKind::Press).is_press());
+        assert!(!key(KeyEventKind::Repeat).is_press());
+        assert!(!key(KeyEventKind::Release).is_press());
 
-        assert!(key.is_press());
-        assert!(!key.is_repeat());
-        assert!(!key.is_release());
-        assert!(key.is_action());
-
-        key.kind = KeyEventKind::Repeat;
-        assert!(!key.is_press());
-        assert!(key.is_repeat());
-        assert!(!key.is_release());
-        assert!(key.is_action());
-
-        key.kind = KeyEventKind::Release;
-        assert!(!key.is_press());
-        assert!(!key.is_repeat());
-        assert!(key.is_release());
-        assert!(!key.is_action());
+        // Held-key entry: press and repeat type, release does not.
+        assert!(key(KeyEventKind::Press).is_insert());
+        assert!(key(KeyEventKind::Repeat).is_insert());
+        assert!(!key(KeyEventKind::Release).is_insert());
+        assert!(key(KeyEventKind::Release).is_release());
+        assert!(!key(KeyEventKind::Repeat).is_release());
+        assert!(key(KeyEventKind::Repeat).is_repeat());
+        assert!(!key(KeyEventKind::Press).is_repeat());
     }
 }

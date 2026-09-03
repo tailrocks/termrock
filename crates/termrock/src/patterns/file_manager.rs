@@ -33,7 +33,7 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::StatefulWidget};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
+    input::{KeyCode, KeyEvent, KeyModifiers},
     layout::{
         PaneConstraint, PaneGeom, PaneId, Workspace, WorkspaceAxis, WorkspaceNode, WorkspaceState,
     },
@@ -911,10 +911,10 @@ impl FileManagerState {
         ops: &[FileOpItem],
         quick_open_items: &[QuickOpenItem<String>],
     ) -> FileManagerOutcome {
-        if key.kind == KeyEventKind::Release {
+        if key.is_release() {
             return FileManagerOutcome::Ignored;
         }
-        let is_press = key.kind == KeyEventKind::Press;
+        let is_press = key.is_press();
 
         // Modal dialogs first
         match &self.dialog {
@@ -1120,7 +1120,7 @@ impl FileManagerState {
         key: KeyEvent,
         entries: &[FileTreeEntry<'_, String>],
     ) -> FileManagerOutcome {
-        let is_press = key.kind == KeyEventKind::Press;
+        let is_press = key.is_press();
 
         // While rename draft, filter typing, or inline delete confirm is active,
         // FileTree owns the keyboard — do not steal x/v/p for cut/paste/preview.
@@ -1271,7 +1271,7 @@ impl FileManagerState {
     }
 
     fn handle_queue_key(&mut self, key: KeyEvent, ops: &[FileOpItem]) -> FileManagerOutcome {
-        if key.kind != KeyEventKind::Press {
+        if !key.is_press() {
             return FileManagerOutcome::Ignored;
         }
         let rows = Self::queue_rows(ops);

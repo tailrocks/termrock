@@ -606,7 +606,7 @@ impl ContextMeterState {
 
     /// Keys.
     pub fn handle_key(&mut self, key: KeyEvent, budget: &ContextBudget) -> ContextMeterOutcome {
-        if !self.accepts_input || key.kind != KeyEventKind::Press {
+        if !self.accepts_input || !key.is_press() {
             return ContextMeterOutcome::Ignored;
         }
         match key.code {

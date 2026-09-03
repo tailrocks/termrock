@@ -7,7 +7,7 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind},
+    input::{KeyCode, KeyEvent},
     style::{DesignSystem, Role},
     text::take_display_cols,
 };
@@ -95,7 +95,7 @@ impl<Id: Clone + PartialEq> ModeRibbonState<Id> {
         modes: &[WorkbenchMode<'_, Id>],
         key: KeyEvent,
     ) -> ModeRibbonOutcome<Id> {
-        if !self.focused || key.kind != KeyEventKind::Press {
+        if !self.focused || !key.is_press() {
             return ModeRibbonOutcome::Ignored;
         }
         let enabled: Vec<usize> = modes

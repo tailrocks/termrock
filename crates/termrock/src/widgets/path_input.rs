@@ -18,9 +18,7 @@ use std::collections::VecDeque;
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
     style::{ButtonRecipeVariant, ControlState, DesignSystem, Glyph, Role},
     text::take_display_cols,
@@ -715,7 +713,7 @@ impl PathInputState {
 
     /// Key adapter.
     pub fn handle_key(&mut self, key: KeyEvent) -> PathInputOutcome {
-        if key.kind == KeyEventKind::Release || !self.enabled {
+        if key.is_release() || !self.enabled {
             return PathInputOutcome::Ignored;
         }
         self.sync_editor();

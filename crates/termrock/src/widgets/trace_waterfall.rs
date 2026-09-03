@@ -19,9 +19,7 @@ use std::collections::BTreeSet;
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     style::{DesignSystem, ListRowVisualState, Role},
     text::take_display_cols,
     widgets::{
@@ -663,7 +661,7 @@ impl TraceWaterfallState {
 
     /// Keys.
     pub fn handle_key(&mut self, spans: &[TraceSpan<'_>], key: KeyEvent) -> TraceWaterfallOutcome {
-        if !self.accepts_input || key.kind != KeyEventKind::Press {
+        if !self.accepts_input || !key.is_press() {
             return TraceWaterfallOutcome::Ignored;
         }
         self.sync_total(spans);

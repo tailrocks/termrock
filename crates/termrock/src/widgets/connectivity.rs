@@ -666,7 +666,7 @@ impl ReconnectingState {
 
     /// Keyboard handling for banner/full actions.
     pub fn handle_key(&mut self, key: KeyEvent) -> ConnectivityOutcome {
-        if key.kind != KeyEventKind::Press || !self.phase.is_offline_like() {
+        if !key.is_press() || !self.phase.is_offline_like() {
             return ConnectivityOutcome::Ignored;
         }
         if matches!(key.code, KeyCode::Char('r') | KeyCode::Char('R')) {

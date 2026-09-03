@@ -764,7 +764,7 @@ impl GitWorkbenchState {
         terminal_lines: &[TerminalLine<'_>],
         terminal_meta: &TerminalCommandMeta<'_>,
     ) -> GitWorkbenchOutcome {
-        if key.kind != KeyEventKind::Press {
+        if !key.is_press() {
             return GitWorkbenchOutcome::Ignored;
         }
 

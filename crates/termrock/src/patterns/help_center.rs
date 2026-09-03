@@ -792,13 +792,13 @@ impl HelpCenterState {
         doctor: Option<&DoctorReport>,
         component_ids: &[String],
     ) -> HelpCenterOutcome {
-        if key.kind == KeyEventKind::Release {
+        if key.is_release() {
             return HelpCenterOutcome::Ignored;
         }
         // Keep focus cycle / clamp aligned with painted diagnostics pane.
         self.sync_diagnostics_live(doctor, component_ids);
         self.ensure_keyboard_map_modal();
-        let is_press = key.kind == KeyEventKind::Press;
+        let is_press = key.is_press();
 
         if is_press {
             match key.code {
@@ -875,7 +875,7 @@ impl HelpCenterState {
         let q = self.search.query().to_string();
         let filtered = filter_help_topics(topics, &q);
         let rows = help_topic_rows(&filtered);
-        if key.kind == KeyEventKind::Press && key.code == KeyCode::Enter {
+        if key.is_press() && key.code == KeyCode::Enter {
             if let Some(id) = self
                 .nav
                 .selected()
@@ -970,7 +970,7 @@ impl HelpCenterState {
         let owned: Vec<CommandEntry<String>> = filtered.into_iter().cloned().collect();
         let rows = command_list_rows(&owned);
 
-        if key.kind == KeyEventKind::Press {
+        if key.is_press() {
             match key.code {
                 KeyCode::Enter => {
                     if let Some(id) = self
@@ -1045,7 +1045,7 @@ impl HelpCenterState {
         // Safety: blocks borrow from `md` which borrows from `topics` parameter — valid for this call
         let out = if blocks.is_empty() {
             // Still allow anchor jump chords without body
-            if key.kind == KeyEventKind::Press {
+            if key.is_press() {
                 if let KeyCode::Char('g') = key.code {
                     if let Some(t) = topic {
                         if let Some(a) = t.anchors.first() {
@@ -1063,7 +1063,7 @@ impl HelpCenterState {
         match out {
             MarkdownOutcome::Ignored => {
                 // Anchor jump: g then first anchor, or explicit
-                if key.kind == KeyEventKind::Press && key.code == KeyCode::Char('g') {
+                if key.is_press() && key.code == KeyCode::Char('g') {
                     if let Some(t) = topic {
                         if let Some(a) = t.anchors.first() {
                             return HelpCenterOutcome::AnchorJumped { anchor: a.clone() };
@@ -1102,7 +1102,7 @@ impl HelpCenterState {
         doctor: Option<&DoctorReport>,
         component_ids: &[String],
     ) -> HelpCenterOutcome {
-        if key.kind == KeyEventKind::Press {
+        if key.is_press() {
             match key.code {
                 KeyCode::Char('i') if key.modifiers.is_empty() => {
                     // Only component registry ids — not DoctorFinding codes.

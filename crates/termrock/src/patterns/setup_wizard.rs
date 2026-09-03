@@ -409,7 +409,7 @@ impl SetupWizardState {
         fieldsets: &[Fieldset<'_, &'static str>],
         theme_presets: &[ThemePreset],
     ) -> SetupWizardOutcome {
-        if key.kind != KeyEventKind::Press && key.kind != KeyEventKind::Repeat {
+        if key.is_release() {
             return SetupWizardOutcome::Ignored;
         }
 

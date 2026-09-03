@@ -690,7 +690,7 @@ impl<Id> NavigationListState<Id> {
     where
         Id: Clone + PartialEq,
     {
-        if key.kind == KeyEventKind::Release || !self.enabled || !self.accepts_input {
+        if key.is_release() || !self.enabled || !self.accepts_input {
             return NavigationListOutcome::Ignored;
         }
         if !self.focused {

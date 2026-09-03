@@ -23,9 +23,7 @@ use std::collections::BTreeSet;
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     style::{DesignSystem, Role},
     text::take_display_cols,
     widgets::{
@@ -691,10 +689,10 @@ impl SearchResultsState {
         items: &[SearchResultItem<'_>],
         key: KeyEvent,
     ) -> SearchResultsOutcome {
-        if !self.accepts_input || key.kind == KeyEventKind::Release {
+        if !self.accepts_input || key.is_release() {
             return SearchResultsOutcome::Ignored;
         }
-        let is_press = key.kind == KeyEventKind::Press;
+        let is_press = key.is_press();
         if !is_press {
             return SearchResultsOutcome::Ignored;
         }

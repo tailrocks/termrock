@@ -792,7 +792,7 @@ impl FormWizardState {
 
     /// Key adapter.
     pub fn handle_key(&mut self, key: KeyEvent) -> FormWizardOutcome {
-        if key.kind == KeyEventKind::Release || !self.enabled {
+        if key.is_release() || !self.enabled {
             return FormWizardOutcome::Ignored;
         }
         if !self.focused {

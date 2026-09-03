@@ -36,9 +36,7 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     patterns::{ActivityKind, ActivityModel, ActivityScope},
     style::{DesignSystem, PanelChrome, Role},
     text::{display_cols, take_display_cols},
@@ -831,7 +829,7 @@ impl BackgroundTaskPanelState {
         key: KeyEvent,
         tasks: &[BackgroundTask],
     ) -> BackgroundTaskPanelOutcome {
-        if !self.accepts_input || key.kind != KeyEventKind::Press {
+        if !self.accepts_input || !key.is_press() {
             return BackgroundTaskPanelOutcome::Ignored;
         }
         if !self.open {

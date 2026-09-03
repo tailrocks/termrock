@@ -37,7 +37,7 @@ use ratatui_core::{
 
 use crate::{
     // nav sample seed
-    input::{KeyCode, KeyEvent, KeyEventKind},
+    input::{KeyCode, KeyEvent},
     interaction::{
         InteractionElement, InteractionLayer, InteractionOutcome, InteractionScene,
         LayerDismissPolicy, LayerKind, Outcome, SemanticRole,
@@ -415,7 +415,7 @@ impl AgentWorkbenchState {
         diff_hunks: Option<&[DiffHunk]>,
     ) -> WorkbenchKeyOutcome {
         // Esc: one-layer peel
-        if matches!(key.code, KeyCode::Esc) && key.kind == KeyEventKind::Press {
+        if matches!(key.code, KeyCode::Esc) && key.is_press() {
             let top_dismissible = self.scene.layers().last().is_some_and(|layer| {
                 layer.id != "root" && matches!(layer.esc, LayerDismissPolicy::Dismissible)
             });
@@ -507,7 +507,7 @@ impl AgentWorkbenchState {
 
         // Tab focus cycle when no overlay
         if !self.any_overlay_open()
-            && key.kind == KeyEventKind::Press
+            && key.is_press()
             && matches!(key.code, KeyCode::Tab | KeyCode::BackTab)
         {
             return self.cycle_focus(matches!(key.code, KeyCode::BackTab));

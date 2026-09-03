@@ -623,23 +623,17 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
     /// Prefer intents via [`crate::interaction::default_tree_intent`]. Printable
     /// characters feed typeahead. `/` opens filter query chrome.
     pub fn handle_key(&mut self, nodes: &[TreeNode<'_, Id>], key: KeyEvent) -> TreeOutcome<Id> {
-        if key.kind == KeyEventKind::Release {
+        if key.is_release() {
             return TreeOutcome::Ignored;
         }
         // Filter mode
-        if key.kind == KeyEventKind::Press
-            && matches!(key.code, KeyCode::Char('/'))
-            && key.modifiers.is_empty()
-        {
+        if key.is_press() && matches!(key.code, KeyCode::Char('/')) && key.modifiers.is_empty() {
             if self.filter_query.is_none() {
                 self.filter_query = Some(String::new());
             }
             return TreeOutcome::Ignored; // host reprojects; treat as chrome change
         }
-        if self.filter_query.is_some()
-            && key.kind == KeyEventKind::Press
-            && key.modifiers.is_empty()
-        {
+        if self.filter_query.is_some() && key.is_press() && key.modifiers.is_empty() {
             match key.code {
                 KeyCode::Backspace => {
                     if let Some(q) = self.filter_query.as_mut() {
@@ -663,7 +657,7 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
                 _ => {}
             }
         }
-        if key.kind == KeyEventKind::Press && key.modifiers.is_empty() {
+        if key.is_press() && key.modifiers.is_empty() {
             match key.code {
                 KeyCode::Char('*') => {
                     self.collection.clear_typeahead();
@@ -694,7 +688,7 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
     }
 
     fn handle_typeahead(&mut self, nodes: &[TreeNode<'_, Id>], key: KeyEvent) -> TreeOutcome<Id> {
-        if key.kind != KeyEventKind::Press {
+        if !key.is_press() {
             return TreeOutcome::Ignored;
         }
         let KeyCode::Char(c) = key.code else {

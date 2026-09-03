@@ -561,7 +561,7 @@ impl WorkingStateCardState {
 
     /// Keyboard.
     pub fn handle_key(&mut self, key: KeyEvent) -> WorkingStateOutcome {
-        if !self.focused || !self.accepts_input || key.kind != KeyEventKind::Press {
+        if !self.focused || !self.accepts_input || !key.is_press() {
             return WorkingStateOutcome::Ignored;
         }
         let Some(work) = self.work.as_ref() else {

@@ -582,7 +582,7 @@ impl<Id> TabsState<Id> {
     where
         Id: Clone + PartialEq,
     {
-        if key.kind == KeyEventKind::Release || !self.enabled {
+        if key.is_release() || !self.enabled {
             return TabsOutcome::Ignored;
         }
         if !self.focused {

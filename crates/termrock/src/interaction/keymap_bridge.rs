@@ -22,7 +22,7 @@ where
     LayerId: PartialEq,
     Action: Clone + Copy + PartialEq + 'static,
 {
-    if key.kind == KeyEventKind::Release {
+    if key.is_release() {
         return InteractionOutcome::Ignored;
     }
     let chord = KeyChord::from(key);

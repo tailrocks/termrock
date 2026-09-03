@@ -661,10 +661,10 @@ impl TerminalOutputState {
         lines: &[TerminalLine<'_>],
         meta: &TerminalCommandMeta<'_>,
     ) -> TerminalOutputOutcome {
-        if !self.accepts_input || key.kind == KeyEventKind::Release {
+        if !self.accepts_input || key.is_release() {
             return TerminalOutputOutcome::Ignored;
         }
-        let is_press = key.kind == KeyEventKind::Press;
+        let is_press = key.is_press();
         let view = filter_terminal_lines(lines, self.hide_stdout, self.hide_stderr);
 
         if is_press {

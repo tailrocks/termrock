@@ -27,10 +27,7 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{
-        Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent,
-        MouseEventKind,
-    },
+    input::{Event, KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{
         OverlayId, OverlayKind, OverlayOutcome, OverlaySize, OverlaySpec, OverlayStack,
         place_overlay,
@@ -979,7 +976,7 @@ impl PromptComposerState {
         if self.connection == ComposerConnection::Disabled {
             return PromptComposerOutcome::Ignored;
         }
-        if !self.accepts_input || key.kind == KeyEventKind::Release {
+        if !self.accepts_input || key.is_release() {
             return PromptComposerOutcome::Ignored;
         }
 
@@ -1050,7 +1047,7 @@ impl PromptComposerState {
         }
 
         // Submit / newline policy
-        if key.code == KeyCode::Enter && key.kind == KeyEventKind::Press {
+        if key.code == KeyCode::Enter && key.is_press() {
             let mod_newline = self.policy.newline_chord
                 && (key.modifiers.contains(KeyModifiers::ALT)
                     || key.modifiers.contains(KeyModifiers::CONTROL)

@@ -193,7 +193,7 @@ impl SplitPaneState {
 
     /// Moves the focused divider along its layout axis with arrow keys.
     pub fn handle_key(&mut self, spec: &SplitPane<'_>, key: KeyEvent) -> SplitPaneOutcome {
-        if !self.focused || key.kind == KeyEventKind::Release {
+        if !self.focused || key.is_release() {
             return SplitPaneOutcome::Ignored;
         }
         let delta = match (spec.direction, key.code) {
