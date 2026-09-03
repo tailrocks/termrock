@@ -30491,7 +30491,6 @@ pub termrock::style::RecipeFamily::Overlay
 pub termrock::style::RecipeFamily::Status
 impl termrock::style::RecipeFamily
 pub const termrock::style::RecipeFamily::ALL: [Self; 7]
-pub const fn termrock::style::RecipeFamily::id(self) -> &'static str
 impl core::clone::Clone for termrock::style::RecipeFamily
 pub fn termrock::style::RecipeFamily::clone(&self) -> termrock::style::RecipeFamily
 impl core::cmp::Eq for termrock::style::RecipeFamily
