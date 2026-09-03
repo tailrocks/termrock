@@ -193,75 +193,6 @@ where
         + leading_space_cols(parts)
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// A source-byte segment and its measured display-column placement.
-pub struct FixedPrefixSegment {
-    /// Inclusive UTF-8 byte offset in the source string.
-    pub start_byte: usize,
-    /// Exclusive UTF-8 byte offset in the source string.
-    pub end_byte: usize,
-    /// Zero-based output display column.
-    pub target_col: usize,
-    /// Width of the segment in terminal display columns.
-    pub display_cols: usize,
-}
-
-/// Visible byte ranges for a horizontally scrolled line whose prefix remains
-/// fixed while the suffix scrolls by display columns.
-#[must_use]
-pub fn fixed_prefix_scroll_segments(
-    text: &str,
-    base_col: usize,
-    fixed_prefix_cols: usize,
-    scroll_cols: usize,
-    viewport_cols: usize,
-) -> Vec<FixedPrefixSegment> {
-    use unicode_width::UnicodeWidthChar;
-
-    let prefix_cols = fixed_prefix_cols.min(viewport_cols);
-    let suffix_cols = viewport_cols.saturating_sub(prefix_cols);
-    let suffix_start = fixed_prefix_cols.saturating_add(scroll_cols);
-    let suffix_end = suffix_start.saturating_add(suffix_cols);
-    let mut segments: Vec<FixedPrefixSegment> = Vec::new();
-    let mut col = base_col;
-
-    for (start_byte, ch) in text.char_indices() {
-        if is_terminal_control_char(ch) {
-            continue;
-        }
-        let end_byte = start_byte + ch.len_utf8();
-        let width = ch.width().unwrap_or(0);
-        if width == 0 {
-            if let Some(last) = segments.last_mut()
-                && last.end_byte == start_byte
-            {
-                last.end_byte = end_byte;
-            }
-            continue;
-        }
-
-        let target_col = if col < prefix_cols && col + width <= prefix_cols {
-            col
-        } else if col >= suffix_start && col + width <= suffix_end {
-            prefix_cols + (col - suffix_start)
-        } else {
-            col += width;
-            continue;
-        };
-        if target_col + width <= viewport_cols {
-            segments.push(FixedPrefixSegment {
-                start_byte,
-                end_byte,
-                target_col,
-                display_cols: width,
-            });
-        }
-        col += width;
-    }
-
-    segments
-}
-
 /// Expand ASCII tabs to spaces (`tab_width` columns, default 4 when 0 → 4).
 ///
 /// Control characters other than tab are dropped (copy-safe plain text path).
@@ -948,24 +879,5 @@ mod tests {
         let combining = truncate_cols("e\u{301}clair", 4, "…");
         assert!(display_cols(&combining) <= 4);
         assert!(combining.starts_with("e\u{301}"));
-    }
-
-    #[test]
-    fn fixed_prefix_segments_cover_scroll_and_combining_boundaries() {
-        let fit = fixed_prefix_scroll_segments("ab", 0, 1, 0, 2);
-        assert_eq!(fit.len(), 2);
-        assert_eq!((fit[0].target_col, fit[1].target_col), (0, 1));
-
-        let past_end = fixed_prefix_scroll_segments("ab", 0, 1, 10, 2);
-        assert_eq!(past_end.len(), 1);
-        assert_eq!(past_end[0].start_byte, 0);
-
-        let combining = fixed_prefix_scroll_segments("e\u{301}x", 0, 1, 0, 2);
-        assert_eq!(combining[0].end_byte, "e\u{301}".len());
-        assert_eq!(combining[1].target_col, 1);
-
-        let no_prefix = fixed_prefix_scroll_segments("ab", 0, 0, 1, 1);
-        assert_eq!(no_prefix.len(), 1);
-        assert_eq!(no_prefix[0].target_col, 0);
     }
 }

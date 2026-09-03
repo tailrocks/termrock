@@ -14,10 +14,7 @@ mod render;
 
 pub use render::{
     SCROLLBAR_HORIZONTAL_THUMB, SCROLLBAR_TRACK, ScrollbarGeometry, ScrollbarSpec, ScrollbarStyle,
-    apply_scroll_delta, apply_scroll_delta_unclamped, apply_term_width_scroll_delta,
-    clamp_scroll_offset, horizontal_scrollbar_area, paint_line_with_fixed_prefix_scroll,
-    paint_lines_with_offset_in_area, paint_overflow_scrollbar, paint_scrollbar,
-    scrollbar_offset_for_track_position, vertical_scrollbar_area, viewport_height, viewport_width,
+    paint_overflow_scrollbar, paint_scrollbar, viewport_height, viewport_width,
 };
 
 use ratatui_core::{layout::Rect, text::Line};
@@ -293,6 +290,28 @@ pub struct DialogScroll {
     pub scroll_y: u16,
     /// Cached dimensions used by revision-aware viewport widgets.
     pub(crate) measurement: Measured,
+}
+
+/// Horizontal track inside the bottom border.
+#[must_use]
+const fn horizontal_scrollbar_area(block_area: Rect) -> Rect {
+    Rect::new(
+        block_area.x + 1,
+        block_area.y + block_area.height.saturating_sub(1),
+        block_area.width.saturating_sub(2),
+        1,
+    )
+}
+
+/// Vertical track inside the right border.
+#[must_use]
+const fn vertical_scrollbar_area(block_area: Rect) -> Rect {
+    Rect::new(
+        block_area.x + block_area.width.saturating_sub(1),
+        block_area.y + 1,
+        1,
+        block_area.height.saturating_sub(2),
+    )
 }
 
 impl DialogScroll {
