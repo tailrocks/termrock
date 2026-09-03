@@ -88335,7 +88335,6 @@ impl<'a> termrock::widgets::Toggle<'a>
 pub fn termrock::widgets::Toggle<'a>::a11y_name(&self) -> &'a str
 pub const fn termrock::widgets::Toggle<'a>::accessible_label(self, &'a str) -> Self
 pub fn termrock::widgets::Toggle<'a>::handle_key(&self, &mut termrock::widgets::ToggleState, termrock::input::KeyEvent) -> termrock::widgets::ToggleOutcome
-pub fn termrock::widgets::Toggle<'a>::handle_key_result(&self, &mut termrock::widgets::ToggleState, termrock::input::KeyEvent) -> termrock::interaction::EventResult<termrock::widgets::ToggleOutcome>
 pub fn termrock::widgets::Toggle<'a>::handle_mouse(&self, &mut termrock::widgets::ToggleState, termrock::input::MouseEvent) -> termrock::widgets::ToggleOutcome
 pub fn termrock::widgets::Toggle<'a>::has_accessible_label(&self) -> bool
 pub const fn termrock::widgets::Toggle<'a>::icon(self, &'a str) -> Self
@@ -88384,10 +88383,8 @@ pub struct termrock::widgets::ToggleGroup<'a, Id>
 impl<'a, Id: core::clone::Clone + core::cmp::PartialEq> termrock::widgets::ToggleGroup<'a, Id>
 pub fn termrock::widgets::ToggleGroup<'a, Id>::activate_overflow(&self, &termrock::widgets::ToggleGroupState<Id>, Id) -> termrock::widgets::ToggleGroupOutcome<Id>
 pub fn termrock::widgets::ToggleGroup<'a, Id>::handle_key(&self, &mut termrock::widgets::ToggleGroupState<Id>, termrock::input::KeyEvent) -> termrock::widgets::ToggleGroupOutcome<Id>
-pub fn termrock::widgets::ToggleGroup<'a, Id>::handle_key_result(&self, &mut termrock::widgets::ToggleGroupState<Id>, termrock::input::KeyEvent) -> termrock::interaction::EventResult<termrock::widgets::ToggleGroupOutcome<Id>>
 pub fn termrock::widgets::ToggleGroup<'a, Id>::handle_mouse(&self, &mut termrock::widgets::ToggleGroupState<Id>, termrock::input::MouseEvent) -> termrock::widgets::ToggleGroupOutcome<Id>
 pub fn termrock::widgets::ToggleGroup<'a, Id>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::ToggleGroupState<Id>) -> termrock::widgets::ToggleGroupParts<Id>
-pub fn termrock::widgets::ToggleGroup<'a, Id>::register_semantic<Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, &termrock::widgets::ToggleGroupState<Id>) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
 impl<'a, Id> termrock::widgets::ToggleGroup<'a, Id>
 pub const fn termrock::widgets::ToggleGroup<'a, Id>::compact(self) -> Self
 pub const fn termrock::widgets::ToggleGroup<'a, Id>::connected(self) -> Self
