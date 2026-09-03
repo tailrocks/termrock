@@ -1022,6 +1022,18 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
         let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
         let alt = key.modifiers.contains(KeyModifiers::ALT);
 
+        // Confirmation, cancellation, result focus traversal, jump-mode
+        // entry, and presentation toggles are one-shot actions. Consume
+        // repeats before TextInputState can submit or cancel the query draft.
+        if !key.is_press()
+            && (matches!(
+                key.code,
+                KeyCode::Enter | KeyCode::Esc | KeyCode::Tab | KeyCode::BackTab
+            ) || (ctrl && matches!(key.code, KeyCode::Char('j' | 'J' | '\\'))))
+        {
+            return QuickOpenOutcome::Ignored;
+        }
+
         // Ctrl+P / Ctrl+N — provider cycle (VS Code-ish) when Alt not held.
         if ctrl && !alt && matches!(key.code, KeyCode::Char('p' | 'P')) {
             return self.cycle_provider(providers, -1, visible);
@@ -1999,7 +2011,7 @@ pub fn example_quick_open_symbols() -> Vec<QuickOpenItem<&'static str>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyModifiers;
+    use crate::input::{KeyEventKind, KeyModifiers};
 
     fn providers() -> Vec<QuickOpenProvider> {
         example_quick_open_providers()
@@ -2138,6 +2150,35 @@ mod tests {
                 id: "main"
             } if provider_id == "files"
         ));
+    }
+
+    #[test]
+    fn repeated_one_shot_keys_are_ignored() {
+        let mut s = focused();
+        let p = providers();
+        let items = example_quick_open_files();
+        let vis = matches_of(&items);
+        let _ = s.apply_results(0, &vis, true, None);
+
+        let cases = [
+            (KeyCode::Esc, KeyModifiers::NONE),
+            (KeyCode::Enter, KeyModifiers::NONE),
+            (KeyCode::Tab, KeyModifiers::NONE),
+            (KeyCode::BackTab, KeyModifiers::NONE),
+            (KeyCode::Tab, KeyModifiers::CONTROL),
+            (KeyCode::Char('j'), KeyModifiers::CONTROL),
+            (KeyCode::Char('\\'), KeyModifiers::CONTROL),
+        ];
+
+        for (code, modifiers) in cases {
+            let mut repeat = KeyEvent::new(code, modifiers);
+            repeat.kind = KeyEventKind::Repeat;
+            assert_eq!(
+                s.handle_key(repeat, &p, &vis),
+                QuickOpenOutcome::Ignored,
+                "repeat of {code:?} with {modifiers:?} must not fire a one-shot action"
+            );
+        }
     }
 
     #[test]

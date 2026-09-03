@@ -406,6 +406,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0425 | `v0.14.0` | [Extended key modifiers are preserved](migrations/0425-v0.14.0-preserve-extended-key-modifiers.md) |
 | 0426 | `v0.14.0` | [Validated layer focus restoration](migrations/0426-v0.14.0-validated-layer-focus-return.md) |
 | 0427 | `v0.14.0` | [CommandPalette one-shot actions](migrations/0427-v0.14.0-command-palette-one-shot-actions.md) |
+| 0428 | `v0.14.0` | [QuickOpen one-shot actions](migrations/0428-v0.14.0-quick-open-one-shot-actions.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical
