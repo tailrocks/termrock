@@ -484,20 +484,20 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
             }
             return TreeTableOutcome::Ignored;
         }
-        if rows.is_empty() {
-            return TreeTableOutcome::Ignored;
-        }
-        self.cursor_row = self.cursor_row.min(rows.len() - 1);
-        let vis_n = columns.visible().count().max(1);
-        self.cursor_col = self.cursor_col.min(vis_n - 1);
+        if !rows.is_empty() {
+            self.cursor_row = self.cursor_row.min(rows.len() - 1);
+            let vis_n = columns.visible().count().max(1);
+            self.cursor_col = self.cursor_col.min(vis_n - 1);
 
-        if is_press && matches!(key.code, KeyCode::Char('\\')) && key.modifiers.is_empty() {
-            self.nav_mode = self.nav_mode.cycle();
-            return TreeTableOutcome::NavModeChanged(self.nav_mode);
+            if is_press && matches!(key.code, KeyCode::Char('\\')) && key.modifiers.is_empty() {
+                self.nav_mode = self.nav_mode.cycle();
+                return TreeTableOutcome::NavModeChanged(self.nav_mode);
+            }
         }
 
         // Shift+Left/Right always hierarchy when in Cell mode
-        if key.modifiers.contains(KeyModifiers::SHIFT)
+        if !rows.is_empty()
+            && key.modifiers.contains(KeyModifiers::SHIFT)
             && matches!(
                 key.code,
                 KeyCode::Left | KeyCode::Right | KeyCode::Char('h' | 'l' | 'H' | 'L')
@@ -512,6 +512,10 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
             if !matches!(out, TreeTableOutcome::Ignored) {
                 return out;
             }
+        }
+
+        if rows.is_empty() {
+            return TreeTableOutcome::Ignored;
         }
 
         match key.code {
@@ -1949,6 +1953,27 @@ mod tests {
         state.window.offset = 10;
 
         let out = state.handle_intent(&rows, &columns, UiIntent::Page(PageMove::Forward));
+
+        assert!(matches!(out, TreeTableOutcome::Scrolled));
+        assert_eq!(state.window.offset, 12);
+        assert_eq!(state.selected(), Some(&"off-window"));
+        assert_eq!(state.cursor_row, 0);
+    }
+
+    #[test]
+    fn page_key_scrolls_empty_virtual_projection() {
+        let columns = cols();
+        let rows: [TreeTableRow<'_, &str>; 0] = [];
+        let mut state = TreeTableState::<&str, &str>::new(Some("off-window"));
+        state.set_logical_rows(100);
+        state.window.viewport = 2;
+        state.window.offset = 10;
+
+        let out = state.handle_key(
+            &rows,
+            &columns,
+            KeyEvent::new(KeyCode::PageDown, KeyModifiers::NONE),
+        );
 
         assert!(matches!(out, TreeTableOutcome::Scrolled));
         assert_eq!(state.window.offset, 12);
