@@ -258,7 +258,8 @@ impl<Id: Clone + PartialEq> CollectionState<Id> {
         let window_start = window_start.min(max_offset);
         self.window_start = Some(window_start);
         self.offset = window_start;
-        if total_len > 0
+        let partial_window = window_start > 0 || window.len() < total_len;
+        if partial_window
             && self
                 .roving
                 .active()
@@ -536,6 +537,33 @@ mod tests {
         assert_eq!(out, CollectionOutcome::Ignored);
         assert_eq!(c.active(), Some(&"b"));
         assert_eq!(c.offset(), 2);
+    }
+
+    #[test]
+    fn full_window_reconcile_repairs_missing_active() {
+        let full = items(&[("a", true), ("b", true)]);
+        let mut c = CollectionState::new();
+        c.set_active(Some("gone"));
+
+        assert_eq!(
+            c.reconcile_window(&full, 0, 2, 2),
+            CollectionOutcome::ActiveChanged {
+                from: Some("gone"),
+                to: Some("a"),
+            }
+        );
+        assert_eq!(c.active(), Some(&"a"));
+
+        let disabled = items(&[("a", false), ("b", false)]);
+        c.set_active(Some("gone"));
+        assert_eq!(
+            c.reconcile_window(&disabled, 0, 2, 2),
+            CollectionOutcome::ActiveChanged {
+                from: Some("gone"),
+                to: None,
+            }
+        );
+        assert_eq!(c.active(), None);
     }
 
     #[test]
