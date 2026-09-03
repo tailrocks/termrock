@@ -817,7 +817,22 @@ impl<Id: Clone + PartialEq> HistoryPickerState<Id> {
         key: KeyEvent,
         visible: &[HistoryMatch<'_, Id>],
     ) -> HistoryPickerOutcome<Id> {
-        if !self.live() || key.is_release() {
+        if !self.live() {
+            return HistoryPickerOutcome::Ignored;
+        }
+
+        // Escape is a one-shot cancellation action. Check its phase before
+        // reconciliation so a held or released Escape cannot mutate picker
+        // state on its way to being ignored.
+        if key.code == KeyCode::Esc {
+            if !key.is_press() {
+                return HistoryPickerOutcome::Ignored;
+            }
+            self.close();
+            return HistoryPickerOutcome::Cancelled;
+        }
+
+        if key.is_release() {
             return HistoryPickerOutcome::Ignored;
         }
         self.reconcile(visible);
@@ -832,11 +847,6 @@ impl<Id: Clone + PartialEq> HistoryPickerState<Id> {
             && matches!(key.code, KeyCode::Char('p' | 'P'))
         {
             return self.toggle_pin_cursor(visible);
-        }
-
-        if key.code == KeyCode::Esc {
-            self.close();
-            return HistoryPickerOutcome::Cancelled;
         }
 
         if matches!(
@@ -1559,7 +1569,7 @@ pub fn example_history_entries() -> Vec<HistoryEntry<&'static str>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyModifiers;
+    use crate::input::{KeyEventKind, KeyModifiers};
 
     fn catalog() -> Vec<HistoryEntry<&'static str>> {
         example_history_entries()
@@ -1569,6 +1579,12 @@ mod tests {
         let mut s = HistoryPickerState::new();
         let _ = s.open(Some("draft text".into()));
         s
+    }
+
+    fn key_with_kind(code: KeyCode, kind: KeyEventKind) -> KeyEvent {
+        let mut key = KeyEvent::new(code, KeyModifiers::NONE);
+        key.kind = kind;
+        key
     }
 
     #[test]
@@ -1639,6 +1655,42 @@ mod tests {
         ));
         assert_eq!(s.take_draft().as_deref(), Some("draft text"));
         assert!(!s.is_open());
+    }
+
+    #[test]
+    fn non_press_escape_is_ignored_and_preserves_open_draft() {
+        let cat = catalog();
+        let vis = filter_history_entries(&cat, "");
+
+        for kind in [KeyEventKind::Repeat, KeyEventKind::Release] {
+            let mut s = open_state();
+            let draft = s.draft().map(str::to_owned);
+
+            assert_eq!(
+                s.handle_key(key_with_kind(KeyCode::Esc, kind), &vis),
+                HistoryPickerOutcome::Ignored
+            );
+            assert!(s.is_open(), "{kind:?} Escape closed the picker");
+            assert_eq!(s.draft(), draft.as_deref(), "{kind:?} Escape changed draft");
+        }
+    }
+
+    #[test]
+    fn repeated_down_remains_navigation() {
+        let mut s = open_state();
+        let cat = catalog();
+        let vis = filter_history_entries(&cat, "");
+
+        assert!(matches!(
+            s.handle_key(key_with_kind(KeyCode::Down, KeyEventKind::Repeat), &vis),
+            HistoryPickerOutcome::CursorMoved
+        ));
+        assert_eq!(s.cursor_index(), 1);
+        assert!(matches!(
+            s.handle_key(key_with_kind(KeyCode::Down, KeyEventKind::Repeat), &vis),
+            HistoryPickerOutcome::CursorMoved
+        ));
+        assert_eq!(s.cursor_index(), 2);
     }
 
     #[test]
