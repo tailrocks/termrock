@@ -289,32 +289,6 @@ impl AgentWorkbenchState {
     pub const fn command_open(&self) -> bool {
         self.command_open
     }
-
-    /// Host opens/closes session picker (draft stays in composer).
-    pub const fn set_session_open(&mut self, open: bool) {
-        self.session_open = open;
-    }
-
-    /// Host opens/closes plan review.
-    pub const fn set_plan_open(&mut self, open: bool) {
-        self.plan_open = open;
-    }
-
-    /// Host opens/closes diff review.
-    pub const fn set_diff_open(&mut self, open: bool) {
-        self.diff_open = open;
-    }
-
-    /// Host opens/closes question flow.
-    pub const fn set_question_open(&mut self, open: bool) {
-        self.question_open = open;
-    }
-
-    /// Host opens/closes command surface.
-    pub const fn set_command_open(&mut self, open: bool) {
-        self.command_open = open;
-    }
-
     /// Any dismissible overlay owning input.
     #[must_use]
     pub const fn any_overlay_open(&self) -> bool {

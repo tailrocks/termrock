@@ -663,26 +663,10 @@ impl SessionPickerState {
         }
         self.clamp_cursor();
     }
-
-    /// Append page (virtualization).
-    pub fn append_sessions(&mut self, more: Vec<SessionEntry>) {
-        self.sessions.extend(more);
-        self.refilter();
-    }
-
     /// Total count for chrome.
     pub fn set_total_count(&mut self, n: Option<usize>) {
         self.total_count = n;
     }
-
-    /// Load state.
-    pub fn set_load_state(&mut self, s: SessionLoadState) {
-        self.load_state = s;
-        if matches!(s, SessionLoadState::Ready) {
-            self.load_error = None;
-        }
-    }
-
     /// Error.
     pub fn set_error(&mut self, msg: impl Into<String>) {
         self.load_state = SessionLoadState::Error;

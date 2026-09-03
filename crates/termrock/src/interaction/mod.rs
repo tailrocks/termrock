@@ -149,10 +149,4 @@ impl<T> Outcome<T> {
             other => EventResult::emit(other),
         }
     }
-
-    /// Whether this outcome means the input was not handled.
-    #[must_use]
-    pub const fn is_ignored(&self) -> bool {
-        matches!(self, Self::Ignored)
-    }
 }

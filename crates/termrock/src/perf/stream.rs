@@ -199,27 +199,6 @@ impl StreamCoalescer {
         }
         self.recompute_backpressure();
     }
-
-    /// Note a non-text append (e.g. tool card boundary).
-    pub fn push_event(&mut self, priority: UpdatePriority) {
-        self.pending.append_count = self.pending.append_count.saturating_add(1);
-        if priority > self.pending.priority {
-            self.pending.priority = priority;
-        }
-        self.pending.dirty.body = true;
-        if priority >= UpdatePriority::High {
-            self.pending.force_flush = true;
-        }
-        self.recompute_backpressure();
-    }
-
-    /// Mark cancel/final — always flushes next take.
-    pub fn push_terminal(&mut self) {
-        self.pending.force_flush = true;
-        self.pending.priority = UpdatePriority::Critical;
-        self.pending.dirty.body = true;
-    }
-
     /// Take a batch if due for this frame; otherwise returns empty batch.
     pub fn take_for_frame(&mut self, tick: FrameTick) -> StreamBatch {
         if self.pending.is_empty() {

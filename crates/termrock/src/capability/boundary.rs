@@ -58,25 +58,11 @@ impl CapabilityBoundary {
     pub const fn allow_mouse(self) -> bool {
         self.set.mouse
     }
-
-    /// Bracketed paste desired.
-    #[must_use]
-    pub const fn allow_bracketed_paste(self) -> bool {
-        self.set.bracketed_paste
-    }
-
     /// OSC 8 hyperlinks allowed.
     #[must_use]
     pub const fn allow_hyperlinks(self) -> bool {
         self.set.hyperlinks
     }
-
-    /// Image protocol emission allowed (host still chooses protocol).
-    #[must_use]
-    pub const fn allow_images(self) -> bool {
-        self.set.image_protocols
-    }
-
     /// Interactive keyboard session.
     #[must_use]
     pub const fn interactive(self) -> bool {

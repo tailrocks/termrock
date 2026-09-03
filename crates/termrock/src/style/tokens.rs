@@ -1079,24 +1079,6 @@ impl DesignSystem {
             }
         }
     }
-
-    /// One step down the junie text ladder.
-    ///
-    /// [`Role::Text`] → [`Role::TextSecondary`] → [`Role::TextMuted`] →
-    /// [`Role::TextFaint`] → [`Role::TextGhost`]. Any role off the ladder —
-    /// semantic colours, surfaces — returns itself: de-emphasis never invents
-    /// a new tone, and it never reaches for a DIM modifier.
-    #[must_use]
-    pub const fn lower_text(role: Role) -> Role {
-        match role {
-            Role::Text => Role::TextSecondary,
-            Role::TextSecondary => Role::TextMuted,
-            Role::TextMuted => Role::TextFaint,
-            Role::TextFaint | Role::TextGhost => Role::TextGhost,
-            other => other,
-        }
-    }
-
     /// Builds from a palette with the junie spacing, glyphs, and motion.
     #[must_use]
     pub fn new(palette: RolePalette) -> Self {
@@ -1210,18 +1192,6 @@ impl DesignSystem {
             },
         }
     }
-
-    /// Overrides one family's focus cue (themes state the vocabulary).
-    #[must_use]
-    pub const fn with_focus_emphasis(
-        mut self,
-        family: SurfaceFamily,
-        emphasis: FocusEmphasis,
-    ) -> Self {
-        self.focus[family.index()] = emphasis;
-        self
-    }
-
     /// Supplies this frame's time to every widget painted with this system.
     ///
     /// Call once per frame in the host's render function:

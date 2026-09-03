@@ -648,16 +648,6 @@ impl ErrorRecoveryState {
             last_area_width: None,
         }
     }
-
-    /// Inline fallback factory.
-    #[must_use]
-    pub fn inline_fallback() -> Self {
-        let mut s = Self::new();
-        s.mode = ErrorRecoveryMode::InlineFallback;
-        s.focus = ErrorRecoveryPane::Actions.id();
-        s
-    }
-
     /// Last panes.
     #[must_use]
     pub fn last_panes(&self) -> &[PaneGeom] {

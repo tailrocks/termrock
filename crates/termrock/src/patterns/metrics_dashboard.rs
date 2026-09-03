@@ -642,13 +642,6 @@ impl MetricsDashboardState {
         self.layout_override
             .unwrap_or_else(|| MetricsDashboardLayoutMode::for_width(width))
     }
-
-    /// Focused metric id.
-    #[must_use]
-    pub fn focused_metric_id<'a>(&self, tiles: &[MetricTile<'a>]) -> Option<&'a str> {
-        tiles.get(self.focus_tile).map(|t| t.id)
-    }
-
     /// Keys.
     pub fn handle_key(
         &mut self,

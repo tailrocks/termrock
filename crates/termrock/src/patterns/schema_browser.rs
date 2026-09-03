@@ -187,19 +187,6 @@ impl SchemaConnStatus {
             Self::Stale => '~',
         }
     }
-
-    /// ASCII letter.
-    #[must_use]
-    pub const fn letter_ascii(self) -> char {
-        match self {
-            Self::Connected => '*',
-            Self::Connecting => '.',
-            Self::Offline => 'o',
-            Self::Error => '!',
-            Self::Stale => '~',
-        }
-    }
-
     /// Shared lifecycle projection for recipe-owned status paint.
     #[must_use]
     pub const fn semantic(self) -> SemanticStatus {
@@ -772,16 +759,6 @@ impl<Id: Clone + Ord + PartialEq> SchemaBrowserState<Id> {
         self.presentation_override
             .unwrap_or_else(|| SchemaBrowserPresentation::for_bounds(area.width, area.height))
     }
-
-    /// Record expansion for preserve set.
-    pub fn mark_expanded(&mut self, id: Id, expanded: bool) {
-        if expanded {
-            self.expanded.insert(id);
-        } else {
-            self.expanded.remove(&id);
-        }
-    }
-
     /// Merge host projection expansion into preserve set.
     pub fn sync_expanded_from_entries(&mut self, entries: &[SchemaBrowserEntry<'_, Id>]) {
         for e in entries {

@@ -38,9 +38,9 @@ use crate::{
     input::{Event, KeyCode, KeyEvent, KeyModifiers, MouseEvent},
     style::{DesignSystem, Role},
     widgets::{
-        CodeFrame, CodeFrameLine, CompletionMenuState, Diagnostic, DiagnosticSeverity, HelpEntry,
-        HistoryEntry, HistoryKind, SemanticStatus, SourceLabel, StatusIndicator, TextArea,
-        TextAreaOutcome, TextAreaState, TextCursor, TextWrap,
+        CodeFrameLine, CompletionMenuState, Diagnostic, DiagnosticSeverity, HelpEntry,
+        HistoryEntry, HistoryKind, SemanticStatus, StatusIndicator, TextArea, TextAreaOutcome,
+        TextAreaState, TextCursor, TextWrap,
     },
 };
 
@@ -1454,26 +1454,6 @@ impl<'a> QueryEditor<'a> {
 
         state.slots = slots;
     }
-
-    /// Optional CodeFrame for selected diagnostic over draft lines.
-    pub fn paint_diagnostic_frame(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &QueryEditorState,
-        labels: &[SourceLabel<'a>],
-    ) {
-        if area.is_empty() || self.diagnostics.is_empty() {
-            return;
-        }
-        let lines = draft_code_frame_lines(&state.editor);
-        // CodeFrame needs 'a lines — draft_code_frame_lines returns owned refs into editor
-        // which is tied to state lifetime, not 'a. Paint via temporary borrow:
-        let line_refs: Vec<CodeFrameLine<'_>> = lines;
-        CodeFrame::new(&line_refs, self.system)
-            .labels(labels)
-            .paint(area, buffer);
-    }
 }
 
 // ── Bench ───────────────────────────────────────────────────────────────────
@@ -1496,6 +1476,7 @@ pub mod bench {
 mod tests {
     use super::*;
     use crate::style::DesignSystem;
+    use crate::widgets::SourceLabel;
     use crate::widgets::SourceRange;
     use crate::widgets::SpanStyle;
 

@@ -415,13 +415,6 @@ pub enum PresenceChange {
 
 /// FrameTick helpers for motion.
 impl FrameTick {
-    /// Milliseconds into a repeating period.
-    #[must_use]
-    pub fn phase_ms(self, period_ms: u64) -> u64 {
-        let p = period_ms.max(1);
-        self.elapsed().as_millis() as u64 % p
-    }
-
     /// Spinner frame index.
     #[must_use]
     pub fn spinner_step(self, frame_count: usize, period_ms: u64, motion: MotionPolicy) -> usize {

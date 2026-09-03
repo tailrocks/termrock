@@ -1000,16 +1000,6 @@ impl PlanReviewState {
             orphaned_comments: orphaned,
         }
     }
-
-    /// Seed comments (host).
-    pub fn set_comments(&mut self, comments: Vec<PlanComment>) {
-        if let Some(plan) = self.plan.as_ref() {
-            self.comments = remap_plan_comments(&comments, plan);
-        } else {
-            self.comments = comments;
-        }
-    }
-
     /// Whether open.
     #[must_use]
     pub const fn is_open(&self) -> bool {

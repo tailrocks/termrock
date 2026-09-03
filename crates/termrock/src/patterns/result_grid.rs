@@ -984,12 +984,6 @@ impl ResultGridState {
     pub const fn accepts_input(&self) -> bool {
         self.accepts_input
     }
-
-    /// Set schema.
-    pub fn set_schema(&mut self, schema: Vec<ResultColumn>) {
-        self.schema = schema;
-    }
-
     /// Set status + sync load chrome.
     pub fn set_status(&mut self, status: ResultQueryStatus, projected_len: usize) {
         self.table.load = status.to_load_state(projected_len);
@@ -1000,13 +994,6 @@ impl ResultGridState {
     pub fn set_logical_rows(&mut self, n: u64) {
         self.table.set_logical_rows(n);
     }
-
-    /// QueryEditor summary bridge.
-    #[must_use]
-    pub fn query_summary(&self) -> QueryResultSummary {
-        self.status.to_query_summary(self.schema.len())
-    }
-
     /// Toggle stats strip.
     pub fn toggle_stats(&mut self) {
         self.show_stats = !self.show_stats;

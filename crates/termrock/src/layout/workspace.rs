@@ -99,16 +99,6 @@ impl WorkspaceState {
     pub fn new() -> Self {
         Self::default()
     }
-
-    /// Toggles collapse for a pane.
-    pub fn toggle_collapse(&mut self, id: PaneId) {
-        if let Some(pos) = self.collapsed.iter().position(|item| item == &id) {
-            self.collapsed.remove(pos);
-        } else {
-            self.collapsed.push(id);
-        }
-    }
-
     /// Returns whether a pane is collapsed.
     #[must_use]
     pub fn is_collapsed(&self, id: &PaneId) -> bool {

@@ -325,14 +325,6 @@ impl BackgroundOutputBuffer {
         }
         self.lines.push_back(line);
     }
-
-    /// Append many.
-    pub fn append_all<I: IntoIterator<Item = BackgroundOutputLine>>(&mut self, it: I) {
-        for l in it {
-            self.append(l);
-        }
-    }
-
     /// Dropped-line indicator text.
     #[must_use]
     pub fn dropped_banner(&self) -> Option<String> {
@@ -499,31 +491,6 @@ impl BackgroundTask {
         self.output = buf;
         self
     }
-
-    /// Header for rail row.
-    #[must_use]
-    pub fn row_label(&self) -> String {
-        let g = self.status.glyph();
-        let mut s = format!(
-            "| {g} {} · {} {}",
-            self.status.id(),
-            self.kind.letter(),
-            self.title
-        );
-        if self.restart_count > 0 {
-            s.push_str(&format!(" ×{}", self.restart_count));
-        }
-        if let Some(ms) = self.duration_ms {
-            s.push(' ');
-            s.push_str(&format_duration_ms(ms));
-        }
-        if !self.ports.is_empty() {
-            s.push_str(" :");
-            s.push_str(&self.ports[0]);
-        }
-        s
-    }
-
     /// Meta line.
     #[must_use]
     pub fn meta_line(&self) -> String {
@@ -770,12 +737,6 @@ impl BackgroundTaskPanelState {
         self.open = false;
         BackgroundTaskPanelOutcome::Closed
     }
-
-    /// Open panel.
-    pub fn open_panel(&mut self) {
-        self.open = true;
-    }
-
     /// Selected id.
     #[must_use]
     pub fn selected_id(&self) -> Option<&str> {

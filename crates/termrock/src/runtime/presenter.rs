@@ -354,17 +354,6 @@ impl<B> QuietBackend<B> {
     pub const fn inner(&self) -> &B {
         &self.inner
     }
-
-    /// Mutably borrow the wrapped backend.
-    pub const fn inner_mut(&mut self) -> &mut B {
-        &mut self.inner
-    }
-
-    /// Unwrap.
-    pub fn into_inner(self) -> B {
-        self.inner
-    }
-
     /// Forget what we believe about the terminal's cursor.
     ///
     /// Call after anything that moves the cursor behind our back (a resize, a

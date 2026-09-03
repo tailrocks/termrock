@@ -64,13 +64,7 @@ pub enum SelectionDelta<Id> {
     },
 }
 
-impl<Id> SelectionDelta<Id> {
-    /// Whether membership is non-empty after a replace/range (best-effort).
-    #[must_use]
-    pub fn is_noop_clear(&self) -> bool {
-        matches!(self, Self::Cleared)
-    }
-}
+impl<Id> SelectionDelta<Id> {}
 
 /// Visual recipe requirement — never color alone.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -199,22 +193,6 @@ impl<Id: Clone + PartialEq> SelectionModel<Id> {
     pub fn checked(&self) -> &[Id] {
         self.selected()
     }
-
-    /// Sets kind (does not clear membership).
-    pub fn set_kind(&mut self, kind: SelectionKind) {
-        self.kind = kind;
-        if matches!(kind, SelectionKind::None) {
-            self.selected.clear();
-            self.anchor = None;
-        } else if matches!(kind, SelectionKind::Single) && self.selected.len() > 1 {
-            let last = self.selected.pop();
-            self.selected.clear();
-            if let Some(id) = last {
-                self.selected.push(id);
-            }
-        }
-    }
-
     /// Application-controlled replace of the entire set.
     pub fn replace(&mut self, ids: impl IntoIterator<Item = Id>) -> SelectionDelta<Id> {
         if matches!(self.kind, SelectionKind::None) {
@@ -467,34 +445,6 @@ impl<Id: Clone + PartialEq> SelectionModel<Id> {
                 selected: self.selected.clone(),
             }
         }
-    }
-
-    /// Removes only ids explicitly listed in `invalid` (filtered views keep rest).
-    pub fn reconcile_drop(&mut self, invalid: &[Id]) -> SelectionDelta<Id> {
-        let before = self.selected.len();
-        self.selected.retain(|id| !invalid.iter().any(|v| v == id));
-        if let Some(a) = &self.anchor
-            && invalid.iter().any(|v| v == a)
-        {
-            self.anchor = self.selected.first().cloned();
-        }
-        if self.selected.len() != before && self.selected.is_empty() {
-            SelectionDelta::Cleared
-        } else {
-            SelectionDelta::Replaced {
-                selected: self.selected.clone(),
-            }
-        }
-    }
-
-    /// Intersection of selection with `visible` (for paint / “selected in view”).
-    #[must_use]
-    pub fn selected_in_view(&self, visible: &[Id]) -> Vec<Id> {
-        visible
-            .iter()
-            .filter(|id| self.is_selected(id))
-            .cloned()
-            .collect()
     }
 }
 

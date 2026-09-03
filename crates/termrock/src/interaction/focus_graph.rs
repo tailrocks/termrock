@@ -20,7 +20,7 @@ use ratatui_core::layout::{Position, Rect};
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers},
     interaction::{FocusRequest, InteractionScene, NavigationMove, UiIntent},
-    style::{DesignSystem, PanelChrome, Role},
+    style::{DesignSystem, Role},
 };
 
 /// Result of a focus operation.
@@ -258,19 +258,6 @@ impl<Id> FocusGraph<Id> {
         }
         self.nodes.push(node);
     }
-
-    /// Attaches/updates painted geometry after render.
-    pub fn attach_area(&mut self, id: &Id, area: Rect) -> bool
-    where
-        Id: PartialEq,
-    {
-        let Some(node) = self.nodes.iter_mut().find(|n| &n.id == id) else {
-            return false;
-        };
-        node.area = Some(area);
-        true
-    }
-
     /// Nav mode.
     #[must_use]
     pub const fn nav_mode(&self) -> FocusNavMode {
@@ -300,20 +287,6 @@ impl<Id> FocusGraph<Id> {
     {
         self.is_focused(id)
     }
-
-    /// Panel chrome helper for focus-visible borders.
-    #[must_use]
-    pub fn panel_chrome_for(&self, id: &Id) -> PanelChrome
-    where
-        Id: PartialEq,
-    {
-        if self.owns_keyboard(id) {
-            PanelChrome::Focused
-        } else {
-            PanelChrome::Normal
-        }
-    }
-
     /// Active modal trap root.
     #[must_use]
     pub const fn trap_root(&self) -> Option<&Id> {
@@ -686,25 +659,6 @@ impl<Id: Clone + PartialEq> FocusGraph<Id> {
             });
         }
         g
-    }
-
-    /// Syncs focus id from an interaction scene after scene tab routing.
-    pub fn sync_from_scene<LayerId, Action>(
-        &mut self,
-        scene: &InteractionScene<Id, LayerId, Action>,
-    ) {
-        self.focused = scene.focused().cloned();
-    }
-
-    /// Pushes focused id into a scene when the graph moved (host bridge).
-    pub fn apply_to_scene<LayerId, Action>(&self, scene: &mut InteractionScene<Id, LayerId, Action>)
-    where
-        Id: Clone + PartialEq,
-        LayerId: PartialEq,
-    {
-        if let Some(id) = self.focused.clone() {
-            let _ = scene.focus(id);
-        }
     }
 }
 

@@ -279,13 +279,6 @@ impl Center {
             spec: CenterSpec::failure(width, height),
         }
     }
-
-    /// From full spec.
-    #[must_use]
-    pub const fn from_spec(spec: CenterSpec) -> Self {
-        Self { spec }
-    }
-
     /// Borrow spec.
     #[must_use]
     pub const fn spec(self) -> CenterSpec {

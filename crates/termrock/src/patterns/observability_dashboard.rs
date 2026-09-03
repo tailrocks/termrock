@@ -577,13 +577,6 @@ impl ObservabilityDashboardState {
         self.logs.set_reconnect_message(None);
         self.apply_focus_gates();
     }
-
-    /// Host reports offline/failure.
-    pub fn set_offline(&mut self) {
-        self.live = ObservabilityLiveState::Offline;
-        self.apply_focus_gates();
-    }
-
     /// Project drill-down.
     pub fn set_drill_down(
         &mut self,

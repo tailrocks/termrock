@@ -163,21 +163,6 @@ impl CapabilityPreviewHost {
     pub fn projected_theme(&self) -> RolePalette {
         self.system.palette().quantized(self.capability)
     }
-
-    /// Tokens with the palette resolved for the active capability.
-    ///
-    /// One downgrade, applied where the tokens are born; there is no separate
-    /// chrome-degrading pass, because selection chrome is already canonical
-    /// (gutter + tint) and a colourless terminal suppresses the tint in the
-    /// row recipe itself.
-    #[must_use]
-    pub fn projected_tokens(&self) -> DesignSystem {
-        let mut tokens = self.system.clone();
-        tokens.palette = self.projected_theme();
-        tokens.capability = self.capability;
-        tokens
-    }
-
     /// Bumps generation (call when selection/content identity changes).
     pub fn bump_generation(&mut self) -> u64 {
         self.generation = self.generation.saturating_add(1);
@@ -234,31 +219,6 @@ impl CapabilityPreviewHost {
         self.next_placement = self.next_placement.saturating_add(1);
         id
     }
-
-    /// Registers a preview surface for the current frame.
-    pub fn register_surface(&mut self, mut surface: PreviewSurface) {
-        if surface.generation == 0 {
-            surface.generation = self.generation;
-        }
-        if surface.presentation == PreviewPresentation::CellFallback
-            && matches!(
-                surface.kind,
-                PreviewSurfaceKind::Image | PreviewSurfaceKind::ResourceDetail
-            )
-        {
-            surface.presentation = self.resolve_presentation(surface.kind);
-        }
-        if surface.placement_id == 0 {
-            if let Some(resource_id) = surface.resource_id.as_deref() {
-                surface.placement_id = self.placement_id_for(surface.kind, resource_id);
-            } else {
-                surface.placement_id = self.next_placement;
-                self.next_placement = self.next_placement.saturating_add(1);
-            }
-        }
-        self.surfaces.push(surface);
-    }
-
     /// Marks all surfaces of `kind` stale (e.g. after resource change).
     pub fn mark_stale(&mut self, kind: PreviewSurfaceKind) {
         for surface in &mut self.surfaces {

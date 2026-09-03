@@ -111,13 +111,6 @@ impl ContractionStage {
             _ => Self::Full,
         }
     }
-
-    /// Whether secondary labels should be abbreviated.
-    #[must_use]
-    pub const fn shorten_secondary(self) -> bool {
-        (self as u8) >= (Self::ShortenSecondary as u8)
-    }
-
     /// Human-readable stage name for tests/docs.
     #[must_use]
     pub const fn as_str(self) -> &'static str {

@@ -130,13 +130,6 @@ impl<Id> RovingFocusGroup<Id> {
         self.wrap = wrap;
         self
     }
-
-    /// Current orientation.
-    #[must_use]
-    pub const fn orientation_mode(&self) -> RovingOrientation {
-        self.orientation
-    }
-
     /// Whether wrap is enabled.
     #[must_use]
     pub const fn wraps(&self) -> bool {
@@ -465,24 +458,6 @@ impl<Id: Clone + PartialEq> RovingFocusGroup<Id> {
         }
         RovingOutcome::Ignored
     }
-
-    /// Builds entries from parallel id/enabled/label slices (virtualized windows).
-    #[must_use]
-    pub fn entries_from_parts<'a>(
-        ids: &[Id],
-        enabled: &[bool],
-        labels: &[&'a str],
-    ) -> Vec<RovingEntry<'a, Id>> {
-        ids.iter()
-            .enumerate()
-            .map(|(i, id)| RovingEntry {
-                id: id.clone(),
-                enabled: enabled.get(i).copied().unwrap_or(true),
-                label: labels.get(i).copied().unwrap_or(""),
-            })
-            .collect()
-    }
-
     /// Registers active-descendant geometry into a [`crate::interaction::SemanticScene`].
     ///
     /// Parent should be the collection surface id already registered on the semantic tree.

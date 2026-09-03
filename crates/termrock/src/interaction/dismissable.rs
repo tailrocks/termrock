@@ -226,12 +226,6 @@ impl DismissGuard {
     pub fn mark_dismissed(&mut self) {
         self.dismissed = true;
     }
-
-    /// Whether this event already produced a dismiss.
-    #[must_use]
-    pub const fn already_dismissed(&self) -> bool {
-        self.dismissed
-    }
 }
 
 /// Pointer press/release tracking for outside-dismiss safety (Radix drag cancel).
@@ -281,13 +275,6 @@ impl DismissableLayer {
             ignore_empty_rect: true,
         }
     }
-
-    /// From esc/outside layer policies (overlay migration path).
-    #[must_use]
-    pub const fn from_layer_policies(esc: LayerDismissPolicy, outside: LayerDismissPolicy) -> Self {
-        Self::new(DismissPolicy::from_layer_pair(esc, outside))
-    }
-
     /// Policy.
     #[must_use]
     pub const fn policy(&self) -> DismissPolicy {
@@ -355,24 +342,6 @@ impl DismissableLayer {
         }
         d
     }
-
-    /// Focus left this surface (host detected).
-    pub fn on_focus_leave(
-        &mut self,
-        guard: &mut DismissGuard,
-        event: DismissEventId,
-    ) -> DismissDecision {
-        if !guard.begin(event) {
-            return DismissDecision::None;
-        }
-        let d = self.decide(DismissReason::FocusLeave);
-        if d.should_dismiss() {
-            guard.mark_dismissed();
-            self.reset_gesture();
-        }
-        d
-    }
-
     /// Parent overlay closed — children always evaluate parent_closed policy.
     pub fn on_parent_closed(
         &mut self,

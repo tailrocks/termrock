@@ -17,7 +17,7 @@
 //! is set for Studio and hosts.
 use ratatui_core::layout::Rect;
 
-use crate::style::{DesignSystem, SpacingScale};
+use crate::style::SpacingScale;
 
 /// Soft cap for stack-allocated main-size scratch (above → heap `Vec`).
 const INLINE_SCRATCH: usize = 64;
@@ -147,42 +147,6 @@ impl FlexSize {
             Self::Collapsed => 0,
         }
     }
-
-    /// Ideal main-axis claim (preferred or fixed; weight → 0).
-    #[must_use]
-    pub const fn ideal_main(self) -> u16 {
-        match self {
-            Self::Fixed(n) => n,
-            Self::Weight(_) => 0,
-            Self::Preferred {
-                min,
-                preferred,
-                max,
-            } => {
-                let lo = min;
-                let hi = if max < min { min } else { max };
-                if preferred < lo {
-                    lo
-                } else if preferred > hi {
-                    hi
-                } else {
-                    preferred
-                }
-            }
-            Self::Collapsed => 0,
-        }
-    }
-
-    /// Maximum main-axis claim (fixed = exact; weight unbounded as 0 meaning flex).
-    #[must_use]
-    pub const fn max_main(self) -> Option<u16> {
-        match self {
-            Self::Fixed(n) => Some(n),
-            Self::Weight(_) => None,
-            Self::Preferred { min, max, .. } => Some(if max < min { min } else { max }),
-            Self::Collapsed => Some(0),
-        }
-    }
 }
 
 /// Behavior when fixed/preferred children exceed the main axis.
@@ -247,12 +211,6 @@ impl Default for StackSpec {
 }
 
 impl StackSpec {
-    /// Resolves gap and padding from the frame design system.
-    #[must_use]
-    pub const fn from_system(system: &DesignSystem) -> Self {
-        Self::vertical().with_spacing(system.spacing)
-    }
-
     /// Vertical stack defaults.
     #[must_use]
     pub const fn vertical() -> Self {
@@ -347,14 +305,6 @@ impl StackLayout {
             .iter()
             .position(|r| r.width > 0 && r.height > 0 && r.contains(pos))
     }
-
-    /// Group hit (padded content).
-    #[must_use]
-    pub fn contains_group(&self, col: u16, row: u16) -> bool {
-        self.content
-            .contains(ratatui_core::layout::Position { x: col, y: row })
-    }
-
     /// Project non-empty children into hit regions (id = stable index).
     #[must_use]
     pub fn hit_regions(&self) -> Vec<crate::interaction::HitRegion<usize>> {

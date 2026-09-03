@@ -630,12 +630,6 @@ impl DatabaseWorkbenchState {
             .map(|t| t.id.clone())
             .unwrap_or_else(|| "tab0".into())
     }
-
-    /// Set density override.
-    pub fn set_density(&mut self, d: Option<DatabaseWorkbenchDensity>) {
-        self.density = d;
-    }
-
     /// Project connection gate from current connection selection.
     pub fn sync_conn_gate_from_selection(&mut self) {
         if let Some(c) = self.connections.current() {
@@ -671,23 +665,6 @@ impl DatabaseWorkbenchState {
             self.tx_status = DatabaseTxStatus::Active;
         }
     }
-
-    /// Host reports run success.
-    pub fn finish_run_success(&mut self, rows: u64, duration_ms: u64) {
-        self.query.run = QueryRunStatus::Success {
-            rows: Some(rows),
-            duration_ms: Some(duration_ms),
-        };
-        self.results.status = ResultQueryStatus::Ready {
-            total: Some(rows),
-            duration_ms: Some(duration_ms),
-        };
-        if matches!(self.tx_status, DatabaseTxStatus::Active) {
-            self.tx_status = DatabaseTxStatus::Open;
-        }
-        self.last_error = None;
-    }
-
     /// Host reports run error.
     pub fn finish_run_error(&mut self, message: impl Into<String>) {
         let message = message.into();

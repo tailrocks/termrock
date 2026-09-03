@@ -286,13 +286,4 @@ impl ComponentContract {
     pub fn qualified_name(&self) -> String {
         format!("{}/{}", self.namespace, self.id)
     }
-
-    /// Whether this is a kernel-hosted primitive/behavior/component (not copy-install).
-    #[must_use]
-    pub const fn is_kernel_hosted(&self) -> bool {
-        matches!(
-            self.kind,
-            RegistryItemKind::Primitive | RegistryItemKind::Behavior | RegistryItemKind::Component
-        ) && self.module.is_some()
-    }
 }

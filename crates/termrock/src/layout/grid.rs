@@ -26,7 +26,6 @@
 use ratatui_core::layout::Rect;
 
 use crate::interaction::NavigationMove;
-use crate::style::DesignSystem;
 
 use super::stack::OverflowPolicy;
 
@@ -78,49 +77,6 @@ impl TrackSize {
             min,
             preferred,
             max,
-        }
-    }
-
-    /// Minimum claim before free-space distribution.
-    #[must_use]
-    pub const fn min_size(self) -> u16 {
-        match self {
-            Self::Fixed(n) => n,
-            Self::Weight(_) => 0,
-            Self::MinMax { min, .. } => min,
-        }
-    }
-
-    /// Ideal claim (fixed / preferred / weight 0).
-    #[must_use]
-    pub const fn ideal_size(self) -> u16 {
-        match self {
-            Self::Fixed(n) => n,
-            Self::Weight(_) => 0,
-            Self::MinMax {
-                min,
-                preferred,
-                max,
-            } => {
-                let hi = if max < min { min } else { max };
-                if preferred < min {
-                    min
-                } else if preferred > hi {
-                    hi
-                } else {
-                    preferred
-                }
-            }
-        }
-    }
-
-    /// Maximum claim when growing (None = unbounded weight).
-    #[must_use]
-    pub const fn max_size(self) -> Option<u16> {
-        match self {
-            Self::Fixed(n) => Some(n),
-            Self::Weight(_) => None,
-            Self::MinMax { min, max, .. } => Some(if max < min { min } else { max }),
         }
     }
 }
@@ -210,18 +166,6 @@ impl Default for GridSpec {
 }
 
 impl GridSpec {
-    /// Resolves gaps and padding from the frame design system.
-    #[must_use]
-    pub fn from_system(system: &DesignSystem) -> Self {
-        Self {
-            column_gap: system.spacing.gap,
-            row_gap: system.spacing.gap,
-            pad_x: system.spacing.card_inset,
-            pad_y: 1,
-            ..Self::default()
-        }
-    }
-
     /// N equal fractional columns.
     #[must_use]
     pub fn columns_fr(n: u16) -> Self {
@@ -422,13 +366,6 @@ impl Grid {
             spec: GridSpec::columns_fr(n),
         }
     }
-
-    /// From a full spec.
-    #[must_use]
-    pub fn from_spec(spec: GridSpec) -> Self {
-        Self { spec }
-    }
-
     /// Gaps.
     #[must_use]
     pub fn gaps(mut self, column_gap: u16, row_gap: u16) -> Self {

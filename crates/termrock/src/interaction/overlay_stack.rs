@@ -824,25 +824,10 @@ pub enum OverlayOutcome<FocusId = ()> {
 }
 
 impl<FocusId> OverlayOutcome<FocusId> {
-    /// Layer was opened (not queued).
-    #[must_use]
-    pub const fn is_opened(&self) -> bool {
-        matches!(self, Self::Opened { .. })
-    }
-
     /// Layer was dismissed.
     #[must_use]
     pub const fn is_dismissed(&self) -> bool {
         matches!(self, Self::Dismissed { .. })
-    }
-
-    /// Opener focus if dismissed.
-    #[must_use]
-    pub fn restored_focus(&self) -> Option<&FocusId> {
-        match self {
-            Self::Dismissed { focus, .. } => focus.as_ref(),
-            _ => None,
-        }
     }
 }
 
@@ -960,16 +945,6 @@ impl<FocusId> OverlayStack<FocusId> {
     pub fn top_rect(&self) -> Option<Rect> {
         self.entries.last().map(|entry| entry.rect)
     }
-
-    /// Bottom-to-top resolved layer geometry for diagnostics and inspectors.
-    pub fn resolved_layers(
-        &self,
-    ) -> impl ExactSizeIterator<Item = (&OverlayId, OverlayKind, Rect)> {
-        self.entries
-            .iter()
-            .map(|entry| (&entry.id, entry.kind, entry.rect))
-    }
-
     /// Whether any overlay is open.
     #[must_use]
     pub fn is_empty(&self) -> bool {

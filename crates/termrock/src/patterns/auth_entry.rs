@@ -322,13 +322,6 @@ impl AuthEntryState {
     pub fn take_password_secret(&mut self) -> String {
         self.secrets.password.take_secret()
     }
-
-    /// Confirm secret (sign-up).
-    #[must_use]
-    pub fn confirm_secret(&self) -> &str {
-        self.secrets.confirm.secret()
-    }
-
     /// Terms accepted.
     #[must_use]
     pub fn terms_accepted(&self) -> bool {
@@ -346,29 +339,6 @@ impl AuthEntryState {
     pub fn host_error(&self) -> Option<&str> {
         self.host_error.as_deref()
     }
-
-    /// Set host auth failure message (no secrets).
-    pub fn set_host_error(&mut self, msg: impl Into<String>) {
-        self.host_error = Some(msg.into());
-    }
-
-    /// Clear host error.
-    pub fn clear_host_error(&mut self) {
-        self.host_error = None;
-    }
-
-    /// Require password confirm (sign-up).
-    pub fn set_require_confirm(&mut self, on: bool) {
-        self.require_confirm = on;
-        self.clamp_focus();
-    }
-
-    /// Require terms checkbox (sign-up).
-    pub fn set_require_terms(&mut self, on: bool) {
-        self.require_terms = on;
-        self.clamp_focus();
-    }
-
     /// Pending remote verify (blocks edits).
     pub fn set_pending(&mut self, on: bool) {
         self.pending = on;
@@ -376,13 +346,6 @@ impl AuthEntryState {
         self.secrets.confirm.set_pending(on);
         self.identity.set_loading(on);
     }
-
-    /// Shell focus gate.
-    pub fn set_shell_focused(&mut self, on: bool) {
-        self.shell_focused = on;
-        self.sync_field_focus();
-    }
-
     /// Input gate.
     pub fn set_accepts_input(&mut self, on: bool) {
         self.accepts_input = on;
@@ -425,14 +388,6 @@ impl AuthEntryState {
             v.push(AuthEntryField::Terms);
         }
         v
-    }
-
-    fn clamp_focus(&mut self) {
-        let order = self.field_order();
-        if !order.contains(&self.focus) {
-            self.focus = order.first().copied().unwrap_or(AuthEntryField::Identity);
-        }
-        self.sync_field_focus();
     }
 
     fn sync_field_focus(&mut self) {

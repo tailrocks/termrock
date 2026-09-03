@@ -36,7 +36,6 @@ use crate::{
     widgets::DataColumn,
     widgets::DataColumnWidth,
     widgets::LoadState,
-    widgets::SortSpec,
     widgets::VirtualWindow,
     widgets::{EmptyKind, EmptyState, SemanticStatus, StatusIndicator},
 };
@@ -752,27 +751,10 @@ impl ProcessTableState {
     pub fn checked(&self) -> &[ProcessKey] {
         &self.checked
     }
-
-    /// Whether multi-select is enabled.
-    #[must_use]
-    pub const fn multi_enabled(&self) -> bool {
-        self.multi
-    }
-
     /// Enable multi-select.
     pub fn enable_multi_select(&mut self) {
         self.multi = true;
     }
-
-    /// Active sort as [`SortSpec`].
-    #[must_use]
-    pub fn sort_spec(&self) -> SortSpec<&'static str> {
-        SortSpec {
-            column: self.sort_key.id(),
-            ascending: self.sort_asc,
-        }
-    }
-
     /// Reconcile selection after host refresh (drops dead keys; keeps stable matches).
     pub fn reconcile(&mut self, live: &[ProcessRow<'_>]) {
         let keys: Vec<ProcessKey> = live.iter().map(|r| r.key).collect();
@@ -1112,16 +1094,6 @@ impl ProcessTableState {
             _ => ProcessTableOutcome::Ignored,
         }
     }
-
-    /// Alias for [`Self::handle_key`] (nav-focused name).
-    pub fn handle_key_nav(
-        &mut self,
-        processes: &[ProcessRow<'_>],
-        key: KeyEvent,
-    ) -> ProcessTableOutcome {
-        self.handle_key(processes, key)
-    }
-
     /// Mouse: click row to select; wheel scroll.
     pub fn handle_mouse(
         &mut self,

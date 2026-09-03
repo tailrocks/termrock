@@ -315,23 +315,6 @@ impl WorkingState {
         }
         parts.join(". ")
     }
-
-    /// Compact one-line for collapsed chrome.
-    #[must_use]
-    pub fn compact_line(&self, ascii: bool, max_cols: usize) -> String {
-        let g = self.phase.glyph(ascii);
-        let el = self
-            .elapsed
-            .as_ref()
-            .map(|e| format!(" · {e}"))
-            .unwrap_or_default();
-        let mut s = format!("{g} {} · {}{el}", self.phase.label(), self.summary);
-        if display_cols(&s) > max_cols {
-            s = take_display_cols(&s, max_cols).into_owned();
-        }
-        s
-    }
-
     /// Project into [`ActivityItem`] for ActivityShelf collapse.
     #[must_use]
     pub fn to_activity_item(&self) -> ActivityItem {

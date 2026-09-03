@@ -613,18 +613,6 @@ impl AgentStatusHeaderState {
         self.presentation = p;
         self.auto_contract = false;
     }
-
-    /// Re-enable auto contract.
-    pub const fn set_auto_contract(&mut self, on: bool) {
-        self.auto_contract = on;
-    }
-
-    /// Custom actions.
-    pub fn set_actions(&mut self, actions: Vec<AgentStatusAction>) {
-        self.actions = actions;
-        self.action_cursor = self.action_cursor.min(self.actions.len().saturating_sub(1));
-    }
-
     fn current_action(&self) -> Option<AgentStatusAction> {
         self.actions.get(self.action_cursor).copied()
     }

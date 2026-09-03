@@ -254,16 +254,6 @@ impl ConnectionStatus {
                 | Self::Connecting
         )
     }
-
-    /// Whether connect is a sensible request.
-    #[must_use]
-    pub const fn can_connect(self) -> bool {
-        matches!(
-            self,
-            Self::Disconnected | Self::Offline | Self::Error | Self::AuthRequired
-        )
-    }
-
     /// Whether reconnect is a sensible request.
     #[must_use]
     pub const fn can_reconnect(self) -> bool {
@@ -499,13 +489,6 @@ impl ConnectionEntry {
         self.enabled = false;
         self
     }
-
-    /// Target + environment chrome line.
-    #[must_use]
-    pub fn identity_line(&self) -> String {
-        format!("{} · {}", self.target, self.environment)
-    }
-
     /// Semantic / scene-safe credential label (never raw secret).
     #[must_use]
     pub fn credential_scene_label(&self) -> String {

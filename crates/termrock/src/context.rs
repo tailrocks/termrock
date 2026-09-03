@@ -211,12 +211,6 @@ where
     pub fn semantics_mut(&mut self) -> &mut SemanticScene<Id, Action> {
         self.semantics
     }
-
-    /// Mutable diagnostics.
-    pub fn diagnostics_mut(&mut self) -> &mut UiDiagnostics {
-        self.diagnostics
-    }
-
     /// Record a diagnostic note.
     pub fn note(&mut self, msg: impl Into<String>) {
         self.diagnostics.note(msg);
@@ -364,21 +358,6 @@ where
         host.clock = FrameClock::from_start(Instant::now());
         host
     }
-
-    /// Attach keymap.
-    #[must_use]
-    pub fn with_keymap(mut self, keymap: Keymap<MapAction>) -> Self {
-        self.keymap = Some(keymap);
-        self
-    }
-
-    /// Attach capability boundary.
-    #[must_use]
-    pub fn with_boundary(mut self, boundary: CapabilityBoundary) -> Self {
-        self.boundary = Some(boundary);
-        self
-    }
-
     /// Begin a frame: clear scene elements + semantics, tick clock, return context.
     ///
     /// Layers and focus **persist** across frames (InteractionScene contract).

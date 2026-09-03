@@ -131,17 +131,6 @@ impl<Id> AppDashboardState<Id> {
     pub const fn pane(&self) -> AppDashboardPane {
         self.pane
     }
-
-    /// Show metrics strip.
-    pub fn set_show_metrics(&mut self, on: bool) {
-        self.show_metrics = on;
-    }
-
-    /// Sidebar dock width (cols).
-    pub fn set_sidebar_width(&mut self, w: u16) {
-        self.sidebar_width = w.max(4);
-    }
-
     /// Input gate.
     pub fn set_accepts_input(&mut self, on: bool) {
         self.accepts_input = on;

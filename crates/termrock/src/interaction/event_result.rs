@@ -191,19 +191,6 @@ impl<M, FocusId> EventResult<M, FocusId> {
             overlay: None,
         }
     }
-
-    /// Domain message that still bubbles (parent may also act). Rare.
-    #[must_use]
-    pub fn emit_bubble(message: M) -> Self {
-        Self {
-            propagation: Propagation::Bubble,
-            message: Some(message),
-            redraw: Redraw::Now,
-            focus: None,
-            overlay: None,
-        }
-    }
-
     /// Whether propagation is [`Propagation::Stop`] (input consumed).
     #[must_use]
     pub const fn consumed(&self) -> bool {
@@ -239,26 +226,12 @@ impl<M, FocusId> EventResult<M, FocusId> {
     pub const fn overlay(&self) -> Option<&OverlayRequest> {
         self.overlay.as_ref()
     }
-
-    /// Takes the domain message, leaving `None`.
-    pub fn take_message(&mut self) -> Option<M> {
-        self.message.take()
-    }
-
     /// Overrides redraw.
     #[must_use]
     pub const fn with_redraw(mut self, redraw: Redraw) -> Self {
         self.redraw = redraw;
         self
     }
-
-    /// Overrides propagation.
-    #[must_use]
-    pub const fn with_propagation(mut self, propagation: Propagation) -> Self {
-        self.propagation = propagation;
-        self
-    }
-
     /// Attaches a focus request (replaces prior).
     #[must_use]
     pub fn with_focus(mut self, focus: FocusRequest<FocusId>) -> Self {
@@ -372,29 +345,7 @@ pub fn compose_capture<M, FocusId>(
     }
 }
 
-impl<M, FocusId> EventResult<M, FocusId> {
-    /// Builds from consume flag + optional message (test/host adapters).
-    #[must_use]
-    pub fn from_parts(
-        consumed: bool,
-        message: Option<M>,
-        redraw: Redraw,
-        focus: Option<FocusRequest<FocusId>>,
-        overlay: Option<OverlayRequest>,
-    ) -> Self {
-        Self {
-            propagation: if consumed {
-                Propagation::Stop
-            } else {
-                Propagation::Bubble
-            },
-            message,
-            redraw,
-            focus,
-            overlay,
-        }
-    }
-}
+impl<M, FocusId> EventResult<M, FocusId> {}
 
 #[cfg(test)]
 mod tests {

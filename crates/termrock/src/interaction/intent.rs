@@ -144,22 +144,6 @@ impl UiIntent {
             Self::AppCommand(_) => "app_command",
         }
     }
-
-    /// Whether this intent is primarily chrome/global rather than leaf-widget.
-    #[must_use]
-    pub const fn is_global_chrome(self) -> bool {
-        matches!(
-            self,
-            Self::Help
-                | Self::Search
-                | Self::Fullscreen
-                | Self::OpenCommandPalette
-                | Self::JumpStart
-                | Self::AppCommand(_)
-                | Self::FocusNext
-                | Self::FocusPrevious
-        )
-    }
 }
 
 /// Maps a key event to a list-oriented intent using TermRock defaults.
