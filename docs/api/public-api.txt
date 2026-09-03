@@ -84053,7 +84053,6 @@ pub termrock::widgets::SourceCitationState::hovered: bool
 pub termrock::widgets::SourceCitationState::visited: bool
 impl termrock::widgets::SourceCitationState
 pub const fn termrock::widgets::SourceCitationState::new() -> Self
-pub const fn termrock::widgets::SourceCitationState::set_focused(&mut self, bool)
 impl core::clone::Clone for termrock::widgets::SourceCitationState
 pub fn termrock::widgets::SourceCitationState::clone(&self) -> termrock::widgets::SourceCitationState
 impl core::cmp::Eq for termrock::widgets::SourceCitationState
