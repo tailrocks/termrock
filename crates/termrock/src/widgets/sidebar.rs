@@ -684,11 +684,11 @@ impl<Id> NavigationListState<Id> {
         // Filter mode
         if self.filter_active {
             match key.code {
-                KeyCode::Esc => {
+                KeyCode::Esc if key.is_press() => {
                     self.filter_active = false;
                     return NavigationListOutcome::Changed;
                 }
-                KeyCode::Enter => {
+                KeyCode::Enter if key.is_press() => {
                     let _ = self.reconcile_projected(&projected);
                     self.filter_active = false;
                     return self.activate_focus_projected(&projected);
@@ -723,17 +723,19 @@ impl<Id> NavigationListState<Id> {
         self.ensure_initial_focus(&coll);
 
         // Start filter
-        if matches!(key.code, KeyCode::Char('/') | KeyCode::Char('f'))
-            && key.modifiers.contains(KeyModifiers::CONTROL)
-            || (key.code == KeyCode::Char('/') && key.modifiers.is_empty())
+        if key.is_press()
+            && (matches!(key.code, KeyCode::Char('/') | KeyCode::Char('f'))
+                && key.modifiers.contains(KeyModifiers::CONTROL)
+                || (key.code == KeyCode::Char('/') && key.modifiers.is_empty()))
         {
             self.filter_active = true;
             return NavigationListOutcome::Changed;
         }
 
         // Context menu (submenu-as-dropdown peer — host paints overlay)
-        if key.code == KeyCode::Char(' ') && key.modifiers.contains(KeyModifiers::SHIFT)
-            || matches!(key.code, KeyCode::Char('m') if key.modifiers.contains(KeyModifiers::CONTROL))
+        if key.is_press()
+            && (key.code == KeyCode::Char(' ') && key.modifiers.contains(KeyModifiers::SHIFT)
+                || matches!(key.code, KeyCode::Char('m') if key.modifiers.contains(KeyModifiers::CONTROL)))
         {
             if let Some(id) = self.collection.active().cloned() {
                 return NavigationListOutcome::ContextMenuRequested { id };
@@ -741,7 +743,10 @@ impl<Id> NavigationListState<Id> {
         }
 
         // Expand/collapse Left/Right
-        if matches!(key.code, KeyCode::Left | KeyCode::Right) && key.modifiers.is_empty() {
+        if key.is_press()
+            && matches!(key.code, KeyCode::Left | KeyCode::Right)
+            && key.modifiers.is_empty()
+        {
             if let Some(id) = self.collection.active().cloned() {
                 if let Some(item) = projected.iter().find(|i| i.id == id) {
                     if item.has_children
@@ -757,12 +762,12 @@ impl<Id> NavigationListState<Id> {
             }
         }
 
-        if key.code == KeyCode::Enter && key.modifiers.is_empty() {
+        if key.is_press() && key.code == KeyCode::Enter && key.modifiers.is_empty() {
             return self.activate_focus_projected(&projected);
         }
 
         // Space activates item without expand (if leaf)
-        if matches!(key.code, KeyCode::Char(' ')) && key.modifiers.is_empty() {
+        if key.is_press() && matches!(key.code, KeyCode::Char(' ')) && key.modifiers.is_empty() {
             return self.activate_focus_projected(&projected);
         }
 
@@ -1011,20 +1016,26 @@ impl<Id> SidebarState<Id> {
         }
 
         // Rail toggle
-        if key.code == KeyCode::Char('[') && key.modifiers.is_empty() {
+        if key.is_press() && key.code == KeyCode::Char('[') && key.modifiers.is_empty() {
             return self.toggle_rail();
         }
         // Palette hint
-        if key.code == KeyCode::Char('p') && key.modifiers.contains(KeyModifiers::CONTROL) {
+        if key.is_press()
+            && key.code == KeyCode::Char('p')
+            && key.modifiers.contains(KeyModifiers::CONTROL)
+        {
             self.presentation = SidebarPresentation::Palette;
             return SidebarOutcome::OpenPalette;
         }
         // Drawer request on very narrow (host may already show drawer)
-        if key.code == KeyCode::Char('b') && key.modifiers.contains(KeyModifiers::CONTROL) {
+        if key.is_press()
+            && key.code == KeyCode::Char('b')
+            && key.modifiers.contains(KeyModifiers::CONTROL)
+        {
             self.presentation = SidebarPresentation::Drawer;
             return SidebarOutcome::OpenDrawer;
         }
-        if key.code == KeyCode::Esc && key.modifiers.is_empty() {
+        if key.is_press() && key.code == KeyCode::Esc && key.modifiers.is_empty() {
             if self.nav.filter_active {
                 return self.nav.handle_key(key, items).into();
             }
@@ -1586,8 +1597,9 @@ pub fn example_sectioned_sidebar_nav() -> Vec<NavItem<&'static str>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::input::KeyEventKind;
     use crate::style::RolePalette;
-    use crate::widgets::tests::click;
+    use crate::widgets::tests::{click, key_with_kind};
 
     #[test]
     fn route_distinct_from_focus() {
@@ -1809,6 +1821,76 @@ mod tests {
             matches!(out, NavigationListOutcome::ContextMenuRequested { id: "a" }),
             "{out:?}"
         );
+    }
+
+    #[test]
+    fn repeated_navigation_lifecycle_actions_are_ignored() {
+        let items = [NavItem::new("a", "Alpha")];
+        let mut state = NavigationListState::new(Some("a"));
+        state.set_focused(true);
+        state.collection.set_active(Some("a"));
+
+        state.filter_active = true;
+        assert!(matches!(
+            state.handle_key(
+                key_with_kind(KeyCode::Esc, KeyModifiers::NONE, KeyEventKind::Repeat),
+                &items
+            ),
+            NavigationListOutcome::Ignored
+        ));
+        assert!(state.is_filter_active());
+
+        state.filter_active = false;
+        for (code, modifiers) in [
+            (KeyCode::Enter, KeyModifiers::NONE),
+            (KeyCode::Char(' '), KeyModifiers::NONE),
+            (KeyCode::Char('/'), KeyModifiers::NONE),
+            (KeyCode::Char('m'), KeyModifiers::CONTROL),
+        ] {
+            assert!(matches!(
+                state.handle_key(key_with_kind(code, modifiers, KeyEventKind::Repeat), &items),
+                NavigationListOutcome::Ignored
+            ));
+        }
+        assert_eq!(state.route(), Some(&"a"));
+        assert!(!state.is_filter_active());
+
+        let group = [
+            NavItem::group("group", "Group")
+                .has_children(true)
+                .expanded(false),
+            NavItem::new("child", "Child").depth(1),
+        ];
+        let mut group_state = NavigationListState::new(Some("group"));
+        group_state.set_focused(true);
+        group_state.collection.set_active(Some("group"));
+        assert!(matches!(
+            group_state.handle_key(
+                key_with_kind(KeyCode::Right, KeyModifiers::NONE, KeyEventKind::Repeat),
+                &group
+            ),
+            NavigationListOutcome::Ignored
+        ));
+    }
+
+    #[test]
+    fn repeated_sidebar_actions_are_ignored() {
+        let items = [NavItem::new("a", "Alpha")];
+        for (code, modifiers) in [
+            (KeyCode::Char('['), KeyModifiers::NONE),
+            (KeyCode::Char('p'), KeyModifiers::CONTROL),
+            (KeyCode::Char('b'), KeyModifiers::CONTROL),
+            (KeyCode::Esc, KeyModifiers::NONE),
+        ] {
+            let mut state = SidebarState::new(Some("a"));
+            state.set_focused(true);
+            let presentation = state.presentation();
+            assert!(matches!(
+                state.handle_key(key_with_kind(code, modifiers, KeyEventKind::Repeat), &items),
+                SidebarOutcome::Ignored
+            ));
+            assert_eq!(state.presentation(), presentation);
+        }
     }
 
     #[test]
