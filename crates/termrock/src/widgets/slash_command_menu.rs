@@ -808,38 +808,10 @@ impl SlashCommandMenuState {
         self.query = None;
         self.menu.set_open(false);
     }
-
-    /// Host forces open with an explicit query (e.g. after argument phase host edit).
-    pub fn open_with_query(&mut self, query: SlashQuery) {
-        self.query = Some(query);
-        self.open = true;
-        self.menu.set_open(true);
-    }
-
     /// Begin async plugin fetch.
     pub fn begin_async(&mut self) -> u64 {
         self.menu.begin_async()
     }
-
-    /// Apply async command list (generation gated).
-    pub fn apply_async_commands(
-        &mut self,
-        generation: u64,
-        commands: &[SlashCommand],
-    ) -> SlashCommandMenuOutcome {
-        let candidates = slash_commands_to_candidates(commands);
-        // CompletionMenu apply_results needs candidates with matching gen
-        match self.menu.apply_results(generation, &candidates) {
-            CompletionMenuOutcome::GenerationStale { generation } => {
-                SlashCommandMenuOutcome::GenerationStale { generation }
-            }
-            CompletionMenuOutcome::StatusChanged { status } => {
-                SlashCommandMenuOutcome::StatusChanged { status }
-            }
-            other => map_menu_outcome(other),
-        }
-    }
-
     /// Set status (loading / empty / error chrome).
     pub fn set_status(&mut self, status: CompletionStatus) {
         self.menu.set_status(status);
@@ -1056,37 +1028,6 @@ impl SlashCommandMenuState {
         opener: Option<FocusId>,
     ) -> OverlayOutcome<FocusId> {
         open_slash_command_overlay(stack, bounds, anchor, opener)
-    }
-}
-
-fn map_menu_outcome(out: CompletionMenuOutcome<String>) -> SlashCommandMenuOutcome {
-    match out {
-        CompletionMenuOutcome::Ignored => SlashCommandMenuOutcome::Ignored,
-        CompletionMenuOutcome::SelectionChanged => {
-            SlashCommandMenuOutcome::SelectionChanged { id: String::new() }
-        }
-        CompletionMenuOutcome::Committed(id) => SlashCommandMenuOutcome::CommandCommitted {
-            id,
-            insertion: String::new(),
-            needs_arguments: false,
-        },
-        CompletionMenuOutcome::CommitWithChar { id, .. } => {
-            SlashCommandMenuOutcome::CommandCommitted {
-                id,
-                insertion: String::new(),
-                needs_arguments: false,
-            }
-        }
-        CompletionMenuOutcome::Dismissed => SlashCommandMenuOutcome::Dismissed,
-        CompletionMenuOutcome::StatusChanged { status } => {
-            SlashCommandMenuOutcome::StatusChanged { status }
-        }
-        CompletionMenuOutcome::PresentationChanged { presentation } => {
-            SlashCommandMenuOutcome::PresentationChanged { presentation }
-        }
-        CompletionMenuOutcome::GenerationStale { generation } => {
-            SlashCommandMenuOutcome::GenerationStale { generation }
-        }
     }
 }
 

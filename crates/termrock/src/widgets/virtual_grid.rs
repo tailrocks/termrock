@@ -300,20 +300,6 @@ impl<RowId, ColId> VirtualGridState<RowId, ColId> {
     pub fn column_widths(&self) -> &[u16] {
         &self.column_widths
     }
-
-    /// Replaces column widths (caller-owned persistence).
-    pub fn set_column_widths(&mut self, widths: Vec<u16>) {
-        self.column_widths = widths;
-        self.column_widths_policy.clear();
-        self.column_widths_available = None;
-        self.column_widths_explicit = true;
-    }
-
-    /// Clears range selection anchor.
-    pub fn clear_anchor(&mut self) {
-        self.anchor = None;
-    }
-
     fn clamp_cursor(&mut self) {
         match self.total_rows {
             Some(0) => self.cursor_row = 0,

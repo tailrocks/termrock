@@ -255,13 +255,6 @@ impl<'a> EmptyState<'a> {
         self.context = Some(context);
         self
     }
-
-    /// Resolved kind.
-    #[must_use]
-    pub const fn empty_kind(self) -> EmptyKind {
-        self.kind
-    }
-
     /// Rows needed at `width`: every configured slot, as painted.
     #[must_use]
     pub fn measure_height(&self, width: u16) -> u16 {

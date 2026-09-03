@@ -32,17 +32,6 @@ pub enum ImageProtocol {
 }
 
 impl ImageProtocol {
-    /// Maps a host presentation plan to the protocol enum.
-    #[must_use]
-    pub const fn from_presentation(presentation: PreviewPresentation) -> Self {
-        match presentation {
-            PreviewPresentation::CellFallback => Self::Placeholder,
-            PreviewPresentation::Kitty => Self::Kitty,
-            PreviewPresentation::ITerm2 => Self::ITerm2,
-            PreviewPresentation::Sixel => Self::Sixel,
-        }
-    }
-
     /// Maps to a host presentation plan.
     #[must_use]
     pub const fn presentation(self) -> PreviewPresentation {

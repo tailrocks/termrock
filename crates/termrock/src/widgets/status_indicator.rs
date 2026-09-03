@@ -145,12 +145,6 @@ impl StatusIndicatorState {
             accessible_label: None,
         }
     }
-
-    /// Set elapsed seconds.
-    pub fn set_elapsed_secs(&mut self, secs: Option<u64>) {
-        self.elapsed_secs = secs;
-    }
-
     /// Elapsed.
     #[must_use]
     pub const fn elapsed_secs(&self) -> Option<u64> {

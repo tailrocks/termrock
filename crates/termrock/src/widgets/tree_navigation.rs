@@ -365,22 +365,6 @@ impl<Id> TreeNavigationState<Id> {
     pub fn set_enabled(&mut self, on: bool) {
         self.enabled = on;
     }
-
-    /// Set route; recomputes ancestors from projection when provided later.
-    pub fn set_route(&mut self, id: Option<Id>) {
-        self.route = id;
-        self.route_ancestors.clear();
-    }
-
-    /// Set route and recompute ancestors from full projection.
-    pub fn set_route_in(&mut self, id: Option<Id>, nodes: &[TreeNavNode<Id>])
-    where
-        Id: Clone + PartialEq,
-    {
-        self.route = id;
-        self.recompute_ancestors(nodes);
-    }
-
     /// Align focus to route if present in projection.
     pub fn focus_route(&mut self, nodes: &[TreeNavNode<Id>])
     where

@@ -217,11 +217,6 @@ impl<Id: Clone + PartialEq> PickerState<Id> {
     pub const fn list(&self) -> &ListState<Id> {
         &self.list
     }
-
-    /// Returns mutable list state for focus, scrolling, and pointer integration.
-    pub const fn list_mut(&mut self) -> &mut ListState<Id> {
-        &mut self.list
-    }
 }
 
 impl<Id: Clone + PartialEq> Default for PickerState<Id> {
@@ -413,19 +408,6 @@ impl<Id: Clone + PartialEq> PickerState<Id> {
             other => crate::interaction::EventResult::emit(other),
         }
     }
-
-    /// Intent path with [`crate::interaction::EventResult`] envelope.
-    pub fn handle_intent_result(
-        &mut self,
-        visible: &[ListRow<'_, Id>],
-        intent: crate::interaction::UiIntent,
-    ) -> crate::interaction::EventResult<PickerOutcome<Id>> {
-        match self.handle_intent(visible, intent) {
-            PickerOutcome::Ignored => crate::interaction::EventResult::ignored(),
-            other => crate::interaction::EventResult::emit(other),
-        }
-    }
-
     /// Updates list hover from geometry painted by the latest picker render.
     pub fn hover(&mut self, position: Position) -> Option<&Id> {
         if !self.accepts_input {

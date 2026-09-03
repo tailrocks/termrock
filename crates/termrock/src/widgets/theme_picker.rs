@@ -87,12 +87,6 @@ impl ThemePickerState {
     pub const fn confirmed(&self) -> Option<&'static str> {
         self.confirmed
     }
-
-    /// Clears the confirmation latch.
-    pub fn clear_confirmed(&mut self) {
-        self.confirmed = None;
-    }
-
     /// Focus-visible interaction ownership.
     pub fn set_focused(&mut self, on: bool) {
         self.focused = on && self.enabled;
@@ -161,16 +155,6 @@ impl ThemePickerState {
     ) -> EventResult<ThemePickerOutcome> {
         Self::outcome_to_result(self.handle_key(key, preset_count))
     }
-
-    /// Intent path with [`EventResult`]. Cancel attaches dismiss-top overlay request.
-    pub fn handle_intent_result(
-        &mut self,
-        intent: UiIntent,
-        preset_count: usize,
-    ) -> EventResult<ThemePickerOutcome> {
-        Self::outcome_to_result(self.handle_intent(intent, preset_count))
-    }
-
     /// Pointer activation over exact row geometry published by the last render.
     pub fn handle_mouse(&mut self, event: MouseEvent, preset_count: usize) -> ThemePickerOutcome {
         if !self.enabled

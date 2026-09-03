@@ -636,13 +636,6 @@ impl DiffViewState {
     pub fn is_hunk_folded(&self, id: &str) -> bool {
         self.folded_hunks.contains(id)
     }
-
-    /// Whether a file is folded.
-    #[must_use]
-    pub fn is_file_folded(&self, id: &str) -> bool {
-        self.folded_files.contains(id)
-    }
-
     /// Folded hunk set.
     #[must_use]
     pub fn folded_hunks(&self) -> &BTreeSet<String> {

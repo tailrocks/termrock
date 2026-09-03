@@ -469,15 +469,6 @@ impl DrawerState {
         s.max_depth = 24;
         s
     }
-
-    /// Non-modal factory.
-    #[must_use]
-    pub const fn non_modal() -> Self {
-        let mut s = Self::new();
-        s.modality = DrawerModality::NonModal;
-        s
-    }
-
     /// Whether open.
     #[must_use]
     pub const fn is_open(&self) -> bool {
@@ -503,29 +494,11 @@ impl DrawerState {
     pub const fn edge(&self) -> DrawerEdge {
         self.edge
     }
-
-    /// Set edge.
-    pub fn set_edge(&mut self, edge: DrawerEdge) {
-        self.edge = edge;
-        if edge.is_horizontal() && self.depth < 12 {
-            self.depth = DRAWER_DEFAULT_WIDTH;
-        }
-        if !edge.is_horizontal() && self.depth > 40 {
-            self.depth = DRAWER_DEFAULT_HEIGHT;
-        }
-    }
-
     /// Modality.
     #[must_use]
     pub const fn modality(&self) -> DrawerModality {
         self.modality
     }
-
-    /// Set modality.
-    pub fn set_modality(&mut self, m: DrawerModality) {
-        self.modality = m;
-    }
-
     /// Presentation.
     #[must_use]
     pub const fn presentation(&self) -> DrawerPresentation {
@@ -550,14 +523,6 @@ impl DrawerState {
     pub fn set_depth(&mut self, depth: u16) {
         self.depth = depth.clamp(self.min_depth, self.max_depth);
     }
-
-    /// Resize limits.
-    pub fn set_depth_limits(&mut self, min: u16, max: u16) {
-        self.min_depth = min.max(1);
-        self.max_depth = max.max(self.min_depth);
-        self.depth = self.depth.clamp(self.min_depth, self.max_depth);
-    }
-
     /// Header / footer rows.
     pub fn set_header_rows(&mut self, rows: u16) {
         self.header_rows = rows;
@@ -600,15 +565,6 @@ impl DrawerState {
     pub fn set_enabled(&mut self, on: bool) {
         self.enabled = on;
     }
-
-    /// Compact handle-only.
-    pub fn set_handle_only(&mut self, on: bool) {
-        self.handle_only = on;
-        if on {
-            self.presentation = DrawerPresentation::Compact;
-        }
-    }
-
     /// Overlay size for current edge/depth.
     #[must_use]
     pub fn overlay_size(&self, bounds: Rect) -> OverlaySize {

@@ -820,12 +820,6 @@ impl<Id> AlertState<Id> {
     pub const fn details_open(&self) -> bool {
         self.details_open
     }
-
-    /// Toggle details.
-    pub fn set_details_open(&mut self, on: bool) {
-        self.details_open = on;
-    }
-
     /// Slots.
     #[must_use]
     pub const fn slots(&self) -> CalloutSlots {

@@ -20,7 +20,6 @@ use crate::{
     text::take_display_cols,
     widgets::{
         breadcrumbs::BreadcrumbItem,
-        file_picker::FileEntryKind,
         quick_open::{QuickOpenItem, QuickOpenPreview},
         tree::{Tree, TreeNode, TreeNodeStatus, TreeOutcome, TreeState},
     },
@@ -69,19 +68,6 @@ impl FileTreeKind {
     pub const fn is_symlink(self) -> bool {
         matches!(self, Self::SymlinkFile | Self::SymlinkDir)
     }
-
-    /// Map from file-picker kind.
-    #[must_use]
-    pub const fn from_entry_kind(kind: FileEntryKind) -> Self {
-        match kind {
-            FileEntryKind::File => Self::File,
-            FileEntryKind::Directory => Self::Directory,
-            FileEntryKind::SymlinkFile => Self::SymlinkFile,
-            FileEntryKind::SymlinkDir => Self::SymlinkDir,
-            FileEntryKind::Other => Self::Other,
-        }
-    }
-
     /// Leading glyph.
     #[must_use]
     pub const fn glyph(self, ascii: bool) -> &'static str {

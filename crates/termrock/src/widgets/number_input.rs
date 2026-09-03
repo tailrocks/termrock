@@ -106,28 +106,6 @@ impl NumberConstraints {
             step: sanitize_step(bounds.step),
         }
     }
-
-    /// Builder: min.
-    #[must_use]
-    pub const fn with_min(mut self, min: f64) -> Self {
-        self.min = Some(min);
-        self
-    }
-
-    /// Builder: max.
-    #[must_use]
-    pub const fn with_max(mut self, max: f64) -> Self {
-        self.max = Some(max);
-        self
-    }
-
-    /// Builder: step.
-    #[must_use]
-    pub fn with_step(mut self, step: f64) -> Self {
-        self.step = sanitize_step(step);
-        self
-    }
-
     /// Clamp + optional snap to step grid when both bounds present.
     #[must_use]
     pub fn clamp_snap(self, value: f64) -> f64 {

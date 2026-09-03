@@ -80,13 +80,6 @@ impl ToggleValue {
     pub const fn is_pressed(self) -> bool {
         matches!(self, Self::Pressed)
     }
-
-    /// Whether mixed.
-    #[must_use]
-    pub const fn is_indeterminate(self) -> bool {
-        matches!(self, Self::Indeterminate)
-    }
-
     /// Next value after activate (indeterminate/off → on, on → off).
     #[must_use]
     pub const fn activate(self) -> Self {

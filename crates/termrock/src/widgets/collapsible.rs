@@ -97,13 +97,7 @@ pub struct CollapsibleParts {
     pub content_policy: CollapsedContentPolicy,
 }
 
-impl CollapsibleParts {
-    /// True when content has positive area.
-    #[must_use]
-    pub const fn has_content(self) -> bool {
-        self.content.width > 0 && self.content.height > 0
-    }
-}
+impl CollapsibleParts {}
 
 /// Typed outcomes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -135,9 +129,6 @@ impl CollapsibleOutcome {
         }
     }
 }
-
-/// How long a section takes to reveal its body.
-const REVEAL_MS: u64 = 120;
 
 /// Interaction + uncontrolled open state.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
@@ -452,35 +443,6 @@ impl<'a> Collapsible<'a> {
     pub fn resolved_open(&self, state: &CollapsibleState) -> bool {
         self.open.unwrap_or(state.open)
     }
-
-    /// How many body rows to reveal this frame.
-    ///
-    /// A section that snaps from zero rows to twelve moves everything below
-    /// it in one frame; revealing over ~120 ms keeps the reader's place. A
-    /// host that never calls [`CollapsibleState::mark_toggled_at`] gets the
-    /// settled count, which is the honest static answer (plans/014 Step 3b).
-    #[must_use]
-    pub fn reveal_rows(
-        &self,
-        state: &CollapsibleState,
-        content_rows: u16,
-        elapsed_ms: u64,
-        motion: crate::style::MotionPolicy,
-    ) -> u16 {
-        if !self.resolved_open(state) {
-            return 0;
-        }
-        if !motion.allows_transitions() {
-            return content_rows;
-        }
-        let settled = state.reveal_fraction(elapsed_ms, REVEAL_MS);
-        if settled >= 1.0 {
-            return content_rows;
-        }
-        let rows = f32::from(content_rows) * settled;
-        (rows.round() as u16).clamp(1, content_rows.max(1))
-    }
-
     fn left_pad(&self) -> u16 {
         self.indent
             .saturating_add(u16::from(self.depth).saturating_mul(2))

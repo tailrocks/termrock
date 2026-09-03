@@ -718,17 +718,6 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
     pub const fn is_focused(&self) -> bool {
         self.focused
     }
-
-    /// Show preview pane.
-    pub fn set_show_preview(&mut self, on: bool) {
-        self.show_preview = on;
-    }
-
-    /// Window limit for requests.
-    pub fn set_limit(&mut self, n: usize) {
-        self.limit = n.max(1);
-    }
-
     /// Loading.
     pub fn set_loading(&mut self, loading: bool) -> QuickOpenOutcome<Id> {
         if self.loading == loading {
@@ -922,17 +911,6 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
         self.scroll = self.scroll.min(visible.len().saturating_sub(1));
         true
     }
-
-    /// Append stream chunk (same generation); host concatenates then re-applies
-    /// full window, or uses this to extend indices.
-    pub fn note_stream_progress(&mut self, generation: u64, complete: bool) -> bool {
-        if generation != self.generation {
-            return false;
-        }
-        self.stream_complete = complete;
-        true
-    }
-
     /// Switch provider by index (preserves per-provider query/cursor).
     pub fn set_provider(
         &mut self,
@@ -1868,13 +1846,6 @@ impl<'a, Id> QuickOpen<'a, Id> {
             }
         }
     }
-
-    /// Access last painted result hits (for JumpMode).
-    #[must_use]
-    pub fn hits_from_state(state: &QuickOpenState<Id>) -> &[(usize, Rect)] {
-        &state.hits
-    }
-
     /// Semantic registration.
     pub fn register_semantic<Sid, Action>(
         &self,

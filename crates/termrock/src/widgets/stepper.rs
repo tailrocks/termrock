@@ -91,12 +91,6 @@ impl StepStatus {
             Self::Optional | Self::Future => " ",
         }
     }
-
-    /// Whether the step may receive activation under default linear policy.
-    #[must_use]
-    pub const fn is_terminal_ok(self) -> bool {
-        matches!(self, Self::Complete | Self::Skipped)
-    }
 }
 
 /// One step definition (host-projected; values stay outside).

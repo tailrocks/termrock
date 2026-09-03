@@ -415,22 +415,6 @@ impl<Id> HistoryEntry<Id> {
         self.recency = r;
         self
     }
-
-    /// Apply redaction to display when sensitive.
-    #[must_use]
-    pub fn with_redaction(mut self, policy: HistoryRedaction) -> Self {
-        if self.sensitive
-            && !matches!(
-                policy,
-                HistoryRedaction::HostProvided | HistoryRedaction::None
-            )
-        {
-            self.display = redact_history_text(&self.value, policy);
-        } else if matches!(policy, HistoryRedaction::HostProvided) {
-            // leave display
-        }
-        self
-    }
 }
 
 /// One scored filter match: the borrowed entry plus the highlight ranges
@@ -665,12 +649,6 @@ impl<Id: Clone + PartialEq> HistoryPickerState<Id> {
     pub const fn redaction(&self) -> HistoryRedaction {
         self.redaction
     }
-
-    /// Preview pane.
-    pub fn set_show_preview(&mut self, on: bool) {
-        self.show_preview = on;
-    }
-
     /// Presentation override.
     pub fn set_presentation_override(&mut self, p: Option<HistoryPickerPresentation>) {
         self.presentation_override = p;

@@ -310,14 +310,6 @@ impl<Id> SelectState<Id> {
         self.recipe = recipe;
         self
     }
-
-    /// Preferred list rows.
-    #[must_use]
-    pub fn with_list_rows(mut self, rows: u16) -> Self {
-        self.list_rows = rows.max(3);
-        self
-    }
-
     /// Committed value.
     #[must_use]
     pub const fn value(&self) -> Option<&Id> {

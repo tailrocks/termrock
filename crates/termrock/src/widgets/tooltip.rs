@@ -365,13 +365,6 @@ impl TooltipState {
     pub const fn is_disabled(&self) -> bool {
         self.disabled
     }
-
-    /// When true (default), showing content with `essential_elsewhere == false`
-    /// yields [`TooltipOutcome::EssentialRequiresNonHover`] and stays hidden.
-    pub fn set_enforce_essential_elsewhere(&mut self, on: bool) {
-        self.enforce_essential_elsewhere = on;
-    }
-
     /// Pointer is over the anchor region.
     pub fn set_pointer_over(&mut self, over: bool) {
         self.pointer_over = over;
@@ -497,29 +490,6 @@ impl TooltipState {
         }
         self.visibility_outcome()
     }
-
-    /// Convenience: update triggers then advance.
-    pub fn advance_with_triggers(
-        &mut self,
-        tick: FrameTick,
-        pointer_over: bool,
-        focus_within: bool,
-        motion: MotionPolicy,
-    ) -> TooltipOutcome {
-        self.pointer_over = pointer_over;
-        self.focus_within = focus_within;
-        if !self.armed() {
-            let was = self.was_visible || self.is_visible();
-            self.force_hide();
-            return if was {
-                TooltipOutcome::Hidden
-            } else {
-                TooltipOutcome::Ignored
-            };
-        }
-        self.advance(tick, motion)
-    }
-
     fn visibility_outcome(&mut self) -> TooltipOutcome {
         let vis = self.is_visible();
         if vis && !self.was_visible {
@@ -609,13 +579,6 @@ impl<'a> Tooltip<'a> {
         self.max_width = w;
         self
     }
-
-    /// Content borrow.
-    #[must_use]
-    pub const fn body_content(&self) -> TooltipContent<'a> {
-        self.content
-    }
-
     /// Overlay size for current content.
     #[must_use]
     pub fn overlay_size(&self) -> OverlaySize {

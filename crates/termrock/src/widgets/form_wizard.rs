@@ -352,14 +352,6 @@ impl FormWizardState {
         self.allow_skip = on;
         self
     }
-
-    /// Linear navigation (no jump past incomplete).
-    #[must_use]
-    pub const fn with_linear(mut self, on: bool) -> Self {
-        self.linear = on;
-        self
-    }
-
     // ── accessors ───────────────────────────────────────────────────────────
 
     /// Steps.
@@ -469,12 +461,6 @@ impl FormWizardState {
         g.resize(self.steps.len(), WizardGate::Valid);
         self.gates = g;
     }
-
-    /// Gate message (shown when blocked).
-    pub fn set_gate_message(&mut self, msg: Option<String>) {
-        self.gate_message = msg;
-    }
-
     /// Field focus hint for next FocusFieldRequested.
     pub fn set_field_hint(&mut self, hint: Option<String>) {
         self.field_hint = hint;

@@ -246,12 +246,6 @@ impl<Id> VirtualListState<Id> {
     pub const fn page_status(&self) -> VirtualPageStatus {
         self.page_status
     }
-
-    /// Set async page status.
-    pub fn set_page_status(&mut self, status: VirtualPageStatus) {
-        self.page_status = status;
-    }
-
     /// Filter chrome.
     pub fn set_filter_query(&mut self, query: Option<String>) {
         self.filter_query = query.filter(|q| !q.is_empty());

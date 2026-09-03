@@ -255,13 +255,6 @@ impl<'a> TextSpan<'a> {
     pub fn content(&self) -> &str {
         self.content.as_ref()
     }
-
-    /// Role.
-    #[must_use]
-    pub const fn role_of(&self) -> Role {
-        self.role
-    }
-
     /// Annotation borrow.
     #[must_use]
     pub fn annotation_of(&self) -> Option<&str> {
@@ -367,17 +360,6 @@ impl<'a> Text<'a> {
             ellipsis: Cow::Borrowed("…"),
         }
     }
-
-    /// Replace spans.
-    #[must_use]
-    pub fn with_spans<I>(mut self, spans: I) -> Self
-    where
-        I: IntoIterator<Item = TextSpan<'a>>,
-    {
-        self.spans = spans.into_iter().collect();
-        self
-    }
-
     /// Role for the first span (convenience for single-span text).
     #[must_use]
     pub fn role(mut self, role: Role) -> Self {
@@ -489,13 +471,6 @@ impl<'a> Text<'a> {
     pub const fn policy(&self) -> SelectablePolicy {
         self.selectable
     }
-
-    /// Overflow.
-    #[must_use]
-    pub const fn overflow_mode(&self) -> TextOverflow {
-        self.overflow
-    }
-
     /// Spans borrow.
     #[must_use]
     pub fn spans_ref(&self) -> &[TextSpan<'a>] {

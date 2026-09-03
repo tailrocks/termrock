@@ -40,7 +40,7 @@ use crate::{
 use super::{
     COMPLETION_OVERLAY_ID, CompletionCandidate, CompletionMenu, CompletionMenuOutcome,
     CompletionMenuSize, CompletionMenuState, TextInput, TextInputOutcome, TextInputState,
-    Validation, dismiss_completion_overlay, open_completion_overlay, place_completion_menu,
+    Validation, dismiss_completion_overlay, open_completion_overlay,
 };
 
 /// Default recent-values capacity.
@@ -264,17 +264,6 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
         self.exact_required = on;
         self
     }
-
-    /// Recent capacity.
-    #[must_use]
-    pub fn with_recent_limit(mut self, limit: usize) -> Self {
-        self.recent_limit = limit.max(1);
-        while self.recent.len() > self.recent_limit {
-            self.recent.pop_back();
-        }
-        self
-    }
-
     /// Seed draft text.
     #[must_use]
     pub fn with_draft(mut self, text: impl Into<String>) -> Self {
@@ -347,13 +336,6 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
     pub const fn mode(&self) -> ComboMode {
         self.mode
     }
-
-    /// Creatable.
-    #[must_use]
-    pub const fn is_creatable(&self) -> bool {
-        self.creatable
-    }
-
     /// Focused.
     #[must_use]
     pub const fn is_focused(&self) -> bool {
@@ -377,12 +359,6 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
     pub const fn menu(&self) -> &CompletionMenuState<Id> {
         &self.menu
     }
-
-    /// Mutable menu (advanced paint).
-    pub fn menu_mut(&mut self) -> &mut CompletionMenuState<Id> {
-        &mut self.menu
-    }
-
     /// Recent values (newest first).
     #[must_use]
     pub fn recent(&self) -> impl Iterator<Item = (&Id, &str)> {
@@ -424,15 +400,6 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
         self.value = id;
         self.value_label = label;
     }
-
-    /// Host error message for status Error.
-    pub fn set_error_message(&mut self, msg: Option<String>) {
-        self.error_message = msg;
-        if self.error_message.is_some() {
-            self.status = SuggestionStatus::Error;
-        }
-    }
-
     fn bump_generation(&mut self) -> u64 {
         self.generation = self.generation.saturating_add(1);
         self.status = SuggestionStatus::Loading;
@@ -487,18 +454,6 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
         }
         true
     }
-
-    /// Mark loading for current generation (host starts fetch).
-    pub fn mark_loading(&mut self) {
-        self.status = SuggestionStatus::Loading;
-    }
-
-    /// Mark error for current generation.
-    pub fn mark_error(&mut self, message: impl Into<String>) {
-        self.status = SuggestionStatus::Error;
-        self.error_message = Some(message.into());
-    }
-
     fn push_recent(&mut self, id: Id, label: String) {
         self.recent.retain(|(i, _)| i != &id);
         self.recent.push_front((id, label));
@@ -914,12 +869,6 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
         stack: &mut OverlayStack<FocusId>,
     ) -> crate::interaction::OverlayOutcome<FocusId> {
         dismiss_completion_overlay(stack)
-    }
-
-    /// Place menu rect for paint.
-    #[must_use]
-    pub fn place_menu(&self, bounds: Rect, preferred: CompletionMenuSize) -> Rect {
-        place_completion_menu(bounds, self.field, preferred)
     }
 }
 

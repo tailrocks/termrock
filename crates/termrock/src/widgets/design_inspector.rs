@@ -50,21 +50,7 @@ pub struct DesignInspectorFrame<'a> {
     pub focus_graph: &'a [&'a str],
 }
 
-impl DesignInspectorFrame<'_> {
-    /// Reads the chrome facts off the system that is actually painting.
-    ///
-    /// The inspector used to hardcode `gutter`, `compact` and `Truecolor`, so
-    /// it reported the same three answers whatever the host had configured —
-    /// an inspector that cannot be trusted is worse than none (plans/011
-    /// Step 4).
-    #[must_use]
-    pub fn from_system(system: &DesignSystem) -> Self {
-        Self {
-            capability: system.capability,
-            ..Self::default()
-        }
-    }
-}
+impl DesignInspectorFrame<'_> {}
 
 impl Default for DesignInspectorFrame<'_> {
     fn default() -> Self {

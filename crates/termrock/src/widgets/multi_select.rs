@@ -203,14 +203,6 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
         self.max_summary_chips = n.max(1);
         self
     }
-
-    /// Preferred list rows.
-    #[must_use]
-    pub fn with_list_rows(mut self, rows: u16) -> Self {
-        self.list_rows = rows.max(3);
-        self
-    }
-
     /// Checked ids in check order.
     #[must_use]
     pub fn selected(&self) -> &[Id] {

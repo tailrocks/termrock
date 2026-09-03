@@ -267,17 +267,6 @@ impl SearchInputState {
         self.debounce = debounce;
         self
     }
-
-    /// History capacity.
-    #[must_use]
-    pub fn with_history_limit(mut self, limit: usize) -> Self {
-        self.history_limit = limit.max(1);
-        while self.history.len() > self.history_limit {
-            self.history.pop_back();
-        }
-        self
-    }
-
     /// Current query text.
     #[must_use]
     pub fn query(&self) -> &str {
@@ -294,13 +283,6 @@ impl SearchInputState {
     pub fn syntax(&self) -> SearchSyntax {
         SearchSyntax::detect(self.query.value())
     }
-
-    /// Payload after syntax sigil.
-    #[must_use]
-    pub fn syntax_payload(&self) -> &str {
-        self.syntax().payload(self.query.value())
-    }
-
     /// History entries (newest first).
     #[must_use]
     pub fn history(&self) -> impl Iterator<Item = &str> {
@@ -386,12 +368,6 @@ impl SearchInputState {
             self.history.pop_back();
         }
     }
-
-    /// Push current query into history.
-    pub fn commit_to_history(&mut self) {
-        self.push_history(self.query.value().to_owned());
-    }
-
     fn mark_edited(&mut self, now: Option<Instant>) {
         self.debounce_pending = true;
         self.last_edit_at = now.or_else(|| Some(Instant::now()));

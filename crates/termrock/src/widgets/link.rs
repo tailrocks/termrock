@@ -199,12 +199,6 @@ impl LinkState {
     pub const fn set_hovered(&mut self, on: bool) {
         self.hovered = on;
     }
-
-    /// Visited.
-    pub const fn set_visited(&mut self, on: bool) {
-        self.visited = on;
-    }
-
     /// Disabled.
     pub const fn set_disabled(&mut self, on: bool) {
         self.disabled = on;
@@ -289,14 +283,6 @@ impl<'a> Link<'a> {
         self.hyperlinks = on;
         self
     }
-
-    /// External risk cue (↗ / `^`).
-    #[must_use]
-    pub const fn external_cue(mut self, on: bool) -> Self {
-        self.show_external_cue = on;
-        self
-    }
-
     /// OSC hyperlink id.
     #[must_use]
     pub const fn osc_id(mut self, id: &'a str) -> Self {

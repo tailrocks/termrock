@@ -299,13 +299,6 @@ impl<'a, Id> Label<'a, Id> {
     pub const fn tone_of(&self) -> LabelTone {
         self.tone
     }
-
-    /// Mark.
-    #[must_use]
-    pub const fn mark_of(&self) -> LabelMark {
-        self.mark
-    }
-
     /// Layout mode.
     #[must_use]
     pub const fn layout_of(&self) -> CaptionLayout {
@@ -707,19 +700,6 @@ impl<'a, Id: Clone> FieldCaption<'a, Id> {
             system,
         }
     }
-
-    /// From existing label.
-    #[must_use]
-    pub fn from_label(label: Label<'a, Id>, system: &'a DesignSystem) -> Self {
-        let layout = label.layout_of();
-        Self {
-            label,
-            description: None,
-            layout,
-            system,
-        }
-    }
-
     /// Associate both with control id.
     #[must_use]
     pub fn for_id(mut self, id: Id) -> Self {

@@ -413,19 +413,6 @@ impl AgentModeKind {
     pub const fn is_warning(self) -> bool {
         matches!(self, Self::FullAuto)
     }
-
-    /// Parse common short labels.
-    #[must_use]
-    pub fn from_short(s: &str) -> Option<Self> {
-        match s.to_ascii_uppercase().as_str() {
-            "ASK" => Some(Self::Ask),
-            "PLAN" => Some(Self::Plan),
-            "EDIT" => Some(Self::Edit),
-            "AUTO" => Some(Self::Auto),
-            "FULL" | "FULLAUTO" | "FULL-AUTO" => Some(Self::FullAuto),
-            _ => None,
-        }
-    }
 }
 
 /// Execution policy display (host-owned meaning).

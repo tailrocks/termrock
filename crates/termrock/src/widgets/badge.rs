@@ -303,14 +303,6 @@ impl<'a> Badge<'a> {
         self.count = Some(BadgeCount::new(value));
         self
     }
-
-    /// Count formatting.
-    #[must_use]
-    pub const fn count_spec(mut self, count: BadgeCount) -> Self {
-        self.count = Some(count);
-        self
-    }
-
     /// Soft fill under badge (opt-in; default none for dense views).
     #[must_use]
     pub const fn fill(mut self, fill: BadgeFill) -> Self {
@@ -358,13 +350,6 @@ impl<'a> Badge<'a> {
     pub const fn is_interactive(&self) -> bool {
         self.interactive
     }
-
-    /// Variant.
-    #[must_use]
-    pub const fn variant_of(&self) -> BadgeVariant {
-        self.variant
-    }
-
     /// Visible body text (without padding or count parens).
     #[must_use]
     pub fn body_text(&self) -> String {

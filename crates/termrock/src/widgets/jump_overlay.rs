@@ -546,12 +546,6 @@ impl JumpOverlayState {
     pub fn set_accepts_input(&mut self, on: bool) {
         self.accepts_input = on;
     }
-
-    /// Dim unmatched while typing a prefix.
-    pub fn set_dim_unmatched(&mut self, on: bool) {
-        self.dim_unmatched = on;
-    }
-
     /// Whether dimming is enabled.
     #[must_use]
     pub const fn dim_unmatched(&self) -> bool {

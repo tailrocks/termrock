@@ -24,7 +24,6 @@ use crate::style::{DesignSystem, Elevation, PanelChrome, PanelRecipe, Role};
 use crate::text::{display_cols, take_display_cols};
 use crate::widgets::empty_state::EmptyState;
 use crate::widgets::error_state::ErrorState;
-use crate::widgets::skeleton::Skeleton;
 use crate::widgets::surface::{Surface, SurfaceFill, SurfaceRecipe};
 use crate::widgets::view_state::LoadingView;
 
@@ -1367,18 +1366,6 @@ impl<'a> Panel<'a> {
                     selected: matches!(self.variant, PanelVariant::Selected),
                     ..Default::default()
                 }),
-        );
-    }
-
-    /// Skeleton body helper for loading lists (host-driven).
-    pub fn paint_skeleton_body(&self, body: Rect, buffer: &mut Buffer, lines: u16) {
-        if body.is_empty() {
-            return;
-        }
-        Skeleton::new(lines, self.tokens).paint(
-            body,
-            buffer,
-            &crate::widgets::SkeletonState::new(),
         );
     }
 }

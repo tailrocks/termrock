@@ -604,14 +604,6 @@ impl<'a> Chart<'a> {
         self.fill = ChartFill::Area;
         self
     }
-
-    /// Stacked area: series sum then fill under cumulative outline.
-    #[must_use]
-    pub const fn area_stacked(mut self) -> Self {
-        self.fill = ChartFill::AreaStacked;
-        self
-    }
-
     /// Explicit fill mode.
     #[must_use]
     pub const fn fill(mut self, fill: ChartFill) -> Self {

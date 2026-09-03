@@ -132,19 +132,6 @@ impl DepNodeStatus {
             Self::Loading => '…',
         }
     }
-
-    /// ASCII letter.
-    #[must_use]
-    pub const fn letter_ascii(self) -> char {
-        match self {
-            Self::Ok => '.',
-            Self::Warning => '!',
-            Self::Error => 'x',
-            Self::Missing => '?',
-            Self::Loading => '.',
-        }
-    }
-
     /// Role.
     #[must_use]
     pub const fn role(self) -> Role {

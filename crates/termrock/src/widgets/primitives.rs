@@ -238,15 +238,6 @@ impl ActivationState {
     ) -> crate::interaction::EventResult<ActivationOutcome> {
         self.handle_key(key).into_event_result()
     }
-
-    /// Intent path with [`crate::interaction::EventResult`].
-    pub fn handle_intent_result(
-        &mut self,
-        intent: crate::interaction::UiIntent,
-    ) -> crate::interaction::EventResult<ActivationOutcome> {
-        self.handle_intent(intent).into_event_result()
-    }
-
     /// Pointer activation: Down arms; Up inside region activates once.
     pub fn handle_mouse(&mut self, event: MouseEvent, region: Option<Rect>) -> ActivationOutcome {
         if !self.can_activate() {
@@ -437,21 +428,6 @@ impl<'a> Button<'a> {
         self.variant = ButtonVariant::Secondary;
         self
     }
-
-    /// Fluent Quiet.
-    #[must_use]
-    pub const fn as_quiet(mut self) -> Self {
-        self.variant = ButtonVariant::Quiet;
-        self
-    }
-
-    /// Fluent Destructive.
-    #[must_use]
-    pub const fn as_destructive(mut self) -> Self {
-        self.variant = ButtonVariant::Destructive;
-        self
-    }
-
     /// Size / pad.
     #[must_use]
     pub const fn size(mut self, size: ButtonSize) -> Self {
@@ -1021,27 +997,6 @@ impl<'a> IconButton<'a> {
     pub const fn is_safe_default_focus(self) -> bool {
         !matches!(self.variant, ButtonVariant::Destructive)
     }
-
-    /// Preferred **visual** width (glyph + optional badge), not hit slop.
-    #[must_use]
-    pub fn preferred_visual_width(&self) -> u16 {
-        let face = display_cols(self.face_glyph());
-        let badge = self.badge.map(|b| display_cols(b).min(2)).unwrap_or(0);
-        // Badge overlays corner; visual footprint stays max(face, 2) when badge
-        let w = if badge > 0 {
-            face.max(2).max(badge)
-        } else {
-            face.max(1)
-        };
-        u16::try_from(w.min(4)).unwrap_or(2)
-    }
-
-    /// Minimum hit width for pointer (slop).
-    #[must_use]
-    pub const fn min_hit_width(&self) -> u16 {
-        ICON_BUTTON_MIN_HIT
-    }
-
     fn mono(&self) -> bool {
         self.colorless
             || matches!(
@@ -1316,12 +1271,6 @@ impl<'a> IconButton<'a> {
                     ..Default::default()
                 }),
         );
-    }
-
-    /// Accessible label for toolbar overflow / overflow menus (same as a11y).
-    #[must_use]
-    pub const fn to_toolbar_label(&self) -> &'a str {
-        self.accessible_label
     }
 }
 

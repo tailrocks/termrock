@@ -115,16 +115,6 @@ impl DiagnosticSeverity {
             Self::Note => Role::TextMuted,
         }
     }
-
-    /// Map toast-style severity when hosts only have four levels.
-    #[must_use]
-    pub const fn from_toast(severity: crate::widgets::Severity) -> Self {
-        match severity {
-            crate::widgets::Severity::Error => Self::Error,
-            crate::widgets::Severity::Warning => Self::Warning,
-            crate::widgets::Severity::Info | crate::widgets::Severity::Success => Self::Info,
-        }
-    }
 }
 
 // ── Spans & locations ───────────────────────────────────────────────────────
@@ -330,13 +320,6 @@ impl<'a> DiagnosticNote<'a> {
             severity: DiagnosticSeverity::Help,
             message,
         }
-    }
-
-    /// Custom severity.
-    #[must_use]
-    pub const fn with_severity(mut self, severity: DiagnosticSeverity) -> Self {
-        self.severity = severity;
-        self
     }
 }
 

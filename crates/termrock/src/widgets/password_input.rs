@@ -16,7 +16,6 @@
 use std::fmt;
 
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
-use unicode_segmentation::UnicodeSegmentation;
 
 use crate::{
     input::{
@@ -333,12 +332,6 @@ impl PasswordInputState {
         self.set_reveal_policy(policy);
         self
     }
-
-    /// Clipboard policy.
-    pub const fn set_clipboard_policy(&mut self, policy: ClipboardPolicy) {
-        self.clipboard = policy;
-    }
-
     /// Clipboard policy (builder).
     #[must_use]
     pub const fn with_clipboard_policy(mut self, policy: ClipboardPolicy) -> Self {
@@ -375,13 +368,6 @@ impl PasswordInputState {
     pub fn is_empty(&self) -> bool {
         self.editor.value().is_empty()
     }
-
-    /// Grapheme count (not in Debug).
-    #[must_use]
-    pub fn grapheme_len(&self) -> usize {
-        self.editor.value().graphemes(true).count()
-    }
-
     /// Whether plaintext is currently visible per policy.
     #[must_use]
     pub const fn is_revealed(&self) -> bool {
@@ -397,13 +383,6 @@ impl PasswordInputState {
     pub const fn reveal_policy(&self) -> RevealPolicy {
         self.reveal_policy
     }
-
-    /// Clipboard policy.
-    #[must_use]
-    pub const fn clipboard_policy(&self) -> ClipboardPolicy {
-        self.clipboard
-    }
-
     /// Enabled.
     #[must_use]
     pub const fn is_enabled(&self) -> bool {
@@ -496,19 +475,6 @@ impl PasswordInputState {
             revealed: self.revealed,
         }
     }
-
-    /// Set explicit reveal.
-    pub fn set_revealed(&mut self, on: bool) -> PasswordInputOutcome {
-        if !matches!(self.reveal_policy, RevealPolicy::Explicit) {
-            return PasswordInputOutcome::Ignored;
-        }
-        if self.revealed == on {
-            return PasswordInputOutcome::Ignored;
-        }
-        self.revealed = on;
-        PasswordInputOutcome::RevealChanged { revealed: on }
-    }
-
     /// Insert paste payload.
     pub fn insert_str(&mut self, text: &str) -> PasswordInputOutcome {
         if matches!(self.clipboard, ClipboardPolicy::DenyAll) {

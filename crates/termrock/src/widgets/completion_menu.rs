@@ -599,19 +599,6 @@ impl<Id> CompletionMenuState<Id> {
     pub fn set_show_docs(&mut self, on: bool) {
         self.show_docs = on;
     }
-
-    /// Status message overrides.
-    pub fn set_status_messages(
-        &mut self,
-        loading: impl Into<String>,
-        empty: impl Into<String>,
-        stale: impl Into<String>,
-    ) {
-        self.loading_message = loading.into();
-        self.empty_message = empty.into();
-        self.stale_message = stale.into();
-    }
-
     /// Begin async fetch; returns generation token for [`Self::apply_results`].
     pub fn begin_async(&mut self) -> u64 {
         self.generation = self.generation.saturating_add(1);

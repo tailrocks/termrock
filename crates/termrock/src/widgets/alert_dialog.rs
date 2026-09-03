@@ -112,12 +112,6 @@ impl AlertKind {
             Self::Custom => "Cancel",
         }
     }
-
-    /// Whether countdown is commonly justified (destructive bulk / egress).
-    #[must_use]
-    pub const fn countdown_justified(self) -> bool {
-        matches!(self, Self::Delete | Self::DataEgress | Self::Terminate)
-    }
 }
 
 /// Whether the action can be undone.
@@ -369,12 +363,6 @@ impl<Id> AlertDialogState<Id> {
     pub fn scope(&self) -> &AlertScope {
         &self.scope
     }
-
-    /// Replace scope.
-    pub fn set_scope(&mut self, scope: AlertScope) {
-        self.scope = scope;
-    }
-
     /// Confirm gates (typed / countdown).
     pub fn set_gates(&mut self, gates: AlertConfirmGates) {
         self.countdown_left_ms = gates.countdown_ms;
@@ -397,13 +385,6 @@ impl<Id> AlertDialogState<Id> {
             DialogClosePolicy::ConfirmOnly
         });
     }
-
-    /// Whether locked.
-    #[must_use]
-    pub const fn is_locked(&self) -> bool {
-        self.locked
-    }
-
     /// Override title.
     pub fn set_title(&mut self, title: impl Into<String>) {
         self.title_override = Some(title.into());
@@ -420,13 +401,6 @@ impl<Id> AlertDialogState<Id> {
     pub fn typed_buffer(&self) -> &str {
         &self.typed_buffer
     }
-
-    /// Remaining countdown ms.
-    #[must_use]
-    pub const fn countdown_remaining_ms(&self) -> Option<u64> {
-        self.countdown_left_ms
-    }
-
     /// Whether typed phrase matches (or no typed gate).
     #[must_use]
     pub fn typed_satisfied(&self) -> bool {

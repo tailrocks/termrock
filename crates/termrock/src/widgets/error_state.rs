@@ -580,14 +580,6 @@ impl<'a> ErrorState<'a> {
         self.recipe = ErrorRecipe::Dialog;
         self
     }
-
-    /// Full-screen recipe.
-    #[must_use]
-    pub const fn full_screen(mut self) -> Self {
-        self.recipe = ErrorRecipe::FullScreen;
-        self
-    }
-
     /// Override illustration glyph.
     #[must_use]
     pub const fn glyph(mut self, glyph: &'a str) -> Self {
@@ -606,23 +598,9 @@ impl<'a> ErrorState<'a> {
     pub const fn error_kind(self) -> ErrorKind {
         self.kind
     }
-
-    /// Recovery borrow.
-    #[must_use]
-    pub const fn recovery_bundle(self) -> Recovery<'a> {
-        self.recovery
-    }
-
     fn use_ascii(&self) -> bool {
         false
     }
-
-    /// Resolved illustration.
-    #[must_use]
-    pub fn resolved_glyph(&self) -> &'static str {
-        self.kind.glyph(self.use_ascii())
-    }
-
     fn glyph_for_paint(&self) -> &str {
         self.illustration
             .unwrap_or_else(|| self.kind.glyph(self.use_ascii()))

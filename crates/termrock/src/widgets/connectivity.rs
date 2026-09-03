@@ -445,13 +445,6 @@ impl ReconnectingState {
     pub fn set_offline_capabilities(&mut self, caps: Vec<OfflineCapability>) {
         self.offline_caps = caps;
     }
-
-    /// Caps.
-    #[must_use]
-    pub fn offline_capabilities(&self) -> &[OfflineCapability] {
-        &self.offline_caps
-    }
-
     /// Drafts preserved (default true).
     pub fn set_drafts_preserved(&mut self, on: bool) {
         self.drafts_preserved = on;
@@ -473,12 +466,6 @@ impl ReconnectingState {
     pub const fn selection_preserved(&self) -> bool {
         self.selection_preserved
     }
-
-    /// Auto retry flag.
-    pub fn set_auto_retry(&mut self, on: bool) {
-        self.auto_retry = on;
-    }
-
     /// Presentation.
     pub fn set_presentation(&mut self, p: ConnectivityPresentation) {
         self.presentation = p;

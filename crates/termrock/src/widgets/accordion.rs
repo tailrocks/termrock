@@ -288,12 +288,6 @@ impl<Id: Clone + PartialEq> AccordionState<Id> {
     pub fn is_open(&self, id: &Id) -> bool {
         self.open.iter().any(|x| x == id)
     }
-
-    /// Replace uncontrolled open set.
-    pub fn set_open_ids(&mut self, ids: impl IntoIterator<Item = Id>) {
-        self.open = ids.into_iter().collect();
-    }
-
     /// Seed initially open ids (builder-style).
     #[must_use]
     pub fn initially_open(mut self, ids: impl IntoIterator<Item = Id>) -> Self {
@@ -522,18 +516,6 @@ impl<'a, Id> Accordion<'a, Id> {
     pub const fn max_content_height(mut self, rows: u16) -> Self {
         self.max_content_height = rows;
         self
-    }
-
-    /// Mode.
-    #[must_use]
-    pub const fn open_mode(&self) -> AccordionMode {
-        self.mode
-    }
-
-    /// Recipe id.
-    #[must_use]
-    pub const fn recipe_kind(&self) -> AccordionRecipe {
-        self.recipe
     }
 }
 

@@ -548,16 +548,6 @@ impl<'a> HighlightedText<'a> {
     pub const fn plain(&self) -> &'a str {
         self.source
     }
-
-    /// Prepare owned ranges for reuse across frames.
-    #[must_use]
-    pub fn prepare_ranges(&self) -> MatchRanges {
-        MatchRanges {
-            ranges: self.ranges.to_vec(),
-        }
-        .prepare(self.source)
-    }
-
     /// Build TextSpans for the full source (no width truncation).
     #[must_use]
     pub fn to_spans(&self) -> Vec<TextSpan<'a>> {

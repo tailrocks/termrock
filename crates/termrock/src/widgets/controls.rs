@@ -55,13 +55,6 @@ impl CheckboxValue {
     pub const fn is_checked(self) -> bool {
         matches!(self, Self::Checked)
     }
-
-    /// Mixed.
-    #[must_use]
-    pub const fn is_indeterminate(self) -> bool {
-        matches!(self, Self::Indeterminate)
-    }
-
     /// From bool (no indeterminate).
     #[must_use]
     pub const fn from_bool(checked: bool) -> Self {
@@ -816,13 +809,6 @@ impl<Id: Clone + PartialEq> RadioState<Id> {
     pub const fn policy(&self) -> RadioSelectionPolicy {
         self.policy
     }
-
-    /// Surface focus.
-    #[must_use]
-    pub const fn is_surface_focused(&self) -> bool {
-        self.surface_focused
-    }
-
     /// Parts from last paint.
     #[must_use]
     pub const fn parts(&self) -> Option<&RadioGroupParts<Id>> {

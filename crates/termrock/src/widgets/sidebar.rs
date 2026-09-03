@@ -569,12 +569,6 @@ impl<Id> NavigationListState<Id> {
     pub fn set_enabled(&mut self, on: bool) {
         self.enabled = on;
     }
-
-    /// Set route without moving focus.
-    pub fn set_route(&mut self, id: Option<Id>) {
-        self.route = id;
-    }
-
     /// Set route and align focus.
     pub fn set_route_and_focus(&mut self, id: Id)
     where
@@ -923,14 +917,6 @@ impl<Id> SidebarState<Id> {
             accepts_input: true,
         }
     }
-
-    /// Presentation.
-    #[must_use]
-    pub const fn with_presentation(mut self, p: SidebarPresentation) -> Self {
-        self.presentation = p;
-        self
-    }
-
     /// Route.
     #[must_use]
     pub const fn route(&self) -> Option<&Id> {

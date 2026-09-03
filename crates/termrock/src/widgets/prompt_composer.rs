@@ -28,10 +28,7 @@ use ratatui_core::{
 
 use crate::{
     input::{Event, KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
-    interaction::{
-        OverlayId, OverlayKind, OverlayOutcome, OverlaySize, OverlaySpec, OverlayStack,
-        place_overlay,
-    },
+    interaction::{OverlayId, OverlayKind, OverlayOutcome, OverlaySize, OverlaySpec, OverlayStack},
     style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
     widgets::{
@@ -148,18 +145,6 @@ impl ComposerChip {
             bytes: None,
             payload: None,
         }
-    }
-
-    /// From [`AttachmentItem`](crate::widgets::AttachmentItem) (file/image/code/url).
-    #[must_use]
-    pub fn from_attachment(item: &crate::widgets::AttachmentItem) -> Self {
-        attachment_to_composer_chip(item)
-    }
-
-    /// From [`PastePayload`](crate::widgets::PastePayload).
-    #[must_use]
-    pub fn from_paste(paste: &crate::widgets::PastePayload) -> Self {
-        paste_to_composer_chip(paste)
     }
 }
 
@@ -551,13 +536,6 @@ impl PromptComposerState {
     pub fn text(&self) -> String {
         self.editor.text()
     }
-
-    /// Whether the editor holds a non-whitespace draft.
-    #[must_use]
-    pub fn has_draft(&self) -> bool {
-        !self.text().trim().is_empty()
-    }
-
     /// Whether host granted keyboard/pointer input (overlay/scene ownership).
     #[must_use]
     pub const fn accepts_input(&self) -> bool {
@@ -625,12 +603,6 @@ impl PromptComposerState {
     pub fn set_model(&mut self, model: Option<ModelIndicator>) {
         self.model = model;
     }
-
-    /// Context estimate.
-    pub fn set_context(&mut self, context: ContextEstimate) {
-        self.context = context;
-    }
-
     /// No-color / monochrome-friendly chrome (forces ASCII marks; host should also
     /// pass a monochrome-quantized [`DesignSystem`]).
     pub fn set_colorless(&mut self, colorless: bool) {
@@ -762,18 +734,6 @@ impl PromptComposerState {
             Some(self.queue.remove(0))
         }
     }
-
-    /// Clone of the FIFO queue for hosts / patterns recipes.
-    #[must_use]
-    pub fn queue_items(&self) -> Vec<PromptQueueItem> {
-        self.queue.clone()
-    }
-
-    /// Clears the submit queue (does not touch draft).
-    pub fn clear_queue(&mut self) {
-        self.queue.clear();
-    }
-
     /// Inserts text at cursor (records undo); replaces selection if any.
     pub fn insert_text(&mut self, text: &str) -> PromptComposerOutcome {
         if self.connection == ComposerConnection::Disabled {
@@ -1295,18 +1255,6 @@ impl PromptComposerState {
     ) -> OverlayOutcome<FocusId> {
         stack.dismiss(&OverlayId::from_static(PROMPT_COMPLETION_OVERLAY_ID))
     }
-
-    /// Preferred completion rect (does not open stack).
-    #[must_use]
-    pub fn place_completion(bounds: Rect, anchor: Rect, width: u16, height: u16) -> Rect {
-        place_overlay(
-            bounds,
-            Some(anchor),
-            OverlaySize::menu(width, height),
-            crate::interaction::OverlayPolicy::for_kind(OverlayKind::Completion),
-        )
-    }
-
     // —— internals ——
 
     fn try_submit_or_queue(&mut self) -> PromptComposerOutcome {

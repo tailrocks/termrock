@@ -523,12 +523,6 @@ impl DateTimePickerKind {
     pub const fn has_time(self) -> bool {
         matches!(self, Self::Time | Self::DateTime)
     }
-
-    /// Range selection.
-    #[must_use]
-    pub const fn is_range(self) -> bool {
-        matches!(self, Self::DateRange)
-    }
 }
 
 /// Active interaction surface.
@@ -816,28 +810,6 @@ impl DateTimePickerState {
         self.kind = kind;
         self
     }
-
-    /// Date display format.
-    #[must_use]
-    pub const fn with_date_format(mut self, fmt: DateDisplayFormat) -> Self {
-        self.date_fmt = fmt;
-        self
-    }
-
-    /// Time display format.
-    #[must_use]
-    pub const fn with_time_format(mut self, fmt: TimeDisplayFormat) -> Self {
-        self.time_fmt = fmt;
-        self
-    }
-
-    /// Week start.
-    #[must_use]
-    pub const fn with_week_start(mut self, w: WeekStart) -> Self {
-        self.week_start = w;
-        self
-    }
-
     /// Time list step.
     #[must_use]
     pub fn with_time_step_minutes(mut self, step: u32) -> Self {
@@ -872,35 +844,12 @@ impl DateTimePickerState {
         self.max_date = Some(d);
         self
     }
-
-    /// Presentation.
-    #[must_use]
-    pub const fn with_presentation(mut self, p: DateTimePickerPresentation) -> Self {
-        self.presentation = p;
-        self
-    }
-
     /// Initial date value.
     #[must_use]
     pub fn with_date(mut self, d: CivilDate) -> Self {
         self.set_date(Some(d));
         self
     }
-
-    /// Initial time.
-    #[must_use]
-    pub fn with_time(mut self, t: CivilTime) -> Self {
-        self.set_time(Some(t));
-        self
-    }
-
-    /// Initial range.
-    #[must_use]
-    pub fn with_range(mut self, range: CivilDateRange) -> Self {
-        self.set_range(Some(range));
-        self
-    }
-
     // ── accessors ───────────────────────────────────────────────────────────
 
     /// Kind.
@@ -1026,24 +975,6 @@ impl DateTimePickerState {
             self.view_month = d.month;
         }
     }
-
-    /// Min date.
-    pub fn set_min_date(&mut self, d: Option<CivilDate>) {
-        self.min_date = d;
-        self.refresh_validity();
-    }
-
-    /// Max date.
-    pub fn set_max_date(&mut self, d: Option<CivilDate>) {
-        self.max_date = d;
-        self.refresh_validity();
-    }
-
-    /// Timezone label.
-    pub fn set_timezone_label(&mut self, label: Option<String>) {
-        self.timezone_label = label;
-    }
-
     /// Set committed date and sync draft.
     pub fn set_date(&mut self, d: Option<CivilDate>) {
         self.value_date = d;

@@ -367,28 +367,6 @@ impl<'a> Kbd<'a> {
             variant: KbdVariant::Compact,
         }
     }
-
-    /// From one chord.
-    #[must_use]
-    pub fn from_chord(chord: KeyChord, system: &'a DesignSystem) -> Self {
-        let fmt = ChordFormat::new();
-        Self {
-            label: Cow::Owned(format_chord(chord, fmt)),
-            system,
-            variant: KbdVariant::Compact,
-        }
-    }
-
-    /// From chord with format options.
-    #[must_use]
-    pub fn from_chord_fmt(chord: KeyChord, fmt: ChordFormat, system: &'a DesignSystem) -> Self {
-        Self {
-            label: Cow::Owned(format_chord(chord, fmt)),
-            system,
-            variant: KbdVariant::Compact,
-        }
-    }
-
     /// Sequence of chords.
     #[must_use]
     pub fn sequence(chords: &[KeyChord], system: &'a DesignSystem) -> Self {
@@ -554,32 +532,6 @@ impl<'a> ShortcutHint<'a> {
             contract_command_first: true,
         }
     }
-
-    /// From chords + command.
-    #[must_use]
-    pub fn from_chords(
-        chords: &[KeyChord],
-        command: impl Into<Cow<'a, str>>,
-        system: &'a DesignSystem,
-    ) -> Self {
-        let fmt = ChordFormat::new();
-        let chord = if chords.len() <= 1 {
-            chords
-                .first()
-                .map(|c| format_chord(*c, fmt))
-                .unwrap_or_default()
-        } else {
-            format_alternatives(chords, fmt)
-        };
-        Self {
-            chord: Cow::Owned(chord),
-            command: command.into(),
-            system,
-            form: ShortcutForm::Footer,
-            contract_command_first: true,
-        }
-    }
-
     /// From keymap binding (display + hint label).
     #[must_use]
     pub fn from_binding<A: Clone + 'static>(
@@ -622,14 +574,6 @@ impl<'a> ShortcutHint<'a> {
         self.form = ShortcutForm::Footer;
         self
     }
-
-    /// Inline documentation form.
-    #[must_use]
-    pub const fn inline_doc(mut self) -> Self {
-        self.form = ShortcutForm::InlineDoc;
-        self
-    }
-
     /// Keycap form.
     #[must_use]
     pub const fn keycap(mut self) -> Self {

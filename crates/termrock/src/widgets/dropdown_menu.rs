@@ -545,12 +545,6 @@ impl DropdownMenuState {
     pub fn set_accepts_input(&mut self, on: bool) {
         self.accepts_input = on;
     }
-
-    /// Force context mode.
-    pub fn set_context_mode(&mut self, on: bool) {
-        self.context_mode = on;
-    }
-
     /// Force presentation.
     pub fn set_presentation_override(&mut self, p: Option<DropdownMenuPresentation>) {
         self.presentation_override = p;
@@ -1099,69 +1093,6 @@ impl<'a, Id> DropdownMenu<'a, Id> {
         };
         self.paint_items(area, buffer, state, items, self.depth);
     }
-
-    /// Paint all open cascade panels stacked to the right of `root_area`.
-    pub fn paint_cascade(
-        &self,
-        root_area: Rect,
-        bounds: Rect,
-        buffer: &mut Buffer,
-        state: &mut DropdownMenuState,
-    ) where
-        Id: Clone,
-    {
-        state.panel_hits.clear();
-        state.preview_hits.clear();
-        if !state.is_open() || root_area.is_empty() {
-            return;
-        }
-        let mut area = root_area;
-        for depth in 0..state.depth() {
-            let path: Vec<usize> = state.open_path.iter().copied().take(depth).collect();
-            let items = match DropdownMenuState::items_at_path(self.items, &path) {
-                Some(i) => i,
-                None => break,
-            };
-            let size = measure_menu_panel(items);
-            if depth == 0 {
-                // Host usually places root; clamp to area.
-                let placed = if state.context_mode {
-                    place_context_menu(bounds, area, size)
-                } else {
-                    place_dropdown_menu(bounds, area, size)
-                };
-                area = if placed.is_empty() { root_area } else { placed };
-            } else {
-                // Anchor to previous cursor row hit if available.
-                let anchor = state
-                    .panel_hits
-                    .iter()
-                    .rev()
-                    .find(|(d, idx, _)| {
-                        *d == depth.saturating_sub(1)
-                            && state.panel_cursor(depth.saturating_sub(1)) == Some(*idx)
-                    })
-                    .map(|(_, _, r)| *r)
-                    .unwrap_or(area);
-                let placed = place_dropdown_menu(bounds, anchor, size);
-                area = if placed.is_empty() {
-                    // Fall right of previous panel.
-                    Rect::new(
-                        area.right()
-                            .saturating_add(1)
-                            .min(bounds.right().saturating_sub(size.width)),
-                        area.y,
-                        size.width.min(bounds.width),
-                        size.height.min(bounds.height),
-                    )
-                } else {
-                    placed
-                };
-            }
-            self.paint_items(area, buffer, state, items, depth);
-        }
-    }
-
     fn paint_items(
         &self,
         area: Rect,

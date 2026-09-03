@@ -589,18 +589,6 @@ impl PreviewCardState {
             self.force_hide();
         }
     }
-
-    /// Enforce essential-elsewhere (default true).
-    pub fn set_enforce_essential_elsewhere(&mut self, on: bool) {
-        self.enforce_essential_elsewhere = on;
-    }
-
-    /// ASCII chrome preference (paint also accepts widget flag).
-    /// Max width for measure helpers.
-    pub fn set_max_width(&mut self, w: u16) {
-        self.max_width = w.max(12);
-    }
-
     /// Pointer over anchor.
     pub fn set_pointer_over(&mut self, over: bool) {
         self.pointer_over = over;
@@ -616,15 +604,6 @@ impl PreviewCardState {
             self.force_hide();
         }
     }
-
-    /// Selection present (list cursor non-empty).
-    pub fn set_selection_active(&mut self, on: bool) {
-        self.selection_active = on;
-        if !self.pinned && !self.armed() {
-            self.force_hide();
-        }
-    }
-
     /// Armed for delayed show (or pinned).
     #[must_use]
     pub fn armed(&self) -> bool {
@@ -780,19 +759,6 @@ impl PreviewCardState {
         self.load = PreviewLoadState::Ready;
         PreviewCardOutcome::ContentApplied { generation }
     }
-
-    /// Apply error for generation.
-    pub fn apply_error(&mut self, generation: u64) -> PreviewCardOutcome {
-        if !self.accepts_generation(generation) {
-            return PreviewCardOutcome::GenerationStale { generation };
-        }
-        self.pending_generation = None;
-        self.applied_generation = generation;
-        self.generation = generation;
-        self.load = PreviewLoadState::Error;
-        PreviewCardOutcome::ContentApplied { generation }
-    }
-
     /// Mark load stale (optional host cue).
     pub fn mark_stale(&mut self) {
         if self.load == PreviewLoadState::Ready {
@@ -838,16 +804,6 @@ impl PreviewCardState {
         }
         PreviewCardOutcome::Unpinned
     }
-
-    /// Toggle pin.
-    pub fn toggle_pin(&mut self) -> PreviewCardOutcome {
-        if self.pinned {
-            self.unpin()
-        } else {
-            self.pin()
-        }
-    }
-
     fn effective_delay(&self, motion: MotionPolicy) -> Duration {
         match motion {
             MotionPolicy::Off => Duration::ZERO,
@@ -943,34 +899,6 @@ impl PreviewCardState {
         }
         self.visibility_outcome()
     }
-
-    /// Update triggers then advance.
-    pub fn advance_with_triggers(
-        &mut self,
-        tick: FrameTick,
-        pointer_over: bool,
-        focus_within: bool,
-        selection_active: bool,
-        motion: MotionPolicy,
-    ) -> PreviewCardOutcome {
-        self.pointer_over = pointer_over;
-        self.focus_within = focus_within;
-        self.selection_active = selection_active;
-        if self.pinned {
-            return PreviewCardOutcome::Ignored;
-        }
-        if !self.armed() {
-            let was = self.was_visible || self.presence.is_visible();
-            self.force_hide();
-            return if was {
-                PreviewCardOutcome::Hidden
-            } else {
-                PreviewCardOutcome::Ignored
-            };
-        }
-        self.advance(tick, motion)
-    }
-
     fn visibility_outcome(&mut self) -> PreviewCardOutcome {
         let vis = self.is_visible();
         if vis && !self.was_visible {

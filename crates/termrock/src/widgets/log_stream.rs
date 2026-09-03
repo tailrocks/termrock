@@ -424,12 +424,6 @@ impl LogStreamState {
     pub fn set_reconnect_message(&mut self, msg: Option<String>) {
         self.reconnect_message = msg;
     }
-
-    /// Report burst batch chrome.
-    pub fn report_batched(&mut self, n: u64) {
-        self.batched = n;
-    }
-
     /// Clear dropped / reconnect chrome.
     pub fn ack_dropped(&mut self) {
         self.dropped = 0;

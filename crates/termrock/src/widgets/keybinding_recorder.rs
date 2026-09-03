@@ -22,7 +22,7 @@ use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::State
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers},
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
-    keymap::{Conflict, KeyBinding, KeyChord, Keymap, Visibility, raw_bytes_to_chord},
+    keymap::{KeyBinding, KeyChord, Keymap, Visibility, raw_bytes_to_chord},
     style::{ControlState, DesignSystem, Role},
     text::take_display_cols,
 };
@@ -271,14 +271,6 @@ impl KeybindingRecorderState {
         self.default = v;
         self
     }
-
-    /// Factory default only (value unchanged).
-    #[must_use]
-    pub fn with_default(mut self, chords: impl IntoIterator<Item = KeyChord>) -> Self {
-        self.default = chords.into_iter().collect();
-        self
-    }
-
     /// Chord display format.
     #[must_use]
     pub const fn with_format(mut self, fmt: ChordFormat) -> Self {
@@ -299,38 +291,6 @@ impl KeybindingRecorderState {
         self.allow_empty = on;
         self
     }
-
-    /// Hard-fail on conflicts.
-    #[must_use]
-    pub const fn with_hard_conflicts(mut self, on: bool) -> Self {
-        self.hard_conflicts = on;
-        self
-    }
-
-    /// Hard-fail on reserved.
-    #[must_use]
-    pub const fn with_hard_reserved(mut self, on: bool) -> Self {
-        self.hard_reserved = on;
-        self
-    }
-
-    /// Replace reserved table.
-    #[must_use]
-    pub fn with_reserved(mut self, reserved: Vec<(KeyChord, String)>) -> Self {
-        self.reserved = reserved;
-        self
-    }
-
-    /// Extend reserved.
-    pub fn push_reserved(&mut self, chord: KeyChord, reason: impl Into<String>) {
-        self.reserved.push((chord, reason.into()));
-    }
-
-    /// Set conflict table (other actions' chords → labels).
-    pub fn set_occupied(&mut self, occupied: Vec<(KeyChord, String)>) {
-        self.occupied = occupied;
-    }
-
     /// Load occupied chords from a [`Keymap`], skipping `skip` action.
     pub fn load_occupied_from_keymap<A>(
         &mut self,
@@ -364,18 +324,6 @@ impl KeybindingRecorderState {
             map.remap(action, self.value.clone())
         }
     }
-
-    /// Seed from existing keymap binding.
-    pub fn load_from_binding<A: Clone + 'static>(&mut self, binding: &KeyBinding<A>) {
-        self.value = binding.chords().to_vec();
-        if self.default.is_empty() {
-            self.default = self.value.clone();
-        }
-        if let Some(h) = binding.hint() {
-            self.action_label = h.to_owned();
-        }
-    }
-
     // ── accessors ───────────────────────────────────────────────────────────
 
     /// Action id.
@@ -395,13 +343,6 @@ impl KeybindingRecorderState {
     pub fn value(&self) -> &[KeyChord] {
         &self.value
     }
-
-    /// Default chords.
-    #[must_use]
-    pub fn default_chords(&self) -> &[KeyChord] {
-        &self.default
-    }
-
     /// Draft while recording (else empty).
     #[must_use]
     pub fn draft(&self) -> &[KeyChord] {
@@ -768,15 +709,6 @@ impl KeybindingRecorderState {
             }
             _ => KeybindingRecorderOutcome::Ignored,
         }
-    }
-
-    /// Conflicts currently present in an external keymap (pass-through helper).
-    #[must_use]
-    pub fn keymap_conflicts<'a, A>(map: &'a Keymap<A>) -> Vec<Conflict<'a, A>>
-    where
-        A: Clone + Copy + PartialEq + 'static,
-    {
-        map.conflicts()
     }
 }
 

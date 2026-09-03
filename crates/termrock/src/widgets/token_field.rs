@@ -338,12 +338,6 @@ impl<Id> TokenFieldState<Id> {
     pub fn tokens(&self) -> &[FieldToken<Id>] {
         &self.tokens
     }
-
-    /// Mutable tokens (advanced).
-    pub fn tokens_mut(&mut self) -> &mut Vec<FieldToken<Id>> {
-        &mut self.tokens
-    }
-
     /// Draft text.
     #[must_use]
     pub fn draft(&self) -> &str {
@@ -417,12 +411,6 @@ impl<Id> TokenFieldState<Id> {
 }
 
 impl<Id: Clone + PartialEq> TokenFieldState<Id> {
-    /// Replace all tokens.
-    pub fn set_tokens(&mut self, tokens: Vec<FieldToken<Id>>) {
-        self.tokens = tokens;
-        self.clamp_zone();
-    }
-
     fn clamp_zone(&mut self) {
         match self.zone {
             TokenFieldZone::Draft => {}
@@ -450,17 +438,6 @@ impl<Id: Clone + PartialEq> TokenFieldState<Id> {
         self.tokens.push(token);
         true
     }
-
-    /// Insert at index.
-    pub fn insert_token(&mut self, index: usize, token: FieldToken<Id>) -> bool {
-        if !self.can_add(&token.id, &token.label) {
-            return false;
-        }
-        let i = index.min(self.tokens.len());
-        self.tokens.insert(i, token);
-        true
-    }
-
     fn can_add(&self, id: &Id, label: &str) -> bool {
         match self.duplicate {
             DuplicatePolicy::Allow => true,
@@ -476,17 +453,6 @@ impl<Id: Clone + PartialEq> TokenFieldState<Id> {
         self.clamp_zone();
         Some(t)
     }
-
-    /// Remove by index.
-    pub fn remove_index(&mut self, index: usize) -> Option<FieldToken<Id>> {
-        if index >= self.tokens.len() {
-            return None;
-        }
-        let t = self.tokens.remove(index);
-        self.clamp_zone();
-        Some(t)
-    }
-
     /// Reorder token.
     pub fn reorder(&mut self, from: usize, to: usize) -> bool {
         if from >= self.tokens.len() || to >= self.tokens.len() || from == to {
@@ -551,26 +517,6 @@ impl TokenFieldState<String> {
         self.sync_draft_focus();
         TokenFieldOutcome::TokenAdded { id, label }
     }
-
-    /// Commit draft with host-provided id.
-    pub fn commit_draft_with_id(&mut self, id: String) -> TokenFieldOutcome<String> {
-        let label = self.draft.value().trim().to_owned();
-        if label.is_empty() {
-            return TokenFieldOutcome::Ignored;
-        }
-        if self.read_only || !self.enabled {
-            return TokenFieldOutcome::Ignored;
-        }
-        if !self.can_add(&id, &label) {
-            return TokenFieldOutcome::DuplicateRejected { label };
-        }
-        self.tokens.push(FieldToken::new(id.clone(), label.clone()));
-        let _ = self.draft.clear();
-        self.zone = TokenFieldZone::Draft;
-        self.sync_draft_focus();
-        TokenFieldOutcome::TokenAdded { id, label }
-    }
-
     /// Apply completion candidate as new token (or replace draft).
     pub fn apply_suggestion(
         &mut self,

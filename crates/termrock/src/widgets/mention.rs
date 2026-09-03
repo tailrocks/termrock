@@ -23,7 +23,7 @@ use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseEvent},
-    style::{DesignSystem, ListRowVisualState, Role},
+    style::{DesignSystem, Role},
     text::take_display_cols,
     widgets::{
         completion_menu::CompletionCandidate,
@@ -164,15 +164,6 @@ impl MentionType {
                 Self::User => "◎",
                 Self::Other => "·",
             }
-        }
-    }
-
-    /// Default trigger char for this type.
-    #[must_use]
-    pub const fn default_trigger(self) -> char {
-        match self.family() {
-            MentionFamily::File => MENTION_TRIGGER_AT,
-            MentionFamily::Entity => MENTION_TRIGGER_AT,
         }
     }
 }
@@ -733,12 +724,6 @@ impl MentionCandidate {
     pub fn insert_markup(&self) -> String {
         self.to_mention_ref().to_markup()
     }
-
-    /// Insert short form `@label` (host may prefer markup).
-    #[must_use]
-    pub fn insert_short(&self) -> String {
-        format!("@{}", self.label)
-    }
 }
 
 /// Detect `@` / `#` mention query before cursor (pure; no I/O).
@@ -936,36 +921,6 @@ impl MentionDraft {
             cursor: MentionCursor::InText { part: 0, byte: len },
         }
     }
-
-    /// Flatten to plain text (mentions as markup).
-    #[must_use]
-    pub fn to_plain_markup(&self) -> String {
-        let mut s = String::new();
-        for p in &self.parts {
-            match p {
-                MentionSegment::Text(t) => s.push_str(t),
-                MentionSegment::Mention(m) => s.push_str(&m.to_markup()),
-            }
-        }
-        s
-    }
-
-    /// Flatten display labels only (for soft preview).
-    #[must_use]
-    pub fn to_display_string(&self) -> String {
-        let mut s = String::new();
-        for p in &self.parts {
-            match p {
-                MentionSegment::Text(t) => s.push_str(t),
-                MentionSegment::Mention(m) => {
-                    s.push('@');
-                    s.push_str(&m.label);
-                }
-            }
-        }
-        s
-    }
-
     /// Insert text at cursor (splits text segments; refuses inside mention).
     pub fn insert_text(&mut self, text: &str) {
         if text.is_empty() {
@@ -1464,61 +1419,6 @@ impl<'a> InlineMention<'a> {
         }
         parts
     }
-
-    /// Paint disambiguation list into area (host places popover).
-    pub fn paint_disambiguation(
-        &self,
-        area: Rect,
-        buffer: &mut Buffer,
-        state: &InlineMentionState,
-    ) {
-        if area.is_empty() {
-            return;
-        }
-        for (i, d) in self
-            .mention
-            .disambiguators
-            .iter()
-            .take(MENTION_DISAMBIG_MAX)
-            .enumerate()
-        {
-            let y = area.y.saturating_add(i as u16);
-            if y >= area.bottom() {
-                break;
-            }
-            let mark = if i == state.disambiguation_cursor {
-                "›"
-            } else {
-                " "
-            };
-            let line = match &d.detail {
-                Some(det) => format!("{mark} {} {} {det}", d.label, { "·" }),
-                None => format!("{mark} {}", d.label),
-            };
-            let selected = i == state.disambiguation_cursor;
-            let recipe = self.system.resolve_list_row(ListRowVisualState {
-                selected,
-                focused: selected && state.tag.focused,
-                hovered: false,
-                enabled: true,
-                loading: false,
-                checked: false,
-                ..ListRowVisualState::default()
-            });
-            let row = Rect::new(area.x, y, area.width, 1);
-            if recipe.use_tint {
-                buffer.set_style(row, recipe.tint);
-            }
-            buffer.set_stringn(
-                area.x,
-                y,
-                take_display_cols(&line, usize::from(area.width)),
-                usize::from(area.width),
-                recipe.label,
-            );
-        }
-    }
-
     /// Keys.
     pub fn handle_key(
         &self,

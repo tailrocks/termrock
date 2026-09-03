@@ -574,28 +574,6 @@ impl FilePickerState {
         self.preview_enabled = on;
         self
     }
-
-    /// Show hidden entries.
-    #[must_use]
-    pub const fn with_show_hidden(mut self, on: bool) -> Self {
-        self.show_hidden = on;
-        self
-    }
-
-    /// Sort key.
-    #[must_use]
-    pub const fn with_sort(mut self, sort: FileSortKey) -> Self {
-        self.sort = sort;
-        self
-    }
-
-    /// Presentation.
-    #[must_use]
-    pub const fn with_presentation(mut self, p: FilePickerPresentation) -> Self {
-        self.presentation = p;
-        self
-    }
-
     /// Cwd.
     #[must_use]
     pub fn cwd(&self) -> &str {
@@ -670,13 +648,6 @@ impl FilePickerState {
     pub const fn mode(&self) -> FilePickerMode {
         self.mode
     }
-
-    /// Multi.
-    #[must_use]
-    pub const fn is_multi(&self) -> bool {
-        self.multi
-    }
-
     /// Show hidden.
     #[must_use]
     pub const fn show_hidden(&self) -> bool {
@@ -694,13 +665,6 @@ impl FilePickerState {
     pub const fn presentation(&self) -> FilePickerPresentation {
         self.presentation
     }
-
-    /// Path field.
-    #[must_use]
-    pub const fn path_state(&self) -> &PathInputState {
-        &self.path
-    }
-
     /// Focus.
     pub fn set_focused(&mut self, on: bool) {
         self.focused = on;
@@ -716,31 +680,11 @@ impl FilePickerState {
         self.enabled = on;
         self.path.set_enabled(on);
     }
-
-    /// Toggle hidden and rebuild visible projection from raw listing.
-    pub fn set_show_hidden(&mut self, on: bool) {
-        self.show_hidden = on;
-        self.reprocess_visible();
-    }
-
     /// Active name filter, for the pane title.
     #[must_use]
     pub fn filter_text(&self) -> &str {
         &self.name_filter
     }
-
-    /// Name filter (client-side) and rebuild visible projection.
-    pub fn set_name_filter(&mut self, filter: impl Into<String>) {
-        self.name_filter = filter.into();
-        self.reprocess_visible();
-    }
-
-    /// Sort and rebuild visible projection.
-    pub fn set_sort(&mut self, sort: FileSortKey) {
-        self.sort = sort;
-        self.reprocess_visible();
-    }
-
     /// Presentation.
     pub const fn set_presentation(&mut self, p: FilePickerPresentation) {
         self.presentation = p;

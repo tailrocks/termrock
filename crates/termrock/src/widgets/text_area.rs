@@ -266,15 +266,6 @@ impl TextAreaState {
     pub const fn wrap(&self) -> TextWrap {
         self.wrap
     }
-
-    /// Indent string (default two spaces).
-    pub fn set_indent(&mut self, indent: impl Into<String>) {
-        self.indent = indent.into();
-        if self.indent.is_empty() {
-            self.indent = DEFAULT_INDENT.to_owned();
-        }
-    }
-
     /// Selection anchor.
     #[must_use]
     pub const fn selection_anchor(&self) -> Option<TextCursor> {

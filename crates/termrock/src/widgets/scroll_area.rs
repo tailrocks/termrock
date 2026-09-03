@@ -18,8 +18,7 @@ use crate::{
         pause_follow_on_user_scroll,
     },
     scroll::{ScrollAxis, apply_delta_u16, max_offset},
-    style::{DesignSystem, Role},
-    text::take_display_cols,
+    style::DesignSystem,
 };
 
 /// Scrollbar visibility policy.
@@ -74,12 +73,6 @@ impl ScrollOutcome {
     #[must_use]
     pub const fn consumed(self) -> bool {
         matches!(self, Self::Scrolled | Self::FollowChanged)
-    }
-
-    /// Parent should try chaining.
-    #[must_use]
-    pub const fn chains(self) -> bool {
-        matches!(self, Self::ChainToParent)
     }
 }
 
@@ -224,12 +217,6 @@ impl ScrollAreaState {
             }
         }
     }
-
-    /// Notify horizontal content growth (no follow-tail semantics by default).
-    pub fn on_content_grown_x(&mut self, _appended: u64) {
-        self.clamp();
-    }
-
     fn stick_to_tail_y(&mut self) {
         self.offset_y = max_offset(self.content_h as usize, self.viewport_h as usize) as u16;
         self.anchor = Some(ScrollAnchor::from_end(0));
@@ -321,25 +308,11 @@ impl ScrollAreaState {
     pub const fn viewport_w(&self) -> u16 {
         self.viewport_w
     }
-
-    #[must_use]
-    /// Follow mode.
-    pub const fn follow_mode(&self) -> FollowMode {
-        self.follow
-    }
-
     #[must_use]
     /// New-content indicator (paused + unseen).
     pub const fn new_content(&self) -> NewContentIndicator {
         self.indicator
     }
-
-    #[must_use]
-    /// Nesting chain policy.
-    pub const fn chain_policy(&self) -> ScrollChain {
-        self.chain
-    }
-
     #[must_use]
     /// Current anchor, if any.
     pub const fn anchor(&self) -> Option<&ScrollAnchor> {
@@ -358,20 +331,6 @@ impl ScrollAreaState {
             .min(u64::from(self.content_h));
         VisibleRange { start, end }
     }
-
-    /// Visible horizontal half-open range in content columns.
-    #[must_use]
-    pub fn visible_range_x(&self) -> VisibleRange {
-        if self.viewport_w == 0 || self.content_w == 0 {
-            return VisibleRange::empty();
-        }
-        let start = u64::from(self.offset_x);
-        let end = start
-            .saturating_add(u64::from(self.viewport_w))
-            .min(u64::from(self.content_w));
-        VisibleRange { start, end }
-    }
-
     /// Whether vertical content overflows the viewport.
     #[must_use]
     pub fn overflows_y(&self) -> bool {
@@ -553,12 +512,6 @@ impl ScrollAreaState {
         self.follow = FollowMode::Paused;
         self.capture_from_end_anchor();
     }
-
-    /// Resume follow (jumps to tail).
-    pub fn resume_follow(&mut self) {
-        self.follow_tail();
-    }
-
     #[must_use]
     /// Following tail.
     pub const fn is_following(&self) -> bool {
@@ -804,19 +757,6 @@ impl<'a> ScrollArea<'a> {
                 self.tokens,
             );
         }
-    }
-
-    /// Paint new-content indicator with a structural down cue and warning role.
-    pub fn paint_new_content(&self, area: Rect, buffer: &mut Buffer, state: &ScrollAreaState) {
-        if !self.show_new_content || !state.indicator.visible || area.height == 0 {
-            return;
-        }
-        let style = self.tokens.style(Role::Warning);
-        let marker = "↓";
-        let label = format!("{marker} {} new", state.indicator.unseen);
-        let y = area.bottom().saturating_sub(1);
-        let text = take_display_cols(&label, usize::from(area.width));
-        buffer.set_stringn(area.x, y, &text, usize::from(area.width), style);
     }
 }
 

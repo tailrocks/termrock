@@ -438,27 +438,6 @@ impl ProgressBarState {
         self.total = total.max(0.0);
         self.bump();
     }
-
-    /// Set fraction directly (sets total=1, value=fraction).
-    pub fn set_fraction(&mut self, fraction: f64) {
-        self.total = 1.0;
-        self.value = clamp_fraction(fraction);
-        self.bump();
-    }
-
-    /// Unit.
-    pub fn set_unit(&mut self, unit: ProgressUnit) {
-        self.unit = unit;
-        self.bump();
-    }
-
-    /// Custom unit label.
-    pub fn set_unit_label(&mut self, label: impl Into<String>) {
-        self.unit_label = label.into();
-        self.unit = ProgressUnit::Custom;
-        self.bump();
-    }
-
     /// Status.
     pub fn set_status(&mut self, status: ProgressStatus) {
         self.status = status;
@@ -485,13 +464,6 @@ impl ProgressBarState {
         self.rate = rate.filter(|r| r.is_finite() && *r >= 0.0);
         self.bump();
     }
-
-    /// ETA seconds.
-    pub fn set_eta_secs(&mut self, eta: Option<u64>) {
-        self.eta_secs = eta;
-        self.bump();
-    }
-
     /// Derive ETA from remaining / rate when possible.
     pub fn recompute_eta(&mut self) {
         if let (Some(rate), true) = (self.rate, self.is_determinate()) {

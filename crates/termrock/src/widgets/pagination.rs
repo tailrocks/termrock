@@ -364,13 +364,6 @@ impl PaginationState {
     pub fn jump_draft(&self) -> &str {
         &self.jump_draft
     }
-
-    /// Jump active.
-    #[must_use]
-    pub const fn is_jump_active(&self) -> bool {
-        self.jump_active
-    }
-
     /// Focus control.
     pub fn set_focused(&mut self, on: bool) {
         self.focused = on;
@@ -401,13 +394,6 @@ impl PaginationState {
         self.page = page.max(1);
         self.clamp_page();
     }
-
-    /// Host sets page size without emitting outcome.
-    pub fn set_page_size(&mut self, size: u32) {
-        self.page_size = size.max(1);
-        self.clamp_page();
-    }
-
     fn clamp_page(&mut self) {
         if let Some(n) = self.page_count() {
             self.page = self.page.min(n).max(1);

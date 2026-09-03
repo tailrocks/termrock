@@ -24,13 +24,11 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{KeyCode, KeyEvent, KeyModifiers},
     interaction::UiIntent,
     style::{DesignSystem, ListRowVisualState, Role},
     text::take_display_cols,
-    widgets::diff::{
-        DiffFile, DiffHunk, DiffLine, DiffMode, DiffView, DiffViewOutcome, DiffViewState,
-    },
+    widgets::diff::{DiffFile, DiffHunk, DiffLine, DiffView, DiffViewOutcome, DiffViewState},
 };
 
 /// Maximum undo depth for review ops (not VCS ops).
@@ -626,24 +624,11 @@ impl DiffReviewState {
     pub const fn hunk_cursor(&self) -> usize {
         self.view.hunk_cursor
     }
-
-    /// Programmatic hunk cursor.
-    pub fn set_hunk_cursor(&mut self, index: usize) {
-        self.view.hunk_cursor = index;
-    }
-
     /// Vertical offset.
     #[must_use]
     pub fn offset_y(&self) -> u16 {
         self.view.offset()
     }
-
-    /// Split mode preference.
-    #[must_use]
-    pub const fn is_split(&self) -> bool {
-        matches!(self.view.mode, DiffMode::Split)
-    }
-
     /// Prefers split when wide.
     #[must_use]
     pub const fn prefers_split(&self) -> bool {
@@ -705,12 +690,6 @@ impl DiffReviewState {
         }
         s
     }
-
-    /// Inject host-persisted comments (replaces session list).
-    pub fn set_comments(&mut self, comments: Vec<DiffComment>) {
-        self.comments = comments;
-    }
-
     /// Set decision without undo (host hydrate).
     pub fn hydrate_decision(&mut self, unit: DiffReviewUnit, decision: DiffDecision) {
         self.decisions.insert(unit.key(), decision);
@@ -1330,41 +1309,6 @@ impl DiffReviewState {
             DiffReviewOutcome::ExternalEditorRequested { path, line }
         }
     }
-
-    /// Mouse.
-    pub fn handle_mouse_lines(
-        &mut self,
-        event: MouseEvent,
-        lines: &[DiffLine<'_>],
-        hunks: &[DiffHunk],
-        files: &[DiffReviewFileRow<'_>],
-    ) -> DiffReviewOutcome {
-        if !self.accepts_input {
-            return DiffReviewOutcome::Ignored;
-        }
-        // File tree hit
-        if let Some((id, _)) = self
-            .file_regions
-            .iter()
-            .find(|(_, r)| r.contains(event.position))
-        {
-            if matches!(event.kind, MouseEventKind::Down(MouseButton::Left)) {
-                if let Some(i) = files.iter().position(|f| f.id == id) {
-                    self.file_cursor = i;
-                    self.region = DiffReviewRegion::FileTree;
-                    return DiffReviewOutcome::FileCursorMoved { id: id.clone() };
-                }
-            }
-        }
-        if self.summary_area.contains(event.position)
-            && matches!(event.kind, MouseEventKind::Down(MouseButton::Left))
-        {
-            self.region = DiffReviewRegion::Summary;
-            return DiffReviewOutcome::SummaryActivated(self.summary(files.len(), hunks.len()));
-        }
-        let out = self.view.handle_mouse(event, lines, hunks);
-        self.map_view(out)
-    }
 }
 
 /// Interactive DiffReview chrome.
@@ -1759,7 +1703,7 @@ pub mod bench {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::widgets::diff::DiffKind;
+    use crate::widgets::diff::{DiffKind, DiffMode};
 
     /// GAP-DF-1: accepting in the file tree accepts the file you are on.
     #[test]

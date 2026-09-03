@@ -205,12 +205,6 @@ impl SpinnerState {
     pub fn set_phase(&mut self, phase: ActivityPhase) {
         self.phase = phase;
     }
-
-    /// Frame period ms (Full motion base).
-    pub fn set_period_ms(&mut self, ms: u64) {
-        self.period_ms = ms.max(16);
-    }
-
     /// Embedded in labeled control (allows compact glyph-only).
     pub fn set_embedded_in_labeled_control(&mut self, on: bool) {
         self.embedded_in_labeled_control = on;

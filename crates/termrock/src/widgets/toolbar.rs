@@ -157,23 +157,6 @@ impl<'a, Id> ToolbarItem<'a, Id> {
             intent: None,
         }
     }
-
-    /// Static label.
-    #[must_use]
-    pub const fn label_item(id: Id, label: &'a str) -> Self {
-        Self {
-            id,
-            label,
-            icon: None,
-            hint: None,
-            enabled: false,
-            priority: 80,
-            kind: ToolbarItemKind::Label,
-            command: None,
-            intent: None,
-        }
-    }
-
     /// Icon glyph.
     #[must_use]
     pub const fn icon(mut self, icon: &'a str) -> Self {

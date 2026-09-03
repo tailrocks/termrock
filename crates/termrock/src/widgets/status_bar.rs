@@ -374,19 +374,6 @@ impl<Id> StatusBarState<Id> {
         self.previous_mode = Some(mode);
         self.mode_changed_at_ms = elapsed_ms;
     }
-
-    /// How far the mode cross-fade has run at `elapsed_ms` (`1.0` settled).
-    #[must_use]
-    pub fn mode_fade(&self, elapsed_ms: u64, duration_ms: u64) -> f32 {
-        if self.previous_mode.is_none() || duration_ms == 0 {
-            return 1.0;
-        }
-        let since = elapsed_ms.saturating_sub(self.mode_changed_at_ms);
-        if since >= duration_ms {
-            return 1.0;
-        }
-        since as f32 / duration_ms as f32
-    }
 }
 
 impl<Id> Default for StatusBarState<Id> {

@@ -42,17 +42,6 @@ impl HeadingLevel {
             Self::H3 => "h3",
         }
     }
-
-    /// Markdown `#` count (1–3).
-    #[must_use]
-    pub const fn hash_depth(self) -> u8 {
-        match self {
-            Self::H1 => 1,
-            Self::H2 => 2,
-            Self::H3 => 3,
-        }
-    }
-
     /// From markdown hash depth (clamped 1–3).
     #[must_use]
     pub const fn from_hash_depth(n: u8) -> Self {
@@ -207,19 +196,6 @@ impl<'a> Heading<'a> {
         self.selectable = policy;
         self
     }
-
-    /// Level of this heading.
-    #[must_use]
-    pub const fn level_of(&self) -> HeadingLevel {
-        self.level
-    }
-
-    /// Recipe.
-    #[must_use]
-    pub const fn recipe_of(&self) -> HeadingRecipe {
-        self.recipe
-    }
-
     /// Whether a rule row is requested for this paint.
     #[must_use]
     pub fn wants_rule(&self) -> bool {

@@ -433,13 +433,6 @@ impl<'a> Skeleton<'a> {
     pub fn measure_height(&self) -> u16 {
         self.layout.measure_height()
     }
-
-    /// Borrow layout.
-    #[must_use]
-    pub fn skeleton_layout(&self) -> &SkeletonLayout {
-        &self.layout
-    }
-
     /// Paint skeleton bars for this frame.
     ///
     /// `state.visible` gates the paint; shimmer motion is the host's concern

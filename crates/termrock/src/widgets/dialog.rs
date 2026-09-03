@@ -530,16 +530,6 @@ impl<'a> Backdrop<'a> {
             policy: BackdropPolicy::Dim,
         }
     }
-
-    /// Opaque backdrop for blocking/fullscreen layers.
-    #[must_use]
-    pub const fn occluding(system: &'a DesignSystem) -> Self {
-        Self {
-            system,
-            policy: BackdropPolicy::Occlude,
-        }
-    }
-
     /// Selects the semantic policy requested by the overlay stack.
     #[must_use]
     pub const fn policy(mut self, policy: BackdropPolicy) -> Self {
@@ -2198,12 +2188,6 @@ impl<Id: Clone + PartialEq> ChoiceDialogState<Id> {
     pub fn dialog(&self) -> &DialogState<Id> {
         &self.dialog
     }
-
-    /// Mutable access to the dialog engine (close policy, validation, zones).
-    pub fn dialog_mut(&mut self) -> &mut DialogState<Id> {
-        &mut self.dialog
-    }
-
     /// Routes keys via dialog engine → [`Outcome`].
     pub fn handle_key(&mut self, actions: &[Action<'_, Id>], key: KeyEvent) -> Outcome<Id> {
         if !self.accepts_input || key.is_release() {

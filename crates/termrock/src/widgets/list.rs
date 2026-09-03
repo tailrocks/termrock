@@ -372,12 +372,6 @@ impl<Id> ListState<Id> {
     pub fn search_query(&self) -> Option<&str> {
         self.search_query.as_deref()
     }
-
-    /// Set search query (empty string clears).
-    pub fn set_search_query(&mut self, query: Option<String>) {
-        self.search_query = query.filter(|q| !q.is_empty());
-    }
-
     /// Typeahead buffer (from roving).
     #[must_use]
     pub fn typeahead_buffer(&self) -> &str {
@@ -399,12 +393,6 @@ impl<Id> ListState<Id> {
         self.virtual_total = total_len;
         self.collection.set_virtual_window(window_start, total_len);
     }
-
-    /// Sets how missing active IDs are treated during virtual reconciliation.
-    pub fn set_virtual_active_policy(&mut self, policy: VirtualWindowActivePolicy) {
-        self.virtual_active_policy = policy;
-    }
-
     /// Current virtual active-ID reconciliation policy.
     #[must_use]
     pub const fn virtual_active_policy(&self) -> VirtualWindowActivePolicy {
@@ -711,16 +699,6 @@ impl<Id: Clone + PartialEq> ListState<Id> {
             _ => Outcome::Ignored,
         }
     }
-
-    /// Intent path returning the standard [`crate::interaction::EventResult`] envelope.
-    pub fn handle_intent_result(
-        &mut self,
-        rows: &[ListRow<'_, Id>],
-        intent: UiIntent,
-    ) -> crate::interaction::EventResult<Outcome<Id>> {
-        self.handle_intent(rows, intent).into_event_result()
-    }
-
     /// Key path returning [`crate::interaction::EventResult`].
     pub fn handle_key_result(
         &mut self,
@@ -879,54 +857,6 @@ impl<Id: Clone + PartialEq> ListState<Id> {
             ListClickPolicy::Select => Outcome::Changed,
         }
     }
-
-    /// Pointer select with optional range (Shift). Call after hit-test when multi-select is enabled.
-    pub fn click_select(&mut self, position: Position, extend_range: bool) -> Outcome<Id> {
-        let Some(region) = self
-            .regions
-            .iter()
-            .find(|region| region.area.contains(position))
-            .map(|r| (r.id.clone(), r.area))
-        else {
-            return Outcome::Ignored;
-        };
-        let id = region.0;
-        self.collection.set_active(Some(id.clone()));
-        if !extend_range {
-            if let Some(sel) = self.selection.as_mut() {
-                sel.set_anchor(Some(id.clone()));
-                let _ = sel.select(id.clone());
-            }
-            return Outcome::Changed;
-        }
-        // Need rows for order — host should call range_select_to_active with rows.
-        if let Some(sel) = self.selection.as_mut() {
-            if sel.anchor().is_none() {
-                sel.set_anchor(Some(id.clone()));
-            }
-            let _ = sel.toggle(&id);
-        }
-        Outcome::CheckToggled(id)
-    }
-
-    /// Shift-range along visible rows to `to` (stable id).
-    pub fn select_range_to(&mut self, rows: &[ListRow<'_, Id>], to: &Id) -> Outcome<Id> {
-        let Some(selection) = self.selection.as_mut() else {
-            return Outcome::Ignored;
-        };
-        let order: Vec<Id> = rows
-            .iter()
-            .filter(|r| r.enabled && r.role.is_navigable())
-            .map(|r| r.id.clone())
-            .collect();
-        if selection.anchor().is_none() {
-            selection.set_anchor(Some(to.clone()));
-        }
-        let _ = selection.set_range(&order, to);
-        self.collection.set_active(Some(to.clone()));
-        Outcome::CheckToggled(to.clone())
-    }
-
     fn reconcile_rows(&mut self, rows: &[ListRow<'_, Id>], viewport_height: usize) {
         let mut labels = Vec::new();
         let items = collection_items_from_rows(rows, &mut labels);

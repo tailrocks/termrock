@@ -391,13 +391,6 @@ impl<'a> Viewport<'a> {
     pub fn selection(&self, state: &ViewportState) -> Option<(CellPos, CellPos)> {
         state.normalized_selection()
     }
-
-    /// Returns whether a drag anchor is active.
-    #[must_use]
-    pub fn has_anchor(&self, state: &ViewportState) -> bool {
-        state.drag_anchor.is_some()
-    }
-
     /// Returns whether text is selected.
     #[must_use]
     pub fn has_selection(&self, state: &ViewportState) -> bool {

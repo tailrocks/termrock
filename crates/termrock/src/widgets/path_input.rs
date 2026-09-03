@@ -454,35 +454,11 @@ impl PathInputState {
         self.base = Some(base.into());
         self
     }
-
-    /// Home directory string for `~` presentation/expansion helpers.
-    #[must_use]
-    pub fn with_home(mut self, home: impl Into<String>) -> Self {
-        self.home = Some(home.into());
-        self
-    }
-
-    /// History limit.
-    #[must_use]
-    pub fn with_history_limit(mut self, limit: usize) -> Self {
-        self.history_limit = limit.max(1);
-        while self.history.len() > self.history_limit {
-            self.history.pop_back();
-        }
-        self
-    }
-
     /// Raw path text.
     #[must_use]
     pub fn path(&self) -> &str {
         self.path.value()
     }
-
-    /// Mutable editor.
-    pub fn path_editor_mut(&mut self) -> &mut TextInputState {
-        &mut self.path
-    }
-
     /// Style.
     #[must_use]
     pub const fn style(&self) -> PathStyle {
@@ -586,17 +562,6 @@ impl PathInputState {
     pub const fn set_risk(&mut self, risk: PathRisk) {
         self.risk = risk;
     }
-
-    /// Set base path context.
-    pub fn set_base(&mut self, base: Option<String>) {
-        self.base = base;
-    }
-
-    /// Set home for tilde helpers.
-    pub fn set_home(&mut self, home: Option<String>) {
-        self.home = home;
-    }
-
     /// Path with tilde expanded (presentation / resolve helper).
     #[must_use]
     pub fn expanded_tilde(&self) -> String {
@@ -818,15 +783,6 @@ impl PathInputState {
             _ => PathInputOutcome::Ignored,
         }
     }
-
-    /// Request host lookup for current path.
-    #[must_use]
-    pub fn lookup_request(&self) -> PathInputOutcome {
-        PathInputOutcome::LookupRequested {
-            path: self.path.value().to_owned(),
-        }
-    }
-
     /// Mouse: browse / clear / field.
     pub fn handle_mouse(&mut self, event: MouseEvent) -> PathInputOutcome {
         if !self.enabled {

@@ -500,28 +500,6 @@ impl<Id> TabsState<Id> {
             self.collection.set_active(Some(id));
         }
     }
-
-    /// Records when the active tab changed, in runner milliseconds.
-    ///
-    /// Hosts that animate call this from their tick; hosts that do not leave
-    /// it alone and the fill snaps, which is the settled frame.
-    pub const fn mark_changed_at(&mut self, elapsed_ms: u64) {
-        self.changed_at_ms = elapsed_ms;
-    }
-
-    /// How far the active-fill blend has run at `elapsed_ms` (`1.0` settled).
-    #[must_use]
-    pub fn blend_fraction(&self, elapsed_ms: u64, duration_ms: u64) -> f32 {
-        if self.previous.is_none() || duration_ms == 0 {
-            return 1.0;
-        }
-        let since = elapsed_ms.saturating_sub(self.changed_at_ms);
-        if since >= duration_ms {
-            return 1.0;
-        }
-        since as f32 / duration_ms as f32
-    }
-
     /// Presentation for bounds.
     #[must_use]
     pub fn presentation_for_bounds(bounds: Rect, orientation: TabsOrientation) -> TabsPresentation {
@@ -844,21 +822,6 @@ impl<Id> TabsState<Id> {
             }
             _ => TabsOutcome::Ignored,
         }
-    }
-
-    /// Select from overflow menu (host).
-    pub fn select_overflow_id(&mut self, id: Id) -> TabsOutcome<Id>
-    where
-        Id: Clone + PartialEq,
-    {
-        if !self.overflow_ids.contains(&id) {
-            return TabsOutcome::Ignored;
-        }
-        self.overflow_open = false;
-        self.previous = self.selected.clone();
-        self.selected = Some(id.clone());
-        self.collection.set_active(Some(id.clone()));
-        TabsOutcome::SelectionChanged { id }
     }
 }
 

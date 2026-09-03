@@ -76,18 +76,6 @@ impl TraceSpanStatus {
             Self::Cancelled => 'C',
         }
     }
-
-    /// ASCII letter.
-    #[must_use]
-    pub const fn letter_ascii(self) -> char {
-        match self {
-            Self::Unset => '.',
-            Self::Ok => 'S',
-            Self::Error => 'E',
-            Self::Cancelled => 'C',
-        }
-    }
-
     /// Role.
     #[must_use]
     pub const fn role(self) -> Role {

@@ -447,12 +447,6 @@ impl PopoverState {
     pub const fn modality(&self) -> PopoverModality {
         self.modality
     }
-
-    /// Set modality.
-    pub fn set_modality(&mut self, m: PopoverModality) {
-        self.modality = m;
-    }
-
     /// Presentation.
     #[must_use]
     pub const fn presentation(&self) -> PopoverPresentation {

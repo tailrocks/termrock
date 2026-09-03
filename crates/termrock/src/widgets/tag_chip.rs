@@ -762,21 +762,6 @@ impl<'a, Id> Chip<'a, Id> {
             interactive: true,
         }
     }
-
-    /// Static display chip (no toggle).
-    #[must_use]
-    pub const fn static_chip(id: Id, label: &'a str, system: &'a DesignSystem) -> Self {
-        Self {
-            id,
-            label,
-            system,
-            removable: false,
-            status: TokenStatus::Default,
-            disabled: false,
-            interactive: false,
-        }
-    }
-
     /// Removable.
     #[must_use]
     pub const fn removable(mut self, on: bool) -> Self {

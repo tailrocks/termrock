@@ -181,12 +181,6 @@ pub struct SurfaceParts {
 }
 
 impl SurfaceParts {
-    /// True when content has positive area.
-    #[must_use]
-    pub const fn has_content(self) -> bool {
-        self.content.width > 0 && self.content.height > 0
-    }
-
     /// Hit-test a cell.
     #[must_use]
     pub fn contains_hit(self, col: u16, row: u16) -> bool {

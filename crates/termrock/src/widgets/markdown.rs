@@ -438,12 +438,6 @@ impl MarkdownViewState {
     pub const fn set_focused(&mut self, on: bool) {
         self.focused = on;
     }
-
-    /// Cursor block.
-    pub const fn set_cursor_block(&mut self, idx: Option<usize>) {
-        self.cursor_block = idx;
-    }
-
     /// Max scroll.
     #[must_use]
     pub fn max_scroll_y(&self) -> u16 {

@@ -543,14 +543,6 @@ impl ToastSpec {
         self.announcement = Some(text.into());
         self
     }
-
-    /// Announcement string for a11y hosts.
-    #[must_use]
-    pub fn announce_text(&self) -> &str {
-        self.announcement
-            .as_deref()
-            .unwrap_or(self.message.as_str())
-    }
 }
 
 /// Archived toast for NotificationCenter.
@@ -648,13 +640,6 @@ impl ToastQueue {
     pub fn set_anchor(&mut self, anchor: Anchor) {
         self.anchor = anchor;
     }
-
-    /// Insets from the footer edge.
-    pub fn set_margins(&mut self, horizontal: u16, vertical: u16) {
-        self.h_margin = horizontal;
-        self.v_margin = vertical;
-    }
-
     /// Anchor.
     #[must_use]
     pub const fn anchor(&self) -> Anchor {
@@ -847,14 +832,6 @@ impl ToastQueue {
         };
         self.dismiss(&id)
     }
-
-    /// Pauses or resumes every live toast's TTL.
-    ///
-    /// Hosts wire this to terminal focus (`FocusGained` / `FocusLost`).
-    pub fn set_focus_paused(&mut self, tick: FrameTick, paused: bool) -> ToastOutcome {
-        self.set_paused(tick, paused)
-    }
-
     /// Activate undo / action for matching id (host maps hotkey).
     pub fn activate_action(&mut self, id: &str, action: impl Into<String>) -> ToastOutcome {
         if self.live.iter().any(|t| t.id == id) {

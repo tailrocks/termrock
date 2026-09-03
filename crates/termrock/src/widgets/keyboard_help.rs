@@ -669,12 +669,6 @@ impl KeyboardHelpState {
     pub fn set_accepts_input(&mut self, on: bool) {
         self.accepts_input = on;
     }
-
-    /// Footer max hints.
-    pub fn set_footer_max(&mut self, n: usize) {
-        self.footer_max = n.max(1);
-    }
-
     /// Presentation override.
     pub fn set_presentation_override(&mut self, p: Option<KeyboardHelpPresentation>) {
         self.presentation_override = p;

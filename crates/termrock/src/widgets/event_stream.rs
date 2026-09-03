@@ -470,29 +470,11 @@ impl<Id: Clone + PartialEq + Ord> EventStreamState<Id> {
         self.dropped = 0;
         self.batched = 0;
     }
-
-    /// Severity floor filter.
-    pub fn set_severity_floor(&mut self, floor: EventSeverity) {
-        self.severity_floor = floor;
-    }
-
     /// Severity floor.
     #[must_use]
     pub const fn severity_floor(&self) -> EventSeverity {
         self.severity_floor
     }
-
-    /// Exclude / include event type.
-    pub fn toggle_type_filter(&mut self, event_type: &str) -> bool {
-        let key = event_type.to_string();
-        if !self.excluded_types.remove(&key) {
-            self.excluded_types.insert(key);
-            false
-        } else {
-            true
-        }
-    }
-
     /// Capture stable anchor at current cursor (host reprojects; restore later).
     pub fn capture_anchor(&mut self, events: &[StreamEvent<'_, Id>]) {
         let view = self.filtered_view(events);

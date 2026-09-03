@@ -33,7 +33,7 @@ use crate::{
 };
 
 use super::drawer::DRAWER_DEFAULT_WIDTH;
-use super::toast::{ToastArchive, ToastKind, ToastPriority, ToastQueue, ToastSpec};
+use super::toast::{ToastArchive, ToastKind, ToastPriority, ToastQueue};
 
 /// Overlay id for notification center drawer presentation.
 pub const NOTIFICATION_CENTER_OVERLAY_ID: &str = "termrock.notification-center";
@@ -148,36 +148,6 @@ impl NotificationItem {
             announcement,
         }
     }
-
-    /// From a toast push spec (host mirrors toast into history).
-    #[must_use]
-    pub fn from_spec(spec: ToastSpec, created_at_secs: u64) -> Self {
-        let mut actions = Vec::new();
-        if let Some(ul) = spec.undo_label {
-            actions.push(("undo".into(), ul));
-        }
-        let announcement = spec
-            .announcement
-            .clone()
-            .unwrap_or_else(|| spec.message.clone());
-        Self {
-            id: spec.id,
-            kind: spec.kind,
-            priority: spec.priority,
-            title: spec.title,
-            message: spec.message,
-            source: None,
-            group_id: spec.group_id,
-            progress: spec.progress,
-            unread: true,
-            created_at_secs,
-            dedup_key: spec.dedup_key,
-            coalesce_count: 1,
-            actions,
-            announcement,
-        }
-    }
-
     /// Minimal constructor.
     #[must_use]
     pub fn new(id: impl Into<String>, message: impl Into<String>, kind: ToastKind) -> Self {
@@ -595,12 +565,6 @@ impl NotificationCenterState {
         self.trim_capacity();
         self.ensure_cursor();
     }
-
-    /// Mutable items for host merge (prefer ingest_*).
-    pub fn items_mut(&mut self) -> &mut Vec<NotificationItem> {
-        &mut self.items
-    }
-
     /// Unread count (all items).
     #[must_use]
     pub fn unread_count(&self) -> usize {

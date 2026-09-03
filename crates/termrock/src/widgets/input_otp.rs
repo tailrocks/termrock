@@ -129,17 +129,6 @@ impl InputOtpState {
             accepts_input: true,
         }
     }
-
-    /// Charset.
-    pub fn set_charset(&mut self, c: OtpCharset) {
-        self.charset = c;
-    }
-
-    /// Mask paint (`•` instead of char).
-    pub fn set_masked(&mut self, on: bool) {
-        self.masked = on;
-    }
-
     /// Focus.
     pub fn set_focused(&mut self, on: bool) {
         self.focused = on;

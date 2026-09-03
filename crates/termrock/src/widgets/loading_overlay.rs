@@ -18,11 +18,7 @@
 //! blocking is a last resort.
 //!
 //! Research: async UI boundaries, Textual workers, agent tool execution.
-use ratatui_core::{
-    buffer::Buffer,
-    layout::{Position, Rect},
-    style::Modifier,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
@@ -103,12 +99,6 @@ impl BusyMode {
     #[must_use]
     pub const fn wants_wash(self) -> bool {
         matches!(self, Self::Blocking | Self::Cancellable)
-    }
-
-    /// Prefer not to use a heavy overlay for this mode on short ops.
-    #[must_use]
-    pub const fn prefers_light_chrome(self) -> bool {
-        matches!(self, Self::NonBlocking | Self::Optimistic)
     }
 }
 
@@ -240,12 +230,6 @@ impl BusyBoundaryState {
     pub fn set_elapsed_ms(&mut self, ms: u64) {
         self.elapsed_ms = ms;
     }
-
-    /// Advance elapsed by delta (host frame).
-    pub fn advance_ms(&mut self, delta: u64) {
-        self.elapsed_ms = self.elapsed_ms.saturating_add(delta);
-    }
-
     /// Optional expected duration (enables short-op policy).
     pub fn set_expected_ms(&mut self, ms: Option<u64>) {
         self.expected_ms = ms;
@@ -319,12 +303,6 @@ impl BusyBoundaryState {
     pub fn spinner(&self) -> &SpinnerState {
         &self.spinner
     }
-
-    /// Spinner mut.
-    pub fn spinner_mut(&mut self) -> &mut SpinnerState {
-        &mut self.spinner
-    }
-
     /// Whether expected duration classifies this as a short op.
     #[must_use]
     pub fn is_short_op(&self) -> bool {
@@ -433,12 +411,6 @@ impl BusyBoundaryState {
             BusyRoute::Deliver
         }
     }
-
-    /// Whether a position is inside a blocked region (for focus graphs).
-    #[must_use]
-    pub fn blocks_position(&self, pos: Position, region: Rect) -> bool {
-        self.active && self.mode.blocks_input() && region.contains(pos)
-    }
 }
 
 // ── LoadingOverlay paint ────────────────────────────────────────────────────
@@ -468,23 +440,6 @@ impl<'a> LoadingOverlay<'a> {
             system,
         }
     }
-
-    /// From boundary state (borrows label/unavailable).
-    #[must_use]
-    pub fn from_boundary(state: &'a BusyBoundaryState, system: &'a DesignSystem) -> Self {
-        Self {
-            mode: state.mode,
-            label: state.label.as_str(),
-            unavailable: state.unavailable.as_deref(),
-            cancel_hint: if state.mode.cancellable() {
-                Some("esc cancel")
-            } else {
-                None
-            },
-            system,
-        }
-    }
-
     /// Mode.
     #[must_use]
     pub const fn mode(mut self, mode: BusyMode) -> Self {
@@ -808,6 +763,7 @@ mod tests {
     use super::*;
     use crate::input::KeyEventKind;
     use ratatui_core::backend::TestBackend;
+    use ratatui_core::layout::Position;
     use ratatui_core::style::Style;
     use ratatui_core::terminal::Terminal;
     use ratatui_core::widgets::Widget;

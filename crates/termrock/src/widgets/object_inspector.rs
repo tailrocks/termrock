@@ -85,12 +85,6 @@ impl InspectKind {
             Self::Unknown => "·",
         }
     }
-
-    /// Whether this kind is a branch container.
-    #[must_use]
-    pub const fn is_container(self) -> bool {
-        matches!(self, Self::Object | Self::Array)
-    }
 }
 
 /// Load / lazy state for a node body.
@@ -605,13 +599,6 @@ impl ObjectInspectorState {
             false
         }
     }
-
-    /// Expanded path set (for host projection).
-    #[must_use]
-    pub fn expanded_paths(&self) -> &BTreeSet<String> {
-        &self.expanded
-    }
-
     /// Search query.
     #[must_use]
     pub fn search(&self) -> Option<&str> {

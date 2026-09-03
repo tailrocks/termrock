@@ -328,18 +328,6 @@ impl BreadcrumbsState {
     pub const fn focus_on_ellipsis(&self) -> bool {
         self.focus_on_ellipsis
     }
-
-    /// Set focus index into source items.
-    pub fn set_focus_index(&mut self, index: usize) {
-        self.focus_index = index;
-        self.focus_on_ellipsis = false;
-    }
-
-    /// Focus the collapsed ellipsis (when presentation is collapsed).
-    pub fn set_focus_ellipsis(&mut self, on: bool) {
-        self.focus_on_ellipsis = on;
-    }
-
     /// Focus whole control (single Tab stop).
     pub fn set_focused(&mut self, on: bool) {
         self.focused = on;

@@ -85,20 +85,6 @@ impl MetricTileHealth {
             Self::Stale => '~',
         }
     }
-
-    /// ASCII letter.
-    #[must_use]
-    pub const fn letter_ascii(self) -> char {
-        match self {
-            Self::Ok => '.',
-            Self::Warning => '!',
-            Self::Danger => 'X',
-            Self::Loading => '.',
-            Self::Failed => 'x',
-            Self::Stale => '~',
-        }
-    }
-
     /// Shared health projection for recipe-owned status paint.
     #[must_use]
     pub const fn semantic(self) -> SemanticStatus {
@@ -265,14 +251,6 @@ impl<'a> MetricTileView<'a> {
         self.focused = focused;
         self
     }
-
-    /// Forces the ASCII glyph profile.
-    #[must_use]
-    /// The health letter under the active glyph profile.
-    pub fn health_letter(&self) -> char {
-        self.tile.health.letter()
-    }
-
     /// The delta's direction glyph, so a delta reads without color.
     #[must_use]
     pub fn delta_glyph(&self) -> &'static str {

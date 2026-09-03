@@ -489,13 +489,6 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> TableState<RowId, ColumnId> {
         self.h_offset = next;
         changed
     }
-
-    /// Indices of columns kept after the last layout pass (declaration order).
-    #[must_use]
-    pub fn visible_column_indices(&self) -> &[usize] {
-        &self.visible_columns
-    }
-
     /// Reconciles selection after caller sorting, filtering, or replacement.
     ///
     /// Call this after every in-place change to row identity, order, or enabled
