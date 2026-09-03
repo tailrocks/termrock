@@ -266,6 +266,8 @@ pub struct DataTableState<RowId: Clone + Ord, ColId: Clone + PartialEq> {
     body_width: u16,
     /// Scratch: resolved (col_index, width) for paint.
     paint_widths: Vec<(usize, u16)>,
+    /// Scratch: clipped physical rect for each resolved paint column.
+    paint_rects: Vec<Rect>,
     /// Logical column count for h-scroll max.
     content_width: u16,
     /// Viewport width for columns (area − gutter).
@@ -303,6 +305,7 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
             body_rows: 0,
             body_width: 0,
             paint_widths: Vec::new(),
+            paint_rects: Vec::new(),
             content_width: 0,
             viewport_width: 0,
         }
@@ -1172,6 +1175,7 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
     {
         state.header_regions.clear();
         state.cell_regions.clear();
+        state.paint_rects.clear();
         if area.is_empty() {
             return;
         }
@@ -1240,16 +1244,40 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
         state.pin_start_count = pin_start;
         state.pin_end_count = pin_end;
         let gap = self.system.spacing.column_gap;
-        state.content_width = state
-            .paint_widths
-            .iter()
-            .map(|(_, w)| *w)
-            .fold(0u16, u16::saturating_add)
-            .saturating_add(gap.saturating_mul(
-                u16::try_from(state.paint_widths.len().saturating_sub(1)).unwrap_or(0),
-            ));
-        let max_h = state.content_width.saturating_sub(col_budget);
+        let start_extent = column_extent(&state.paint_widths, self.columns, ColumnPin::Start, gap);
+        let end_extent = column_extent(&state.paint_widths, self.columns, ColumnPin::End, gap);
+        let center_extent = column_extent(&state.paint_widths, self.columns, ColumnPin::None, gap);
+        let center_viewport = col_budget
+            .saturating_sub(start_extent)
+            .saturating_sub(end_extent)
+            .saturating_sub(if pin_start > 0 && center_extent > 0 {
+                gap
+            } else {
+                0
+            })
+            .saturating_sub(if pin_end > 0 && center_extent > 0 {
+                gap
+            } else {
+                0
+            });
+        let max_h = center_extent.saturating_sub(center_viewport);
+        // Keep the public viewport width as the full post-chrome budget while
+        // normalizing the scroll extent to the unpinned center strip.
+        state.content_width = col_budget.saturating_add(max_h);
         state.h_offset = state.h_offset.min(max_h);
+        let origin = area.x.saturating_add(self.chrome_width());
+        let clip_right = origin
+            .saturating_add(state.viewport_width)
+            .min(area.right());
+        resolve_column_rects(
+            &state.paint_widths,
+            self.columns,
+            origin,
+            clip_right,
+            state.h_offset,
+            gap,
+            &mut state.paint_rects,
+        );
 
         // Sticky header
         if y < area.bottom() {
@@ -1352,6 +1380,97 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
     }
 }
 
+fn column_extent<ColId>(
+    widths: &[(usize, u16)],
+    columns: &ColumnModel<ColId>,
+    pin: ColumnPin,
+    gap: u16,
+) -> u16 {
+    let mut count = 0usize;
+    let mut width = 0u16;
+    for &(index, column_width) in widths {
+        if columns.columns[index].pin == pin {
+            count += 1;
+            width = width.saturating_add(column_width);
+        }
+    }
+    width.saturating_add(
+        gap.saturating_mul(u16::try_from(count.saturating_sub(1)).unwrap_or(u16::MAX)),
+    )
+}
+
+/// Resolve one physical rect per projected column.
+///
+/// Start pins anchor to the left edge, end pins to the right edge, and only
+/// unpinned columns consume horizontal scroll. The same rects feed header and
+/// body hit regions, so pointer geometry cannot diverge from painted cells.
+fn resolve_column_rects<ColId>(
+    widths: &[(usize, u16)],
+    columns: &ColumnModel<ColId>,
+    origin: u16,
+    clip_right: u16,
+    h_offset: u16,
+    gap: u16,
+    out: &mut Vec<Rect>,
+) {
+    out.clear();
+    out.resize(widths.len(), Rect::new(0, 0, 0, 0));
+    if widths.is_empty() || clip_right <= origin {
+        return;
+    }
+
+    let start_extent = i64::from(column_extent(widths, columns, ColumnPin::Start, gap));
+    let end_extent = i64::from(column_extent(widths, columns, ColumnPin::End, gap));
+    let center_extent = i64::from(column_extent(widths, columns, ColumnPin::None, gap));
+    let has_start = start_extent > 0;
+    let has_end = end_extent > 0;
+    let has_center = center_extent > 0;
+    let origin = i64::from(origin);
+    let clip_right = i64::from(clip_right);
+    let gap = i64::from(gap);
+    let center_left = origin + start_extent + if has_start && has_center { gap } else { 0 };
+    let center_right = clip_right - end_extent - if has_end && has_center { gap } else { 0 };
+    let mut start_x = origin;
+    let mut end_x = clip_right - end_extent;
+    let mut center_offset = 0i64;
+
+    for (ordinal, &(index, width)) in widths.iter().enumerate() {
+        let pin = columns.columns[index].pin;
+        let left = match pin {
+            ColumnPin::Start => {
+                let left = start_x;
+                start_x += i64::from(width) + gap;
+                left
+            }
+            ColumnPin::End => {
+                let left = end_x;
+                end_x += i64::from(width) + gap;
+                left
+            }
+            ColumnPin::None => {
+                let left = center_left + center_offset - i64::from(h_offset);
+                center_offset += i64::from(width) + gap;
+                left
+            }
+        };
+        let right = left + i64::from(width);
+        let (bounds_left, bounds_right) = match pin {
+            ColumnPin::None => (center_left, center_right),
+            ColumnPin::Start | ColumnPin::End => (origin, clip_right),
+        };
+        let visible_left = left.max(bounds_left);
+        let visible_right = right.min(bounds_right);
+        if visible_right > visible_left {
+            out[ordinal] = Rect::new(
+                u16::try_from(visible_left).unwrap_or(u16::MAX),
+                0,
+                u16::try_from(visible_right - visible_left).unwrap_or(u16::MAX),
+                1,
+            );
+        }
+    }
+}
+
 /// Source DataGrid `fit` / `fit_right`: truncate (tail `…`) then pad.
 fn paint_plain_cell(
     buffer: &mut Buffer,
@@ -1448,55 +1567,17 @@ fn paint_header_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
         usize::from(chrome),
         super::table_chrome::header_band(table.system),
     );
-    let origin = area.x.saturating_add(chrome);
-    let clip_right = origin
-        .saturating_add(state.viewport_width)
-        .min(area.right());
-    let mut x = origin;
-    // Apply h_offset only to unpinned center columns; pin start paints first.
-    let widths = &state.paint_widths;
-    let pin_start_w: u16 = widths
-        .iter()
-        .filter(|(i, _)| table.columns.columns[*i].pin == ColumnPin::Start)
-        .map(|(_, w)| *w + 1)
-        .sum::<u16>()
-        .saturating_sub(u16::from(
-            widths
-                .iter()
-                .any(|(i, _)| table.columns.columns[*i].pin == ColumnPin::Start),
-        ));
-    let _ = pin_start_w;
-
-    let gap = i32::from(table.system.spacing.column_gap);
-    let mut logical = 0i32;
-    let h_off = i32::from(state.h_offset);
-    for (paint_ord, &(col_idx, width)) in widths.iter().enumerate() {
+    // Apply h_offset only to unpinned center columns. The physical rects are
+    // shared with body painting so header hit regions match the cells.
+    for (paint_ord, &(col_idx, _width)) in state.paint_widths.iter().enumerate() {
+        let paint_rect = state.paint_rects[paint_ord];
+        if paint_rect.width == 0 {
+            continue;
+        }
         let col = &table.columns.columns[col_idx];
-        let pinned_start = col.pin == ColumnPin::Start;
-        let pinned_end = col.pin == ColumnPin::End;
-        let skip_scroll = pinned_start || pinned_end;
-        let col_left = if skip_scroll {
-            // Pins: place at current x without h_offset
-            i32::from(x)
-        } else {
-            i32::from(origin) + logical - h_off
-        };
-        let col_right = col_left + i32::from(width);
-        if !skip_scroll {
-            logical += i32::from(width) + gap;
-        }
-        if col_right <= i32::from(origin) || col_left >= i32::from(clip_right) {
-            if skip_scroll {
-                x = (col_right as u16).min(clip_right);
-            }
-            continue;
-        }
-        let paint_x = col_left.max(i32::from(origin)) as u16;
-        let paint_end = col_right.min(i32::from(clip_right)) as u16;
-        let paint_w = paint_end.saturating_sub(paint_x);
-        if paint_w == 0 {
-            continue;
-        }
+        let paint_x = paint_rect.x;
+        let paint_w = paint_rect.width;
+        let paint_end = paint_rect.right();
         let mut title = col.title.clone();
         let sorted = state.sort.as_ref().is_some_and(|s| s.column == col.id);
         if sorted {
@@ -1558,9 +1639,6 @@ fn paint_header_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
             // never asked for (plans/021 Step 3).
             sortable: col.sortable,
         });
-        if skip_scroll {
-            x = paint_end.saturating_add(table.system.spacing.column_gap);
-        }
     }
 
     paint_clip_chevrons(table, area, y, buffer, state);
@@ -1712,39 +1790,14 @@ fn paint_data_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
         );
     }
 
-    let origin = area.x.saturating_add(gutter_w);
-    let clip_right = area.right();
-    let h_off = i32::from(state.h_offset);
-    let gap = i32::from(table.system.spacing.column_gap);
-    let mut logical = 0i32;
-    let mut x_pin = origin;
-
-    for (paint_ord, &(col_idx, width)) in state.paint_widths.iter().enumerate() {
+    for (paint_ord, &(col_idx, _width)) in state.paint_widths.iter().enumerate() {
+        let paint_rect = state.paint_rects[paint_ord];
+        if paint_rect.width == 0 {
+            continue;
+        }
         let col = &table.columns.columns[col_idx];
-        let pinned_start = col.pin == ColumnPin::Start;
-        let pinned_end = col.pin == ColumnPin::End;
-        let skip_scroll = pinned_start || pinned_end;
-        let col_left = if skip_scroll {
-            i32::from(x_pin)
-        } else {
-            i32::from(origin) + logical - h_off
-        };
-        let col_right = col_left + i32::from(width);
-        if !skip_scroll {
-            logical += i32::from(width) + gap;
-        }
-        if col_right <= i32::from(origin) || col_left >= i32::from(clip_right) {
-            if skip_scroll {
-                x_pin = (col_right as u16).min(clip_right);
-            }
-            continue;
-        }
-        let paint_x = col_left.max(i32::from(origin)) as u16;
-        let paint_end = col_right.min(i32::from(clip_right)) as u16;
-        let paint_w = paint_end.saturating_sub(paint_x);
-        if paint_w == 0 {
-            continue;
-        }
+        let paint_x = paint_rect.x;
+        let paint_w = paint_rect.width;
         // `paint_widths` is a responsive projection, so its ordinal is not
         // necessarily the source cell index when a middle column dropped.
         let cell_text = cells.get(col_idx).copied().unwrap_or("");
@@ -1818,9 +1871,6 @@ fn paint_data_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
             col_index: paint_ord,
             area: Rect::new(paint_x, y, paint_w, 1),
         });
-        if skip_scroll {
-            x_pin = paint_end.saturating_add(table.system.spacing.column_gap);
-        }
     }
 }
 
@@ -2488,6 +2538,45 @@ mod tests {
             .collect();
         assert!(text.contains("ID") || text.contains("Name"), "{text}");
         assert!(text.contains("alpha") || text.contains("beta"), "{text}");
+    }
+
+    #[test]
+    fn pinned_columns_anchor_to_opposite_edges_and_share_hit_geometry() {
+        use ratatui_core::buffer::Buffer;
+        use ratatui_core::layout::Rect;
+
+        let system = DesignSystem::default();
+        let columns = ColumnModel::new(vec![
+            DataColumn::new("start", "Start", DataColumnWidth::Fixed(4)).pin(ColumnPin::Start),
+            DataColumn::new("center", "Center", DataColumnWidth::Fixed(6)),
+            DataColumn::new("end", "End", DataColumnWidth::Fixed(4)).pin(ColumnPin::End),
+        ]);
+        let cells: &[&str] = &["S", "C", "E"];
+        let rows = [(1u64, cells)];
+        let mut state = DataTableState::<u64, &str>::new();
+        state.accepts_input = false;
+        let area = Rect::new(0, 0, 30, 4);
+        let mut buffer = Buffer::empty(area);
+
+        DataTable::new(&system, &columns, &rows)
+            .row_numbers(false)
+            .render(area, &mut buffer, &mut state);
+
+        let region = |column: &str| {
+            state
+                .cell_regions
+                .iter()
+                .find(|region| region.column == column)
+                .map(|region| region.area)
+                .expect("column is painted")
+        };
+        assert_eq!(region("start").x, 3);
+        assert_eq!(region("center").x, 9);
+        assert_eq!(region("end").x, 24);
+        assert_eq!(buffer[(region("start").x, 1)].symbol(), "S");
+        assert_eq!(buffer[(region("center").x, 1)].symbol(), "C");
+        assert_eq!(buffer[(region("end").x, 1)].symbol(), "E");
+        assert_eq!(state.header_regions[2].area.x, region("end").x);
     }
 
     #[test]
