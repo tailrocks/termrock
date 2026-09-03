@@ -748,6 +748,40 @@ impl TextInputState {
         let alt = key.modifiers.contains(KeyModifiers::ALT);
         let shift = key.modifiers.contains(KeyModifiers::SHIFT);
 
+        // These physical actions have lifecycle or host-facing side effects.
+        // Reject repeats before any editor mutation; ordinary text and cursor
+        // repeats remain supported for held-key behavior.
+        let one_shot = matches!(
+            key.code,
+            KeyCode::Enter
+                | KeyCode::Tab
+                | KeyCode::BackTab
+                | KeyCode::Esc
+                | KeyCode::Char(
+                    'c' | 'C'
+                        | 'k'
+                        | 'K'
+                        | 'm'
+                        | 'M'
+                        | 'u'
+                        | 'U'
+                        | 'v'
+                        | 'V'
+                        | 'w'
+                        | 'W'
+                        | 'x'
+                        | 'X',
+                )
+        );
+        if !key.is_press()
+            && (matches!(
+                key.code,
+                KeyCode::Enter | KeyCode::Tab | KeyCode::BackTab | KeyCode::Esc
+            ) || (ctrl && one_shot))
+        {
+            return TextInputOutcome::Ignored;
+        }
+
         if !self.editing {
             if matches!(key.code, KeyCode::Enter) && !ctrl && !alt && self.can_edit() {
                 self.begin_edit();
@@ -1585,6 +1619,7 @@ impl StatefulWidget for TextInput<'_> {
 
 #[cfg(test)]
 mod tests {
+    use crate::input::KeyEventKind;
 
     #[test]
     fn editing_uses_hardware_cursor_not_a_reversed_cell() {
@@ -1920,6 +1955,46 @@ mod tests {
             TextInputOutcome::Changed
         );
         assert_eq!(state.value(), "");
+    }
+
+    #[test]
+    fn repeated_one_shot_actions_are_ignored_but_text_repeats() {
+        let mut state = TextInputState::new("hello world");
+        state.set_focused(true);
+        state.set_editing(true);
+        let actions = [
+            (KeyCode::Enter, KeyModifiers::NONE),
+            (KeyCode::Tab, KeyModifiers::NONE),
+            (KeyCode::BackTab, KeyModifiers::NONE),
+            (KeyCode::Esc, KeyModifiers::NONE),
+            (KeyCode::Char('m'), KeyModifiers::CONTROL),
+            (
+                KeyCode::Char('m'),
+                KeyModifiers::CONTROL | KeyModifiers::ALT,
+            ),
+            (KeyCode::Char('c'), KeyModifiers::CONTROL),
+            (KeyCode::Char('v'), KeyModifiers::CONTROL),
+            (KeyCode::Char('x'), KeyModifiers::CONTROL),
+            (KeyCode::Char('u'), KeyModifiers::CONTROL),
+            (KeyCode::Char('k'), KeyModifiers::CONTROL),
+            (KeyCode::Char('w'), KeyModifiers::CONTROL),
+        ];
+        for (code, modifiers) in actions {
+            let before = state.clone();
+            let mut key = KeyEvent::new(code, modifiers);
+            key.kind = KeyEventKind::Repeat;
+            assert_eq!(state.handle_key(key), TextInputOutcome::Ignored);
+            assert_eq!(state, before, "{code:?} repeat mutated text-input state");
+        }
+
+        let mut repeat_text = KeyEvent::new(KeyCode::Char('!'), KeyModifiers::NONE);
+        repeat_text.kind = KeyEventKind::Repeat;
+        assert_eq!(
+            state.handle_key(repeat_text),
+            TextInputOutcome::Changed,
+            "ordinary text repeats remain supported"
+        );
+        assert_eq!(state.value(), "hello world!");
     }
 
     #[test]
