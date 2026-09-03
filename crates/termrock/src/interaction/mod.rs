@@ -11,7 +11,9 @@ mod roving;
 mod scene;
 mod selection_model;
 
-pub use collection::{CollectionItem, CollectionOutcome, CollectionState};
+pub use collection::{
+    CollectionItem, CollectionOutcome, CollectionState, VirtualWindowActivePolicy,
+};
 pub use dismissable::{
     DismissAction, DismissDecision, DismissEventId, DismissGuard, DismissPhase, DismissPolicy,
     DismissReason, DismissableLayer, PointerGesture, evaluate_escape_stack,

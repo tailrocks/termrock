@@ -56,6 +56,18 @@ impl<Id> CollectionItem<Id> {
     }
 }
 
+/// How a virtual-window reconciliation treats an active ID absent from its
+/// partial projection.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum VirtualWindowActivePolicy {
+    /// Preserve an ID that may simply be outside the supplied window.
+    #[default]
+    PreserveMissing,
+    /// Treat an absent ID as invalid even when the projection is partial.
+    InvalidateMissing,
+}
+
 /// Outcome of collection navigation / scroll (not domain Activate).
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
@@ -245,12 +257,19 @@ impl<Id: Clone + PartialEq> CollectionState<Id> {
     /// Reconciles against a **window** of items starting at `window_start` in the full list.
     ///
     /// Host owns filtering/sorting; pass only the painted/virtual slice.
+    ///
+    /// [`VirtualWindowActivePolicy::PreserveMissing`] keeps an active ID that
+    /// is outside the supplied partial window. Use
+    /// [`VirtualWindowActivePolicy::InvalidateMissing`] when the host knows
+    /// that absence is authoritative, such as after removal from the source
+    /// collection.
     pub fn reconcile_window(
         &mut self,
         window: &[CollectionItem<Id>],
         window_start: usize,
         total_len: usize,
         viewport_len: usize,
+        active_policy: VirtualWindowActivePolicy,
     ) -> CollectionOutcome<Id> {
         self.total_len = total_len;
         self.viewport_len = viewport_len;
@@ -258,8 +277,9 @@ impl<Id: Clone + PartialEq> CollectionState<Id> {
         let window_start = window_start.min(max_offset);
         self.window_start = Some(window_start);
         self.offset = window_start;
-        let partial_window = window_start > 0 || window.len() < total_len;
-        if partial_window
+        let partial_window = window.len() < total_len;
+        if matches!(active_policy, VirtualWindowActivePolicy::PreserveMissing)
+            && partial_window
             && self
                 .roving
                 .active()
@@ -487,7 +507,13 @@ mod tests {
     fn virtual_window_metadata() {
         let mut c = CollectionState::new();
         let window = items(&[("c", true), ("d", true)]);
-        let _ = c.reconcile_window(&window, 2, 10, 2);
+        let _ = c.reconcile_window(
+            &window,
+            2,
+            10,
+            2,
+            VirtualWindowActivePolicy::PreserveMissing,
+        );
         assert_eq!(c.offset(), 2);
         assert_eq!(c.total_len(), 10);
         assert_eq!(c.viewport_len(), 2);
@@ -498,7 +524,13 @@ mod tests {
     fn virtual_window_movement_keeps_absolute_offset() {
         let mut c = CollectionState::new();
         let window = items(&[("c", true), ("d", true)]);
-        let _ = c.reconcile_window(&window, 50, 200, 2);
+        let _ = c.reconcile_window(
+            &window,
+            50,
+            200,
+            2,
+            VirtualWindowActivePolicy::PreserveMissing,
+        );
 
         assert!(c.move_next(&window).active_changed());
         assert_eq!(c.active(), Some(&"d"));
@@ -518,7 +550,7 @@ mod tests {
         let _ = c.reconcile(&full);
         c.set_active(Some("b"));
 
-        let out = c.reconcile_window(&window, 2, 4, 2);
+        let out = c.reconcile_window(&window, 2, 4, 2, VirtualWindowActivePolicy::PreserveMissing);
 
         assert_eq!(out, CollectionOutcome::Ignored);
         assert_eq!(c.active(), Some(&"b"));
@@ -530,7 +562,7 @@ mod tests {
         let window = items(&[("c", true), ("d", true)]);
         let mut c = CollectionState::new();
         c.set_active(Some("b"));
-        let _ = c.reconcile_window(&window, 2, 4, 2);
+        let _ = c.reconcile_window(&window, 2, 4, 2, VirtualWindowActivePolicy::PreserveMissing);
 
         let out = c.move_next(&window);
 
@@ -546,7 +578,7 @@ mod tests {
         c.set_active(Some("gone"));
 
         assert_eq!(
-            c.reconcile_window(&full, 0, 2, 2),
+            c.reconcile_window(&full, 0, 2, 2, VirtualWindowActivePolicy::PreserveMissing,),
             CollectionOutcome::ActiveChanged {
                 from: Some("gone"),
                 to: Some("a"),
@@ -557,20 +589,96 @@ mod tests {
         let disabled = items(&[("a", false), ("b", false)]);
         c.set_active(Some("gone"));
         assert_eq!(
-            c.reconcile_window(&disabled, 0, 2, 2),
+            c.reconcile_window(
+                &disabled,
+                0,
+                2,
+                2,
+                VirtualWindowActivePolicy::PreserveMissing,
+            ),
             CollectionOutcome::ActiveChanged {
                 from: Some("gone"),
                 to: None,
             }
         );
         assert_eq!(c.active(), None);
+
+        let full_with_stale_start = items(&[
+            ("a", true),
+            ("b", true),
+            ("c", true),
+            ("d", true),
+            ("e", true),
+            ("f", true),
+            ("g", true),
+            ("h", true),
+            ("i", true),
+            ("j", true),
+        ]);
+        c.set_active(Some("gone"));
+        assert_eq!(
+            c.reconcile_window(
+                &full_with_stale_start,
+                99,
+                10,
+                2,
+                VirtualWindowActivePolicy::PreserveMissing,
+            ),
+            CollectionOutcome::ActiveChanged {
+                from: Some("gone"),
+                to: Some("a"),
+            }
+        );
+        assert_eq!(c.active(), Some(&"a"));
+    }
+
+    #[test]
+    fn partial_window_active_policy_distinguishes_off_window_from_removal() {
+        let partial = items(&[("c", false), ("d", false)]);
+
+        let mut preserved = CollectionState::new();
+        preserved.set_active(Some("b"));
+        assert_eq!(
+            preserved.reconcile_window(
+                &partial,
+                2,
+                4,
+                2,
+                VirtualWindowActivePolicy::PreserveMissing,
+            ),
+            CollectionOutcome::Ignored
+        );
+        assert_eq!(preserved.active(), Some(&"b"));
+
+        let mut invalidated = CollectionState::new();
+        invalidated.set_active(Some("b"));
+        assert_eq!(
+            invalidated.reconcile_window(
+                &partial,
+                2,
+                4,
+                2,
+                VirtualWindowActivePolicy::InvalidateMissing,
+            ),
+            CollectionOutcome::ActiveChanged {
+                from: Some("b"),
+                to: None,
+            }
+        );
+        assert_eq!(invalidated.active(), None);
     }
 
     #[test]
     fn virtual_window_clamps_start_before_first_move() {
         let window = items(&[("i", true), ("j", true)]);
         let mut c = CollectionState::new();
-        let _ = c.reconcile_window(&window, 99, 10, 2);
+        let _ = c.reconcile_window(
+            &window,
+            99,
+            10,
+            2,
+            VirtualWindowActivePolicy::PreserveMissing,
+        );
         c.set_active(Some("j"));
 
         let _ = c.move_first(&window);

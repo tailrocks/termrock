@@ -23,7 +23,7 @@ use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers},
     interaction::{
         CollectionState, HitRegion, NavigationMove, Outcome, PageMove, SelectionModel, UiIntent,
-        default_list_intent,
+        VirtualWindowActivePolicy, default_list_intent,
     },
     style::{DesignSystem, ListRowVisualState, Role},
 };
@@ -287,6 +287,8 @@ pub struct ListState<Id> {
     virtual_total: usize,
     /// Absolute start index of the painted window in the full universe.
     virtual_window_start: usize,
+    /// Policy for active IDs absent from a virtual projection.
+    virtual_active_policy: VirtualWindowActivePolicy,
     /// Junie single-select membership. Independent of the keyboard cursor:
     /// arrows move [`collection`] active; Enter/Space writes this. `new(None)`
     /// is chosen-none (no `›`).
@@ -307,6 +309,7 @@ impl<Id> Default for ListState<Id> {
             search_query: None,
             virtual_total: 0,
             virtual_window_start: 0,
+            virtual_active_policy: VirtualWindowActivePolicy::PreserveMissing,
             chosen: None,
         }
     }
@@ -333,6 +336,7 @@ impl<Id> ListState<Id> {
             search_query: None,
             virtual_total: 0,
             virtual_window_start: 0,
+            virtual_active_policy: VirtualWindowActivePolicy::PreserveMissing,
             chosen: selected,
         }
     }
@@ -401,6 +405,17 @@ impl<Id> ListState<Id> {
     pub fn set_virtual_window(&mut self, window_start: usize, total_len: usize) {
         self.virtual_window_start = window_start;
         self.virtual_total = total_len;
+    }
+
+    /// Sets how missing active IDs are treated during virtual reconciliation.
+    pub fn set_virtual_active_policy(&mut self, policy: VirtualWindowActivePolicy) {
+        self.virtual_active_policy = policy;
+    }
+
+    /// Current virtual active-ID reconciliation policy.
+    #[must_use]
+    pub const fn virtual_active_policy(&self) -> VirtualWindowActivePolicy {
+        self.virtual_active_policy
     }
 
     /// Virtual total (0 means not virtualized).
@@ -928,6 +943,7 @@ impl<Id: Clone + PartialEq> ListState<Id> {
                 self.virtual_window_start,
                 total,
                 viewport_height,
+                self.virtual_active_policy,
             );
         } else {
             self.collection
