@@ -2151,11 +2151,7 @@ mod tests {
         state.listing_generation = 1;
         assert!(state.apply_listing(1, "/p", sample_entries("/p"), None));
         // move to README
-        let items: Vec<_> = state
-            .entries()
-            .iter()
-            .map(|e| CollectionItem::new(e.id.clone(), e.name.clone()).enabled(true))
-            .collect();
+        let items = FilePickerState::collection_items(state.entries());
         let _ = state.collection.move_next(&items);
         assert!(matches!(
             state.handle_key(KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE)),
