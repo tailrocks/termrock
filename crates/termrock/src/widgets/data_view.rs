@@ -876,14 +876,10 @@ impl<RowId: Ord + Clone> ExpandState<RowId> {
 
 /// Story / bench row counts for data surfaces.
 pub mod bench {
-    /// Tiny fixture.
-    pub const ROWS_10: u64 = 10;
     /// Interactive medium table.
     pub const ROWS_10K: u64 = 10_000;
     /// Logical universe for virtualization (must not allocate per row).
     pub const ROWS_1M: u64 = 1_000_000;
-    /// Wide table column count target.
-    pub const COLS_WIDE: usize = 64;
     /// Paint budget: body rows visible on a large terminal.
     pub const VIEWPORT_ROWS: u16 = 40;
     /// Target: frame paint O(viewport), not O(logical).

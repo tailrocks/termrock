@@ -1783,8 +1783,6 @@ pub fn code_frame_window<'a>(
 pub mod bench {
     /// Viewport rows.
     pub const VIEWPORT: u16 = 30;
-    /// Diagnostics in a large problems list.
-    pub const LARGE_LIST: usize = 5_000;
     /// Max paint cells.
     pub const MAX_PAINT_CELLS: u32 = 30 * 100;
 }

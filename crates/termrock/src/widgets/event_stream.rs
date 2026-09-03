@@ -1191,8 +1191,6 @@ impl<'a, Id: Clone + PartialEq + Ord> StatefulWidget for EventStream<'a, Id> {
 
 /// Sustained-rate bench targets (documentation / tests).
 pub mod bench {
-    /// Events per second target for host append loops.
-    pub const EVENTS_PER_SEC: u32 = 10_000;
     /// Viewport rows for paint budget.
     pub const VIEWPORT: u16 = 40;
     /// Burst batch size under backpressure.

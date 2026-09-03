@@ -1460,14 +1460,8 @@ impl<'a> QueryEditor<'a> {
 
 /// Large draft / frequent edit targets.
 pub mod bench {
-    /// Characters in a large SQL draft.
-    pub const DRAFT_CHARS: usize = 50_000;
     /// Lines in a large draft.
     pub const DRAFT_LINES: usize = 2_000;
-    /// Completion candidate count.
-    pub const COMPLETION_CANDIDATES: usize = 500;
-    /// Diagnostic count.
-    pub const DIAGNOSTIC_COUNT: usize = 100;
     /// Paint frames for stress.
     pub const PAINT_FRAMES: u32 = 60;
 }

@@ -1672,10 +1672,6 @@ impl StatefulWidget for DiffReview<'_> {
 pub mod bench {
     /// Viewport rows.
     pub const VIEWPORT: u16 = 40;
-    /// Files in tree for host virtualization.
-    pub const FILE_TREE: usize = 200;
-    /// Comments per session budget.
-    pub const COMMENTS: usize = 500;
     /// Undo stack.
     pub const UNDO: usize = super::DIFF_REVIEW_UNDO_LIMIT;
 }

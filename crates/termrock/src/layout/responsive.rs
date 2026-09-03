@@ -1169,19 +1169,6 @@ impl ResponsiveRecipe {
         ],
     };
 
-    /// Dense data tables / review surfaces.
-    pub const DATA_DENSE: Self = Self {
-        name: "data-dense",
-        surface: Some(ResponsiveSurface::DataTable),
-        breakpoints: &[
-            Breakpoint::width(20, ContractionStage::LineMode),
-            Breakpoint::width(48, ContractionStage::CollapseSecondaryActions),
-            Breakpoint::width(72, ContractionStage::HideOptionalMeta),
-            Breakpoint::width(100, ContractionStage::ShortenSecondary),
-            Breakpoint::width(130, ContractionStage::CompactSpacing),
-        ],
-    };
-
     /// Resolve stage: first matching band from the list (narrowest first), else Full.
     #[must_use]
     pub fn stage_for(self, width: u16, height: u16) -> ContractionStage {

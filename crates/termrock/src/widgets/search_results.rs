@@ -1369,8 +1369,6 @@ fn promote_focused(ranges: &[MatchRange], focused: bool) -> Vec<MatchRange> {
 pub mod bench {
     /// Hits in a large page.
     pub const HIT_COUNT: usize = 2_000;
-    /// Groups.
-    pub const GROUP_COUNT: usize = 40;
     /// Viewport.
     pub const VIEWPORT: u16 = 30;
     /// Paint frames.

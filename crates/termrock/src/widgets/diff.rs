@@ -1697,8 +1697,6 @@ impl StatefulWidget for DiffView<'_> {
 pub mod bench {
     /// Lines in a large projected window host should virtualize to.
     pub const VIEWPORT: u16 = 40;
-    /// Typical large patch line count.
-    pub const LARGE_DIFF_LINES: usize = 50_000;
     /// Max paint cells per frame.
     pub const MAX_PAINT_CELLS: u32 = 40 * 120;
     /// Minimum width for split mode.

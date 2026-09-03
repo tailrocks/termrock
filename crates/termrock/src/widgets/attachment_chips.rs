@@ -1246,8 +1246,6 @@ pub mod bench {
     pub const ATTACHMENT_COUNT: usize = 24;
     /// Pastes in strip paint.
     pub const PASTE_COUNT: usize = 8;
-    /// Body size for paste expand.
-    pub const PASTE_BODY_BYTES: usize = 8_192;
     /// Paint frames.
     pub const PAINT_FRAMES: u32 = 20;
 }

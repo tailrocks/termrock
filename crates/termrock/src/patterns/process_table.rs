@@ -1355,12 +1355,8 @@ impl<'a> ProcessTable<'a> {
 pub mod bench {
     /// Processes in a large host snapshot.
     pub const PROCESS_COUNT: usize = 5_000;
-    /// Refresh cadence ms.
-    pub const REFRESH_MS: u32 = 1000;
     /// Viewport rows.
     pub const VIEWPORT: u16 = 40;
-    /// Frames for streaming paint smoke.
-    pub const STREAM_FRAMES: u32 = 120;
 }
 
 #[cfg(test)]

@@ -561,8 +561,6 @@ pub mod glyph {
     pub const LEFT_RIGHT: &str = "\u{2190}\u{2192}";
     /// Canonical grouped four-direction hint glyph.
     pub const ALL_ARROWS: &str = "\u{2191}\u{2193}\u{2190}\u{2192}";
-    /// Canonical Alt-Shift four-direction resize hint.
-    pub const ALT_SHIFT_ALL_ARROWS: &str = "Alt-Shift-\u{2191}\u{2193}\u{2190}\u{2192}";
     /// Canonical paired page-navigation hint.
     pub const PGUP_PGDN: &str = "PgUp/PgDn";
     /// Canonical Escape-key hint label.
