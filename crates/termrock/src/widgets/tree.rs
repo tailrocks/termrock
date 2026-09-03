@@ -661,6 +661,7 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
         if key.is_release() {
             return TreeOutcome::Ignored;
         }
+        self.reconcile_projection(nodes);
         // Filter mode
         if key.is_press() && matches!(key.code, KeyCode::Char('/')) && key.modifiers.is_empty() {
             if self.filter_query.is_none() {
@@ -717,7 +718,7 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
         }
         if let Some(intent) = crate::interaction::default_tree_intent(key) {
             self.collection.clear_typeahead();
-            return self.handle_intent(nodes, intent);
+            return self.handle_intent_reconciled(nodes, intent);
         }
         self.handle_typeahead(nodes, key)
     }
@@ -794,6 +795,15 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
     /// **Right (Expand):** if collapsed/lazy branch → toggle expand/load; else if
     /// expanded with visible children → select first child; else ignored.
     pub fn handle_intent(
+        &mut self,
+        nodes: &[TreeNode<'_, Id>],
+        intent: UiIntent,
+    ) -> TreeOutcome<Id> {
+        self.reconcile_projection(nodes);
+        self.handle_intent_reconciled(nodes, intent)
+    }
+
+    fn handle_intent_reconciled(
         &mut self,
         nodes: &[TreeNode<'_, Id>],
         intent: UiIntent,
@@ -1735,11 +1745,7 @@ mod tests {
         let mut state = TreeState::new(Some("loading"));
         assert_eq!(
             state.handle_intent(&nodes, UiIntent::Activate),
-            TreeOutcome::Ignored
-        );
-        assert_eq!(
-            state.handle_intent(&nodes, UiIntent::Move(NavigationMove::Next)),
-            TreeOutcome::SelectionChanged("ready")
+            TreeOutcome::Activated("ready")
         );
 
         let area = Rect::new(0, 0, 24, 2);
@@ -1779,6 +1785,30 @@ mod tests {
             ),
             TreeOutcome::SelectionChanged("c")
         );
+    }
+
+    #[test]
+    fn input_reconciles_full_projection_before_activation() {
+        let nodes = [
+            TreeNode::new("b", Line::from("Beta"), 0),
+            TreeNode::new("c", Line::from("Charlie"), 0),
+        ];
+
+        let mut intent_state = TreeState::new(Some("a"));
+        intent_state.set_semantic_selection(Some("a"));
+        assert_eq!(
+            intent_state.handle_intent(&nodes, UiIntent::Activate),
+            TreeOutcome::Activated("b")
+        );
+        assert_eq!(intent_state.cursor(), Some(&"b"));
+        assert_eq!(intent_state.semantic_selection(), Some(&"b"));
+
+        let mut key_state = TreeState::new(Some("a"));
+        assert_eq!(
+            key_state.handle_key(&nodes, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
+            TreeOutcome::Activated("b")
+        );
+        assert_eq!(key_state.cursor(), Some(&"b"));
     }
 
     #[test]
