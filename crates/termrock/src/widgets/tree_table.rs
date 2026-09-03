@@ -696,7 +696,7 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
                 return TreeTableOutcome::ExpandToggled(row.id.clone());
             }
             if let Some(parent) = row.parent.as_ref() {
-                if let Some(idx) = rows.iter().position(|r| &r.id == parent) {
+                if let Some(idx) = rows.iter().position(|r| selectable(r) && &r.id == parent) {
                     self.cursor_row = idx;
                     self.selected = Some(parent.clone());
                     self.previous_index = Some(idx);
@@ -713,7 +713,7 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
                 .iter()
                 .enumerate()
                 .rev()
-                .find(|(_, r)| r.depth < depth)
+                .find(|(_, r)| r.depth < depth && selectable(r))
             {
                 self.cursor_row = idx;
                 self.selected = Some(parent.id.clone());
@@ -2212,6 +2212,27 @@ mod tests {
         );
         assert!(matches!(out, TreeTableOutcome::Ignored));
         assert_eq!(state.selected(), Some(&"row"));
+    }
+
+    #[test]
+    fn collapse_skips_nonselectable_group_parent() {
+        let root_cells: &[&str] = &["root", "", ""];
+        let group_cells: &[&str] = &["group", "", ""];
+        let child_cells: &[&str] = &["child", "", ""];
+        let rows = [
+            TreeTableRow::new("root", 0, root_cells).branch().expanded(),
+            TreeTableRow::new("group", 1, group_cells).group(),
+            TreeTableRow::new("child", 2, child_cells).parent("group"),
+        ];
+        let columns = cols();
+        let mut state = TreeTableState::<&str, &str>::new(Some("child"));
+        state.cursor_row = 2;
+
+        let out = state.handle_intent(&rows, &columns, UiIntent::Collapse);
+
+        assert!(matches!(out, TreeTableOutcome::Selected("root")));
+        assert_eq!(state.selected(), Some(&"root"));
+        assert_eq!(state.cursor_row, 0);
     }
 
     #[test]
