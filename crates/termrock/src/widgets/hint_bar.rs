@@ -1,6 +1,6 @@
 use crate::{
     style::{DesignSystem, Role},
-    text::{CellAlignment, LinePlacement, paint_line_overflow},
+    text::{CellAlignment, LinePlacement, display_cols, paint_line_overflow},
 };
 use ratatui_core::{
     buffer::Buffer,
@@ -140,30 +140,66 @@ impl<'a> HintBar<'a> {
     fn fitted(&self, width: u16) -> Vec<&'a Hint<'a>> {
         let mut hints: Vec<&Hint<'a>> = self.hints.iter().filter(|hint| hint.visible).collect();
         hints.sort_by_key(|h| h.priority);
-        let right_w = self
-            .right
-            .map(|r| (UnicodeWidthStr::width(r) as u16).saturating_add(3))
-            .unwrap_or(0);
-        let mut x = 1u16;
+        let right_w = self.right_width(width);
+        let available_width = usize::from(width)
+            .saturating_sub(1)
+            .saturating_sub(usize::from(right_w));
+        let visible_count = hints.len();
+        let mut used = 0usize;
         let mut out = Vec::new();
-        for hint in hints {
-            let w = (UnicodeWidthStr::width(hint.chord) as u16)
-                .saturating_add(1)
-                .saturating_add(UnicodeWidthStr::width(hint.label) as u16)
-                .saturating_add(2);
-            if x.saturating_add(w).saturating_add(right_w) > width {
+        for (index, hint) in hints.into_iter().enumerate() {
+            let cut_reserve = if index + 1 < visible_count { 2 } else { 0 };
+            let hint_width = hint_width(hint);
+            if used.saturating_add(hint_width).saturating_add(cut_reserve) > available_width {
                 break;
             }
             out.push(hint);
-            x = x.saturating_add(w);
+            used = used.saturating_add(hint_width);
         }
         out
     }
+
+    fn right_width(&self, width: u16) -> u16 {
+        let Some(right) = self.right else {
+            return 0;
+        };
+        let text_width = display_cols(right);
+        if usize::from(width) > text_width.saturating_add(2) {
+            u16::try_from(text_width.saturating_add(3)).unwrap_or(u16::MAX)
+        } else {
+            0
+        }
+    }
+
+    fn hint_line(&self, hints: &[&Hint<'a>], truncated: bool) -> Line<'a> {
+        let mut spans = Vec::with_capacity(hints.len().saturating_mul(4) + usize::from(truncated));
+        for hint in hints {
+            spans.push(Span::styled(hint.chord, self.system.key_hint_key()));
+            spans.push(Span::styled(" ", self.system.key_hint_action()));
+            spans.push(Span::styled(hint.label, self.system.key_hint_action()));
+            spans.push(Span::styled("  ", self.system.key_hint_action()));
+        }
+        if truncated {
+            spans.push(Span::styled(
+                self.system.glyphs.ellipsis(),
+                self.system.style(Role::HintDim),
+            ));
+        }
+        Line::from(spans)
+    }
+}
+
+fn hint_width(hint: &Hint<'_>) -> usize {
+    display_cols(hint.chord)
+        .saturating_add(1)
+        .saturating_add(display_cols(hint.label))
+        .saturating_add(2)
 }
 
 impl HintBar<'_> {
     /// Paint (single public entry; the [`Widget`] impl delegates here).
     pub fn paint(&self, area: Rect, buffer: &mut Buffer) {
+        let area = area.intersection(*buffer.area());
         if area.is_empty() {
             return;
         }
@@ -180,39 +216,64 @@ impl HintBar<'_> {
             return;
         }
         // junie: hints start at x+1; status wins the right edge.
-        let mut right_w = 0u16;
+        let right_w = self.right_width(area.width);
         if let Some(right) = self.right {
-            let w = UnicodeWidthStr::width(right) as u16;
-            if area.width > w + 2 {
+            let w = right_w.saturating_sub(3);
+            if right_w > 0 {
                 buffer.set_string(
                     area.right().saturating_sub(w).saturating_sub(1),
                     y,
                     right,
                     self.system.junie_theme().secondary(),
                 );
-                right_w = w + 3;
             }
         }
-        let mut x = area.x.saturating_add(1);
-        for hint in self.fitted(area.width) {
-            let kw = UnicodeWidthStr::width(hint.chord) as u16;
-            let w = kw
-                .saturating_add(1)
-                .saturating_add(UnicodeWidthStr::width(hint.label) as u16)
-                .saturating_add(2);
-            if x.saturating_add(w).saturating_add(right_w) > area.right() {
-                break;
-            }
-            buffer.set_string(x, y, hint.chord, self.system.key_hint_key());
-            buffer.set_string(
-                x.saturating_add(kw).saturating_add(1),
-                y,
-                hint.label,
-                self.system.key_hint_action(),
+        let fitted = self.fitted(area.width);
+        let visible_count = self.hints.iter().filter(|hint| hint.visible).count();
+        let hint_area = Rect::new(
+            area.x.saturating_add(1),
+            y,
+            area.width.saturating_sub(1).saturating_sub(right_w),
+            1,
+        );
+        if !hint_area.is_empty() && (visible_count > 0 || !fitted.is_empty()) {
+            let truncated = fitted.len() < visible_count;
+            let line = self.hint_line(&fitted, truncated);
+            let line_width = line
+                .spans
+                .iter()
+                .map(|span| display_cols(span.content.as_ref()))
+                .sum::<usize>();
+            let (paint_area, paint_alignment) = if self.alignment == CellAlignment::Center {
+                // Center over the full row, then clamp to the inset and status boundary.
+                let left = area.x.saturating_add(1);
+                let limit = area.right().saturating_sub(right_w);
+                // Canonical centering reserves two cells for the cut marker;
+                // the visible ellipsis itself occupies one cell.
+                let effective_width = line_width.saturating_add(usize::from(truncated));
+                let centered = area.x.saturating_add(
+                    u16::try_from(usize::from(area.width).saturating_sub(effective_width) / 2)
+                        .unwrap_or(u16::MAX),
+                );
+                let max_start = limit
+                    .saturating_sub(u16::try_from(effective_width).unwrap_or(u16::MAX))
+                    .max(left);
+                let start = centered.max(left).min(max_start);
+                (
+                    Rect::new(start, y, limit.saturating_sub(start), 1),
+                    CellAlignment::Left,
+                )
+            } else {
+                (hint_area, self.alignment)
+            };
+            paint_hint_lines(
+                buffer,
+                paint_area,
+                std::slice::from_ref(&line),
+                paint_alignment,
+                self.system,
             );
-            x = x.saturating_add(w);
         }
-        let _ = self.alignment;
     }
 }
 
@@ -231,6 +292,10 @@ fn paint_hint_lines(
     alignment: CellAlignment,
     system: &DesignSystem,
 ) {
+    let area = area.intersection(*buffer.area());
+    if area.is_empty() {
+        return;
+    }
     let mut scratch = String::new();
     let placement = LinePlacement::contracting(system.glyphs.ellipsis()).align(alignment);
     for (index, line) in lines.iter().take(usize::from(area.height)).enumerate() {
@@ -269,14 +334,13 @@ pub fn paint_hint_bar(
     spans: &[HintSpan<'_>],
     system: &DesignSystem,
 ) {
-    let line = Line::from(styled_hint_spans(spans, system, |color| color));
-    paint_hint_lines(
-        frame.buffer_mut(),
-        area,
-        std::slice::from_ref(&line),
-        CellAlignment::Center,
-        system,
-    );
+    let buffer = frame.buffer_mut();
+    let area = area.intersection(*buffer.area());
+    if area.is_empty() {
+        return;
+    }
+    let lines = wrapped_hint_lines(spans, area.width, system);
+    paint_hint_lines(buffer, area, &lines, CellAlignment::Center, system);
 }
 
 /// Convert rich hint spans into their canonical styled terminal spans.
@@ -377,6 +441,21 @@ pub fn wrapped_hint_lines(
     let mut row = Vec::new();
     let mut row_width: usize = 0;
     for chunk in chunks {
+        // Keep semantic hint groups atomic. If one group is wider than the
+        // row, its marker stands in for the whole group; the line painter
+        // must never contract through a key/action pair.
+        let chunk = if chunk.width > usize::from(width) {
+            Chunk {
+                spans: vec![Span::styled(
+                    system.glyphs.ellipsis(),
+                    system.style(Role::HintDim),
+                )],
+                width: display_cols(system.glyphs.ellipsis()),
+                separator: chunk.separator,
+            }
+        } else {
+            chunk
+        };
         let separator_width = usize::from(!row.is_empty()) * HINT_SEPARATOR_COLS;
         if !row.is_empty()
             && row_width
@@ -565,5 +644,194 @@ mod tests {
             buffer[(start, 0)].fg,
             system.junie_theme().secondary().fg.unwrap()
         );
+    }
+
+    #[test]
+    fn alignment_places_hint_block_against_each_edge() {
+        let system = crate::style::DesignSystem::default();
+        let hints = [Hint {
+            chord: "Esc",
+            label: "Cancel",
+            priority: 1,
+            visible: true,
+        }];
+        let area = Rect::new(10, 3, 21, 1);
+        let expected = [
+            (CellAlignment::Left, 11),
+            (CellAlignment::Center, 14),
+            (CellAlignment::Right, 19),
+        ];
+
+        for (alignment, x) in expected {
+            let bar = HintBar::new(&hints, &system).alignment(alignment);
+            let mut buffer = Buffer::empty(area);
+            (&bar).render(area, &mut buffer);
+            assert_eq!(buffer[(x, area.y)].symbol(), "E");
+        }
+    }
+
+    #[test]
+    fn narrow_available_width_marks_dropped_hints_without_overflow() {
+        let system = crate::style::DesignSystem::default();
+        let hints = [Hint {
+            chord: "Enter",
+            label: "confirm",
+            priority: 1,
+            visible: true,
+        }];
+        let area = Rect::new(4, 2, 5, 1);
+        let mut buffer = Buffer::empty(area);
+        (&HintBar::new(&hints, &system)).render(area, &mut buffer);
+
+        assert_eq!(buffer[(area.x, area.y)].symbol(), " ");
+        assert_eq!(buffer[(area.x + 1, area.y)].symbol(), "…");
+        assert_eq!(buffer[(area.right() - 1, area.y)].symbol(), " ");
+    }
+
+    #[test]
+    fn right_status_reserves_hint_width_at_the_boundary() {
+        let system = crate::style::DesignSystem::default();
+        let hints = [Hint {
+            chord: "Esc",
+            label: "cancel",
+            priority: 1,
+            visible: true,
+        }];
+        let bar = HintBar::new(&hints, &system)
+            .right("saved")
+            .alignment(CellAlignment::Right);
+        let area = Rect::new(3, 1, 22, 1);
+        let mut buffer = Buffer::empty(area);
+        (&bar).render(area, &mut buffer);
+        let status_x = area.right() - 5 - 1;
+        let status: String = (status_x..status_x + 5)
+            .map(|x| buffer[(x, area.y)].symbol())
+            .collect();
+
+        assert_eq!(status, "saved");
+        assert_eq!(
+            buffer[(status_x - 2 - hint_width(&hints[0]) as u16, area.y)].symbol(),
+            "E"
+        );
+        assert_eq!(buffer[(status_x - 1, area.y)].symbol(), " ");
+    }
+
+    #[test]
+    fn centered_truncation_reserves_two_cells_for_the_cut_marker() {
+        let system = crate::style::DesignSystem::default();
+        let hints = [
+            Hint {
+                chord: "A",
+                label: "a",
+                priority: 1,
+                visible: true,
+            },
+            Hint {
+                chord: "B",
+                label: "b",
+                priority: 2,
+                visible: true,
+            },
+        ];
+        let bar = HintBar::new(&hints, &system).alignment(CellAlignment::Center);
+        let area = Rect::new(4, 1, 10, 1);
+        let mut buffer = Buffer::empty(area);
+
+        (&bar).render(area, &mut buffer);
+
+        // First hint width is five cells; the dropped second hint reserves
+        // two cells for the cut marker, leaving an odd three-cell slack.
+        assert_eq!(buffer[(area.x + 1, area.y)].symbol(), "A");
+        assert_eq!(buffer[(area.x + 6, area.y)].symbol(), "…");
+    }
+
+    #[test]
+    fn empty_and_one_cell_areas_are_safe() {
+        let system = crate::style::DesignSystem::default();
+        let hints = [Hint {
+            chord: "Enter",
+            label: "confirm",
+            priority: 1,
+            visible: true,
+        }];
+        let bar = HintBar::new(&hints, &system);
+        let buffer_area = Rect::new(0, 0, 8, 3);
+        for area in [
+            Rect::new(0, 0, 0, 1),
+            Rect::new(1, 1, 1, 1),
+            Rect::new(2, 2, 4, 0),
+        ] {
+            let mut buffer = Buffer::empty(buffer_area);
+            (&bar).render(area, &mut buffer);
+        }
+    }
+
+    #[test]
+    fn paint_clips_partially_outside_buffer_before_spacer_and_status() {
+        let system = crate::style::DesignSystem::default();
+        let hints = [Hint {
+            chord: "E",
+            label: "go",
+            priority: 1,
+            visible: true,
+        }];
+        let bar = HintBar::new(&hints, &system)
+            .leading_spacer(true)
+            .right("ok");
+        let buffer_area = Rect::new(4, 2, 8, 3);
+        let mut buffer = Buffer::filled(buffer_area, ratatui_core::buffer::Cell::new("x"));
+
+        (&bar).render(Rect::new(1, 1, 12, 3), &mut buffer);
+
+        assert_eq!(buffer[(4, 2)].symbol(), " ");
+        assert_eq!(buffer[(11, 2)].symbol(), " ");
+        assert_eq!(buffer[(9, 3)].symbol(), "o");
+        assert_eq!(buffer[(10, 3)].symbol(), "k");
+        assert_eq!(buffer[(4, 3)].symbol(), "x");
+        assert_eq!(buffer[(11, 3)].symbol(), "x");
+        assert_eq!(buffer[(4, 4)].symbol(), "x");
+
+        let mut disjoint = Buffer::filled(buffer_area, ratatui_core::buffer::Cell::new("x"));
+        (&bar).render(Rect::new(0, 0, 2, 1), &mut disjoint);
+        assert_eq!(disjoint[(4, 2)].symbol(), "x");
+    }
+
+    #[test]
+    fn shared_rich_hint_painter_clips_outside_buffer() {
+        let system = crate::style::DesignSystem::default();
+        let line = Line::raw("Rich");
+        let buffer_area = Rect::new(4, 2, 8, 1);
+        let mut buffer = Buffer::filled(buffer_area, ratatui_core::buffer::Cell::new("x"));
+
+        paint_hint_lines(
+            &mut buffer,
+            Rect::new(1, 2, 12, 1),
+            std::slice::from_ref(&line),
+            CellAlignment::Left,
+            &system,
+        );
+
+        assert_eq!(buffer[(4, 2)].symbol(), "R");
+        assert_eq!(buffer[(7, 2)].symbol(), "h");
+
+        let mut disjoint = Buffer::filled(buffer_area, ratatui_core::buffer::Cell::new("x"));
+        paint_hint_lines(
+            &mut disjoint,
+            Rect::new(0, 0, 2, 1),
+            std::slice::from_ref(&line),
+            CellAlignment::Center,
+            &system,
+        );
+        assert_eq!(disjoint[(4, 2)].symbol(), "x");
+    }
+
+    #[test]
+    fn rich_hint_groups_do_not_split_when_one_group_is_too_wide() {
+        let system = crate::style::DesignSystem::default();
+        let spans = [HintSpan::Key("Enter"), HintSpan::Text("select")];
+        let lines = wrapped_hint_lines(&spans, 5, &system);
+
+        assert_eq!(lines.len(), 1);
+        assert_eq!(lines[0].to_string(), "…");
     }
 }

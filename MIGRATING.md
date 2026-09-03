@@ -413,6 +413,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0431 | `v0.14.0` | [Picker one-shot actions](migrations/0431-v0.14.0-picker-one-shot-actions.md) |
 | 0432 | `v0.14.0` | [HistoryPicker one-shot actions](migrations/0432-v0.14.0-history-picker-mutation-actions.md) |
 | 0433 | `v0.14.0` | [Select lifecycle actions](migrations/0433-v0.14.0-select-lifecycle-actions.md) |
+| 0434 | `v0.14.0` | [HintBar alignment is honored](migrations/0434-v0.14.0-hint-bar-alignment.md) |
 | 0435 | `v0.14.0` | [MultiSelect lifecycle actions](migrations/0435-v0.14.0-multi-select-lifecycle-actions.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
