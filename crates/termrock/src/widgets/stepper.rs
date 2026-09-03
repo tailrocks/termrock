@@ -551,8 +551,22 @@ impl StepperState {
         }
     }
 
+    fn interaction_enabled(&self) -> bool {
+        self.enabled && self.accepts_input
+    }
+
     fn live(&self) -> bool {
-        self.enabled && self.accepts_input && self.focused
+        self.interaction_enabled() && self.focused
+    }
+
+    fn control_state(&self, status: StepStatus) -> ControlState {
+        if !self.interaction_enabled() || matches!(status, StepStatus::Disabled) {
+            ControlState::Disabled
+        } else if self.focused {
+            ControlState::Focused
+        } else {
+            ControlState::Default
+        }
     }
 
     fn uses_vertical_viewport(&self) -> bool {
@@ -752,7 +766,7 @@ impl StepperState {
 
     /// Mouse.
     pub fn handle_mouse(&mut self, event: MouseEvent, items: &[StepItem]) -> StepperOutcome {
-        if !self.enabled || !self.accepts_input || items.is_empty() {
+        if !self.interaction_enabled() || items.is_empty() {
             return StepperOutcome::Ignored;
         }
         if !matches!(event.kind, MouseEventKind::Down(MouseButton::Left)) {
@@ -931,13 +945,14 @@ impl<'a> Stepper<'a> {
         status: StepStatus,
         cursor: bool,
         focused: bool,
-        enabled: bool,
+        interaction_enabled: bool,
     ) -> Style {
+        let row_enabled = interaction_enabled && !matches!(status, StepStatus::Disabled);
         let recipe = self.system.resolve_list_row(ListRowVisualState {
             selected: cursor,
-            focused: cursor && focused,
+            focused: cursor && focused && row_enabled,
             hovered: false,
-            enabled: enabled && !matches!(status, StepStatus::Disabled),
+            enabled: row_enabled,
             loading: false,
             checked: matches!(status, StepStatus::Complete),
             ..ListRowVisualState::default()
@@ -954,7 +969,7 @@ impl<'a> Stepper<'a> {
         let mut x = area.x;
         let y = area.y;
         let cursor = state.cursor();
-        let surface = state.focused && state.accepts_input;
+        let interaction_enabled = state.interaction_enabled();
         for (i, step) in self.items.iter().enumerate() {
             if x >= area.right() {
                 break;
@@ -995,8 +1010,8 @@ impl<'a> Stepper<'a> {
                 buffer,
                 status,
                 cursor == i,
-                surface,
-                state.accepts_input,
+                state.focused,
+                interaction_enabled,
             );
             buffer.set_stringn(
                 rect.x,
@@ -1013,7 +1028,7 @@ impl<'a> Stepper<'a> {
     fn paint_vertical(&self, area: Rect, buffer: &mut Buffer, state: &mut StepperState) {
         let compact = matches!(state.presentation, StepperPresentation::Compact);
         let cursor = state.cursor();
-        let surface = state.focused && state.accepts_input;
+        let interaction_enabled = state.interaction_enabled();
         let mut y = area.y;
         for (i, step) in self.items.iter().enumerate().skip(state.vertical_scroll) {
             if y >= area.bottom() {
@@ -1029,8 +1044,8 @@ impl<'a> Stepper<'a> {
                 buffer,
                 status,
                 cursor == i,
-                surface,
-                state.accepts_input,
+                state.focused,
+                interaction_enabled,
             );
             buffer.set_stringn(
                 rect.x,
@@ -1091,13 +1106,7 @@ impl<'a> Stepper<'a> {
         );
         let recipe = self.system.button_recipe(
             ButtonRecipeVariant::Quiet,
-            if !state.accepts_input || matches!(status, StepStatus::Disabled) {
-                ControlState::Disabled
-            } else if state.focused {
-                ControlState::Focused
-            } else {
-                ControlState::Default
-            },
+            state.control_state(status),
             self.system.junie_theme().surface,
         );
         buffer.set_style(Rect::new(area.x, area.y, area.width, 1), recipe.fill);
@@ -1133,13 +1142,7 @@ impl<'a> Stepper<'a> {
         let line = format!("{mark} {cur}/{n} {title} {chev}");
         let recipe = self.system.button_recipe(
             ButtonRecipeVariant::Quiet,
-            if !state.accepts_input || matches!(status, StepStatus::Disabled) {
-                ControlState::Disabled
-            } else if state.focused {
-                ControlState::Focused
-            } else {
-                ControlState::Default
-            },
+            state.control_state(status),
             self.system.junie_theme().surface,
         );
         buffer.set_style(Rect::new(area.x, area.y, area.width, 1), recipe.fill);
@@ -1175,7 +1178,7 @@ impl<'a> Stepper<'a> {
                     st,
                     cursor == i,
                     state.focused,
-                    state.accepts_input,
+                    state.interaction_enabled(),
                 );
                 buffer.set_stringn(
                     rect.x,
@@ -1486,6 +1489,84 @@ mod tests {
             }
         );
         assert_eq!(state.current(), 0);
+    }
+
+    #[test]
+    fn disabled_expanded_row_has_disabled_style_without_focus() {
+        let system = DesignSystem::default();
+        let items = steps();
+        let mut state = focused_linear(items.len()).policy(StepperNavPolicy::Host);
+        state.set_status(0, StepStatus::Future);
+        state.set_enabled(false);
+        state.set_presentation_override(Some(StepperPresentation::Expanded));
+
+        let area = Rect::new(0, 0, 72, 3);
+        let mut buffer = Buffer::empty(area);
+        Stepper::new(&items, &system).paint(area, &mut buffer, &mut state);
+
+        let expected = system
+            .resolve_list_row(ListRowVisualState {
+                selected: true,
+                enabled: false,
+                ..ListRowVisualState::default()
+            })
+            .label;
+        assert_eq!(buffer[(0, 0)].style().fg, expected.fg);
+        assert_eq!(buffer[(0, 0)].style().bg, expected.bg);
+        assert!(!buffer[(0, 0)].style().add_modifier.contains(Modifier::BOLD));
+        assert_eq!(
+            state.handle_intent(UiIntent::Move(NavigationMove::Next), &items),
+            StepperOutcome::Ignored
+        );
+    }
+
+    #[test]
+    fn disabled_numeric_control_has_disabled_style_without_focus() {
+        let system = DesignSystem::default();
+        let items = steps();
+        let mut state = focused_linear(items.len()).policy(StepperNavPolicy::Host);
+        state.set_status(0, StepStatus::Future);
+        state.set_enabled(false);
+        state.set_presentation_override(Some(StepperPresentation::Numeric));
+
+        let area = Rect::new(0, 0, 28, 1);
+        let mut buffer = Buffer::empty(area);
+        Stepper::new(&items, &system).paint(area, &mut buffer, &mut state);
+
+        let expected = system
+            .button_recipe(
+                ButtonRecipeVariant::Quiet,
+                ControlState::Disabled,
+                system.junie_theme().surface,
+            )
+            .label;
+        assert_eq!(buffer[(0, 0)].style().fg, expected.fg);
+        assert!(!buffer[(0, 0)].style().add_modifier.contains(Modifier::BOLD));
+    }
+
+    #[test]
+    fn disabled_menu_control_has_disabled_style_without_focus() {
+        let system = DesignSystem::default();
+        let items = steps();
+        let mut state = focused_linear(items.len()).policy(StepperNavPolicy::Host);
+        state.set_status(0, StepStatus::Future);
+        state.set_enabled(false);
+        state.set_presentation_override(Some(StepperPresentation::Menu));
+        state.menu_open = true;
+
+        let area = Rect::new(0, 0, 28, 5);
+        let mut buffer = Buffer::empty(area);
+        Stepper::new(&items, &system).paint(area, &mut buffer, &mut state);
+
+        let expected = system
+            .button_recipe(
+                ButtonRecipeVariant::Quiet,
+                ControlState::Disabled,
+                system.junie_theme().surface,
+            )
+            .label;
+        assert_eq!(buffer[(0, 0)].style().fg, expected.fg);
+        assert!(!buffer[(0, 0)].style().add_modifier.contains(Modifier::BOLD));
     }
 
     #[test]
