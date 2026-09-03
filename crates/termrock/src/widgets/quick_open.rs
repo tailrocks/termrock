@@ -973,14 +973,19 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
         let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
         let alt = key.modifiers.contains(KeyModifiers::ALT);
 
-        // Confirmation, cancellation, result focus traversal, jump-mode
-        // entry, and presentation toggles are one-shot actions. Consume
-        // repeats before TextInputState can submit or cancel the query draft.
+        // Confirmation, cancellation, result focus traversal, provider-cycle,
+        // jump-mode entry, and presentation toggles are one-shot actions.
+        // Consume repeats before TextInputState can submit or cancel the query
+        // draft.
         if !key.is_press()
             && (matches!(
                 key.code,
                 KeyCode::Enter | KeyCode::Esc | KeyCode::Tab | KeyCode::BackTab
-            ) || (ctrl && matches!(key.code, KeyCode::Char('j' | 'J' | '\\'))))
+            ) || (ctrl
+                && matches!(
+                    key.code,
+                    KeyCode::Char('j' | 'J' | 'p' | 'P' | 'n' | 'N' | '\\')
+                )))
         {
             return QuickOpenOutcome::Ignored;
         }
@@ -2106,6 +2111,8 @@ mod tests {
             (KeyCode::Tab, KeyModifiers::CONTROL),
             (KeyCode::Char('j'), KeyModifiers::CONTROL),
             (KeyCode::Char('\\'), KeyModifiers::CONTROL),
+            (KeyCode::Char('p'), KeyModifiers::CONTROL),
+            (KeyCode::Char('n'), KeyModifiers::CONTROL),
         ];
 
         for (code, modifiers) in cases {
