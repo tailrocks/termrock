@@ -472,6 +472,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0493 | `v0.14.0` | [Synchronize removed ButtonGroup protocol method](migrations/0493-v0.14.0-sync-removed-button-group-method.md) |
 | 0494 | `v0.14.0` | [Synchronize removed Badge protocol method](migrations/0494-v0.14.0-sync-removed-badge-method.md) |
 | 0495 | `v0.14.0` | [Synchronize removed Accordion protocol method](migrations/0495-v0.14.0-sync-removed-accordion-method.md) |
+| 0496 | `v0.14.0` | [Synchronize removed CollapsibleState protocol method](migrations/0496-v0.14.0-sync-removed-collapsible-state-method.md) |
 | 0464 | `v0.14.0` | [Stepper physical one-shot actions](migrations/0464-v0.14.0-stepper-one-shot-actions.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
