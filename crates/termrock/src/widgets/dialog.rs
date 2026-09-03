@@ -50,11 +50,11 @@ const DIALOG_INSET_Y: u16 = 2;
 /// Cell gap between action buttons.
 const DIALOG_ACTION_GAP: u16 = 1;
 
-/// Footer chords while a confirm dialog is open (sentence case).
+/// Footer chords while a non-editing confirm dialog is open.
 const DIALOG_CONFIRM_HINTS: &[Hint<'static>] = &[
     Hint {
-        chord: "Esc",
-        label: "Cancel",
+        chord: "← →",
+        label: "Choose",
         priority: 10,
         visible: true,
     },
@@ -64,22 +64,34 @@ const DIALOG_CONFIRM_HINTS: &[Hint<'static>] = &[
         priority: 20,
         visible: true,
     },
-];
-
-/// Footer chords while a destructive dialog is open.
-const DIALOG_DESTRUCTIVE_HINTS: &[Hint<'static>] = DIALOG_CONFIRM_HINTS;
-
-/// Footer chords while a prompt dialog is open.
-const DIALOG_PROMPT_HINTS: &[Hint<'static>] = &[
     Hint {
         chord: "Esc",
         label: "Cancel",
+        priority: 30,
+        visible: true,
+    },
+    Hint {
+        chord: "y / n",
+        label: "Quick answer",
+        priority: 40,
+        visible: true,
+    },
+];
+
+/// Footer chords while a non-editing destructive dialog is open.
+const DIALOG_DESTRUCTIVE_HINTS: &[Hint<'static>] = DIALOG_CONFIRM_HINTS;
+
+/// Footer chords while a prompt/editing dialog is open.
+const DIALOG_PROMPT_HINTS: &[Hint<'static>] = &[
+    Hint {
+        chord: "Enter",
+        label: "Confirm",
         priority: 10,
         visible: true,
     },
     Hint {
-        chord: "Enter",
-        label: "Submit",
+        chord: "Esc",
+        label: "Cancel",
         priority: 20,
         visible: true,
     },
@@ -3330,6 +3342,43 @@ mod backdrop_tests {
         );
         assert_eq!(state.action_cursor().copied(), Some("ok"));
         assert!(state.action_regions().iter().any(|r| r.id == "ok"));
+    }
+
+    #[test]
+    fn dialog_footer_hints_match_showcase_contract() {
+        fn footer(dialog: &Dialog<'_>) -> String {
+            let screen = Rect::new(0, 0, 80, 8);
+            let mut buffer = Buffer::empty(screen);
+            let mut state = DialogState::<()>::new();
+            dialog.paint_modal(screen, &mut buffer, &mut state, &[]);
+            (0..screen.width)
+                .map(|x| buffer[(x, screen.bottom() - 1)].symbol().to_string())
+                .collect::<String>()
+                .trim_end()
+                .to_owned()
+        }
+
+        let system = DesignSystem::junie();
+        assert_eq!(
+            footer(&Dialog::confirm(
+                "Confirm",
+                Text::from("Continue?"),
+                &system
+            )),
+            " ← → Choose  Enter Confirm  Esc Cancel  y / n Quick answer"
+        );
+        assert_eq!(
+            footer(&Dialog::destructive(
+                "Delete",
+                Text::from("Continue?"),
+                &system
+            )),
+            " ← → Choose  Enter Confirm  Esc Cancel  y / n Quick answer"
+        );
+        assert_eq!(
+            footer(&Dialog::prompt("Edit", Text::from("Value"), &system)),
+            " Enter Confirm  Esc Cancel"
+        );
     }
 
     #[test]
