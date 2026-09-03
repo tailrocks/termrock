@@ -890,6 +890,30 @@ impl DesignSystem {
         self.junie_theme().row(state, bg)
     }
 
+    /// Resolves one anchored-menu row without borrowing ordinary row focus
+    /// treatment. Menu cursors use a solid highlight plane, while destructive
+    /// rows use a soft rose label until selected.
+    #[must_use]
+    pub fn menu_row(&self, state: VisualState, destructive: bool, bg: Color) -> Style {
+        if state.disabled {
+            return self.style(Role::TextDisabled).bg(bg);
+        }
+        if state.selected {
+            return self.style(if destructive {
+                Role::HighlightDanger
+            } else {
+                Role::Highlight
+            });
+        }
+        let foreground = if destructive {
+            Role::ErrorSoft
+        } else {
+            Role::Text
+        };
+        let row_bg = if state.hovered { self.lift(bg) } else { bg };
+        self.style(foreground).bg(row_bg)
+    }
+
     /// Focus-gutter glyph style for the control that owns the keyboard.
     #[must_use]
     pub fn gutter(&self, state: VisualState, bg: Color, on_accent: bool) -> Style {

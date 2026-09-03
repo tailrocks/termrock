@@ -170,10 +170,16 @@ pub enum Role {
     ChartAxis,
     /// Chart grid / guide lines.
     ChartGrid,
+    /// Solid blue cursor-row fill for anchored menus.
+    Highlight,
+    /// Solid deep-red cursor-row fill for destructive anchored menu rows.
+    HighlightDanger,
+    /// Soft rose foreground for destructive menu rows at rest.
+    ErrorSoft,
 }
 
 /// Number of [`Role`] variants (stable for palette array sizing).
-pub const ROLE_COUNT: usize = 57;
+pub const ROLE_COUNT: usize = 60;
 
 macro_rules! every_role {
     ($macro:ident) => {
@@ -234,7 +240,10 @@ macro_rules! every_role {
             ChartSeries3,
             ChartSeries4,
             ChartAxis,
-            ChartGrid
+            ChartGrid,
+            Highlight,
+            HighlightDanger,
+            ErrorSoft
         }
     };
 }
@@ -372,6 +381,15 @@ impl RolePalette {
             Role::ChartSeries4 => Style::new().fg(t.text_faint),
             Role::ChartAxis => Style::new().fg(t.text_muted),
             Role::ChartGrid => Style::new().fg(t.text_ghost),
+            Role::Highlight => Style::new()
+                .fg(t.text_primary)
+                .bg(t.highlight)
+                .add_modifier(Modifier::BOLD),
+            Role::HighlightDanger => Style::new()
+                .fg(t.text_primary)
+                .bg(t.highlight_danger)
+                .add_modifier(Modifier::BOLD),
+            Role::ErrorSoft => Style::new().fg(t.error_soft),
         })
     }
 
@@ -434,7 +452,7 @@ mod tests {
     fn roles_cover_the_positional_theme_array() {
         let roles = RolePalette::roles();
         assert_eq!(roles.len(), ROLE_COUNT);
-        assert_eq!(Role::ChartGrid as usize, roles.len() - 1);
+        assert_eq!(Role::ErrorSoft as usize, roles.len() - 1);
         for (index, role) in roles.into_iter().enumerate() {
             role_is_declared(role);
             assert_eq!(role as usize, index);

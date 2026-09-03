@@ -46,6 +46,8 @@ pub enum SurfaceRecipe {
     Raised,
     /// Overlay host (dialog, popover body) above backdrop.
     Overlay,
+    /// Anchored menu host on the canonical popover plane.
+    MenuPopover,
     /// Overlay host that owns interaction — elevated fill, focused border.
     OverlayFocused,
     /// Destructive overlay host — elevated fill, danger border.
@@ -72,6 +74,7 @@ impl SurfaceRecipe {
             Self::Sunken => "sunken",
             Self::Raised => "raised",
             Self::Overlay => "overlay",
+            Self::MenuPopover => "menu-popover",
             Self::OverlayFocused => "overlay-focused",
             Self::OverlayDanger => "overlay-danger",
             Self::Interactive => "interactive",
@@ -93,6 +96,7 @@ impl SurfaceRecipe {
                 | Self::Warning
                 | Self::Destructive
                 | Self::Overlay
+                | Self::MenuPopover
                 | Self::OverlayFocused
                 | Self::OverlayDanger
         )
@@ -105,6 +109,7 @@ impl SurfaceRecipe {
             self,
             Self::Raised
                 | Self::Overlay
+                | Self::MenuPopover
                 | Self::OverlayFocused
                 | Self::OverlayDanger
                 | Self::Interactive
@@ -120,7 +125,9 @@ impl SurfaceRecipe {
     pub const fn family(self) -> RecipeFamily {
         match self {
             Self::Canvas | Self::Inset | Self::Sunken | Self::Raised => RecipeFamily::Layout,
-            Self::Overlay | Self::OverlayFocused | Self::OverlayDanger => RecipeFamily::Overlay,
+            Self::Overlay | Self::MenuPopover | Self::OverlayFocused | Self::OverlayDanger => {
+                RecipeFamily::Overlay
+            }
             Self::Interactive | Self::Focused => RecipeFamily::Action,
             Self::Selected => RecipeFamily::Collection,
             Self::Warning | Self::Destructive => RecipeFamily::Status,
@@ -473,6 +480,7 @@ impl DesignSystem {
             // in-flow cards sit on `Raised`, overlays keep `Elevated`.
             SurfaceRecipe::Raised => (Some(Role::Elevated), Some(contract.border), true),
             SurfaceRecipe::Overlay => (Some(contract.surface), Some(contract.border), true),
+            SurfaceRecipe::MenuPopover => (Some(Role::Popover), Some(Role::Border), true),
             SurfaceRecipe::OverlayFocused => {
                 (Some(contract.surface), Some(Role::BorderFocused), true)
             }
@@ -648,6 +656,7 @@ mod tests {
     fn recipe_ids_stable() {
         assert_eq!(SurfaceRecipe::Focused.id(), "focused");
         assert_eq!(SurfaceRecipe::Destructive.id(), "destructive");
+        assert_eq!(SurfaceRecipe::MenuPopover.id(), "menu-popover");
     }
 
     #[test]
@@ -658,6 +667,7 @@ mod tests {
             SurfaceRecipe::Inset,
             SurfaceRecipe::Raised,
             SurfaceRecipe::Overlay,
+            SurfaceRecipe::MenuPopover,
             SurfaceRecipe::Interactive,
             SurfaceRecipe::Focused,
             SurfaceRecipe::Selected,
@@ -738,8 +748,15 @@ mod tests {
 
         // Overlays own the top rung, and a focused overlay keeps it.
         let overlay = system.surface_recipe(SurfaceRecipe::Overlay);
+        let menu = system.surface_recipe(SurfaceRecipe::MenuPopover);
         let focused_overlay = system.surface_recipe(SurfaceRecipe::OverlayFocused);
         assert_eq!(overlay.fill, Some(system.style(Role::Elevated)));
+        assert_eq!(menu.fill, Some(system.style(Role::Popover)));
+        assert_eq!(menu.border, Some(system.style(Role::Border)));
+        assert_ne!(
+            menu.fill, overlay.fill,
+            "menus have their own popover plane"
+        );
         assert_eq!(focused_overlay.fill, overlay.fill);
         let focused_border = focused_overlay
             .border

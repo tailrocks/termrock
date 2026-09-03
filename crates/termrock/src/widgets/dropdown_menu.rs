@@ -20,6 +20,7 @@
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
+    style::{Color, Modifier},
     widgets::StatefulWidget,
 };
 
@@ -32,7 +33,7 @@ use crate::{
         OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, RovingOrientation, SemanticNode,
         SemanticRole, SemanticScene, SemanticState, UiIntent, place_overlay,
     },
-    style::{DesignSystem, Glyph, ListRowVisualState, Role},
+    style::{DesignSystem, Glyph, Role, VisualState},
     text::{display_cols, take_display_cols},
 };
 
@@ -1181,11 +1182,7 @@ impl<'a, Id> DropdownMenu<'a, Id> {
         if area.is_empty() {
             return;
         }
-        let recipe = if state.focused && state.accepts_input {
-            super::SurfaceRecipe::OverlayFocused
-        } else {
-            super::SurfaceRecipe::Overlay
-        };
+        let recipe = super::SurfaceRecipe::MenuPopover;
         let colorless_system;
         let surface_system = if self.colorless {
             colorless_system = self
@@ -1289,22 +1286,6 @@ impl<'a, Id> DropdownMenu<'a, Id> {
             }
 
             let active = cursor == i && surface_focus;
-            let recipe = self.system.resolve_list_row(ListRowVisualState {
-                selected: active,
-                focused: active,
-                hovered: state.hovered == Some((depth, i)),
-                enabled: item.enabled,
-                loading: false,
-                checked: matches!(
-                    item.kind,
-                    MenuRowKind::Checkbox { checked: true }
-                        | MenuRowKind::Radio { selected: true, .. }
-                ),
-                ..ListRowVisualState::default()
-            });
-            if recipe.use_tint {
-                buffer.set_style(hit, recipe.tint);
-            }
             let style = if self.colorless {
                 if !item.enabled {
                     self.system.style(Role::TextMuted)
@@ -1313,15 +1294,24 @@ impl<'a, Id> DropdownMenu<'a, Id> {
                 } else {
                     self.system.style(Role::Text)
                 }
-            } else if !item.enabled {
-                self.system.style(Role::TextDisabled)
-            } else if item.destructive && !active {
-                self.system.style(Role::Danger)
-            } else if active {
-                recipe.label
             } else {
-                self.system.style(Role::Text)
+                self.system.menu_row(
+                    VisualState {
+                        selected: active,
+                        hovered: state.hovered == Some((depth, i)),
+                        disabled: !item.enabled,
+                        ..VisualState::default()
+                    },
+                    item.destructive,
+                    surface_system
+                        .style(Role::Popover)
+                        .bg
+                        .unwrap_or(Color::Reset),
+                )
             };
+            if !self.colorless {
+                buffer.set_style(hit, style);
+            }
 
             let mark = match &item.kind {
                 MenuRowKind::Checkbox { checked: true } if false => "[x] ",
@@ -1807,6 +1797,46 @@ mod tests {
                 .nodes()
                 .iter()
                 .any(|n| n.label.as_deref() == Some("dropdown-menu"))
+        );
+    }
+
+    #[test]
+    fn render_uses_menu_highlights_and_soft_destructive_label() {
+        let system = DesignSystem::junie();
+        let root = vec![
+            MenuNode::command("open", "Open"),
+            MenuNode::command("delete", "Delete").destructive(true),
+        ];
+        let mut state = DropdownMenuState::new();
+        let _ = state.open_from_keyboard(&root, Rect::new(0, 0, 80, 24));
+        let area = Rect::new(0, 0, 32, 8);
+        let mut buffer = Buffer::empty(area);
+        DropdownMenu::new(&root, &system).paint(area, &mut buffer, &mut state);
+
+        let active = state
+            .panel_hits()
+            .iter()
+            .find(|(_, index, _)| *index == 0)
+            .map(|(_, _, rect)| *rect)
+            .expect("active menu row hit");
+        let destructive = state
+            .panel_hits()
+            .iter()
+            .find(|(_, index, _)| *index == 1)
+            .map(|(_, _, rect)| *rect)
+            .expect("destructive menu row hit");
+        let active_style = buffer[(active.x + 2, active.y)].style();
+        let highlight = system.style(Role::Highlight);
+        assert_eq!(active_style.fg, highlight.fg);
+        assert_eq!(active_style.bg, Some(Color::Rgb(0x2f, 0x5a, 0xa8)));
+        assert_eq!(active_style.add_modifier, highlight.add_modifier);
+        assert!(
+            (0..active.width).all(|offset| buffer[(active.x + offset, active.y)].symbol() != "▎"),
+            "menu selection has no focus gutter"
+        );
+        assert_eq!(
+            buffer[(destructive.x + 2, destructive.y)].style().fg,
+            Some(Color::Rgb(0xd9, 0x8a, 0x8a))
         );
     }
 

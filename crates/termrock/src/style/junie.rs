@@ -31,8 +31,9 @@ use super::quantize::ColorCapability;
 /// styles): canvas `#000000`, chrome `#111111`, cards `#18181b` (zinc-900),
 /// input `#1e1e22`, popover `#3f3f46` (zinc-700); accent `#48e054` with hover
 /// at 80% over black and 10–20% alpha tints; text is an alpha ladder on white;
-/// borders are white at 10% (subtle) and 30% (strong); destructive `#e44545`,
-/// warning `#f59e09`.
+/// borders are white at 10% (subtle) and 30% (strong); anchored-menu
+/// highlights are blue/deep-red and destructive menu labels use soft rose;
+/// destructive `#e44545`, warning `#f59e09`.
 pub mod palette {
     use ratatui_core::style::Color;
 
@@ -59,6 +60,12 @@ pub mod palette {
     pub const OVERLAY: Color = rgb(0x27272a);
     /// Popover / dialog surface (zinc-700).
     pub const POPOVER: Color = rgb(0x3f3f46);
+    /// Cursor-row fill for ordinary anchored-menu commands.
+    pub const HIGHLIGHT: Color = rgb(0x2f5aa8);
+    /// Cursor-row fill for destructive anchored-menu commands.
+    pub const HIGHLIGHT_DANGER: Color = rgb(0x7a2a2a);
+    /// Resting destructive anchored-menu label.
+    pub const ERROR_SOFT: Color = rgb(0xd98a8a);
     /// Text primary — 100% white.
     pub const WHITE: Color = rgb(0xffffff);
     /// Text secondary — 70% white.
@@ -105,6 +112,12 @@ pub struct JunieTheme {
     pub field_hover: Color,
     /// Popover / dialog surface.
     pub popover: Color,
+    /// Cursor-row fill for ordinary anchored-menu commands.
+    pub highlight: Color,
+    /// Cursor-row fill for destructive anchored-menu commands.
+    pub highlight_danger: Color,
+    /// Resting destructive anchored-menu label.
+    pub error_soft: Color,
 
     /// Resting boundary.
     pub border_subtle: Color,
@@ -158,6 +171,9 @@ impl JunieTheme {
             field: INPUT,
             field_hover: INPUT_HOVER,
             popover: POPOVER,
+            highlight: HIGHLIGHT,
+            highlight_danger: HIGHLIGHT_DANGER,
+            error_soft: ERROR_SOFT,
             border_subtle: WHITE_15,
             border_strong: WHITE_30,
             text_primary: WHITE,
@@ -200,6 +216,9 @@ impl JunieTheme {
             field,
             field_hover,
             popover,
+            highlight,
+            highlight_danger,
+            error_soft,
             border_subtle,
             border_strong,
             text_primary,
