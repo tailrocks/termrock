@@ -1058,6 +1058,7 @@ impl<'a, Id: Clone + Ord, ColId: Clone + PartialEq> TreeTable<'a, Id, ColId> {
         if area.is_empty() {
             state.paint_widths.clear();
             state.paint_rects.clear();
+            state.hovered = None;
             return;
         }
         // Input permission and scene focus are separate authorities. Neither
@@ -1132,6 +1133,7 @@ impl<'a, Id: Clone + Ord, ColId: Clone + PartialEq> TreeTable<'a, Id, ColId> {
             state.body_origin = (area.x, y);
             state.body_rows = 0;
             state.body_width = area.width;
+            state.hovered = None;
             return;
         }
 
@@ -1146,6 +1148,7 @@ impl<'a, Id: Clone + Ord, ColId: Clone + PartialEq> TreeTable<'a, Id, ColId> {
             state.body_origin = (area.x, y);
             state.body_rows = 0;
             state.body_width = area.width;
+            state.hovered = None;
             return;
         }
 
@@ -1177,6 +1180,13 @@ impl<'a, Id: Clone + Ord, ColId: Clone + PartialEq> TreeTable<'a, Id, ColId> {
             y = y.saturating_add(1);
         }
         state.body_rows = y.saturating_sub(body_start);
+        if state
+            .hovered
+            .as_ref()
+            .is_some_and(|hovered| !state.row_regions.iter().any(|region| &region.id == hovered))
+        {
+            state.hovered = None;
+        }
 
         // Footer
         let fy = area.bottom().saturating_sub(1);
@@ -1998,6 +2008,35 @@ mod tests {
         );
         assert!(matches!(out, TreeTableOutcome::Ignored));
         assert_eq!(state.hovered, Some("r"));
+    }
+
+    #[test]
+    fn reprojecting_rows_clears_stale_hover_geometry() {
+        let system = DesignSystem::default();
+        let columns = cols();
+        let old_cells: &[&str] = &["old", "0", "0"];
+        let new_cells: &[&str] = &["new", "0", "0"];
+        let old_rows = [TreeTableRow::new("old", 0, old_cells)];
+        let new_rows = [TreeTableRow::new("new", 0, new_cells)];
+        let area = Rect::new(0, 0, 40, 6);
+        let mut state = TreeTableState::<&str, &str>::new(None);
+        let mut buffer = Buffer::empty(area);
+
+        TreeTable::new(&system, &columns, &old_rows).render(area, &mut buffer, &mut state);
+        let old = state.row_regions[0].area;
+        let _ = state.handle_mouse(
+            MouseEvent {
+                kind: MouseEventKind::Moved,
+                position: Position { x: old.x, y: old.y },
+                modifiers: KeyModifiers::NONE,
+            },
+            &old_rows,
+            &columns,
+        );
+        assert_eq!(state.hovered, Some("old"));
+
+        TreeTable::new(&system, &columns, &new_rows).render(area, &mut buffer, &mut state);
+        assert_eq!(state.hovered, None);
     }
 
     #[test]
