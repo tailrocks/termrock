@@ -323,6 +323,9 @@ pub struct StepperState {
     hits: Vec<(usize, Rect)>,
     menu_hit: Rect,
     root: Rect,
+    vertical_scroll: usize,
+    vertical_viewport: usize,
+    vertical_show_descriptions: bool,
 }
 
 impl Default for StepperState {
@@ -350,6 +353,9 @@ impl StepperState {
             hits: Vec::new(),
             menu_hit: Rect::default(),
             root: Rect::default(),
+            vertical_scroll: 0,
+            vertical_viewport: 0,
+            vertical_show_descriptions: true,
         }
     }
 
@@ -541,6 +547,59 @@ impl StepperState {
         self.enabled && self.accepts_input && self.focused
     }
 
+    fn uses_vertical_viewport(&self) -> bool {
+        matches!(self.orientation, StepperOrientation::Vertical)
+            && matches!(
+                self.presentation,
+                StepperPresentation::Expanded | StepperPresentation::Compact
+            )
+    }
+
+    fn vertical_rows_to_cursor(&self, items: &[StepItem], start: usize, cursor: usize) -> usize {
+        let expanded = matches!(self.presentation, StepperPresentation::Expanded);
+        let mut rows = 0usize;
+        for index in start..=cursor {
+            rows = rows.saturating_add(1);
+            if expanded && self.vertical_show_descriptions && items[index].description.is_some() {
+                rows = rows.saturating_add(1);
+            }
+            if expanded && index < cursor && index + 1 < items.len() {
+                rows = rows.saturating_add(1);
+            }
+        }
+        rows
+    }
+
+    fn ensure_vertical_cursor_visible(&mut self, items: &[StepItem]) {
+        if !self.uses_vertical_viewport() || items.is_empty() {
+            self.vertical_scroll = 0;
+            return;
+        }
+        let Some(cursor) = self.collection.active().copied() else {
+            self.vertical_scroll = 0;
+            return;
+        };
+        self.vertical_scroll = self.vertical_scroll.min(items.len().saturating_sub(1));
+        if cursor < self.vertical_scroll {
+            self.vertical_scroll = cursor;
+        }
+        let capacity = self.vertical_viewport.max(1);
+        while self.vertical_scroll < cursor
+            && self.vertical_rows_to_cursor(items, self.vertical_scroll, cursor) > capacity
+        {
+            self.vertical_scroll = self.vertical_scroll.saturating_add(1);
+        }
+    }
+
+    fn configure_vertical_viewport(&mut self, items: &[StepItem], rows: usize) {
+        if self.uses_vertical_viewport() {
+            self.vertical_viewport = rows.max(1);
+            self.ensure_vertical_cursor_visible(items);
+        } else {
+            self.vertical_scroll = 0;
+        }
+    }
+
     fn entries(items: &[StepItem], statuses: &[StepStatus]) -> Vec<CollectionItem<usize>> {
         items
             .iter()
@@ -589,6 +648,7 @@ impl StepperState {
         }
         let id = items[index].id.clone();
         self.collection.set_active(Some(index));
+        self.ensure_vertical_cursor_visible(items);
         if self.menu_open {
             self.menu_open = false;
         }
@@ -602,6 +662,7 @@ impl StepperState {
         }
         let entries = Self::entries(items, &self.statuses);
         let _ = self.collection.reconcile(&entries);
+        self.ensure_vertical_cursor_visible(items);
 
         if matches!(self.presentation, StepperPresentation::Menu) && !self.menu_open {
             if matches!(
@@ -648,6 +709,7 @@ impl StepperState {
         }
         let entries = Self::entries(items, &self.statuses);
         let _ = self.collection.reconcile(&entries);
+        self.ensure_vertical_cursor_visible(items);
         match intent {
             UiIntent::Move(
                 NavigationMove::Next
@@ -661,6 +723,7 @@ impl StepperState {
             ) => {
                 let out = self.collection.handle_intent(intent, &entries);
                 if out.active_changed() {
+                    self.ensure_vertical_cursor_visible(items);
                     StepperOutcome::CursorMoved {
                         index: self.cursor(),
                     }
@@ -818,6 +881,8 @@ impl<'a> Stepper<'a> {
         let _ = state.sync_presentation(area);
         let entries = StepperState::entries(self.items, &state.statuses);
         let _ = state.collection.reconcile(&entries);
+        state.vertical_show_descriptions = self.show_descriptions;
+        state.configure_vertical_viewport(self.items, usize::from(area.height));
 
         match state.presentation {
             StepperPresentation::Numeric => self.paint_numeric(area, buffer, state),
@@ -942,7 +1007,7 @@ impl<'a> Stepper<'a> {
         let cursor = state.cursor();
         let surface = state.focused && state.accepts_input;
         let mut y = area.y;
-        for (i, step) in self.items.iter().enumerate() {
+        for (i, step) in self.items.iter().enumerate().skip(state.vertical_scroll) {
             if y >= area.bottom() {
                 break;
             }
@@ -1391,6 +1456,52 @@ mod tests {
             !t2.contains("[✓]") && !t2.contains("[›]") && !t2.contains("[ ]"),
             "invented wells leaked: {t2}"
         );
+    }
+
+    #[test]
+    fn vertical_navigation_reveals_the_active_step() {
+        let system = DesignSystem::default();
+        let items = steps();
+        let mut state = focused_linear(items.len()).policy(StepperNavPolicy::Free);
+        state.set_orientation(StepperOrientation::Vertical);
+        state.set_presentation_override(Some(StepperPresentation::Expanded));
+
+        let area = Rect::new(0, 0, 48, 6);
+        let mut buffer = Buffer::empty(area);
+        Stepper::new(&items, &system).paint(area, &mut buffer, &mut state);
+        for _ in 0..3 {
+            assert!(matches!(
+                state.handle_intent(UiIntent::Move(NavigationMove::Next), &items,),
+                StepperOutcome::CursorMoved { .. }
+            ));
+        }
+
+        let mut buffer = Buffer::empty(area);
+        Stepper::new(&items, &system).paint(area, &mut buffer, &mut state);
+        assert!(state.vertical_scroll > 0);
+        let (_, hit) = state
+            .hits
+            .iter()
+            .find(|(index, _)| *index == 3)
+            .copied()
+            .expect("active step must remain clickable after scrolling");
+        let text: String = buffer
+            .content()
+            .iter()
+            .map(|cell| cell.symbol().to_string())
+            .collect();
+        assert!(text.contains("Review"), "{text}");
+        assert!(matches!(
+            state.handle_mouse(
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(hit.x, hit.y),
+                    modifiers: KeyModifiers::NONE,
+                },
+                &items,
+            ),
+            StepperOutcome::StepActivated { index: 3, .. }
+        ));
     }
 
     #[test]
