@@ -77887,7 +77887,6 @@ pub fn termrock::widgets::PasswordInputState::is_empty(&self) -> bool
 pub const fn termrock::widgets::PasswordInputState::is_enabled(&self) -> bool
 pub const fn termrock::widgets::PasswordInputState::is_focused(&self) -> bool
 pub const fn termrock::widgets::PasswordInputState::is_pending(&self) -> bool
-pub const fn termrock::widgets::PasswordInputState::is_read_only(&self) -> bool
 pub const fn termrock::widgets::PasswordInputState::is_revealed(&self) -> bool
 pub fn termrock::widgets::PasswordInputState::new() -> Self
 pub fn termrock::widgets::PasswordInputState::parts(&self) -> core::option::Option<&termrock::widgets::TextInputParts>

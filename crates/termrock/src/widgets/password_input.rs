@@ -389,12 +389,6 @@ impl PasswordInputState {
         self.enabled
     }
 
-    /// Read-only.
-    #[must_use]
-    pub const fn is_read_only(&self) -> bool {
-        self.read_only
-    }
-
     /// Pending.
     #[must_use]
     pub const fn is_pending(&self) -> bool {
