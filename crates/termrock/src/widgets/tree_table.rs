@@ -1041,7 +1041,12 @@ pub fn default_tree_table_intent(key: KeyEvent, mode: TreeTableNavMode) -> Optio
     if key.is_release() {
         return None;
     }
-    if key.modifiers.contains(KeyModifiers::SHIFT) {
+    if key.modifiers.contains(KeyModifiers::SHIFT)
+        && matches!(
+            key.code,
+            KeyCode::Left | KeyCode::Right | KeyCode::Char('h' | 'l' | 'H' | 'L')
+        )
+    {
         return None; // handled as hierarchy chord
     }
     match key.code {
@@ -2036,6 +2041,14 @@ mod tests {
         assert!(matches!(down, TreeTableOutcome::Scrolled));
         assert!(matches!(up, TreeTableOutcome::Scrolled));
         assert_eq!(state.window.offset, 10);
+        let out = state.handle_key(
+            &rows,
+            &columns,
+            KeyEvent::new(KeyCode::PageDown, KeyModifiers::SHIFT),
+        );
+
+        assert!(matches!(out, TreeTableOutcome::Scrolled));
+        assert_eq!(state.window.offset, 12);
         assert_eq!(state.selected(), Some(&"off-window"));
     }
 
