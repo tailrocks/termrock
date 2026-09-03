@@ -624,9 +624,10 @@ impl MenuBarState {
             .collect()
     }
 
-    fn ensure_bar<Id>(&mut self, menus: &[MenuBarMenu<Id>]) {
+    fn ensure_bar<Id>(&mut self, menus: &[MenuBarMenu<Id>]) -> Vec<CollectionItem<usize>> {
         let entries = Self::bar_entries(menus);
         let _ = self.bar.reconcile(&entries);
+        entries
     }
 
     fn items_at_path<'a, Id>(
@@ -667,7 +668,18 @@ impl MenuBarState {
         if !menus[idx].enabled {
             return MenuBarOutcome::Ignored;
         }
-        self.ensure_bar(menus);
+        let _ = self.ensure_bar(menus);
+        self.open_menu_at_after_ensure(menus, idx)
+    }
+
+    fn open_menu_at_after_ensure<Id: Clone>(
+        &mut self,
+        menus: &[MenuBarMenu<Id>],
+        idx: usize,
+    ) -> MenuBarOutcome<Id> {
+        if !self.enabled || menus.is_empty() || idx >= menus.len() || !menus[idx].enabled {
+            return MenuBarOutcome::Ignored;
+        }
         self.bar.set_active(Some(idx));
         self.open_top = Some(idx);
         self.open_path.clear();
@@ -683,9 +695,12 @@ impl MenuBarState {
 
     /// Open bar cursor menu.
     pub fn open_active_menu<Id: Clone>(&mut self, menus: &[MenuBarMenu<Id>]) -> MenuBarOutcome<Id> {
-        self.ensure_bar(menus);
+        if !self.enabled || menus.is_empty() {
+            return MenuBarOutcome::Ignored;
+        }
+        let _ = self.ensure_bar(menus);
         let idx = self.bar_cursor();
-        self.open_menu_at(menus, idx)
+        self.open_menu_at_after_ensure(menus, idx)
     }
 
     fn current_items<'a, Id>(&self, menus: &'a [MenuBarMenu<Id>]) -> Option<&'a [MenuNode<Id>]> {
@@ -822,8 +837,6 @@ impl MenuBarState {
             // Allow Alt release to keep mode; ignore other releases.
             return MenuBarOutcome::Ignored;
         }
-        self.ensure_bar(menus);
-
         // Platform-neutral mnemonics:
         // - Alt+letter opens matching top menu when the terminal delivers Alt.
         // - Hosts arm sticky mnemonic mode via [`Self::set_mnemonic_mode`] (map
@@ -906,7 +919,7 @@ impl MenuBarState {
         if !self.live() || menus.is_empty() {
             return MenuBarOutcome::Ignored;
         }
-        self.ensure_bar(menus);
+        let bar_entries = self.ensure_bar(menus);
 
         if matches!(self.presentation, MenuBarPresentation::CommandPalette) && !self.is_open() {
             return match intent {
@@ -922,17 +935,17 @@ impl MenuBarState {
         }
 
         if !self.is_open() {
-            return self.handle_intent_closed(intent, menus);
+            return self.handle_intent_closed(intent, menus, &bar_entries);
         }
-        self.handle_intent_open(intent, menus)
+        self.handle_intent_open(intent, menus, &bar_entries)
     }
 
     fn handle_intent_closed<Id: Clone>(
         &mut self,
         intent: UiIntent,
         menus: &[MenuBarMenu<Id>],
+        bar_entries: &[CollectionItem<usize>],
     ) -> MenuBarOutcome<Id> {
-        let entries = Self::bar_entries(menus);
         match intent {
             UiIntent::Move(
                 NavigationMove::Next
@@ -942,7 +955,7 @@ impl MenuBarState {
                 | NavigationMove::First
                 | NavigationMove::Last,
             ) => {
-                let out = self.bar.handle_intent(intent, &entries);
+                let out = self.bar.handle_intent(intent, bar_entries);
                 if out.active_changed() {
                     MenuBarOutcome::BarMoved
                 } else {
@@ -950,9 +963,13 @@ impl MenuBarState {
                 }
             }
             UiIntent::Activate | UiIntent::Submit | UiIntent::Toggle | UiIntent::Expand => {
-                self.open_active_menu(menus)
+                let idx = self.bar_cursor();
+                self.open_menu_at_after_ensure(menus, idx)
             }
-            UiIntent::Move(NavigationMove::Down) => self.open_active_menu(menus),
+            UiIntent::Move(NavigationMove::Down) => {
+                let idx = self.bar_cursor();
+                self.open_menu_at_after_ensure(menus, idx)
+            }
             UiIntent::Cancel | UiIntent::Close => {
                 if self.mnemonic_mode {
                     self.mnemonic_mode = false;
@@ -969,6 +986,7 @@ impl MenuBarState {
         &mut self,
         intent: UiIntent,
         menus: &[MenuBarMenu<Id>],
+        bar_entries: &[CollectionItem<usize>],
     ) -> MenuBarOutcome<Id> {
         let Some(entries) = self.ensure_top_frame(menus) else {
             self.close_all();
@@ -1000,13 +1018,12 @@ impl MenuBarState {
                 }
                 // At root depth, switch to next top menu (desktop style).
                 if self.cascade.len() == 1 {
-                    let entries = Self::bar_entries(menus);
                     let out = self
                         .bar
-                        .handle_intent(UiIntent::Move(NavigationMove::Next), &entries);
+                        .handle_intent(UiIntent::Move(NavigationMove::Next), bar_entries);
                     if out.active_changed() {
                         let idx = self.bar_cursor();
-                        return self.open_menu_at(menus, idx);
+                        return self.open_menu_at_after_ensure(menus, idx);
                     }
                 }
                 MenuBarOutcome::Ignored
@@ -1016,13 +1033,12 @@ impl MenuBarState {
                     return self.close_one_layer();
                 }
                 // At root: switch previous top menu.
-                let entries = Self::bar_entries(menus);
                 let out = self
                     .bar
-                    .handle_intent(UiIntent::Move(NavigationMove::Previous), &entries);
+                    .handle_intent(UiIntent::Move(NavigationMove::Previous), bar_entries);
                 if out.active_changed() {
                     let idx = self.bar_cursor();
-                    return self.open_menu_at(menus, idx);
+                    return self.open_menu_at_after_ensure(menus, idx);
                 }
                 MenuBarOutcome::Ignored
             }
