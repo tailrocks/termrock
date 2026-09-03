@@ -1136,6 +1136,27 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
             }
         }
 
+        if body.contains(event.position)
+            && let Some(crate::scroll::ScrollDelta {
+                axis: crate::scroll::ScrollAxis::Horizontal,
+                amount,
+            }) = crate::scroll::mouse_scroll_delta_with_step(
+                event.kind,
+                event.modifiers,
+                crate::scroll::ScrollAxes {
+                    vertical: true,
+                    horizontal: true,
+                },
+                4,
+            )
+        {
+            return if self.scroll_horizontal(amount) {
+                DataTableOutcome::Scrolled
+            } else {
+                DataTableOutcome::Ignored
+            };
+        }
+
         match event.kind {
             MouseEventKind::ScrollUp if body.contains(event.position) => {
                 if self.window.scroll_by(-1) {
@@ -2569,6 +2590,73 @@ mod tests {
         let out = state.handle_mouse(event, &rows, &cols);
         assert!(matches!(out, DataTableOutcome::CursorMoved));
         assert_eq!(state.cursor_row, 1);
+    }
+
+    #[test]
+    fn horizontal_mouse_wheel_scrolls_painted_body() {
+        let system = DesignSystem::default();
+        let columns = ColumnModel::new(vec![
+            DataColumn::new("a", "A", DataColumnWidth::Fixed(12)),
+            DataColumn::new("b", "B", DataColumnWidth::Fixed(12)),
+            DataColumn::new("c", "C", DataColumnWidth::Fixed(12)),
+        ]);
+        let cells: &[&str] = &["a", "b", "c"];
+        let rows = [(1u64, cells)];
+        let area = Rect::new(0, 0, 24, 4);
+        let mut state = DataTableState::<u64, &str>::new();
+        state.set_nav_mode(DataTableNavMode::Cell);
+        state.cursor_col = 2;
+        let mut buffer = Buffer::empty(area);
+
+        DataTable::new(&system, &columns, &rows)
+            .row_numbers(false)
+            .render(area, &mut buffer, &mut state);
+        assert!(state.content_width > state.viewport_width);
+        let initial_offset = state.h_offset;
+        assert!(initial_offset > 0);
+
+        let event = MouseEvent {
+            kind: MouseEventKind::ScrollLeft,
+            position: Position { x: 1, y: 1 },
+            modifiers: KeyModifiers::NONE,
+        };
+        assert!(matches!(
+            state.handle_mouse(event, &[1], &columns),
+            DataTableOutcome::Scrolled
+        ));
+        assert!(state.h_offset < initial_offset);
+
+        let event = MouseEvent {
+            kind: MouseEventKind::ScrollRight,
+            position: Position { x: 1, y: 1 },
+            modifiers: KeyModifiers::NONE,
+        };
+        assert!(matches!(
+            state.handle_mouse(event, &[1], &columns),
+            DataTableOutcome::Scrolled
+        ));
+        assert_eq!(state.h_offset, initial_offset);
+
+        let event = MouseEvent {
+            kind: MouseEventKind::ScrollLeft,
+            position: Position { x: 1, y: 1 },
+            modifiers: KeyModifiers::NONE,
+        };
+        assert!(matches!(
+            state.handle_mouse(event, &[1], &columns),
+            DataTableOutcome::Scrolled
+        ));
+
+        let event = MouseEvent {
+            kind: MouseEventKind::ScrollDown,
+            position: Position { x: 1, y: 1 },
+            modifiers: KeyModifiers::SHIFT,
+        };
+        assert!(matches!(
+            state.handle_mouse(event, &[1], &columns),
+            DataTableOutcome::Scrolled
+        ));
+        assert_eq!(state.h_offset, initial_offset);
     }
 
     #[test]

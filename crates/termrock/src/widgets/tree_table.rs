@@ -388,7 +388,7 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
     /// Reconcile selection after host reprojects rows.
     pub fn reconcile(&mut self, rows: &[TreeTableRow<'_, Id>]) {
         if let Some(sel) = self.selected.as_ref()
-            && let Some(idx) = rows.iter().position(|r| r.enabled && &r.id == sel)
+            && let Some(idx) = rows.iter().position(|r| selectable(r) && &r.id == sel)
         {
             self.cursor_row = idx;
             self.previous_index = Some(idx);
@@ -399,7 +399,7 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
         let Some(idx) = rows
             .iter()
             .enumerate()
-            .filter(|(_, r)| r.enabled && navigable(r))
+            .filter(|(_, r)| selectable(r))
             .min_by_key(|(i, _)| i.abs_diff(anchor))
             .map(|(i, _)| i)
         else {
@@ -422,6 +422,42 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
         }
         let _ = projected_len;
         self.window.clamp();
+    }
+
+    fn sync_cursor_to_paint(&mut self, columns: &ColumnModel<ColId>)
+    where
+        ColId: Clone,
+    {
+        let visible_count = columns.visible().count();
+        if visible_count == 0 || self.paint_widths.is_empty() {
+            self.cursor_col = 0;
+            return;
+        }
+        self.cursor_col = self.cursor_col.min(visible_count - 1);
+        let target_index = columns
+            .visible()
+            .nth(self.cursor_col)
+            .map(|(index, _)| index);
+        if target_index
+            .is_some_and(|target| self.paint_widths.iter().any(|(index, _)| *index == target))
+        {
+            return;
+        }
+        let Some((_, fallback_ordinal)) = self
+            .paint_widths
+            .iter()
+            .filter_map(|(index, _)| {
+                let ordinal = columns
+                    .visible()
+                    .position(|(visible_index, _)| visible_index == *index)?;
+                Some((ordinal.abs_diff(self.cursor_col), ordinal))
+            })
+            .min_by_key(|(distance, ordinal)| (*distance, *ordinal))
+        else {
+            self.cursor_col = 0;
+            return;
+        };
+        self.cursor_col = fallback_ordinal;
     }
 
     /// Keys over projected rows.
@@ -486,12 +522,16 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
                 self.request_sort(columns)
             }
             KeyCode::Char('x') if is_press => {
-                let id = rows[self.cursor_row].id.clone();
-                TreeTableOutcome::ContextMenu { row: id }
+                if selectable(&rows[self.cursor_row]) {
+                    let id = rows[self.cursor_row].id.clone();
+                    TreeTableOutcome::ContextMenu { row: id }
+                } else {
+                    TreeTableOutcome::Ignored
+                }
             }
             KeyCode::Char(' ') if is_press && self.multi => {
                 let id = rows[self.cursor_row].id.clone();
-                if rows[self.cursor_row].enabled {
+                if selectable(&rows[self.cursor_row]) {
                     self.selection.toggle_row(id.clone());
                     TreeTableOutcome::CheckToggled(id)
                 } else {
@@ -547,7 +587,7 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
             UiIntent::Collapse => self.hierarchy_step(rows, false),
             UiIntent::Activate | UiIntent::Submit | UiIntent::Open => {
                 let row = &rows[self.cursor_row];
-                if row.enabled {
+                if selectable(row) {
                     TreeTableOutcome::Activated(row.id.clone())
                 } else {
                     TreeTableOutcome::Ignored
@@ -556,8 +596,12 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
             UiIntent::Toggle => {
                 if self.multi {
                     let id = rows[self.cursor_row].id.clone();
-                    self.selection.toggle_row(id.clone());
-                    TreeTableOutcome::CheckToggled(id)
+                    if selectable(&rows[self.cursor_row]) {
+                        self.selection.toggle_row(id.clone());
+                        TreeTableOutcome::CheckToggled(id)
+                    } else {
+                        TreeTableOutcome::Ignored
+                    }
                 } else {
                     self.hierarchy_step(rows, true)
                 }
@@ -690,7 +734,7 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
         let enabled: Vec<usize> = rows
             .iter()
             .enumerate()
-            .filter(|(_, r)| r.enabled && navigable(r))
+            .filter(|(_, r)| selectable(r))
             .map(|(i, _)| i)
             .collect();
         if enabled.is_empty() {
@@ -727,10 +771,7 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
         rows: &[TreeTableRow<'_, Id>],
         last: bool,
     ) -> TreeTableOutcome<Id, ColId> {
-        let mut iter = rows
-            .iter()
-            .enumerate()
-            .filter(|(_, r)| r.enabled && navigable(r));
+        let mut iter = rows.iter().enumerate().filter(|(_, r)| selectable(r));
         let Some((idx, row)) = (if last { iter.next_back() } else { iter.next() }) else {
             return TreeTableOutcome::Ignored;
         };
@@ -807,11 +848,11 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
         };
         match event.kind {
             MouseEventKind::Moved => {
-                let next = self
-                    .row_regions
-                    .iter()
-                    .find(|region| region.area.contains(event.position))
-                    .map(|region| region.id.clone());
+                let next = self.row_regions.iter().find_map(|region| {
+                    let row = rows.get(region.index)?;
+                    (row.id == region.id && region.area.contains(event.position))
+                        .then(|| row.id.clone())
+                });
                 if self.hovered != next {
                     self.hovered = next;
                 }
@@ -854,11 +895,23 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
                     .iter()
                     .find(|r| r.area.contains(event.position))
                 {
+                    let Some(row) = rows.get(region.index) else {
+                        return TreeTableOutcome::Ignored;
+                    };
+                    if row.id != region.id {
+                        return TreeTableOutcome::Ignored;
+                    }
                     if region
                         .disclosure
                         .is_some_and(|d| d.contains(event.position))
                     {
-                        return TreeTableOutcome::ExpandToggled(region.id.clone());
+                        if row.enabled {
+                            return TreeTableOutcome::ExpandToggled(region.id.clone());
+                        }
+                        return TreeTableOutcome::Ignored;
+                    }
+                    if !selectable(row) {
+                        return TreeTableOutcome::Ignored;
                     }
                     if self.selected.as_ref() == Some(&region.id) {
                         return TreeTableOutcome::Activated(region.id.clone());
@@ -877,8 +930,15 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
                     .iter()
                     .find(|r| r.area.contains(event.position))
                 {
+                    let Some(row) = rows.get(region.index) else {
+                        return TreeTableOutcome::Ignored;
+                    };
+                    if row.id != region.id || !selectable(row) {
+                        return TreeTableOutcome::Ignored;
+                    }
                     self.cursor_row = region.index;
                     self.selected = Some(region.id.clone());
+                    self.previous_index = Some(region.index);
                     return TreeTableOutcome::ContextMenu {
                         row: region.id.clone(),
                     };
@@ -898,6 +958,10 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> Default for TreeTableState<Id, C
 
 fn navigable<Id>(row: &TreeTableRow<'_, Id>) -> bool {
     !matches!(row.status, TreeNodeStatus::Loading) && !matches!(row.kind, TreeTableRowKind::Group)
+}
+
+fn selectable<Id>(row: &TreeTableRow<'_, Id>) -> bool {
+    row.enabled && navigable(row)
 }
 
 /// Intent map for TreeTable: mode-sensitive Left/Right.
@@ -998,7 +1062,9 @@ impl<'a, Id: Clone + Ord, ColId: Clone + PartialEq> TreeTable<'a, Id, ColId> {
         if area.is_empty() {
             return;
         }
-        let surface_focused = self.focused || state.accepts_input;
+        // Input permission and scene focus are separate authorities. Neither
+        // one alone may paint active focus chrome.
+        let surface_focused = self.focused && state.accepts_input;
         let header_h = u16::from(self.sticky_header);
         let footer_h = 1u16;
         state.window.viewport = area.height.saturating_sub(header_h + footer_h).max(1);
@@ -1007,7 +1073,8 @@ impl<'a, Id: Clone + Ord, ColId: Clone + PartialEq> TreeTable<'a, Id, ColId> {
         let mut y = area.y;
         let col_budget = area.width.saturating_sub(GUTTER_W);
         state.viewport_width = col_budget;
-        self.columns.resolve_paint_widths_with_gap(
+        resolve_tree_paint_widths(
+            self.columns,
             col_budget.saturating_add(state.h_offset),
             self.system.spacing.column_gap,
             &mut state.paint_widths,
@@ -1024,6 +1091,7 @@ impl<'a, Id: Clone + Ord, ColId: Clone + PartialEq> TreeTable<'a, Id, ColId> {
         state.h_offset = state
             .h_offset
             .min(state.content_width.saturating_sub(col_budget));
+        state.sync_cursor_to_paint(self.columns);
 
         if self.sticky_header && y < area.bottom() {
             paint_header(self, area, y, buffer, state, surface_focused);
@@ -1120,6 +1188,37 @@ impl<'a, Id: Clone + Ord, ColId: Clone + PartialEq> TreeTable<'a, Id, ColId> {
             );
         }
     }
+}
+
+fn resolve_tree_paint_widths<ColId: Clone + PartialEq>(
+    columns: &ColumnModel<ColId>,
+    budget: u16,
+    gap: u16,
+    out: &mut Vec<(usize, u16)>,
+) {
+    columns.resolve_paint_widths_with_gap(budget, gap, out);
+    let Some((hierarchy_index, _)) = columns.visible().next() else {
+        return;
+    };
+    if out.iter().any(|(index, _)| *index == hierarchy_index) {
+        return;
+    }
+    let Some(victim_pos) = out
+        .iter()
+        .enumerate()
+        .min_by_key(|(_, (index, _))| (columns.columns[*index].priority, usize::MAX - *index))
+        .map(|(position, _)| position)
+    else {
+        return;
+    };
+    out.remove(victim_pos);
+    let remaining_width = budget
+        .saturating_sub(gap.saturating_mul(u16::try_from(out.len()).unwrap_or(0)))
+        .saturating_sub(out.iter().map(|(_, width)| *width).sum());
+    let hierarchy_width = columns
+        .effective_width(hierarchy_index)
+        .min(remaining_width.max(1));
+    out.insert(0, (hierarchy_index, hierarchy_width));
 }
 
 fn paint_msg<Id: Clone + Ord, ColId: Clone + PartialEq>(
@@ -1225,7 +1324,7 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
 {
     let selected = state.selected.as_ref() == Some(&row.id);
     let checked = state.multi && state.selection.is_row_selected(&row.id);
-    let cursor = state.cursor_row == row_index;
+    let cursor = state.cursor_row == row_index && selectable(row);
     let hovered = state.hovered.as_ref() == Some(&row.id);
     let loading = matches!(row.status, TreeNodeStatus::Loading | TreeNodeStatus::Lazy);
     let indicated = selected || (cursor && surface_focused);
@@ -1267,6 +1366,11 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
 
     // The quiet tier for this row: same ground and weight, lower voice.
     let quiet_style = chrome.secondary_style(base_style);
+    let cursor_col_index = table
+        .columns
+        .visible()
+        .nth(state.cursor_col)
+        .map(|(index, _)| index);
 
     let row_area = Rect::new(area.x, y, area.width, 1);
     chrome.paint_wash(buffer, row_area);
@@ -1327,7 +1431,7 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
         } else {
             col.kind.cell_style(base_style, quiet_style)
         };
-        if cursor && surface_focused && state.cursor_col == ord {
+        if cursor && surface_focused && cursor_col_index == Some(col_idx) {
             // A cell cursor is a cell: it states itself with the explicit
             // reversal pair, not a modifier over the row's own colours.
             cell_style = table.system.reversed();
@@ -1544,6 +1648,57 @@ mod tests {
         );
         assert!(matches!(out, TreeTableOutcome::CursorMoved));
         assert_eq!(state.cursor_col, 1);
+    }
+
+    #[test]
+    fn cell_cursor_reanchors_when_responsive_paint_drops_a_column() {
+        let columns = ColumnModel::new(vec![
+            DataColumn::new("name", "Name", DataColumnWidth::Min(12)).priority(100),
+            DataColumn::new("cpu", "CPU", DataColumnWidth::Fixed(6)).priority(80),
+            DataColumn::new("mem", "MEM", DataColumnWidth::Fixed(6)).priority(40),
+        ]);
+        let cells: &[&str] = &["row", "1", "2"];
+        let rows = [TreeTableRow::new("r", 0, cells)];
+        let system = DesignSystem::default();
+        let area = Rect::new(0, 0, 22, 6);
+        let mut state = TreeTableState::<&str, &str>::new(Some("r"));
+        state.set_nav_mode(TreeTableNavMode::Cell);
+        state.cursor_col = 2;
+        TreeTable::new(&system, &columns, &rows).render(area, &mut Buffer::empty(area), &mut state);
+
+        assert_eq!(state.cursor_col, 1);
+        assert_eq!(
+            state
+                .paint_widths
+                .iter()
+                .map(|(index, _)| *index)
+                .collect::<Vec<_>>(),
+            [0, 1]
+        );
+    }
+
+    #[test]
+    fn responsive_paint_keeps_the_hierarchy_column() {
+        let columns = ColumnModel::new(vec![
+            DataColumn::new("name", "Name", DataColumnWidth::Min(12)).priority(1),
+            DataColumn::new("cpu", "CPU", DataColumnWidth::Fixed(6)).priority(100),
+            DataColumn::new("mem", "MEM", DataColumnWidth::Fixed(6)).priority(90),
+        ]);
+        let cells: &[&str] = &["row", "1", "2"];
+        let rows = [TreeTableRow::new("r", 0, cells)];
+        let system = DesignSystem::default();
+        let area = Rect::new(0, 0, 22, 6);
+        let mut state = TreeTableState::<&str, &str>::new(Some("r"));
+        TreeTable::new(&system, &columns, &rows).render(area, &mut Buffer::empty(area), &mut state);
+
+        assert_eq!(
+            state
+                .paint_widths
+                .iter()
+                .map(|(index, _)| *index)
+                .collect::<Vec<_>>(),
+            [0, 1]
+        );
     }
 
     #[test]
@@ -1771,6 +1926,84 @@ mod tests {
     }
 
     #[test]
+    fn multi_select_toggle_intent_ignores_disabled_row() {
+        let cells: &[&str] = &["disabled", "", ""];
+        let rows = [TreeTableRow::new("r", 0, cells).disabled()];
+        let columns = cols();
+        let mut state = TreeTableState::<&str, &str>::new(Some("r"));
+        state.enable_multi_select();
+
+        let out = state.handle_intent(&rows, &columns, UiIntent::Toggle);
+
+        assert!(matches!(out, TreeTableOutcome::Ignored));
+        assert!(!state.selection.is_row_selected(&"r"));
+    }
+
+    #[test]
+    fn reconcile_and_body_hits_skip_group_rows() {
+        let group_cells: &[&str] = &["group", "", ""];
+        let row_cells: &[&str] = &["row", "", ""];
+        let rows = [
+            TreeTableRow::new("group", 0, group_cells).group(),
+            TreeTableRow::new("row", 0, row_cells),
+        ];
+        let columns = cols();
+        let mut state = TreeTableState::<&str, &str>::new(Some("group"));
+        state.reconcile(&rows);
+        assert_eq!(state.selected(), Some(&"row"));
+        assert_eq!(state.cursor_row, 1);
+
+        let system = DesignSystem::default();
+        let area = Rect::new(0, 0, 40, 6);
+        TreeTable::new(&system, &columns, &rows).render(area, &mut Buffer::empty(area), &mut state);
+        let group = &state.row_regions[0];
+        let out = state.handle_mouse(
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: Position {
+                    x: group.area.x.saturating_add(8),
+                    y: group.area.y,
+                },
+                modifiers: KeyModifiers::NONE,
+            },
+            &rows,
+            &columns,
+        );
+        assert!(matches!(out, TreeTableOutcome::Ignored));
+        assert_eq!(state.selected(), Some(&"row"));
+    }
+
+    #[test]
+    fn stale_row_hit_geometry_cannot_target_a_reprojected_id() {
+        let old_cells: &[&str] = &["old", "", ""];
+        let new_cells: &[&str] = &["new", "", ""];
+        let old_rows = [TreeTableRow::new("old", 0, old_cells)];
+        let new_rows = [TreeTableRow::new("new", 0, new_cells)];
+        let columns = cols();
+        let system = DesignSystem::default();
+        let area = Rect::new(0, 0, 40, 6);
+        let mut state = TreeTableState::<&str, &str>::new(None);
+        TreeTable::new(&system, &columns, &old_rows).render(
+            area,
+            &mut Buffer::empty(area),
+            &mut state,
+        );
+        let old = state.row_regions[0].area;
+
+        let out = state.handle_mouse(
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: Position { x: old.x, y: old.y },
+                modifiers: KeyModifiers::NONE,
+            },
+            &new_rows,
+            &columns,
+        );
+        assert!(matches!(out, TreeTableOutcome::Ignored));
+        assert_eq!(state.selected(), None);
+    }
+
+    #[test]
     fn aggregate_not_expandable() {
         let r0: &[&str] = &["TOTAL", "100", "200"];
         let rows = [TreeTableRow::new("t", 0, r0).aggregate()];
@@ -1827,6 +2060,43 @@ mod tests {
             "a byte count must not read as loudly as the process name"
         );
         assert_eq!(at('4'), system.style(Role::TextMuted).fg);
+    }
+
+    #[test]
+    fn visual_focus_requires_widget_focus_and_input_authority() {
+        let system = DesignSystem::junie();
+        let columns = ColumnModel::new(vec![DataColumn::new(
+            "name",
+            "Name",
+            DataColumnWidth::Fixed(8),
+        )]);
+        let cells: &[&str] = &["alpha"];
+        let rows = [TreeTableRow::new("r", 0, cells)];
+        let area = Rect::new(0, 0, 24, 6);
+
+        let mut focused_state = TreeTableState::<&str, &str>::new(Some("r"));
+        focused_state.set_accepts_input(true);
+        let mut focused = Buffer::empty(area);
+        TreeTable::new(&system, &columns, &rows)
+            .focused(true)
+            .render(area, &mut focused, &mut focused_state);
+
+        let mut scene_unfocused_state = TreeTableState::<&str, &str>::new(Some("r"));
+        scene_unfocused_state.set_accepts_input(true);
+        let mut scene_unfocused = Buffer::empty(area);
+        TreeTable::new(&system, &columns, &rows)
+            .focused(false)
+            .render(area, &mut scene_unfocused, &mut scene_unfocused_state);
+
+        let mut input_disabled_state = TreeTableState::<&str, &str>::new(Some("r"));
+        input_disabled_state.set_accepts_input(false);
+        let mut input_disabled = Buffer::empty(area);
+        TreeTable::new(&system, &columns, &rows)
+            .focused(true)
+            .render(area, &mut input_disabled, &mut input_disabled_state);
+
+        assert_ne!(focused.content(), scene_unfocused.content());
+        assert_eq!(scene_unfocused.content(), input_disabled.content());
     }
 
     #[test]
