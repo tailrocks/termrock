@@ -117,6 +117,11 @@ impl<Id> RovingFocusGroup<Id> {
         self
     }
 
+    /// Sets wrap policy for active movement.
+    pub const fn set_wrap(&mut self, wrap: bool) {
+        self.wrap = wrap;
+    }
+
     /// Whether movement wraps at ends (default true).
     #[must_use]
     pub const fn wrap(mut self, wrap: bool) -> Self {

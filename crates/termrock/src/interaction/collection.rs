@@ -146,6 +146,11 @@ impl<Id> CollectionState<Id> {
         self
     }
 
+    /// Sets wrap policy for active movement.
+    pub const fn set_wrap(&mut self, wrap: bool) {
+        self.roving.set_wrap(wrap);
+    }
+
     /// Active descendant (keyboard cursor).
     #[must_use]
     pub const fn active(&self) -> Option<&Id> {
@@ -267,6 +272,18 @@ impl<Id: Clone + PartialEq> CollectionState<Id> {
 
     /// Moves active by `steps` among enabled items in the projection.
     pub fn move_by(&mut self, items: &[CollectionItem<Id>], steps: isize) -> CollectionOutcome<Id> {
+        if self.window_start.is_some()
+            && self.total_len > 0
+            && self
+                .roving
+                .active()
+                .is_some_and(|active| !items.iter().any(|item| &item.id == active))
+        {
+            // A virtual projection cannot recover the relative position of an
+            // off-window active id. Preserve it and let the virtualizer move
+            // the host-owned window instead of selecting the first row.
+            return CollectionOutcome::Ignored;
+        }
         let entries = Self::to_roving_entries(items);
         let out: CollectionOutcome<Id> = self.roving.move_by(&entries, steps).into();
         if out.active_changed() {
@@ -501,6 +518,20 @@ mod tests {
         c.set_active(Some("b"));
 
         let out = c.reconcile_window(&window, 2, 4, 2);
+
+        assert_eq!(out, CollectionOutcome::Ignored);
+        assert_eq!(c.active(), Some(&"b"));
+        assert_eq!(c.offset(), 2);
+    }
+
+    #[test]
+    fn virtual_window_movement_preserves_off_window_active() {
+        let window = items(&[("c", true), ("d", true)]);
+        let mut c = CollectionState::new();
+        c.set_active(Some("b"));
+        let _ = c.reconcile_window(&window, 2, 4, 2);
+
+        let out = c.move_next(&window);
 
         assert_eq!(out, CollectionOutcome::Ignored);
         assert_eq!(c.active(), Some(&"b"));

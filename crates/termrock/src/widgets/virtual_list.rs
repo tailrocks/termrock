@@ -170,11 +170,13 @@ impl<Id> VirtualListState<Id> {
     /// Empty universe, fixed 1-row extent, default overscan.
     #[must_use]
     pub fn new() -> Self {
+        let mut list = ListState::default();
+        list.collection_mut().set_wrap(false);
         Self {
             virt: Virtualizer::fixed(1)
                 .with_overscan(VIRTUAL_LIST_DEFAULT_OVERSCAN)
                 .with_viewport(1),
-            list: ListState::default(),
+            list,
             follow: VirtualListFollow::Off,
             page_status: VirtualPageStatus::Ready,
             filter_query: None,
@@ -455,14 +457,22 @@ impl<Id> VirtualListState<Id> {
         Id: Clone + PartialEq,
     {
         let rows = projected_rows(projected);
+        self.list.set_virtual_window(
+            0,
+            usize::try_from(self.virt.scrollable_len()).unwrap_or(usize::MAX),
+        );
+        self.list.reconcile_collection(&rows);
         match intent {
             UiIntent::Move(NavigationMove::Next | NavigationMove::Down) => {
                 // Prefer move selection within window; if at end, scroll.
                 let before = self.list.selected().cloned();
                 let out = self.list.handle_intent(&rows, intent);
                 if out == Outcome::Ignored || self.list.selected() == before.as_ref() {
-                    let _ = self.scroll_by(1);
-                    Outcome::Changed
+                    if self.scroll_by(1) {
+                        Outcome::Changed
+                    } else {
+                        Outcome::Ignored
+                    }
                 } else {
                     out
                 }
@@ -471,29 +481,50 @@ impl<Id> VirtualListState<Id> {
                 let before = self.list.selected().cloned();
                 let out = self.list.handle_intent(&rows, intent);
                 if out == Outcome::Ignored || self.list.selected() == before.as_ref() {
-                    let _ = self.scroll_by(-1);
-                    Outcome::Changed
+                    if self.scroll_by(-1) {
+                        Outcome::Changed
+                    } else {
+                        Outcome::Ignored
+                    }
                 } else {
                     out
                 }
             }
             UiIntent::Page(PageMove::Forward) => {
                 let step = i64::from(self.virt.viewport_extent().max(1));
-                let _ = self.scroll_by(step);
-                Outcome::Changed
+                if self.scroll_by(step) {
+                    Outcome::Changed
+                } else {
+                    Outcome::Ignored
+                }
             }
             UiIntent::Page(PageMove::Backward) => {
                 let step = i64::from(self.virt.viewport_extent().max(1));
-                let _ = self.scroll_by(-step);
-                Outcome::Changed
+                if self.scroll_by(-step) {
+                    Outcome::Changed
+                } else {
+                    Outcome::Ignored
+                }
             }
             UiIntent::Move(NavigationMove::First) => {
+                let before_offset = self.virt.offset();
+                let was_following = matches!(self.follow, VirtualListFollow::Tail);
                 self.set_offset(self.virt.body_start());
-                Outcome::Changed
+                if self.virt.offset() != before_offset || was_following {
+                    Outcome::Changed
+                } else {
+                    Outcome::Ignored
+                }
             }
             UiIntent::Move(NavigationMove::Last) => {
+                let before_offset = self.virt.offset();
+                let was_following = matches!(self.follow, VirtualListFollow::Tail);
                 self.set_follow(VirtualListFollow::Tail);
-                Outcome::Changed
+                if self.virt.offset() != before_offset || !was_following {
+                    Outcome::Changed
+                } else {
+                    Outcome::Ignored
+                }
             }
             UiIntent::Activate
             | UiIntent::Open
@@ -1024,6 +1055,120 @@ mod tests {
         let o = state.offset();
         let _ = state.handle_intent(&[], UiIntent::Page(PageMove::Backward));
         assert!(state.offset() < o);
+    }
+
+    #[test]
+    fn movement_keeps_off_window_active_and_scrolls_virtualizer() {
+        let projected = project_u64(&[10, 11]);
+        for (active, intent, expected_offset) in [
+            (9, UiIntent::Move(NavigationMove::Down), 11),
+            (9, UiIntent::Move(NavigationMove::Up), 9),
+            (11, UiIntent::Move(NavigationMove::Down), 11),
+            (10, UiIntent::Move(NavigationMove::Up), 9),
+        ] {
+            let mut state = VirtualListState::<u64>::new();
+            state.set_logical_len(100);
+            state.set_viewport_extent(2);
+            state.set_offset(10);
+            let rows = projected_rows(&projected);
+            state.list_state_mut().set_virtual_window(0, 100);
+            state.list_state_mut().reconcile_collection(&rows);
+            state.list_state_mut().select(Some(active));
+
+            let out = state.handle_intent(&projected, intent);
+
+            assert_eq!(out, Outcome::Changed);
+            assert_eq!(state.list_state().selected(), Some(&active));
+            assert_eq!(state.offset(), expected_offset);
+        }
+
+        let lower_projected = project_u64(&[0, 1]);
+        let mut lower = VirtualListState::<u64>::new();
+        lower.set_logical_len(100);
+        lower.set_viewport_extent(2);
+        let lower_rows = projected_rows(&lower_projected);
+        lower.list_state_mut().set_virtual_window(0, 100);
+        lower.list_state_mut().reconcile_collection(&lower_rows);
+        lower.list_state_mut().select(Some(0));
+        assert_eq!(
+            lower.handle_intent(&lower_projected, UiIntent::Move(NavigationMove::Up)),
+            Outcome::Ignored
+        );
+        assert_eq!(lower.list_state().selected(), Some(&0));
+        assert_eq!(lower.offset(), 0);
+
+        let upper_projected = project_u64(&[98, 99]);
+        let mut upper = VirtualListState::<u64>::new();
+        upper.set_logical_len(100);
+        upper.set_viewport_extent(2);
+        upper.set_offset(98);
+        let upper_rows = projected_rows(&upper_projected);
+        upper.list_state_mut().set_virtual_window(0, 100);
+        upper.list_state_mut().reconcile_collection(&upper_rows);
+        upper.list_state_mut().select(Some(99));
+        assert_eq!(
+            upper.handle_intent(&upper_projected, UiIntent::Move(NavigationMove::Down)),
+            Outcome::Ignored
+        );
+        assert_eq!(upper.list_state().selected(), Some(&99));
+        assert_eq!(upper.offset(), 98);
+
+        let mut lower_page = VirtualListState::<u64>::new();
+        lower_page.set_logical_len(100);
+        lower_page.set_viewport_extent(2);
+        assert_eq!(
+            lower_page.handle_intent(&[], UiIntent::Page(PageMove::Backward)),
+            Outcome::Ignored
+        );
+        assert_eq!(lower_page.offset(), 0);
+
+        let mut upper_page = VirtualListState::<u64>::new();
+        upper_page.set_logical_len(100);
+        upper_page.set_viewport_extent(2);
+        upper_page.set_offset(98);
+        assert_eq!(
+            upper_page.handle_intent(&[], UiIntent::Page(PageMove::Forward)),
+            Outcome::Ignored
+        );
+        assert_eq!(upper_page.offset(), 98);
+
+        let mut first = VirtualListState::<u64>::new();
+        first.set_logical_len(100);
+        first.set_viewport_extent(2);
+        first.set_offset(10);
+        assert_eq!(
+            first.handle_intent(&[], UiIntent::Move(NavigationMove::First)),
+            Outcome::Changed
+        );
+        assert_eq!(first.offset(), 0);
+        assert_eq!(
+            first.handle_intent(&[], UiIntent::Move(NavigationMove::First)),
+            Outcome::Ignored
+        );
+        assert_eq!(first.offset(), 0);
+
+        let mut empty = VirtualListState::<u64>::new();
+        empty.set_logical_len(100);
+        empty.set_viewport_extent(2);
+        empty.set_offset(10);
+        empty.list_state_mut().select(Some(9));
+        assert_eq!(
+            empty.handle_intent(&[], UiIntent::Move(NavigationMove::Down)),
+            Outcome::Changed
+        );
+        assert_eq!(empty.list_state().selected(), Some(&9));
+        assert_eq!(empty.offset(), 11);
+
+        let mut last = VirtualListState::<u64>::new();
+        last.set_logical_len(100);
+        last.set_viewport_extent(2);
+        last.set_offset(98);
+        last.set_follow(VirtualListFollow::Tail);
+        assert_eq!(
+            last.handle_intent(&[], UiIntent::Move(NavigationMove::Last)),
+            Outcome::Ignored
+        );
+        assert_eq!(last.offset(), 98);
     }
 
     #[test]
