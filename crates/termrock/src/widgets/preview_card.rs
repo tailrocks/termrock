@@ -216,10 +216,6 @@ pub struct PreviewCardContent<'a> {
     pub error_message: Option<&'a str>,
     /// Same facts available without preview (list columns, status, labels).
     pub essential_elsewhere: bool,
-    /// Pin action label (default "Pin").
-    pub pin_label: Option<&'a str>,
-    /// Open / promote action label (default "Open").
-    pub open_label: Option<&'a str>,
 }
 
 impl<'a> PreviewCardContent<'a> {
@@ -235,8 +231,6 @@ impl<'a> PreviewCardContent<'a> {
             load: PreviewLoadState::Ready,
             error_message: None,
             essential_elsewhere: true,
-            pin_label: None,
-            open_label: None,
         }
     }
 
