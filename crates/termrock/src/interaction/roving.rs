@@ -182,6 +182,14 @@ impl<Id: Clone + PartialEq> RovingFocusGroup<Id> {
         }
     }
 
+    fn reconciliation_outcome(&mut self, from: Option<Id>) -> RovingOutcome<Id> {
+        let out = self.outcome(from);
+        if out.changed() {
+            self.typeahead.clear();
+        }
+        out
+    }
+
     /// Ensures `active` is an enabled entry; otherwise nearest enabled (or None).
     ///
     /// Call after virtual window changes, insert/remove, or disabled flips.
@@ -190,7 +198,7 @@ impl<Id: Clone + PartialEq> RovingFocusGroup<Id> {
         let enabled = Self::enabled_indices(entries);
         if enabled.is_empty() {
             self.active = None;
-            return self.outcome(from);
+            return self.reconciliation_outcome(from);
         }
         if let Some(cur) = &self.active {
             if let Some(pos) = entries.iter().position(|e| &e.id == cur) {
@@ -205,13 +213,13 @@ impl<Id: Clone + PartialEq> RovingFocusGroup<Id> {
                     .or_else(|| enabled.iter().copied().rev().find(|&i| i < pos))
                     .unwrap_or(enabled[0]);
                 self.active = Some(entries[next].id.clone());
-                return self.outcome(from);
+                return self.reconciliation_outcome(from);
             }
             // Missing id: try same index if we can find nothing — fall through to first.
         }
         // Prefer first enabled.
         self.active = Some(entries[enabled[0]].id.clone());
-        self.outcome(from)
+        self.reconciliation_outcome(from)
     }
 
     /// Index of active among all entries, if present.
@@ -587,9 +595,12 @@ mod tests {
         let mut e = entries(&[("a", true), ("b", true), ("c", true)]);
         let mut g = RovingFocusGroup::new();
         g.set_active(Some("b"));
+        let _ = g.typeahead_char('z', &e);
+        assert_eq!(g.typeahead_buffer(), "z");
         e[1].enabled = false;
         assert!(g.reconcile(&e).changed());
         assert_eq!(g.active(), Some(&"c"));
+        assert!(g.typeahead_buffer().is_empty());
     }
 
     #[test]
