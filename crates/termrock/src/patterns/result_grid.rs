@@ -1148,10 +1148,7 @@ impl ResultGridState {
         let Some(row) = row_ids.get(self.table.cursor_row).copied() else {
             return ResultGridOutcome::Ignored;
         };
-        let column = columns
-            .visible()
-            .nth(self.table.cursor_col)
-            .map(|(_, c)| c.id.clone());
+        let column = self.table.cursor_column_id(columns);
         ResultGridOutcome::InspectRequested { row, column }
     }
 
@@ -1163,11 +1160,7 @@ impl ResultGridState {
         let Some(row) = row_ids.get(self.table.cursor_row).copied() else {
             return ResultGridOutcome::Ignored;
         };
-        let Some(column) = columns
-            .visible()
-            .nth(self.table.cursor_col)
-            .map(|(_, c)| c.id.clone())
-        else {
+        let Some(column) = self.table.cursor_column_id(columns) else {
             return ResultGridOutcome::Ignored;
         };
         // Skip row# column
