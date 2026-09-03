@@ -1581,18 +1581,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "termrock-lookbook"
-version = "0.11.0"
-dependencies = [
- "ratatui",
- "serde",
- "serde_json",
- "termrock",
- "termrock-catalog",
- "termrock-raster",
-]
-
-[[package]]
 name = "termrock-raster"
 version = "0.11.0"
 dependencies = [

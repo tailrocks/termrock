@@ -565,14 +565,28 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
         }
     }
 
-    fn cursor_column_id(&self, columns: &ColumnModel<ColId>) -> Option<ColId>
+    /// Return the source identity of the current projected cursor column.
+    pub fn cursor_column_id(&self, columns: &ColumnModel<ColId>) -> Option<ColId>
     where
         ColId: Clone,
     {
+        let visible_count = columns.visible().count();
+        let projection_changed = self.last_visible_column_ids.len() != visible_count
+            || self
+                .last_visible_column_ids
+                .iter()
+                .zip(columns.visible())
+                .any(|(old, (_, current))| old != &current.id);
+        if projection_changed
+            && let Some(old_id) = self.last_visible_column_ids.get(self.cursor_col)
+            && let Some((_, column)) = columns.visible().find(|(_, column)| &column.id == old_id)
+        {
+            return Some(column.id.clone());
+        }
         columns
             .visible()
             .nth(self.cursor_col)
-            .map(|(_, c)| c.id.clone())
+            .map(|(_, column)| column.id.clone())
     }
 
     fn sync_cursor_focus(&mut self) {
@@ -1473,6 +1487,7 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
         state.cell_regions.clear();
         state.paint_rects.clear();
         if area.is_empty() {
+            state.paint_widths.clear();
             state.body_origin = (0, 0);
             state.body_rows = 0;
             state.body_width = 0;
