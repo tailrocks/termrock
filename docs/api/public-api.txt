@@ -40653,7 +40653,6 @@ pub termrock::widgets::EmptyKind::NoResults
 pub termrock::widgets::EmptyKind::PermissionLimited
 impl termrock::widgets::EmptyKind
 pub const fn termrock::widgets::EmptyKind::id(self) -> &'static str
-pub const fn termrock::widgets::EmptyKind::title_role(self) -> termrock::style::Role
 impl core::clone::Clone for termrock::widgets::EmptyKind
 pub fn termrock::widgets::EmptyKind::clone(&self) -> termrock::widgets::EmptyKind
 impl core::cmp::Eq for termrock::widgets::EmptyKind
@@ -67586,16 +67585,11 @@ pub fn termrock::widgets::EmptyState<'a>::handle_mouse(&self, termrock::input::M
 pub const fn termrock::widgets::EmptyState<'a>::kind(self, termrock::widgets::EmptyKind) -> Self
 pub fn termrock::widgets::EmptyState<'a>::measure_height(&self, u16) -> u16
 pub const fn termrock::widgets::EmptyState<'a>::new(&'a str, &'a termrock::style::DesignSystem) -> Self
-pub fn termrock::widgets::EmptyState<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
-pub fn termrock::widgets::EmptyState<'a>::paint_with_state(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::EmptyStateState)
+pub fn termrock::widgets::EmptyState<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::EmptyStateState)
 pub const fn termrock::widgets::EmptyState<'a>::primary(self, termrock::widgets::EmptyAction<'a>) -> Self
 pub fn termrock::widgets::EmptyState<'a>::register_semantic<Sid, Act>(&self, &mut termrock::interaction::SemanticScene<Sid, Act>, Sid, ratatui_core::layout::rect::Rect, core::option::Option<&termrock::widgets::EmptyStateState>) where Sid: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Act: core::clone::Clone
 pub const fn termrock::widgets::EmptyState<'a>::secondary(self, termrock::widgets::EmptyAction<'a>) -> Self
 pub const fn termrock::widgets::EmptyState<'a>::shortcut(self, &'a str) -> Self
-impl ratatui_core::widgets::widget::Widget for &termrock::widgets::EmptyState<'_>
-pub fn &termrock::widgets::EmptyState<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
-impl ratatui_core::widgets::widget::Widget for termrock::widgets::EmptyState<'_>
-pub fn termrock::widgets::EmptyState<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
 impl<'a> core::clone::Clone for termrock::widgets::EmptyState<'a>
 pub fn termrock::widgets::EmptyState<'a>::clone(&self) -> termrock::widgets::EmptyState<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::EmptyState<'a>
@@ -67792,8 +67786,7 @@ pub fn termrock::widgets::ErrorState<'a>::handle_mouse(&self, termrock::input::M
 pub const fn termrock::widgets::ErrorState<'a>::inline(self) -> Self
 pub const fn termrock::widgets::ErrorState<'a>::kind(self, termrock::widgets::ErrorKind) -> Self
 pub const fn termrock::widgets::ErrorState<'a>::new(&'a str, &'a termrock::style::DesignSystem) -> Self
-pub fn termrock::widgets::ErrorState<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
-pub fn termrock::widgets::ErrorState<'a>::paint_with_state(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::ErrorStateState)
+pub fn termrock::widgets::ErrorState<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::ErrorStateState)
 pub const fn termrock::widgets::ErrorState<'a>::recipe(self, termrock::widgets::ErrorRecipe) -> Self
 pub const fn termrock::widgets::ErrorState<'a>::recovery(self, termrock::widgets::Recovery<'a>) -> Self
 pub const fn termrock::widgets::ErrorState<'a>::recovery_bundle(self) -> termrock::widgets::Recovery<'a>
@@ -67803,10 +67796,6 @@ pub const fn termrock::widgets::ErrorState<'a>::retry_safety(&self) -> termrock:
 pub const fn termrock::widgets::ErrorState<'a>::source(self, &'a str) -> Self
 pub const fn termrock::widgets::ErrorState<'a>::summary(self) -> &'a str
 pub const fn termrock::widgets::ErrorState<'a>::technical(self, &'a str) -> Self
-impl ratatui_core::widgets::widget::Widget for &termrock::widgets::ErrorState<'_>
-pub fn &termrock::widgets::ErrorState<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
-impl ratatui_core::widgets::widget::Widget for termrock::widgets::ErrorState<'_>
-pub fn termrock::widgets::ErrorState<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
 impl<'a> core::clone::Clone for termrock::widgets::ErrorState<'a>
 pub fn termrock::widgets::ErrorState<'a>::clone(&self) -> termrock::widgets::ErrorState<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::ErrorState<'a>
@@ -81334,8 +81323,6 @@ pub const fn termrock::widgets::RangeSlider<'a>::page_step(self, f64) -> Self
 pub fn termrock::widgets::RangeSlider<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::RangeSliderState) -> termrock::widgets::RangeSliderParts
 pub fn termrock::widgets::RangeSlider<'a>::register_semantic<Id, Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, &termrock::widgets::RangeSliderState) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
 pub const fn termrock::widgets::RangeSlider<'a>::show_value(self, bool) -> Self
-impl ratatui_core::widgets::widget::Widget for &termrock::widgets::RangeSlider<'_>
-pub fn &termrock::widgets::RangeSlider<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
 impl<'a> core::clone::Clone for termrock::widgets::RangeSlider<'a>
 pub fn termrock::widgets::RangeSlider<'a>::clone(&self) -> termrock::widgets::RangeSlider<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::RangeSlider<'a>
@@ -84098,8 +84085,6 @@ pub fn termrock::widgets::Slider<'a>::paint(&self, ratatui_core::layout::rect::R
 pub fn termrock::widgets::Slider<'a>::register_semantic<Id, Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, &termrock::widgets::SliderState) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
 pub const fn termrock::widgets::Slider<'a>::show_value(self, bool) -> Self
 pub const fn termrock::widgets::Slider<'a>::vertical(self) -> Self
-impl ratatui_core::widgets::widget::Widget for &termrock::widgets::Slider<'_>
-pub fn &termrock::widgets::Slider<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
 impl<'a> core::clone::Clone for termrock::widgets::Slider<'a>
 pub fn termrock::widgets::Slider<'a>::clone(&self) -> termrock::widgets::Slider<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::Slider<'a>
@@ -85212,18 +85197,13 @@ pub const fn termrock::widgets::StatusIndicator<'a>::kind(self) -> termrock::wid
 pub const fn termrock::widgets::StatusIndicator<'a>::label(self, &'a str) -> Self
 pub fn termrock::widgets::StatusIndicator<'a>::measure_width(&self, core::option::Option<&termrock::widgets::StatusIndicatorState>) -> u16
 pub const fn termrock::widgets::StatusIndicator<'a>::new(termrock::widgets::SemanticStatus, &'a termrock::style::DesignSystem) -> Self
-pub fn termrock::widgets::StatusIndicator<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
-pub fn termrock::widgets::StatusIndicator<'a>::paint_with_state(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, core::option::Option<&termrock::widgets::StatusIndicatorState>)
+pub fn termrock::widgets::StatusIndicator<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, core::option::Option<&termrock::widgets::StatusIndicatorState>)
 pub fn termrock::widgets::StatusIndicator<'a>::rail(&self) -> &'static str
 pub fn termrock::widgets::StatusIndicator<'a>::register_semantic<Sid, Act>(&self, &mut termrock::interaction::SemanticScene<Sid, Act>, Sid, ratatui_core::layout::rect::Rect, core::option::Option<&termrock::widgets::StatusIndicatorState>) where Sid: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Act: core::clone::Clone
 pub fn termrock::widgets::StatusIndicator<'a>::resolved_label(&self) -> &'a str
 pub const fn termrock::widgets::StatusIndicator<'a>::strong(self, bool) -> Self
 pub fn termrock::widgets::StatusIndicator<'a>::text(&self, core::option::Option<&termrock::widgets::StatusIndicatorState>) -> alloc::string::String
 pub const fn termrock::widgets::StatusIndicator<'a>::variant(self, termrock::widgets::StatusIndicatorVariant) -> Self
-impl ratatui_core::widgets::widget::Widget for &termrock::widgets::StatusIndicator<'_>
-pub fn &termrock::widgets::StatusIndicator<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
-impl ratatui_core::widgets::widget::Widget for termrock::widgets::StatusIndicator<'_>
-pub fn termrock::widgets::StatusIndicator<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
 impl<'a> core::clone::Clone for termrock::widgets::StatusIndicator<'a>
 pub fn termrock::widgets::StatusIndicator<'a>::clone(&self) -> termrock::widgets::StatusIndicator<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::StatusIndicator<'a>
@@ -90061,14 +90041,9 @@ pub const fn termrock::widgets::Tooltip<'a>::content(termrock::widgets::TooltipC
 pub const fn termrock::widgets::Tooltip<'a>::max_width(self, u16) -> Self
 pub fn termrock::widgets::Tooltip<'a>::overlay_size(&self) -> termrock::interaction::OverlaySize
 pub fn termrock::widgets::Tooltip<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &termrock::widgets::TooltipState)
-pub fn termrock::widgets::Tooltip<'a>::paint_always(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
 pub const fn termrock::widgets::Tooltip<'a>::rich(self) -> Self
 pub const fn termrock::widgets::Tooltip<'a>::shortcut(self) -> Self
 pub const fn termrock::widgets::Tooltip<'a>::variant(self, termrock::widgets::TooltipVariant) -> Self
-impl ratatui_core::widgets::widget::Widget for &termrock::widgets::Tooltip<'_>
-pub fn &termrock::widgets::Tooltip<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
-impl ratatui_core::widgets::widget::Widget for termrock::widgets::Tooltip<'_>
-pub fn termrock::widgets::Tooltip<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
 impl<'a> core::clone::Clone for termrock::widgets::Tooltip<'a>
 pub fn termrock::widgets::Tooltip<'a>::clone(&self) -> termrock::widgets::Tooltip<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::Tooltip<'a>

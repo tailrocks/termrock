@@ -372,10 +372,15 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0385 | `v0.14.0` | [TreeTable honors error retryability](migrations/0385-v0.14.0-tree-table-error-retryability.md) |
 | 0386 | `v0.14.0` | [TreeTable cycles nav mode on empty projections](migrations/0386-v0.14.0-tree-table-empty-nav-mode.md) |
 | 0387 | `v0.14.0` | [TreeTable key routing for empty projections](migrations/0387-v0.14.0-tree-table-key-empty-projection.md) |
-| 0388 | `v0.14.0` | [paint-only links and controls](migrations/0388-v0.14.0-paint-only-links-controls.md) |
-| 0389 | `v0.14.0` | [Timeline paint contract and Skeleton consolidation](migrations/0389-v0.14.0-paint-only-timeline-skeleton.md) |
+| 0388 | `v0.14.0` | [TreeTable routes shifted page keys](migrations/0388-v0.14.0-tree-table-shifted-page-routing.md) |
+| 0389 | `v0.14.0` | [List one-shot intents reject key repeats](migrations/0389-v0.14.0-list-intent-repeat-gates.md) |
 | 0390 | `v0.14.0` | [paint-only Accordion](migrations/0390-v0.14.0-paint-only-accordion.md) |
 | 0391 | `v0.14.0` | [paint-only ButtonGroup](migrations/0391-v0.14.0-paint-only-button-group.md) |
+| 0392 | `v0.14.0` | [paint-only links and controls](migrations/0392-v0.14.0-paint-only-links-controls.md) |
+| 0393 | `v0.14.0` | [Timeline paint contract and Skeleton consolidation](migrations/0393-v0.14.0-paint-only-timeline-skeleton.md) |
+| 0394 | `v0.14.0` | [EmptyState uses one stateful paint path](migrations/0394-v0.14.0-paint-only-empty-state.md) |
+| 0395 | `v0.14.0` | [ErrorState and StatusIndicator use one paint path](migrations/0395-v0.14.0-paint-only-error-status.md) |
+| 0396 | `v0.14.0` | [Slider family and Tooltip are paint-only](migrations/0396-v0.14.0-paint-only-slider-tooltip.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

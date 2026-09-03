@@ -1858,7 +1858,7 @@ mod tests {
                     counts[index] += 1;
                     counts
                 });
-        assert_eq!(kind_counts, [135, 61, 6, 8]);
+        assert_eq!(kind_counts, [133, 63, 6, 8]);
         assert_eq!(
             public_ui_inventory()
                 .iter()
