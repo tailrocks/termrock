@@ -676,11 +676,48 @@ impl PathInputState {
         if key.is_release() || !self.enabled {
             return PathInputOutcome::Ignored;
         }
-        self.sync_editor();
-
         let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
         let alt = key.modifiers.contains(KeyModifiers::ALT);
         let shift = key.modifiers.contains(KeyModifiers::SHIFT);
+
+        // PathInput owns browse and completion outcomes and wraps a
+        // TextInput lifecycle. Reject every physical one-shot path before
+        // synchronizing the nested editor; history/navigation/text repeats
+        // remain supported.
+        let one_shot = matches!(
+            key.code,
+            KeyCode::Enter
+                | KeyCode::Tab
+                | KeyCode::BackTab
+                | KeyCode::Esc
+                | KeyCode::Char(
+                    'c' | 'C'
+                        | 'k'
+                        | 'K'
+                        | 'm'
+                        | 'M'
+                        | 'o'
+                        | 'O'
+                        | 'u'
+                        | 'U'
+                        | 'v'
+                        | 'V'
+                        | 'w'
+                        | 'W'
+                        | 'x'
+                        | 'X',
+                )
+        );
+        if !key.is_press()
+            && (matches!(
+                key.code,
+                KeyCode::Enter | KeyCode::Tab | KeyCode::BackTab | KeyCode::Esc
+            ) || (ctrl && one_shot))
+        {
+            return PathInputOutcome::Ignored;
+        }
+
+        self.sync_editor();
 
         // Browse: Ctrl+O
         if ctrl && !alt && matches!(key.code, KeyCode::Char('o' | 'O')) {
@@ -1266,6 +1303,7 @@ impl StatefulWidget for PathInput<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::input::KeyEventKind;
     use crate::style::RolePalette;
 
     #[test]
@@ -1331,6 +1369,46 @@ mod tests {
             }
             other => panic!("{other:?}"),
         }
+    }
+
+    #[test]
+    fn repeated_one_shot_actions_are_ignored_but_text_repeats() {
+        let mut state = PathInputState::new().with_path("src/li").with_editing();
+        state.set_focused(true);
+        let actions = [
+            (KeyCode::Enter, KeyModifiers::NONE),
+            (KeyCode::Tab, KeyModifiers::NONE),
+            (KeyCode::BackTab, KeyModifiers::NONE),
+            (KeyCode::Esc, KeyModifiers::NONE),
+            (KeyCode::Char('m'), KeyModifiers::CONTROL),
+            (
+                KeyCode::Char('m'),
+                KeyModifiers::CONTROL | KeyModifiers::ALT,
+            ),
+            (KeyCode::Char('o'), KeyModifiers::CONTROL),
+            (KeyCode::Char('c'), KeyModifiers::CONTROL),
+            (KeyCode::Char('v'), KeyModifiers::CONTROL),
+            (KeyCode::Char('x'), KeyModifiers::CONTROL),
+            (KeyCode::Char('u'), KeyModifiers::CONTROL),
+            (KeyCode::Char('k'), KeyModifiers::CONTROL),
+            (KeyCode::Char('w'), KeyModifiers::CONTROL),
+        ];
+        for (code, modifiers) in actions {
+            let before = state.clone();
+            let mut key = KeyEvent::new(code, modifiers);
+            key.kind = KeyEventKind::Repeat;
+            assert_eq!(state.handle_key(key), PathInputOutcome::Ignored);
+            assert_eq!(state, before, "{code:?} repeat mutated path state");
+        }
+
+        let mut repeat_text = KeyEvent::new(KeyCode::Char('!'), KeyModifiers::NONE);
+        repeat_text.kind = KeyEventKind::Repeat;
+        assert_eq!(
+            state.handle_key(repeat_text),
+            PathInputOutcome::Changed,
+            "ordinary text repeats remain supported"
+        );
+        assert_eq!(state.path(), "src/li!");
     }
 
     #[test]
