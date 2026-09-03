@@ -5519,7 +5519,6 @@ pub fn termrock::interaction::OverlayStack<FocusId>::open(&mut self, ratatui_cor
 pub fn termrock::interaction::OverlayStack<FocusId>::open_with(&mut self, ratatui_core::layout::rect::Rect, termrock::interaction::OverlaySpec<FocusId>, termrock::interaction::OpenMode) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::interaction::OverlayStack<FocusId>::promote_top_fullscreen(&mut self, ratatui_core::layout::rect::Rect) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::interaction::OverlayStack<FocusId>::reflow(&mut self, ratatui_core::layout::rect::Rect)
-pub fn termrock::interaction::OverlayStack<FocusId>::sync_scene_layers<Id, Action>(&self, &mut termrock::interaction::InteractionScene<Id, alloc::string::String, Action>) where Id: core::clone::Clone + core::cmp::PartialEq, FocusId: core::convert::Into<Id> + core::clone::Clone
 pub const fn termrock::interaction::OverlayStack<FocusId>::top_dismissable(&self) -> &termrock::interaction::DismissableLayer
 impl<FocusId> termrock::interaction::OverlayStack<FocusId>
 pub fn termrock::interaction::OverlayStack<FocusId>::backdrop_policy(&self) -> termrock::interaction::BackdropPolicy
@@ -5704,7 +5703,6 @@ pub const fn termrock::interaction::RovingFocusGroup<Id>::orientation_mode(&self
 pub const fn termrock::interaction::RovingFocusGroup<Id>::set_wrap(&mut self, bool)
 pub fn termrock::interaction::RovingFocusGroup<Id>::typeahead_buffer(&self) -> &str
 pub const fn termrock::interaction::RovingFocusGroup<Id>::wrap(self, bool) -> Self
-pub const fn termrock::interaction::RovingFocusGroup<Id>::wraps(&self) -> bool
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::interaction::RovingFocusGroup<Id>
 pub fn termrock::interaction::RovingFocusGroup<Id>::clone(&self) -> termrock::interaction::RovingFocusGroup<Id>
 impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::interaction::RovingFocusGroup<Id>
@@ -5751,7 +5749,6 @@ pub struct termrock::interaction::SelectionModel<Id>
 impl<Id: core::clone::Clone + core::cmp::PartialEq> termrock::interaction::SelectionModel<Id>
 pub fn termrock::interaction::SelectionModel<Id>::checked(&self) -> &[Id]
 pub fn termrock::interaction::SelectionModel<Id>::deselect(&mut self, &Id) -> termrock::interaction::SelectionDelta<Id>
-pub fn termrock::interaction::SelectionModel<Id>::extend_range(&mut self, &[Id], &Id) -> termrock::interaction::SelectionDelta<Id>
 pub fn termrock::interaction::SelectionModel<Id>::invert_visible(&mut self, &[Id]) -> termrock::interaction::SelectionDelta<Id>
 pub fn termrock::interaction::SelectionModel<Id>::is_checked(&self, &Id) -> bool
 pub fn termrock::interaction::SelectionModel<Id>::is_selected(&self, &Id) -> bool
@@ -7518,7 +7515,6 @@ pub termrock::layout::AdaptiveAnatomy::secondary_actions: bool
 pub termrock::layout::AdaptiveAnatomy::use_drawer: bool
 impl termrock::layout::AdaptiveAnatomy
 pub const fn termrock::layout::AdaptiveAnatomy::from_stage(termrock::layout::ContractionStage) -> Self
-pub const fn termrock::layout::AdaptiveAnatomy::shows(self, termrock::layout::ContentPriority) -> bool
 impl core::clone::Clone for termrock::layout::AdaptiveAnatomy
 pub fn termrock::layout::AdaptiveAnatomy::clone(&self) -> termrock::layout::AdaptiveAnatomy
 impl core::cmp::Eq for termrock::layout::AdaptiveAnatomy
@@ -7572,7 +7568,6 @@ impl termrock::layout::AnatomyPart
 pub const fn termrock::layout::AnatomyPart::essential(&'static str, u16, u16) -> Self
 pub const fn termrock::layout::AnatomyPart::important(&'static str, u16, u16) -> Self
 pub const fn termrock::layout::AnatomyPart::optional(&'static str, u16) -> Self
-pub const fn termrock::layout::AnatomyPart::secondary_action(&'static str, u16) -> Self
 pub const fn termrock::layout::AnatomyPart::visible(self, termrock::layout::AdaptiveAnatomy) -> bool
 impl core::clone::Clone for termrock::layout::AnatomyPart
 pub fn termrock::layout::AnatomyPart::clone(&self) -> termrock::layout::AnatomyPart
@@ -19484,7 +19479,6 @@ pub fn termrock::patterns::AuthEntryState::set_require_terms(&mut self, bool)
 pub fn termrock::patterns::AuthEntryState::set_shell_focused(&mut self, bool)
 pub fn termrock::patterns::AuthEntryState::sign_in() -> Self
 pub fn termrock::patterns::AuthEntryState::sign_up() -> Self
-pub fn termrock::patterns::AuthEntryState::take_password_secret(&mut self) -> alloc::string::String
 pub fn termrock::patterns::AuthEntryState::terms_accepted(&self) -> bool
 pub fn termrock::patterns::AuthEntryState::validate(&mut self) -> bool
 impl core::clone::Clone for termrock::patterns::AuthEntryState
@@ -20293,7 +20287,6 @@ pub termrock::patterns::CrashReportSnapshot::summary: alloc::string::String
 pub termrock::patterns::CrashReportSnapshot::technical: alloc::string::String
 pub termrock::patterns::CrashReportSnapshot::work_preserved: bool
 impl termrock::patterns::CrashReportSnapshot
-pub fn termrock::patterns::CrashReportSnapshot::crash(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
 impl core::clone::Clone for termrock::patterns::CrashReportSnapshot
 pub fn termrock::patterns::CrashReportSnapshot::clone(&self) -> termrock::patterns::CrashReportSnapshot
 impl core::cmp::Eq for termrock::patterns::CrashReportSnapshot
@@ -28149,7 +28142,6 @@ pub termrock::runtime::FrameRate::Ambient
 pub termrock::runtime::FrameRate::Ceiling
 pub termrock::runtime::FrameRate::Idle
 impl termrock::runtime::FrameRate
-pub const fn termrock::runtime::FrameRate::fps(self) -> u16
 pub const fn termrock::runtime::FrameRate::interval(self) -> core::option::Option<core::time::Duration>
 impl core::clone::Clone for termrock::runtime::FrameRate
 pub fn termrock::runtime::FrameRate::clone(&self) -> termrock::runtime::FrameRate
@@ -28498,7 +28490,6 @@ impl<T> either::into_either::IntoEither for termrock::runtime::FrameTick
 pub struct termrock::runtime::Presence
 impl termrock::runtime::Presence
 pub fn termrock::runtime::Presence::advance(&mut self, termrock::runtime::FrameTick, termrock::style::MotionPolicy) -> termrock::runtime::PresenceChange
-pub fn termrock::runtime::Presence::demand(self) -> termrock::runtime::AnimationDemand
 pub fn termrock::runtime::Presence::exit_alpha(self, termrock::runtime::FrameTick) -> f32
 pub const fn termrock::runtime::Presence::force_hide(&mut self)
 pub const fn termrock::runtime::Presence::immediate() -> Self
@@ -31092,7 +31083,6 @@ pub termrock::style::DesignSystem::motion: termrock::style::MotionPolicy
 pub termrock::style::DesignSystem::palette: termrock::style::RolePalette
 pub termrock::style::DesignSystem::spacing: termrock::style::SpacingScale
 impl termrock::style::DesignSystem
-pub fn termrock::style::DesignSystem::adaptive() -> Self
 pub const fn termrock::style::DesignSystem::at(self, termrock::runtime::FrameTick) -> Self
 pub fn termrock::style::DesignSystem::badge(&self, termrock::style::BadgeKind) -> ratatui_core::style::Style
 pub const fn termrock::style::DesignSystem::border_set(&self) -> ratatui_core::symbols::border::Set<'static>
@@ -60644,7 +60634,6 @@ pub const fn termrock::widgets::ButtonGroup<'a, Id>::new(&'a [termrock::widgets:
 pub const fn termrock::widgets::ButtonGroup<'a, Id>::orientation(self, termrock::widgets::ButtonGroupOrientation) -> Self
 pub const fn termrock::widgets::ButtonGroup<'a, Id>::overflow_label(self, &'a str) -> Self
 pub const fn termrock::widgets::ButtonGroup<'a, Id>::recipe(self, termrock::widgets::ButtonGroupRecipe) -> Self
-pub const fn termrock::widgets::ButtonGroup<'a, Id>::separated(self) -> Self
 pub const fn termrock::widgets::ButtonGroup<'a, Id>::stack_below(self, u16) -> Self
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::ButtonGroup<'a, Id>
 pub fn termrock::widgets::ButtonGroup<'a, Id>::clone(&self) -> termrock::widgets::ButtonGroup<'a, Id>
@@ -65113,7 +65102,6 @@ pub fn termrock::widgets::DateTimePickerState::begin_edit(&mut self)
 pub fn termrock::widgets::DateTimePickerState::close(&mut self) -> termrock::widgets::DateTimePickerOutcome
 pub fn termrock::widgets::DateTimePickerState::commit_draft(&mut self) -> termrock::widgets::DateTimePickerOutcome
 pub const fn termrock::widgets::DateTimePickerState::date(&self) -> core::option::Option<termrock::widgets::CivilDate>
-pub fn termrock::widgets::DateTimePickerState::datetime(&self) -> core::option::Option<termrock::widgets::CivilDateTime>
 pub fn termrock::widgets::DateTimePickerState::dismiss_overlay<FocusId: core::clone::Clone>(&mut termrock::interaction::OverlayStack<FocusId>) -> termrock::interaction::OverlayOutcome<FocusId>
 pub fn termrock::widgets::DateTimePickerState::draft(&self) -> &str
 pub const fn termrock::widgets::DateTimePickerState::focus_date(&self) -> core::option::Option<termrock::widgets::CivilDate>
@@ -65208,7 +65196,6 @@ pub termrock::widgets::DepEdge::to: &'a str
 impl<'a> termrock::widgets::DepEdge<'a>
 pub const fn termrock::widgets::DepEdge<'a>::kind(self, termrock::widgets::DepEdgeKind) -> Self
 pub const fn termrock::widgets::DepEdge<'a>::new(&'a str, &'a str) -> Self
-pub const fn termrock::widgets::DepEdge<'a>::undirected(self) -> Self
 impl<'a> core::clone::Clone for termrock::widgets::DepEdge<'a>
 pub fn termrock::widgets::DepEdge<'a>::clone(&self) -> termrock::widgets::DepEdge<'a>
 impl<'a> core::cmp::Eq for termrock::widgets::DepEdge<'a>
@@ -69796,8 +69783,6 @@ impl<'a> termrock::widgets::Heading<'a>
 pub const fn termrock::widgets::Heading<'a>::compact(self) -> Self
 pub const fn termrock::widgets::Heading<'a>::copyable(self) -> Self
 pub const fn termrock::widgets::Heading<'a>::h1(self) -> Self
-pub const fn termrock::widgets::Heading<'a>::h2(self) -> Self
-pub const fn termrock::widgets::Heading<'a>::h3(self) -> Self
 pub fn termrock::widgets::Heading<'a>::layout(&self, ratatui_core::layout::rect::Rect) -> termrock::widgets::HeadingParts
 pub const fn termrock::widgets::Heading<'a>::level(self, termrock::widgets::HeadingLevel) -> Self
 pub const fn termrock::widgets::Heading<'a>::level_of(&self) -> termrock::widgets::HeadingLevel
@@ -71910,7 +71895,6 @@ pub fn termrock::widgets::JumpTarget<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::JumpTarget<Id>
 pub struct termrock::widgets::Kbd<'a>
 impl<'a> termrock::widgets::Kbd<'a>
-pub fn termrock::widgets::Kbd<'a>::alternatives(&[termrock::keymap::KeyChord], &'a termrock::style::DesignSystem) -> Self
 pub const fn termrock::widgets::Kbd<'a>::compact(self) -> Self
 pub fn termrock::widgets::Kbd<'a>::decorated(&self) -> alloc::string::String
 pub fn termrock::widgets::Kbd<'a>::for_action<A: core::clone::Clone + core::marker::Copy + core::cmp::PartialEq + 'static>(&termrock::keymap::Keymap<A>, A, &'a termrock::style::DesignSystem) -> core::option::Option<Self>
@@ -72917,7 +72901,6 @@ pub const fn termrock::widgets::Link<'a>::app_route(&'a str, &'a str, &'a termro
 pub fn termrock::widgets::Link<'a>::copy_text(&self) -> alloc::string::String
 pub fn termrock::widgets::Link<'a>::decorated(&self, &termrock::widgets::LinkState) -> alloc::string::String
 pub const fn termrock::widgets::Link<'a>::destination_display(self, termrock::widgets::DestinationDisplay) -> Self
-pub fn termrock::widgets::Link<'a>::encode_osc_close() -> alloc::vec::Vec<u8>
 pub fn termrock::widgets::Link<'a>::encode_osc_open(&self, &termrock::widgets::LinkState) -> alloc::vec::Vec<u8>
 pub const fn termrock::widgets::Link<'a>::external_cue(self, bool) -> Self
 pub fn termrock::widgets::Link<'a>::handle_intent(&self, &mut termrock::widgets::LinkState, termrock::context::ContextUiIntent) -> termrock::widgets::LinkOutcome
@@ -74061,7 +74044,6 @@ impl<T> either::into_either::IntoEither for termrock::widgets::MatchRange
 pub struct termrock::widgets::MatchRanges
 impl termrock::widgets::MatchRanges
 pub fn termrock::widgets::MatchRanges::as_slice(&self) -> &[termrock::widgets::MatchRange]
-pub fn termrock::widgets::MatchRanges::covering(&self, usize) -> alloc::vec::Vec<usize>
 pub fn termrock::widgets::MatchRanges::from_ranges(impl core::iter::traits::collect::IntoIterator<Item = termrock::widgets::MatchRange>) -> Self
 pub fn termrock::widgets::MatchRanges::is_empty(&self) -> bool
 pub fn termrock::widgets::MatchRanges::len(&self) -> usize
@@ -74341,7 +74323,6 @@ pub fn termrock::widgets::MentionRef::preview(self, impl core::convert::Into<all
 pub const fn termrock::widgets::MentionRef::removable(self, bool) -> Self
 pub const fn termrock::widgets::MentionRef::sensitive(self, bool) -> Self
 pub fn termrock::widgets::MentionRef::symbol(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
-pub fn termrock::widgets::MentionRef::to_composer_label(&self) -> alloc::string::String
 pub fn termrock::widgets::MentionRef::to_markup(&self) -> alloc::string::String
 pub const fn termrock::widgets::MentionRef::validity(self, termrock::widgets::MentionValidity) -> Self
 pub fn termrock::widgets::MentionRef::with_disambiguators(self, alloc::vec::Vec<termrock::widgets::MentionDisambiguator>) -> Self
@@ -79722,7 +79703,6 @@ pub fn termrock::widgets::PromptComposerState::apply_completion_insert(&mut self
 pub fn termrock::widgets::PromptComposerState::apply_external_editor_text(&mut self, &str) -> termrock::widgets::PromptComposerOutcome
 pub fn termrock::widgets::PromptComposerState::chip(&self, &str) -> core::option::Option<&termrock::widgets::ComposerChip>
 pub fn termrock::widgets::PromptComposerState::chips(&self) -> &[termrock::widgets::ComposerChip]
-pub fn termrock::widgets::PromptComposerState::clear_draft(&mut self)
 pub fn termrock::widgets::PromptComposerState::clear_queue(&mut self)
 pub fn termrock::widgets::PromptComposerState::clear_selection(&mut self)
 pub fn termrock::widgets::PromptComposerState::close_completion(&mut self) -> termrock::widgets::PromptComposerOutcome
@@ -88604,7 +88584,6 @@ pub const fn termrock::widgets::ToggleGroup<'a, Id>::new(&'a [termrock::widgets:
 pub const fn termrock::widgets::ToggleGroup<'a, Id>::orientation(self, termrock::widgets::ToggleGroupOrientation) -> Self
 pub const fn termrock::widgets::ToggleGroup<'a, Id>::overflow_label(self, &'a str) -> Self
 pub fn termrock::widgets::ToggleGroup<'a, Id>::plan_overflow(&self, u16) -> (alloc::vec::Vec<usize>, alloc::vec::Vec<usize>)
-pub const fn termrock::widgets::ToggleGroup<'a, Id>::separated(self) -> Self
 pub const fn termrock::widgets::ToggleGroup<'a, Id>::single(self) -> Self
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::widgets::ToggleGroup<'a, Id>
 pub fn termrock::widgets::ToggleGroup<'a, Id>::clone(&self) -> termrock::widgets::ToggleGroup<'a, Id>
@@ -91495,7 +91474,6 @@ pub fn termrock::widgets::VirtualListState<Id>::hover(&mut self, ratatui_core::l
 pub const fn termrock::widgets::VirtualListState<Id>::list_state(&self) -> &termrock::widgets::ListState<Id>
 pub fn termrock::widgets::VirtualListState<Id>::list_state_mut(&mut self) -> &mut termrock::widgets::ListState<Id>
 pub const fn termrock::widgets::VirtualListState<Id>::logical_len(&self) -> u64
-pub fn termrock::widgets::VirtualListState<Id>::measure_slice(&self) -> termrock::widgets::VirtSlice
 pub fn termrock::widgets::VirtualListState<Id>::million_fixed() -> Self
 pub fn termrock::widgets::VirtualListState<Id>::new() -> Self
 pub fn termrock::widgets::VirtualListState<Id>::note_measured(&mut self, u64, u16)

@@ -463,6 +463,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0484 | `v0.14.0` | [Synchronize removed interaction and outcome variants](migrations/0484-v0.14.0-sync-removed-interaction-outcome-variants.md) |
 | 0485 | `v0.14.0` | [Synchronize tranche-one orphan function removals](migrations/0485-v0.14.0-sync-tranche-one-orphan-functions.md) |
 | 0486 | `v0.14.0` | [Synchronize tranche-two orphan getter and method removals](migrations/0486-v0.14.0-sync-tranche-two-orphan-methods.md) |
+| 0487 | `v0.14.0` | [Synchronize orphan public function removals](migrations/0487-v0.14.0-sync-orphan-public-functions.md) |
 | 0464 | `v0.14.0` | [Stepper physical one-shot actions](migrations/0464-v0.14.0-stepper-one-shot-actions.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
