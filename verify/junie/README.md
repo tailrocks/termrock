@@ -161,6 +161,15 @@ digests. Existing entries marked `checked-in source shot` intentionally retain
 only the immutable source SHA, dimensions, events, and artifact digests because
 their original machine capture metadata is unavailable.
 
+## Source provenance
+
+`reference/manifest.json` records `main` at `e43cf67` and the inspected
+`jackin` ref. The checked-in `main/shots` artifacts last changed at `4b857a0`;
+the executable advanced afterward without shot regeneration. The parity gate
+therefore compares independently rendered TermRock output against those
+immutable shots and fails on any mismatch. It does not bless a baseline or
+silently select a hybrid source state.
+
 ## Porting a pending source state
 
 ```sh
