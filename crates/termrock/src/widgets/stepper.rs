@@ -459,6 +459,14 @@ impl StepperState {
         self.collection.active().copied().unwrap_or(0)
     }
 
+    fn selected_index(&self, len: usize) -> usize {
+        self.collection
+            .active()
+            .copied()
+            .unwrap_or(self.current)
+            .min(len.saturating_sub(1))
+    }
+
     /// Statuses.
     #[must_use]
     pub fn statuses(&self) -> &[StepStatus] {
@@ -1064,16 +1072,17 @@ impl<'a> Stepper<'a> {
 
     fn paint_numeric(&self, area: Rect, buffer: &mut Buffer, state: &mut StepperState) {
         let n = self.items.len().max(1);
-        let cur = state.current.saturating_add(1).min(n);
+        let selected = state.selected_index(self.items.len());
+        let cur = selected.saturating_add(1).min(n);
         let status = state
             .statuses
-            .get(state.current)
+            .get(selected)
             .copied()
             .unwrap_or(StepStatus::Current);
         let mark = status.mark();
         let title = self
             .items
-            .get(state.current)
+            .get(selected)
             .map(|s| s.title.as_str())
             .unwrap_or("");
         let line = format!(
@@ -1102,20 +1111,21 @@ impl<'a> Stepper<'a> {
         );
         state
             .hits
-            .push((state.current, Rect::new(area.x, area.y, area.width, 1)));
+            .push((selected, Rect::new(area.x, area.y, area.width, 1)));
     }
 
     fn paint_menu(&self, area: Rect, buffer: &mut Buffer, state: &mut StepperState) {
         let n = self.items.len().max(1);
-        let cur = state.current.saturating_add(1).min(n);
+        let selected = state.selected_index(self.items.len());
+        let cur = selected.saturating_add(1).min(n);
         let title = self
             .items
-            .get(state.current)
+            .get(selected)
             .map(|s| s.title.as_str())
             .unwrap_or("Step");
         let status = state
             .statuses
-            .get(state.current)
+            .get(selected)
             .copied()
             .unwrap_or(StepStatus::Current);
         let mark = status.mark();
@@ -1142,7 +1152,7 @@ impl<'a> Stepper<'a> {
             style,
         );
         state.menu_hit = Rect::new(area.x, area.y, area.width, 1);
-        state.hits.push((state.current, state.menu_hit));
+        state.hits.push((selected, state.menu_hit));
 
         if state.menu_open && area.height > 1 {
             let mut y = area.y.saturating_add(1);
@@ -1389,6 +1399,93 @@ mod tests {
             s.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE), &items),
             StepperOutcome::MenuToggled { open: false }
         ));
+    }
+
+    #[test]
+    fn numeric_paint_and_mouse_follow_roving_cursor() {
+        let system = DesignSystem::default();
+        let items = steps();
+        let mut state = focused_linear(items.len()).policy(StepperNavPolicy::Host);
+        state.set_presentation_override(Some(StepperPresentation::Numeric));
+        let area = Rect::new(0, 0, 28, 1);
+        let widget = Stepper::new(&items, &system);
+
+        let mut buffer = Buffer::empty(area);
+        widget.paint(area, &mut buffer, &mut state);
+        assert_eq!(
+            state.handle_intent(UiIntent::Move(NavigationMove::Next), &items),
+            StepperOutcome::CursorMoved { index: 1 }
+        );
+
+        let mut buffer = Buffer::empty(area);
+        widget.paint(area, &mut buffer, &mut state);
+        let text: String = buffer
+            .content()
+            .iter()
+            .map(|cell| cell.symbol().to_string())
+            .collect();
+        assert!(text.contains("2/4 Region"), "{text}");
+        assert_eq!(state.hits()[0].0, 1);
+        let hit = state.hits()[0].1;
+        assert_eq!(
+            state.handle_mouse(
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(hit.x, hit.y),
+                    modifiers: KeyModifiers::NONE,
+                },
+                &items,
+            ),
+            StepperOutcome::StepActivated {
+                index: 1,
+                id: items[1].id.clone(),
+            }
+        );
+        assert_eq!(state.current(), 0);
+    }
+
+    #[test]
+    fn menu_paint_and_header_hit_follow_roving_cursor() {
+        let system = DesignSystem::default();
+        let items = steps();
+        let mut state = focused_linear(items.len()).policy(StepperNavPolicy::Host);
+        state.set_presentation_override(Some(StepperPresentation::Menu));
+        state.menu_open = true;
+        let area = Rect::new(0, 0, 28, 5);
+        let widget = Stepper::new(&items, &system);
+
+        let mut buffer = Buffer::empty(area);
+        widget.paint(area, &mut buffer, &mut state);
+        assert_eq!(
+            state.handle_intent(UiIntent::Move(NavigationMove::Next), &items),
+            StepperOutcome::CursorMoved { index: 1 }
+        );
+
+        let mut buffer = Buffer::empty(area);
+        widget.paint(area, &mut buffer, &mut state);
+        let text: String = buffer
+            .content()
+            .iter()
+            .map(|cell| cell.symbol().to_string())
+            .collect();
+        assert!(text.contains("2/4 Region"), "{text}");
+        assert_eq!(state.hits()[0].0, 1);
+        let hit = state.hits()[0].1;
+        assert_eq!(
+            state.handle_mouse(
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(hit.x, hit.y),
+                    modifiers: KeyModifiers::NONE,
+                },
+                &items,
+            ),
+            StepperOutcome::StepActivated {
+                index: 1,
+                id: items[1].id.clone(),
+            }
+        );
+        assert_eq!(state.current(), 0);
     }
 
     #[test]
