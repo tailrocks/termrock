@@ -1219,7 +1219,7 @@ impl<'a, Id> DropdownMenu<'a, Id> {
         if let Some(frame) = state.cascade.get_mut(depth) {
             frame.collection.set_viewport(offset, viewport, items.len());
         }
-        let gutter = Rect::new(inner.right().saturating_sub(1), inner.y, 1, inner.height);
+        let gutter = crate::scroll::gutter_column(inner);
 
         let mut y = inner.y;
         for (i, item) in items.iter().enumerate().skip(offset) {
@@ -1368,12 +1368,13 @@ impl<'a, Id> DropdownMenu<'a, Id> {
 
         // The gutter says the same thing every other scrolled surface in the
         // library says.
-        crate::scroll::paint_scrolled_region(
+        crate::scroll::paint_overflow_scrollbar(
             buffer,
             gutter,
             items.len(),
             viewport,
             u16::try_from(offset).unwrap_or(u16::MAX),
+            state.live(),
             self.system,
         );
     }

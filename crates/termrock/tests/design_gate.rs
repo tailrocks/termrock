@@ -35,7 +35,7 @@ use ratatui_core::widgets::{StatefulWidget, Widget};
 use termrock::runtime::{FrameTick, Instant};
 use termrock::scroll::{
     SCROLLBAR_TRACK, ScrollAxis, ScrollbarGeometry, ScrollbarSpec, ScrollbarStyle,
-    paint_scrolled_region, render_scrollbar,
+    paint_overflow_scrollbar, render_scrollbar,
 };
 use termrock::style::{
     ACTION_FLASH_MS, AccentUsage, ActionFlash, BadgeKind, BorderShape, ButtonKind,
@@ -3378,7 +3378,7 @@ fn a_scrolled_region_says_it_continues() {
     // Nothing is painted when the content fits: a reserved gutter stays blank
     // rather than showing a full-height thumb.
     let quiet = painted(area, |buffer| {
-        paint_scrolled_region(buffer, area, 5, 5, 0, &system);
+        paint_overflow_scrollbar(buffer, area, 5, 5, 0, false, &system);
     });
     assert!(
         quiet
@@ -3392,10 +3392,10 @@ fn a_scrolled_region_says_it_continues() {
     // follows, which is the property the deleted `paint_scroll_edges` owned.
     let gutter = Rect::new(8, 0, 1, 3);
     let with_more = painted(Rect::new(0, 0, 10, 3), |buffer| {
-        paint_scrolled_region(buffer, gutter, 9, 3, 0, &system);
+        paint_overflow_scrollbar(buffer, gutter, 9, 3, 0, false, &system);
     });
     let at_end = painted(Rect::new(0, 0, 10, 3), |buffer| {
-        paint_scrolled_region(buffer, gutter, 3, 3, 0, &system);
+        paint_overflow_scrollbar(buffer, gutter, 3, 3, 0, false, &system);
     });
     for y in 0..3 {
         for x in 0..8 {
@@ -3419,13 +3419,12 @@ fn a_scrolled_region_says_it_continues() {
             .to_string_lossy()
             .to_string();
         let paints_bar = source.lines.iter().any(|(_, line)| {
-            line.contains("paint_list_scrollbar(")
-                || line.contains("paint_overflow_scrollbar(")
-                || line.contains("render_scrollbar(")
+            line.contains("paint_overflow_scrollbar(") || line.contains("render_scrollbar(")
         });
-        let goes_through_the_authority = source.lines.iter().any(|(_, line)| {
-            line.contains("paint_scrolled_region(") || line.contains("paint_overflow_scrollbar(")
-        });
+        let goes_through_the_authority = source
+            .lines
+            .iter()
+            .any(|(_, line)| line.contains("paint_overflow_scrollbar("));
         if paints_bar && !goes_through_the_authority && name != "scroll_area.rs" {
             bare.push(name);
         }
