@@ -423,6 +423,9 @@ impl<'a, Id> Label<'a, Id> {
         let theme = self.system.junie_theme();
         let width = parts.label.width;
         let name = crate::text::take_display_cols(self.text, usize::from(width));
+        // Match source label rows: fit the label style across the whole row,
+        // while retaining the background established by the owning control.
+        buffer.set_style(parts.label, self.label_style());
         buffer.set_stringn(
             parts.label.x,
             parts.label.y,
@@ -971,6 +974,7 @@ mod tests {
     use super::*;
     use crate::style::GlyphSet;
     use ratatui_core::buffer::Buffer;
+    use ratatui_core::style::{Color, Style};
 
     #[test]
     fn required_mark_and_disabled_is_tone_not_glyph() {
@@ -1015,6 +1019,21 @@ mod tests {
                 .add_modifier
                 .contains(ratatui_core::style::Modifier::BOLD)
         );
+    }
+
+    #[test]
+    fn paint_styles_trailing_cells_without_changing_background() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let area = Rect::new(0, 0, 12, 1);
+        let mut buffer = Buffer::empty(area);
+        buffer.set_style(area, Style::new().fg(Color::Red).bg(Color::Blue));
+
+        Label::<()>::new("Name", &system).paint(area, &mut buffer);
+
+        assert_eq!(buffer[(0, 0)].fg, theme.text_secondary);
+        assert_eq!(buffer[(8, 0)].fg, theme.text_secondary);
+        assert_eq!(buffer[(8, 0)].bg, Color::Blue);
     }
 
     #[test]
