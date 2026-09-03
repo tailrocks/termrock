@@ -228,26 +228,6 @@ impl CalloutSlots {
     }
 }
 
-/// Callout outcomes (dismiss / action when enabled).
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-#[non_exhaustive]
-pub enum CalloutOutcome<Id = ()> {
-    /// No change.
-    Ignored,
-    /// Dismissed.
-    Dismissed,
-    /// Action activated.
-    ActionActivated {
-        /// Action id.
-        id: Id,
-    },
-    /// Details expanded/collapsed.
-    DetailsToggled {
-        /// Expanded?
-        open: bool,
-    },
-}
-
 /// Alert interaction outcomes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[non_exhaustive]

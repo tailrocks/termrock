@@ -706,23 +706,6 @@ fn is_fence_close_ticks(line: &str, ticks: usize) -> bool {
     n >= ticks && t.chars().skip(n).all(|c| c.is_whitespace())
 }
 
-// ── Outcomes ────────────────────────────────────────────────────────────────
-
-/// Streaming markdown surface outcomes.
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[non_exhaustive]
-pub enum StreamingMarkdownOutcome {
-    /// Ignored.
-    Ignored,
-    /// Content/revision changed.
-    Changed {
-        /// New revision.
-        revision: u64,
-    },
-    /// Markdown view outcome passthrough.
-    View(MarkdownOutcome),
-}
-
 // ── Widget ──────────────────────────────────────────────────────────────────
 
 /// Streaming markdown paint host.
