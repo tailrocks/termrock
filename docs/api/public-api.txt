@@ -29887,7 +29887,6 @@ pub termrock::style::FocusEmphasis::Reversed
 pub termrock::style::FocusEmphasis::SelectionFill
 impl termrock::style::FocusEmphasis
 pub const fn termrock::style::FocusEmphasis::for_family(termrock::style::SurfaceFamily) -> Self
-pub const fn termrock::style::FocusEmphasis::id(self) -> &'static str
 impl core::clone::Clone for termrock::style::FocusEmphasis
 pub fn termrock::style::FocusEmphasis::clone(&self) -> termrock::style::FocusEmphasis
 impl core::cmp::Eq for termrock::style::FocusEmphasis

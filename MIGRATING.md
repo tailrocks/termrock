@@ -480,6 +480,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0501 | `v0.14.0` | [Synchronize removed AlertReversibility getter](migrations/0501-v0.14.0-sync-removed-alert-reversibility-getter.md) |
 | 0502 | `v0.14.0` | [Synchronize removed GlyphGroup getter](migrations/0502-v0.14.0-sync-removed-glyph-group-getter.md) |
 | 0503 | `v0.14.0` | [Synchronize removed KeyReleaseReporting getter](migrations/0503-v0.14.0-sync-removed-key-release-reporting-getter.md) |
+| 0504 | `v0.14.0` | [Synchronize removed FocusEmphasis getter](migrations/0504-v0.14.0-sync-removed-focus-emphasis-getter.md) |
 | 0464 | `v0.14.0` | [Stepper physical one-shot actions](migrations/0464-v0.14.0-stepper-one-shot-actions.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
