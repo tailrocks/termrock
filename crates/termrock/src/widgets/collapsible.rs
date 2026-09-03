@@ -97,8 +97,6 @@ pub struct CollapsibleParts {
     pub content_policy: CollapsedContentPolicy,
 }
 
-impl CollapsibleParts {}
-
 /// Typed outcomes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -139,8 +137,6 @@ pub struct CollapsibleState {
     pub focused: bool,
     /// Cached parts from last paint.
     pub parts: Option<CollapsibleParts>,
-    /// When the section last toggled, in runner milliseconds.
-    toggled_at_ms: u64,
 }
 
 impl CollapsibleState {
@@ -151,7 +147,6 @@ impl CollapsibleState {
             open: false,
             focused: false,
             parts: None,
-            toggled_at_ms: 0,
         }
     }
 
