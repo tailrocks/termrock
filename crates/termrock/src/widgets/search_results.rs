@@ -643,9 +643,6 @@ impl SearchResultsState {
     /// Apply host results, rejecting stale or cancelled completions.
     pub fn apply_results(&mut self, generation: u64, status: SearchResultsStatus, count: usize) {
         if generation < self.generation {
-            if !matches!(self.status, SearchResultsStatus::Cancelled) {
-                self.status = SearchResultsStatus::Stale { generation };
-            }
             return;
         }
         if generation == self.generation && matches!(self.status, SearchResultsStatus::Cancelled) {
@@ -1441,12 +1438,40 @@ mod tests {
     fn generation_stale_gate() {
         let mut state = SearchResultsState::new();
         let g1 = state.begin_search();
+        state.apply_results(g1, SearchResultsStatus::Ready { total: Some(1) }, 1);
         let g2 = state.begin_search();
         assert!(g2 > g1);
         state.apply_results(g1, SearchResultsStatus::Ready { total: Some(1) }, 1);
-        assert!(matches!(state.status, SearchResultsStatus::Stale { .. }));
+        assert_eq!(state.generation, g2);
+        assert_eq!(state.window.logical_len, 1);
+        assert_eq!(state.status, SearchResultsStatus::Loading { message: None });
         state.apply_results(g2, SearchResultsStatus::Ready { total: Some(2) }, 2);
         assert!(matches!(state.status, SearchResultsStatus::Ready { .. }));
+    }
+
+    #[test]
+    fn older_completion_cannot_replace_current_loading_status() {
+        let mut state = SearchResultsState::new();
+        let old_generation = state.begin_search();
+        state.apply_results(
+            old_generation,
+            SearchResultsStatus::Ready { total: Some(1) },
+            1,
+        );
+        let current_generation = state.begin_search();
+
+        state.apply_results(
+            old_generation,
+            SearchResultsStatus::Error {
+                message: "old failure".into(),
+                retryable: true,
+            },
+            99,
+        );
+
+        assert_eq!(state.generation, current_generation);
+        assert_eq!(state.status, SearchResultsStatus::Loading { message: None });
+        assert_eq!(state.window.logical_len, 1);
     }
 
     #[test]
