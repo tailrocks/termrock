@@ -54,7 +54,9 @@ impl Default for RunOptions {
 /// **Demand-driven.** A frame is drawn when input arrives, when a deadline the
 /// model reported comes due, or when a scroll flush is owed — never on a fixed
 /// cadence. An idle screen emits nothing and burns no CPU. State that changes
-/// outside of events must be announced through `next_deadline`.
+/// outside of events must be announced through `next_deadline`. At most 64
+/// ready events are applied per frame cycle so sustained input cannot starve
+/// frame advancement.
 pub fn run<Model>(
     model: &mut Model,
     options: RunOptions,
@@ -106,6 +108,14 @@ const fn is_scroll(event: &Event) -> bool {
             if matches!(mouse.kind, MouseEventKind::ScrollUp | MouseEventKind::ScrollDown)
     )
 }
+
+/// Maximum backend events applied before the loop advances to another frame.
+///
+/// A zero-time poll is useful for draining a ready batch, but an always-ready
+/// producer must not prevent rendering, deadline evaluation, or input-free
+/// animation from progressing. Events beyond this bound stay in the backend
+/// queue and are handled by the next frame cycle.
+const MAX_EVENTS_PER_FRAME: usize = 64;
 
 fn finish_with_restore(
     result: io::Result<()>,
@@ -170,7 +180,7 @@ where
             .next_wake(tick.now())
             .map_or(timeout, |wake| timeout.min(wake));
         if poll(timeout)? {
-            loop {
+            for event_index in 0..MAX_EVENTS_PER_FRAME {
                 let event = read()?;
                 if is_scroll(&event) {
                     presenter.mark_scrolled();
@@ -179,6 +189,9 @@ where
                 }
                 if matches!(update(model, event, tick), ControlFlow::Break(())) {
                     return Ok(());
+                }
+                if event_index + 1 == MAX_EVENTS_PER_FRAME {
+                    break;
                 }
                 if !poll(Duration::ZERO)? {
                     break;
@@ -317,6 +330,54 @@ mod tests {
         assert!(
             polls.is_empty(),
             "ControlFlow::Break must not perform a follow-up poll"
+        );
+    }
+
+    #[test]
+    fn sustained_ready_events_yield_after_the_frame_budget() {
+        let total_events = MAX_EVENTS_PER_FRAME + 1;
+        let mut events = VecDeque::from(vec![Event::Unknown; total_events]);
+        let mut observed_polls = Vec::new();
+        let updates = Cell::new(0_usize);
+        let mut updates_at_draw = Vec::new();
+        let mut clock = FrameClock::from_start(Instant::now());
+
+        drive_loop(
+            &mut (),
+            &mut clock,
+            unthrottled(),
+            Duration::from_millis(7),
+            |_: &mut (), _| {
+                updates_at_draw.push(updates.get());
+                Ok(())
+            },
+            |timeout| {
+                observed_polls.push(timeout);
+                Ok(true)
+            },
+            || Ok(events.pop_front().expect("bounded event fixture")),
+            |_, _, _| {
+                updates.set(updates.get() + 1);
+                if updates.get() == total_events {
+                    ControlFlow::Break(())
+                } else {
+                    ControlFlow::Continue(())
+                }
+            },
+            |_| None,
+        )
+        .expect("bounded ready batch yields cleanly");
+
+        assert_eq!(updates.get(), total_events);
+        assert_eq!(updates_at_draw, [0, MAX_EVENTS_PER_FRAME]);
+        assert_eq!(observed_polls.first(), Some(&Duration::from_millis(7)));
+        assert_eq!(observed_polls.last(), Some(&Duration::from_millis(7)));
+        assert_eq!(
+            observed_polls
+                .iter()
+                .filter(|timeout| **timeout == Duration::ZERO)
+                .count(),
+            MAX_EVENTS_PER_FRAME - 1
         );
     }
 
