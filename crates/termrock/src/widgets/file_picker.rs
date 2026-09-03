@@ -1033,8 +1033,12 @@ impl FilePickerState {
         let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
         let alt = key.modifiers.contains(KeyModifiers::ALT);
 
-        // Esc: leave path/preview first; else cancel picker
+        // Esc: leave path/preview first; else cancel picker. Cancellation is
+        // one-shot; repeats must not fall through to pane-specific handlers.
         if key.code == KeyCode::Esc && key.modifiers.is_empty() {
+            if !key.is_press() {
+                return FilePickerOutcome::Ignored;
+            }
             if matches!(self.pane, FilePickerPane::Path | FilePickerPane::Preview) {
                 self.pane = FilePickerPane::List;
                 self.path.set_focused(false);
@@ -1045,6 +1049,9 @@ impl FilePickerState {
 
         // Pane focus: Tab cycles List → Path → Preview
         if matches!(key.code, KeyCode::Tab) && !ctrl && !alt {
+            if !key.is_press() {
+                return FilePickerOutcome::Ignored;
+            }
             self.pane = match self.pane {
                 FilePickerPane::List => FilePickerPane::Path,
                 FilePickerPane::Path => {
@@ -1063,6 +1070,9 @@ impl FilePickerState {
 
         // Ctrl+H toggle hidden (client-side reprocess from raw)
         if ctrl && matches!(key.code, KeyCode::Char('h' | 'H')) {
+            if !key.is_press() {
+                return FilePickerOutcome::Ignored;
+            }
             self.show_hidden = !self.show_hidden;
             self.reprocess_visible();
             return FilePickerOutcome::FilterChanged;
@@ -1070,6 +1080,9 @@ impl FilePickerState {
 
         // Ctrl+L focus path
         if ctrl && matches!(key.code, KeyCode::Char('l' | 'L')) {
+            if !key.is_press() {
+                return FilePickerOutcome::Ignored;
+            }
             self.pane = FilePickerPane::Path;
             self.path.set_focused(true);
             return FilePickerOutcome::Changed;
@@ -1079,7 +1092,7 @@ impl FilePickerState {
             FilePickerPane::Path => self.handle_path_key(key),
             FilePickerPane::Preview => {
                 // arrows go back to list
-                if matches!(key.code, KeyCode::Left | KeyCode::Esc) {
+                if key.code == KeyCode::Left || (key.code == KeyCode::Esc && key.is_press()) {
                     self.pane = FilePickerPane::List;
                     return FilePickerOutcome::Changed;
                 }
@@ -1112,11 +1125,17 @@ impl FilePickerState {
 
         // Enter open / confirm
         if key.code == KeyCode::Enter && key.modifiers.is_empty() {
+            if !key.is_press() {
+                return FilePickerOutcome::Ignored;
+            }
             return self.open_highlight();
         }
 
         // Space toggle multi
         if matches!(key.code, KeyCode::Char(' ')) && self.multi {
+            if !key.is_press() {
+                return FilePickerOutcome::Ignored;
+            }
             if let Some(id) = self.collection.active().cloned() {
                 if let Some(e) = self.entries.iter().find(|e| e.id == id) {
                     if e.selectable && e.error.is_none() {
@@ -1734,8 +1753,15 @@ impl StatefulWidget for FilePicker<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::input::KeyEventKind;
     use crate::style::RolePalette;
     use ratatui_core::layout::Position;
+
+    fn key_with_kind(code: KeyCode, modifiers: KeyModifiers, kind: KeyEventKind) -> KeyEvent {
+        let mut key = KeyEvent::new(code, modifiers);
+        key.kind = kind;
+        key
+    }
 
     fn sample_entries(cwd: &str) -> Vec<FileEntry> {
         vec![
@@ -2125,9 +2151,30 @@ mod tests {
         assert!(state.apply_listing(2, "/proj/src", files, None));
         assert_eq!(state.highlight().map(|e| e.name.as_str()), Some("lib.rs"));
         assert!(matches!(
-            state.open_highlight(),
+            state.handle_key(key_with_kind(
+                KeyCode::Enter,
+                KeyModifiers::NONE,
+                KeyEventKind::Press,
+            )),
             FilePickerOutcome::Confirmed { paths } if paths[0].ends_with("lib.rs")
         ));
+        assert_eq!(
+            state.handle_key(key_with_kind(
+                KeyCode::Enter,
+                KeyModifiers::NONE,
+                KeyEventKind::Repeat,
+            )),
+            FilePickerOutcome::Ignored
+        );
+        assert_eq!(
+            state.handle_key(key_with_kind(
+                KeyCode::Enter,
+                KeyModifiers::NONE,
+                KeyEventKind::Release,
+            )),
+            FilePickerOutcome::Ignored
+        );
+        assert_eq!(state.selected_paths(), ["/proj/src/lib.rs"]);
     }
 
     #[test]
@@ -2145,7 +2192,36 @@ mod tests {
             state.handle_key(KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE)),
             FilePickerOutcome::SelectionChanged
         ));
-        assert!(!state.selected_paths().is_empty());
+        assert_eq!(state.selected_paths(), ["/p/README.md"]);
+        assert_eq!(
+            state.handle_key(key_with_kind(
+                KeyCode::Char(' '),
+                KeyModifiers::NONE,
+                KeyEventKind::Repeat,
+            )),
+            FilePickerOutcome::Ignored
+        );
+        assert_eq!(
+            state.handle_key(key_with_kind(
+                KeyCode::Char(' '),
+                KeyModifiers::NONE,
+                KeyEventKind::Release,
+            )),
+            FilePickerOutcome::Ignored
+        );
+        assert_eq!(state.selected_paths(), ["/p/README.md"]);
+        assert!(matches!(
+            state.handle_key(key_with_kind(
+                KeyCode::Down,
+                KeyModifiers::NONE,
+                KeyEventKind::Repeat,
+            )),
+            FilePickerOutcome::PreviewRequested { path, .. } if path == "/p/src"
+        ));
+        assert_eq!(
+            state.highlight().map(|entry| entry.name.as_str()),
+            Some("src")
+        );
     }
 
     #[test]
@@ -2161,18 +2237,101 @@ mod tests {
         ));
         assert!(state.show_hidden());
         assert!(state.entries().iter().any(|e| e.name == ".hidden"));
+        assert_eq!(
+            state.handle_key(key_with_kind(
+                KeyCode::Char('h'),
+                KeyModifiers::CONTROL,
+                KeyEventKind::Repeat,
+            )),
+            FilePickerOutcome::Ignored
+        );
+        assert_eq!(
+            state.handle_key(key_with_kind(
+                KeyCode::Char('h'),
+                KeyModifiers::CONTROL,
+                KeyEventKind::Release,
+            )),
+            FilePickerOutcome::Ignored
+        );
+        assert!(state.show_hidden());
+        assert!(state.entries().iter().any(|e| e.name == ".hidden"));
     }
 
     #[test]
     fn esc_leaves_path_before_cancel() {
         let mut state = FilePickerState::new("/p");
         state.set_focused(true);
+        assert_eq!(
+            state.handle_key(key_with_kind(
+                KeyCode::Esc,
+                KeyModifiers::NONE,
+                KeyEventKind::Repeat,
+            )),
+            FilePickerOutcome::Ignored
+        );
+        assert_eq!(
+            state.handle_key(key_with_kind(
+                KeyCode::Esc,
+                KeyModifiers::NONE,
+                KeyEventKind::Release,
+            )),
+            FilePickerOutcome::Ignored
+        );
+        assert_eq!(state.pane(), FilePickerPane::List);
         // Tab → Path pane
         assert!(matches!(
             state.handle_key(KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE)),
             FilePickerOutcome::Changed
         ));
         assert_eq!(state.pane(), FilePickerPane::Path);
+        assert_eq!(
+            state.handle_key(key_with_kind(
+                KeyCode::Esc,
+                KeyModifiers::NONE,
+                KeyEventKind::Repeat,
+            )),
+            FilePickerOutcome::Ignored
+        );
+        assert_eq!(
+            state.handle_key(key_with_kind(
+                KeyCode::Esc,
+                KeyModifiers::NONE,
+                KeyEventKind::Release,
+            )),
+            FilePickerOutcome::Ignored
+        );
+        assert_eq!(state.pane(), FilePickerPane::Path);
+        assert!(matches!(
+            state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
+            FilePickerOutcome::Changed
+        ));
+        assert_eq!(state.pane(), FilePickerPane::List);
+        assert!(matches!(
+            state.handle_key(KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE)),
+            FilePickerOutcome::Changed
+        ));
+        assert!(matches!(
+            state.handle_key(KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE)),
+            FilePickerOutcome::Changed
+        ));
+        assert_eq!(state.pane(), FilePickerPane::Preview);
+        assert_eq!(
+            state.handle_key(key_with_kind(
+                KeyCode::Esc,
+                KeyModifiers::NONE,
+                KeyEventKind::Repeat,
+            )),
+            FilePickerOutcome::Ignored
+        );
+        assert_eq!(
+            state.handle_key(key_with_kind(
+                KeyCode::Esc,
+                KeyModifiers::NONE,
+                KeyEventKind::Release,
+            )),
+            FilePickerOutcome::Ignored
+        );
+        assert_eq!(state.pane(), FilePickerPane::Preview);
         assert!(matches!(
             state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
             FilePickerOutcome::Changed
@@ -2182,6 +2341,72 @@ mod tests {
             state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
             FilePickerOutcome::Cancelled
         ));
+    }
+
+    #[test]
+    fn pane_switches_are_press_only() {
+        let mut state = FilePickerState::new("/p");
+        state.set_focused(true);
+
+        assert_eq!(
+            state.handle_key(key_with_kind(
+                KeyCode::Tab,
+                KeyModifiers::NONE,
+                KeyEventKind::Repeat,
+            )),
+            FilePickerOutcome::Ignored
+        );
+        assert_eq!(
+            state.handle_key(key_with_kind(
+                KeyCode::Tab,
+                KeyModifiers::NONE,
+                KeyEventKind::Release,
+            )),
+            FilePickerOutcome::Ignored
+        );
+        assert_eq!(state.pane(), FilePickerPane::List);
+        assert_eq!(
+            state.handle_key(key_with_kind(
+                KeyCode::Char('l'),
+                KeyModifiers::CONTROL,
+                KeyEventKind::Repeat,
+            )),
+            FilePickerOutcome::Ignored
+        );
+        assert_eq!(
+            state.handle_key(key_with_kind(
+                KeyCode::Char('l'),
+                KeyModifiers::CONTROL,
+                KeyEventKind::Release,
+            )),
+            FilePickerOutcome::Ignored
+        );
+        assert_eq!(state.pane(), FilePickerPane::List);
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE)),
+            FilePickerOutcome::Changed
+        );
+        assert_eq!(state.pane(), FilePickerPane::Path);
+        for (code, modifiers) in [
+            (KeyCode::Tab, KeyModifiers::NONE),
+            (KeyCode::Char('h'), KeyModifiers::CONTROL),
+            (KeyCode::Char('l'), KeyModifiers::CONTROL),
+        ] {
+            assert_eq!(
+                state.handle_key(key_with_kind(code, modifiers, KeyEventKind::Repeat)),
+                FilePickerOutcome::Ignored
+            );
+            assert_eq!(
+                state.handle_key(key_with_kind(code, modifiers, KeyEventKind::Release)),
+                FilePickerOutcome::Ignored
+            );
+        }
+        assert_eq!(state.pane(), FilePickerPane::Path);
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Char('l'), KeyModifiers::CONTROL)),
+            FilePickerOutcome::Changed
+        );
+        assert_eq!(state.pane(), FilePickerPane::Path);
     }
 
     #[test]

@@ -401,6 +401,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0419 | `v0.14.0` | [Nested focus traps restore their outer boundary](migrations/0419-v0.14.0-nested-focus-trap-restoration.md) |
 | 0421 | `v0.14.0` | [HistoryPicker Escape cancellation is one-shot](migrations/0421-v0.14.0-history-picker-one-shot-cancel.md) |
 | 0422 | `v0.14.0` | [DatabaseWorkbench preserves the HistoryPicker lifecycle](migrations/0422-v0.14.0-database-workbench-history-lifecycle.md) |
+| 0423 | `v0.14.0` | [FilePicker one-shot raw-key actions](migrations/0423-v0.14.0-file-picker-one-shot-confirm.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical
