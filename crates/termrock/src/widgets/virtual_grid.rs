@@ -219,6 +219,9 @@ pub struct VirtualGridState<RowId, ColId> {
     /// Shared row/col virtualizer (offset, capacity, overscan, anchors).
     virt: Virtualizer2D,
     column_widths: Vec<u16>,
+    column_widths_policy: Vec<GridColumnWidth>,
+    column_widths_available: Option<u16>,
+    column_widths_explicit: bool,
     body_rows: u16,
     body_cols_visible: usize,
     total_rows: Option<u64>,
@@ -238,6 +241,9 @@ impl<RowId, ColId> Default for VirtualGridState<RowId, ColId> {
             anchor: None,
             virt: Virtualizer2D::fixed_cells(),
             column_widths: Vec::new(),
+            column_widths_policy: Vec::new(),
+            column_widths_available: None,
+            column_widths_explicit: false,
             body_rows: 0,
             body_cols_visible: 0,
             total_rows: None,
@@ -306,6 +312,9 @@ impl<RowId, ColId> VirtualGridState<RowId, ColId> {
     /// Replaces column widths (caller-owned persistence).
     pub fn set_column_widths(&mut self, widths: Vec<u16>) {
         self.column_widths = widths;
+        self.column_widths_policy.clear();
+        self.column_widths_available = None;
+        self.column_widths_explicit = true;
     }
 
     /// Clears range selection anchor.
@@ -956,11 +965,26 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> StatefulWidget for &VirtualGrid<'_, R
         let content_x = area.x.saturating_add(state.gutter_width);
         let content_width = area.width.saturating_sub(state.gutter_width);
 
-        if state.column_widths.len() != self.columns.len() {
+        let explicit_widths =
+            state.column_widths_explicit && state.column_widths.len() == self.columns.len();
+        let policy_changed = state.column_widths_policy.len() != self.columns.len()
+            || state
+                .column_widths_policy
+                .iter()
+                .zip(self.columns)
+                .any(|(current, column)| *current != column.width);
+        if !explicit_widths
+            && (state.column_widths.len() != self.columns.len()
+                || state.column_widths_available != Some(content_width)
+                || policy_changed)
+        {
             state.column_widths = VirtualGridState::<RowId, ColId>::resolve_widths_from_policy(
                 self.columns,
                 content_width,
             );
+            state.column_widths_policy = self.columns.iter().map(|column| column.width).collect();
+            state.column_widths_available = Some(content_width);
+            state.column_widths_explicit = false;
         }
 
         // Visible column window from virtualizer first_col.
@@ -1302,6 +1326,46 @@ mod tests {
                 .map(|region| region.col_index)
                 .collect::<Vec<_>>(),
             vec![3]
+        );
+    }
+
+    #[test]
+    fn same_count_width_policy_change_recomputes_auto_layout() {
+        let system = DesignSystem::default();
+        let initial_columns = [GridColumn::fixed(0, "A", 3), GridColumn::fixed(1, "B", 5)];
+        let updated_columns = [GridColumn::fixed(0, "A", 6), GridColumn::fixed(1, "B", 2)];
+        let cells = [GridCell::text("a"), GridCell::text("b")];
+        let rows = [GridRow::new(0, 0, &cells)];
+        let area = Rect::new(0, 0, 12, 2);
+        let mut state = VirtualGridState::new();
+        let mut buffer = Buffer::empty(area);
+
+        StatefulWidget::render(
+            &VirtualGrid::new(&initial_columns, &rows, &system)
+                .total_rows(1)
+                .gutter(false),
+            area,
+            &mut buffer,
+            &mut state,
+        );
+        assert_eq!(state.column_widths, [3, 5]);
+
+        StatefulWidget::render(
+            &VirtualGrid::new(&updated_columns, &rows, &system)
+                .total_rows(1)
+                .gutter(false),
+            area,
+            &mut buffer,
+            &mut state,
+        );
+        assert_eq!(state.column_widths, [6, 2]);
+        assert_eq!(
+            state
+                .header_regions
+                .iter()
+                .map(|region| region.area.width)
+                .collect::<Vec<_>>(),
+            vec![6, 2]
         );
     }
 
