@@ -395,11 +395,6 @@ pub enum PromptComposerOutcome {
         /// Queue entry (rich item; identities preserved).
         entry: PromptQueueItem,
     },
-    /// User removed a queued entry.
-    QueueRemoved {
-        /// Id.
-        id: String,
-    },
     /// Cancel current agent run / stop.
     Cancel,
     /// Soft interrupt (Ctrl+C style) without clearing draft.

@@ -293,11 +293,6 @@ pub enum ResizablePanelOutcome {
         /// Preset name.
         name: String,
     },
-    /// Responsive recipe suggests drawer presentation (host applies overlay).
-    DrawerSuggested {
-        /// Panel ids that should leave the in-flow group.
-        ids: Vec<PanelId>,
-    },
 }
 
 /// Runtime state: sizes, collapse, handle focus/drag, presets.

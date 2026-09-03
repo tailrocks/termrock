@@ -320,13 +320,6 @@ pub enum EventStreamOutcome<Id> {
     FilterChanged(String),
     /// Severity floor filter changed.
     SeverityFilter(EventSeverity),
-    /// Type filter toggled (host applies).
-    TypeFilterChanged {
-        /// Type key.
-        event_type: String,
-        /// Included after toggle.
-        included: bool,
-    },
     /// Cancel / clear filter.
     Cancelled,
     /// Backpressure dropped count acknowledged / cleared.

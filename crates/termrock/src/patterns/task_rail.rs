@@ -1008,8 +1008,6 @@ pub enum TaskRailOutcome {
     },
     /// Prefer drawer (responsive hint).
     PreferDrawer,
-    /// Prefer status summary.
-    PreferStatusSummary,
     /// Hide completed toggled.
     HideCompletedChanged {
         /// On.

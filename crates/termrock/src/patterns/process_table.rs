@@ -621,10 +621,6 @@ pub enum ProcessTableOutcome {
     ViewModeChanged(ProcessViewMode),
     /// Filter query.
     FilterChanged(String),
-    /// User filter.
-    UserFilterChanged(Option<String>),
-    /// Status filter.
-    StatusFilterChanged(Option<ProcessStatus>),
     /// Signal request (after confirm if needed).
     SignalRequested {
         /// Targets.

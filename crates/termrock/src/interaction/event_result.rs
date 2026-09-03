@@ -7,7 +7,7 @@
 //! Hosts apply redraw, focus, and overlay requests; domain `M` stays product-owned.
 //!
 //! Not an Elm/Bubble Tea runtime: no global command executor, no forced app loop.
-use crate::interaction::{OverlayId, OverlayKind};
+use crate::interaction::OverlayId;
 
 /// Whether the frame should be painted again.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -100,17 +100,8 @@ pub enum OverlayRequest {
     DismissTop,
     /// Dismiss a named overlay.
     Dismiss(OverlayId),
-    /// Open jump-mode chrome (host pairs with JumpOverlay).
-    OpenJump,
     /// Open command-palette chrome.
     OpenCommandPalette,
-    /// Open a named layer; host builds full [`crate::interaction::OverlaySpec`].
-    OpenNamed {
-        /// Overlay identity.
-        id: OverlayId,
-        /// Kind for policy defaults.
-        kind: OverlayKind,
-    },
 }
 
 /// Standard result envelope for component input handlers.

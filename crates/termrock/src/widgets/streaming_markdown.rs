@@ -731,11 +731,6 @@ pub enum StreamingMarkdownOutcome {
     },
     /// Markdown view outcome passthrough.
     View(MarkdownOutcome),
-    /// Citation activated (fullscreen reader).
-    CitationActivated {
-        /// Id.
-        id: String,
-    },
 }
 
 // ── Widget ──────────────────────────────────────────────────────────────────

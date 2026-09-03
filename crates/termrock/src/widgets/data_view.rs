@@ -980,15 +980,6 @@ pub enum DataViewOutcome<RowId, ColId> {
         /// New width.
         width: u16,
     },
-    /// Row activated (Enter / double-click).
-    RowActivated(RowId),
-    /// Cell activated.
-    CellActivated {
-        /// Row.
-        row: RowId,
-        /// Column.
-        column: ColId,
-    },
     /// Context menu requested at focus.
     ContextMenu {
         /// Row if any.

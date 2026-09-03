@@ -245,8 +245,6 @@ pub enum SceneError {
     DuplicateElement,
     /// Element references an unknown layer.
     UnknownLayer,
-    /// Duplicate layer id.
-    DuplicateLayer,
 }
 
 /// Per-frame interaction scene (immediate mode) with cross-frame focus/layers.

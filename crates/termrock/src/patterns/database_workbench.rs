@@ -310,8 +310,6 @@ pub enum DatabaseWorkbenchOutcome {
     Ignored,
     /// Focus pane changed.
     FocusChanged(&'static str),
-    /// Density override applied.
-    DensityChanged(DatabaseWorkbenchDensity),
     /// Query run requested (host executes).
     RunRequested {
         /// Active tab id.

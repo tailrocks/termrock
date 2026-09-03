@@ -1257,8 +1257,6 @@ pub enum OverflowAction {
     OverflowMenu,
     /// Open as drawer / overlay (`use_drawer`).
     PromoteDrawer,
-    /// Collapse pane (`Workspace` leaf).
-    CollapsePane,
     /// Switch to line-mode essential chrome.
     LineMode,
 }

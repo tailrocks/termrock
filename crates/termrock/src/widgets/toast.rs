@@ -578,8 +578,6 @@ pub enum ToastArchiveReason {
     Expired,
     /// Evicted from full queue.
     Evicted,
-    /// Explicit archive / host move.
-    HostArchived,
     /// Dismissed (optional history).
     Dismissed,
 }

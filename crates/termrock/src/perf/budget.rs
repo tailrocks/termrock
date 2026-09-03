@@ -13,8 +13,6 @@ use std::time::Duration;
 pub enum PerfClass {
     /// Small chrome; negligible cost expected.
     Chrome,
-    /// Typical interactive list/table viewport.
-    InteractiveViewport,
     /// Streaming transcript / log follow.
     StreamingSurface,
     /// Large virtualized table/tree/grid.

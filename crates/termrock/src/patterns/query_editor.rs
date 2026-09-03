@@ -484,11 +484,6 @@ pub enum QueryEditorOutcome {
     },
     /// Open saved-query picker (host).
     OpenSavedQueries,
-    /// Load saved query into draft (host may call [`QueryEditorState::set_text`]).
-    SavedQuerySelected {
-        /// Saved id.
-        id: String,
-    },
     /// Open history picker.
     OpenHistory,
     /// Apply history value (host may also call set_text).
