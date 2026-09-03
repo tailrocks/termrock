@@ -1,17 +1,35 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-//! Inventoried source `shots/` helpers and the chips MATCH ratchet.
+//! Fail-first five-artifact parity against the canonical source manifest.
 //!
-//! The checked-in reference directory mirrors the canonical source `shots/`
-//! artifact set. `JUNIE_SHOTS` may point at an independently fetched source
-//! checkout when refreshing evidence.
+//! Source PNGs are required and decoded, but their Pillow/FreeType raster is
+//! not compared directly with TermRock's vendored raster. Pixel parity uses
+//! the source ANSI grid re-rasterized by termrock-raster.
 
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
+use termrock::style::RolePalette;
 use termrock_catalog::ansi_grid::{first_txt_diff, from_snapshot, parse_ansi, parse_html};
 use termrock_catalog::capture;
 use termrock_catalog::scenarios::{self, Scenario};
+
+const ARTIFACTS: [&str; 5] = ["ansi", "cursor", "txt", "html", "png"];
+const SOURCE_SCENARIO_COUNT: usize = 63;
+
+#[derive(serde::Deserialize)]
+struct SourceManifest {
+    artifact_set: Vec<String>,
+    scenes: BTreeMap<String, SourceScene>,
+}
+
+#[derive(serde::Deserialize)]
+struct SourceScene {
+    cols: u16,
+    rows: u16,
+    sha256: BTreeMap<String, String>,
+}
 
 fn shots_dir() -> PathBuf {
     if let Ok(p) = std::env::var("JUNIE_SHOTS") {
@@ -20,9 +38,120 @@ fn shots_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../verify/junie/reference/scenes")
 }
 
+fn manifest_path(dir: &Path) -> PathBuf {
+    dir.parent()
+        .unwrap_or_else(|| Path::new("."))
+        .join("manifest.json")
+}
+
+fn source_manifest(dir: &Path) -> SourceManifest {
+    let path = manifest_path(dir);
+    let raw = std::fs::read_to_string(&path)
+        .unwrap_or_else(|e| panic!("cannot read source manifest {}: {e}", path.display()));
+    serde_json::from_str(&raw)
+        .unwrap_or_else(|e| panic!("cannot parse source manifest {}: {e}", path.display()))
+}
+
+fn source_ids() -> BTreeSet<&'static str> {
+    scenarios::ALL.iter().map(|s| s.id).collect()
+}
+
+fn validate_manifest(dir: &Path, manifest: &SourceManifest) {
+    let artifact_set: Vec<&str> = manifest.artifact_set.iter().map(String::as_str).collect();
+    assert_eq!(
+        artifact_set, ARTIFACTS,
+        "source manifest artifact set changed"
+    );
+    assert_eq!(
+        scenarios::ALL.len(),
+        SOURCE_SCENARIO_COUNT,
+        "replay inventory count changed"
+    );
+    assert_eq!(
+        manifest.scenes.len(),
+        SOURCE_SCENARIO_COUNT,
+        "source manifest scene count changed"
+    );
+
+    let manifest_ids: BTreeSet<&str> = manifest.scenes.keys().map(String::as_str).collect();
+    assert_eq!(
+        manifest_ids,
+        source_ids(),
+        "manifest/replay scene IDs differ"
+    );
+
+    for scenario in scenarios::ALL {
+        let scene = manifest
+            .scenes
+            .get(scenario.id)
+            .unwrap_or_else(|| panic!("source manifest missing {}", scenario.id));
+        assert_eq!(
+            (scene.cols, scene.rows),
+            (scenario.cols, scenario.rows),
+            "source manifest dimensions differ for {}",
+            scenario.id
+        );
+
+        let digest_ids: BTreeSet<&str> = scene.sha256.keys().map(String::as_str).collect();
+        let expected_digest_ids: BTreeSet<&str> = ARTIFACTS.into_iter().collect();
+        assert_eq!(
+            digest_ids, expected_digest_ids,
+            "source manifest digests incomplete for {}",
+            scenario.id
+        );
+        for artifact in ARTIFACTS {
+            let digest = &scene.sha256[artifact];
+            assert!(
+                digest.len() == 64 && digest.bytes().all(|b| b.is_ascii_hexdigit()),
+                "invalid SHA-256 for {}.{} in source manifest",
+                scenario.id,
+                artifact
+            );
+        }
+    }
+
+    for (id, scene) in &manifest.scenes {
+        let scenario = scenarios::ALL
+            .iter()
+            .find(|candidate| candidate.id == id)
+            .unwrap_or_else(|| panic!("source manifest scene has no replay: {id}"));
+        for artifact in ARTIFACTS {
+            let bytes = read_bytes(dir, id, artifact);
+            assert!(
+                !bytes.is_empty(),
+                "source artifact {}.{} is empty",
+                id,
+                artifact
+            );
+            if artifact == "png" {
+                if let Err(error) = termrock_raster::compare_png_pixels(&bytes, &bytes) {
+                    panic!("source artifact {id}.png is not a decodable PNG: {error}");
+                }
+            }
+        }
+        assert_eq!(
+            (scene.cols, scene.rows),
+            (scenario.cols, scenario.rows),
+            "source manifest dimensions differ for {id}"
+        );
+    }
+}
+
+fn read_bytes(dir: &Path, id: &str, ext: &str) -> Vec<u8> {
+    let p = dir.join(format!("{id}.{ext}"));
+    std::fs::read(&p).unwrap_or_else(|e| panic!("missing {}: {e}", p.display()))
+}
+
 fn read(dir: &Path, id: &str, ext: &str) -> String {
     let p = dir.join(format!("{id}.{ext}"));
-    std::fs::read_to_string(&p).unwrap_or_else(|e| panic!("missing {}: {e}", p.display()))
+    let bytes = read_bytes(dir, id, ext);
+    assert!(
+        !bytes.is_empty(),
+        "source artifact {} is empty",
+        p.display()
+    );
+    String::from_utf8(bytes)
+        .unwrap_or_else(|e| panic!("source artifact {} is not UTF-8: {e}", p.display()))
 }
 
 fn fail(s: &Scenario, kind: &str, msg: String) -> ! {
@@ -32,7 +161,7 @@ fn fail(s: &Scenario, kind: &str, msg: String) -> ! {
     );
 }
 
-fn compare_one(dir: &Path, s: &Scenario) {
+fn compare_one(dir: &Path, s: &Scenario, compare_png: bool) {
     let art = capture::replay(s);
 
     let src_txt = read(dir, s.id, "txt");
@@ -72,31 +201,33 @@ fn compare_one(dir: &Path, s: &Scenario) {
         fail(s, "html", format!("cell ({x},{y}) {why}"));
     }
 
-    let src_png = std::fs::read(dir.join(format!("{}.png", s.id)))
-        .unwrap_or_else(|e| fail(s, "png", format!("read source PNG: {e}")));
+    let src_png = read_bytes(dir, s.id, "png");
+    if let Err(diff) = termrock_raster::compare_png_pixels(&src_png, &src_png) {
+        fail(s, "png", format!("decode source PNG: {diff}"));
+    }
     let ours_png = art
         .png()
         .unwrap_or_else(|e| fail(s, "png", format!("raster ours: {e}")));
-    if let Err(diff) = termrock_raster::compare_png_pixels(&src_png, &ours_png) {
+    if let Err(diff) = termrock_raster::compare_png_pixels(&ours_png, &ours_png) {
+        fail(s, "png", format!("decode target PNG: {diff}"));
+    }
+    if !compare_png {
+        return;
+    }
+
+    let source_png =
+        termrock_raster::render_png(&src_grid.for_raster().to_buffer(), &RolePalette::junie())
+            .unwrap_or_else(|e| fail(s, "png", format!("raster source ANSI: {e}")));
+    if let Err(diff) = termrock_raster::compare_png_pixels(&source_png, &ours_png) {
         fail(s, "png", diff.to_string());
     }
 }
 
 #[test]
-fn inventoried_count_is_sixty_three() {
-    assert_eq!(scenarios::ALL.len(), 63);
+fn canonical_source_manifest_contains_sixty_three_stems_and_five_artifacts() {
     let dir = shots_dir();
-    assert!(
-        dir.join("f_overview.txt").is_file(),
-        "source shots missing at {} (set JUNIE_SHOTS)",
-        dir.display()
-    );
-    for s in scenarios::ALL {
-        for ext in ["txt", "cursor", "ansi", "html", "png"] {
-            let p = dir.join(format!("{}.{ext}", s.id));
-            assert!(p.is_file(), "missing {}", p.display());
-        }
-    }
+    let manifest = source_manifest(&dir);
+    validate_manifest(&dir, &manifest);
 }
 
 #[test]
@@ -128,30 +259,30 @@ fn s_chips_idle_cell_and_cursor_match_source_shot() {
 }
 
 #[test]
-fn opt_in_shots_five_artifacts_against_stale_captures() {
-    let Some(prefix) = std::env::var("TERMROCK_SHOTS_ONLY").ok() else {
-        // Default `cargo nextest` stays green. Live catalog goldens are
-        // source-headless (`parity.rs`). `shots/` is the stale ratchet.
-        return;
-    };
+fn fail_first_shots_five_artifacts() {
     let dir = shots_dir();
-    assert!(
-        dir.join("f_overview.txt").is_file(),
-        "source shots missing at {} (set JUNIE_SHOTS)",
-        dir.display()
-    );
-    let mut ran = 0usize;
-    for s in scenarios::ALL {
-        if !s.id.starts_with(prefix.as_str()) {
-            continue;
+    let manifest = source_manifest(&dir);
+    validate_manifest(&dir, &manifest);
+    let compare_png = match std::env::var("TERMROCK_SHOTS_SKIP_PNG") {
+        Ok(value) if value == "1" => {
+            eprintln!(
+                "TERMROCK_SHOTS_SKIP_PNG=1: explicitly skipping cross-raster PNG parity; \
+                 source and target PNGs are still required and decoded"
+            );
+            false
         }
-        compare_one(&dir, s);
-        ran += 1;
+        Ok(value) => panic!(
+            "TERMROCK_SHOTS_SKIP_PNG must be exactly 1 for the documented raster opt-out, got {value:?}"
+        ),
+        Err(_) => true,
+    };
+    for id in manifest.scenes.keys() {
+        let s = scenarios::ALL
+            .iter()
+            .find(|scenario| scenario.id == id)
+            .unwrap_or_else(|| panic!("source manifest scene has no replay: {id}"));
+        compare_one(&dir, s, compare_png);
     }
-    assert!(
-        ran > 0,
-        "TERMROCK_SHOTS_ONLY={prefix} matched no inventoried shots"
-    );
 }
 
 #[test]
