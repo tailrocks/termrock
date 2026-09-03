@@ -392,6 +392,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0408 | `v0.14.0` | [Legacy layout and input aliases removed](migrations/0408-v0.14.0-remove-legacy-layout-and-input-aliases.md) |
 | 0409 | `v0.14.0` | [LogStream and list-row migration shims removed](migrations/0409-v0.14.0-remove-log-and-list-migration-shims.md) |
 | 0410 | `v0.14.0` | [Panel and Card use explicit paint](migrations/0410-v0.14.0-remove-panel-card-widget-impls.md) |
+| 0413 | `v0.14.0` | [Tree virtual windows use absolute scroll geometry](migrations/0413-v0.14.0-tree-virtual-window-absolute-offset.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

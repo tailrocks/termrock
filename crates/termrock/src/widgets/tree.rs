@@ -491,7 +491,10 @@ impl<Id> TreeState<Id> {
     }
 
     #[must_use]
-    /// Returns the zero-based first visible node index.
+    /// Returns the zero-based first visible logical node index.
+    ///
+    /// For a virtual projection this is the index in the host's full
+    /// collection, not the first index in the resident `nodes` slice.
     pub const fn offset(&self) -> usize {
         self.offset
     }
@@ -560,10 +563,16 @@ impl<Id> TreeState<Id> {
 
     /// Virtual window into a larger flat list (host projects only the window).
     pub fn set_virtual_window(&mut self, window_start: usize, total_len: usize) {
-        self.virtual_window_start = window_start;
         self.virtual_total = total_len;
         self.virt.set_len(total_len as u64);
+        if total_len == 0 {
+            self.virtual_window_start = 0;
+            self.offset = 0;
+            return;
+        }
         self.virt.set_offset(window_start as u64);
+        self.virtual_window_start = self.virt.offset() as usize;
+        self.offset = self.virtual_window_start;
     }
 
     /// Borrow virtualizer (anchors / overscan).
@@ -615,7 +624,12 @@ impl<Id> TreeState<Id> {
     /// Moves the scroll position by a signed delta and clamps it to valid content.
     pub fn scroll_by(&mut self, delta: isize, node_count: usize) -> bool {
         let before = self.offset;
-        let maximum = max_offset(node_count, self.viewport_height);
+        let content_len = if self.virtual_total > 0 {
+            self.virtual_total
+        } else {
+            node_count
+        };
+        let maximum = max_offset(content_len, self.viewport_height);
         self.offset = if delta.is_negative() {
             self.offset.saturating_sub(delta.unsigned_abs())
         } else {
@@ -623,6 +637,10 @@ impl<Id> TreeState<Id> {
                 .saturating_add(delta.unsigned_abs())
                 .min(maximum)
         };
+        if self.virtual_total > 0 {
+            self.virt.set_offset(self.offset as u64);
+            self.offset = self.virt.offset() as usize;
+        }
         self.follow_selection = false;
         before != self.offset
     }
@@ -635,12 +653,21 @@ impl<Id> TreeState<Id> {
         if !area.contains(position) {
             return false;
         }
+        let content_len = if self.virtual_total > 0 {
+            self.virtual_total
+        } else {
+            node_count
+        };
         self.offset = crate::scroll::offset_for_track_position(
-            node_count,
+            content_len,
             self.viewport_height,
             area.height,
             usize::from(position.y.saturating_sub(area.y)),
         );
+        if self.virtual_total > 0 {
+            self.virt.set_offset(self.offset as u64);
+            self.offset = self.virt.offset() as usize;
+        }
         self.follow_selection = false;
         true
     }
@@ -749,7 +776,12 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
     }
 
     fn reconcile_projection(&mut self, nodes: &[TreeNode<'_, Id>]) {
-        let partial = self.virtual_total > nodes.len();
+        let partial = self.virtual_mode(nodes.len());
+        if partial {
+            let maximum = max_offset(self.virtual_total, self.viewport_height.max(1));
+            self.virtual_window_start = self.virtual_window_start.min(maximum);
+            self.offset = self.offset.min(maximum);
+        }
         let had_cursor = self.cursor.is_some();
         if partial {
             self.collection
@@ -787,6 +819,10 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
         if !keep_selected {
             self.selected = None;
         }
+    }
+
+    fn virtual_mode(&self, projected_len: usize) -> bool {
+        self.virtual_total > projected_len
     }
 
     /// Routes a semantic intent (keymap / scene adapter).
@@ -1497,7 +1533,9 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
         state.check_regions.clear();
         state.scrollbar_region = None;
         if area.is_empty() {
-            state.offset = 0;
+            if state.virtual_total == 0 {
+                state.offset = 0;
+            }
             state.viewport_height = 0;
             state.reconcile_projection(self.nodes);
             state.hovered = None;
@@ -1530,7 +1568,9 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
             return;
         }
         if self.nodes.is_empty() {
-            state.offset = 0;
+            if state.virtual_total == 0 {
+                state.offset = 0;
+            }
             state.hovered = None;
             if let Some(message) = self.empty_message {
                 let style = self.tokens.style(Role::TextMuted);
@@ -1539,19 +1579,20 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
             return;
         }
 
-        let node_count = if state.virtual_total > 0 {
-            state.virtual_total
-        } else {
-            self.nodes.len()
-        };
+        let virtual_mode = state.virtual_mode(self.nodes.len());
         if state.virtual_total > 0 {
             state.virt.set_len(state.virtual_total as u64);
         }
 
         if state.follow_selection
-            && let Some(selected) = state.cursor_index(self.nodes)
+            && let Some(selected) = state.cursor_index(self.nodes).map(|index| {
+                if virtual_mode {
+                    state.virtual_window_start.saturating_add(index)
+                } else {
+                    index
+                }
+            })
         {
-            // selected is index in projected window
             if selected < state.offset {
                 state.offset = selected;
             } else if selected >= state.offset.saturating_add(usize::from(body.height)) {
@@ -1559,20 +1600,18 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
             }
         }
         state.follow_selection = false;
-        let paint_len = if state.virtual_total > 0 {
-            self.nodes.len()
+        let scroll_len = if virtual_mode {
+            state.virtual_total
         } else {
             self.nodes.len()
         };
         state.offset = state
             .offset
-            .min(max_offset(paint_len, usize::from(body.height)));
-        let scroll_len = if state.virtual_total > 0 {
-            state.virtual_total
-        } else {
-            self.nodes.len()
-        };
-        let _ = node_count;
+            .min(max_offset(scroll_len, usize::from(body.height)));
+        if virtual_mode && state.virt.offset() as usize != state.offset {
+            state.virt.set_offset(state.offset as u64);
+            state.offset = state.virt.offset() as usize;
+        }
         let show_scrollbar =
             crate::scroll::is_scrollable(scroll_len, usize::from(body.height)) && body.width > 1;
         let content_area = Rect {
@@ -1581,11 +1620,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
             width: body.width.saturating_sub(u16::from(show_scrollbar)),
             height: body.height,
         };
-        let paint_offset = if state.virtual_total > 0 {
-            0
-        } else {
-            state.offset
-        };
+        let paint_offset = if virtual_mode { 0 } else { state.offset };
         state.content_width = self
             .nodes
             .iter()
@@ -1635,7 +1670,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
         if show_scrollbar {
             let scrollbar = Rect::new(body.right().saturating_sub(1), body.y, 1, body.height);
             state.scrollbar_region = Some(scrollbar);
-            let thumb_total = if state.virtual_total > 0 {
+            let thumb_total = if virtual_mode {
                 state.virtual_total
             } else {
                 self.nodes.len()
@@ -1989,6 +2024,60 @@ mod tests {
         state.restore_scroll_anchor();
         // anchor restore sets virt offset
         assert!(state.virtualizer().offset() <= 10_000);
+    }
+
+    #[test]
+    fn virtual_window_uses_absolute_scroll_geometry() {
+        let tokens = DesignSystem::junie();
+        let nodes = [
+            TreeNode::new(50, Line::from("50"), 0),
+            TreeNode::new(51, Line::from("51"), 0),
+            TreeNode::new(52, Line::from("52"), 0),
+            TreeNode::new(53, Line::from("53"), 0),
+            TreeNode::new(54, Line::from("54"), 0),
+        ];
+        let area = Rect::new(0, 0, 24, 3);
+        let mut state = TreeState::new(Some(54));
+        state.set_virtual_window(50, 200);
+        let mut buffer = Buffer::empty(area);
+
+        Tree::new(&nodes, &tokens).render(area, &mut buffer, &mut state);
+
+        assert_eq!(state.offset(), 52);
+        assert_eq!(state.virtualizer().offset(), 52);
+        assert!(state.scroll_by(7, nodes.len()));
+        Tree::new(&nodes, &tokens).render(area, &mut buffer, &mut state);
+        assert_eq!(state.offset(), 59);
+        assert_eq!(state.virtualizer().offset(), 59);
+
+        state.set_virtual_window(0, 0);
+        let full = [
+            TreeNode::new(0, Line::from("0"), 0),
+            TreeNode::new(1, Line::from("1"), 0),
+        ];
+        Tree::new(&full, &tokens).render(area, &mut buffer, &mut state);
+        assert_eq!(state.offset(), 0);
+        assert_eq!(state.virtualizer().logical_len(), 0);
+    }
+
+    #[test]
+    fn empty_virtual_window_preserves_origin_until_full_reset() {
+        let tokens = DesignSystem::junie();
+        let nodes: [TreeNode<'_, usize>; 0] = [];
+        let area = Rect::new(0, 0, 24, 3);
+        let mut state = TreeState::new(Some(50));
+        state.set_virtual_window(50, 200);
+        let mut buffer = Buffer::empty(area);
+
+        Tree::new(&nodes, &tokens).render(area, &mut buffer, &mut state);
+
+        assert_eq!(state.offset(), 50);
+        assert_eq!(state.virtualizer().logical_len(), 200);
+
+        state.set_virtual_window(0, 0);
+        Tree::new(&nodes, &tokens).render(area, &mut buffer, &mut state);
+        assert_eq!(state.offset(), 0);
+        assert_eq!(state.virtualizer().logical_len(), 0);
     }
 
     #[test]
