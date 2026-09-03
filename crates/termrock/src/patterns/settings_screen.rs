@@ -330,10 +330,11 @@ impl<SectionId: Clone + PartialEq> SettingsScreenState<SectionId> {
         if key.is_release() {
             return SettingsScreenOutcome::Ignored;
         }
+        let is_press = key.is_press();
 
         // Help overlay peels first
         if self.help_open {
-            if matches!(key.code, KeyCode::Esc | KeyCode::Char('?')) {
+            if is_press && matches!(key.code, KeyCode::Esc | KeyCode::Char('?')) {
                 self.help_open = false;
                 return SettingsScreenOutcome::HelpClosed;
             }
@@ -341,24 +342,31 @@ impl<SectionId: Clone + PartialEq> SettingsScreenState<SectionId> {
         }
 
         // Global chords
-        if key.code == KeyCode::Char('s') && key.modifiers.contains(KeyModifiers::CONTROL) {
+        if is_press
+            && key.code == KeyCode::Char('s')
+            && key.modifiers.contains(KeyModifiers::CONTROL)
+        {
             return SettingsScreenOutcome::SaveRequested;
         }
-        if key.code == KeyCode::Char('z')
+        if is_press
+            && key.code == KeyCode::Char('z')
             && key.modifiers.contains(KeyModifiers::CONTROL)
             && self.dirty
         {
             return SettingsScreenOutcome::DiscardRequested;
         }
-        if key.code == KeyCode::Char('?') && key.modifiers.is_empty() {
+        if is_press && key.code == KeyCode::Char('?') && key.modifiers.is_empty() {
             self.help_open = true;
             return SettingsScreenOutcome::HelpOpened;
         }
-        if matches!(key.code, KeyCode::Tab | KeyCode::BackTab) {
+        if is_press && matches!(key.code, KeyCode::Tab | KeyCode::BackTab) {
             return self.cycle_region(matches!(key.code, KeyCode::BackTab));
         }
         // Drawer toggle on narrow (Ctrl+B like many editors)
-        if key.code == KeyCode::Char('b') && key.modifiers.contains(KeyModifiers::CONTROL) {
+        if is_press
+            && key.code == KeyCode::Char('b')
+            && key.modifiers.contains(KeyModifiers::CONTROL)
+        {
             self.drawer_open = !self.drawer_open;
             if self.drawer_open {
                 self.region = SettingsRegion::Nav;
@@ -370,7 +378,7 @@ impl<SectionId: Clone + PartialEq> SettingsScreenState<SectionId> {
         }
 
         // Esc: drawer / search blur one layer
-        if matches!(key.code, KeyCode::Esc) {
+        if is_press && matches!(key.code, KeyCode::Esc) {
             if self.drawer_open {
                 self.drawer_open = false;
                 self.region = SettingsRegion::Body;
@@ -423,12 +431,14 @@ impl<SectionId: Clone + PartialEq> SettingsScreenState<SectionId> {
             }
             SettingsRegion::Body => match self.body_mode {
                 SettingsBodyMode::Form => {
-                    if key.code == KeyCode::Char('r')
+                    if is_press
+                        && key.code == KeyCode::Char('r')
                         && key.modifiers.contains(KeyModifiers::CONTROL)
                     {
                         return SettingsScreenOutcome::ResetSectionRequested;
                     }
-                    if key.code == KeyCode::Char('r')
+                    if is_press
+                        && key.code == KeyCode::Char('r')
                         && key.modifiers.contains(KeyModifiers::ALT)
                         && let Some(fid) = self.focused_field
                     {
@@ -463,7 +473,7 @@ impl<SectionId: Clone + PartialEq> SettingsScreenState<SectionId> {
                     }
                 }
                 SettingsBodyMode::NoResults => {
-                    if key.code == KeyCode::Char('/') {
+                    if is_press && key.code == KeyCode::Char('/') {
                         self.region = SettingsRegion::Search;
                         self.sync_region_focus_flags();
                         SettingsScreenOutcome::RegionChanged(SettingsRegion::Search)
@@ -472,13 +482,14 @@ impl<SectionId: Clone + PartialEq> SettingsScreenState<SectionId> {
                     }
                 }
             },
-            SettingsRegion::Footer => match key.code {
+            SettingsRegion::Footer if is_press => match key.code {
                 KeyCode::Enter | KeyCode::Char('s') => SettingsScreenOutcome::SaveRequested,
                 KeyCode::Char('r') => SettingsScreenOutcome::ResetSectionRequested,
                 KeyCode::Char('R') => SettingsScreenOutcome::ResetAllRequested,
                 KeyCode::Char('d') | KeyCode::Char('z') => SettingsScreenOutcome::DiscardRequested,
                 _ => SettingsScreenOutcome::Ignored,
             },
+            SettingsRegion::Footer => SettingsScreenOutcome::Ignored,
         }
     }
 }
@@ -1023,8 +1034,10 @@ pub fn example_settings_categories() -> Vec<NavItem<&'static str>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::input::KeyEventKind;
     use crate::widgets::BUILTIN_THEME_PRESETS;
     use crate::widgets::collect_errors;
+    use crate::widgets::tests::key_with_kind;
     use ratatui_core::backend::TestBackend;
     use ratatui_core::terminal::Terminal;
 
@@ -1327,6 +1340,227 @@ mod tests {
             BUILTIN_THEME_PRESETS,
         );
         assert!(matches!(out, SettingsScreenOutcome::HelpClosed));
+    }
+
+    #[test]
+    fn repeated_settings_screen_one_shot_actions_are_ignored() {
+        let repeat = |code, modifiers| key_with_kind(code, modifiers, KeyEventKind::Repeat);
+        let nav = example_settings_categories();
+        let fields = example_settings_profile_fields();
+        let sets = [Fieldset::new("Profile", &fields)];
+
+        let mut st = SettingsScreenState::<&str>::new();
+        st.dirty = true;
+        assert_eq!(
+            st.handle_key(
+                repeat(KeyCode::Char('s'), KeyModifiers::CONTROL),
+                &nav,
+                &sets,
+                BUILTIN_THEME_PRESETS,
+            ),
+            SettingsScreenOutcome::Ignored
+        );
+        assert_eq!(
+            st.handle_key(
+                repeat(KeyCode::Char('z'), KeyModifiers::CONTROL),
+                &nav,
+                &sets,
+                BUILTIN_THEME_PRESETS,
+            ),
+            SettingsScreenOutcome::Ignored
+        );
+
+        let mut st = SettingsScreenState::<&str>::new();
+        assert_eq!(
+            st.handle_key(
+                repeat(KeyCode::Char('?'), KeyModifiers::NONE),
+                &nav,
+                &sets,
+                BUILTIN_THEME_PRESETS,
+            ),
+            SettingsScreenOutcome::Ignored
+        );
+        assert!(!st.help_open);
+        assert_eq!(
+            st.handle_key(
+                KeyEvent::new(KeyCode::Char('?'), KeyModifiers::NONE),
+                &nav,
+                &sets,
+                BUILTIN_THEME_PRESETS,
+            ),
+            SettingsScreenOutcome::HelpOpened
+        );
+        assert_eq!(
+            st.handle_key(
+                repeat(KeyCode::Esc, KeyModifiers::NONE),
+                &nav,
+                &sets,
+                BUILTIN_THEME_PRESETS,
+            ),
+            SettingsScreenOutcome::Ignored
+        );
+        assert!(st.help_open);
+        assert_eq!(
+            st.handle_key(
+                KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE),
+                &nav,
+                &sets,
+                BUILTIN_THEME_PRESETS,
+            ),
+            SettingsScreenOutcome::HelpClosed
+        );
+
+        let mut st = SettingsScreenState::<&str>::new();
+        assert_eq!(
+            st.handle_key(
+                repeat(KeyCode::Tab, KeyModifiers::NONE),
+                &nav,
+                &sets,
+                BUILTIN_THEME_PRESETS,
+            ),
+            SettingsScreenOutcome::Ignored
+        );
+        assert_eq!(st.region, SettingsRegion::Nav);
+        assert_eq!(
+            st.handle_key(
+                KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE),
+                &nav,
+                &sets,
+                BUILTIN_THEME_PRESETS,
+            ),
+            SettingsScreenOutcome::RegionChanged(SettingsRegion::Body)
+        );
+
+        let mut st = SettingsScreenState::<&str>::new();
+        st.density = Some(SettingsDensity::Narrow);
+        assert_eq!(
+            st.handle_key(
+                repeat(KeyCode::Char('b'), KeyModifiers::CONTROL),
+                &nav,
+                &sets,
+                BUILTIN_THEME_PRESETS,
+            ),
+            SettingsScreenOutcome::Ignored
+        );
+        assert!(!st.drawer_open);
+        assert!(matches!(
+            st.handle_key(
+                KeyEvent::new(KeyCode::Char('b'), KeyModifiers::CONTROL),
+                &nav,
+                &sets,
+                BUILTIN_THEME_PRESETS,
+            ),
+            SettingsScreenOutcome::DrawerToggled { open: true }
+        ));
+
+        let mut st = SettingsScreenState::<&str>::new();
+        st.region = SettingsRegion::Search;
+        st.sync_region_focus_flags();
+        assert_eq!(
+            st.handle_key(
+                repeat(KeyCode::Esc, KeyModifiers::NONE),
+                &nav,
+                &sets,
+                BUILTIN_THEME_PRESETS,
+            ),
+            SettingsScreenOutcome::Ignored
+        );
+        assert_eq!(st.region, SettingsRegion::Search);
+        assert_eq!(
+            st.handle_key(
+                KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE),
+                &nav,
+                &sets,
+                BUILTIN_THEME_PRESETS,
+            ),
+            SettingsScreenOutcome::RegionChanged(SettingsRegion::Nav)
+        );
+
+        let mut st = SettingsScreenState::<&str>::new();
+        st.region = SettingsRegion::Body;
+        st.focused_field = Some("profile");
+        st.sync_region_focus_flags();
+        for (code, modifiers) in [
+            (KeyCode::Char('r'), KeyModifiers::CONTROL),
+            (KeyCode::Char('r'), KeyModifiers::ALT),
+        ] {
+            assert_eq!(
+                st.handle_key(repeat(code, modifiers), &nav, &sets, BUILTIN_THEME_PRESETS),
+                SettingsScreenOutcome::Ignored
+            );
+        }
+        assert_eq!(
+            st.handle_key(
+                KeyEvent::new(KeyCode::Char('r'), KeyModifiers::CONTROL),
+                &nav,
+                &sets,
+                BUILTIN_THEME_PRESETS,
+            ),
+            SettingsScreenOutcome::ResetSectionRequested
+        );
+        assert_eq!(
+            st.handle_key(
+                KeyEvent::new(KeyCode::Char('r'), KeyModifiers::ALT),
+                &nav,
+                &sets,
+                BUILTIN_THEME_PRESETS,
+            ),
+            SettingsScreenOutcome::ResetFieldRequested("profile")
+        );
+
+        let mut st = SettingsScreenState::<&str>::new();
+        st.region = SettingsRegion::Body;
+        st.body_mode = SettingsBodyMode::NoResults;
+        st.sync_region_focus_flags();
+        assert_eq!(
+            st.handle_key(
+                repeat(KeyCode::Char('/'), KeyModifiers::NONE),
+                &nav,
+                &sets,
+                BUILTIN_THEME_PRESETS,
+            ),
+            SettingsScreenOutcome::Ignored
+        );
+        assert_eq!(st.region, SettingsRegion::Body);
+        assert_eq!(
+            st.handle_key(
+                KeyEvent::new(KeyCode::Char('/'), KeyModifiers::NONE),
+                &nav,
+                &sets,
+                BUILTIN_THEME_PRESETS,
+            ),
+            SettingsScreenOutcome::RegionChanged(SettingsRegion::Search)
+        );
+
+        let mut st = SettingsScreenState::<&str>::new();
+        st.region = SettingsRegion::Footer;
+        st.sync_region_focus_flags();
+        for code in [
+            KeyCode::Enter,
+            KeyCode::Char('s'),
+            KeyCode::Char('r'),
+            KeyCode::Char('R'),
+            KeyCode::Char('d'),
+        ] {
+            assert_eq!(
+                st.handle_key(
+                    repeat(code, KeyModifiers::NONE),
+                    &nav,
+                    &sets,
+                    BUILTIN_THEME_PRESETS
+                ),
+                SettingsScreenOutcome::Ignored
+            );
+        }
+        assert_eq!(
+            st.handle_key(
+                KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
+                &nav,
+                &sets,
+                BUILTIN_THEME_PRESETS,
+            ),
+            SettingsScreenOutcome::SaveRequested
+        );
     }
 
     #[test]

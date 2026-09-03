@@ -444,6 +444,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0465 | `v0.14.0` | [Tabs physical one-shot actions](migrations/0465-v0.14.0-tabs-one-shot-actions.md) |
 | 0466 | `v0.14.0` | [JumpOverlay physical one-shot actions](migrations/0466-v0.14.0-jump-overlay-one-shot-actions.md) |
 | 0467 | `v0.14.0` | [SetupWizard physical one-shot actions](migrations/0467-v0.14.0-setup-wizard-one-shot-actions.md) |
+| 0468 | `v0.14.0` | [SettingsScreen physical one-shot actions](migrations/0468-v0.14.0-settings-screen-one-shot-actions.md) |
 | 0464 | `v0.14.0` | [Stepper physical one-shot actions](migrations/0464-v0.14.0-stepper-one-shot-actions.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
