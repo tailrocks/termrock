@@ -30,9 +30,7 @@ use ratatui_core::{
 use ratatui_widgets::{block::Block, borders::Borders};
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{
         NavigationMove, OverlayId, OverlayKind, OverlayOutcome, OverlayPolicy, OverlaySize,
         OverlaySpec, OverlayStack, PageMove, SemanticNode, SemanticRole, SemanticScene,
@@ -331,10 +329,10 @@ impl From<CompletionMenuSize> for OverlaySize {
 /// Does **not** map printable characters (those may be commit chars or editor typing).
 #[must_use]
 pub fn default_completion_intent(key: KeyEvent) -> Option<UiIntent> {
-    if key.kind == KeyEventKind::Release {
+    if key.is_release() {
         return None;
     }
-    let is_press = key.kind == KeyEventKind::Press;
+    let is_press = key.is_press();
     if key.modifiers.contains(KeyModifiers::CONTROL) || key.modifiers.contains(KeyModifiers::ALT) {
         return None;
     }
@@ -810,11 +808,11 @@ impl<Id: Clone + PartialEq> CompletionMenuState<Id> {
         key: KeyEvent,
         candidates: &[CompletionCandidate<'_, Id>],
     ) -> CompletionMenuOutcome<Id> {
-        if !self.open || !self.accepts_input || key.kind == KeyEventKind::Release {
+        if !self.open || !self.accepts_input || key.is_release() {
             return CompletionMenuOutcome::Ignored;
         }
         // Commit characters (Press only).
-        if key.kind == KeyEventKind::Press
+        if key.is_press()
             && key.modifiers.is_empty()
             && let KeyCode::Char(ch) = key.code
             && self.commit_characters.contains(ch)
@@ -829,7 +827,7 @@ impl<Id: Clone + PartialEq> CompletionMenuState<Id> {
         let Some(intent) = default_completion_intent(key) else {
             return CompletionMenuOutcome::Ignored;
         };
-        if matches!(intent, UiIntent::Activate) && key.kind != KeyEventKind::Press {
+        if matches!(intent, UiIntent::Activate) && !key.is_press() {
             return CompletionMenuOutcome::Ignored;
         }
         self.handle_intent(candidates, intent)

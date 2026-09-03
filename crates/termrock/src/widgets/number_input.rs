@@ -13,9 +13,7 @@
 //!
 //! Research: shadcn numeric inputs, Textual numeric fields, desktop form UX.
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
     style::{ButtonRecipeVariant, ControlState, DesignSystem},
     text::{display_cols, take_display_cols},
@@ -598,7 +596,7 @@ impl NumberInputState {
 
     /// Key adapter.
     pub fn handle_key(&mut self, key: KeyEvent) -> NumberInputOutcome {
-        if key.kind == KeyEventKind::Release || !self.enabled {
+        if key.is_release() || !self.enabled {
             return NumberInputOutcome::Ignored;
         }
         self.sync_draft_gates();

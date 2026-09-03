@@ -763,7 +763,7 @@ impl<'a, Id: Clone + PartialEq> ButtonGroup<'a, Id> {
         state: &mut ButtonGroupState<Id>,
         key: KeyEvent,
     ) -> ButtonGroupOutcome<Id> {
-        if !state.surface_focused || key.kind != KeyEventKind::Press {
+        if !state.surface_focused || !key.is_press() {
             return ButtonGroupOutcome::Ignored;
         }
 

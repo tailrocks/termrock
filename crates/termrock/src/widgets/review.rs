@@ -24,9 +24,7 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::UiIntent,
     style::{DesignSystem, ListRowVisualState, Role},
     text::take_display_cols,
@@ -1034,10 +1032,10 @@ impl DiffReviewState {
         hunks: &[DiffHunk],
         files: &[DiffReviewFileRow<'_>],
     ) -> DiffReviewOutcome {
-        if !self.accepts_input || key.kind == KeyEventKind::Release {
+        if !self.accepts_input || key.is_release() {
             return DiffReviewOutcome::Ignored;
         }
-        let is_press = key.kind == KeyEventKind::Press;
+        let is_press = key.is_press();
 
         // Confirm banner
         if self.pending_confirm.is_some() && is_press {
@@ -1239,7 +1237,7 @@ impl DiffReviewState {
         hunks: &[DiffHunk],
         lines: &[DiffLine<'_>],
     ) -> DiffReviewOutcome {
-        if files.is_empty() || key.kind != KeyEventKind::Press {
+        if files.is_empty() || !key.is_press() {
             return DiffReviewOutcome::Ignored;
         }
         match key.code {

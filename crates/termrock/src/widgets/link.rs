@@ -18,7 +18,7 @@
 //! References: Rich hyperlinks, OSC 8, CLI docs conventions.
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
 
-use crate::input::{KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind};
+use crate::input::{KeyEvent, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{
     EventResult, SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent,
     default_button_intent,
@@ -551,7 +551,7 @@ impl<'a> Link<'a> {
 
     /// Activate (Enter / click).
     pub fn handle_key(&self, state: &mut LinkState, key: KeyEvent) -> LinkOutcome {
-        if state.disabled || !state.focused || key.kind != KeyEventKind::Press {
+        if state.disabled || !state.focused || !key.is_press() {
             return LinkOutcome::Ignored;
         }
         if let Some(intent) = default_button_intent(key) {
@@ -798,7 +798,7 @@ impl<'a> ActionLink<'a> {
 
     /// Keys.
     pub fn handle_key(&self, state: &mut LinkState, key: KeyEvent) -> ActionLinkOutcome {
-        if state.disabled || !state.focused || key.kind != KeyEventKind::Press {
+        if state.disabled || !state.focused || !key.is_press() {
             return ActionLinkOutcome::Ignored;
         }
         if default_button_intent(key)

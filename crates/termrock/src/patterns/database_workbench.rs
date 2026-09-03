@@ -38,7 +38,7 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
+    input::{KeyCode, KeyEvent, KeyModifiers},
     layout::{
         ModalSpec, PaneConstraint, PaneGeom, PaneId, Workspace, WorkspaceAxis, WorkspaceNode,
         WorkspaceState, modal_rect,
@@ -860,7 +860,7 @@ impl DatabaseWorkbenchState {
         result_rows_len: usize,
         inspect_fields: &[InspectorField<'_>],
     ) -> DatabaseWorkbenchOutcome {
-        if key.kind != KeyEventKind::Press {
+        if !key.is_press() {
             return DatabaseWorkbenchOutcome::Ignored;
         }
 

@@ -15,7 +15,7 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::StatefulWidget};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent},
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseEvent},
     style::{DesignSystem, Role},
     text::take_display_cols,
     widgets::{
@@ -729,10 +729,10 @@ impl<Id: Clone + PartialEq> FileTreeState<Id> {
     where
         Id: Clone + PartialEq + Eq,
     {
-        if !self.accepts_input || key.kind == KeyEventKind::Release {
+        if !self.accepts_input || key.is_release() {
             return FileTreeOutcome::Ignored;
         }
-        let is_press = key.kind == KeyEventKind::Press;
+        let is_press = key.is_press();
         let view = filter_file_tree_entries(
             entries,
             self.filter.as_deref().unwrap_or(""),

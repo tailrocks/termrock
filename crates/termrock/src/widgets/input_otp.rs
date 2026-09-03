@@ -14,7 +14,7 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
+    input::{KeyCode, KeyEvent, KeyModifiers},
     style::{ControlState, DesignSystem},
     text::take_display_cols,
 };
@@ -239,8 +239,7 @@ impl InputOtpState {
 
     /// Keys.
     pub fn handle_key(&mut self, key: KeyEvent) -> InputOtpOutcome {
-        if !self.enabled || !self.accepts_input || !self.focused || key.kind != KeyEventKind::Press
-        {
+        if !self.enabled || !self.accepts_input || !self.focused || !key.is_press() {
             return InputOtpOutcome::Ignored;
         }
         match key.code {

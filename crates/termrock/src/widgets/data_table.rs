@@ -25,9 +25,7 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{NavigationMove, PageMove, UiIntent},
     style::{DesignSystem, Glyph, ListRowVisualState, Role},
     text::{display_cols, take_display_cols, truncate_cols},
@@ -373,10 +371,10 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
     where
         ColId: Clone,
     {
-        if !self.accepts_input || key.kind == KeyEventKind::Release {
+        if !self.accepts_input || key.is_release() {
             return DataTableOutcome::Ignored;
         }
-        let is_press = key.kind == KeyEventKind::Press;
+        let is_press = key.is_press();
 
         if self.editing {
             if visible_rows.is_empty()
@@ -508,7 +506,7 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
     where
         ColId: Clone,
     {
-        if key.kind != KeyEventKind::Press {
+        if !key.is_press() {
             return DataTableOutcome::Ignored;
         }
         match key.code {

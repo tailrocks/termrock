@@ -1044,10 +1044,10 @@ impl PermissionPromptState {
 
     /// Keyboard routing.
     pub fn handle_key(&mut self, key: KeyEvent) -> PermissionOutcome {
-        if !self.accepts_input || key.kind == KeyEventKind::Release {
+        if !self.accepts_input || key.is_release() {
             return PermissionOutcome::Ignored;
         }
-        let is_press = key.kind == KeyEventKind::Press;
+        let is_press = key.is_press();
 
         if matches!(
             self.mode,
@@ -1243,13 +1243,11 @@ impl PermissionPromptState {
                 self.mode = SurfaceMode::Navigate;
                 self.confirm_with_edit(generation, edited)
             }
-            KeyCode::Backspace if is_press || key.kind == KeyEventKind::Repeat => {
+            KeyCode::Backspace if key.is_insert() => {
                 self.edit_buffer.pop();
                 PermissionOutcome::EditChanged
             }
-            KeyCode::Char(c)
-                if !c.is_control() && (is_press || key.kind == KeyEventKind::Repeat) =>
-            {
+            KeyCode::Char(c) if !c.is_control() && (key.is_insert()) => {
                 self.edit_buffer.push(c);
                 PermissionOutcome::EditChanged
             }

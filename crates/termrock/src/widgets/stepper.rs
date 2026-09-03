@@ -685,7 +685,7 @@ impl StepperState {
 
     /// Keyboard.
     pub fn handle_key(&mut self, key: KeyEvent, items: &[StepItem]) -> StepperOutcome {
-        if !self.live() || items.is_empty() || key.kind == KeyEventKind::Release {
+        if !self.live() || items.is_empty() || key.is_release() {
             return StepperOutcome::Ignored;
         }
         let entries = Self::entries(items, &self.statuses);
@@ -825,10 +825,10 @@ fn rect_contains(rect: Rect, pos: Position) -> bool {
 /// Default intent map.
 #[must_use]
 pub fn default_stepper_intent(key: KeyEvent, orientation: StepperOrientation) -> Option<UiIntent> {
-    if key.kind == KeyEventKind::Release {
+    if key.is_release() {
         return None;
     }
-    let is_press = key.kind == KeyEventKind::Press;
+    let is_press = key.is_press();
     match (orientation, key.code) {
         (_, KeyCode::Home) => Some(UiIntent::Move(NavigationMove::First)),
         (_, KeyCode::End) => Some(UiIntent::Move(NavigationMove::Last)),

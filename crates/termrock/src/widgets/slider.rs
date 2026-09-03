@@ -22,9 +22,7 @@ use ratatui_core::{
     widgets::Widget,
 };
 
-use crate::input::{
-    KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-};
+use crate::input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{
     EventResult, SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent,
     default_button_intent,
@@ -845,7 +843,7 @@ impl<'a> Slider<'a> {
 
     /// Keys: arrows step, Page page, Home/End, Enter edit, digits.
     pub fn handle_key(&self, state: &mut SliderState, key: KeyEvent) -> SliderOutcome {
-        if !state.focused || key.kind != KeyEventKind::Press {
+        if !state.focused || !key.is_press() {
             return SliderOutcome::Ignored;
         }
         if !state.can_edit() && !state.editing {
@@ -1496,7 +1494,7 @@ impl<'a> RangeSlider<'a> {
 
     /// Keys: Tab switches thumb; arrows move active thumb.
     pub fn handle_key(&self, state: &mut RangeSliderState, key: KeyEvent) -> RangeSliderOutcome {
-        if !state.focused || !state.can_edit() || key.kind != KeyEventKind::Press {
+        if !state.focused || !state.can_edit() || !key.is_press() {
             return RangeSliderOutcome::Ignored;
         }
         match key.code {

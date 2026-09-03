@@ -736,7 +736,7 @@ impl DrawerState {
         if !self.open || !self.enabled || !self.accepts_input {
             return DrawerOutcome::Ignored;
         }
-        if key.kind == KeyEventKind::Release {
+        if key.is_release() {
             return DrawerOutcome::Ignored;
         }
         if key.code == KeyCode::Esc && key.modifiers.is_empty() {

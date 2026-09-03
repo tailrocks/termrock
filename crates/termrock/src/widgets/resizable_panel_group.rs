@@ -777,7 +777,7 @@ impl<'a> ResizablePanelGroup<'a> {
         key: KeyEvent,
         area: Rect,
     ) -> ResizablePanelOutcome {
-        if key.kind != KeyEventKind::Press {
+        if !key.is_press() {
             return ResizablePanelOutcome::Ignored;
         }
         let Some(handle) = state.focused_handle else {

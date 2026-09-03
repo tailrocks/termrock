@@ -802,7 +802,7 @@ impl<'a, Id: Clone + PartialEq> SegmentedControl<'a, Id> {
         state: &mut SegmentedControlState<Id>,
         key: KeyEvent,
     ) -> SegmentedControlOutcome<Id> {
-        if !state.surface_focused || key.kind != KeyEventKind::Press || self.items.is_empty() {
+        if !state.surface_focused || !key.is_press() || self.items.is_empty() {
             return SegmentedControlOutcome::Ignored;
         }
         if matches!(key.code, crate::input::KeyCode::Esc) && state.menu_open {

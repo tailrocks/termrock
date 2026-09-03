@@ -25,7 +25,7 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
+    input::{KeyCode, KeyEvent, KeyModifiers},
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
     keymap::{Conflict, KeyBinding, KeyChord, Keymap, Visibility, raw_bytes_to_chord},
     style::{ControlState, DesignSystem, Role},
@@ -705,7 +705,7 @@ impl KeybindingRecorderState {
 
     /// Key adapter.
     pub fn handle_key(&mut self, key: KeyEvent) -> KeybindingRecorderOutcome {
-        if key.kind == KeyEventKind::Release || !self.enabled {
+        if key.is_release() || !self.enabled {
             return KeybindingRecorderOutcome::Ignored;
         }
         if !self.focused {

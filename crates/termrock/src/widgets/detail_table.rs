@@ -154,7 +154,7 @@ impl<Id: Clone + PartialEq> DetailTableState<Id> {
         rows: &[DetailRow<'_, Id>],
         key: KeyEvent,
     ) -> DetailTableOutcome<Id> {
-        if key.kind == KeyEventKind::Release {
+        if key.is_release() {
             return DetailTableOutcome::Ignored;
         }
         match key.code {

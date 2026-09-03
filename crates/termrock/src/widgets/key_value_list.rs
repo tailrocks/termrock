@@ -889,7 +889,7 @@ impl<'a, Id: Clone + PartialEq> KeyValueList<'a, Id> {
         state: &mut KeyValueListState<Id>,
         key: KeyEvent,
     ) -> KeyValueListOutcome<Id> {
-        if !state.focused || key.kind != KeyEventKind::Press {
+        if !state.focused || !key.is_press() {
             return KeyValueListOutcome::Ignored;
         }
         // copy

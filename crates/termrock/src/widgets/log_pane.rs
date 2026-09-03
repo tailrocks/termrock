@@ -177,7 +177,7 @@ impl LogPaneState {
 
     /// Applies line, page, oldest, and live-tail scrollback navigation.
     pub fn handle_key(&mut self, key: KeyEvent) -> Outcome<()> {
-        if key.kind == KeyEventKind::Release {
+        if key.is_release() {
             return Outcome::Ignored;
         }
         let page = self.viewport_height.max(1);

@@ -1405,7 +1405,7 @@ impl DateTimePickerState {
 
     /// Key adapter.
     pub fn handle_key(&mut self, key: KeyEvent) -> DateTimePickerOutcome {
-        if key.kind == KeyEventKind::Release || !self.enabled {
+        if key.is_release() || !self.enabled {
             return DateTimePickerOutcome::Ignored;
         }
         if !self.focused {

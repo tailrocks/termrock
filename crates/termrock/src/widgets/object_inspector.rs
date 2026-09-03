@@ -681,10 +681,10 @@ impl ObjectInspectorState {
         key: KeyEvent,
         fields: &[InspectorField<'_>],
     ) -> ObjectInspectorOutcome {
-        if !self.accepts_input || key.kind == KeyEventKind::Release {
+        if !self.accepts_input || key.is_release() {
             return ObjectInspectorOutcome::Ignored;
         }
-        let is_press = key.kind == KeyEventKind::Press;
+        let is_press = key.is_press();
         let field_count = fields.len();
 
         if matches!(
@@ -1033,7 +1033,7 @@ impl ObjectInspectorState {
         key: KeyEvent,
         fields: &[InspectorField<'_>],
     ) -> ObjectInspectorOutcome {
-        if key.kind != KeyEventKind::Press {
+        if !key.is_press() {
             return ObjectInspectorOutcome::Ignored;
         }
         match key.code {

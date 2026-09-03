@@ -961,7 +961,7 @@ impl<'a> ErrorState<'a> {
 
     /// Keyboard handling.
     pub fn handle_key(&self, key: KeyEvent, state: &mut ErrorStateState) -> ErrorStateOutcome {
-        if key.kind != KeyEventKind::Press {
+        if !key.is_press() {
             return ErrorStateOutcome::Ignored;
         }
         // Toggle details

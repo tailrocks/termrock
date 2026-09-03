@@ -29,9 +29,7 @@ use std::collections::BTreeSet;
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     style::{DesignSystem, Role},
     text::take_display_cols,
     widgets::ColumnModel,
@@ -903,10 +901,10 @@ impl ProcessTableState {
         processes: &[ProcessRow<'_>],
         key: KeyEvent,
     ) -> ProcessTableOutcome {
-        if !self.accepts_input || key.kind == KeyEventKind::Release {
+        if !self.accepts_input || key.is_release() {
             return ProcessTableOutcome::Ignored;
         }
-        let is_press = key.kind == KeyEventKind::Press;
+        let is_press = key.is_press();
 
         if self.pending_confirm.is_some() && is_press {
             match key.code {

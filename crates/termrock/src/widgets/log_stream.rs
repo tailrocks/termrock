@@ -27,9 +27,7 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{NavigationMove, PageMove, UiIntent},
     style::{DesignSystem, ListRowVisualState, Role},
     text::{display_cols, take_display_cols, wrap_display_cols},
@@ -486,10 +484,10 @@ impl LogStreamState {
 
     /// Keys.
     pub fn handle_key(&mut self, key: KeyEvent, lines: &[LogLine<'_>]) -> LogStreamOutcome {
-        if !self.accepts_input || key.kind == KeyEventKind::Release {
+        if !self.accepts_input || key.is_release() {
             return LogStreamOutcome::Ignored;
         }
-        let is_press = key.kind == KeyEventKind::Press;
+        let is_press = key.is_press();
 
         // Search
         if is_press && matches!(key.code, KeyCode::Char('/')) && key.modifiers.is_empty() {

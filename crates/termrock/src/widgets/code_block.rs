@@ -22,7 +22,7 @@ use ratatui_core::{
     widgets::Widget,
 };
 
-use crate::input::{KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind};
+use crate::input::{KeyEvent, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{
     EventResult, NavigationMove, PageMove, SemanticNode, SemanticRole, SemanticScene,
     SemanticState, UiIntent, default_list_intent,
@@ -1542,7 +1542,7 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
 
     /// Key handling (scroll / cursor / copy / activate).
     pub fn handle_key(&self, state: &mut CodeBlockState, key: KeyEvent) -> CodeBlockOutcome {
-        if !state.focused || key.kind != KeyEventKind::Press {
+        if !state.focused || !key.is_press() {
             return CodeBlockOutcome::Ignored;
         }
         let doc = self.document_len();

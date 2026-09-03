@@ -12,7 +12,7 @@
 //! / [`Section::depth`].
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
-use crate::input::{KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind};
+use crate::input::{KeyEvent, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{EventResult, UiIntent, default_button_intent, default_list_intent};
 use crate::style::{DesignSystem, Role};
 use crate::text::{display_cols, take_display_cols};
@@ -139,7 +139,7 @@ impl SectionState {
 
     /// Key path via intents.
     pub fn handle_key(&mut self, key: KeyEvent, collapsible: bool) -> SectionOutcome {
-        if !self.focused || !collapsible || key.kind != KeyEventKind::Press {
+        if !self.focused || !collapsible || !key.is_press() {
             return SectionOutcome::Ignored;
         }
         let Some(intent) = default_button_intent(key).or_else(|| default_list_intent(key)) else {

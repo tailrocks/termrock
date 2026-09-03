@@ -804,7 +804,7 @@ impl CheckpointTimelineState {
     ///
     /// **Draft:** no path touches composer draft text.
     pub fn handle_key(&mut self, key: KeyEvent) -> CheckpointTimelineOutcome {
-        if !self.focused || !self.accepts_input || key.kind != KeyEventKind::Press {
+        if !self.focused || !self.accepts_input || !key.is_press() {
             return CheckpointTimelineOutcome::Ignored;
         }
         if self.checkpoints.is_empty() {

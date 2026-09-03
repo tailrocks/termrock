@@ -573,7 +573,7 @@ impl ScrollAreaState {
 
     /// Page / line / home / end / arrows.
     pub fn handle_key(&mut self, key: KeyEvent) -> ScrollOutcome {
-        if key.kind == KeyEventKind::Release {
+        if key.is_release() {
             return ScrollOutcome::Ignored;
         }
         if !key.modifiers.is_empty()

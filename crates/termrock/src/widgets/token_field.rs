@@ -636,7 +636,7 @@ impl TokenFieldState<String> {
 impl TokenFieldState<String> {
     /// Key adapter (String token ids).
     pub fn handle_key(&mut self, key: KeyEvent) -> TokenFieldOutcome<String> {
-        if key.kind == KeyEventKind::Release || !self.enabled {
+        if key.is_release() || !self.enabled {
             return TokenFieldOutcome::Ignored;
         }
         self.sync_draft_focus();

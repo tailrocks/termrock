@@ -26,9 +26,7 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{
         CollectionItem, CollectionState, NavigationMove, OverlayId, OverlayKind, OverlayOutcome,
         OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, RovingOrientation, SemanticNode,
@@ -833,7 +831,7 @@ impl MenuBarState {
         key: KeyEvent,
         menus: &[MenuBarMenu<Id>],
     ) -> MenuBarOutcome<Id> {
-        if !self.live() || menus.is_empty() || key.kind == KeyEventKind::Release {
+        if !self.live() || menus.is_empty() || key.is_release() {
             // Allow Alt release to keep mode; ignore other releases.
             return MenuBarOutcome::Ignored;
         }
@@ -1150,10 +1148,10 @@ fn rect_contains(rect: Rect, pos: Position) -> bool {
 /// Default intent map for MenuBar (closed + open panels).
 #[must_use]
 pub fn default_menu_bar_intent(key: KeyEvent) -> Option<UiIntent> {
-    if key.kind == KeyEventKind::Release {
+    if key.is_release() {
         return None;
     }
-    let is_press = key.kind == KeyEventKind::Press;
+    let is_press = key.is_press();
     // Ignore Alt chords here; handle_key processes mnemonics.
     if key.modifiers.contains(KeyModifiers::ALT) && matches!(key.code, KeyCode::Char(_)) {
         return None;

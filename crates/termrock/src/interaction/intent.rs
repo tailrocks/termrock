@@ -168,7 +168,7 @@ impl UiIntent {
 /// for releases and unmapped keys.
 #[must_use]
 pub fn default_list_intent(key: KeyEvent) -> Option<UiIntent> {
-    if !key.is_action() {
+    if !key.is_insert() {
         return None;
     }
     // Ignore pure-modifier noise; list defaults ignore most modifiers.
@@ -200,7 +200,7 @@ pub fn default_list_intent(key: KeyEvent) -> Option<UiIntent> {
 /// Default intent map for tree collections (list + expand/collapse).
 #[must_use]
 pub fn default_tree_intent(key: KeyEvent) -> Option<UiIntent> {
-    if !key.is_action() {
+    if !key.is_insert() {
         return None;
     }
     match key.code {
@@ -216,7 +216,7 @@ pub fn default_tree_intent(key: KeyEvent) -> Option<UiIntent> {
 /// scroll on [`crate::widgets::Table`]. Space does not toggle multi-select.
 #[must_use]
 pub fn default_table_intent(key: KeyEvent) -> Option<UiIntent> {
-    if !key.is_action() {
+    if !key.is_insert() {
         return None;
     }
     match key.code {
@@ -235,7 +235,7 @@ pub fn default_table_intent(key: KeyEvent) -> Option<UiIntent> {
 /// [`crate::widgets::TranscriptState::handle_key`] as a product chord.
 #[must_use]
 pub fn default_transcript_intent(key: KeyEvent) -> Option<UiIntent> {
-    if !key.is_action() {
+    if !key.is_insert() {
         return None;
     }
     let is_press = key.is_press();
@@ -258,7 +258,7 @@ pub fn default_transcript_intent(key: KeyEvent) -> Option<UiIntent> {
 /// Default intent map for [`crate::widgets::DropdownMenu`] / context menus.
 #[must_use]
 pub fn default_menu_intent(key: KeyEvent) -> Option<UiIntent> {
-    if !key.is_action() {
+    if !key.is_insert() {
         return None;
     }
     let is_press = key.is_press();
@@ -283,7 +283,7 @@ pub fn default_menu_intent(key: KeyEvent) -> Option<UiIntent> {
 /// a held key cannot close and reopen the overlay.
 #[must_use]
 pub fn default_palette_intent(key: KeyEvent) -> Option<UiIntent> {
-    if !key.is_action() {
+    if !key.is_insert() {
         return None;
     }
     let is_press = key.is_press();
@@ -309,7 +309,7 @@ pub fn default_palette_intent(key: KeyEvent) -> Option<UiIntent> {
 /// [`DataTableState::handle_key`].
 #[must_use]
 pub fn default_data_table_intent(key: KeyEvent) -> Option<UiIntent> {
-    if !key.is_action() {
+    if !key.is_insert() {
         return None;
     }
     let is_press = key.is_press();
@@ -362,7 +362,7 @@ pub fn default_inspector_intent(key: KeyEvent) -> Option<UiIntent> {
 /// Home/End jump first/last hunk when hunks exist.
 #[must_use]
 pub fn default_diff_review_intent(key: KeyEvent) -> Option<UiIntent> {
-    if !key.is_action() {
+    if !key.is_insert() {
         return None;
     }
     let is_press = key.is_press();
@@ -389,7 +389,7 @@ pub fn default_diff_review_intent(key: KeyEvent) -> Option<UiIntent> {
 /// Esc / Enter stay on the state path (search cancel / copy).
 #[must_use]
 pub fn default_log_stream_intent(key: KeyEvent) -> Option<UiIntent> {
-    if !key.is_action() {
+    if !key.is_insert() {
         return None;
     }
     match key.code {
@@ -410,7 +410,7 @@ pub fn default_log_stream_intent(key: KeyEvent) -> Option<UiIntent> {
 /// Up/Down line motion stays key-path (not list Previous/Next).
 #[must_use]
 pub fn default_text_area_intent(key: KeyEvent) -> Option<UiIntent> {
-    if !key.is_action() {
+    if !key.is_insert() {
         return None;
     }
     if !key.modifiers.is_empty() && key.modifiers != KeyModifiers::SHIFT {
@@ -456,7 +456,7 @@ pub fn default_button_intent(key: KeyEvent) -> Option<UiIntent> {
 /// [`crate::widgets::PromptComposerState::handle_key`].
 #[must_use]
 pub fn default_prompt_composer_intent(key: KeyEvent) -> Option<UiIntent> {
-    if !key.is_action() {
+    if !key.is_insert() {
         return None;
     }
     let is_press = key.is_press();
@@ -478,7 +478,7 @@ pub fn default_prompt_composer_intent(key: KeyEvent) -> Option<UiIntent> {
 ///   when action ids are registered as focus targets
 #[must_use]
 pub fn default_choice_dialog_intent(key: KeyEvent) -> Option<UiIntent> {
-    if !key.is_action() {
+    if !key.is_insert() {
         return None;
     }
     let is_press = key.is_press();
@@ -502,7 +502,7 @@ pub fn default_choice_dialog_intent(key: KeyEvent) -> Option<UiIntent> {
 /// **Field cycle (Tab / Up / Down) is host / scene owned** — not mapped here.
 #[must_use]
 pub fn default_form_intent(key: KeyEvent) -> Option<UiIntent> {
-    if !key.is_action() {
+    if !key.is_insert() {
         return None;
     }
     let is_press = key.is_press();
@@ -523,7 +523,7 @@ pub fn default_form_intent(key: KeyEvent) -> Option<UiIntent> {
 /// keymap pack is adopted.
 #[must_use]
 pub fn default_permission_intent(key: KeyEvent) -> Option<UiIntent> {
-    if !key.is_action() {
+    if !key.is_insert() {
         return None;
     }
     // Press-only for confirm/cancel to avoid held-key multi-fire.

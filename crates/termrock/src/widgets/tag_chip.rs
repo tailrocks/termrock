@@ -322,7 +322,7 @@ impl<'a, Id: Clone> Tag<'a, Id> {
 
     /// Key path: Left/Right part, Delete remove, Enter activate/remove.
     pub fn handle_key(&self, state: &mut TagState, key: KeyEvent) -> TagOutcome<Id> {
-        if self.disabled || !state.focused || key.kind != KeyEventKind::Press {
+        if self.disabled || !state.focused || !key.is_press() {
             return TagOutcome::Ignored;
         }
         if let Some(intent) = default_button_intent(key) {
@@ -966,7 +966,7 @@ impl<'a, Id: Clone> Chip<'a, Id> {
 
     /// Keys: part nav, toggle, remove.
     pub fn handle_key(&self, state: &mut ChipState, key: KeyEvent) -> ChipOutcome<Id> {
-        if self.disabled || !state.focused || key.kind != KeyEventKind::Press {
+        if self.disabled || !state.focused || !key.is_press() {
             return ChipOutcome::Ignored;
         }
         if let Some(intent) = default_button_intent(key) {
@@ -1677,7 +1677,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> TokenStrip<'a, Id> {
         state: &mut TokenStripState<Id>,
         key: KeyEvent,
     ) -> TokenStripOutcome<Id> {
-        if !state.surface_focused || key.kind != KeyEventKind::Press {
+        if !state.surface_focused || !key.is_press() {
             return TokenStripOutcome::Ignored;
         }
         let entries = self.entries();

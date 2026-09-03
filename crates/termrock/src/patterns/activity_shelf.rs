@@ -769,7 +769,7 @@ impl ActivityShelfState {
 
     /// Keys.
     pub fn handle_key(&mut self, key: KeyEvent, items: &[ActivityItem]) -> ActivityShelfOutcome {
-        if !self.accepts_input || !self.focused || key.kind != KeyEventKind::Press {
+        if !self.accepts_input || !self.focused || !key.is_press() {
             return ActivityShelfOutcome::Ignored;
         }
         let sorted = sort_activity_items(items);

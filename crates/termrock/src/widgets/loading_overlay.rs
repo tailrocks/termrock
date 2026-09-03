@@ -388,7 +388,7 @@ impl BusyBoundaryState {
         if !self.active {
             return BusyRoute::Deliver;
         }
-        if key.kind != KeyEventKind::Press {
+        if !key.is_press() {
             return if self.mode.blocks_input() {
                 BusyRoute::Blocked
             } else {

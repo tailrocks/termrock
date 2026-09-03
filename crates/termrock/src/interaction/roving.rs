@@ -320,7 +320,7 @@ impl<Id: Clone + PartialEq> RovingFocusGroup<Id> {
     ///
     /// Does not Activate — host maps Enter/Space after consulting [`Self::active`].
     pub fn handle_key(&mut self, key: KeyEvent, entries: &[RovingEntry<Id>]) -> RovingOutcome<Id> {
-        if key.kind == KeyEventKind::Release || entries.is_empty() {
+        if key.is_release() || entries.is_empty() {
             return RovingOutcome::Ignored;
         }
         if !key.modifiers.is_empty()

@@ -718,10 +718,10 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
         state: &mut KeyValueTableState<Id>,
         key: KeyEvent,
     ) -> KeyValueTableOutcome<Id> {
-        if !state.accepts_input || key.kind == KeyEventKind::Release {
+        if !state.accepts_input || key.is_release() {
             return KeyValueTableOutcome::Ignored;
         }
-        let is_press = key.kind == KeyEventKind::Press;
+        let is_press = key.is_press();
 
         if matches!(
             state.load,
@@ -830,7 +830,7 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
         state: &mut KeyValueTableState<Id>,
         key: KeyEvent,
     ) -> KeyValueTableOutcome<Id> {
-        if key.kind != KeyEventKind::Press {
+        if !key.is_press() {
             return KeyValueTableOutcome::Ignored;
         }
         match key.code {

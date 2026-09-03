@@ -22,7 +22,7 @@ use std::collections::BTreeSet;
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent},
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseEvent},
     style::DesignSystem,
     text::{display_cols, take_display_cols},
     widgets::transcript::{
@@ -919,7 +919,7 @@ impl MessageThreadState {
         entries: &[MessageEntry],
         blocks: &[TranscriptBlock<'_, String>],
     ) -> MessageThreadOutcome {
-        if !self.accepts_input || key.kind == KeyEventKind::Release {
+        if !self.accepts_input || key.is_release() {
             return MessageThreadOutcome::Ignored;
         }
         // Search mode

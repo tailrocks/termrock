@@ -842,7 +842,7 @@ impl SessionPickerState {
     ///
     /// **Draft:** cancel never touches host PromptComposer draft.
     pub fn handle_key(&mut self, key: KeyEvent) -> SessionPickerOutcome {
-        if !self.focused || !self.accepts_input || key.kind != KeyEventKind::Press {
+        if !self.focused || !self.accepts_input || !key.is_press() {
             return SessionPickerOutcome::Ignored;
         }
 

@@ -29,9 +29,7 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{NavigationMove, PageMove, UiIntent},
     style::{DesignSystem, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
@@ -725,10 +723,10 @@ impl DiffViewState {
         lines: &[DiffLine<'_>],
         hunks: &[DiffHunk],
     ) -> DiffViewOutcome {
-        if !self.accepts_input || key.kind == KeyEventKind::Release {
+        if !self.accepts_input || key.is_release() {
             return DiffViewOutcome::Ignored;
         }
-        let is_press = key.kind == KeyEventKind::Press;
+        let is_press = key.is_press();
         let view = filter_diff_lines(lines, self.search.as_deref().unwrap_or(""), self);
 
         // Search

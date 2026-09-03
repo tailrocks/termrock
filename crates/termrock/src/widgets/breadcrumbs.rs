@@ -430,7 +430,7 @@ impl BreadcrumbsState {
         key: KeyEvent,
         items: &[BreadcrumbItem<Id>],
     ) -> BreadcrumbsOutcome<Id> {
-        if !self.enabled || key.kind == KeyEventKind::Release {
+        if !self.enabled || key.is_release() {
             return BreadcrumbsOutcome::Ignored;
         }
         if !self.focused {

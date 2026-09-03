@@ -375,7 +375,7 @@ impl PromptQueueState {
 
     /// Keyboard.
     pub fn handle_key(&mut self, key: KeyEvent) -> PromptQueueOutcome {
-        if !self.focused || !self.accepts_input || key.kind != KeyEventKind::Press {
+        if !self.focused || !self.accepts_input || !key.is_press() {
             return PromptQueueOutcome::Ignored;
         }
 

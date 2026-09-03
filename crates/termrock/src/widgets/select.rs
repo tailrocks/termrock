@@ -597,7 +597,7 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
         options: &[SelectOption<Id>],
         bounds: Rect,
     ) -> SelectOutcome<Id> {
-        if key.kind == KeyEventKind::Release || !self.enabled {
+        if key.is_release() || !self.enabled {
             return SelectOutcome::Ignored;
         }
 

@@ -21,9 +21,7 @@
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     style::{DesignSystem, MotionPolicy, PanelChrome, Role, SPINNER_BRAILLE_FRAMES},
     text::{display_cols, take_display_cols},
     widgets::{AccentRail, agent::ToolStatus, card::Card},
@@ -533,7 +531,7 @@ impl ToolCallCardState {
 
     /// Keys.
     pub fn handle_key(&mut self, key: KeyEvent, call: &ToolCall) -> ToolCallCardOutcome {
-        if !self.accepts_input || !self.focused || key.kind != KeyEventKind::Press {
+        if !self.accepts_input || !self.focused || !key.is_press() {
             return ToolCallCardOutcome::Ignored;
         }
         match key.code {

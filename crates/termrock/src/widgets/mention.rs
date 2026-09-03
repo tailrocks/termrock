@@ -1529,7 +1529,7 @@ impl<'a> InlineMention<'a> {
         state: &mut InlineMentionState,
         key: KeyEvent,
     ) -> InlineMentionOutcome {
-        if key.kind == KeyEventKind::Release {
+        if key.is_release() {
             return InlineMentionOutcome::Ignored;
         }
         if state.disambiguation_open {

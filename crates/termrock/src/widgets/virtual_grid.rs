@@ -470,7 +470,7 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> VirtualGridState<RowId, ColId> {
         columns: &[GridColumn<'_, ColId>],
         rows: &[GridRow<'_, RowId>],
     ) -> VirtualGridOutcome<RowId, ColId> {
-        if event.kind == KeyEventKind::Release {
+        if event.is_release() {
             return VirtualGridOutcome::Ignored;
         }
         let extend = event.modifiers.contains(KeyModifiers::SHIFT);
@@ -478,9 +478,7 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> VirtualGridState<RowId, ColId> {
         let before = (self.first_row(), self.first_col());
         // Prefer universal intents for shared collection actions.
         if !control && let Some(intent) = crate::interaction::default_table_intent(event) {
-            if matches!(intent, crate::interaction::UiIntent::Activate)
-                && event.kind != KeyEventKind::Press
-            {
+            if matches!(intent, crate::interaction::UiIntent::Activate) && !event.is_press() {
                 return VirtualGridOutcome::Ignored;
             }
             // Page/Activate/Cancel/vertical Move via intent; Left/Right not in table map.
@@ -641,40 +639,35 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> VirtualGridState<RowId, ColId> {
         if columns.is_empty() {
             return VirtualGridOutcome::Ignored;
         }
+        if let Some(delta) = crate::scroll::mouse_scroll_delta_with_step(
+            event.kind,
+            event.modifiers,
+            crate::scroll::ScrollAxes {
+                vertical: true,
+                horizontal: true,
+            },
+            1,
+        ) {
+            self.sync_virt_bounds();
+            let changed = match delta.axis {
+                crate::scroll::ScrollAxis::Vertical => {
+                    self.virt.rows.scroll_by(i64::from(delta.amount))
+                }
+                crate::scroll::ScrollAxis::Horizontal => {
+                    self.virt.cols.scroll_by(i64::from(delta.amount))
+                }
+            };
+            return if changed {
+                VirtualGridOutcome::ViewportChanged {
+                    first_row: self.first_row(),
+                    first_col: self.first_col(),
+                }
+            } else {
+                VirtualGridOutcome::Ignored
+            };
+        }
         let position = event.position;
         match event.kind {
-            MouseEventKind::ScrollDown => {
-                self.sync_virt_bounds();
-                let _ = self.virt.rows.scroll_by(1);
-                VirtualGridOutcome::ViewportChanged {
-                    first_row: self.first_row(),
-                    first_col: self.first_col(),
-                }
-            }
-            MouseEventKind::ScrollUp => {
-                self.sync_virt_bounds();
-                let _ = self.virt.rows.scroll_by(-1);
-                VirtualGridOutcome::ViewportChanged {
-                    first_row: self.first_row(),
-                    first_col: self.first_col(),
-                }
-            }
-            MouseEventKind::ScrollRight => {
-                self.sync_virt_bounds();
-                let _ = self.virt.cols.scroll_by(1);
-                VirtualGridOutcome::ViewportChanged {
-                    first_row: self.first_row(),
-                    first_col: self.first_col(),
-                }
-            }
-            MouseEventKind::ScrollLeft => {
-                self.sync_virt_bounds();
-                let _ = self.virt.cols.scroll_by(-1);
-                VirtualGridOutcome::ViewportChanged {
-                    first_row: self.first_row(),
-                    first_col: self.first_col(),
-                }
-            }
             MouseEventKind::Down(MouseButton::Left) => {
                 let Some(region) = self
                     .cell_regions
@@ -1433,6 +1426,61 @@ mod tests {
                 ..
             }
         ));
+    }
+
+    #[test]
+    fn shifted_wheel_scrolls_columns_and_edge_wheel_is_ignored() {
+        let system = DesignSystem::default();
+        let columns = [
+            GridColumn::fixed("a", "A", 8),
+            GridColumn::fixed("b", "B", 8),
+            GridColumn::fixed("c", "C", 8),
+        ];
+        let cell0 = cells("a", "b", "c");
+        let cell1 = cells("d", "e", "f");
+        let cell2 = cells("g", "h", "i");
+        let rows = [
+            GridRow::new(10, 0, &cell0),
+            GridRow::new(11, 1, &cell1),
+            GridRow::new(12, 2, &cell2),
+        ];
+        let grid = VirtualGrid::new(&columns, &rows, &system).total_rows(10);
+        let mut state = VirtualGridState::new();
+        let area = Rect::new(0, 0, 20, 4);
+        let mut buffer = Buffer::empty(area);
+        StatefulWidget::render(&grid, area, &mut buffer, &mut state);
+        assert_eq!(state.first_col(), 0);
+
+        let position = Position::new(8, 2);
+        let edge = state.handle_mouse(
+            MouseEvent {
+                kind: MouseEventKind::ScrollLeft,
+                position,
+                modifiers: KeyModifiers::NONE,
+            },
+            &columns,
+            &rows,
+        );
+        assert_eq!(edge, VirtualGridOutcome::Ignored);
+
+        let shifted = state.handle_mouse(
+            MouseEvent {
+                kind: MouseEventKind::ScrollDown,
+                position,
+                modifiers: KeyModifiers::SHIFT,
+            },
+            &columns,
+            &rows,
+        );
+        assert_eq!(
+            shifted,
+            VirtualGridOutcome::ViewportChanged {
+                first_row: 0,
+                first_col: 1,
+            }
+        );
+        assert_eq!(state.first_row(), 0);
+        assert_eq!(state.first_col(), 1);
     }
 
     #[test]

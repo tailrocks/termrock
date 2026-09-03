@@ -20,7 +20,7 @@
 //! References: Radix Collapsible, tree disclosures, agent tool-detail expansion.
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
-use crate::input::{KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind};
+use crate::input::{KeyEvent, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{EventResult, UiIntent, default_tree_intent};
 use crate::style::{DesignSystem, Role};
 use crate::text::take_display_cols;
@@ -228,7 +228,7 @@ impl CollapsibleState {
         disabled: bool,
         controlled_open: Option<bool>,
     ) -> CollapsibleOutcome {
-        if disabled || !self.focused || key.kind != KeyEventKind::Press {
+        if disabled || !self.focused || !key.is_press() {
             return CollapsibleOutcome::Ignored;
         }
         let Some(intent) = default_tree_intent(key) else {

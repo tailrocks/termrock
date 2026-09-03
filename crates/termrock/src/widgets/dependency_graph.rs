@@ -20,9 +20,7 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     style::{DesignSystem, ListRowVisualState, Role},
     text::take_display_cols,
     widgets::{
@@ -873,7 +871,7 @@ impl DependencyGraphState {
         edges: &[DepEdge<'_>],
         key: KeyEvent,
     ) -> DependencyGraphOutcome {
-        if !self.accepts_input || key.kind != KeyEventKind::Press {
+        if !self.accepts_input || !key.is_press() {
             return DependencyGraphOutcome::Ignored;
         }
 

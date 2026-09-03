@@ -666,7 +666,7 @@ impl ObservabilityDashboardState {
         alerts: &[MetricAlert<'_>],
         inspect_fields: &[InspectorField<'_>],
     ) -> ObservabilityDashboardOutcome {
-        if key.kind != KeyEventKind::Press {
+        if !key.is_press() {
             return ObservabilityDashboardOutcome::Ignored;
         }
 

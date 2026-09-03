@@ -11,9 +11,7 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Style, widgets::StatefulWidget};
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{NavigationMove, PageMove, UiIntent},
     style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
@@ -459,7 +457,7 @@ impl<Id: Clone + Eq> TranscriptState<Id> {
         key: KeyEvent,
         blocks: &[TranscriptBlock<'_, Id>],
     ) -> TranscriptOutcome<Id> {
-        if key.kind == KeyEventKind::Release {
+        if key.is_release() {
             return TranscriptOutcome::Ignored;
         }
         if let Some(intent) = crate::interaction::default_transcript_intent(key) {
@@ -468,7 +466,7 @@ impl<Id: Clone + Eq> TranscriptState<Id> {
         // Product fold chord (Ctrl+F) — not in generic intent map.
         if matches!(key.code, KeyCode::Char('f' | 'F'))
             && key.modifiers.contains(KeyModifiers::CONTROL)
-            && key.kind == KeyEventKind::Press
+            && key.is_press()
         {
             if let Some(id) = self.selected.clone() {
                 let folded = blocks

@@ -507,11 +507,10 @@ impl ProgressStepsState {
         if !self.can_interact() || !self.focused {
             return ProgressStepsOutcome::Ignored;
         }
-        if key.kind == KeyEventKind::Release || steps.is_empty() {
+        if key.is_release() || steps.is_empty() {
             return ProgressStepsOutcome::Ignored;
         }
-        let press = matches!(key.kind, KeyEventKind::Press | KeyEventKind::Repeat);
-        if !press {
+        if !key.is_insert() {
             return ProgressStepsOutcome::Ignored;
         }
 

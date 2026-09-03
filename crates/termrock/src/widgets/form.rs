@@ -24,7 +24,7 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
+    input::{KeyCode, KeyEvent, KeyModifiers},
     interaction::{HitRegion, PageMove, UiIntent},
     layout::{ResponsiveSurface, form_grid_template},
     scroll::max_offset,
@@ -562,11 +562,11 @@ impl<Id: Clone + PartialEq> FormState<Id> {
         key: KeyEvent,
         focused_field: Option<&Id>,
     ) -> FormOutcome<Id> {
-        if !self.accepts_input || key.kind == KeyEventKind::Release {
+        if !self.accepts_input || key.is_release() {
             return FormOutcome::Ignored;
         }
         // Form-level chords before default form intent
-        if key.kind == KeyEventKind::Press {
+        if key.is_press() {
             if key.modifiers.contains(KeyModifiers::CONTROL)
                 && matches!(
                     key.code,

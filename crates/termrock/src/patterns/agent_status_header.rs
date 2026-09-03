@@ -639,7 +639,7 @@ impl AgentStatusHeaderState {
 
     /// Keyboard.
     pub fn handle_key(&mut self, key: KeyEvent) -> AgentStatusHeaderOutcome {
-        if !self.focused || !self.accepts_input || key.kind != KeyEventKind::Press {
+        if !self.focused || !self.accepts_input || !key.is_press() {
             return AgentStatusHeaderOutcome::Ignored;
         }
         if self.actions.is_empty() {

@@ -209,7 +209,7 @@ impl CarouselState {
 
     /// Keys.
     pub fn handle_key(&mut self, key: KeyEvent, slides: &[CarouselSlide]) -> CarouselOutcome {
-        if !self.accepts_input || !self.focused || key.kind != KeyEventKind::Press {
+        if !self.accepts_input || !self.focused || !key.is_press() {
             return CarouselOutcome::Ignored;
         }
         match key.code {

@@ -958,11 +958,10 @@ impl NotificationCenterState {
         if !self.open || !self.enabled || !self.accepts_input || !self.focused {
             return NotificationCenterOutcome::Ignored;
         }
-        if key.kind == KeyEventKind::Release {
+        if key.is_release() {
             return NotificationCenterOutcome::Ignored;
         }
-        let press = matches!(key.kind, KeyEventKind::Press | KeyEventKind::Repeat);
-        if !press {
+        if !key.is_insert() {
             return NotificationCenterOutcome::Ignored;
         }
 

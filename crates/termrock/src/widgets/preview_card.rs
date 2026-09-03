@@ -1005,10 +1005,10 @@ impl PreviewCardState {
         if !self.pinned || self.disabled {
             return PreviewCardOutcome::Ignored;
         }
-        if key.kind == KeyEventKind::Release {
+        if key.is_release() {
             return PreviewCardOutcome::Ignored;
         }
-        if !matches!(key.kind, KeyEventKind::Press | KeyEventKind::Repeat) {
+        if !key.is_insert() {
             return PreviewCardOutcome::Ignored;
         }
         match key.code {

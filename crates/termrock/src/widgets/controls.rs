@@ -285,7 +285,7 @@ impl CheckboxState {
 
     /// Toggle when focused and activatable.
     pub fn handle_key<Id: Clone>(&mut self, key: KeyEvent, id: &Id) -> CheckboxOutcome<Id> {
-        if !self.can_activate() || !self.focused || key.kind != KeyEventKind::Press {
+        if !self.can_activate() || !self.focused || !key.is_press() {
             return CheckboxOutcome::Ignored;
         }
         if let Some(intent) = default_button_intent(key) {
@@ -1288,7 +1288,7 @@ impl<'a, Id: Clone + PartialEq> RadioGroup<'a, Id> {
         if !state.enabled || !state.surface_focused || self.options.is_empty() {
             return RadioOutcome::Ignored;
         }
-        if key.kind == KeyEventKind::Release {
+        if key.is_release() {
             return RadioOutcome::Ignored;
         }
         let items = self.collection_items();
@@ -1297,7 +1297,7 @@ impl<'a, Id: Clone + PartialEq> RadioGroup<'a, Id> {
             return RadioOutcome::Ignored;
         }
 
-        let is_press = key.kind == KeyEventKind::Press;
+        let is_press = key.is_press();
 
         // Space/Enter always commit active
         if is_press {
@@ -1510,14 +1510,14 @@ impl<Id: Clone + PartialEq> RadioState<Id> {
     /// Prefer [`RadioGroup::handle_key`] for full option metadata (disabled,
     /// typeahead labels, policy with widget).
     pub fn handle_key(&mut self, key: KeyEvent, options: &[Id]) -> RadioOutcome<Id> {
-        if !self.enabled || options.is_empty() || key.kind == KeyEventKind::Release {
+        if !self.enabled || options.is_empty() || key.is_release() {
             return RadioOutcome::Ignored;
         }
         // Ensure surface focused for headless tests
         self.surface_focused = true;
         let items = Self::collection_items(options);
         let _ = self.collection.reconcile(&items);
-        let is_press = key.kind == KeyEventKind::Press;
+        let is_press = key.is_press();
         if is_press
             && key.modifiers.is_empty()
             && matches!(key.code, KeyCode::Enter | KeyCode::Char(' '))
@@ -1756,7 +1756,7 @@ impl SwitchState {
 
     /// Space / Enter toggle when focused and activatable.
     pub fn handle_key<Id: Clone>(&mut self, key: KeyEvent, id: &Id) -> SwitchOutcome<Id> {
-        if !self.can_activate() || !self.focused || key.kind != KeyEventKind::Press {
+        if !self.can_activate() || !self.focused || !key.is_press() {
             return SwitchOutcome::Ignored;
         }
         if let Some(intent) = default_button_intent(key) {

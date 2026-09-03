@@ -549,7 +549,7 @@ impl PasswordInputState {
             }
         }
 
-        if key.kind == KeyEventKind::Release {
+        if key.is_release() {
             return PasswordInputOutcome::Ignored;
         }
 

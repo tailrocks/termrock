@@ -20,7 +20,7 @@
 //! appending does not thrash unrelated block geometry.
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
-use crate::input::{KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind};
+use crate::input::{KeyEvent, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{
     EventResult, NavigationMove, PageMove, SemanticNode, SemanticRole, SemanticScene,
     SemanticState, UiIntent, default_list_intent,
@@ -1088,7 +1088,7 @@ impl<'a> MarkdownView<'a> {
 
     /// Keys: scroll, cursor, copy, link activate.
     pub fn handle_key(&self, state: &mut MarkdownViewState, key: KeyEvent) -> MarkdownOutcome {
-        if !state.focused || key.kind != KeyEventKind::Press {
+        if !state.focused || !key.is_press() {
             return MarkdownOutcome::Ignored;
         }
         if matches!(key.code, crate::input::KeyCode::Char('c' | 'C')) && key.modifiers.is_empty() {

@@ -569,7 +569,7 @@ impl<Id: Clone + PartialEq> FocusGraph<Id> {
 
     /// Tab / BackTab / optional spatial arrows from raw keys.
     pub fn handle_key(&mut self, key: KeyEvent) -> FocusOutcome<Id> {
-        if key.kind == KeyEventKind::Release {
+        if key.is_release() {
             return FocusOutcome::Ignored;
         }
         match key.code {

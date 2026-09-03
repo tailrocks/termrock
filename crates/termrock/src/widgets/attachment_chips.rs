@@ -23,9 +23,7 @@
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
-    input::{
-        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-    },
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{UiIntent, default_button_intent},
     style::{DesignSystem, Role},
     text::take_display_cols,
@@ -861,7 +859,7 @@ impl<'a> AttachmentChip<'a> {
         state: &mut AttachmentChipState,
         key: KeyEvent,
     ) -> AttachmentChipOutcome {
-        if key.kind == KeyEventKind::Release {
+        if key.is_release() {
             return AttachmentChipOutcome::Ignored;
         }
         // Retry on error
@@ -1020,7 +1018,7 @@ impl<'a> PasteChip<'a> {
 
     /// Keys.
     pub fn handle_key(&self, state: &mut PasteChipState, key: KeyEvent) -> PasteChipOutcome {
-        if key.kind == KeyEventKind::Release {
+        if key.is_release() {
             return PasteChipOutcome::Ignored;
         }
         if key.code == KeyCode::Esc && state.expanded {

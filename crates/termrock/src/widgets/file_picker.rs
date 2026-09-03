@@ -1032,7 +1032,7 @@ impl FilePickerState {
 
     /// Key adapter.
     pub fn handle_key(&mut self, key: KeyEvent) -> FilePickerOutcome {
-        if key.kind == KeyEventKind::Release || !self.enabled {
+        if key.is_release() || !self.enabled {
             return FilePickerOutcome::Ignored;
         }
         if !self.focused {
