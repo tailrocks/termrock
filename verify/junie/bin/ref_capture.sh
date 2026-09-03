@@ -168,6 +168,10 @@ case "$COLS:$ROWS" in
 esac
 [ "$COLS" -gt 0 ] && [ "$ROWS" -gt 0 ] || die "columns and rows must be positive integers"
 
+if [ "$OUT" = "$ROOT/reference/scenes" ]; then
+  die "--out is required; immutable reference/scenes cannot be overwritten by capture"
+fi
+
 if [ "$ALL" -eq 1 ]; then
   if [ "$BUILD" -eq 1 ]; then
     echo "building reference (release) ..."

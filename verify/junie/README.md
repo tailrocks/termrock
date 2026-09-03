@@ -155,8 +155,11 @@ COLORTERM=truecolor
 NO_COLOR unset
 ```
 
-Pane dimensions come from tmux. The capture manifest records source commit,
-tmux version, dimensions, arguments, input events, and artifact digests.
+Pane dimensions come from tmux. Newly regenerated entries record source commit,
+tmux version, capture time, dimensions, arguments, input events, and artifact
+digests. Existing entries marked `checked-in source shot` intentionally retain
+only the immutable source SHA, dimensions, events, and artifact digests because
+their original machine capture metadata is unavailable.
 
 ## Porting a pending source state
 

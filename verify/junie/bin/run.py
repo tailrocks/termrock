@@ -102,7 +102,41 @@ def load_scenarios(path=None):
     data = json.loads(_strip_json5(path.read_text(encoding="utf-8")))
     if isinstance(data, dict):
         data = data.get("scenarios", [])
+    manifest_path = ROOT / "reference" / "manifest.json"
+    if manifest_path.exists():
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        for scenario in data:
+            reference = scenario.setdefault("reference", {})
+            events = manifest.get("scenes", {}).get(scenario.get("scene"), {}).get("events", [])
+            reference.setdefault("keys", event_keys(events))
+            reference.setdefault("mouse", event_mouse(events))
     return data
+
+
+def event_keys(events):
+    """Translate recorded simple key events to tmux/catalog key arguments.
+
+    Ticks and typed text require the end-to-end replay harness and are not
+    representable by the diagnostic frame CLI. They remain in the authoritative
+    reference manifest and are deliberately not discarded from that record.
+    """
+    keys = []
+    for event in events:
+        if not isinstance(event, str) or event.startswith(("ticks:", "type ", "move ", "click ", "wheel", "resize ")):
+            continue
+        keys.append(event.replace("Ctrl-", "C-").replace("Alt-", "M-"))
+    return keys
+
+
+def event_mouse(events):
+    mouse = []
+    for event in events:
+        if not isinstance(event, str):
+            continue
+        parts = event.split(maxsplit=1)
+        if len(parts) == 2 and parts[0] in {"move", "click", "down", "up", "drag", "wheelup", "wheeldown"}:
+            mouse.append(f"{parts[0]}|{parts[1]}")
+    return mouse
 
 
 def git(*args):
@@ -138,19 +172,19 @@ def reference_grid(scene, cols, rows, cache={}):
     return cache[key]
 
 
-def termrock_frame(target, cols, rows, keys, out_dir, application=False, connect=None):
+def termrock_frame(target, cols, rows, keys, out_dir, application=False, connect=None, scenario=False):
     """Render one canonical catalog page or application to frame JSON."""
     out_dir.mkdir(parents=True, exist_ok=True)
     slug = re.sub(
         r"[^A-Za-z0-9_.-]",
         "_",
-        f"junie-reference_{target}_{'app' if application else 'page'}_"
+        f"junie-reference_{target}_{'app' if application else 'scenario' if scenario else 'page'}_"
         f"{connect or '-'}_{cols}x{rows}_{'-'.join(keys)}_{git('rev-parse', '--short', 'HEAD')}",
     )
     dst = out_dir / f"{slug}.frame.json"
     if not dst.exists():
         cmd = ["cargo", "run", "-q", "-p", "termrock-catalog", "--", "frame"]
-        cmd += ["--application" if application else "--page", target]
+        cmd += ["--application" if application else "--scenario" if scenario else "--page", target]
         if connect:
             cmd += ["--connect", connect]
         cmd += ["--cols", str(cols), "--rows", str(rows)]
@@ -216,8 +250,14 @@ def compare_scenario(sc, opts, frames_dir):
         # The catalog frame is the complete Junie page. Compare the same
         # source-defined region on both sides; legacy target-local crop metadata
         # is intentionally ignored.
-        target = tm_spec.get("page") or tm_spec["application"]
+        target = tm_spec.get("page") or tm_spec.get("application")
+        target_is_application = bool(tm_spec.get("application"))
         target_keys = tm_spec.get("keys", ref_spec.get("keys", []))
+        target_connect = tm_spec.get("connect")
+        if target_is_application and target_connect is None:
+            args = ref_spec.get("args", [])
+            if "--connect" in args:
+                target_connect = args[args.index("--connect") + 1]
         got = diff_grid.crop(
             termrock_frame(
                 target,
@@ -225,8 +265,8 @@ def compare_scenario(sc, opts, frames_dir):
                 rows,
                 target_keys,
                 frames_dir,
-                application=bool(tm_spec.get("application")),
-                connect=tm_spec.get("connect"),
+                application=target_is_application,
+                connect=target_connect,
             ),
             crop_box,
         )

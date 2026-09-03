@@ -112,11 +112,11 @@ def main():
         for ext in ARTIFACTS
     }
     captured_at = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    scenes = data.get("scenes", {})
+    previous = scenes.get(name, {})
     entry = {
         "bin": bin_name,
         "args": args,
-        "keys": keys,
-        "mouse": mouse,
         "cols": int(cols),
         "rows": int(rows),
         "source_ref": source_ref,
@@ -125,13 +125,15 @@ def main():
         "junie_dirty": dirty,
         "tmux": tmux_version(),
         "captured_at": captured_at,
+        "events": previous.get("events", []),
+        "evidence": previous.get("evidence", "capture from pinned source commit"),
         "sha256": sha256,
     }
-    scenes = data.get("scenes", {})
     scenes[name] = entry
     data["scenes"] = scenes
     data["source_ref"] = source_ref
     data["source_sha"] = source_sha
+    data["event_authority"] = "reference/manifest.json"
     data["junie_commit"] = entry["junie_commit"]
     data["tmux"] = entry["tmux"]
     data["updated_at"] = captured_at

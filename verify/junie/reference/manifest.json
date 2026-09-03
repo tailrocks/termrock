@@ -11,6 +11,7 @@
     "html",
     "png"
   ],
+  "event_authority": "reference/manifest.json",
   "scenes": {
     "f_80x24_taskrunner": {
       "bin": "showcase",
