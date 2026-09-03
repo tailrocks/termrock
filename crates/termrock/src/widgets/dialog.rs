@@ -2034,6 +2034,12 @@ impl<'a> Dialog<'a> {
         }
         if screen.height > 0 && (!self.hints.is_empty() || self.footer_hint.is_some()) {
             let footer = Rect::new(screen.x, screen.bottom().saturating_sub(1), screen.width, 1);
+            let base = self.tokens.junie_theme().base();
+            for x in footer.left()..footer.right() {
+                let cell = &mut buffer[(x, footer.y)];
+                cell.reset();
+                cell.set_char(' ').set_style(base);
+            }
             if !self.hints.is_empty() {
                 ratatui_core::widgets::Widget::render(
                     &HintBar::new(self.hints, self.tokens),
@@ -3324,6 +3330,31 @@ mod backdrop_tests {
         );
         assert_eq!(state.action_cursor().copied(), Some("ok"));
         assert!(state.action_regions().iter().any(|r| r.id == "ok"));
+    }
+
+    #[test]
+    fn modal_footer_clears_stale_hints_with_canvas_base_style() {
+        let system = DesignSystem::junie();
+        let screen = Rect::new(0, 0, 40, 8);
+        let mut buffer = Buffer::empty(screen);
+        let mut state = DialogState::<()>::new();
+        Dialog::new("Notice", Text::from("Saved"), &system)
+            .footer_hint("Esc Cancel extended")
+            .paint_modal(screen, &mut buffer, &mut state, &[]);
+        buffer[(8, screen.bottom() - 1)]
+            .set_char('x')
+            .set_style(Style::new().fg(Color::Red).add_modifier(Modifier::BOLD));
+
+        Dialog::new("Notice", Text::from("Saved"), &system)
+            .footer_hint("Esc")
+            .paint_modal(screen, &mut buffer, &mut state, &[]);
+
+        let base = system.junie_theme().base();
+        let stale_tail = &buffer[(8, screen.bottom() - 1)];
+        assert_eq!(stale_tail.symbol(), " ");
+        assert_eq!(stale_tail.fg, base.fg.unwrap());
+        assert_eq!(stale_tail.bg, base.bg.unwrap());
+        assert_eq!(stale_tail.modifier, Modifier::empty());
     }
 
     #[test]
