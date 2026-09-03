@@ -86915,15 +86915,11 @@ pub fn termrock::widgets::TerminalOutputState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::TerminalOutputState
 pub struct termrock::widgets::Text<'a>
 impl<'a> termrock::widgets::Text<'a>
-pub const fn termrock::widgets::Text<'a>::align(self, termrock::widgets::TextAlign) -> Self
 pub const fn termrock::widgets::Text<'a>::center(self) -> Self
 pub const fn termrock::widgets::Text<'a>::copyable(self) -> Self
-pub fn termrock::widgets::Text<'a>::dim(self) -> Self
-pub fn termrock::widgets::Text<'a>::ellipsis(self, impl core::convert::Into<alloc::borrow::Cow<'a, str>>) -> Self
 pub fn termrock::widgets::Text<'a>::emphasis(self, termrock::widgets::TextEmphasis) -> Self
 pub fn termrock::widgets::Text<'a>::layout(&self, u16, u16) -> termrock::widgets::TextLayout
 pub fn termrock::widgets::Text<'a>::measure_height(&self, u16) -> u16
-pub fn termrock::widgets::Text<'a>::muted(self) -> Self
 pub fn termrock::widgets::Text<'a>::new(impl core::convert::Into<alloc::borrow::Cow<'a, str>>, &'a termrock::style::DesignSystem) -> Self
 pub const fn termrock::widgets::Text<'a>::overflow(self, termrock::widgets::TextOverflow) -> Self
 pub const fn termrock::widgets::Text<'a>::overflow_mode(&self) -> termrock::widgets::TextOverflow
@@ -86935,8 +86931,6 @@ pub fn termrock::widgets::Text<'a>::role(self, termrock::style::Role) -> Self
 pub const fn termrock::widgets::Text<'a>::selectable(self, termrock::widgets::SelectablePolicy) -> Self
 pub fn termrock::widgets::Text<'a>::spans<I>(I, &'a termrock::style::DesignSystem) -> Self where I: core::iter::traits::collect::IntoIterator<Item = termrock::widgets::TextSpan<'a>>
 pub fn termrock::widgets::Text<'a>::spans_ref(&self) -> &[termrock::widgets::TextSpan<'a>]
-pub fn termrock::widgets::Text<'a>::strong(self) -> Self
-pub const fn termrock::widgets::Text<'a>::tab_width(self, usize) -> Self
 pub const fn termrock::widgets::Text<'a>::truncate(self) -> Self
 pub fn termrock::widgets::Text<'a>::with_spans<I>(self, I) -> Self where I: core::iter::traits::collect::IntoIterator<Item = termrock::widgets::TextSpan<'a>>
 pub const fn termrock::widgets::Text<'a>::wrap(self) -> Self
@@ -87496,11 +87490,9 @@ pub struct termrock::widgets::TextSpan<'a>
 impl<'a> termrock::widgets::TextSpan<'a>
 pub fn termrock::widgets::TextSpan<'a>::annotation(self, impl core::convert::Into<alloc::borrow::Cow<'a, str>>) -> Self
 pub fn termrock::widgets::TextSpan<'a>::annotation_of(&self) -> core::option::Option<&str>
-pub const fn termrock::widgets::TextSpan<'a>::borrowed(&'a str) -> Self
 pub const fn termrock::widgets::TextSpan<'a>::code(self) -> Self
 pub fn termrock::widgets::TextSpan<'a>::content(&self) -> &str
 pub const fn termrock::widgets::TextSpan<'a>::dim(self) -> Self
-pub const fn termrock::widgets::TextSpan<'a>::emphasis(self, termrock::widgets::TextEmphasis) -> Self
 pub const fn termrock::widgets::TextSpan<'a>::highlight(self, bool) -> Self
 pub const fn termrock::widgets::TextSpan<'a>::is_highlight(&self) -> bool
 pub fn termrock::widgets::TextSpan<'a>::new(impl core::convert::Into<alloc::borrow::Cow<'a, str>>) -> Self
