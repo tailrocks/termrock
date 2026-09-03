@@ -1734,6 +1734,7 @@ pub fn filter_tree_table_with_ancestors<'a, Id: Clone + PartialEq>(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::input::KeyEventKind;
     use crate::widgets::data_view::{ColumnKind, DataColumn, DataColumnWidth, bench};
     use ratatui_core::layout::Position;
 
@@ -2674,6 +2675,23 @@ mod tests {
         );
         assert!(matches!(out, TreeTableOutcome::CheckToggled("r")));
         assert!(state.selection.is_row_selected(&"r"));
+    }
+
+    #[test]
+    fn repeated_space_does_not_toggle_multi_selection() {
+        let r0: &[&str] = &["a", "", ""];
+        let rows = [TreeTableRow::new("r", 0, r0)];
+        let columns = cols();
+        let mut state = TreeTableState::<&str, &str>::new(Some("r"));
+        state.enable_multi_select();
+
+        let mut repeat = KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE);
+        repeat.kind = KeyEventKind::Repeat;
+
+        let out = state.handle_key(&rows, &columns, repeat);
+
+        assert!(matches!(out, TreeTableOutcome::Ignored));
+        assert!(!state.selection.is_row_selected(&"r"));
     }
 
     #[test]
