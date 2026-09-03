@@ -1699,13 +1699,8 @@ mod tests {
     use super::*;
     use crate::input::KeyEventKind;
     use crate::style::RolePalette;
+    use crate::widgets::tests::key_with_kind;
     use ratatui_core::layout::Position;
-
-    fn key_with_kind(code: KeyCode, modifiers: KeyModifiers, kind: KeyEventKind) -> KeyEvent {
-        let mut key = KeyEvent::new(code, modifiers);
-        key.kind = kind;
-        key
-    }
 
     fn sample_entries(cwd: &str) -> Vec<FileEntry> {
         vec![

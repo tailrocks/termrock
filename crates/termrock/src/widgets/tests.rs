@@ -7,7 +7,19 @@ use ratatui_core::{
 };
 
 use super::*;
+use crate::input::{KeyCode, KeyEvent, KeyModifiers};
 use crate::style::{DesignSystem, Role, RolePalette};
+
+/// Shared press/repeat/release key factory for widget tests.
+pub(crate) fn key_with_kind(
+    code: KeyCode,
+    modifiers: KeyModifiers,
+    kind: crate::input::KeyEventKind,
+) -> KeyEvent {
+    let mut key = KeyEvent::new(code, modifiers);
+    key.kind = kind;
+    key
+}
 
 #[cfg(feature = "serde")]
 #[test]

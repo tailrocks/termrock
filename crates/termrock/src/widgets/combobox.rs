@@ -1148,6 +1148,7 @@ mod tests {
     use super::*;
     use crate::input::KeyEventKind;
     use crate::style::RolePalette;
+    use crate::widgets::tests::key_with_kind;
 
     fn cands() -> Vec<CompletionCandidate<'static, &'static str>> {
         vec![
@@ -1155,12 +1156,6 @@ mod tests {
             CompletionCandidate::new("go", "Go").kind("lang"),
             CompletionCandidate::new("ts", "TypeScript").kind("lang"),
         ]
-    }
-
-    fn key_with_kind(code: KeyCode, modifiers: KeyModifiers, kind: KeyEventKind) -> KeyEvent {
-        let mut key = KeyEvent::new(code, modifiers);
-        key.kind = kind;
-        key
     }
 
     #[test]

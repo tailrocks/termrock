@@ -1424,13 +1424,8 @@ fn format_mnemonic_label(label: &str, mnemonic: Option<char>) -> String {
 mod tests {
     use super::*;
     use crate::input::{KeyEventKind, KeyModifiers};
+    use crate::widgets::tests::key_with_kind;
     use ratatui_core::layout::Position;
-
-    fn key_with_kind(code: KeyCode, kind: KeyEventKind) -> KeyEvent {
-        let mut key = KeyEvent::new(code, KeyModifiers::NONE);
-        key.kind = kind;
-        key
-    }
 
     fn sample_tree() -> Vec<MenuNode<&'static str>> {
         vec![
@@ -1531,7 +1526,7 @@ mod tests {
             for kind in [KeyEventKind::Repeat, KeyEventKind::Release] {
                 let before = state.clone();
                 assert_eq!(
-                    state.handle_key(key_with_kind(code, kind), &root),
+                    state.handle_key(key_with_kind(code, KeyModifiers::NONE, kind), &root),
                     DropdownMenuOutcome::Ignored
                 );
                 assert_eq!(state, before, "{code:?} {kind:?} mutated menu state");
@@ -1542,7 +1537,7 @@ mod tests {
         for code in [KeyCode::Right, KeyCode::Char('l')] {
             for kind in [KeyEventKind::Repeat, KeyEventKind::Release] {
                 assert_eq!(
-                    state.handle_key(key_with_kind(code, kind), &root),
+                    state.handle_key(key_with_kind(code, KeyModifiers::NONE, kind), &root),
                     DropdownMenuOutcome::Ignored
                 );
                 assert_eq!(state.depth(), 1);
@@ -1558,7 +1553,7 @@ mod tests {
         for code in [KeyCode::Left, KeyCode::Char('h')] {
             for kind in [KeyEventKind::Repeat, KeyEventKind::Release] {
                 assert_eq!(
-                    state.handle_key(key_with_kind(code, kind), &root),
+                    state.handle_key(key_with_kind(code, KeyModifiers::NONE, kind), &root),
                     DropdownMenuOutcome::Ignored
                 );
                 assert_eq!(state.depth(), 2);
@@ -1588,7 +1583,7 @@ mod tests {
 
         assert_eq!(
             state.handle_key(
-                key_with_kind(KeyCode::Right, KeyEventKind::Repeat),
+                key_with_kind(KeyCode::Right, KeyModifiers::NONE, KeyEventKind::Repeat),
                 &current
             ),
             DropdownMenuOutcome::Ignored
@@ -1612,7 +1607,10 @@ mod tests {
             DropdownMenuOutcome::CursorMoved
         );
         assert_eq!(
-            state.handle_key(key_with_kind(KeyCode::Down, KeyEventKind::Repeat), &root),
+            state.handle_key(
+                key_with_kind(KeyCode::Down, KeyModifiers::NONE, KeyEventKind::Repeat),
+                &root
+            ),
             DropdownMenuOutcome::CursorMoved
         );
         assert_eq!(state.cursor_index(), 2);
@@ -1623,7 +1621,7 @@ mod tests {
         );
         assert_eq!(
             state.handle_key(
-                key_with_kind(KeyCode::Char('b'), KeyEventKind::Repeat),
+                key_with_kind(KeyCode::Char('b'), KeyModifiers::NONE, KeyEventKind::Repeat),
                 &root
             ),
             DropdownMenuOutcome::TypeaheadMatched
@@ -1632,7 +1630,11 @@ mod tests {
         assert_eq!(state.typeahead_buffer(), "b");
         assert_eq!(
             state.handle_key(
-                key_with_kind(KeyCode::Char('g'), KeyEventKind::Release),
+                key_with_kind(
+                    KeyCode::Char('g'),
+                    KeyModifiers::NONE,
+                    KeyEventKind::Release
+                ),
                 &root
             ),
             DropdownMenuOutcome::Ignored
@@ -1679,14 +1681,17 @@ mod tests {
         assert_ne!(first_page_cursor, 0);
         assert_eq!(
             state.handle_key(
-                key_with_kind(KeyCode::PageDown, KeyEventKind::Repeat),
+                key_with_kind(KeyCode::PageDown, KeyModifiers::NONE, KeyEventKind::Repeat),
                 &root
             ),
             DropdownMenuOutcome::CursorMoved
         );
         assert_ne!(state.cursor_index(), first_page_cursor);
         assert_eq!(
-            state.handle_key(key_with_kind(KeyCode::PageUp, KeyEventKind::Release), &root),
+            state.handle_key(
+                key_with_kind(KeyCode::PageUp, KeyModifiers::NONE, KeyEventKind::Release),
+                &root
+            ),
             DropdownMenuOutcome::Ignored
         );
         assert_ne!(state.cursor_index(), first_page_cursor);

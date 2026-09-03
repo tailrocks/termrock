@@ -1506,6 +1506,7 @@ pub fn example_history_entries() -> Vec<HistoryEntry<&'static str>> {
 mod tests {
     use super::*;
     use crate::input::{KeyEventKind, KeyModifiers};
+    use crate::widgets::tests::key_with_kind;
     use ratatui_core::layout::Position;
 
     fn catalog() -> Vec<HistoryEntry<&'static str>> {
@@ -1516,12 +1517,6 @@ mod tests {
         let mut s = HistoryPickerState::new();
         let _ = s.open(Some("draft text".into()));
         s
-    }
-
-    fn key_with_kind(code: KeyCode, kind: KeyEventKind) -> KeyEvent {
-        let mut key = KeyEvent::new(code, KeyModifiers::NONE);
-        key.kind = kind;
-        key
     }
 
     #[test]
@@ -1604,7 +1599,7 @@ mod tests {
             let draft = s.draft().map(str::to_owned);
 
             assert_eq!(
-                s.handle_key(key_with_kind(KeyCode::Esc, kind), &vis),
+                s.handle_key(key_with_kind(KeyCode::Esc, KeyModifiers::NONE, kind), &vis),
                 HistoryPickerOutcome::Ignored
             );
             assert!(s.is_open(), "{kind:?} Escape closed the picker");
@@ -1619,12 +1614,18 @@ mod tests {
         let vis = filter_history_entries(&cat, "");
 
         assert!(matches!(
-            s.handle_key(key_with_kind(KeyCode::Down, KeyEventKind::Repeat), &vis),
+            s.handle_key(
+                key_with_kind(KeyCode::Down, KeyModifiers::NONE, KeyEventKind::Repeat),
+                &vis
+            ),
             HistoryPickerOutcome::CursorMoved
         ));
         assert_eq!(s.cursor_index(), 1);
         assert!(matches!(
-            s.handle_key(key_with_kind(KeyCode::Down, KeyEventKind::Repeat), &vis),
+            s.handle_key(
+                key_with_kind(KeyCode::Down, KeyModifiers::NONE, KeyEventKind::Repeat),
+                &vis
+            ),
             HistoryPickerOutcome::CursorMoved
         ));
         assert_eq!(s.cursor_index(), 2);

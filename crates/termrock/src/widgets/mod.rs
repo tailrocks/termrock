@@ -859,4 +859,4 @@ pub use virtualizer::{
 };
 
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;
