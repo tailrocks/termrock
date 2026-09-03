@@ -1335,8 +1335,8 @@ pub fn example_observability_tiles() -> Vec<MetricTile<'static>> {
 #[must_use]
 pub fn example_observability_alerts() -> Vec<MetricAlert<'static>> {
     vec![
-        MetricAlert::new("a1", MetricAlertSeverity::Critical, "error rate > 1%").metric("err"),
-        MetricAlert::new("a2", MetricAlertSeverity::Warning, "p99 latency elevated").metric("p99"),
+        MetricAlert::new("a1", MetricAlertSeverity::Critical, "error rate > 1%"),
+        MetricAlert::new("a2", MetricAlertSeverity::Warning, "p99 latency elevated"),
     ]
 }
 

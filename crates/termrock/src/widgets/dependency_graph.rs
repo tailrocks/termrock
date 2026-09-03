@@ -802,8 +802,6 @@ pub struct DependencyGraphState {
     pub cursor: usize,
     /// Last effective view (set on paint).
     pub effective_view: DependencyGraphView,
-    /// Unreadable reason if any.
-    pub unreadable: Option<GraphUnreadableReason>,
     /// Node hit regions (id, rect).
     node_regions: Vec<(String, Rect)>,
     accepts_input: bool,
@@ -828,7 +826,6 @@ impl DependencyGraphState {
             filter: None,
             cursor: 0,
             effective_view: DependencyGraphView::Graph,
-            unreadable: None,
             node_regions: Vec::new(),
             accepts_input: true,
         }
@@ -1155,7 +1152,6 @@ impl<'a> DependencyGraph<'a> {
             state.force_tree,
         );
         state.effective_view = view;
-        state.unreadable = reason;
 
         let mut y = area.y;
         let mut h = area.height;

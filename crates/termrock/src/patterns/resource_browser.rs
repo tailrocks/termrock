@@ -10,7 +10,6 @@
 //! Teaches: how to compose a resource browser's geometry — a tree or list
 //! rail, a detail pane, and an optional preview.
 //!
-//! Composes: [`crate::widgets::ScrollAreaState`],
 //! [`crate::widgets::NavItem`], [`crate::widgets::SidebarOutcome`],
 //! [`crate::widgets::SidebarState`].
 //!
@@ -347,7 +346,7 @@ mod tests {
 
 use crate::{
     input::KeyEvent,
-    widgets::{NavItem, ScrollAreaState, SidebarOutcome, SidebarState},
+    widgets::{NavItem, SidebarOutcome, SidebarState},
 };
 
 // ── ResourceBrowser ─────────────────────────────────────────────────────────
@@ -371,8 +370,6 @@ pub enum ResourceBrowserOutcome<Id> {
 pub struct ResourceBrowserState<Id: Clone + PartialEq> {
     /// Sidebar.
     pub sidebar: SidebarState<Id>,
-    /// List scroll.
-    pub list_scroll: ScrollAreaState,
     /// Generation for stale preview guard.
     pub selection_generation: u64,
 }
@@ -383,7 +380,6 @@ impl<Id: Clone + PartialEq> ResourceBrowserState<Id> {
     pub fn new() -> Self {
         Self {
             sidebar: SidebarState::new(None),
-            list_scroll: ScrollAreaState::new(),
             selection_generation: 0,
         }
     }

@@ -558,8 +558,6 @@ pub struct HelpCenterState {
     pub density: Option<HelpCenterDensity>,
     /// Selected topic id.
     pub selected_topic: Option<String>,
-    /// Selected command id.
-    pub selected_command: Option<String>,
     /// Context help line (host: current focus widget).
     pub context_label: Option<String>,
     /// Host wants diagnostics pane when content exists.
@@ -606,7 +604,6 @@ impl HelpCenterState {
             focus: HelpCenterPane::Nav.id(),
             density: None,
             selected_topic: None,
-            selected_command: None,
             context_label: None,
             show_diagnostics: true,
             diagnostics_live: false,
@@ -986,13 +983,11 @@ impl HelpCenterState {
                         if id.starts_with("g-") {
                             return HelpCenterOutcome::Ignored;
                         }
-                        self.selected_command = Some(id.clone());
                         return HelpCenterOutcome::CommandRun { id };
                     }
                 }
                 KeyCode::Char('c') if key.modifiers.is_empty() => {
                     if let Some(id) = self.commands.selected().cloned() {
-                        self.selected_command = Some(id.clone());
                         return HelpCenterOutcome::CommandSelected { id };
                     }
                 }
@@ -1008,14 +1003,12 @@ impl HelpCenterState {
                 if id.is_empty() || id.starts_with("g-") {
                     return HelpCenterOutcome::Ignored;
                 }
-                self.selected_command = Some(id.clone());
                 HelpCenterOutcome::CommandSelected { id }
             }
             Outcome::Activated(id) => {
                 if id.starts_with("g-") {
                     return HelpCenterOutcome::Ignored;
                 }
-                self.selected_command = Some(id.clone());
                 HelpCenterOutcome::CommandRun { id }
             }
             Outcome::Cancelled => HelpCenterOutcome::Cancelled,

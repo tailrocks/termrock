@@ -548,10 +548,6 @@ pub struct FileManagerState {
     pub density: Option<FileManagerDensity>,
     /// Narrow density: preview drawer open.
     pub drawer_open: bool,
-    /// Entry count chrome.
-    pub entry_count: u64,
-    /// Selected path chrome.
-    pub selected_path: Option<String>,
     /// Colorless.
     pub colorless: bool,
     /// Last panes.
@@ -600,8 +596,6 @@ impl FileManagerState {
             focus: FileManagerPane::Tree.id(),
             density: None,
             drawer_open: false,
-            entry_count: 0,
-            selected_path: None,
             colorless: false,
             last_panes: Vec::new(),
             last_area_width: None,
@@ -1152,7 +1146,6 @@ impl FileManagerState {
                     if let Some(id) = self.tree.selected().cloned() {
                         self.drawer_open = true;
                         let _ = self.preview.set_selection(id.clone());
-                        self.selected_path = Some(id.clone());
                         return FileManagerOutcome::PreviewRequested { id };
                     }
                 }
@@ -1172,7 +1165,6 @@ impl FileManagerState {
         match out {
             FileTreeOutcome::Ignored => FileManagerOutcome::Ignored,
             FileTreeOutcome::SelectionChanged(id) => {
-                self.selected_path = Some(id.clone());
                 let _ = self.preview.set_selection(id.clone());
                 FileManagerOutcome::SelectionChanged { id }
             }
@@ -1182,7 +1174,6 @@ impl FileManagerState {
             FileTreeOutcome::PreviewRequested(id) => {
                 self.drawer_open = true;
                 let _ = self.preview.set_selection(id.clone());
-                self.selected_path = Some(id.clone());
                 FileManagerOutcome::PreviewRequested { id }
             }
             FileTreeOutcome::LoadChildrenRequested(id) => {
@@ -1536,7 +1527,6 @@ pub fn paint_file_manager(buffer: &mut Buffer, area: Rect, surfaces: FileManager
     state.last_panes = panes.clone();
     state.clamp_focus_to_density(density);
     state.apply_focus_gates();
-    state.entry_count = entries.len() as u64;
 
     // Breadcrumbs
     if let Some(r) = pane_area(&panes, "breadcrumbs") {

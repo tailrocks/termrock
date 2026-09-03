@@ -442,8 +442,6 @@ pub struct CodeBlockState {
     pub focused: bool,
     /// Document is being edited (cursor line wears the field underline).
     pub editing: bool,
-    /// Hovered absolute line.
-    pub hovered_line: Option<usize>,
     /// Last painted geometry.
     pub parts: Option<CodeBlockParts>,
     /// Acknowledgement owed after a copy fired.
@@ -472,7 +470,6 @@ impl CodeBlockState {
             selection: None,
             focused: false,
             editing: false,
-            hovered_line: None,
             parts: None,
             copied: crate::style::ActionFlash::new(),
             viewport_rows: 0,
@@ -1671,14 +1668,6 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
                         scroll_y: state.scroll_y,
                         scroll_x: state.scroll_x,
                     };
-                }
-            }
-            MouseEventKind::Moved => {
-                if parts.body.contains(event.position) || parts.gutter.contains(event.position) {
-                    let row = event.position.y.saturating_sub(parts.body.y);
-                    state.hovered_line = Some(parts.first_line.saturating_add(usize::from(row)));
-                } else {
-                    state.hovered_line = None;
                 }
             }
             MouseEventKind::Down(MouseButton::Left) => {

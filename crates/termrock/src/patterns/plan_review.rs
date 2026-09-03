@@ -504,8 +504,6 @@ pub struct PlanComment {
     pub id: String,
     /// Body text.
     pub body: String,
-    /// Optional author label.
-    pub author: Option<String>,
     /// Anchor.
     pub anchor: PlanCommentAnchor,
     /// Plan version when created.
@@ -526,18 +524,10 @@ impl PlanComment {
         Self {
             id: id.into(),
             body: body.into(),
-            author: None,
             anchor,
             created_at_version: version,
             preserved: true,
         }
-    }
-
-    /// Author.
-    #[must_use]
-    pub fn author(mut self, a: impl Into<String>) -> Self {
-        self.author = Some(a.into());
-        self
     }
 }
 

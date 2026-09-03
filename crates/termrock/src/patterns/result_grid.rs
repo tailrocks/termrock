@@ -520,10 +520,6 @@ pub struct ResultColumnStats {
     pub min: Option<String>,
     /// Max display.
     pub max: Option<String>,
-    /// Mean / average display.
-    pub mean: Option<String>,
-    /// Sum display.
-    pub sum: Option<String>,
 }
 
 impl ResultColumnStats {
@@ -537,8 +533,6 @@ impl ResultColumnStats {
             distinct: None,
             min: None,
             max: None,
-            mean: None,
-            sum: None,
         }
     }
 
@@ -940,8 +934,6 @@ pub struct ResultGridState {
     pub title: Option<String>,
     /// Schema columns (for chrome / model rebuild).
     pub schema: Vec<ResultColumn>,
-    /// Last status line painted.
-    pub last_status_line: String,
     accepts_input: bool,
 }
 
@@ -969,7 +961,6 @@ impl ResultGridState {
             colorless: false,
             title: None,
             schema: Vec::new(),
-            last_status_line: String::new(),
             accepts_input: true,
         }
     }
@@ -1283,7 +1274,6 @@ impl<'a> ResultGrid<'a> {
                     .status
                     .summary_line(self.columns.len(), self.rows.len())
             );
-            state.last_status_line = line.clone();
             let status = StatusIndicator::new(state.status.semantic(), self.system)
                 .label(state.status.verb());
             let status_width = status.measure_width(None).min(area.width);

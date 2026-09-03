@@ -229,8 +229,6 @@ pub struct MetricAlert<'a> {
     pub severity: MetricAlertSeverity,
     /// Message.
     pub message: &'a str,
-    /// Optional related metric id.
-    pub metric_id: Option<&'a str>,
 }
 
 impl<'a> MetricAlert<'a> {
@@ -241,15 +239,7 @@ impl<'a> MetricAlert<'a> {
             id,
             severity,
             message,
-            metric_id: None,
         }
-    }
-
-    /// Link to metric.
-    #[must_use]
-    pub const fn metric(mut self, id: &'a str) -> Self {
-        self.metric_id = Some(id);
-        self
     }
 }
 
@@ -1168,9 +1158,8 @@ mod tests {
 
     fn alerts() -> Vec<MetricAlert<'static>> {
         vec![
-            MetricAlert::new("a1", MetricAlertSeverity::Warning, "mem > 70%").metric("mem"),
-            MetricAlert::new("a2", MetricAlertSeverity::Critical, "error scrape failed")
-                .metric("err"),
+            MetricAlert::new("a1", MetricAlertSeverity::Warning, "mem > 70%"),
+            MetricAlert::new("a2", MetricAlertSeverity::Critical, "error scrape failed"),
         ]
     }
 

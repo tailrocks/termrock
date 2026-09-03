@@ -252,10 +252,6 @@ pub struct DataTableState<RowId: Clone + Ord, ColId: Clone + PartialEq> {
     pub editing: bool,
     /// Pending edit draft (host may mirror).
     pub edit_draft: String,
-    /// Sticky first N paint columns are pin-start (resolved each frame).
-    pub pin_start_count: usize,
-    /// Sticky last N paint columns are pin-end.
-    pub pin_end_count: usize,
     /// Header hit regions from last paint.
     pub header_regions: Vec<DataTableHeaderRegion<ColId>>,
     /// Body cell hit regions from last paint.
@@ -306,8 +302,6 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
             accepts_input: true,
             editing: false,
             edit_draft: String::new(),
-            pin_start_count: 0,
-            pin_end_count: 0,
             header_regions: Vec::new(),
             cell_regions: Vec::new(),
             hovered_row: None,
@@ -1600,8 +1594,6 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
                 ColumnPin::None => {}
             }
         }
-        state.pin_start_count = pin_start;
-        state.pin_end_count = pin_end;
         let gap = self.system.spacing.column_gap;
         let start_extent = column_extent(&state.paint_widths, self.columns, ColumnPin::Start, gap);
         let end_extent = column_extent(&state.paint_widths, self.columns, ColumnPin::End, gap);
