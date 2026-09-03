@@ -61288,10 +61288,6 @@ pub const fn termrock::widgets::Card<'a>::subtitle(self, &'a str) -> Self
 pub const fn termrock::widgets::Card<'a>::title(self, &'a str) -> Self
 pub const fn termrock::widgets::Card<'a>::trailing(self, &'a str) -> Self
 pub const fn termrock::widgets::Card<'a>::variant(self, termrock::widgets::PanelVariant) -> Self
-impl ratatui_core::widgets::widget::Widget for &termrock::widgets::Card<'_>
-pub fn &termrock::widgets::Card<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
-impl ratatui_core::widgets::widget::Widget for termrock::widgets::Card<'_>
-pub fn termrock::widgets::Card<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
 impl<'a> core::clone::Clone for termrock::widgets::Card<'a>
 pub fn termrock::widgets::Card<'a>::clone(&self) -> termrock::widgets::Card<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::Card<'a>
@@ -77120,10 +77116,6 @@ pub const fn termrock::widgets::Panel<'a>::title_spec(self, termrock::widgets::P
 pub const fn termrock::widgets::Panel<'a>::trailing(self, &'a str) -> Self
 pub const fn termrock::widgets::Panel<'a>::variant(self, termrock::widgets::PanelVariant) -> Self
 pub const fn termrock::widgets::Panel<'a>::vertical_scroll(self, usize) -> Self
-impl ratatui_core::widgets::widget::Widget for &termrock::widgets::Panel<'_>
-pub fn &termrock::widgets::Panel<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
-impl ratatui_core::widgets::widget::Widget for termrock::widgets::Panel<'_>
-pub fn termrock::widgets::Panel<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
 impl<'a> core::clone::Clone for termrock::widgets::Panel<'a>
 pub fn termrock::widgets::Panel<'a>::clone(&self) -> termrock::widgets::Panel<'a>
 impl<'a> core::fmt::Debug for termrock::widgets::Panel<'a>

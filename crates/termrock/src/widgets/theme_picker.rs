@@ -2,11 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Live theme picker: select a named preset; caller re-renders with that theme.
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    widgets::{StatefulWidget, Widget},
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
 
 use crate::{
     input::{KeyEvent, MouseButton, MouseEvent, MouseEventKind},
@@ -259,7 +255,7 @@ impl StatefulWidget for &ThemePicker<'_> {
             .title("Theme")
             .emphasis(PanelChrome::for_focus(state.focused && state.enabled));
         let inner = panel.inner(area);
-        Widget::render(&panel, area, buffer);
+        panel.paint(area, buffer, None);
         if inner.is_empty() {
             return;
         }

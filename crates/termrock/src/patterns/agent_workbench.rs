@@ -955,7 +955,7 @@ pub fn paint_agent_workbench(buffer: &mut Buffer, area: Rect, surfaces: Workbenc
                         PanelChrome::Normal
                     });
                 let inner = panel.inner(pane.area);
-                Widget::render(&panel, pane.area, buffer);
+                panel.paint(pane.area, buffer, None);
                 transcript_state.set_focused(is_focused);
                 StatefulWidget::render(
                     &transcript.focused(is_focused),

@@ -1904,7 +1904,7 @@ impl StatefulWidget for &PromptComposer<'_> {
             let panel = Panel::new(self.system)
                 .variant(PanelVariant::Bordered)
                 .emphasis(emphasis);
-            Widget::render(&panel, area, buffer);
+            panel.paint(area, buffer, None);
         }
 
         // Chips — AttachmentChip / PasteChip (Tag chrome underneath).

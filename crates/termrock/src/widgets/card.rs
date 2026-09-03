@@ -6,7 +6,7 @@
 //! shadcn-style anatomy without nested box soup:
 //! `root` · `header` · `title` · `description` · `body` · `footer`.
 //! Tool/dashboard cards build on this primitive; domain policy stays outside.
-use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
+use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::style::{DesignSystem, PanelChrome, Role};
 use crate::text::take_display_cols;
@@ -307,18 +307,6 @@ impl<'a> Card<'a> {
             return card.body;
         }
         body_after_panel
-    }
-}
-
-impl Widget for &Card<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        let _ = self.paint(area, buffer, None);
-    }
-}
-
-impl Widget for Card<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        <&Self as Widget>::render(&self, area, buffer);
     }
 }
 

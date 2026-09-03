@@ -570,7 +570,7 @@ pub static PUBLIC_UI_INVENTORY: &[PublicUiInventoryEntry] = &[
         "button-group/dialog"
     ),
     public_ui!(Callout, Widget, Feedback, "callout", "callout/basic"),
-    public_ui!(Card, Widget, Layout, "card", "card/basic"),
+    public_ui!(Card, Paint, Layout, "card", "card/basic"),
     public_ui!(Carousel, Paint, Navigation, "carousel", "carousel/basic"),
     public_ui!(Center, Layout, Layout, "center", "center/both"),
     public_ui!(Chart, Widget, Visualization, "chart", "chart/basic"),
@@ -1033,7 +1033,7 @@ pub static PUBLIC_UI_INVENTORY: &[PublicUiInventoryEntry] = &[
         "pagination",
         "pagination/full"
     ),
-    public_ui!(Panel, Widget, Layout, "panel", "panel/focused"),
+    public_ui!(Panel, Paint, Layout, "panel", "panel/focused"),
     public_ui!(Paragraph, Widget, Layout, "paragraph", "paragraph/basic"),
     public_ui!(
         PasswordInput,
@@ -1858,7 +1858,7 @@ mod tests {
                     counts[index] += 1;
                     counts
                 });
-        assert_eq!(kind_counts, [130, 66, 6, 8]);
+        assert_eq!(kind_counts, [128, 68, 6, 8]);
         assert_eq!(
             public_ui_inventory()
                 .iter()

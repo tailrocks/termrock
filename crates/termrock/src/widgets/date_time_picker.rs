@@ -16,12 +16,7 @@
 //! pick ranges, or choose from a stepped time list.
 //!
 //! Research: shadcn Calendar/DatePicker, Textual DateTimeInput patterns.
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::Modifier,
-    widgets::{StatefulWidget, Widget},
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
@@ -2020,7 +2015,7 @@ impl<'a> DateTimePicker<'a> {
                 PanelChrome::Normal
             });
         let inner = panel.inner(body);
-        Widget::render(&panel, body, buffer);
+        panel.paint(body, buffer, None);
         if inner.is_empty() {
             return;
         }

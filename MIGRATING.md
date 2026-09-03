@@ -391,6 +391,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0407 | `v0.14.0` | [AgentWorkbench removes the legacy task-list fallback and SettingsShell aliases](migrations/0407-v0.14.0-remove-agent-workbench-task-list-fallback.md) |
 | 0408 | `v0.14.0` | [Legacy layout and input aliases removed](migrations/0408-v0.14.0-remove-legacy-layout-and-input-aliases.md) |
 | 0409 | `v0.14.0` | [LogStream and list-row migration shims removed](migrations/0409-v0.14.0-remove-log-and-list-migration-shims.md) |
+| 0410 | `v0.14.0` | [Panel and Card use explicit paint](migrations/0410-v0.14.0-remove-panel-card-widget-impls.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
 index row in the same commit. Existing migration files describe historical

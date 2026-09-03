@@ -1391,18 +1391,6 @@ impl<'a> Panel<'a> {
     }
 }
 
-impl Widget for &Panel<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        let _ = self.paint(area, buffer, None);
-    }
-}
-
-impl Widget for Panel<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        <&Self as Widget>::render(&self, area, buffer);
-    }
-}
-
 fn paint_header_line(
     panel: &Panel<'_>,
     header: Rect,
@@ -1625,7 +1613,7 @@ mod tests {
             .variant(PanelVariant::Bordered)
             .title("日本語のタイトルです、とても長い見出し")
             .footer("a footer far too long for this panel")
-            .render(area, &mut buffer);
+            .paint(area, &mut buffer, None);
         for y in [0u16, area.height - 1] {
             let row: String = (0..area.width).map(|x| buffer[(x, y)].symbol()).collect();
             // Corners survive: the label never overruns its own border.
@@ -1933,7 +1921,7 @@ mod tests {
             .title_spec(spec);
         let area = Rect::new(0, 0, 48, 4);
         let mut buffer = Buffer::empty(area);
-        Widget::render(&panel, area, &mut buffer);
+        panel.paint(area, &mut buffer, None);
 
         let top: String = (0..area.width).map(|x| buffer[(x, 0)].symbol()).collect();
         assert!(top.contains("Pods(kube-system)[42] /api"), "{top:?}");
@@ -1966,7 +1954,7 @@ mod tests {
             .title_spec(spec);
         let area = Rect::new(0, 0, 24, 3);
         let mut buffer = Buffer::empty(area);
-        Widget::render(&panel, area, &mut buffer);
+        panel.paint(area, &mut buffer, None);
         let top: String = (0..area.width).map(|x| buffer[(x, 0)].symbol()).collect();
         assert!(
             top.contains(system.glyphs.ellipsis()),

@@ -30,12 +30,7 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::Modifier,
-    widgets::{StatefulWidget, Widget},
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers},
@@ -1511,7 +1506,7 @@ pub fn paint_database_workbench(
                 PanelChrome::Normal
             });
         let inner = panel.inner(r);
-        Widget::render(&panel, r, buffer);
+        panel.paint(r, buffer, None);
         ConnectionManager::new(system)
             .colorless(state.colorless)
             .list_only(true)

@@ -31,11 +31,7 @@
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
 #![allow(unused_variables, unused_mut)] // unit-test fixtures
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    widgets::{StatefulWidget, Widget},
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers},
@@ -1154,7 +1150,7 @@ pub fn paint_observability_dashboard(
                     PanelChrome::Normal
                 });
             let inner = panel.inner(r);
-            Widget::render(&panel, r, buffer);
+            panel.paint(r, buffer, None);
             if !inner.is_empty() {
                 SearchInput::new(system)
                     .placeholder("filter logs & events…")
@@ -1209,7 +1205,7 @@ pub fn paint_observability_dashboard(
                 PanelChrome::Normal
             });
         let inner = panel.inner(r);
-        Widget::render(&panel, r, buffer);
+        panel.paint(r, buffer, None);
         if inspect_fields.is_empty() {
             if !inner.is_empty() {
                 EmptyState::new("Pick a row", system)

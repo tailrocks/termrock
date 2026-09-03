@@ -18,12 +18,7 @@
 //! roving focus is independent until activation (Enter / click).
 //!
 //! Research: IDE sidebars, Yazi, Posting, OpenCode, shadcn sidebar.
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::Modifier,
-    widgets::{StatefulWidget, Widget},
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
@@ -1489,7 +1484,7 @@ impl<'a, Id: Clone + PartialEq> Sidebar<'a, Id> {
                 self.title
             };
             inner = panel.inner(area);
-            Widget::render(&panel.title(title), area, buffer);
+            panel.title(title).paint(area, buffer, None);
         }
 
         let rail = matches!(state.presentation, SidebarPresentation::Rail);

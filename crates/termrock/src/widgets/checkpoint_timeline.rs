@@ -1114,8 +1114,7 @@ impl<'a> CheckpointTimeline<'a> {
             .title(title.as_str())
             .emphasis(emphasis);
         let inner = panel.inner(area);
-        use ratatui_core::widgets::Widget;
-        Widget::render(&panel, area, buffer);
+        panel.paint(area, buffer, None);
         if inner.is_empty() {
             return;
         }

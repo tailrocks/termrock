@@ -49,7 +49,7 @@ fn leaf_widgets_render_at_tiny_and_off_origin_areas() {
     let backdrop = Backdrop::new(&system);
     for area in areas() {
         let mut buffer = Buffer::empty(Rect::new(0, 0, 100, 30));
-        (&panel).render(area, &mut buffer);
+        panel.paint(area, &mut buffer, None);
         (&hint_bar).render(area, &mut buffer);
         (&toast).render(area, &mut buffer);
         (&backdrop).render(area, &mut buffer);
@@ -64,7 +64,7 @@ fn focused_quiet_panel_remains_borderless() {
     let area = Rect::new(0, 0, 10, 3);
     let mut buffer = Buffer::empty(area);
     let panel = Panel::new(&panel_tokens).emphasis(PanelChrome::Focused);
-    (&panel).render(area, &mut buffer);
+    panel.paint(area, &mut buffer, None);
     assert_quiet_panel_has_no_box(&buffer, area);
 }
 
@@ -75,7 +75,7 @@ fn inactive_quiet_panel_remains_borderless() {
     let panel_tokens = DesignSystem::new(theme.clone());
     let area = Rect::new(0, 0, 10, 3);
     let mut buffer = Buffer::empty(area);
-    Panel::new(&panel_tokens).render(area, &mut buffer);
+    Panel::new(&panel_tokens).paint(area, &mut buffer, None);
     assert_quiet_panel_has_no_box(&buffer, area);
 }
 
@@ -359,9 +359,11 @@ fn owned_panel_render_matches_borrowed_render() {
     let mut owned = Buffer::empty(area);
     let mut borrowed = Buffer::empty(area);
 
-    Widget::render(Panel::new(&panel_tokens).title("Panel"), area, &mut owned);
+    Panel::new(&panel_tokens)
+        .title("Panel")
+        .paint(area, &mut owned, None);
     let panel = Panel::new(&panel_tokens).title("Panel");
-    Widget::render(&panel, area, &mut borrowed);
+    panel.paint(area, &mut borrowed, None);
 
     assert_eq!(owned, borrowed);
 }

@@ -1586,8 +1586,7 @@ impl<'a> PlanReview<'a> {
                 .title("Plan")
                 .emphasis(PanelChrome::Normal);
             let inner = panel.inner(area);
-            use ratatui_core::widgets::Widget;
-            Widget::render(&panel, area, buffer);
+            panel.paint(area, buffer, None);
             if !inner.is_empty() {
                 let m = "∅ no plan";
                 self.system.paint_row(
@@ -1624,7 +1623,7 @@ impl<'a> PlanReview<'a> {
             )
             .emphasis(emphasis);
         let inner = panel.inner(panel_area);
-        Widget::render(&panel, panel_area, buffer);
+        panel.paint(panel_area, buffer, None);
         if inner.is_empty() {
             state.plan = Some(plan);
             return;

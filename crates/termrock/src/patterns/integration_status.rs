@@ -1086,8 +1086,7 @@ impl<'a> IntegrationStatus<'a> {
                 PanelChrome::Normal
             });
         let inner = panel.inner(area);
-        use ratatui_core::widgets::Widget;
-        Widget::render(&panel, area, buffer);
+        panel.paint(area, buffer, None);
         if inner.is_empty() {
             return;
         }
@@ -1187,8 +1186,7 @@ impl<'a> IntegrationStatus<'a> {
                 PanelChrome::Normal
             });
         let inner = panel.inner(area);
-        use ratatui_core::widgets::Widget;
-        Widget::render(&panel, area, buffer);
+        panel.paint(area, buffer, None);
         if inner.is_empty() {
             return;
         }

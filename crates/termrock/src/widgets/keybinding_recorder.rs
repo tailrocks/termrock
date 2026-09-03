@@ -17,12 +17,7 @@
 //!
 //! Research: editor keybinding settings, terminal protocol limits (no F-keys in
 //! neutral vocabulary, CSI ambiguity, Ctrl+C SIGINT).
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::Modifier,
-    widgets::{StatefulWidget, Widget},
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers},
@@ -842,7 +837,7 @@ impl<'a> KeybindingRecorder<'a> {
         } else {
             state.action_label.as_str()
         };
-        Widget::render(&panel.title(title), area, buffer);
+        panel.title(title).paint(area, buffer, None);
         if inner.is_empty() {
             return;
         }

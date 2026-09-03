@@ -20,11 +20,7 @@
 //!
 //! Research: Grok Build permissions, Amp plugin prompts, browser permissions,
 //! sudo, security review UIs.
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    widgets::{StatefulWidget, Widget},
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
@@ -1451,7 +1447,7 @@ impl StatefulWidget for &PermissionPrompt<'_> {
                 } else {
                     PanelChrome::Normal
                 });
-            Widget::render(&panel, area, buffer);
+            panel.paint(area, buffer, None);
             let inner = panel.inner(area);
             if !inner.is_empty() {
                 let mark = { "∅ " };
@@ -1497,7 +1493,7 @@ impl StatefulWidget for &PermissionPrompt<'_> {
             .title(title.as_str())
             .emphasis(emphasis);
         let inner = panel.inner(content_area);
-        Widget::render(&panel, content_area, buffer);
+        panel.paint(content_area, buffer, None);
         if inner.is_empty() {
             return;
         }

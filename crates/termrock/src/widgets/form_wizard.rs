@@ -14,12 +14,7 @@
 //! embeds it for paint and projects [`StepItem`] steps onto it.
 //!
 //! Research: Huh forms, installers, cloud CLIs, onboarding wizards.
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::Modifier,
-    widgets::{StatefulWidget, Widget},
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
@@ -950,7 +945,7 @@ impl<'a> FormWizard<'a> {
                 PanelChrome::Normal
             });
         let inner = panel.inner(area);
-        Widget::render(&panel.title(self.title), area, buffer);
+        panel.title(self.title).paint(area, buffer, None);
         if inner.is_empty() {
             state.body_area = inner;
             return;

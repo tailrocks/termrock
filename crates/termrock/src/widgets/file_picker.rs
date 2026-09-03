@@ -14,12 +14,7 @@
 //! path/FS-shaped with breadcrumbs and entry kinds.
 //!
 //! Research: Yazi, ranger, lf, broot, desktop dialogs, fuzzy finders.
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    style::Modifier,
-    widgets::{StatefulWidget, Widget},
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
@@ -1415,7 +1410,7 @@ impl<'a> FilePicker<'a> {
                 PanelChrome::Normal
             });
         let inner = panel.inner(area);
-        Widget::render(&panel, area, buffer);
+        panel.paint(area, buffer, None);
         if inner.is_empty() {
             return;
         }

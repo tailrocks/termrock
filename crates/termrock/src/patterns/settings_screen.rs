@@ -27,11 +27,7 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-use ratatui_core::{
-    buffer::Buffer,
-    layout::Rect,
-    widgets::{StatefulWidget, Widget},
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers},
@@ -756,7 +752,7 @@ pub fn paint_settings_screen<SectionId: Clone + PartialEq>(
                     },
                 );
                 let inner = panel.inner(slots.body);
-                Widget::render(&panel, slots.body, buffer);
+                panel.paint(slots.body, buffer, None);
                 if !inner.is_empty() && !fieldsets.is_empty() {
                     StatefulWidget::render(
                         &Form::new(fieldsets, system).focused_field(state.focused_field.as_ref()),
@@ -836,7 +832,7 @@ pub fn paint_settings_screen<SectionId: Clone + PartialEq>(
             .title("Categories")
             .emphasis(PanelChrome::Focused);
         let inner = panel.inner(drawer);
-        Widget::render(&panel, drawer, buffer);
+        panel.paint(drawer, buffer, None);
         if !inner.is_empty() {
             state.sidebar.set_focused(true);
             state.sidebar.set_presentation(SidebarPresentation::Drawer);

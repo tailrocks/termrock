@@ -31,7 +31,7 @@ use ratatui_core::buffer::{Buffer, Cell};
 use ratatui_core::layout::Rect;
 use ratatui_core::style::{Color, Modifier};
 use ratatui_core::text::Line;
-use ratatui_core::widgets::{StatefulWidget, Widget};
+use ratatui_core::widgets::StatefulWidget;
 use termrock::runtime::{FrameTick, Instant};
 use termrock::scroll::{
     SCROLLBAR_TRACK, ScrollAxis, ScrollbarGeometry, ScrollbarSpec, ScrollbarStyle,
@@ -3132,7 +3132,7 @@ fn truncation_has_ellipsis() {
     ] {
         let area = Rect::new(0, 0, 24, 4);
         let buffer = painted(area, |buffer| {
-            Widget::render(&panel, area, buffer);
+            Panel::paint(&panel, area, buffer, None);
         });
         let painted_text: String = buffer
             .content()
@@ -3169,10 +3169,11 @@ fn flagship_widgets_survive_tiny_and_random_geometry() {
         };
         let area = Rect::new(0, 0, width, height);
         let _ = painted(area, |buffer| {
-            Widget::render(
+            Panel::paint(
                 &Panel::new(&system).title("panel").footer("esc close"),
                 area,
                 buffer,
+                None,
             );
         });
         let _ = painted(area, |buffer| {

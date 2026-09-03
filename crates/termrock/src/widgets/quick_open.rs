@@ -1402,7 +1402,7 @@ impl<'a, Id> QuickOpen<'a, Id> {
             .title(self.title)
             .emphasis(emphasis);
         let inner = panel.inner(area);
-        ratatui_core::widgets::Widget::render(&panel, area, buffer);
+        panel.paint(area, buffer, None);
         if inner.is_empty() {
             return;
         }
