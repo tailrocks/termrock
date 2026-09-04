@@ -143,7 +143,7 @@ enum Overlay {
     Confirm(Box<ConfirmOverlay>),
     Switcher,
     Filter(Box<FilterEditor>),
-    SafeMode(SafeModeOverlay),
+    SafeMode(Box<SafeModeOverlay>),
 }
 
 struct Host {
@@ -1261,9 +1261,9 @@ impl App {
             return;
         };
         let current = wb.connection.safe_mode;
-        self.overlay = Overlay::SafeMode(SafeModeOverlay {
+        self.overlay = Overlay::SafeMode(Box::new(SafeModeOverlay {
             picker: PickerState::new(Some(current)),
-        });
+        }));
     }
 
     fn set_safe_mode(&mut self, level: SafeMode) {

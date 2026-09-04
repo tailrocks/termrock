@@ -3,7 +3,7 @@
 
 //! Ratatui adapters for shared terminal design tokens.
 //!
-use ratatui_core::style::{Color, Modifier, Style};
+use ratatui_core::style::{Modifier, Style};
 
 mod ansi_rgb;
 #[cfg(test)]
@@ -26,7 +26,6 @@ pub use junie::{
     nearest_256,
 };
 pub use motion::{ACTION_FLASH_MS, ActionFlash, MotionPolicy};
-use palette::PREVIEW_CARD as PREVIEW_CARD_RGB;
 pub use palette::{Rgb, contrast_ratio, relative_luminance};
 pub use preview_host::{
     CapabilityPreviewHost, MediaSessionCommand, PreviewPresentation, PreviewSurface,
@@ -39,18 +38,6 @@ pub use tokens::{
     KvSeparator, ListRowRecipe, ListRowVisualState, MotionSemantics, NonColorCue, PanelChrome,
     PanelRecipe, RecipeFamily, SpacerBand, SpacingScale, SurfaceFamily, ThemePackage,
 };
-
-#[must_use]
-/// Converts this palette color into Ratatui color space.
-pub const fn color(rgb: Rgb) -> Color {
-    Color::Rgb(rgb.r, rgb.g, rgb.b)
-}
-
-/// Truecolor preview-card swatch for web/SVG export; runtime TUI recipes use
-/// [`Ansi16Color`] names.
-/// Truecolor preview-card swatch (the junie elevated plane) for web/SVG
-/// export; never a runtime TUI authority.
-pub const PREVIEW_CARD: Color = color(PREVIEW_CARD_RGB);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
@@ -447,6 +434,7 @@ impl Default for RolePalette {
 mod tests {
     use super::*;
     use junie::palette as jp;
+    use ratatui_core::style::Color;
 
     #[test]
     fn roles_cover_the_positional_theme_array() {

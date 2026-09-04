@@ -418,7 +418,7 @@ fn replay_tablepro(scenario: &Scenario, connect: Option<&str>) -> Artifacts {
         );
         drive.draw(&mut term, tick_at(elapsed));
     }
-    drop(drive);
+    let _ = drive;
     if let Some(name) = scenario.table_name {
         let focus = match scenario.table_focus {
             Some(TableFocusSeed::TabStrip) => crate::tablepro::workbench::TABSTRIP,
