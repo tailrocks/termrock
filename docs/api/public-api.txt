@@ -4838,7 +4838,6 @@ pub fn termrock::interaction::FocusGraph<Id>::attach_area(&mut self, &Id, ratatu
 pub fn termrock::interaction::FocusGraph<Id>::begin_frame(&mut self)
 pub const fn termrock::interaction::FocusGraph<Id>::focused(&self) -> core::option::Option<&Id>
 pub fn termrock::interaction::FocusGraph<Id>::history(&self) -> impl core::iter::traits::iterator::Iterator<Item = &Id>
-pub fn termrock::interaction::FocusGraph<Id>::is_focused(&self, &Id) -> bool where Id: core::cmp::PartialEq
 pub const fn termrock::interaction::FocusGraph<Id>::mode(self, termrock::interaction::FocusNavMode) -> Self
 pub fn termrock::interaction::FocusGraph<Id>::new() -> Self
 pub fn termrock::interaction::FocusGraph<Id>::nodes(&self) -> &[termrock::interaction::FocusNode<Id>]
