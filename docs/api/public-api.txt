@@ -245,7 +245,6 @@ impl<T> either::into_either::IntoEither for termrock::ansi_text::AnsiStream
 pub struct termrock::ansi_text::AnsiText<'a>
 impl<'a> termrock::ansi_text::AnsiText<'a>
 pub const fn termrock::ansi_text::AnsiText<'a>::first(self, usize) -> Self
-pub const fn termrock::ansi_text::AnsiText<'a>::is_empty(&self) -> bool
 pub const fn termrock::ansi_text::AnsiText<'a>::len(&self) -> usize
 pub const fn termrock::ansi_text::AnsiText<'a>::lines(&'a [termrock::ansi_text::AnsiLine], &'a termrock::style::DesignSystem) -> Self
 pub const fn termrock::ansi_text::AnsiText<'a>::mode(self, termrock::ansi_text::AnsiTextMode) -> Self
@@ -32401,7 +32400,6 @@ impl<T> either::into_either::IntoEither for termrock::ansi_text::AnsiStream
 pub struct termrock::text::AnsiText<'a>
 impl<'a> termrock::ansi_text::AnsiText<'a>
 pub const fn termrock::ansi_text::AnsiText<'a>::first(self, usize) -> Self
-pub const fn termrock::ansi_text::AnsiText<'a>::is_empty(&self) -> bool
 pub const fn termrock::ansi_text::AnsiText<'a>::len(&self) -> usize
 pub const fn termrock::ansi_text::AnsiText<'a>::lines(&'a [termrock::ansi_text::AnsiLine], &'a termrock::style::DesignSystem) -> Self
 pub const fn termrock::ansi_text::AnsiText<'a>::mode(self, termrock::ansi_text::AnsiTextMode) -> Self
@@ -59243,7 +59241,6 @@ impl<T> either::into_either::IntoEither for termrock::widgets::AnsiSyntax
 pub struct termrock::widgets::AnsiText<'a>
 impl<'a> termrock::ansi_text::AnsiText<'a>
 pub const fn termrock::ansi_text::AnsiText<'a>::first(self, usize) -> Self
-pub const fn termrock::ansi_text::AnsiText<'a>::is_empty(&self) -> bool
 pub const fn termrock::ansi_text::AnsiText<'a>::len(&self) -> usize
 pub const fn termrock::ansi_text::AnsiText<'a>::lines(&'a [termrock::ansi_text::AnsiLine], &'a termrock::style::DesignSystem) -> Self
 pub const fn termrock::ansi_text::AnsiText<'a>::mode(self, termrock::ansi_text::AnsiTextMode) -> Self

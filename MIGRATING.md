@@ -493,6 +493,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0514 | `v0.14.0` | [Synchronize removed MetricAlertSeverity letter getter](migrations/0514-v0.14.0-sync-removed-metric-alert-severity-letter-getter.md) |
 | 0515 | `v0.14.0` | [Synchronize removed ProcessStatus label getter](migrations/0515-v0.14.0-sync-removed-process-status-label-getter.md) |
 | 0516 | `v0.14.0` | [Synchronize removed CapabilityBoundary constructor](migrations/0516-v0.14.0-sync-removed-capability-boundary-constructor.md) |
+| 0517 | `v0.14.0` | [Synchronize removed AnsiText emptiness getter](migrations/0517-v0.14.0-sync-removed-ansi-text-emptiness-getter.md) |
 | 0464 | `v0.14.0` | [Stepper physical one-shot actions](migrations/0464-v0.14.0-stepper-one-shot-actions.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an
