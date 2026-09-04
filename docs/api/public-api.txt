@@ -1267,7 +1267,6 @@ pub fn termrock::context::ContextUiIntent::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::context::ContextUiIntent
 pub struct termrock::context::UiContext<'a, Id, LayerId, Action, MapAction: core::clone::Clone + 'static> where Id: core::clone::Clone + core::cmp::Eq + core::hash::Hash, LayerId: core::clone::Clone + core::cmp::Eq + core::hash::Hash
 impl<'a, Id, LayerId, Action, MapAction> termrock::context::UiContext<'a, Id, LayerId, Action, MapAction> where Id: core::clone::Clone + core::cmp::Eq + core::hash::Hash, LayerId: core::clone::Clone + core::cmp::Eq + core::hash::Hash, MapAction: core::clone::Clone + 'static
-pub const fn termrock::context::UiContext<'a, Id, LayerId, Action, MapAction>::boundary(&self) -> core::option::Option<&termrock::capability::CapabilityBoundary>
 pub const fn termrock::context::UiContext<'a, Id, LayerId, Action, MapAction>::capabilities(&self) -> &termrock::capability::TerminalCapabilities
 pub fn termrock::context::UiContext<'a, Id, LayerId, Action, MapAction>::collect_semantic_diagnostics(&mut self)
 pub const fn termrock::context::UiContext<'a, Id, LayerId, Action, MapAction>::design(&self) -> &termrock::style::DesignSystem
