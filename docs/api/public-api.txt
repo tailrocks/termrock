@@ -205,7 +205,6 @@ pub fn termrock::ansi_text::AnsiStream::into_lines(self) -> alloc::vec::Vec<term
 pub fn termrock::ansi_text::AnsiStream::lines(&self) -> &alloc::collections::vec_deque::VecDeque<termrock::ansi_text::AnsiLine>
 pub fn termrock::ansi_text::AnsiStream::new(termrock::ansi_text::AnsiParseOptions) -> Self
 pub fn termrock::ansi_text::AnsiStream::pending_plain(&self) -> alloc::string::String
-pub fn termrock::ansi_text::AnsiStream::plain(&self) -> alloc::string::String
 pub fn termrock::ansi_text::AnsiStream::reset_style(&mut self)
 pub fn termrock::ansi_text::AnsiStream::with_max_lines(self, usize) -> Self
 impl core::clone::Clone for termrock::ansi_text::AnsiStream
@@ -32359,7 +32358,6 @@ pub fn termrock::ansi_text::AnsiStream::into_lines(self) -> alloc::vec::Vec<term
 pub fn termrock::ansi_text::AnsiStream::lines(&self) -> &alloc::collections::vec_deque::VecDeque<termrock::ansi_text::AnsiLine>
 pub fn termrock::ansi_text::AnsiStream::new(termrock::ansi_text::AnsiParseOptions) -> Self
 pub fn termrock::ansi_text::AnsiStream::pending_plain(&self) -> alloc::string::String
-pub fn termrock::ansi_text::AnsiStream::plain(&self) -> alloc::string::String
 pub fn termrock::ansi_text::AnsiStream::reset_style(&mut self)
 pub fn termrock::ansi_text::AnsiStream::with_max_lines(self, usize) -> Self
 impl core::clone::Clone for termrock::ansi_text::AnsiStream
@@ -59159,7 +59157,6 @@ pub fn termrock::ansi_text::AnsiStream::into_lines(self) -> alloc::vec::Vec<term
 pub fn termrock::ansi_text::AnsiStream::lines(&self) -> &alloc::collections::vec_deque::VecDeque<termrock::ansi_text::AnsiLine>
 pub fn termrock::ansi_text::AnsiStream::new(termrock::ansi_text::AnsiParseOptions) -> Self
 pub fn termrock::ansi_text::AnsiStream::pending_plain(&self) -> alloc::string::String
-pub fn termrock::ansi_text::AnsiStream::plain(&self) -> alloc::string::String
 pub fn termrock::ansi_text::AnsiStream::reset_style(&mut self)
 pub fn termrock::ansi_text::AnsiStream::with_max_lines(self, usize) -> Self
 impl core::clone::Clone for termrock::ansi_text::AnsiStream
