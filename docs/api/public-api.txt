@@ -1578,6 +1578,7 @@ pub termrock::input::KeyCode::Down
 pub termrock::input::KeyCode::End
 pub termrock::input::KeyCode::Enter
 pub termrock::input::KeyCode::Esc
+pub termrock::input::KeyCode::F(u8)
 pub termrock::input::KeyCode::Home
 pub termrock::input::KeyCode::Left
 pub termrock::input::KeyCode::PageDown
@@ -2012,10 +2013,10 @@ pub termrock::input::KeyEvent::kind: termrock::input::KeyEventKind
 pub termrock::input::KeyEvent::modifiers: termrock::input::KeyModifiers
 pub termrock::input::KeyEvent::state: termrock::input::KeyEventState
 impl termrock::input::KeyEvent
-pub const fn termrock::input::KeyEvent::is_action(self) -> bool
-pub const fn termrock::input::KeyEvent::is_press(self) -> bool
-pub const fn termrock::input::KeyEvent::is_release(self) -> bool
-pub const fn termrock::input::KeyEvent::is_repeat(self) -> bool
+pub const fn termrock::input::KeyEvent::is_insert(&self) -> bool
+pub const fn termrock::input::KeyEvent::is_press(&self) -> bool
+pub const fn termrock::input::KeyEvent::is_release(&self) -> bool
+pub const fn termrock::input::KeyEvent::is_repeat(&self) -> bool
 pub const fn termrock::input::KeyEvent::new(termrock::input::KeyCode, termrock::input::KeyModifiers) -> Self
 impl core::clone::Clone for termrock::input::KeyEvent
 pub fn termrock::input::KeyEvent::clone(&self) -> termrock::input::KeyEvent
@@ -60631,6 +60632,7 @@ pub const fn termrock::widgets::Button<'a>::container(self, ratatui_core::style:
 pub const fn termrock::widgets::Button<'a>::full_width(self, bool) -> Self
 pub const fn termrock::widgets::Button<'a>::is_safe_default_focus(self) -> bool
 pub const fn termrock::widgets::Button<'a>::leading(self, &'a str) -> Self
+pub const fn termrock::widgets::Button<'a>::leading_role(self, termrock::style::Role) -> Self
 pub const fn termrock::widgets::Button<'a>::new(&'a str, &'a termrock::style::DesignSystem) -> Self
 pub fn termrock::widgets::Button<'a>::preferred_width(&self) -> u16
 pub const fn termrock::widgets::Button<'a>::size(self, termrock::widgets::ButtonSize) -> Self
@@ -62729,7 +62731,9 @@ pub const fn termrock::widgets::CodeBlock<'a, H>::controls(self, termrock::widge
 pub fn termrock::widgets::CodeBlock<'a, H>::copy_range(&self, usize, usize) -> alloc::string::String
 pub fn termrock::widgets::CodeBlock<'a, H>::copy_text(&self, &termrock::widgets::CodeBlockState) -> alloc::string::String
 pub const fn termrock::widgets::CodeBlock<'a, H>::current_block(self, usize, usize) -> Self
+pub const fn termrock::widgets::CodeBlock<'a, H>::cursor_marker(self, bool) -> Self
 pub fn termrock::widgets::CodeBlock<'a, H>::document_len(&self) -> usize
+pub const fn termrock::widgets::CodeBlock<'a, H>::fill_body(self, bool) -> Self
 pub const fn termrock::widgets::CodeBlock<'a, H>::first_line(self, usize) -> Self
 pub const fn termrock::widgets::CodeBlock<'a, H>::footer_status(self, core::option::Option<(&'a str, termrock::style::Role)>) -> Self
 pub const fn termrock::widgets::CodeBlock<'a, H>::gutter_marks(self, &'a [termrock::widgets::CodeGutterMark]) -> Self
@@ -62856,6 +62860,7 @@ impl termrock::widgets::CodeBlockState
 pub fn termrock::widgets::CodeBlockState::clamp(&mut self, usize)
 pub fn termrock::widgets::CodeBlockState::max_scroll_y(&self, usize) -> usize
 pub const fn termrock::widgets::CodeBlockState::new() -> Self
+pub fn termrock::widgets::CodeBlockState::reveal_column(&mut self, usize)
 pub fn termrock::widgets::CodeBlockState::reveal_line(&mut self, usize, usize)
 pub fn termrock::widgets::CodeBlockState::scroll_by_cols(&mut self, i16) -> bool
 pub fn termrock::widgets::CodeBlockState::scroll_by_lines(&mut self, isize, usize) -> bool
@@ -74000,7 +74005,6 @@ pub fn termrock::widgets::MarkdownView<'a>::measure_height(&self, u16) -> u16
 pub const fn termrock::widgets::MarkdownView<'a>::new(&'a [termrock::widgets::MarkdownBlock<'a>], &'a termrock::style::DesignSystem) -> Self
 pub fn termrock::widgets::MarkdownView<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::MarkdownViewState) -> termrock::widgets::MarkdownParts
 pub fn termrock::widgets::MarkdownView<'a>::register_semantic<Id, Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, &termrock::widgets::MarkdownViewState) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
-pub fn termrock::widgets::MarkdownView<'a>::row_map(&self, u16) -> alloc::vec::Vec<(usize, u16)>
 pub const fn termrock::widgets::MarkdownView<'a>::section_gap(self, bool) -> Self
 pub const fn termrock::widgets::MarkdownView<'a>::selectable(self, bool) -> Self
 impl ratatui_core::widgets::widget::Widget for &termrock::widgets::MarkdownView<'_>
@@ -77709,8 +77713,10 @@ pub fn termrock::widgets::PasswordConfirmState::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::widgets::PasswordConfirmState
 pub struct termrock::widgets::PasswordInput<'a>
 impl<'a> termrock::widgets::PasswordInput<'a>
+pub const fn termrock::widgets::PasswordInput<'a>::help(self, &'a str) -> Self
 pub const fn termrock::widgets::PasswordInput<'a>::mask(self, char) -> Self
 pub const fn termrock::widgets::PasswordInput<'a>::new(&'a str, &'a termrock::style::DesignSystem) -> Self
+pub const fn termrock::widgets::PasswordInput<'a>::optional(self, bool) -> Self
 pub fn termrock::widgets::PasswordInput<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::PasswordInputState) -> termrock::widgets::PasswordInputParts
 pub const fn termrock::widgets::PasswordInput<'a>::placeholder(self, &'a str) -> Self
 pub fn termrock::widgets::PasswordInput<'a>::register_semantic<Id, Action>(&self, &mut termrock::interaction::SemanticScene<Id, Action>, Id, ratatui_core::layout::rect::Rect, &termrock::widgets::PasswordInputState) where Id: core::clone::Clone + core::cmp::PartialEq + core::fmt::Display, Action: core::clone::Clone
@@ -89523,6 +89529,7 @@ pub fn termrock::widgets::TokenStrip<'a, Id>::handle_mouse(&self, &mut termrock:
 pub fn termrock::widgets::TokenStrip<'a, Id>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::widgets::TokenStripState<Id>)
 impl<'a, Id> termrock::widgets::TokenStrip<'a, Id>
 pub const fn termrock::widgets::TokenStrip<'a, Id>::add_label(self, core::option::Option<&'a str>) -> Self
+pub const fn termrock::widgets::TokenStrip<'a, Id>::background(self, ratatui_core::style::color::Color) -> Self
 pub const fn termrock::widgets::TokenStrip<'a, Id>::gap(self, u16) -> Self
 pub const fn termrock::widgets::TokenStrip<'a, Id>::lead(self, core::option::Option<&'a str>) -> Self
 pub const fn termrock::widgets::TokenStrip<'a, Id>::max_visible(self, usize) -> Self
@@ -90653,6 +90660,7 @@ impl<'a, Id> termrock::widgets::Tree<'a, Id>
 pub const fn termrock::widgets::Tree<'a, Id>::background(self, ratatui_core::style::color::Color) -> Self
 pub const fn termrock::widgets::Tree<'a, Id>::empty_message(self, &'a str) -> Self
 pub const fn termrock::widgets::Tree<'a, Id>::focused(self, bool) -> Self
+pub const fn termrock::widgets::Tree<'a, Id>::focused_metadata_bold(self, bool) -> Self
 pub const fn termrock::widgets::Tree<'a, Id>::new(&'a [termrock::widgets::TreeNode<'a, Id>], &'a termrock::style::DesignSystem) -> Self
 pub const fn termrock::widgets::Tree<'a, Id>::selection_visible(self, bool) -> Self
 pub const fn termrock::widgets::Tree<'a, Id>::spinner_frame(self, usize) -> Self
@@ -90950,6 +90958,7 @@ impl<Id> termrock::widgets::TreeState<Id>
 pub const fn termrock::widgets::TreeState<Id>::bulk_disclosure(&self) -> core::option::Option<bool>
 pub fn termrock::widgets::TreeState<Id>::capture_scroll_anchor(&mut self)
 pub fn termrock::widgets::TreeState<Id>::clear_typeahead(&mut self)
+pub const fn termrock::widgets::TreeState<Id>::cursor(&self) -> core::option::Option<&Id>
 pub fn termrock::widgets::TreeState<Id>::disable_multi_select(&mut self)
 pub fn termrock::widgets::TreeState<Id>::enable_multi_select(&mut self)
 pub fn termrock::widgets::TreeState<Id>::filter_query(&self) -> core::option::Option<&str>
@@ -90966,8 +90975,10 @@ pub fn termrock::widgets::TreeState<Id>::select(&mut self, core::option::Option<
 pub const fn termrock::widgets::TreeState<Id>::selected(&self) -> core::option::Option<&Id>
 pub const fn termrock::widgets::TreeState<Id>::selection(&self) -> core::option::Option<&termrock::widgets::Selection<Id>>
 pub fn termrock::widgets::TreeState<Id>::selection_mut(&mut self) -> core::option::Option<&mut termrock::widgets::Selection<Id>>
+pub const fn termrock::widgets::TreeState<Id>::semantic_selection(&self) -> core::option::Option<&Id>
 pub fn termrock::widgets::TreeState<Id>::set_filter_query(&mut self, core::option::Option<alloc::string::String>)
 pub fn termrock::widgets::TreeState<Id>::set_h_offset(&mut self, u16)
+pub fn termrock::widgets::TreeState<Id>::set_semantic_selection(&mut self, core::option::Option<Id>)
 pub fn termrock::widgets::TreeState<Id>::set_sticky(&mut self, termrock::widgets::StickyRegion)
 pub fn termrock::widgets::TreeState<Id>::set_virtual_window(&mut self, usize, usize)
 pub fn termrock::widgets::TreeState<Id>::take_bulk_disclosure(&mut self) -> core::option::Option<bool>
@@ -90984,13 +90995,13 @@ impl<Id: core::fmt::Debug> core::fmt::Debug for termrock::widgets::TreeState<Id>
 pub fn termrock::widgets::TreeState<Id>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl<Id> core::default::Default for termrock::widgets::TreeState<Id>
 pub fn termrock::widgets::TreeState<Id>::default() -> Self
-impl<Id> core::marker::Freeze for termrock::widgets::TreeState<Id> where core::option::Option<Id>: core::marker::Freeze + core::marker::Freeze, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::marker::Freeze + core::marker::Freeze + core::marker::Freeze, core::option::Option<termrock::widgets::Selection<Id>>: core::marker::Freeze, termrock::interaction::CollectionState<Id>: core::marker::Freeze
-impl<Id> core::marker::Send for termrock::widgets::TreeState<Id> where core::option::Option<Id>: core::marker::Send + core::marker::Send, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::marker::Send + core::marker::Send + core::marker::Send, core::option::Option<termrock::widgets::Selection<Id>>: core::marker::Send, termrock::interaction::CollectionState<Id>: core::marker::Send
-impl<Id> core::marker::Sync for termrock::widgets::TreeState<Id> where core::option::Option<Id>: core::marker::Sync + core::marker::Sync, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::marker::Sync + core::marker::Sync + core::marker::Sync, core::option::Option<termrock::widgets::Selection<Id>>: core::marker::Sync, termrock::interaction::CollectionState<Id>: core::marker::Sync
-impl<Id> core::marker::Unpin for termrock::widgets::TreeState<Id> where core::option::Option<Id>: core::marker::Unpin + core::marker::Unpin, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::marker::Unpin + core::marker::Unpin + core::marker::Unpin, core::option::Option<termrock::widgets::Selection<Id>>: core::marker::Unpin, termrock::interaction::CollectionState<Id>: core::marker::Unpin
-impl<Id> core::marker::UnsafeUnpin for termrock::widgets::TreeState<Id> where core::option::Option<Id>: core::marker::UnsafeUnpin + core::marker::UnsafeUnpin, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::marker::UnsafeUnpin + core::marker::UnsafeUnpin + core::marker::UnsafeUnpin, core::option::Option<termrock::widgets::Selection<Id>>: core::marker::UnsafeUnpin, termrock::interaction::CollectionState<Id>: core::marker::UnsafeUnpin
-impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TreeState<Id> where core::option::Option<Id>: core::panic::unwind_safe::RefUnwindSafe + core::panic::unwind_safe::RefUnwindSafe, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::panic::unwind_safe::RefUnwindSafe + core::panic::unwind_safe::RefUnwindSafe + core::panic::unwind_safe::RefUnwindSafe, core::option::Option<termrock::widgets::Selection<Id>>: core::panic::unwind_safe::RefUnwindSafe, termrock::interaction::CollectionState<Id>: core::panic::unwind_safe::RefUnwindSafe
-impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::TreeState<Id> where core::option::Option<Id>: core::panic::unwind_safe::UnwindSafe + core::panic::unwind_safe::UnwindSafe, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::panic::unwind_safe::UnwindSafe + core::panic::unwind_safe::UnwindSafe + core::panic::unwind_safe::UnwindSafe, core::option::Option<termrock::widgets::Selection<Id>>: core::panic::unwind_safe::UnwindSafe, termrock::interaction::CollectionState<Id>: core::panic::unwind_safe::UnwindSafe
+impl<Id> core::marker::Freeze for termrock::widgets::TreeState<Id> where core::option::Option<Id>: core::marker::Freeze + core::marker::Freeze + core::marker::Freeze, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::marker::Freeze + core::marker::Freeze + core::marker::Freeze, core::option::Option<termrock::widgets::Selection<Id>>: core::marker::Freeze, termrock::interaction::CollectionState<Id>: core::marker::Freeze
+impl<Id> core::marker::Send for termrock::widgets::TreeState<Id> where core::option::Option<Id>: core::marker::Send + core::marker::Send + core::marker::Send, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::marker::Send + core::marker::Send + core::marker::Send, core::option::Option<termrock::widgets::Selection<Id>>: core::marker::Send, termrock::interaction::CollectionState<Id>: core::marker::Send
+impl<Id> core::marker::Sync for termrock::widgets::TreeState<Id> where core::option::Option<Id>: core::marker::Sync + core::marker::Sync + core::marker::Sync, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::marker::Sync + core::marker::Sync + core::marker::Sync, core::option::Option<termrock::widgets::Selection<Id>>: core::marker::Sync, termrock::interaction::CollectionState<Id>: core::marker::Sync
+impl<Id> core::marker::Unpin for termrock::widgets::TreeState<Id> where core::option::Option<Id>: core::marker::Unpin + core::marker::Unpin + core::marker::Unpin, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::marker::Unpin + core::marker::Unpin + core::marker::Unpin, core::option::Option<termrock::widgets::Selection<Id>>: core::marker::Unpin, termrock::interaction::CollectionState<Id>: core::marker::Unpin
+impl<Id> core::marker::UnsafeUnpin for termrock::widgets::TreeState<Id> where core::option::Option<Id>: core::marker::UnsafeUnpin + core::marker::UnsafeUnpin + core::marker::UnsafeUnpin, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::marker::UnsafeUnpin + core::marker::UnsafeUnpin + core::marker::UnsafeUnpin, core::option::Option<termrock::widgets::Selection<Id>>: core::marker::UnsafeUnpin, termrock::interaction::CollectionState<Id>: core::marker::UnsafeUnpin
+impl<Id> core::panic::unwind_safe::RefUnwindSafe for termrock::widgets::TreeState<Id> where core::option::Option<Id>: core::panic::unwind_safe::RefUnwindSafe + core::panic::unwind_safe::RefUnwindSafe + core::panic::unwind_safe::RefUnwindSafe, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::panic::unwind_safe::RefUnwindSafe + core::panic::unwind_safe::RefUnwindSafe + core::panic::unwind_safe::RefUnwindSafe, core::option::Option<termrock::widgets::Selection<Id>>: core::panic::unwind_safe::RefUnwindSafe, termrock::interaction::CollectionState<Id>: core::panic::unwind_safe::RefUnwindSafe
+impl<Id> core::panic::unwind_safe::UnwindSafe for termrock::widgets::TreeState<Id> where core::option::Option<Id>: core::panic::unwind_safe::UnwindSafe + core::panic::unwind_safe::UnwindSafe + core::panic::unwind_safe::UnwindSafe, alloc::vec::Vec<termrock::interaction::HitRegion<Id>>: core::panic::unwind_safe::UnwindSafe + core::panic::unwind_safe::UnwindSafe + core::panic::unwind_safe::UnwindSafe, core::option::Option<termrock::widgets::Selection<Id>>: core::panic::unwind_safe::UnwindSafe, termrock::interaction::CollectionState<Id>: core::panic::unwind_safe::UnwindSafe
 impl<Q, K> equivalent::Equivalent<K> for termrock::widgets::TreeState<Id> where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
 pub fn termrock::widgets::TreeState<Id>::equivalent(&self, &K) -> bool
 impl<T, U> core::convert::Into<U> for termrock::widgets::TreeState<Id> where U: core::convert::From<T>
@@ -92476,7 +92487,6 @@ pub fn termrock::widgets::format_binding<A: core::clone::Clone + 'static>(&termr
 pub fn termrock::widgets::format_budget_compact(&termrock::widgets::BudgetMeasure) -> alloc::string::String
 pub fn termrock::widgets::format_budget_count(u64, termrock::widgets::BudgetPrecision) -> alloc::string::String
 pub fn termrock::widgets::format_budget_percent(core::option::Option<f64>, termrock::widgets::BudgetPrecision) -> alloc::string::String
-pub fn termrock::widgets::format_byte_hex(u8) -> alloc::string::String
 pub fn termrock::widgets::format_chord(termrock::keymap::KeyChord, termrock::widgets::ChordFormat) -> alloc::string::String
 pub fn termrock::widgets::format_diagnostic_plain(&termrock::widgets::Diagnostic<'_>) -> alloc::string::String
 pub fn termrock::widgets::format_diagnostics_plain(&[termrock::widgets::Diagnostic<'_>]) -> alloc::string::String
@@ -92626,6 +92636,7 @@ pub fn termrock::widgets::project_tool_call_lines(&termrock::widgets::ToolCall, 
 pub fn termrock::widgets::prompt_composer_help_entries() -> alloc::vec::Vec<termrock::widgets::HelpEntry>
 pub fn termrock::widgets::protocol_emission_hint(termrock::widgets::ImageProtocol, &str) -> alloc::string::String
 pub fn termrock::widgets::protocol_limitations(termrock::widgets::Platform) -> alloc::vec::Vec<&'static str>
+pub fn termrock::widgets::push_byte_hex(&mut alloc::string::String, u8)
 pub fn termrock::widgets::quick_open_jump_targets<Id: core::clone::Clone>(&[termrock::widgets::QuickOpenItem<Id>], &[(usize, ratatui_core::layout::rect::Rect)], &[char]) -> alloc::vec::Vec<termrock::widgets::JumpTarget<Id>>
 pub fn termrock::widgets::quick_open_presentation_for_bounds(ratatui_core::layout::rect::Rect) -> termrock::widgets::QuickOpenPresentation
 pub fn termrock::widgets::redact_env_value(&str, &str) -> (alloc::string::String, bool)
