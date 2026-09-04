@@ -159,7 +159,8 @@ impl Artifacts {
     /// PNG bytes via termrock-raster (zero-tol pixel compare).
     #[cfg(feature = "native")]
     pub fn png(&self) -> Result<Vec<u8>, String> {
-        termrock_raster::render_png(&self.buffer, &termrock::style::RolePalette::junie())
+        let raster = crate::ansi_grid::from_snapshot(&self.snapshot).for_raster();
+        termrock_raster::render_png(&raster.to_buffer(), &termrock::style::RolePalette::junie())
             .map_err(|e| e.to_string())
     }
 
