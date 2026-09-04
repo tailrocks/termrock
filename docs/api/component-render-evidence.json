@@ -829,9 +829,9 @@
         "noColor": true,
         "asciiFallback": false,
         "keyboard": true,
-        "mouse": true,
-        "focus": true,
-        "escape": true
+        "mouse": false,
+        "focus": false,
+        "escape": false
       },
       "characterStories": {
         "unicode": [
@@ -1313,9 +1313,9 @@
         "noColor": true,
         "asciiFallback": false,
         "keyboard": true,
-        "mouse": true,
-        "focus": true,
-        "escape": true
+        "mouse": false,
+        "focus": false,
+        "escape": false
       },
       "characterStories": {
         "unicode": [
@@ -4655,9 +4655,9 @@
         "noColor": true,
         "asciiFallback": false,
         "keyboard": true,
-        "mouse": true,
-        "focus": true,
-        "escape": true
+        "mouse": false,
+        "focus": false,
+        "escape": false
       },
       "characterStories": {
         "unicode": [
@@ -5505,9 +5505,9 @@
         "noColor": true,
         "asciiFallback": false,
         "keyboard": true,
-        "mouse": true,
-        "focus": true,
-        "escape": true
+        "mouse": false,
+        "focus": false,
+        "escape": false
       },
       "characterStories": {
         "unicode": [
@@ -6397,9 +6397,9 @@
         "noColor": true,
         "asciiFallback": false,
         "keyboard": true,
-        "mouse": true,
-        "focus": true,
-        "escape": true
+        "mouse": false,
+        "focus": false,
+        "escape": false
       },
       "characterStories": {
         "unicode": [
