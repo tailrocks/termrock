@@ -4492,7 +4492,6 @@ pub fn termrock::interaction::CollectionState<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::interaction::CollectionState<Id>
 pub struct termrock::interaction::DismissEventId(pub u64)
 impl termrock::interaction::DismissEventId
-pub const fn termrock::interaction::DismissEventId::next(self) -> Self
 impl core::clone::Clone for termrock::interaction::DismissEventId
 pub fn termrock::interaction::DismissEventId::clone(&self) -> termrock::interaction::DismissEventId
 impl core::cmp::Eq for termrock::interaction::DismissEventId
