@@ -340,8 +340,8 @@ pub fn default_completion_intent(key: KeyEvent) -> Option<UiIntent> {
         KeyCode::Tab if is_press && key.modifiers.is_empty() => Some(UiIntent::Activate),
         KeyCode::Enter if is_press => Some(UiIntent::Activate),
         KeyCode::Esc if is_press => Some(UiIntent::Cancel),
-        KeyCode::Up | KeyCode::Char('k' | 'K') => Some(UiIntent::Move(NavigationMove::Previous)),
-        KeyCode::Down | KeyCode::Char('j' | 'J') => Some(UiIntent::Move(NavigationMove::Next)),
+        KeyCode::Up => Some(UiIntent::Move(NavigationMove::Previous)),
+        KeyCode::Down => Some(UiIntent::Move(NavigationMove::Next)),
         KeyCode::Home => Some(UiIntent::Move(NavigationMove::First)),
         KeyCode::End => Some(UiIntent::Move(NavigationMove::Last)),
         KeyCode::PageUp => Some(UiIntent::Page(PageMove::Backward)),
@@ -1366,7 +1366,14 @@ impl<'a, Id> CompletionMenu<'a, Id> {
             if show_detail && let Some(detail) = candidate.detail {
                 let dtext = take_display_cols(detail, detail_cols);
                 let dw = display_cols(&dtext) as u16;
-                let dx = row_rect.right().saturating_sub(dw.saturating_add(1));
+                let right_reserve = if self.candidates.len() > state.viewport_height {
+                    2
+                } else {
+                    1
+                };
+                let dx = row_rect
+                    .right()
+                    .saturating_sub(dw.saturating_add(right_reserve));
                 if dx >= label_x {
                     buffer.set_stringn(dx, y, &dtext, usize::from(dw), detail_style);
                 }

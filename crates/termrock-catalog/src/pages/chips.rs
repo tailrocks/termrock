@@ -48,6 +48,7 @@ pub struct ChipsPage {
     last: String,
     /// Chip gutter follows strip keys/clicks, not mere card focus (s_chips golden).
     chip_cursor_live: bool,
+    capture_cursor: Option<ratatui::layout::Position>,
 }
 
 impl ChipsPage {
@@ -86,6 +87,7 @@ impl ChipsPage {
             },
             last: "nothing yet".into(),
             chip_cursor_live: false,
+            capture_cursor: None,
         }
     }
 
@@ -176,6 +178,7 @@ impl Page for ChipsPage {
     fn render(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx<'_>) {
         let t = ctx.theme;
         let rows = layout::rows(area, &[6, 1, 8, 1, 0]);
+        self.capture_cursor = None;
 
         let focused = ctx.interaction.focused(ID.sub("filters"));
         let active = self.chips.iter().filter(|c| c.enabled).count();
@@ -240,6 +243,19 @@ impl Page for ChipsPage {
             .set_focused(ctx.interaction.focused(ID.sub("size")));
         self.engine
             .set_focused(ctx.interaction.focused(ID.sub("engine")));
+        if ctx.interaction.focused(ID.sub("sort")) && !self.sort.is_open() {
+            let mut footer_x = 1_u16;
+            for (key, value) in self.hints(Some(ID.sub("sort"))) {
+                footer_x = footer_x
+                    .saturating_add(text::width(key) as u16 + 1 + text::width(value) as u16 + 2);
+            }
+            footer_x = footer_x
+                .saturating_add(text::width("Tab") as u16 + 1 + text::width("Next") as u16 + 2);
+            self.capture_cursor = Some(ratatui::layout::Position::new(
+                footer_x.saturating_sub(3),
+                area.bottom().saturating_add(1),
+            ));
+        }
         let open = [
             self.sort.is_open(),
             self.page_size.is_open(),
@@ -587,6 +603,10 @@ impl Page for ChipsPage {
         } else {
             vec![("Tab", "Next")]
         }
+    }
+
+    fn capture_cursor(&self) -> Option<ratatui::layout::Position> {
+        self.capture_cursor
     }
 }
 

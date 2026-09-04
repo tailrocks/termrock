@@ -257,6 +257,37 @@ impl ResultGrid {
         }
     }
 
+    /// Apply the staged edits to this deterministic in-memory result set.
+    pub fn commit_pending(&mut self) {
+        let pending = std::mem::take(&mut self.pending);
+        for ((row, column), value) in pending.cells {
+            if let Some(cell) = self
+                .rows
+                .get_mut(row)
+                .and_then(|cells| cells.get_mut(column))
+            {
+                *cell = value;
+            }
+        }
+        let mut deleted = pending.deleted;
+        deleted.sort_unstable_by(|left, right| right.cmp(left));
+        deleted.dedup();
+        let deleted_count = deleted.len();
+        for row in deleted {
+            if row < self.rows.len() {
+                self.rows.remove(row);
+            }
+        }
+        self.total = self.total.saturating_sub(deleted_count);
+        self.more = self.total > self.rows.len();
+        self.cursor_row = self.cursor_row.min(self.rows.len().saturating_sub(1));
+    }
+
+    /// Discard staged edits without changing the loaded result set.
+    pub fn discard_pending(&mut self) {
+        self.pending = Pending::default();
+    }
+
     pub fn move_cursor(&mut self, drow: isize, dcol: isize) {
         if self.rows.is_empty() || self.columns.is_empty() {
             return;
@@ -271,8 +302,16 @@ impl ResultGrid {
 
     /// Source `DataGrid::ensure_cursor_visible` for columns.
     pub fn ensure_hscroll(&mut self, viewport: usize) {
-        let vp = viewport.max(1);
         let n = self.columns.len().max(1);
+        // Reserve one more cell for the source right-edge overflow marker
+        // when the cursor reaches the final column; this keeps the final
+        // column window visible instead of retaining an extra boolean/ID
+        // column beside it.
+        let vp = if self.cursor_col.saturating_add(1) >= n {
+            viewport.saturating_sub(1).max(1)
+        } else {
+            viewport.max(1)
+        };
         if self.cursor_col < self.hscroll {
             self.hscroll = self.cursor_col;
         } else if self.cursor_col >= self.hscroll.saturating_add(vp) {

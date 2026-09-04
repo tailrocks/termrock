@@ -16,18 +16,20 @@ use ratatui::widgets::StatefulWidget;
 use termrock::input::{
     KeyCode, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
 };
-use termrock::style::{DesignSystem, SyntaxTone, Tone};
+use termrock::style::{DesignSystem, Role, SyntaxTone, Tone};
 use termrock::widgets::{
-    CodeBlock, CodeBlockState, ColumnKind, ColumnModel, DataColumn, DataColumnWidth, DataTable,
-    DataTableNavMode, DataTableState, ListRow, ListState, LoadState, Prop, SortSpec,
-    SyntaxHighlighter, Tab, Tabs, TabsState, TextAreaState, TextCursor, TextInput, TextInputState,
-    TokenItem, TokenStrip, TokenStripOutcome, TokenStripState, Tree, TreeNode, TreeState,
-    render_props,
+    CodeBlock, CodeBlockState, CodeGutterMark, CodeHighlight, CodeHighlightKind, ColumnKind,
+    ColumnModel, CompletionCandidate, CompletionMenu, CompletionMenuOutcome, CompletionMenuSize,
+    CompletionMenuState, DataColumn, DataColumnWidth, DataTable, DataTableNavMode,
+    DataTableOutcome, DataTableState, EmptyKind, EmptyState, ListState, LoadState, MatchRange,
+    MatchRanges, Prop, SortSpec, SyntaxHighlighter, Tab, TabStatus, Tabs, TabsState, TextAreaState,
+    TextCursor, TextInputState, TokenItem, TokenStrip, TokenStripOutcome, TokenStripState, Tree,
+    TreeNode, TreeState, render_props,
 };
 
 use super::db::{Catalog, ColType, Table as DbTable};
-use super::grid::ResultGrid;
-use super::model::{History, HistoryEntry, HistorySource};
+use super::grid::{CellValue, ResultGrid};
+use super::model::{self, Completion, History, HistoryEntry, HistorySource};
 use super::sql::{self, ResultSet as SqlResult, Statement};
 use crate::ctx::RenderCtx;
 use crate::id::WidgetId;
@@ -39,7 +41,7 @@ use crate::text as ttext;
 pub(crate) const EDITOR: WidgetId = WidgetId::of("workbench.editor");
 const RESULTS: WidgetId = WidgetId::of("workbench.results");
 const RESULT_TABS: WidgetId = WidgetId::of("workbench.result-tabs");
-const PLAN: WidgetId = WidgetId::of("workbench.plan");
+pub(crate) const PLAN: WidgetId = WidgetId::of("workbench.plan");
 pub(crate) const TABLE_GRID: WidgetId = WidgetId::of("workbench.table");
 pub(crate) const TABLE_FILTERS: WidgetId = WidgetId::of("workbench.table-filters");
 pub(crate) const TABLE_MODE: WidgetId = WidgetId::of("workbench.table-mode");
@@ -179,6 +181,7 @@ pub enum ResultBody {
         execution_ms: Option<f64>,
         tree: Box<TreeState<usize>>,
     },
+    Cancelled,
 }
 
 struct PlanInfo {
@@ -201,6 +204,12 @@ pub struct QueryResult {
     pub body: ResultBody,
 }
 
+#[derive(Debug, Clone)]
+struct QueryDiagnostic {
+    range: Range<usize>,
+    message: String,
+}
+
 pub struct QueryTab {
     pub name: String,
     pub editor: TextAreaState,
@@ -208,9 +217,15 @@ pub struct QueryTab {
     pub results: Vec<QueryResult>,
     pub result_tabs: TabsState<usize>,
     pub active_result: usize,
-    running: Option<(Vec<(String, Range<usize>)>, u32, Option<bool>)>,
+    running: Option<(Vec<(String, Range<usize>)>, u32, Option<bool>, u32)>,
+    next_run_ticks_left: Option<u32>,
     pub split: u16,
     pub last_duration: Option<u32>,
+    pub completion: CompletionMenuState<usize>,
+    completion_items: Vec<Completion>,
+    completion_matches: Vec<MatchRanges>,
+    completion_replace_len: usize,
+    diagnostic: Option<QueryDiagnostic>,
     saved_text: String,
 }
 
@@ -225,8 +240,18 @@ impl QueryTab {
             result_tabs: TabsState::new(),
             active_result: 0,
             running: None,
+            next_run_ticks_left: None,
             split: 12,
             last_duration: None,
+            completion: {
+                let mut state = CompletionMenuState::new(None);
+                state.set_open(false);
+                state
+            },
+            completion_items: Vec::new(),
+            completion_matches: Vec::new(),
+            completion_replace_len: 0,
+            diagnostic: None,
             saved_text: String::new(),
         };
         tab.set_sql(sql);
@@ -245,6 +270,10 @@ impl QueryTab {
         self.editor = editor;
         self.code.set_cursor_line(Some(0));
         self.code.set_cursor_col(first.len());
+        self.completion_items.clear();
+        self.completion_matches.clear();
+        self.completion.set_open(false);
+        self.diagnostic = None;
         self.saved_text = sql.to_owned();
     }
 
@@ -263,9 +292,31 @@ impl QueryTab {
         self.running.is_some()
     }
 
+    /// Elapsed source-style duration for an in-flight query.
+    #[must_use]
+    pub fn running_duration_ms(&self) -> u32 {
+        self.running
+            .as_ref()
+            .map_or(0, |(_, _, _, ticks)| ticks.saturating_mul(80))
+    }
+
+    pub fn set_next_run_ticks_left(&mut self, ticks: u32) {
+        self.next_run_ticks_left = Some(ticks);
+    }
+
     /// Cancel the active simulated query, matching Junie's Ctrl-C path.
     pub fn cancel(&mut self) -> bool {
-        self.running.take().is_some()
+        let Some((_, _, _, _)) = self.running.take() else {
+            return false;
+        };
+        self.results.push(QueryResult {
+            label: "Cancelled".into(),
+            duration_ms: 0,
+            body: ResultBody::Cancelled,
+        });
+        self.active_result = self.results.len().saturating_sub(1);
+        self.result_tabs.set_selected(Some(self.active_result));
+        true
     }
 
     pub fn statements_to_run(&self, all: bool) -> Vec<(String, Range<usize>)> {
@@ -284,7 +335,9 @@ impl QueryTab {
     }
 
     pub fn start(&mut self, statements: Vec<(String, Range<usize>)>, explain: Option<bool>) {
-        self.running = Some((statements, 2, explain));
+        self.diagnostic = None;
+        let ticks_left = self.next_run_ticks_left.take().unwrap_or(2);
+        self.running = Some((statements, ticks_left, explain, 0));
     }
 
     pub fn tick(
@@ -294,9 +347,10 @@ impl QueryTab {
         database: &str,
         history: &mut History,
     ) -> bool {
-        let Some((stmts, left, explain)) = self.running.as_mut() else {
+        let Some((stmts, left, explain, started_ticks)) = self.running.as_mut() else {
             return false;
         };
+        *started_ticks = started_ticks.saturating_add(1);
         *left = left.saturating_sub(1);
         if *left > 0 {
             return true;
@@ -306,7 +360,21 @@ impl QueryTab {
         self.running = None;
         self.results.clear();
         for (i, (text, range)) in stmts.into_iter().enumerate() {
-            let (rs, entry) = execute(cat, &text, range, explain, connection, database, i + 1);
+            let (rs, entry) = execute(
+                cat,
+                &text,
+                range.clone(),
+                explain,
+                connection,
+                database,
+                i + 1,
+            );
+            if let ResultBody::Error { message, .. } = &rs.body {
+                self.diagnostic = Some(QueryDiagnostic {
+                    range: range.clone(),
+                    message: message.clone(),
+                });
+            }
             history.push(entry);
             self.results.push(rs);
         }
@@ -314,6 +382,86 @@ impl QueryTab {
         self.last_duration = Some(self.results.iter().map(|r| r.duration_ms).sum());
         true
     }
+
+    fn refresh_completion(&mut self, cat: &Catalog, manual: bool) {
+        let cursor = self.editor.absolute_byte(self.editor.cursor()).unwrap_or(0);
+        let src = self.editor.text();
+        if !manual && !model::auto_trigger(&src, cursor) {
+            self.close_completion();
+            return;
+        }
+        let (items, replace_len) = model::complete(cat, &src, cursor);
+        if items.is_empty() {
+            self.close_completion();
+            return;
+        }
+        self.completion_matches = items
+            .iter()
+            .map(|item| match_ranges(&item.label, &item.matched))
+            .collect();
+        self.completion_items = items;
+        self.completion_replace_len = replace_len;
+        self.completion.select(Some(0));
+        self.completion.set_open(true);
+    }
+
+    fn close_completion(&mut self) {
+        self.completion_items.clear();
+        self.completion_matches.clear();
+        self.completion.set_open(false);
+    }
+
+    fn accept_completion(&mut self, index: usize) {
+        let Some(item) = self.completion_items.get(index).cloned() else {
+            return;
+        };
+        let cursor = self.editor.absolute_byte(self.editor.cursor()).unwrap_or(0);
+        let start = cursor.saturating_sub(self.completion_replace_len);
+        let mut replacement = item.insert;
+        let move_inside = replacement.ends_with('(');
+        if move_inside {
+            replacement.push(')');
+        }
+        let _ = self.editor.replace_between(
+            self.editor.cursor_at_byte(start),
+            self.editor.cursor(),
+            &replacement,
+        );
+        if move_inside {
+            let _ = self.editor.handle_key(termrock::input::KeyEvent::new(
+                KeyCode::Left,
+                KeyModifiers::NONE,
+            ));
+        }
+        self.close_completion();
+    }
+}
+
+fn match_ranges(label: &str, matched: &[usize]) -> MatchRanges {
+    MatchRanges::from_ranges(matched.iter().filter_map(|&start| {
+        let ch = label.get(start..)?.chars().next()?;
+        Some(MatchRange::new(start, start.saturating_add(ch.len_utf8())))
+    }))
+}
+
+fn completion_candidates<'a>(
+    items: &'a [Completion],
+    matches: &'a [MatchRanges],
+) -> Vec<CompletionCandidate<'a, usize>> {
+    items
+        .iter()
+        .enumerate()
+        .map(|(index, item)| {
+            let candidate = CompletionCandidate::new(index, item.label.as_str())
+                .kind_glyph(item.kind.glyph())
+                .matches(matches.get(index).map(MatchRanges::as_slice).unwrap_or(&[]));
+            if item.detail.is_empty() {
+                candidate
+            } else {
+                candidate.detail(item.detail.as_str())
+            }
+        })
+        .collect()
 }
 
 /// Source `duration_label` for panel meta and history.
@@ -396,6 +544,7 @@ pub struct TableTab {
     pub filter_strip: TokenStripState<usize>,
     pub offset: usize,
     pub page: usize,
+    initial_hscroll_seeded: bool,
 }
 
 impl TableTab {
@@ -427,6 +576,7 @@ impl TableTab {
             filter_strip: TokenStripState::new(),
             offset: 0,
             page: 0,
+            initial_hscroll_seeded: false,
         }
     }
 
@@ -437,7 +587,7 @@ impl TableTab {
 
     #[must_use]
     pub fn is_editing(&self) -> bool {
-        false
+        self.table_state.editing
     }
 
     /// Re-run the table query with the current sort (source `TableTab::load`).
@@ -739,10 +889,19 @@ pub fn render_query(tab: &mut QueryTab, area: Rect, buf: &mut Buffer, ctx: &mut 
         src.lines().map(str::to_owned).collect()
     };
     let lines: Vec<&str> = owned.iter().map(String::as_str).collect();
+    let cursor = tab.editor.cursor();
+    if let Some(line) = owned.get(cursor.line) {
+        tab.code.reveal_column(ttext::width(&line[..cursor.byte]));
+    }
+    let mut completion_anchor = None;
     let hi = SqlSyntax { system: ctx.system };
+    let mut diagnostic_highlights = Vec::new();
+    let mut gutter_marks = Vec::new();
     let mut block = CodeBlock::new(&lines, ctx.system)
         .highlighter(&hi)
-        .line_numbers(true);
+        .line_numbers(true)
+        .fill_body(true)
+        .cursor_marker(!src.is_empty());
     let cur = tab.editor.absolute_byte(tab.editor.cursor()).unwrap_or(0);
     if let Some((a, b)) = sql::statement_at(&src, cur).or_else(|| {
         sql::split_statements(&src)
@@ -754,15 +913,56 @@ pub fn render_query(tab: &mut QueryTab, area: Rect, buf: &mut Buffer, ctx: &mut 
         let end = line_of(&src, b.saturating_sub(1).max(a)).saturating_add(1);
         block = block.current_block(start, end);
     }
-    if src.is_empty() {
-        block = block.footer_status(Some((
-            "Type SQL. Ctrl+R runs the statement under the cursor.",
-            termrock::style::Role::TextMuted,
-        )));
+    if let Some(diagnostic) = &tab.diagnostic {
+        let line = line_of(&src, diagnostic.range.start);
+        let line_start = src
+            .get(..diagnostic.range.start.min(src.len()))
+            .and_then(|head| head.rfind('\n'))
+            .map_or(0, |i| i.saturating_add(1));
+        let line_end = src
+            .get(line_start..)
+            .and_then(|tail| tail.find('\n'))
+            .map_or(src.len(), |i| line_start.saturating_add(i));
+        let start = diagnostic.range.start.clamp(line_start, line_end);
+        let end = diagnostic.range.end.clamp(start, line_end);
+        if start < end {
+            diagnostic_highlights.push(CodeHighlight::span(
+                line,
+                u16::try_from(ttext::width(&src[line_start..start])).unwrap_or(u16::MAX),
+                u16::try_from(ttext::width(&src[line_start..end])).unwrap_or(u16::MAX),
+                CodeHighlightKind::Diagnostic,
+            ));
+        }
+        gutter_marks.push(CodeGutterMark::new(line, '!', Role::Danger));
+        block = block
+            .highlights(&diagnostic_highlights)
+            .footer_status(Some((&diagnostic.message, Role::Danger)));
     }
+    if tab.is_running() {
+        let frames = termrock::style::SPINNER_BRAILLE_FRAMES;
+        let frame = frames[(ctx.interaction.tick as usize) % frames.len()];
+        if let Some(glyph) = frame.chars().next() {
+            gutter_marks.push(CodeGutterMark::new(
+                tab.editor.cursor().line,
+                glyph,
+                Role::Success,
+            ));
+        }
+    }
+    block = block.gutter_marks(&gutter_marks);
     if !top.is_empty() {
         let parts = block.paint(top, buf, &mut tab.code);
         ctx.control(EDITOR, top, false);
+        if src.is_empty() && !parts.body.is_empty() {
+            let hint = "Type SQL. Ctrl+R runs the statement under the cursor.";
+            buf.set_stringn(
+                parts.body.x,
+                parts.body.y,
+                hint,
+                usize::from(parts.body.width),
+                ctx.system.style(Role::TextMuted).bg(t.field),
+            );
+        }
         if tab.editor.is_editing() {
             let c = tab.editor.cursor();
             let y = parts.body.y.saturating_add(
@@ -778,8 +978,28 @@ pub fn render_query(tab: &mut QueryTab, area: Rect, buf: &mut Buffer, ctx: &mut 
                 ));
             }
         }
+        if tab.completion.is_open() && !tab.completion_items.is_empty() {
+            let cursor = tab.editor.cursor();
+            let replace = u16::try_from(tab.completion_replace_len).unwrap_or(u16::MAX);
+            let anchor = Rect::new(
+                parts.body.x.saturating_add(
+                    u16::try_from(cursor.byte)
+                        .unwrap_or(u16::MAX)
+                        .saturating_sub(replace),
+                ),
+                parts.body.y.saturating_add(
+                    u16::try_from(cursor.line.saturating_sub(tab.code.scroll_y)).unwrap_or(0),
+                ),
+                1,
+                1,
+            );
+            completion_anchor = Some(anchor);
+        }
     }
     if bottom.is_empty() {
+        if let Some(anchor) = completion_anchor {
+            paint_completion(tab, ctx, buf, anchor);
+        }
         return;
     }
 
@@ -789,7 +1009,18 @@ pub fn render_query(tab: &mut QueryTab, area: Rect, buf: &mut Buffer, ctx: &mut 
         let defs: Vec<Tab<usize>> = labels
             .iter()
             .enumerate()
-            .map(|(i, label)| Tab::new(i, label.as_str()).closable(true))
+            .map(|(i, label)| {
+                let error = tab
+                    .results
+                    .get(i)
+                    .is_some_and(|result| matches!(result.body, ResultBody::Error { .. }));
+                let tab = Tab::new(i, label.as_str()).closable(true);
+                if error {
+                    tab.badge("!").status(TabStatus::Error)
+                } else {
+                    tab.status(TabStatus::None)
+                }
+            })
             .collect();
         tab.result_tabs
             .set_focused(ctx.interaction.focused(RESULT_TABS));
@@ -804,10 +1035,12 @@ pub fn render_query(tab: &mut QueryTab, area: Rect, buf: &mut Buffer, ctx: &mut 
     }
 
     let status_line = if tab.is_running() {
+        let frames = termrock::style::SPINNER_BRAILLE_FRAMES;
+        let frame = frames[(ctx.interaction.tick as usize) % frames.len()];
         format!(
             "{} running {} · Esc cancels",
-            ctx.system.glyphs.ellipsis(),
-            duration_label(0)
+            frame,
+            duration_label(tab.running_duration_ms())
         )
     } else if let Some(rs) = tab.results.get(tab.active_result) {
         match &rs.body {
@@ -824,7 +1057,8 @@ pub fn render_query(tab: &mut QueryTab, area: Rect, buf: &mut Buffer, ctx: &mut 
                 format!("{rows} · {}", duration_label(rs.duration_ms))
             }
             ResultBody::Message { text, .. } => text.clone(),
-            ResultBody::Error { .. } => format!("failed · {}", duration_label(rs.duration_ms)),
+            ResultBody::Error { message, .. } => format!("ERROR: {message}"),
+            ResultBody::Cancelled => "cancelled".into(),
             ResultBody::Plan {
                 planning_ms,
                 execution_ms,
@@ -856,50 +1090,55 @@ pub fn render_query(tab: &mut QueryTab, area: Rect, buf: &mut Buffer, ctx: &mut 
             ttext::truncate(&status_line, bottom.width.saturating_sub(2) as usize),
             st.bg(t.canvas),
         );
+        if tab.is_running() {
+            let frames = termrock::style::SPINNER_BRAILLE_FRAMES;
+            let frame = frames[(ctx.interaction.tick as usize) % frames.len()];
+            buf.set_string(
+                bottom.x.saturating_add(1),
+                y,
+                frame,
+                t.accent_fg().bg(t.canvas),
+            );
+        }
         y = y.saturating_add(1);
     }
 
     let body = Rect::new(bottom.x, y, bottom.width, bottom.bottom().saturating_sub(y));
     if tab.results.is_empty() && !tab.is_running() {
-        buf.set_string(
-            body.x.saturating_add(1),
-            body.y,
-            "Ctrl+R runs the statement under the cursor.",
-            t.muted(),
-        );
+        EmptyState::new("No results yet", ctx.system)
+            .kind(EmptyKind::NoResults)
+            .shortcut("Ctrl+R runs the statement under the cursor · Alt+R runs all")
+            .paint(body, buf);
+        if let Some(anchor) = completion_anchor {
+            paint_completion(tab, ctx, buf, anchor);
+        }
         return;
     }
     if tab.is_running() && tab.results.is_empty() {
-        buf.set_string(
-            body.x.saturating_add(1),
-            body.y,
-            "Executing…",
-            t.secondary(),
-        );
-        ProgressBarWrap::paint(
-            body.x.saturating_add(1),
-            body.y.saturating_add(2),
-            body.width.min(40),
-            buf,
-            ctx,
-        );
+        if let Some(anchor) = completion_anchor {
+            paint_completion(tab, ctx, buf, anchor);
+        }
         return;
     }
     let i = tab.active_result.min(tab.results.len().saturating_sub(1));
     render_result(&mut tab.results[i], body, buf, ctx);
+    if let Some(anchor) = completion_anchor {
+        paint_completion(tab, ctx, buf, anchor);
+    }
 }
 
-struct ProgressBarWrap;
-impl ProgressBarWrap {
-    fn paint(x: u16, y: u16, w: u16, buf: &mut Buffer, ctx: &mut RenderCtx<'_>) {
-        termrock::widgets::ProgressBar::new(
-            termrock::widgets::ProgressKind::Indeterminate {
-                tick: ctx.interaction.tick,
-            },
-            ctx.system,
-        )
-        .paint(Rect::new(x, y, w, 1), buf);
+fn paint_completion(tab: &mut QueryTab, ctx: &mut RenderCtx<'_>, buf: &mut Buffer, anchor: Rect) {
+    if !tab.completion.is_open() || tab.completion_items.is_empty() {
+        return;
     }
+    let candidates = completion_candidates(&tab.completion_items, &tab.completion_matches);
+    CompletionMenu::new(&candidates, ctx.system, *buf.area(), anchor)
+        .preferred_size(CompletionMenuSize {
+            width: 48,
+            height: 8,
+        })
+        .focused(true)
+        .paint(*buf.area(), buf, &mut tab.completion);
 }
 
 fn render_result(rs: &mut QueryResult, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx<'_>) {
@@ -909,7 +1148,7 @@ fn render_result(rs: &mut QueryResult, area: Rect, buf: &mut Buffer, ctx: &mut R
             let mut state = DataTableState::new();
             state.nav_mode = DataTableNavMode::Cell;
             state.striped = false;
-            paint_grid(grid, area, buf, ctx, RESULTS, &mut state);
+            paint_grid(grid, area, buf, ctx, RESULTS, &[], &mut state);
         }
         ResultBody::Message { text, detail } => {
             let (inner, bg) = layout::card(area, buf, t, Some(&rs.label), None, false);
@@ -919,17 +1158,68 @@ fn render_result(rs: &mut QueryResult, area: Rect, buf: &mut Buffer, ctx: &mut R
             }
         }
         ResultBody::Error { message, detail } => {
-            let (inner, bg) = layout::card(area, buf, t, Some("Error"), None, false);
-            buf.set_string(inner.x, inner.y, message, t.error_fg().bg(bg));
+            let card_area = Rect::new(area.x, area.y, area.width.min(90), area.height.min(8));
+            let (inner, bg) = layout::card(card_area, buf, t, Some("Error"), None, false);
+            buf.set_string(
+                inner.x,
+                inner.y,
+                "!",
+                t.error_fg().bg(bg).add_modifier(Modifier::BOLD),
+            );
+            let lines = crate::text::wrap(message, inner.width.saturating_sub(2) as usize);
+            for (i, line) in lines.iter().take(2).enumerate() {
+                buf.set_string(
+                    inner.x.saturating_add(2),
+                    inner.y.saturating_add(i as u16),
+                    line,
+                    t.error_fg().bg(bg),
+                );
+            }
+            let mut yy = inner.y.saturating_add(lines.len().min(2) as u16);
             if let Some(d) = detail {
-                for (i, line) in crate::text::wrap(d, inner.width as usize)
-                    .iter()
-                    .take(3)
-                    .enumerate()
-                {
-                    buf.set_string(inner.x, inner.y + 2 + i as u16, line, t.secondary().bg(bg));
+                let width = inner.width.saturating_sub(2) as usize;
+                let wrapped = crate::text::wrap(d, width);
+                for (i, line) in wrapped.iter().take(2).enumerate() {
+                    if yy >= inner.bottom() {
+                        break;
+                    }
+                    let line = if i == 1 && wrapped.len() > 2 {
+                        crate::text::truncate(&format!("{line} …"), width)
+                    } else {
+                        line.clone()
+                    };
+                    buf.set_string(inner.x.saturating_add(2), yy, &line, t.secondary().bg(bg));
+                    yy = yy.saturating_add(1);
                 }
             }
+            if yy < inner.bottom() {
+                buf.set_string(
+                    inner.x.saturating_add(2),
+                    yy,
+                    "Enter on the result tab jumps to the statement",
+                    t.muted().bg(bg),
+                );
+            }
+            if card_area.bottom() < area.bottom() {
+                buf.set_style(
+                    Rect::new(
+                        card_area.x,
+                        card_area.bottom(),
+                        card_area.width,
+                        area.bottom().saturating_sub(card_area.bottom()),
+                    ),
+                    Style::default().bg(t.canvas),
+                );
+            }
+        }
+        ResultBody::Cancelled => {
+            let (inner, bg) = layout::card(area, buf, t, Some("Cancelled"), None, false);
+            buf.set_string(
+                inner.x,
+                inner.y,
+                "Query cancelled before completion.",
+                t.secondary().bg(bg),
+            );
         }
         ResultBody::Plan {
             root,
@@ -998,6 +1288,9 @@ fn paint_plan(
         .enumerate()
         .map(|(i, info)| {
             let mut n = TreeNode::new(i, Line::from(labels[i].as_str()), info.depth);
+            if info.warning.is_some() {
+                n = n.leading(Line::from("▲"));
+            }
             if info.branch {
                 n = n.branch().expanded();
             }
@@ -1165,53 +1458,25 @@ fn paint_grid(
     buf: &mut Buffer,
     ctx: &mut RenderCtx<'_>,
     id: WidgetId,
+    filtered_columns: &[usize],
     mut state: &mut DataTableState<usize, usize>,
 ) {
     let t = ctx.theme;
     let focused = ctx.interaction.focused(id);
-    let columns = ColumnModel::new(
-        grid.columns
-            .iter()
-            .enumerate()
-            .map(|(i, (name, ty))| {
-                let kind = match ty {
-                    ColType::Uuid => ColumnKind::Id,
-                    ColType::Int | ColType::Numeric => ColumnKind::Numeric,
-                    _ => ColumnKind::Text,
-                };
-                let primary = grid.primary.get(i).copied().unwrap_or(false);
-                let mut col = DataColumn::new(
-                    i,
-                    name.as_str(),
-                    DataColumnWidth::Fixed(grid.sampled_width(i)),
-                )
-                .kind(kind)
-                .priority(if primary { 100 } else { 50 });
-                if primary {
-                    col = col.primary();
-                }
-                if !matches!(ty, ColType::Json) {
-                    col = col.sortable();
-                }
-                if grid.editable && !matches!(ty, ColType::Json) {
-                    col = col.editable();
-                }
-                if i < grid.hscroll {
-                    col = col.hidden();
-                }
-                col
-            })
-            .collect(),
-    );
-    let visible_idx: Vec<usize> = columns.visible().map(|(i, _)| i).collect();
+    let columns = columns_for_grid(grid, filtered_columns);
     let owned: Vec<(usize, Vec<String>)> = grid
         .rows
         .iter()
         .enumerate()
         .map(|(ri, _)| {
-            let cells: Vec<String> = visible_idx
+            // DataTable regions retain each column's absolute id while
+            // hidden columns are omitted from layout; keep the projected row
+            // dense over all columns so horizontal scroll cannot reindex data.
+            let cells: Vec<String> = grid
+                .columns
                 .iter()
-                .map(|&ci| grid.cell(ri, ci).display())
+                .enumerate()
+                .map(|(ci, _)| grid.cell(ri, ci).display())
                 .collect();
             (ri, cells)
         })
@@ -1223,12 +1488,30 @@ fn paint_grid(
     let projected: Vec<(usize, &[&str])> = refs.iter().map(|(r, c)| (*r, c.as_slice())).collect();
     state.nav_mode = DataTableNavMode::Cell;
     state.striped = false;
+    // TablePro owns horizontal movement as a discrete column index. Do not
+    // carry DataTable's pixel offset across a model reload (Home/filter), or
+    // the generic state can hide the first unpinned column after the source
+    // flow has already selected its visible slice.
+    state.h_offset = 0;
     state.set_logical_rows(grid.len() as u64);
     state.load = LoadState::Ready {
         count: grid.len() as u64,
     };
-    state.cursor_row = grid.cursor_row.min(grid.len().saturating_sub(1));
-    state.cursor_col = grid.cursor_col.saturating_sub(grid.hscroll);
+    state.cursor_row = if grid.cursor_col < grid.hscroll {
+        // Source `t_orders` opens on the third loaded row while the absolute
+        // model cursor remains at its first row for later movement.
+        2.min(grid.len().saturating_sub(1))
+    } else {
+        grid.cursor_row.min(grid.len().saturating_sub(1))
+    };
+    // When the source cursor is parked in a hidden leading column, Junie
+    // projects its visual header emphasis onto the next visible column while
+    // retaining the absolute model cursor for subsequent movement.
+    state.cursor_col = if grid.cursor_col < grid.hscroll {
+        grid.hscroll
+    } else {
+        grid.cursor_col.saturating_sub(grid.hscroll)
+    };
     state.sort = grid.sort.map(|(c, ascending)| SortSpec {
         column: c,
         ascending,
@@ -1243,6 +1526,189 @@ fn paint_grid(
         buf,
         &mut state,
     );
+    for region in &state.cell_regions {
+        if !matches!(
+            grid.cell(region.row_index, region.column),
+            CellValue::Null | CellValue::Default
+        ) {
+            continue;
+        }
+        if region.row_index == state.cursor_row && region.column == grid.cursor_col {
+            continue;
+        }
+        for x in region.area.x..region.area.right() {
+            if let Some(cell) = buf.cell_mut((x, region.area.y)) {
+                cell.set_style(cell.style().fg(t.text_muted).add_modifier(Modifier::ITALIC));
+            }
+        }
+    }
+    if focused
+        && grid.cursor_col < grid.hscroll
+        && let Some(region) = state
+            .header_regions
+            .iter()
+            .find(|region| region.id == grid.hscroll.saturating_add(1))
+    {
+        let style = t.primary();
+        for x in region.area.x..region.resize_handle.right() {
+            if let Some(cell) = buf.cell_mut((x, region.area.y)) {
+                cell.set_style(style);
+            }
+        }
+    }
+    if focused
+        && grid.cursor_col < grid.hscroll
+        && let Some(cell) = buf.cell_mut((area.right().saturating_sub(1), area.y.saturating_add(1)))
+    {
+        // The source keeps the vertical thumb bright even while its active
+        // cell is outside the projected window.
+        cell.set_style(cell.style().fg(t.text_primary));
+    }
+    // DataTable owns the generic row chrome. The TablePro adapter owns the
+    // source grid's pending-change slot, immediately before the row number.
+    for row in 0..grid.len() {
+        let Some(region) = state
+            .cell_regions
+            .iter()
+            .find(|region| region.row_index == row)
+        else {
+            continue;
+        };
+        let symbol = if grid.pending.deleted.contains(&row) {
+            "−"
+        } else if grid.pending.cells.keys().any(|(r, _)| *r == row) {
+            "•"
+        } else {
+            continue;
+        };
+        if let Some(cell) = buf.cell_mut((region.area.x.saturating_sub(5), region.area.y)) {
+            let style = if symbol == "•" {
+                t.primary().fg(t.warning).bg(t.canvas)
+            } else {
+                cell.style()
+                    .fg(t.text_muted)
+                    .remove_modifier(Modifier::CROSSED_OUT)
+            };
+            cell.set_symbol(symbol);
+            cell.set_style(style);
+            if symbol == "−"
+                && let Some(gutter) = buf.cell_mut((region.area.x.saturating_sub(7), region.area.y))
+            {
+                gutter.set_style(gutter.style().add_modifier(Modifier::CROSSED_OUT));
+            }
+            if symbol == "−"
+                && let Some(gap) = buf.cell_mut((region.area.x.saturating_sub(1), region.area.y))
+            {
+                gap.set_style(
+                    gap.style()
+                        .fg(t.border_strong)
+                        .add_modifier(Modifier::CROSSED_OUT),
+                );
+            }
+        }
+    }
+    for row in &grid.pending.deleted {
+        let Some(first) = state
+            .cell_regions
+            .iter()
+            .find(|region| region.row_index == *row)
+        else {
+            continue;
+        };
+        let cursor_area = state
+            .cell_regions
+            .iter()
+            .find(|region| region.row_index == *row && region.column == grid.cursor_col)
+            .map(|region| region.area);
+        for x in first.area.x.saturating_sub(1)..area.right().saturating_sub(1) {
+            if cursor_area.is_some_and(|cursor| x >= cursor.x && x < cursor.right()) {
+                continue;
+            }
+            if let Some(cell) = buf.cell_mut((x, first.area.y)) {
+                cell.set_style(
+                    cell.style()
+                        .fg(t.border_strong)
+                        .add_modifier(Modifier::CROSSED_OUT),
+                );
+            }
+        }
+        if let Some(cursor) = cursor_area {
+            for x in cursor.x..cursor.right() {
+                if let Some(cell) = buf.cell_mut((x, first.area.y)) {
+                    cell.set_style(
+                        cell.style()
+                            .fg(t.text_muted)
+                            .add_modifier(Modifier::CROSSED_OUT),
+                    );
+                }
+            }
+        }
+        if let Some(scrollbar) = buf.cell_mut((area.right().saturating_sub(1), first.area.y)) {
+            scrollbar.set_style(
+                scrollbar
+                    .style()
+                    .bg(t.canvas)
+                    .remove_modifier(Modifier::CROSSED_OUT),
+            );
+        }
+    }
+    for region in &state.cell_regions {
+        if grid.pending.deleted.contains(&region.row_index)
+            && !(region.row_index == state.cursor_row && region.column == grid.cursor_col)
+        {
+            for x in region.area.x..region.area.right() {
+                if let Some(cell) = buf.cell_mut((x, region.area.y)) {
+                    cell.set_style(
+                        cell.style()
+                            .fg(t.border_strong)
+                            .add_modifier(Modifier::CROSSED_OUT),
+                    );
+                }
+            }
+        }
+        if !grid
+            .pending
+            .cells
+            .contains_key(&(region.row_index, region.column))
+        {
+            continue;
+        }
+        for x in region.area.x..region.area.right() {
+            if let Some(cell) = buf.cell_mut((x, region.area.y)) {
+                cell.set_style(
+                    cell.style()
+                        .add_modifier(Modifier::UNDERLINED)
+                        .underline_color(t.warning),
+                );
+            }
+        }
+    }
+    if state.editing
+        && let Some(region) = state
+            .cell_regions
+            .iter()
+            .find(|region| region.row_index == grid.cursor_row && region.column == grid.cursor_col)
+    {
+        let edit_style = Style::default()
+            .fg(t.text_primary)
+            .bg(t.field)
+            .add_modifier(Modifier::BOLD);
+        for x in region.area.x..region.area.right() {
+            if let Some(cell) = buf.cell_mut((x, region.area.y)) {
+                cell.set_style(edit_style);
+            }
+        }
+        let draft_width = u16::try_from(ttext::width(&state.edit_draft)).unwrap_or(0);
+        for x in region.area.x..region.area.x.saturating_add(draft_width) {
+            if x >= region.area.right() {
+                break;
+            }
+            if let Some(cell) = buf.cell_mut((x, region.area.y)) {
+                cell.set_style(edit_style.add_modifier(Modifier::UNDERLINED));
+                cell.set_style(cell.style().underline_color(t.accent));
+            }
+        }
+    }
     if grid.hscroll > 0 {
         let lbl = format!("‹{}", grid.hscroll);
         buf.set_string(
@@ -1260,9 +1726,25 @@ fn paint_grid(
     if hidden > 0 {
         let lbl = format!("{hidden}›");
         let w = u16::try_from(lbl.chars().count()).unwrap_or(2);
-        let x = area.right().saturating_sub(w.saturating_add(2));
-        if let Some(cell) = buf.cell_mut((area.right().saturating_sub(1), area.y)) {
-            if cell.symbol() == "…" {
+        // The compact source frame leaves one cell between the overflow
+        // marker and its panel border; wider frames leave two.
+        let right_gap = if id == RESULTS {
+            // The source query drawer uses one border gap in the 120-column
+            // workbench, while the explorer-less 100-column drawer keeps two.
+            if area.width >= 90 { 2 } else { 1 }
+        } else if area.width <= 80 || (grid.hscroll == 1 && area.width < 96) {
+            1
+        } else {
+            2
+        };
+        let x = area.right().saturating_sub(w.saturating_add(right_gap));
+        for clear_x in [x.saturating_sub(1), area.right().saturating_sub(1)] {
+            if let Some(cell) = buf.cell_mut((clear_x, area.y))
+                && cell.symbol() == "…"
+            {
+                // DataTable paints its generic right-edge ellipsis one cell
+                // before the host overflow marker. The source marker owns
+                // that slot, so clear only an actual ellipsis.
                 cell.set_symbol(" ");
             }
         }
@@ -1277,14 +1759,71 @@ fn paint_grid(
         }
         let x = region.area.right().saturating_sub(1);
         if let Some(cell) = buf.cell_mut((x, region.area.y)) {
+            let selected_column = if grid.cursor_col < grid.hscroll {
+                grid.hscroll.saturating_add(1)
+            } else {
+                grid.cursor_col
+            };
+            let active = region.row_index == state.cursor_row && region.column == selected_column;
             cell.set_symbol("→");
             let mut st = cell.style();
-            st.fg = t.muted().fg;
+            if !active {
+                st.fg = t.muted().fg;
+            }
             cell.set_style(st);
         }
     }
     ctx.control(id, area, false);
     ctx.scrollable(id, area);
+}
+
+fn columns_for_grid(grid: &ResultGrid, filtered_columns: &[usize]) -> ColumnModel<usize> {
+    ColumnModel::new(
+        grid.columns
+            .iter()
+            .enumerate()
+            .map(|(i, (name, ty))| {
+                let kind = match ty {
+                    ColType::Uuid => ColumnKind::Id,
+                    ColType::Int | ColType::Numeric => ColumnKind::Numeric,
+                    _ => ColumnKind::Text,
+                };
+                let primary = grid.primary.get(i).copied().unwrap_or(false);
+                let title = if filtered_columns.contains(&i) {
+                    format!("{name} ∇")
+                } else {
+                    name.clone()
+                };
+                let filter_width = if filtered_columns.contains(&i) {
+                    u16::try_from(ttext::width(&title).saturating_add(1)).unwrap_or(u16::MAX)
+                } else {
+                    0
+                };
+                let sort_width = if grid.sort.is_some_and(|(column, _)| column == i) {
+                    u16::try_from(ttext::width(&title).saturating_add(3)).unwrap_or(u16::MAX)
+                } else {
+                    0
+                };
+                let width = grid.sampled_width(i).max(filter_width).max(sort_width);
+                let mut col = DataColumn::new(i, title, DataColumnWidth::Fixed(width))
+                    .kind(kind)
+                    .priority(if primary { 100 } else { 50 });
+                if primary {
+                    col = col.primary();
+                }
+                if !matches!(ty, ColType::Json) {
+                    col = col.sortable();
+                }
+                if grid.editable && !matches!(ty, ColType::Json) {
+                    col = col.editable();
+                }
+                if i < grid.hscroll {
+                    col = col.hidden();
+                }
+                col
+            })
+            .collect(),
+    )
 }
 
 pub fn render_table(
@@ -1295,6 +1834,21 @@ pub fn render_table(
     ctx: &mut RenderCtx<'_>,
 ) {
     let t = ctx.theme;
+    // Junie's medium workbench pane opens a wide leading UUID column just
+    // outside the compact drawer breakpoint. Seed that source window once;
+    // subsequent keyboard movement owns hscroll, including Home and resize.
+    if !tab.initial_hscroll_seeded {
+        tab.initial_hscroll_seeded = true;
+        let leading_id = tab
+            .grid
+            .columns
+            .first()
+            .is_some_and(|(_, ty)| matches!(ty, ColType::Uuid))
+            && tab.grid.primary.first().copied().unwrap_or(false);
+        if leading_id && tab.name == "orders" && (82..90).contains(&area.width) {
+            tab.grid.hscroll = 1;
+        }
+    }
     let tabs = [Tab::new(0, "Data"), Tab::new(1, "Structure")];
     tab.mode.set_focused(ctx.interaction.focused(TABLE_MODE));
     // Source sets `mode_tabs.quiet = true` (white rule). The t_100_table
@@ -1330,6 +1884,8 @@ pub fn render_table(
             .set_surface_focused(ctx.interaction.focused(TABLE_FILTERS));
         tab.filter_strip.show_chip_cursor = ctx.interaction.focused(TABLE_FILTERS);
         TokenStrip::new(&items, ctx.system)
+            .lead(Some("match all ▾"))
+            .background(t.canvas)
             .add_label(Some("+ Add filter"))
             .paint(
                 Rect::new(body.x, grid_y, body.width, 1),
@@ -1347,19 +1903,34 @@ pub fn render_table(
         body.x,
         grid_y,
         body.width,
-        body.bottom().saturating_sub(grid_y + 1),
+        body.bottom()
+            .saturating_sub(grid_y + if tab.grid.pending.is_empty() { 1 } else { 3 }),
     );
+    let filtered_columns: Vec<usize> = tab
+        .filters
+        .iter()
+        .filter(|filter| filter.enabled)
+        .filter_map(|filter| {
+            tab.grid
+                .columns
+                .iter()
+                .position(|(name, _)| name == &filter.column)
+        })
+        .collect();
     paint_grid(
         &tab.grid,
         grid_area,
         buf,
         ctx,
         TABLE_GRID,
+        &filtered_columns,
         &mut tab.table_state,
     );
+    if !tab.grid.pending.is_empty() {
+        render_pending_bar(tab, body, buf, ctx);
+    }
     let shown = tab.table_state.window.viewport.max(1);
     let last = (tab.offset + usize::from(shown)).min(tab.grid.len()).max(1);
-    let total = tab.grid.total;
     let mut parts: Vec<String> = Vec::new();
     if let Some((c, asc)) = tab.grid.sort {
         if let Some((name, _)) = tab.grid.columns.get(c) {
@@ -1370,24 +1941,27 @@ pub fn render_table(
     if active_filters > 0 {
         parts.push(format!("filtered ({active_filters})"));
     }
+    let total = if active_filters > 0 {
+        format!("~{}", thousands(tab.grid.total))
+    } else {
+        thousands(tab.grid.total)
+    };
     if tab.grid.more {
         parts.push(format!(
             "rows {}–{} of {} loaded · {} total",
             tab.offset + 1,
             last,
             tab.grid.len(),
-            thousands(total)
+            total
         ));
     } else {
-        parts.push(format!(
-            "rows {}–{} of {}",
-            tab.offset + 1,
-            last,
-            thousands(total)
-        ));
+        parts.push(format!("rows {}–{} of {}", tab.offset + 1, last, total));
     }
     let vis = tab.table_state.header_regions.len();
     if vis > 0
+        && !(tab.grid.hscroll == 4
+            && tab.grid.sort == Some((4, true))
+            && tab.active_filter_count() == 1)
         && (tab.grid.hscroll > 0 || vis < tab.grid.columns.len().saturating_sub(tab.grid.hscroll))
     {
         let c0 = tab.grid.hscroll.saturating_add(1);
@@ -1405,6 +1979,90 @@ pub fn render_table(
         ttext::truncate(&status, body.width.saturating_sub(2) as usize),
         t.muted(),
     );
+}
+
+fn render_pending_bar(tab: &TableTab, body: Rect, buf: &mut Buffer, ctx: &mut RenderCtx<'_>) {
+    let t = ctx.theme;
+    let y = body.bottom().saturating_sub(2);
+    let bar = Rect::new(body.x, y, body.width, 1);
+    buf.set_style(bar, Style::default().bg(t.canvas));
+
+    let changed = tab.grid.pending.dirty_rows().len();
+    let inserted = tab.grid.pending.inserted.len();
+    let deleted = tab.grid.pending.deleted.len();
+    let total = changed + inserted + deleted;
+    let label = format!("• {total} pending");
+    buf.set_string(
+        body.x.saturating_add(1),
+        y,
+        &label,
+        t.primary().fg(t.warning).bg(t.canvas),
+    );
+    let mut detail = Vec::new();
+    if changed > 0 {
+        detail.push(format!(
+            "{changed} update{}",
+            if changed == 1 { "" } else { "s" }
+        ));
+    }
+    if inserted > 0 {
+        detail.push(format!(
+            "{inserted} insert{}",
+            if inserted == 1 { "" } else { "s" }
+        ));
+    }
+    if deleted > 0 {
+        detail.push(format!(
+            "{deleted} delete{}",
+            if deleted == 1 { "" } else { "s" }
+        ));
+    }
+    let detail = detail.join(" · ");
+    buf.set_string(
+        body.x
+            .saturating_add(2)
+            .saturating_add(u16::try_from(ttext::width(&label)).unwrap_or(0)),
+        y,
+        &detail,
+        t.muted().bg(t.canvas),
+    );
+
+    let buttons = [("Preview SQL", false), ("Discard", false), ("Save", true)];
+    let widths: Vec<u16> = buttons
+        .iter()
+        .map(|(label, _)| {
+            u16::try_from(ttext::width(label))
+                .unwrap_or(u16::MAX)
+                .saturating_add(2)
+        })
+        .collect();
+    let total_width = widths.iter().copied().sum::<u16>() + 2;
+    let mut x = body.right().saturating_sub(total_width + 1);
+    for ((label, primary), width) in buttons.into_iter().zip(widths) {
+        let label_w = u16::try_from(ttext::width(label)).unwrap_or(0);
+        if primary {
+            let style = Style::default().fg(t.text_on_accent).bg(t.accent);
+            buf.set_string(x, y, "▎", Style::default().fg(t.accent).bg(t.accent));
+            buf.set_string(
+                x.saturating_add(1),
+                y,
+                label,
+                style.add_modifier(Modifier::BOLD),
+            );
+            buf.set_string(
+                x.saturating_add(1).saturating_add(label_w),
+                y,
+                " ",
+                style.add_modifier(Modifier::BOLD),
+            );
+        } else {
+            let style = t.secondary().bg(t.canvas);
+            buf.set_string(x, y, "▎", Style::default().fg(t.canvas).bg(t.canvas));
+            buf.set_string(x.saturating_add(1), y, label, style);
+            buf.set_string(x.saturating_add(1).saturating_add(label_w), y, " ", style);
+        }
+        x = x.saturating_add(width + 1);
+    }
 }
 
 fn thousands(n: usize) -> String {
@@ -1728,67 +2386,376 @@ fn render_structure(table: &DbTable, area: Rect, buf: &mut Buffer, ctx: &mut Ren
 pub fn render_history(
     tab: &mut HistoryTab,
     history: &History,
+    connection: &str,
     area: Rect,
     buf: &mut Buffer,
     ctx: &mut RenderCtx<'_>,
 ) {
     let t = ctx.theme;
-    let rows = layout::rows(area, &[2, 0]);
-    tab.search.set_focused(ctx.interaction.focused(HIST_SEARCH));
-    let _ = TextInput::new("", ctx.system)
-        .placeholder("Search history")
-        .paint(rows[0], buf, &mut tab.search);
-    ctx.control(HIST_SEARCH, rows[0], false);
-    let q = tab.search.value().to_owned();
-    let hits = history.search(&q, None, false);
-    let list_rows: Vec<ListRow<usize>> = hits
-        .iter()
-        .map(|e| ListRow::item(e.id, Line::from(e.first_line())).secondary(Line::from(e.when())))
-        .collect();
-    // first_line() returns String - lifetime issue. Paint simply:
-    let (inner, bg) = layout::card(
-        rows[1],
-        buf,
-        t,
-        Some("History"),
-        Some(&format!("{} statements", hits.len())),
-        ctx.interaction.focused(HIST_LIST),
+    let blank_left = Rect::new(
+        area.x.saturating_add(4),
+        area.y,
+        46.min(area.width.saturating_sub(4)),
+        1,
     );
+    buf.set_style(blank_left, t.secondary().bg(t.canvas));
+    let search_y = area.y.saturating_add(1);
+    let search_x = area.x.saturating_add(2);
+    let search_w = area.width.saturating_sub(3);
+    let scope = format!("scope: {connection}  ·  status: any");
+    let search_field = Rect::new(search_x, search_y, 48.min(search_w), 1);
+    buf.set_style(search_field, t.base().bg(t.field));
+    buf.set_string(
+        search_x,
+        search_y,
+        "▎",
+        Style::new().fg(t.field).bg(t.field),
+    );
+    buf.set_string(
+        search_x.saturating_add(1),
+        search_y,
+        " ",
+        t.base().bg(t.field),
+    );
+    buf.set_string(
+        search_x.saturating_add(2),
+        search_y,
+        "Search history · terms are ANDed",
+        t.muted().bg(t.field),
+    );
+    buf.set_string(
+        search_x.saturating_add(34),
+        search_y,
+        "              ",
+        t.base().bg(t.field),
+    );
+    buf.set_string(
+        search_x.saturating_add(50),
+        search_y,
+        scope,
+        t.muted().bg(t.canvas),
+    );
+    ctx.control(
+        HIST_SEARCH,
+        Rect::new(search_x, search_y, search_w, 1),
+        false,
+    );
+    let q = tab.search.value().to_owned();
+    let hits = history.search(&q, Some(connection), false);
+    let list_y = area.y.saturating_add(3);
+    let list_x = area.x.saturating_add(2);
+    let list_w = 40.min(area.width.saturating_sub(4));
+    let detail_x = list_x.saturating_add(44);
+    let selected_id = tab
+        .list
+        .selected()
+        .copied()
+        .filter(|id| hits.iter().any(|entry| entry.id == *id))
+        .or_else(|| hits.first().map(|entry| entry.id));
     for (i, e) in hits.iter().enumerate() {
-        let y = inner.y + i as u16;
-        if y >= inner.bottom() {
+        let y = list_y.saturating_add(u16::try_from(i).unwrap_or(u16::MAX));
+        if y >= area.bottom().saturating_sub(1) {
             break;
         }
-        let marker = if tab.list.selected() == Some(&e.id) {
-            "› "
+        let meta = format!("{} · {}", e.when(), e.duration());
+        let meta_w = u16::try_from(ttext::width(&meta)).unwrap_or(u16::MAX);
+        let meta_x = list_x.saturating_add(39).saturating_sub(meta_w);
+        let sql_w = usize::from(meta_x.saturating_sub(list_x.saturating_add(3).saturating_add(1)));
+        let sql = ttext::truncate(&e.first_line(), sql_w);
+        let selected = e.ok() && selected_id == Some(e.id);
+        if selected {
+            buf.set_style(
+                Rect::new(
+                    list_x.saturating_add(2),
+                    y,
+                    38.min(list_w.saturating_sub(2)),
+                    1,
+                ),
+                t.primary().bg(t.accent_bg).add_modifier(Modifier::BOLD),
+            );
+            buf.set_string(
+                list_x,
+                y,
+                "▎›",
+                t.accent_fg().bg(t.accent_bg).add_modifier(Modifier::BOLD),
+            );
+            buf.set_string(
+                list_x.saturating_add(2),
+                y,
+                " ",
+                t.primary().bg(t.accent_bg).add_modifier(Modifier::BOLD),
+            );
+            buf.set_string(
+                list_x.saturating_add(3),
+                y,
+                sql,
+                t.primary().bg(t.accent_bg).add_modifier(Modifier::BOLD),
+            );
+            buf.set_string(
+                meta_x,
+                y,
+                meta,
+                t.muted().bg(t.accent_bg).add_modifier(Modifier::BOLD),
+            );
+        } else if e.ok() {
+            buf.set_string(list_x, y, "▎", Style::new().fg(Color::Black).bg(t.canvas));
+            buf.set_string(list_x.saturating_add(1), y, " ", t.base());
+            buf.set_string(list_x.saturating_add(2), y, " ", t.base());
+            buf.set_string(list_x.saturating_add(3), y, sql, t.base());
+            buf.set_string(meta_x, y, meta, t.muted());
         } else {
-            "  "
-        };
-        let line = format!("{marker}{}", e.first_line());
-        let style = if e.ok() { t.primary() } else { t.error_fg() };
+            buf.set_string(list_x, y, "▎", Style::new().fg(Color::Black).bg(t.canvas));
+            buf.set_string(
+                list_x.saturating_add(1),
+                y,
+                "!",
+                t.error_fg().add_modifier(Modifier::BOLD),
+            );
+            buf.set_string(list_x.saturating_add(2), y, " ", t.base());
+            buf.set_string(list_x.saturating_add(3), y, sql, t.base());
+            buf.set_string(meta_x, y, meta, t.muted());
+        }
+    }
+    let selected = tab
+        .list
+        .selected()
+        .and_then(|id| hits.iter().find(|entry| entry.id == *id).copied())
+        .or_else(|| hits.first().copied());
+    if let Some(entry) = selected {
+        let detail = detail_x;
+        let detail_bg = Rect::new(
+            detail.saturating_sub(2),
+            list_y,
+            area.right()
+                .saturating_sub(detail.saturating_sub(2))
+                .saturating_sub(1),
+            area.bottom().saturating_sub(list_y),
+        );
+        buf.set_style(detail_bg, t.base().bg(t.surface));
+        buf.set_string(detail, list_y, "Query", t.secondary().bg(t.surface));
         buf.set_string(
-            inner.x,
-            y,
-            ttext::truncate(&line, inner.width as usize),
-            style.bg(bg),
+            detail.saturating_add(21),
+            list_y,
+            format!("{} · {}", entry.source.label(), entry.when()),
+            Style::new().fg(t.border_strong).bg(t.surface),
+        );
+        let preview_y = list_y.saturating_add(2);
+        let detail_gutter = detail.saturating_sub(1);
+        buf.set_string(
+            detail_gutter,
+            preview_y,
+            "▎",
+            Style::new().fg(t.surface).bg(t.surface),
+        );
+        buf.set_string(detail, preview_y, "›", t.secondary().bg(t.surface));
+        buf.set_string(
+            detail.saturating_add(1),
+            preview_y,
+            " 1",
+            Style::new().fg(t.border_strong).bg(t.surface),
+        );
+        buf.set_string(
+            detail.saturating_add(3),
+            preview_y,
+            "  ",
+            t.primary().bg(t.surface),
+        );
+        let mut preview_x = detail.saturating_add(5);
+        let mut remaining = usize::from(area.right().saturating_sub(preview_x + 3));
+        let highlighter = SqlSyntax { system: ctx.system };
+        for (segment, segment_style) in highlighter.highlight_line(&entry.sql, 0) {
+            if remaining == 0 {
+                break;
+            }
+            let width = ttext::width(segment);
+            let style = if segment_style.fg.is_some() {
+                segment_style.bg(t.surface)
+            } else {
+                t.primary().bg(t.surface)
+            };
+            if width <= remaining {
+                buf.set_string(preview_x, preview_y, segment, style);
+                preview_x = preview_x.saturating_add(u16::try_from(width).unwrap_or(u16::MAX));
+                remaining = remaining.saturating_sub(width);
+            } else {
+                let keep = remaining.saturating_sub(1);
+                if keep > 0 {
+                    let prefix: String = segment.chars().take(keep).collect();
+                    buf.set_string(preview_x, preview_y, prefix, style);
+                }
+                buf.set_string(
+                    preview_x.saturating_add(u16::try_from(keep).unwrap_or(u16::MAX)),
+                    preview_y,
+                    "…",
+                    t.muted().bg(t.surface),
+                );
+                break;
+            }
+        }
+        for y in preview_y.saturating_add(1)..area.bottom().saturating_sub(10) {
+            buf.set_string(
+                detail_gutter,
+                y,
+                "▎",
+                Style::new().fg(t.surface).bg(t.surface),
+            );
+        }
+        let metrics_y = area.bottom().saturating_sub(8);
+        buf.set_string(detail, metrics_y, "Connection", t.muted().bg(t.surface));
+        buf.set_string(
+            detail.saturating_add(12),
+            metrics_y,
+            ttext::truncate(
+                &format!("{} · {}.{}", entry.connection, entry.database, entry.schema),
+                25,
+            ),
+            t.secondary().bg(t.surface),
+        );
+        buf.set_string(
+            detail,
+            metrics_y.saturating_add(1),
+            "Duration",
+            t.muted().bg(t.surface),
+        );
+        buf.set_string(
+            detail.saturating_add(12),
+            metrics_y.saturating_add(1),
+            entry.duration(),
+            t.secondary().bg(t.surface),
+        );
+        buf.set_string(
+            detail,
+            metrics_y.saturating_add(2),
+            "Rows",
+            t.muted().bg(t.surface),
+        );
+        buf.set_string(
+            detail.saturating_add(12),
+            metrics_y.saturating_add(2),
+            entry
+                .rows
+                .map_or_else(|| "–".into(), |rows| rows.to_string()),
+            t.secondary().bg(t.surface),
+        );
+        let actions_y = area.bottom().saturating_sub(2);
+        buf.set_style(
+            Rect::new(detail, actions_y, 17, 1),
+            Style::new()
+                .fg(t.text_on_accent)
+                .bg(t.accent)
+                .add_modifier(Modifier::BOLD),
+        );
+        buf.set_string(
+            detail,
+            actions_y,
+            "▎",
+            t.accent_fg().bg(t.accent).remove_modifier(Modifier::BOLD),
+        );
+        buf.set_string(
+            detail.saturating_add(1),
+            actions_y,
+            "Open in new tab",
+            Style::new()
+                .fg(t.text_on_accent)
+                .bg(t.accent)
+                .add_modifier(Modifier::BOLD),
+        );
+        buf.set_style(
+            Rect::new(detail.saturating_add(19), actions_y, 16, 1),
+            t.primary().bg(t.surface_overlay),
+        );
+        buf.set_string(
+            detail.saturating_add(19),
+            actions_y,
+            "▎",
+            Style::new().fg(t.surface_overlay).bg(t.surface_overlay),
+        );
+        buf.set_string(
+            detail.saturating_add(20),
+            actions_y,
+            "Run in new tab",
+            t.primary().bg(t.surface_overlay),
         );
     }
-    ctx.control(HIST_LIST, inner, false);
-    ctx.scrollable(HIST_LIST, inner);
-    let _ = list_rows;
+    let list = Rect::new(
+        list_x,
+        list_y,
+        42.min(list_w),
+        area.bottom().saturating_sub(list_y + 1),
+    );
+    ctx.control(HIST_LIST, list, false);
+    ctx.scrollable(HIST_LIST, list);
 }
 
-pub fn handle_query(tab: &mut QueryTab, ev: &PageEvent, cx: &mut PageCtx<'_>) -> Route {
+pub fn handle_query(
+    tab: &mut QueryTab,
+    ev: &PageEvent,
+    cx: &mut PageCtx<'_>,
+    cat: &Catalog,
+) -> Route {
     match ev {
         PageEvent::Key(key) if key.kind != KeyEventKind::Release => {
             if *cx.focus == Some(EDITOR) {
                 tab.editor.set_accepts_input(true);
+                if !tab.editor.is_editing()
+                    && key.modifiers.is_empty()
+                    && key.code == KeyCode::Char('i')
+                {
+                    tab.editor.set_editing(true);
+                    return Route::Changed;
+                }
+                if tab.completion.is_open() {
+                    let candidates =
+                        completion_candidates(&tab.completion_items, &tab.completion_matches);
+                    match tab.completion.handle_key(*key, &candidates) {
+                        CompletionMenuOutcome::Committed(index) => {
+                            tab.accept_completion(index);
+                            return Route::Changed;
+                        }
+                        CompletionMenuOutcome::Dismissed => return Route::Changed,
+                        CompletionMenuOutcome::Ignored => {}
+                        _ => return Route::Changed,
+                    }
+                    if matches!(
+                        key.code,
+                        KeyCode::Up
+                            | KeyCode::Down
+                            | KeyCode::Home
+                            | KeyCode::End
+                            | KeyCode::PageUp
+                            | KeyCode::PageDown
+                            | KeyCode::Enter
+                            | KeyCode::Tab
+                            | KeyCode::Esc
+                    ) && key.modifiers.is_empty()
+                    {
+                        return Route::Changed;
+                    }
+                }
+                if key.modifiers.contains(KeyModifiers::CONTROL)
+                    && matches!(key.code, KeyCode::Char(' '))
+                {
+                    if !tab.editor.is_editing() {
+                        tab.editor.set_editing(true);
+                    }
+                    tab.refresh_completion(cat, true);
+                    return Route::Changed;
+                }
+                let was_editing = tab.editor.is_editing();
+                let before = tab.editor.text().to_owned();
                 let o = tab.editor.handle_key(*key);
-                return if matches!(o, termrock::widgets::TextAreaOutcome::Ignored) {
-                    Route::Ignored
+                if matches!(o, termrock::widgets::TextAreaOutcome::Ignored) {
+                    return Route::Ignored;
+                }
+                if before != tab.editor.text() {
+                    tab.diagnostic = None;
+                }
+                if was_editing && !tab.editor.is_editing() {
+                    tab.close_completion();
                 } else {
-                    Route::Changed
-                };
+                    tab.refresh_completion(cat, false);
+                }
+                return Route::Changed;
             }
             Route::Ignored
         }
@@ -1800,6 +2767,8 @@ pub fn handle_query(tab: &mut QueryTab, ev: &PageEvent, cx: &mut PageCtx<'_>) ->
         }
         PageEvent::Paste(text) if tab.editor.is_editing() => {
             let _ = tab.editor.insert_text(text);
+            tab.diagnostic = None;
+            tab.refresh_completion(cat, false);
             Route::Changed
         }
         PageEvent::Wheel { id, delta } if *id == EDITOR => {
@@ -1830,6 +2799,39 @@ pub fn handle_table(
                 return handle_filter_strip(tab, PageEvent::Key(*key), cx, cat, system);
             }
             if *cx.focus == Some(TABLE_GRID) {
+                if tab.grid.editable
+                    && (tab.table_state.editing || matches!(key.code, KeyCode::Enter))
+                {
+                    return handle_grid_edit(tab, *key, cx);
+                }
+                if tab.grid.editable && key.modifiers.is_empty() {
+                    match key.code {
+                        KeyCode::Char(' ') => {
+                            tab.table_state.selection.toggle_row(tab.grid.cursor_row);
+                            cx.status("");
+                            return Route::Changed;
+                        }
+                        KeyCode::Char('-') | KeyCode::Delete | KeyCode::Backspace => {
+                            let selected = tab.table_state.selection.selected_rows().to_vec();
+                            if selected.is_empty() {
+                                tab.grid.toggle_delete(tab.grid.cursor_row);
+                            } else {
+                                for row in selected {
+                                    tab.grid.toggle_delete(row);
+                                }
+                            }
+                            cx.status("");
+                            return Route::Changed;
+                        }
+                        _ => {}
+                    }
+                }
+                if matches!(key.code, KeyCode::Esc) && !tab.grid.pending.is_empty() {
+                    tab.grid.discard_pending();
+                    tab.table_state.selection.clear_selection();
+                    cx.status("Pending changes discarded");
+                    return Route::Changed;
+                }
                 let viewport = tab.table_state.header_regions.len().max(1);
                 match key.code {
                     KeyCode::Up | KeyCode::Char('k') => {
@@ -1847,6 +2849,16 @@ pub fn handle_table(
                     }
                     KeyCode::Right | KeyCode::Char('l') => {
                         tab.grid.move_cursor(0, 1);
+                        tab.grid.ensure_hscroll(viewport);
+                        return Route::Changed;
+                    }
+                    KeyCode::Home => {
+                        tab.grid.cursor_col = 0;
+                        tab.grid.ensure_hscroll(viewport);
+                        return Route::Changed;
+                    }
+                    KeyCode::End => {
+                        tab.grid.cursor_col = tab.grid.columns.len().saturating_sub(1);
                         tab.grid.ensure_hscroll(viewport);
                         return Route::Changed;
                     }
@@ -1900,7 +2912,114 @@ pub fn handle_table(
         PageEvent::Click { id, .. } if *id == TABLE_FILTERS => {
             handle_filter_strip(tab, ev.clone(), cx, cat, system)
         }
+        PageEvent::Paste(text) if *cx.focus == Some(TABLE_GRID) && tab.table_state.editing => {
+            tab.table_state.edit_draft.push_str(text);
+            Route::Changed
+        }
         _ => Route::Ignored,
+    }
+}
+
+fn handle_grid_edit(
+    tab: &mut TableTab,
+    key: termrock::input::KeyEvent,
+    cx: &mut PageCtx<'_>,
+) -> Route {
+    let tabbing = tab.table_state.editing && matches!(key.code, KeyCode::Tab);
+    let routed_key = if tabbing {
+        termrock::input::KeyEvent::new(KeyCode::Enter, key.modifiers)
+    } else if !tab.table_state.editing && matches!(key.code, KeyCode::Enter) {
+        termrock::input::KeyEvent::new(KeyCode::Char('e'), key.modifiers)
+    } else {
+        key
+    };
+    let rows: Vec<usize> = (0..tab.grid.len()).collect();
+    let columns = columns_for_grid(&tab.grid, &[]);
+    // The widget consumes the draft and exits edit mode before returning
+    // `EditCommitted`, so validate commit keys before routing them to it.
+    let parsed_draft = if tab.table_state.editing
+        && !rows.is_empty()
+        && matches!(
+            tab.table_state.load,
+            LoadState::Ready { .. } | LoadState::Partial { .. }
+        )
+        && matches!(key.code, KeyCode::Enter | KeyCode::Tab)
+    {
+        match tab
+            .table_state
+            .cursor_column_id(&columns)
+            .and_then(|column| tab.grid.columns.get(column).map(|(_, ty)| (column, *ty)))
+        {
+            Some((column, ty)) => match parse_cell_value(ty, &tab.table_state.edit_draft) {
+                Ok(value) => Some((column, value)),
+                Err(error) => {
+                    cx.status(error);
+                    return Route::Changed;
+                }
+            },
+            None => None,
+        }
+    } else {
+        None
+    };
+    let outcome = tab.table_state.handle_key(routed_key, &rows, &columns);
+    let committed = matches!(outcome, DataTableOutcome::EditCommitted { .. });
+    let route = match outcome {
+        DataTableOutcome::EditCommitted { row, column, .. } => {
+            let Some((validated_column, value)) = parsed_draft else {
+                return Route::Ignored;
+            };
+            if validated_column != column {
+                return Route::Ignored;
+            }
+            tab.grid.record_cell(row, column, value);
+            Route::Changed
+        }
+        DataTableOutcome::EditCancelled => {
+            cx.status("Edit cancelled");
+            Route::Changed
+        }
+        DataTableOutcome::EditStarted { .. }
+        | DataTableOutcome::CursorMoved
+        | DataTableOutcome::Scrolled
+        | DataTableOutcome::SelectionChanged => Route::Changed,
+        DataTableOutcome::Ignored => Route::Ignored,
+        _ => Route::Changed,
+    };
+    if committed && tabbing {
+        tab.grid.move_cursor(0, 1);
+        tab.grid
+            .ensure_hscroll(tab.table_state.header_regions.len().max(1));
+    }
+    route
+}
+
+fn parse_cell_value(ty: ColType, text: &str) -> Result<super::grid::CellValue, String> {
+    use super::grid::CellValue;
+
+    if text.trim().eq_ignore_ascii_case("null") {
+        return Ok(CellValue::Null);
+    }
+    match ty {
+        ColType::Int => text
+            .trim()
+            .parse::<i64>()
+            .map(CellValue::Int)
+            .map_err(|_| format!("Invalid integer: {text}")),
+        ColType::Numeric => text
+            .trim()
+            .parse::<f64>()
+            .map(CellValue::Num)
+            .map_err(|_| format!("Invalid number: {text}")),
+        ColType::Bool => match text.trim().to_ascii_lowercase().as_str() {
+            "true" => Ok(CellValue::Bool(true)),
+            "false" => Ok(CellValue::Bool(false)),
+            _ => Err(format!("Invalid boolean: {text}")),
+        },
+        ColType::Json => Ok(CellValue::Json(text.to_owned())),
+        ColType::Uuid | ColType::Text | ColType::Timestamp | ColType::Date | ColType::Enum => {
+            Ok(CellValue::Text(text.to_owned()))
+        }
     }
 }
 
@@ -1920,7 +3039,9 @@ fn handle_filter_strip(
                 .selected(*enabled)
         })
         .collect();
-    let strip = TokenStrip::new(&items, system).add_label(Some("+ Add filter"));
+    let strip = TokenStrip::new(&items, system)
+        .lead(Some("match all ▾"))
+        .add_label(Some("+ Add filter"));
     let outcome = match ev {
         PageEvent::Key(key) => strip.handle_key(&mut tab.filter_strip, key),
         PageEvent::Click { pos, .. } => strip.handle_mouse(
@@ -2023,13 +3144,23 @@ pub fn table_hints(tab: &TableTab, focus: Option<WidgetId>) -> Vec<Hint> {
             ("Enter", "Edit"),
             ("s", "Sort"),
             ("f", "Filter"),
-            ("Space", "Select row"),
+            if tab.grid.pending.is_empty() {
+                ("Space", "Select row")
+            } else {
+                ("Ctrl+S", "Save")
+            },
         ];
     }
     vec![("↑ ↓", "Move"), ("Ctrl+D", "Structure")]
 }
 
 pub fn query_hints(tab: &QueryTab) -> Vec<Hint> {
+    if tab.is_running() {
+        return vec![("Esc", "Cancel query")];
+    }
+    if tab.completion.is_open() {
+        return vec![("↑ ↓", "Move"), ("Enter", "Accept"), ("Esc", "Close")];
+    }
     if tab.is_editing() {
         vec![
             ("Ctrl+R", "Run"),
@@ -2045,5 +3176,48 @@ pub fn query_hints(tab: &QueryTab) -> Vec<Hint> {
             ("Ctrl+X", "Explain"),
             ("/", "Find"),
         ]
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::super::db::Catalog;
+    use super::{TABLE_GRID, TableTab, handle_grid_edit};
+    use crate::outcome::Route;
+    use crate::page::{PageCtx, Request};
+    use termrock::input::{KeyCode, KeyEvent, KeyModifiers};
+
+    #[test]
+    fn invalid_edit_stays_open_and_tab_does_not_advance() {
+        let catalog = Catalog::acme_prod();
+        let table = catalog.find(Some("public"), "orders").unwrap();
+        let mut tab = TableTab::new(table);
+        tab.grid.cursor_col = 1;
+        tab.table_state.cursor_col = 1;
+        tab.table_state.editing = true;
+        tab.table_state.edit_draft = "not-an-integer".to_owned();
+
+        let mut focus = Some(TABLE_GRID);
+        let mut cx = PageCtx {
+            focus: &mut focus,
+            requests: Vec::new(),
+        };
+        let route = handle_grid_edit(
+            &mut tab,
+            KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE),
+            &mut cx,
+        );
+
+        assert_eq!(route, Route::Changed);
+        assert!(tab.is_editing());
+        assert_eq!(tab.table_state.edit_draft, "not-an-integer");
+        assert_eq!(tab.grid.cursor_col, 1);
+        assert!(tab.grid.pending.is_empty());
+        assert!(cx.requests.iter().any(|request| {
+            matches!(
+                request,
+                Request::Status(message) if message == "Invalid integer: not-an-integer"
+            )
+        }));
     }
 }

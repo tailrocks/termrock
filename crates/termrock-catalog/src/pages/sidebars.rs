@@ -6,8 +6,10 @@
 //! Sections, current item, focus cursor, hover, collapsed mode.
 
 use ratatui::buffer::Buffer;
-use ratatui::layout::Rect;
-use termrock::input::{KeyCode, KeyEventKind, MouseButton, MouseEvent, MouseEventKind};
+use ratatui::layout::{Position, Rect};
+use termrock::input::{
+    KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+};
 use termrock::widgets::{
     Button, ButtonState, ButtonVariant, NavItem, NavigationList, NavigationListOutcome,
     NavigationListState,
@@ -62,6 +64,8 @@ pub struct SidebarsPage {
     nav: NavigationListState<&'static str>,
     collapse: ButtonState,
     collapsed: bool,
+    capture_cursor: Option<Position>,
+    nav_focus_initialized: bool,
 }
 
 impl SidebarsPage {
@@ -73,6 +77,8 @@ impl SidebarsPage {
             nav,
             collapse: ButtonState::new(),
             collapsed: false,
+            capture_cursor: None,
+            nav_focus_initialized: false,
         }
     }
 }
@@ -94,12 +100,21 @@ impl Page for SidebarsPage {
         // nav origin is the card edge, not the +2 caption inset.
         let nav_area = Rect::new(side.x, inner.y, side.width, inner.height.saturating_sub(2));
         let items = nav_items();
-        self.nav.set_focused(ctx.interaction.focused(NAV));
+        let nav_focused = ctx.interaction.focused(NAV);
+        self.nav.set_focused(nav_focused);
+        if nav_focused && !self.nav_focus_initialized {
+            self.nav_focus_initialized = true;
+            let _ = self
+                .nav
+                .handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE), &items);
+        }
         NavigationList::new(&items, ctx.system)
             .rail(self.collapsed)
             .show_filter(false)
             .paint(nav_area, buf, &mut self.nav);
         ctx.control(NAV, nav_area, false);
+        self.capture_cursor =
+            nav_focused.then(|| Position::new(side.right(), nav_area.y.saturating_add(2)));
 
         let collapse_label = if self.collapsed { "›" } else { "Collapse" };
         self.collapse.focused = ctx.interaction.focused(COLLAPSE);
@@ -201,5 +216,9 @@ impl Page for SidebarsPage {
 
     fn hints(&self, _focus: Option<WidgetId>) -> Vec<Hint> {
         vec![("↑ ↓", "Move"), ("Enter", "Open")]
+    }
+
+    fn capture_cursor(&self) -> Option<Position> {
+        self.capture_cursor
     }
 }

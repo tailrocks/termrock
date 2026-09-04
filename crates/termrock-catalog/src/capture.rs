@@ -22,7 +22,7 @@ use termrock::style::ColorCapability;
 use unicode_width::UnicodeWidthStr;
 
 use crate::catalog::CatalogProfile;
-use crate::scenarios::{Host, Scenario, Step};
+use crate::scenarios::{Host, Scenario, Step, TableFocusSeed};
 use crate::shell::App;
 use crate::snapshot::Snapshot;
 use crate::tablepro::App as TableProApp;
@@ -66,6 +66,13 @@ impl CursorTrackingBackend {
 
     fn cursor_visible(&self) -> bool {
         self.visible
+    }
+
+    /// Mouse reports leave tmux's cursor at the reported terminal cell even
+    /// when the application redraw does not write that cell. Preserve that
+    /// terminal-side position for source-shot cursor parity.
+    fn set_input_cursor(&mut self, position: Position) {
+        self.cursor = position;
     }
 }
 
@@ -159,7 +166,8 @@ impl Artifacts {
     /// PNG bytes via termrock-raster (zero-tol pixel compare).
     #[cfg(feature = "native")]
     pub fn png(&self) -> Result<Vec<u8>, String> {
-        termrock_raster::render_png(&self.buffer, &termrock::style::RolePalette::junie())
+        let raster = crate::ansi_grid::from_snapshot(&self.snapshot).for_raster();
+        termrock_raster::render_png(&raster.to_buffer(), &termrock::style::RolePalette::junie())
             .map_err(|e| e.to_string())
     }
 
@@ -220,6 +228,30 @@ impl Drive<'_> {
             Self::TablePro(app) => app.on_tick(t),
         }
     }
+
+    fn draw(&mut self, term: &mut Terminal<CursorTrackingBackend>, t: FrameTick) {
+        match self {
+            Self::Catalog(app) => {
+                term.draw(|f| app.render(f, t)).expect("draw");
+            }
+            Self::TablePro(app) => {
+                term.draw(|f| app.render(f, t)).expect("draw");
+                if let Some(position) = app.capture_cursor() {
+                    term.backend_mut().set_cursor_position(position);
+                }
+                if app.editing() {
+                    term.backend_mut().show_cursor().expect("show cursor");
+                } else {
+                    term.backend_mut().hide_cursor().expect("hide cursor");
+                }
+            }
+        };
+        if let Self::Catalog(app) = self
+            && let Some(position) = app.capture_cursor()
+        {
+            term.backend_mut().set_cursor_position(position);
+        }
+    }
 }
 
 fn apply_step(
@@ -260,7 +292,10 @@ fn apply_step(
                 drive.send(key(KeyCode::Char(c), KeyModifiers::NONE), tick_at(*elapsed));
             }
         }
-        Step::Move(x, y) => drive.send(mouse(MouseEventKind::Moved, x, y), tick_at(*elapsed)),
+        Step::Move(x, y) => {
+            drive.send(mouse(MouseEventKind::Moved, x, y), tick_at(*elapsed));
+            term.backend_mut().set_input_cursor(Position::new(x, y));
+        }
         Step::Click(x, y) => {
             drive.send(
                 mouse(MouseEventKind::Down(MouseButton::Left), x, y),
@@ -270,9 +305,11 @@ fn apply_step(
                 mouse(MouseEventKind::Up(MouseButton::Left), x, y),
                 tick_at(*elapsed),
             );
+            term.backend_mut().set_input_cursor(Position::new(x, y));
         }
         Step::WheelDown(x, y) => {
             drive.send(mouse(MouseEventKind::ScrollDown, x, y), tick_at(*elapsed));
+            term.backend_mut().set_input_cursor(Position::new(x, y));
         }
         Step::Resize(c, r) => {
             *cols = c;
@@ -289,7 +326,9 @@ fn apply_step(
         Step::Ticks(n) => {
             for _ in 0..n {
                 *elapsed = elapsed.saturating_add(80);
-                drive.tick(tick_at(*elapsed));
+                let t = tick_at(*elapsed);
+                drive.tick(t);
+                drive.draw(term, t);
             }
         }
     }
@@ -331,21 +370,18 @@ fn replay_catalog(scenario: &Scenario, page: crate::catalog::PageId) -> Artifact
     let mut rows = scenario.rows;
     let mut term = Terminal::new(CursorTrackingBackend::new(cols, rows)).expect("test backend");
     let mut elapsed = 0_u64;
-    let draw = |app: &mut App, term: &mut Terminal<CursorTrackingBackend>, elapsed: u64| {
-        let t = tick_at(elapsed);
-        term.draw(|f| app.render(f, t)).expect("draw");
-    };
-    draw(&mut app, &mut term, elapsed);
+    let mut drive = Drive::Catalog(&mut app);
+    drive.draw(&mut term, tick_at(elapsed));
     for step in scenario.steps {
         apply_step(
-            &mut Drive::Catalog(&mut app),
+            &mut drive,
             &mut term,
             &mut cols,
             &mut rows,
             &mut elapsed,
             *step,
         );
-        draw(&mut app, &mut term, elapsed);
+        drive.draw(&mut term, tick_at(elapsed));
     }
     snapshot_from_terminal(&term)
 }
@@ -359,26 +395,50 @@ fn replay_tablepro(scenario: &Scenario, connect: Option<&str>) -> Artifacts {
     if let Some(sql) = scenario.seed_sql {
         app.seed_active_query(sql);
     }
+    if let Some(ticks) = scenario.run_ticks_left {
+        app.set_active_query_run_ticks_left(ticks);
+    }
+    if let Some((x, y)) = scenario.capture_cursor {
+        app.set_capture_cursor(Position::new(x, y));
+    }
     let mut cols = scenario.cols;
     let mut rows = scenario.rows;
     let mut term = Terminal::new(CursorTrackingBackend::new(cols, rows)).expect("test backend");
     let mut elapsed = 0_u64;
-    let draw = |app: &mut TableProApp, term: &mut Terminal<CursorTrackingBackend>, elapsed: u64| {
-        let t = tick_at(elapsed);
-        term.draw(|f| app.render(f, t)).expect("draw");
-    };
-    draw(&mut app, &mut term, elapsed);
+    let mut drive = Drive::TablePro(&mut app);
+    drive.draw(&mut term, tick_at(elapsed));
     for step in scenario.steps {
         apply_step(
-            &mut Drive::TablePro(&mut app),
+            &mut drive,
             &mut term,
             &mut cols,
             &mut rows,
             &mut elapsed,
             *step,
         );
-        draw(&mut app, &mut term, elapsed);
+        drive.draw(&mut term, tick_at(elapsed));
     }
+    drop(drive);
+    if let Some(name) = scenario.table_name {
+        let focus = match scenario.table_focus {
+            Some(TableFocusSeed::TabStrip) => crate::tablepro::workbench::TABSTRIP,
+            Some(TableFocusSeed::Explorer) | None => crate::tablepro::workbench::EXPLORER,
+        };
+        app.seed_active_table(name, scenario.table_mode.unwrap_or(0), focus);
+    }
+    if let Some(state) = scenario.table_state {
+        app.seed_active_table_state(
+            state.filter_column,
+            state.filter_value,
+            state.sort_column,
+            state.sort_ascending,
+            state.hscroll,
+            state.cursor_row,
+            state.cursor_col,
+        );
+    }
+    let mut drive = Drive::TablePro(&mut app);
+    drive.draw(&mut term, tick_at(elapsed));
     snapshot_from_terminal(&term)
 }
 
@@ -415,9 +475,16 @@ pub fn tablepro(connect: Option<&str>, cols: u16, rows: u16) -> Artifacts {
 #[cfg(test)]
 mod tests {
     use super::CursorTrackingBackend;
+    use super::Drive;
+    use super::apply_step;
+    use super::replay;
+    use crate::scenarios::Step;
+    use crate::tablepro::App as TableProApp;
+    use ratatui::Terminal;
     use ratatui::backend::Backend;
     use ratatui::buffer::Cell;
     use ratatui::layout::Position;
+    use termrock::style::ColorCapability;
 
     #[test]
     fn tracks_post_print_cursor_without_fixture_coordinates() {
@@ -445,5 +512,40 @@ mod tests {
         backend.hide_cursor().unwrap();
         assert_eq!(backend.cursor(), Position::new(4, 2));
         assert!(!backend.cursor_visible());
+    }
+
+    #[test]
+    fn mouse_replay_steps_track_input_cursor() {
+        let mut app = TableProApp::new(ColorCapability::Truecolor);
+        let mut drive = Drive::TablePro(&mut app);
+        let mut term = Terminal::new(CursorTrackingBackend::new(20, 10)).expect("test backend");
+        let mut cols = 20;
+        let mut rows = 10;
+        let mut elapsed = 0;
+
+        for (step, expected) in [
+            (Step::Move(1, 2), Position::new(1, 2)),
+            (Step::Click(3, 4), Position::new(3, 4)),
+            (Step::WheelDown(5, 6), Position::new(5, 6)),
+        ] {
+            apply_step(
+                &mut drive,
+                &mut term,
+                &mut cols,
+                &mut rows,
+                &mut elapsed,
+                step,
+            );
+            assert_eq!(term.backend().cursor(), expected);
+        }
+    }
+
+    #[test]
+    fn taskrunner_ticks_render_before_the_next_tick() {
+        let scenario = crate::scenarios::capture_scenarios()
+            .find(|scenario| scenario.id == "f_80x24_taskrunner")
+            .expect("taskrunner capture scenario");
+
+        assert_eq!(replay(scenario).cursor(), "73 12 0\n");
     }
 }

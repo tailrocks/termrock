@@ -126,8 +126,18 @@ pub trait Page {
     fn captures_text_input(&self) -> bool {
         self.editing()
     }
+    /// Terminal cursor position preserved by the native capture backend even
+    /// when the application keeps the cursor hidden. Browser hosts must not
+    /// treat this as an editing cursor.
+    fn capture_cursor(&self) -> Option<Position> {
+        None
+    }
     /// Page-owned modal already painted the footer hint row.
     fn overlaying(&self) -> bool {
+        false
+    }
+    /// Whether the page owns footer hints while the sidebar remains selected.
+    fn page_hints_when_nav(&self) -> bool {
         false
     }
 }

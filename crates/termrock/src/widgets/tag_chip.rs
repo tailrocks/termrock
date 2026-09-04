@@ -18,7 +18,12 @@
 //!
 //! References: token inputs, Grok paste/file chips, desktop filter chips.
 #![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
+use ratatui_core::{
+    buffer::Buffer,
+    layout::Rect,
+    style::{Color, Modifier},
+    widgets::Widget,
+};
 
 use crate::input::{KeyCode, KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{
@@ -296,6 +301,16 @@ impl<'a, Id: Clone> Tag<'a, Id> {
     /// Paint; updates state geometry.
     /// Paint; updates state geometry.
     pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut TagState) -> TokenParts {
+        self.paint_on(area, buffer, state, None)
+    }
+
+    fn paint_on(
+        &self,
+        area: Rect,
+        buffer: &mut Buffer,
+        state: &mut TagState,
+        background: Option<Color>,
+    ) -> TokenParts {
         state.parts = None;
         if area.is_empty() {
             return TokenParts::default();
@@ -314,6 +329,7 @@ impl<'a, Id: Clone> Tag<'a, Id> {
             part: state.part,
             hovered_remove: state.hovered_remove,
             overlay: false,
+            background,
         }
         .paint(area, buffer);
         state.parts = Some(parts);
@@ -531,6 +547,8 @@ struct TokenPaint<'a> {
     hovered_remove: bool,
     /// Chip wells sit on overlay (junie Toggle/Secondary). Tags stay quiet.
     overlay: bool,
+    /// Host surface used by a source chip bar.
+    background: Option<Color>,
 }
 
 impl TokenPaint<'_> {
@@ -577,7 +595,10 @@ impl TokenPaint<'_> {
             style,
         );
 
-        let fill_bg = style.bg.unwrap_or(self.system.junie_theme().surface);
+        let fill_bg = style
+            .bg
+            .or(self.background)
+            .unwrap_or(self.system.junie_theme().surface);
         let gutter_style = self.system.gutter(
             crate::style::VisualState {
                 focused: self.focused,
@@ -941,6 +962,16 @@ impl ChipState {
 impl<'a, Id: Clone> Chip<'a, Id> {
     /// Paint chip.
     pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut ChipState) -> TokenParts {
+        self.paint_on(area, buffer, state, None)
+    }
+
+    fn paint_on(
+        &self,
+        area: Rect,
+        buffer: &mut Buffer,
+        state: &mut ChipState,
+        background: Option<Color>,
+    ) -> TokenParts {
         state.parts = None;
         if area.is_empty() {
             return TokenParts::default();
@@ -958,6 +989,7 @@ impl<'a, Id: Clone> Chip<'a, Id> {
             part: state.part,
             hovered_remove: state.hovered_remove,
             overlay: true,
+            background,
         }
         .paint(area, buffer);
         state.parts = Some(parts);
@@ -1304,6 +1336,8 @@ pub struct TokenStrip<'a, Id> {
     add_label: Option<&'a str>,
     /// Leading label such as `match all ▾` (source ChipBar `lead`).
     lead: Option<&'a str>,
+    /// Optional background for the host surface.
+    background: Option<Color>,
 }
 
 impl<'a, Id> TokenStrip<'a, Id> {
@@ -1318,6 +1352,7 @@ impl<'a, Id> TokenStrip<'a, Id> {
             gap: 1,
             add_label: Some("+ Add filter"),
             lead: None,
+            background: None,
         }
     }
 
@@ -1361,6 +1396,13 @@ impl<'a, Id> TokenStrip<'a, Id> {
     #[must_use]
     pub const fn lead(mut self, lead: Option<&'a str>) -> Self {
         self.lead = lead;
+        self
+    }
+
+    /// Paint the strip on an explicit host background.
+    #[must_use]
+    pub const fn background(mut self, background: Color) -> Self {
+        self.background = Some(background);
         self
     }
 }
@@ -1429,10 +1471,8 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> TokenStrip<'a, Id> {
             return area;
         }
         let surface = self
-            .system
-            .style(Role::Surface)
-            .bg
-            .unwrap_or(ratatui_core::style::Color::Reset);
+            .background
+            .unwrap_or_else(|| self.system.style(Role::Surface).bg.unwrap_or(Color::Reset));
         let style = self.system.style(Role::TextMuted).bg(surface);
         buffer.set_string(area.x, area.y, &text, style);
         state.lead_region = Some(Rect {
@@ -1509,7 +1549,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> TokenStrip<'a, Id> {
                 width: ow.min(area.width),
                 height: 1.min(area.height),
             };
-            paint_subtle_chip(self.system, buffer, rect, &label, false);
+            paint_subtle_chip(self.system, buffer, rect, &label, false, self.background);
             state.overflow_region = Some(rect);
         }
         let next_x = state
@@ -1574,7 +1614,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> TokenStrip<'a, Id> {
                     width: ow.min(area.right().saturating_sub(x)),
                     height: 1,
                 };
-                paint_subtle_chip(self.system, buffer, rect, &label, false);
+                paint_subtle_chip(self.system, buffer, rect, &label, false, self.background);
                 state.overflow_region = Some(rect);
                 x = x.saturating_add(ow).saturating_add(self.gap);
             }
@@ -1612,7 +1652,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> TokenStrip<'a, Id> {
             if focused {
                 cs.set_part(state.part);
             }
-            let _ = chip.paint(rect, buffer, &mut cs);
+            let _ = chip.paint_on(rect, buffer, &mut cs, self.background);
         } else {
             let tag = Tag::new(item.id.clone(), item.label, self.system)
                 .removable(item.removable)
@@ -1624,7 +1664,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> TokenStrip<'a, Id> {
             if focused {
                 ts.set_part(state.part);
             }
-            let _ = tag.paint(rect, buffer, &mut ts);
+            let _ = tag.paint_on(rect, buffer, &mut ts, self.background);
         }
     }
 
@@ -1667,6 +1707,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> TokenStrip<'a, Id> {
             rect,
             label,
             state.surface_focused && state.add_focused,
+            self.background,
         );
         state.add_region = Some(rect);
     }
@@ -1882,21 +1923,32 @@ fn paint_subtle_chip(
     rect: Rect,
     label: &str,
     focused: bool,
+    background: Option<Color>,
 ) {
     if rect.is_empty() {
         return;
     }
-    let mut style = system.style(Role::TextMuted);
+    let fill_bg = background.or_else(|| buffer.cell((rect.x, rect.y)).map(|cell| cell.bg));
+    let mut style = system.style(Role::TextSecondary);
+    if let Some(bg) = fill_bg {
+        style = style.bg(bg);
+    }
     if focused {
         style = system.style(Role::Text).add_modifier(Modifier::BOLD);
+        if let Some(bg) = fill_bg {
+            style = style.bg(bg);
+        }
     }
     buffer.set_style(rect, style);
     let gutter = system.glyphs.selection_gutter();
-    let gutter_style = if focused {
-        style.patch(system.style(Role::Focus))
-    } else {
-        style
-    };
+    let gutter_style = system.gutter(
+        crate::style::VisualState {
+            focused,
+            ..crate::style::VisualState::default()
+        },
+        fill_bg.unwrap_or(Color::Reset),
+        false,
+    );
     buffer.set_stringn(rect.x, rect.y, gutter, 1, gutter_style);
     if rect.width > 1 {
         buffer.set_stringn(

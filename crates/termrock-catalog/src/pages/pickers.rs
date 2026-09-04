@@ -271,6 +271,7 @@ pub struct PickersPage {
     level: usize,
     chosen: Option<(String, String)>,
     opened: u32,
+    capture_cursor: Option<Position>,
 }
 
 impl PickersPage {
@@ -302,13 +303,16 @@ impl PickersPage {
             level: 3,
             chosen: None,
             opened: 0,
+            capture_cursor: None,
         }
     }
 
     fn open(&mut self, kind: Kind) {
         self.opened += 1;
         let (title, placeholder, width, searchable, selected) = match kind {
-            Kind::Quick => ("Open quickly", "Files and tasks…", 80, true, None),
+            // Source quick-open keeps its default 64-cell modal even on a
+            // 120-cell terminal; wider screens leave the side gutters open.
+            Kind::Quick => ("Open quickly", "Files and tasks…", 64, true, None),
             Kind::Tabs => ("Open tabs", "Filter tabs…", 48, true, None),
             Kind::Level => (
                 "Safe Mode · this connection",
@@ -453,6 +457,7 @@ impl Page for PickersPage {
     }
 
     fn render(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx<'_>) {
+        self.capture_cursor = None;
         let t = ctx.theme;
         let rows = layout::rows(area, &[7, 1, 0]);
         let (inner, bg) = layout::card(rows[0], buf, t, Some("Open a picker"), None, false);
@@ -464,21 +469,27 @@ impl Page for PickersPage {
         ];
         let ids = [ID.sub("quick"), ID.sub("tabs"), ID.sub("level")];
         let mut x = inner.x;
+        let button_y = inner.y;
+        let mut level_button_right = None;
         let allow_focus = self.picker.is_none();
         let states = [&mut self.quick, &mut self.tabs_btn, &mut self.level_btn];
         for i in 0..3 {
             let w = btn_width(labels[i]).min(inner.right().saturating_sub(x));
+            let button_area = Rect::new(x, inner.y, w, 1);
             paint_btn(
                 labels[i],
                 variants[i],
                 ids[i],
-                Rect::new(x, inner.y, w, 1),
+                button_area,
                 buf,
                 ctx,
                 states[i],
                 bg,
                 allow_focus,
             );
+            if i == 2 {
+                level_button_right = Some(button_area.right());
+            }
             x = x.saturating_add(w).saturating_add(2);
         }
         if inner.y + 2 < inner.bottom() {
@@ -605,6 +616,10 @@ impl Page for PickersPage {
                     inner.x.saturating_add(2).saturating_add(qlen.min(cap)),
                     inner.y.saturating_add(1),
                 ));
+            } else if let Some(x) = level_button_right {
+                // Native capture leaves the hidden cursor at the focused
+                // level button while the fixed-choice modal is open.
+                self.capture_cursor = Some(Position::new(x, button_y));
             }
             ctx.control(ID.sub("picker"), placed, false);
         }
@@ -773,5 +788,9 @@ impl Page for PickersPage {
         } else {
             vec![("Enter", "Open"), ("Tab", "Next")]
         }
+    }
+
+    fn capture_cursor(&self) -> Option<Position> {
+        self.capture_cursor
     }
 }

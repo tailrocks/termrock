@@ -106,6 +106,81 @@ fn key_opens_orders_from_explorer() {
 }
 
 #[test]
+fn table_enter_edits_and_commits_pending_cell() {
+    let mut h = Harness::connected(120, 40);
+    open_orders(&mut h);
+    h.key(KeyCode::Right, KeyModifiers::NONE);
+    h.key(KeyCode::Enter, KeyModifiers::NONE);
+    assert!(matches!(
+        h.app.workbench.as_ref().unwrap().active_tab(),
+        Some(WorkTab::Table(table)) if table.is_editing()
+    ));
+    h.type_text("99999");
+    h.key(KeyCode::Enter, KeyModifiers::NONE);
+
+    let table = match h.app.workbench.as_ref().unwrap().active_tab() {
+        Some(WorkTab::Table(table)) => table,
+        _ => unreachable!(),
+    };
+    assert!(!table.is_editing());
+    assert_eq!(table.grid.cell(0, 1).display(), "99999");
+    assert_eq!(table.grid.pending.count(), 1);
+}
+
+#[test]
+fn table_escape_discards_edit_without_pending_change() {
+    let mut h = Harness::connected(120, 40);
+    open_orders(&mut h);
+    h.key(KeyCode::Right, KeyModifiers::NONE);
+    let original = match h.app.workbench.as_ref().unwrap().active_tab() {
+        Some(WorkTab::Table(table)) => table.grid.cell(0, 1).display(),
+        _ => unreachable!(),
+    };
+    h.key(KeyCode::Enter, KeyModifiers::NONE);
+    h.type_text("123");
+    h.key(KeyCode::Esc, KeyModifiers::NONE);
+
+    let table = match h.app.workbench.as_ref().unwrap().active_tab() {
+        Some(WorkTab::Table(table)) => table,
+        _ => unreachable!(),
+    };
+    assert!(!table.is_editing());
+    assert!(table.grid.pending.is_empty());
+    assert_eq!(table.grid.cell(0, 1).display(), original);
+}
+
+#[test]
+fn table_ctrl_s_saves_and_escape_discards_pending_changes() {
+    let mut h = Harness::connected(120, 40);
+    open_orders(&mut h);
+    h.key(KeyCode::Right, KeyModifiers::NONE);
+    h.key(KeyCode::Enter, KeyModifiers::NONE);
+    h.type_text("99999");
+    h.key(KeyCode::Enter, KeyModifiers::NONE);
+    h.key(KeyCode::Char('s'), KeyModifiers::CONTROL);
+
+    let saved = match h.app.workbench.as_ref().unwrap().active_tab() {
+        Some(WorkTab::Table(table)) => {
+            assert!(table.grid.pending.is_empty());
+            table.grid.cell(0, 1).display()
+        }
+        _ => unreachable!(),
+    };
+    assert_eq!(saved, "99999");
+
+    h.key(KeyCode::Enter, KeyModifiers::NONE);
+    h.type_text("12345");
+    h.key(KeyCode::Enter, KeyModifiers::NONE);
+    h.key(KeyCode::Esc, KeyModifiers::NONE);
+    let table = match h.app.workbench.as_ref().unwrap().active_tab() {
+        Some(WorkTab::Table(table)) => table,
+        _ => unreachable!(),
+    };
+    assert!(table.grid.pending.is_empty());
+    assert_eq!(table.grid.cell(0, 1).display(), saved);
+}
+
+#[test]
 fn key_navigation_sorts_orders_and_marks_header() {
     let mut h = Harness::connected(120, 40);
     open_orders(&mut h);

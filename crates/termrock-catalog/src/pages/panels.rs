@@ -219,24 +219,25 @@ impl Page for PanelsPage {
                 prose_lines.extend(text::wrap(para, wrap_w));
             }
         }
+        let prose_view = rrows[0].height.saturating_sub(2);
+        self.prose
+            .set_content_size(rrows[0].width, prose_lines.len() as u16);
+        self.prose.set_viewport(rrows[0].width, prose_view);
+        self.prose_view = prose_view;
+        let (inner, bg) = layout::framed(rrows[0], buf, t, Some("Framed · split pane"), pf);
         let pos = crate::layout::overflow_label(
             usize::from(self.prose.offset_y()),
             usize::from(self.prose_view),
             prose_lines.len(),
         );
-        self.prose
-            .set_content_size(rrows[0].width, prose_lines.len() as u16);
-        self.prose
-            .set_viewport(rrows[0].width, rrows[0].height.saturating_sub(2));
-        self.prose_view = rrows[0].height.saturating_sub(2);
-        let (inner, bg) = layout::framed(rrows[0], buf, t, Some("Framed · split pane"), pf);
         if !pos.is_empty() {
-            let mw = text::width(&pos) as u16;
+            let meta = format!(" {pos} ");
+            let mw = text::width(&meta) as u16;
             if rrows[0].width > mw + 4 {
                 buf.set_string(
                     rrows[0].right().saturating_sub(mw + 2),
                     rrows[0].y,
-                    &pos,
+                    &meta,
                     t.faint().bg(t.canvas),
                 );
             }
@@ -254,7 +255,7 @@ impl Page for PanelsPage {
             buf.set_string(
                 body.x,
                 y,
-                &text::truncate(line, text_w as usize),
+                &text::fit(line, text_w as usize),
                 t.secondary().bg(bg),
             );
         }
@@ -277,21 +278,21 @@ impl Page for PanelsPage {
             rrows[1].width,
             rrows[1].height.saturating_sub(1),
         );
-        let pos = crate::layout::overflow_label(
-            usize::from(self.log.offset_y()),
-            usize::from(self.log_view),
-            self.log_lines.len(),
-        );
+        let log_view = log_area.height.saturating_sub(3);
         self.log
             .set_content_size(log_area.width, self.log_lines.len() as u16);
-        self.log
-            .set_viewport(log_area.width, log_area.height.saturating_sub(2));
-        self.log_view = log_area.height.saturating_sub(2);
+        self.log.set_viewport(log_area.width, log_view);
+        self.log_view = log_view;
         let follow = if self.log.is_following() {
             "following"
         } else {
             ""
         };
+        let pos = crate::layout::overflow_label(
+            usize::from(self.log.offset_y()),
+            usize::from(self.log_view),
+            self.log_lines.len(),
+        );
         let meta = if follow.is_empty() {
             pos
         } else if pos.is_empty() {
@@ -314,7 +315,7 @@ impl Page for PanelsPage {
             buf.set_string(
                 body.x,
                 y,
-                &text::truncate(line, text_w as usize),
+                &text::fit(line, text_w as usize),
                 log_style(t, line).bg(bg),
             );
         }
@@ -411,5 +412,9 @@ impl Page for PanelsPage {
         } else {
             vec![("↑ ↓", "Scroll"), ("PgUp PgDn", "Page"), ("g G", "Ends")]
         }
+    }
+
+    fn page_hints_when_nav(&self) -> bool {
+        true
     }
 }

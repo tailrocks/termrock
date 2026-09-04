@@ -1029,6 +1029,8 @@ pub struct Tree<'a, Id> {
     background: Option<Color>,
     /// Whether the active identity is painted as a semantic selection.
     selection_visible: bool,
+    /// Whether focused-row metadata carries the row's weight cue.
+    focused_metadata_bold: bool,
 }
 
 impl<'a, Id> Tree<'a, Id> {
@@ -1043,6 +1045,7 @@ impl<'a, Id> Tree<'a, Id> {
             spinner_frame: 0,
             background: None,
             selection_visible: true,
+            focused_metadata_bold: false,
         }
     }
 
@@ -1064,6 +1067,13 @@ impl<'a, Id> Tree<'a, Id> {
     #[must_use]
     pub const fn selection_visible(mut self, visible: bool) -> Self {
         self.selection_visible = visible;
+        self
+    }
+
+    /// Applies the focused-row weight to right-aligned metadata.
+    #[must_use]
+    pub const fn focused_metadata_bold(mut self, bold: bool) -> Self {
+        self.focused_metadata_bold = bold;
         self
     }
 
@@ -1097,6 +1107,7 @@ fn paint_tree_row<Id: Clone + PartialEq>(
     ground: Color,
     selection_visible: bool,
     focused: bool,
+    focused_metadata_bold: bool,
     spinner_frame: usize,
     node: &TreeNode<'_, Id>,
     row: Rect,
@@ -1114,9 +1125,10 @@ fn paint_tree_row<Id: Clone + PartialEq>(
         .as_ref()
         .is_some_and(|selection| selection.is_checked(&node.id));
     let busy = matches!(node.status, TreeNodeStatus::Loading);
+    let row_focused = focused && state.cursor.as_ref() == Some(&node.id) && node.enabled;
     let visual = ListRowVisualState {
         selected,
-        focused: focused && state.cursor.as_ref() == Some(&node.id) && node.enabled,
+        focused: row_focused,
         hovered: hovered && node.enabled,
         enabled: node.enabled,
         loading: busy,
@@ -1238,12 +1250,13 @@ fn paint_tree_row<Id: Clone + PartialEq>(
         .unwrap_or(0);
     let avail = row.right().saturating_sub(x);
     // Hide meta rather than starve the label below one identity cell.
-    let meta_w = if raw_meta_w > 0 && avail.saturating_sub(raw_meta_w.saturating_add(2)) >= 1 {
+    let label_w = u16::try_from(node.label.width()).unwrap_or(u16::MAX);
+    let meta_w = if raw_meta_w > 0 && avail.saturating_sub(raw_meta_w.saturating_add(2)) >= label_w
+    {
         raw_meta_w
     } else {
         0
     };
-
     let shortcut_need = node
         .shortcut
         .map(|s| {
@@ -1307,7 +1320,8 @@ fn paint_tree_row<Id: Clone + PartialEq>(
         } else {
             0
         })
-        .saturating_sub(extras);
+        .saturating_sub(extras)
+        .saturating_sub(u16::from(meta_w == 0));
     let label_w = label_right.saturating_sub(x);
 
     let mut label_style = if selected && node.enabled {
@@ -1320,14 +1334,16 @@ fn paint_tree_row<Id: Clone + PartialEq>(
     }
 
     if label_w > 0 && x < row.right() {
+        // A selected tree identity owns its label field, including padding
+        // before right-aligned metadata. Keep the separator cell unstyled so
+        // the metadata gap matches the source frame.
+        let label_style_w = label_w.saturating_sub(u16::from(meta_w > 0));
+        buffer.set_style(Rect::new(x, y, label_style_w, 1), label_style);
         if state.h_offset == 0 {
             buffer.set_line(x, y, &node.label, label_w);
             let painted = u16::try_from(node.label.width())
                 .unwrap_or(u16::MAX)
                 .min(label_w);
-            if painted > 0 {
-                buffer.set_style(Rect::new(x, y, painted, 1), label_style);
-            }
             x = x.saturating_add(painted);
         } else {
             let mut visible = String::new();
@@ -1355,10 +1371,11 @@ fn paint_tree_row<Id: Clone + PartialEq>(
                 .min(label_right.saturating_sub(x));
             if sw > 0 {
                 buffer.set_line(x, y, secondary, sw);
-                buffer.set_style(
-                    Rect::new(x, y, sw, 1),
-                    chrome.secondary_style(recipe.secondary),
-                );
+                let mut style = chrome.secondary_style(recipe.secondary);
+                if row_focused && focused_metadata_bold {
+                    style = style.add_modifier(Modifier::BOLD);
+                }
+                buffer.set_style(Rect::new(x, y, sw, 1), style);
             }
         }
     }
@@ -1369,10 +1386,11 @@ fn paint_tree_row<Id: Clone + PartialEq>(
     {
         cursor = cursor.saturating_sub(meta_w.saturating_add(1));
         buffer.set_line(cursor, y, badge, meta_w);
-        buffer.set_style(
-            Rect::new(cursor, y, meta_w, 1),
-            chrome.secondary_style(tokens.style(Role::TextMuted)),
-        );
+        let mut style = chrome.secondary_style(tokens.style(Role::TextMuted));
+        if row_focused && focused_metadata_bold {
+            style = style.add_modifier(Modifier::BOLD);
+        }
+        buffer.set_style(Rect::new(cursor, y, meta_w, 1), style);
     }
     if show_actions && let Some(act) = node.actions.as_ref() {
         let w = actions_w.min(cursor.saturating_sub(row.x));
@@ -1537,6 +1555,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
                 ground,
                 self.selection_visible,
                 self.focused,
+                self.focused_metadata_bold,
                 self.spinner_frame,
                 node,
                 row,

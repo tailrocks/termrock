@@ -8,7 +8,7 @@
 use std::collections::{BTreeSet, HashMap};
 
 use ratatui::buffer::Buffer;
-use ratatui::layout::Rect;
+use ratatui::layout::{Position, Rect};
 use ratatui::style::{Modifier, Style};
 use ratatui::text::Text;
 use ratatui::widgets::StatefulWidget;
@@ -349,7 +349,8 @@ impl GridPage {
             DataColumn::new("mrr", "mrr", DataColumnWidth::Fixed(7))
                 .kind(ColumnKind::Numeric)
                 .sortable(),
-            DataColumn::new("active", "active", DataColumnWidth::Fixed(6)).editable(),
+            // Bool cells use Junie's five-cell fit: `active` becomes `acti…`.
+            DataColumn::new("active", "active", DataColumnWidth::Fixed(5)).editable(),
             DataColumn::new("renewed_at", "renewed_at", DataColumnWidth::Fixed(12)).editable(),
             DataColumn::new("notes", "notes", DataColumnWidth::Fixed(27)).editable(),
         ]);
@@ -665,7 +666,7 @@ impl GridPage {
         cx.status("Saving…");
     }
 
-    fn open_preview(&mut self) {
+    fn open_preview(&mut self, cx: &mut PageCtx<'_>) {
         let code = self.statements();
         let (changed, inserted, deleted) = self.pending.counts();
         self.preview_facts = vec![
@@ -679,6 +680,10 @@ impl GridPage {
         self.preview_code = code;
         self.dialog = DialogState::destructive("close", "cancel");
         self.preview = true;
+        if !self.pending.is_empty() {
+            // The source shell keeps the last edit status beside modal hints.
+            cx.status(format!("{} pending", self.pending.total()));
+        }
     }
 
     fn sort_by(&mut self, spec: SortSpec<&'static str>) {
@@ -977,6 +982,17 @@ impl Page for GridPage {
         self.preview
     }
 
+    fn capture_cursor(&self) -> Option<Position> {
+        self.preview.then(|| {
+            self.dialog
+                .action_regions()
+                .first()
+                .map_or(Position::ORIGIN, |region| {
+                    Position::new(region.area.right(), region.area.y)
+                })
+        })
+    }
+
     fn render(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx<'_>) {
         let t = ctx.theme;
         let overlay = self.preview;
@@ -1109,6 +1125,27 @@ impl Page for GridPage {
                 );
             }
         }
+
+        let hy = area.y.saturating_add(h).saturating_add(1);
+        if hy < area.bottom() {
+            let help = if pending {
+                format!(
+                    "Enter edits · Space selects · s sorts · + inserts · - deletes · p previews SQL · Ctrl+S saves · seats over 500 are rejected on save · saved so far: {}",
+                    self.saved
+                )
+            } else {
+                format!(
+                    "p previews SQL · Ctrl+S saves · seats over 500 are rejected on save · saved so far: {}",
+                    self.saved
+                )
+            };
+            buf.set_string(
+                area.x.saturating_add(2),
+                hy,
+                &text::truncate(&help, usize::from(area.width.saturating_sub(2))),
+                t.muted(),
+            );
+        }
         ctx.inert = saved_inert;
         if overlay {
             self.dialog.set_open(true);
@@ -1168,7 +1205,7 @@ impl Page for GridPage {
                 if f == PREVIEW {
                     return match self.preview_btn.handle_key(*key) {
                         ActivationOutcome::Activated => {
-                            self.open_preview();
+                            self.open_preview(cx);
                             Route::Changed
                         }
                         ActivationOutcome::Ignored => Route::Ignored,
@@ -1243,7 +1280,7 @@ impl Page for GridPage {
                         return Route::Changed;
                     }
                     if matches!(key.code, KeyCode::Char('p')) && key.modifiers.is_empty() {
-                        self.open_preview();
+                        self.open_preview(cx);
                         return Route::Changed;
                     }
                     if matches!(key.code, KeyCode::Char('U')) {
@@ -1310,7 +1347,7 @@ impl Page for GridPage {
             PageEvent::Click { id, pos } => {
                 if *id == PREVIEW {
                     cx.set_focus(*id);
-                    self.open_preview();
+                    self.open_preview(cx);
                     return Route::Changed;
                 }
                 if *id == DISCARD {

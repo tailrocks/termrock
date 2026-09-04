@@ -9,7 +9,7 @@
 use std::collections::HashSet;
 
 use ratatui::buffer::Buffer;
-use ratatui::layout::Rect;
+use ratatui::layout::{Position, Rect};
 use ratatui::text::Line;
 use ratatui::widgets::StatefulWidget;
 use termrock::input::{KeyCode, KeyEventKind};
@@ -116,7 +116,9 @@ pub struct ConnectionsScreen {
     expanded: HashSet<String>,
     filter: TextInputState,
     pub selected: Option<usize>,
+    tree_selection_moved: bool,
     pub state: ConnState,
+    action_cursor: Option<Position>,
     pending_delete: Option<usize>,
     connect_btn: ButtonState,
     edit_btn: ButtonState,
@@ -218,7 +220,9 @@ impl ConnectionsScreen {
             expanded,
             filter,
             selected: Some(0),
+            tree_selection_moved: false,
             state: ConnState::Idle,
+            action_cursor: None,
             pending_delete: None,
             connect_btn: ButtonState::new(),
             edit_btn: ButtonState::new(),
@@ -435,14 +439,12 @@ impl ConnectionsScreen {
     fn select_named(&mut self, name: &str) {
         if let Some(i) = self.connections.iter().position(|c| c.name == name) {
             self.selected = Some(i);
+            self.tree_selection_moved = true;
         }
     }
 
     pub fn render(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx<'_>) {
-        if self.form.is_some() {
-            self.render_form(area, buf, ctx);
-            return;
-        }
+        self.action_cursor = None;
         let t = ctx.theme;
         let list_w = (area.width / 3).clamp(26, 40);
         let (l, r) = if area.width >= 80 {
@@ -527,18 +529,29 @@ impl ConnectionsScreen {
         StatefulWidget::render(
             &Tree::new(&nodes, ctx.system)
                 .focused(ctx.interaction.focused(TREE))
+                .focused_metadata_bold(ctx.interaction.focused(TREE))
                 .background(bg),
             tree_area,
             buf,
             &mut self.tree,
         );
+        if self.form.is_none() && ctx.interaction.focused(TREE) && !self.tree_selection_moved {
+            self.action_cursor = Some(Position::new(
+                tree_area.right(),
+                tree_area.y.saturating_add(1),
+            ));
+        }
         ctx.control(TREE, tree_area, false);
         ctx.scrollable(TREE, tree_area);
 
         if r.is_empty() {
             return;
         }
-        self.render_detail(r, buf, ctx);
+        if self.form.is_some() {
+            self.render_form(r, buf, ctx);
+        } else {
+            self.render_detail(r, buf, ctx);
+        }
     }
 
     fn render_detail(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx<'_>) {
@@ -566,8 +579,6 @@ impl ConnectionsScreen {
         } else {
             Tone::Secondary
         };
-        let value_width = usize::from(inner.width.saturating_sub(6).saturating_sub(13)).max(4);
-        let safe_lines = crate::text::wrap(&safe_value, value_width);
         let mut facts = vec![
             Prop::new("Engine", c.engine.label()),
             Prop::new(
@@ -601,28 +612,16 @@ impl ConnectionsScreen {
                 Environment::Local => Tone::Faint,
             }),
         ];
-        facts.extend(safe_lines.iter().enumerate().map(|(i, line)| {
-            Prop::new(if i == 0 { "Safe Mode" } else { "" }, line.clone()).tone(safe_tone)
-        }));
-        let safe_end = facts.len();
-        if c.environment == Environment::Production && c.safe_mode == SafeMode::Silent {
-            facts.insert(
-                safe_end,
-                Prop::new(
-                    "",
-                    "Production with Silent safe mode: writes run without asking",
-                )
-                .tone(Tone::Warning)
-                .wrap(),
-            );
-        }
+        facts.push(Prop::new("Safe Mode", safe_value).tone(safe_tone).wrap());
         facts.push(Prop::new("SSL / SSH", format!("{ssl} / {ssh}")).tone(Tone::Secondary));
         facts.push(Prop::new("Last used", c.last_used.clone()).tone(Tone::Muted));
         let used = termrock::widgets::render_props(
             Rect::new(
                 inner.x,
                 inner.y,
-                inner.width.saturating_sub(6),
+                inner
+                    .width
+                    .saturating_sub(if c.safe_mode == SafeMode::Safe { 7 } else { 3 }),
                 inner.height.saturating_sub(3),
             ),
             buf,
@@ -730,6 +729,9 @@ impl ConnectionsScreen {
             false,
             bg,
         );
+        if ctx.interaction.focused(DUP) {
+            self.action_cursor = Some(Position::new(rects[2].right(), ay));
+        }
     }
 
     fn render_form(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx<'_>) {
@@ -742,11 +744,18 @@ impl ConnectionsScreen {
         } else {
             "New connection"
         };
-        let (inner, bg) = layout::card(area, buf, t, Some(title), None, false);
+        let (inner, bg) = layout::card(area, buf, t, Some(title), Some("Ctrl+S Save"), false);
         let tabs = [Tab::new(0, "Basic"), Tab::new(1, "Advanced")];
         form.tabs.set_focused(ctx.interaction.focused(FORM_TABS));
         let tab_area = Rect::new(inner.x, inner.y, inner.width, 2);
         Tabs::new(&tabs, ctx.system).paint(tab_area, buf, &mut form.tabs);
+        buf.set_style(tab_area, ratatui::style::Style::new().bg(t.surface));
+        for region in &form.tabs.regions {
+            buf.set_style(
+                Rect::new(region.area.x, region.area.y, 1, 1),
+                ratatui::style::Style::new().fg(t.surface).bg(t.surface),
+            );
+        }
         ctx.control(FORM_TABS, tab_area, false);
 
         let body = Rect::new(
@@ -755,14 +764,16 @@ impl ConnectionsScreen {
             inner.width,
             inner.height.saturating_sub(5),
         );
-        let left_width = body.width.saturating_sub(4).min(58);
+        let usable = body.width.saturating_sub(4);
+        let left_width = usable / 2;
+        let left_width = left_width.clamp(30, usable.saturating_sub(24));
         let (left, right) = layout::columns(body, left_width, 4);
         let basic = form.tabs.selected != Some(1);
 
         if basic {
             let mut y = left.y;
             let field_width = left.width;
-            let name_area = Rect::new(left.x, y, field_width, 2);
+            let name_area = Rect::new(left.x, y, field_width, 3);
             form.name.set_focused(ctx.interaction.focused(FORM_NAME));
             if !form.name.is_focused() && form.name.is_editing() {
                 form.name.commit();
@@ -771,9 +782,9 @@ impl ConnectionsScreen {
                 .required(true)
                 .paint(name_area, buf, &mut form.name);
             ctx.control(FORM_NAME, name_area, false);
-            y = y.saturating_add(2);
+            y = y.saturating_add(3);
 
-            let engine_area = Rect::new(left.x, y, field_width, 2);
+            let engine_area = Rect::new(left.x, y, field_width, 3);
             form.engine
                 .set_focused(ctx.interaction.focused(FORM_ENGINE));
             let engines = engine_options();
@@ -782,24 +793,32 @@ impl ConnectionsScreen {
                 .placeholder("Select engine")
                 .paint(engine_area, engine_area, buf, &mut form.engine);
             ctx.control(FORM_ENGINE, engine_area, false);
-            y = y.saturating_add(2);
+            y = y.saturating_add(3);
 
-            let host_port = Rect::new(left.x, y, field_width, 2);
-            let port_width = field_width / 4;
-            let host_width = field_width.saturating_sub(port_width + 2);
-            let host_area = Rect::new(host_port.x, host_port.y, host_width, 2);
+            let host_port = Rect::new(left.x, y, field_width, 3);
+            let split_width = field_width.saturating_sub(2);
+            let host_width = (u32::from(split_width) * 70 / 100) as u16;
+            let host_width = host_width.clamp(12, split_width.saturating_sub(8));
+            let port_width = split_width.saturating_sub(host_width);
+            let host_area = Rect::new(host_port.x, host_port.y, host_width, 3);
             let port_area = Rect::new(
                 host_area.right().saturating_add(2),
                 host_port.y,
                 port_width,
-                2,
+                3,
             );
             form.host.set_focused(ctx.interaction.focused(FORM_HOST));
             if !form.host.is_focused() && form.host.is_editing() {
                 form.host.commit();
             }
             TextInput::new("Host", ctx.system)
+                .optional(true)
                 .placeholder("localhost")
+                .help(if form.index.is_some() {
+                    "Empty means the driver default is used."
+                } else {
+                    "Blank: driver default"
+                })
                 .paint(host_area, buf, &mut form.host);
             ctx.control(FORM_HOST, host_area, false);
             form.port.set_focused(ctx.interaction.focused(FORM_PORT));
@@ -807,40 +826,58 @@ impl ConnectionsScreen {
                 form.port.commit();
             }
             TextInput::new("Port", ctx.system)
+                .optional(form.index.is_some())
                 .placeholder("5432")
                 .paint(port_area, buf, &mut form.port);
+            if form.index.is_some() {
+                buf.set_string(
+                    port_area.x.saturating_add(8),
+                    port_area.y,
+                    "optional",
+                    t.faint().bg(bg),
+                );
+            }
             ctx.control(FORM_PORT, port_area, false);
-            y = y.saturating_add(2);
+            y = y.saturating_add(3);
 
-            let database_area = Rect::new(left.x, y, field_width, 2);
+            let database_area = Rect::new(left.x, y, field_width, 3);
             form.database
                 .set_focused(ctx.interaction.focused(FORM_DATABASE));
             if !form.database.is_focused() && form.database.is_editing() {
                 form.database.commit();
             }
-            TextInput::new("Database", ctx.system).paint(database_area, buf, &mut form.database);
+            TextInput::new("Database", ctx.system)
+                .optional(true)
+                .help("Required for PostgreSQL")
+                .paint(database_area, buf, &mut form.database);
             ctx.control(FORM_DATABASE, database_area, false);
-            y = y.saturating_add(2);
+            y = y.saturating_add(3);
 
-            let user_area = Rect::new(left.x, y, field_width, 2);
+            let user_area = Rect::new(left.x, y, field_width, 3);
             form.user.set_focused(ctx.interaction.focused(FORM_USER));
             if !form.user.is_focused() && form.user.is_editing() {
                 form.user.commit();
             }
-            TextInput::new("Username", ctx.system).paint(user_area, buf, &mut form.user);
+            TextInput::new("Username", ctx.system).optional(true).paint(
+                user_area,
+                buf,
+                &mut form.user,
+            );
             ctx.control(FORM_USER, user_area, false);
-            y = y.saturating_add(2);
+            y = y.saturating_add(3);
 
-            let password_area = Rect::new(left.x, y, field_width, 2);
+            let password_area = Rect::new(left.x, y, field_width, 3);
             form.password
                 .set_focused(ctx.interaction.focused(FORM_PASSWORD));
             let _ = PasswordInput::new("Password", ctx.system)
+                .optional(true)
                 .placeholder("stored in the keychain")
+                .help("Never written to connections.json")
                 .paint(password_area, buf, &mut form.password);
             ctx.control(FORM_PASSWORD, password_area, false);
-            y = y.saturating_add(2);
+            y = y.saturating_add(3);
 
-            let prompt_area = Rect::new(left.x, y, field_width, 1);
+            let prompt_area = Rect::new(left.x, y, field_width.saturating_sub(1), 1);
             form.prompt_pw
                 .set_focused(ctx.interaction.focused(FORM_PROMPT));
             Checkbox::new(FORM_PROMPT, "Prompt for password on connect", ctx.system).paint(
@@ -876,6 +913,40 @@ impl ConnectionsScreen {
                 .legend("Safe Mode")
                 .paint(safe_area, buf, &mut form.safe);
             ctx.control(FORM_SAFE, safe_area, false);
+            if form.safe.selected() == Some(&0) {
+                let description = if form.index.is_some() {
+                    [
+                        "Writes run without asking. DROP,",
+                        "TRUNCATE and DELETE without WHERE",
+                    ]
+                } else {
+                    [
+                        "Writes run without asking.",
+                        "Destructive statements still confirm.",
+                    ]
+                };
+                for (i, line) in description.iter().enumerate() {
+                    let shown = termrock::text::take_display_cols(
+                        line,
+                        if form.index.is_some() {
+                            right.width.saturating_sub(2) as usize
+                        } else {
+                            right.width.saturating_sub(7) as usize
+                        },
+                    );
+                    let y = safe_area
+                        .y
+                        .saturating_add(7 + u16::try_from(i).unwrap_or(0));
+                    buf.set_string(right.x.saturating_add(2), y, &shown, t.muted().bg(bg));
+                    let end = right.x.saturating_add(2).saturating_add(shown.len() as u16);
+                    if end < area.right() {
+                        buf.set_style(
+                            Rect::new(end, y, 1, 1),
+                            ratatui::style::Style::new().fg(t.text_primary).bg(bg),
+                        );
+                    }
+                }
+            }
         } else {
             let mut y = left.y;
             let ssl_area = Rect::new(left.x, y, left.width, 1);
@@ -1037,6 +1108,11 @@ impl ConnectionsScreen {
         }
         match ev {
             PageEvent::Key(key) if key.kind != KeyEventKind::Release => {
+                if key.modifiers.is_empty() && key.code == KeyCode::Char('n') {
+                    self.open_form(None);
+                    cx.set_focus(FORM_NAME);
+                    return (Route::Changed, None);
+                }
                 let Some(f) = *cx.focus else {
                     return (Route::Ignored, None);
                 };
@@ -1167,13 +1243,18 @@ impl ConnectionsScreen {
         }
     }
 
-    fn duplicate(&mut self, cx: &mut PageCtx<'_>) {
+    pub fn duplicate(&mut self, cx: &mut PageCtx<'_>) {
         let Some(i) = self.selected else { return };
         let mut c = self.connections[i].clone();
-        c.name = format!("{} copy", c.name);
+        c.name = format!("{} (Copy)", c.name);
         self.connections.insert(i + 1, c);
-        self.selected = Some(i + 1);
-        cx.status("Duplicated connection");
+        cx.set_focus(DUP);
+        cx.status("Duplicated");
+    }
+
+    #[must_use]
+    pub const fn action_cursor(&self) -> Option<Position> {
+        self.action_cursor
     }
 
     fn delete_selected(&mut self) {
@@ -1316,7 +1397,14 @@ impl ConnectionsScreen {
     #[must_use]
     pub fn hints(&self, focus: Option<WidgetId>) -> Vec<Hint> {
         if self.form.is_some() {
-            return vec![("Esc", "Cancel"), ("Enter", "Edit")];
+            if self.is_editing() {
+                return vec![("Esc", "Cancel")];
+            }
+            return vec![
+                ("Enter", "Edit"),
+                ("← →", "Basic / Advanced"),
+                ("Ctrl+S", "Save"),
+            ];
         }
         if focus == Some(FILTER) {
             return vec![("Type", "Filter"), ("↓", "Into list"), ("Esc", "Clear")];

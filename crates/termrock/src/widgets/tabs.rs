@@ -1066,7 +1066,7 @@ impl<'a, Id> Tabs<'a, Id> {
                 cols = cols
                     .saturating_add(UnicodeWidthStr::width(g.content.as_ref()) as u16)
                     .saturating_add(1);
-            } else if tab.status.mark(false).is_some() {
+            } else if tab.badge.is_none() && tab.status.mark(false).is_some() {
                 cols = cols.saturating_add(2);
             }
         }
@@ -1416,7 +1416,9 @@ impl<'a, Id> Tabs<'a, Id> {
                 cx = cx
                     .saturating_add(UnicodeWidthStr::width(prefix) as u16)
                     .saturating_add(1);
-            } else if let Some(m) = tab.status.mark(false) {
+            } else if tab.badge.is_none()
+                && let Some(m) = tab.status.mark(false)
+            {
                 let mark_style = match tab.status {
                     TabStatus::Error => style.fg(theme.error),
                     TabStatus::Dirty | TabStatus::Warning => style.fg(theme.warning),
@@ -1442,12 +1444,18 @@ impl<'a, Id> Tabs<'a, Id> {
             if cx.saturating_add(1) < label_rect.right() {
                 cx = cx.saturating_add(1);
                 let bw = label_rect.right().saturating_sub(cx);
+                let badge_style = match tab.status {
+                    TabStatus::Error => style.fg(theme.error),
+                    TabStatus::Dirty | TabStatus::Warning => style.fg(theme.warning),
+                    TabStatus::Running | TabStatus::Success => style.fg(theme.accent),
+                    TabStatus::None => style,
+                };
                 buffer.set_stringn(
                     cx,
                     label_rect.y,
                     take_display_cols(b, usize::from(bw)),
                     usize::from(bw),
-                    style,
+                    badge_style,
                 );
                 cx = cx.saturating_add(UnicodeWidthStr::width(b) as u16);
             }

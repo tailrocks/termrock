@@ -4,8 +4,8 @@
 //! Canonical cell snapshot: one grid, then txt / ansi / cursor / html / png.
 
 use ratatui::buffer::Buffer;
-use ratatui::layout::Position;
-use ratatui::style::{Color, Modifier};
+use ratatui::layout::{Position, Rect};
+use ratatui::style::{Color, Modifier, Style};
 
 fn export_rgb(color: Color, is_fg: bool) -> [u8; 3] {
     match color {
@@ -123,6 +123,33 @@ impl Snapshot {
             cursor,
             cursor_visible,
         }
+    }
+
+    /// Materialize explicit RGB styles for deterministic raster output.
+    ///
+    /// A live ratatui buffer may retain `Color::Reset`, whose terminal meaning
+    /// is encoder-dependent. The source ANSI grid uses Junie's default text
+    /// color (`#d0d0d0`) and black background; resolving here makes target PNG
+    /// output use the same semantic cells as target ANSI/HTML artifacts.
+    #[must_use]
+    pub fn to_raster_buffer(&self) -> Buffer {
+        let mut buffer = Buffer::empty(Rect::new(0, 0, self.cols, self.rows));
+        for y in 0..self.rows {
+            for x in 0..self.cols {
+                let index = usize::from(y) * usize::from(self.cols) + usize::from(x);
+                let Some(cell) = self.cells.get(index) else {
+                    continue;
+                };
+                let fg = export_rgb(cell.fg, true);
+                let bg = export_rgb(cell.bg, false);
+                let style = Style::default()
+                    .fg(Color::Rgb(fg[0], fg[1], fg[2]))
+                    .bg(Color::Rgb(bg[0], bg[1], bg[2]))
+                    .add_modifier(cell.modifier);
+                buffer[(x, y)].set_symbol(&cell.glyph).set_style(style);
+            }
+        }
+        buffer
     }
 
     /// Plain-text capture using tmux `capture-pane -p` line semantics.
@@ -288,6 +315,8 @@ fn html_escape(text: &str) -> String {
     text.replace('&', "&amp;")
         .replace('<', "&lt;")
         .replace('>', "&gt;")
+        .replace('"', "&quot;")
+        .replace('\'', "&#x27;")
 }
 
 fn html_style(cell: &Cell) -> String {

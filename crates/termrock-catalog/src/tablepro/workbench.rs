@@ -10,7 +10,8 @@ use std::collections::HashSet;
 use std::ops::Range;
 
 use ratatui::buffer::Buffer;
-use ratatui::layout::Rect;
+use ratatui::layout::{Position, Rect};
+use ratatui::style::{Color, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::StatefulWidget;
 use termrock::input::{KeyCode, KeyEventKind};
@@ -23,7 +24,7 @@ use termrock::widgets::{
 use super::db::{Catalog, Connection, ObjectKind};
 use super::model::History;
 use super::tabs::{
-    HistoryTab, QueryTab, TableTab, handle_history, handle_query, handle_table, query_hints,
+    HistoryTab, PLAN, QueryTab, TableTab, handle_history, handle_query, handle_table, query_hints,
     render_history, render_query, render_table, table_hints,
 };
 use crate::ctx::RenderCtx;
@@ -86,6 +87,7 @@ pub struct Workbench {
     pub active: usize,
     pub query_counter: usize,
     pub pending_run: Option<PendingRun>,
+    explorer_cursor: Option<Position>,
     pending_close: Option<usize>,
 }
 
@@ -122,6 +124,7 @@ impl Workbench {
             active: 0,
             query_counter: 0,
             pending_run: None,
+            explorer_cursor: None,
             pending_close: None,
         };
         wb.explorer = TreeState::new(Some(format!("{}/public", wb.catalog.database)));
@@ -191,6 +194,14 @@ impl Workbench {
     pub fn running(&self) -> Option<&str> {
         self.tabs.iter().find_map(|t| match t {
             WorkTab::Query(q) if q.is_running() => Some(q.name.as_str()),
+            _ => None,
+        })
+    }
+
+    #[must_use]
+    pub fn running_duration_ms(&self) -> Option<u32> {
+        self.tabs.iter().find_map(|t| match t {
+            WorkTab::Query(q) if q.is_running() => Some(q.running_duration_ms()),
             _ => None,
         })
     }
@@ -314,7 +325,14 @@ impl Workbench {
         }
     }
 
-    pub fn render(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx<'_>) {
+    pub fn render(
+        &mut self,
+        area: Rect,
+        buf: &mut Buffer,
+        ctx: &mut RenderCtx<'_>,
+        history: &History,
+    ) {
+        self.explorer_cursor = None;
         let t = ctx.theme;
         // Tab strip is full width; explorer sits in the remaining body.
         let strip = Rect::new(area.x, area.y, area.width, 2);
@@ -376,7 +394,7 @@ impl Workbench {
             buf.set_string(plus.x, plus.y, " + ", t.muted().bg(t.canvas));
             ctx.clickable(TABSTRIP.sub("new"), plus);
         }
-        ctx.control(TABSTRIP, strip, false);
+        ctx.clickable(TABSTRIP, strip);
         if main.is_empty() {
             return;
         }
@@ -387,14 +405,25 @@ impl Workbench {
             None => String::new(),
         };
         let meta = match self.tabs.get(self.active) {
-            Some(WorkTab::Query(q)) => q.last_duration.map(super::tabs::duration_label),
-            Some(WorkTab::Table(tt)) => Some(format!("{} cols", tt.grid.columns.len())),
-            Some(WorkTab::History(_)) => Some(format!("{} entries", 0)),
-            None => None,
+            Some(WorkTab::Query(q)) => q
+                .last_duration
+                .map(super::tabs::duration_label)
+                .unwrap_or_default(),
+            Some(WorkTab::Table(tt)) => format!("{} cols", tt.grid.columns.len()),
+            Some(WorkTab::History(_)) => format!("{} entries", history.entries.len()),
+            None => String::new(),
         };
-        // Source frames keep the active workbench pane emphasized while the
-        // explorer owns keyboard focus; its tree has the focus gutter.
-        let focus_in_tab = true;
+        // Source emphasizes the workbench pane only when focus is inside its
+        // tab body/strip; explorer and filter own their own focus chrome.
+        let structure_focused = ctx.interaction.focused(EXPLORER)
+            && matches!(
+                self.tabs.get(self.active),
+                Some(WorkTab::Table(tab)) if tab.mode.selected == Some(1)
+            );
+        let focus_in_tab = ctx
+            .interaction
+            .focus
+            .is_some_and(|f| (f != EXPLORER && f != FILTER && f != TABSTRIP) || structure_focused);
         let mut panel = Panel::new(ctx.system)
             .variant(PanelVariant::Bordered)
             .emphasis(if focus_in_tab {
@@ -405,10 +434,19 @@ impl Workbench {
         if !title.is_empty() {
             panel = panel.title(&title);
         }
-        if let Some(m) = meta.as_deref().filter(|s| !s.is_empty()) {
-            panel = panel.trailing(m);
-        }
+        panel = panel.trailing(&meta);
         panel.paint(main, buf, None);
+        // The framed source pane leaves unpainted interior cells at the
+        // canvas/default text tone; child widgets own their painted wells.
+        let panel_interior = Rect::new(
+            main.x.saturating_add(1),
+            main.y.saturating_add(1),
+            main.width.saturating_sub(2),
+            main.height.saturating_sub(2),
+        );
+        if !panel_interior.is_empty() {
+            buf.set_style(panel_interior, Style::new().fg(t.text_primary).bg(t.canvas));
+        }
         let pane = Panel::new(ctx.system)
             .variant(PanelVariant::Bordered)
             .inner(main);
@@ -420,10 +458,7 @@ impl Workbench {
                 }
             }
             Some(WorkTab::History(h)) => {
-                // history is borrowed from App; caller paints via render_history_with
                 let _ = h;
-                let (inner, bg) = layout::card(pane, buf, t, Some("History"), None, false);
-                buf.set_string(inner.x, inner.y, "Open with Ctrl+Y", t.muted().bg(bg));
             }
             None => {
                 let (inner, bg) = layout::card(pane, buf, t, Some("Empty"), None, false);
@@ -445,10 +480,8 @@ impl Workbench {
         ctx: &mut RenderCtx<'_>,
     ) {
         if let Some(WorkTab::History(h)) = self.tabs.get_mut(self.active) {
-            let explorer_w = if self.explorer_visible && area.width >= 90 {
-                28
-            } else if self.explorer_visible {
-                22
+            let explorer_w = if self.explorer_visible {
+                (area.width / 4).clamp(28, 40)
             } else {
                 0
             };
@@ -457,24 +490,48 @@ impl Workbench {
             } else {
                 area.x
             };
-            let pane = Rect::new(
+            let main = Rect::new(
                 body_x,
-                area.y + 3,
+                area.y + 2,
                 area.width
                     .saturating_sub(if explorer_w > 0 { explorer_w + 1 } else { 0 }),
-                area.height.saturating_sub(3),
+                area.height.saturating_sub(2),
             );
-            render_history(h, history, pane, buf, ctx);
+            let pane = Rect::new(
+                main.x.saturating_add(1),
+                main.y.saturating_add(1),
+                main.width.saturating_sub(2),
+                main.height.saturating_sub(2),
+            );
+            render_history(h, history, &self.connection.name, pane, buf, ctx);
         }
     }
 
     fn render_explorer(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx<'_>) {
+        let structure_active = matches!(
+            self.tabs.get(self.active),
+            Some(WorkTab::Table(tab)) if tab.mode.selected == Some(1)
+        );
         let panel = Panel::new(ctx.system)
             .variant(PanelVariant::Bordered)
             .title("Explorer")
             .trailing(&self.schema)
-            .emphasis(PanelChrome::Normal);
+            .emphasis(PanelChrome::for_focus(
+                ctx.interaction.focused(EXPLORER) && !structure_active,
+            ));
         panel.paint(area, buf, None);
+        let panel_interior = Rect::new(
+            area.x.saturating_add(1),
+            area.y.saturating_add(1),
+            area.width.saturating_sub(2),
+            area.height.saturating_sub(2),
+        );
+        if !panel_interior.is_empty() {
+            buf.set_style(
+                panel_interior,
+                Style::new().fg(ctx.theme.text_primary).bg(ctx.theme.canvas),
+            );
+        }
         let inner = Panel::new(ctx.system)
             .variant(PanelVariant::Bordered)
             .inner(area);
@@ -522,7 +579,9 @@ impl Workbench {
                         n = n.expanded();
                     }
                 }
-                if let Some(m) = meta {
+                if let Some(m) = meta
+                    && (area.width >= 39 || crate::text::width(m) <= 3)
+                {
                     n = n.badge(Line::from(m.as_str()));
                 }
                 n
@@ -534,20 +593,62 @@ impl Workbench {
             inner.width.saturating_add(1),
             inner.height.saturating_sub(2),
         );
-        // Source connected-workbench shots keep tree navigation active while
-        // hiding the row-focus wash/bar; the footer carries the focus cue.
-        let tree_focused = false;
+        let tree_focused = ctx.interaction.focused(EXPLORER) && !structure_active;
         StatefulWidget::render(
             &Tree::new(&nodes, ctx.system)
                 .focused(tree_focused)
                 .background(ctx.theme.canvas)
-                .selection_visible(false),
+                .focused_metadata_bold(tree_focused)
+                .selection_visible(!structure_active),
             tree_area,
             buf,
             &mut self.explorer,
         );
+        if structure_active
+            && let Some(selected) = self.explorer.selected()
+            && let Some(row) = vis.iter().position(|(id, ..)| id == selected)
+        {
+            let y = tree_area
+                .y
+                .saturating_add(u16::try_from(row).unwrap_or(u16::MAX));
+            let symbols: String = (tree_area.x..tree_area.right())
+                .filter_map(|x| buf.cell((x, y)).map(|cell| cell.symbol()))
+                .collect();
+            if let Some(start) = symbols
+                .find("orders")
+                .map(|byte| symbols[..byte].chars().count())
+            {
+                for x in tree_area
+                    .x
+                    .saturating_add(u16::try_from(start).unwrap_or(0))
+                    ..tree_area
+                        .x
+                        .saturating_add(u16::try_from(start.saturating_add(13)).unwrap_or(0))
+                {
+                    if let Some(cell) = buf.cell_mut((x, y)) {
+                        cell.set_style(Style::new().fg(ctx.theme.accent).bg(Color::Reset));
+                    }
+                }
+            }
+        }
         ctx.control(EXPLORER, tree_area, false);
         ctx.scrollable(EXPLORER, tree_area);
+        if ctx.interaction.focused(EXPLORER)
+            && let Some(selected) = self.explorer.selected()
+            && let Some(row) = vis.iter().position(|(id, ..)| id == selected)
+        {
+            self.explorer_cursor = Some(Position::new(
+                area.right().saturating_sub(3),
+                tree_area
+                    .y
+                    .saturating_add(u16::try_from(row).unwrap_or(u16::MAX)),
+            ));
+        }
+    }
+
+    #[must_use]
+    pub fn explorer_cursor(&self) -> Option<Position> {
+        self.explorer_cursor
     }
 
     pub fn handle(
@@ -596,8 +697,9 @@ impl Workbench {
                 }
                 match self.tabs.get(self.active) {
                     Some(WorkTab::Query(_)) => {
+                        let cat = self.catalog.clone();
                         if let Some(WorkTab::Query(q)) = self.tabs.get_mut(self.active) {
-                            return handle_query(q, ev, cx);
+                            return handle_query(q, ev, cx, &cat);
                         }
                     }
                     Some(WorkTab::Table(_)) => {
@@ -632,8 +734,9 @@ impl Workbench {
                 }
                 match self.tabs.get(self.active) {
                     Some(WorkTab::Query(_)) => {
+                        let cat = self.catalog.clone();
                         if let Some(WorkTab::Query(q)) = self.tabs.get_mut(self.active) {
-                            return handle_query(q, ev, cx);
+                            return handle_query(q, ev, cx, &cat);
                         }
                     }
                     Some(WorkTab::Table(_)) => {
@@ -658,8 +761,9 @@ impl Workbench {
             }
             PageEvent::Paste(_) | PageEvent::Wheel { .. } => match self.tabs.get(self.active) {
                 Some(WorkTab::Query(_)) => {
+                    let cat = self.catalog.clone();
                     if let Some(WorkTab::Query(q)) = self.tabs.get_mut(self.active) {
-                        return handle_query(q, ev, cx);
+                        return handle_query(q, ev, cx, &cat);
                     }
                     Route::Ignored
                 }
@@ -739,9 +843,9 @@ impl Workbench {
         if parts.len() == 4 && matches!(parts[2], "Tables" | "Views") {
             let schema = parts[1].to_owned();
             let name = parts[3].to_owned();
+            self.explorer.select(Some(id.to_owned()));
             self.open_table(&schema, &name);
             cx.set_focus(super::tabs::TABLE_GRID);
-            cx.status(format!("Opened {schema}.{name}"));
             return Route::Changed;
         }
         if self.expanded.contains(id) {
@@ -784,15 +888,42 @@ impl Workbench {
 
     #[must_use]
     pub fn hints(&self, focus: Option<WidgetId>) -> Vec<Hint> {
-        if focus == Some(EXPLORER) || focus == Some(FILTER) {
-            // The source connected-workbench frame keeps its footer compact;
-            // detailed explorer actions are available through the help view.
+        if focus == Some(PLAN) {
             return vec![("↑ ↓", "Move")];
+        }
+        if focus == Some(TABSTRIP) {
+            return vec![
+                ("← →", "Switch"),
+                ("Ctrl+T", "New query"),
+                ("x", "Close"),
+                ("Ctrl+G", "Tab list"),
+                ("z", "Zoom"),
+            ];
+        }
+        if focus == Some(EXPLORER) || focus == Some(FILTER) {
+            if focus == Some(EXPLORER)
+                && matches!(self.tabs.get(self.active), Some(WorkTab::Table(tab)) if tab.mode.selected == Some(1))
+            {
+                return vec![("↑ ↓", "Move"), ("Ctrl+D", "Structure")];
+            }
+            return vec![
+                ("↑ ↓", "Move"),
+                ("Enter", "Open"),
+                ("→", "Expand"),
+                ("/", "Filter"),
+                ("Ctrl+O", "Quick open"),
+            ];
         }
         match self.tabs.get(self.active) {
             Some(WorkTab::Query(q)) => query_hints(q),
             Some(WorkTab::Table(t)) => table_hints(t, focus),
-            Some(WorkTab::History(_)) => vec![("↑ ↓", "Move"), ("Enter", "Open")],
+            Some(WorkTab::History(_)) => vec![
+                ("Enter", "Open in new tab"),
+                ("r", "Rerun"),
+                ("y", "Copy"),
+                ("/", "Search"),
+                ("c s", "Scope · Status"),
+            ],
             None => vec![("Ctrl+T", "New query")],
         }
     }

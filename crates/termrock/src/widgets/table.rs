@@ -12,7 +12,7 @@ use std::num::NonZeroU16;
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
-    style::Style,
+    style::{Modifier, Style},
     text::Line,
     widgets::StatefulWidget,
 };
@@ -1093,11 +1093,16 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
         };
         if let Some((message, role)) = placeholder {
             let msg_area = Rect::new(area.x, body_y.saturating_add(body_h / 2), area.width, 1);
+            let mut message = message;
+            let message_style = self.tokens.palette.style(role);
+            for span in &mut message.spans {
+                span.style = message_style.patch(span.style);
+            }
             render_line(
                 &message,
                 msg_area,
                 CellAlignment::Center,
-                self.tokens.palette.style(role),
+                self.tokens.palette.style(Role::Text),
                 buffer,
                 &mut state.scratch_text,
             );
@@ -1131,11 +1136,14 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
             // "a column happens to be focused" — Left/Right on a row-select
             // table must not drop › and tint.
             let cell_nav = state.cell_nav;
+            let focused_row = !cell_nav
+                && self.focused
+                && (selected || (state.selected.is_none() && row_index == state.offset));
             let chrome = super::row_chrome::RowChrome::resolve(
                 self.tokens,
                 ListRowVisualState {
                     selected: selected && !cell_nav,
-                    focused: selected && self.focused,
+                    focused: focused_row,
                     hovered,
                     enabled: row.enabled,
                     loading: false,
@@ -1148,7 +1156,11 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
             let quiet = if !row.enabled || row.style.is_some() {
                 style
             } else {
-                chrome.secondary_style(style)
+                let mut quiet = chrome.secondary_style(style);
+                if style.add_modifier.contains(Modifier::BOLD) {
+                    quiet = quiet.add_modifier(Modifier::BOLD);
+                }
+                quiet
             };
             // Fill first so colour-only gutter inherits BOLD from the row
             // style (junie fill-then-stamp). Cell-nav skips the accent wash.
@@ -1161,7 +1173,7 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
                 row_area,
                 self.tokens,
                 selected && !cell_nav,
-                selected && self.focused,
+                focused_row,
                 hovered,
                 row.enabled,
                 style,
@@ -1233,9 +1245,11 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
             }
         }
         if v_scroll {
+            let scrollbar_area = Rect::new(area.right().saturating_sub(1), body_y, 1, body_h);
+            buffer.set_style(scrollbar_area, self.tokens.style(Role::Surface));
             crate::scroll::paint_overflow_scrollbar(
                 buffer,
-                Rect::new(area.right().saturating_sub(1), body_y, 1, body_h),
+                scrollbar_area,
                 self.rows.len(),
                 state.viewport_rows.max(1),
                 u16::try_from(state.offset).unwrap_or(u16::MAX),
@@ -1342,7 +1356,6 @@ fn paint_header_row<RowId: Clone + Eq, ColumnId: Clone + Eq>(
     bordered: bool,
     column_budget: u16,
 ) {
-    let idle_header = super::table_chrome::header_style(table.tokens);
     buffer.set_style(
         Rect::new(area.x, area.y, area.width, 1),
         super::table_chrome::header_band(table.tokens),
@@ -1355,7 +1368,7 @@ fn paint_header_row<RowId: Clone + Eq, ColumnId: Clone + Eq>(
         area.y,
         "   ",
         usize::from(MARKER_WIDTH),
-        idle_header,
+        super::table_chrome::header_band(table.tokens),
     );
     let mut logical_x: i32 = i32::from(origin_x) - i32::from(state.h_offset);
     let mut shown_sort = false;
@@ -1409,7 +1422,14 @@ fn paint_header_row<RowId: Clone + Eq, ColumnId: Clone + Eq>(
                     );
                 }
                 if suffix_w > 0 && (col_right as u16) <= clip_right {
-                    let suffix_x = paint_end.saturating_sub(suffix_w);
+                    let suffix_x = if column.alignment == CellAlignment::Left {
+                        let title_width = u16::try_from(column.title.width())
+                            .unwrap_or(title_w)
+                            .min(title_w);
+                        paint_x.saturating_add(title_width)
+                    } else {
+                        paint_end.saturating_sub(suffix_w)
+                    };
                     buffer.set_stringn(
                         suffix_x,
                         area.y,
@@ -1493,7 +1513,25 @@ fn paint_data_cells<RowId: Clone + Eq, ColumnId: Clone + Eq>(
                         .as_ref()
                         .is_some_and(|id| id == &table.columns[column_index].id);
                 let kind = table.columns[column_index].kind;
-                let mut cell_style = kind.cell_style(style, quiet);
+                // An explicitly styled cell owns its whole canvas, including
+                // alignment padding. This keeps a numeric value's authored
+                // tone from leaving quiet padding behind (or vice versa).
+                let authored_style = row.cells.get(column_index).and_then(|line| {
+                    line.spans
+                        .iter()
+                        .find(|span| span.style.fg.is_some())
+                        .map(|span| style.patch(span.style))
+                });
+                let mut cell_style = if matches!(kind, ColumnKind::Numeric | ColumnKind::Id) {
+                    authored_style.unwrap_or(quiet)
+                } else {
+                    kind.cell_style(style, quiet)
+                };
+                if matches!(kind, ColumnKind::Numeric)
+                    && style.add_modifier.contains(Modifier::BOLD)
+                {
+                    cell_style = style;
+                }
                 if cell_focused {
                     // A cell cursor is a cell: the explicit reversal pair.
                     // Rows use gutter + tint and never reverse.

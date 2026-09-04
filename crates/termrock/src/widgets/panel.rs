@@ -1126,14 +1126,11 @@ impl<'a> Panel<'a> {
                 .padding(0, 0)
                 .paint(area, buffer);
             let theme = self.tokens.junie_theme();
-            let mut border = if matches!(self.emphasis, PanelChrome::Danger) {
+            let border = if matches!(self.emphasis, PanelChrome::Danger) {
                 self.tokens.style(Role::Danger)
             } else {
                 theme.border(focused_chrome)
             };
-            if focused_chrome {
-                border = border.add_modifier(ratatui_core::style::Modifier::BOLD);
-            }
             ratatui_widgets::block::Block::default()
                 .borders(ratatui_widgets::borders::Borders::ALL)
                 .border_style(border)
@@ -1200,7 +1197,8 @@ impl<'a> Panel<'a> {
                             .remove_modifier(ratatui_core::style::Modifier::BOLD),
                     );
                 }
-            } else if self.vertical_scroll.is_some() && area.width > 4 {
+            } else if (slots.trailing.is_some() || self.vertical_scroll.is_some()) && area.width > 4
+            {
                 // junie `.meta("")` still paints `"  "` faint before `─╮`.
                 let theme = self.tokens.junie_theme();
                 buffer.set_stringn(

@@ -23,6 +23,8 @@ pub enum LayerId {
 pub struct Interaction {
     pub focus: Option<WidgetId>,
     pub hover: Option<WidgetId>,
+    /// Last terminal pointer position, for stateful row-level hover paint.
+    pub pointer: Option<Position>,
     pub pressed: Option<WidgetId>,
     pub flash: Option<WidgetId>,
     pub focus_hidden: bool,

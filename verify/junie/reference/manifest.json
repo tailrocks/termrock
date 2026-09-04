@@ -1249,7 +1249,7 @@
       ],
       "keys": [],
       "mouse": [],
-      "cols": 160,
+      "cols": 120,
       "rows": 40,
       "source_ref": "main",
       "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
@@ -1281,9 +1281,6 @@
       "junie_dirty": false,
       "events": [
         "Tab",
-        "i",
-        "type SELECT * FROM orders LIMIT 25",
-        "Esc",
         "Ctrl-r",
         "ticks:10"
       ],
@@ -1312,10 +1309,8 @@
       "junie_dirty": false,
       "events": [
         "Tab",
-        "i",
-        "type SELECT * FROM events",
-        "Esc",
-        "Ctrl-r"
+        "Ctrl-r",
+        "ticks:4"
       ],
       "evidence": "checked-in source shot",
       "sha256": {

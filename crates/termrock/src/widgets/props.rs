@@ -14,6 +14,45 @@ use ratatui_core::{
 use crate::style::{JunieTheme, Tone};
 use crate::text::{display_cols, truncate_cols, wrap_display_cols};
 
+fn wrap_words(s: &str, width: usize) -> Vec<String> {
+    let width = width.max(1);
+    let mut lines = Vec::new();
+    for paragraph in s.split('\n') {
+        let mut line = String::new();
+        for word in paragraph.split(' ') {
+            if word.is_empty() {
+                continue;
+            }
+            let word_width = display_cols(word);
+            if line.is_empty() {
+                if word_width <= width {
+                    line.push_str(word);
+                } else {
+                    let chunks = wrap_display_cols(word, width);
+                    let last = chunks.len().saturating_sub(1);
+                    lines.extend(chunks[..last].iter().cloned());
+                    line = chunks.last().cloned().unwrap_or_default();
+                }
+            } else if display_cols(&line) + 1 + word_width <= width {
+                line.push(' ');
+                line.push_str(word);
+            } else {
+                lines.push(std::mem::take(&mut line));
+                if word_width <= width {
+                    line.push_str(word);
+                } else {
+                    let chunks = wrap_display_cols(word, width);
+                    let last = chunks.len().saturating_sub(1);
+                    lines.extend(chunks[..last].iter().cloned());
+                    line = chunks.last().cloned().unwrap_or_default();
+                }
+            }
+        }
+        lines.push(line);
+    }
+    lines
+}
+
 /// One facts row: muted label, toned value.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Prop {
@@ -84,11 +123,15 @@ pub fn render(area: Rect, buf: &mut Buffer, t: &JunieTheme, props: &[Prop], bg: 
             continue;
         }
         if p.wrap {
-            for line in wrap_display_cols(&p.value, vw.max(4)) {
+            for line in wrap_words(&p.value, vw.max(4)) {
                 if y >= area.bottom() {
                     break;
                 }
-                let shown = truncate_cols(&line, vw, "…");
+                // The canonical Junie word wrapper starts each continuation
+                // at the value column; discard the separator space that the
+                // display-column wrapper may carry across a line break.
+                let line = line.trim_start_matches(' ');
+                let shown = truncate_cols(line, vw, "…");
                 buf.set_stringn(
                     vx,
                     y,

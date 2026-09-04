@@ -25,7 +25,7 @@ use crate::{
     style::{
         ButtonRecipeVariant, ControlState, DesignSystem, ListRowVisualState, Role, VisualState,
     },
-    text::{display_cols, take_display_cols},
+    text::{display_cols, take_display_cols, truncate_cols},
 };
 
 // ── Checkbox ────────────────────────────────────────────────────────────────
@@ -466,7 +466,7 @@ impl<'a, Id> Checkbox<'a, Id> {
         if label_x < area.right() && area.height > 0 && !self.label.is_empty() {
             let lw = area.right().saturating_sub(label_x);
             label_area = Rect::new(label_x, area.y, lw, 1);
-            let text = take_display_cols(self.label, usize::from(lw));
+            let text = truncate_cols(self.label, usize::from(lw), "…");
             buffer.set_stringn(
                 label_area.x,
                 label_area.y,

@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Scrollbar painting and the fixed-prefix line primitive.
-use ratatui_core::{buffer::Buffer, layout::Rect, terminal::Frame, text::Line, widgets::Widget};
+use ratatui_core::{
+    buffer::Buffer, layout::Rect, style::Modifier, terminal::Frame, text::Line, widgets::Widget,
+};
 use ratatui_widgets::paragraph::Paragraph;
 
 use crate::{
@@ -260,15 +262,18 @@ pub fn paint_overflow_scrollbar(
     let thumb = ScrollbarStyle::Line.vertical_thumb();
     for index in 0..track {
         let on_thumb = index >= start && index < start + len;
+        let style = if on_thumb {
+            system
+                .scrollbar_thumb(focused, false)
+                .remove_modifier(Modifier::BOLD)
+        } else {
+            system.scrollbar_track().remove_modifier(Modifier::BOLD)
+        };
         buffer.set_string(
             gutter.x,
             gutter.y + index as u16,
             if on_thumb { thumb } else { SCROLLBAR_TRACK },
-            if on_thumb {
-                system.scrollbar_thumb(focused, false)
-            } else {
-                system.scrollbar_track()
-            },
+            style,
         );
     }
 }

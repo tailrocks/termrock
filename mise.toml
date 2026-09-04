@@ -50,6 +50,8 @@ cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
 cargo nextest run --workspace --all-features --locked
 mise run preview-goldens
 mise run png-baselines
+mise run junie-capture
+mise run junie-compare
 cargo check -p termrock --no-default-features --locked
 cargo check --workspace --examples --locked
 cargo check --workspace --examples --features crossterm --locked
@@ -112,6 +114,8 @@ run = """
 [tasks.junie-capture]
 description = "Capture all five artifacts from the canonical junie-reference catalog"
 run = """
+mkdir -p verify/junie/out/target-capture
+find verify/junie/out/target-capture -mindepth 1 -maxdepth 1 -type f -delete
 TERMROCK_CATALOG_PROFILE=junie-reference cargo run -q -p termrock-catalog -- capture --out verify/junie/out/target-capture --all
 """
 

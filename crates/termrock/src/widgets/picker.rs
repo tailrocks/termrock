@@ -759,7 +759,9 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
                 .map(|row| display_cols(&row.plain_label()) as u16)
                 .max()
                 .unwrap_or(6)
-                .clamp(6, (row_w * 45 / 100).max(6));
+                // Quick-open keeps a 29-cell label rail in its 60-cell
+                // inner pane, leaving the source's two-cell detail gap.
+                .clamp(6, (row_w * 49 / 100).max(6));
             let tag_col = self
                 .rows
                 .iter()
@@ -826,7 +828,10 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
                 let tag = row.status.as_ref().map(line_plain).unwrap_or_default();
                 let tag_w = display_cols(&tag);
                 let label_plain = row.plain_label();
-                let label = truncate_cols(&label_plain, usize::from(label_col), "…");
+                // Junie's fixed rail leaves one spare cell before detail; a
+                // label may therefore use the rail plus that separator.
+                let label =
+                    truncate_cols(&label_plain, usize::from(label_col.saturating_add(1)), "…");
                 let matched = super::fuzzy_match_label(state.query.value(), &label_plain)
                     .map(|(_, ranges)| ranges)
                     .unwrap_or_default();
@@ -854,9 +859,9 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
                 }
                 let _ = x;
                 let mut rx = row_rect.right();
-                if group_col > 0 {
+                if group_col > 0 && show_group {
                     rx = rx.saturating_sub(group_col.saturating_add(1));
-                    if show_group && rx < row_rect.right() {
+                    if rx < row_rect.right() {
                         buffer.set_stringn(
                             rx,
                             ry,
@@ -866,9 +871,9 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
                         );
                     }
                 }
-                if tag_col > 0 {
+                if tag_col > 0 && tag_w > 0 {
                     rx = rx.saturating_sub(tag_col.saturating_add(2));
-                    if tag_w > 0 && rx < row_rect.right() {
+                    if rx < row_rect.right() {
                         buffer.set_stringn(
                             rx,
                             ry,
@@ -879,14 +884,35 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
                     }
                 }
                 if !detail.is_empty() {
-                    let dx = row_rect
+                    let label_width = display_cols(label.as_ref()) as u16;
+                    let rail_dx = row_rect
                         .x
                         .saturating_add(3)
                         .saturating_add(label_col)
                         .saturating_add(2);
-                    let room = rx.saturating_sub(dx.saturating_add(1));
-                    if room >= 4 && dx < row_rect.right() {
+                    let min_dx = if self.searchable {
+                        row_rect
+                            .x
+                            .saturating_add(3)
+                            .saturating_add(label_width)
+                            .saturating_add(2)
+                    } else {
+                        // Fixed-choice pickers keep their descriptions after
+                        // the full label rail; quick-open metadata is packed
+                        // from the right edge instead.
+                        rail_dx
+                    };
+                    let room = rx.saturating_sub(min_dx.saturating_add(1));
+                    if room >= 4 && min_dx < row_rect.right() {
                         let shown = truncate_cols(&detail, usize::from(room), "…");
+                        // Searchable metadata is right-aligned against the
+                        // active trailing rail, keeping short values aligned.
+                        let dx = if self.searchable {
+                            rx.saturating_sub(display_cols(shown.as_ref()) as u16)
+                                .saturating_sub(2)
+                        } else {
+                            min_dx
+                        };
                         buffer.set_stringn(
                             dx,
                             ry,

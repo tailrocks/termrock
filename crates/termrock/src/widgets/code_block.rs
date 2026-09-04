@@ -578,6 +578,24 @@ impl CodeBlockState {
         before != self.scroll_x
     }
 
+    /// Keep a display-column caret visible with the source editor's margin.
+    pub fn reveal_column(&mut self, col: usize) {
+        // Hosts may update the caret before the first paint establishes the
+        // body geometry. Defer reveal until a real viewport is known; treating
+        // the unknown width as one column creates a persistent bogus offset.
+        if self.body_width == 0 {
+            return;
+        }
+        let width = usize::from(self.body_width);
+        let x = usize::from(self.scroll_x);
+        if col < x.saturating_add(4) {
+            self.scroll_x = u16::try_from(col.saturating_sub(4)).unwrap_or(u16::MAX);
+        } else if col.saturating_add(4) >= x.saturating_add(width) {
+            self.scroll_x =
+                u16::try_from(col.saturating_add(5).saturating_sub(width)).unwrap_or(u16::MAX);
+        }
+    }
+
     /// Reveal absolute line in viewport.
     pub fn reveal_line(&mut self, line: usize, logical_len: usize) {
         let vh = usize::from(self.viewport_rows.max(1));
@@ -670,8 +688,12 @@ pub struct CodeBlock<'a, H: SyntaxHighlighter = PlainSyntax> {
     /// Absolute inclusive-start / exclusive-end of the current statement block.
     /// `›` is painted on the first line; `▎` is focus-only.
     current_block: Option<(usize, usize)>,
+    /// Whether a focused cursor line without an explicit block gets `›`.
+    cursor_marker: bool,
     /// Footer-left diagnostic / status (source CodeEditor message row).
     footer_status: Option<(&'a str, Role)>,
+    /// Keep the editor well full-height when the document is shorter than it.
+    fill_body: bool,
 }
 
 impl<'a> CodeBlock<'a, PlainSyntax> {
@@ -694,7 +716,9 @@ impl<'a> CodeBlock<'a, PlainSyntax> {
             streaming: false,
             first_line: 0,
             current_block: None,
+            cursor_marker: true,
             footer_status: None,
+            fill_body: false,
         }
     }
 }
@@ -771,7 +795,9 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
             streaming: self.streaming,
             first_line: self.first_line,
             current_block: self.current_block,
+            cursor_marker: self.cursor_marker,
             footer_status: self.footer_status,
+            fill_body: self.fill_body,
         }
     }
 
@@ -817,6 +843,13 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
         self
     }
 
+    /// Keeps a short document's editor well full-height before its footer.
+    #[must_use]
+    pub const fn fill_body(mut self, on: bool) -> Self {
+        self.fill_body = on;
+        self
+    }
+
     /// Streaming / unfinished fence cue.
     #[must_use]
     pub const fn streaming(mut self, on: bool) -> Self {
@@ -829,6 +862,13 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
     #[must_use]
     pub const fn current_block(mut self, start: usize, end: usize) -> Self {
         self.current_block = Some((start, if end < start { start } else { end }));
+        self
+    }
+
+    /// Controls the implicit `›` marker for a focused line without a block.
+    #[must_use]
+    pub const fn cursor_marker(mut self, on: bool) -> Self {
+        self.cursor_marker = on;
         self
     }
 
@@ -933,7 +973,11 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
         if let Some(b) = self.current_block {
             return Some(b);
         }
-        state.cursor_line.map(|line| (line, line.saturating_add(1)))
+        if self.cursor_marker {
+            state.cursor_line.map(|line| (line, line.saturating_add(1)))
+        } else {
+            None
+        }
     }
 
     fn highlights_for(&self, abs_line: usize, state: &CodeBlockState) -> Vec<CodeHighlightKind> {
@@ -1052,7 +1096,9 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
         // every document line; leftover rows below the document still host
         // the `1–N of M` / `ln · col` footer.
         let doc = self.document_len();
-        let body_h = if doc > 0 && doc <= usize::from(content_h) {
+        let body_h = if self.fill_body && content_h > 1 {
+            content_h.saturating_sub(1)
+        } else if doc > 0 && doc <= usize::from(content_h) {
             u16::try_from(doc).unwrap_or(content_h).min(content_h)
         } else if content_h > 1 {
             content_h.saturating_sub(1)
@@ -1148,6 +1194,8 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
             buffer.set_style(well, fs);
         }
         let block = self.resolved_block(state);
+        let marker_on_first = block.is_some_and(|(start, _)| start == parts.first_line);
+        let spinner_present = self.gutter_marks.iter().any(|mark| mark.glyph != '!');
 
         let mono = self.is_monochrome();
         let tab = usize::from(self.tab_width);
@@ -1161,9 +1209,9 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
         let mut abs = first;
         while row < body_h {
             let Some(win_i) = self.window_index(abs) else {
-                // Past the document: junie still walks the well; `▎` only if
-                // the cursor sits on that empty line (`code.rs` `li == cur.line`).
-                if parts.gutter.width > 0 && state.cursor_line == Some(abs) {
+                // Past the document: junie keeps the focus gutter across the
+                // remaining editor well, even though no line number exists.
+                if parts.gutter.width > 0 {
                     let y = parts.body.y.saturating_add(row);
                     let gx = parts.gutter.x;
                     let line_gutter = self.system.gutter(
@@ -1203,30 +1251,27 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
             if parts.gutter.width > 0 {
                 let y = parts.body.y.saturating_add(row);
                 let gx = parts.gutter.x;
-                if state.cursor_line == Some(abs) {
-                    let line_gutter = self.system.gutter(
-                        VisualState {
-                            focused: state.focused,
-                            ..visual
-                        },
-                        field_bg,
-                        false,
-                    );
-                    buffer.set_stringn(
-                        gx,
-                        y,
-                        self.system.glyphs.selection_gutter(),
-                        1,
-                        line_gutter,
-                    );
-                }
+                let line_gutter = self.system.gutter(
+                    VisualState {
+                        focused: state.focused,
+                        ..visual
+                    },
+                    field_bg,
+                    false,
+                );
+                buffer.set_stringn(gx, y, self.system.glyphs.selection_gutter(), 1, line_gutter);
                 // junie: numbers at `area.x + 3` via `fit_right`.
                 let num_w = if self.show_line_numbers && parts.gutter.width > 3 {
-                    parts.gutter.width.saturating_sub(4)
+                    let width = parts.gutter.width.saturating_sub(4);
+                    if marker_on_first { width } else { width.max(2) }
                 } else {
                     0
                 };
-                let num_x = gx.saturating_add(3);
+                let num_x = gx.saturating_add(if marker_on_first || spinner_present {
+                    2
+                } else {
+                    3
+                });
                 let spinner = self
                     .gutter_marks
                     .iter()
@@ -1238,8 +1283,7 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
                 if let Some(m) = spinner {
                     let mark_style = fs.patch(self.system.style(m.role));
                     buffer.set_stringn(gx.saturating_add(1), y, m.glyph.to_string(), 1, mark_style);
-                } else if bang_mark.is_none()
-                    && let Some((start, end)) = block
+                } else if let Some((start, end)) = block
                     && abs == start
                     && abs < end
                 {
@@ -1269,24 +1313,31 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
                     };
                     buffer.set_stringn(num_x, y, &number, usize::from(num_w), nstyle);
                     if let Some(m) = bang_mark {
-                        // s_editor_diag: `▎  1!` — bang overwrites the last number cell.
+                        // Focused query diagnostics keep the statement marker and append
+                        // the bang after the line number: `▎› 1!`. Standalone blocks
+                        // retain the compact `▎  1!` overwrite used by the widget API.
                         let mut mark_style = fs.patch(self.system.style(m.role));
                         mark_style = mark_style.add_modifier(Modifier::BOLD);
-                        buffer.set_stringn(
-                            num_x.saturating_add(num_w.saturating_sub(1)),
-                            y,
-                            m.glyph.to_string(),
-                            1,
-                            mark_style,
-                        );
+                        let bang_x = if marker_on_first {
+                            num_x.saturating_add(num_w)
+                        } else {
+                            num_x.saturating_add(num_w.saturating_sub(1))
+                        };
+                        buffer.set_stringn(bang_x, y, m.glyph.to_string(), 1, mark_style);
                     }
                 }
             }
 
             // Body rows for this logical line
+            let leading_ellipsis = state.scroll_x > 0 && !prepared.is_empty();
             let display_rows: Vec<String> = match self.wrap {
                 CodeWrap::Clip => {
-                    let sliced = horizontal_slice(&prepared, state.scroll_x, body_w);
+                    let text_width = body_w.saturating_sub(u16::from(leading_ellipsis));
+                    let sliced = horizontal_slice(
+                        &prepared,
+                        state.scroll_x.saturating_add(u16::from(leading_ellipsis)),
+                        text_width,
+                    );
                     vec![sliced]
                 }
                 CodeWrap::Wrap => {
@@ -1306,21 +1357,33 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
                 if wrap_i > 0 && parts.gutter.width > 0 {
                     // leave gutter as-is (already empty for this row)
                 }
+                let text_x = parts.body.x.saturating_add(u16::from(leading_ellipsis));
+                let text_width = body_w.saturating_sub(u16::from(leading_ellipsis));
                 self.paint_body_row(
                     buffer,
-                    parts.body.x,
+                    text_x,
                     parts.body.y.saturating_add(row),
-                    body_w,
+                    text_width,
                     display_row,
                     &prepared,
                     abs,
                     &kinds,
                     mono,
                     fs,
-                    display_cols(&prepared).saturating_sub(usize::from(state.scroll_x))
-                        > usize::from(body_w),
-                    state.scroll_x,
+                    display_cols(&prepared).saturating_sub(usize::from(
+                        state.scroll_x.saturating_add(u16::from(leading_ellipsis)),
+                    )) > usize::from(text_width),
+                    state.scroll_x.saturating_add(u16::from(leading_ellipsis)),
                 );
+                if leading_ellipsis && text_width > 0 {
+                    buffer.set_stringn(
+                        parts.body.x,
+                        parts.body.y.saturating_add(row),
+                        self.system.glyphs.ellipsis(),
+                        1,
+                        fs.fg(theme.text_muted),
+                    );
+                }
                 if wrap_i == 0 && state.editing && state.cursor_line == Some(abs) {
                     let y = parts.body.y.saturating_add(row);
                     for x in parts.body.x..parts.body.right() {
@@ -1424,7 +1487,7 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
         x: u16,
         y: u16,
         width: u16,
-        display_row: &str,
+        _display_row: &str,
         prepared_full: &str,
         abs_line: usize,
         kinds: &[CodeHighlightKind],
@@ -1438,18 +1501,14 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
         }
         // Highlight against full prepared line; paint only display_row segment styles.
         let segments = self.highlighter.highlight_line(prepared_full, abs_line);
-        let paint_segments = if display_row == prepared_full {
-            segments
-        } else {
-            self.highlighter.highlight_line(display_row, abs_line)
-        };
-        let unstyled = paint_segments.iter().all(|(_, s)| *s == Style::default());
+        let unstyled = segments.iter().all(|(_, s)| *s == Style::default());
         let fallback: Vec<(&str, Style)>;
-        let paint_segments = if unstyled {
+        let source_segments = if unstyled {
             // Fallback: language-agnostic tokens through `theme.syntax()` —
-            // weight + text ladder, never historical ANSI hues.
+            // weight + text ladder, never historical ANSI hues. Tokenize the
+            // full line so horizontal clipping cannot split a keyword's style.
             fallback = tokenize_line(
-                display_row,
+                prepared_full,
                 self.meta.language,
                 keywords_for(self.meta.language),
             )
@@ -1458,8 +1517,9 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
             .collect();
             fallback
         } else {
-            paint_segments
+            segments
         };
+        let paint_segments = clip_syntax_segments(&source_segments, scroll_x, width);
 
         let mut col = 0u16;
         for (segment, mut style) in paint_segments {
@@ -1487,7 +1547,7 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
                 break;
             }
             let remaining = usize::from(width.saturating_sub(col));
-            let clipped = take_display_cols(segment, remaining);
+            let clipped = take_display_cols(&segment, remaining);
             let used = u16::try_from(display_cols(&clipped))
                 .unwrap_or(0)
                 .min(width.saturating_sub(col));
@@ -1519,7 +1579,6 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
         if width == 0 {
             return;
         }
-        let theme = self.system.junie_theme();
         for h in self.highlights {
             if h.line != abs_line || h.kind != CodeHighlightKind::Diagnostic {
                 continue;
@@ -1527,7 +1586,12 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
             let start = h.start_col.unwrap_or(0).saturating_sub(scroll_x);
             let end = h.end_col.unwrap_or(u16::MAX).saturating_sub(scroll_x);
             let end = end.min(width);
-            let color = theme.warning;
+            let color = self
+                .gutter_marks
+                .iter()
+                .find(|mark| mark.line == abs_line && mark.glyph == '!')
+                .and_then(|mark| self.system.style(mark.role).fg)
+                .unwrap_or(self.system.junie_theme().warning);
             for col in start..end {
                 if let Some(cell) = buffer.cell_mut((x.saturating_add(col), y)) {
                     cell.set_style(
@@ -1811,6 +1875,52 @@ fn horizontal_slice(s: &str, scroll_x: u16, width: u16) -> String {
     // Skip scroll_x columns then take width.
     let skipped = take_display_cols_from(s, usize::from(scroll_x));
     take_display_cols(&skipped, usize::from(width))
+}
+
+fn clip_syntax_segments(
+    segments: &[(&str, Style)],
+    scroll_x: u16,
+    width: u16,
+) -> Vec<(String, Style)> {
+    let skip = usize::from(scroll_x);
+    let limit = usize::from(width);
+    if limit == 0 {
+        return Vec::new();
+    }
+    let mut offset = 0usize;
+    let mut out: Vec<(String, Style)> = Vec::new();
+    for (segment, style) in segments {
+        let segment_width = display_cols(segment);
+        let segment_end = offset.saturating_add(segment_width);
+        if segment_end <= skip {
+            offset = segment_end;
+            continue;
+        }
+        let local_skip = skip.saturating_sub(offset);
+        let visible_width = limit.saturating_sub(
+            out.iter()
+                .map(|(text, _)| display_cols(text))
+                .sum::<usize>(),
+        );
+        if visible_width == 0 {
+            break;
+        }
+        let visible =
+            take_display_cols(&take_display_cols_from(segment, local_skip), visible_width);
+        if !visible.is_empty() {
+            out.push((visible, *style));
+        }
+        offset = segment_end;
+        if out
+            .iter()
+            .map(|(text, _)| display_cols(text))
+            .sum::<usize>()
+            >= limit
+        {
+            break;
+        }
+    }
+    out
 }
 
 /// Drop the first `skip` display columns of `s`, return remainder.

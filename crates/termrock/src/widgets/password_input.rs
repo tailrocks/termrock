@@ -747,6 +747,8 @@ impl PasswordConfirmState {
 pub struct PasswordInput<'a> {
     label: &'a str,
     placeholder: &'a str,
+    show_optional: bool,
+    help: &'a str,
     validation: Validation<'a>,
     system: &'a DesignSystem,
     mask: char,
@@ -774,6 +776,8 @@ impl<'a> PasswordInput<'a> {
         Self {
             label,
             placeholder: "",
+            show_optional: false,
+            help: "",
             validation: Validation::Valid,
             system,
             mask: '●',
@@ -786,6 +790,20 @@ impl<'a> PasswordInput<'a> {
     #[must_use]
     pub const fn placeholder(mut self, placeholder: &'a str) -> Self {
         self.placeholder = placeholder;
+        self
+    }
+
+    /// Paint the optional suffix when it fits beside the label.
+    #[must_use]
+    pub const fn optional(mut self, on: bool) -> Self {
+        self.show_optional = on;
+        self
+    }
+
+    /// Helper text painted below the field.
+    #[must_use]
+    pub const fn help(mut self, help: &'a str) -> Self {
+        self.help = help;
         self
     }
 
@@ -841,6 +859,8 @@ impl<'a> PasswordInput<'a> {
 
         let input = TextInput::new(self.label, self.system)
             .placeholder(self.placeholder)
+            .optional(self.show_optional)
+            .help(self.help)
             .validation(self.validation)
             .secret(!revealed)
             .secret_mask(mask);

@@ -264,7 +264,7 @@ impl Page for ScrollingPage {
                     buf.set_string(
                         inner.x,
                         y,
-                        text::truncate(line, inner.width.saturating_sub(2) as usize),
+                        text::fit(line, inner.width.saturating_sub(2) as usize),
                         t.secondary().bg(bg),
                     );
                 }
@@ -330,7 +330,7 @@ impl Page for ScrollingPage {
                     buf.set_string(
                         inner.x,
                         y,
-                        text::truncate(line, inner.width.saturating_sub(2) as usize),
+                        text::fit(line, inner.width.saturating_sub(2) as usize),
                         log_style(t, line).bg(bg),
                     );
                 }
