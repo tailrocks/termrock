@@ -249,7 +249,6 @@ pub const fn termrock::ansi_text::AnsiText<'a>::len(&self) -> usize
 pub const fn termrock::ansi_text::AnsiText<'a>::lines(&'a [termrock::ansi_text::AnsiLine], &'a termrock::style::DesignSystem) -> Self
 pub const fn termrock::ansi_text::AnsiText<'a>::mode(self, termrock::ansi_text::AnsiTextMode) -> Self
 pub fn termrock::ansi_text::AnsiText<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::ansi_text::AnsiTextState)
-pub fn termrock::ansi_text::AnsiText<'a>::plain(&self) -> alloc::string::String
 impl ratatui_core::widgets::widget::Widget for &termrock::ansi_text::AnsiText<'_>
 pub fn &termrock::ansi_text::AnsiText<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
 impl ratatui_core::widgets::widget::Widget for termrock::ansi_text::AnsiText<'_>
@@ -32404,7 +32403,6 @@ pub const fn termrock::ansi_text::AnsiText<'a>::len(&self) -> usize
 pub const fn termrock::ansi_text::AnsiText<'a>::lines(&'a [termrock::ansi_text::AnsiLine], &'a termrock::style::DesignSystem) -> Self
 pub const fn termrock::ansi_text::AnsiText<'a>::mode(self, termrock::ansi_text::AnsiTextMode) -> Self
 pub fn termrock::ansi_text::AnsiText<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::ansi_text::AnsiTextState)
-pub fn termrock::ansi_text::AnsiText<'a>::plain(&self) -> alloc::string::String
 impl ratatui_core::widgets::widget::Widget for &termrock::ansi_text::AnsiText<'_>
 pub fn &termrock::ansi_text::AnsiText<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
 impl ratatui_core::widgets::widget::Widget for termrock::ansi_text::AnsiText<'_>
@@ -59245,7 +59243,6 @@ pub const fn termrock::ansi_text::AnsiText<'a>::len(&self) -> usize
 pub const fn termrock::ansi_text::AnsiText<'a>::lines(&'a [termrock::ansi_text::AnsiLine], &'a termrock::style::DesignSystem) -> Self
 pub const fn termrock::ansi_text::AnsiText<'a>::mode(self, termrock::ansi_text::AnsiTextMode) -> Self
 pub fn termrock::ansi_text::AnsiText<'a>::paint(&self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer, &mut termrock::ansi_text::AnsiTextState)
-pub fn termrock::ansi_text::AnsiText<'a>::plain(&self) -> alloc::string::String
 impl ratatui_core::widgets::widget::Widget for &termrock::ansi_text::AnsiText<'_>
 pub fn &termrock::ansi_text::AnsiText<'_>::render(self, ratatui_core::layout::rect::Rect, &mut ratatui_core::buffer::buffer::Buffer)
 impl ratatui_core::widgets::widget::Widget for termrock::ansi_text::AnsiText<'_>
