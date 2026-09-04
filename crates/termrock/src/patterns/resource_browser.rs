@@ -148,8 +148,6 @@ pub enum ResourceBrowserFocus {
     /// The navigation rail.
     #[default]
     Rail,
-    /// The detail pane.
-    Detail,
 }
 
 /// Paints a reference resource browser over [`layout_resource_browser`].
@@ -355,14 +353,10 @@ use crate::{
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum ResourceBrowserOutcome<Id> {
-    /// No change.
-    Ignored,
     /// Sidebar selection.
     Sidebar(SidebarOutcome<Id>),
     /// Request load of selection (consumer).
     LoadRequested(Id),
-    /// Open preview.
-    PreviewRequested(Id),
 }
 
 /// Resource browser state.

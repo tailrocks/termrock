@@ -134,8 +134,6 @@ pub enum OverflowBehavior {
     /// Grapheme-safe ellipsis at the end (default for labels).
     #[default]
     Ellipsis,
-    /// Hard clip without ellipsis (rare; status meters).
-    Clip,
     /// Scroll within the allocated region.
     Scroll,
     /// Wrap to additional rows when height allows.

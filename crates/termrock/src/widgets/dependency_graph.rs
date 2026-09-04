@@ -702,11 +702,6 @@ pub enum DependencyGraphOutcome {
     },
     /// Cancel filter.
     Cancelled,
-    /// Tree expand in tree view (host optional).
-    ExpandToggled {
-        /// Id.
-        id: String,
-    },
 }
 
 // ── State ───────────────────────────────────────────────────────────────────

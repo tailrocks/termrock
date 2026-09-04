@@ -153,8 +153,6 @@ pub enum FocusEmphasis {
     /// `Role::BorderFocused` on the container's own edge (panels, inputs).
     #[default]
     BrightBorder,
-    /// Full selection fill — opt-in only, never a resting default.
-    SelectionFill,
     /// `Role::SelectionTint` behind the row plus its gutter glyph.
     FocusTint,
     /// Reversed cell — a cell cursor is a cell (tables, grids).

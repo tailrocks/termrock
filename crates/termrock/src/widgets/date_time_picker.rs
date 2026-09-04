@@ -538,8 +538,6 @@ pub enum DateTimePickerPresentation {
     /// In-place expanded panel.
     #[default]
     Embedded,
-    /// Modal / popover overlay.
-    Modal,
     /// Fullscreen on tiny terminals.
     Fullscreen,
 }
@@ -654,11 +652,6 @@ pub enum DateTimePickerOutcome {
     Closed,
     /// Cancelled (Esc from field / modal).
     Cancelled,
-    /// Presentation hint.
-    PresentationChanged {
-        /// Presentation.
-        presentation: DateTimePickerPresentation,
-    },
 }
 
 // ── State ───────────────────────────────────────────────────────────────────

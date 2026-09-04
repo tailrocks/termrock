@@ -18,8 +18,6 @@ pub enum CapabilitySource {
     Profile,
     /// Built-in safe default.
     Default,
-    /// Not probed / unknown.
-    Unknown,
 }
 
 /// Raw environment hints (detection only).

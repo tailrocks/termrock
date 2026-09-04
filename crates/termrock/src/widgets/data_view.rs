@@ -630,8 +630,6 @@ pub enum SelectionMode {
     /// No selection chrome.
     #[default]
     None,
-    /// Single row.
-    Row,
     /// Multiple rows.
     MultiRow,
     /// Single cell.
@@ -794,13 +792,6 @@ pub enum CopyPayload {
     Cell {
         /// Text.
         text: String,
-    },
-    /// TSV/CSV-ish range.
-    Range {
-        /// Rows of cells.
-        rows: Vec<Vec<String>>,
-        /// `true` = tab-separated.
-        tsv: bool,
     },
     /// Whole focused row.
     Row {

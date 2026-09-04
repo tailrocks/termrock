@@ -567,8 +567,6 @@ pub enum ModelSelectorOutcome {
         /// Effort.
         effort: ReasoningEffort,
     },
-    /// Compact status activated (open request).
-    ActivateCompact,
 }
 
 /// Agent mode selector outcomes.
@@ -604,8 +602,6 @@ pub enum AgentModeSelectorOutcome {
         /// Warning.
         warning: bool,
     },
-    /// Compact badge activated.
-    ActivateCompact,
 }
 
 // ── ModelSelector state / paint ─────────────────────────────────────────────

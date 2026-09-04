@@ -467,13 +467,6 @@ pub enum QueryEditorOutcome {
     OpenSavedQueries,
     /// Open history picker.
     OpenHistory,
-    /// Apply history value (host may also call set_text).
-    HistoryApplied {
-        /// History entry id.
-        id: String,
-        /// Value text.
-        value: String,
-    },
     /// Completion surface should open/refresh.
     CompletionRequested {
         /// Prefix / token at cursor.

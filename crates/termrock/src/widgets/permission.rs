@@ -394,8 +394,6 @@ pub enum PermissionOutcome {
         /// Generation at cancel time.
         generation: u64,
     },
-    /// Queue advanced (request dismissed as stale/resolved externally).
-    QueueChanged,
     /// Attempted to confirm a stale generation.
     StaleIgnored {
         /// Generation that was attempted.

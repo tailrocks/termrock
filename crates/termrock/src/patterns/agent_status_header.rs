@@ -500,10 +500,6 @@ pub enum AgentStatusHeaderOutcome {
     Action(AgentStatusAction),
     /// Action cursor moved (does not fire).
     ActionFocused(AgentStatusAction),
-    /// Presentation changed.
-    PresentationChanged(AgentStatusPresentation),
-    /// Header focused.
-    Focused,
 }
 
 // ── State ───────────────────────────────────────────────────────────────────

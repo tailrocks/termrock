@@ -289,11 +289,6 @@ pub enum TabsOutcome<Id> {
         /// To index.
         to: usize,
     },
-    /// Presentation class changed.
-    PresentationChanged {
-        /// Presentation.
-        presentation: TabsPresentation,
-    },
 }
 
 // ── State ───────────────────────────────────────────────────────────────────

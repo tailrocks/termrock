@@ -535,11 +535,6 @@ pub enum CodeBlockOutcome {
         /// Absolute line.
         line: usize,
     },
-    /// Selection updated.
-    SelectionChanged {
-        /// Inclusive start, exclusive end.
-        range: (usize, usize),
-    },
     /// Copy request — host emits clipboard / OSC 52.
     Copy {
         /// Prepared plain text (tabs expanded; controls stripped for safety).

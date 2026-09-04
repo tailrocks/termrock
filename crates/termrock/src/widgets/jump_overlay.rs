@@ -182,8 +182,6 @@ pub enum JumpOutcome<Id> {
     },
     /// Target activated by key sequence or click.
     Activated(Id),
-    /// Filter changed; host should rebuild targets.
-    FilterChanged,
 }
 
 // ── Label generation (deterministic, collision-free) ────────────────────────

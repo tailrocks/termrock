@@ -458,11 +458,6 @@ pub struct HexRegion {
 pub enum HexViewerOutcome {
     /// No change.
     Ignored,
-    /// Viewport scrolled (row units).
-    Scrolled {
-        /// Row offset.
-        row: u64,
-    },
     /// Cursor moved to absolute offset.
     CursorMoved {
         /// Absolute byte offset.

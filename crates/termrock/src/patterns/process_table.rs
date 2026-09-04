@@ -571,8 +571,6 @@ pub enum ProcessTableOutcome {
     },
     /// Cancelled filter.
     Cancelled,
-    /// Viewport scrolled.
-    Scrolled,
 }
 
 // ── State ───────────────────────────────────────────────────────────────────

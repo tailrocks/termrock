@@ -273,11 +273,6 @@ impl<Id: Clone + PartialEq> SegmentedControlState<Id> {
 pub enum SegmentedControlOutcome<Id> {
     /// No change.
     Ignored,
-    /// Cursor moved without selection change (rare; reserved).
-    CursorMoved {
-        /// Active id.
-        id: Id,
-    },
     /// Selected value changed.
     Selected {
         /// New value id.

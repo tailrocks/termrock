@@ -535,11 +535,6 @@ pub enum QuickOpenOutcome<Id> {
     },
     /// Dismissed.
     Cancelled,
-    /// Loading flag toggled.
-    LoadingChanged {
-        /// Loading.
-        loading: bool,
-    },
 }
 
 // ── Per-provider memory ─────────────────────────────────────────────────────

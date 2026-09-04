@@ -88,8 +88,6 @@ pub enum AppShellLifecycle {
     /// Normal interactive session.
     #[default]
     Ready,
-    /// Connecting / reconnecting.
-    Connecting,
     /// Offline but shell still usable (local buffers).
     Offline,
     /// Hard disconnect — prefer minimal chrome + banner in header/main.

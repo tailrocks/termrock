@@ -481,15 +481,6 @@ pub fn mouse_scroll_delta_with_step(
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// Content and viewport lengths used to derive bounded scroll geometry.
-pub struct ScrollSpan {
-    /// Total content length in cells or rows.
-    pub content_len: usize,
-    /// Visible viewport length in cells or rows.
-    pub viewport_len: usize,
-}
-
 /// Scroll a selectable list by wheel while keeping selection and viewport
 /// coherent.
 ///

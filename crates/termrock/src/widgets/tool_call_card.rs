@@ -414,11 +414,6 @@ pub enum ToolCallCardOutcome {
         /// Call id.
         id: String,
     },
-    /// Activated (generic).
-    Activated {
-        /// Call id.
-        id: String,
-    },
 }
 
 /// Presentation / zoom.

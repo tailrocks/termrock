@@ -161,8 +161,6 @@ pub fn keyboard_help_presentation_for_bounds(bounds: Rect) -> KeyboardHelpPresen
 pub enum HelpEntrySource {
     /// Live keymap binding.
     Keymap,
-    /// Semantic scene action / help line.
-    Semantic,
     /// Overlay stack layer.
     Overlay,
     /// Conflict report from keymap.

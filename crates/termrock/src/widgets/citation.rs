@@ -498,11 +498,6 @@ pub enum SourceCitationOutcome {
         /// Text (includes raw dest).
         text: String,
     },
-    /// Focus / hover changed.
-    Focused {
-        /// Id.
-        id: String,
-    },
     /// Jump to markdown anchor in parent reader.
     JumpToAnchor {
         /// Citation id.

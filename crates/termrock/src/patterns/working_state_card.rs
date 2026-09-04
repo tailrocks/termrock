@@ -356,8 +356,6 @@ pub enum WorkingStateOutcome {
         /// Resource id.
         resource_id: String,
     },
-    /// Presentation changed.
-    PresentationChanged(WorkingStatePresentation),
 }
 
 // ── State ───────────────────────────────────────────────────────────────────

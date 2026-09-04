@@ -322,8 +322,6 @@ pub enum ObjectInspectorOutcome {
         /// Projected index.
         index: usize,
     },
-    /// Viewport scrolled.
-    Scrolled,
     /// Expand / collapse / lazy load requested.
     ExpandToggled {
         /// Stable path.

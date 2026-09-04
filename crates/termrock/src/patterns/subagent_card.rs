@@ -582,11 +582,6 @@ pub enum SubagentCardOutcome {
         /// Child id.
         id: String,
     },
-    /// Generic activate.
-    Activated {
-        /// Id.
-        id: String,
-    },
 }
 
 /// Interactive state.

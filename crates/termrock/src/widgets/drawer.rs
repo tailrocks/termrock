@@ -317,13 +317,6 @@ pub enum DrawerOutcome {
         /// New depth (width for L/R, height for T/B).
         depth: u16,
     },
-    /// Presentation suggestion changed.
-    PresentationChanged {
-        /// New presentation.
-        presentation: DrawerPresentation,
-    },
-    /// Focus entered drawer surface.
-    FocusEntered,
 }
 
 /// Slot geometry after paint.

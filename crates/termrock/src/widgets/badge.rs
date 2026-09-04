@@ -151,11 +151,6 @@ pub enum BadgeOutcome {
     Ignored,
     /// Activated (Enter / click).
     Activated,
-    /// Selection toggled (host applies).
-    Toggled {
-        /// New selected flag when host should apply.
-        selected: bool,
-    },
 }
 
 /// Interaction state for actionable badges only.

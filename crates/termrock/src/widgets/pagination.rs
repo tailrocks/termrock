@@ -147,11 +147,6 @@ pub enum PaginationOutcome {
     JumpStarted,
     /// Jump cancelled.
     JumpCancelled,
-    /// Presentation auto-changed.
-    PresentationChanged {
-        /// Presentation.
-        presentation: PaginationPresentation,
-    },
 }
 
 // ── Guidance ────────────────────────────────────────────────────────────────

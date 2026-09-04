@@ -500,8 +500,6 @@ pub enum ResultExportFormat {
     Tsv,
     /// JSON lines / array (host decides).
     Json,
-    /// Markdown table.
-    Markdown,
 }
 
 /// Redaction policy for secrets/binary.

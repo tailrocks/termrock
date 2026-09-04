@@ -67,8 +67,6 @@ pub enum UiIntent {
     FocusNext,
     /// Linear focus previous (BackTab / Shift+Tab).
     FocusPrevious,
-    /// Enter edit mode / focus the field editor.
-    Edit,
     /// Open find / filter / search surface.
     Search,
     /// Show keyboard help / bindings panel.

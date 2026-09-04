@@ -127,15 +127,6 @@ pub fn resolve_dialog(outer: Rect, spec: DialogSpec) -> Rect {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// Resolved body and bottom-chrome rectangles.
-pub struct Slots {
-    /// Remaining rectangle available to primary content.
-    pub body: Rect,
-    /// Rectangle reserved for bottom chrome.
-    pub bottom: Rect,
-}
-
 /// Split fixed rows from the bottom of an area in top-to-bottom order.
 ///
 /// The body receives all remaining height. Rows that do not fit collapse to

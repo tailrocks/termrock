@@ -62,16 +62,8 @@ pub enum ContractFileRole {
     Primary,
     /// Supporting module.
     Support,
-    /// Studio / lookbook story.
-    Story,
     /// Test or fixture.
     Fixture,
-    /// Documentation.
-    Docs,
-    /// Migration note.
-    Migration,
-    /// Other.
-    Other,
 }
 
 /// One file belonging to a contract or registry item.

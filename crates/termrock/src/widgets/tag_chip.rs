@@ -354,8 +354,6 @@ impl<'a, Id: Clone> Tag<'a, Id> {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
 pub enum BracketStyle {
-    /// `⟨ label ⟩` — a neutral tag (ASCII `< >`).
-    Angle,
     /// `[ label ]` — an interactive chip or keycap.
     #[default]
     Square,

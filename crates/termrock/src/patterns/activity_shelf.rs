@@ -668,11 +668,6 @@ pub enum ActivityShelfOutcome {
     OverflowOpen,
     /// Overflow closed.
     OverflowClosed,
-    /// Presentation auto-contracted.
-    PresentationChanged {
-        /// Mode.
-        presentation: ActivityShelfPresentation,
-    },
 }
 
 /// Interactive state.

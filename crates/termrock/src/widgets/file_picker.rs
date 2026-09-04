@@ -283,8 +283,6 @@ pub enum FilePickerPresentation {
     /// In-place panel (embedded).
     #[default]
     Embedded,
-    /// Modal overlay preferred.
-    Modal,
     /// Fullscreen (tiny terminal / host force).
     Fullscreen,
 }
@@ -358,11 +356,6 @@ pub enum FilePickerOutcome {
     },
     /// Cancelled (Esc).
     Cancelled,
-    /// Navigate into directory (highlight or path).
-    OpenDirectory {
-        /// Directory path.
-        path: String,
-    },
     /// Filter / hidden / sort UI changed (host may re-list).
     FilterChanged,
     /// Presentation hint changed.

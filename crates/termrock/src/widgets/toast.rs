@@ -62,12 +62,8 @@ pub enum Severity {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
 pub enum Anchor {
-    /// Footer left edge.
-    TopLeft,
     /// Footer right edge.
     TopRight,
-    /// Footer left edge.
-    BottomLeft,
     /// Footer right edge (junie).
     #[default]
     BottomRight,
@@ -171,8 +167,6 @@ pub enum ToastPriority {
     Normal,
     /// Prefer keep when queue is full.
     High,
-    /// Always keep; may archive lower when full.
-    Critical,
 }
 
 /// Host coordination for a single toast or queue.
@@ -196,23 +190,11 @@ pub enum ToastOutcome {
         /// Entry id.
         id: String,
     },
-    /// Action (e.g. undo) activated.
-    ActionActivated {
-        /// Toast id.
-        id: String,
-        /// Action id.
-        action: String,
-    },
     /// Replaced an existing entry with the same replace/dedup key.
     Replaced {
         /// Previous id.
         previous_id: String,
         /// New id.
-        id: String,
-    },
-    /// Archived to missed list (NotificationCenter route).
-    Archived {
-        /// Entry id.
         id: String,
     },
     /// Queue paused (host / unfocused window).

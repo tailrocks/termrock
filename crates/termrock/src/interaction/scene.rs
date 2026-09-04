@@ -103,10 +103,6 @@ pub enum LayerKind {
     Root,
     /// Menu / palette / completion.
     Menu,
-    /// Jump mode.
-    Jump,
-    /// Transient toast (usually non-modal).
-    Toast,
     /// Blocking card/dialog.
     Card,
     /// Caller-defined.

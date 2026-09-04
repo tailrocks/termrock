@@ -145,8 +145,6 @@ pub struct WizardProgress {
 pub enum FormWizardOutcome {
     /// No effect.
     Ignored,
-    /// Chrome / gate projection changed.
-    Changed,
     /// Step index or phase navigation.
     StepChanged {
         /// Previous index.
@@ -207,11 +205,6 @@ pub enum FormWizardOutcome {
     ProgressSaved {
         /// Snapshot.
         progress: WizardProgress,
-    },
-    /// Presentation auto-changed.
-    PresentationChanged {
-        /// Presentation.
-        presentation: FormWizardPresentation,
     },
 }
 

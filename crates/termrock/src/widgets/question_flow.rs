@@ -458,11 +458,6 @@ pub enum QuestionFlowOutcome {
     Cancelled,
     /// Fullscreen promote request.
     FullscreenRequested,
-    /// Queued set advanced after submit/cancel.
-    QueueChanged {
-        /// Remaining sets.
-        remaining: usize,
-    },
 }
 
 // ── Per-question interaction state ──────────────────────────────────────────

@@ -17,8 +17,6 @@ pub enum UpdatePriority {
     Normal = 1,
     /// Tool result boundaries, errors, permissions.
     High = 2,
-    /// Must not drop (cancel, final).
-    Critical = 3,
 }
 
 /// Coarse dirty flags for a surface (optional; full redraw always correct).

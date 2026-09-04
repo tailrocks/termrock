@@ -478,8 +478,6 @@ pub enum TraceWaterfallOutcome {
     TimelineExportRequested,
     /// Cancel filter.
     Cancelled,
-    /// Viewport scrolled vertically.
-    Scrolled,
 }
 
 // ── State ───────────────────────────────────────────────────────────────────

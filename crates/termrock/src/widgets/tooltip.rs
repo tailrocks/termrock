@@ -45,8 +45,6 @@ pub enum TooltipPrefer {
     /// Above anchor (default OverlayStack Tooltip policy).
     #[default]
     Above,
-    /// Below anchor.
-    Below,
 }
 
 /// Places a tooltip relative to `anchor` (may hide on tiny terminals via policy).

@@ -308,11 +308,6 @@ pub struct SlashQuery {
 pub enum SlashCommandMenuOutcome {
     /// Not handled.
     Ignored,
-    /// Menu opened or query span changed.
-    QueryChanged {
-        /// Current query.
-        query: SlashQuery,
-    },
     /// Selection moved.
     SelectionChanged {
         /// Selected command or arg value id.

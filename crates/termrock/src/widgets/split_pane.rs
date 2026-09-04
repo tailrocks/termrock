@@ -151,6 +151,12 @@ impl SplitPaneState {
         self.ratio
     }
 
+    /// The side currently collapsed, if any.
+    #[must_use]
+    pub const fn collapsed(&self) -> Option<SplitSide> {
+        self.collapsed
+    }
+
     /// Replaces the expanded ratio and clears any collapsed side.
     pub const fn set_ratio(&mut self, ratio: SplitRatio) {
         self.ratio = SplitRatio::from_basis_points(ratio.basis_points());
