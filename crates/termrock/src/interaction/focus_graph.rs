@@ -252,24 +252,10 @@ impl<Id> FocusGraph<Id> {
         self.focused.as_ref()
     }
 
-    /// Whether `id` owns keyboard focus.
-    #[must_use]
-    pub fn is_focused(&self, id: &Id) -> bool
-    where
-        Id: PartialEq,
-    {
-        self.focused.as_ref() == Some(id)
-    }
     /// Active modal trap root.
     #[must_use]
     pub const fn trap_root(&self) -> Option<&Id> {
         self.trap_root.as_ref()
-    }
-
-    /// Registered nodes this frame.
-    #[must_use]
-    pub fn nodes(&self) -> &[FocusNode<Id>] {
-        &self.nodes
     }
 
     /// Focus history (oldest → newest).

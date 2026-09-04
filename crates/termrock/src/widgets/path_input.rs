@@ -452,12 +452,6 @@ impl PathInputState {
         self.sync_editor();
     }
 
-    /// Enabled.
-    pub fn set_enabled(&mut self, on: bool) {
-        self.enabled = on;
-        self.sync_editor();
-    }
-
     fn sync_editor(&mut self) {
         self.path.set_focused(self.focused);
         self.path.set_enabled(self.enabled);
@@ -697,25 +691,6 @@ impl PathInputState {
         }
     }
 
-    /// Paste.
-    pub fn insert_str(&mut self, text: &str) -> PathInputOutcome {
-        if !self.enabled || self.read_only {
-            return PathInputOutcome::Ignored;
-        }
-        self.path.begin_edit();
-        // Strip newlines from multi-line paste
-        let cleaned: String = text
-            .chars()
-            .take_while(|c| !matches!(c, '\n' | '\r'))
-            .collect();
-        match self.path.insert_str(&cleaned) {
-            TextInputOutcome::Changed => {
-                self.fs_status = PathFsStatus::Pending;
-                PathInputOutcome::Changed
-            }
-            _ => PathInputOutcome::Ignored,
-        }
-    }
     /// Mouse: browse / clear / field.
     pub fn handle_mouse(&mut self, event: MouseEvent) -> PathInputOutcome {
         if !self.enabled {
