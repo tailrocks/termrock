@@ -64,4 +64,3 @@ pub fn contrast_ratio(a: Rgb, b: Rgb) -> f32 {
     };
     (high + 0.05) / (low + 0.05)
 }
-
