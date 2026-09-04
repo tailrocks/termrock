@@ -205,14 +205,17 @@ function applies(entry: CanonicalEntry, report: RenderEvidence, axis: AxisName):
   }
   if (axis === 'keyboard' || axis === 'focus') return entry.interactive
   if (axis === 'mouse') return entry.interactive && expectsPointer(entry)
-  if (axis === 'escape') return entry.interactive && entry.interactionKind === 'disclosure-overlay'
+  // The fine-grained interaction vocabulary (disclosure-overlay,
+  // scrolling-virtualization) lives in the render evidence data, not in the
+  // generated canonical union, so read it from the evidence entry.
+  if (axis === 'escape') return entry.interactive && report.interactionKind === 'disclosure-overlay'
   if (axis === 'disabled') {
     return entry.interactive && ['action', 'input', 'navigation', 'overlay'].includes(entry.family)
   }
-  if (axis === 'overlay') return entry.family === 'overlay' || entry.interactionKind === 'disclosure-overlay'
+  if (axis === 'overlay') return entry.family === 'overlay' || report.interactionKind === 'disclosure-overlay'
   if (axis === 'large_data') {
     return stateStories(report, axis).length > 0
-      || (entry.family === 'data' && entry.interactionKind === 'scrolling-virtualization')
+      || (entry.family === 'data' && report.interactionKind === 'scrolling-virtualization')
   }
   return stateStories(report, axis).length > 0
 }
