@@ -1221,7 +1221,6 @@ pub termrock::context::ContextUiIntent::Search
 pub termrock::context::ContextUiIntent::Submit
 pub termrock::context::ContextUiIntent::Toggle
 impl termrock::context::ContextUiIntent
-pub const fn termrock::context::ContextUiIntent::as_str(self) -> &'static str
 pub const fn termrock::context::ContextUiIntent::is_global_chrome(self) -> bool
 impl core::clone::Clone for termrock::context::ContextUiIntent
 pub fn termrock::context::ContextUiIntent::clone(&self) -> termrock::context::ContextUiIntent
@@ -4164,7 +4163,6 @@ pub termrock::interaction::UiIntent::Search
 pub termrock::interaction::UiIntent::Submit
 pub termrock::interaction::UiIntent::Toggle
 impl termrock::context::ContextUiIntent
-pub const fn termrock::context::ContextUiIntent::as_str(self) -> &'static str
 pub const fn termrock::context::ContextUiIntent::is_global_chrome(self) -> bool
 impl core::clone::Clone for termrock::context::ContextUiIntent
 pub fn termrock::context::ContextUiIntent::clone(&self) -> termrock::context::ContextUiIntent
