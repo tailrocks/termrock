@@ -573,7 +573,11 @@ impl ConnectionsScreen {
         );
         let ssl = if c.ssl { "on" } else { "off" };
         let ssh = c.ssh.clone().unwrap_or_else(|| "off".into());
-        let safe_value = format!("{} · {}", c.safe_mode.label(), c.safe_mode.description());
+        let safe_value = format!(
+            "{} · {}",
+            c.safe_mode.label(),
+            c.safe_mode.detail_description()
+        );
         let safe_tone = if c.safe_mode >= SafeMode::Safe {
             Tone::Normal
         } else {

@@ -12,7 +12,7 @@ use std::num::NonZeroU16;
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
-    style::{Modifier, Style},
+    style::Style,
     text::Line,
     widgets::StatefulWidget,
 };
@@ -1136,14 +1136,11 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
             // "a column happens to be focused" — Left/Right on a row-select
             // table must not drop › and tint.
             let cell_nav = state.cell_nav;
-            let focused_row = !cell_nav
-                && self.focused
-                && (selected || (state.selected.is_none() && row_index == state.offset));
             let chrome = super::row_chrome::RowChrome::resolve(
                 self.tokens,
                 ListRowVisualState {
                     selected: selected && !cell_nav,
-                    focused: focused_row,
+                    focused: selected && self.focused,
                     hovered,
                     enabled: row.enabled,
                     loading: false,
@@ -1156,11 +1153,7 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
             let quiet = if !row.enabled || row.style.is_some() {
                 style
             } else {
-                let mut quiet = chrome.secondary_style(style);
-                if style.add_modifier.contains(Modifier::BOLD) {
-                    quiet = quiet.add_modifier(Modifier::BOLD);
-                }
-                quiet
+                chrome.secondary_style(style)
             };
             // Fill first so colour-only gutter inherits BOLD from the row
             // style (junie fill-then-stamp). Cell-nav skips the accent wash.
@@ -1173,7 +1166,7 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
                 row_area,
                 self.tokens,
                 selected && !cell_nav,
-                focused_row,
+                selected && self.focused,
                 hovered,
                 row.enabled,
                 style,
@@ -1513,25 +1506,7 @@ fn paint_data_cells<RowId: Clone + Eq, ColumnId: Clone + Eq>(
                         .as_ref()
                         .is_some_and(|id| id == &table.columns[column_index].id);
                 let kind = table.columns[column_index].kind;
-                // An explicitly styled cell owns its whole canvas, including
-                // alignment padding. This keeps a numeric value's authored
-                // tone from leaving quiet padding behind (or vice versa).
-                let authored_style = row.cells.get(column_index).and_then(|line| {
-                    line.spans
-                        .iter()
-                        .find(|span| span.style.fg.is_some())
-                        .map(|span| style.patch(span.style))
-                });
-                let mut cell_style = if matches!(kind, ColumnKind::Numeric | ColumnKind::Id) {
-                    authored_style.unwrap_or(quiet)
-                } else {
-                    kind.cell_style(style, quiet)
-                };
-                if matches!(kind, ColumnKind::Numeric)
-                    && style.add_modifier.contains(Modifier::BOLD)
-                {
-                    cell_style = style;
-                }
+                let mut cell_style = kind.cell_style(style, quiet);
                 if cell_focused {
                     // A cell cursor is a cell: the explicit reversal pair.
                     // Rows use gutter + tint and never reverse.

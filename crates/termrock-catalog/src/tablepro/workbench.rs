@@ -11,7 +11,7 @@ use std::ops::Range;
 
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Position, Rect};
-use ratatui::style::{Color, Style};
+use ratatui::style::Style;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::StatefulWidget;
 use termrock::input::{KeyCode, KeyEventKind};
@@ -604,33 +604,6 @@ impl Workbench {
             buf,
             &mut self.explorer,
         );
-        if structure_active
-            && let Some(selected) = self.explorer.selected()
-            && let Some(row) = vis.iter().position(|(id, ..)| id == selected)
-        {
-            let y = tree_area
-                .y
-                .saturating_add(u16::try_from(row).unwrap_or(u16::MAX));
-            let symbols: String = (tree_area.x..tree_area.right())
-                .filter_map(|x| buf.cell((x, y)).map(|cell| cell.symbol()))
-                .collect();
-            if let Some(start) = symbols
-                .find("orders")
-                .map(|byte| symbols[..byte].chars().count())
-            {
-                for x in tree_area
-                    .x
-                    .saturating_add(u16::try_from(start).unwrap_or(0))
-                    ..tree_area
-                        .x
-                        .saturating_add(u16::try_from(start.saturating_add(13)).unwrap_or(0))
-                {
-                    if let Some(cell) = buf.cell_mut((x, y)) {
-                        cell.set_style(Style::new().fg(ctx.theme.accent).bg(Color::Reset));
-                    }
-                }
-            }
-        }
         ctx.control(EXPLORER, tree_area, false);
         ctx.scrollable(EXPLORER, tree_area);
         if ctx.interaction.focused(EXPLORER)
@@ -665,6 +638,14 @@ impl Workbench {
                     return Route::Ignored;
                 };
                 if f == FILTER {
+                    // TextInputState only edits once editing; an unmodified
+                    // char begins editing so the filter is keyboard-reachable.
+                    if !self.explorer_filter.is_editing()
+                        && let KeyCode::Char(_) = key.code
+                        && key.modifiers.is_empty()
+                    {
+                        self.explorer_filter.begin_edit();
+                    }
                     let o = self.explorer_filter.handle_key(*key);
                     return if matches!(o, termrock::widgets::TextInputOutcome::Ignored) {
                         Route::Ignored

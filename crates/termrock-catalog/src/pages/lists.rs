@@ -288,15 +288,13 @@ impl Page for ListsPage {
 
         let (inner, _bg) = layout::card(cols[2], buf, t, Some("Search results"), None, false);
         let empty_rows: [ListRow<'_, usize>; 0] = [];
-        let empty_width = text::width("No results for “retry”") as u16;
-        let empty_area = Rect::new(inner.x, inner.y, inner.width.min(empty_width), inner.height);
         if let Some(pointer) = ctx.interaction.pointer {
             self.empty.hover(pointer);
         }
         List::new(&empty_rows, ctx.system)
             .empty_message(Line::from("No results for “retry”"))
             .focused(false)
-            .render(empty_area, buf, &mut self.empty);
+            .render(inner, buf, &mut self.empty);
         ctx.control(ID.sub("empty"), inner, false);
         ctx.scrollable(ID.sub("empty"), inner);
     }

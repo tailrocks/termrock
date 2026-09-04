@@ -1194,8 +1194,6 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
             buffer.set_style(well, fs);
         }
         let block = self.resolved_block(state);
-        let marker_on_first = block.is_some_and(|(start, _)| start == parts.first_line);
-        let spinner_present = self.gutter_marks.iter().any(|mark| mark.glyph != '!');
 
         let mono = self.is_monochrome();
         let tab = usize::from(self.tab_width);
@@ -1209,9 +1207,9 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
         let mut abs = first;
         while row < body_h {
             let Some(win_i) = self.window_index(abs) else {
-                // Past the document: junie keeps the focus gutter across the
-                // remaining editor well, even though no line number exists.
-                if parts.gutter.width > 0 {
+                // Past the document: junie still walks the well; `▎` only if
+                // the cursor sits on that empty line (`code.rs` `li == cur.line`).
+                if parts.gutter.width > 0 && state.cursor_line == Some(abs) {
                     let y = parts.body.y.saturating_add(row);
                     let gx = parts.gutter.x;
                     let line_gutter = self.system.gutter(
@@ -1251,27 +1249,30 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
             if parts.gutter.width > 0 {
                 let y = parts.body.y.saturating_add(row);
                 let gx = parts.gutter.x;
-                let line_gutter = self.system.gutter(
-                    VisualState {
-                        focused: state.focused,
-                        ..visual
-                    },
-                    field_bg,
-                    false,
-                );
-                buffer.set_stringn(gx, y, self.system.glyphs.selection_gutter(), 1, line_gutter);
+                if state.cursor_line == Some(abs) {
+                    let line_gutter = self.system.gutter(
+                        VisualState {
+                            focused: state.focused,
+                            ..visual
+                        },
+                        field_bg,
+                        false,
+                    );
+                    buffer.set_stringn(
+                        gx,
+                        y,
+                        self.system.glyphs.selection_gutter(),
+                        1,
+                        line_gutter,
+                    );
+                }
                 // junie: numbers at `area.x + 3` via `fit_right`.
                 let num_w = if self.show_line_numbers && parts.gutter.width > 3 {
-                    let width = parts.gutter.width.saturating_sub(4);
-                    if marker_on_first { width } else { width.max(2) }
+                    parts.gutter.width.saturating_sub(4)
                 } else {
                     0
                 };
-                let num_x = gx.saturating_add(if marker_on_first || spinner_present {
-                    2
-                } else {
-                    3
-                });
+                let num_x = gx.saturating_add(3);
                 let spinner = self
                     .gutter_marks
                     .iter()
@@ -1283,7 +1284,8 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
                 if let Some(m) = spinner {
                     let mark_style = fs.patch(self.system.style(m.role));
                     buffer.set_stringn(gx.saturating_add(1), y, m.glyph.to_string(), 1, mark_style);
-                } else if let Some((start, end)) = block
+                } else if bang_mark.is_none()
+                    && let Some((start, end)) = block
                     && abs == start
                     && abs < end
                 {
@@ -1313,17 +1315,16 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
                     };
                     buffer.set_stringn(num_x, y, &number, usize::from(num_w), nstyle);
                     if let Some(m) = bang_mark {
-                        // Focused query diagnostics keep the statement marker and append
-                        // the bang after the line number: `▎› 1!`. Standalone blocks
-                        // retain the compact `▎  1!` overwrite used by the widget API.
+                        // s_editor_diag: `▎  1!` — bang overwrites the last number cell.
                         let mut mark_style = fs.patch(self.system.style(m.role));
                         mark_style = mark_style.add_modifier(Modifier::BOLD);
-                        let bang_x = if marker_on_first {
-                            num_x.saturating_add(num_w)
-                        } else {
-                            num_x.saturating_add(num_w.saturating_sub(1))
-                        };
-                        buffer.set_stringn(bang_x, y, m.glyph.to_string(), 1, mark_style);
+                        buffer.set_stringn(
+                            num_x.saturating_add(num_w.saturating_sub(1)),
+                            y,
+                            m.glyph.to_string(),
+                            1,
+                            mark_style,
+                        );
                     }
                 }
             }

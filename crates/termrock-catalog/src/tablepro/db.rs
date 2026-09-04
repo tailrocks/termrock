@@ -102,6 +102,17 @@ impl SafeMode {
         }
     }
 
+    /// Long-form description for wide detail surfaces. The short
+    /// [`Self::description`] strings are pinned by the safe-mode shots.
+    pub fn detail_description(self) -> &'static str {
+        match self {
+            SafeMode::Silent => {
+                "Writes run without asking. DROP, TRUNCATE and DELETE without WHERE still confirm."
+            }
+            other => other.description(),
+        }
+    }
+
     pub fn requires_confirmation(self) -> bool {
         !matches!(self, SafeMode::Silent | SafeMode::ReadOnly)
     }

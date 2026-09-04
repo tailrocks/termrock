@@ -159,21 +159,6 @@ const fn tp_sql(
     }
 }
 
-const fn tp_sql_running(
-    id: &'static str,
-    cols: u16,
-    rows: u16,
-    connect: Option<&'static str>,
-    sql: &'static str,
-    run_ticks_left: u32,
-    steps: &'static [Step],
-) -> Scenario {
-    let mut scenario = tp_sql(id, cols, rows, connect, sql, steps);
-    scenario.run_ticks_left = Some(run_ticks_left);
-    scenario.capture_cursor = Some((47, 17));
-    scenario
-}
-
 const fn tp_table_state(
     id: &'static str,
     cols: u16,
@@ -741,22 +726,32 @@ pub static ALL: &[Scenario] = &[
             Step::Right,
         ],
     ),
-    tp_sql(
+    tp(
         "t_result",
         120,
         40,
         Some("Production"),
-        "SELECT * FROM orders WHERE status = 'pending' ORDER BY total_amount DESC LIMIT 40",
-        &[Step::Tab, Step::Ctrl('r'), Step::Ticks(10)],
+        &[
+            Step::Tab,
+            Step::Char('i'),
+            Step::Type("SELECT * FROM orders LIMIT 25"),
+            Step::Esc,
+            Step::Ctrl('r'),
+            Step::Ticks(10),
+        ],
     ),
-    tp_sql_running(
+    tp(
         "t_running",
         120,
         40,
         Some("Production"),
-        "SELECT * FROM orders WHERE status = 'pending' ORDER BY total_amount DESC LIMIT 40",
-        6,
-        &[Step::Tab, Step::Ctrl('r'), Step::Ticks(4)],
+        &[
+            Step::Tab,
+            Step::Char('i'),
+            Step::Type("SELECT * FROM events"),
+            Step::Esc,
+            Step::Ctrl('r'),
+        ],
     ),
     tp(
         "t_safemode",
