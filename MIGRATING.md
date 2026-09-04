@@ -504,6 +504,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0524 | `v0.14.0` | [Synchronize removed ContextUiIntent string projection](migrations/0524-v0.14.0-sync-removed-context-ui-intent-string-projection.md) |
 | 0525 | `v0.14.0` | [Synchronize removed UiContext boundary accessor](migrations/0525-v0.14.0-sync-removed-ui-context-boundary-accessor.md) |
 | 0526 | `v0.14.0` | [Synchronize removed UiContext capabilities accessor](migrations/0526-v0.14.0-sync-removed-ui-context-capabilities-accessor.md) |
+| 0528 | `v0.14.0` | [Synchronize removed EventResult map_focus method](migrations/0528-v0.14.0-sync-removed-event-result-map-focus.md) |
 | 0527 | `v0.14.0` | [Synchronize removed UiContext keymap accessor](migrations/0527-v0.14.0-sync-removed-ui-context-keymap-accessor.md) |
 | 0464 | `v0.14.0` | [Stepper physical one-shot actions](migrations/0464-v0.14.0-stepper-one-shot-actions.md) |
 

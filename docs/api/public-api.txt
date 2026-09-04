@@ -4714,7 +4714,6 @@ pub fn termrock::interaction::EventResult<M, FocusId>::emit_bubble(M) -> Self
 pub const fn termrock::interaction::EventResult<M, FocusId>::focus(&self) -> core::option::Option<&termrock::interaction::FocusRequest<FocusId>>
 pub const fn termrock::interaction::EventResult<M, FocusId>::ignored() -> Self
 pub fn termrock::interaction::EventResult<M, FocusId>::map<N>(self, impl core::ops::function::FnOnce(M) -> N) -> termrock::interaction::EventResult<N, FocusId>
-pub fn termrock::interaction::EventResult<M, FocusId>::map_focus<J>(self, impl core::ops::function::FnOnce(FocusId) -> J) -> termrock::interaction::EventResult<M, J>
 pub fn termrock::interaction::EventResult<M, FocusId>::merge(self, Self) -> Self
 pub const fn termrock::interaction::EventResult<M, FocusId>::message(&self) -> core::option::Option<&M>
 pub fn termrock::interaction::EventResult<M, FocusId>::or_else(self, impl core::ops::function::FnOnce() -> Self) -> Self
