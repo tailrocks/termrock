@@ -11,7 +11,9 @@ use crate::{
 };
 
 const RATIO_SCALE: u16 = 10_000;
-const KEYBOARD_STEP: u16 = 250;
+const MIN_RATIO_BASIS_POINTS: u16 = 500;
+const MAX_RATIO_BASIS_POINTS: u16 = 9_500;
+const KEYBOARD_STEP_CELLS: u16 = 1;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// The axis along which a split pane divides its area.
@@ -32,35 +34,38 @@ pub enum SplitSide {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 /// A split proportion stored as bounded basis points.
 pub struct SplitRatio(u16);
 
 impl SplitRatio {
     #[must_use]
-    /// Creates a ratio clamped to the inclusive 0–10,000 basis-point range.
+    /// Creates a ratio clamped to the inclusive 500–9,500 basis-point range.
     pub const fn from_basis_points(basis_points: u16) -> Self {
-        Self(if basis_points > RATIO_SCALE {
-            RATIO_SCALE
-        } else {
-            basis_points
-        })
+        Self(normalize_basis_points(basis_points))
     }
 
     #[must_use]
-    /// Creates a ratio from a percentage clamped to the inclusive 0–100 range.
+    /// Creates a ratio from a percentage clamped to the inclusive 5–95 range.
     pub const fn from_percent(percent: u8) -> Self {
-        Self::from_basis_points(if percent > 100 {
-            RATIO_SCALE
-        } else {
-            percent as u16 * 100
-        })
+        Self::from_basis_points((percent as u16).saturating_mul(100))
     }
 
     #[must_use]
     /// Returns the split proportion in basis points.
     pub const fn basis_points(self) -> u16 {
         self.0
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de> serde::Deserialize<'de> for SplitRatio {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let basis_points = <u16 as serde::Deserialize>::deserialize(deserializer)?;
+        Ok(Self::from_basis_points(basis_points))
     }
 }
 
@@ -126,7 +131,7 @@ impl SplitPaneState {
     /// Creates split state at the supplied ratio with both panes expanded.
     pub const fn new(ratio: SplitRatio) -> Self {
         Self {
-            ratio,
+            ratio: SplitRatio::from_basis_points(ratio.basis_points()),
             focused: false,
             hovered: false,
             dragging: false,
@@ -148,7 +153,7 @@ impl SplitPaneState {
 
     /// Replaces the expanded ratio and clears any collapsed side.
     pub const fn set_ratio(&mut self, ratio: SplitRatio) {
-        self.ratio = ratio;
+        self.ratio = SplitRatio::from_basis_points(ratio.basis_points());
         self.collapsed = None;
     }
 
@@ -180,26 +185,46 @@ impl SplitPaneState {
 
     /// Moves the focused divider along its layout axis with arrow keys.
     pub fn handle_key(&mut self, spec: &SplitPane<'_>, key: KeyEvent) -> SplitPaneOutcome {
-        if !self.focused || key.is_release() {
+        if !self.focused
+            || key.is_release()
+            || self.collapsed.is_some()
+            || self.layout.divider.is_empty()
+        {
             return SplitPaneOutcome::Ignored;
         }
         let delta = match (spec.direction, key.code) {
             (SplitDirection::Horizontal, KeyCode::Left)
-            | (SplitDirection::Vertical, KeyCode::Up) => Some(-i32::from(KEYBOARD_STEP)),
+            | (SplitDirection::Vertical, KeyCode::Up) => Some(-i32::from(KEYBOARD_STEP_CELLS)),
             (SplitDirection::Horizontal, KeyCode::Right)
-            | (SplitDirection::Vertical, KeyCode::Down) => Some(i32::from(KEYBOARD_STEP)),
+            | (SplitDirection::Vertical, KeyCode::Down) => Some(i32::from(KEYBOARD_STEP_CELLS)),
             _ => None,
         };
-        if let Some(delta) = delta {
-            self.collapsed = None;
-            let current = i32::from(self.ratio.basis_points());
-            let next = current
-                .saturating_add(delta)
-                .clamp(0, i32::from(RATIO_SCALE));
-            self.ratio = SplitRatio::from_basis_points(next as u16);
-            return SplitPaneOutcome::RatioChanged(self.ratio);
+        let Some(delta) = delta else {
+            return SplitPaneOutcome::Ignored;
+        };
+        let available = layout_available(self.layout, spec.direction);
+        let Some(feasible) = resolve_feasible_split(available, spec.first_min, spec.second_min)
+        else {
+            return SplitPaneOutcome::Ignored;
+        };
+        let current = feasible.first_for_ratio(self.ratio);
+        let target = i32::from(current)
+            .saturating_add(delta)
+            .clamp(0, i32::from(available)) as u16;
+        let target = feasible.clamp_first(target);
+        if target == current {
+            return SplitPaneOutcome::Ignored;
         }
-        SplitPaneOutcome::Ignored
+        let next_ratio = feasible.ratio_for_keyboard(target);
+        if next_ratio == self.ratio {
+            return SplitPaneOutcome::Ignored;
+        }
+        if feasible.first_for_ratio(next_ratio) == current {
+            return SplitPaneOutcome::Ignored;
+        }
+        self.ratio = next_ratio;
+        self.collapsed = None;
+        SplitPaneOutcome::RatioChanged(self.ratio)
     }
 
     /// Collapses one pane while preserving the configured split ratio.
@@ -264,17 +289,10 @@ impl SplitPaneState {
             return SplitPaneOutcome::Ignored;
         };
         let area = painted_area(painted.layout, spec.direction);
-        let available = match spec.direction {
-            SplitDirection::Horizontal => painted
-                .layout
-                .first
-                .width
-                .saturating_add(painted.layout.second.width),
-            SplitDirection::Vertical => painted
-                .layout
-                .first
-                .height
-                .saturating_add(painted.layout.second.height),
+        let available = layout_available(painted.layout, spec.direction);
+        let Some(feasible) = resolve_feasible_split(available, spec.first_min, spec.second_min)
+        else {
+            return SplitPaneOutcome::Ignored;
         };
         if available == 0 {
             return SplitPaneOutcome::Ignored;
@@ -287,10 +305,19 @@ impl SplitPaneState {
             SplitDirection::Horizontal => position.x,
             SplitDirection::Vertical => position.y,
         };
-        let first = coordinate.saturating_sub(origin).min(available);
-        let basis_points = (u32::from(first) * u32::from(RATIO_SCALE) + u32::from(available) / 2)
-            / u32::from(available);
-        self.ratio = SplitRatio::from_basis_points(basis_points as u16);
+        let requested = coordinate.saturating_sub(origin).min(available);
+        let next_ratio = feasible.ratio_for_drag(requested);
+        if next_ratio == self.ratio {
+            return SplitPaneOutcome::Ignored;
+        }
+        let painted_first = match spec.direction {
+            SplitDirection::Horizontal => painted.layout.first.width,
+            SplitDirection::Vertical => painted.layout.first.height,
+        };
+        if feasible.first_for_ratio(next_ratio) == painted_first {
+            return SplitPaneOutcome::Ignored;
+        }
+        self.ratio = next_ratio;
         self.collapsed = None;
         spec.layout(area, self);
         SplitPaneOutcome::RatioChanged(self.ratio)
@@ -330,25 +357,22 @@ impl<'a> SplitPane<'a> {
 
     /// Resolves both panes and the divider inside the supplied rectangle.
     pub fn layout(&self, area: Rect, state: &mut SplitPaneState) -> SplitPaneLayout {
+        if let Some(side) = state.collapsed {
+            state.layout = collapsed_layout(area, self.direction, side);
+            return state.layout;
+        }
+
         let total = match self.direction {
             SplitDirection::Horizontal => area.width,
             SplitDirection::Vertical => area.height,
         };
-        if total == 0 {
-            state.layout = SplitPaneLayout {
-                first: empty_rect(area, self.direction),
-                divider: empty_rect(area, self.direction),
-                second: empty_rect(area, self.direction),
-            };
-            return state.layout;
-        }
-
         let available = total.saturating_sub(1);
-        let first = match state.collapsed {
-            Some(SplitSide::First) => 0,
-            Some(SplitSide::Second) => available,
-            None => constrained_first(available, state.ratio, self.first_min, self.second_min),
+        let Some(feasible) = resolve_feasible_split(available, self.first_min, self.second_min)
+        else {
+            state.layout = impossible_layout(area, self.direction);
+            return state.layout;
         };
+        let first = feasible.first_for_ratio(state.ratio);
         state.layout = split_rects(area, self.direction, first, available - first);
         state.layout
     }
@@ -414,27 +438,106 @@ impl StatefulWidget for SplitPane<'_> {
     }
 }
 
-fn constrained_first(available: u16, ratio: SplitRatio, first_min: u16, second_min: u16) -> u16 {
-    let desired = ((u32::from(available) * u32::from(ratio.basis_points())
-        + u32::from(RATIO_SCALE) / 2)
-        / u32::from(RATIO_SCALE)) as u16;
-    let minimum_sum = u32::from(first_min) + u32::from(second_min);
-    if u32::from(available) >= minimum_sum {
-        desired.clamp(first_min, available.saturating_sub(second_min))
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct FeasibleSplit {
+    available: u16,
+    first_min: u16,
+    second_min: u16,
+}
+
+impl FeasibleSplit {
+    fn clamp_first(self, first: u16) -> u16 {
+        first.clamp(
+            self.first_min,
+            self.available.saturating_sub(self.second_min),
+        )
+    }
+
+    fn first_for_ratio(self, ratio: SplitRatio) -> u16 {
+        let desired = (u32::from(self.available) * u32::from(ratio.basis_points())
+            / u32::from(RATIO_SCALE)) as u16;
+        self.clamp_first(desired)
+    }
+
+    /// Converts a physical seam to the canonical nearest whole-percent ratio.
+    fn ratio_for_drag(self, first: u16) -> SplitRatio {
+        self.ratio_for_cell(first)
+    }
+
+    /// Converts a keyboard target cell to the smallest whole-percent ratio that reaches it.
+    fn ratio_for_keyboard(self, first: u16) -> SplitRatio {
+        if self.available == 0 {
+            return SplitRatio::default();
+        }
+        let first = self.clamp_first(first);
+        let percent = ((u32::from(first) * 100 + u32::from(self.available) - 1)
+            / u32::from(self.available)) as u8;
+        SplitRatio::from_percent(percent)
+    }
+
+    fn ratio_for_cell(self, first: u16) -> SplitRatio {
+        if self.available == 0 {
+            return SplitRatio::default();
+        }
+        let first = self.clamp_first(first);
+        let percent = ((u32::from(first) * 100 + u32::from(self.available) / 2)
+            / u32::from(self.available)) as u8;
+        SplitRatio::from_percent(percent)
+    }
+}
+
+fn resolve_feasible_split(
+    available: u16,
+    first_min: u16,
+    second_min: u16,
+) -> Option<FeasibleSplit> {
+    if u32::from(first_min) + u32::from(second_min) > u32::from(available) {
+        None
     } else {
-        let proportional =
-            (u32::from(available) * u32::from(first_min) + minimum_sum / 2) / minimum_sum;
-        u16::try_from(proportional)
-            .unwrap_or(available)
-            .min(available)
+        Some(FeasibleSplit {
+            available,
+            first_min,
+            second_min,
+        })
+    }
+}
+
+const fn normalize_basis_points(basis_points: u16) -> u16 {
+    if basis_points < MIN_RATIO_BASIS_POINTS {
+        MIN_RATIO_BASIS_POINTS
+    } else if basis_points > MAX_RATIO_BASIS_POINTS {
+        MAX_RATIO_BASIS_POINTS
+    } else {
+        basis_points
     }
 }
 
 fn split_rects(area: Rect, direction: SplitDirection, first: u16, second: u16) -> SplitPaneLayout {
+    if first == 0 && second == 0 {
+        return SplitPaneLayout {
+            first: empty_rect(area, direction),
+            divider: Rect::ZERO,
+            second: empty_second_rect(area, direction),
+        };
+    }
+
+    let divider = if first == 0 || second == 0 {
+        Rect::ZERO
+    } else {
+        match direction {
+            SplitDirection::Horizontal => {
+                Rect::new(area.x.saturating_add(first), area.y, 1, area.height)
+            }
+            SplitDirection::Vertical => {
+                Rect::new(area.x, area.y.saturating_add(first), area.width, 1)
+            }
+        }
+    };
+
     match direction {
         SplitDirection::Horizontal => SplitPaneLayout {
             first: Rect::new(area.x, area.y, first, area.height),
-            divider: Rect::new(area.x.saturating_add(first), area.y, 1, area.height),
+            divider,
             second: Rect::new(
                 area.x.saturating_add(first).saturating_add(1),
                 area.y,
@@ -444,7 +547,7 @@ fn split_rects(area: Rect, direction: SplitDirection, first: u16, second: u16) -
         },
         SplitDirection::Vertical => SplitPaneLayout {
             first: Rect::new(area.x, area.y, area.width, first),
-            divider: Rect::new(area.x, area.y.saturating_add(first), area.width, 1),
+            divider,
             second: Rect::new(
                 area.x,
                 area.y.saturating_add(first).saturating_add(1),
@@ -460,6 +563,61 @@ fn empty_rect(area: Rect, direction: SplitDirection) -> Rect {
         SplitDirection::Horizontal => Rect::new(area.x, area.y, 0, area.height),
         SplitDirection::Vertical => Rect::new(area.x, area.y, area.width, 0),
     }
+}
+
+fn empty_second_rect(area: Rect, direction: SplitDirection) -> Rect {
+    match direction {
+        SplitDirection::Horizontal => Rect::new(area.x.saturating_add(1), area.y, 0, area.height),
+        SplitDirection::Vertical => Rect::new(area.x, area.y.saturating_add(1), area.width, 0),
+    }
+}
+
+fn collapsed_layout(area: Rect, direction: SplitDirection, side: SplitSide) -> SplitPaneLayout {
+    match (direction, side) {
+        (SplitDirection::Horizontal, SplitSide::First)
+        | (SplitDirection::Vertical, SplitSide::First) => SplitPaneLayout {
+            first: Rect::ZERO,
+            divider: Rect::ZERO,
+            second: area,
+        },
+        (SplitDirection::Horizontal, SplitSide::Second)
+        | (SplitDirection::Vertical, SplitSide::Second) => SplitPaneLayout {
+            first: area,
+            divider: Rect::ZERO,
+            second: Rect::ZERO,
+        },
+    }
+}
+
+fn impossible_layout(area: Rect, direction: SplitDirection) -> SplitPaneLayout {
+    match direction {
+        SplitDirection::Horizontal => SplitPaneLayout {
+            first: Rect::ZERO,
+            divider: Rect::ZERO,
+            second: area,
+        },
+        SplitDirection::Vertical => SplitPaneLayout {
+            first: area,
+            divider: Rect::ZERO,
+            second: Rect::ZERO,
+        },
+    }
+}
+
+fn layout_available(layout: SplitPaneLayout, direction: SplitDirection) -> u16 {
+    let total = match direction {
+        SplitDirection::Horizontal => {
+            u32::from(layout.first.width)
+                + u32::from(layout.divider.width)
+                + u32::from(layout.second.width)
+        }
+        SplitDirection::Vertical => {
+            u32::from(layout.first.height)
+                + u32::from(layout.divider.height)
+                + u32::from(layout.second.height)
+        }
+    };
+    total.saturating_sub(1).min(u32::from(u16::MAX)) as u16
 }
 
 fn painted_area(layout: SplitPaneLayout, direction: SplitDirection) -> Rect {
