@@ -14710,7 +14710,6 @@ pub termrock::patterns::ProcessStatus::Unknown
 pub termrock::patterns::ProcessStatus::Zombie
 impl termrock::patterns::ProcessStatus
 pub const fn termrock::patterns::ProcessStatus::id(self) -> &'static str
-pub const fn termrock::patterns::ProcessStatus::label(self) -> &'static str
 pub const fn termrock::patterns::ProcessStatus::semantic(self) -> termrock::widgets::SemanticStatus
 impl core::clone::Clone for termrock::patterns::ProcessStatus
 pub fn termrock::patterns::ProcessStatus::clone(&self) -> termrock::patterns::ProcessStatus
