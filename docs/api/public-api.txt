@@ -5758,7 +5758,6 @@ impl<Id> termrock::interaction::SelectionModel<Id>
 pub const fn termrock::interaction::SelectionModel<Id>::anchor(&self) -> core::option::Option<&Id>
 pub fn termrock::interaction::SelectionModel<Id>::clear(&mut self) -> termrock::interaction::SelectionDelta<Id>
 pub fn termrock::interaction::SelectionModel<Id>::is_empty(&self) -> bool
-pub const fn termrock::interaction::SelectionModel<Id>::kind(&self) -> termrock::interaction::SelectionKind
 pub fn termrock::interaction::SelectionModel<Id>::len(&self) -> usize
 pub const fn termrock::interaction::SelectionModel<Id>::multiple() -> Self
 pub const fn termrock::interaction::SelectionModel<Id>::new(termrock::interaction::SelectionKind) -> Self
