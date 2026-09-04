@@ -423,16 +423,7 @@ impl<'a, Id> Label<'a, Id> {
         let theme = self.system.junie_theme();
         let width = parts.label.width;
         let name = crate::text::take_display_cols(self.text, usize::from(width));
-        // Match source label rows: fit the complete label style across the
-        // whole row, while retaining each cell's existing background.
         let label_style = self.label_style();
-        let backgrounds: Vec<_> = (parts.label.x..parts.label.right())
-            .map(|x| buffer[(x, parts.label.y)].bg)
-            .collect();
-        for (offset, background) in backgrounds.iter().copied().enumerate() {
-            let x = parts.label.x.saturating_add(offset as u16);
-            buffer[(x, parts.label.y)].set_style(label_style.bg(background));
-        }
         buffer.set_stringn(
             parts.label.x,
             parts.label.y,
@@ -462,10 +453,6 @@ impl<'a, Id> Label<'a, Id> {
                 }
                 _ => {}
             }
-        }
-        for (offset, background) in backgrounds.into_iter().enumerate() {
-            let x = parts.label.x.saturating_add(offset as u16);
-            buffer[(x, parts.label.y)].bg = background;
         }
         parts
     }

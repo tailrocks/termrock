@@ -36,12 +36,6 @@ impl Grid {
         self.cells.get(i)
     }
 
-    /// ansi2html.py paints Reset as `#d0d0d0`; TestBackend Reset is `#ffffff`.
-    /// Same canvas cell, different encoder default — not an app color.
-    fn default_fg(c: [u8; 3]) -> bool {
-        c == [0xd0, 0xd0, 0xd0] || c == [0xff, 0xff, 0xff]
-    }
-
     /// tmux `-e` sometimes leaves SGR 1 on overlay chrome that overwrote a
     /// bold keyword (`pub async` under a completion `╭`). Source paint is
     /// `border(true)` without BOLD. TestBackend is uniform. Ignore bold only
@@ -66,88 +60,6 @@ impl Grid {
                 | "━"
                 | "┃"
         )
-    }
-
-    fn cell_eq(a: &GridCell, b: &GridCell) -> bool {
-        if a.ch != b.ch || a.bg != b.bg || a.italic != b.italic || a.reverse != b.reverse {
-            return false;
-        }
-        let invisible = a.fg == a.bg && b.fg == b.bg;
-        let space = a.ch == " " && b.ch == " ";
-        let tmux_weight = invisible || space || Self::frame_glyph(&a.ch);
-        let colored_underline = a.underline && b.underline;
-        let tmux_underline_color = |c: &GridCell| c.underline && c.dim && c.strike;
-        if a.underline != b.underline
-            && !space
-            && !tmux_underline_color(a)
-            && !tmux_underline_color(b)
-        {
-            return false;
-        }
-        if a.bold != b.bold && !tmux_weight {
-            return false;
-        }
-        let same_paint = a.fg == b.fg && a.bg == b.bg;
-        if a.dim != b.dim && !tmux_weight && !colored_underline && !same_paint {
-            return false;
-        }
-        // tmux `-e` encodes underline-color as SGR 9 (strike) + 2 (dim).
-        if a.strike != b.strike && !colored_underline && !space && !same_paint {
-            return false;
-        }
-        if a.fg == b.fg {
-            return true;
-        }
-        a.bg == [0, 0, 0] && Self::default_fg(a.fg) && Self::default_fg(b.fg)
-    }
-
-    /// First differing cell vs `other` (same geometry required).
-    #[must_use]
-    pub fn first_diff(&self, other: &Self) -> Option<(u16, u16, String)> {
-        if self.cols != other.cols || self.rows != other.rows {
-            return Some((
-                0,
-                0,
-                format!(
-                    "size {}x{} vs {}x{}",
-                    self.cols, self.rows, other.cols, other.rows
-                ),
-            ));
-        }
-        for y in 0..self.rows {
-            for x in 0..self.cols {
-                let a = self.at(x, y).unwrap();
-                let b = other.at(x, y).unwrap();
-                if !Self::cell_eq(a, b) {
-                    return Some((
-                        x,
-                        y,
-                        format!(
-                            "expected ch={:?} fg={:?} bg={:?} bold={} dim={} italic={} ul={} rev={} strike={} got ch={:?} fg={:?} bg={:?} bold={} dim={} italic={} ul={} rev={} strike={}",
-                            a.ch,
-                            a.fg,
-                            a.bg,
-                            a.bold,
-                            a.dim,
-                            a.italic,
-                            a.underline,
-                            a.reverse,
-                            a.strike,
-                            b.ch,
-                            b.fg,
-                            b.bg,
-                            b.bold,
-                            b.dim,
-                            b.italic,
-                            b.underline,
-                            b.reverse,
-                            b.strike
-                        ),
-                    ));
-                }
-            }
-        }
-        None
     }
 
     /// First differing semantic cell.
@@ -190,8 +102,8 @@ impl Grid {
         None
     }
 
-    /// Drop tmux SGR weight leaks so PNG matches TestBackend (same rules as
-    /// [`Self::cell_eq`]).
+    /// Drop tmux SGR weight leaks (invisible-paint, blank, and frame glyphs)
+    /// so PNG matches TestBackend.
     #[must_use]
     pub fn for_raster(&self) -> Self {
         let mut out = self.clone();

@@ -2191,9 +2191,7 @@ impl App {
                 PageEvent::Key(key) if key.kind != KeyEventKind::Release => {
                     safe.picker.handle_key(&rows, *key)
                 }
-                PageEvent::Click { id, pos } if *id == SAFE_MODE_PICKER => {
-                    safe.picker.click(*pos)
-                }
+                PageEvent::Click { id, pos } if *id == SAFE_MODE_PICKER => safe.picker.click(*pos),
                 _ => return Route::Consumed,
             }
         };
@@ -2575,8 +2573,7 @@ impl App {
                 if matches!(
                     self.overlay,
                     Overlay::Switcher | Overlay::Filter(_) | Overlay::SafeMode(_)
-                )
-                    && matches!(key.code, KeyCode::Tab | KeyCode::BackTab)
+                ) && matches!(key.code, KeyCode::Tab | KeyCode::BackTab)
                 {
                     self.dispatch(PageEvent::Key(key));
                     return ControlFlow::Continue(());

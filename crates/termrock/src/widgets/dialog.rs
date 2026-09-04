@@ -2045,7 +2045,7 @@ impl<'a> Dialog<'a> {
             );
             state.action_regions = regions;
         }
-        if screen.height > 0 && (!self.hints.is_empty() || self.footer_hint.is_some()) {
+        if screen.height > 0 {
             let footer = Rect::new(screen.x, screen.bottom().saturating_sub(1), screen.width, 1);
             let base = self.tokens.junie_theme().base();
             for x in footer.left()..footer.right() {

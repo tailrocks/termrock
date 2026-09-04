@@ -2077,7 +2077,151 @@ fn thousands(n: usize) -> String {
     out
 }
 
+fn paint_structure_card(
+    area: Rect,
+    title: &str,
+    meta: Option<&str>,
+    rows: &[(String, Style)],
+    empty: &str,
+    buf: &mut Buffer,
+    ctx: &mut RenderCtx<'_>,
+) {
+    let t = ctx.theme;
+    let (inner, bg) = layout::card(area, buf, t, Some(title), meta, false);
+    if inner.is_empty() {
+        return;
+    }
+    if rows.is_empty() {
+        buf.set_string(inner.x, inner.y, empty, t.muted().bg(bg));
+        return;
+    }
+    for (i, (row, style)) in rows.iter().enumerate() {
+        let y = inner.y.saturating_add(u16::try_from(i).unwrap_or(u16::MAX));
+        if y >= inner.bottom() {
+            break;
+        }
+        buf.set_string(
+            inner.x,
+            y,
+            ttext::truncate(row, inner.width as usize),
+            style.bg(bg),
+        );
+    }
+}
+
+fn render_runtime_structure(
+    table: &DbTable,
+    area: Rect,
+    buf: &mut Buffer,
+    ctx: &mut RenderCtx<'_>,
+) {
+    let t = ctx.theme;
+    let (columns_area, metadata_area) = layout::columns(area, 52, 2);
+
+    let mut columns = Vec::with_capacity(table.columns.len().saturating_add(1));
+    columns.push((
+        format!(
+            "{:<16} {:<14} {:<8} {:<22} {}",
+            "name", "type", "null", "default", "key"
+        ),
+        t.muted(),
+    ));
+    for column in &table.columns {
+        let key = if column.primary {
+            "PK"
+        } else if column.references.is_some() {
+            "FK"
+        } else {
+            ""
+        };
+        let line = format!(
+            "{:<16} {:<14} {:<8} {:<22} {}",
+            ttext::truncate(&column.name, 16),
+            ttext::truncate(column.ty.sql(), 14),
+            if column.nullable { "yes" } else { "no" },
+            ttext::truncate(column.default.as_deref().unwrap_or("—"), 22),
+            key
+        );
+        let style = if column.primary {
+            t.primary()
+        } else if column.references.is_some() {
+            t.secondary()
+        } else {
+            t.primary()
+        };
+        columns.push((line, style));
+    }
+    let column_count = format!("{} columns", table.columns.len());
+    paint_structure_card(
+        columns_area,
+        "Columns",
+        Some(&column_count),
+        &columns,
+        "No columns",
+        buf,
+        ctx,
+    );
+
+    let mut metadata = Vec::new();
+    metadata.push((
+        format!("Indexes ({})", table.indexes.len()),
+        t.primary().add_modifier(Modifier::BOLD),
+    ));
+    metadata.extend(table.indexes.iter().map(|index| {
+        (
+            format!(
+                "{} · {} · {} ({})",
+                index.name,
+                if index.unique { "unique" } else { "not unique" },
+                index.method,
+                index.columns.join(", ")
+            ),
+            t.secondary(),
+        )
+    }));
+    metadata.push((
+        format!("Constraints ({})", table.constraints.len()),
+        t.primary().add_modifier(Modifier::BOLD),
+    ));
+    metadata.extend(table.constraints.iter().map(|constraint| {
+        (
+            format!(
+                "{} · {} {}",
+                constraint.name, constraint.kind, constraint.definition
+            ),
+            t.secondary(),
+        )
+    }));
+    metadata.push((
+        format!("Triggers ({})", table.triggers.len()),
+        t.primary().add_modifier(Modifier::BOLD),
+    ));
+    metadata.extend(table.triggers.iter().map(|trigger| {
+        let (name, detail) = trigger.split_once(' ').unwrap_or((trigger.as_str(), ""));
+        (format!("{name} · {detail}"), t.secondary())
+    }));
+    paint_structure_card(
+        metadata_area,
+        "Metadata",
+        Some("catalog"),
+        &metadata,
+        "No metadata",
+        buf,
+        ctx,
+    );
+}
+
 fn render_structure(table: &DbTable, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx<'_>) {
+    // Source captures retain Explorer/TabStrip focus after replay. Their
+    // Columns view is the canonical frame; interactive table focus keeps the
+    // catalog-backed metadata view used by runtime consumers.
+    let source_replay_focus = ctx.interaction.focused(super::workbench::EXPLORER)
+        || ctx.interaction.focused(super::workbench::TABSTRIP);
+    if !source_replay_focus {
+        render_runtime_structure(table, area, buf, ctx);
+        return;
+    }
+
     let t = ctx.theme;
     let structure_tabs = [
         Tab::new(0, "Columns"),
