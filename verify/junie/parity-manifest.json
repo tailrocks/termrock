@@ -1,9 +1,9 @@
 {
   "source_repo": "https://github.com/donbeave/terminal-components-claude",
   "source_ref": "main",
-  "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
-  "golden_shots_last_changed_sha": "4b857a079946e2acfdcf54cf48ef92bd83766478",
-  "golden_shots_provenance": "main/shots last changed in 4b857a0; main executable advanced to e43cf67 without shot regeneration",
+  "source_sha": "014a07f6ade5d2732e53fcd783ff8819d43aa05b",
+  "golden_shots_last_changed_sha": "a216c7994c09c37a73ad696be711fd10491a7237",
+  "golden_shots_provenance": "main/shots last changed in a216c79; source executable is pinned to beca6d5 and checked-in selected scenes retain per-scene capture provenance in reference/manifest.json",
   "source_behavior_selection": "checked-in shots are immutable acceptance evidence; executable/source divergence is an explicit unresolved parity failure",
   "profile": "junie-reference",
   "scenario_count": 63,

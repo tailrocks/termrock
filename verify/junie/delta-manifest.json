@@ -1,6 +1,6 @@
 {
   "description": "Intentional differences between junie-reference profile and default TermRock catalog. Unlisted differences are defects.",
-  "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+  "source_sha": "014a07f6ade5d2732e53fcd783ff8819d43aa05b",
   "deltas": [
     {
       "id": "product-name",
@@ -28,7 +28,7 @@
     },
     {
       "id": "f-shots-sixteen-page-nav",
-      "junie-reference": "20-page source prefix (e43cf670 NAV_ENTRIES: includes Code editor, Data grid, Chips & selects, Pickers)",
+      "junie-reference": "20-page source prefix (014a07f6 NAV_ENTRIES: includes Code editor, Data grid, Chips & selects, Pickers)",
       "source-shots-f": "16-page nav captured before those four pages. f_80x24_taskrunner.txt (3,16) is Settings; current executable paints Code editor. s_* shots are 20-page.",
       "where": "sidebar of every f_* shot"
     }

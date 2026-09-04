@@ -1,9 +1,9 @@
 {
   "source_repo": "https://github.com/donbeave/terminal-components-claude",
   "source_ref": "main",
-  "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
-  "jackin_sha": "f0c262173c74459e21774783c7f4b0ff7e4fe8de",
-  "jackin_vs_main": "docs-only; Cargo.toml/src/tests/tools/shots identical",
+  "source_sha": "014a07f6ade5d2732e53fcd783ff8819d43aa05b",
+  "jackin_sha": "52e54c48deffccf4c73b9b357e81dc184f44634c",
+  "jackin_vs_main": "jackin is an ancestor with 23 scoped differences: workspace metadata, showcase/TablePro/Jackin entrypoints, removed perf/visual-test files, removed baseline tooling, and removed source_f_* shots; shared page/widget implementations otherwise retained",
   "artifact_set": [
     "ansi",
     "cursor",
