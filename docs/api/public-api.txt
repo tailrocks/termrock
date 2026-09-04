@@ -4430,7 +4430,6 @@ pub fn termrock::interaction::CollectionState<Id>::reconcile(&mut self, &[termro
 pub fn termrock::interaction::CollectionState<Id>::reconcile_window(&mut self, &[termrock::interaction::CollectionItem<Id>], usize, usize, usize, termrock::interaction::VirtualWindowActivePolicy) -> termrock::interaction::CollectionOutcome<Id>
 pub fn termrock::interaction::CollectionState<Id>::scroll_by(&mut self, isize) -> termrock::interaction::CollectionOutcome<Id>
 pub fn termrock::interaction::CollectionState<Id>::set_active(&mut self, core::option::Option<Id>)
-pub fn termrock::interaction::CollectionState<Id>::set_current(&mut self, core::option::Option<Id>)
 pub fn termrock::interaction::CollectionState<Id>::set_viewport(&mut self, usize, usize, usize)
 pub fn termrock::interaction::CollectionState<Id>::to_roving_entries(&[termrock::interaction::CollectionItem<Id>]) -> alloc::vec::Vec<termrock::interaction::RovingEntry<Id>>
 impl<Id> termrock::interaction::CollectionState<Id>
