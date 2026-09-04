@@ -32081,11 +32081,9 @@ pub const termrock::style::BRAILLE_RAMP: &[char; 5]
 pub const termrock::style::GLYPH_CONTEXTS: &[(&str, &[termrock::style::Glyph])]
 pub const termrock::style::LEFT_BLOCK_RAMP: &[char; 9]
 pub const termrock::style::MASK_CELLS: usize
-pub const termrock::style::PREVIEW_CARD: ratatui_core::style::color::Color
 pub const termrock::style::ROLE_COUNT: usize
 pub const termrock::style::SHADE_RAMP: &[char; 4]
 pub const termrock::style::SPINNER_BRAILLE_FRAMES: &[&str]
-pub const fn termrock::style::color(termrock::style::Rgb) -> ratatui_core::style::color::Color
 pub fn termrock::style::color_to_rgb(ratatui_core::style::color::Color, bool) -> [u8; 3]
 pub fn termrock::style::contrast_ratio(termrock::style::Rgb, termrock::style::Rgb) -> f32
 pub fn termrock::style::downgrade(ratatui_core::style::color::Color, termrock::style::ColorCapability) -> ratatui_core::style::color::Color
