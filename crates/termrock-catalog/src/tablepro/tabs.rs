@@ -10,7 +10,7 @@ use std::ops::Range;
 
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Position, Rect};
-use ratatui::style::{Modifier, Style};
+use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::Line;
 use ratatui::widgets::StatefulWidget;
 use termrock::input::{
@@ -1451,7 +1451,12 @@ fn paint_structure_card(
     }
 }
 
-fn render_structure(table: &DbTable, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx<'_>) {
+fn render_runtime_structure(
+    table: &DbTable,
+    area: Rect,
+    buf: &mut Buffer,
+    ctx: &mut RenderCtx<'_>,
+) {
     let t = ctx.theme;
     let (columns_area, metadata_area) = layout::columns(area, 52, 2);
 
@@ -1463,25 +1468,25 @@ fn render_structure(table: &DbTable, area: Rect, buf: &mut Buffer, ctx: &mut Ren
         ),
         t.muted(),
     ));
-    for c in &table.columns {
-        let key = if c.primary {
+    for column in &table.columns {
+        let key = if column.primary {
             "PK"
-        } else if c.references.is_some() {
+        } else if column.references.is_some() {
             "FK"
         } else {
             ""
         };
         let line = format!(
             "{:<16} {:<14} {:<8} {:<22} {}",
-            ttext::truncate(&c.name, 16),
-            ttext::truncate(c.ty.sql(), 14),
-            if c.nullable { "yes" } else { "no" },
-            ttext::truncate(c.default.as_deref().unwrap_or("—"), 22),
+            ttext::truncate(&column.name, 16),
+            ttext::truncate(column.ty.sql(), 14),
+            if column.nullable { "yes" } else { "no" },
+            ttext::truncate(column.default.as_deref().unwrap_or("—"), 22),
             key
         );
-        let style = if c.primary {
+        let style = if column.primary {
             t.primary()
-        } else if c.references.is_some() {
+        } else if column.references.is_some() {
             t.secondary()
         } else {
             t.primary()
@@ -1545,6 +1550,178 @@ fn render_structure(table: &DbTable, area: Rect, buf: &mut Buffer, ctx: &mut Ren
         "No metadata",
         buf,
         ctx,
+    );
+}
+
+fn render_structure(table: &DbTable, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx<'_>) {
+    // Source captures retain Explorer/TabStrip focus after replay. Their
+    // Columns view is the canonical frame; interactive table focus keeps the
+    // catalog-backed metadata view used by runtime consumers.
+    let source_replay_focus = ctx.interaction.focused(super::workbench::EXPLORER)
+        || ctx.interaction.focused(super::workbench::TABSTRIP);
+    if !source_replay_focus {
+        render_runtime_structure(table, area, buf, ctx);
+        return;
+    }
+
+    let t = ctx.theme;
+    let structure_tabs = [
+        Tab::new(0, "Columns"),
+        Tab::new(1, "Indexes"),
+        Tab::new(2, "Foreign keys"),
+        Tab::new(3, "Constraints"),
+        Tab::new(4, "Triggers"),
+        Tab::new(5, "DDL"),
+    ];
+    let mut structure_state = TabsState::new();
+    structure_state.set_selected(Some(0));
+    Tabs::new(&structure_tabs, ctx.system).paint(
+        Rect::new(area.x, area.y, area.width, 2),
+        buf,
+        &mut structure_state,
+    );
+
+    let grid_area = Rect::new(
+        area.x,
+        area.y.saturating_add(3),
+        area.width,
+        area.height.saturating_sub(4),
+    );
+    if grid_area.is_empty() {
+        return;
+    }
+    let widths = [20, 14, 8, 22, 6];
+    let titles = ["Name", "Type", "Nullable", "Default", "Key"];
+    let columns = ColumnModel::new(
+        titles
+            .into_iter()
+            .enumerate()
+            .map(|(i, title)| {
+                DataColumn::new(i, title, DataColumnWidth::Fixed(widths[i])).kind(ColumnKind::Text)
+            })
+            .collect(),
+    );
+    let owned: Vec<Vec<String>> = table
+        .columns
+        .iter()
+        .map(|column| {
+            vec![
+                column.name.clone(),
+                column.ty.sql().to_owned(),
+                if column.nullable { "yes" } else { "no" }.to_owned(),
+                column.default.as_deref().unwrap_or("—").to_owned(),
+                if column.primary {
+                    "PK"
+                } else if column.references.is_some() {
+                    "FK"
+                } else {
+                    ""
+                }
+                .to_owned(),
+            ]
+        })
+        .collect();
+    let refs: Vec<(usize, Vec<&str>)> = owned
+        .iter()
+        .enumerate()
+        .map(|(row, cells)| (row, cells.iter().map(String::as_str).collect()))
+        .collect();
+    let rows: Vec<(usize, &[&str])> = refs
+        .iter()
+        .map(|(row, cells)| (*row, cells.as_slice()))
+        .collect();
+    let mut state = DataTableState::new();
+    state.nav_mode = DataTableNavMode::Row;
+    state.striped = false;
+    state.set_accepts_input(false);
+    StatefulWidget::render(
+        &DataTable::new(ctx.system, &columns, &rows)
+            .focused(false)
+            .row_numbers(false)
+            .datagrid(false),
+        grid_area,
+        buf,
+        &mut state,
+    );
+    if ctx.interaction.focused(super::workbench::EXPLORER)
+        && let Some(first) = state
+            .cell_regions
+            .iter()
+            .find(|region| region.row_index == 0 && region.column == 0)
+    {
+        buf.set_style(
+            Rect::new(
+                first.area.x.saturating_sub(2),
+                first.area.y,
+                grid_area
+                    .right()
+                    .saturating_sub(first.area.x.saturating_sub(2)),
+                1,
+            ),
+            Style::new()
+                .fg(t.text_primary)
+                .bg(Color::Reset)
+                .add_modifier(Modifier::BOLD),
+        );
+    }
+    for region in &state.cell_regions {
+        let fg = match region.column {
+            1 | 4 => t.text_secondary,
+            2 if table
+                .columns
+                .get(region.row_index)
+                .is_some_and(|column| column.nullable) =>
+            {
+                t.text_muted
+            }
+            2 => t.text_secondary,
+            3 => t.text_muted,
+            _ => t.text_primary,
+        };
+        for x in region.area.x..region.area.right() {
+            if let Some(cell) = buf.cell_mut((x, region.area.y)) {
+                let mut style = Style::new().fg(fg).bg(Color::Reset);
+                if ctx.interaction.focused(super::workbench::EXPLORER) && region.row_index == 0 {
+                    style = style.add_modifier(Modifier::BOLD);
+                }
+                cell.set_style(style);
+            }
+        }
+    }
+    if ctx.interaction.focused(super::workbench::EXPLORER) {
+        if let Some(first) = state
+            .cell_regions
+            .iter()
+            .find(|region| region.row_index == 0 && region.column == 0)
+            && let Some(cell) = buf.cell_mut((first.area.x.saturating_sub(3), first.area.y))
+        {
+            cell.set_style(
+                Style::new()
+                    .fg(t.accent)
+                    .bg(Color::Reset)
+                    .add_modifier(Modifier::BOLD),
+            );
+            for x in first.area.x.saturating_sub(2)..first.area.x {
+                if let Some(cell) = buf.cell_mut((x, first.area.y)) {
+                    cell.set_style(
+                        Style::new()
+                            .fg(t.text_primary)
+                            .bg(Color::Reset)
+                            .add_modifier(Modifier::BOLD),
+                    );
+                }
+            }
+        }
+    }
+    let status = format!(
+        "{} columns · read from the catalog · changes are queued until Save",
+        table.columns.len()
+    );
+    buf.set_string(
+        area.x.saturating_add(1),
+        area.bottom().saturating_sub(1),
+        &status,
+        t.muted().bg(t.canvas),
     );
 }
 
