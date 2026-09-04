@@ -504,6 +504,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0524 | `v0.14.0` | [Synchronize removed ContextUiIntent string projection](migrations/0524-v0.14.0-sync-removed-context-ui-intent-string-projection.md) |
 | 0525 | `v0.14.0` | [Synchronize removed UiContext boundary accessor](migrations/0525-v0.14.0-sync-removed-ui-context-boundary-accessor.md) |
 | 0526 | `v0.14.0` | [Synchronize removed UiContext capabilities accessor](migrations/0526-v0.14.0-sync-removed-ui-context-capabilities-accessor.md) |
+| 0538 | `v0.14.0` | [Synchronize removed FocusGraph nodes accessor](migrations/0538-v0.14.0-sync-removed-focus-graph-nodes-accessor.md) |
 | 0537 | `v0.14.0` | [Synchronize removed FocusGraph is_focused accessor](migrations/0537-v0.14.0-sync-removed-focus-graph-is-focused-accessor.md) |
 | 0536 | `v0.14.0` | [Synchronize removed apply_mouse_scroll_u16 helper](migrations/0536-v0.14.0-sync-removed-apply-mouse-scroll-u16-helper.md) |
 | 0535 | `v0.14.0` | [Synchronize removed ScrollSpan public type](migrations/0535-v0.14.0-sync-removed-scroll-span-public-type.md) |

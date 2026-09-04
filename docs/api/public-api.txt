@@ -4840,7 +4840,6 @@ pub const fn termrock::interaction::FocusGraph<Id>::focused(&self) -> core::opti
 pub fn termrock::interaction::FocusGraph<Id>::history(&self) -> impl core::iter::traits::iterator::Iterator<Item = &Id>
 pub const fn termrock::interaction::FocusGraph<Id>::mode(self, termrock::interaction::FocusNavMode) -> Self
 pub fn termrock::interaction::FocusGraph<Id>::new() -> Self
-pub fn termrock::interaction::FocusGraph<Id>::nodes(&self) -> &[termrock::interaction::FocusNode<Id>]
 pub fn termrock::interaction::FocusGraph<Id>::owns_keyboard(&self, &Id) -> bool where Id: core::cmp::PartialEq
 pub fn termrock::interaction::FocusGraph<Id>::panel_chrome_for(&self, &Id) -> termrock::style::PanelChrome where Id: core::cmp::PartialEq
 pub fn termrock::interaction::FocusGraph<Id>::register(&mut self, termrock::interaction::FocusNode<Id>) where Id: core::cmp::PartialEq
