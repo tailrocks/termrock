@@ -405,20 +405,21 @@ fn replay_tablepro(scenario: &Scenario, connect: Option<&str>) -> Artifacts {
     let mut rows = scenario.rows;
     let mut term = Terminal::new(CursorTrackingBackend::new(cols, rows)).expect("test backend");
     let mut elapsed = 0_u64;
-    let mut drive = Drive::TablePro(&mut app);
-    drive.draw(&mut term, tick_at(elapsed));
-    for step in scenario.steps {
-        apply_step(
-            &mut drive,
-            &mut term,
-            &mut cols,
-            &mut rows,
-            &mut elapsed,
-            *step,
-        );
+    {
+        let mut drive = Drive::TablePro(&mut app);
         drive.draw(&mut term, tick_at(elapsed));
+        for step in scenario.steps {
+            apply_step(
+                &mut drive,
+                &mut term,
+                &mut cols,
+                &mut rows,
+                &mut elapsed,
+                *step,
+            );
+            drive.draw(&mut term, tick_at(elapsed));
+        }
     }
-    let _ = drive;
     if let Some(name) = scenario.table_name {
         let focus = match scenario.table_focus {
             Some(TableFocusSeed::TabStrip) => crate::tablepro::workbench::TABSTRIP,

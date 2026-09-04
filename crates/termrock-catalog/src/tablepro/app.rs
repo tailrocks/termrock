@@ -62,29 +62,22 @@ const FILTER_OPERATOR: WidgetId = FILTER_EDITOR.sub("operator");
 const FILTER_VALUE: WidgetId = FILTER_EDITOR.sub("value");
 const FILTER_APPLY: WidgetId = FILTER_EDITOR.sub("apply");
 const FILTER_CANCEL: WidgetId = FILTER_EDITOR.sub("cancel");
+const SAFE_MODE_PICKER: WidgetId = WidgetId::of("dialog.safe-mode.picker");
+const SAFE_MODE_OUTSIDE: WidgetId = WidgetId::of("dialog.safe-mode.outside");
 const SAFE_MODE_HINTS: &str =
     "↑↓ Move · Enter Set level · Esc Keep · levels are saved to the connection";
 
 fn safe_mode_rows(selected: Option<SafeMode>) -> Vec<ListRow<'static, SafeMode>> {
-    const DETAILS: [&str; 6] = [
-        "Writes run without asking. Destructive statements still confirm.",
-        "Every write asks for confirmation before it runs.",
-        "Every statement, reads included, asks for confirmation.",
-        "Writes ask for confirmation and a deliberate acknowledgement.",
-        "Every statement asks for confirmation and a deliberate acknowledgement.",
-        "Writes are refused. Reads and exports still work.",
-    ];
     SafeMode::ALL
         .into_iter()
-        .zip(DETAILS)
-        .map(|(level, detail)| {
+        .map(|level| {
             let row = ListRow::item(level, Line::from(level.label()))
                 .leading(Line::from(if selected == Some(level) {
                     "›"
                 } else {
                     " "
                 }))
-                .secondary(Line::from(detail));
+                .secondary(Line::from(level.description()));
             if selected == Some(level) {
                 row.status(Line::from("current"))
             } else {
@@ -135,6 +128,7 @@ struct FilterEditor {
 
 struct SafeModeOverlay {
     picker: PickerState<SafeMode>,
+    return_focus: Option<WidgetId>,
 }
 
 enum Overlay {
@@ -579,7 +573,21 @@ impl App {
             Rect::new(area.right().saturating_sub(8), area.y, 8, 1),
         );
         ctx.clickable(STRIP_CONN, area);
-        ctx.clickable(STRIP_SAFE, area);
+        let token_chars: Vec<char> = level_s.chars().collect();
+        let token_width = u16::try_from(token_chars.len()).unwrap_or(u16::MAX);
+        if token_width > 0 && token_width <= area.width {
+            let max_offset = area.width.saturating_sub(token_width);
+            let token_rect = (0..=max_offset).find_map(|offset| {
+                let matches = token_chars.iter().enumerate().all(|(index, expected)| {
+                    let x = area.x.saturating_add(offset).saturating_add(index as u16);
+                    buf[(x, area.y)].symbol().chars().next() == Some(*expected)
+                });
+                matches.then(|| Rect::new(area.x.saturating_add(offset), area.y, token_width, 1))
+            });
+            if let Some(token_rect) = token_rect {
+                ctx.clickable(STRIP_SAFE, token_rect);
+            }
+        }
     }
 
     fn draw_overlay(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx<'_>) {
@@ -604,6 +612,8 @@ impl App {
                 .hints(SAFE_MODE_HINTS)
                 .focused(true);
             StatefulWidget::render(&picker, popup, buf, &mut safe.picker);
+            ctx.clickable(SAFE_MODE_OUTSIDE, area);
+            ctx.control(SAFE_MODE_PICKER, popup, false);
             return;
         }
         match &self.overlay {
@@ -1066,6 +1076,12 @@ impl App {
                 self.workbench = None;
                 Route::Changed
             }
+            PageEvent::Click { id, .. }
+                if *id == STRIP_SAFE && self.screen == Screen::Workbench =>
+            {
+                self.open_safe_mode_picker(cx);
+                Route::Changed
+            }
             other => match self.screen {
                 Screen::Connections => self.handle_connections_event(other, cx),
                 Screen::Workbench => self.handle_workbench_event(other, cx),
@@ -1148,7 +1164,7 @@ impl App {
             && self.screen == Screen::Workbench
             && !self.editing()
         {
-            self.open_safe_mode_picker();
+            self.open_safe_mode_picker(cx);
             return true;
         }
         if ctrl && matches!(key.code, KeyCode::Char('d') | KeyCode::Char('D')) {
@@ -1256,14 +1272,29 @@ impl App {
         self.refresh_switcher();
     }
 
-    fn open_safe_mode_picker(&mut self) {
+    fn open_safe_mode_picker(&mut self, cx: &mut PageCtx<'_>) {
         let Some(wb) = self.workbench.as_ref() else {
             return;
         };
         let current = wb.connection.safe_mode;
         self.overlay = Overlay::SafeMode(Box::new(SafeModeOverlay {
             picker: PickerState::new(Some(current)),
+            return_focus: cx.focus_id(),
         }));
+        cx.set_focus(SAFE_MODE_PICKER);
+    }
+
+    fn close_safe_mode_picker(&mut self, cx: &mut PageCtx<'_>) {
+        let return_focus = match &self.overlay {
+            Overlay::SafeMode(safe) => safe.return_focus,
+            _ => None,
+        };
+        self.overlay = Overlay::None;
+        cx.set_focus(
+            return_focus
+                .or_else(|| self.workbench.as_ref().and_then(Workbench::primary_focus))
+                .unwrap_or(EXPLORER),
+        );
     }
 
     fn set_safe_mode(&mut self, level: SafeMode) {
@@ -2147,27 +2178,33 @@ impl App {
     }
 
     fn handle_safe_mode(&mut self, ev: &PageEvent, cx: &mut PageCtx<'_>) -> Route {
-        let PageEvent::Key(key) = ev else {
-            return Route::Consumed;
-        };
-        if key.kind == KeyEventKind::Release {
-            return Route::Consumed;
+        if matches!(ev, PageEvent::Click { id, .. } if *id == SAFE_MODE_OUTSIDE) {
+            self.close_safe_mode_picker(cx);
+            return Route::Changed;
         }
         let outcome = {
             let Overlay::SafeMode(safe) = &mut self.overlay else {
                 return Route::Ignored;
             };
             let rows = safe_mode_rows(safe.picker.list().selected().copied());
-            safe.picker.handle_key(&rows, *key)
+            match ev {
+                PageEvent::Key(key) if key.kind != KeyEventKind::Release => {
+                    safe.picker.handle_key(&rows, *key)
+                }
+                PageEvent::Click { id, pos } if *id == SAFE_MODE_PICKER => {
+                    safe.picker.click(*pos)
+                }
+                _ => return Route::Consumed,
+            }
         };
         match outcome {
             PickerOutcome::Cancelled => {
-                self.overlay = Overlay::None;
+                self.close_safe_mode_picker(cx);
                 Route::Changed
             }
             PickerOutcome::Activated(level) => {
                 self.set_safe_mode(level);
-                self.overlay = Overlay::None;
+                self.close_safe_mode_picker(cx);
                 cx.status(format!(
                     "Safety level set to {} · saved to the connection",
                     level.label()
@@ -2535,7 +2572,10 @@ impl App {
                     }
                     return ControlFlow::Continue(());
                 }
-                if matches!(self.overlay, Overlay::Switcher | Overlay::Filter(_))
+                if matches!(
+                    self.overlay,
+                    Overlay::Switcher | Overlay::Filter(_) | Overlay::SafeMode(_)
+                )
                     && matches!(key.code, KeyCode::Tab | KeyCode::BackTab)
                 {
                     self.dispatch(PageEvent::Key(key));
@@ -2632,6 +2672,9 @@ impl App {
             MouseEventKind::Moved => {
                 self.host.hover_suppressed = false;
                 self.host.hover = self.host.scene.hit_test(m.position).map(|e| e.id);
+                if let Overlay::SafeMode(safe) = &mut self.overlay {
+                    let _ = safe.picker.hover(m.position);
+                }
             }
             MouseEventKind::Down(MouseButton::Left) => {
                 let hit = self.host.scene.hit_test(m.position).map(|e| e.id);
