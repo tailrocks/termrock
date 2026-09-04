@@ -30,7 +30,12 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
+use ratatui_core::{
+    buffer::Buffer,
+    layout::Rect,
+    style::Modifier,
+    widgets::{StatefulWidget, Widget},
+};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers},
@@ -39,21 +44,19 @@ use crate::{
         WorkspaceState, modal_rect,
     },
     patterns::{
-        CONNECTION_MANAGER_WINDOW, ConnectionEntry, ConnectionKind, ConnectionManager,
-        ConnectionManagerOutcome, ConnectionManagerPresentation, ConnectionManagerState,
-        ConnectionStatus, QueryEditor, QueryEditorOutcome, QueryEditorState, QueryRunStatus,
-        ResultCell, ResultColumn, ResultExportFormat, ResultGrid, ResultGridOutcome,
-        ResultGridState, ResultQueryStatus, ResultRow, SchemaBrowser, SchemaBrowserEntry,
-        SchemaBrowserState, SchemaConnStatus, connection_to_reconnecting_state,
-        example_connections,
+        ConnectionEntry, ConnectionKind, ConnectionManager, ConnectionManagerOutcome,
+        ConnectionManagerPresentation, ConnectionManagerState, ConnectionStatus, QueryEditor,
+        QueryEditorOutcome, QueryEditorState, QueryRunStatus, ResultCell, ResultColumn,
+        ResultExportFormat, ResultGrid, ResultGridOutcome, ResultGridState, ResultQueryStatus,
+        ResultRow, SchemaBrowser, SchemaBrowserEntry, SchemaBrowserState, SchemaConnStatus,
+        connection_to_reconnecting_state, example_connections,
     },
     style::{DesignSystem, PanelChrome, Role},
     widgets::{
-        CommandEntry, CommandMatch, CommandPalette, CommandPaletteOutcome, CommandPaletteState,
-        HistoryEntry, HistoryKind, HistoryMatch, HistoryPicker, HistoryPickerOutcome,
-        HistoryPickerState, InspectorField, ObjectInspector, ObjectInspectorOutcome,
-        ObjectInspectorState, Panel, StatusBar, StatusBarState, StatusRegion, StatusSlot,
-        example_command_catalog, example_history_entries,
+        CommandEntry, CommandPalette, CommandPaletteOutcome, CommandPaletteState, HistoryEntry,
+        HistoryKind, HistoryPicker, HistoryPickerOutcome, HistoryPickerState, InspectorField,
+        ObjectInspector, ObjectInspectorOutcome, ObjectInspectorState, Panel, StatusBar,
+        StatusBarState, StatusRegion, StatusSlot, example_command_catalog, example_history_entries,
     },
 };
 
@@ -127,6 +130,16 @@ impl DatabaseWorkbenchDensity {
             Self::Narrow
         } else {
             Self::Normal
+        }
+    }
+
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Normal => "normal",
+            Self::Narrow => "narrow",
+            Self::Tiny => "tiny",
         }
     }
 }
@@ -279,6 +292,20 @@ pub enum DatabaseRunBlockReason {
     EmptyQuery,
 }
 
+impl DatabaseRunBlockReason {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Disconnected => "disconnected",
+            Self::Offline => "offline",
+            Self::AuthRequired => "auth_required",
+            Self::Error => "error",
+            Self::EmptyQuery => "empty_query",
+        }
+    }
+}
+
 /// Workbench key / action outcomes — requests only.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
@@ -287,6 +314,8 @@ pub enum DatabaseWorkbenchOutcome {
     Ignored,
     /// Focus pane changed.
     FocusChanged(&'static str),
+    /// Density override applied.
+    DensityChanged(DatabaseWorkbenchDensity),
     /// Query run requested (host executes).
     RunRequested {
         /// Active tab id.
@@ -462,11 +491,7 @@ impl DatabaseWorkbenchState {
             .iter()
             .position(|&si| connections.connections[si].status == ConnectionStatus::Connected)
         {
-            connections.window.set_cursor(
-                fi,
-                connections.filtered_len(),
-                CONNECTION_MANAGER_WINDOW,
-            );
+            connections.cursor = fi;
         }
         let gate = connections
             .current()
@@ -611,6 +636,12 @@ impl DatabaseWorkbenchState {
             .map(|t| t.id.clone())
             .unwrap_or_else(|| "tab0".into())
     }
+
+    /// Set density override.
+    pub fn set_density(&mut self, d: Option<DatabaseWorkbenchDensity>) {
+        self.density = d;
+    }
+
     /// Project connection gate from current connection selection.
     pub fn sync_conn_gate_from_selection(&mut self) {
         if let Some(c) = self.connections.current() {
@@ -646,6 +677,23 @@ impl DatabaseWorkbenchState {
             self.tx_status = DatabaseTxStatus::Active;
         }
     }
+
+    /// Host reports run success.
+    pub fn finish_run_success(&mut self, rows: u64, duration_ms: u64) {
+        self.query.run = QueryRunStatus::Success {
+            rows: Some(rows),
+            duration_ms: Some(duration_ms),
+        };
+        self.results.status = ResultQueryStatus::Ready {
+            total: Some(rows),
+            duration_ms: Some(duration_ms),
+        };
+        if matches!(self.tx_status, DatabaseTxStatus::Active) {
+            self.tx_status = DatabaseTxStatus::Open;
+        }
+        self.last_error = None;
+    }
+
     /// Host reports run error.
     pub fn finish_run_error(&mut self, message: impl Into<String>) {
         let message = message.into();
@@ -799,13 +847,6 @@ impl DatabaseWorkbenchState {
         DatabaseWorkbenchOutcome::CancelRequested { tab_id, run_id }
     }
 
-    fn open_history(&mut self) -> DatabaseWorkbenchOutcome {
-        let _ = self.history.open(Some(self.query.text()));
-        self.history_open = true;
-        self.apply_focus_gates();
-        DatabaseWorkbenchOutcome::OpenHistory
-    }
-
     /// Keyboard routing.
     ///
     /// `inspect_fields` is the same host projection used for paint so inspector
@@ -814,8 +855,8 @@ impl DatabaseWorkbenchState {
         &mut self,
         key: KeyEvent,
         schema_entries: &[SchemaBrowserEntry<'_, &'static str>],
-        history_entries: &[HistoryMatch<'_, &'static str>],
-        commands: &[CommandMatch<'_, &'static str>],
+        history_entries: &[HistoryEntry<&'static str>],
+        commands: &[CommandEntry<&'static str>],
         result_rows_len: usize,
         inspect_fields: &[InspectorField<'_>],
     ) -> DatabaseWorkbenchOutcome {
@@ -851,7 +892,10 @@ impl DatabaseWorkbenchState {
                                 "export-csv" => {
                                     self.export_request(ResultExportFormat::Csv, result_rows_len)
                                 }
-                                "history" => self.open_history(),
+                                "history" => {
+                                    self.history_open = true;
+                                    DatabaseWorkbenchOutcome::OpenHistory
+                                }
                                 other => DatabaseWorkbenchOutcome::Palette {
                                     kind: "activated".into(),
                                     id: Some(other.into()),
@@ -882,38 +926,47 @@ impl DatabaseWorkbenchState {
 
         // Overlay: history
         if self.history_open {
-            let out = self.history.handle_key(key, history_entries);
-            return match out {
-                HistoryPickerOutcome::Selected { id, value } => {
+            match key.code {
+                KeyCode::Esc => {
                     self.history_open = false;
-                    self.query.set_text(&value);
                     self.apply_focus_gates();
-                    DatabaseWorkbenchOutcome::History {
-                        kind: "applied".into(),
-                        id: Some(id.into()),
-                    }
-                }
-                HistoryPickerOutcome::Cancelled => {
-                    self.history_open = false;
-                    if let Some(draft) = self.history.take_draft() {
-                        self.query.set_text(&draft);
-                    }
-                    self.apply_focus_gates();
-                    DatabaseWorkbenchOutcome::History {
-                        kind: "cancelled".into(),
+                    return DatabaseWorkbenchOutcome::History {
+                        kind: "dismissed".into(),
                         id: None,
-                    }
+                    };
                 }
-                HistoryPickerOutcome::Ignored => DatabaseWorkbenchOutcome::Ignored,
-                other => DatabaseWorkbenchOutcome::History {
-                    kind: format!("{other:?}")
-                        .split(|c: char| c == '(' || c == ' ')
-                        .next()
-                        .unwrap_or("history")
-                        .into(),
-                    id: None,
-                },
-            };
+                _ => {
+                    let out = self.history.handle_key(key, history_entries);
+                    return match out {
+                        HistoryPickerOutcome::Selected { id, value } => {
+                            self.history_open = false;
+                            self.query.set_text(&value);
+                            self.apply_focus_gates();
+                            DatabaseWorkbenchOutcome::History {
+                                kind: "applied".into(),
+                                id: Some(id.into()),
+                            }
+                        }
+                        HistoryPickerOutcome::Cancelled => {
+                            self.history_open = false;
+                            self.apply_focus_gates();
+                            DatabaseWorkbenchOutcome::History {
+                                kind: "cancelled".into(),
+                                id: None,
+                            }
+                        }
+                        HistoryPickerOutcome::Ignored => DatabaseWorkbenchOutcome::Ignored,
+                        other => DatabaseWorkbenchOutcome::History {
+                            kind: format!("{other:?}")
+                                .split(|c: char| c == '(' || c == ' ')
+                                .next()
+                                .unwrap_or("history")
+                                .into(),
+                            id: None,
+                        },
+                    };
+                }
+            }
         }
 
         // Global chords
@@ -923,7 +976,8 @@ impl DatabaseWorkbenchState {
                 return DatabaseWorkbenchOutcome::OpenPalette;
             }
             KeyCode::Char('h') if key.modifiers.contains(KeyModifiers::CONTROL) => {
-                return self.open_history();
+                self.history_open = true;
+                return DatabaseWorkbenchOutcome::OpenHistory;
             }
             KeyCode::Char('b') if key.modifiers.contains(KeyModifiers::CONTROL) => {
                 return self.toggle_connections();
@@ -1043,7 +1097,10 @@ impl DatabaseWorkbenchState {
                             run_id,
                         }
                     }
-                    QueryEditorOutcome::OpenHistory => self.open_history(),
+                    QueryEditorOutcome::OpenHistory => {
+                        self.history_open = true;
+                        DatabaseWorkbenchOutcome::OpenHistory
+                    }
                     other => DatabaseWorkbenchOutcome::Query(other),
                 }
             }
@@ -1150,7 +1207,12 @@ impl DatabaseWorkbenchState {
             DatabaseTxStatus::Active => crate::widgets::SemanticStatus::Running,
             DatabaseTxStatus::Failed => crate::widgets::SemanticStatus::Failed,
         };
+        let tab = self
+            .active_tab()
+            .map(|t| t.title.as_str())
+            .unwrap_or("query");
         // StatusSlot wants 'static content — use stable static labels for gate/run/tx;
+        // tab title may not be static so use focus zone for dynamic-ish info.
         let mut slots = vec![
             StatusSlot::connection("conn", conn)
                 .semantic(conn_status)
@@ -1162,6 +1224,7 @@ impl DatabaseWorkbenchState {
             StatusSlot::focus_zone("focus", self.focus).priority(70),
             StatusSlot::shortcut("keys", "C-↵ run · C-e export · C-p cmd · tab focus").priority(10),
         ];
+        let _ = tab;
         if self.last_error.is_some() {
             slots.insert(
                 0,
@@ -1176,6 +1239,17 @@ impl DatabaseWorkbenchState {
 }
 
 // ── Layout ──────────────────────────────────────────────────────────────────
+
+/// Layout with width-derived density.
+#[must_use]
+pub fn database_workbench_layout(area: Rect, state: &WorkspaceState) -> Vec<PaneGeom> {
+    database_workbench_layout_density(
+        area,
+        state,
+        DatabaseWorkbenchDensity::for_width(area.width),
+        DatabaseWorkbenchPanes::default(),
+    )
+}
 
 /// Which consult-panes share the default frame.
 ///
@@ -1374,13 +1448,13 @@ pub struct DatabaseWorkbenchSurfaces<'a> {
     /// Inspector fields for selection.
     pub inspect_fields: &'a [InspectorField<'a>],
     /// History catalog.
-    pub history: &'a [HistoryMatch<'a, &'static str>],
+    pub history: &'a [HistoryEntry<&'static str>],
     /// Command catalog.
-    pub commands: &'a [CommandMatch<'a, &'static str>],
+    pub commands: &'a [CommandEntry<&'static str>],
 }
 
 /// Paint composed database workbench (public child widgets only).
-pub fn paint_database_workbench(
+pub fn render_database_workbench(
     buffer: &mut Buffer,
     area: Rect,
     surfaces: DatabaseWorkbenchSurfaces<'_>,
@@ -1436,7 +1510,7 @@ pub fn paint_database_workbench(
                 PanelChrome::Normal
             });
         let inner = panel.inner(r);
-        panel.paint(r, buffer, None);
+        Widget::render(&panel, r, buffer);
         ConnectionManager::new(system)
             .colorless(state.colorless)
             .list_only(true)
@@ -1448,7 +1522,7 @@ pub fn paint_database_workbench(
         let _ = SchemaBrowser::new(schema_entries, system)
             .title("Schema")
             .focused(focused)
-            .paint(r, buffer, &mut state.schema);
+            .render(r, buffer, &mut state.schema);
     }
 
     if let Some(r) = pane_area(&panes, "query") {
@@ -1493,7 +1567,7 @@ pub fn paint_database_workbench(
             let _ = QueryEditor::new(system)
                 .title(tab_title.as_str())
                 .focused(focused)
-                .paint(editor_area, buffer, &mut state.query);
+                .render(editor_area, buffer, &mut state.query);
         }
     }
 
@@ -1502,7 +1576,7 @@ pub fn paint_database_workbench(
         let _ = ResultGrid::new(system, result_columns, result_rows)
             .title("Results")
             .focused(focused)
-            .paint(r, buffer, &mut state.results);
+            .render(r, buffer, &mut state.results);
     }
 
     if let Some(r) = pane_area(&panes, "inspector") {
@@ -1723,6 +1797,12 @@ pub fn example_db_history() -> Vec<HistoryEntry<&'static str>> {
     h
 }
 
+/// Connected example connection list for stories.
+#[must_use]
+pub fn example_workbench_connections() -> Vec<ConnectionEntry> {
+    example_connections()
+}
+
 /// Disconnected-only catalog for gate stories.
 #[must_use]
 pub fn example_disconnected_connections() -> Vec<ConnectionEntry> {
@@ -1764,9 +1844,11 @@ pub mod bench {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyEventKind;
     use crate::patterns::ResultCell;
-    use crate::widgets::tests::press;
+
+    fn press(code: KeyCode) -> KeyEvent {
+        KeyEvent::new(code, KeyModifiers::NONE)
+    }
 
     fn ctrl(code: KeyCode) -> KeyEvent {
         KeyEvent::new(code, KeyModifiers::CONTROL)
@@ -2021,13 +2103,7 @@ mod tests {
         let rows = example_result_row_refs(&data, &mut cell_store);
         let inspect = example_inspect_fields();
         let history = example_db_history();
-        let history_matches: Vec<HistoryMatch<'_, &'static str>> =
-            history.iter().map(|e| HistoryMatch::new(e, None)).collect();
         let commands = example_db_commands();
-        let command_matches: Vec<CommandMatch<'_, &'static str>> = commands
-            .iter()
-            .map(|c| CommandMatch::new(c, 0, None))
-            .collect();
 
         for d in [
             DatabaseWorkbenchDensity::Normal,
@@ -2041,7 +2117,7 @@ mod tests {
                 DatabaseWorkbenchDensity::Tiny => Rect::new(0, 0, 40, 16),
             };
             let mut buf = Buffer::empty(area);
-            paint_database_workbench(
+            render_database_workbench(
                 &mut buf,
                 area,
                 DatabaseWorkbenchSurfaces {
@@ -2051,8 +2127,8 @@ mod tests {
                     result_columns: &cols,
                     result_rows: &rows,
                     inspect_fields: &inspect,
-                    history: &history_matches,
-                    commands: &command_matches,
+                    history: &history,
+                    commands: &commands,
                 },
             );
             assert!(!st.last_panes().is_empty());
@@ -2124,18 +2200,12 @@ mod tests {
             .collect();
         let inspect = example_inspect_fields();
         let history = example_db_history();
-        let history_matches: Vec<HistoryMatch<'_, &'static str>> =
-            history.iter().map(|e| HistoryMatch::new(e, None)).collect();
         let commands = example_db_commands();
-        let command_matches: Vec<CommandMatch<'_, &'static str>> = commands
-            .iter()
-            .map(|c| CommandMatch::new(c, 0, None))
-            .collect();
         let area = Rect::new(0, 0, 120, 40);
         let mut buf = Buffer::empty(area);
         let start = std::time::Instant::now();
         for _ in 0..bench::PAINT_FRAMES {
-            paint_database_workbench(
+            render_database_workbench(
                 &mut buf,
                 area,
                 DatabaseWorkbenchSurfaces {
@@ -2145,8 +2215,8 @@ mod tests {
                     result_columns: &cols,
                     result_rows: &rows,
                     inspect_fields: &inspect,
-                    history: &history_matches,
-                    commands: &command_matches,
+                    history: &history,
+                    commands: &commands,
                 },
             );
         }
@@ -2177,117 +2247,17 @@ mod tests {
     fn palette_and_history_open() {
         let mut st = open();
         let cmds = example_db_commands();
-        let cmd_matches: Vec<CommandMatch<'_, &'static str>> =
-            cmds.iter().map(|c| CommandMatch::new(c, 0, None)).collect();
         let hist = example_db_history();
-        let hist_matches: Vec<HistoryMatch<'_, &'static str>> =
-            hist.iter().map(|e| HistoryMatch::new(e, None)).collect();
-        let out = st.handle_key(
-            ctrl(KeyCode::Char('p')),
-            &[],
-            &hist_matches,
-            &cmd_matches,
-            0,
-            &[],
-        );
+        let out = st.handle_key(ctrl(KeyCode::Char('p')), &[], &hist, &cmds, 0, &[]);
         assert!(matches!(out, DatabaseWorkbenchOutcome::OpenPalette));
         assert!(st.palette_open());
-        let out = st.handle_key(
-            press(KeyCode::Esc),
-            &[],
-            &hist_matches,
-            &cmd_matches,
-            0,
-            &[],
-        );
+        let out = st.handle_key(press(KeyCode::Esc), &[], &hist, &cmds, 0, &[]);
         assert!(matches!(out, DatabaseWorkbenchOutcome::Palette { .. }));
         assert!(!st.palette_open());
 
-        st.query.set_text("draft sql");
-        let out = st.handle_key(
-            ctrl(KeyCode::Char('h')),
-            &[],
-            &hist_matches,
-            &cmd_matches,
-            0,
-            &[],
-        );
+        let out = st.handle_key(ctrl(KeyCode::Char('h')), &[], &hist, &cmds, 0, &[]);
         assert!(matches!(out, DatabaseWorkbenchOutcome::OpenHistory));
         assert!(st.history_open());
-        assert!(st.history.is_open());
-        assert_eq!(st.history.draft(), Some("draft sql"));
-        assert_eq!(st.history.query_text(), "");
-
-        let out = st.handle_key(
-            press(KeyCode::Esc),
-            &[],
-            &hist_matches,
-            &cmd_matches,
-            0,
-            &[],
-        );
-        assert!(matches!(
-            out,
-            DatabaseWorkbenchOutcome::History { ref kind, .. } if kind == "cancelled"
-        ));
-        assert!(!st.history_open());
-        assert!(!st.history.is_open());
-        assert_eq!(st.query.text(), "draft sql");
-
-        st.query.set_text("new draft");
-        let out = st.handle_key(
-            ctrl(KeyCode::Char('h')),
-            &[],
-            &hist_matches,
-            &cmd_matches,
-            0,
-            &[],
-        );
-        assert!(matches!(out, DatabaseWorkbenchOutcome::OpenHistory));
-        assert!(st.history.is_open());
-        assert_eq!(st.history.query_text(), "");
-        assert_eq!(st.history.draft(), Some("new draft"));
-        let _ = st.handle_key(
-            press(KeyCode::Esc),
-            &[],
-            &hist_matches,
-            &cmd_matches,
-            0,
-            &[],
-        );
-        assert_eq!(st.query.text(), "new draft");
-    }
-
-    #[test]
-    fn history_repeat_escape_is_ignored() {
-        let mut st = open();
-        let cmds = example_db_commands();
-        let cmd_matches: Vec<CommandMatch<'_, &'static str>> =
-            cmds.iter().map(|c| CommandMatch::new(c, 0, None)).collect();
-        let hist = example_db_history();
-        let hist_matches: Vec<HistoryMatch<'_, &'static str>> =
-            hist.iter().map(|e| HistoryMatch::new(e, None)).collect();
-
-        st.query.set_text("draft sql");
-        let out = st.handle_key(
-            ctrl(KeyCode::Char('h')),
-            &[],
-            &hist_matches,
-            &cmd_matches,
-            0,
-            &[],
-        );
-        assert!(matches!(out, DatabaseWorkbenchOutcome::OpenHistory));
-
-        let mut repeat_escape = KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE);
-        repeat_escape.kind = KeyEventKind::Repeat;
-        let out = st.handle_key(repeat_escape, &[], &hist_matches, &cmd_matches, 0, &[]);
-        assert!(matches!(out, DatabaseWorkbenchOutcome::Ignored));
-        assert!(st.history_open());
-        assert!(st.history.is_open());
-        assert_eq!(st.history.draft(), Some("draft sql"));
-        assert_eq!(st.history.query_text(), "");
-        assert_eq!(st.query.text(), "draft sql");
     }
 
     #[test]
@@ -2410,4 +2380,36 @@ mod tests {
             assert!(!t.id().is_empty());
         }
     }
+}
+
+/// Database explorer sample projection.
+#[must_use]
+pub fn example_database_nav() -> Vec<crate::widgets::NavItem<&'static str>> {
+    use crate::widgets::{NavItem, NavItemStatus};
+
+    vec![
+        NavItem::section("conn", "Connections").icon("⬡"),
+        NavItem::new("prod", "production")
+            .depth(1)
+            .icon("●")
+            .status(NavItemStatus::Success)
+            .command("nav.db.prod"),
+        NavItem::new("staging", "staging")
+            .depth(1)
+            .icon("○")
+            .command("nav.db.staging"),
+        NavItem::section("schema", "Schema"),
+        NavItem::group("tables", "Tables")
+            .depth(1)
+            .expanded(true)
+            .has_children(true),
+        NavItem::new("users", "users")
+            .depth(2)
+            .badge("12")
+            .command("nav.db.users"),
+        NavItem::new("orders", "orders")
+            .depth(2)
+            .command("nav.db.orders"),
+        NavItem::new("disabled", "legacy").depth(2).enabled(false),
+    ]
 }

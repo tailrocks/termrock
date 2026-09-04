@@ -2,10 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Empty, loading, error, and banner feedback views.
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{
-    style::{DesignSystem, Glyph, Role},
+    style::{DesignSystem, Glyph, Role, RolePalette},
     text::{display_cols, take_display_cols},
     widgets::{SemanticStatus, Severity},
 };
@@ -32,9 +33,8 @@ impl<'a> LoadingView<'a> {
     }
 }
 
-impl LoadingView<'_> {
-    /// Paint (single public entry; the [`Widget`] impl delegates here).
-    pub fn paint(&self, area: Rect, buffer: &mut Buffer) {
+impl Widget for &LoadingView<'_> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
         if area.is_empty() {
             return;
         }
@@ -66,12 +66,6 @@ impl LoadingView<'_> {
             frame,
             status_style,
         );
-    }
-}
-
-impl Widget for &LoadingView<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        self.paint(area, buffer);
     }
 }
 
@@ -107,9 +101,8 @@ impl<'a> Banner<'a> {
     }
 }
 
-impl Banner<'_> {
-    /// Paint (single public entry; the [`Widget`] impl delegates here).
-    pub fn paint(&self, area: Rect, buffer: &mut Buffer) {
+impl Widget for &Banner<'_> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
         if area.is_empty() {
             return;
         }
@@ -146,12 +139,6 @@ impl Banner<'_> {
     }
 }
 
-impl Widget for &Banner<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        self.paint(area, buffer);
-    }
-}
-
 impl Widget for Banner<'_> {
     #[expect(
         clippy::needless_borrows_for_generic_args,
@@ -182,7 +169,6 @@ fn paint_centered_line(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::style::RolePalette;
     use ratatui_core::buffer::Buffer;
 
     #[test]

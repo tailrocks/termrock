@@ -20,6 +20,8 @@
 //! owns chrome, follow, and control outcomes.
 //!
 //! Research: Grok Build, Amp, OpenCode, terminal emulators, CI command logs.
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+use std::collections::BTreeSet;
 
 use ratatui_core::{
     buffer::Buffer,
@@ -30,7 +32,9 @@ use ratatui_core::{
 
 use crate::{
     ansi_text::{AnsiLine, AnsiText, AnsiTextMode},
-    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     interaction::{NavigationMove, PageMove, UiIntent},
     style::{DesignSystem, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
@@ -53,9 +57,19 @@ pub enum TerminalStream {
 }
 
 impl TerminalStream {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Stdout => "stdout",
+            Self::Stderr => "stderr",
+            Self::System => "system",
+        }
+    }
+
     /// No-color prefix.
     #[must_use]
-    pub const fn prefix(self) -> &'static str {
+    pub const fn prefix(self, _ascii: bool) -> &'static str {
         match self {
             Self::Stdout => "│ ",
             Self::Stderr => "! ",
@@ -134,7 +148,7 @@ impl TerminalRunStatus {
 
     /// Glyph (ASCII uses letter).
     #[must_use]
-    pub const fn glyph(self) -> &'static str {
+    pub const fn glyph(self, _ascii: bool) -> &'static str {
         match self {
             Self::Pending => "·",
             Self::WaitingPermission => "⏸",
@@ -380,6 +394,18 @@ pub enum TerminalOutputRecipe {
     Fullscreen,
 }
 
+impl TerminalOutputRecipe {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Compact => "compact",
+            Self::Pane => "pane",
+            Self::Fullscreen => "fullscreen",
+        }
+    }
+}
+
 /// How body text is painted.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -550,6 +576,12 @@ impl TerminalOutputState {
         self.accepts_input = accepts;
     }
 
+    /// Accepts input.
+    #[must_use]
+    pub const fn accepts_input(&self) -> bool {
+        self.accepts_input
+    }
+
     /// Following tail.
     #[must_use]
     pub const fn is_following(&self) -> bool {
@@ -566,6 +598,12 @@ impl TerminalOutputState {
     #[must_use]
     pub fn unread(&self) -> u64 {
         u64::from(self.scroll.new_content().unseen)
+    }
+
+    /// Scroll.
+    #[must_use]
+    pub const fn scroll(&self) -> &ScrollAreaState {
+        &self.scroll
     }
 
     /// Force follow.
@@ -1018,7 +1056,7 @@ impl<'a> TerminalOutput<'a> {
     }
 
     /// Paint.
-    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut TerminalOutputState) {
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut TerminalOutputState) {
         state.regions.clear();
         if area.is_empty() {
             state.body_rows = 0;
@@ -1077,6 +1115,7 @@ impl<'a> TerminalOutput<'a> {
                 state,
                 self.system,
                 surface,
+                false,
                 colorless,
                 tiny,
                 narrow,
@@ -1118,6 +1157,7 @@ impl<'a> TerminalOutput<'a> {
                     state.paint_mode,
                     self.system,
                     surface,
+                    false,
                     colorless,
                     cursor,
                     tiny,
@@ -1180,6 +1220,7 @@ fn paint_header(
     state: &TerminalOutputState,
     system: &DesignSystem,
     surface: bool,
+    _ascii: bool,
     colorless: bool,
     tiny: bool,
     narrow: bool,
@@ -1189,7 +1230,7 @@ fn paint_header(
         return area.y;
     }
     let mut y = area.y;
-    let g = meta.status.glyph();
+    let g = meta.status.glyph(false);
     let badge = meta.status.label();
     let exit = meta
         .exit_code
@@ -1316,6 +1357,7 @@ fn paint_line(
     paint_mode: TerminalPaintMode,
     system: &DesignSystem,
     surface: bool,
+    _ascii: bool,
     colorless: bool,
     cursor: bool,
     tiny: bool,
@@ -1325,7 +1367,7 @@ fn paint_line(
     }
     // The cursor column is stamped by the shared row chrome.
     let gutter = " ";
-    let prefix = if tiny { "" } else { line.stream.prefix() };
+    let prefix = if tiny { "" } else { line.stream.prefix(false) };
 
     // The stream rides its prefix, not the whole sentence: a page of stderr
     // is a page of readable text with a marked left edge, not a wall of red
@@ -1418,14 +1460,14 @@ fn paint_stream_line(
 impl StatefulWidget for &TerminalOutput<'_> {
     type State = TerminalOutputState;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        TerminalOutput::paint(self, area, buffer, state);
+        TerminalOutput::render(self, area, buffer, state);
     }
 }
 
 impl StatefulWidget for TerminalOutput<'_> {
     type State = TerminalOutputState;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        TerminalOutput::paint(&self, area, buffer, state);
+        TerminalOutput::render(&self, area, buffer, state);
     }
 }
 
@@ -1435,13 +1477,17 @@ impl StatefulWidget for TerminalOutput<'_> {
 pub mod bench {
     /// Lines/sec host append target.
     pub const LINES_PER_SEC: u32 = 20_000;
+    /// Viewport rows.
+    pub const VIEWPORT: u16 = 40;
+    /// Max paint cells.
+    pub const MAX_PAINT_CELLS: u32 = 40 * 120;
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::ansi_text::{AnsiParseOptions, parse_to_line};
-    use crate::widgets::tests::click;
+    use ratatui_core::layout::Position;
 
     fn sample_meta() -> TerminalCommandMeta<'static> {
         TerminalCommandMeta::new("cargo test -p termrock")
@@ -1654,7 +1700,11 @@ mod tests {
         );
         assert!(!state.is_following());
         let chip_y = area.bottom().saturating_sub(1);
-        let click = click(0, chip_y);
+        let click = MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: Position::new(0, chip_y),
+            modifiers: KeyModifiers::NONE,
+        };
         assert!(matches!(
             state.handle_mouse(click, &lines),
             TerminalOutputOutcome::Follow
@@ -1731,14 +1781,14 @@ mod tests {
             TerminalRunStatus::Detached,
         ] {
             assert!(!s.id().is_empty());
-            assert!(!s.glyph().is_empty());
+            assert!(!s.glyph(true).is_empty());
         }
         for st in [
             TerminalStream::Stdout,
             TerminalStream::Stderr,
             TerminalStream::System,
         ] {
-            assert!(!st.prefix().is_empty());
+            assert!(!st.prefix(true).is_empty());
         }
         assert!(bench::LINES_PER_SEC >= 1000);
     }

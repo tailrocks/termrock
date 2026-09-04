@@ -30,7 +30,9 @@ use ratatui_core::{
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
-    interaction::{OverlayStack, SemanticNode, SemanticRole, SemanticScene, SemanticState},
+    interaction::{
+        OverlayStack, SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent,
+    },
     style::{DesignSystem, Role},
     text::take_display_cols,
 };
@@ -38,7 +40,7 @@ use crate::{
 use super::{
     COMPLETION_OVERLAY_ID, CompletionCandidate, CompletionMenu, CompletionMenuOutcome,
     CompletionMenuSize, CompletionMenuState, TextInput, TextInputOutcome, TextInputState,
-    Validation, dismiss_completion_overlay, open_completion_overlay,
+    Validation, dismiss_completion_overlay, open_completion_overlay, place_completion_menu,
 };
 
 /// Default recent-values capacity.
@@ -107,7 +109,7 @@ impl SuggestionStatus {
 pub enum ComboboxOutcome<Id> {
     /// No effect.
     Ignored,
-    /// Draft text changed; host should fetch for `generation`.
+    /// Draft text or caret changed; host should fetch for `generation`.
     DraftChanged {
         /// Current draft.
         text: String,
@@ -153,13 +155,6 @@ pub enum ComboboxOutcome<Id> {
     ClipboardCopy {
         /// Text.
         text: String,
-    },
-    /// Host cut.
-    ClipboardCut {
-        /// Text removed from the draft.
-        text: String,
-        /// Monotonic generation for the changed draft.
-        generation: u64,
     },
 }
 
@@ -262,6 +257,17 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
         self.exact_required = on;
         self
     }
+
+    /// Recent capacity.
+    #[must_use]
+    pub fn with_recent_limit(mut self, limit: usize) -> Self {
+        self.recent_limit = limit.max(1);
+        while self.recent.len() > self.recent_limit {
+            self.recent.pop_back();
+        }
+        self
+    }
+
     /// Seed draft text.
     #[must_use]
     pub fn with_draft(mut self, text: impl Into<String>) -> Self {
@@ -291,6 +297,12 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
     #[must_use]
     pub const fn value(&self) -> Option<&Id> {
         self.value.as_ref()
+    }
+
+    /// Committed label.
+    #[must_use]
+    pub fn value_label(&self) -> Option<&str> {
+        self.value_label.as_deref()
     }
 
     /// Active suggestion id.
@@ -323,10 +335,45 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
         self.applied_generation
     }
 
+    /// Mode.
+    #[must_use]
+    pub const fn mode(&self) -> ComboMode {
+        self.mode
+    }
+
+    /// Creatable.
+    #[must_use]
+    pub const fn is_creatable(&self) -> bool {
+        self.creatable
+    }
+
     /// Focused.
     #[must_use]
     pub const fn is_focused(&self) -> bool {
         self.focused
+    }
+
+    /// Enabled.
+    #[must_use]
+    pub const fn is_enabled(&self) -> bool {
+        self.enabled
+    }
+
+    /// Field rect (anchor).
+    #[must_use]
+    pub const fn field_area(&self) -> Rect {
+        self.field
+    }
+
+    /// Menu state.
+    #[must_use]
+    pub const fn menu(&self) -> &CompletionMenuState<Id> {
+        &self.menu
+    }
+
+    /// Mutable menu (advanced paint).
+    pub fn menu_mut(&mut self) -> &mut CompletionMenuState<Id> {
+        &mut self.menu
     }
 
     /// Recent values (newest first).
@@ -344,6 +391,18 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
         }
     }
 
+    /// Enabled.
+    pub fn set_enabled(&mut self, on: bool) {
+        self.enabled = on;
+        self.draft.set_enabled(on);
+    }
+
+    /// Read-only.
+    pub fn set_read_only(&mut self, on: bool) {
+        self.read_only = on;
+        self.draft.set_read_only(on);
+    }
+
     /// Controlled draft (does not bump generation unless `notify`).
     pub fn set_draft(&mut self, text: impl Into<String>) {
         let text = text.into();
@@ -351,6 +410,20 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
         self.draft.set_enabled(self.enabled);
         self.draft.set_read_only(self.read_only);
         self.draft = self.draft.reseed(text);
+    }
+
+    /// Set committed value without changing draft.
+    pub fn set_value(&mut self, id: Option<Id>, label: Option<String>) {
+        self.value = id;
+        self.value_label = label;
+    }
+
+    /// Host error message for status Error.
+    pub fn set_error_message(&mut self, msg: Option<String>) {
+        self.error_message = msg;
+        if self.error_message.is_some() {
+            self.status = SuggestionStatus::Error;
+        }
     }
 
     fn bump_generation(&mut self) -> u64 {
@@ -407,6 +480,18 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
         }
         true
     }
+
+    /// Mark loading for current generation (host starts fetch).
+    pub fn mark_loading(&mut self) {
+        self.status = SuggestionStatus::Loading;
+    }
+
+    /// Mark error for current generation.
+    pub fn mark_error(&mut self, message: impl Into<String>) {
+        self.status = SuggestionStatus::Error;
+        self.error_message = Some(message.into());
+    }
+
     fn push_recent(&mut self, id: Id, label: String) {
         self.recent.retain(|(i, _)| i != &id);
         self.recent.push_front((id, label));
@@ -487,23 +572,6 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
 
         let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
         let alt = key.modifiers.contains(KeyModifiers::ALT);
-        let one_shot_closed_down =
-            !self.menu.is_open() && matches!(key.code, KeyCode::Down) && !ctrl && !alt;
-        let one_shot_lifecycle = matches!(
-            key.code,
-            KeyCode::Esc | KeyCode::Enter | KeyCode::Tab | KeyCode::BackTab
-        ) || (ctrl
-            && matches!(
-                key.code,
-                KeyCode::Char('m' | 'M' | 'u' | 'U' | 'k' | 'K' | 'w' | 'W')
-                    | KeyCode::Char('c' | 'C' | 'x' | 'X' | 'v' | 'V')
-            ));
-        if !key.is_press() && (one_shot_closed_down || one_shot_lifecycle) {
-            // Keep one-shot lifecycle and destructive/host-editing chords out
-            // of direct handling and the TextInput fallback. Arrow/page
-            // navigation and ordinary draft editing remain repeatable.
-            return ComboboxOutcome::Ignored;
-        }
 
         // Esc semantics
         if key.code == KeyCode::Esc && key.modifiers.is_empty() {
@@ -585,7 +653,10 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
         if key.code == KeyCode::Enter && key.modifiers.is_empty() {
             if !self.draft.is_editing() {
                 self.draft.begin_edit();
-                return ComboboxOutcome::Ignored;
+                return ComboboxOutcome::DraftChanged {
+                    text: self.draft.value().to_owned(),
+                    generation: self.generation,
+                };
             }
             if self.menu.is_open() && self.menu.selected().is_some() && !candidates.is_empty() {
                 return self.commit_active(candidates);
@@ -615,12 +686,8 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
             return ComboboxOutcome::Ignored;
         }
 
-        let before_draft = self.draft.value().to_owned();
         match self.draft.handle_key(key) {
             TextInputOutcome::Changed | TextInputOutcome::Cleared => {
-                if self.draft.value() == before_draft {
-                    return ComboboxOutcome::Ignored;
-                }
                 let request_gen = self.bump_generation();
                 self.menu.set_open(true);
                 // clear selection until new list arrives
@@ -642,17 +709,68 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
                 }
             }
             TextInputOutcome::ClipboardPasteRequest => ComboboxOutcome::ClipboardPasteRequest,
-            TextInputOutcome::ClipboardCopy { text } => ComboboxOutcome::ClipboardCopy { text },
-            TextInputOutcome::ClipboardCut { text } => {
-                let request_gen = self.bump_generation();
-                self.menu.set_open(true);
-                self.menu.select(None);
-                ComboboxOutcome::ClipboardCut {
-                    text,
-                    generation: request_gen,
-                }
+            TextInputOutcome::ClipboardCopy { text } | TextInputOutcome::ClipboardCut { text } => {
+                ComboboxOutcome::ClipboardCopy { text }
             }
             TextInputOutcome::Ignored => ComboboxOutcome::Ignored,
+        }
+    }
+
+    /// Intent path.
+    pub fn handle_intent(
+        &mut self,
+        intent: UiIntent,
+        candidates: &[CompletionCandidate<'_, Id>],
+    ) -> ComboboxOutcome<Id> {
+        if !self.enabled || !self.focused {
+            return ComboboxOutcome::Ignored;
+        }
+        match intent {
+            UiIntent::Activate | UiIntent::Submit => {
+                if !self.draft.is_editing() {
+                    self.draft.begin_edit();
+                    ComboboxOutcome::DraftChanged {
+                        text: self.draft.value().to_owned(),
+                        generation: self.generation,
+                    }
+                } else if self.menu.is_open() && self.menu.selected().is_some() {
+                    self.commit_active(candidates)
+                } else if self.creatable {
+                    self.commit_created()
+                } else {
+                    ComboboxOutcome::Ignored
+                }
+            }
+            UiIntent::Cancel | UiIntent::Close => {
+                if self.menu.is_open() {
+                    self.close_menu()
+                } else {
+                    ComboboxOutcome::Dismissed
+                }
+            }
+            other => match self.menu.handle_intent(candidates, other) {
+                CompletionMenuOutcome::SelectionChanged => ComboboxOutcome::HighlightChanged {
+                    id: self.menu.selected().cloned(),
+                },
+                CompletionMenuOutcome::Committed(id)
+                | CompletionMenuOutcome::CommitWithChar { id, .. } => {
+                    let label = candidates
+                        .iter()
+                        .find(|c| c.id == id)
+                        .map(|c| c.label.to_owned())
+                        .unwrap_or_default();
+                    self.value = Some(id.clone());
+                    self.value_label = Some(label.clone());
+                    self.set_draft(label.clone());
+                    self.menu.set_open(false);
+                    ComboboxOutcome::Committed { id, label }
+                }
+                CompletionMenuOutcome::Dismissed => self.close_menu(),
+                CompletionMenuOutcome::Ignored
+                | CompletionMenuOutcome::StatusChanged { .. }
+                | CompletionMenuOutcome::PresentationChanged { .. }
+                | CompletionMenuOutcome::GenerationStale { .. } => ComboboxOutcome::Ignored,
+            },
         }
     }
 
@@ -768,6 +886,12 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
     ) -> crate::interaction::OverlayOutcome<FocusId> {
         dismiss_completion_overlay(stack)
     }
+
+    /// Place menu rect for paint.
+    #[must_use]
+    pub fn place_menu(&self, bounds: Rect, preferred: CompletionMenuSize) -> Rect {
+        place_completion_menu(bounds, self.field, preferred)
+    }
 }
 
 // ── Widget ──────────────────────────────────────────────────────────────────
@@ -800,6 +924,20 @@ impl<'a> Combobox<'a> {
         self
     }
 
+    /// Placeholder.
+    #[must_use]
+    pub const fn placeholder(mut self, placeholder: &'a str) -> Self {
+        self.placeholder = placeholder;
+        self
+    }
+
+    /// Validation.
+    #[must_use]
+    pub const fn validation(mut self, validation: Validation<'a>) -> Self {
+        self.validation = validation;
+        self
+    }
+
     /// ASCII.
     #[must_use]
     /// Paint field only; host paints [`CompletionMenu`] in placed rect.
@@ -825,6 +963,7 @@ impl<'a> Combobox<'a> {
             } else {
                 crate::style::ControlState::Default
             },
+            invalid,
             state.draft.is_editing(),
         );
         let mut y = area.y;
@@ -1030,10 +1169,7 @@ const _: &str = COMPLETION_OVERLAY_ID;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyEventKind;
     use crate::style::RolePalette;
-    use crate::widgets::tests::click;
-    use crate::widgets::tests::key_with_kind;
 
     fn cands() -> Vec<CompletionCandidate<'static, &'static str>> {
         vec![
@@ -1171,119 +1307,6 @@ mod tests {
     }
 
     #[test]
-    fn repeated_lifecycle_and_fallback_actions_are_ignored() {
-        let candidates = cands();
-
-        for kind in [KeyEventKind::Repeat, KeyEventKind::Release] {
-            for (code, modifiers) in [
-                (KeyCode::Esc, KeyModifiers::NONE),
-                (KeyCode::Enter, KeyModifiers::NONE),
-                (KeyCode::Tab, KeyModifiers::NONE),
-                (KeyCode::BackTab, KeyModifiers::NONE),
-                (KeyCode::Down, KeyModifiers::NONE),
-            ] {
-                let mut state = ComboboxState::new().with_draft("draft");
-                let _ = state.close_menu();
-                state.set_focused(true);
-                assert_eq!(
-                    state.handle_key(key_with_kind(code, modifiers, kind), &candidates),
-                    ComboboxOutcome::Ignored
-                );
-                assert!(
-                    !state.is_menu_open(),
-                    "unexpected open for {kind:?} {code:?}"
-                );
-                assert_eq!(state.draft(), "draft");
-            }
-        }
-
-        let mut state = ComboboxState::new().with_editing();
-        state.set_focused(true);
-        let _ = state.close_menu();
-        let _ = state.open_menu();
-        assert!(state.is_menu_open());
-        assert!(state.apply_suggestions(1, &candidates));
-        for kind in [KeyEventKind::Repeat, KeyEventKind::Release] {
-            for (code, modifiers) in [
-                (KeyCode::Esc, KeyModifiers::NONE),
-                (KeyCode::Esc, KeyModifiers::SHIFT),
-                (KeyCode::Enter, KeyModifiers::NONE),
-                (KeyCode::Enter, KeyModifiers::CONTROL),
-                (KeyCode::Tab, KeyModifiers::NONE),
-                (KeyCode::Tab, KeyModifiers::CONTROL),
-                (KeyCode::BackTab, KeyModifiers::NONE),
-                (KeyCode::BackTab, KeyModifiers::ALT),
-            ] {
-                assert_eq!(
-                    state.handle_key(key_with_kind(code, modifiers, kind), &candidates),
-                    ComboboxOutcome::Ignored
-                );
-            }
-        }
-        assert!(state.is_menu_open());
-        assert_eq!(state.draft(), "");
-        assert_eq!(state.value(), None);
-
-        let mut fallback = ComboboxState::autocomplete()
-            .with_draft("draft")
-            .with_editing();
-        fallback.set_focused(true);
-        for kind in [KeyEventKind::Repeat, KeyEventKind::Release] {
-            for (code, modifiers) in [
-                (KeyCode::Char('m'), KeyModifiers::CONTROL),
-                (KeyCode::Char('u'), KeyModifiers::CONTROL),
-                (KeyCode::Char('k'), KeyModifiers::CONTROL),
-                (KeyCode::Char('w'), KeyModifiers::CONTROL),
-                (KeyCode::Char('c'), KeyModifiers::CONTROL),
-                (KeyCode::Char('x'), KeyModifiers::CONTROL),
-                (KeyCode::Char('v'), KeyModifiers::CONTROL),
-            ] {
-                assert_eq!(
-                    fallback.handle_key(key_with_kind(code, modifiers, kind), &candidates),
-                    ComboboxOutcome::Ignored
-                );
-                assert_eq!(fallback.draft(), "draft");
-            }
-        }
-        assert_eq!(fallback.suggestion_generation(), 0);
-
-        let mut caret = ComboboxState::autocomplete()
-            .with_draft("abc")
-            .with_editing();
-        let _ = caret.close_menu();
-        caret.set_focused(true);
-        assert_eq!(
-            caret.handle_key(
-                KeyEvent::new(KeyCode::Left, KeyModifiers::NONE),
-                &candidates
-            ),
-            ComboboxOutcome::Ignored
-        );
-        assert_eq!(caret.draft(), "abc");
-        assert_eq!(caret.suggestion_generation(), 0);
-        assert!(!caret.is_menu_open());
-
-        let _ = caret.handle_key(
-            KeyEvent::new(KeyCode::Char('l'), KeyModifiers::CONTROL),
-            &candidates,
-        );
-        assert!(caret.draft.selection_range().is_some());
-        assert_eq!(
-            caret.handle_key(
-                KeyEvent::new(KeyCode::Char('x'), KeyModifiers::CONTROL),
-                &candidates,
-            ),
-            ComboboxOutcome::ClipboardCut {
-                text: "abc".to_owned(),
-                generation: 1,
-            }
-        );
-        assert_eq!(caret.draft(), "");
-        assert!(caret.is_menu_open());
-        assert_eq!(caret.suggestion_generation(), 1);
-    }
-
-    #[test]
     fn tab_commits_highlight() {
         let mut state: ComboboxState<&'static str> = ComboboxState::new().with_creatable(false);
         state.set_focused(true);
@@ -1366,7 +1389,11 @@ mod tests {
         Combobox::new(&system).paint_with_menu(area, &mut buffer, &mut state, &candidates);
 
         let outcome = state.handle_mouse(
-            click(state.field.x, state.field.y),
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: Position::new(state.field.x, state.field.y),
+                modifiers: KeyModifiers::NONE,
+            },
             &candidates,
             Rect::default(),
         );

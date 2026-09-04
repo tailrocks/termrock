@@ -42,6 +42,31 @@ impl MotionPolicy {
             _ => None,
         }
     }
+
+    /// Reads the operator's motion preference from the environment.
+    ///
+    /// `TERMROCK_MOTION` wins when set; `NO_COLOR`-style `NO_MOTION` and the
+    /// standards-track `MOTION` environment variable follow.
+    #[must_use]
+    pub fn from_env() -> Self {
+        for key in ["TERMROCK_MOTION", "NO_MOTION", "MOTION"] {
+            if let Ok(value) = std::env::var(key) {
+                if key == "MOTION" {
+                    // The standards variable says what to *reduce from*; any
+                    // value set means the operator asked for reduction.
+                    if value.trim() == "0" || value.is_empty() {
+                        continue;
+                    }
+                    return Self::Off;
+                }
+                if let Some(policy) = Self::parse(&value) {
+                    return policy;
+                }
+            }
+        }
+        Self::Full
+    }
+
     /// Whether indeterminate spinners should advance frames.
     #[must_use]
     pub const fn animate_spinners(self) -> bool {

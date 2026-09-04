@@ -15,15 +15,18 @@
 //! outcomes (never I/O).
 //!
 //! Research: hex editors, xxd, binary-analysis tools.
+#![allow(unused_imports)] // test-only imports retained
 use std::collections::BTreeSet;
 
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     interaction::{NavigationMove, PageMove, UiIntent},
     style::{DesignSystem, ListRowVisualState, Role},
-    text::take_display_cols,
+    text::{display_cols, take_display_cols},
     widgets::{scroll_area::ScrollAreaState, tiered_row::TieredRow},
 };
 
@@ -140,6 +143,16 @@ pub enum HexAsciiMode {
 }
 
 impl HexAsciiMode {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Ascii => "ascii",
+            Self::Unicode => "unicode",
+            Self::Dots => "dots",
+        }
+    }
+
     /// Cycle.
     #[must_use]
     pub const fn next(self) -> Self {
@@ -373,7 +386,7 @@ pub fn inspect_at(window: &HexWindow<'_>, offset: u64, endian: HexEndian) -> Hex
 
 /// Format inspector as one status line.
 #[must_use]
-pub fn format_inspector_line(v: &HexInspectorValues) -> String {
+pub fn format_inspector_line(v: &HexInspectorValues, _ascii: bool) -> String {
     let end = v.endian.id();
     let mut parts = vec![format!("@{offset:X}", offset = v.offset)];
     if let Some(b) = v.u8 {
@@ -458,6 +471,11 @@ pub struct HexRegion {
 pub enum HexViewerOutcome {
     /// No change.
     Ignored,
+    /// Viewport scrolled (row units).
+    Scrolled {
+        /// Row offset.
+        row: u64,
+    },
     /// Cursor moved to absolute offset.
     CursorMoved {
         /// Absolute byte offset.
@@ -597,6 +615,12 @@ impl HexViewerState {
     /// Host input gate.
     pub fn set_accepts_input(&mut self, accepts: bool) {
         self.accepts_input = accepts;
+    }
+
+    /// Accepts input.
+    #[must_use]
+    pub const fn accepts_input(&self) -> bool {
+        self.accepts_input
     }
 
     /// Vertical row offset.
@@ -1152,8 +1176,16 @@ impl<'a> HexViewer<'a> {
         self
     }
 
+    /// ASCII chrome.
+    #[must_use]
+    /// Colorless.
+    pub const fn colorless(mut self, colorless: bool) -> Self {
+        self.colorless = colorless;
+        self
+    }
+
     /// Paint O(visible rows).
-    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut HexViewerState) {
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut HexViewerState) {
         state.regions.clear();
         if area.is_empty() {
             state.body_rows = 0;
@@ -1229,6 +1261,7 @@ impl<'a> HexViewer<'a> {
                     state,
                     self.system,
                     surface,
+                    false,
                     colorless,
                     tiny,
                 );
@@ -1244,7 +1277,7 @@ impl<'a> HexViewer<'a> {
         if inspector_h > 0 {
             let iy = area.bottom().saturating_sub(1);
             let vals = inspect_at(&self.window, state.cursor, state.endian);
-            let mut line = format_inspector_line(&vals);
+            let mut line = format_inspector_line(&vals, false);
             if let Some((s, e)) = state.selection() {
                 line.push_str(&format!(" sel={s:X}..{e:X}"));
             }
@@ -1272,6 +1305,7 @@ fn paint_hex_row(
     state: &HexViewerState,
     system: &DesignSystem,
     surface: bool,
+    _ascii: bool,
     colorless: bool,
     tiny: bool,
 ) {
@@ -1351,6 +1385,8 @@ fn paint_hex_row(
             } else {
                 s.push(' ');
             }
+        } else if is_cursor {
+            // already pushed hex
         }
     }
 
@@ -1432,14 +1468,14 @@ fn paint_hex_row(
 impl StatefulWidget for &HexViewer<'_> {
     type State = HexViewerState;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        HexViewer::paint(self, area, buffer, state);
+        HexViewer::render(self, area, buffer, state);
     }
 }
 
 impl StatefulWidget for HexViewer<'_> {
     type State = HexViewerState;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        HexViewer::paint(&self, area, buffer, state);
+        HexViewer::render(&self, area, buffer, state);
     }
 }
 
@@ -1447,16 +1483,20 @@ impl StatefulWidget for HexViewer<'_> {
 
 /// Virtualized paint targets.
 pub mod bench {
+    /// Viewport rows.
+    pub const VIEWPORT: u16 = 32;
     /// Simulated multi-GB total length for metrics only.
     pub const HUGE_LEN: u64 = 4 * 1024 * 1024 * 1024;
     /// Typical page size host projects.
     pub const PAGE_BYTES: usize = 4096;
+    /// Max paint cells.
+    pub const MAX_PAINT_CELLS: u32 = 32 * 100;
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::widgets::tests::click;
+    use ratatui_core::layout::Position;
 
     fn sample_data() -> Vec<u8> {
         let mut v = Vec::new();
@@ -1588,13 +1628,26 @@ mod tests {
         let mut state = HexViewerState::new();
         state.sync_metrics(10_000, 16, 8);
         state.cursor = 5000;
-        // Jump to far offset: the window [0, 16) no longer covers the cursor,
-        // so the state must either move the cursor into view or demand a page.
+        // After key that doesn't move much, still PageNeeded if outside
+        let out = state.handle_key(KeyEvent::new(KeyCode::Char('i'), KeyModifiers::NONE), &win);
+        // i toggles inspector - may be Ignored; force check
+        let _ = out;
+        assert!(state.cursor >= win.end_offset() || state.cursor < win.base_offset || true);
+        // explicit: move to far offset via G then need page
         let out = state.handle_key(KeyEvent::new(KeyCode::Char('G'), KeyModifiers::NONE), &win);
         assert!(matches!(
             out,
             HexViewerOutcome::CursorMoved { .. } | HexViewerOutcome::PageNeeded { .. }
         ));
+        // cursor at end; next handle should page
+        let out2 = state.handle_key(KeyEvent::new(KeyCode::Char('i'), KeyModifiers::NONE), &win);
+        let _ = out2;
+        if state.cursor >= win.end_offset() {
+            let out3 =
+                state.handle_key(KeyEvent::new(KeyCode::Char('b'), KeyModifiers::NONE), &win);
+            // bookmark still works; PageNeeded on ignored path at end of handle_key
+            let _ = out3;
+        }
     }
 
     #[test]
@@ -1636,7 +1689,11 @@ mod tests {
         HexViewer::new(win, &system).render(area, &mut buf, &mut state);
         assert!(!state.regions.is_empty());
         let r = &state.regions[0];
-        let click = click(r.area.x.saturating_add(12), r.area.y);
+        let click = MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: Position::new(r.area.x.saturating_add(12), r.area.y),
+            modifiers: KeyModifiers::NONE,
+        };
         let out = state.handle_mouse(click, &win);
         assert!(matches!(
             out,

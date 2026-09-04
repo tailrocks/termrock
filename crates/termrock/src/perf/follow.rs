@@ -38,6 +38,8 @@ pub struct ScrollAnchor {
     pub index: u64,
     /// Content id when `kind == ContentId`.
     pub content_id: Option<String>,
+    /// Fraction of the anchor row visible from the top (0.0–1.0), optional.
+    pub row_bias: u16,
 }
 
 impl ScrollAnchor {
@@ -48,6 +50,7 @@ impl ScrollAnchor {
             kind: ScrollAnchorKind::Index,
             index,
             content_id: None,
+            row_bias: 0,
         }
     }
 
@@ -58,6 +61,7 @@ impl ScrollAnchor {
             kind: ScrollAnchorKind::FromEnd,
             index: distance,
             content_id: None,
+            row_bias: 0,
         }
     }
 
@@ -68,6 +72,7 @@ impl ScrollAnchor {
             kind: ScrollAnchorKind::ContentId,
             index: 0,
             content_id: Some(id.into()),
+            row_bias: 0,
         }
     }
 }
@@ -131,7 +136,8 @@ pub fn apply_follow_after_append(
 
 /// User scroll interaction: pause follow (does not clear indicator).
 #[must_use]
-pub const fn pause_follow_on_user_scroll() -> FollowMode {
+pub const fn pause_follow_on_user_scroll(follow: FollowMode) -> FollowMode {
+    let _ = follow;
     FollowMode::Paused
 }
 
@@ -164,6 +170,9 @@ mod tests {
 
     #[test]
     fn user_scroll_pauses() {
-        assert_eq!(pause_follow_on_user_scroll(), FollowMode::Paused);
+        assert_eq!(
+            pause_follow_on_user_scroll(FollowMode::Following),
+            FollowMode::Paused
+        );
     }
 }

@@ -52,6 +52,15 @@ impl KeyChord {
         }
     }
 
+    /// Chord with Shift held (typically only meaningful for non-Char keys).
+    #[must_use]
+    pub const fn shift(key: KeyCode) -> Self {
+        Self {
+            key,
+            mods: KeyModifiers::SHIFT,
+        }
+    }
+
     /// Chord with Alt-Shift held (used for pane-resize CSI sequences).
     #[must_use]
     pub const fn alt_shift(key: KeyCode) -> Self {
@@ -77,15 +86,6 @@ impl From<crate::input::KeyEvent> for KeyChord {
         }
         if ev.modifiers.contains(KeyModifiers::ALT) {
             mods = mods.with_alt();
-        }
-        if ev.modifiers.contains(KeyModifiers::SUPER) {
-            mods = mods.with_super();
-        }
-        if ev.modifiers.contains(KeyModifiers::HYPER) {
-            mods = mods.with_hyper();
-        }
-        if ev.modifiers.contains(KeyModifiers::META) {
-            mods = mods.with_meta();
         }
         // Shift is intrinsic to Char casing; only track it for non-Char keys.
         if !is_char && ev.modifiers.contains(KeyModifiers::SHIFT) {
@@ -353,6 +353,25 @@ impl<A: Clone + Copy + PartialEq + 'static> Keymap<A> {
         })
     }
 
+    /// Push the `Key` (and optional `Text`) spans for `action` onto `out`,
+    /// derived from the binding. No separators are added — the caller owns
+    /// layout. Does nothing if the action is unbound. The single primitive
+    /// for building context-dependent footers from a keymap.
+    pub fn push_spans_for(&self, action: A, out: &mut Vec<HintSpan<'static>>) {
+        if let Some(binding) = self.binding_for(action) {
+            match &binding.glyph {
+                Some(Cow::Borrowed(glyph)) => out.push(HintSpan::Key(glyph)),
+                Some(Cow::Owned(glyph)) => out.push(HintSpan::DynKey(glyph.clone())),
+                None => out.push(HintSpan::Key(chord_glyph(binding.chords.first().copied()))),
+            }
+            match &binding.hint {
+                Some(Cow::Borrowed(label)) => out.push(HintSpan::Text(label)),
+                Some(Cow::Owned(label)) => out.push(HintSpan::Dyn(label.clone())),
+                None => {}
+            }
+        }
+    }
+
     /// Replaces an action's chord set and clears any now-stale explicit glyph.
     ///
     /// A static map clones only on its first successful edit. Hints immediately
@@ -552,6 +571,8 @@ pub mod glyph {
     pub const LEFT_RIGHT: &str = "\u{2190}\u{2192}";
     /// Canonical grouped four-direction hint glyph.
     pub const ALL_ARROWS: &str = "\u{2191}\u{2193}\u{2190}\u{2192}";
+    /// Canonical Alt-Shift four-direction resize hint.
+    pub const ALT_SHIFT_ALL_ARROWS: &str = "Alt-Shift-\u{2191}\u{2193}\u{2190}\u{2192}";
     /// Canonical paired page-navigation hint.
     pub const PGUP_PGDN: &str = "PgUp/PgDn";
     /// Canonical Escape-key hint label.
@@ -632,12 +653,87 @@ pub fn chord_glyph(chord: Option<KeyChord>) -> &'static str {
         KeyCode::PageDown => "PgDn",
         KeyCode::Backspace => "⌫",
         KeyCode::Delete => "Del",
+        KeyCode::F(1) => "F1",
+        KeyCode::F(2) => "F2",
+        KeyCode::F(3) => "F3",
+        KeyCode::F(4) => "F4",
+        KeyCode::F(5) => "F5",
+        KeyCode::F(6) => "F6",
+        KeyCode::F(7) => "F7",
+        KeyCode::F(8) => "F8",
+        KeyCode::F(9) => "F9",
+        KeyCode::F(10) => "F10",
+        KeyCode::F(11) => "F11",
+        KeyCode::F(12) => "F12",
+        KeyCode::F(13) => "F13",
+        KeyCode::F(14) => "F14",
+        KeyCode::F(15) => "F15",
+        KeyCode::F(16) => "F16",
+        KeyCode::F(17) => "F17",
+        KeyCode::F(18) => "F18",
+        KeyCode::F(19) => "F19",
+        KeyCode::F(20) => "F20",
+        KeyCode::F(21) => "F21",
+        KeyCode::F(22) => "F22",
+        KeyCode::F(23) => "F23",
+        KeyCode::F(24) => "F24",
+        KeyCode::F(_) => "F?",
         // Other modifier combos on Char (e.g. Alt-Shift-Arrow converted as Char)
         // are not in the common-shortcut set — callers must supply an explicit glyph.
         KeyCode::Char(_) => "?",
         KeyCode::Unknown => "",
     }
 }
+
+// ── Scroll hint keymap ───────────────────────────────────────────────────────
+
+/// Axis discriminant for [`SCROLL_HINT_KEYMAP`].
+///
+/// The action type is never used for dispatch; `SCROLL_HINT_KEYMAP` exists
+/// solely to produce axis-gated [`HintSpan`] sequences via
+/// [`Keymap::hint_spans_for_axes`], eliminating the duplicate gating logic
+/// that previously lived in `scroll_hint_spans`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ScrollHintAxis {
+    /// The vertical terminal axis.
+    Vertical,
+    /// The horizontal terminal axis.
+    Horizontal,
+}
+
+/// Hint-only keymap for the two scroll axes.
+///
+/// Each binding carries a pre-composed combined glyph (`"↑↓/j/k"`,
+/// `"←→/h/l"`). The chords drive axis-gating in
+/// The same axis gate used by [`Keymap::hint_spans_for_axes`] applies: a binding whose chords are all `Up`/`Down`
+/// is suppressed when `axes.vertical` is false; one whose chords are all
+/// `Left`/`Right` is suppressed when `axes.horizontal` is false.
+///
+/// Use via [`Keymap::hint_spans_for_axes`]. Never call
+/// [`Keymap::dispatch`] on this keymap — both Up and Down map to
+/// `ScrollHintAxis::Vertical`, so the return value has no directional meaning.
+static SCROLL_HINT_BINDINGS: &[KeyBinding<ScrollHintAxis>] = &[
+    KeyBinding::borrowed(
+        &[KeyChord::plain(KeyCode::Up), KeyChord::plain(KeyCode::Down)],
+        ScrollHintAxis::Vertical,
+        Some("scroll"),
+        Visibility::Shown,
+        Some("↑↓/j/k"),
+    ),
+    KeyBinding::borrowed(
+        &[
+            KeyChord::plain(KeyCode::Left),
+            KeyChord::plain(KeyCode::Right),
+        ],
+        ScrollHintAxis::Horizontal,
+        Some("scroll"),
+        Visibility::Shown,
+        Some("←→/h/l"),
+    ),
+];
+
+/// Hint-only keymap for both scroll axes, filtered at render time by available axes.
+pub static SCROLL_HINT_KEYMAP: Keymap<ScrollHintAxis> = Keymap::from_static(SCROLL_HINT_BINDINGS);
 
 #[cfg(test)]
 mod tests;

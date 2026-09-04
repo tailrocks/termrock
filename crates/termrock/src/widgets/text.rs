@@ -97,6 +97,16 @@ pub enum SelectablePolicy {
 }
 
 impl SelectablePolicy {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::None => "none",
+            Self::Copyable => "copyable",
+            Self::Selectable => "selectable",
+        }
+    }
+
     /// Whether plain text is intended for copy.
     #[must_use]
     pub const fn copyable(self) -> bool {
@@ -163,10 +173,31 @@ impl<'a> TextSpan<'a> {
         }
     }
 
+    /// Borrowed content helper.
+    #[must_use]
+    pub const fn borrowed(content: &'a str) -> Self {
+        Self {
+            content: Cow::Borrowed(content),
+            role: Role::Text,
+            emphasis: TextEmphasis::Normal,
+            underline: false,
+            reverse: false,
+            annotation: None,
+            highlight: false,
+        }
+    }
+
     /// Semantic role.
     #[must_use]
     pub const fn role(mut self, role: Role) -> Self {
         self.role = role;
+        self
+    }
+
+    /// Emphasis.
+    #[must_use]
+    pub const fn emphasis(mut self, emphasis: TextEmphasis) -> Self {
+        self.emphasis = emphasis;
         self
     }
 
@@ -217,6 +248,18 @@ impl<'a> TextSpan<'a> {
     pub const fn highlight(mut self, on: bool) -> Self {
         self.highlight = on;
         self
+    }
+
+    /// Content borrow.
+    #[must_use]
+    pub fn content(&self) -> &str {
+        self.content.as_ref()
+    }
+
+    /// Role.
+    #[must_use]
+    pub const fn role_of(&self) -> Role {
+        self.role
     }
 
     /// Annotation borrow.
@@ -324,6 +367,17 @@ impl<'a> Text<'a> {
             ellipsis: Cow::Borrowed("…"),
         }
     }
+
+    /// Replace spans.
+    #[must_use]
+    pub fn with_spans<I>(mut self, spans: I) -> Self
+    where
+        I: IntoIterator<Item = TextSpan<'a>>,
+    {
+        self.spans = spans.into_iter().collect();
+        self
+    }
+
     /// Role for the first span (convenience for single-span text).
     #[must_use]
     pub fn role(mut self, role: Role) -> Self {
@@ -331,6 +385,33 @@ impl<'a> Text<'a> {
             s.role = role;
         }
         self
+    }
+
+    /// Emphasis for the first span.
+    #[must_use]
+    pub fn emphasis(mut self, emphasis: TextEmphasis) -> Self {
+        if let Some(s) = self.spans.first_mut() {
+            s.emphasis = emphasis;
+        }
+        self
+    }
+
+    /// Strong first span.
+    #[must_use]
+    pub fn strong(self) -> Self {
+        self.emphasis(TextEmphasis::Strong)
+    }
+
+    /// Dim first span.
+    #[must_use]
+    pub fn dim(self) -> Self {
+        self.emphasis(TextEmphasis::Dim)
+    }
+
+    /// Muted role on first span.
+    #[must_use]
+    pub fn muted(self) -> Self {
+        self.role(Role::TextMuted)
     }
 
     /// Soft wrap.
@@ -351,6 +432,13 @@ impl<'a> Text<'a> {
     #[must_use]
     pub const fn truncate(mut self) -> Self {
         self.overflow = TextOverflow::Truncate;
+        self
+    }
+
+    /// Alignment.
+    #[must_use]
+    pub const fn align(mut self, align: TextAlign) -> Self {
+        self.align = align;
         self
     }
 
@@ -382,11 +470,32 @@ impl<'a> Text<'a> {
         self
     }
 
+    /// Tab stop width.
+    #[must_use]
+    pub const fn tab_width(mut self, width: usize) -> Self {
+        self.tab_width = if width == 0 { 4 } else { width };
+        self
+    }
+
+    /// Ellipsis string (e.g. `"..."` for ASCII).
+    #[must_use]
+    pub fn ellipsis(mut self, ellipsis: impl Into<Cow<'a, str>>) -> Self {
+        self.ellipsis = ellipsis.into();
+        self
+    }
+
     /// Selectable policy.
     #[must_use]
     pub const fn policy(&self) -> SelectablePolicy {
         self.selectable
     }
+
+    /// Overflow.
+    #[must_use]
+    pub const fn overflow_mode(&self) -> TextOverflow {
+        self.overflow
+    }
+
     /// Spans borrow.
     #[must_use]
     pub fn spans_ref(&self) -> &[TextSpan<'a>] {
@@ -506,7 +615,7 @@ impl<'a> Text<'a> {
             let was = display_cols(&joined) > w;
             (t, was)
         } else {
-            let t = take_display_cols(&joined, w).into_owned();
+            let t = take_display_cols(&joined, w);
             let was = display_cols(&joined) > w;
             (t, was)
         };
@@ -534,7 +643,7 @@ impl<'a> Text<'a> {
                     break;
                 }
                 let remain = w - used;
-                let piece = take_display_cols(text, remain).into_owned();
+                let piece = take_display_cols(text, remain);
                 let pw = display_cols(&piece);
                 if piece.is_empty() && !text.is_empty() {
                     break;

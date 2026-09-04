@@ -2,12 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Live theme picker: select a named preset; caller re-renders with that theme.
-use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+use ratatui_core::{
+    buffer::Buffer,
+    layout::Rect,
+    widgets::{StatefulWidget, Widget},
+};
 
 use crate::{
-    input::{KeyEvent, MouseButton, MouseEvent, MouseEventKind},
+    input::{KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind},
     interaction::{EventResult, NavigationMove, OverlayRequest, UiIntent, default_list_intent},
-    style::{DesignSystem, ListRowVisualState},
+    style::{DesignSystem, ListRowVisualState, Role, RolePalette},
     text::take_display_cols,
     widgets::{Panel, PanelChrome, PanelVariant},
 };
@@ -30,6 +35,13 @@ pub const BUILTIN_THEME_PRESETS: &[ThemePreset] = &[ThemePreset {
     requires_truecolor: true,
 }];
 
+/// Resolves a built-in theme by preset id. There are no aliases: only the
+/// canonical id `junie` resolves; anything else returns `None`.
+#[must_use]
+pub fn theme_from_preset_id(id: &str) -> Option<RolePalette> {
+    system_from_preset_id(id).map(|system| system.palette)
+}
+
 /// Resolves a full [`DesignSystem`] for a preset id. There are no aliases:
 /// only the canonical id `junie` resolves; anything else returns `None`.
 #[must_use]
@@ -44,6 +56,7 @@ pub fn system_from_preset_id(id: &str) -> Option<DesignSystem> {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ThemePickerState {
     selected: usize,
+    confirmed: Option<&'static str>,
     focused: bool,
     enabled: bool,
     row_regions: Vec<(usize, Rect)>,
@@ -61,6 +74,7 @@ impl ThemePickerState {
     pub const fn new(selected: usize) -> Self {
         Self {
             selected,
+            confirmed: None,
             focused: true,
             enabled: true,
             row_regions: Vec::new(),
@@ -71,6 +85,22 @@ impl ThemePickerState {
     #[must_use]
     pub const fn selected(&self) -> usize {
         self.selected
+    }
+
+    /// Last confirmed preset id, if any.
+    #[must_use]
+    pub const fn confirmed(&self) -> Option<&'static str> {
+        self.confirmed
+    }
+
+    /// Clears the confirmation latch.
+    pub fn clear_confirmed(&mut self) {
+        self.confirmed = None;
+    }
+
+    /// Focus-visible interaction ownership.
+    pub fn set_focused(&mut self, on: bool) {
+        self.focused = on && self.enabled;
     }
 
     /// Enables navigation, confirmation, and pointer activation.
@@ -136,6 +166,16 @@ impl ThemePickerState {
     ) -> EventResult<ThemePickerOutcome> {
         Self::outcome_to_result(self.handle_key(key, preset_count))
     }
+
+    /// Intent path with [`EventResult`]. Cancel attaches dismiss-top overlay request.
+    pub fn handle_intent_result(
+        &mut self,
+        intent: UiIntent,
+        preset_count: usize,
+    ) -> EventResult<ThemePickerOutcome> {
+        Self::outcome_to_result(self.handle_intent(intent, preset_count))
+    }
+
     /// Pointer activation over exact row geometry published by the last render.
     pub fn handle_mouse(&mut self, event: MouseEvent, preset_count: usize) -> ThemePickerOutcome {
         if !self.enabled
@@ -166,6 +206,11 @@ impl ThemePickerState {
             }
             other => EventResult::emit(other),
         }
+    }
+
+    /// Confirms a preset id after the caller resolves index → id.
+    pub fn confirm_id(&mut self, id: &'static str) {
+        self.confirmed = Some(id);
     }
 }
 
@@ -215,7 +260,7 @@ impl StatefulWidget for &ThemePicker<'_> {
             .title("Theme")
             .emphasis(PanelChrome::for_focus(state.focused && state.enabled));
         let inner = panel.inner(area);
-        panel.paint(area, buffer, None);
+        Widget::render(&panel, area, buffer);
         if inner.is_empty() {
             return;
         }
@@ -271,7 +316,6 @@ mod tests {
     use super::*;
     use crate::input::{KeyCode, KeyModifiers};
     use crate::interaction::{OverlayRequest, Propagation};
-    use crate::widgets::tests::click;
 
     #[test]
     fn navigation_and_confirm_index() {
@@ -318,7 +362,11 @@ mod tests {
         let mut state = ThemePickerState::new(0);
         StatefulWidget::render(&picker, area, &mut buffer, &mut state);
         let (_, row) = state.row_regions[1];
-        let click = click(row.x, row.y);
+        let click = MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: ratatui_core::layout::Position::new(row.x, row.y),
+            modifiers: KeyModifiers::NONE,
+        };
 
         assert_eq!(
             state.handle_mouse(click, presets.len()),

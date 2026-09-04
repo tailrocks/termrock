@@ -26,16 +26,24 @@
 //! | Typeahead | Jump focus to label prefix match |
 //!
 //! Research: VS Code trees, file explorers, Yazi, broot, DB navigators.
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+use ratatui_core::{
+    buffer::Buffer,
+    layout::{Position, Rect},
+    style::Modifier,
+    widgets::StatefulWidget,
+};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     interaction::{
         CollectionItem, CollectionOutcome, CollectionState, HitRegion, RovingOrientation,
-        SemanticNode, SemanticRole, SemanticScene, SemanticState,
+        SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent,
     },
     style::{DesignSystem, Role},
-    text::take_display_cols,
+    text::{display_cols, take_display_cols},
 };
 
 /// Indent columns per depth level (compact).
@@ -65,6 +73,18 @@ pub enum TreeNavStatus {
 }
 
 impl TreeNavStatus {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Ready => "ready",
+            Self::Loading => "loading",
+            Self::Error => "error",
+            Self::Dirty => "dirty",
+            Self::Warning => "warning",
+        }
+    }
+
     /// Non-color mark.
     #[must_use]
     pub const fn mark(self, ascii: bool) -> Option<&'static str> {
@@ -328,6 +348,12 @@ impl<Id> TreeNavigationState<Id> {
         &self.filter
     }
 
+    /// Lazy generation.
+    #[must_use]
+    pub const fn generation(&self) -> u64 {
+        self.generation
+    }
+
     /// Ancestors of current route (ids).
     #[must_use]
     pub fn route_ancestors(&self) -> &[Id] {
@@ -341,6 +367,26 @@ impl<Id> TreeNavigationState<Id> {
             self.filter_active = false;
             self.typeahead.clear();
         }
+    }
+
+    /// Enabled.
+    pub fn set_enabled(&mut self, on: bool) {
+        self.enabled = on;
+    }
+
+    /// Set route; recomputes ancestors from projection when provided later.
+    pub fn set_route(&mut self, id: Option<Id>) {
+        self.route = id;
+        self.route_ancestors.clear();
+    }
+
+    /// Set route and recompute ancestors from full projection.
+    pub fn set_route_in(&mut self, id: Option<Id>, nodes: &[TreeNavNode<Id>])
+    where
+        Id: Clone + PartialEq,
+    {
+        self.route = id;
+        self.recompute_ancestors(nodes);
     }
 
     /// Align focus to route if present in projection.
@@ -400,13 +446,13 @@ impl<Id> TreeNavigationState<Id> {
         self.route.as_ref() == Some(id)
     }
 
-    fn collection_items<'a>(nodes: &'a [TreeNavNode<Id>]) -> Vec<CollectionItem<'a, Id>>
+    fn collection_items(nodes: &[TreeNavNode<Id>]) -> Vec<CollectionItem<Id>>
     where
         Id: Clone,
     {
         nodes
             .iter()
-            .map(|n| CollectionItem::new(n.id.clone(), &n.label).enabled(n.enabled))
+            .map(|n| CollectionItem::new(n.id.clone(), n.label.clone()).enabled(n.enabled))
             .collect()
     }
 
@@ -417,7 +463,7 @@ impl<Id> TreeNavigationState<Id> {
         }
         nodes
             .iter()
-            .filter(|n| crate::text::contains_lower(&n.label, &q))
+            .filter(|n| n.label.to_ascii_lowercase().contains(&q))
             .collect()
     }
 
@@ -480,7 +526,7 @@ impl<Id> TreeNavigationState<Id> {
     fn reconcile_route_with_collection(
         &mut self,
         nodes: &[TreeNavNode<Id>],
-        coll: &[CollectionItem<'_, Id>],
+        coll: &[CollectionItem<Id>],
     ) where
         Id: Clone + PartialEq,
     {
@@ -619,11 +665,10 @@ impl<Id> TreeNavigationState<Id> {
                 && c != '/'
             {
                 self.typeahead.push(c);
-                let needle = self.typeahead.to_lowercase();
-                if let Some(node) = nodes
-                    .iter()
-                    .find(|n| n.enabled && crate::text::starts_with_lower(&n.label, &needle))
-                {
+                let needle = self.typeahead.to_ascii_lowercase();
+                if let Some(node) = nodes.iter().find(|n| {
+                    n.enabled && n.label.to_ascii_lowercase().starts_with(needle.as_str())
+                }) {
                     self.collection.set_active(Some(node.id.clone()));
                     return TreeNavigationOutcome::TypeaheadMatched {
                         id: node.id.clone(),
@@ -726,6 +771,42 @@ impl<Id> TreeNavigationState<Id> {
         TreeNavigationOutcome::Ignored
     }
 
+    /// Intent path.
+    pub fn handle_intent(
+        &mut self,
+        intent: UiIntent,
+        nodes: &[TreeNavNode<Id>],
+    ) -> TreeNavigationOutcome<Id>
+    where
+        Id: Clone + PartialEq,
+    {
+        if !self.enabled || !self.focused {
+            return TreeNavigationOutcome::Ignored;
+        }
+        let coll = Self::collection_items(nodes);
+        match self.collection.reconcile(&coll) {
+            CollectionOutcome::ActiveChanged { to, .. } => {
+                return TreeNavigationOutcome::FocusChanged { id: to };
+            }
+            CollectionOutcome::Scrolled => return TreeNavigationOutcome::Changed,
+            CollectionOutcome::Ignored => {}
+        }
+        match intent {
+            UiIntent::Activate | UiIntent::Submit => self.activate_focus(nodes),
+            UiIntent::Expand => self.expand_or_child(nodes),
+            UiIntent::Collapse => self.collapse_or_parent(nodes),
+            UiIntent::Cancel | UiIntent::Close => TreeNavigationOutcome::Cancelled,
+            UiIntent::Search => {
+                self.filter_active = true;
+                TreeNavigationOutcome::Changed
+            }
+            other => {
+                let out = self.collection.handle_intent(other, &coll);
+                Self::map_focus(out)
+            }
+        }
+    }
+
     /// Mouse.
     pub fn handle_mouse(
         &mut self,
@@ -817,6 +898,14 @@ impl<'a, Id> TreeNavigation<'a, Id> {
         }
     }
 
+    /// ASCII glyphs.
+    #[must_use]
+    /// Empty message.
+    pub const fn empty_message(mut self, msg: &'a str) -> Self {
+        self.empty_message = msg;
+        self
+    }
+
     /// Paint.
     pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut TreeNavigationState<Id>)
     where
@@ -900,7 +989,7 @@ impl<'a, Id> TreeNavigation<'a, Id> {
 
             let depth = node.depth.min(TREE_NAV_MAX_INDENT_DEPTH);
             let indent_cols = if state.narrow {
-                depth.min(2)
+                depth.min(2) * 1
             } else {
                 depth * TREE_NAV_INDENT
             };
@@ -934,7 +1023,7 @@ impl<'a, Id> TreeNavigation<'a, Id> {
             };
 
             let label = if state.narrow {
-                take_display_cols(&node.label, 8).into_owned()
+                take_display_cols(&node.label, 8)
             } else {
                 node.label.clone()
             };
@@ -1119,7 +1208,6 @@ pub fn example_docs_tree() -> Vec<TreeNavNode<&'static str>> {
 mod tests {
     use super::*;
     use crate::style::RolePalette;
-    use crate::widgets::tests::click;
 
     #[test]
     fn route_distinct_from_focus() {
@@ -1319,7 +1407,14 @@ mod tests {
         assert!(!state.regions.is_empty());
         if let Some(hit) = state.regions.iter().find(|r| r.id == "events") {
             assert!(matches!(
-                state.handle_mouse(click(hit.area.x, hit.area.y), &nodes),
+                state.handle_mouse(
+                    MouseEvent {
+                        kind: MouseEventKind::Down(MouseButton::Left),
+                        position: Position::new(hit.area.x, hit.area.y),
+                        modifiers: KeyModifiers::NONE,
+                    },
+                    &nodes
+                ),
                 TreeNavigationOutcome::RouteChanged { id: "events" }
             ));
         }

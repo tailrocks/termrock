@@ -35,12 +35,13 @@ use ratatui_core::{buffer::Buffer, layout::Rect};
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     style::{DesignSystem, PanelChrome, Role},
-    text::take_display_cols,
+    text::{display_cols, take_display_cols},
     widgets::{
         AccentRail, Card, SemanticStatus, StatusIndicator, TerminalCommandMeta, TerminalEnvEntry,
         TerminalLine, TerminalOutput, TerminalOutputOutcome, TerminalOutputRecipe,
         TerminalOutputState, TerminalPaintMode, TerminalRunStatus, ToolCall, ToolRisk, ToolStatus,
-        filter_terminal_lines, format_duration_ms, redact_env_value, redact_tool_secrets,
+        escape_raw_terminal, filter_terminal_lines, format_duration_ms, redact_env_value,
+        redact_tool_secrets,
     },
 };
 
@@ -127,6 +128,16 @@ pub struct TerminalRunEnv {
 }
 
 impl TerminalRunEnv {
+    /// Construct.
+    #[must_use]
+    pub fn new(key: impl Into<String>, value: impl Into<String>) -> Self {
+        Self {
+            key: key.into(),
+            value: value.into(),
+            redacted: false,
+        }
+    }
+
     /// Secret placeholder.
     #[must_use]
     pub fn secret(key: impl Into<String>) -> Self {
@@ -305,6 +316,13 @@ impl TerminalRun {
         self
     }
 
+    /// Signal.
+    #[must_use]
+    pub fn signal(mut self, s: impl Into<String>) -> Self {
+        self.signal = Some(s.into());
+        self
+    }
+
     /// Pid.
     #[must_use]
     pub const fn pid(mut self, p: u32) -> Self {
@@ -340,10 +358,17 @@ impl TerminalRun {
         self
     }
 
+    /// Revision.
+    #[must_use]
+    pub const fn revision(mut self, r: u64) -> Self {
+        self.revision = r;
+        self
+    }
+
     /// Header summary line.
     #[must_use]
-    pub fn header_line(&self) -> String {
-        let g = self.status.glyph();
+    pub fn header_line(&self, ascii: bool) -> String {
+        let g = self.status.glyph(ascii);
         let phase = self.phase().badge();
         let mut s = format!(
             "{g} [{phase}] {}",
@@ -462,8 +487,9 @@ pub fn project_terminal_run_lines(
     run: &TerminalRun,
     lines: &[TerminalLine<'_>],
     expanded: bool,
+    ascii: bool,
 ) -> Vec<String> {
-    let mut out = vec![run.header_line()];
+    let mut out = vec![run.header_line(ascii)];
     let phase = run.phase();
     if phase != TerminalCommandPhase::Executed
         || run
@@ -498,7 +524,7 @@ pub fn project_terminal_run_lines(
         {
             out.push(format!(
                 "  {}{}",
-                l.stream.prefix(),
+                l.stream.prefix(ascii),
                 redact_tool_secrets(l.text)
             ));
         }
@@ -522,6 +548,16 @@ pub enum TerminalRunPresentation {
 }
 
 impl TerminalRunPresentation {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Compact => "compact",
+            Self::Expanded => "expanded",
+            Self::Fullscreen => "fullscreen",
+        }
+    }
+
     fn to_recipe(self) -> TerminalOutputRecipe {
         match self {
             Self::Compact => TerminalOutputRecipe::Compact,
@@ -667,6 +703,17 @@ impl TerminalRunCardState {
     pub fn set_accepts_input(&mut self, on: bool) {
         self.accepts_input = on;
         self.output.set_accepts_input(on);
+    }
+
+    /// Focus.
+    pub const fn set_focused(&mut self, on: bool) {
+        self.focused = on;
+    }
+
+    /// Expanded?
+    #[must_use]
+    pub const fn is_expanded(&self) -> bool {
+        !matches!(self.presentation, TerminalRunPresentation::Compact)
     }
 
     /// Following tail.
@@ -826,6 +873,7 @@ pub struct TerminalRunCard<'a> {
     lines: &'a [TerminalLine<'a>],
     system: &'a DesignSystem,
     colorless: bool,
+    tick: u64,
 }
 
 impl<'a> TerminalRunCard<'a> {
@@ -841,6 +889,7 @@ impl<'a> TerminalRunCard<'a> {
             lines,
             system,
             colorless: false,
+            tick: 0,
         }
     }
 
@@ -849,6 +898,13 @@ impl<'a> TerminalRunCard<'a> {
     /// Colorless.
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
+        self
+    }
+
+    /// Deterministic paint tick for active presence.
+    #[must_use]
+    pub const fn tick(mut self, tick: u64) -> Self {
+        self.tick = tick;
         self
     }
 
@@ -891,11 +947,7 @@ impl<'a> TerminalRunCard<'a> {
             );
             StatusIndicator::compact(semantic, self.system)
                 .colorless(colorless)
-                .paint(
-                    Rect::new(inner.x, inner.y, inner.width.min(1), 1),
-                    buffer,
-                    None,
-                );
+                .paint(Rect::new(inner.x, inner.y, inner.width.min(1), 1), buffer);
             state.header_hit = Rect::new(area.x, area.y, area.width, 1);
             return;
         }
@@ -931,10 +983,10 @@ impl<'a> TerminalRunCard<'a> {
 
         // Colorless is exactly when the glyph matters most: dropping it left
         // the card with no status cue at all (plans/013 Step 2).
-        let leading = run.status.glyph();
+        let leading = run.status.glyph(false);
         let badge = phase.badge();
         let card = Card::new(self.system)
-            .title(title.as_ref())
+            .title(title.as_str())
             .leading(leading)
             .badge(badge)
             .subtitle(subtitle.as_str())
@@ -1021,7 +1073,7 @@ impl<'a> TerminalRunCard<'a> {
             StatusIndicator::new(SemanticStatus::Waiting, self.system)
                 .label("permission required · p")
                 .colorless(colorless)
-                .paint(Rect::new(body.x, y, body.width, 1), buffer, None);
+                .paint(Rect::new(body.x, y, body.width, 1), buffer);
             y = y.saturating_add(1);
         }
         if let Some(e) = &run.egress {
@@ -1030,7 +1082,7 @@ impl<'a> TerminalRunCard<'a> {
                 StatusIndicator::new(SemanticStatus::Warning, self.system)
                     .label(&warning)
                     .colorless(colorless)
-                    .paint(Rect::new(body.x, y, body.width, 1), buffer, None);
+                    .paint(Rect::new(body.x, y, body.width, 1), buffer);
                 y = y.saturating_add(1);
             }
         }
@@ -1062,7 +1114,14 @@ impl<'a> TerminalRunCard<'a> {
             .focused(state.focused)
             .colorless(colorless)
             .show_chrome(false); // card owns command chrome; substrate owns stream
-        view.paint(stream_area, buffer, &mut state.output);
+        view.render(stream_area, buffer, &mut state.output);
+
+        let _ = (display_cols, escape_raw_terminal);
+    }
+
+    /// Render alias.
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut TerminalRunCardState) {
+        self.paint(area, buffer, state);
     }
 }
 
@@ -1119,8 +1178,12 @@ pub fn example_terminal_run_lines() -> Vec<TerminalLine<'static>> {
 
 /// Paint stress.
 pub mod bench {
+    /// Cards.
+    pub const CARD_COUNT: usize = 32;
     /// Frames.
     pub const PAINT_FRAMES: u32 = 24;
+    /// Lines per run.
+    pub const LINES: usize = 80;
 }
 
 // ── Tests ───────────────────────────────────────────────────────────────────
@@ -1130,7 +1193,7 @@ mod tests {
     use super::*;
     use crate::ansi_text::{AnsiParseOptions, parse_to_line};
     use crate::style::MotionPolicy;
-    use crate::widgets::tests::click;
+    use ratatui_core::layout::Position;
 
     #[test]
     fn phase_proposed_edited_executed() {
@@ -1261,7 +1324,7 @@ mod tests {
             .status(TerminalRunStatus::Succeeded)
             .exit_code(0);
         let lines = example_terminal_run_lines();
-        let p = project_terminal_run_lines(&run, &lines, true);
+        let p = project_terminal_run_lines(&run, &lines, true, true);
         let j = p.join("\n");
         assert!(j.contains("proposed"));
         assert!(j.contains("executed"));
@@ -1344,7 +1407,11 @@ mod tests {
         let area = Rect::new(0, 0, 48, 10);
         let mut buf = Buffer::empty(area);
         TerminalRunCard::new(&run, &lines, &system).paint(area, &mut buf, &mut st);
-        let ev = click(st.header_hit.x, st.header_hit.y);
+        let ev = MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: Position::new(st.header_hit.x, st.header_hit.y),
+            modifiers: KeyModifiers::NONE,
+        };
         assert!(matches!(
             st.handle_mouse(ev, &run, &lines),
             TerminalRunCardOutcome::Expanded { .. }
@@ -1402,7 +1469,7 @@ mod tests {
             TerminalRunStatus::Detached,
         ] {
             let run = TerminalRun::new("r", "cmd").status(s);
-            let _ = run.header_line();
+            let _ = run.header_line(true);
             let _ = terminal_run_to_tool_call(&run);
         }
         for p in [
@@ -1461,6 +1528,6 @@ mod tests {
         let mut st = TerminalOutputState::new();
         let area = Rect::new(0, 0, 40, 8);
         let mut buf = Buffer::empty(area);
-        TerminalOutput::new(&meta, &lines, &system).paint(area, &mut buf, &mut st);
+        TerminalOutput::new(&meta, &lines, &system).render(area, &mut buf, &mut st);
     }
 }

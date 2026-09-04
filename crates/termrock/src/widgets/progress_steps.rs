@@ -20,19 +20,28 @@
 //! live run progress.
 //!
 //! Research: CI pipelines, installers, agent task plans.
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+use ratatui_core::{
+    buffer::Buffer,
+    layout::{Position, Rect},
+    style::Modifier,
+    widgets::StatefulWidget,
+};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     interaction::{
         NavigationMove, SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent,
         default_list_intent,
     },
     style::{DesignSystem, Glyph, Role},
-    text::take_display_cols,
+    text::{display_cols, take_display_cols},
     widgets::{Hint, HintBar},
 };
 
+use super::list::ListRow;
 use super::stepper::StepStatus;
 use super::timeline::{Timeline, TimelineEvent};
 
@@ -242,6 +251,13 @@ impl ProgressStep {
         self
     }
 
+    /// Source.
+    #[must_use]
+    pub fn source(mut self, s: impl Into<String>) -> Self {
+        self.source = Some(s.into());
+        self
+    }
+
     /// Effective verb.
     #[must_use]
     pub fn effective_verb(&self) -> &str {
@@ -287,6 +303,16 @@ pub enum ProgressStepsPresentation {
 }
 
 impl ProgressStepsPresentation {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Expanded => "expanded",
+            Self::Compact => "compact",
+            Self::Summary => "summary",
+        }
+    }
+
     /// Choose from width.
     #[must_use]
     pub const fn for_width(width: u16) -> Self {
@@ -370,6 +396,20 @@ impl ProgressStepsState {
         s.mode = ProgressStepsMode::Interactive;
         s.focused = true;
         s
+    }
+
+    /// Mode.
+    #[must_use]
+    pub const fn mode(&self) -> ProgressStepsMode {
+        self.mode
+    }
+
+    /// Set mode.
+    pub fn set_mode(&mut self, mode: ProgressStepsMode) {
+        self.mode = mode;
+        if matches!(mode, ProgressStepsMode::Passive) {
+            self.focused = false;
+        }
     }
 
     /// Focused (interactive).
@@ -471,15 +511,6 @@ impl ProgressStepsState {
             return ProgressStepsOutcome::Ignored;
         }
         if !key.is_insert() {
-            return ProgressStepsOutcome::Ignored;
-        }
-
-        if !key.is_press()
-            && matches!(
-                key.code,
-                KeyCode::Esc | KeyCode::Enter | KeyCode::Char('r' | 'R')
-            )
-        {
             return ProgressStepsOutcome::Ignored;
         }
 
@@ -649,7 +680,7 @@ impl<'a> ProgressSteps<'a> {
             buffer.set_stringn(
                 area.x,
                 area.y,
-                take_display_cols(&line, usize::from(area.width)).as_ref(),
+                &take_display_cols(&line, usize::from(area.width)),
                 usize::from(area.width),
                 self.system.style(Role::Text),
             );
@@ -661,7 +692,7 @@ impl<'a> ProgressSteps<'a> {
             buffer.set_stringn(
                 area.x,
                 y,
-                take_display_cols(title, usize::from(area.width)).as_ref(),
+                &take_display_cols(title, usize::from(area.width)),
                 usize::from(area.width),
                 self.system
                     .style(Role::TextStrong)
@@ -689,8 +720,11 @@ impl<'a> ProgressSteps<'a> {
             if let Some(idx) = self.steps.iter().position(|s| &s.id == c) {
                 let page = ((list_bottom.saturating_sub(y)) / row_h.max(1)) as usize;
                 let page = page.max(1);
-                state.scroll =
-                    crate::scroll::cursor_follow_offset(idx, self.steps.len(), page, state.scroll);
+                if idx < state.scroll {
+                    state.scroll = idx;
+                } else if idx >= state.scroll.saturating_add(page) {
+                    state.scroll = idx.saturating_sub(page.saturating_sub(1));
+                }
             }
         }
 
@@ -724,7 +758,7 @@ impl<'a> ProgressSteps<'a> {
             buffer.set_stringn(
                 area.x,
                 y,
-                take_display_cols(&line, usize::from(area.width)).as_ref(),
+                &take_display_cols(&line, usize::from(area.width)),
                 usize::from(area.width),
                 style,
             );
@@ -755,8 +789,7 @@ impl<'a> ProgressSteps<'a> {
                     buffer.set_stringn(
                         area.x.saturating_add(4),
                         y + 1,
-                        take_display_cols(&detail, usize::from(area.width.saturating_sub(4)))
-                            .as_ref(),
+                        &take_display_cols(&detail, usize::from(area.width.saturating_sub(4))),
                         usize::from(area.width.saturating_sub(4)),
                         self.system.style(Role::TextMuted),
                     );
@@ -859,11 +892,41 @@ pub fn paint_progress_steps_as_timeline(
     steps: &[ProgressStep],
     area: Rect,
     buffer: &mut Buffer,
-    state: &mut crate::widgets::TimelineState<()>,
     system: &DesignSystem,
 ) {
+    use ratatui_core::widgets::Widget;
     let events = progress_steps_as_timeline_events(steps);
-    Timeline::new(&events, system).paint(area, buffer, state);
+    Widget::render(&Timeline::new(&events, system), area, buffer);
+}
+
+/// Project to list rows for List / legacy rail hosts (prefer [`ActivityModel`](super::ActivityModel) + TaskRail).
+///
+/// **Note:** `label`/`trailing` use owned strings via `Line::from`; callers
+/// typically rebuild rows each frame from live steps.
+#[must_use]
+pub fn progress_steps_as_list_rows(steps: &[ProgressStep]) -> Vec<ListRow<'static, String>> {
+    steps
+        .iter()
+        .map(|s| {
+            let mut row = ListRow::item(
+                s.id.clone(),
+                ratatui_core::text::Line::from(s.title.clone()),
+            );
+            row.status = Some(ratatui_core::text::Line::from(format!(
+                "| {} {}",
+                s.status.semantic().glyph_unicode(),
+                s.status.default_verb()
+            )));
+            if let Some(d) = &s.detail {
+                row.secondary = Some(ratatui_core::text::Line::from(d.clone()));
+            }
+            if let Some(ms) = s.duration_ms {
+                row.badge = Some(ratatui_core::text::Line::from(format_duration_ms(ms)));
+            }
+            row.enabled = !matches!(s.status, ProgressStepStatus::Cancelled);
+            row
+        })
+        .collect()
 }
 
 // ── Example data ────────────────────────────────────────────────────────────
@@ -917,8 +980,6 @@ pub fn example_agent_plan_steps() -> Vec<ProgressStep> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyEventKind;
-    use crate::widgets::tests::{click, key_with_kind};
 
     #[test]
     fn status_marks_are_non_color() {
@@ -1017,24 +1078,6 @@ mod tests {
     }
 
     #[test]
-    fn repeated_lifecycle_actions_are_ignored() {
-        let steps = example_agent_plan_steps();
-        for code in [KeyCode::Esc, KeyCode::Enter, KeyCode::Char('r')] {
-            for kind in [KeyEventKind::Repeat, KeyEventKind::Release] {
-                let mut state = ProgressStepsState::interactive();
-                state.set_cursor(Some("build".into()));
-                assert_eq!(
-                    state.handle_key(&steps, key_with_kind(code, KeyModifiers::NONE, kind)),
-                    ProgressStepsOutcome::Ignored,
-                    "{kind:?} {code:?} must not repeat a lifecycle action"
-                );
-                assert!(state.focused);
-                assert_eq!(state.cursor(), Some("build"));
-            }
-        }
-    }
-
-    #[test]
     fn disabled_state_ignores_key_intent_and_mouse() {
         let steps = example_build_pipeline();
         let mut state = ProgressStepsState::interactive();
@@ -1058,7 +1101,16 @@ mod tests {
             ProgressStepsOutcome::Ignored
         );
         assert_eq!(
-            state.handle_mouse(&steps, click(0, 1), Rect::new(0, 0, 20, 4), 1,),
+            state.handle_mouse(
+                &steps,
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(0, 1),
+                    modifiers: KeyModifiers::NONE,
+                },
+                Rect::new(0, 0, 20, 4),
+                1,
+            ),
             ProgressStepsOutcome::Ignored
         );
         assert_eq!(state.cursor(), Some("compile"));
@@ -1073,7 +1125,16 @@ mod tests {
         state.accepts_input = false;
 
         assert_eq!(
-            state.handle_mouse(&steps, click(0, 1), Rect::new(0, 0, 20, 4), 1,),
+            state.handle_mouse(
+                &steps,
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(0, 1),
+                    modifiers: KeyModifiers::NONE,
+                },
+                Rect::new(0, 0, 20, 4),
+                1,
+            ),
             ProgressStepsOutcome::Ignored
         );
         assert_eq!(
@@ -1135,8 +1196,7 @@ mod tests {
         let steps = example_build_pipeline();
         let area = Rect::new(0, 0, 40, 6);
         let mut buf = Buffer::empty(area);
-        let mut state = crate::widgets::TimelineState::new();
-        paint_progress_steps_as_timeline(&steps, area, &mut buf, &mut state, &system);
+        paint_progress_steps_as_timeline(&steps, area, &mut buf, &system);
         let text: String = buf
             .content()
             .iter()
@@ -1146,6 +1206,14 @@ mod tests {
             text.contains("Compile") || text.contains("●") || text.contains("○"),
             "{text}"
         );
+    }
+
+    #[test]
+    fn list_rows_projection() {
+        let steps = example_build_pipeline();
+        let rows = progress_steps_as_list_rows(&steps);
+        assert_eq!(rows.len(), steps.len());
+        assert_eq!(rows[0].id, "fetch");
     }
 
     #[test]

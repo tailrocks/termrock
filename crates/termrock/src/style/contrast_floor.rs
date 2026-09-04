@@ -63,18 +63,20 @@ const PALETTE_SHORTFALLS: &[(&str, &str)] = &[
 ];
 
 const RECIPE_SHORTFALLS: &[(&str, &str)] = &[
-    ("junie", "button Destructive/Default label"),  // 3.71
-    ("junie", "button Destructive/Focused label"),  // 3.71
-    ("junie", "button Destructive/Hovered label"),  // 2.60
-    ("junie", "button Destructive/Pressed label"),  // 4.01
-    ("junie", "button Primary/Pressed label"),      // 3.81
-    ("junie", "button Primary/Disabled label"),     // 1.76
-    ("junie", "button Secondary/Disabled label"),   // 1.76
-    ("junie", "button Outline/Disabled label"),     // 1.76
-    ("junie", "button Destructive/Disabled label"), // 1.76
-    ("junie", "button Quiet/Disabled label"),       // 2.23
-    ("junie", "input Disabled value"),              // 1.97
-    ("junie", "input Disabled placeholder"),        // 1.97
+    ("junie", "button Destructive/Default label"),   // 3.71
+    ("junie", "button Destructive/Focused label"),   // 3.71
+    ("junie", "button Destructive/Hovered label"),   // 2.60
+    ("junie", "button Destructive/Pressed label"),   // 4.01
+    ("junie", "button Primary/Pressed label"),       // 3.81
+    ("junie", "button Primary/Disabled label"),      // 1.76
+    ("junie", "button Secondary/Disabled label"),    // 1.76
+    ("junie", "button Outline/Disabled label"),      // 1.76
+    ("junie", "button Destructive/Disabled label"),  // 1.76
+    ("junie", "button Quiet/Disabled label"),        // 2.23
+    ("junie", "input Disabled/invalid=false value"), // 1.97
+    ("junie", "input Disabled/invalid=false placeholder"), // 1.97
+    ("junie", "input Disabled/invalid=true placeholder"), // 1.97
+    ("junie", "input Disabled/invalid=true value"),  // 1.97 — invalid says error in the underline
 ];
 
 /// The one palette TermRock ships, measured at truecolor where its hex values
@@ -122,7 +124,7 @@ fn measure(
     });
 }
 
-fn palette_pairs(palette: &RolePalette) -> Vec<Measured> {
+fn palette_pairs(preset: &'static str, palette: &RolePalette) -> Vec<Measured> {
     let mut out = Vec::new();
     for surface in SURFACES {
         for role in [Role::Text, Role::TextStrong] {
@@ -220,10 +222,11 @@ fn palette_pairs(palette: &RolePalette) -> Vec<Measured> {
             1.15,
         );
     }
+    let _ = preset;
     out
 }
 
-fn recipe_pairs(system: &DesignSystem) -> Vec<Measured> {
+fn recipe_pairs(preset: &'static str, system: &DesignSystem) -> Vec<Measured> {
     let palette = &system.palette;
     let mut out = Vec::new();
     for variant in [
@@ -265,28 +268,30 @@ fn recipe_pairs(system: &DesignSystem) -> Vec<Measured> {
         ControlState::Hovered,
         ControlState::Disabled,
     ] {
-        let recipe = system.input_recipe(state, false);
-        let ground = style_ground(palette, recipe.fill);
-        measure(
-            &mut out,
-            format!("input {state:?} value"),
-            recipe.value.fg.and_then(Rgb::from_color),
-            ground,
-            if matches!(state, ControlState::Disabled) {
-                2.5
-            } else {
-                4.5
-            },
-        );
-        // junie's placeholder is muted text on the field plane: 4.2:1, a
-        // deliberately quiet answer to "what goes here".
-        measure(
-            &mut out,
-            format!("input {state:?} placeholder"),
-            recipe.placeholder.fg.and_then(Rgb::from_color),
-            ground,
-            2.5,
-        );
+        for invalid in [false, true] {
+            let recipe = system.input_recipe(state, invalid, false);
+            let ground = style_ground(palette, recipe.fill);
+            measure(
+                &mut out,
+                format!("input {state:?}/invalid={invalid} value"),
+                recipe.value.fg.and_then(Rgb::from_color),
+                ground,
+                if matches!(state, ControlState::Disabled) {
+                    2.5
+                } else {
+                    4.5
+                },
+            );
+            // junie's placeholder is muted text on the field plane: 4.2:1, a
+            // deliberately quiet answer to "what goes here".
+            measure(
+                &mut out,
+                format!("input {state:?}/invalid={invalid} placeholder"),
+                recipe.placeholder.fg.and_then(Rgb::from_color),
+                ground,
+                2.5,
+            );
+        }
     }
     for selected in [false, true] {
         for focused in [false, true] {
@@ -354,6 +359,7 @@ fn recipe_pairs(system: &DesignSystem) -> Vec<Measured> {
             1.15,
         );
     }
+    let _ = preset;
     out
 }
 
@@ -399,15 +405,19 @@ fn assert_floor_exact(measured: Vec<Measured>, shortfalls: &[(&str, &str)]) {
 
 #[test]
 fn contrast_floor_holds() {
-    let (_, palette) = junie_palette();
-    let measured = palette_pairs(&palette);
+    let (preset, palette) = junie_palette();
+    let measured = palette_pairs(preset, &palette);
     assert!(measured.len() > 45, "floor table lost its coverage");
     assert_floor_exact(measured, PALETTE_SHORTFALLS);
 }
 
 #[test]
 fn recipe_pairs_measure_their_declared_shortfalls() {
-    assert_floor_exact(recipe_pairs(&DesignSystem::junie()), RECIPE_SHORTFALLS);
+    let (preset, _) = junie_palette();
+    assert_floor_exact(
+        recipe_pairs(preset, &DesignSystem::junie()),
+        RECIPE_SHORTFALLS,
+    );
 }
 
 #[test]
@@ -415,8 +425,8 @@ fn floor_table_covers_every_text_tier() {
     // A new text tier that never reaches this table is a contrast defect
     // waiting to happen, so the table names the tiers it measures. `TextGhost`
     // is absent on purpose: it is a backdrop tier and never carries content.
-    let (_, palette) = junie_palette();
-    let measured = palette_pairs(&palette);
+    let (preset, palette) = junie_palette();
+    let measured = palette_pairs(preset, &palette);
     for tier in [
         "Text",
         "TextStrong",

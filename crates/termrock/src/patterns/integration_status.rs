@@ -28,13 +28,20 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+use ratatui_core::{
+    buffer::Buffer,
+    layout::{Position, Rect},
+    style::Modifier,
+    widgets::StatefulWidget,
+};
 
 use crate::{
-    input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind},
-    interaction::CursorWindow,
-    style::{DesignSystem, PanelChrome, Role},
-    text::display_cols,
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
+    style::{DesignSystem, Glyph, PanelChrome, Role},
+    text::{display_cols, take_display_cols},
     widgets::Panel,
     widgets::{EmptyKind, EmptyState, SemanticStatus, StatusIndicator},
 };
@@ -166,6 +173,33 @@ impl IntegrationHealth {
         }
     }
 
+    /// Glyph.
+    #[must_use]
+    pub const fn glyph(self, ascii: bool) -> &'static str {
+        if ascii {
+            return match self {
+                Self::Connected => "+",
+                Self::Disconnected => "o",
+                Self::Starting => "~",
+                Self::Error => "x",
+                Self::PermissionRequired => "!",
+                Self::UpdateAvailable => "^",
+                Self::Disabled => "-",
+                Self::Degraded => "!",
+            };
+        }
+        match self {
+            Self::Connected => "●",
+            Self::Disconnected => "○",
+            Self::Starting => "◌",
+            Self::Error => "✗",
+            Self::PermissionRequired => "⚠",
+            Self::UpdateAvailable => "↑",
+            Self::Disabled => "–",
+            Self::Degraded => "◐",
+        }
+    }
+
     /// Shared lifecycle projection for recipe-owned status paint.
     #[must_use]
     pub const fn semantic(self) -> SemanticStatus {
@@ -287,6 +321,8 @@ pub struct IntegrationProvenance {
     pub source: Option<String>,
     /// Version string.
     pub version: Option<String>,
+    /// Trust note (`signed`, `unsigned`, `local path`).
+    pub trust_note: Option<String>,
     /// Whether third-party (not first-party host).
     pub third_party: bool,
 }
@@ -299,6 +335,7 @@ impl IntegrationProvenance {
             publisher: Some("host".into()),
             source: None,
             version: Some(version.into()),
+            trust_note: Some("first-party".into()),
             third_party: false,
         }
     }
@@ -314,8 +351,16 @@ impl IntegrationProvenance {
             publisher: Some(publisher.into()),
             source: Some(source.into()),
             version: Some(version.into()),
+            trust_note: Some("third-party — review permissions".into()),
             third_party: true,
         }
+    }
+
+    /// Trust note.
+    #[must_use]
+    pub fn trust_note(mut self, n: impl Into<String>) -> Self {
+        self.trust_note = Some(n.into());
+        self
     }
 
     /// One-line provenance chrome.
@@ -491,6 +536,18 @@ pub enum IntegrationStatusPresentation {
     Panel,
 }
 
+impl IntegrationStatusPresentation {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Badge => "badge",
+            Self::CompactList => "compact_list",
+            Self::Panel => "panel",
+        }
+    }
+}
+
 /// Detail sub-pane inside Panel.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -598,8 +655,10 @@ pub enum IntegrationStatusOutcome {
 pub struct IntegrationStatusState {
     /// Entries.
     pub entries: Vec<IntegrationEntry>,
-    /// Cursor + scroll window.
-    pub window: CursorWindow,
+    /// Cursor.
+    pub cursor: usize,
+    /// Scroll.
+    pub scroll: usize,
     /// Presentation.
     pub presentation: IntegrationStatusPresentation,
     /// Detail tab (panel).
@@ -665,7 +724,8 @@ impl IntegrationStatusState {
     pub fn new() -> Self {
         Self {
             entries: Vec::new(),
-            window: CursorWindow::new(),
+            cursor: 0,
+            scroll: 0,
             presentation: IntegrationStatusPresentation::CompactList,
             tab: IntegrationDetailTab::Overview,
             focused: true,
@@ -683,8 +743,7 @@ impl IntegrationStatusState {
         self.entries = entries;
         if let Some(id) = keep {
             if let Some(i) = self.entries.iter().position(|e| e.id == id) {
-                self.window
-                    .set_cursor(i, self.entries.len(), INTEGRATION_LIST_WINDOW);
+                self.cursor = i;
             }
         }
         self.clamp_cursor();
@@ -695,10 +754,20 @@ impl IntegrationStatusState {
         self.accepts_input = on;
     }
 
+    /// Focus.
+    pub const fn set_focused(&mut self, on: bool) {
+        self.focused = on;
+    }
+
+    /// Presentation.
+    pub const fn set_presentation(&mut self, p: IntegrationStatusPresentation) {
+        self.presentation = p;
+    }
+
     /// Current.
     #[must_use]
     pub fn current(&self) -> Option<&IntegrationEntry> {
-        self.entries.get(self.window.cursor())
+        self.entries.get(self.cursor)
     }
 
     /// Current id.
@@ -737,8 +806,18 @@ impl IntegrationStatusState {
     }
 
     fn clamp_cursor(&mut self) {
-        self.window
-            .clamp(self.entries.len(), INTEGRATION_LIST_WINDOW);
+        if self.entries.is_empty() {
+            self.cursor = 0;
+            self.scroll = 0;
+            return;
+        }
+        self.cursor = self.cursor.min(self.entries.len() - 1);
+        let window = INTEGRATION_LIST_WINDOW;
+        if self.cursor < self.scroll {
+            self.scroll = self.cursor;
+        } else if self.cursor >= self.scroll + window {
+            self.scroll = self.cursor + 1 - window;
+        }
         let actions = self.actions_for_current();
         if self.action_cursor >= actions.len() {
             self.action_cursor = actions.len().saturating_sub(1);
@@ -746,14 +825,16 @@ impl IntegrationStatusState {
     }
 
     fn move_cursor(&mut self, delta: isize) -> IntegrationStatusOutcome {
-        self.window
-            .move_by(delta, self.entries.len(), INTEGRATION_LIST_WINDOW);
+        if self.entries.is_empty() {
+            return IntegrationStatusOutcome::Ignored;
+        }
+        let n = self.entries.len() as isize;
+        self.cursor = (self.cursor as isize + delta).clamp(0, n - 1) as usize;
         self.action_cursor = 0;
         self.log_scroll = 0;
         self.clamp_cursor();
-        match self.entries.get(self.window.cursor()) {
-            Some(e) => IntegrationStatusOutcome::Selected { id: e.id.clone() },
-            None => IntegrationStatusOutcome::Ignored,
+        IntegrationStatusOutcome::Selected {
+            id: self.entries[self.cursor].id.clone(),
         }
     }
 
@@ -910,8 +991,7 @@ impl IntegrationStatusState {
             .map(|(id, _)| id.clone());
         if let Some(id) = hit {
             if let Some(i) = self.entries.iter().position(|e| e.id == id) {
-                self.window
-                    .set_cursor(i, self.entries.len(), INTEGRATION_LIST_WINDOW);
+                self.cursor = i;
                 self.action_cursor = 0;
                 return IntegrationStatusOutcome::Selected { id };
             }
@@ -1002,7 +1082,7 @@ impl<'a> IntegrationStatus<'a> {
         StatusIndicator::new(semantic, self.system)
             .label(&text)
             .colorless(self.colorless)
-            .paint(Rect::new(area.x, area.y, area.width, 1), buffer, None);
+            .paint(Rect::new(area.x, area.y, area.width, 1), buffer);
     }
 
     fn paint_list(&self, area: Rect, buffer: &mut Buffer, state: &mut IntegrationStatusState) {
@@ -1014,7 +1094,8 @@ impl<'a> IntegrationStatus<'a> {
                 PanelChrome::Normal
             });
         let inner = panel.inner(area);
-        panel.paint(area, buffer, None);
+        use ratatui_core::widgets::Widget;
+        Widget::render(&panel, area, buffer);
         if inner.is_empty() {
             return;
         }
@@ -1025,26 +1106,24 @@ impl<'a> IntegrationStatus<'a> {
         if state.entries.is_empty() {
             EmptyState::new("No integrations", self.system)
                 .kind(EmptyKind::NoData)
-                .paint(
-                    Rect::new(inner.x, y, inner.width, 1),
-                    buffer,
-                    &mut crate::widgets::EmptyStateState::new(),
-                );
+                .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
             return;
         }
 
         let viewport = max_y.saturating_sub(y) as usize;
-        // Read-only projection: re-derive the visible slice against the
-        // painted viewport without mutating state during paint.
-        let mut view = state.window;
-        view.clamp(state.entries.len(), viewport);
-        let offset = view.scroll();
+        let mut offset = state.scroll;
+        if state.cursor < offset {
+            offset = state.cursor;
+        } else if viewport > 0 && state.cursor >= offset + viewport {
+            offset = state.cursor + 1 - viewport;
+        }
+        state.scroll = offset;
 
         for (i, e) in state.entries.iter().enumerate().skip(offset) {
             if y >= max_y {
                 break;
             }
-            let selected = i == state.window.cursor();
+            let selected = i == state.cursor;
             let mark = if selected { "›" } else { " " };
             let kg = e.kind.glyph(false);
             let indicator = StatusIndicator::new(e.health.semantic(), self.system)
@@ -1079,7 +1158,6 @@ impl<'a> IntegrationStatus<'a> {
                         1,
                     ),
                     buffer,
-                    None,
                 );
             }
             state.row_hits.push((
@@ -1112,7 +1190,8 @@ impl<'a> IntegrationStatus<'a> {
                 PanelChrome::Normal
             });
         let inner = panel.inner(area);
-        panel.paint(area, buffer, None);
+        use ratatui_core::widgets::Widget;
+        Widget::render(&panel, area, buffer);
         if inner.is_empty() {
             return;
         }
@@ -1174,7 +1253,7 @@ impl<'a> IntegrationStatus<'a> {
                 StatusIndicator::new(SemanticStatus::Warning, self.system)
                     .label(&warning)
                     .colorless(self.colorless)
-                    .paint(Rect::new(inner.x, y, inner.width, 1), buffer, None);
+                    .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
                 y = y.saturating_add(1);
             }
         }
@@ -1186,7 +1265,7 @@ impl<'a> IntegrationStatus<'a> {
                     StatusIndicator::new(e.health.semantic(), self.system)
                         .label(e.health.label())
                         .colorless(self.colorless)
-                        .paint(Rect::new(inner.x, y, inner.width, 1), buffer, None);
+                        .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
                     y = y.saturating_add(1);
                 }
                 let lines = [
@@ -1217,7 +1296,7 @@ impl<'a> IntegrationStatus<'a> {
                     StatusIndicator::new(SemanticStatus::Failed, self.system)
                         .label(&failure)
                         .colorless(self.colorless)
-                        .paint(Rect::new(inner.x, y, inner.width, 1), buffer, None);
+                        .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
                 }
             }
             IntegrationDetailTab::Capabilities => {
@@ -1245,11 +1324,7 @@ impl<'a> IntegrationStatus<'a> {
                 if e.capabilities.is_empty() && y < content_bottom {
                     EmptyState::new("No capabilities declared", self.system)
                         .kind(EmptyKind::NoData)
-                        .paint(
-                            Rect::new(inner.x, y, inner.width, 1),
-                            buffer,
-                            &mut crate::widgets::EmptyStateState::new(),
-                        );
+                        .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
                 }
                 self.paint_more_note(
                     buffer,
@@ -1286,11 +1361,7 @@ impl<'a> IntegrationStatus<'a> {
                 if e.permissions.is_empty() && y < content_bottom {
                     EmptyState::new("No permissions declared", self.system)
                         .kind(EmptyKind::NoData)
-                        .paint(
-                            Rect::new(inner.x, y, inner.width, 1),
-                            buffer,
-                            &mut crate::widgets::EmptyStateState::new(),
-                        );
+                        .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
                 }
                 self.paint_more_note(
                     buffer,
@@ -1320,11 +1391,7 @@ impl<'a> IntegrationStatus<'a> {
                     EmptyState::new("No logs", self.system)
                         .kind(EmptyKind::NoData)
                         .explanation("g requests the host stream")
-                        .paint(
-                            Rect::new(inner.x, y, inner.width, 1),
-                            buffer,
-                            &mut crate::widgets::EmptyStateState::new(),
-                        );
+                        .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
                 }
                 self.paint_more_note(
                     buffer,
@@ -1463,11 +1530,10 @@ pub fn example_integrations() -> Vec<IntegrationEntry> {
             .logs(["awaiting permission"]),
         IntegrationEntry::new("plug-lint", "lint-helper", IntegrationKind::Plugin)
             .health(IntegrationHealth::Degraded)
-            .provenance(IntegrationProvenance::third_party(
-                "acme",
-                "https://plugins.example/lint",
-                "2.0.0",
-            ))
+            .provenance(
+                IntegrationProvenance::third_party("acme", "https://plugins.example/lint", "2.0.0")
+                    .trust_note("unsigned package — review before enable"),
+            )
             .summary("Partial: rules pack failed to load")
             .last_error("ruleset v3 missing")
             .capabilities(vec![IntegrationCapability::new("lint/run", "Run linter")])
@@ -1513,8 +1579,9 @@ pub mod bench {
 mod tests {
     use super::*;
 
-    use crate::widgets::tests::click;
-    use crate::widgets::tests::press;
+    fn press(code: KeyCode) -> KeyEvent {
+        KeyEvent::new(code, KeyModifiers::NONE)
+    }
 
     fn open() -> IntegrationStatusState {
         let mut st = IntegrationStatusState::new();
@@ -1549,8 +1616,7 @@ mod tests {
     fn permission_request_for_ungranted() {
         let mut st = open();
         let i = st.entries.iter().position(|e| e.id == "mcp-web").unwrap();
-        st.window
-            .set_cursor(i, st.entries.len(), INTEGRATION_LIST_WINDOW);
+        st.cursor = i;
         let out = st.handle_key(press(KeyCode::Char('p')));
         assert!(matches!(
             out,
@@ -1570,8 +1636,7 @@ mod tests {
             IntegrationStatusOutcome::DisableRequested { ref id } if id == "mcp-fs"
         ));
         let i = st.entries.iter().position(|e| e.id == "ext-theme").unwrap();
-        st.window
-            .set_cursor(i, st.entries.len(), INTEGRATION_LIST_WINDOW);
+        st.cursor = i;
         let out = st.handle_key(press(KeyCode::Char('e')));
         assert!(matches!(
             out,
@@ -1605,8 +1670,7 @@ mod tests {
     fn egress_warning_focus() {
         let mut st = open();
         let i = st.entries.iter().position(|e| e.id == "mcp-web").unwrap();
-        st.window
-            .set_cursor(i, st.entries.len(), INTEGRATION_LIST_WINDOW);
+        st.cursor = i;
         let out = st.handle_key(press(KeyCode::Char('w')));
         assert!(matches!(
             out,
@@ -1618,8 +1682,7 @@ mod tests {
     fn update_request() {
         let mut st = open();
         let i = st.entries.iter().position(|e| e.id == "tool-fmt").unwrap();
-        st.window
-            .set_cursor(i, st.entries.len(), INTEGRATION_LIST_WINDOW);
+        st.cursor = i;
         let out = st.handle_key(press(KeyCode::Char('u')));
         assert!(matches!(
             out,
@@ -1728,7 +1791,11 @@ mod tests {
         IntegrationStatus::new(&system).paint(area, &mut buf, &mut st);
         assert!(!st.row_hits.is_empty());
         let (id, r) = st.row_hits[0].clone();
-        let out = st.handle_mouse(click(r.x, r.y));
+        let out = st.handle_mouse(MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: Position { x: r.x, y: r.y },
+            modifiers: KeyModifiers::NONE,
+        });
         assert!(
             matches!(out, IntegrationStatusOutcome::Selected { .. }),
             "{out:?} {id}"

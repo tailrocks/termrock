@@ -26,10 +26,14 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
+use ratatui_core::{
+    buffer::Buffer,
+    layout::Rect,
+    widgets::{StatefulWidget, Widget},
+};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers},
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseEvent},
     patterns::QueryResultSummary,
     style::{DesignSystem, Role},
     text::take_display_cols,
@@ -72,6 +76,24 @@ pub enum ResultCellKind {
 }
 
 impl ResultCellKind {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Null => "null",
+            Self::Bool => "bool",
+            Self::Integer => "integer",
+            Self::Float => "float",
+            Self::Text => "text",
+            Self::Binary => "binary",
+            Self::Json => "json",
+            Self::Timestamp => "timestamp",
+            Self::Uuid => "uuid",
+            Self::Secret => "secret",
+            Self::Other => "other",
+        }
+    }
+
     /// Map to object-inspector kind.
     #[must_use]
     pub const fn to_inspect_kind(self) -> InspectKind {
@@ -82,6 +104,22 @@ impl ResultCellKind {
             Self::Text | Self::Timestamp | Self::Uuid | Self::Other => InspectKind::String,
             Self::Binary | Self::Secret => InspectKind::Binary,
             Self::Json => InspectKind::Object,
+        }
+    }
+
+    /// Paint role for non-selected cells.
+    #[must_use]
+    pub const fn role(self) -> Role {
+        match self {
+            Self::Null => Role::TextDisabled,
+            Self::Bool => Role::TextMuted,
+            Self::Integer | Self::Float => Role::Text,
+            Self::Text | Self::Timestamp | Self::Uuid | Self::Other => Role::Text,
+            Self::Binary => Role::TextMuted,
+            Self::Json => Role::TextSecondary,
+            // Redaction is a value kind, not a warning state. Its literal
+            // label carries the distinction without spending warning color.
+            Self::Secret => Role::TextMuted,
         }
     }
 }
@@ -184,6 +222,27 @@ impl<'a> ResultCell<'a> {
             secret: true,
             truncated: false,
         }
+    }
+
+    /// Kind override.
+    #[must_use]
+    pub const fn kind(mut self, kind: ResultCellKind) -> Self {
+        self.kind = kind;
+        self
+    }
+
+    /// Truncated large text mark.
+    #[must_use]
+    pub const fn truncated(mut self) -> Self {
+        self.truncated = true;
+        self
+    }
+
+    /// Secret flag.
+    #[must_use]
+    pub const fn secret(mut self) -> Self {
+        self.secret = true;
+        self
     }
 }
 
@@ -345,6 +404,18 @@ pub enum ResultQueryStatus {
 }
 
 impl ResultQueryStatus {
+    /// Stable id.
+    #[must_use]
+    pub fn id(&self) -> &'static str {
+        match self {
+            Self::Idle => "idle",
+            Self::Streaming { .. } => "streaming",
+            Self::Ready { .. } => "ready",
+            Self::Failed { .. } => "failed",
+            Self::Cancelled => "cancelled",
+        }
+    }
+
     /// Operator-facing lifecycle verb.
     #[must_use]
     pub fn verb(&self) -> &'static str {
@@ -453,6 +524,10 @@ pub struct ResultColumnStats {
     pub min: Option<String>,
     /// Max display.
     pub max: Option<String>,
+    /// Mean / average display.
+    pub mean: Option<String>,
+    /// Sum display.
+    pub sum: Option<String>,
 }
 
 impl ResultColumnStats {
@@ -466,6 +541,8 @@ impl ResultColumnStats {
             distinct: None,
             min: None,
             max: None,
+            mean: None,
+            sum: None,
         }
     }
 
@@ -500,6 +577,21 @@ pub enum ResultExportFormat {
     Tsv,
     /// JSON lines / array (host decides).
     Json,
+    /// Markdown table.
+    Markdown,
+}
+
+impl ResultExportFormat {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Csv => "csv",
+            Self::Tsv => "tsv",
+            Self::Json => "json",
+            Self::Markdown => "markdown",
+        }
+    }
 }
 
 /// Redaction policy for secrets/binary.
@@ -528,7 +620,11 @@ pub const RESULT_TRUNC_MARK: &str = "…";
 
 /// Format a cell for grid display under redaction policy.
 #[must_use]
-pub fn format_result_cell(cell: &ResultCell<'_>, redaction: ResultRedaction) -> String {
+pub fn format_result_cell(
+    cell: &ResultCell<'_>,
+    redaction: ResultRedaction,
+    _ascii: bool,
+) -> String {
     if cell.secret || matches!(cell.kind, ResultCellKind::Secret) {
         if matches!(redaction, ResultRedaction::RevealSecrets) {
             return with_trunc(cell.text, cell.truncated);
@@ -619,6 +715,7 @@ pub fn project_result_rows(
     rows: &[ResultRow<'_>],
     columns: &[ResultColumn],
     redaction: ResultRedaction,
+    _ascii: bool,
     row_numbers: bool,
 ) -> Vec<(u64, Vec<String>)> {
     rows.iter()
@@ -636,7 +733,7 @@ pub fn project_result_rows(
                 if col.binary && matches!(c.kind, ResultCellKind::Text | ResultCellKind::Other) {
                     c.kind = ResultCellKind::Binary;
                 }
-                let formatted = format_result_cell(&c, redaction);
+                let formatted = format_result_cell(&c, redaction, false);
                 cells.push(clamp_cell_display(&formatted, RESULT_CELL_MAX_DISPLAY));
             }
             (r.id, cells)
@@ -650,12 +747,17 @@ pub fn result_row_to_inspector_fields<'a>(
     columns: &'a [ResultColumn],
     row: &ResultRow<'a>,
     redaction: ResultRedaction,
+    _ascii: bool,
 ) -> Vec<InspectorField<'a>> {
     columns
         .iter()
         .enumerate()
         .map(|(i, col)| {
             let cell = row.cells.get(i).copied().unwrap_or(ResultCell::null());
+            let display = format_result_cell(&cell, redaction, false);
+            // InspectorField needs &'a str for value — we only have owned display.
+            // Host should prefer raw cell.text when not redacted; we expose key/path only
+            // when text is already borrowed.
             let value = if cell.secret && !matches!(redaction, ResultRedaction::RevealSecrets) {
                 RESULT_SECRET_MASK
             } else if matches!(cell.kind, ResultCellKind::Null) {
@@ -666,6 +768,7 @@ pub fn result_row_to_inspector_fields<'a>(
             } else {
                 cell.text
             };
+            let _ = display;
             let mut f =
                 InspectorField::new(col.id.as_str(), value).kind(cell.kind.to_inspect_kind());
             if let Some(t) = col.type_name.as_deref() {
@@ -688,6 +791,7 @@ pub fn export_result_window_tsv(
     columns: &[ResultColumn],
     rows: &[ResultRow<'_>],
     redaction: ResultRedaction,
+    _ascii: bool,
     include_header: bool,
 ) -> String {
     let mut out = String::new();
@@ -709,7 +813,7 @@ pub fn export_result_window_tsv(
             if col.secret {
                 cell.secret = true;
             }
-            let s = format_result_cell(&cell, redaction);
+            let s = format_result_cell(&cell, redaction, false);
             // Escape tabs/newlines lightly
             out.push_str(&s.replace(['\t', '\n', '\r'], " "));
         }
@@ -852,6 +956,8 @@ pub struct ResultGridState {
     pub title: Option<String>,
     /// Schema columns (for chrome / model rebuild).
     pub schema: Vec<ResultColumn>,
+    /// Last status line painted.
+    pub last_status_line: String,
     accepts_input: bool,
 }
 
@@ -879,6 +985,7 @@ impl ResultGridState {
             colorless: false,
             title: None,
             schema: Vec::new(),
+            last_status_line: String::new(),
             accepts_input: true,
         }
     }
@@ -897,10 +1004,32 @@ impl ResultGridState {
         self.table.set_accepts_input(on);
     }
 
+    /// Accepts input.
+    #[must_use]
+    pub const fn accepts_input(&self) -> bool {
+        self.accepts_input
+    }
+
+    /// Set schema.
+    pub fn set_schema(&mut self, schema: Vec<ResultColumn>) {
+        self.schema = schema;
+    }
+
     /// Set status + sync load chrome.
     pub fn set_status(&mut self, status: ResultQueryStatus, projected_len: usize) {
         self.table.load = status.to_load_state(projected_len);
         self.status = status;
+    }
+
+    /// Logical universe for virtual window (unknown → 0 or resident).
+    pub fn set_logical_rows(&mut self, n: u64) {
+        self.table.set_logical_rows(n);
+    }
+
+    /// QueryEditor summary bridge.
+    #[must_use]
+    pub fn query_summary(&self) -> QueryResultSummary {
+        self.status.to_query_summary(self.schema.len())
     }
 
     /// Toggle stats strip.
@@ -998,6 +1127,20 @@ impl ResultGridState {
         }
 
         let out = self.table.handle_key(key, row_ids, columns);
+        map_table_outcome(out)
+    }
+
+    /// Mouse.
+    pub fn handle_mouse(
+        &mut self,
+        event: MouseEvent,
+        columns: &mut ColumnModel<String>,
+        row_ids: &[u64],
+    ) -> ResultGridOutcome {
+        if !self.accepts_input {
+            return ResultGridOutcome::Ignored;
+        }
+        let out = self.table.handle_mouse(event, row_ids, columns);
         map_table_outcome(out)
     }
 
@@ -1130,7 +1273,7 @@ impl<'a> ResultGrid<'a> {
     /// ASCII.
     #[must_use]
     /// Paint status + optional stats + DataTable body.
-    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut ResultGridState) {
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut ResultGridState) {
         if area.is_empty() {
             return;
         }
@@ -1156,10 +1299,11 @@ impl<'a> ResultGrid<'a> {
                     .status
                     .summary_line(self.columns.len(), self.rows.len())
             );
+            state.last_status_line = line.clone();
             let status = StatusIndicator::new(state.status.semantic(), self.system)
                 .label(state.status.verb());
             let status_width = status.measure_width(None).min(area.width);
-            status.paint(Rect::new(area.x, y, status_width, 1), buffer, None);
+            Widget::render(&status, Rect::new(area.x, y, status_width, 1), buffer);
             let metadata_x = area.x.saturating_add(status_width.saturating_add(1));
             let metadata_width = area.right().saturating_sub(metadata_x);
             if metadata_width > 0 {
@@ -1204,8 +1348,13 @@ impl<'a> ResultGrid<'a> {
         };
 
         // Project strings for DataTable
-        let projected_owned =
-            project_result_rows(self.rows, self.columns, state.redaction, state.row_numbers);
+        let projected_owned = project_result_rows(
+            self.rows,
+            self.columns,
+            state.redaction,
+            false,
+            state.row_numbers,
+        );
         // Build col model
         let col_model = result_column_model(self.columns, state.row_numbers);
 
@@ -1254,6 +1403,8 @@ pub mod bench {
     pub const PAGE_ROWS: usize = 500;
     /// Logical unknown-total stream size (host).
     pub const STREAM_RESIDENT: u64 = 50_000;
+    /// Paint frames.
+    pub const PAINT_FRAMES: u32 = 40;
 }
 
 #[cfg(test)]
@@ -1328,18 +1479,22 @@ mod tests {
     #[test]
     fn format_null_secret_binary() {
         assert_eq!(
-            format_result_cell(&ResultCell::null(), ResultRedaction::Safe),
+            format_result_cell(&ResultCell::null(), ResultRedaction::Safe, false),
             RESULT_NULL_GLYPH
         );
         assert_eq!(
-            format_result_cell(&ResultCell::secret_value("x"), ResultRedaction::Safe),
+            format_result_cell(&ResultCell::secret_value("x"), ResultRedaction::Safe, false),
             RESULT_SECRET_MASK
         );
-        assert!(format_result_cell(&ResultCell::binary(99), ResultRedaction::Safe).contains("99"));
+        assert!(
+            format_result_cell(&ResultCell::binary(99), ResultRedaction::Safe, false)
+                .contains("99")
+        );
         assert_eq!(
             format_result_cell(
                 &ResultCell::secret_value("open"),
-                ResultRedaction::RevealSecrets
+                ResultRedaction::RevealSecrets,
+                false
             ),
             "open"
         );
@@ -1348,7 +1503,7 @@ mod tests {
     #[test]
     fn project_includes_row_numbers_and_redaction() {
         let (cols, rows) = sample_rows();
-        let proj = project_result_rows(&rows, &cols, ResultRedaction::Safe, true);
+        let proj = project_result_rows(&rows, &cols, ResultRedaction::Safe, true, true);
         assert_eq!(proj[0].1[0], "1"); // row#
         assert!(proj[0].1.iter().any(|c| c == RESULT_SECRET_MASK));
         assert!(proj[0].1.iter().any(|c| c.contains("blob")));
@@ -1357,7 +1512,7 @@ mod tests {
     #[test]
     fn export_tsv_header() {
         let (cols, rows) = sample_rows();
-        let tsv = export_result_window_tsv(&cols, &rows, ResultRedaction::Safe, true);
+        let tsv = export_result_window_tsv(&cols, &rows, ResultRedaction::Safe, true, true);
         assert!(tsv.starts_with("ID\tName"));
         assert!(tsv.contains("alpha"));
         assert!(tsv.contains(RESULT_SECRET_MASK));
@@ -1404,7 +1559,7 @@ mod tests {
         let mut buf = Buffer::empty(area);
         let _ = ResultGrid::new(&system, &cols, &rows)
             .title("q1")
-            .paint(area, &mut buf, &mut state);
+            .render(area, &mut buf, &mut state);
         let text: String = buf
             .content()
             .iter()
@@ -1502,7 +1657,7 @@ mod tests {
     #[test]
     fn inspector_bridge() {
         let (cols, rows) = sample_rows();
-        let fields = result_row_to_inspector_fields(&cols, &rows[0], ResultRedaction::Safe);
+        let fields = result_row_to_inspector_fields(&cols, &rows[0], ResultRedaction::Safe, true);
         assert_eq!(fields.len(), cols.len());
         assert!(fields.iter().any(|f| f.secret));
     }
@@ -1541,7 +1696,7 @@ mod tests {
         let area = Rect::new(0, 0, 100, 30);
         let mut buf = Buffer::empty(area);
         for _ in 0..6 {
-            let _ = ResultGrid::new(&system, &cols, &rows).paint(area, &mut buf, &mut state);
+            let _ = ResultGrid::new(&system, &cols, &rows).render(area, &mut buf, &mut state);
         }
     }
 

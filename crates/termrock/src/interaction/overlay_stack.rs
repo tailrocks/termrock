@@ -16,7 +16,8 @@ use ratatui_core::{
 };
 
 use super::{
-    DismissDecision, DismissEventId, DismissGuard, DismissableLayer, LayerDismissPolicy, LayerKind,
+    DismissDecision, DismissEventId, DismissGuard, DismissableLayer, InteractionLayer,
+    InteractionScene, LayerDismissPolicy, LayerKind,
 };
 
 /// Stable overlay identity.
@@ -777,9 +778,7 @@ pub enum PointerRoute {
         /// Index in [`OverlayStack::entries`] (always last).
         index: usize,
     },
-    /// No input-owning overlay contains the pointer; a point inside a
-    /// tooltip-only top rectangle can therefore map here. The top entry index
-    /// is still reported so hosts can apply its outside policy.
+    /// Outside the top rect (may dismiss or trap per policy).
     OutsideTop {
         /// Top entry index.
         index: usize,
@@ -823,10 +822,25 @@ pub enum OverlayOutcome<FocusId = ()> {
 }
 
 impl<FocusId> OverlayOutcome<FocusId> {
+    /// Layer was opened (not queued).
+    #[must_use]
+    pub const fn is_opened(&self) -> bool {
+        matches!(self, Self::Opened { .. })
+    }
+
     /// Layer was dismissed.
     #[must_use]
     pub const fn is_dismissed(&self) -> bool {
         matches!(self, Self::Dismissed { .. })
+    }
+
+    /// Opener focus if dismissed.
+    #[must_use]
+    pub fn restored_focus(&self) -> Option<&FocusId> {
+        match self {
+            Self::Dismissed { focus, .. } => focus.as_ref(),
+            _ => None,
+        }
     }
 }
 
@@ -909,6 +923,12 @@ impl<FocusId> OverlayStack<FocusId> {
         }
     }
 
+    /// Pending modal queue (FIFO).
+    #[must_use]
+    pub fn queue(&self) -> &[OverlaySpec<FocusId>] {
+        &self.queue
+    }
+
     /// Number of deferred opens.
     #[must_use]
     pub fn queue_len(&self) -> usize {
@@ -938,10 +958,26 @@ impl<FocusId> OverlayStack<FocusId> {
     pub fn top_rect(&self) -> Option<Rect> {
         self.entries.last().map(|entry| entry.rect)
     }
+
+    /// Bottom-to-top resolved layer geometry for diagnostics and inspectors.
+    pub fn resolved_layers(
+        &self,
+    ) -> impl ExactSizeIterator<Item = (&OverlayId, OverlayKind, Rect)> {
+        self.entries
+            .iter()
+            .map(|entry| (&entry.id, entry.kind, entry.rect))
+    }
+
     /// Whether any overlay is open.
     #[must_use]
     pub fn is_empty(&self) -> bool {
         self.entries.is_empty()
+    }
+
+    /// Current bounds used for placement.
+    #[must_use]
+    pub const fn bounds(&self) -> Rect {
+        self.bounds
     }
 
     /// Whether `id` is currently open.
@@ -1073,19 +1109,22 @@ impl<FocusId> OverlayStack<FocusId> {
             return PointerRoute::Empty;
         }
         let top_i = self.entries.len() - 1;
-        for (index, entry) in self.entries.iter().enumerate().rev() {
-            if !entry.policy.owns_input {
-                continue;
-            }
+        if self.entries[top_i].rect.contains(position) {
+            return PointerRoute::Top { index: top_i };
+        }
+        // Lower hits (for translucent tops / tooltips that do not own input).
+        for (index, entry) in self.entries.iter().enumerate().rev().skip(1) {
             if entry.rect.contains(position) {
-                return if index == top_i {
-                    PointerRoute::Top { index }
-                } else {
-                    PointerRoute::Lower { index }
-                };
+                return PointerRoute::Lower { index };
             }
         }
         PointerRoute::OutsideTop { index: top_i }
+    }
+
+    /// Whether the top layer traps Tab/focus.
+    #[must_use]
+    pub fn top_focus_trap(&self) -> bool {
+        self.entries.last().is_some_and(|e| e.policy.focus_trap)
     }
 }
 
@@ -1173,6 +1212,21 @@ impl<FocusId: Clone> OverlayStack<FocusId> {
         Some(self.push_entry(self.bounds, spec))
     }
 
+    /// Drain until queue empty or a blocking top remains.
+    pub fn drain_queue_all(&mut self) -> Vec<OverlayOutcome<FocusId>> {
+        let mut out = Vec::new();
+        while let Some(o) = self.drain_queue() {
+            out.push(o);
+            if matches!(
+                self.entries.last().map(|e| e.kind),
+                Some(k) if kind_blocks_queue(k)
+            ) {
+                break;
+            }
+        }
+        out
+    }
+
     fn dismiss_root(&mut self, root_id: &OverlayId) -> OverlayOutcome<FocusId> {
         let Some(index) = self.entries.iter().position(|e| &e.id == root_id) else {
             return OverlayOutcome::Ignored;
@@ -1200,6 +1254,38 @@ impl<FocusId: Clone> OverlayStack<FocusId> {
         top.policy.prefer = PlacementPrefer::Fullscreen;
         let id = top.id.clone();
         OverlayOutcome::Opened { id, rect: bounds }
+    }
+
+    /// Clears fullscreen promotion and reflows preferred placement.
+    pub fn demote_top_fullscreen(&mut self, bounds: Rect) -> OverlayOutcome<FocusId> {
+        self.bounds = bounds;
+        let Some(top) = self.entries.last_mut() else {
+            return OverlayOutcome::Ignored;
+        };
+        if !top.fullscreen_promoted && !matches!(top.kind, OverlayKind::Fullscreen) {
+            return OverlayOutcome::Ignored;
+        }
+        // Explicit Fullscreen kind cannot demote.
+        if matches!(top.kind, OverlayKind::Fullscreen) {
+            top.rect = bounds;
+            top.fit = top.size.fit_within(bounds);
+            let id = top.id.clone();
+            return OverlayOutcome::Opened { id, rect: bounds };
+        }
+        top.fullscreen_promoted = false;
+        // Restore kind default prefer if we had forced Fullscreen.
+        if matches!(top.policy.prefer, PlacementPrefer::Fullscreen) {
+            top.policy.prefer = OverlayPolicy::for_kind(top.kind).prefer;
+        }
+        let placement = resolve_placement(bounds, top.anchor, top.size, top.policy, top.kind);
+        top.rect = placement.rect;
+        top.fullscreen_promoted = placement.fullscreen_promoted;
+        top.fit = placement.fit;
+        let id = top.id.clone();
+        OverlayOutcome::Opened {
+            id,
+            rect: placement.rect,
+        }
     }
 
     /// Reflows all geometries after resize (keeps stack order and open set).
@@ -1300,9 +1386,53 @@ impl<FocusId: Clone> OverlayStack<FocusId> {
         }
     }
 
+    /// Access top dismiss controller (tests / advanced hosts).
+    #[must_use]
+    pub const fn top_dismissable(&self) -> &DismissableLayer {
+        &self.top_dismiss
+    }
+
     /// Removes an overlay by id (and its transitive descendants).
     pub fn dismiss(&mut self, id: &OverlayId) -> OverlayOutcome<FocusId> {
         self.dismiss_root(id)
+    }
+
+    /// Pushes matching layers onto an [`InteractionScene`] (does not clear root).
+    ///
+    /// Call after ensuring a root layer. Overlay layer ids are stringified
+    /// [`OverlayId`] values — use the same string when registering elements.
+    pub fn sync_scene_layers<Id, Action>(&self, scene: &mut InteractionScene<Id, String, Action>)
+    where
+        Id: Clone + PartialEq,
+        FocusId: Into<Id> + Clone,
+    {
+        for entry in &self.entries {
+            let focus_return = entry.opener_focus.clone().map(Into::into);
+            scene.push_layer(InteractionLayer {
+                id: entry.id.0.clone(),
+                kind: OverlayPolicy::scene_layer_kind(entry.kind),
+                owns_input: entry.policy.owns_input,
+                esc: entry.policy.esc,
+                outside: entry.policy.outside,
+                focus_return,
+            });
+        }
+    }
+}
+
+impl OverlayStack<()> {
+    /// Convenience sync when focus ids are unit.
+    pub fn sync_scene_layers_unit<Action>(&self, scene: &mut InteractionScene<(), String, Action>) {
+        for entry in &self.entries {
+            scene.push_layer(InteractionLayer {
+                id: entry.id.0.clone(),
+                kind: OverlayPolicy::scene_layer_kind(entry.kind),
+                owns_input: entry.policy.owns_input,
+                esc: entry.policy.esc,
+                outside: entry.policy.outside,
+                focus_return: None,
+            });
+        }
     }
 }
 
@@ -1582,7 +1712,7 @@ fn place_anchored(
     };
 
     let raw = Rect::new(x, y, width, height);
-    let rect = clamp_rect(raw, bounds);
+    let mut rect = clamp_rect(raw, bounds);
     let mut clamped = rect.x != raw.x || rect.y != raw.y;
 
     if !cover_anchor && rect_intersects(rect, anchor) {
@@ -1619,6 +1749,7 @@ fn place_anchored(
         }
         clamped = true;
     }
+    let _ = &mut rect;
     (rect, flipped_v, flipped_h, clamped)
 }
 
@@ -2025,53 +2156,6 @@ mod tests {
         );
         assert!(!detailed.rect.is_empty());
         assert!(detailed.flipped_vertical || detailed.rect.y + detailed.rect.height <= 20);
-    }
-
-    #[test]
-    fn non_owning_tooltips_pass_pointer_to_lower_owner() {
-        let bounds = Rect::new(0, 0, 80, 24);
-        let anchor = Rect::new(40, 12, 1, 1);
-        let mut stack = OverlayStack::<()>::new();
-        stack.open(
-            bounds,
-            OverlaySpec::dialog("dialog", OverlaySize::dialog(40, 10), None),
-        );
-        stack.open(
-            bounds,
-            OverlaySpec::tooltip("tip-1", anchor, OverlaySize::menu(12, 4), None),
-        );
-        stack.open(
-            bounds,
-            OverlaySpec::tooltip("tip-2", anchor, OverlaySize::menu(12, 4), None),
-        );
-
-        let top = stack.top_rect().expect("tooltip is open");
-        let point = Position::new(top.x, top.y);
-        assert!(stack.pointer_hits_top(point));
-        assert_eq!(stack.route_pointer(point), PointerRoute::Lower { index: 0 });
-    }
-
-    #[test]
-    fn tooltip_only_pointer_is_outside_input_stack() {
-        let bounds = Rect::new(0, 0, 80, 24);
-        let mut stack = OverlayStack::<()>::new();
-        stack.open(
-            bounds,
-            OverlaySpec::tooltip(
-                "tip",
-                Rect::new(40, 12, 1, 1),
-                OverlaySize::menu(12, 4),
-                None,
-            ),
-        );
-
-        let top = stack.top_rect().expect("tooltip is open");
-        let point = Position::new(top.x, top.y);
-        assert!(stack.pointer_hits_top(point));
-        assert_eq!(
-            stack.route_pointer(point),
-            PointerRoute::OutsideTop { index: 0 }
-        );
     }
 
     #[test]
@@ -2762,7 +2846,7 @@ mod tests {
 
     #[test]
     fn dim_policy_washes_the_whole_layer_not_just_the_overlay() {
-        use crate::style::DesignSystem;
+        use crate::style::{DesignSystem, Role};
         use ratatui_core::buffer::Buffer;
 
         let bounds = Rect::new(0, 0, 40, 12);

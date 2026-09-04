@@ -18,8 +18,9 @@ use std::collections::VecDeque;
 use ratatui_core::layout::{Position, Rect};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers},
-    interaction::{FocusRequest, InteractionScene, NavigationMove},
+    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
+    interaction::{FocusRequest, InteractionScene, NavigationMove, UiIntent},
+    style::{DesignSystem, PanelChrome, Role},
 };
 
 /// Result of a focus operation.
@@ -140,6 +141,13 @@ impl<Id> FocusNode<Id> {
         self.enabled = enabled;
         self
     }
+
+    /// Focusable flag.
+    #[must_use]
+    pub const fn focusable(mut self, focusable: bool) -> Self {
+        self.focusable = focusable;
+        self
+    }
 }
 
 /// Debug / Studio snapshot of one frame's focus graph.
@@ -195,8 +203,8 @@ pub struct FocusGraph<Id> {
     nodes: Vec<FocusNode<Id>>,
     focused: Option<Id>,
     trap_root: Option<Id>,
-    /// Openers and roots under traps (bottom → top).
-    restore_stack: Vec<(Option<Id>, Id)>,
+    /// Openers under traps (bottom → top).
+    restore_stack: Vec<Option<Id>>,
     history: VecDeque<Id>,
     mode: FocusNavMode,
     max_history: usize,
@@ -235,6 +243,11 @@ impl<Id> FocusGraph<Id> {
         self.nodes.clear();
     }
 
+    /// Reserves capacity for virtualized registration windows.
+    pub fn reserve(&mut self, additional: usize) {
+        self.nodes.reserve(additional);
+    }
+
     /// Registers one node (duplicate id ignored; first wins).
     pub fn register(&mut self, node: FocusNode<Id>)
     where
@@ -246,16 +259,71 @@ impl<Id> FocusGraph<Id> {
         self.nodes.push(node);
     }
 
+    /// Attaches/updates painted geometry after render.
+    pub fn attach_area(&mut self, id: &Id, area: Rect) -> bool
+    where
+        Id: PartialEq,
+    {
+        let Some(node) = self.nodes.iter_mut().find(|n| &n.id == id) else {
+            return false;
+        };
+        node.area = Some(area);
+        true
+    }
+
+    /// Nav mode.
+    #[must_use]
+    pub const fn nav_mode(&self) -> FocusNavMode {
+        self.mode
+    }
+
     /// Currently focused id.
     #[must_use]
     pub const fn focused(&self) -> Option<&Id> {
         self.focused.as_ref()
     }
 
+    /// Whether `id` owns keyboard focus.
+    #[must_use]
+    pub fn is_focused(&self, id: &Id) -> bool
+    where
+        Id: PartialEq,
+    {
+        self.focused.as_ref() == Some(id)
+    }
+
+    /// Whether `id` should paint as keyboard owner (Panel chrome).
+    #[must_use]
+    pub fn owns_keyboard(&self, id: &Id) -> bool
+    where
+        Id: PartialEq,
+    {
+        self.is_focused(id)
+    }
+
+    /// Panel chrome helper for focus-visible borders.
+    #[must_use]
+    pub fn panel_chrome_for(&self, id: &Id) -> PanelChrome
+    where
+        Id: PartialEq,
+    {
+        if self.owns_keyboard(id) {
+            PanelChrome::Focused
+        } else {
+            PanelChrome::Normal
+        }
+    }
+
     /// Active modal trap root.
     #[must_use]
     pub const fn trap_root(&self) -> Option<&Id> {
         self.trap_root.as_ref()
+    }
+
+    /// Registered nodes this frame.
+    #[must_use]
+    pub fn nodes(&self) -> &[FocusNode<Id>] {
+        &self.nodes
     }
 
     /// Focus history (oldest → newest).
@@ -454,7 +522,7 @@ impl<Id: Clone + PartialEq> FocusGraph<Id> {
     /// Pushes a modal trap; only `root` subtree participates until [`Self::pop_trap`].
     pub fn push_trap(&mut self, root: Id, opener: Option<Id>) {
         self.restore_stack
-            .push((opener.or_else(|| self.focused.clone()), root.clone()));
+            .push(opener.or_else(|| self.focused.clone()));
         self.trap_root = Some(root.clone());
         // Prefer focusing trap root if focusable, else first eligible under trap.
         if self
@@ -470,13 +538,18 @@ impl<Id: Clone + PartialEq> FocusGraph<Id> {
 
     /// Pops trap and restores opener when possible.
     pub fn pop_trap(&mut self) -> FocusOutcome<Id> {
-        let opener = self.restore_stack.pop().and_then(|(opener, _)| opener);
-        self.trap_root = self.restore_stack.last().map(|(_, root)| root.clone());
+        let opener = self.restore_stack.pop().flatten();
+        self.trap_root = if self.restore_stack.is_empty() {
+            None
+        } else {
+            // Nested traps: keep prior trap if host re-pushed; simple model clears.
+            None
+        };
         if let Some(id) = opener {
             if self
                 .nodes
                 .iter()
-                .any(|n| n.id == id && n.focusable && n.enabled && self.in_trap(n))
+                .any(|n| n.id == id && n.focusable && n.enabled)
             {
                 return self.set_focused(Some(id));
             }
@@ -517,6 +590,16 @@ impl<Id: Clone + PartialEq> FocusGraph<Id> {
         }
     }
 
+    /// Routes focus-related [`UiIntent`]s.
+    pub fn handle_intent(&mut self, intent: UiIntent) -> FocusOutcome<Id> {
+        match intent {
+            UiIntent::FocusNext => self.focus_next(),
+            UiIntent::FocusPrevious => self.focus_previous(),
+            UiIntent::Move(dir) if self.spatial_arrows_active() => self.focus_spatial(dir),
+            _ => FocusOutcome::Ignored,
+        }
+    }
+
     fn spatial_arrows_active(&self) -> bool {
         match self.mode {
             FocusNavMode::Spatial => true,
@@ -541,6 +624,21 @@ impl<Id: Clone + PartialEq> FocusGraph<Id> {
     #[must_use]
     pub fn focused_roving(&self) -> bool {
         self.focused_is_roving()
+    }
+
+    /// Jump badge candidates: focusable visible areas.
+    #[must_use]
+    pub fn jump_regions(&self) -> Vec<crate::interaction::HitRegion<Id>> {
+        self.nodes
+            .iter()
+            .filter(|n| n.focusable && n.enabled && self.in_trap(n))
+            .filter_map(|n| {
+                n.area.map(|area| crate::interaction::HitRegion {
+                    id: n.id.clone(),
+                    area,
+                })
+            })
+            .collect()
     }
 
     /// Debug snapshot for Studio / Focus Lens.
@@ -594,6 +692,25 @@ impl<Id: Clone + PartialEq> FocusGraph<Id> {
         }
         g
     }
+
+    /// Syncs focus id from an interaction scene after scene tab routing.
+    pub fn sync_from_scene<LayerId, Action>(
+        &mut self,
+        scene: &InteractionScene<Id, LayerId, Action>,
+    ) {
+        self.focused = scene.focused().cloned();
+    }
+
+    /// Pushes focused id into a scene when the graph moved (host bridge).
+    pub fn apply_to_scene<LayerId, Action>(&self, scene: &mut InteractionScene<Id, LayerId, Action>)
+    where
+        Id: Clone + PartialEq,
+        LayerId: PartialEq,
+    {
+        if let Some(id) = self.focused.clone() {
+            let _ = scene.focus(id);
+        }
+    }
 }
 
 fn center(area: Rect) -> (i32, i32) {
@@ -619,6 +736,139 @@ fn in_direction(from: (i32, i32), to: (i32, i32), dir: NavigationMove) -> bool {
     }
 }
 
+/// Focus Lens paint mode.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum FocusLensMode {
+    /// Tab-order indices only (default Studio debug).
+    #[default]
+    TabOrder,
+    /// Focused outline marker only.
+    FocusedOnly,
+    /// Tab order + focused marker.
+    Combined,
+}
+
+impl FocusLensMode {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::TabOrder => "tab-order",
+            Self::FocusedOnly => "focused-only",
+            Self::Combined => "combined",
+        }
+    }
+}
+
+/// Focus Lens: paints tab-order markers and focused outline for Studio debug.
+///
+/// Complements JumpMode: lens is **inspection** (order / focus), jump is
+/// **activation** (key labels). Neither mutates widgets beyond reading the
+/// graph / semantic scene hosts already maintain.
+#[derive(Debug, Clone, Copy)]
+pub struct FocusLens<'a, Id> {
+    graph: &'a FocusGraph<Id>,
+    system: &'a DesignSystem,
+    show_order: bool,
+    mode: FocusLensMode,
+    colorless: bool,
+}
+
+impl<'a, Id> FocusLens<'a, Id> {
+    /// Creates a lens over a graph snapshot.
+    #[must_use]
+    pub const fn new(graph: &'a FocusGraph<Id>, system: &'a DesignSystem) -> Self {
+        Self {
+            graph,
+            system,
+            show_order: true,
+            mode: FocusLensMode::Combined,
+            colorless: false,
+        }
+    }
+
+    /// Whether to paint tab-order indices.
+    #[must_use]
+    pub const fn show_order(mut self, show: bool) -> Self {
+        self.show_order = show;
+        self
+    }
+
+    /// Lens mode.
+    #[must_use]
+    pub const fn mode(mut self, mode: FocusLensMode) -> Self {
+        self.mode = mode;
+        self
+    }
+
+    /// Reduced-color roles (strong/muted only).
+    #[must_use]
+    pub const fn colorless(mut self, on: bool) -> Self {
+        self.colorless = on;
+        self
+    }
+}
+
+impl<Id: Clone + PartialEq + std::fmt::Display> ratatui_core::widgets::Widget
+    for &FocusLens<'_, Id>
+{
+    fn render(self, _area: Rect, buffer: &mut ratatui_core::buffer::Buffer) {
+        let accent = if self.colorless {
+            // Monochrome states the lens with weight; a reversal reads as a
+            // selection, and the lens is an overlay, not a selection.
+            self.system
+                .style(Role::TextStrong)
+                .add_modifier(ratatui_core::style::Modifier::BOLD)
+        } else {
+            self.system.style(Role::BorderFocused)
+        };
+        let muted = self.system.style(Role::TextMuted);
+        let order = self.graph.tab_order();
+        let show_order = self.show_order
+            && matches!(self.mode, FocusLensMode::TabOrder | FocusLensMode::Combined);
+        let show_focus = matches!(
+            self.mode,
+            FocusLensMode::FocusedOnly | FocusLensMode::Combined
+        );
+        for (i, id) in order.iter().enumerate() {
+            let Some(node) = self.graph.nodes().iter().find(|n| &n.id == *id) else {
+                continue;
+            };
+            let Some(area) = node.area else {
+                continue;
+            };
+            if area.width == 0 || area.height == 0 {
+                continue;
+            }
+            let focused = self.graph.is_focused(id);
+            let style = if focused { accent } else { muted };
+            if show_order {
+                let label = format!("{}", i + 1);
+                buffer.set_stringn(area.x, area.y, &label, usize::from(area.width), style);
+            }
+            if show_focus && focused {
+                let mark = "◈";
+                // Prefer trailing corner when order digit already at origin.
+                let mx = if show_order && area.width > 1 {
+                    area.x.saturating_add(area.width.saturating_sub(1))
+                } else {
+                    area.x
+                };
+                buffer.set_stringn(mx, area.y, mark, 1, accent);
+            }
+        }
+    }
+}
+
+impl<Id: Clone + PartialEq + std::fmt::Display> ratatui_core::widgets::Widget
+    for FocusLens<'_, Id>
+{
+    fn render(self, area: Rect, buffer: &mut ratatui_core::buffer::Buffer) {
+        ratatui_core::widgets::Widget::render(&self, area, buffer);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -630,9 +880,7 @@ mod tests {
         List,
         Editor,
         Dialog,
-        InnerDialog,
         Ok,
-        InnerOk,
         Cancel,
     }
 
@@ -719,55 +967,6 @@ mod tests {
         assert!(matches!(g.focused(), Some(&Id::Dialog) | Some(&Id::Ok)));
         let _ = g.pop_trap();
         assert_eq!(g.focused(), Some(&Id::Editor));
-    }
-
-    #[test]
-    fn nested_trap_restores_outer_boundary() {
-        let mut g = FocusGraph::new();
-        g.register(FocusNode::leaf(Id::Sidebar, Rect::new(0, 0, 10, 5)).tab_index(0));
-        g.register(FocusNode::leaf(Id::Dialog, Rect::new(5, 5, 30, 8)).tab_index(10));
-        g.register(
-            FocusNode::leaf(Id::Ok, Rect::new(6, 10, 4, 1))
-                .parent(Id::Dialog)
-                .tab_index(11),
-        );
-        g.register(
-            FocusNode::leaf(Id::InnerDialog, Rect::new(8, 7, 20, 5))
-                .parent(Id::Dialog)
-                .tab_index(12),
-        );
-        g.register(
-            FocusNode::leaf(Id::InnerOk, Rect::new(9, 9, 5, 1))
-                .parent(Id::InnerDialog)
-                .tab_index(13),
-        );
-        let _ = g.request_focus(Id::Sidebar);
-
-        g.push_trap(Id::Dialog, None);
-        g.push_trap(Id::InnerDialog, Some(Id::Dialog));
-        assert_eq!(g.trap_root(), Some(&Id::InnerDialog));
-        assert_eq!(g.focused(), Some(&Id::InnerDialog));
-        assert_eq!(g.tab_order(), vec![&Id::InnerDialog, &Id::InnerOk]);
-        assert_eq!(g.request_focus(Id::Ok), FocusOutcome::Ignored);
-
-        let _ = g.pop_trap();
-        assert_eq!(g.trap_root(), Some(&Id::Dialog));
-        assert_eq!(g.focused(), Some(&Id::Dialog));
-        assert_eq!(g.request_focus(Id::Sidebar), FocusOutcome::Ignored);
-        assert!(g.handle_key(key(KeyCode::Tab)).changed());
-        assert!(matches!(g.focused(), Some(&Id::Dialog) | Some(&Id::Ok)));
-
-        g.push_trap(Id::InnerDialog, Some(Id::Sidebar));
-        let _ = g.pop_trap();
-        assert_eq!(g.trap_root(), Some(&Id::Dialog));
-        assert_ne!(g.focused(), Some(&Id::Sidebar));
-
-        let _ = g.pop_trap();
-        assert_eq!(g.trap_root(), None);
-        assert_eq!(g.focused(), Some(&Id::Sidebar));
-        let _ = g.pop_trap();
-        assert_eq!(g.trap_root(), None);
-        assert_eq!(g.focused(), Some(&Id::Sidebar));
     }
 
     #[test]

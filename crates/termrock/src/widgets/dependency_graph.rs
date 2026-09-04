@@ -20,10 +20,13 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers},
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     style::{DesignSystem, ListRowVisualState, Role},
-    text::{contains_lower_all, take_display_cols},
-    widgets::object_inspector::{InspectKind, InspectorField},
+    text::take_display_cols,
+    widgets::{
+        data_view::{ColumnModel, DataColumn, DataColumnWidth},
+        object_inspector::{InspectKind, InspectorField},
+    },
 };
 
 /// Max nodes for graph view before auto tree fallback (host may override).
@@ -75,7 +78,7 @@ impl DepNodeKind {
 
     /// Glyph.
     #[must_use]
-    pub const fn glyph(self) -> &'static str {
+    pub const fn glyph(self, _ascii: bool) -> &'static str {
         match self {
             Self::Package => "▣",
             Self::Service => "⬡",
@@ -129,6 +132,19 @@ impl DepNodeStatus {
             Self::Loading => '…',
         }
     }
+
+    /// ASCII letter.
+    #[must_use]
+    pub const fn letter_ascii(self) -> char {
+        match self {
+            Self::Ok => '.',
+            Self::Warning => '!',
+            Self::Error => 'x',
+            Self::Missing => '?',
+            Self::Loading => '.',
+        }
+    }
+
     /// Role.
     #[must_use]
     pub const fn role(self) -> Role {
@@ -158,9 +174,21 @@ pub enum DepEdgeKind {
 }
 
 impl DepEdgeKind {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::DependsOn => "depends",
+            Self::Imports => "imports",
+            Self::Calls => "calls",
+            Self::Contains => "contains",
+            Self::Blocks => "blocks",
+        }
+    }
+
     /// Connector glyph preference.
     #[must_use]
-    pub const fn arrow(self) -> &'static str {
+    pub const fn arrow(self, _ascii: bool) -> &'static str {
         match self {
             Self::DependsOn | Self::Imports => "→",
             Self::Calls => "⇒",
@@ -262,6 +290,13 @@ impl<'a> DepEdge<'a> {
     #[must_use]
     pub const fn kind(mut self, k: DepEdgeKind) -> Self {
         self.kind = k;
+        self
+    }
+
+    /// Undirected.
+    #[must_use]
+    pub const fn undirected(mut self) -> Self {
+        self.directed = false;
         self
     }
 }
@@ -497,6 +532,22 @@ pub fn layout_dependency_layers(
     out
 }
 
+/// Content size of layout in cells.
+#[must_use]
+pub fn layout_content_size(layout: &[DepLayoutNode]) -> (u16, u16) {
+    let w = layout
+        .iter()
+        .map(|n| n.x.saturating_add(DEP_GRAPH_CELL_W))
+        .max()
+        .unwrap_or(0);
+    let h = layout
+        .iter()
+        .map(|n| n.y.saturating_add(DEP_GRAPH_CELL_H))
+        .max()
+        .unwrap_or(0);
+    (w, h)
+}
+
 /// Filter nodes by query (label/id/group/kind).
 #[must_use]
 pub fn filter_dep_nodes<'a>(nodes: &'a [DepNode<'a>], query: &str) -> Vec<&'a DepNode<'a>> {
@@ -506,7 +557,17 @@ pub fn filter_dep_nodes<'a>(nodes: &'a [DepNode<'a>], query: &str) -> Vec<&'a De
     }
     nodes
         .iter()
-        .filter(|n| contains_lower_all(&[n.id, n.label, n.kind.id(), n.group.unwrap_or("")], &q))
+        .filter(|n| {
+            let hay = format!(
+                "{} {} {} {}",
+                n.id,
+                n.label,
+                n.kind.id(),
+                n.group.unwrap_or("")
+            )
+            .to_ascii_lowercase();
+            hay.contains(&q)
+        })
         .collect()
 }
 
@@ -646,6 +707,17 @@ pub fn project_dep_tree_rows(
     meta
 }
 
+/// Column model for tree/list fallback.
+#[must_use]
+pub fn dependency_tree_column_model() -> ColumnModel<&'static str> {
+    ColumnModel::new(vec![
+        DataColumn::new("name", "Name", DataColumnWidth::Min(12)).priority(100),
+        DataColumn::new("kind", "Kind", DataColumnWidth::Fixed(8)).priority(80),
+        DataColumn::new("status", "Status", DataColumnWidth::Fixed(8)).priority(70),
+        DataColumn::new("detail", "Detail", DataColumnWidth::Min(8)).priority(40),
+    ])
+}
+
 /// ObjectInspector fields for a node.
 #[must_use]
 pub fn dep_node_to_inspector_fields<'a>(node: &'a DepNode<'a>) -> Vec<InspectorField<'a>> {
@@ -702,6 +774,11 @@ pub enum DependencyGraphOutcome {
     },
     /// Cancel filter.
     Cancelled,
+    /// Tree expand in tree view (host optional).
+    ExpandToggled {
+        /// Id.
+        id: String,
+    },
 }
 
 // ── State ───────────────────────────────────────────────────────────────────
@@ -725,6 +802,8 @@ pub struct DependencyGraphState {
     pub cursor: usize,
     /// Last effective view (set on paint).
     pub effective_view: DependencyGraphView,
+    /// Unreadable reason if any.
+    pub unreadable: Option<GraphUnreadableReason>,
     /// Node hit regions (id, rect).
     node_regions: Vec<(String, Rect)>,
     accepts_input: bool,
@@ -749,6 +828,7 @@ impl DependencyGraphState {
             filter: None,
             cursor: 0,
             effective_view: DependencyGraphView::Graph,
+            unreadable: None,
             node_regions: Vec::new(),
             accepts_input: true,
         }
@@ -765,6 +845,23 @@ impl DependencyGraphState {
     /// Host input gate.
     pub fn set_accepts_input(&mut self, on: bool) {
         self.accepts_input = on;
+    }
+
+    /// Accepts input.
+    #[must_use]
+    pub const fn accepts_input(&self) -> bool {
+        self.accepts_input
+    }
+
+    /// Selected.
+    #[must_use]
+    pub fn selected(&self) -> Option<&str> {
+        self.selected.as_deref()
+    }
+
+    /// Select.
+    pub fn select(&mut self, id: Option<String>) {
+        self.selected = id;
     }
 
     /// Keys.
@@ -939,6 +1036,61 @@ impl DependencyGraphState {
             _ => DependencyGraphOutcome::Ignored,
         }
     }
+
+    /// Mouse.
+    pub fn handle_mouse(
+        &mut self,
+        _nodes: &[DepNode<'_>],
+        event: MouseEvent,
+    ) -> DependencyGraphOutcome {
+        if !self.accepts_input {
+            return DependencyGraphOutcome::Ignored;
+        }
+        match event.kind {
+            MouseEventKind::ScrollDown if event.modifiers.contains(KeyModifiers::SHIFT) => {
+                self.pan_x = self.pan_x.saturating_add(4);
+                DependencyGraphOutcome::Panned {
+                    x: self.pan_x,
+                    y: self.pan_y,
+                }
+            }
+            MouseEventKind::ScrollUp if event.modifiers.contains(KeyModifiers::SHIFT) => {
+                self.pan_x = self.pan_x.saturating_sub(4);
+                DependencyGraphOutcome::Panned {
+                    x: self.pan_x,
+                    y: self.pan_y,
+                }
+            }
+            MouseEventKind::ScrollDown => {
+                self.pan_y = self.pan_y.saturating_add(2);
+                DependencyGraphOutcome::Panned {
+                    x: self.pan_x,
+                    y: self.pan_y,
+                }
+            }
+            MouseEventKind::ScrollUp => {
+                self.pan_y = self.pan_y.saturating_sub(2);
+                DependencyGraphOutcome::Panned {
+                    x: self.pan_x,
+                    y: self.pan_y,
+                }
+            }
+            MouseEventKind::Down(MouseButton::Left) => {
+                let hit = self
+                    .node_regions
+                    .iter()
+                    .find(|(_, r)| r.contains(event.position))
+                    .map(|(id, _)| id.clone());
+                if let Some(id) = hit {
+                    self.selected = Some(id.clone());
+                    DependencyGraphOutcome::SelectionChanged { id }
+                } else {
+                    DependencyGraphOutcome::Ignored
+                }
+            }
+            _ => DependencyGraphOutcome::Ignored,
+        }
+    }
 }
 
 // ── Widget ──────────────────────────────────────────────────────────────────
@@ -977,10 +1129,17 @@ impl<'a> DependencyGraph<'a> {
         self
     }
 
+    /// Focus.
+    #[must_use]
+    pub const fn focused(mut self, on: bool) -> Self {
+        self.focused = on;
+        self
+    }
+
     /// ASCII.
     #[must_use]
     /// Paint.
-    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut DependencyGraphState) {
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut DependencyGraphState) {
         if area.is_empty() {
             return;
         }
@@ -1000,6 +1159,7 @@ impl<'a> DependencyGraph<'a> {
             state.force_tree,
         );
         state.effective_view = view;
+        state.unreadable = reason;
 
         let mut y = area.y;
         let mut h = area.height;
@@ -1057,6 +1217,7 @@ impl<'a> DependencyGraph<'a> {
                     buffer,
                     self.system,
                     state,
+                    false,
                     self.focused,
                 );
             }
@@ -1068,6 +1229,7 @@ impl<'a> DependencyGraph<'a> {
                     buffer,
                     self.system,
                     state,
+                    false,
                     self.focused,
                     matches!(view, DependencyGraphView::Tree),
                 );
@@ -1083,6 +1245,7 @@ fn paint_graph(
     buffer: &mut Buffer,
     system: &DesignSystem,
     state: &mut DependencyGraphState,
+    _ascii: bool,
     focused: bool,
 ) {
     if nodes.is_empty() {
@@ -1146,7 +1309,7 @@ fn paint_graph(
         if mid_x >= area.x && mid_x < area.right() && mid_y >= area.y && mid_y < area.bottom() {
             put_sym(buffer, mid_x, mid_y, corner, style);
         }
-        let _ = e.kind.arrow();
+        let _ = e.kind.arrow(false);
     }
 
     // Draw nodes
@@ -1171,7 +1334,7 @@ fn paint_graph(
         let mark = " ";
         let label = format!(
             "{mark}{}{} {}",
-            n.kind.glyph(),
+            n.kind.glyph(false),
             letter,
             take_display_cols(n.label, usize::from(w.saturating_sub(4)))
         );
@@ -1235,6 +1398,7 @@ fn paint_list_or_tree(
     buffer: &mut Buffer,
     system: &DesignSystem,
     state: &mut DependencyGraphState,
+    _ascii: bool,
     focused: bool,
     tree: bool,
 ) {
@@ -1352,6 +1516,8 @@ pub mod bench {
     pub const NODE_COUNT: usize = 80;
     /// Edges.
     pub const EDGE_COUNT: usize = 160;
+    /// Paint frames.
+    pub const PAINT_FRAMES: u32 = 40;
 }
 
 #[cfg(test)]
@@ -1467,7 +1633,7 @@ mod tests {
         let mut buf = Buffer::empty(area);
         let _ = DependencyGraph::new(&nodes, &edges, &system)
             .title("Crates")
-            .paint(area, &mut buf, &mut state);
+            .render(area, &mut buf, &mut state);
         assert_eq!(state.effective_view, DependencyGraphView::Graph);
         let text: String = buf
             .content()
@@ -1480,7 +1646,7 @@ mod tests {
         );
 
         state.force_tree = true;
-        let _ = DependencyGraph::new(&nodes, &edges, &system).paint(area, &mut buf, &mut state);
+        let _ = DependencyGraph::new(&nodes, &edges, &system).render(area, &mut buf, &mut state);
         assert_eq!(state.effective_view, DependencyGraphView::Tree);
     }
 
@@ -1536,7 +1702,8 @@ mod tests {
         let area = Rect::new(0, 0, 100, 30);
         let mut buf = Buffer::empty(area);
         for _ in 0..8 {
-            let _ = DependencyGraph::new(&nodes, &edges, &system).paint(area, &mut buf, &mut state);
+            let _ =
+                DependencyGraph::new(&nodes, &edges, &system).render(area, &mut buf, &mut state);
             let _ = state.handle_key(
                 &nodes,
                 &edges,

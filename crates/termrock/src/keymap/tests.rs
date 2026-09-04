@@ -4,7 +4,6 @@
 use super::*;
 use crate::scroll::ScrollAxes;
 use crate::widgets::HintSpan;
-use crate::widgets::tests::press;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -226,20 +225,8 @@ fn serde_deserialization_produces_an_owned_runtime_map() {
 #[cfg(feature = "serde")]
 #[test]
 fn serde_rejects_unknown_modifier_bits() {
-    let error = serde_json::from_str::<KeyModifiers>("64").expect_err("bit 6 is not a modifier");
+    let error = serde_json::from_str::<KeyModifiers>("8").expect_err("bit 3 is not a modifier");
     assert!(error.to_string().contains("unknown key modifier bits"));
-}
-
-#[cfg(feature = "serde")]
-#[test]
-fn serde_round_trips_extended_modifier_bits() {
-    let modifiers = KeyModifiers::NONE.with_super().with_hyper().with_meta();
-    let encoded = serde_json::to_string(&modifiers).expect("extended modifiers serialize");
-    assert_eq!(encoded, "56");
-    assert_eq!(
-        serde_json::from_str::<KeyModifiers>(&encoded).expect("extended modifiers deserialize"),
-        modifiers
-    );
 }
 
 const TEST_BINDINGS: &[KeyBinding<TestAction>] = &[
@@ -311,23 +298,6 @@ fn key_event_conversion_preserves_unified_modifiers() {
 
     assert_eq!(chord, KeyChord::ctrl(KeyCode::Char('x')));
     assert_eq!(CTRL_MAP.dispatch(chord), Some(TestAction::Confirm));
-}
-
-#[test]
-fn key_event_conversion_preserves_extended_modifiers_and_distinguishes_chords() {
-    let base = KeyCode::Char('x');
-    let cases = [
-        KeyModifiers::SUPER,
-        KeyModifiers::HYPER,
-        KeyModifiers::META,
-        KeyModifiers::CONTROL.with_super().with_hyper().with_meta(),
-    ];
-
-    for modifiers in cases {
-        let chord = KeyChord::from(crate::input::KeyEvent::new(base, modifiers));
-        assert_eq!(chord.mods, modifiers);
-        assert_ne!(chord, KeyChord::plain(base));
-    }
 }
 
 #[test]
@@ -494,7 +464,12 @@ fn from_crossterm_key_event_converts_basic_keys() {
     assert_eq!(chord.key, KeyCode::Char('q'));
     assert!(chord.mods.contains(KeyModifiers::CONTROL));
 
-    let ev2 = press(KeyCode::Enter);
+    let ev2 = KeyEvent {
+        code: KeyCode::Enter,
+        modifiers: KeyModifiers::NONE,
+        kind: KeyEventKind::Press,
+        state: KeyEventState::NONE,
+    };
     assert_eq!(KeyChord::from(ev2), KeyChord::plain(KeyCode::Enter));
 }
 

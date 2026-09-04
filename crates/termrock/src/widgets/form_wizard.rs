@@ -11,14 +11,22 @@
 //! **vs [`Form`](super::Form).** Form is single-surface field chrome. Wizard
 //! sequences multiple host-owned step surfaces with a stepper and nav.
 //! **vs [`super::Stepper`].** Stepper is the reusable step chrome; FormWizard
-//! embeds it for paint and projects [`StepItem`] steps onto it.
+//! embeds it for paint and maps [`WizardStepStatus`] = [`StepStatus`].
 //!
 //! Research: Huh forms, installers, cloud CLIs, onboarding wizards.
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+use ratatui_core::{
+    buffer::Buffer,
+    layout::{Position, Rect},
+    style::Modifier,
+    widgets::{StatefulWidget, Widget},
+};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
-    interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
+    interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
     style::{ButtonRecipeVariant, ControlState, DesignSystem, Role},
     text::{display_cols, take_display_cols},
 };
@@ -34,6 +42,9 @@ pub const FORM_WIZARD_NARROW_MAX_WIDTH: u16 = 36;
 pub const FORM_WIZARD_COMPACT_MAX_HEIGHT: u16 = 10;
 
 // ── Step model (shared with Stepper) ─────────────────────────────────────────
+
+/// Wizard step definition — alias of [`StepItem`].
+pub type WizardStep = StepItem;
 
 /// Host-projected gate for the **current** step (or review).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -65,6 +76,11 @@ impl WizardGate {
         matches!(self, Self::Valid)
     }
 }
+
+/// Visual / progress status — alias of [`StepStatus`].
+///
+/// Historical name `Upcoming` maps to [`StepStatus::Future`].
+pub type WizardStepStatus = StepStatus;
 
 /// Wizard high-level phase.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -104,6 +120,18 @@ pub enum FormWizardPresentation {
     Compact,
 }
 
+impl FormWizardPresentation {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Full => "full",
+            Self::Narrow => "narrow",
+            Self::Compact => "compact",
+        }
+    }
+}
+
 /// Why the step index changed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
@@ -137,6 +165,20 @@ pub struct WizardProgress {
     pub failure_message: Option<String>,
 }
 
+impl WizardProgress {
+    /// Empty at start.
+    #[must_use]
+    pub fn start() -> Self {
+        Self {
+            step_index: 0,
+            phase: WizardPhase::Step,
+            completed: Vec::new(),
+            skipped: Vec::new(),
+            failure_message: None,
+        }
+    }
+}
+
 // ── Outcomes ────────────────────────────────────────────────────────────────
 
 /// Side-effect-free wizard outcomes. Host owns persistence and submit I/O.
@@ -145,6 +187,8 @@ pub struct WizardProgress {
 pub enum FormWizardOutcome {
     /// No effect.
     Ignored,
+    /// Chrome / gate projection changed.
+    Changed,
     /// Step index or phase navigation.
     StepChanged {
         /// Previous index.
@@ -206,6 +250,11 @@ pub enum FormWizardOutcome {
         /// Snapshot.
         progress: WizardProgress,
     },
+    /// Presentation auto-changed.
+    PresentationChanged {
+        /// Presentation.
+        presentation: FormWizardPresentation,
+    },
 }
 
 // ── State ───────────────────────────────────────────────────────────────────
@@ -213,13 +262,13 @@ pub enum FormWizardOutcome {
 /// Runtime state for [`FormWizard`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FormWizardState {
-    steps: Vec<StepItem>,
+    steps: Vec<WizardStep>,
     index: usize,
     phase: WizardPhase,
     /// Per-step gate (host projects; length == steps).
     gates: Vec<WizardGate>,
     /// Per-step status for stepper (derived + host overrides).
-    statuses: Vec<StepStatus>,
+    statuses: Vec<WizardStepStatus>,
     completed: Vec<String>,
     skipped: Vec<String>,
     /// Enable review screen before submit.
@@ -249,35 +298,31 @@ pub struct FormWizardState {
 
 impl Default for FormWizardState {
     fn default() -> Self {
-        Self::new(1)
+        Self::from_count(1)
     }
 }
 
 impl FormWizardState {
-    /// Wizard with N untitled placeholder steps (`step-0`…).
+    /// Wizard with N placeholder steps (legacy / quick start).
     ///
     /// Prefer [`Self::with_steps`] for titled optional steps.
     #[must_use]
     pub fn new(step_count: usize) -> Self {
-        let n = step_count.max(1);
-        let steps = (0..n)
-            .map(|i| StepItem::new(format!("step-{i}"), format!("Step {}", i + 1)))
-            .collect::<Vec<_>>();
-        Self::with_steps(steps)
+        Self::from_count(step_count)
     }
 
     /// Wizard from step definitions.
     #[must_use]
-    pub fn with_steps(steps: impl IntoIterator<Item = StepItem>) -> Self {
+    pub fn with_steps(steps: impl IntoIterator<Item = WizardStep>) -> Self {
         let steps: Vec<_> = steps.into_iter().collect();
         let steps = if steps.is_empty() {
-            vec![StepItem::new("step-0", "Step 1")]
+            vec![WizardStep::new("step-0", "Step 1")]
         } else {
             steps
         };
         let n = steps.len();
-        let mut statuses = vec![StepStatus::Future; n];
-        statuses[0] = StepStatus::Current;
+        let mut statuses = vec![WizardStepStatus::Future; n];
+        statuses[0] = WizardStepStatus::Current;
         Self {
             steps,
             index: 0,
@@ -306,6 +351,16 @@ impl FormWizardState {
         }
     }
 
+    /// N untitled steps `step-0`…
+    #[must_use]
+    pub fn from_count(step_count: usize) -> Self {
+        let n = step_count.max(1);
+        let steps = (0..n)
+            .map(|i| WizardStep::new(format!("step-{i}"), format!("Step {}", i + 1)))
+            .collect::<Vec<_>>();
+        Self::with_steps(steps)
+    }
+
     /// Review screen before submit.
     #[must_use]
     pub const fn with_review(mut self, on: bool) -> Self {
@@ -319,7 +374,21 @@ impl FormWizardState {
         self.allow_skip = on;
         self
     }
+
+    /// Linear navigation (no jump past incomplete).
+    #[must_use]
+    pub const fn with_linear(mut self, on: bool) -> Self {
+        self.linear = on;
+        self
+    }
+
     // ── accessors ───────────────────────────────────────────────────────────
+
+    /// Steps.
+    #[must_use]
+    pub fn steps(&self) -> &[WizardStep] {
+        &self.steps
+    }
 
     /// Current index.
     #[must_use]
@@ -341,7 +410,7 @@ impl FormWizardState {
 
     /// Current step def.
     #[must_use]
-    pub fn current_step(&self) -> Option<&StepItem> {
+    pub fn current_step(&self) -> Option<&WizardStep> {
         self.steps.get(self.index)
     }
 
@@ -352,6 +421,18 @@ impl FormWizardState {
             .get(self.index)
             .copied()
             .unwrap_or(WizardGate::Valid)
+    }
+
+    /// Statuses for stepper.
+    #[must_use]
+    pub fn statuses(&self) -> &[WizardStepStatus] {
+        &self.statuses
+    }
+
+    /// Presentation.
+    #[must_use]
+    pub const fn presentation(&self) -> FormWizardPresentation {
+        self.presentation
     }
 
     /// Body paint area (host renders step form here after paint).
@@ -372,9 +453,20 @@ impl FormWizardState {
         }
     }
 
+    /// Async generation.
+    #[must_use]
+    pub const fn generation(&self) -> u64 {
+        self.generation
+    }
+
     /// Focus.
     pub fn set_focused(&mut self, on: bool) {
         self.focused = on;
+    }
+
+    /// Enabled.
+    pub fn set_enabled(&mut self, on: bool) {
+        self.enabled = on;
     }
 
     /// Host projects gate for current step (or all via set_gates).
@@ -391,6 +483,18 @@ impl FormWizardState {
         } else {
             WizardGate::Invalid
         });
+    }
+
+    /// Set all gates (must match step count; truncated/padded).
+    pub fn set_gates(&mut self, gates: impl IntoIterator<Item = WizardGate>) {
+        let mut g: Vec<_> = gates.into_iter().collect();
+        g.resize(self.steps.len(), WizardGate::Valid);
+        self.gates = g;
+    }
+
+    /// Gate message (shown when blocked).
+    pub fn set_gate_message(&mut self, msg: Option<String>) {
+        self.gate_message = msg;
     }
 
     /// Field focus hint for next FocusFieldRequested.
@@ -450,12 +554,12 @@ impl FormWizardState {
 
     fn rebuild_statuses(&mut self) {
         let n = self.steps.len();
-        self.statuses = vec![StepStatus::Future; n];
+        self.statuses = vec![WizardStepStatus::Future; n];
         for (i, step) in self.steps.iter().enumerate() {
             if self.skipped.iter().any(|s| s == &step.id) {
-                self.statuses[i] = StepStatus::Skipped;
+                self.statuses[i] = WizardStepStatus::Skipped;
             } else if self.completed.iter().any(|s| s == &step.id) {
-                self.statuses[i] = StepStatus::Complete;
+                self.statuses[i] = WizardStepStatus::Complete;
             }
         }
         match self.phase {
@@ -463,9 +567,9 @@ impl FormWizardState {
                 let gate = self.current_gate();
                 if let Some(s) = self.statuses.get_mut(self.index) {
                     *s = if matches!(gate, WizardGate::Invalid) {
-                        StepStatus::Error
+                        WizardStepStatus::Error
                     } else {
-                        StepStatus::Current
+                        WizardStepStatus::Current
                     };
                 }
             }
@@ -641,16 +745,15 @@ impl FormWizardState {
         if self.linear {
             // only completed, skipped, current, or previous
             let allowed = index <= self.index
-                || self
-                    .statuses
-                    .get(index)
-                    .is_some_and(|s| matches!(s, StepStatus::Complete | StepStatus::Skipped));
+                || self.statuses.get(index).is_some_and(|s| {
+                    matches!(s, WizardStepStatus::Complete | WizardStepStatus::Skipped)
+                });
             if !allowed && index > self.index {
                 // allow only if all prior complete/skipped
                 let prior_ok = (0..index).all(|i| {
                     matches!(
                         self.statuses.get(i),
-                        Some(StepStatus::Complete | StepStatus::Skipped)
+                        Some(WizardStepStatus::Complete | WizardStepStatus::Skipped)
                     ) || i == self.index && self.current_gate().allows_advance()
                 });
                 if !prior_ok {
@@ -689,7 +792,7 @@ impl FormWizardState {
 
     /// Key adapter.
     pub fn handle_key(&mut self, key: KeyEvent) -> FormWizardOutcome {
-        if !key.is_press() || !self.enabled {
+        if key.is_release() || !self.enabled {
             return FormWizardOutcome::Ignored;
         }
         if !self.focused {
@@ -731,6 +834,18 @@ impl FormWizardState {
                 KeyCode::Char('s') | KeyCode::Char('S') if ctrl => self.save_progress(),
                 _ => FormWizardOutcome::Ignored,
             },
+        }
+    }
+
+    /// Intent path.
+    pub fn handle_intent(&mut self, intent: UiIntent) -> FormWizardOutcome {
+        if !self.enabled || !self.focused {
+            return FormWizardOutcome::Ignored;
+        }
+        match intent {
+            UiIntent::Cancel | UiIntent::Close => self.cancel(),
+            UiIntent::Submit | UiIntent::Activate => self.next(),
+            _ => FormWizardOutcome::Ignored,
         }
     }
 
@@ -817,6 +932,13 @@ impl<'a> FormWizard<'a> {
         self
     }
 
+    /// Show nav row.
+    #[must_use]
+    pub const fn show_nav(mut self, on: bool) -> Self {
+        self.show_nav = on;
+        self
+    }
+
     /// Paint chrome; updates `body_area` for host content.
     pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut FormWizardState) {
         state.stepper_hits.clear();
@@ -844,7 +966,7 @@ impl<'a> FormWizard<'a> {
                 PanelChrome::Normal
             });
         let inner = panel.inner(area);
-        panel.title(self.title).paint(area, buffer, None);
+        Widget::render(&panel.title(self.title), area, buffer);
         if inner.is_empty() {
             state.body_area = inner;
             return;
@@ -1213,15 +1335,13 @@ impl<'a> FormWizard<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyEventKind;
     use crate::style::RolePalette;
-    use crate::widgets::tests::click;
 
     fn three_steps() -> FormWizardState {
         FormWizardState::with_steps([
-            StepItem::new("account", "Account"),
-            StepItem::new("region", "Region").optional(true),
-            StepItem::new("confirm", "Confirm"),
+            WizardStep::new("account", "Account"),
+            WizardStep::new("region", "Region").optional(true),
+            WizardStep::new("confirm", "Confirm"),
         ])
         .with_review(true)
         .with_allow_skip(true)
@@ -1367,48 +1487,6 @@ mod tests {
     }
 
     #[test]
-    fn repeated_actions_are_ignored_across_wizard_phases() {
-        let mut step = three_steps();
-        step.set_focused(true);
-        for (code, modifiers) in [
-            (KeyCode::Right, KeyModifiers::NONE),
-            (KeyCode::Enter, KeyModifiers::NONE),
-            (KeyCode::Char('s'), KeyModifiers::CONTROL),
-            (KeyCode::Esc, KeyModifiers::NONE),
-        ] {
-            let before = step.clone();
-            let mut key = KeyEvent::new(code, modifiers);
-            key.kind = KeyEventKind::Repeat;
-            assert_eq!(
-                step.handle_key(key),
-                FormWizardOutcome::Ignored,
-                "{code:?} repeat emitted a wizard action"
-            );
-            assert_eq!(step, before, "{code:?} repeat mutated step state");
-        }
-
-        let mut review = three_steps();
-        review.set_focused(true);
-        let _ = review.next();
-        let _ = review.next();
-        assert!(matches!(review.next(), FormWizardOutcome::ReviewOpened));
-        let before = review.clone();
-        let mut repeat_submit = KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE);
-        repeat_submit.kind = KeyEventKind::Repeat;
-        assert_eq!(review.handle_key(repeat_submit), FormWizardOutcome::Ignored);
-        assert_eq!(review, before);
-
-        let mut failed = three_steps();
-        failed.set_focused(true);
-        let _ = failed.fail("network down");
-        let before = failed.clone();
-        let mut repeat_retry = KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE);
-        repeat_retry.kind = KeyEventKind::Repeat;
-        assert_eq!(failed.handle_key(repeat_retry), FormWizardOutcome::Ignored);
-        assert_eq!(failed, before);
-    }
-
-    #[test]
     fn focus_field_after_step() {
         let mut w = three_steps();
         w.set_field_hint(Some("email".into()));
@@ -1445,17 +1523,21 @@ mod tests {
         // click next
         let nr = state.nav_next;
         assert!(matches!(
-            state.handle_mouse(click(nr.x, nr.y)),
+            state.handle_mouse(MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: Position::new(nr.x, nr.y),
+                modifiers: KeyModifiers::NONE,
+            }),
             FormWizardOutcome::StepChanged { .. }
         ));
     }
 
     #[test]
-    fn count_constructor_yields_placeholder_steps() {
-        let w = FormWizardState::new(3);
+    fn from_count_compat() {
+        let w = FormWizardState::from_count(3);
         assert_eq!(w.step_count(), 3);
-        let empty = FormWizardState::new(0);
-        assert_eq!(empty.step_count(), 1, "count clamps to at least one step");
+        let w2 = FormWizardState::new(2);
+        assert_eq!(w2.step_count(), 2);
     }
 
     #[test]

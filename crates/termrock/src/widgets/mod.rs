@@ -24,7 +24,7 @@ mod agent_blocks;
 mod alert_dialog;
 mod attachment_chips;
 mod badge;
-mod brand;
+mod blocks;
 mod breadcrumbs;
 mod button_group;
 mod callout;
@@ -123,6 +123,7 @@ mod search_results;
 mod section;
 mod segmented_control;
 mod select;
+mod selection;
 mod semantic_status;
 mod separator;
 mod sidebar;
@@ -171,6 +172,7 @@ pub use accent_rail::AccentRail;
 pub use action_bar::{Action, ActionBar, ActionBarState, ActionVariant};
 pub use agent::{ThinkingBlock, TokenMeter, ToolCard, ToolStatus};
 pub use agent_blocks::{ModeRibbon, ModeRibbonOutcome, ModeRibbonState, WorkbenchMode};
+pub use blocks::BlockChrome;
 pub use button_group::{
     ButtonGroup, ButtonGroupItem, ButtonGroupItemParts, ButtonGroupOrientation, ButtonGroupOutcome,
     ButtonGroupParts, ButtonGroupRecipe, ButtonGroupState,
@@ -179,8 +181,8 @@ pub use checkpoint_timeline::bench as checkpoint_timeline_bench;
 pub use checkpoint_timeline::{
     CHECKPOINT_DETAIL_WINDOW, CHECKPOINT_TIMELINE_OVERLAY_ID, Checkpoint, CheckpointBoundary,
     CheckpointConfirmAction, CheckpointKind, CheckpointTimeline, CheckpointTimelineMode,
-    CheckpointTimelineOutcome, CheckpointTimelineRecipe, CheckpointTimelineState,
-    example_checkpoints,
+    CheckpointTimelineOutcome, CheckpointTimelineRecipe, CheckpointTimelineState, checkpoint_index,
+    checkpoint_to_timeline_event, example_checkpoints,
 };
 pub use context_meter::bench as context_meter_bench;
 pub use context_meter::{
@@ -195,15 +197,17 @@ pub use dependency_graph::{
     DEP_GRAPH_AUTO_TREE_NODES, DEP_GRAPH_CELL_H, DEP_GRAPH_CELL_W, DEP_GRAPH_NARROW_MAX_WIDTH,
     DepEdge, DepEdgeKind, DepLayoutNode, DepNode, DepNodeKind, DepNodeStatus, DependencyGraph,
     DependencyGraphOutcome, DependencyGraphState, DependencyGraphView, GraphUnreadableReason,
-    choose_dependency_view, dep_node_to_inspector_fields, filter_dep_edges, filter_dep_nodes,
-    layout_dependency_layers, project_dep_tree_rows,
+    choose_dependency_view, dep_node_to_inspector_fields, dependency_tree_column_model,
+    filter_dep_edges, filter_dep_nodes, layout_content_size, layout_dependency_layers,
+    project_dep_tree_rows,
 };
 pub use diagnostic::bench as diagnostic_bench;
 pub use diagnostic::{
     CODE_FRAME_TAB_STOP, CodeFrame, CodeFrameLine, Diagnostic, DiagnosticNote, DiagnosticOutcome,
     DiagnosticRecipe, DiagnosticRegion, DiagnosticSeverity, DiagnosticState, DiagnosticView,
-    RelatedLocation, SourceLabel, SourceRange, SpanStyle, SuggestedFix, code_frame_window,
-    diagnostics_to_gutter_marks, diagnostics_to_highlights, expand_tabs, format_diagnostic_plain,
+    FixApplicability, RelatedLocation, SourceLabel, SourceRange, SpanStyle, SuggestedFix,
+    code_frame_window, diagnostics_to_gutter_marks, diagnostics_to_highlights, expand_tabs,
+    format_diagnostic_plain, format_diagnostics_plain,
 };
 pub use event_stream::bench as event_stream_bench;
 pub use event_stream::{
@@ -243,6 +247,7 @@ pub use search_results::{
     SearchFlatRow, SearchResultGroup, SearchResultItem, SearchResultKind, SearchResults,
     SearchResultsOutcome, SearchResultsState, SearchResultsStatus, collect_match_targets,
     flatten_search_results, keep_first_match_slice, search_results_to_quick_open,
+    truncate_snippet_keep_match,
 };
 pub use segmented_control::{
     SegmentedControl, SegmentedControlOutcome, SegmentedControlParts, SegmentedControlState,
@@ -282,25 +287,26 @@ pub use accordion::{
 pub use alert_dialog::{
     ALERT_DIALOG_DEFAULT_HEIGHT, ALERT_DIALOG_DEFAULT_WIDTH, ALERT_DIALOG_OVERLAY_ID,
     AlertConfirmGates, AlertDialog, AlertDialogOutcome, AlertDialogState, AlertKind,
-    AlertReversibility, AlertScope,
+    AlertReversibility, AlertScope, dismiss_alert_dialog_overlay, open_alert_dialog_widget_overlay,
 };
 pub use attachment_chips::bench as attachment_chips_bench;
 pub use attachment_chips::{
     AttachmentChip, AttachmentChipOutcome, AttachmentChipState, AttachmentItem, AttachmentStatus,
     AttachmentStripEvent, AttachmentType, PASTE_CHIP_THRESHOLD, PASTE_EXPAND_LINES,
     PASTE_PREVIEW_CHARS, PROGRESS_UNKNOWN, PasteChip, PasteChipOutcome, PasteChipState,
-    PastePayload, attachment_semantic_summary, fill_attachment_strip_labels, map_strip_outcome,
-    paint_attachment_strip, paste_preview_from, paste_semantic_summary,
+    PastePayload, attachment_semantic_summary, attachment_token_items,
+    fill_attachment_strip_labels, map_strip_outcome, paint_attachment_strip, paste_preview_from,
+    paste_semantic_summary,
 };
 pub use badge::{Badge, BadgeCount, BadgeFill, BadgeOutcome, BadgeParts, BadgeState, BadgeVariant};
-pub use brand::{Lockup, LockupParts, LockupState};
 pub use breadcrumbs::{
     BREADCRUMBS_COLLAPSE_MAX_WIDTH, BreadcrumbHit, BreadcrumbItem, BreadcrumbSeparator,
     BreadcrumbStatus, Breadcrumbs, BreadcrumbsMode, BreadcrumbsOutcome, BreadcrumbsPresentation,
     BreadcrumbsState, crumbs_from_labels,
 };
 pub use callout::{
-    Alert, AlertOutcome, AlertState, Callout, CalloutRecipe, CalloutSlots, CalloutTone,
+    Alert, AlertOutcome, AlertState, Callout, CalloutOutcome, CalloutRecipe, CalloutSlots,
+    CalloutTone,
 };
 pub use card::{Card, CardParts};
 pub use carousel::{
@@ -319,12 +325,12 @@ pub use citation::{
     CITATION_PREVIEW_OVERLAY_ID, CitationAvailability, CitationGroup, CitationList,
     CitationListOutcome, CitationListState, CitationProvenance, CitationSource, CitationSourceType,
     SourceCitation, SourceCitationOutcome, SourceCitationState, citation_from_stream,
-    citation_to_stream, example_citations, group_citations,
+    citation_link, citation_to_stream, example_citations, group_citations,
 };
 pub use code_block::{
     AnsiSyntax, CodeBlock, CodeBlockOutcome, CodeBlockParts, CodeBlockState, CodeGutterMark,
     CodeHighlight, CodeHighlightKind, CodeSourceMeta, CodeTokenKind, CodeWrap, ControlRender,
-    PlainSyntax, RoleTokenSyntax, SyntaxHighlighter, prepare_code_display,
+    PlainSyntax, RoleTokenSyntax, SyntaxHighlighter, prepare_code_display, syntax_role_style,
 };
 pub use collapsible::{
     CollapsedContentPolicy, Collapsible, CollapsibleOutcome, CollapsibleParts, CollapsibleState,
@@ -336,10 +342,10 @@ pub use combobox::{
 };
 pub use command_palette::{
     COMMAND_PALETTE_FULLSCREEN_MAX_HEIGHT, COMMAND_PALETTE_FULLSCREEN_MAX_WIDTH,
-    COMMAND_PALETTE_HISTORY_CAP, COMMAND_PALETTE_OVERLAY_ID, CommandEntry, CommandMatch,
-    CommandPalette, CommandPaletteOutcome, CommandPalettePhase, CommandPalettePresentation,
-    CommandPaletteSize, CommandPaletteState, command_palette_presentation_for_bounds,
-    example_command_catalog, filter_command_entries, fuzzy_match_label,
+    COMMAND_PALETTE_HISTORY_CAP, COMMAND_PALETTE_OVERLAY_ID, CommandEntry, CommandPalette,
+    CommandPaletteOutcome, CommandPalettePhase, CommandPalettePresentation, CommandPaletteSize,
+    CommandPaletteState, command_palette_presentation_for_bounds, dismiss_command_palette_overlay,
+    entries_from_keymap, example_command_catalog, filter_command_entries, fuzzy_match_label,
     open_command_palette_overlay, place_command_palette,
 };
 pub use completion_menu::{
@@ -375,8 +381,8 @@ pub use data_table::{
 pub use data_view::bench as data_view_bench;
 pub use data_view::{
     CellCoord, ColumnKind, ColumnModel, ColumnPin, CopyPayload, DataColumn, DataColumnWidth,
-    ExpandState, FilterSpec, GroupHeader, LoadState, SelectionMode, SelectionModel, SortSpec,
-    VirtualWindow,
+    DataViewOutcome, ExpandState, FilterSpec, GroupHeader, LoadState, SelectionMode,
+    SelectionModel, SortSpec, VirtualWindow,
 };
 pub use date_time_picker::{
     CivilDate, CivilDateRange, CivilDateTime, CivilTime, DATE_TIME_PICKER_FULLSCREEN_MAX_HEIGHT,
@@ -395,7 +401,7 @@ pub use dialog::{
     DialogClosePolicy, DialogFocusZone, DialogOutcome, DialogRecipe, DialogSize, DialogSlots,
     DialogState, DialogVariant, MessageDialog, default_dialog_intent, dialog_recipe_for_bounds,
     dismiss_dialog_overlay, open_alert_dialog_overlay, open_dialog_child_overlay,
-    open_dialog_configured, open_dialog_overlay, place_dialog,
+    open_dialog_configured, open_dialog_overlay, place_dialog, place_dialog_recipe,
 };
 pub use diff::bench as diff_bench;
 pub use diff::{
@@ -408,7 +414,7 @@ pub use drawer::{
     DRAWER_FULLSCREEN_MAX_WIDTH, DRAWER_HANDLE_CELLS, DRAWER_NESTED_OVERLAY_PREFIX,
     DRAWER_OVERLAY_ID, Drawer, DrawerEdge, DrawerModality, DrawerOutcome, DrawerPresentation,
     DrawerSlots, DrawerState, dismiss_drawer_overlay, drawer_presentation_for,
-    open_drawer_configured, open_drawer_nested_overlay, place_drawer_on_edge,
+    open_drawer_configured, open_drawer_nested_overlay, open_drawer_overlay, place_drawer_on_edge,
 };
 pub use dropdown_menu::{
     CONTEXT_MENU_OVERLAY_ID, CONTEXT_MENU_SUBMENU_PREFIX, DROPDOWN_MENU_OVERLAY_ID,
@@ -417,7 +423,7 @@ pub use dropdown_menu::{
     MENU_PROMOTE_MIN_DEPTH, MenuOpenTrigger, dismiss_context_menu_overlays,
     dismiss_dropdown_menu_overlays, dropdown_menu_presentation_for, flatten_menu_nodes,
     measure_menu_panel, open_context_menu_overlay, open_dropdown_menu_overlay,
-    open_menu_submenu_overlay, place_context_menu,
+    open_menu_submenu_overlay, place_context_menu, place_dropdown_menu,
 };
 pub use empty_state::{
     EMPTY_STATE_INLINE_MAX_HEIGHT, EMPTY_STATE_INLINE_MAX_WIDTH, EmptyAction, EmptyFocus,
@@ -447,7 +453,7 @@ pub use form::{
 pub use form_wizard::{
     FORM_WIZARD_COMPACT_MAX_HEIGHT, FORM_WIZARD_NARROW_MAX_WIDTH, FormWizard, FormWizardOutcome,
     FormWizardPresentation, FormWizardState, StepChangeReason, WizardGate, WizardPhase,
-    WizardProgress,
+    WizardProgress, WizardStep, WizardStepStatus,
 };
 pub use fullscreen_viewer::{
     FULLSCREEN_VIEWER_HINT, FULLSCREEN_VIEWER_NESTED_PREFIX, FULLSCREEN_VIEWER_OVERLAY_ID,
@@ -460,17 +466,20 @@ pub use fullscreen_viewer::{
 pub use highlighted_text::{
     HighlightVisual, HighlightedText, HighlightedTextParts, MatchKind, MatchRange, MatchRanges,
     MatchTruncate, match_range_from_display_cols, substring_ranges,
+    substring_ranges_ignore_ascii_case,
 };
 pub use hint_bar::{
-    HINT_GROUP_JOIN, HINT_SEPARATOR_COLS, Hint, HintBar, HintSpan, hint_row_cols, paint_hint_bar,
+    HINT_GROUP_JOIN, HINT_SEPARATOR_COLS, Hint, HintBar, HintSpan, hint_row_cols, render_hint_bar,
     styled_hint_spans, wrapped_hint_lines,
 };
 pub use history_picker::{
     HISTORY_PICKER_FULLSCREEN_MAX_HEIGHT, HISTORY_PICKER_FULLSCREEN_MAX_WIDTH,
-    HISTORY_PICKER_OVERLAY_ID, HistoryEntry, HistoryKind, HistoryMatch, HistoryPicker,
-    HistoryPickerOutcome, HistoryPickerPresentation, HistoryPickerSize, HistoryPickerState,
-    HistoryRedaction, example_history_entries, filter_history_entries,
-    history_picker_presentation_for_bounds, history_redaction_secret, open_history_picker_overlay,
+    HISTORY_PICKER_OVERLAY_ID, HistoryEntry, HistoryKind, HistoryPicker, HistoryPickerOutcome,
+    HistoryPickerPresentation, HistoryPickerSize, HistoryPickerState, HistoryRedaction,
+    dismiss_history_picker_overlay, example_history_entries, filter_history_entries,
+    history_picker_presentation_for_bounds, history_redaction_secret,
+    open_history_picker_fullscreen, open_history_picker_overlay,
+    open_history_picker_popover_overlay, place_history_picker, place_history_picker_popover,
     redact_history_text,
 };
 pub use icon::{Icon, IconParts};
@@ -513,9 +522,11 @@ pub use keyboard_help::{
     KEYBOARD_HELP_OVERLAY_ID, KEYBOARD_HELP_TINY_MAX_HEIGHT, KEYBOARD_HELP_TINY_MAX_WIDTH,
     KeyboardHelp, KeyboardHelpMode, KeyboardHelpOutcome, KeyboardHelpPresentation,
     KeyboardHelpSize, KeyboardHelpState, contract_help_entries, default_keyboard_help_intent,
-    example_help_entries, example_help_keymap, filter_help_entries, help_entries_from_conflicts,
-    help_entries_from_keymap, help_entries_from_overlays, keyboard_help_presentation_for_bounds,
+    dismiss_keyboard_help_overlay, example_help_entries, example_help_keymap, filter_help_entries,
+    help_entries_from_conflicts, help_entries_from_keymap, help_entries_from_overlays,
+    help_entries_from_semantics, help_entries_to_hints, keyboard_help_presentation_for_bounds,
     mark_remapped_help_entries, merge_help_entries, open_keyboard_help_overlay,
+    place_keyboard_help,
 };
 pub use label::{
     CaptionLayout, CaptionParts, DROP_DESCRIPTION_WIDTH, DROP_MARK_WIDTH, Description,
@@ -523,7 +534,8 @@ pub use label::{
     line_plain,
 };
 pub use link::{
-    DestinationDisplay, Link, LinkDestination, LinkOutcome, LinkParts, LinkState, LinkVariant,
+    ActionLink, ActionLinkOutcome, DestinationDisplay, Link, LinkDestination, LinkOutcome,
+    LinkParts, LinkState, LinkVariant,
 };
 pub use list::{
     LIST_NARROW_DROP_ORDER, List, ListClickPolicy, ListRow, ListSelectionMode, ListState, RowRole,
@@ -532,7 +544,8 @@ pub use list::{
 pub use loading_overlay::{
     BUSY_BOUNDARY_MAX_NEST, BusyBoundary, BusyBoundaryOutcome, BusyBoundaryState, BusyMode,
     BusyRoute, LOADING_OVERLAY_MIN_SHOW_MS, LOADING_OVERLAY_SHORT_OP_HINT_MS, LoadingOverlay,
-    example_busy_blocking, example_busy_cancellable, example_busy_optimistic, example_busy_stale,
+    example_busy_blocking, example_busy_cancellable, example_busy_non_blocking,
+    example_busy_optimistic, example_busy_stale,
 };
 pub use log_pane::{LogPane, LogPaneState};
 pub use markdown::{
@@ -548,8 +561,9 @@ pub use mention::{
     MentionCursor, MentionDisambiguator, MentionDraft, MentionFamily, MentionQuery, MentionRef,
     MentionSegment, MentionType, MentionValidity, apply_mention_insert,
     detect_entity_mention_query, detect_file_mention_query, detect_mention_query,
-    filter_mention_candidates, mention_semantic_description, mention_to_completion_candidate,
-    parse_draft_with_mentions, parse_mention_markup,
+    filter_mention_candidates, mention_candidates_as_completion, mention_semantic_description,
+    mention_to_completion_candidate, mention_to_token_item, parse_draft_with_mentions,
+    parse_mention_markup,
 };
 pub use menu_bar::{
     MENU_BAR_NARROW_MAX_WIDTH, MENU_BAR_OVERLAY_ID, MENU_BAR_SUBMENU_OVERLAY_PREFIX, MenuBar,
@@ -629,7 +643,7 @@ pub use popover::{
     PopoverModality, PopoverOutcome, PopoverPresentation, PopoverSlots, PopoverState,
     dismiss_popover_overlay, open_popover_configured, open_popover_modal_overlay,
     open_popover_nested_overlay, open_popover_overlay, open_popover_with_presentation,
-    place_popover, popover_presentation_for,
+    place_popover, place_popover_with_modality, popover_presentation_for,
 };
 pub use preview_card::{
     PREVIEW_CARD_DEFAULT_DELAY_MS, PREVIEW_CARD_DEFAULT_MAX_HEIGHT, PREVIEW_CARD_DEFAULT_MAX_WIDTH,
@@ -643,7 +657,7 @@ pub use preview_card::{
 pub use primitives::{
     ActivationOutcome, ActivationState, Button, ButtonParts, ButtonSize, ButtonState,
     ButtonVariant, ICON_BUTTON_MIN_HIT, IconButton, IconButtonParts, IconButtonSize,
-    IconButtonState, toolbar_icon_action,
+    IconButtonState, button_hit, toolbar_icon_action,
 };
 pub use progress::{
     DEFAULT_PROGRESS_FRAMES, PROGRESS_DEFAULT_THROTTLE_MS, ProgressBar, ProgressBarState,
@@ -653,7 +667,8 @@ pub use progress_steps::{
     PROGRESS_STEPS_COMPACT_MAX_WIDTH, PROGRESS_STEPS_HINTS, PROGRESS_STEPS_SUMMARY_MAX_WIDTH,
     ProgressStep, ProgressStepStatus, ProgressSteps, ProgressStepsMode, ProgressStepsOutcome,
     ProgressStepsPresentation, ProgressStepsState, example_agent_plan_steps,
-    example_build_pipeline, paint_progress_steps_as_timeline, progress_steps_as_timeline_events,
+    example_build_pipeline, paint_progress_steps_as_timeline, progress_steps_as_list_rows,
+    progress_steps_as_timeline_events,
 };
 pub use prompt_composer::bench as prompt_composer_bench;
 pub use prompt_composer::{
@@ -661,21 +676,23 @@ pub use prompt_composer::{
     ComposerPresentation, ContextEstimate, LARGE_PASTE_THRESHOLD, ModeIndicator, ModelIndicator,
     PROMPT_COMPLETION_OVERLAY_ID, PROMPT_FULLSCREEN_OVERLAY_ID, PROMPT_HISTORY_LIMIT,
     PROMPT_UNDO_LIMIT, PromptComposer, PromptComposerLayout, PromptComposerOutcome,
-    PromptComposerState, SubmitPolicy, composer_chip_to_attachment, composer_chip_to_paste,
-    detect_completion, prompt_composer_help_entries, submit_history_to_entries,
+    PromptComposerState, SubmitPolicy, attachment_to_composer_chip, composer_chip_to_attachment,
+    composer_chip_to_paste, detect_completion, paste_to_composer_chip,
+    prompt_composer_help_entries, submit_history_to_entries,
 };
 /// Composer bridge name for a queued prompt entry ([`PromptQueueItem`]).
 pub use prompt_queue_model::PromptQueueItem as QueuedPrompt;
 pub use prompt_queue_model::{AgentBusyState, PromptQueueItem, PromptQueueRef, PromptQueueStatus};
-pub use props::{Prop, paint as paint_props};
+pub use props::{Prop, render as render_props};
 pub use quick_open::{
     ParsedQuickOpenQuery, QUICK_OPEN_DEFAULT_LIMIT, QUICK_OPEN_FULLSCREEN_MAX_HEIGHT,
     QUICK_OPEN_FULLSCREEN_MAX_WIDTH, QUICK_OPEN_OVERLAY_ID, QUICK_OPEN_PROVIDER_STRIP_COMPACT_MAX,
-    QuickOpen, QuickOpenItem, QuickOpenMatch, QuickOpenOutcome, QuickOpenPresentation,
-    QuickOpenPreview, QuickOpenProvider, QuickOpenSearchRequest, QuickOpenSize, QuickOpenState,
-    example_quick_open_files, example_quick_open_providers, example_quick_open_symbols,
-    filter_quick_open_items, open_quick_open_fullscreen, open_quick_open_overlay,
-    parse_quick_open_query, quick_open_jump_targets, quick_open_presentation_for_bounds,
+    QuickOpen, QuickOpenItem, QuickOpenOutcome, QuickOpenPresentation, QuickOpenPreview,
+    QuickOpenProvider, QuickOpenSearchRequest, QuickOpenSize, QuickOpenState,
+    dismiss_quick_open_overlay, example_quick_open_files, example_quick_open_providers,
+    example_quick_open_symbols, filter_quick_open_items, open_quick_open_fullscreen,
+    open_quick_open_overlay, parse_quick_open_query, place_quick_open, quick_open_jump_targets,
+    quick_open_presentation_for_bounds,
 };
 pub use resizable_panel_group::{
     PanelDock, PanelGroupRecipe, PanelId, PanelLayoutPreset, PanelRect, ResizablePanelGroup,
@@ -702,6 +719,7 @@ pub use select::{
     SELECT_FULLSCREEN_MAX_HEIGHT, SELECT_FULLSCREEN_MAX_WIDTH, Select, SelectOption, SelectOutcome,
     SelectPresentation, SelectRecipe, SelectRowKind, SelectState,
 };
+pub use selection::Selection;
 pub use semantic_status::SemanticStatus;
 pub use separator::{Separator, SeparatorOrientation, SeparatorThickness, SeparatorVariant};
 pub use sidebar::{
@@ -719,7 +737,8 @@ pub use slash_command_menu::bench as slash_command_menu_bench;
 pub use slash_command_menu::{
     SLASH_ARG_SEPARATOR, SLASH_COMMAND_OVERLAY_ID, SLASH_TRIGGER, SlashArgument, SlashCommand,
     SlashCommandMenu, SlashCommandMenuOutcome, SlashCommandMenuState, SlashCommandSource,
-    SlashMenuPhase, SlashQuery, apply_slash_insert, detect_slash_query, example_slash_catalog,
+    SlashMenuPhase, SlashQuery, apply_slash_insert, argument_values_to_candidates,
+    detect_slash_query, dismiss_slash_command_overlay, example_slash_catalog,
     filter_argument_values, filter_slash_commands, open_slash_command_overlay,
     place_slash_command_menu, slash_commands_from_command_entries, slash_commands_to_candidates,
     slash_presentation_for,
@@ -748,15 +767,15 @@ pub use status_strip::{LineSegment, StatusSegment, StatusStrip, paint_line_segme
 pub use stepper::{
     STEPPER_COMPACT_MAX_HEIGHT, STEPPER_COMPACT_MAX_WIDTH, STEPPER_NARROW_MAX_WIDTH, StepItem,
     StepStatus, Stepper, StepperNavPolicy, StepperOrientation, StepperOutcome, StepperPresentation,
-    StepperState, default_stepper_intent, example_onboarding_steps,
+    StepperState, default_stepper_intent, example_onboarding_steps, step_items_from_titles,
     stepper_presentation_for_bounds,
 };
 pub use streaming_markdown::bench as streaming_markdown_bench;
 pub use streaming_markdown::fixtures as streaming_markdown_fixtures;
 pub use streaming_markdown::{
     STREAM_COALESCE_CHARS, STREAM_COALESCE_DELTAS, STREAM_HOT_FULL_REPARSE_BUDGET, STREAM_TAIL_MAX,
-    StreamCitation, StreamInsertion, StreamPhase, StreamingMarkdown, StreamingMarkdownState,
-    has_open_fence,
+    StreamCitation, StreamInsertion, StreamPhase, StreamingMarkdown, StreamingMarkdownOutcome,
+    StreamingMarkdownState, has_open_fence, streaming_stable_prefix_len,
 };
 pub use surface::{Surface, SurfaceFill, SurfacePaintPlan, SurfaceParts, SurfaceRecipe};
 pub use table::{
@@ -787,7 +806,7 @@ pub use text_input::{
 };
 pub use theme_picker::{
     BUILTIN_THEME_PRESETS, ThemePicker, ThemePickerOutcome, ThemePickerState, ThemePreset,
-    system_from_preset_id,
+    system_from_preset_id, theme_from_preset_id,
 };
 pub use toast::{
     Anchor, Severity, TOAST_DEFAULT_H_MARGIN, TOAST_DEFAULT_MAX_VISIBLE, TOAST_DEFAULT_TTL,
@@ -811,7 +830,8 @@ pub use toolbar::{
 pub use tooltip::{
     TOOLTIP_CHROME_COLS, TOOLTIP_CHROME_ROWS, TOOLTIP_DEFAULT_DELAY_MS, TOOLTIP_DEFAULT_MAX_WIDTH,
     TOOLTIP_OVERLAY_ID, Tooltip, TooltipContent, TooltipOutcome, TooltipPrefer, TooltipState,
-    TooltipTrigger, TooltipVariant, open_tooltip_overlay, place_tooltip, tooltip_overlay_size,
+    TooltipTrigger, TooltipVariant, dismiss_tooltip_overlay, open_tooltip_overlay, place_tooltip,
+    tooltip_overlay_size,
 };
 pub use transcript::{
     Transcript, TranscriptAnchor, TranscriptBlock, TranscriptKind, TranscriptOutcome,
@@ -832,7 +852,7 @@ pub use tree_table::{
     filter_tree_table_with_ancestors,
 };
 pub use view_state::{Banner, LoadingView};
-pub use viewport::{CellPos, Viewport, ViewportEvent, ViewportState};
+pub use viewport::Viewport;
 pub use virtual_grid::{
     GridCell, GridCellRegion, GridColumn, GridColumnWidth, GridHeaderRegion, GridRow, VirtualGrid,
     VirtualGridOutcome, VirtualGridState,
@@ -840,6 +860,7 @@ pub use virtual_grid::{
 pub use virtual_list::{
     VIRTUAL_LIST_BENCH_ROWS, VIRTUAL_LIST_DEFAULT_OVERSCAN, VirtualList, VirtualListDiagnostics,
     VirtualListFollow, VirtualListItem, VirtualListState, VirtualPageStatus,
+    example_project_million, project_index_window,
 };
 pub use virtualizer::{
     ExtentPolicy, StickyRegion, VirtRange, VirtSlice, Virtualizer, Virtualizer2D,
@@ -847,4 +868,4 @@ pub use virtualizer::{
 };
 
 #[cfg(test)]
-pub(crate) mod tests;
+mod tests;

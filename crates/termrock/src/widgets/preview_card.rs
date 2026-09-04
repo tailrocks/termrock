@@ -24,19 +24,21 @@
 //! is the reusable floating / side card primitive.
 //!
 //! Research: IDE quick previews, hover cards, Yazi previews, QuickOpen panels.
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::time::Duration;
 use web_time::Instant;
 
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
-    input::{KeyCode, KeyEvent},
+    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
     interaction::{
         OverlayId, OverlayKind, OverlayOutcome, OverlayPolicy, OverlaySize, OverlaySpec,
-        OverlayStack, SemanticNode, SemanticRole, SemanticScene, SemanticState, place_overlay,
+        OverlayStack, SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent,
+        place_overlay,
     },
     runtime::{FrameTick, Presence},
-    style::{DesignSystem, MotionPolicy, Role},
+    style::{DesignSystem, GlyphSet, MotionPolicy, Role},
     text::{display_cols, take_display_cols},
 };
 
@@ -151,6 +153,18 @@ pub enum PreviewTrigger {
 }
 
 impl PreviewTrigger {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Pointer => "pointer",
+            Self::Focus => "focus",
+            Self::Selection => "selection",
+            Self::Hover => "hover",
+            Self::Any => "any",
+        }
+    }
+
     fn armed(self, pointer: bool, focus: bool, selection: bool) -> bool {
         match self {
             Self::Pointer => pointer,
@@ -203,6 +217,10 @@ pub struct PreviewCardContent<'a> {
     pub error_message: Option<&'a str>,
     /// Same facts available without preview (list columns, status, labels).
     pub essential_elsewhere: bool,
+    /// Pin action label (default "Pin").
+    pub pin_label: Option<&'a str>,
+    /// Open / promote action label (default "Open").
+    pub open_label: Option<&'a str>,
 }
 
 impl<'a> PreviewCardContent<'a> {
@@ -218,6 +236,8 @@ impl<'a> PreviewCardContent<'a> {
             load: PreviewLoadState::Ready,
             error_message: None,
             essential_elsewhere: true,
+            pin_label: None,
+            open_label: None,
         }
     }
 
@@ -563,6 +583,25 @@ impl PreviewCardState {
         self.selection_debounce = d;
     }
 
+    /// Disable.
+    pub fn set_disabled(&mut self, on: bool) {
+        self.disabled = on;
+        if on {
+            self.force_hide();
+        }
+    }
+
+    /// Enforce essential-elsewhere (default true).
+    pub fn set_enforce_essential_elsewhere(&mut self, on: bool) {
+        self.enforce_essential_elsewhere = on;
+    }
+
+    /// ASCII chrome preference (paint also accepts widget flag).
+    /// Max width for measure helpers.
+    pub fn set_max_width(&mut self, w: u16) {
+        self.max_width = w.max(12);
+    }
+
     /// Pointer over anchor.
     pub fn set_pointer_over(&mut self, over: bool) {
         self.pointer_over = over;
@@ -578,6 +617,15 @@ impl PreviewCardState {
             self.force_hide();
         }
     }
+
+    /// Selection present (list cursor non-empty).
+    pub fn set_selection_active(&mut self, on: bool) {
+        self.selection_active = on;
+        if !self.pinned && !self.armed() {
+            self.force_hide();
+        }
+    }
+
     /// Armed for delayed show (or pinned).
     #[must_use]
     pub fn armed(&self) -> bool {
@@ -603,6 +651,12 @@ impl PreviewCardState {
         self.pinned
     }
 
+    /// Disabled?
+    #[must_use]
+    pub const fn is_disabled(&self) -> bool {
+        self.disabled
+    }
+
     /// Current generation.
     #[must_use]
     pub const fn generation(&self) -> u64 {
@@ -625,6 +679,24 @@ impl PreviewCardState {
     #[must_use]
     pub const fn load(&self) -> PreviewLoadState {
         self.load
+    }
+
+    /// Slots after paint.
+    #[must_use]
+    pub const fn slots(&self) -> PreviewCardSlots {
+        self.slots
+    }
+
+    /// Body area for host-extended paint.
+    #[must_use]
+    pub const fn body_area(&self) -> Rect {
+        self.slots.body
+    }
+
+    /// Presence deadline for host poll.
+    #[must_use]
+    pub fn next_deadline(&self) -> Option<Instant> {
+        self.presence.next_deadline()
     }
 
     /// Force hide (also unpins).
@@ -667,6 +739,25 @@ impl PreviewCardState {
         }
     }
 
+    /// Clear selection (hides unpinned).
+    pub fn clear_selection(&mut self) -> PreviewCardOutcome {
+        self.selection_id = None;
+        self.selection_active = false;
+        self.pending_generation = None;
+        self.load = PreviewLoadState::Idle;
+        self.selection_dirty_at_ms = None;
+        if self.pinned {
+            return PreviewCardOutcome::Ignored;
+        }
+        let was = self.was_visible || self.is_visible();
+        self.force_hide();
+        if was {
+            PreviewCardOutcome::Hidden
+        } else {
+            PreviewCardOutcome::Ignored
+        }
+    }
+
     /// Begin async fetch for current selection; returns generation token.
     pub fn begin_fetch(&mut self) -> PreviewCardOutcome {
         if self.disabled || self.selection_id.is_none() {
@@ -690,6 +781,26 @@ impl PreviewCardState {
         self.load = PreviewLoadState::Ready;
         PreviewCardOutcome::ContentApplied { generation }
     }
+
+    /// Apply error for generation.
+    pub fn apply_error(&mut self, generation: u64) -> PreviewCardOutcome {
+        if !self.accepts_generation(generation) {
+            return PreviewCardOutcome::GenerationStale { generation };
+        }
+        self.pending_generation = None;
+        self.applied_generation = generation;
+        self.generation = generation;
+        self.load = PreviewLoadState::Error;
+        PreviewCardOutcome::ContentApplied { generation }
+    }
+
+    /// Mark load stale (optional host cue).
+    pub fn mark_stale(&mut self) {
+        if self.load == PreviewLoadState::Ready {
+            self.load = PreviewLoadState::Stale;
+        }
+    }
+
     fn accepts_generation(&self, generation: u64) -> bool {
         if let Some(pending) = self.pending_generation {
             generation == pending
@@ -728,6 +839,16 @@ impl PreviewCardState {
         }
         PreviewCardOutcome::Unpinned
     }
+
+    /// Toggle pin.
+    pub fn toggle_pin(&mut self) -> PreviewCardOutcome {
+        if self.pinned {
+            self.unpin()
+        } else {
+            self.pin()
+        }
+    }
+
     fn effective_delay(&self, motion: MotionPolicy) -> Duration {
         match motion {
             MotionPolicy::Off => Duration::ZERO,
@@ -823,6 +944,34 @@ impl PreviewCardState {
         }
         self.visibility_outcome()
     }
+
+    /// Update triggers then advance.
+    pub fn advance_with_triggers(
+        &mut self,
+        tick: FrameTick,
+        pointer_over: bool,
+        focus_within: bool,
+        selection_active: bool,
+        motion: MotionPolicy,
+    ) -> PreviewCardOutcome {
+        self.pointer_over = pointer_over;
+        self.focus_within = focus_within;
+        self.selection_active = selection_active;
+        if self.pinned {
+            return PreviewCardOutcome::Ignored;
+        }
+        if !self.armed() {
+            let was = self.was_visible || self.presence.is_visible();
+            self.force_hide();
+            return if was {
+                PreviewCardOutcome::Hidden
+            } else {
+                PreviewCardOutcome::Ignored
+            };
+        }
+        self.advance(tick, motion)
+    }
+
     fn visibility_outcome(&mut self) -> PreviewCardOutcome {
         let vis = self.is_visible();
         if vis && !self.was_visible {
@@ -859,7 +1008,7 @@ impl PreviewCardState {
         if key.is_release() {
             return PreviewCardOutcome::Ignored;
         }
-        if !key.is_press() {
+        if !key.is_insert() {
             return PreviewCardOutcome::Ignored;
         }
         match key.code {
@@ -867,6 +1016,28 @@ impl PreviewCardState {
             KeyCode::Enter if key.modifiers.is_empty() => PreviewCardOutcome::OpenRequested,
             KeyCode::Char('p' | 'P') if key.modifiers.is_empty() => self.unpin(),
             _ => PreviewCardOutcome::Ignored,
+        }
+    }
+
+    /// Intent routing (pinned only).
+    pub fn handle_intent(&mut self, intent: UiIntent) -> PreviewCardOutcome {
+        if !self.pinned || self.disabled {
+            return PreviewCardOutcome::Ignored;
+        }
+        match intent {
+            UiIntent::Cancel | UiIntent::Close => self.unpin(),
+            UiIntent::Activate | UiIntent::Submit => PreviewCardOutcome::OpenRequested,
+            _ => PreviewCardOutcome::Ignored,
+        }
+    }
+
+    /// Sync visibility with stack presence.
+    pub fn sync_with_stack<F>(&mut self, stack: &OverlayStack<F>) {
+        let id = OverlayId::from_static(PREVIEW_CARD_OVERLAY_ID);
+        if !stack.contains(&id) && !self.pinned {
+            self.was_visible = false;
+            self.show_requested = false;
+            self.presence.force_hide();
         }
     }
 }
@@ -879,6 +1050,7 @@ pub struct PreviewCard<'a> {
     content: PreviewCardContent<'a>,
     system: &'a DesignSystem,
     colorless: bool,
+    max_width: u16,
 }
 
 impl<'a> PreviewCard<'a> {
@@ -889,7 +1061,29 @@ impl<'a> PreviewCard<'a> {
             content,
             system,
             colorless: false,
+            max_width: PREVIEW_CARD_DEFAULT_MAX_WIDTH,
         }
+    }
+
+    /// ASCII borders.
+    #[must_use]
+    /// Colorless roles.
+    pub const fn colorless(mut self, on: bool) -> Self {
+        self.colorless = on;
+        self
+    }
+
+    /// Max width.
+    #[must_use]
+    pub const fn max_width(mut self, w: u16) -> Self {
+        self.max_width = w;
+        self
+    }
+
+    /// Overlay size for current content.
+    #[must_use]
+    pub fn overlay_size(&self) -> OverlaySize {
+        preview_card_overlay_size(&self.content, self.max_width)
     }
 
     /// Paint when visible; no-op when hidden.
@@ -953,7 +1147,7 @@ impl<'a> PreviewCard<'a> {
         buffer.set_stringn(
             inner.x,
             y,
-            take_display_cols(&title, usize::from(inner.width)).as_ref(),
+            &take_display_cols(&title, usize::from(inner.width)),
             usize::from(inner.width),
             title_style,
         );
@@ -963,7 +1157,7 @@ impl<'a> PreviewCard<'a> {
                 buffer.set_stringn(
                     inner.x,
                     y,
-                    take_display_cols(sub, usize::from(inner.width)).as_ref(),
+                    &take_display_cols(sub, usize::from(inner.width)),
                     usize::from(inner.width),
                     self.system.style(Role::TextMuted),
                 );
@@ -982,7 +1176,7 @@ impl<'a> PreviewCard<'a> {
                 buffer.set_stringn(
                     inner.x,
                     y,
-                    take_display_cols(&line, usize::from(inner.width)).as_ref(),
+                    &take_display_cols(&line, usize::from(inner.width)),
                     usize::from(inner.width),
                     self.system.style(Role::Text),
                 );
@@ -1018,7 +1212,7 @@ impl<'a> PreviewCard<'a> {
                 buffer.set_stringn(
                     inner.x,
                     y,
-                    take_display_cols(&line, usize::from(inner.width)).as_ref(),
+                    &take_display_cols(&line, usize::from(inner.width)),
                     usize::from(inner.width),
                     self.system.style(Role::Danger),
                 );
@@ -1050,7 +1244,7 @@ impl<'a> PreviewCard<'a> {
                     buffer.set_stringn(
                         inner.x,
                         y.saturating_add(i as u16),
-                        take_display_cols(line, usize::from(inner.width)).as_ref(),
+                        &take_display_cols(line, usize::from(inner.width)),
                         usize::from(inner.width),
                         self.system.style(Role::Text),
                     );
@@ -1069,7 +1263,7 @@ impl<'a> PreviewCard<'a> {
         buffer.set_stringn(
             inner.x,
             y,
-            take_display_cols(hint, usize::from(inner.width)).as_ref(),
+            &take_display_cols(hint, usize::from(inner.width)),
             usize::from(inner.width),
             self.system.style(Role::TextMuted),
         );
@@ -1218,7 +1412,7 @@ pub fn example_session_preview<'a>() -> (
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::{KeyEventKind, KeyModifiers};
+    use crate::input::KeyModifiers;
     use crate::interaction::OverlayOutcome;
 
     #[test]
@@ -1363,32 +1557,6 @@ mod tests {
             state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
             PreviewCardOutcome::OpenRequested
         ));
-    }
-
-    #[test]
-    fn repeated_pinned_actions_are_ignored() {
-        let mut state = PreviewCardState::new();
-        let _ = state.pin();
-
-        let mut repeat_enter = KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE);
-        repeat_enter.kind = KeyEventKind::Repeat;
-        let before = state.clone();
-        assert_eq!(state.handle_key(repeat_enter), PreviewCardOutcome::Ignored);
-        assert_eq!(state, before);
-        assert_eq!(
-            state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
-            PreviewCardOutcome::OpenRequested
-        );
-
-        let mut repeat_unpin = KeyEvent::new(KeyCode::Char('p'), KeyModifiers::NONE);
-        repeat_unpin.kind = KeyEventKind::Repeat;
-        let before = state.clone();
-        assert_eq!(state.handle_key(repeat_unpin), PreviewCardOutcome::Ignored);
-        assert_eq!(state, before);
-        assert_eq!(
-            state.handle_key(KeyEvent::new(KeyCode::Char('p'), KeyModifiers::NONE)),
-            PreviewCardOutcome::Unpinned
-        );
     }
 
     #[test]

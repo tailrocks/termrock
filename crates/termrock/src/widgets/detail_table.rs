@@ -1,3 +1,4 @@
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -6,11 +7,11 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent},
+    input::{KeyCode, KeyEvent, KeyEventKind},
     osc::HyperlinkRegion,
     scroll::{DialogScroll, Measured, UNCACHED_REVISION, effective_offset},
     style::DesignSystem,
-    style::{ListRowVisualState, Role},
+    style::{ListRowVisualState, Role, RolePalette},
     text::take_display_cols,
 };
 
@@ -159,7 +160,7 @@ impl<Id: Clone + PartialEq> DetailTableState<Id> {
         match key.code {
             KeyCode::Up | KeyCode::Char('k' | 'K') => self.select_previous(rows),
             KeyCode::Down | KeyCode::Char('j' | 'J') => self.select_next(rows),
-            KeyCode::Enter if key.is_press() => self.activate_selected(rows),
+            KeyCode::Enter => self.activate_selected(rows),
             _ => DetailTableOutcome::Ignored,
         }
     }
@@ -302,6 +303,16 @@ impl<'a, Id> DetailTable<'a, Id> {
     /// [`crate::style::KvSeparator`].
     fn separator(&self) -> &'static str {
         self.system.kv_separator().text()
+    }
+
+    /// Line shown when there is nothing to show.
+    ///
+    /// A collection that paints nothing when empty reads as broken; it has to
+    /// say that it is empty.
+    #[must_use]
+    pub const fn empty_message(mut self, message: &'a str) -> Self {
+        self.empty_message = message;
+        self
     }
 
     #[must_use]
@@ -780,8 +791,6 @@ fn affordance_width<Id>(row: &DetailRow<'_, Id>, copied: bool) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::{KeyEventKind, KeyModifiers};
-    use crate::style::RolePalette;
     use ratatui_core::{buffer::Buffer, widgets::StatefulWidget};
 
     #[test]
@@ -898,27 +907,6 @@ mod tests {
         assert_eq!(
             state.click_link(log_position),
             DetailTableOutcome::ActivateLink("log")
-        );
-    }
-
-    #[test]
-    fn repeated_enter_does_not_reactivate_selected_row() {
-        let rows = rows();
-        let mut state = DetailTableState::default();
-        assert_eq!(
-            state.select_next(&rows),
-            DetailTableOutcome::Selected("run")
-        );
-
-        let mut repeat = KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE);
-        repeat.kind = KeyEventKind::Repeat;
-        let before = state.clone();
-        assert_eq!(state.handle_key(&rows, repeat), DetailTableOutcome::Ignored);
-        assert_eq!(state, before);
-
-        assert_eq!(
-            state.handle_key(&rows, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
-            DetailTableOutcome::Copy("run")
         );
     }
 

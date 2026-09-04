@@ -30,7 +30,7 @@ use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{NavigationMove, PageMove, UiIntent},
     style::{DesignSystem, ListRowVisualState, Role},
-    text::{contains_lower_all, display_cols, take_display_cols, wrap_display_cols},
+    text::{display_cols, take_display_cols, wrap_display_cols},
     widgets::{scroll_area::ScrollAreaState, tiered_row::TieredRow},
 };
 
@@ -52,6 +52,18 @@ pub enum LogLevel {
 }
 
 impl LogLevel {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Trace => "trace",
+            Self::Debug => "debug",
+            Self::Info => "info",
+            Self::Warn => "warn",
+            Self::Error => "error",
+        }
+    }
+
     #[must_use]
     fn role(self) -> Role {
         match self {
@@ -64,7 +76,7 @@ impl LogLevel {
 
     /// Level mark (`ascii` uses T/D/I/W/E).
     #[must_use]
-    pub const fn glyph(self) -> &'static str {
+    pub const fn glyph(self, _ascii: bool) -> &'static str {
         match self {
             Self::Trace => ".",
             Self::Debug => "·",
@@ -98,6 +110,17 @@ pub enum LogLineRecipe {
     Detailed,
 }
 
+impl LogLineRecipe {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Compact => "compact",
+            Self::Detailed => "detailed",
+        }
+    }
+}
+
 /// How body text fits the cell width.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -107,6 +130,17 @@ pub enum LogWrap {
     Clip,
     /// Soft-wrap to multiple viewport rows (virtual height grows).
     Wrap,
+}
+
+impl LogWrap {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Clip => "clip",
+            Self::Wrap => "wrap",
+        }
+    }
 }
 
 /// One projected log line.
@@ -156,6 +190,13 @@ impl<'a> LogLine<'a> {
     #[must_use]
     pub const fn source(mut self, source: &'a str) -> Self {
         self.source = Some(source);
+        self
+    }
+
+    /// Styled spans (ANSI path).
+    #[must_use]
+    pub const fn styled(mut self, line: &'a Line<'a>) -> Self {
+        self.styled = Some(line);
         self
     }
 
@@ -263,15 +304,8 @@ pub struct LogStreamState {
     pub reconnect_message: Option<String>,
     /// Burst batched count (chrome).
     pub batched: u64,
-    /// Widest filtered line in display columns (h-scroll bound is this plus
-    /// the 40-column chrome pad).
-    content_cols: u16,
-    /// Scan memo `(line_count, search, level_floor)` for `content_cols`.
-    /// The filtered projection is append-only while the filter is stable, so
-    /// a longer projection rescans only the appended tail; a shorter one
-    /// (bounded-history truncation) or a changed filter forces a full rescan.
-    /// Without the memo, paint rescanned every line every frame.
-    content_width_memo: (usize, Option<String>, LogLevel),
+    /// Content width estimate for h-scroll.
+    content_width: u16,
     /// Hit regions.
     pub regions: Vec<LogStreamRegion>,
     /// Prefer no-color paint (letter marks; or set on the widget).
@@ -310,8 +344,7 @@ impl LogStreamState {
             dropped: 0,
             reconnect_message: None,
             batched: 0,
-            content_cols: 0,
-            content_width_memo: (0, None, LogLevel::Trace),
+            content_width: 0,
             regions: Vec::new(),
             colorless: false,
             anchor_id: None,
@@ -321,6 +354,12 @@ impl LogStreamState {
     /// Host input gate.
     pub fn set_accepts_input(&mut self, accepts: bool) {
         self.accepts_input = accepts;
+    }
+
+    /// Whether host granted input.
+    #[must_use]
+    pub const fn accepts_input(&self) -> bool {
+        self.accepts_input
     }
 
     /// Following tail.
@@ -339,6 +378,12 @@ impl LogStreamState {
     #[must_use]
     pub fn unread(&self) -> u64 {
         u64::from(self.scroll.new_content().unseen)
+    }
+
+    /// Scroll state (anchors, indicator).
+    #[must_use]
+    pub const fn scroll(&self) -> &ScrollAreaState {
+        &self.scroll
     }
 
     /// Selected ids.
@@ -371,6 +416,12 @@ impl LogStreamState {
     pub fn set_reconnect_message(&mut self, msg: Option<String>) {
         self.reconnect_message = msg;
     }
+
+    /// Report burst batch chrome.
+    pub fn report_batched(&mut self, n: u64) {
+        self.batched = n;
+    }
+
     /// Clear dropped / reconnect chrome.
     pub fn ack_dropped(&mut self) {
         self.dropped = 0;
@@ -493,7 +544,7 @@ impl LogStreamState {
             }
         }
         if is_press && matches!(key.code, KeyCode::Right | KeyCode::Char('l' | 'L')) {
-            let max = self.content_cols;
+            let max = self.content_width.saturating_sub(40);
             if self.h_offset < max {
                 self.h_offset = self.h_offset.saturating_add(4).min(max);
                 return LogStreamOutcome::HScrolled {
@@ -721,6 +772,16 @@ impl LogStreamState {
         }
     }
 
+    /// Legacy key API without lines (scroll/follow only).
+    pub fn handle_key_scroll(&mut self, key: KeyEvent) -> LogStreamOutcome {
+        self.handle_key(key, &[])
+    }
+
+    /// Legacy intent without lines.
+    pub fn handle_intent_scroll(&mut self, intent: UiIntent) -> LogStreamOutcome {
+        self.handle_intent(intent, &[])
+    }
+
     fn copy_outcome(&self, lines: &[LogLine<'_>]) -> LogStreamOutcome {
         let view = self.filtered(lines);
         let text = if !self.selected.is_empty() {
@@ -794,6 +855,11 @@ impl LogStreamState {
             _ => LogStreamOutcome::Ignored,
         }
     }
+
+    /// Legacy mouse without lines.
+    pub fn handle_mouse_scroll(&mut self, event: MouseEvent) -> LogStreamOutcome {
+        self.handle_mouse(event, &[])
+    }
 }
 
 /// Filter by search + level floor.
@@ -813,10 +879,14 @@ pub fn filter_log_lines<'a>(
             if q.is_empty() {
                 return true;
             }
-            contains_lower_all(
-                &[l.text, l.source.unwrap_or(""), l.timestamp.unwrap_or("")],
-                &q,
+            let hay = format!(
+                "{} {} {}",
+                l.text,
+                l.source.unwrap_or(""),
+                l.timestamp.unwrap_or("")
             )
+            .to_ascii_lowercase();
+            hay.contains(&q)
         })
         .collect()
 }
@@ -884,7 +954,7 @@ impl<'a> LogStream<'a> {
     }
 
     /// Paint O(visible).
-    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut LogStreamState) {
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut LogStreamState) {
         state.regions.clear();
         if area.is_empty() {
             state.body_rows = 0;
@@ -897,29 +967,16 @@ impl<'a> LogStream<'a> {
         state.area_rows = area.height;
 
         let view = state.filtered(self.lines);
-        // Content width for h-scroll, memoized per (count, filter). Scanning
-        // every line every frame dominated paint on hot logs.
-        let width_of = |l: &&LogLine<'_>| u16::try_from(display_cols(l.text)).unwrap_or(u16::MAX);
-        if state.content_width_memo.1.as_deref() != state.search.as_deref()
-            || state.content_width_memo.2 != state.level_floor
-            || view.len() < state.content_width_memo.0
-        {
-            state.content_cols = view.iter().map(width_of).max().unwrap_or(0);
-        } else if view.len() > state.content_width_memo.0 {
-            let tail_max = view[state.content_width_memo.0..]
-                .iter()
-                .map(width_of)
-                .max()
-                .unwrap_or(0);
-            state.content_cols = state.content_cols.max(tail_max);
-        }
-        state.content_width_memo = (view.len(), state.search.clone(), state.level_floor);
-        state.h_offset = state.h_offset.min(
-            state
-                .content_cols
-                .saturating_add(40)
-                .saturating_sub(area.width.max(1)),
-        );
+        // Content width for h-scroll
+        state.content_width = view
+            .iter()
+            .map(|l| u16::try_from(display_cols(l.text)).unwrap_or(u16::MAX))
+            .max()
+            .unwrap_or(0)
+            .saturating_add(40);
+        state.h_offset = state
+            .h_offset
+            .min(state.content_width.saturating_sub(area.width.max(1)));
 
         let following = state.scroll.is_following();
         let unread = state.unread();
@@ -1060,7 +1117,7 @@ impl<'a> LogStream<'a> {
                 );
                 let style = chrome.label_style(style);
 
-                let g = line.level.glyph();
+                let g = line.level.glyph(false);
                 let bm = if bookmarked { "★" } else { " " };
                 let batch = if line.batch_count > 1 {
                     format!("{}{}", "×", line.batch_count)
@@ -1259,14 +1316,14 @@ impl<'a> LogStream<'a> {
 impl StatefulWidget for &LogStream<'_> {
     type State = LogStreamState;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        LogStream::paint(self, area, buffer, state);
+        LogStream::render(self, area, buffer, state);
     }
 }
 
 impl StatefulWidget for LogStream<'_> {
     type State = LogStreamState;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        LogStream::paint(&self, area, buffer, state);
+        LogStream::render(&self, area, buffer, state);
     }
 }
 
@@ -1284,7 +1341,8 @@ pub fn log_lines_from_plain<'a>(
     text_buf.clear();
     for (i, line) in owned.iter().enumerate() {
         id_buf.push(i.to_string());
-        text_buf.push(crate::widgets::line_plain(line));
+        let t: String = line.spans.iter().map(|s| s.content.as_ref()).collect();
+        text_buf.push(t);
     }
     id_buf
         .iter()
@@ -1301,15 +1359,17 @@ pub mod bench {
     pub const LINES_PER_SEC: u32 = 20_000;
     /// Viewport rows for paint budget.
     pub const VIEWPORT: u16 = 40;
+    /// Burst batch size under pressure.
+    pub const BURST_BATCH: u32 = 128;
     /// Default bounded history (aligns with LogPane).
     pub const BOUNDED_HISTORY: usize = 10_000;
+    /// Max paint cells per frame (viewport × avg cols).
+    pub const MAX_PAINT_CELLS: u32 = 40 * 80;
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::widgets::tests::click;
-    use crate::widgets::tests::mouse;
 
     fn sample() -> Vec<LogLine<'static>> {
         vec![
@@ -1543,6 +1603,7 @@ mod tests {
 
     #[test]
     fn mouse_wheel_and_chip() {
+        use ratatui_core::layout::Position;
         let system = DesignSystem::default();
         let lines = sample();
         let mut state = LogStreamState::new();
@@ -1550,13 +1611,21 @@ mod tests {
         let mut buffer = Buffer::empty(area);
         LogStream::new(&lines, &system).render(area, &mut buffer, &mut state);
         assert!(state.is_following());
-        let wheel = mouse(MouseEventKind::ScrollUp, 0, 0);
+        let wheel = MouseEvent {
+            kind: MouseEventKind::ScrollUp,
+            position: Position::new(0, 0),
+            modifiers: KeyModifiers::NONE,
+        };
         assert!(matches!(
             state.handle_mouse(wheel, &lines),
             LogStreamOutcome::Detach
         ));
         let chip_y = area.bottom().saturating_sub(1);
-        let click = click(0, chip_y);
+        let click = MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: Position::new(0, chip_y),
+            modifiers: KeyModifiers::NONE,
+        };
         assert!(matches!(
             state.handle_mouse(click, &lines),
             LogStreamOutcome::Follow

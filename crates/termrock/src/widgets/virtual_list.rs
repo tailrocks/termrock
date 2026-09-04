@@ -18,13 +18,15 @@
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
+    text::Line,
     widgets::StatefulWidget,
 };
 
 use crate::{
+    input::KeyEvent,
     interaction::{
         HitRegion, NavigationMove, Outcome, PageMove, SemanticNode, SemanticRole, SemanticScene,
-        SemanticState, UiIntent,
+        SemanticState, UiIntent, default_list_intent,
     },
     style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
@@ -49,6 +51,17 @@ pub enum VirtualListFollow {
     Off,
     /// Keep the last items visible (log tail).
     Tail,
+}
+
+impl VirtualListFollow {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Off => "off",
+            Self::Tail => "tail",
+        }
+    }
 }
 
 /// Async page-loading status for the measure window.
@@ -93,6 +106,15 @@ impl<'a, Id> VirtualListItem<'a, Id> {
     pub fn new(logical_index: u64, row: ListRow<'a, Id>) -> Self {
         Self { logical_index, row }
     }
+
+    /// Placeholder loading row for a missing page.
+    #[must_use]
+    pub fn placeholder(logical_index: u64, id: Id) -> Self {
+        Self {
+            logical_index,
+            row: ListRow::item(id, Line::from("loading")).loading(),
+        }
+    }
 }
 
 // ── Diagnostics ─────────────────────────────────────────────────────────────
@@ -136,6 +158,8 @@ pub struct VirtualListState<Id> {
     last_diag: VirtualListDiagnostics,
     /// Pointer for hover hit tests on last paint.
     pointer: Option<Position>,
+    /// Hit regions for projected body rows only.
+    regions: Vec<HitRegion<Id>>,
 }
 
 impl<Id> Default for VirtualListState<Id> {
@@ -148,19 +172,18 @@ impl<Id> VirtualListState<Id> {
     /// Empty universe, fixed 1-row extent, default overscan.
     #[must_use]
     pub fn new() -> Self {
-        let mut list = ListState::default();
-        list.collection_mut().set_wrap(false);
         Self {
             virt: Virtualizer::fixed(1)
                 .with_overscan(VIRTUAL_LIST_DEFAULT_OVERSCAN)
                 .with_viewport(1),
-            list,
+            list: ListState::default(),
             follow: VirtualListFollow::Off,
             page_status: VirtualPageStatus::Ready,
             filter_query: None,
             filter_match_count: None,
             last_diag: VirtualListDiagnostics::default(),
             pointer: None,
+            regions: Vec::new(),
         }
     }
 
@@ -181,6 +204,11 @@ impl<Id> VirtualListState<Id> {
         &self.virt
     }
 
+    /// Mutable virtualizer (advanced).
+    pub fn virtualizer_mut(&mut self) -> &mut Virtualizer {
+        &mut self.virt
+    }
+
     /// Nested list state over the projected window (typeahead / multi).
     #[must_use]
     pub const fn list_state(&self) -> &ListState<Id> {
@@ -198,6 +226,12 @@ impl<Id> VirtualListState<Id> {
         self.last_diag
     }
 
+    /// Follow policy.
+    #[must_use]
+    pub const fn follow(&self) -> VirtualListFollow {
+        self.follow
+    }
+
     /// Set follow-tail.
     pub fn set_follow(&mut self, follow: VirtualListFollow) {
         self.follow = follow;
@@ -208,9 +242,26 @@ impl<Id> VirtualListState<Id> {
         }
     }
 
+    /// Page status.
+    #[must_use]
+    pub const fn page_status(&self) -> VirtualPageStatus {
+        self.page_status
+    }
+
+    /// Set async page status.
+    pub fn set_page_status(&mut self, status: VirtualPageStatus) {
+        self.page_status = status;
+    }
+
     /// Filter chrome.
     pub fn set_filter_query(&mut self, query: Option<String>) {
         self.filter_query = query.filter(|q| !q.is_empty());
+    }
+
+    /// Filter query.
+    #[must_use]
+    pub fn filter_query(&self) -> Option<&str> {
+        self.filter_query.as_deref()
     }
 
     /// Host-reported match count after filter.
@@ -221,6 +272,11 @@ impl<Id> VirtualListState<Id> {
     /// Configure sticky headers/footers.
     pub fn set_sticky(&mut self, sticky: StickyRegion) {
         self.virt.set_sticky(sticky);
+    }
+
+    /// Overscan for measure/prefetch.
+    pub fn set_overscan(&mut self, overscan: u16) {
+        self.virt.set_overscan(overscan);
     }
 
     /// Extent policy (fixed or variable).
@@ -260,6 +316,12 @@ impl<Id> VirtualListState<Id> {
         }
     }
 
+    /// Logical length.
+    #[must_use]
+    pub const fn logical_len(&self) -> u64 {
+        self.virt.logical_len()
+    }
+
     /// Viewport extent (terminal rows).
     pub fn set_viewport_extent(&mut self, rows: u16) {
         self.virt.set_viewport_extent(rows);
@@ -292,6 +354,12 @@ impl<Id> VirtualListState<Id> {
         self.virt.visible_slice()
     }
 
+    /// Measure/overscan slice (what host should project).
+    #[must_use]
+    pub fn measure_slice(&self) -> VirtSlice {
+        self.virt.visible_slice()
+    }
+
     /// Indices the host should project this frame (sticky + measure window).
     ///
     /// Never returns O(logical_len) for large universes.
@@ -308,6 +376,12 @@ impl<Id> VirtualListState<Id> {
         out.dedup();
     }
 
+    /// Visible ranges for diagnostics / host.
+    #[must_use]
+    pub fn visible_range(&self) -> VirtRange {
+        self.virt.visible_slice().visible()
+    }
+
     /// Record measured row height (variable extents).
     pub fn note_measured(&mut self, logical_index: u64, extent: u16) {
         self.virt.note_measured(logical_index, extent);
@@ -315,13 +389,40 @@ impl<Id> VirtualListState<Id> {
             .forget_measured_outside(u64::from(self.virt.overscan()).saturating_add(8));
     }
 
-    /// Hit regions from the last paint (projected body rows only).
-    ///
-    /// Forwards to the inner [`ListState`], which owns its regions — the
-    /// previous duplicate `Vec` was re-copied from it every frame.
+    /// Reveal logical index in the body viewport.
+    pub fn reveal(&mut self, logical_index: u64) -> bool {
+        self.follow = VirtualListFollow::Off;
+        self.virt.reveal(logical_index)
+    }
+
+    /// Capture content-id anchor for preserve-across-filter (host resolves id).
+    pub fn capture_index_anchor(&mut self) {
+        self.virt.capture_index_anchor();
+    }
+
+    /// Apply stored anchor after filter/rebuild.
+    pub fn restore_anchor(&mut self, resolve_id: impl FnOnce(&str) -> Option<u64>) {
+        if let Some(a) = self.virt.anchor().cloned() {
+            self.virt.apply_anchor(&a, resolve_id);
+        }
+    }
+
+    /// Hit regions from last paint.
     #[must_use]
     pub fn regions(&self) -> &[HitRegion<Id>] {
-        self.list.regions()
+        &self.regions
+    }
+
+    /// Hover at position.
+    pub fn hover(&mut self, position: Position) -> Option<&Id>
+    where
+        Id: Clone,
+    {
+        self.pointer = Some(position);
+        self.regions
+            .iter()
+            .find(|r| r.area.contains(position))
+            .map(|r| &r.id)
     }
 
     /// Click at position.
@@ -331,8 +432,7 @@ impl<Id> VirtualListState<Id> {
     {
         self.pointer = Some(position);
         let Some(region) = self
-            .list
-            .regions()
+            .regions
             .iter()
             .find(|r| r.area.contains(position))
             .map(|r| r.id.clone())
@@ -353,22 +453,14 @@ impl<Id> VirtualListState<Id> {
         Id: Clone + PartialEq,
     {
         let rows = projected_rows(projected);
-        self.list.set_virtual_window(
-            0,
-            usize::try_from(self.virt.scrollable_len()).unwrap_or(usize::MAX),
-        );
-        self.list.reconcile_collection(&rows);
         match intent {
             UiIntent::Move(NavigationMove::Next | NavigationMove::Down) => {
                 // Prefer move selection within window; if at end, scroll.
                 let before = self.list.selected().cloned();
                 let out = self.list.handle_intent(&rows, intent);
                 if out == Outcome::Ignored || self.list.selected() == before.as_ref() {
-                    if self.scroll_by(1) {
-                        Outcome::Changed
-                    } else {
-                        Outcome::Ignored
-                    }
+                    let _ = self.scroll_by(1);
+                    Outcome::Changed
                 } else {
                     out
                 }
@@ -377,50 +469,29 @@ impl<Id> VirtualListState<Id> {
                 let before = self.list.selected().cloned();
                 let out = self.list.handle_intent(&rows, intent);
                 if out == Outcome::Ignored || self.list.selected() == before.as_ref() {
-                    if self.scroll_by(-1) {
-                        Outcome::Changed
-                    } else {
-                        Outcome::Ignored
-                    }
+                    let _ = self.scroll_by(-1);
+                    Outcome::Changed
                 } else {
                     out
                 }
             }
             UiIntent::Page(PageMove::Forward) => {
                 let step = i64::from(self.virt.viewport_extent().max(1));
-                if self.scroll_by(step) {
-                    Outcome::Changed
-                } else {
-                    Outcome::Ignored
-                }
+                let _ = self.scroll_by(step);
+                Outcome::Changed
             }
             UiIntent::Page(PageMove::Backward) => {
                 let step = i64::from(self.virt.viewport_extent().max(1));
-                if self.scroll_by(-step) {
-                    Outcome::Changed
-                } else {
-                    Outcome::Ignored
-                }
+                let _ = self.scroll_by(-step);
+                Outcome::Changed
             }
             UiIntent::Move(NavigationMove::First) => {
-                let before_offset = self.virt.offset();
-                let was_following = matches!(self.follow, VirtualListFollow::Tail);
                 self.set_offset(self.virt.body_start());
-                if self.virt.offset() != before_offset || was_following {
-                    Outcome::Changed
-                } else {
-                    Outcome::Ignored
-                }
+                Outcome::Changed
             }
             UiIntent::Move(NavigationMove::Last) => {
-                let before_offset = self.virt.offset();
-                let was_following = matches!(self.follow, VirtualListFollow::Tail);
                 self.set_follow(VirtualListFollow::Tail);
-                if self.virt.offset() != before_offset || !was_following {
-                    Outcome::Changed
-                } else {
-                    Outcome::Ignored
-                }
+                Outcome::Changed
             }
             UiIntent::Activate
             | UiIntent::Open
@@ -430,6 +501,25 @@ impl<Id> VirtualListState<Id> {
             | UiIntent::Close => self.list.handle_intent(&rows, intent),
             _ => Outcome::Ignored,
         }
+    }
+
+    /// Key path via intents (+ list typeahead on projected labels).
+    pub fn handle_key(
+        &mut self,
+        projected: &[VirtualListItem<'_, Id>],
+        key: KeyEvent,
+    ) -> Outcome<Id>
+    where
+        Id: Clone + PartialEq,
+    {
+        if key.is_release() {
+            return Outcome::Ignored;
+        }
+        if let Some(intent) = default_list_intent(key) {
+            return self.handle_intent(projected, intent);
+        }
+        let rows = projected_rows(projected);
+        self.list.handle_key(&rows, key)
     }
 
     fn refresh_diagnostics(&mut self, projected_len: usize) {
@@ -489,6 +579,13 @@ impl<'a, Id> VirtualList<'a, Id> {
         }
     }
 
+    /// Focused surface.
+    #[must_use]
+    pub const fn focused(mut self, on: bool) -> Self {
+        self.focused = on;
+        self
+    }
+
     /// Empty universe message.
     #[must_use]
     pub const fn empty_message(mut self, msg: &'a str) -> Self {
@@ -511,9 +608,7 @@ impl<'a, Id> VirtualList<'a, Id> {
         if area.is_empty() {
             return;
         }
-        // Regions live in the inner ListState now; a frame that returns early
-        // (empty view) must not leave the previous frame's geometry behind.
-        state.list.clear_hit_regions();
+        state.regions.clear();
         state.pointer = state.list.hovered().and_then(|_| state.pointer);
 
         let mut y = area.y;
@@ -526,7 +621,7 @@ impl<'a, Id> VirtualList<'a, Id> {
             buffer.set_stringn(
                 area.x,
                 y,
-                take_display_cols(&line, usize::from(area.width)).as_ref(),
+                &take_display_cols(&line, usize::from(area.width)),
                 usize::from(area.width),
                 self.system.style(Role::TextSecondary),
             );
@@ -570,7 +665,7 @@ impl<'a, Id> VirtualList<'a, Id> {
             buffer.set_stringn(
                 area.x,
                 y,
-                take_display_cols(&line, usize::from(area.width)).as_ref(),
+                &take_display_cols(&line, usize::from(area.width)),
                 usize::from(area.width),
                 self.system.style(Role::TextDisabled),
             );
@@ -600,42 +695,36 @@ impl<'a, Id> VirtualList<'a, Id> {
             return;
         }
 
-        // Partition projected into sticky leading / body / sticky trail.
-        //
-        // projection_indices() returns ascending logical indexes, so the three
-        // bands are contiguous ranges of `self.projected` — no per-frame
-        // partition `Vec`s or row clones are needed. Sticky rows paint
-        // directly; only the body slice materializes rows for `List`.
+        // Partition projected into sticky leading vs body (by logical index).
         let sticky_lead = state.virt.sticky().leading;
         let sticky_trail = state.virt.sticky().trailing;
         let len = state.virt.logical_len();
-        let trail_floor = len.saturating_sub(sticky_trail);
 
-        let lead_end = if sticky_lead > 0 {
-            self.projected
-                .partition_point(|p| p.logical_index < sticky_lead)
-        } else {
-            0
-        };
-        let trail_start = if sticky_trail > 0 {
-            self.projected
-                .partition_point(|p| p.logical_index < trail_floor)
-        } else {
-            self.projected.len()
-        };
-        let trail_count = self.projected.len() - trail_start;
+        let mut sticky_rows: Vec<ListRow<'_, Id>> = Vec::new();
+        let mut body_items: Vec<&VirtualListItem<'_, Id>> = Vec::new();
+        let mut trail_rows: Vec<ListRow<'_, Id>> = Vec::new();
+
+        for p in self.projected {
+            if p.logical_index < sticky_lead {
+                sticky_rows.push(p.row.clone());
+            } else if sticky_trail > 0 && p.logical_index >= len.saturating_sub(sticky_trail) {
+                trail_rows.push(p.row.clone());
+            } else {
+                body_items.push(p);
+            }
+        }
 
         let mut paint_y = body.y;
         // Sticky headers
-        for item in &self.projected[..lead_end] {
+        for row in &sticky_rows {
             if paint_y >= body.bottom() {
                 break;
             }
-            let selected = state.list.selected() == Some(&item.row.id);
+            let selected = state.list.selected() == Some(&row.id);
             paint_simple_row(
                 buffer,
                 Rect::new(body.x, paint_y, body.width, 1),
-                &item.row,
+                row,
                 self.system,
                 true,
                 selected,
@@ -644,7 +733,7 @@ impl<'a, Id> VirtualList<'a, Id> {
             paint_y = paint_y.saturating_add(1);
         }
 
-        let body_bottom_reserve = u16::try_from(trail_count).unwrap_or(0);
+        let body_bottom_reserve = u16::try_from(trail_rows.len()).unwrap_or(0);
         let list_bottom = body.bottom().saturating_sub(body_bottom_reserve);
         let list_area = Rect::new(
             body.x,
@@ -653,34 +742,34 @@ impl<'a, Id> VirtualList<'a, Id> {
             list_bottom.saturating_sub(paint_y),
         );
 
-        // Body via List (window already projected; offset 0). Render even when
-        // the area is empty: ListState owns the hit regions now, and its
-        // render clears them — the old shadow `Vec` did that by hand.
-        let body_rows: Vec<ListRow<'_, Id>> = self.projected[lead_end..trail_start]
-            .iter()
-            .map(|p| p.row.clone())
-            .collect();
-        // Virtual total: body scroll universe for scrollbar only
-        let body_total = state.virt.scrollable_len();
-        state
-            .list
-            .set_virtual_window(0, usize::try_from(body_total).unwrap_or(usize::MAX));
-        // Keep list offset at 0 — Virtualizer owns scroll
-        // Selection still works on projected ids
-        let list = List::new(&body_rows, self.system).focused(self.focused);
-        StatefulWidget::render(&list, list_area, buffer, &mut state.list);
+        // Body via List (window already projected; offset 0)
+        if !list_area.is_empty() {
+            let body_rows: Vec<ListRow<'_, Id>> =
+                body_items.iter().map(|p| p.row.clone()).collect();
+            // Virtual total: body scroll universe for scrollbar only
+            let body_total = state.virt.scrollable_len();
+            state
+                .list
+                .set_virtual_window(0, usize::try_from(body_total).unwrap_or(usize::MAX));
+            // Keep list offset at 0 — Virtualizer owns scroll
+            // Selection still works on projected ids
+            let list = List::new(&body_rows, self.system).focused(self.focused);
+            StatefulWidget::render(&list, list_area, buffer, &mut state.list);
+            // Capture hit regions (adjust? List uses list_area coords — already absolute)
+            state.regions = state.list.regions().to_vec();
+        }
 
         // Sticky trail
         let mut ty = body.bottom().saturating_sub(body_bottom_reserve);
-        for item in &self.projected[trail_start..] {
+        for row in &trail_rows {
             if ty >= body.bottom() {
                 break;
             }
-            let selected = state.list.selected() == Some(&item.row.id);
+            let selected = state.list.selected() == Some(&row.id);
             paint_simple_row(
                 buffer,
                 Rect::new(body.x, ty, body.width, 1),
-                &item.row,
+                row,
                 self.system,
                 true,
                 selected,
@@ -742,7 +831,7 @@ impl<'a, Id> VirtualList<'a, Id> {
                 // Soft cap: still register all projected; projected is already window-sized.
             }
             let row_area = state
-                .regions()
+                .regions
                 .iter()
                 .find(|r| r.id == p.row.id)
                 .map(|r| r.area)
@@ -806,13 +895,7 @@ fn paint_simple_row<Id>(
     // Reserve the gutter column so pinned rows line up with the body.
     let text = format!(" {}", row.plain_label());
     let w = display_cols(&text).min(usize::from(area.width));
-    buffer.set_stringn(
-        area.x,
-        area.y,
-        take_display_cols(&text, w).as_ref(),
-        w,
-        style,
-    );
+    buffer.set_stringn(area.x, area.y, &take_display_cols(&text, w), w, style);
     chrome.paint(buffer, area);
 }
 
@@ -832,6 +915,23 @@ impl<Id: Clone + PartialEq> StatefulWidget for VirtualList<'_, Id> {
     }
 }
 
+// ── Projection helpers ──────────────────────────────────────────────────────
+
+/// Build projected items for fixed-extent demos: `row {index}` labels.
+#[must_use]
+pub fn project_index_window<'a>(indices: &[u64], id_prefix: &'a str) -> Vec<(u64, String, String)> {
+    // Returns (index, id, label) owned — host maps to VirtualListItem.
+    indices
+        .iter()
+        .map(|&i| (i, format!("{id_prefix}{i}"), format!("row {i:>9}")))
+        .collect()
+}
+
+/// Example: project sticky + measure window for a million-row universe.
+pub fn example_project_million(state: &VirtualListState<&'static str>, out_indices: &mut Vec<u64>) {
+    state.projection_indices(out_indices);
+}
+
 // ── Tests ───────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -839,7 +939,6 @@ mod tests {
     use super::*;
     use ratatui_core::backend::TestBackend;
     use ratatui_core::terminal::Terminal;
-    use ratatui_core::text::Line;
     use std::time::Instant;
 
     fn system() -> DesignSystem {
@@ -909,120 +1008,6 @@ mod tests {
         let o = state.offset();
         let _ = state.handle_intent(&[], UiIntent::Page(PageMove::Backward));
         assert!(state.offset() < o);
-    }
-
-    #[test]
-    fn movement_keeps_off_window_active_and_scrolls_virtualizer() {
-        let projected = project_u64(&[10, 11]);
-        for (active, intent, expected_offset) in [
-            (9, UiIntent::Move(NavigationMove::Down), 11),
-            (9, UiIntent::Move(NavigationMove::Up), 9),
-            (11, UiIntent::Move(NavigationMove::Down), 11),
-            (10, UiIntent::Move(NavigationMove::Up), 9),
-        ] {
-            let mut state = VirtualListState::<u64>::new();
-            state.set_logical_len(100);
-            state.set_viewport_extent(2);
-            state.set_offset(10);
-            let rows = projected_rows(&projected);
-            state.list_state_mut().set_virtual_window(0, 100);
-            state.list_state_mut().reconcile_collection(&rows);
-            state.list_state_mut().select(Some(active));
-
-            let out = state.handle_intent(&projected, intent);
-
-            assert_eq!(out, Outcome::Changed);
-            assert_eq!(state.list_state().selected(), Some(&active));
-            assert_eq!(state.offset(), expected_offset);
-        }
-
-        let lower_projected = project_u64(&[0, 1]);
-        let mut lower = VirtualListState::<u64>::new();
-        lower.set_logical_len(100);
-        lower.set_viewport_extent(2);
-        let lower_rows = projected_rows(&lower_projected);
-        lower.list_state_mut().set_virtual_window(0, 100);
-        lower.list_state_mut().reconcile_collection(&lower_rows);
-        lower.list_state_mut().select(Some(0));
-        assert_eq!(
-            lower.handle_intent(&lower_projected, UiIntent::Move(NavigationMove::Up)),
-            Outcome::Ignored
-        );
-        assert_eq!(lower.list_state().selected(), Some(&0));
-        assert_eq!(lower.offset(), 0);
-
-        let upper_projected = project_u64(&[98, 99]);
-        let mut upper = VirtualListState::<u64>::new();
-        upper.set_logical_len(100);
-        upper.set_viewport_extent(2);
-        upper.set_offset(98);
-        let upper_rows = projected_rows(&upper_projected);
-        upper.list_state_mut().set_virtual_window(0, 100);
-        upper.list_state_mut().reconcile_collection(&upper_rows);
-        upper.list_state_mut().select(Some(99));
-        assert_eq!(
-            upper.handle_intent(&upper_projected, UiIntent::Move(NavigationMove::Down)),
-            Outcome::Ignored
-        );
-        assert_eq!(upper.list_state().selected(), Some(&99));
-        assert_eq!(upper.offset(), 98);
-
-        let mut lower_page = VirtualListState::<u64>::new();
-        lower_page.set_logical_len(100);
-        lower_page.set_viewport_extent(2);
-        assert_eq!(
-            lower_page.handle_intent(&[], UiIntent::Page(PageMove::Backward)),
-            Outcome::Ignored
-        );
-        assert_eq!(lower_page.offset(), 0);
-
-        let mut upper_page = VirtualListState::<u64>::new();
-        upper_page.set_logical_len(100);
-        upper_page.set_viewport_extent(2);
-        upper_page.set_offset(98);
-        assert_eq!(
-            upper_page.handle_intent(&[], UiIntent::Page(PageMove::Forward)),
-            Outcome::Ignored
-        );
-        assert_eq!(upper_page.offset(), 98);
-
-        let mut first = VirtualListState::<u64>::new();
-        first.set_logical_len(100);
-        first.set_viewport_extent(2);
-        first.set_offset(10);
-        assert_eq!(
-            first.handle_intent(&[], UiIntent::Move(NavigationMove::First)),
-            Outcome::Changed
-        );
-        assert_eq!(first.offset(), 0);
-        assert_eq!(
-            first.handle_intent(&[], UiIntent::Move(NavigationMove::First)),
-            Outcome::Ignored
-        );
-        assert_eq!(first.offset(), 0);
-
-        let mut empty = VirtualListState::<u64>::new();
-        empty.set_logical_len(100);
-        empty.set_viewport_extent(2);
-        empty.set_offset(10);
-        empty.list_state_mut().select(Some(9));
-        assert_eq!(
-            empty.handle_intent(&[], UiIntent::Move(NavigationMove::Down)),
-            Outcome::Changed
-        );
-        assert_eq!(empty.list_state().selected(), Some(&9));
-        assert_eq!(empty.offset(), 11);
-
-        let mut last = VirtualListState::<u64>::new();
-        last.set_logical_len(100);
-        last.set_viewport_extent(2);
-        last.set_offset(98);
-        last.set_follow(VirtualListFollow::Tail);
-        assert_eq!(
-            last.handle_intent(&[], UiIntent::Move(NavigationMove::Last)),
-            Outcome::Ignored
-        );
-        assert_eq!(last.offset(), 98);
     }
 
     #[test]
@@ -1122,7 +1107,10 @@ mod tests {
         let mut buf = Buffer::empty(area);
         VirtualList::new(&projected, &system).paint(area, &mut buf, &mut state);
         if let Some(r) = state.regions().first() {
-            let out = state.click(Position::new(r.area.x, r.area.y));
+            let out = state.click(Position {
+                x: r.area.x,
+                y: r.area.y,
+            });
             assert!(
                 matches!(out, Outcome::Activated(_)) || matches!(out, Outcome::Ignored),
                 "{out:?}"

@@ -13,13 +13,14 @@
 //! with ASCII and narrow contraction.
 //!
 //! References: shadcn Kbd, editor shortcut UIs, Textual bindings, Zellij help.
+#![allow(unused_variables, unused_mut)] // unit-test fixtures
 use std::borrow::Cow;
 
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
 
 use crate::input::{KeyCode, KeyModifiers};
 use crate::keymap::{KeyBinding, KeyChord, Keymap, chord_glyph};
-use crate::style::{DesignSystem, Role};
+use crate::style::{DesignSystem, GlyphSet, Role};
 use crate::text::{display_cols, take_display_cols};
 
 // ── Platform / format style ─────────────────────────────────────────────────
@@ -38,6 +39,16 @@ pub enum Platform {
 }
 
 impl Platform {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Auto => "auto",
+            Self::Mac => "mac",
+            Self::Other => "other",
+        }
+    }
+
     /// Resolved platform (Auto → Mac/Other).
     #[must_use]
     pub const fn resolve(self) -> Self {
@@ -67,6 +78,18 @@ pub enum ModifierStyle {
     Symbols,
 }
 
+impl ModifierStyle {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Emacs => "emacs",
+            Self::Spelled => "spelled",
+            Self::Symbols => "symbols",
+        }
+    }
+}
+
 /// Visual form of a keycap / chord paint.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -80,6 +103,18 @@ pub enum KbdVariant {
     Inline,
 }
 
+impl KbdVariant {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Compact => "compact",
+            Self::Keycap => "keycap",
+            Self::Inline => "inline",
+        }
+    }
+}
+
 /// How a shortcut pair is laid out.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -91,6 +126,18 @@ pub enum ShortcutForm {
     InlineDoc,
     /// Keycap-heavy: `[C-s] Save`.
     Keycap,
+}
+
+impl ShortcutForm {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Footer => "footer",
+            Self::InlineDoc => "inline-doc",
+            Self::Keycap => "keycap",
+        }
+    }
 }
 
 // ── Chord formatting ────────────────────────────────────────────────────────
@@ -132,13 +179,21 @@ impl ChordFormat {
         }
     }
 
-    /// Default format (auto platform, Emacs modifiers).
+    /// From glyph set (ASCII profile → ascii format).
     #[must_use]
-    pub const fn new() -> Self {
+    pub const fn from_glyphs(glyphs: GlyphSet) -> Self {
         Self {
             platform: Platform::Auto,
             modifiers: ModifierStyle::Emacs,
         }
+    }
+
+    /// ASCII forced.
+    #[must_use]
+    /// Modifier style.
+    pub const fn modifiers(mut self, style: ModifierStyle) -> Self {
+        self.modifiers = style;
+        self
     }
 
     /// Platform.
@@ -240,6 +295,7 @@ fn format_key(key: KeyCode) -> String {
         KeyCode::End => "End".into(),
         KeyCode::PageUp => "PgUp".into(),
         KeyCode::PageDown => "PgDn".into(),
+        KeyCode::F(number) => format!("F{number}"),
         KeyCode::Unknown => "?".into(),
     }
 }
@@ -314,13 +370,56 @@ impl<'a> Kbd<'a> {
         }
     }
 
+    /// From one chord.
+    #[must_use]
+    pub fn from_chord(chord: KeyChord, system: &'a DesignSystem) -> Self {
+        let fmt = ChordFormat::from_glyphs(system.glyphs);
+        Self {
+            label: Cow::Owned(format_chord(chord, fmt)),
+            system,
+            variant: KbdVariant::Compact,
+        }
+    }
+
+    /// From chord with format options.
+    #[must_use]
+    pub fn from_chord_fmt(chord: KeyChord, fmt: ChordFormat, system: &'a DesignSystem) -> Self {
+        Self {
+            label: Cow::Owned(format_chord(chord, fmt)),
+            system,
+            variant: KbdVariant::Compact,
+        }
+    }
+
+    /// Sequence of chords.
+    #[must_use]
+    pub fn sequence(chords: &[KeyChord], system: &'a DesignSystem) -> Self {
+        let fmt = ChordFormat::from_glyphs(system.glyphs);
+        Self {
+            label: Cow::Owned(format_sequence(chords, fmt, " ")),
+            system,
+            variant: KbdVariant::Compact,
+        }
+    }
+
+    /// Alternative chords for one command.
+    #[must_use]
+    pub fn alternatives(chords: &[KeyChord], system: &'a DesignSystem) -> Self {
+        let fmt = ChordFormat::from_glyphs(system.glyphs);
+        Self {
+            label: Cow::Owned(format_alternatives(chords, fmt)),
+            system,
+            variant: KbdVariant::Compact,
+        }
+    }
+
     /// From a keymap binding (glyph override wins).
     #[must_use]
     pub fn from_binding<A: Clone + 'static>(
         binding: &KeyBinding<A>,
         system: &'a DesignSystem,
     ) -> Self {
-        let fmt = ChordFormat::new();
+        let fmt = ChordFormat::from_glyphs(system.glyphs);
         Self {
             label: Cow::Owned(format_binding(binding, fmt)),
             system,
@@ -339,10 +438,31 @@ impl<'a> Kbd<'a> {
             .map(|b| Self::from_binding(b, system))
     }
 
+    /// Visual variant.
+    #[must_use]
+    pub const fn variant(mut self, variant: KbdVariant) -> Self {
+        self.variant = variant;
+        self
+    }
+
     /// Keycap form.
     #[must_use]
     pub const fn keycap(mut self) -> Self {
         self.variant = KbdVariant::Keycap;
+        self
+    }
+
+    /// Inline docs form (still paints HintKey role).
+    #[must_use]
+    pub const fn inline(mut self) -> Self {
+        self.variant = KbdVariant::Inline;
+        self
+    }
+
+    /// Compact footer form.
+    #[must_use]
+    pub const fn compact(mut self) -> Self {
+        self.variant = KbdVariant::Compact;
         self
     }
 
@@ -436,13 +556,39 @@ impl<'a> ShortcutHint<'a> {
             contract_command_first: true,
         }
     }
+
+    /// From chords + command.
+    #[must_use]
+    pub fn from_chords(
+        chords: &[KeyChord],
+        command: impl Into<Cow<'a, str>>,
+        system: &'a DesignSystem,
+    ) -> Self {
+        let fmt = ChordFormat::from_glyphs(system.glyphs);
+        let chord = if chords.len() <= 1 {
+            chords
+                .first()
+                .map(|c| format_chord(*c, fmt))
+                .unwrap_or_default()
+        } else {
+            format_alternatives(chords, fmt)
+        };
+        Self {
+            chord: Cow::Owned(chord),
+            command: command.into(),
+            system,
+            form: ShortcutForm::Footer,
+            contract_command_first: true,
+        }
+    }
+
     /// From keymap binding (display + hint label).
     #[must_use]
     pub fn from_binding<A: Clone + 'static>(
         binding: &KeyBinding<A>,
         system: &'a DesignSystem,
     ) -> Self {
-        let fmt = ChordFormat::new();
+        let fmt = ChordFormat::from_glyphs(system.glyphs);
         let chord = format_binding(binding, fmt);
         let command = binding.hint().unwrap_or("").to_string();
         Self {
@@ -465,12 +611,34 @@ impl<'a> ShortcutHint<'a> {
             .map(|b| Self::from_binding(b, system))
     }
 
+    /// Form.
+    #[must_use]
+    pub const fn form(mut self, form: ShortcutForm) -> Self {
+        self.form = form;
+        self
+    }
+
     /// Footer form.
     #[must_use]
     pub const fn footer(mut self) -> Self {
         self.form = ShortcutForm::Footer;
         self
     }
+
+    /// Inline documentation form.
+    #[must_use]
+    pub const fn inline_doc(mut self) -> Self {
+        self.form = ShortcutForm::InlineDoc;
+        self
+    }
+
+    /// Keycap form.
+    #[must_use]
+    pub const fn keycap(mut self) -> Self {
+        self.form = ShortcutForm::Keycap;
+        self
+    }
+
     /// Chord display.
     #[must_use]
     pub fn chord(&self) -> &str {
@@ -481,6 +649,16 @@ impl<'a> ShortcutHint<'a> {
     #[must_use]
     pub fn command(&self) -> &str {
         self.command.as_ref()
+    }
+
+    /// Full plain text for a11y / copy.
+    #[must_use]
+    pub fn plain(&self) -> String {
+        if self.command.is_empty() {
+            self.chord.to_string()
+        } else {
+            format!("{} {}", self.chord, self.command)
+        }
     }
 
     /// Measure natural width.
@@ -585,6 +763,22 @@ impl Widget for ShortcutHint<'_> {
     }
 }
 
+// ── Legacy Kbd::from_chord buffer API ───────────────────────────────────────
+
+impl<'a> Kbd<'a> {
+    /// Format a [`KeyChord`] into a short display label (writes into `buf`).
+    #[must_use]
+    pub fn from_chord_buf(chord: KeyChord, buf: &'a mut String, tokens: &'a DesignSystem) -> Self {
+        let fmt = ChordFormat::from_glyphs(tokens.glyphs);
+        *buf = format_chord(chord, fmt);
+        Self {
+            label: Cow::Borrowed(buf.as_str()),
+            system: tokens,
+            variant: KbdVariant::Keycap,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -686,6 +880,7 @@ mod tests {
 
     #[test]
     fn layout_is_cheap() {
+        let system = DesignSystem::default();
         let chord = KeyChord::ctrl(KeyCode::Char('q'));
         for _ in 0..20_000 {
             let _ = format_chord(chord, ChordFormat::footer());

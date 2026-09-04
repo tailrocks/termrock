@@ -32,6 +32,21 @@ pub struct ComposedRow<'a, Id> {
 }
 
 impl<'a, Id> ComposedRow<'a, Id> {
+    /// Creates a primary-only row.
+    #[must_use]
+    pub fn primary(id: Id, primary: Line<'a>) -> Self {
+        Self {
+            id,
+            leading: None,
+            primary,
+            secondary: None,
+            badge: None,
+            shortcut: None,
+            enabled: true,
+            loading: false,
+        }
+    }
+
     /// Drop priority for narrow terminals: shortcut → badge → secondary → leading → primary.
     ///
     /// Uses measured cell budgets so optional chrome is kept whenever it still

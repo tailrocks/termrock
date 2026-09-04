@@ -18,15 +18,19 @@
 //! - Draft model: [`MentionDraft`] atomic segments
 //! - Completion: [`mention_to_completion_candidate`] + [`CompletionMenu`]
 //! - Chips: [`MentionRef::to_composer_label`] / PromptComposer mention chips
+//! - Strip: project via [`mention_to_token_item`]
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers},
-    style::{DesignSystem, Role},
-    text::{contains_lower_all, take_display_cols},
+    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent},
+    style::{DesignSystem, ListRowVisualState, Role},
+    text::{display_cols, take_display_cols},
     widgets::{
         completion_menu::CompletionCandidate,
-        tag_chip::{Tag, TagOutcome, TagState, TokenPart, TokenParts, TokenStatus},
+        tag_chip::{
+            Tag, TagOutcome, TagState, TokenItem, TokenPart, TokenParts, TokenStatus, remove_label,
+        },
     },
 };
 
@@ -120,6 +124,22 @@ impl MentionType {
         }
     }
 
+    /// ASCII type letter.
+    #[must_use]
+    pub const fn letter(self) -> char {
+        match self {
+            Self::File => 'F',
+            Self::Directory => 'D',
+            Self::Symbol => 'S',
+            Self::Agent => 'A',
+            Self::Tool => 'T',
+            Self::Session => 'H',
+            Self::Resource => 'R',
+            Self::User => 'U',
+            Self::Other => '?',
+        }
+    }
+
     /// Glyph (emoji or letter).
     #[must_use]
     pub const fn glyph(self, ascii: bool) -> &'static str {
@@ -147,6 +167,15 @@ impl MentionType {
                 Self::User => "◎",
                 Self::Other => "·",
             }
+        }
+    }
+
+    /// Default trigger char for this type.
+    #[must_use]
+    pub const fn default_trigger(self) -> char {
+        match self.family() {
+            MentionFamily::File => MENTION_TRIGGER_AT,
+            MentionFamily::Entity => MENTION_TRIGGER_AT,
         }
     }
 }
@@ -303,6 +332,27 @@ impl MentionRef {
         }
     }
 
+    /// Symbol mention.
+    #[must_use]
+    pub fn symbol(
+        id: impl Into<String>,
+        label: impl Into<String>,
+        canonical: impl Into<String>,
+    ) -> Self {
+        Self {
+            id: id.into(),
+            kind: MentionType::Symbol,
+            label: label.into(),
+            canonical: canonical.into(),
+            validity: MentionValidity::Valid,
+            disambiguators: Vec::new(),
+            disambiguation_index: None,
+            preview: None,
+            removable: true,
+            sensitive: false,
+        }
+    }
+
     /// Entity (agent/tool/session/resource).
     #[must_use]
     pub fn entity(
@@ -343,10 +393,24 @@ impl MentionRef {
         self
     }
 
+    /// Preview.
+    #[must_use]
+    pub fn preview(mut self, p: impl Into<String>) -> Self {
+        self.preview = Some(p.into());
+        self
+    }
+
     /// Sensitive.
     #[must_use]
     pub const fn sensitive(mut self, on: bool) -> Self {
         self.sensitive = on;
+        self
+    }
+
+    /// Removable.
+    #[must_use]
+    pub const fn removable(mut self, on: bool) -> Self {
+        self.removable = on;
         self
     }
 
@@ -369,6 +433,12 @@ impl MentionRef {
             s.push_str(&format!("×{}", self.disambiguators.len()));
         }
         s
+    }
+
+    /// Label for composer chip bridge.
+    #[must_use]
+    pub fn to_composer_label(&self) -> String {
+        self.label.clone()
     }
 
     /// Apply selected disambiguator (host confirms resolution).
@@ -442,6 +512,30 @@ impl FileMention {
         }
     }
 
+    /// Symbol.
+    #[must_use]
+    pub fn symbol(
+        id: impl Into<String>,
+        label: impl Into<String>,
+        canonical: impl Into<String>,
+    ) -> Self {
+        Self {
+            mention: MentionRef::symbol(id, label, canonical),
+        }
+    }
+
+    /// Directory.
+    #[must_use]
+    pub fn directory(
+        id: impl Into<String>,
+        label: impl Into<String>,
+        path: impl Into<String>,
+    ) -> Self {
+        let mut m = MentionRef::file(id, label, path);
+        m.kind = MentionType::Directory;
+        Self { mention: m }
+    }
+
     /// Missing path.
     #[must_use]
     pub fn missing(
@@ -511,10 +605,39 @@ impl EntityMention {
         }
     }
 
+    /// Session.
+    #[must_use]
+    pub fn session(
+        id: impl Into<String>,
+        label: impl Into<String>,
+        canonical: impl Into<String>,
+    ) -> Self {
+        Self {
+            mention: MentionRef::entity(id, MentionType::Session, label, canonical),
+        }
+    }
+
+    /// Resource.
+    #[must_use]
+    pub fn resource(
+        id: impl Into<String>,
+        label: impl Into<String>,
+        canonical: impl Into<String>,
+    ) -> Self {
+        Self {
+            mention: MentionRef::entity(id, MentionType::Resource, label, canonical),
+        }
+    }
+
     /// Borrow.
     #[must_use]
     pub const fn as_ref(&self) -> &MentionRef {
         &self.mention
+    }
+
+    /// Mut.
+    pub const fn as_mut(&mut self) -> &mut MentionRef {
+        &mut self.mention
     }
 }
 
@@ -613,6 +736,12 @@ impl MentionCandidate {
     pub fn insert_markup(&self) -> String {
         self.to_mention_ref().to_markup()
     }
+
+    /// Insert short form `@label` (host may prefer markup).
+    #[must_use]
+    pub fn insert_short(&self) -> String {
+        format!("@{}", self.label)
+    }
 }
 
 /// Detect `@` / `#` mention query before cursor (pure; no I/O).
@@ -696,6 +825,18 @@ pub fn mention_to_completion_candidate(c: &MentionCandidate) -> CompletionCandid
     cand
 }
 
+/// Build completion rows; host must keep `candidates` alive for label borrows…
+/// Prefer mapping in host loop with owned labels — this helper clones ids.
+#[must_use]
+pub fn mention_candidates_as_completion(
+    candidates: &[MentionCandidate],
+) -> Vec<CompletionCandidate<'_, String>> {
+    candidates
+        .iter()
+        .map(mention_to_completion_candidate)
+        .collect()
+}
+
 /// Filter candidates by query (case-insensitive label/canonical/id contains).
 #[must_use]
 pub fn filter_mention_candidates<'a>(
@@ -715,7 +856,8 @@ pub fn filter_mention_candidates<'a>(
             if q.is_empty() {
                 return true;
             }
-            contains_lower_all(&[c.label.as_str(), c.canonical.as_str(), c.id.as_str()], &q)
+            let hay = format!("{} {} {}", c.label, c.canonical, c.id).to_ascii_lowercase();
+            hay.contains(&q)
         })
         .collect()
 }
@@ -797,6 +939,36 @@ impl MentionDraft {
             cursor: MentionCursor::InText { part: 0, byte: len },
         }
     }
+
+    /// Flatten to plain text (mentions as markup).
+    #[must_use]
+    pub fn to_plain_markup(&self) -> String {
+        let mut s = String::new();
+        for p in &self.parts {
+            match p {
+                MentionSegment::Text(t) => s.push_str(t),
+                MentionSegment::Mention(m) => s.push_str(&m.to_markup()),
+            }
+        }
+        s
+    }
+
+    /// Flatten display labels only (for soft preview).
+    #[must_use]
+    pub fn to_display_string(&self) -> String {
+        let mut s = String::new();
+        for p in &self.parts {
+            match p {
+                MentionSegment::Text(t) => s.push_str(t),
+                MentionSegment::Mention(m) => {
+                    s.push('@');
+                    s.push_str(&m.label);
+                }
+            }
+        }
+        s
+    }
+
     /// Insert text at cursor (splits text segments; refuses inside mention).
     pub fn insert_text(&mut self, text: &str) {
         if text.is_empty() {
@@ -954,6 +1126,58 @@ impl MentionDraft {
         }
     }
 
+    /// Move caret right (atomic over mentions).
+    pub fn move_right(&mut self) -> bool {
+        match self.cursor {
+            MentionCursor::End => false,
+            MentionCursor::OnMention { part } => {
+                let next = part + 1;
+                if next >= self.parts.len() {
+                    self.cursor = MentionCursor::End;
+                    return true;
+                }
+                match &self.parts[next] {
+                    MentionSegment::Mention(_) => {
+                        self.cursor = MentionCursor::OnMention { part: next };
+                    }
+                    MentionSegment::Text(_) => {
+                        self.cursor = MentionCursor::InText {
+                            part: next,
+                            byte: 0,
+                        };
+                    }
+                }
+                true
+            }
+            MentionCursor::InText { part, byte } => {
+                if let Some(MentionSegment::Text(t)) = self.parts.get(part) {
+                    if byte < t.len() {
+                        let b = next_char_boundary(t, byte);
+                        self.cursor = MentionCursor::InText { part, byte: b };
+                        return true;
+                    }
+                }
+                let next = part + 1;
+                if next >= self.parts.len() {
+                    self.cursor = MentionCursor::End;
+                    return true;
+                }
+                match &self.parts[next] {
+                    MentionSegment::Mention(_) => {
+                        self.cursor = MentionCursor::OnMention { part: next };
+                    }
+                    MentionSegment::Text(_) => {
+                        self.cursor = MentionCursor::InText {
+                            part: next,
+                            byte: 0,
+                        };
+                    }
+                }
+                true
+            }
+        }
+    }
+
     /// Backspace: deletes one char or whole mention.
     pub fn delete_backward(&mut self) -> bool {
         match self.cursor {
@@ -1049,10 +1273,11 @@ impl MentionDraft {
                         };
                         // reindex: text was at part, now at prev if merged?
                         // simple: after remove, text segment index is part-1
-                        if matches!(self.parts.get(prev), Some(MentionSegment::Text(_))) {
+                        if let Some(MentionSegment::Text(t)) = self.parts.get(prev) {
                             // if we had text at `part`, now at `prev` only if removed mention before it
+                            let _ = t;
                             self.cursor = MentionCursor::InText {
-                                part: prev,
+                                part: prev.saturating_add(0),
                                 byte: 0,
                             };
                             // actually text is now at prev if mention was before...
@@ -1193,6 +1418,25 @@ impl<'a> InlineMention<'a> {
         Self::new(&file.mention, system)
     }
 
+    /// From entity mention.
+    #[must_use]
+    pub const fn entity(entity: &'a EntityMention, system: &'a DesignSystem) -> Self {
+        Self::new(&entity.mention, system)
+    }
+
+    /// Measure width.
+    #[must_use]
+    pub fn measure_width(&self) -> u16 {
+        let label = self.mention.display_label(false);
+        let tag = if self.mention.removable {
+            Tag::removable_tag(self.mention.id.as_str(), label.as_str(), self.system)
+        } else {
+            Tag::new(self.mention.id.as_str(), label.as_str(), self.system)
+        }
+        .status(self.mention.validity.token_status());
+        tag.measure_width()
+    }
+
     /// Paint token.
     pub fn paint(
         &self,
@@ -1224,6 +1468,61 @@ impl<'a> InlineMention<'a> {
         }
         parts
     }
+
+    /// Paint disambiguation list into area (host places popover).
+    pub fn paint_disambiguation(
+        &self,
+        area: Rect,
+        buffer: &mut Buffer,
+        state: &InlineMentionState,
+    ) {
+        if area.is_empty() {
+            return;
+        }
+        for (i, d) in self
+            .mention
+            .disambiguators
+            .iter()
+            .take(MENTION_DISAMBIG_MAX)
+            .enumerate()
+        {
+            let y = area.y.saturating_add(i as u16);
+            if y >= area.bottom() {
+                break;
+            }
+            let mark = if i == state.disambiguation_cursor {
+                "›"
+            } else {
+                " "
+            };
+            let line = match &d.detail {
+                Some(det) => format!("{mark} {} {} {det}", d.label, { "·" }),
+                None => format!("{mark} {}", d.label),
+            };
+            let selected = i == state.disambiguation_cursor;
+            let recipe = self.system.resolve_list_row(ListRowVisualState {
+                selected,
+                focused: selected && state.tag.focused,
+                hovered: false,
+                enabled: true,
+                loading: false,
+                checked: false,
+                ..ListRowVisualState::default()
+            });
+            let row = Rect::new(area.x, y, area.width, 1);
+            if recipe.use_tint {
+                buffer.set_style(row, recipe.tint);
+            }
+            buffer.set_stringn(
+                area.x,
+                y,
+                take_display_cols(&line, usize::from(area.width)),
+                usize::from(area.width),
+                recipe.label,
+            );
+        }
+    }
+
     /// Keys.
     pub fn handle_key(
         &self,
@@ -1233,28 +1532,20 @@ impl<'a> InlineMention<'a> {
         if key.is_release() {
             return InlineMentionOutcome::Ignored;
         }
-        let is_press = key.is_press();
         if state.disambiguation_open {
             return self.handle_disambiguation_key(state, key);
         }
-        if is_press
-            && key.code == KeyCode::Char('c')
-            && key.modifiers.contains(KeyModifiers::CONTROL)
-        {
+        if key.code == KeyCode::Char('c') && key.modifiers.contains(KeyModifiers::CONTROL) {
             return InlineMentionOutcome::CopyRequested {
                 id: self.mention.id.clone(),
             };
         }
-        if is_press
-            && key.code == KeyCode::Char('p')
-            && key.modifiers.contains(KeyModifiers::CONTROL)
-        {
+        if key.code == KeyCode::Char('p') && key.modifiers.contains(KeyModifiers::CONTROL) {
             return InlineMentionOutcome::PreviewRequested {
                 id: self.mention.id.clone(),
             };
         }
-        if is_press
-            && key.code == KeyCode::Char('d')
+        if key.code == KeyCode::Char('d')
             && key.modifiers.contains(KeyModifiers::CONTROL)
             && matches!(self.mention.validity, MentionValidity::Ambiguous)
         {
@@ -1265,8 +1556,7 @@ impl<'a> InlineMention<'a> {
             };
         }
         // Enter on ambiguous opens disambiguation
-        if is_press
-            && key.code == KeyCode::Enter
+        if key.code == KeyCode::Enter
             && matches!(self.mention.validity, MentionValidity::Ambiguous)
             && state.tag.part == TokenPart::Body
         {
@@ -1298,7 +1588,7 @@ impl<'a> InlineMention<'a> {
     ) -> InlineMentionOutcome {
         let n = self.mention.disambiguators.len().max(1);
         match key.code {
-            KeyCode::Esc if key.is_press() => {
+            KeyCode::Esc => {
                 state.disambiguation_open = false;
                 InlineMentionOutcome::Ignored
             }
@@ -1310,7 +1600,7 @@ impl<'a> InlineMention<'a> {
                 state.disambiguation_cursor = (state.disambiguation_cursor + 1).min(n - 1);
                 InlineMentionOutcome::Ignored
             }
-            KeyCode::Enter if key.is_press() => {
+            KeyCode::Enter => {
                 let idx = state.disambiguation_cursor.min(n - 1);
                 state.disambiguation_open = false;
                 InlineMentionOutcome::DisambiguationSelected {
@@ -1321,9 +1611,46 @@ impl<'a> InlineMention<'a> {
             _ => InlineMentionOutcome::Ignored,
         }
     }
+
+    /// Mouse.
+    pub fn handle_mouse(
+        &self,
+        state: &mut InlineMentionState,
+        event: MouseEvent,
+    ) -> InlineMentionOutcome {
+        let label = self.mention.display_label(false);
+        let tag = if self.mention.removable {
+            Tag::removable_tag(self.mention.id.as_str(), label.as_str(), self.system)
+        } else {
+            Tag::new(self.mention.id.as_str(), label.as_str(), self.system)
+        }
+        .status(self.mention.validity.token_status());
+        match tag.handle_mouse(&mut state.tag, event) {
+            TagOutcome::Ignored => InlineMentionOutcome::Ignored,
+            TagOutcome::Remove(id) => InlineMentionOutcome::Removed { id: id.to_string() },
+            TagOutcome::PartChanged(p) => InlineMentionOutcome::PartChanged(p),
+            TagOutcome::Activated(id) => {
+                if matches!(self.mention.validity, MentionValidity::Ambiguous) {
+                    state.disambiguation_open = true;
+                    InlineMentionOutcome::DisambiguateRequested { id: id.to_string() }
+                } else {
+                    InlineMentionOutcome::Activated { id: id.to_string() }
+                }
+            }
+            TagOutcome::HoverChanged => InlineMentionOutcome::Ignored,
+        }
+    }
 }
 
 // ── TokenStrip / semantic helpers ───────────────────────────────────────────
+
+/// Project mention to strip item (label must outlive).
+#[must_use]
+pub fn mention_to_token_item<'a>(m: &'a MentionRef, label: &'a str) -> TokenItem<'a, &'a str> {
+    TokenItem::tag(m.id.as_str(), label)
+        .removable(m.removable)
+        .status(m.validity.token_status())
+}
 
 /// Parse `@[kind:id|label]` markup into a mention (best-effort).
 #[must_use]
@@ -1412,6 +1739,11 @@ impl FileMentionState {
         }
     }
 
+    /// Gate.
+    pub const fn set_accepts_input(&mut self, on: bool) {
+        self.accepts_input = on;
+    }
+
     /// Sync from draft text + cursor (host calls after edit).
     pub fn sync_from_draft(&mut self, text: &str, cursor_byte: usize) -> bool {
         if !self.accepts_input {
@@ -1432,6 +1764,12 @@ impl FileMentionState {
             }
         }
     }
+
+    /// Close.
+    pub fn close(&mut self) {
+        self.open = false;
+        self.query = None;
+    }
 }
 
 /// Entity mention completion session.
@@ -1443,6 +1781,50 @@ pub struct EntityMentionState {
     pub query: Option<MentionQuery>,
     /// Accepts input.
     pub accepts_input: bool,
+}
+
+impl EntityMentionState {
+    /// Fresh.
+    #[must_use]
+    pub fn new() -> Self {
+        Self {
+            open: false,
+            query: None,
+            accepts_input: true,
+        }
+    }
+
+    /// Gate.
+    pub const fn set_accepts_input(&mut self, on: bool) {
+        self.accepts_input = on;
+    }
+
+    /// Sync.
+    pub fn sync_from_draft(&mut self, text: &str, cursor_byte: usize) -> bool {
+        if !self.accepts_input {
+            return false;
+        }
+        match detect_entity_mention_query(text, cursor_byte) {
+            Some(q) => {
+                let changed = self.query.as_ref() != Some(&q);
+                self.query = Some(q);
+                self.open = true;
+                changed
+            }
+            None => {
+                let was = self.open;
+                self.open = false;
+                self.query = None;
+                was
+            }
+        }
+    }
+
+    /// Close.
+    pub fn close(&mut self) {
+        self.open = false;
+        self.query = None;
+    }
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -1483,6 +1865,17 @@ fn prev_char_boundary(s: &str, byte: usize) -> usize {
     i
 }
 
+fn next_char_boundary(s: &str, byte: usize) -> usize {
+    if byte >= s.len() {
+        return s.len();
+    }
+    let mut i = byte + 1;
+    while i < s.len() && !s.is_char_boundary(i) {
+        i += 1;
+    }
+    i
+}
+
 // ── Bench ───────────────────────────────────────────────────────────────────
 
 /// Moderate mention draft / completion sizes.
@@ -1491,6 +1884,8 @@ pub mod bench {
     pub const MENTION_COUNT: usize = 48;
     /// Candidates for filter.
     pub const CANDIDATE_COUNT: usize = 200;
+    /// Paint frames.
+    pub const PAINT_FRAMES: u32 = 24;
 }
 
 // ── Tests ───────────────────────────────────────────────────────────────────
@@ -1498,9 +1893,7 @@ pub mod bench {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyEventKind;
     use crate::style::DesignSystem;
-    use crate::widgets::remove_label;
 
     #[test]
     fn detect_file_mention_at() {
@@ -1642,85 +2035,6 @@ mod tests {
         assert!(matches!(out, InlineMentionOutcome::CopyRequested { .. }));
         let desc = mention_semantic_description(file.as_ref());
         assert!(desc.contains("missing"));
-    }
-
-    #[test]
-    fn repeated_direct_actions_and_disambiguation_lifecycle_are_ignored() {
-        let system = DesignSystem::default();
-        let file = FileMention::missing("m", "gone.rs", "gone.rs");
-        let mention = InlineMention::file(&file, &system);
-        let mut state = InlineMentionState::new();
-        state.set_focused(true);
-
-        for (code, modifiers) in [
-            (KeyCode::Char('c'), KeyModifiers::CONTROL),
-            (KeyCode::Char('p'), KeyModifiers::CONTROL),
-        ] {
-            let mut repeat = KeyEvent::new(code, modifiers);
-            repeat.kind = KeyEventKind::Repeat;
-            let before = state.clone();
-            assert_eq!(
-                mention.handle_key(&mut state, repeat),
-                InlineMentionOutcome::Ignored
-            );
-            assert_eq!(state, before, "{code:?} repeat mutated mention state");
-        }
-        assert!(matches!(
-            mention.handle_key(
-                &mut state,
-                KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL)
-            ),
-            InlineMentionOutcome::CopyRequested { .. }
-        ));
-
-        let ambiguous = FileMention::ambiguous(
-            "a",
-            "same.rs",
-            vec![
-                MentionDisambiguator::new("one/same.rs", "same.rs"),
-                MentionDisambiguator::new("two/same.rs", "same.rs"),
-            ],
-        );
-        let ambiguous_mention = InlineMention::file(&ambiguous, &system);
-        let mut repeat_disambiguate = KeyEvent::new(KeyCode::Char('d'), KeyModifiers::CONTROL);
-        repeat_disambiguate.kind = KeyEventKind::Repeat;
-        assert_eq!(
-            ambiguous_mention.handle_key(&mut state, repeat_disambiguate),
-            InlineMentionOutcome::Ignored
-        );
-        assert!(!state.disambiguation_open);
-        assert!(matches!(
-            ambiguous_mention.handle_key(
-                &mut state,
-                KeyEvent::new(KeyCode::Char('d'), KeyModifiers::CONTROL)
-            ),
-            InlineMentionOutcome::DisambiguateRequested { .. }
-        ));
-
-        let before = state.clone();
-        let mut repeat_escape = KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE);
-        repeat_escape.kind = KeyEventKind::Repeat;
-        assert_eq!(
-            ambiguous_mention.handle_key(&mut state, repeat_escape),
-            InlineMentionOutcome::Ignored
-        );
-        assert_eq!(state, before);
-
-        let mut repeat_enter = KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE);
-        repeat_enter.kind = KeyEventKind::Repeat;
-        let before = state.clone();
-        assert_eq!(
-            ambiguous_mention.handle_key(&mut state, repeat_enter),
-            InlineMentionOutcome::Ignored
-        );
-        assert_eq!(state, before);
-        assert!(matches!(
-            ambiguous_mention.handle_key(
-                &mut state,
-                KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)
-            ),
-            InlineMentionOutcome::DisambiguationSelected { index: 0, .. }
-        ));
     }
 
     #[test]

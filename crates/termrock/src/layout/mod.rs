@@ -18,7 +18,7 @@ pub use center::{
     Center, CenterAxis, CenterLayout, CenterSpec, ModalSpec, center_block_y, center_line_x,
     layout_center, modal_rect,
 };
-pub use dialog::paint_dialog_shell;
+pub use dialog::{render_dialog_shell, render_scrollable_dialog_body};
 pub use grid::{
     Grid, GridAutoFlow, GridItem, GridLayout, GridSpec, TrackSize, auto_flow_items,
     dashboard_grid_template, form_grid_template, grid_neighbor, grid_neighbor_2d,
@@ -123,6 +123,36 @@ pub fn resolve_dialog(outer: Rect, spec: DialogSpec) -> Rect {
                 .layout(outer)
                 .child;
             Rect::new(child.x, outer.y, child.width, height.min(outer.height))
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Resolved body and bottom-chrome rectangles.
+pub struct Slots {
+    /// Remaining rectangle available to primary content.
+    pub body: Rect,
+    /// Rectangle reserved for bottom chrome.
+    pub bottom: Rect,
+}
+
+impl Slots {
+    #[must_use]
+    /// Reserves bottom chrome and returns the resulting body and bottom rectangles.
+    pub const fn bottom(area: Rect, rows: u16) -> Self {
+        let bottom_height = if area.height < rows {
+            area.height
+        } else {
+            rows
+        };
+        Self {
+            body: Rect::new(area.x, area.y, area.width, area.height - bottom_height),
+            bottom: Rect::new(
+                area.x,
+                area.y.saturating_add(area.height - bottom_height),
+                area.width,
+                bottom_height,
+            ),
         }
     }
 }
@@ -250,14 +280,11 @@ mod tests {
     fn dialog_center_stays_inside_tiny_and_large_inputs() {
         let outer = Rect::new(7, 11, 20, 10);
         assert_eq!(
-            Center::new(8, 4).safe_margin(true).layout(outer).child,
+            Center::dialog(8, 4).layout(outer).child,
             Rect::new(13, 14, 8, 4)
         );
         for (width, height) in [(0, 0), (1, 1), (2, 2), (u16::MAX, u16::MAX)] {
-            let rect = Center::new(width, height)
-                .safe_margin(true)
-                .layout(outer)
-                .child;
+            let rect = Center::dialog(width, height).layout(outer).child;
             assert!(rect.x >= outer.x && rect.y >= outer.y);
             assert!(rect.right() <= outer.right());
             assert!(rect.bottom() <= outer.bottom());

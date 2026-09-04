@@ -79,7 +79,7 @@ pub fn parse_to_line(input: &str, options: &AnsiParseOptions) -> AnsiLine {
         .lines()
         .back()
         .cloned()
-        .unwrap_or_else(AnsiLine::empty)
+        .unwrap_or_else(|| AnsiLine::empty(options.default_style))
 }
 
 /// Parse multi-line input into completed lines (trailing partial kept only if
@@ -150,6 +150,14 @@ impl AnsiParseOptions {
             ..Self::default()
         }
     }
+
+    /// Strip mode: ignore colors and hyperlinks (plain text path).
+    #[must_use]
+    pub const fn strip_only(mut self) -> Self {
+        self.no_color = true;
+        self.hyperlinks = false;
+        self
+    }
 }
 
 // ── Parsed model ────────────────────────────────────────────────────────────
@@ -165,6 +173,18 @@ pub struct AnsiSegment {
     pub href: Option<String>,
 }
 
+impl AnsiSegment {
+    /// Plain segment.
+    #[must_use]
+    pub fn plain(text: impl Into<String>, style: Style) -> Self {
+        Self {
+            text: text.into(),
+            style,
+            href: None,
+        }
+    }
+}
+
 /// One logical output line after CR/BS resolution.
 #[derive(Debug, Clone, PartialEq)]
 pub struct AnsiLine {
@@ -177,7 +197,8 @@ pub struct AnsiLine {
 impl AnsiLine {
     /// Empty line.
     #[must_use]
-    pub fn empty() -> Self {
+    pub fn empty(style: Style) -> Self {
+        let _ = style;
         Self {
             segments: Vec::new(),
             plain: String::new(),
@@ -215,6 +236,12 @@ impl AnsiLine {
             .iter()
             .filter_map(|s| s.href.as_ref().map(|u| (s.text.clone(), u.clone())))
             .collect()
+    }
+
+    /// Display column width of plain text.
+    #[must_use]
+    pub fn width(&self) -> usize {
+        display_cols(&self.plain)
     }
 }
 
@@ -271,10 +298,28 @@ impl AnsiStream {
         self
     }
 
+    /// Options borrow.
+    #[must_use]
+    pub const fn options(&self) -> &AnsiParseOptions {
+        &self.options
+    }
+
     /// Completed lines (oldest first).
     #[must_use]
     pub fn lines(&self) -> &VecDeque<AnsiLine> {
         &self.lines
+    }
+
+    /// Incomplete line plain preview.
+    #[must_use]
+    pub fn pending_plain(&self) -> String {
+        self.cells.iter().map(|c| c.ch).collect()
+    }
+
+    /// Whether the current line has unflushed cells.
+    #[must_use]
+    pub fn has_partial(&self) -> bool {
+        !self.cells.is_empty() || !self.pending.is_empty()
     }
 
     /// Feed raw bytes (may include partial escape at end).
@@ -345,11 +390,61 @@ impl AnsiStream {
         self.push_line(line);
     }
 
+    /// Reset style/href to defaults; clear partial line (keeps history).
+    pub fn reset_style(&mut self) {
+        self.style = self.options.default_style;
+        self.href = None;
+    }
+
+    /// Clear history and partial state.
+    pub fn clear(&mut self) {
+        self.lines.clear();
+        self.cells.clear();
+        self.cursor = 0;
+        self.pending.clear();
+        self.reset_style();
+    }
+
     /// Drain completed lines into a Vec.
     #[must_use]
     pub fn into_lines(mut self) -> Vec<AnsiLine> {
         self.finish_line();
         self.lines.into_iter().collect()
+    }
+
+    /// Take completed lines, leave stream ready for more feed.
+    pub fn drain_lines(&mut self) -> Vec<AnsiLine> {
+        self.lines.drain(..).collect()
+    }
+
+    /// Append completed lines to a LogPane-style sink via callback.
+    pub fn drain_into_lines<F>(&mut self, mut f: F)
+    where
+        F: FnMut(Line<'static>),
+    {
+        for line in self.drain_lines() {
+            f(line.to_line());
+        }
+    }
+
+    /// Plain history + pending for copy.
+    #[must_use]
+    pub fn plain(&self) -> String {
+        let mut out = String::new();
+        for (i, line) in self.lines.iter().enumerate() {
+            if i > 0 {
+                out.push('\n');
+            }
+            out.push_str(&line.plain);
+        }
+        let pending = self.pending_plain();
+        if !pending.is_empty() {
+            if !out.is_empty() {
+                out.push('\n');
+            }
+            out.push_str(&pending);
+        }
+        out
     }
 
     fn push_line(&mut self, line: AnsiLine) {
@@ -556,6 +651,9 @@ impl Perform for PlainPerformer {
     }
 }
 
+// ── Legacy one-shot styled performer (used only via parse path) ─────────────
+// Kept logic unified through AnsiStream.
+
 // ── SGR ─────────────────────────────────────────────────────────────────────
 
 fn apply_sgr(params: &Params, style: &mut Style, default_style: Style, no_color: bool) {
@@ -691,7 +789,7 @@ fn starts_with_ignore_ascii_case(hay: &[u8], prefix: &[u8]) -> bool {
 
 fn cells_to_line(cells: &[LineCell], options: &AnsiParseOptions) -> AnsiLine {
     if cells.is_empty() {
-        return AnsiLine::empty();
+        return AnsiLine::empty(options.default_style);
     }
     let mut segments = Vec::new();
     let mut plain = String::with_capacity(cells.len());
@@ -790,6 +888,18 @@ pub enum AnsiTextMode {
     Plain,
 }
 
+impl AnsiTextMode {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Color => "color",
+            Self::NoColor => "no-color",
+            Self::Plain => "plain",
+        }
+    }
+}
+
 /// Interaction state for multi-line ANSI views.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct AnsiTextState {
@@ -814,12 +924,33 @@ impl AnsiTextState {
         }
     }
 
+    /// Focus.
+    pub const fn set_focused(&mut self, on: bool) {
+        self.focused = on;
+    }
+
     /// Scroll clamp.
     pub fn clamp(&mut self) {
         let max = self.total.saturating_sub(usize::from(self.viewport.max(1)));
         if self.scroll_y > max {
             self.scroll_y = max;
         }
+    }
+
+    /// Scroll by lines.
+    pub fn scroll_by(&mut self, delta: isize) -> bool {
+        let before = self.scroll_y;
+        if delta >= 0 {
+            self.scroll_y = self
+                .scroll_y
+                .saturating_add(usize::try_from(delta).unwrap_or(usize::MAX));
+        } else {
+            self.scroll_y = self
+                .scroll_y
+                .saturating_sub(usize::try_from(-delta).unwrap_or(usize::MAX));
+        }
+        self.clamp();
+        before != self.scroll_y
     }
 }
 
@@ -850,6 +981,35 @@ impl<'a> AnsiText<'a> {
     pub const fn mode(mut self, mode: AnsiTextMode) -> Self {
         self.mode = mode;
         self
+    }
+
+    /// First visible line (Widget path).
+    #[must_use]
+    pub const fn first(mut self, first: usize) -> Self {
+        self.first = first;
+        self
+    }
+
+    /// Line count.
+    #[must_use]
+    pub const fn len(&self) -> usize {
+        self.lines.len()
+    }
+
+    /// Empty.
+    #[must_use]
+    pub const fn is_empty(&self) -> bool {
+        self.lines.is_empty()
+    }
+
+    /// Plain join for copy.
+    #[must_use]
+    pub fn plain(&self) -> String {
+        self.lines
+            .iter()
+            .map(|l| l.plain.as_str())
+            .collect::<Vec<_>>()
+            .join("\n")
     }
 
     /// Paint with scroll state.

@@ -7,6 +7,7 @@
 //! Hosts apply redraw, focus, and overlay requests; domain `M` stays product-owned.
 //!
 //! Not an Elm/Bubble Tea runtime: no global command executor, no forced app loop.
+use crate::interaction::{OverlayId, OverlayKind};
 
 /// Whether the frame should be painted again.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -78,12 +79,38 @@ pub enum FocusRequest<Id = ()> {
     Previous,
 }
 
+impl<Id> FocusRequest<Id> {
+    /// Maps the focused identity type.
+    #[must_use]
+    pub fn map_id<J>(self, f: impl FnOnce(Id) -> J) -> FocusRequest<J> {
+        match self {
+            Self::Set(id) => FocusRequest::Set(f(id)),
+            Self::Clear => FocusRequest::Clear,
+            Self::Next => FocusRequest::Next,
+            Self::Previous => FocusRequest::Previous,
+        }
+    }
+}
+
 /// Framework overlay coordination (host owns [`crate::interaction::OverlayStack`]).
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum OverlayRequest {
     /// Dismiss the top overlay layer.
     DismissTop,
+    /// Dismiss a named overlay.
+    Dismiss(OverlayId),
+    /// Open jump-mode chrome (host pairs with JumpOverlay).
+    OpenJump,
+    /// Open command-palette chrome.
+    OpenCommandPalette,
+    /// Open a named layer; host builds full [`crate::interaction::OverlaySpec`].
+    OpenNamed {
+        /// Overlay identity.
+        id: OverlayId,
+        /// Kind for policy defaults.
+        kind: OverlayKind,
+    },
 }
 
 /// Standard result envelope for component input handlers.
@@ -138,6 +165,18 @@ impl<M, FocusId> EventResult<M, FocusId> {
         }
     }
 
+    /// Consumed with no domain message and no redraw (e.g. key arm only).
+    #[must_use]
+    pub const fn stop() -> Self {
+        Self {
+            propagation: Propagation::Stop,
+            message: None,
+            redraw: Redraw::None,
+            focus: None,
+            overlay: None,
+        }
+    }
+
     /// Consumed state change that needs paint, no domain message.
     #[must_use]
     pub const fn changed() -> Self {
@@ -161,6 +200,19 @@ impl<M, FocusId> EventResult<M, FocusId> {
             overlay: None,
         }
     }
+
+    /// Domain message that still bubbles (parent may also act). Rare.
+    #[must_use]
+    pub fn emit_bubble(message: M) -> Self {
+        Self {
+            propagation: Propagation::Bubble,
+            message: Some(message),
+            redraw: Redraw::Now,
+            focus: None,
+            overlay: None,
+        }
+    }
+
     /// Whether propagation is [`Propagation::Stop`] (input consumed).
     #[must_use]
     pub const fn consumed(&self) -> bool {
@@ -196,12 +248,26 @@ impl<M, FocusId> EventResult<M, FocusId> {
     pub const fn overlay(&self) -> Option<&OverlayRequest> {
         self.overlay.as_ref()
     }
+
+    /// Takes the domain message, leaving `None`.
+    pub fn take_message(&mut self) -> Option<M> {
+        self.message.take()
+    }
+
     /// Overrides redraw.
     #[must_use]
     pub const fn with_redraw(mut self, redraw: Redraw) -> Self {
         self.redraw = redraw;
         self
     }
+
+    /// Overrides propagation.
+    #[must_use]
+    pub const fn with_propagation(mut self, propagation: Propagation) -> Self {
+        self.propagation = propagation;
+        self
+    }
+
     /// Attaches a focus request (replaces prior).
     #[must_use]
     pub fn with_focus(mut self, focus: FocusRequest<FocusId>) -> Self {
@@ -231,6 +297,18 @@ impl<M, FocusId> EventResult<M, FocusId> {
             message: self.message.map(f),
             redraw: self.redraw,
             focus: self.focus,
+            overlay: self.overlay,
+        }
+    }
+
+    /// Maps focus identity type.
+    #[must_use]
+    pub fn map_focus<J>(self, f: impl FnOnce(FocusId) -> J) -> EventResult<M, J> {
+        EventResult {
+            propagation: self.propagation,
+            message: self.message,
+            redraw: self.redraw,
+            focus: self.focus.map(|req| req.map_id(f)),
             overlay: self.overlay,
         }
     }
@@ -303,7 +381,29 @@ pub fn compose_capture<M, FocusId>(
     }
 }
 
-impl<M, FocusId> EventResult<M, FocusId> {}
+impl<M, FocusId> EventResult<M, FocusId> {
+    /// Builds from consume flag + optional message (test/host adapters).
+    #[must_use]
+    pub fn from_parts(
+        consumed: bool,
+        message: Option<M>,
+        redraw: Redraw,
+        focus: Option<FocusRequest<FocusId>>,
+        overlay: Option<OverlayRequest>,
+    ) -> Self {
+        Self {
+            propagation: if consumed {
+                Propagation::Stop
+            } else {
+                Propagation::Bubble
+            },
+            message,
+            redraw,
+            focus,
+            overlay,
+        }
+    }
+}
 
 #[cfg(test)]
 mod tests {

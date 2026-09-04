@@ -27,6 +27,18 @@ pub enum ChromeRowKind {
     Notice,
 }
 
+impl ChromeRowKind {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Query => "query",
+            Self::Mode => "mode",
+            Self::Notice => "notice",
+        }
+    }
+}
+
 /// One line of inline pane chrome.
 #[derive(Debug, Clone, Copy)]
 pub struct ChromeRow<'a> {
@@ -76,6 +88,13 @@ impl<'a> ChromeRow<'a> {
             tone: None,
             caret: false,
         }
+    }
+
+    /// Overrides the glyph's tone (a rename is not a failure).
+    #[must_use]
+    pub const fn tone(mut self, role: Role) -> Self {
+        self.tone = Some(role);
+        self
     }
 
     /// Whether the row ends in a live caret (an editable row does).

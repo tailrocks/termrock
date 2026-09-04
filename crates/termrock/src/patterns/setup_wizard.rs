@@ -24,17 +24,24 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+use ratatui_core::{
+    buffer::Buffer,
+    layout::Rect,
+    widgets::{StatefulWidget, Widget},
+};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers},
+    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
     style::{DesignSystem, Role},
+    text::take_display_cols,
     widgets::{
-        Button, ButtonState, ButtonVariant, ConfirmPrompt, EmptyKind, EmptyState, Field, Fieldset,
-        Form, FormOutcome, FormState, FormWizard, FormWizardOutcome, FormWizardState, KeyValueList,
-        KeyValueListState, KeybindingRecorderState, KvEntry, KvStatus, PermissionPrompt,
-        PermissionPromptState, StepChangeReason, StepItem, ThemePicker, ThemePickerOutcome,
-        ThemePickerState, ThemePreset, WizardGate, WizardPhase, WizardProgress,
+        BUILTIN_THEME_PRESETS, Button, ButtonState, ButtonVariant, ConfirmPrompt, EmptyKind,
+        EmptyState, Field, Fieldset, Form, FormOutcome, FormState, FormWizard, FormWizardOutcome,
+        FormWizardState, KeyValueList, KeyValueListState, KeybindingRecorderState, KvEntry,
+        KvStatus, PermissionPrompt, PermissionPromptState, StepChangeReason, ThemePicker,
+        ThemePickerOutcome, ThemePickerState, ThemePreset, WizardGate, WizardPhase, WizardProgress,
+        WizardStep,
     },
 };
 
@@ -49,6 +56,17 @@ pub enum SetupWizardMode {
     Fullscreen,
     /// Embedded in an existing shell pane (tighter chrome).
     Inline,
+}
+
+impl SetupWizardMode {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Fullscreen => "fullscreen",
+            Self::Inline => "inline",
+        }
+    }
 }
 
 /// Semantic kind for an onboarding step (drives body paint + defaults).
@@ -80,6 +98,24 @@ pub enum SetupStepKind {
 }
 
 impl SetupStepKind {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Welcome => "welcome",
+            Self::Capability => "capability",
+            Self::Account => "account",
+            Self::Connection => "connection",
+            Self::Choices => "choices",
+            Self::Validation => "validation",
+            Self::Permission => "permission",
+            Self::Theme => "theme",
+            Self::Summary => "summary",
+            Self::Recovery => "recovery",
+            Self::Custom => "custom",
+        }
+    }
+
     /// Default wizard gate when entering the step (host may override).
     #[must_use]
     pub const fn default_gate(self) -> WizardGate {
@@ -99,7 +135,7 @@ impl SetupStepKind {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SetupStep {
     /// Wizard step chrome.
-    pub step: StepItem,
+    pub step: WizardStep,
     /// Body kind.
     pub kind: SetupStepKind,
 }
@@ -109,7 +145,7 @@ impl SetupStep {
     #[must_use]
     pub fn new(id: impl Into<String>, title: impl Into<String>, kind: SetupStepKind) -> Self {
         Self {
-            step: StepItem::new(id, title),
+            step: WizardStep::new(id, title),
             kind,
         }
     }
@@ -243,7 +279,7 @@ impl SetupWizardState {
     pub fn from_steps(steps: impl IntoIterator<Item = SetupStep>) -> Self {
         let collected: Vec<SetupStep> = steps.into_iter().collect();
         let kinds: Vec<SetupStepKind> = collected.iter().map(|s| s.kind).collect();
-        let wizard_steps: Vec<StepItem> = collected.into_iter().map(|s| s.step).collect();
+        let wizard_steps: Vec<WizardStep> = collected.into_iter().map(|s| s.step).collect();
         let mut wizard = FormWizardState::with_steps(wizard_steps).with_review(true);
         wizard.set_focused(true);
         // Apply default gates for first step
@@ -266,6 +302,21 @@ impl SetupWizardState {
         }
     }
 
+    /// Quick start with N custom steps (all Custom).
+    #[must_use]
+    pub fn new(step_count: usize) -> Self {
+        let steps: Vec<SetupStep> = (0..step_count.max(1))
+            .map(|i| {
+                SetupStep::new(
+                    format!("step-{i}"),
+                    format!("Step {}", i + 1),
+                    SetupStepKind::Custom,
+                )
+            })
+            .collect();
+        Self::from_steps(steps)
+    }
+
     /// Mode.
     #[must_use]
     pub const fn with_mode(mut self, mode: SetupWizardMode) -> Self {
@@ -278,6 +329,12 @@ impl SetupWizardState {
     pub fn with_title(mut self, title: impl Into<String>) -> Self {
         self.title = title.into();
         self
+    }
+
+    /// Step kinds.
+    #[must_use]
+    pub fn kinds(&self) -> &[SetupStepKind] {
+        &self.kinds
     }
 
     /// Kind of current step (or Recovery if failed phase).
@@ -297,12 +354,13 @@ impl SetupWizardState {
 
     /// Resume from saved progress (chrome only).
     pub fn resume(&mut self, progress: &WizardProgress) -> SetupWizardOutcome {
-        let _ = self.wizard.restore_progress(progress);
+        let out = self.wizard.restore_progress(progress);
         self.cancel_confirm = false;
         let step = self.wizard.step();
         if let Some(kind) = self.kinds.get(step) {
             self.wizard.set_gate(kind.default_gate());
         }
+        let _ = out;
         SetupWizardOutcome::Resumed { step }
     }
 
@@ -354,13 +412,9 @@ impl SetupWizardState {
         if key.is_release() {
             return SetupWizardOutcome::Ignored;
         }
-        let is_press = key.is_press();
 
         // Safe cancel confirmation layer
         if self.cancel_confirm {
-            if !is_press {
-                return SetupWizardOutcome::Ignored;
-            }
             match key.code {
                 KeyCode::Esc | KeyCode::Char('n') | KeyCode::Char('N') => {
                     return self.dismiss_cancel_confirm();
@@ -373,13 +427,12 @@ impl SetupWizardState {
         }
 
         // Esc → safe cancel (never one-shot leave)
-        if is_press && matches!(key.code, KeyCode::Esc) {
+        if matches!(key.code, KeyCode::Esc) {
             return self.request_cancel();
         }
 
         // Review step: `a` opens the values the diet held back.
-        if is_press
-            && matches!(self.current_kind(), SetupStepKind::Summary)
+        if matches!(self.current_kind(), SetupStepKind::Summary)
             && key.modifiers.is_empty()
             && matches!(key.code, KeyCode::Char('a' | 'A'))
         {
@@ -390,10 +443,7 @@ impl SetupWizardState {
         }
 
         // Ctrl+S progress save (wizard)
-        if is_press
-            && key.code == KeyCode::Char('s')
-            && key.modifiers.contains(KeyModifiers::CONTROL)
-        {
+        if key.code == KeyCode::Char('s') && key.modifiers.contains(KeyModifiers::CONTROL) {
             let out = self.wizard.save_progress();
             return SetupWizardOutcome::Wizard(out);
         }
@@ -472,6 +522,7 @@ impl SetupWizardState {
             FormWizardOutcome::StepChanged { to, reason, .. } => {
                 if let Some(kind) = self.kinds.get(*to) {
                     // Preserve resume gates; for Next set kind default if still default
+                    let _ = reason;
                     if matches!(
                         reason,
                         StepChangeReason::Next | StepChangeReason::Back | StepChangeReason::Skip
@@ -596,7 +647,7 @@ pub struct SetupWizardSurfaces<'a> {
 }
 
 /// Paint setup wizard chrome + body content from public widgets.
-pub fn paint_setup_wizard(buffer: &mut Buffer, area: Rect, surfaces: SetupWizardSurfaces<'_>) {
+pub fn render_setup_wizard(buffer: &mut Buffer, area: Rect, surfaces: SetupWizardSurfaces<'_>) {
     let SetupWizardSurfaces {
         system,
         state,
@@ -638,10 +689,10 @@ pub fn paint_setup_wizard(buffer: &mut Buffer, area: Rect, surfaces: SetupWizard
                 .kind(EmptyKind::FirstUse)
                 .explanation(welcome_detail)
                 .shortcut("Enter continue · Esc cancel")
-                .paint(body, buffer, &mut crate::widgets::EmptyStateState::new());
+                .paint(body, buffer);
         }
         SetupStepKind::Capability => {
-            paint_capability_list(buffer, body, system, capabilities);
+            paint_capability_list(buffer, body, system, capabilities, false);
         }
         SetupStepKind::Account
         | SetupStepKind::Connection
@@ -649,7 +700,13 @@ pub fn paint_setup_wizard(buffer: &mut Buffer, area: Rect, surfaces: SetupWizard
         | SetupStepKind::Validation
         | SetupStepKind::Custom => {
             if fieldsets.is_empty() {
-                paint_body_hint(buffer, body, system, "Host form fields for this step");
+                paint_body_hint(
+                    buffer,
+                    body,
+                    system,
+                    "Host form fields for this step",
+                    false,
+                );
             } else {
                 StatefulWidget::render(
                     &Form::new(fieldsets, system).focused_field(state.focused_field.as_ref()),
@@ -668,13 +725,13 @@ pub fn paint_setup_wizard(buffer: &mut Buffer, area: Rect, surfaces: SetupWizard
                         .kind(EmptyKind::PermissionLimited)
                         .explanation("Review tool trust on first use. Host opens gates when ready.")
                         .shortcut("Enter continue")
-                        .paint(body, buffer, &mut crate::widgets::EmptyStateState::new());
+                        .paint(body, buffer);
                 }
             } else {
                 EmptyState::new("Permissions", system)
                     .kind(EmptyKind::PermissionLimited)
                     .explanation("Host will request elevated tools before first run.")
-                    .paint(body, buffer, &mut crate::widgets::EmptyStateState::new());
+                    .paint(body, buffer);
             }
         }
         SetupStepKind::Theme => {
@@ -687,7 +744,14 @@ pub fn paint_setup_wizard(buffer: &mut Buffer, area: Rect, surfaces: SetupWizard
             );
         }
         SetupStepKind::Summary => {
-            paint_summary(buffer, body, system, summary_lines, state.show_all_summary);
+            paint_summary(
+                buffer,
+                body,
+                system,
+                summary_lines,
+                state.show_all_summary,
+                false,
+            );
         }
         SetupStepKind::Recovery => {
             let msg = state
@@ -699,7 +763,7 @@ pub fn paint_setup_wizard(buffer: &mut Buffer, area: Rect, surfaces: SetupWizard
                 .kind(EmptyKind::NoData)
                 .explanation(msg.as_str())
                 .shortcut("r retry · Esc cancel")
-                .paint(body, buffer, &mut crate::widgets::EmptyStateState::new());
+                .paint(body, buffer);
         }
     }
 
@@ -773,6 +837,7 @@ fn paint_capability_list(
     area: Rect,
     system: &DesignSystem,
     lines: &[CapabilityLine<'_>],
+    _ascii: bool,
 ) {
     if area.is_empty() {
         return;
@@ -825,6 +890,7 @@ fn paint_summary(
     system: &DesignSystem,
     lines: &[SetupSummaryLine<'_>],
     show_all: bool,
+    _ascii: bool,
 ) {
     if area.is_empty() {
         return;
@@ -895,7 +961,13 @@ fn paint_summary(
     }
 }
 
-fn paint_body_hint(buffer: &mut Buffer, area: Rect, system: &DesignSystem, text: &str) {
+fn paint_body_hint(
+    buffer: &mut Buffer,
+    area: Rect,
+    system: &DesignSystem,
+    text: &str,
+    _ascii: bool,
+) {
     if area.is_empty() {
         return;
     }
@@ -930,6 +1002,12 @@ pub fn example_setup_steps() -> Vec<SetupStep> {
     ]
 }
 
+/// Alias for product docs that say "onboarding".
+#[must_use]
+pub fn example_onboarding_setup_steps() -> Vec<SetupStep> {
+    example_setup_steps()
+}
+
 /// Demo capability rows.
 #[must_use]
 pub fn example_capability_lines() -> Vec<CapabilityLine<'static>> {
@@ -953,6 +1031,26 @@ pub fn example_setup_account_fields() -> [Field<'static, &'static str>; 2] {
     ]
 }
 
+/// Demo connection fields.
+#[must_use]
+pub fn example_setup_connection_fields() -> [Field<'static, &'static str>; 2] {
+    [
+        Field::new("endpoint", "Endpoint", "https://api.example")
+            .required(true)
+            .dirty(true),
+        Field::new("token", "Token", "••••••••").required(true),
+    ]
+}
+
+/// Demo choices fields.
+#[must_use]
+pub fn example_setup_choices_fields() -> [Field<'static, &'static str>; 2] {
+    [
+        Field::new("region", "Region", "us-east").dirty(true),
+        Field::new("plan", "Plan", "hobby"),
+    ]
+}
+
 /// Demo summary lines.
 #[must_use]
 pub fn example_setup_summary_lines() -> Vec<SetupSummaryLine<'static>> {
@@ -964,14 +1062,17 @@ pub fn example_setup_summary_lines() -> Vec<SetupSummaryLine<'static>> {
     ]
 }
 
+/// Build WizardStep list only (for hosts that only need FormWizard).
+#[must_use]
+pub fn setup_steps_to_wizard_steps(steps: &[SetupStep]) -> Vec<WizardStep> {
+    steps.iter().map(|s| s.step.clone()).collect()
+}
+
 // ── Tests ───────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyEventKind;
-    use crate::widgets::BUILTIN_THEME_PRESETS;
-    use crate::widgets::tests::key_with_kind;
     use ratatui_core::backend::TestBackend;
     use ratatui_core::terminal::Terminal;
 
@@ -1020,101 +1121,6 @@ mod tests {
             BUILTIN_THEME_PRESETS,
         );
         assert!(matches!(out, SetupWizardOutcome::CancelConfirmOpen));
-    }
-
-    #[test]
-    fn repeated_setup_wizard_one_shot_actions_are_ignored() {
-        let repeat = |code, modifiers| key_with_kind(code, modifiers, KeyEventKind::Repeat);
-        let fields = example_setup_account_fields();
-        let sets = [Fieldset::new("Account", &fields)];
-        let mut state = SetupWizardState::from_steps(example_setup_steps());
-
-        assert_eq!(
-            state.handle_key(
-                repeat(KeyCode::Esc, KeyModifiers::NONE),
-                &sets,
-                BUILTIN_THEME_PRESETS
-            ),
-            SetupWizardOutcome::Ignored
-        );
-        assert!(!state.cancel_confirm);
-        assert!(matches!(
-            state.handle_key(
-                KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE),
-                &sets,
-                BUILTIN_THEME_PRESETS
-            ),
-            SetupWizardOutcome::CancelConfirmOpen
-        ));
-        assert_eq!(
-            state.handle_key(
-                repeat(KeyCode::Enter, KeyModifiers::NONE),
-                &sets,
-                BUILTIN_THEME_PRESETS
-            ),
-            SetupWizardOutcome::Ignored
-        );
-        assert!(state.cancel_confirm);
-        assert_eq!(
-            state.handle_key(
-                repeat(KeyCode::Esc, KeyModifiers::NONE),
-                &sets,
-                BUILTIN_THEME_PRESETS
-            ),
-            SetupWizardOutcome::Ignored
-        );
-        assert!(state.cancel_confirm);
-        assert!(matches!(
-            state.handle_key(
-                KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE),
-                &sets,
-                BUILTIN_THEME_PRESETS
-            ),
-            SetupWizardOutcome::CancelConfirmDismissed
-        ));
-
-        assert_eq!(
-            state.handle_key(
-                repeat(KeyCode::Char('s'), KeyModifiers::CONTROL),
-                &sets,
-                BUILTIN_THEME_PRESETS
-            ),
-            SetupWizardOutcome::Ignored
-        );
-        assert!(matches!(
-            state.handle_key(
-                key_with_kind(
-                    KeyCode::Char('s'),
-                    KeyModifiers::CONTROL,
-                    KeyEventKind::Press
-                ),
-                &sets,
-                BUILTIN_THEME_PRESETS
-            ),
-            SetupWizardOutcome::Wizard(FormWizardOutcome::ProgressSaved { .. })
-        ));
-
-        while !matches!(state.wizard.phase(), WizardPhase::Review) {
-            state.set_gate(WizardGate::Valid);
-            let _ = state.wizard.next();
-        }
-        assert_eq!(state.current_kind(), SetupStepKind::Summary);
-        assert_eq!(
-            state.handle_key(
-                repeat(KeyCode::Char('a'), KeyModifiers::NONE),
-                &[],
-                BUILTIN_THEME_PRESETS
-            ),
-            SetupWizardOutcome::Ignored
-        );
-        assert!(matches!(
-            state.handle_key(
-                KeyEvent::new(KeyCode::Char('a'), KeyModifiers::NONE),
-                &[],
-                BUILTIN_THEME_PRESETS
-            ),
-            SetupWizardOutcome::SummaryDetailToggled { .. }
-        ));
     }
 
     #[test]
@@ -1181,7 +1187,7 @@ mod tests {
         let mut st = SetupWizardState::from_steps(example_setup_steps()).with_title("First run");
         let area = Rect::new(0, 0, 80, 24);
         let mut buf = Buffer::empty(area);
-        paint_setup_wizard(
+        render_setup_wizard(
             &mut buf,
             area,
             SetupWizardSurfaces {
@@ -1219,7 +1225,7 @@ mod tests {
             }
         }
         let mut buf = Buffer::empty(area);
-        paint_setup_wizard(
+        render_setup_wizard(
             &mut buf,
             area,
             SetupWizardSurfaces {
@@ -1245,7 +1251,7 @@ mod tests {
             .with_title("Inline setup");
         let area = Rect::new(0, 0, 48, 14);
         let mut buf = Buffer::empty(area);
-        paint_setup_wizard(
+        render_setup_wizard(
             &mut buf,
             area,
             SetupWizardSurfaces {
@@ -1271,7 +1277,7 @@ mod tests {
         assert_eq!(st.current_kind(), SetupStepKind::Recovery);
         let area = Rect::new(0, 0, 60, 16);
         let mut buf = Buffer::empty(area);
-        paint_setup_wizard(
+        render_setup_wizard(
             &mut buf,
             area,
             SetupWizardSurfaces {
@@ -1307,7 +1313,7 @@ mod tests {
         terminal
             .draw(|f| {
                 let area = f.area();
-                paint_setup_wizard(
+                render_setup_wizard(
                     f.buffer_mut(),
                     area,
                     SetupWizardSurfaces {

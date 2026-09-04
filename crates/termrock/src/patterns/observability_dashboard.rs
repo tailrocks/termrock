@@ -30,10 +30,17 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+#![allow(unused_variables, unused_mut)] // unit-test fixtures
+use ratatui_core::{
+    buffer::Buffer,
+    layout::Rect,
+    style::Modifier,
+    widgets::{StatefulWidget, Widget},
+};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers},
+    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
     layout::{
         PaneConstraint, PaneGeom, PaneId, Workspace, WorkspaceAxis, WorkspaceNode, WorkspaceState,
     },
@@ -41,13 +48,14 @@ use crate::{
         MetricAlert, MetricAlertSeverity, MetricsDashboard, MetricsDashboardOutcome,
         MetricsDashboardState, MetricsTimeRange,
     },
-    style::{DesignSystem, PanelChrome},
+    style::{DesignSystem, PanelChrome, Role},
+    text::take_display_cols,
     widgets::{
         EmptyKind, EmptyState, EventSeverity, EventStream, EventStreamOutcome, EventStreamState,
         InspectorField, LogLevel, LogLine, LogStream, LogStreamOutcome, LogStreamState, MetricTile,
         MetricTileHealth, ObjectInspector, ObjectInspectorOutcome, ObjectInspectorState, Panel,
         SearchInput, SearchInputOutcome, SearchInputState, StatusBar, StatusBarState, StatusRegion,
-        StatusSlot, StreamEvent, StreamRowKind,
+        StatusSlot, StreamEvent, StreamRowKind, filter_log_lines, filter_stream_events,
     },
 };
 
@@ -426,6 +434,12 @@ impl ObservabilityDashboardState {
         }
     }
 
+    /// Which streams the operator has opened.
+    #[must_use]
+    pub const fn open_panes(&self) -> ObservabilityPanes {
+        self.open_panes
+    }
+
     /// Opens or closes the log stream.
     pub fn toggle_logs(&mut self) -> ObservabilityDashboardOutcome {
         self.open_panes.logs = !self.open_panes.logs;
@@ -571,6 +585,13 @@ impl ObservabilityDashboardState {
         self.logs.set_reconnect_message(None);
         self.apply_focus_gates();
     }
+
+    /// Host reports offline/failure.
+    pub fn set_offline(&mut self) {
+        self.live = ObservabilityLiveState::Offline;
+        self.apply_focus_gates();
+    }
+
     /// Project drill-down.
     pub fn set_drill_down(
         &mut self,
@@ -872,6 +893,17 @@ impl ObservabilityDashboardState {
 
 // ── Layout ──────────────────────────────────────────────────────────────────
 
+/// Width-derived layout.
+#[must_use]
+pub fn observability_dashboard_layout(area: Rect, state: &WorkspaceState) -> Vec<PaneGeom> {
+    observability_dashboard_layout_density(
+        area,
+        state,
+        ObservabilityDensity::for_width(area.width),
+        ObservabilityPanes::default(),
+    )
+}
+
 /// Which streams share the default frame beside the metrics.
 ///
 /// A dashboard answers "is it healthy" first; the log and event streams are
@@ -1070,7 +1102,7 @@ fn pane_area(panes: &[PaneGeom], id: &str) -> Option<Rect> {
 // ── Render ──────────────────────────────────────────────────────────────────
 
 /// Paint composed observability dashboard (public child widgets only).
-pub fn paint_observability_dashboard(
+pub fn render_observability_dashboard(
     buffer: &mut Buffer,
     area: Rect,
     surfaces: ObservabilityDashboardSurfaces<'_>,
@@ -1125,7 +1157,7 @@ pub fn paint_observability_dashboard(
                     PanelChrome::Normal
                 });
             let inner = panel.inner(r);
-            panel.paint(r, buffer, None);
+            Widget::render(&panel, r, buffer);
             if !inner.is_empty() {
                 SearchInput::new(system)
                     .placeholder("filter logs & events…")
@@ -1146,7 +1178,7 @@ pub fn paint_observability_dashboard(
             .focused(focused)
             // The shell's status bar is the frame's one hint row.
             .hints(false)
-            .paint(r, buffer, &mut state.metrics);
+            .render(r, buffer, &mut state.metrics);
     }
 
     if let Some(r) = pane_area(&panes, "logs") {
@@ -1180,16 +1212,12 @@ pub fn paint_observability_dashboard(
                 PanelChrome::Normal
             });
         let inner = panel.inner(r);
-        panel.paint(r, buffer, None);
+        Widget::render(&panel, r, buffer);
         if inspect_fields.is_empty() {
             if !inner.is_empty() {
                 EmptyState::new("Pick a row", system)
                     .kind(EmptyKind::NoData)
-                    .paint(
-                        Rect::new(inner.x, inner.y, inner.width, 1),
-                        buffer,
-                        &mut crate::widgets::EmptyStateState::new(),
-                    );
+                    .paint(Rect::new(inner.x, inner.y, inner.width, 1), buffer);
             }
         } else {
             ObjectInspector::new(inspect_fields, system)
@@ -1311,8 +1339,8 @@ pub fn example_observability_tiles() -> Vec<MetricTile<'static>> {
 #[must_use]
 pub fn example_observability_alerts() -> Vec<MetricAlert<'static>> {
     vec![
-        MetricAlert::new("a1", MetricAlertSeverity::Critical, "error rate > 1%"),
-        MetricAlert::new("a2", MetricAlertSeverity::Warning, "p99 latency elevated"),
+        MetricAlert::new("a1", MetricAlertSeverity::Critical, "error rate > 1%").metric("err"),
+        MetricAlert::new("a2", MetricAlertSeverity::Warning, "p99 latency elevated").metric("p99"),
     ]
 }
 
@@ -1381,9 +1409,10 @@ pub mod bench {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::widgets::filter_log_lines;
-    use crate::widgets::filter_stream_events;
-    use crate::widgets::tests::press;
+
+    fn press(code: KeyCode) -> KeyEvent {
+        KeyEvent::new(code, KeyModifiers::NONE)
+    }
 
     /// The frame with every consult-pane asked for, for layout assertions.
     fn every_pane_open() -> ObservabilityPanes {
@@ -1495,7 +1524,7 @@ mod tests {
         let inspect = example_log_inspect_fields();
         let area = Rect::new(0, 0, 120, 36);
         let mut buf = Buffer::empty(area);
-        paint_observability_dashboard(
+        render_observability_dashboard(
             &mut buf,
             area,
             ObservabilityDashboardSurfaces {
@@ -1556,7 +1585,7 @@ mod tests {
         let mut buf = Buffer::empty(area);
         // Clear any prior transient so we prove paint path sets it
         st.status.transient = None;
-        paint_observability_dashboard(
+        render_observability_dashboard(
             &mut buf,
             area,
             ObservabilityDashboardSurfaces {
@@ -1717,6 +1746,7 @@ mod tests {
         let mut st = open();
         st.focus = "events";
         st.events.set_accepts_input(true);
+        let events = example_observability_events();
         // Select/activate via Enter if possible
         st.events.selected = Some("e2");
         let out = st.set_drill_down("event", "e2");
@@ -1814,7 +1844,7 @@ mod tests {
                 ObservabilityDensity::Tiny => Rect::new(0, 0, 40, 16),
             };
             let mut buf = Buffer::empty(area);
-            paint_observability_dashboard(
+            render_observability_dashboard(
                 &mut buf,
                 area,
                 ObservabilityDashboardSurfaces {
@@ -1834,7 +1864,7 @@ mod tests {
         seed_failure_state(&mut st);
         let area = Rect::new(0, 0, 100, 28);
         let mut buf = Buffer::empty(area);
-        paint_observability_dashboard(
+        render_observability_dashboard(
             &mut buf,
             area,
             ObservabilityDashboardSurfaces {
@@ -1901,7 +1931,7 @@ mod tests {
         let mut buf = Buffer::empty(area);
         let start = std::time::Instant::now();
         for _ in 0..bench::PAINT_FRAMES {
-            paint_observability_dashboard(
+            render_observability_dashboard(
                 &mut buf,
                 area,
                 ObservabilityDashboardSurfaces {

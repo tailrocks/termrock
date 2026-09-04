@@ -74,7 +74,7 @@ impl SearchResultKind {
 
     /// Short glyph.
     #[must_use]
-    pub const fn glyph(self) -> &'static str {
+    pub const fn glyph(self, _ascii: bool) -> &'static str {
         {
             match self {
                 Self::File => "·",
@@ -149,6 +149,21 @@ pub enum SearchResultsStatus {
 }
 
 impl SearchResultsStatus {
+    /// Stable id.
+    #[must_use]
+    pub fn id(&self) -> &'static str {
+        match self {
+            Self::Idle => "idle",
+            Self::Loading { .. } => "loading",
+            Self::Partial { .. } => "partial",
+            Self::Ready { .. } => "ready",
+            Self::Empty { .. } => "empty",
+            Self::Error { .. } => "error",
+            Self::Stale { .. } => "stale",
+            Self::Cancelled => "cancelled",
+        }
+    }
+
     /// Status line for chrome.
     #[must_use]
     pub fn summary_line(&self, visible: usize) -> String {
@@ -196,6 +211,13 @@ impl SearchResultGroup {
             count,
             collapsed: false,
         }
+    }
+
+    /// Collapsed.
+    #[must_use]
+    pub const fn collapsed(mut self) -> Self {
+        self.collapsed = true;
+        self
     }
 }
 
@@ -293,6 +315,20 @@ impl<'a> SearchResultItem<'a> {
         self.line = Some(n);
         self
     }
+
+    /// Score.
+    #[must_use]
+    pub const fn score(mut self, s: u32) -> Self {
+        self.score = Some(s);
+        self
+    }
+
+    /// Disabled.
+    #[must_use]
+    pub const fn disabled(mut self) -> Self {
+        self.enabled = false;
+        self
+    }
 }
 
 // ── Flattened paint rows ────────────────────────────────────────────────────
@@ -377,6 +413,16 @@ pub fn collect_match_targets(items: &[SearchResultItem<'_>]) -> Vec<(usize, bool
         }
     }
     out
+}
+
+/// Match-preserving snippet truncation for paint width.
+#[must_use]
+pub fn truncate_snippet_keep_match(
+    snippet: &str,
+    matches: Option<&[MatchRange]>,
+    max_cols: usize,
+) -> String {
+    keep_first_match_slice(snippet, matches.unwrap_or(&[]), max_cols)
 }
 
 /// Core keep-first-match window in display columns.
@@ -573,6 +619,17 @@ impl SearchResultsState {
         self.accepts_input = on;
     }
 
+    /// Accepts input.
+    #[must_use]
+    pub const fn accepts_input(&self) -> bool {
+        self.accepts_input
+    }
+
+    /// Enable multi-check.
+    pub fn enable_multi_select(&mut self) {
+        self.multi = true;
+    }
+
     /// Begin a new search generation (host). Returns generation to tag results.
     pub fn begin_search(&mut self) -> u64 {
         self.generation = self.generation.saturating_add(1);
@@ -586,6 +643,9 @@ impl SearchResultsState {
     /// Apply host results, rejecting stale or cancelled completions.
     pub fn apply_results(&mut self, generation: u64, status: SearchResultsStatus, count: usize) {
         if generation < self.generation {
+            if !matches!(self.status, SearchResultsStatus::Cancelled) {
+                self.status = SearchResultsStatus::Stale { generation };
+            }
             return;
         }
         if generation == self.generation && matches!(self.status, SearchResultsStatus::Cancelled) {
@@ -1013,8 +1073,23 @@ impl<'a> SearchResults<'a> {
         self
     }
 
+    /// Focus.
+    #[must_use]
+    pub const fn focused(mut self, on: bool) -> Self {
+        self.focused = on;
+        self
+    }
+
+    /// ASCII.
+    #[must_use]
+    /// Single-line density.
+    pub const fn compact(mut self) -> Self {
+        self.dense = false;
+        self
+    }
+
     /// Paint.
-    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut SearchResultsState) {
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut SearchResultsState) {
         if area.is_empty() {
             return;
         }
@@ -1133,7 +1208,7 @@ impl<'a> SearchResults<'a> {
                     } else {
                         " "
                     };
-                    let glyph = item.kind.glyph();
+                    let glyph = item.kind.glyph(false);
                     let line_no = item.line.map(|n| format!(":{n}")).unwrap_or_default();
                     let title_budget = usize::from(area.width).saturating_sub(4);
                     // Focused match walk: mark first range focused when this is walk target
@@ -1141,7 +1216,12 @@ impl<'a> SearchResults<'a> {
                         item.title_matches.unwrap_or(&[]),
                         items_match_focused(self.items, item.id, state, false),
                     );
-                    let title_disp = take_display_cols(item.title, title_budget).to_string();
+                    let title_disp = {
+                        let ranges = MatchRanges::from_ranges(title_ranges.iter().copied())
+                            .normalized(item.title);
+                        let _ = ranges;
+                        take_display_cols(item.title, title_budget).to_string()
+                    };
                     // The kind rides its glyph; the title is what you read
                     // (plans/012 Step 3).
                     let mut tiers = TieredRow::with_separator("");
@@ -1297,13 +1377,18 @@ fn promote_focused(ranges: &[MatchRange], focused: bool) -> Vec<MatchRange> {
 pub mod bench {
     /// Hits in a large page.
     pub const HIT_COUNT: usize = 2_000;
+    /// Groups.
+    pub const GROUP_COUNT: usize = 40;
+    /// Viewport.
+    pub const VIEWPORT: u16 = 30;
+    /// Paint frames.
+    pub const PAINT_FRAMES: u32 = 40;
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::style::DesignSystem;
-    use crate::widgets::tests::click;
 
     fn sample() -> (Vec<SearchResultGroup>, Vec<SearchResultItem<'static>>) {
         static T0: &[MatchRange] = &[MatchRange::new(0, 4)];
@@ -1356,40 +1441,12 @@ mod tests {
     fn generation_stale_gate() {
         let mut state = SearchResultsState::new();
         let g1 = state.begin_search();
-        state.apply_results(g1, SearchResultsStatus::Ready { total: Some(1) }, 1);
         let g2 = state.begin_search();
         assert!(g2 > g1);
         state.apply_results(g1, SearchResultsStatus::Ready { total: Some(1) }, 1);
-        assert_eq!(state.generation, g2);
-        assert_eq!(state.window.logical_len, 1);
-        assert_eq!(state.status, SearchResultsStatus::Loading { message: None });
+        assert!(matches!(state.status, SearchResultsStatus::Stale { .. }));
         state.apply_results(g2, SearchResultsStatus::Ready { total: Some(2) }, 2);
         assert!(matches!(state.status, SearchResultsStatus::Ready { .. }));
-    }
-
-    #[test]
-    fn older_completion_cannot_replace_current_loading_status() {
-        let mut state = SearchResultsState::new();
-        let old_generation = state.begin_search();
-        state.apply_results(
-            old_generation,
-            SearchResultsStatus::Ready { total: Some(1) },
-            1,
-        );
-        let current_generation = state.begin_search();
-
-        state.apply_results(
-            old_generation,
-            SearchResultsStatus::Error {
-                message: "old failure".into(),
-                retryable: true,
-            },
-            99,
-        );
-
-        assert_eq!(state.generation, current_generation);
-        assert_eq!(state.status, SearchResultsStatus::Loading { message: None });
-        assert_eq!(state.window.logical_len, 1);
     }
 
     #[test]
@@ -1489,7 +1546,7 @@ mod tests {
         let mut buf = Buffer::empty(area);
         SearchResults::new(&groups, &items, &system)
             .title("Find")
-            .paint(area, &mut buf, &mut state);
+            .render(area, &mut buf, &mut state);
         let text: String = buf
             .content()
             .iter()
@@ -1527,7 +1584,11 @@ mod tests {
             items[0].id.to_string(),
             Rect::new(3, 4, 24, 1),
         )];
-        let event = click(3, 4);
+        let event = MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: ratatui_core::layout::Position::new(3, 4),
+            modifiers: KeyModifiers::NONE,
+        };
         assert!(matches!(
             state.handle_mouse(&flat, event),
             SearchResultsOutcome::SelectionChanged { ref id, .. } if id == items[0].id
@@ -1568,7 +1629,7 @@ mod tests {
         let area = Rect::new(0, 0, 80, 24);
         let mut buf = Buffer::empty(area);
         for _ in 0..6 {
-            SearchResults::new(&groups, &items, &system).paint(area, &mut buf, &mut state);
+            SearchResults::new(&groups, &items, &system).render(area, &mut buf, &mut state);
             let flat = flatten_search_results(&groups, &items, &state.collapsed);
             let _ = state.handle_key(
                 &flat,

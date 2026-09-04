@@ -1,28 +1,28 @@
 //! Stable-ID focus, hover, hit regions, and logical outcomes.
+#![allow(unused_imports)] // test-only imports retained
 mod collection;
-mod cursor_window;
 mod dismissable;
 mod event_result;
 mod focus_graph;
 mod intent;
 mod keymap_bridge;
+mod modal;
 mod overlay_stack;
 mod roving;
 mod scene;
 mod selection_model;
 
-pub use collection::{
-    CollectionItem, CollectionOutcome, CollectionState, VirtualWindowActivePolicy,
-};
-pub use cursor_window::CursorWindow;
+pub use collection::{CollectionItem, CollectionOutcome, CollectionState};
 pub use dismissable::{
     DismissAction, DismissDecision, DismissEventId, DismissGuard, DismissPhase, DismissPolicy,
-    DismissReason, DismissableLayer, PointerGesture, evaluate_escape_stack,
+    DismissReason, DismissableLayer, PointerGesture, evaluate_escape_stack, evaluate_outside_top,
 };
 pub use event_result::{
     EventResult, FocusRequest, OverlayRequest, Propagation, Redraw, compose_bubble, compose_capture,
 };
-pub use focus_graph::{FocusDebugSnapshot, FocusGraph, FocusNavMode, FocusNode, FocusOutcome};
+pub use focus_graph::{
+    FocusDebugSnapshot, FocusGraph, FocusLens, FocusLensMode, FocusNavMode, FocusNode, FocusOutcome,
+};
 pub use roving::{
     RovingEntry, RovingFocusGroup, RovingOrientation, RovingOutcome, roving_hint_keymap,
     roving_hint_keymap_horizontal, roving_hint_keymap_vertical,
@@ -41,6 +41,7 @@ pub use intent::{
 };
 pub use keymap_bridge::dispatch_keymap_action;
 /// Paint a dim/occlude wash when [`OverlayStack::backdrop_policy`] requests it.
+pub use modal::render_backdrop;
 pub use overlay_stack::{
     BackdropPolicy, NarrowFallback, OpenMode, OverlayFit, OverlayId, OverlayKind, OverlayOutcome,
     OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, PlacementPrefer, PlacementResult,
@@ -120,7 +121,8 @@ impl<Id: Clone> HoverState<Id> {
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// Shared result vocabulary for widget interaction handlers.
 ///
-/// Prefer wrapping non-ignored values in [`EventResult`] at host boundaries.
+/// Prefer wrapping non-ignored values in [`EventResult`] at host boundaries:
+/// `outcome.into_event_result()`.
 #[non_exhaustive]
 pub enum Outcome<T> {
     /// The event was not actionable.
@@ -133,4 +135,23 @@ pub enum Outcome<T> {
     Activated(T),
     /// The interaction was cancelled.
     Cancelled,
+}
+
+impl<T> Outcome<T> {
+    /// Converts to the standard [`EventResult`] envelope.
+    ///
+    /// `Ignored` → bubble / no paint. All other variants → stop + redraw + message.
+    #[must_use]
+    pub fn into_event_result(self) -> EventResult<Self> {
+        match self {
+            Self::Ignored => EventResult::ignored(),
+            other => EventResult::emit(other),
+        }
+    }
+
+    /// Whether this outcome means the input was not handled.
+    #[must_use]
+    pub const fn is_ignored(&self) -> bool {
+        matches!(self, Self::Ignored)
+    }
 }

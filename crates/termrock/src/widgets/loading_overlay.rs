@@ -18,16 +18,24 @@
 //! blocking is a last resort.
 //!
 //! Research: async UI boundaries, Textual workers, agent tool execution.
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+use ratatui_core::{
+    buffer::Buffer,
+    layout::{Position, Rect},
+    style::{Modifier, Style},
+    widgets::Widget,
+};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     interaction::{
         SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, default_button_intent,
     },
     layout::{Center, CenterAxis, center_line_x},
-    runtime::FrameTick,
-    style::{DesignSystem, MotionPolicy, Role},
+    runtime::{AnimationDemand, FrameTick},
+    style::{DesignSystem, GlyphSet, MotionPolicy, Role},
     text::{display_cols, take_display_cols},
     widgets::{ActivityPhase, SpinnerState},
 };
@@ -99,6 +107,12 @@ impl BusyMode {
     #[must_use]
     pub const fn wants_wash(self) -> bool {
         matches!(self, Self::Blocking | Self::Cancellable)
+    }
+
+    /// Prefer not to use a heavy overlay for this mode on short ops.
+    #[must_use]
+    pub const fn prefers_light_chrome(self) -> bool {
+        matches!(self, Self::NonBlocking | Self::Optimistic)
     }
 }
 
@@ -230,6 +244,12 @@ impl BusyBoundaryState {
     pub fn set_elapsed_ms(&mut self, ms: u64) {
         self.elapsed_ms = ms;
     }
+
+    /// Advance elapsed by delta (host frame).
+    pub fn advance_ms(&mut self, delta: u64) {
+        self.elapsed_ms = self.elapsed_ms.saturating_add(delta);
+    }
+
     /// Optional expected duration (enables short-op policy).
     pub fn set_expected_ms(&mut self, ms: Option<u64>) {
         self.expected_ms = ms;
@@ -297,6 +317,18 @@ impl BusyBoundaryState {
     pub const fn nest_depth(&self) -> u8 {
         self.nest_depth
     }
+
+    /// Spinner state (for host tick demand).
+    #[must_use]
+    pub fn spinner(&self) -> &SpinnerState {
+        &self.spinner
+    }
+
+    /// Spinner mut.
+    pub fn spinner_mut(&mut self) -> &mut SpinnerState {
+        &mut self.spinner
+    }
+
     /// Whether expected duration classifies this as a short op.
     #[must_use]
     pub fn is_short_op(&self) -> bool {
@@ -340,6 +372,15 @@ impl BusyBoundaryState {
                 }
             }
         }
+    }
+
+    /// Animation demand from composed spinner.
+    #[must_use]
+    pub fn animation_demand(&self, tick: FrameTick, motion: MotionPolicy) -> AnimationDemand {
+        if !self.active {
+            return AnimationDemand::idle();
+        }
+        self.spinner.animation_demand(tick, motion)
     }
 
     /// Route a key against this boundary (region assumed focused/contains event).
@@ -396,6 +437,12 @@ impl BusyBoundaryState {
             BusyRoute::Deliver
         }
     }
+
+    /// Whether a position is inside a blocked region (for focus graphs).
+    #[must_use]
+    pub fn blocks_position(&self, pos: Position, region: Rect) -> bool {
+        self.active && self.mode.blocks_input() && region.contains(pos)
+    }
 }
 
 // ── LoadingOverlay paint ────────────────────────────────────────────────────
@@ -425,6 +472,23 @@ impl<'a> LoadingOverlay<'a> {
             system,
         }
     }
+
+    /// From boundary state (borrows label/unavailable).
+    #[must_use]
+    pub fn from_boundary(state: &'a BusyBoundaryState, system: &'a DesignSystem) -> Self {
+        Self {
+            mode: state.mode,
+            label: state.label.as_str(),
+            unavailable: state.unavailable.as_deref(),
+            cancel_hint: if state.mode.cancellable() {
+                Some("esc cancel")
+            } else {
+                None
+            },
+            system,
+        }
+    }
+
     /// Mode.
     #[must_use]
     pub const fn mode(mut self, mode: BusyMode) -> Self {
@@ -499,7 +563,7 @@ impl<'a> LoadingOverlay<'a> {
         buffer.set_stringn(
             x,
             area.y,
-            take_display_cols(badge, usize::from(w)).as_ref(),
+            take_display_cols(badge, usize::from(w)).as_str(),
             usize::from(w),
             self.system
                 .style(Role::Warning)
@@ -528,7 +592,7 @@ impl<'a> LoadingOverlay<'a> {
         buffer.set_stringn(
             x,
             area.y,
-            take_display_cols(&text, usize::from(w)).as_ref(),
+            take_display_cols(&text, usize::from(w)).as_str(),
             usize::from(w),
             self.system.style(Role::TextSecondary),
         );
@@ -670,6 +734,19 @@ impl BusyBoundary {
 
 // ── Examples / recipes ──────────────────────────────────────────────────────
 
+/// Non-blocking pane busy (short refresh).
+#[must_use]
+pub fn example_busy_non_blocking(system: &DesignSystem) -> (LoadingOverlay<'_>, BusyBoundaryState) {
+    let mut st = BusyBoundaryState::new();
+    let _ = st.begin(BusyMode::NonBlocking, "Refreshing");
+    st.set_elapsed_ms(200);
+    st.set_expected_ms(Some(100)); // short op
+    (
+        LoadingOverlay::new("Refreshing", system).mode(BusyMode::NonBlocking),
+        st,
+    )
+}
+
 /// Blocking pane load.
 #[must_use]
 pub fn example_busy_blocking(system: &DesignSystem) -> (LoadingOverlay<'_>, BusyBoundaryState) {
@@ -733,14 +810,8 @@ pub fn example_busy_stale(system: &DesignSystem) -> (LoadingOverlay<'_>, BusyBou
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    use crate::widgets::tests::click;
-    use crate::widgets::tests::press;
     use ratatui_core::backend::TestBackend;
-
-    use ratatui_core::style::Style;
     use ratatui_core::terminal::Terminal;
-    use ratatui_core::widgets::Widget;
     use std::time::{Duration, Instant};
 
     fn system() -> DesignSystem {
@@ -802,7 +873,12 @@ mod tests {
     fn non_blocking_allows_input() {
         let mut st = BusyBoundaryState::new();
         let _ = st.begin(BusyMode::NonBlocking, "Refresh");
-        let key = press(KeyCode::Char('j'));
+        let key = KeyEvent {
+            code: KeyCode::Char('j'),
+            modifiers: KeyModifiers::NONE,
+            kind: KeyEventKind::Press,
+            state: crate::input::KeyEventState::NONE,
+        };
         assert_eq!(st.route_key(key), BusyRoute::Deliver);
         assert!(!st.focus_trapped());
     }
@@ -811,7 +887,12 @@ mod tests {
     fn blocking_swallows_keys() {
         let mut st = BusyBoundaryState::new();
         let _ = st.begin(BusyMode::Blocking, "Load");
-        let key = press(KeyCode::Char('j'));
+        let key = KeyEvent {
+            code: KeyCode::Char('j'),
+            modifiers: KeyModifiers::NONE,
+            kind: KeyEventKind::Press,
+            state: crate::input::KeyEventState::NONE,
+        };
         assert_eq!(st.route_key(key), BusyRoute::Blocked);
         assert!(st.focus_trapped());
     }
@@ -820,7 +901,12 @@ mod tests {
     fn cancellable_esc_requests_cancel() {
         let mut st = BusyBoundaryState::new();
         let _ = st.begin(BusyMode::Cancellable, "Sync");
-        let key = press(KeyCode::Esc);
+        let key = KeyEvent {
+            code: KeyCode::Esc,
+            modifiers: KeyModifiers::NONE,
+            kind: KeyEventKind::Press,
+            state: crate::input::KeyEventState::NONE,
+        };
         assert_eq!(st.route_key(key), BusyRoute::Cancel);
         assert!(st.cancel_requested());
     }
@@ -838,13 +924,23 @@ mod tests {
         child.set_elapsed_ms(400);
         child.set_expected_ms(Some(5_000));
 
-        let esc = press(KeyCode::Esc);
+        let esc = KeyEvent {
+            code: KeyCode::Esc,
+            modifiers: KeyModifiers::NONE,
+            kind: KeyEventKind::Press,
+            state: crate::input::KeyEventState::NONE,
+        };
         assert_eq!(child.route_key(esc), BusyRoute::Cancel);
         assert!(child.cancel_requested());
         assert!(!parent.cancel_requested(), "parent must not auto-cancel");
 
         // Parent still blocks
-        let j = press(KeyCode::Char('j'));
+        let j = KeyEvent {
+            code: KeyCode::Char('j'),
+            modifiers: KeyModifiers::NONE,
+            kind: KeyEventKind::Press,
+            state: crate::input::KeyEventState::NONE,
+        };
         assert_eq!(parent.route_key(j), BusyRoute::Blocked);
     }
 
@@ -931,7 +1027,11 @@ mod tests {
         let mut st = BusyBoundaryState::new();
         let _ = st.begin(BusyMode::Blocking, "X");
         let region = Rect::new(0, 0, 10, 5);
-        let mouse = click(50, 50);
+        let mouse = MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: Position { x: 50, y: 50 },
+            modifiers: KeyModifiers::NONE,
+        };
         assert_eq!(st.route_pointer(mouse, region), BusyRoute::Outside);
     }
 

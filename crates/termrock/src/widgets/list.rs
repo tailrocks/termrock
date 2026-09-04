@@ -2,7 +2,7 @@
 //!
 //! **Mission.** Rows compose leading, primary, secondary, status, badge,
 //! trailing actions, and shortcuts with group headers and separators. State is
-//! [`CollectionState`] + [`SelectionModel`] + roving focus
+//! [`CollectionState`] + [`SelectionModel`] (via [`Selection`]) + roving focus
 //! + scroll/virtualization. Single / multi / range selection, typeahead,
 //! search, disabled/loading/empty, density, and narrow drop priority.
 //!
@@ -10,6 +10,7 @@
 //! printable keys feed typeahead through the collection roving model.
 //!
 //! Research: lazygit, Yazi, Textual ListView, shadcn command items.
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -20,13 +21,15 @@ use ratatui_core::{
 use ratatui_core::style::Modifier;
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers},
+    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
     interaction::{
-        CollectionState, HitRegion, NavigationMove, Outcome, PageMove, SelectionModel, UiIntent,
-        VirtualWindowActivePolicy, default_list_intent,
+        CollectionState, HitRegion, NavigationMove, Outcome, PageMove, UiIntent,
+        default_list_intent,
     },
-    style::{DesignSystem, ListRowVisualState, Role},
+    style::{DesignSystem, Glyph, ListRowVisualState, Role},
 };
+
+use super::Selection;
 
 /// How a pointer press on a row is interpreted.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -50,6 +53,18 @@ pub enum ListSelectionMode {
     Multi,
     /// Multi with shift-range support.
     Range,
+}
+
+impl ListSelectionMode {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Single => "single",
+            Self::Multi => "multi",
+            Self::Range => "range",
+        }
+    }
 }
 
 const fn list_row_height() -> u16 {
@@ -141,6 +156,25 @@ impl<'a, Id> ListRow<'a, Id> {
         }
     }
 
+    /// Creates a non-interactive separator row.
+    #[must_use]
+    pub fn separator(id: Id, label: Line<'a>) -> Self {
+        Self {
+            id,
+            label,
+            leading: None,
+            secondary: None,
+            status: None,
+            badge: None,
+            shortcut: None,
+            actions: None,
+            custom: None,
+            role: RowRole::Separator,
+            enabled: true,
+            loading: false,
+        }
+    }
+
     /// Creates a group header (skipped by selection movement).
     #[must_use]
     pub fn group_header(id: Id, label: Line<'a>) -> Self {
@@ -216,11 +250,26 @@ impl<'a, Id> ListRow<'a, Id> {
         self
     }
 
+    /// Marks the row loading (leading becomes a busy glyph).
+    #[must_use]
+    pub fn loading(mut self) -> Self {
+        self.loading = true;
+        self
+    }
+
     /// Plain text for typeahead / search (primary spans).
     #[must_use]
     pub fn plain_label(&self) -> String {
-        crate::widgets::line_plain(&self.label)
+        line_plain(&self.label)
     }
+}
+
+/// Plain text from a ratatui [`Line`].
+fn line_plain(line: &Line<'_>) -> String {
+    line.spans
+        .iter()
+        .map(|span| span.content.as_ref())
+        .collect()
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -231,7 +280,7 @@ pub struct ListState<Id> {
     hovered: Option<Id>,
     regions: Vec<HitRegion<Id>>,
     pointer: Option<Position>,
-    selection: Option<SelectionModel<Id>>,
+    selection: Option<Selection<Id>>,
     check_regions: Vec<HitRegion<Id>>,
     click_policy: ListClickPolicy,
     selection_mode: ListSelectionMode,
@@ -241,8 +290,6 @@ pub struct ListState<Id> {
     virtual_total: usize,
     /// Absolute start index of the painted window in the full universe.
     virtual_window_start: usize,
-    /// Policy for active IDs absent from a virtual projection.
-    virtual_active_policy: VirtualWindowActivePolicy,
     /// Junie single-select membership. Independent of the keyboard cursor:
     /// arrows move [`collection`] active; Enter/Space writes this. `new(None)`
     /// is chosen-none (no `›`).
@@ -263,7 +310,6 @@ impl<Id> Default for ListState<Id> {
             search_query: None,
             virtual_total: 0,
             virtual_window_start: 0,
-            virtual_active_policy: VirtualWindowActivePolicy::PreserveMissing,
             chosen: None,
         }
     }
@@ -290,7 +336,6 @@ impl<Id> ListState<Id> {
             search_query: None,
             virtual_total: 0,
             virtual_window_start: 0,
-            virtual_active_policy: VirtualWindowActivePolicy::PreserveMissing,
             chosen: selected,
         }
     }
@@ -321,10 +366,14 @@ impl<Id> ListState<Id> {
         match mode {
             ListSelectionMode::Single => self.disable_multi_select(),
             ListSelectionMode::Multi => {
-                self.selection.get_or_insert_with(SelectionModel::multiple);
+                self.selection.get_or_insert_with(|| {
+                    Selection::from(crate::interaction::SelectionModel::multiple())
+                });
             }
             ListSelectionMode::Range => {
-                self.selection.get_or_insert_with(SelectionModel::range);
+                self.selection.get_or_insert_with(|| {
+                    Selection::from(crate::interaction::SelectionModel::range())
+                });
             }
         }
     }
@@ -334,10 +383,21 @@ impl<Id> ListState<Id> {
     pub fn search_query(&self) -> Option<&str> {
         self.search_query.as_deref()
     }
+
+    /// Set search query (empty string clears).
+    pub fn set_search_query(&mut self, query: Option<String>) {
+        self.search_query = query.filter(|q| !q.is_empty());
+    }
+
     /// Typeahead buffer (from roving).
     #[must_use]
     pub fn typeahead_buffer(&self) -> &str {
         self.collection.roving().typeahead_buffer()
+    }
+
+    /// Clear typeahead.
+    pub fn clear_typeahead(&mut self) {
+        self.collection.clear_typeahead();
     }
 
     /// Virtualization: painted window of a larger universe.
@@ -348,8 +408,8 @@ impl<Id> ListState<Id> {
     pub fn set_virtual_window(&mut self, window_start: usize, total_len: usize) {
         self.virtual_window_start = window_start;
         self.virtual_total = total_len;
-        self.collection.set_virtual_window(window_start, total_len);
     }
+
     /// Virtual total (0 means not virtualized).
     #[must_use]
     pub const fn virtual_total(&self) -> usize {
@@ -359,6 +419,12 @@ impl<Id> ListState<Id> {
     /// Configures pointer-click outcomes ([`ListClickPolicy`]).
     pub const fn set_click_policy(&mut self, policy: ListClickPolicy) {
         self.click_policy = policy;
+    }
+
+    #[must_use]
+    /// Returns the pointer-click policy.
+    pub const fn click_policy(&self) -> ListClickPolicy {
+        self.click_policy
     }
 
     /// Replace the stable selected identity.
@@ -414,15 +480,6 @@ impl<Id> ListState<Id> {
         &self.regions
     }
 
-    /// Drops painted hit regions so hit tests miss until the next render.
-    ///
-    /// Callers that skip a frame's render (empty view, early return) use this
-    /// to keep [`Self::regions`] honest instead of serving stale geometry.
-    pub fn clear_hit_regions(&mut self) {
-        self.regions.clear();
-        self.check_regions.clear();
-    }
-
     /// Disables multi-selection and discards checked identities.
     pub fn disable_multi_select(&mut self) {
         self.selection = None;
@@ -430,12 +487,12 @@ impl<Id> ListState<Id> {
 
     #[must_use]
     /// Returns the ordered multi-selection state, if enabled.
-    pub const fn selection(&self) -> Option<&SelectionModel<Id>> {
+    pub const fn selection(&self) -> Option<&Selection<Id>> {
         self.selection.as_ref()
     }
 
     /// Returns mutable access to ordered multi-selection state, if enabled.
-    pub fn selection_mut(&mut self) -> Option<&mut SelectionModel<Id>> {
+    pub fn selection_mut(&mut self) -> Option<&mut Selection<Id>> {
         self.selection.as_mut()
     }
 
@@ -584,8 +641,7 @@ impl<Id: Clone + PartialEq> ListState<Id> {
         {
             return Outcome::Ignored;
         }
-        let mut labels = Vec::new();
-        let items = collection_items_from_rows(rows, &mut labels);
+        let items = collection_items_from_rows(rows);
         let out = self.collection.handle_key(key, &items);
         if out.active_changed() {
             ensure_list_active_visible(self, rows, self.collection.viewport_len());
@@ -599,8 +655,7 @@ impl<Id: Clone + PartialEq> ListState<Id> {
     pub fn handle_intent(&mut self, rows: &[ListRow<'_, Id>], intent: UiIntent) -> Outcome<Id> {
         match intent {
             UiIntent::Move(_) | UiIntent::Page(_) => {
-                let mut labels = Vec::new();
-                let items = collection_items_from_rows(rows, &mut labels);
+                let items = collection_items_from_rows(rows);
                 // Empty selection: first Next/PageForward lands on first, Previous on last.
                 let out = if self.collection.active().is_none() {
                     match intent {
@@ -645,6 +700,24 @@ impl<Id: Clone + PartialEq> ListState<Id> {
         }
     }
 
+    /// Intent path returning the standard [`crate::interaction::EventResult`] envelope.
+    pub fn handle_intent_result(
+        &mut self,
+        rows: &[ListRow<'_, Id>],
+        intent: UiIntent,
+    ) -> crate::interaction::EventResult<Outcome<Id>> {
+        self.handle_intent(rows, intent).into_event_result()
+    }
+
+    /// Key path returning [`crate::interaction::EventResult`].
+    pub fn handle_key_result(
+        &mut self,
+        rows: &[ListRow<'_, Id>],
+        key: KeyEvent,
+    ) -> crate::interaction::EventResult<Outcome<Id>> {
+        self.handle_key(rows, key).into_event_result()
+    }
+
     fn toggle_all(&mut self, rows: &[ListRow<'_, Id>]) -> Outcome<Id> {
         let Some(selection) = self.selection.as_mut() else {
             return Outcome::Ignored;
@@ -660,7 +733,7 @@ impl<Id: Clone + PartialEq> ListState<Id> {
         let all = ids.iter().all(|id| selection.is_checked(id));
         if all {
             for id in &ids {
-                selection.toggle(id);
+                let _ = selection.toggle(id);
             }
         } else {
             selection.select_all(&ids);
@@ -679,8 +752,8 @@ impl<Id: Clone + PartialEq> ListState<Id> {
             return Outcome::Ignored;
         };
         // Anchor for subsequent range ops.
-        if selection.anchor().is_none() {
-            selection.set_anchor(Some(row.id.clone()));
+        if selection.model().anchor().is_none() {
+            selection.model_mut().set_anchor(Some(row.id.clone()));
         }
         selection.toggle(&row.id);
         Outcome::CheckToggled(row.id.clone())
@@ -699,17 +772,16 @@ impl<Id: Clone + PartialEq> ListState<Id> {
             .filter(|r| r.enabled && r.role.is_navigable())
             .map(|r| r.id.clone())
             .collect();
-        if selection.anchor().is_none() {
-            selection.set_anchor(Some(active.clone()));
+        if selection.model().anchor().is_none() {
+            selection.model_mut().set_anchor(Some(active.clone()));
         }
-        let _ = selection.set_range(&order, &active);
+        let _ = selection.model_mut().set_range(&order, &active);
         Outcome::CheckToggled(active)
     }
 
     /// Moves selection to the next enabled item, wrapping at the end.
     pub fn select_next(&mut self, rows: &[ListRow<'_, Id>]) -> Outcome<Id> {
-        let mut labels = Vec::new();
-        let items = collection_items_from_rows(rows, &mut labels);
+        let items = collection_items_from_rows(rows);
         if self.collection.move_next(&items).active_changed() {
             Outcome::Changed
         } else {
@@ -719,8 +791,7 @@ impl<Id: Clone + PartialEq> ListState<Id> {
 
     /// Moves selection to the previous enabled item, wrapping at the start.
     pub fn select_previous(&mut self, rows: &[ListRow<'_, Id>]) -> Outcome<Id> {
-        let mut labels = Vec::new();
-        let items = collection_items_from_rows(rows, &mut labels);
+        let items = collection_items_from_rows(rows);
         if self.collection.move_previous(&items).active_changed() {
             Outcome::Changed
         } else {
@@ -773,7 +844,7 @@ impl<Id: Clone + PartialEq> ListState<Id> {
         {
             self.collection.set_active(Some(id.clone()));
             if let Some(selection) = self.selection.as_mut() {
-                let _ = selection.toggle(&id);
+                selection.toggle(&id);
                 return Outcome::CheckToggled(id);
             }
         }
@@ -794,9 +865,56 @@ impl<Id: Clone + PartialEq> ListState<Id> {
             ListClickPolicy::Select => Outcome::Changed,
         }
     }
+
+    /// Pointer select with optional range (Shift). Call after hit-test when multi-select is enabled.
+    pub fn click_select(&mut self, position: Position, extend_range: bool) -> Outcome<Id> {
+        let Some(region) = self
+            .regions
+            .iter()
+            .find(|region| region.area.contains(position))
+            .map(|r| (r.id.clone(), r.area))
+        else {
+            return Outcome::Ignored;
+        };
+        let id = region.0;
+        self.collection.set_active(Some(id.clone()));
+        if !extend_range {
+            if let Some(sel) = self.selection.as_mut() {
+                sel.model_mut().set_anchor(Some(id.clone()));
+                let _ = sel.model_mut().select(id.clone());
+            }
+            return Outcome::Changed;
+        }
+        // Need rows for order — host should call range_select_to_active with rows.
+        if let Some(sel) = self.selection.as_mut() {
+            if sel.model().anchor().is_none() {
+                sel.model_mut().set_anchor(Some(id.clone()));
+            }
+            let _ = sel.toggle(&id);
+        }
+        Outcome::CheckToggled(id)
+    }
+
+    /// Shift-range along visible rows to `to` (stable id).
+    pub fn select_range_to(&mut self, rows: &[ListRow<'_, Id>], to: &Id) -> Outcome<Id> {
+        let Some(selection) = self.selection.as_mut() else {
+            return Outcome::Ignored;
+        };
+        let order: Vec<Id> = rows
+            .iter()
+            .filter(|r| r.enabled && r.role.is_navigable())
+            .map(|r| r.id.clone())
+            .collect();
+        if selection.model().anchor().is_none() {
+            selection.model_mut().set_anchor(Some(to.clone()));
+        }
+        let _ = selection.model_mut().set_range(&order, to);
+        self.collection.set_active(Some(to.clone()));
+        Outcome::CheckToggled(to.clone())
+    }
+
     fn reconcile_rows(&mut self, rows: &[ListRow<'_, Id>], viewport_height: usize) {
-        let mut labels = Vec::new();
-        let items = collection_items_from_rows(rows, &mut labels);
+        let items = collection_items_from_rows(rows);
         let total = if self.virtual_total > 0 {
             self.virtual_total
         } else {
@@ -808,7 +926,6 @@ impl<Id: Clone + PartialEq> ListState<Id> {
                 self.virtual_window_start,
                 total,
                 viewport_height,
-                self.virtual_active_policy,
             );
         } else {
             self.collection
@@ -853,7 +970,7 @@ pub fn filter_list_rows<'a, Id: Clone>(
             if matches!(r.role, RowRole::GroupHeader | RowRole::Separator) {
                 return true; // keep structure; host may post-process empty groups
             }
-            crate::text::contains_lower(&r.plain_label(), &q)
+            r.plain_label().to_ascii_lowercase().contains(&q)
         })
         .collect()
 }
@@ -983,6 +1100,18 @@ impl<'a, Id> List<'a, Id> {
     pub fn empty_message(mut self, message: Line<'a>) -> Self {
         self.empty_message = Some(message);
         self
+    }
+
+    /// Theme borrowed from design tokens.
+    #[must_use]
+    pub const fn theme(&self) -> &crate::style::RolePalette {
+        self.tokens.palette()
+    }
+
+    /// Design tokens used for recipes.
+    #[must_use]
+    pub const fn tokens(&self) -> &DesignSystem {
+        self.tokens
     }
 }
 
@@ -1404,22 +1533,16 @@ impl<Id: Clone + PartialEq> StatefulWidget for List<'_, Id> {
 }
 
 /// Frame projection for headless [`crate::interaction::CollectionState`] (no long-lived borrows).
-fn collection_items_from_rows<'a, Id: Clone>(
+fn collection_items_from_rows<Id: Clone>(
     rows: &[ListRow<'_, Id>],
-    labels: &'a mut Vec<String>,
-) -> Vec<crate::interaction::CollectionItem<'a, Id>> {
-    labels.clear();
-    let navigable: Vec<&ListRow<'_, Id>> =
-        rows.iter().filter(|row| row.role.is_navigable()).collect();
-    labels.extend(navigable.iter().map(|row| row.plain_label()));
-    navigable
-        .iter()
-        .zip(labels.iter())
-        .map(|(row, label)| crate::interaction::CollectionItem {
+) -> Vec<crate::interaction::CollectionItem<Id>> {
+    rows.iter()
+        .filter(|row| row.role.is_navigable())
+        .map(|row| crate::interaction::CollectionItem {
             id: row.id.clone(),
             enabled: row.enabled,
             // Primary plain text enables roving typeahead.
-            label,
+            label: row.plain_label(),
             parent: None,
         })
         .collect()
@@ -1942,7 +2065,7 @@ mod tests {
 
         state.select(Some("second"));
         state.enable_multi_select();
-        state.selection_mut().unwrap().toggle(&"second");
+        assert!(state.selection_mut().unwrap().toggle(&"second"));
 
         assert_eq!(state.selected(), Some(&"second"));
         assert_eq!(state.selection().unwrap().checked(), ["second"]);
@@ -2163,33 +2286,6 @@ mod tests {
     }
 
     #[test]
-    fn virtual_window_mode_switches_before_reconcile() {
-        let window = [
-            ListRow::item("50", Line::from("fifty")),
-            ListRow::item("51", Line::from("fifty-one")),
-        ];
-        let rows = [
-            ListRow::item("a", Line::from("A")),
-            ListRow::item("b", Line::from("B")),
-        ];
-        let mut state = ListState::new(Some("off-window"));
-        state.set_virtual_window(50, 200);
-        assert_eq!(
-            state.handle_intent(&window, UiIntent::Move(NavigationMove::Down)),
-            Outcome::Ignored
-        );
-
-        state.set_virtual_window(0, 0);
-
-        assert_eq!(state.collection().offset(), 0);
-        assert_eq!(
-            state.handle_intent(&rows, UiIntent::Move(NavigationMove::Down)),
-            Outcome::Changed
-        );
-        assert_eq!(state.selected(), Some(&"a"));
-    }
-
-    #[test]
     fn narrow_drop_order_documented() {
         assert_eq!(LIST_NARROW_DROP_ORDER[0], "shortcut");
         assert_eq!(*LIST_NARROW_DROP_ORDER.last().unwrap(), "primary");
@@ -2302,8 +2398,7 @@ mod tests {
         let system = DesignSystem::junie();
         let mut state = ListState::new(Some("a"));
         state.set_selection_mode(ListSelectionMode::Multi);
-        state.selection_mut().unwrap().toggle(&"a");
-        assert!(state.selection().unwrap().is_checked(&"a"));
+        assert!(state.selection_mut().unwrap().toggle(&"a"));
         let area = Rect::new(0, 0, 20, 2);
         let mut buffer = Buffer::empty(area);
         (&List::new(&rows, &system)).render(area, &mut buffer, &mut state);

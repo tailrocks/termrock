@@ -12,11 +12,13 @@
 //! wells. Count is numeric `(n)`. Outline is padded inner + Border role.
 //!
 //! References: shadcn Badge, issue labels, btop indicators, agent task status.
+#![allow(unused_variables, unused_mut)] // unit-test fixtures
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
 
-use crate::input::{KeyCode, KeyEvent};
+use crate::input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{
-    SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, default_button_intent,
+    EventResult, SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent,
+    default_button_intent,
 };
 use crate::style::{DesignSystem, Glyph, Role};
 use crate::text::{display_cols, take_display_cols};
@@ -122,6 +124,13 @@ impl BadgeCount {
         }
     }
 
+    /// Custom clamp threshold.
+    #[must_use]
+    pub const fn max_display(mut self, max: u64) -> Self {
+        self.max_display = if max == 0 { 1 } else { max };
+        self
+    }
+
     /// Formatted digits (`"0"` … `"99+"`).
     #[must_use]
     pub fn format(self) -> String {
@@ -151,6 +160,11 @@ pub enum BadgeOutcome {
     Ignored,
     /// Activated (Enter / click).
     Activated,
+    /// Selection toggled (host applies).
+    Toggled {
+        /// New selected flag when host should apply.
+        selected: bool,
+    },
 }
 
 /// Interaction state for actionable badges only.
@@ -178,6 +192,11 @@ impl BadgeState {
     /// Focus flag.
     pub const fn set_focused(&mut self, focused: bool) {
         self.focused = focused;
+    }
+
+    /// Selection flag.
+    pub const fn set_selected(&mut self, selected: bool) {
+        self.selected = selected;
     }
 }
 
@@ -237,6 +256,13 @@ impl<'a> Badge<'a> {
         self
     }
 
+    /// Neutral category.
+    #[must_use]
+    pub const fn neutral(mut self) -> Self {
+        self.variant = BadgeVariant::Neutral;
+        self
+    }
+
     /// Success.
     #[must_use]
     pub const fn success(mut self) -> Self {
@@ -248,6 +274,13 @@ impl<'a> Badge<'a> {
     #[must_use]
     pub const fn warning(mut self) -> Self {
         self.variant = BadgeVariant::Warning;
+        self
+    }
+
+    /// Destructive.
+    #[must_use]
+    pub const fn destructive(mut self) -> Self {
+        self.variant = BadgeVariant::Destructive;
         self
     }
 
@@ -271,10 +304,25 @@ impl<'a> Badge<'a> {
         self.count = Some(BadgeCount::new(value));
         self
     }
+
+    /// Count formatting.
+    #[must_use]
+    pub const fn count_spec(mut self, count: BadgeCount) -> Self {
+        self.count = Some(count);
+        self
+    }
+
     /// Soft fill under badge (opt-in; default none for dense views).
     #[must_use]
     pub const fn fill(mut self, fill: BadgeFill) -> Self {
         self.fill = fill;
+        self
+    }
+
+    /// Soft fill convenience.
+    #[must_use]
+    pub const fn soft(mut self) -> Self {
+        self.fill = BadgeFill::Soft;
         self
     }
 
@@ -292,11 +340,30 @@ impl<'a> Badge<'a> {
         self
     }
 
+    /// Toggle status glyph prefix.
+    #[must_use]
+    pub const fn show_glyph(mut self, on: bool) -> Self {
+        self.show_glyph = on;
+        self
+    }
+
     /// Cap content width (truncation).
     #[must_use]
     pub const fn max_cols(mut self, cols: u16) -> Self {
         self.max_cols = cols;
         self
+    }
+
+    /// Whether interactive.
+    #[must_use]
+    pub const fn is_interactive(&self) -> bool {
+        self.interactive
+    }
+
+    /// Variant.
+    #[must_use]
+    pub const fn variant_of(&self) -> BadgeVariant {
+        self.variant
     }
 
     /// Visible body text (without padding or count parens).
@@ -410,7 +477,7 @@ impl<'a> Badge<'a> {
         if self.max_cols > 0 {
             budget = budget.min(usize::from(self.max_cols));
         }
-        text = take_display_cols(&text, budget).into_owned();
+        text = take_display_cols(&text, budget);
         let w = u16::try_from(display_cols(&text))
             .unwrap_or(0)
             .min(area.width);
@@ -448,7 +515,7 @@ impl<'a> Badge<'a> {
         }
         let mut text = self.decorated(Some(&snap));
         let budget = usize::from(parts.content.width);
-        text = take_display_cols(&text, budget).into_owned();
+        text = take_display_cols(&text, budget);
         let style = self.paint_style(Some(&snap));
         if matches!(self.fill, BadgeFill::Soft) && !parts.content.is_empty() {
             buffer.set_style(parts.content, style);
@@ -504,6 +571,36 @@ impl<'a> Badge<'a> {
             UiIntent::Activate | UiIntent::Submit | UiIntent::Toggle => self.activate(state),
             _ => BadgeOutcome::Ignored,
         }
+    }
+
+    /// Key with EventResult.
+    pub fn handle_key_result(
+        &self,
+        state: &mut BadgeState,
+        key: KeyEvent,
+    ) -> EventResult<BadgeOutcome> {
+        match self.handle_key(state, key) {
+            BadgeOutcome::Ignored => EventResult::ignored(),
+            other => EventResult::emit(other),
+        }
+    }
+
+    /// Mouse down on painted region.
+    pub fn handle_mouse(&self, state: &mut BadgeState, event: MouseEvent) -> BadgeOutcome {
+        if !self.interactive
+            || self.disabled
+            || event.kind != MouseEventKind::Down(MouseButton::Left)
+        {
+            return BadgeOutcome::Ignored;
+        }
+        let Some(region) = state.region else {
+            return BadgeOutcome::Ignored;
+        };
+        if !region.contains(event.position) {
+            return BadgeOutcome::Ignored;
+        }
+        state.focused = true;
+        self.activate(state)
     }
 
     fn activate(&self, state: &mut BadgeState) -> BadgeOutcome {
@@ -780,9 +877,10 @@ mod tests {
         assert!(!scene.nodes()[0].focusable);
 
         let bi = Badge::new("tag", &system).interactive(true);
-        let state = BadgeState::new();
+        let mut state = BadgeState::new();
         bi.register_semantic(&mut scene, "b2", Rect::new(0, 1, 20, 1), Some(&state));
         assert!(scene.nodes().iter().any(|n| n.focusable));
+        let _ = state;
     }
 
     #[test]

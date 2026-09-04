@@ -14,12 +14,15 @@
 //! **vs charts/Gauge.** Domain-neutral viz; this is AI/context budget semantics.
 //!
 //! Research: Amp compaction, OpenCode context displays, AI chat token meters.
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
 
 use crate::{
-    input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     style::{DesignSystem, Role},
-    text::take_display_cols,
+    text::{display_cols, take_display_cols},
 };
 
 use super::{SemanticStatus, StatusIndicator};
@@ -121,6 +124,19 @@ pub enum ContextSourceKind {
 }
 
 impl ContextSourceKind {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Message => "message",
+            Self::Tool => "tool",
+            Self::Attachment => "attachment",
+            Self::Cache => "cache",
+            Self::System => "system",
+            Self::Other => "other",
+        }
+    }
+
     /// Letter.
     #[must_use]
     pub const fn letter(self) -> char {
@@ -501,6 +517,18 @@ pub enum ContextMeterPresentation {
     Popover,
 }
 
+impl ContextMeterPresentation {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Compact => "compact",
+            Self::Expanded => "expanded",
+            Self::Popover => "popover",
+        }
+    }
+}
+
 /// Outcomes.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
@@ -555,6 +583,11 @@ impl ContextMeterState {
     /// Gate.
     pub fn set_accepts_input(&mut self, on: bool) {
         self.accepts_input = on;
+    }
+
+    /// Focus.
+    pub const fn set_focused(&mut self, on: bool) {
+        self.focused = on;
     }
 
     /// Toggle expand.
@@ -651,6 +684,13 @@ impl<'a> ContextMeter<'a> {
         self
     }
 
+    /// Monochrome density bar (no role color).
+    #[must_use]
+    pub const fn mono(mut self, on: bool) -> Self {
+        self.mono = on;
+        self
+    }
+
     /// Paint.
     pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut ContextMeterState) {
         state.hit = area;
@@ -719,7 +759,7 @@ impl<'a> ContextMeter<'a> {
             .label(verb)
             .colorless(self.colorless);
         let indicator_width = indicator.measure_width(None).min(area.width);
-        indicator.paint(Rect::new(area.x, area.y, indicator_width, 1), buffer, None);
+        indicator.paint(Rect::new(area.x, area.y, indicator_width, 1), buffer);
         let metadata_x = area
             .x
             .saturating_add(indicator_width)
@@ -937,6 +977,12 @@ impl<'a> ContextMeter<'a> {
                 );
             }
         }
+        let _ = display_cols;
+    }
+
+    /// Render alias.
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut ContextMeterState) {
+        self.paint(area, buffer, state);
     }
 }
 
@@ -1001,8 +1047,7 @@ pub mod bench {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyModifiers;
-    use crate::widgets::tests::click;
+    use ratatui_core::layout::Position;
 
     #[test]
     fn never_100_percent_without_limit() {
@@ -1020,8 +1065,14 @@ mod tests {
         let m = BudgetMeasure::tokens(10, 0);
         // limit 0 → fraction None
         assert!(m.fraction().is_none() || m.limit == Some(0));
+        let f = if m.limit == Some(0) {
+            None
+        } else {
+            m.fraction()
+        };
         // our tokens() sets limit Some(0); fraction returns None for limit 0
         assert!(BudgetMeasure::tokens(10, 0).fraction().is_none());
+        let _ = f;
         let s = format_budget_compact(&BudgetMeasure::tokens(10, 0));
         assert!(!s.contains("100%"));
     }
@@ -1148,7 +1199,11 @@ mod tests {
         let area = Rect::new(0, 0, 20, 1);
         let mut buf = Buffer::empty(area);
         ContextMeter::new(&b, &system).paint(area, &mut buf, &mut st);
-        let ev = click(area.x, area.y);
+        let ev = MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: Position::new(area.x, area.y),
+            modifiers: KeyModifiers::NONE,
+        };
         assert!(matches!(
             st.handle_mouse(ev),
             ContextMeterOutcome::Activated

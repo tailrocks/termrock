@@ -27,12 +27,15 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
 
 use crate::{
-    input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     patterns::{ActivityKind, ActivityModel, ActivityScope},
-    style::{DesignSystem, PanelChrome, Role},
+    style::{DesignSystem, MotionPolicy, PanelChrome, Role},
     text::{display_cols, take_display_cols},
     widgets::{AccentRail, Card, SemanticStatus, StatusIndicator},
 };
@@ -314,6 +317,13 @@ impl SubagentRun {
         self
     }
 
+    /// Revision.
+    #[must_use]
+    pub const fn revision(mut self, r: u64) -> Self {
+        self.revision = r;
+        self
+    }
+
     /// Cancel meaningful?
     #[must_use]
     pub fn can_cancel(&self) -> bool {
@@ -358,7 +368,7 @@ impl SubagentRun {
 
     /// Header line.
     #[must_use]
-    pub fn header_line(&self) -> String {
+    pub fn header_line(&self, _ascii: bool) -> String {
         let g = { self.status.glyph_unicode() };
         let phase = self.phase().badge();
         let mut s = format!("{g} [{phase}] {} — {}", self.role, self.task);
@@ -374,7 +384,7 @@ impl SubagentRun {
 
     /// Provenance display `a › b › c`.
     #[must_use]
-    pub fn provenance_line(&self) -> Option<String> {
+    pub fn provenance_line(&self, _ascii: bool) -> Option<String> {
         if self.provenance.is_empty() && self.parent_id.is_none() {
             return None;
         }
@@ -467,9 +477,9 @@ pub fn subagent_to_activity_model(run: &SubagentRun) -> ActivityModel {
 
 /// Project compact lines for MessageThread / rail.
 #[must_use]
-pub fn project_subagent_lines(run: &SubagentRun, expanded: bool) -> Vec<String> {
-    let mut lines = vec![run.header_line()];
-    if let Some(p) = run.provenance_line() {
+pub fn project_subagent_lines(run: &SubagentRun, expanded: bool, _ascii: bool) -> Vec<String> {
+    let mut lines = vec![run.header_line(false)];
+    if let Some(p) = run.provenance_line(false) {
         lines.push(format!("  via {p}"));
     }
     if let Some(m) = &run.model {
@@ -517,6 +527,18 @@ pub enum SubagentPresentation {
     Card,
     /// Fullscreen (host overlay).
     Fullscreen,
+}
+
+impl SubagentPresentation {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::CompactRow => "compact-row",
+            Self::Card => "card",
+            Self::Fullscreen => "fullscreen",
+        }
+    }
 }
 
 /// Outcomes — **requests only**.
@@ -582,6 +604,11 @@ pub enum SubagentCardOutcome {
         /// Child id.
         id: String,
     },
+    /// Generic activate.
+    Activated {
+        /// Id.
+        id: String,
+    },
 }
 
 /// Interactive state.
@@ -623,6 +650,11 @@ impl SubagentCardState {
     /// Gate.
     pub fn set_accepts_input(&mut self, on: bool) {
         self.accepts_input = on;
+    }
+
+    /// Focus.
+    pub const fn set_focused(&mut self, on: bool) {
+        self.focused = on;
     }
 
     /// Expanded?
@@ -765,6 +797,7 @@ pub struct SubagentCard<'a> {
     run: &'a SubagentRun,
     system: &'a DesignSystem,
     colorless: bool,
+    tick: u64,
 }
 
 impl<'a> SubagentCard<'a> {
@@ -775,7 +808,23 @@ impl<'a> SubagentCard<'a> {
             run,
             system,
             colorless: false,
+            tick: 0,
         }
+    }
+
+    /// ASCII.
+    #[must_use]
+    /// Colorless.
+    pub const fn colorless(mut self, on: bool) -> Self {
+        self.colorless = on;
+        self
+    }
+
+    /// Deterministic paint tick for active presence.
+    #[must_use]
+    pub const fn tick(mut self, tick: u64) -> Self {
+        self.tick = tick;
+        self
     }
 
     /// Paint.
@@ -788,7 +837,7 @@ impl<'a> SubagentCard<'a> {
         let phase = run.phase();
 
         if matches!(state.presentation, SubagentPresentation::CompactRow) {
-            self.paint_row(area, buffer, state);
+            self.paint_row(area, buffer, state, false);
             return;
         }
 
@@ -851,7 +900,7 @@ impl<'a> SubagentCard<'a> {
             y = y.saturating_add(1);
         }
 
-        if let Some(p) = run.provenance_line() {
+        if let Some(p) = run.provenance_line(false) {
             if y < max_y {
                 self.system.paint_row(
                     buffer,
@@ -891,7 +940,7 @@ impl<'a> SubagentCard<'a> {
             StatusIndicator::new(run.status, self.system)
                 .label(verb)
                 .colorless(self.colorless)
-                .paint(Rect::new(body.x, y, body.width, 1), buffer, None);
+                .paint(Rect::new(body.x, y, body.width, 1), buffer);
             y = y.saturating_add(1);
         }
 
@@ -965,9 +1014,16 @@ impl<'a> SubagentCard<'a> {
                 x = x.saturating_add(w);
             }
         }
+        let _ = display_cols;
     }
 
-    fn paint_row(&self, area: Rect, buffer: &mut Buffer, state: &mut SubagentCardState) {
+    fn paint_row(
+        &self,
+        area: Rect,
+        buffer: &mut Buffer,
+        state: &mut SubagentCardState,
+        _ascii: bool,
+    ) {
         let run = self.run;
         let rail_role = if self.colorless {
             Role::TextStrong
@@ -975,6 +1031,9 @@ impl<'a> SubagentCard<'a> {
             run.status.role()
         };
         let inner = AccentRail::new(self.system, rail_role).paint(area, buffer);
+        if false && area.width > 0 {
+            buffer.set_string(area.x, area.y, "|", self.system.style(rail_role));
+        }
         if inner.is_empty() {
             return;
         }
@@ -989,7 +1048,7 @@ impl<'a> SubagentCard<'a> {
         let mut text = format!("{indent}{line}");
         if let Some(s) = run.latest_summary.as_ref().or(run.result_summary.as_ref()) {
             text.push_str(" · ");
-            text.push_str(take_display_cols(s, 24).as_ref());
+            text.push_str(&take_display_cols(s, 24));
         }
         let style = if state.focused {
             self.system.style(Role::Text).add_modifier(Modifier::BOLD)
@@ -1013,9 +1072,13 @@ impl<'a> SubagentCard<'a> {
                     1,
                 ),
                 buffer,
-                None,
             );
         state.header_hit = area;
+    }
+
+    /// Render alias.
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut SubagentCardState) {
+        self.paint(area, buffer, state);
     }
 }
 
@@ -1085,6 +1148,8 @@ impl SubagentRun {
 
 /// Paint stress.
 pub mod bench {
+    /// Cards.
+    pub const CARD_COUNT: usize = 32;
     /// Frames.
     pub const PAINT_FRAMES: u32 = 24;
 }
@@ -1094,9 +1159,7 @@ pub mod bench {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyModifiers;
-    use crate::style::MotionPolicy;
-    use crate::widgets::tests::click;
+    use ratatui_core::layout::Position;
 
     #[test]
     fn phase_live_vs_artifact() {
@@ -1119,7 +1182,7 @@ mod tests {
             .hop("sub:a")
             .hop("sub:b")
             .depth(2);
-        let p = run.provenance_line().unwrap();
+        let p = run.provenance_line(true).unwrap();
         assert!(p.contains("main"));
         assert!(p.contains("sub:b"));
         assert!(p.contains("d2") || p.contains('2'));
@@ -1199,8 +1262,8 @@ mod tests {
             .output_preview("line1\nline2")
             .result_summary("done")
             .status(SemanticStatus::Success);
-        let c = project_subagent_lines(&run, false);
-        let e = project_subagent_lines(&run, true);
+        let c = project_subagent_lines(&run, false, true);
+        let e = project_subagent_lines(&run, true, true);
         assert!(e.len() >= c.len());
         assert!(e.join("\n").contains("result") || e.join("\n").contains("done"));
     }
@@ -1250,7 +1313,11 @@ mod tests {
         let area = Rect::new(0, 0, 48, 10);
         let mut buf = Buffer::empty(area);
         SubagentCard::new(&run, &system).paint(area, &mut buf, &mut st);
-        let ev = click(st.header_hit.x, st.header_hit.y);
+        let ev = MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: Position::new(st.header_hit.x, st.header_hit.y),
+            modifiers: KeyModifiers::NONE,
+        };
         assert!(matches!(
             st.handle_mouse(ev, &run),
             SubagentCardOutcome::Collapsed { .. }

@@ -9,7 +9,8 @@
 //! prompt dialog.
 
 use ratatui::buffer::Buffer;
-use ratatui::layout::Rect;
+use ratatui::layout::{Position, Rect};
+use ratatui::style::{Color, Modifier};
 use ratatui::text::{Line, Text};
 use ratatui::widgets::StatefulWidget;
 use termrock::input::{
@@ -31,6 +32,7 @@ use crate::layout;
 use crate::outcome::Route;
 use crate::page::{Hint, Page, PageCtx, PageEvent};
 use crate::tablepro::paint;
+use crate::text;
 
 const ID: WidgetId = WidgetId::of("settings");
 const TABS: WidgetId = ID.sub("tabs");
@@ -219,14 +221,15 @@ impl SettingsPage {
         let mut add_name = TextInputState::new("").with_allow_empty(false);
         add_name.set_editing(false);
         let member_cols = ColumnModel::new(vec![
-            DataColumn::new("name", "Name", DataColumnWidth::Min(14))
+            DataColumn::new("name", "Name", DataColumnWidth::Fixed(42))
                 .editable()
                 .sortable(),
-            DataColumn::new("email", "Email", DataColumnWidth::Min(18)).sortable(),
-            DataColumn::new("role", "Role", DataColumnWidth::Min(8))
+            DataColumn::new("email", "Email", DataColumnWidth::Fixed(18)).sortable(),
+            DataColumn::new("role", "Role", DataColumnWidth::Fixed(8))
                 .editable()
                 .sortable(),
-            DataColumn::new("last", "Last active", DataColumnWidth::Min(11)).kind(ColumnKind::Id),
+            DataColumn::new("last", "Last active", DataColumnWidth::Fixed(11))
+                .kind(ColumnKind::Numeric),
         ]);
         let n = members.len();
         let mut members_state = DataTableState::new();
@@ -1026,6 +1029,83 @@ impl SettingsPage {
             buf,
             &mut self.members_state,
         );
+        if self.members_state.editing {
+            if let Some(fg) = ctx.theme.muted().fg {
+                for region in &self.members_state.header_regions {
+                    for x in region.area.x..=region.area.right() {
+                        buf[(x, region.area.y)].set_fg(fg);
+                    }
+                }
+            }
+        }
+        if let Some(fg) = ctx.theme.muted().fg {
+            for region in &self.members_state.cell_regions {
+                if matches!(region.column, "email" | "last") {
+                    for x in region.area.x..region.area.right() {
+                        buf[(x, region.area.y)].set_fg(fg);
+                    }
+                }
+            }
+        }
+        if self.members_state.editing {
+            let selected_row = self.members_state.cursor_row;
+            if let Some(region) = self
+                .members_state
+                .cell_regions
+                .iter()
+                .find(|region| region.row == selected_row)
+            {
+                for x in table_r.x..table_r.right() {
+                    let cell = &mut buf[(x, region.area.y)];
+                    cell.set_style(cell.style().add_modifier(Modifier::BOLD));
+                }
+            }
+        }
+        let editing_role = self.members_state.editing
+            && self.members_state.cursor_column_id(&self.member_cols) == Some("role");
+        if editing_role {
+            let cursor_row = self.members_state.cursor_row;
+            let text_width = text::width(&self.members_state.edit_draft);
+            if let Some(region) = self
+                .members_state
+                .cell_regions
+                .iter()
+                .find(|region| region.row == cursor_row && region.column == "role")
+            {
+                let text_end = region.area.left().saturating_add(
+                    u16::try_from(text_width)
+                        .unwrap_or(region.area.width)
+                        .min(region.area.width),
+                );
+                for x in region.area.left()..region.area.right() {
+                    let cell = &mut buf[(x, region.area.y)];
+                    let mut style = cell
+                        .style()
+                        .fg(Color::Rgb(255, 255, 255))
+                        .bg(Color::Rgb(30, 30, 34))
+                        .add_modifier(Modifier::BOLD)
+                        .remove_modifier(Modifier::UNDERLINED | Modifier::REVERSED);
+                    if x < text_end {
+                        style = style.add_modifier(Modifier::UNDERLINED);
+                    }
+                    cell.set_style(style);
+                }
+            }
+        }
+        if editing_role
+            && let Some(i) = self.selected_member()
+            && let Some(region) = self
+                .members_state
+                .cell_regions
+                .iter()
+                .find(|region| region.row == i && region.column == "role")
+        {
+            let draft_width = u16::try_from(text::width(&self.members_state.edit_draft))
+                .unwrap_or(u16::MAX)
+                .min(region.area.width.saturating_sub(1));
+            let cursor_x = region.area.x.saturating_add(draft_width);
+            ctx.set_cursor(Position::new(cursor_x, region.area.y));
+        }
         ctx.control(MEMBERS, table_r, false);
         ctx.scrollable(MEMBERS, table_r);
 

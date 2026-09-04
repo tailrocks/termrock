@@ -176,6 +176,33 @@ impl App {
         }
     }
 
+    /// Capture-only terminal cursor position for hidden modal cursors.
+    pub(crate) fn capture_cursor(&self) -> Option<Position> {
+        let page = &self.pages[self.page.index(self.nav())];
+        if let Some(position) = page.capture_cursor() {
+            return Some(position);
+        }
+        if self.focus == Some(NAV) && page.page_hints_when_nav() {
+            let footer_x = page
+                .hints(self.focus)
+                .into_iter()
+                .fold(1_u16, |x, (key, value)| {
+                    x.saturating_add(text::width(key) as u16 + 1 + text::width(value) as u16 + 2)
+                });
+            let footer_x = if page.editing() {
+                footer_x
+            } else {
+                footer_x
+                    .saturating_add(text::width("Tab") as u16 + 1 + text::width("Next") as u16 + 2)
+            };
+            return Some(Position::new(
+                footer_x.saturating_sub(2),
+                self.size.1.saturating_sub(1),
+            ));
+        }
+        None
+    }
+
     pub fn goto(&mut self, page: PageId) {
         if self.page != page {
             self.page = page;
@@ -218,6 +245,7 @@ impl App {
         Interaction {
             focus: self.focus,
             hover: self.hover,
+            pointer: self.mouse,
             pressed: self.pressed,
             flash,
             focus_hidden: false,
@@ -619,6 +647,8 @@ impl App {
         self.scene.ensure_root(root_layer());
         if self.help_open {
             self.scene.push_layer(dialog_layer());
+        } else {
+            self.scene.remove_layer(&LayerId::Dialog);
         }
         self.scroll_hits.clear();
         let mut scene = std::mem::take(&mut self.scene);
@@ -726,12 +756,21 @@ impl App {
         self.draw_header(layout.header, buf, ctx);
         self.draw_sidebar(layout.sidebar, buf, ctx);
         ctx.inert = page_inert;
-        self.draw_main(layout.main, buf, ctx);
+        let page_overlay = self.pages[self.page.index(self.nav())].overlaying();
+        if page_overlay {
+            // Dialog paint owns the hint row; apply the shell status after it,
+            // matching the source order (main, footer, modal).
+            self.draw_main(layout.main, buf, ctx);
+            ctx.inert = false;
+            self.draw_footer(layout.footer, buf, ctx);
+        } else {
+            self.draw_main(layout.main, buf, ctx);
+            ctx.inert = false;
+            self.draw_footer(layout.footer, buf, ctx);
+        }
         if !layout.inspector.is_empty() {
             self.draw_inspector(layout.inspector, buf, ctx);
         }
-        ctx.inert = false;
-        self.draw_footer(layout.footer, buf, ctx);
         if self.help_open {
             ctx.inert = false;
             ctx.layer = LayerId::Dialog;
@@ -970,7 +1009,7 @@ impl App {
             hints.push(("Esc".into(), "Cancel".into()));
         } else if page.overlaying() {
             // Keep the dialog footer; only the status sentence is ours.
-        } else if self.focus == Some(NAV) {
+        } else if self.focus == Some(NAV) && !page.page_hints_when_nav() {
             hints.push(("↑ ↓".into(), "Move".into()));
             hints.push(("Enter".into(), "Open".into()));
             hints.push(("Tab".into(), "Into page".into()));

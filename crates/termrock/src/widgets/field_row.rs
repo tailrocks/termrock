@@ -106,6 +106,13 @@ impl<'a> FieldRow<'a> {
             .unwrap_or(u16::MAX)
     }
 
+    /// Sets the shared label-band width.
+    #[must_use]
+    pub fn label_cols(mut self, cols: u16) -> Self {
+        self.label_cols = cols.max(8);
+        self
+    }
+
     /// Adds a marker between selection gutter and label.
     #[must_use]
     pub const fn marker(mut self, marker: &'a str) -> Self {

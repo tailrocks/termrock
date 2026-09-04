@@ -333,8 +333,9 @@ impl<Id: Clone + Eq> TranscriptState<Id> {
                 return;
             }
         }
-        if let Some((id, _, height)) = starts.last() {
+        if let Some((id, start, height)) = starts.last() {
             let row = height.saturating_sub(1);
+            let _ = start;
             self.anchor = Some(TranscriptAnchor {
                 id: id.clone(),
                 row,
@@ -702,7 +703,7 @@ impl<'a, Id> Transcript<'a, Id> {
     }
 }
 
-fn kind_prefix(kind: TranscriptKind) -> &'static str {
+fn kind_prefix(kind: TranscriptKind, _ascii: bool) -> &'static str {
     kind.glyph()
 }
 
@@ -715,6 +716,7 @@ fn kind_style(system: &DesignSystem, kind: TranscriptKind, colorless: bool) -> S
         };
     }
     let style = system.style(kind.role());
+    let _ = kind;
     style
 }
 
@@ -786,7 +788,7 @@ impl<Id: Clone + Eq> StatefulWidget for &Transcript<'_, Id> {
                 kind_style(self.system, block.kind, colorless)
             };
 
-            let prefix = kind_prefix(block.kind);
+            let prefix = kind_prefix(block.kind, false);
             let mut region_y0: Option<u16> = None;
             let mut region_y1: u16 = area.y;
 
@@ -908,7 +910,6 @@ impl<Id: Clone + Eq> StatefulWidget for Transcript<'_, Id> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::widgets::tests::click;
     use ratatui_core::{backend::TestBackend, terminal::Terminal};
 
     fn system() -> DesignSystem {
@@ -1215,7 +1216,14 @@ mod tests {
         assert!(!state.block_regions.is_empty());
         let (id, rect) = state.block_regions[0].clone();
         assert_eq!(id, 1);
-        let event = click(rect.x, rect.y);
+        let event = MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: ratatui_core::layout::Position {
+                x: rect.x,
+                y: rect.y,
+            },
+            modifiers: KeyModifiers::NONE,
+        };
         let out = state.handle_mouse(event, &blocks);
         assert_eq!(out, TranscriptOutcome::Changed);
         assert_eq!(state.selected(), Some(&1));

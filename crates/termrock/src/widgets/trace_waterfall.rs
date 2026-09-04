@@ -19,9 +19,9 @@ use std::collections::BTreeSet;
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers},
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     style::{DesignSystem, ListRowVisualState, Role},
-    text::{contains_lower_all, take_display_cols},
+    text::take_display_cols,
     widgets::{
         data_view::VirtualWindow,
         object_inspector::{InspectKind, InspectorField},
@@ -76,6 +76,18 @@ impl TraceSpanStatus {
             Self::Cancelled => 'C',
         }
     }
+
+    /// ASCII letter.
+    #[must_use]
+    pub const fn letter_ascii(self) -> char {
+        match self {
+            Self::Unset => '.',
+            Self::Ok => 'S',
+            Self::Error => 'E',
+            Self::Cancelled => 'C',
+        }
+    }
+
     /// Role.
     #[must_use]
     pub const fn role(self) -> Role {
@@ -331,15 +343,15 @@ pub fn filter_trace_spans<'a>(spans: &'a [TraceSpan<'a>], query: &str) -> Vec<&'
     }
     let mut keep = vec![false; spans.len()];
     for (i, s) in spans.iter().enumerate() {
-        if contains_lower_all(
-            &[
-                s.name,
-                s.service,
-                s.kind.unwrap_or(""),
-                s.error.unwrap_or(""),
-            ],
-            &q,
-        ) {
+        let hay = format!(
+            "{} {} {} {}",
+            s.name,
+            s.service,
+            s.kind.unwrap_or(""),
+            s.error.unwrap_or("")
+        )
+        .to_ascii_lowercase();
+        if hay.contains(&q) {
             keep[i] = true;
             let mut parent = s.parent;
             while let Some(pid) = parent {
@@ -478,6 +490,8 @@ pub enum TraceWaterfallOutcome {
     TimelineExportRequested,
     /// Cancel filter.
     Cancelled,
+    /// Viewport scrolled vertically.
+    Scrolled,
 }
 
 // ── State ───────────────────────────────────────────────────────────────────
@@ -556,6 +570,18 @@ impl TraceWaterfallState {
     /// Host input gate.
     pub fn set_accepts_input(&mut self, on: bool) {
         self.accepts_input = on;
+    }
+
+    /// Accepts input.
+    #[must_use]
+    pub const fn accepts_input(&self) -> bool {
+        self.accepts_input
+    }
+
+    /// Selected id.
+    #[must_use]
+    pub fn selected(&self) -> Option<&str> {
+        self.selected.as_deref()
     }
 
     /// Select.
@@ -869,6 +895,65 @@ impl TraceWaterfallState {
         }
         TraceWaterfallOutcome::Ignored
     }
+
+    /// Mouse.
+    pub fn handle_mouse(
+        &mut self,
+        spans: &[TraceSpan<'_>],
+        event: MouseEvent,
+    ) -> TraceWaterfallOutcome {
+        if !self.accepts_input {
+            return TraceWaterfallOutcome::Ignored;
+        }
+        match event.kind {
+            MouseEventKind::ScrollDown if event.modifiers.contains(KeyModifiers::SHIFT) => {
+                self.sync_total(spans);
+                self.pan_time(0.1)
+            }
+            MouseEventKind::ScrollUp if event.modifiers.contains(KeyModifiers::SHIFT) => {
+                self.sync_total(spans);
+                self.pan_time(-0.1)
+            }
+            MouseEventKind::ScrollDown => {
+                let before = self.window.offset;
+                let _ = self.window.scroll_by(3);
+                if self.window.offset != before {
+                    TraceWaterfallOutcome::Scrolled
+                } else {
+                    TraceWaterfallOutcome::Ignored
+                }
+            }
+            MouseEventKind::ScrollUp => {
+                let before = self.window.offset;
+                let _ = self.window.scroll_by(-3);
+                if self.window.offset != before {
+                    TraceWaterfallOutcome::Scrolled
+                } else {
+                    TraceWaterfallOutcome::Ignored
+                }
+            }
+            MouseEventKind::Down(MouseButton::Left) => {
+                let hit = self
+                    .row_regions
+                    .iter()
+                    .chain(self.bar_regions.iter())
+                    .find(|(_, r)| r.contains(event.position))
+                    .map(|(id, _)| id.clone());
+                if let Some(id) = hit {
+                    let visible = self.visible_spans(spans);
+                    if let Some(i) = visible.iter().position(|s| s.id == id) {
+                        self.cursor = i;
+                        let _ = self.window.reveal(i as u64);
+                    }
+                    self.selected = Some(id.clone());
+                    TraceWaterfallOutcome::SelectionChanged { id }
+                } else {
+                    TraceWaterfallOutcome::Ignored
+                }
+            }
+            _ => TraceWaterfallOutcome::Ignored,
+        }
+    }
 }
 
 // ── Widget ──────────────────────────────────────────────────────────────────
@@ -911,7 +996,7 @@ impl<'a> TraceWaterfall<'a> {
     /// ASCII.
     #[must_use]
     /// Paint.
-    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut TraceWaterfallState) {
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut TraceWaterfallState) {
         if area.is_empty() {
             return;
         }
@@ -984,6 +1069,7 @@ impl<'a> TraceWaterfall<'a> {
                 self.system,
                 state.time_start_ms,
                 state.time_duration_ms,
+                false,
             );
             y = y.saturating_add(1);
             h = h.saturating_sub(1);
@@ -1000,11 +1086,8 @@ impl<'a> TraceWaterfall<'a> {
 
         if visible.is_empty() {
             let msg = state.empty_message.as_deref().unwrap_or("No spans");
-            super::EmptyState::new(msg, self.system).paint(
-                Rect::new(area.x, y, area.width, 1),
-                buffer,
-                &mut super::EmptyStateState::new(),
-            );
+            super::EmptyState::new(msg, self.system)
+                .paint(Rect::new(area.x, y, area.width, 1), buffer);
             return;
         }
 
@@ -1025,7 +1108,7 @@ impl<'a> TraceWaterfall<'a> {
         let mut py = y;
         let bottom = y.saturating_add(h);
 
-        for span in visible.iter().skip(start).take(end - start) {
+        for (i, span) in visible.iter().enumerate().skip(start).take(end - start) {
             if py >= bottom {
                 break;
             }
@@ -1145,6 +1228,7 @@ impl<'a> TraceWaterfall<'a> {
                 }
             }
             chrome.paint(buffer, Rect::new(area.x, py, area.width, 1));
+            let _ = i;
             py = py.saturating_add(1);
         }
     }
@@ -1156,6 +1240,7 @@ fn paint_time_ruler(
     system: &DesignSystem,
     start_ms: u64,
     dur_ms: u64,
+    _ascii: bool,
 ) {
     if area.is_empty() || dur_ms == 0 {
         return;
@@ -1195,6 +1280,10 @@ fn paint_time_ruler(
 pub mod bench {
     /// Spans in a large projection.
     pub const SPAN_COUNT: usize = 2_000;
+    /// Viewport rows.
+    pub const VIEWPORT: u16 = 40;
+    /// Paint frames.
+    pub const PAINT_FRAMES: u32 = 40;
 }
 
 #[cfg(test)]
@@ -1336,7 +1425,7 @@ mod tests {
         let mut buf = Buffer::empty(area);
         let _ = TraceWaterfall::new(&spans, &system)
             .title("Request")
-            .paint(area, &mut buf, &mut state);
+            .render(area, &mut buf, &mut state);
         let text: String = buf
             .content()
             .iter()
@@ -1387,7 +1476,7 @@ mod tests {
         let area = Rect::new(0, 0, 100, 30);
         let mut buf = Buffer::empty(area);
         for _ in 0..6 {
-            let _ = TraceWaterfall::new(&spans, &system).paint(area, &mut buf, &mut state);
+            let _ = TraceWaterfall::new(&spans, &system).render(area, &mut buf, &mut state);
             let _ = state.handle_key(&spans, KeyEvent::new(KeyCode::Down, KeyModifiers::NONE));
         }
     }

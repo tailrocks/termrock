@@ -135,7 +135,7 @@ pub struct StudioShellView<'a> {
 /// The preview pane is a [`Panel`] the host paints a story into (the returned
 /// slots carry its inner rect), the inspector is [`DesignInspector`], and the
 /// footer is a [`StatusBar`].
-pub fn paint_studio_shell(
+pub fn render_studio_shell(
     area: Rect,
     buffer: &mut Buffer,
     system: &DesignSystem,
@@ -146,10 +146,11 @@ pub fn paint_studio_shell(
     let slots = layout_studio_shell(area, config);
 
     if slots.preview.height > 0 {
-        Panel::new(system)
+        let inner = Panel::new(system)
             .title(view.preview_title)
             .emphasis(PanelChrome::for_focus(preview_focused))
             .paint(slots.preview, buffer, None);
+        let _ = inner;
     }
 
     if slots.inspector.height > 0 {
@@ -207,7 +208,7 @@ mod tests {
         };
         let area = Rect::new(0, 0, 100, 24);
         let mut buffer = Buffer::empty(area);
-        let slots = paint_studio_shell(
+        let slots = render_studio_shell(
             area,
             &mut buffer,
             &system,

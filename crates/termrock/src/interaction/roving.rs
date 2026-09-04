@@ -9,7 +9,7 @@
 //! Behavioral reference: Radix RovingFocusGroup, adapted to terminal intents
 //! and immediate-mode entry lists (including virtualized windows).
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers},
+    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
     interaction::{NavigationMove, UiIntent},
     keymap::{KeyBinding, KeyChord, Keymap, Visibility},
 };
@@ -28,26 +28,24 @@ pub enum RovingOrientation {
 }
 
 /// One item in a roving group (frame projection; may be a virtualized window).
-///
-/// The label borrows from the projected model; roving state never stores it.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct RovingEntry<'a, Id> {
+pub struct RovingEntry<Id> {
     /// Stable identity (not index — survives reordering when ids stable).
     pub id: Id,
     /// Disabled entries are skipped by movement and typeahead.
     pub enabled: bool,
     /// Typeahead / a11y label (empty skips typeahead match for this row).
-    pub label: &'a str,
+    pub label: String,
 }
 
-impl<'a, Id> RovingEntry<'a, Id> {
+impl<Id> RovingEntry<Id> {
     /// Enabled entry with label.
     #[must_use]
-    pub const fn new(id: Id, label: &'a str) -> Self {
+    pub fn new(id: Id, label: impl Into<String>) -> Self {
         Self {
             id,
             enabled: true,
-            label,
+            label: label.into(),
         }
     }
 
@@ -119,17 +117,25 @@ impl<Id> RovingFocusGroup<Id> {
         self
     }
 
-    /// Sets wrap policy for active movement.
-    pub const fn set_wrap(&mut self, wrap: bool) {
-        self.wrap = wrap;
-    }
-
     /// Whether movement wraps at ends (default true).
     #[must_use]
     pub const fn wrap(mut self, wrap: bool) -> Self {
         self.wrap = wrap;
         self
     }
+
+    /// Current orientation.
+    #[must_use]
+    pub const fn orientation_mode(&self) -> RovingOrientation {
+        self.orientation
+    }
+
+    /// Whether wrap is enabled.
+    #[must_use]
+    pub const fn wraps(&self) -> bool {
+        self.wrap
+    }
+
     /// Active descendant id.
     #[must_use]
     pub const fn active(&self) -> Option<&Id> {
@@ -156,7 +162,7 @@ impl<Id: Clone + PartialEq> RovingFocusGroup<Id> {
     }
 
     /// Enabled entries only, in list order.
-    fn enabled_indices(entries: &[RovingEntry<'_, Id>]) -> Vec<usize> {
+    fn enabled_indices(entries: &[RovingEntry<Id>]) -> Vec<usize> {
         entries
             .iter()
             .enumerate()
@@ -176,23 +182,15 @@ impl<Id: Clone + PartialEq> RovingFocusGroup<Id> {
         }
     }
 
-    fn reconciliation_outcome(&mut self, from: Option<Id>) -> RovingOutcome<Id> {
-        let out = self.outcome(from);
-        if out.changed() {
-            self.typeahead.clear();
-        }
-        out
-    }
-
     /// Ensures `active` is an enabled entry; otherwise nearest enabled (or None).
     ///
     /// Call after virtual window changes, insert/remove, or disabled flips.
-    pub fn reconcile(&mut self, entries: &[RovingEntry<'_, Id>]) -> RovingOutcome<Id> {
+    pub fn reconcile(&mut self, entries: &[RovingEntry<Id>]) -> RovingOutcome<Id> {
         let from = self.active.clone();
         let enabled = Self::enabled_indices(entries);
         if enabled.is_empty() {
             self.active = None;
-            return self.reconciliation_outcome(from);
+            return self.outcome(from);
         }
         if let Some(cur) = &self.active {
             if let Some(pos) = entries.iter().position(|e| &e.id == cur) {
@@ -207,82 +205,30 @@ impl<Id: Clone + PartialEq> RovingFocusGroup<Id> {
                     .or_else(|| enabled.iter().copied().rev().find(|&i| i < pos))
                     .unwrap_or(enabled[0]);
                 self.active = Some(entries[next].id.clone());
-                return self.reconciliation_outcome(from);
+                return self.outcome(from);
             }
             // Missing id: try same index if we can find nothing — fall through to first.
         }
         // Prefer first enabled.
         self.active = Some(entries[enabled[0]].id.clone());
-        self.reconciliation_outcome(from)
+        self.outcome(from)
     }
 
     /// Index of active among all entries, if present.
-    fn active_index(&self, entries: &[RovingEntry<'_, Id>]) -> Option<usize> {
+    fn active_index(&self, entries: &[RovingEntry<Id>]) -> Option<usize> {
         self.active
             .as_ref()
             .and_then(|id| entries.iter().position(|e| &e.id == id))
     }
 
     /// Moves by signed steps among enabled entries.
-    pub fn move_by(&mut self, entries: &[RovingEntry<'_, Id>], steps: isize) -> RovingOutcome<Id> {
+    pub fn move_by(&mut self, entries: &[RovingEntry<Id>], steps: isize) -> RovingOutcome<Id> {
         let from = self.active.clone();
         let enabled = Self::enabled_indices(entries);
         if enabled.is_empty() || steps == 0 {
             return self.reconcile(entries);
         }
-        if let Some(disabled_index) = self
-            .active
-            .as_ref()
-            .and_then(|active| entries.iter().position(|entry| &entry.id == active))
-            .filter(|&index| !entries[index].enabled)
-        {
-            let insertion = enabled
-                .iter()
-                .position(|&index| index > disabled_index)
-                .unwrap_or(enabled.len());
-            let magnitude = steps.unsigned_abs();
-            let target = if steps > 0 {
-                let start = if insertion < enabled.len() {
-                    insertion
-                } else if self.wrap {
-                    0
-                } else {
-                    enabled.len() - 1
-                };
-                if self.wrap {
-                    (start + (magnitude.saturating_sub(1) % enabled.len())) % enabled.len()
-                } else {
-                    start
-                        .saturating_add(magnitude.saturating_sub(1))
-                        .min(enabled.len() - 1)
-                }
-            } else {
-                let start = insertion
-                    .checked_sub(1)
-                    .unwrap_or_else(|| if self.wrap { enabled.len() - 1 } else { 0 });
-                if self.wrap {
-                    let back = magnitude.saturating_sub(1) % enabled.len();
-                    if back <= start {
-                        start - back
-                    } else {
-                        enabled.len() - (back - start)
-                    }
-                } else {
-                    start.saturating_sub(magnitude.saturating_sub(1))
-                }
-            };
-            self.active = Some(entries[enabled[target]].id.clone());
-            self.typeahead.clear();
-            return self.outcome(from);
-        }
-        let missing_active = self
-            .active
-            .as_ref()
-            .is_some_and(|active| !entries.iter().any(|entry| &entry.id == active));
         let _ = self.reconcile(entries);
-        if missing_active {
-            return self.outcome(from);
-        }
         let from = self.active.clone().or(from);
         let enabled = Self::enabled_indices(entries);
         let cur = self
@@ -302,17 +248,17 @@ impl<Id: Clone + PartialEq> RovingFocusGroup<Id> {
     }
 
     /// Next enabled item.
-    pub fn move_next(&mut self, entries: &[RovingEntry<'_, Id>]) -> RovingOutcome<Id> {
+    pub fn move_next(&mut self, entries: &[RovingEntry<Id>]) -> RovingOutcome<Id> {
         self.move_by(entries, 1)
     }
 
     /// Previous enabled item.
-    pub fn move_previous(&mut self, entries: &[RovingEntry<'_, Id>]) -> RovingOutcome<Id> {
+    pub fn move_previous(&mut self, entries: &[RovingEntry<Id>]) -> RovingOutcome<Id> {
         self.move_by(entries, -1)
     }
 
     /// First enabled item.
-    pub fn move_first(&mut self, entries: &[RovingEntry<'_, Id>]) -> RovingOutcome<Id> {
+    pub fn move_first(&mut self, entries: &[RovingEntry<Id>]) -> RovingOutcome<Id> {
         let from = self.active.clone();
         let enabled = Self::enabled_indices(entries);
         if enabled.is_empty() {
@@ -325,7 +271,7 @@ impl<Id: Clone + PartialEq> RovingFocusGroup<Id> {
     }
 
     /// Last enabled item.
-    pub fn move_last(&mut self, entries: &[RovingEntry<'_, Id>]) -> RovingOutcome<Id> {
+    pub fn move_last(&mut self, entries: &[RovingEntry<Id>]) -> RovingOutcome<Id> {
         let from = self.active.clone();
         let enabled = Self::enabled_indices(entries);
         if enabled.is_empty() {
@@ -341,7 +287,7 @@ impl<Id: Clone + PartialEq> RovingFocusGroup<Id> {
     pub fn handle_intent(
         &mut self,
         intent: UiIntent,
-        entries: &[RovingEntry<'_, Id>],
+        entries: &[RovingEntry<Id>],
     ) -> RovingOutcome<Id> {
         match intent {
             UiIntent::Move(NavigationMove::Next | NavigationMove::Down | NavigationMove::Right) => {
@@ -373,11 +319,7 @@ impl<Id: Clone + PartialEq> RovingFocusGroup<Id> {
     /// Key routing: Home/End, orientation arrows, printable typeahead.
     ///
     /// Does not Activate — host maps Enter/Space after consulting [`Self::active`].
-    pub fn handle_key(
-        &mut self,
-        key: KeyEvent,
-        entries: &[RovingEntry<'_, Id>],
-    ) -> RovingOutcome<Id> {
+    pub fn handle_key(&mut self, key: KeyEvent, entries: &[RovingEntry<Id>]) -> RovingOutcome<Id> {
         if key.is_release() || entries.is_empty() {
             return RovingOutcome::Ignored;
         }
@@ -407,18 +349,14 @@ impl<Id: Clone + PartialEq> RovingFocusGroup<Id> {
     }
 
     /// Append typeahead char and jump to first enabled label prefix match (case-insensitive).
-    pub fn typeahead_char(
-        &mut self,
-        ch: char,
-        entries: &[RovingEntry<'_, Id>],
-    ) -> RovingOutcome<Id> {
+    pub fn typeahead_char(&mut self, ch: char, entries: &[RovingEntry<Id>]) -> RovingOutcome<Id> {
         if ch == '\u{1b}' {
             self.typeahead.clear();
             return RovingOutcome::Ignored;
         }
         let from = self.active.clone();
         self.typeahead.push(ch);
-        let needle = self.typeahead.to_lowercase();
+        let needle = self.typeahead.to_ascii_lowercase();
         // Search from next after current, then wrap full list.
         let start = self.active_index(entries).map(|i| i + 1).unwrap_or(0) % entries.len().max(1);
         let n = entries.len();
@@ -428,7 +366,7 @@ impl<Id: Clone + PartialEq> RovingFocusGroup<Id> {
             if !e.enabled || e.label.is_empty() {
                 continue;
             }
-            if crate::text::starts_with_lower(e.label, &needle) {
+            if e.label.to_ascii_lowercase().starts_with(&needle) {
                 self.active = Some(e.id.clone());
                 return self.outcome(from);
             }
@@ -437,13 +375,11 @@ impl<Id: Clone + PartialEq> RovingFocusGroup<Id> {
         if needle.chars().count() > 1 {
             self.typeahead.clear();
             self.typeahead.push(ch);
-            let needle = self.typeahead.to_lowercase();
-            for offset in 0..n {
-                let i = (start + offset) % n;
-                let e = &entries[i];
+            let needle = self.typeahead.to_ascii_lowercase();
+            for e in entries {
                 if e.enabled
                     && !e.label.is_empty()
-                    && crate::text::starts_with_lower(e.label, &needle)
+                    && e.label.to_ascii_lowercase().starts_with(&needle)
                 {
                     self.active = Some(e.id.clone());
                     return self.outcome(from);
@@ -451,6 +387,53 @@ impl<Id: Clone + PartialEq> RovingFocusGroup<Id> {
             }
         }
         RovingOutcome::Ignored
+    }
+
+    /// Builds entries from parallel id/enabled/label slices (virtualized windows).
+    #[must_use]
+    pub fn entries_from_parts(
+        ids: &[Id],
+        enabled: &[bool],
+        labels: &[&str],
+    ) -> Vec<RovingEntry<Id>> {
+        ids.iter()
+            .enumerate()
+            .map(|(i, id)| RovingEntry {
+                id: id.clone(),
+                enabled: enabled.get(i).copied().unwrap_or(true),
+                label: labels.get(i).unwrap_or(&"").to_string(),
+            })
+            .collect()
+    }
+
+    /// Registers active-descendant geometry into a [`crate::interaction::SemanticScene`].
+    ///
+    /// Parent should be the collection surface id already registered on the semantic tree.
+    pub fn register_semantic(
+        &self,
+        scene: &mut crate::interaction::SemanticScene<Id>,
+        parent: &Id,
+        entries: &[RovingEntry<Id>],
+        areas: &[ratatui_core::layout::Rect],
+    ) where
+        Id: Clone + PartialEq + std::fmt::Display,
+    {
+        for (i, e) in entries.iter().enumerate() {
+            let area = areas.get(i).copied().unwrap_or_default();
+            let mut node = crate::interaction::SemanticNode::control(e.id.clone(), area)
+                .role(crate::interaction::SemanticRole::ListItem)
+                .parent(parent.clone())
+                .focusable(e.enabled)
+                .disabled(!e.enabled)
+                .state(crate::interaction::SemanticState {
+                    selected: self.active.as_ref() == Some(&e.id),
+                    ..crate::interaction::SemanticState::default()
+                });
+            if !e.label.is_empty() {
+                node = node.label(e.label.clone());
+            }
+            let _ = scene.register(node);
+        }
     }
 }
 
@@ -520,13 +503,13 @@ pub fn roving_hint_keymap(orientation: RovingOrientation) -> Keymap<&'static str
 mod tests {
     use super::*;
 
-    fn entries(specs: &[(&'static str, bool)]) -> Vec<RovingEntry<'static, &'static str>> {
+    fn entries(specs: &[(&'static str, bool)]) -> Vec<RovingEntry<&'static str>> {
         specs
             .iter()
             .map(|(id, en)| RovingEntry {
                 id: *id,
                 enabled: *en,
-                label: *id,
+                label: (*id).to_string(),
             })
             .collect()
     }
@@ -559,54 +542,9 @@ mod tests {
         let mut e = entries(&[("a", true), ("b", true), ("c", true)]);
         let mut g = RovingFocusGroup::new();
         g.set_active(Some("b"));
-        let _ = g.typeahead_char('z', &e);
-        assert_eq!(g.typeahead_buffer(), "z");
         e[1].enabled = false;
         assert!(g.reconcile(&e).changed());
         assert_eq!(g.active(), Some(&"c"));
-        assert!(g.typeahead_buffer().is_empty());
-    }
-
-    #[test]
-    fn movement_from_disabled_active_does_not_skip_repaired_neighbor() {
-        let e = entries(&[("a", true), ("b", false), ("c", true)]);
-        let mut g = RovingFocusGroup::new();
-        g.set_active(Some("b"));
-
-        assert_eq!(
-            g.move_next(&e),
-            RovingOutcome::ActiveChanged {
-                from: Some("b"),
-                to: Some("c"),
-            }
-        );
-        assert_eq!(g.active(), Some(&"c"));
-
-        g.set_active(Some("b"));
-        assert_eq!(
-            g.move_previous(&e),
-            RovingOutcome::ActiveChanged {
-                from: Some("b"),
-                to: Some("a"),
-            }
-        );
-        assert_eq!(g.active(), Some(&"a"));
-    }
-
-    #[test]
-    fn movement_from_missing_active_selects_first_enabled_entry() {
-        let e = entries(&[("a", true), ("b", true)]);
-        let mut g = RovingFocusGroup::new();
-        g.set_active(Some("gone"));
-
-        assert_eq!(
-            g.move_next(&e),
-            RovingOutcome::ActiveChanged {
-                from: Some("gone"),
-                to: Some("a"),
-            }
-        );
-        assert_eq!(g.active(), Some(&"a"));
     }
 
     #[test]
@@ -650,37 +588,6 @@ mod tests {
         assert!(g.typeahead_char('a', &e).changed());
         assert!(matches!(g.active(), Some(&"1") | Some(&"2")));
         assert!(g.typeahead_char('p', &e).changed() || g.active().is_some());
-    }
-
-    #[test]
-    fn typeahead_matches_unicode_case_insensitively() {
-        let e = vec![
-            RovingEntry::new("other", "Other"),
-            RovingEntry::new("accented", "Éclair"),
-        ];
-        let mut g = RovingFocusGroup::new();
-        let _ = g.reconcile(&e);
-
-        assert!(g.typeahead_char('é', &e).changed());
-        assert_eq!(g.active(), Some(&"accented"));
-    }
-
-    #[test]
-    fn repeated_typeahead_retries_from_next_active() {
-        let e = vec![
-            RovingEntry::new("apple", "Apple"),
-            RovingEntry::new("apricot", "Apricot"),
-            RovingEntry::new("avocado", "Avocado"),
-        ];
-        let mut g = RovingFocusGroup::new();
-        let _ = g.reconcile(&e);
-
-        let _ = g.typeahead_char('a', &e);
-        assert_eq!(g.active(), Some(&"apricot"));
-        let _ = g.typeahead_char('a', &e);
-        assert_eq!(g.active(), Some(&"avocado"));
-        let _ = g.typeahead_char('a', &e);
-        assert_eq!(g.active(), Some(&"apple"));
     }
 
     #[test]

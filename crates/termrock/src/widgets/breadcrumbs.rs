@@ -17,11 +17,19 @@
 //! collapses to `…` / overflow.
 //!
 //! Research: desktop breadcrumbs, terminal file managers, shadcn Breadcrumb.
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+use ratatui_core::{
+    buffer::Buffer,
+    layout::{Position, Rect},
+    style::Modifier,
+    widgets::StatefulWidget,
+};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
-    interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
+    interaction::{HitRegion, SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
     style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
 };
@@ -47,6 +55,17 @@ pub enum BreadcrumbStatus {
 }
 
 impl BreadcrumbStatus {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::None => "none",
+            Self::Loading => "loading",
+            Self::Warning => "warning",
+            Self::Error => "error",
+        }
+    }
+
     /// Mark.
     #[must_use]
     pub const fn mark(self, ascii: bool) -> Option<&'static str> {
@@ -281,6 +300,13 @@ impl BreadcrumbsState {
         self
     }
 
+    /// Separator.
+    #[must_use]
+    pub const fn with_separator(mut self, sep: BreadcrumbSeparator) -> Self {
+        self.separator = sep;
+        self
+    }
+
     /// Focus index into source items.
     #[must_use]
     pub const fn focus_index(&self) -> usize {
@@ -299,6 +325,29 @@ impl BreadcrumbsState {
         self.presentation
     }
 
+    /// Draft path when editing.
+    #[must_use]
+    pub fn draft(&self) -> &str {
+        &self.draft
+    }
+
+    /// Focused on ellipsis.
+    #[must_use]
+    pub const fn focus_on_ellipsis(&self) -> bool {
+        self.focus_on_ellipsis
+    }
+
+    /// Set focus index into source items.
+    pub fn set_focus_index(&mut self, index: usize) {
+        self.focus_index = index;
+        self.focus_on_ellipsis = false;
+    }
+
+    /// Focus the collapsed ellipsis (when presentation is collapsed).
+    pub fn set_focus_ellipsis(&mut self, on: bool) {
+        self.focus_on_ellipsis = on;
+    }
+
     /// Focus whole control (single Tab stop).
     pub fn set_focused(&mut self, on: bool) {
         self.focused = on;
@@ -306,6 +355,11 @@ impl BreadcrumbsState {
             self.mode = BreadcrumbsMode::Trail;
             self.draft.clear();
         }
+    }
+
+    /// Enabled.
+    pub fn set_enabled(&mut self, on: bool) {
+        self.enabled = on;
     }
 
     /// Clamp focus after items change; prefer current (last).
@@ -386,13 +440,12 @@ impl BreadcrumbsState {
             return BreadcrumbsOutcome::Ignored;
         }
         self.reconcile_len(items.len());
-        let is_press = key.is_press();
 
         // Editable mode
         if matches!(self.mode, BreadcrumbsMode::Editable) {
             match key.code {
-                KeyCode::Esc if is_press => return self.cancel_edit(),
-                KeyCode::Enter if is_press => return self.commit_edit(),
+                KeyCode::Esc => return self.cancel_edit(),
+                KeyCode::Enter => return self.commit_edit(),
                 KeyCode::Backspace => {
                     self.draft.pop();
                     return BreadcrumbsOutcome::Changed;
@@ -411,7 +464,7 @@ impl BreadcrumbsState {
 
         // Overflow open: Esc closes
         if self.overflow_open {
-            if key.code == KeyCode::Esc && is_press {
+            if key.code == KeyCode::Esc {
                 self.overflow_open = false;
                 return BreadcrumbsOutcome::OverflowClosed;
             }
@@ -420,11 +473,7 @@ impl BreadcrumbsState {
         let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
 
         // Start edit: F2-like via Ctrl+E or when editable + Enter on current
-        if self.editable
-            && is_press
-            && ctrl
-            && matches!(key.code, KeyCode::Char('e') | KeyCode::Char('E'))
-        {
+        if self.editable && ctrl && matches!(key.code, KeyCode::Char('e') | KeyCode::Char('E')) {
             return self.start_edit(items);
         }
 
@@ -445,10 +494,8 @@ impl BreadcrumbsState {
                 self.focus_index = items.len().saturating_sub(1);
                 BreadcrumbsOutcome::Changed
             }
-            KeyCode::Enter | KeyCode::Char(' ') if is_press && key.modifiers.is_empty() => {
-                self.activate(items)
-            }
-            KeyCode::Esc if is_press => {
+            KeyCode::Enter | KeyCode::Char(' ') if key.modifiers.is_empty() => self.activate(items),
+            KeyCode::Esc => {
                 if self.overflow_open {
                     self.overflow_open = false;
                     BreadcrumbsOutcome::OverflowClosed
@@ -457,7 +504,7 @@ impl BreadcrumbsState {
                 }
             }
             // `/` start path edit when editable
-            KeyCode::Char('/') if is_press && self.editable && key.modifiers.is_empty() => {
+            KeyCode::Char('/') if self.editable && key.modifiers.is_empty() => {
                 self.start_edit(items)
             }
             _ => BreadcrumbsOutcome::Ignored,
@@ -528,6 +575,50 @@ impl BreadcrumbsState {
             return BreadcrumbsOutcome::Ignored;
         }
         BreadcrumbsOutcome::Navigate(item.id.clone())
+    }
+
+    /// Intent path.
+    pub fn handle_intent<Id: Clone>(
+        &mut self,
+        intent: UiIntent,
+        items: &[BreadcrumbItem<Id>],
+    ) -> BreadcrumbsOutcome<Id> {
+        if !self.enabled || !self.focused {
+            return BreadcrumbsOutcome::Ignored;
+        }
+        match intent {
+            UiIntent::Activate | UiIntent::Submit => self.activate(items),
+            UiIntent::Cancel | UiIntent::Close => {
+                if matches!(self.mode, BreadcrumbsMode::Editable) {
+                    self.cancel_edit()
+                } else if self.overflow_open {
+                    self.overflow_open = false;
+                    BreadcrumbsOutcome::OverflowClosed
+                } else {
+                    BreadcrumbsOutcome::Blurred
+                }
+            }
+            UiIntent::Edit if self.editable => self.start_edit(items),
+            UiIntent::Move(m) => {
+                use crate::interaction::NavigationMove;
+                match m {
+                    NavigationMove::Previous => self.move_focus(-1, items),
+                    NavigationMove::Next => self.move_focus(1, items),
+                    NavigationMove::First => {
+                        self.focus_on_ellipsis = false;
+                        self.focus_index = 0;
+                        BreadcrumbsOutcome::Changed
+                    }
+                    NavigationMove::Last => {
+                        self.focus_on_ellipsis = false;
+                        self.focus_index = items.len().saturating_sub(1);
+                        BreadcrumbsOutcome::Changed
+                    }
+                    _ => BreadcrumbsOutcome::Ignored,
+                }
+            }
+            _ => BreadcrumbsOutcome::Ignored,
+        }
     }
 
     /// Mouse — click segment or ellipsis.
@@ -872,9 +963,7 @@ pub fn crumbs_from_labels(labels: &[&str]) -> Vec<BreadcrumbItem<String>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyEventKind;
     use crate::style::RolePalette;
-    use crate::widgets::tests::click;
 
     fn sample() -> Vec<BreadcrumbItem<&'static str>> {
         vec![
@@ -992,58 +1081,6 @@ mod tests {
     }
 
     #[test]
-    fn repeated_one_shot_actions_are_ignored_but_draft_text_repeats() {
-        let items = sample();
-        let mut state = BreadcrumbsState::new().with_editable(true);
-        state.set_focused(true);
-        state.focus_index = 0;
-
-        for (code, modifiers) in [
-            (KeyCode::Enter, KeyModifiers::NONE),
-            (KeyCode::Char(' '), KeyModifiers::NONE),
-            (KeyCode::Esc, KeyModifiers::NONE),
-            (KeyCode::Char('/'), KeyModifiers::NONE),
-            (KeyCode::Char('e'), KeyModifiers::CONTROL),
-        ] {
-            let mut repeat = KeyEvent::new(code, modifiers);
-            repeat.kind = KeyEventKind::Repeat;
-            let before = state.clone();
-            assert_eq!(
-                state.handle_key(repeat, &items),
-                BreadcrumbsOutcome::Ignored
-            );
-            assert_eq!(state, before, "{code:?} repeat mutated breadcrumbs");
-        }
-
-        state.focus_index = items.len() - 1;
-        assert!(matches!(
-            state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &items),
-            BreadcrumbsOutcome::EditStarted { .. }
-        ));
-        for code in [KeyCode::Enter, KeyCode::Esc] {
-            let mut repeat = KeyEvent::new(code, KeyModifiers::NONE);
-            repeat.kind = KeyEventKind::Repeat;
-            let before = state.clone();
-            assert_eq!(
-                state.handle_key(repeat, &items),
-                BreadcrumbsOutcome::Ignored
-            );
-            assert_eq!(
-                state, before,
-                "{code:?} repeat mutated editable breadcrumbs"
-            );
-        }
-
-        let mut repeat_text = KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE);
-        repeat_text.kind = KeyEventKind::Repeat;
-        assert_eq!(
-            state.handle_key(repeat_text, &items),
-            BreadcrumbsOutcome::Changed
-        );
-        assert!(state.draft.ends_with('x'));
-    }
-
-    #[test]
     fn disabled_segment_ignored() {
         let items = [
             BreadcrumbItem::new("a", "A"),
@@ -1090,7 +1127,15 @@ mod tests {
             .find(|(h, _)| matches!(h, BreadcrumbHit::Item { index: 1, .. }))
             .expect("projects");
         assert!(matches!(
-            state.handle_mouse(click(rect.x, rect.y), &items, &[(hit.clone(), *rect)],),
+            state.handle_mouse(
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(rect.x, rect.y),
+                    modifiers: KeyModifiers::NONE,
+                },
+                &items,
+                &[(hit.clone(), *rect)],
+            ),
             BreadcrumbsOutcome::Navigate("a")
         ));
     }

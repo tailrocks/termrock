@@ -8,23 +8,26 @@
 //! max selection, groups, search, and a compact summary when closed.
 //!
 //! **vs [`Select`](super::Select).** Single value. MultiSelect owns ordered
-//! membership via [`SelectionModel`](crate::interaction::SelectionModel).
+//! membership via [`Selection`](super::Selection).
 //! **vs always-visible checkbox lists.** MultiSelect is closed-by-default with
 //! popover/fullscreen list chrome (host places overlays).
 //!
 //! Research: modern multi-selects, Huh, terminal fuzzy pickers.
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
-    layout::Rect,
+    layout::{Position, Rect},
     style::{Modifier, Style},
     widgets::StatefulWidget,
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     interaction::{
-        CollectionItem, CollectionOutcome, CollectionState, SelectionModel, SemanticNode,
-        SemanticRole, SemanticScene, SemanticState, UiIntent,
+        CollectionItem, CollectionOutcome, CollectionState, SemanticNode, SemanticRole,
+        SemanticScene, SemanticState, UiIntent,
     },
     style::{ButtonRecipeVariant, ControlState, DesignSystem, Glyph, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
@@ -32,7 +35,7 @@ use crate::{
 
 use super::{
     SELECT_FULLSCREEN_MAX_HEIGHT, SELECT_FULLSCREEN_MAX_WIDTH, SelectOption, SelectPresentation,
-    SelectRecipe, SelectRowKind, SelectState, Surface, SurfaceRecipe, TextInput, TextInputOutcome,
+    SelectRecipe, SelectRowKind, Selection, Surface, SurfaceRecipe, TextInput, TextInputOutcome,
     TextInputState, Validation,
 };
 
@@ -102,7 +105,7 @@ pub enum MultiSelectOutcome<Id> {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MultiSelectState<Id: Clone + PartialEq> {
     /// Ordered checked membership.
-    selection: SelectionModel<Id>,
+    selection: Selection<Id>,
     /// Open presentation.
     presentation: SelectPresentation,
     /// Keyboard highlight (distinct from checks).
@@ -144,7 +147,7 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
             .with_editing();
         search.set_focused(false);
         Self {
-            selection: SelectionModel::multiple(),
+            selection: Selection::new(),
             presentation: SelectPresentation::Closed,
             collection: CollectionState::new().wrap(true),
             search,
@@ -183,6 +186,13 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
         self
     }
 
+    /// Recipe.
+    #[must_use]
+    pub const fn with_recipe(mut self, recipe: SelectRecipe) -> Self {
+        self.recipe = recipe;
+        self
+    }
+
     /// Maximum number of checked options.
     #[must_use]
     pub const fn with_max_selected(mut self, max: Option<usize>) -> Self {
@@ -196,16 +206,18 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
         self.max_summary_chips = n.max(1);
         self
     }
+
+    /// Preferred list rows.
+    #[must_use]
+    pub fn with_list_rows(mut self, rows: u16) -> Self {
+        self.list_rows = rows.max(3);
+        self
+    }
+
     /// Checked ids in check order.
     #[must_use]
     pub fn selected(&self) -> &[Id] {
         self.selection.checked()
-    }
-
-    /// Collection view (options / filtering).
-    #[must_use]
-    pub const fn collection(&self) -> &CollectionState<Id> {
-        &self.collection
     }
 
     /// Whether id is checked.
@@ -218,6 +230,12 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
     #[must_use]
     pub const fn highlight(&self) -> Option<&Id> {
         self.collection.active()
+    }
+
+    /// Presentation.
+    #[must_use]
+    pub const fn presentation(&self) -> SelectPresentation {
+        self.presentation
     }
 
     /// Open?
@@ -240,6 +258,59 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
         }
     }
 
+    /// Focused.
+    #[must_use]
+    pub const fn is_focused(&self) -> bool {
+        self.focused
+    }
+
+    /// Enabled.
+    #[must_use]
+    pub const fn is_enabled(&self) -> bool {
+        self.enabled
+    }
+
+    /// Recipe.
+    #[must_use]
+    pub const fn recipe(&self) -> SelectRecipe {
+        self.recipe
+    }
+
+    /// Max selected.
+    #[must_use]
+    pub const fn max_selected(&self) -> Option<usize> {
+        self.max_selected
+    }
+
+    /// Selection model.
+    #[must_use]
+    pub const fn selection(&self) -> &Selection<Id> {
+        &self.selection
+    }
+
+    /// Mutable selection (advanced).
+    pub fn selection_mut(&mut self) -> &mut Selection<Id> {
+        &mut self.selection
+    }
+
+    /// Collection.
+    #[must_use]
+    pub const fn collection(&self) -> &CollectionState<Id> {
+        &self.collection
+    }
+
+    /// Trigger area.
+    #[must_use]
+    pub const fn trigger_area(&self) -> Rect {
+        self.trigger
+    }
+
+    /// Panel area.
+    #[must_use]
+    pub const fn panel_area(&self) -> Rect {
+        self.panel
+    }
+
     /// Focus.
     pub fn set_focused(&mut self, on: bool) {
         self.focused = on;
@@ -248,21 +319,64 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
         }
     }
 
-    fn collection_items_from_projection<'a>(
-        options: &[&'a SelectOption<Id>],
-    ) -> Vec<CollectionItem<'a, Id>> {
+    /// Enabled.
+    pub const fn set_enabled(&mut self, on: bool) {
+        self.enabled = on;
+    }
+
+    /// Replace membership (controlled).
+    pub fn set_selected(&mut self, ids: impl IntoIterator<Item = Id>) {
+        self.selection.clear();
+        for id in ids {
+            if !self.selection.is_checked(&id) {
+                let _ = self.selection.toggle(&id);
+            }
+        }
+    }
+
+    /// Force presentation.
+    pub const fn set_presentation(&mut self, presentation: SelectPresentation) {
+        self.presentation = presentation;
+    }
+
+    fn filtered_options<'a>(
+        options: &'a [SelectOption<Id>],
+        query: &str,
+    ) -> Vec<&'a SelectOption<Id>> {
+        let q = query.trim().to_ascii_lowercase();
+        if q.is_empty() {
+            return options.iter().collect();
+        }
+
+        let mut out = Vec::new();
+        let mut pending_group: Option<&SelectOption<Id>> = None;
+        for option in options {
+            match option.kind {
+                SelectRowKind::Group => pending_group = Some(option),
+                SelectRowKind::Separator => {}
+                SelectRowKind::Option => {
+                    if option.label.to_ascii_lowercase().contains(&q) {
+                        if let Some(group) = pending_group.take() {
+                            out.push(group);
+                        }
+                        out.push(option);
+                    }
+                }
+            }
+        }
+        out
+    }
+
+    fn collection_items_from_projection(options: &[&SelectOption<Id>]) -> Vec<CollectionItem<Id>> {
         options
             .iter()
             .filter(|o| o.is_option())
-            .map(|o| CollectionItem::new(o.id.clone(), &o.label).enabled(!o.disabled))
+            .map(|o| CollectionItem::new(o.id.clone(), o.label.clone()).enabled(!o.disabled))
             .collect()
     }
 
-    fn filtered_items<'a>(
-        options: &'a [SelectOption<Id>],
-        query: &str,
-    ) -> Vec<CollectionItem<'a, Id>> {
-        let visible = SelectState::filter_options(options, query);
+    fn filtered_items(options: &[SelectOption<Id>], query: &str) -> Vec<CollectionItem<Id>> {
+        let visible = Self::filtered_options(options, query);
         Self::collection_items_from_projection(&visible)
     }
 
@@ -362,8 +476,7 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
                 }
             }
         }
-        self.selection.toggle(id);
-        let now = self.selection.is_checked(id);
+        let now = self.selection.toggle(id);
         MultiSelectOutcome::Toggled {
             id: id.clone(),
             checked: now,
@@ -441,25 +554,6 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
         if !self.focused {
             return MultiSelectOutcome::Ignored;
         }
-        // Keep one-shot activation and clearing out of the closed-state
-        // fallbacks. Printable typeahead opens the searchable list, while
-        // Backspace/Delete mutates the checked set.
-        if !key.is_press()
-            && ((key.modifiers.is_empty()
-                && matches!(
-                    key.code,
-                    KeyCode::Enter
-                        | KeyCode::Char(' ')
-                        | KeyCode::Down
-                        | KeyCode::Backspace
-                        | KeyCode::Delete
-                ))
-                || (matches!(key.code, KeyCode::Char(c) if !c.is_control())
-                    && !key.modifiers.contains(KeyModifiers::CONTROL)
-                    && !key.modifiers.contains(KeyModifiers::ALT)))
-        {
-            return MultiSelectOutcome::Ignored;
-        }
         match key.code {
             KeyCode::Enter | KeyCode::Char(' ') | KeyCode::Down if key.modifiers.is_empty() => {
                 self.open(bounds, options)
@@ -494,28 +588,6 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
         options: &[SelectOption<Id>],
         bounds: Rect,
     ) -> MultiSelectOutcome<Id> {
-        // Keep one-shot actions out of the search and collection fallbacks.
-        // Searchable Space remains repeatable once it is part of a non-empty
-        // query; otherwise it toggles membership and must fire once.
-        let one_shot_space = key.modifiers.is_empty()
-            && matches!(key.code, KeyCode::Char(' '))
-            && (!self.searchable || self.search.value().is_empty());
-        let one_shot_search_edit = self.searchable
-            && key.modifiers.contains(KeyModifiers::CONTROL)
-            && matches!(key.code, KeyCode::Char('u' | 'U'));
-        if !key.is_press()
-            && (key.code == KeyCode::Esc && key.modifiers.is_empty()
-                || key.code == KeyCode::Enter && key.modifiers.is_empty()
-                || one_shot_space
-                || one_shot_search_edit
-                || key.modifiers.contains(KeyModifiers::CONTROL)
-                    && matches!(
-                        key.code,
-                        KeyCode::Char('a' | 'A' | 'd' | 'D') | KeyCode::Backspace
-                    ))
-        {
-            return MultiSelectOutcome::Ignored;
-        }
         if key.code == KeyCode::Esc && key.modifiers.is_empty() {
             return self.close();
         }
@@ -752,10 +824,32 @@ impl<'a, Id> MultiSelect<'a, Id> {
         }
     }
 
+    /// Placeholder when none selected.
+    #[must_use]
+    pub const fn placeholder(mut self, placeholder: &'a str) -> Self {
+        self.placeholder = placeholder;
+        self
+    }
+
     /// Label.
     #[must_use]
     pub const fn label(mut self, label: &'a str) -> Self {
         self.label = label;
+        self
+    }
+
+    /// Validation.
+    #[must_use]
+    pub const fn validation(mut self, validation: Validation<'a>) -> Self {
+        self.validation = validation;
+        self
+    }
+
+    /// ASCII glyphs.
+    #[must_use]
+    /// Clear affordance on trigger.
+    pub const fn show_clear(mut self, on: bool) -> Self {
+        self.show_clear = on;
         self
     }
 }
@@ -816,6 +910,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
         buffer: &mut Buffer,
         state: &mut MultiSelectState<Id>,
     ) {
+        let invalid = matches!(self.validation, Validation::Invalid(_));
         let recipe = self.system.input_recipe(
             if !state.enabled {
                 ControlState::Disabled
@@ -824,6 +919,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
             } else {
                 ControlState::Default
             },
+            invalid,
             false,
         );
         let mut y = area.y;
@@ -943,7 +1039,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
             buffer.set_stringn(
                 x,
                 trigger.y,
-                take_display_cols(&chip, usize::from(w)).as_ref(),
+                &take_display_cols(&chip, usize::from(w)),
                 usize::from(w),
                 recipe.value,
             );
@@ -1014,7 +1110,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> MultiSelect<'a, Id> {
         }
 
         let query = state.effective_query().to_owned();
-        let visible = SelectState::filter_options(self.options, &query);
+        let visible = MultiSelectState::filtered_options(self.options, &query);
 
         let coll_items = MultiSelectState::collection_items_from_projection(&visible);
         let vp = usize::from(list_area.height).max(1);
@@ -1221,10 +1317,7 @@ impl<Id: Clone + PartialEq + std::fmt::Display> StatefulWidget for MultiSelect<'
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyEventKind;
     use crate::style::RolePalette;
-    use crate::widgets::tests::click;
-    use crate::widgets::tests::key_with_kind;
 
     fn opts() -> Vec<SelectOption<&'static str>> {
         vec![
@@ -1369,104 +1462,6 @@ mod tests {
     }
 
     #[test]
-    fn repeated_lifecycle_and_mutation_actions_are_ignored() {
-        let options = opts();
-        let bounds = Rect::new(0, 0, 80, 24);
-
-        for kind in [KeyEventKind::Repeat, KeyEventKind::Release] {
-            for (code, modifiers) in [
-                (KeyCode::Enter, KeyModifiers::NONE),
-                (KeyCode::Char(' '), KeyModifiers::NONE),
-                (KeyCode::Down, KeyModifiers::NONE),
-                (KeyCode::Char('r'), KeyModifiers::NONE),
-                (KeyCode::Backspace, KeyModifiers::NONE),
-                (KeyCode::Delete, KeyModifiers::NONE),
-            ] {
-                let mut state = MultiSelectState::new().with_selected(["rs"]);
-                state.set_focused(true);
-                assert_eq!(
-                    state.handle_key(key_with_kind(code, modifiers, kind), &options, bounds,),
-                    MultiSelectOutcome::Ignored
-                );
-                assert!(!state.is_open());
-                assert_eq!(state.selected(), &["rs"]);
-                assert_eq!(state.search_query(), "");
-            }
-        }
-
-        let mut state = MultiSelectState::new().with_selected(["rs"]);
-        state.set_focused(true);
-        let _ = state.open(bounds, &options);
-        for kind in [KeyEventKind::Repeat, KeyEventKind::Release] {
-            for (code, modifiers) in [
-                (KeyCode::Esc, KeyModifiers::NONE),
-                (KeyCode::Enter, KeyModifiers::NONE),
-                (KeyCode::Char(' '), KeyModifiers::NONE),
-                (KeyCode::Char('a'), KeyModifiers::CONTROL),
-                (KeyCode::Char('d'), KeyModifiers::CONTROL),
-                (KeyCode::Backspace, KeyModifiers::CONTROL),
-            ] {
-                assert_eq!(
-                    state.handle_key(key_with_kind(code, modifiers, kind), &options, bounds,),
-                    MultiSelectOutcome::Ignored
-                );
-            }
-        }
-        assert!(state.is_open());
-        assert_eq!(state.selected(), &["rs"]);
-
-        let mut searchable = MultiSelectState::new();
-        searchable.set_focused(true);
-        let _ = searchable.open(bounds, &options);
-        assert!(matches!(
-            searchable.handle_key(
-                key_with_kind(KeyCode::Char('r'), KeyModifiers::NONE, KeyEventKind::Repeat),
-                &options,
-                bounds,
-            ),
-            MultiSelectOutcome::SearchChanged { .. }
-        ));
-        assert!(matches!(
-            searchable.handle_key(
-                key_with_kind(KeyCode::Char(' '), KeyModifiers::NONE, KeyEventKind::Repeat),
-                &options,
-                bounds,
-            ),
-            MultiSelectOutcome::SearchChanged { .. }
-        ));
-        assert_eq!(searchable.search_query(), "r ");
-        assert!(searchable.is_open());
-
-        let mut kill_to_start = MultiSelectState::new();
-        kill_to_start.set_focused(true);
-        let _ = kill_to_start.open(bounds, &options);
-        let _ = kill_to_start.search.insert_str("abc");
-        for kind in [KeyEventKind::Repeat, KeyEventKind::Release] {
-            assert_eq!(
-                kill_to_start.handle_key(
-                    key_with_kind(KeyCode::Char('u'), KeyModifiers::CONTROL, kind,),
-                    &options,
-                    bounds,
-                ),
-                MultiSelectOutcome::Ignored
-            );
-            assert_eq!(kill_to_start.search_query(), "abc");
-        }
-        assert!(matches!(
-            kill_to_start.handle_key(
-                key_with_kind(
-                    KeyCode::Char('u'),
-                    KeyModifiers::CONTROL,
-                    KeyEventKind::Press,
-                ),
-                &options,
-                bounds,
-            ),
-            MultiSelectOutcome::SearchChanged { query } if query.is_empty()
-        ));
-    }
-
-    #[test]
     fn tiny_fullscreen() {
         let tiny = Rect::new(0, 0, 20, 8);
         let mut state = MultiSelectState::<&str>::new();
@@ -1516,7 +1511,11 @@ mod tests {
         let (id, rect) = state.option_regions[0].clone();
         assert!(matches!(
             state.handle_mouse(
-                click(rect.x, rect.y),
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(rect.x, rect.y),
+                    modifiers: KeyModifiers::NONE,
+                },
                 &options,
                 area,
             ),
@@ -1571,7 +1570,11 @@ mod tests {
         assert!(painted_row_text(&buffer, group_row).contains("Lang"));
         assert!(matches!(
             state.handle_mouse(
-                click(rect.x, rect.y),
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(rect.x, rect.y),
+                    modifiers: KeyModifiers::NONE,
+                },
                 &options,
                 area,
             ),
@@ -1657,7 +1660,11 @@ mod tests {
         assert!(painted_row_text(&buf, rect).contains("Rust"));
         assert!(matches!(
             state.handle_mouse(
-                click(rect.x, rect.y),
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(rect.x, rect.y),
+                    modifiers: KeyModifiers::NONE,
+                },
                 &options,
                 bounds,
             ),

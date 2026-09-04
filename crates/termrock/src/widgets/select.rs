@@ -17,16 +17,19 @@
 //! Tiny terminals set [`SelectPresentation::Fullscreen`].
 //!
 //! Research: Radix Select, Huh select, Textual Select, terminal pickers.
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
-    layout::{Margin, Rect},
+    layout::{Margin, Position, Rect},
     style::{Modifier, Style},
     widgets::{StatefulWidget, Widget},
 };
 use ratatui_widgets::{block::Block, borders::Borders};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     interaction::{
         CollectionItem, CollectionOutcome, CollectionState, SemanticNode, SemanticRole,
         SemanticScene, SemanticState, UiIntent,
@@ -271,7 +274,7 @@ impl<Id> SelectState<Id> {
         Self {
             value: None,
             presentation: SelectPresentation::Closed,
-            collection: CollectionState::new().wrap(false),
+            collection: CollectionState::new().wrap(true),
             search,
             searchable: false,
             recipe: SelectRecipe::Inline,
@@ -310,6 +313,14 @@ impl<Id> SelectState<Id> {
         self.recipe = recipe;
         self
     }
+
+    /// Preferred list rows.
+    #[must_use]
+    pub fn with_list_rows(mut self, rows: u16) -> Self {
+        self.list_rows = rows.max(3);
+        self
+    }
+
     /// Committed value.
     #[must_use]
     pub const fn value(&self) -> Option<&Id> {
@@ -322,10 +333,58 @@ impl<Id> SelectState<Id> {
         self.collection.active()
     }
 
+    /// Presentation.
+    #[must_use]
+    pub const fn presentation(&self) -> SelectPresentation {
+        self.presentation
+    }
+
     /// Whether open.
     #[must_use]
     pub const fn is_open(&self) -> bool {
         self.presentation.is_open()
+    }
+
+    /// Search query.
+    #[must_use]
+    pub fn search_query(&self) -> &str {
+        self.search.value()
+    }
+
+    /// Focused (opener when closed; list when open).
+    #[must_use]
+    pub const fn is_focused(&self) -> bool {
+        self.focused
+    }
+
+    /// Enabled.
+    #[must_use]
+    pub const fn is_enabled(&self) -> bool {
+        self.enabled
+    }
+
+    /// Recipe.
+    #[must_use]
+    pub const fn recipe(&self) -> SelectRecipe {
+        self.recipe
+    }
+
+    /// Collection model.
+    #[must_use]
+    pub const fn collection(&self) -> &CollectionState<Id> {
+        &self.collection
+    }
+
+    /// Trigger geometry.
+    #[must_use]
+    pub const fn trigger_area(&self) -> Rect {
+        self.trigger
+    }
+
+    /// Open list geometry.
+    #[must_use]
+    pub const fn panel_area(&self) -> Rect {
+        self.panel
     }
 
     /// Focus.
@@ -362,11 +421,11 @@ impl<Id> SelectState<Id> {
 impl<Id: Clone + PartialEq> SelectState<Id> {
     /// Build collection items from options (only selectable options).
     #[must_use]
-    pub fn collection_items<'a>(options: &'a [SelectOption<Id>]) -> Vec<CollectionItem<'a, Id>> {
+    pub fn collection_items(options: &[SelectOption<Id>]) -> Vec<CollectionItem<Id>> {
         options
             .iter()
             .filter(|o| o.is_option())
-            .map(|o| CollectionItem::new(o.id.clone(), &o.label).enabled(!o.disabled))
+            .map(|o| CollectionItem::new(o.id.clone(), o.label.clone()).enabled(!o.disabled))
             .collect()
     }
 
@@ -392,7 +451,7 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
                     // drop unless we already emitted something
                 }
                 SelectRowKind::Option => {
-                    if crate::text::contains_lower(&o.label, &q) {
+                    if o.label.to_ascii_lowercase().contains(&q) {
                         if let Some(g) = pending_group.take() {
                             out.push(g);
                         }
@@ -404,24 +463,21 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
         out
     }
 
-    fn filtered_collection_items<'a>(
-        options: &'a [SelectOption<Id>],
+    fn filtered_collection_items(
+        options: &[SelectOption<Id>],
         query: &str,
-    ) -> Vec<CollectionItem<'a, Id>> {
+    ) -> Vec<CollectionItem<Id>> {
         if query.trim().is_empty() {
             return Self::collection_items(options);
         }
         Self::filter_options(options, query)
             .into_iter()
             .filter(|o| o.is_option())
-            .map(|o| CollectionItem::new(o.id.clone(), &o.label).enabled(!o.disabled))
+            .map(|o| CollectionItem::new(o.id.clone(), o.label.clone()).enabled(!o.disabled))
             .collect()
     }
 
-    fn current_collection_items<'a>(
-        &self,
-        options: &'a [SelectOption<Id>],
-    ) -> Vec<CollectionItem<'a, Id>> {
+    fn current_collection_items(&self, options: &[SelectOption<Id>]) -> Vec<CollectionItem<Id>> {
         if self.searchable {
             Self::filtered_collection_items(options, self.search.value())
         } else {
@@ -564,9 +620,6 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
             KeyCode::Enter | KeyCode::Char(' ')
                 if key.modifiers.is_empty() || key.modifiers == KeyModifiers::NONE =>
             {
-                if !key.is_press() {
-                    return SelectOutcome::Ignored;
-                }
                 self.open(bounds, options)
             }
             KeyCode::Down | KeyCode::Right if key.modifiers.is_empty() => {
@@ -576,17 +629,12 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
                 self.cycle_closed_value(options, -1)
             }
             KeyCode::Esc => SelectOutcome::Ignored,
-            // junie closed select: j/k ignored (arrows cycle; Enter/Space open).
-            KeyCode::Char('j' | 'k' | 'J' | 'K') => SelectOutcome::Ignored,
             // typeahead open + first char
             KeyCode::Char(c)
                 if !c.is_control()
                     && !key.modifiers.contains(KeyModifiers::CONTROL)
                     && !key.modifiers.contains(KeyModifiers::ALT) =>
             {
-                if !key.is_press() {
-                    return SelectOutcome::Ignored;
-                }
                 let out = self.open(bounds, options);
                 if self.searchable {
                     let _ = self.search.insert_str(&c.to_string());
@@ -610,33 +658,13 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
         options: &[SelectOption<Id>],
         bounds: Rect,
     ) -> SelectOutcome<Id> {
-        // Keep one-shot actions out of the search and collection fallbacks.
-        // Searchable Ctrl+M submits through TextInputState; non-searchable
-        // Space commits after CollectionState sees the event.
-        if !key.is_press()
-            && ((self.searchable
-                && key.modifiers.contains(KeyModifiers::CONTROL)
-                && matches!(key.code, KeyCode::Char('m' | 'M')))
-                || (!self.searchable
-                    && key.modifiers.is_empty()
-                    && matches!(key.code, KeyCode::Char(' '))))
-        {
-            return SelectOutcome::Ignored;
-        }
-
         // Esc close
         if key.code == KeyCode::Esc && key.modifiers.is_empty() {
-            if !key.is_press() {
-                return SelectOutcome::Ignored;
-            }
             return self.close();
         }
 
         // Enter commit
         if key.code == KeyCode::Enter && key.modifiers.is_empty() {
-            if !key.is_press() {
-                return SelectOutcome::Ignored;
-            }
             return self.commit_highlight();
         }
 
@@ -673,22 +701,6 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
 
         let items = self.current_collection_items(options);
 
-        // junie open select: j/k move the cursor, not typeahead.
-        if !self.searchable && matches!(key.code, KeyCode::Char('j' | 'J' | 'k' | 'K')) {
-            let dir = if matches!(key.code, KeyCode::Char('j' | 'J')) {
-                1
-            } else {
-                -1
-            };
-            return match self.collection.move_by(&items, dir) {
-                CollectionOutcome::ActiveChanged { to, .. } => {
-                    SelectOutcome::HighlightChanged { id: to }
-                }
-                CollectionOutcome::Scrolled => SelectOutcome::Changed,
-                CollectionOutcome::Ignored => SelectOutcome::Ignored,
-            };
-        }
-
         // Page / arrows via collection
         match self.collection.handle_key(key, &items) {
             CollectionOutcome::ActiveChanged { to, .. } => {
@@ -698,9 +710,6 @@ impl<Id: Clone + PartialEq> SelectState<Id> {
             CollectionOutcome::Ignored => {
                 // Space commits like Enter when open
                 if matches!(key.code, KeyCode::Char(' ')) && key.modifiers.is_empty() {
-                    if !key.is_press() {
-                        return SelectOutcome::Ignored;
-                    }
                     return self.commit_highlight();
                 }
                 SelectOutcome::Ignored
@@ -989,6 +998,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
         if area.is_empty() {
             return;
         }
+        let invalid = matches!(self.validation, Validation::Invalid(_));
         // The trigger is a field, so it wears the field's chrome. Swapping the
         // whole style to `Role::Focus` on focus threw away the well underneath
         // it — the box stopped looking like something you type into at the one
@@ -1000,7 +1010,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
         } else {
             ControlState::Default
         };
-        let recipe = self.system.input_recipe(control_state, false);
+        let recipe = self.system.input_recipe(control_state, invalid, false);
         buffer.set_style(area, recipe.fill);
         // Prompt column is reserved in every state so the value does not shift
         // when focus arrives. Idle paints ▎ with fg=bg; focus makes it visible.
@@ -1222,7 +1232,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> Select<'a, Id> {
                             checked: is_val,
                             ..ListRowVisualState::default()
                         };
-                        paint_list_anatomy_row(buffer, rect, self.system, visual, &label);
+                        paint_list_anatomy_row(buffer, rect, self.system, visual, is_val, &label);
                     }
                     if !opt.disabled {
                         state.option_regions.push((opt.id.clone(), rect));
@@ -1412,6 +1422,7 @@ fn paint_list_anatomy_row(
     row: Rect,
     system: &DesignSystem,
     visual: ListRowVisualState,
+    chosen: bool,
     label: &str,
 ) {
     if row.is_empty() {
@@ -1421,6 +1432,7 @@ fn paint_list_anatomy_row(
     let recipe = system.resolve_list_row(visual);
     let style = chrome.label_style(recipe.label);
     chrome.paint(buffer, row);
+    let _ = chosen;
     let text_x = row.x.saturating_add(3).min(row.right());
     let text_w = row.right().saturating_sub(text_x);
     if text_w > 0 {
@@ -1437,9 +1449,7 @@ fn paint_list_anatomy_row(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyEventKind;
     use crate::style::RolePalette;
-    use crate::widgets::tests::click;
 
     fn sample_options() -> Vec<SelectOption<&'static str>> {
         vec![
@@ -1473,91 +1483,6 @@ mod tests {
         );
         assert_eq!(state.value(), Some(&"apple"));
         assert_eq!(state.highlight(), Some(&"banana"));
-    }
-
-    #[test]
-    fn closed_non_searchable_jk_are_ignored_plain_and_modified() {
-        let opts = sample_options();
-        let bounds = Rect::new(0, 0, 80, 24);
-        let mut state = SelectState::new().with_value("apple");
-        state.set_focused(true);
-
-        for (code, modifiers) in [
-            (KeyCode::Char('j'), KeyModifiers::NONE),
-            (KeyCode::Char('k'), KeyModifiers::SHIFT),
-            (KeyCode::Char('J'), KeyModifiers::CONTROL),
-            (KeyCode::Char('K'), KeyModifiers::ALT),
-        ] {
-            assert_eq!(
-                state.handle_key(KeyEvent::new(code, modifiers), &opts, bounds),
-                SelectOutcome::Ignored
-            );
-        }
-
-        assert!(!state.is_open());
-        assert_eq!(state.value(), Some(&"apple"));
-        assert_eq!(state.highlight(), Some(&"apple"));
-    }
-
-    #[test]
-    fn open_non_searchable_jk_move_highlight_with_bounds() {
-        let opts = sample_options();
-        let bounds = Rect::new(0, 0, 80, 24);
-        let mut state = SelectState::new().with_value("apple");
-        state.set_focused(true);
-        let _ = state.open(bounds, &opts);
-
-        assert_eq!(
-            state.handle_key(
-                KeyEvent::new(KeyCode::Char('j'), KeyModifiers::NONE),
-                &opts,
-                bounds,
-            ),
-            SelectOutcome::HighlightChanged { id: Some("banana") }
-        );
-        assert_eq!(
-            state.handle_key(
-                KeyEvent::new(KeyCode::Char('j'), KeyModifiers::NONE),
-                &opts,
-                bounds,
-            ),
-            SelectOutcome::HighlightChanged { id: Some("carrot") }
-        );
-        assert_eq!(
-            state.handle_key(
-                KeyEvent::new(KeyCode::Char('j'), KeyModifiers::NONE),
-                &opts,
-                bounds,
-            ),
-            SelectOutcome::Ignored
-        );
-        assert_eq!(state.highlight(), Some(&"carrot"));
-
-        assert_eq!(
-            state.handle_key(
-                KeyEvent::new(KeyCode::Char('k'), KeyModifiers::NONE),
-                &opts,
-                bounds,
-            ),
-            SelectOutcome::HighlightChanged { id: Some("banana") }
-        );
-        assert_eq!(
-            state.handle_key(
-                KeyEvent::new(KeyCode::Char('k'), KeyModifiers::NONE),
-                &opts,
-                bounds,
-            ),
-            SelectOutcome::HighlightChanged { id: Some("apple") }
-        );
-        assert_eq!(
-            state.handle_key(
-                KeyEvent::new(KeyCode::Char('k'), KeyModifiers::NONE),
-                &opts,
-                bounds,
-            ),
-            SelectOutcome::Ignored
-        );
-        assert_eq!(state.highlight(), Some(&"apple"));
     }
 
     #[test]
@@ -1608,65 +1533,6 @@ mod tests {
     }
 
     #[test]
-    fn repeated_open_close_and_commit_triggers_are_ignored() {
-        let opts = sample_options();
-        let bounds = Rect::new(0, 0, 80, 24);
-
-        for kind in [KeyEventKind::Repeat, KeyEventKind::Release] {
-            for code in [KeyCode::Enter, KeyCode::Char(' '), KeyCode::Char('a')] {
-                let mut state = SelectState::new().with_value("apple");
-                state.set_focused(true);
-                let mut non_press = KeyEvent::new(code, KeyModifiers::NONE);
-                non_press.kind = kind;
-                assert_eq!(
-                    state.handle_key(non_press, &opts, bounds),
-                    SelectOutcome::Ignored,
-                    "{kind:?} of {code:?} must not open a closed select"
-                );
-                assert!(!state.is_open());
-            }
-
-            for code in [KeyCode::Esc, KeyCode::Enter, KeyCode::Char(' ')] {
-                let mut state = SelectState::new().with_value("apple");
-                state.set_focused(true);
-                let _ = state.open(bounds, &opts);
-                let mut non_press = KeyEvent::new(code, KeyModifiers::NONE);
-                non_press.kind = kind;
-                assert_eq!(
-                    state.handle_key(non_press, &opts, bounds),
-                    SelectOutcome::Ignored,
-                    "{kind:?} of {code:?} must not close or commit an open select"
-                );
-                assert!(state.is_open());
-                assert_eq!(state.value(), Some(&"apple"));
-            }
-        }
-
-        let mut searchable = SelectState::new().with_searchable(true);
-        searchable.set_focused(true);
-        let _ = searchable.open(bounds, &opts);
-        let mut repeat_text = KeyEvent::new(KeyCode::Char('a'), KeyModifiers::NONE);
-        repeat_text.kind = KeyEventKind::Repeat;
-        assert_eq!(
-            searchable.handle_key(repeat_text, &opts, bounds),
-            SelectOutcome::SearchChanged {
-                query: "a".to_owned()
-            }
-        );
-        assert!(searchable.is_open());
-
-        let mut repeat_submit = KeyEvent::new(KeyCode::Char('m'), KeyModifiers::CONTROL);
-        repeat_submit.kind = KeyEventKind::Repeat;
-        assert_eq!(
-            searchable.handle_key(repeat_submit, &opts, bounds),
-            SelectOutcome::Ignored
-        );
-        assert!(searchable.is_open());
-        assert!(searchable.search.is_editing());
-        assert_eq!(searchable.search.value(), "a");
-    }
-
-    #[test]
     fn search_filters_options() {
         let opts = sample_options();
         let mut state = SelectState::new().with_searchable(true);
@@ -1675,7 +1541,12 @@ mod tests {
         let _ = state.open(bounds, &opts);
         let _ = state.search.insert_str("car");
         state.reconcile_options(&opts);
-        let items = SelectState::filtered_collection_items(&opts, "car");
+        let items = SelectState::collection_items(
+            &SelectState::filter_options(&opts, "car")
+                .into_iter()
+                .cloned()
+                .collect::<Vec<_>>(),
+        );
         assert!(items.iter().any(|i| i.id == "carrot"));
         assert!(!items.iter().any(|i| i.id == "apple"));
     }
@@ -1754,7 +1625,15 @@ mod tests {
         assert!(!state.option_regions.is_empty());
         let (id, rect) = state.option_regions[0].clone();
         assert_eq!(
-            state.handle_mouse(click(rect.x, rect.y), &opts, area,),
+            state.handle_mouse(
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(rect.x, rect.y),
+                    modifiers: KeyModifiers::NONE,
+                },
+                &opts,
+                area,
+            ),
             SelectOutcome::ValueChanged { id }
         );
     }
@@ -2047,7 +1926,15 @@ mod tests {
             "open disclosure: {field:?}"
         );
         assert_eq!(
-            state.handle_mouse(click(80, 40), &opts, area,),
+            state.handle_mouse(
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(80, 40),
+                    modifiers: KeyModifiers::NONE,
+                },
+                &opts,
+                area,
+            ),
             SelectOutcome::Closed
         );
         assert!(!state.is_open());

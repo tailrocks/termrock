@@ -29,13 +29,14 @@ use std::collections::BTreeSet;
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers},
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     style::{DesignSystem, Role},
     text::take_display_cols,
     widgets::ColumnModel,
     widgets::DataColumn,
     widgets::DataColumnWidth,
     widgets::LoadState,
+    widgets::SortSpec,
     widgets::VirtualWindow,
     widgets::{EmptyKind, EmptyState, SemanticStatus, StatusIndicator},
 };
@@ -97,6 +98,20 @@ impl ProcessStatus {
             Self::Zombie => "zombie",
             Self::Dead => "dead",
             Self::Unknown => "unknown",
+        }
+    }
+
+    /// Short status letter (htop-class).
+    #[must_use]
+    pub const fn label(self) -> &'static str {
+        match self {
+            Self::Running => "R",
+            Self::Sleeping => "S",
+            Self::Idle => "D",
+            Self::Stopped => "T",
+            Self::Zombie => "Z",
+            Self::Dead => "X",
+            Self::Unknown => "?",
         }
     }
 
@@ -181,6 +196,20 @@ impl ProcessSortKey {
         }
     }
 
+    /// Header label.
+    #[must_use]
+    pub const fn header(self) -> &'static str {
+        match self {
+            Self::Pid => "PID",
+            Self::Cpu => "CPU%",
+            Self::Memory => "MEM",
+            Self::Elapsed => "TIME",
+            Self::Command => "COMMAND",
+            Self::User => "USER",
+            Self::Status => "S",
+        }
+    }
+
     /// Cycle for `s` chord.
     #[must_use]
     pub const fn next(self) -> Self {
@@ -192,6 +221,21 @@ impl ProcessSortKey {
             Self::Command => Self::User,
             Self::User => Self::Status,
             Self::Status => Self::Cpu,
+        }
+    }
+
+    /// Parse column id.
+    #[must_use]
+    pub fn from_id(id: &str) -> Option<Self> {
+        match id {
+            "pid" => Some(Self::Pid),
+            "cpu" => Some(Self::Cpu),
+            "mem" => Some(Self::Memory),
+            "time" => Some(Self::Elapsed),
+            "cmd" => Some(Self::Command),
+            "user" => Some(Self::User),
+            "stat" => Some(Self::Status),
+            _ => None,
         }
     }
 }
@@ -223,6 +267,23 @@ pub enum ProcessSignal {
 }
 
 impl ProcessSignal {
+    /// Stable id.
+    #[must_use]
+    pub fn id(self) -> String {
+        match self {
+            Self::Term => "TERM".into(),
+            Self::Kill => "KILL".into(),
+            Self::Int => "INT".into(),
+            Self::Hup => "HUP".into(),
+            Self::Quit => "QUIT".into(),
+            Self::Stop => "STOP".into(),
+            Self::Cont => "CONT".into(),
+            Self::Usr1 => "USR1".into(),
+            Self::Usr2 => "USR2".into(),
+            Self::Custom(n) => format!("SIG{n}"),
+        }
+    }
+
     /// Safe confirm verb (no “destroy” / casual “kill all”).
     #[must_use]
     pub const fn safe_verb(self) -> &'static str {
@@ -357,6 +418,13 @@ impl<'a> ProcessRow<'a> {
         self.elapsed_ms = ms;
         self
     }
+
+    /// Disabled.
+    #[must_use]
+    pub const fn disabled(mut self) -> Self {
+        self.enabled = false;
+        self
+    }
 }
 
 // ── Formatting ──────────────────────────────────────────────────────────────
@@ -450,7 +518,9 @@ pub fn filter_processes<'a>(
             if q.is_empty() {
                 return true;
             }
-            crate::text::contains_lower_all(&[r.command, r.user, &r.key.pid.to_string()], &q)
+            let pid = r.key.pid.to_string();
+            let hay = format!("{} {} {}", r.command, r.user, pid).to_ascii_lowercase();
+            hay.contains(&q)
         })
         .collect()
 }
@@ -551,6 +621,10 @@ pub enum ProcessTableOutcome {
     ViewModeChanged(ProcessViewMode),
     /// Filter query.
     FilterChanged(String),
+    /// User filter.
+    UserFilterChanged(Option<String>),
+    /// Status filter.
+    StatusFilterChanged(Option<ProcessStatus>),
     /// Signal request (after confirm if needed).
     SignalRequested {
         /// Targets.
@@ -571,6 +645,8 @@ pub enum ProcessTableOutcome {
     },
     /// Cancelled filter.
     Cancelled,
+    /// Viewport scrolled.
+    Scrolled,
 }
 
 // ── State ───────────────────────────────────────────────────────────────────
@@ -645,9 +721,23 @@ impl ProcessTableState {
         }
     }
 
+    /// With initial selection.
+    #[must_use]
+    pub fn with_selected(key: Option<ProcessKey>) -> Self {
+        let mut s = Self::new();
+        s.selected = key;
+        s
+    }
+
     /// Host input gate.
     pub fn set_accepts_input(&mut self, on: bool) {
         self.accepts_input = on;
+    }
+
+    /// Accepts input.
+    #[must_use]
+    pub const fn accepts_input(&self) -> bool {
+        self.accepts_input
     }
 
     /// Selected process key.
@@ -660,6 +750,33 @@ impl ProcessTableState {
     pub fn select(&mut self, key: Option<ProcessKey>) {
         self.selected = key;
     }
+
+    /// Multi-check membership.
+    #[must_use]
+    pub fn checked(&self) -> &[ProcessKey] {
+        &self.checked
+    }
+
+    /// Whether multi-select is enabled.
+    #[must_use]
+    pub const fn multi_enabled(&self) -> bool {
+        self.multi
+    }
+
+    /// Enable multi-select.
+    pub fn enable_multi_select(&mut self) {
+        self.multi = true;
+    }
+
+    /// Active sort as [`SortSpec`].
+    #[must_use]
+    pub fn sort_spec(&self) -> SortSpec<&'static str> {
+        SortSpec {
+            column: self.sort_key.id(),
+            ascending: self.sort_asc,
+        }
+    }
+
     /// Reconcile selection after host refresh (drops dead keys; keeps stable matches).
     pub fn reconcile(&mut self, live: &[ProcessRow<'_>]) {
         let keys: Vec<ProcessKey> = live.iter().map(|r| r.key).collect();
@@ -999,6 +1116,64 @@ impl ProcessTableState {
             _ => ProcessTableOutcome::Ignored,
         }
     }
+
+    /// Alias for [`Self::handle_key`] (nav-focused name).
+    pub fn handle_key_nav(
+        &mut self,
+        processes: &[ProcessRow<'_>],
+        key: KeyEvent,
+    ) -> ProcessTableOutcome {
+        self.handle_key(processes, key)
+    }
+
+    /// Mouse: click row to select; wheel scroll.
+    pub fn handle_mouse(
+        &mut self,
+        processes: &[ProcessRow<'_>],
+        event: MouseEvent,
+    ) -> ProcessTableOutcome {
+        if !self.accepts_input {
+            return ProcessTableOutcome::Ignored;
+        }
+        match event.kind {
+            MouseEventKind::ScrollDown => {
+                let before = self.window.offset;
+                let _ = self.window.scroll_by(3);
+                if self.window.offset != before {
+                    ProcessTableOutcome::Scrolled
+                } else {
+                    ProcessTableOutcome::Ignored
+                }
+            }
+            MouseEventKind::ScrollUp => {
+                let before = self.window.offset;
+                let _ = self.window.scroll_by(-3);
+                if self.window.offset != before {
+                    ProcessTableOutcome::Scrolled
+                } else {
+                    ProcessTableOutcome::Ignored
+                }
+            }
+            MouseEventKind::Down(MouseButton::Left) => {
+                for (key, rect) in &self.row_regions {
+                    if rect.contains(event.position) {
+                        let k = *key;
+                        self.selected = Some(k);
+                        if let Some(idx) = self
+                            .visible_processes(processes)
+                            .iter()
+                            .position(|p| p.key == k)
+                        {
+                            self.reveal_index(idx);
+                        }
+                        return ProcessTableOutcome::SelectionChanged(k);
+                    }
+                }
+                ProcessTableOutcome::Ignored
+            }
+            _ => ProcessTableOutcome::Ignored,
+        }
+    }
 }
 
 // ── Widget ──────────────────────────────────────────────────────────────────
@@ -1031,10 +1206,17 @@ impl<'a> ProcessTable<'a> {
         self
     }
 
+    /// Focus.
+    #[must_use]
+    pub const fn focused(mut self, on: bool) -> Self {
+        self.focused = on;
+        self
+    }
+
     /// ASCII.
     #[must_use]
     /// Paint.
-    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut ProcessTableState) {
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut ProcessTableState) {
         if area.is_empty() {
             return;
         }
@@ -1108,11 +1290,7 @@ impl<'a> ProcessTable<'a> {
         if visible.is_empty() {
             EmptyState::new("No processes", self.system)
                 .kind(EmptyKind::NoData)
-                .paint(
-                    Rect::new(area.x, py, area.width, 1),
-                    buffer,
-                    &mut crate::widgets::EmptyStateState::new(),
-                );
+                .paint(Rect::new(area.x, py, area.width, 1), buffer);
         } else {
             for p in visible.iter().skip(start).take(end.saturating_sub(start)) {
                 if py >= bottom {
@@ -1169,7 +1347,6 @@ impl<'a> ProcessTable<'a> {
                             1,
                         ),
                         buffer,
-                        None,
                     );
                 }
                 state.row_regions.push((
@@ -1194,7 +1371,7 @@ impl<'a> ProcessTable<'a> {
             );
             StatusIndicator::new(SemanticStatus::Warning, self.system)
                 .label(&msg)
-                .paint(Rect::new(area.x, cy, area.width, 1), buffer, None);
+                .paint(Rect::new(area.x, cy, area.width, 1), buffer);
         }
     }
 }
@@ -1205,8 +1382,12 @@ impl<'a> ProcessTable<'a> {
 pub mod bench {
     /// Processes in a large host snapshot.
     pub const PROCESS_COUNT: usize = 5_000;
+    /// Refresh cadence ms.
+    pub const REFRESH_MS: u32 = 1000;
     /// Viewport rows.
     pub const VIEWPORT: u16 = 40;
+    /// Frames for streaming paint smoke.
+    pub const STREAM_FRAMES: u32 = 120;
 }
 
 #[cfg(test)]
@@ -1360,7 +1541,7 @@ mod tests {
         let mut buf = Buffer::empty(area);
         let _ = ProcessTable::new(&rows, &system)
             .title("Procs")
-            .paint(area, &mut buf, &mut state);
+            .render(area, &mut buf, &mut state);
         let text: String = buf
             .content()
             .iter()
@@ -1372,7 +1553,7 @@ mod tests {
         );
 
         state.view_mode = ProcessViewMode::Tree;
-        let _ = ProcessTable::new(&rows, &system).paint(area, &mut buf, &mut state);
+        let _ = ProcessTable::new(&rows, &system).render(area, &mut buf, &mut state);
     }
 
     #[test]
@@ -1444,7 +1625,7 @@ mod tests {
         let area = Rect::new(0, 0, 100, 30);
         let mut buf = Buffer::empty(area);
         for _ in 0..8 {
-            let _ = ProcessTable::new(&rows, &system).paint(area, &mut buf, &mut state);
+            let _ = ProcessTable::new(&rows, &system).render(area, &mut buf, &mut state);
             let _ = state.handle_key(&rows, KeyEvent::new(KeyCode::Down, KeyModifiers::NONE));
         }
     }
@@ -1487,7 +1668,7 @@ mod tests {
         let mut state = ProcessTableState::new();
         let area = Rect::new(0, 0, 72, 12);
         let mut buf = Buffer::empty(area);
-        let _ = ProcessTable::new(&rows, &system).paint(area, &mut buf, &mut state);
+        let _ = ProcessTable::new(&rows, &system).render(area, &mut buf, &mut state);
         let row_text = |y: u16| -> String {
             (0..area.width)
                 .map(|x| buf[(x, y)].symbol().to_string())

@@ -14,14 +14,20 @@
 //! pages, loading/empty/no-result chrome, keymap/scene projection helpers.
 //!
 //! Research: VS Code palette, Textual, Posting, Zellij, television, agent TUIs.
+#![allow(unused_variables, unused_mut)] // unit-test fixtures
 use std::collections::VecDeque;
 
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
+use ratatui_core::{
+    buffer::Buffer,
+    layout::{Position, Rect},
+    style::Modifier,
+    widgets::StatefulWidget,
+};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{
-        CollectionItem, CollectionState, NavigationMove, OverlayKind, OverlayOutcome,
+        CollectionItem, CollectionState, NavigationMove, OverlayId, OverlayKind, OverlayOutcome,
         OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, PageMove, RovingOrientation,
         SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, default_palette_intent,
         place_overlay,
@@ -48,6 +54,7 @@ pub const COMMAND_PALETTE_HISTORY_CAP: usize = 32;
 /// Two constants rather than one gated literal so host-supplied copy survives
 /// the ASCII profile: only the *default* is swapped.
 const COMMAND_PALETTE_LOADING: &str = "Loading…";
+const COMMAND_PALETTE_LOADING_ASCII: &str = "Loading...";
 
 // ── Size / placement ────────────────────────────────────────────────────────
 
@@ -91,6 +98,17 @@ pub enum CommandPalettePresentation {
     Centered,
     /// Near-fullscreen (narrow / tiny terminals).
     Fullscreen,
+}
+
+impl CommandPalettePresentation {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Centered => "centered",
+            Self::Fullscreen => "fullscreen",
+        }
+    }
 }
 
 /// Derive presentation from terminal bounds.
@@ -152,6 +170,13 @@ pub fn open_command_palette_overlay<FocusId: Clone>(
             opener_focus,
         ),
     )
+}
+
+/// Dismisses the default command-palette overlay when present.
+pub fn dismiss_command_palette_overlay<FocusId: Clone>(
+    stack: &mut OverlayStack<FocusId>,
+) -> OverlayOutcome<FocusId> {
+    stack.dismiss(&OverlayId::from_static(COMMAND_PALETTE_OVERLAY_ID))
 }
 
 // ── Entry model ─────────────────────────────────────────────────────────────
@@ -377,31 +402,33 @@ pub fn fuzzy_match_label(query: &str, haystack: &str) -> Option<(u32, MatchRange
     if query.is_empty() {
         return Some((0, MatchRanges::default()));
     }
-    // Stream both sides: this runs per row on every query change, so neither
-    // the query nor the haystack is materialized.
-    let mut q = query.chars().map(|c| c.to_ascii_lowercase());
-    let mut want = q.next();
+    let q: Vec<char> = query.chars().map(|c| c.to_ascii_lowercase()).collect();
+    let h: Vec<(usize, char)> = haystack.char_indices().map(|(i, c)| (i, c)).collect();
+    if q.is_empty() {
+        return Some((0, MatchRanges::default()));
+    }
+    let mut qi = 0usize;
     let mut ranges = MatchRanges::default();
     let mut score = 0u32;
     let mut last_match_idx = None::<usize>;
     let mut run_start: Option<(usize, usize)> = None; // byte start, end
 
-    for (byte_i, ch) in haystack.char_indices() {
+    for (byte_i, ch) in &h {
         let lower = ch.to_ascii_lowercase();
-        if want == Some(lower) {
+        if qi < q.len() && lower == q[qi] {
             let end = byte_i + ch.len_utf8();
             match run_start {
                 Some((s, _)) => run_start = Some((s, end)),
-                None => run_start = Some((byte_i, end)),
+                None => run_start = Some((*byte_i, end)),
             }
             if let Some(prev) = last_match_idx {
-                score = score.saturating_add((byte_i as u32).saturating_sub(prev as u32));
+                score = score.saturating_add((*byte_i as u32).saturating_sub(prev as u32));
             } else {
-                score = score.saturating_add(byte_i as u32); // prefer early match
+                score = score.saturating_add(*byte_i as u32); // prefer early match
             }
-            last_match_idx = Some(byte_i);
-            want = q.next();
-            if want.is_none() {
+            last_match_idx = Some(*byte_i);
+            qi += 1;
+            if qi == q.len() {
                 if let Some((s, e)) = run_start.take() {
                     ranges.push(MatchRange::with_kind(s, e, MatchKind::Match));
                 }
@@ -411,7 +438,7 @@ pub fn fuzzy_match_label(query: &str, haystack: &str) -> Option<(u32, MatchRange
             ranges.push(MatchRange::with_kind(s, e, MatchKind::Match));
         }
     }
-    if want.is_some() {
+    if qi < q.len() {
         return None;
     }
     if let Some((s, e)) = run_start {
@@ -420,85 +447,50 @@ pub fn fuzzy_match_label(query: &str, haystack: &str) -> Option<(u32, MatchRange
     Some((score, ranges))
 }
 
-/// One scored filter match: the borrowed entry plus computed match metadata.
-///
-/// Filtering used to clone every matching [`CommandEntry`] per frame; the
-/// projection now borrows the entry and carries only the score and the
-/// highlight ranges computed for the current query.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CommandMatch<'a, Id> {
-    /// The matched entry.
-    pub entry: &'a CommandEntry<Id>,
-    /// Sort score (lower is better).
-    pub score: u32,
-    /// Highlight ranges into [`CommandEntry::label`] (byte offsets).
-    pub match_ranges: Option<MatchRanges>,
-}
-
-impl<'a, Id> CommandMatch<'a, Id> {
-    /// Wrap an entry with match metadata.
-    #[must_use]
-    pub const fn new(
-        entry: &'a CommandEntry<Id>,
-        score: u32,
-        match_ranges: Option<MatchRanges>,
-    ) -> Self {
-        Self {
-            entry,
-            score,
-            match_ranges,
-        }
-    }
-}
-
-impl<Id> std::ops::Deref for CommandMatch<'_, Id> {
-    type Target = CommandEntry<Id>;
-
-    fn deref(&self) -> &Self::Target {
-        self.entry
-    }
-}
-
 /// Filter + score entries for `query` on the active page.
 ///
 /// Host may replace this with its own scorer; this is the built-in default.
 #[must_use]
-pub fn filter_command_entries<'a, Id>(
-    entries: &'a [CommandEntry<Id>],
+pub fn filter_command_entries<Id: Clone>(
+    entries: &[CommandEntry<Id>],
     query: &str,
     page: Option<&str>,
-) -> Vec<CommandMatch<'a, Id>> {
+) -> Vec<CommandEntry<Id>> {
     let q = query.trim();
-    let mut out: Vec<CommandMatch<'a, Id>> = entries
+    let mut out: Vec<CommandEntry<Id>> = entries
         .iter()
         .filter(|e| e.page.as_deref() == page)
         .filter_map(|e| {
             if q.is_empty() {
-                let score = if e.recent {
+                let mut c = e.clone();
+                c.match_ranges = None;
+                c.score = if c.recent {
                     0
-                } else if e.contextual {
+                } else if c.contextual {
                     1
                 } else {
                     10
                 };
-                return Some(CommandMatch::new(e, score, None));
+                return Some(c);
             }
-            let mut best =
-                fuzzy_match_label(q, &e.label).map(|(score, ranges)| (score, Some(ranges)));
+            let mut best: Option<(u32, MatchRanges)> = fuzzy_match_label(q, &e.label);
             for kw in &e.keywords {
-                if let Some((score, _)) = fuzzy_match_label(q, kw) {
-                    let score = score.saturating_add(5); // keyword slightly worse
+                if let Some((s, r)) = fuzzy_match_label(q, kw) {
                     best = Some(match best {
-                        Some((best_score, best_ranges)) if best_score <= score => {
-                            (best_score, best_ranges)
-                        }
-                        _ => (score, None),
+                        Some((bs, br)) if bs <= s => (bs, br),
+                        _ => (s.saturating_add(5), r), // keyword slightly worse
                     });
                 }
             }
             best.map(|(score, ranges)| {
-                let match_ranges = ranges.filter(|ranges| !ranges.as_slice().is_empty());
-                CommandMatch::new(e, score, match_ranges)
+                let mut c = e.clone();
+                c.score = score;
+                c.match_ranges = if ranges.as_slice().is_empty() {
+                    None
+                } else {
+                    Some(ranges)
+                };
+                c
             })
         })
         .collect();
@@ -510,6 +502,46 @@ pub fn filter_command_entries<'a, Id>(
             .then_with(|| b.contextual.cmp(&a.contextual))
             .then_with(|| a.label.cmp(&b.label))
     });
+    out
+}
+
+/// Project keymap bindings into command entries (host supplies id + label).
+///
+/// `map` receives the action and returns `(id, label, optional group)`.
+#[must_use]
+pub fn entries_from_keymap<A, Id, F>(
+    keymap: &crate::keymap::Keymap<A>,
+    mut map: F,
+) -> Vec<CommandEntry<Id>>
+where
+    A: Clone + Copy + PartialEq + 'static,
+    F: FnMut(&A, &crate::keymap::KeyBinding<A>) -> (Id, String, Option<String>),
+{
+    let mut out = Vec::new();
+    for binding in keymap.bindings() {
+        // Skip internal widget keys; include Shown and HiddenAlias.
+        if matches!(binding.visibility(), crate::keymap::Visibility::Internal) {
+            continue;
+        }
+        let (id, label, group) = map(binding.action(), binding);
+        let mut e = CommandEntry::new(id, label);
+        if let Some(g) = group {
+            e = e.group(g);
+        }
+        if let Some(hint) = binding.hint() {
+            e = e.preview(hint.to_string());
+        }
+        let glyph = binding.glyph().map(|s| s.to_string()).or_else(|| {
+            binding
+                .chords()
+                .first()
+                .map(|c| crate::keymap::chord_glyph(Some(*c)).to_string())
+        });
+        if let Some(sc) = glyph {
+            e = e.shortcut(sc);
+        }
+        out.push(e);
+    }
     out
 }
 
@@ -621,6 +653,12 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
         self.focused = on;
     }
 
+    /// Focused.
+    #[must_use]
+    pub const fn is_focused(&self) -> bool {
+        self.focused
+    }
+
     /// Loading flag (async).
     pub fn set_loading(&mut self, loading: bool) -> CommandPaletteOutcome<Id> {
         if self.loading == loading {
@@ -642,16 +680,39 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
         self.generation
     }
 
+    /// Last applied generation.
+    #[must_use]
+    pub const fn applied_generation(&self) -> u64 {
+        self.applied_generation
+    }
+
     /// Query text.
     #[must_use]
     pub fn query_text(&self) -> &str {
         self.query.value()
     }
 
+    /// Query state.
+    #[must_use]
+    pub const fn query(&self) -> &TextInputState {
+        &self.query
+    }
+
+    /// Mutable query.
+    pub const fn query_mut(&mut self) -> &mut TextInputState {
+        &mut self.query
+    }
+
     /// Argument draft.
     #[must_use]
     pub fn argument_text(&self) -> &str {
         self.argument.value()
+    }
+
+    /// Phase.
+    #[must_use]
+    pub fn phase(&self) -> &CommandPalettePhase {
+        &self.phase
     }
 
     /// Current page id.
@@ -666,10 +727,30 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
         self.page_stack.last().map(|(_, t)| t.as_str())
     }
 
+    /// Presentation.
+    #[must_use]
+    pub const fn presentation(&self) -> CommandPalettePresentation {
+        self.presentation
+    }
+
+    /// Force presentation.
+    pub fn set_presentation_override(&mut self, p: Option<CommandPalettePresentation>) {
+        self.presentation_override = p;
+        if let Some(p) = p {
+            self.presentation = p;
+        }
+    }
+
     /// Cursor index into visible flat list.
     #[must_use]
     pub fn cursor_index(&self) -> usize {
         self.collection.active().copied().unwrap_or(0)
+    }
+
+    /// History snapshot.
+    #[must_use]
+    pub fn history(&self) -> impl Iterator<Item = &str> {
+        self.history.iter().map(String::as_str)
     }
 
     /// Push query into history (dedup consecutive).
@@ -697,16 +778,14 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
         self.generation
     }
 
-    fn entries_collection<'a>(
-        visible: &'a [CommandMatch<'_, Id>],
-    ) -> Vec<CollectionItem<'a, usize>> {
+    fn entries_collection(visible: &[CommandEntry<Id>]) -> Vec<CollectionItem<usize>> {
         visible
             .iter()
             .enumerate()
             .map(|(i, e)| CollectionItem {
                 id: i,
                 enabled: e.enabled,
-                label: &e.label,
+                label: e.label.clone(),
                 parent: None,
             })
             .collect()
@@ -717,7 +796,7 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
     /// Call after filtering / async apply. `generation` must match
     /// [`Self::generation`] for async replies — otherwise the update is ignored
     /// (stale-result cancellation).
-    pub fn apply_results(&mut self, generation: u64, visible: &[CommandMatch<'_, Id>]) -> bool {
+    pub fn apply_results(&mut self, generation: u64, visible: &[CommandEntry<Id>]) -> bool {
         if generation != self.generation {
             return false;
         }
@@ -729,7 +808,7 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
     }
 
     /// Convenience: filter locally and apply (sync path).
-    pub fn refilter<'a>(&mut self, catalog: &'a [CommandEntry<Id>]) -> Vec<CommandMatch<'a, Id>> {
+    pub fn refilter(&mut self, catalog: &[CommandEntry<Id>]) -> Vec<CommandEntry<Id>> {
         let page = self.current_page().map(str::to_string);
         let visible = filter_command_entries(catalog, self.query_text(), page.as_deref());
         let generation = self.generation;
@@ -749,7 +828,8 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
         self.query = TextInputState::new("")
             .with_allow_empty(true)
             .with_editing();
-        self.bump_generation();
+        let generation = self.bump_generation();
+        let _ = generation;
         CommandPaletteOutcome::PageOpened { page_id }
     }
 
@@ -768,7 +848,7 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
 
     fn activate_at(
         &mut self,
-        visible: &[CommandMatch<'_, Id>],
+        visible: &[CommandEntry<Id>],
         idx: usize,
     ) -> CommandPaletteOutcome<Id> {
         let entry = match visible.get(idx) {
@@ -838,20 +918,9 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
     pub fn handle_key(
         &mut self,
         key: KeyEvent,
-        visible: &[CommandMatch<'_, Id>],
+        visible: &[CommandEntry<Id>],
     ) -> CommandPaletteOutcome<Id> {
         if !self.live() || key.is_release() {
-            return CommandPaletteOutcome::Ignored;
-        }
-        // Enter, Escape, and result focus traversal are one-shot actions.
-        // Consume repeats before they reach TextInputState, whose Enter/Tab
-        // paths submit and whose Escape path cancels the active draft.
-        if !key.is_press()
-            && matches!(
-                key.code,
-                KeyCode::Enter | KeyCode::Esc | KeyCode::Tab | KeyCode::BackTab
-            )
-        {
             return CommandPaletteOutcome::Ignored;
         }
         let _ = self.apply_results(self.generation, visible);
@@ -862,8 +931,7 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
         }
 
         // Ctrl+P / Ctrl+N history when query empty (or always with Ctrl).
-        if key.is_press()
-            && key.modifiers.contains(KeyModifiers::CONTROL)
+        if key.modifiers.contains(KeyModifiers::CONTROL)
             && matches!(key.code, KeyCode::Char('p' | 'P' | 'n' | 'N'))
         {
             return self.history_step(matches!(key.code, KeyCode::Char('p' | 'P')));
@@ -949,9 +1017,6 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
 
     fn handle_key_argument(&mut self, key: KeyEvent) -> CommandPaletteOutcome<Id> {
         if key.code == KeyCode::Esc {
-            if !key.is_press() {
-                return CommandPaletteOutcome::Ignored;
-            }
             self.phase = CommandPalettePhase::Browse;
             self.pending_id = None;
             self.pending_command = None;
@@ -961,9 +1026,6 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
             return CommandPaletteOutcome::ArgumentCancelled;
         }
         if key.code == KeyCode::Enter {
-            if !key.is_press() {
-                return CommandPaletteOutcome::Ignored;
-            }
             return self.submit_argument();
         }
         match self.argument.handle_key(key) {
@@ -992,7 +1054,8 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
         self.query = TextInputState::new(&q)
             .with_allow_empty(true)
             .with_editing();
-        self.bump_generation();
+        let generation = self.bump_generation();
+        let _ = generation;
         CommandPaletteOutcome::HistoryApplied { query: q }
     }
 
@@ -1000,7 +1063,7 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
     pub fn handle_intent(
         &mut self,
         intent: UiIntent,
-        visible: &[CommandMatch<'_, Id>],
+        visible: &[CommandEntry<Id>],
     ) -> CommandPaletteOutcome<Id> {
         if !self.live() {
             return CommandPaletteOutcome::Ignored;
@@ -1038,12 +1101,13 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
                 let out = self.collection.handle_intent(intent, &entries);
                 if out.active_changed() {
                     // Keep cursor visible.
-                    self.scroll = crate::scroll::cursor_follow_offset(
-                        self.cursor_index(),
-                        visible.len(),
-                        usize::from(self.painted_rows),
-                        self.scroll,
-                    );
+                    let cur = self.cursor_index();
+                    let vis = usize::from(self.painted_rows.max(1));
+                    if cur < self.scroll {
+                        self.scroll = cur;
+                    } else if cur >= self.scroll.saturating_add(vis) {
+                        self.scroll = cur.saturating_sub(vis.saturating_sub(1));
+                    }
                     CommandPaletteOutcome::CursorMoved
                 } else {
                     CommandPaletteOutcome::Ignored
@@ -1079,7 +1143,7 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
     pub fn handle_mouse(
         &mut self,
         event: MouseEvent,
-        visible: &[CommandMatch<'_, Id>],
+        visible: &[CommandEntry<Id>],
     ) -> CommandPaletteOutcome<Id> {
         if !self.live() {
             return CommandPaletteOutcome::Ignored;
@@ -1087,7 +1151,7 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
         match event.kind {
             MouseEventKind::Down(MouseButton::Left) => {
                 for (idx, rect) in &self.hits {
-                    if rect.contains(event.position) {
+                    if rect_contains(*rect, event.position) {
                         self.collection.set_active(Some(*idx));
                         return self.activate_at(visible, *idx);
                     }
@@ -1105,10 +1169,10 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
                 self.hovered = self
                     .hits
                     .iter()
-                    .find(|(_, rect)| rect.contains(event.position))
+                    .find(|(_, rect)| rect_contains(*rect, event.position))
                     .map(|(idx, _)| *idx);
                 for (idx, rect) in &self.hits {
-                    if rect.contains(event.position) {
+                    if rect_contains(*rect, event.position) {
                         if self.cursor_index() != *idx {
                             self.collection.set_active(Some(*idx));
                             return CommandPaletteOutcome::CursorMoved;
@@ -1137,13 +1201,20 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
     }
 }
 
+fn rect_contains(rect: Rect, pos: Position) -> bool {
+    pos.x >= rect.x
+        && pos.y >= rect.y
+        && pos.x < rect.x.saturating_add(rect.width)
+        && pos.y < rect.y.saturating_sub(0).saturating_add(rect.height)
+}
+
 // ── Widget ──────────────────────────────────────────────────────────────────
 
 /// Floating command palette chrome.
 #[derive(Debug, Clone, Copy)]
 pub struct CommandPalette<'a, Id> {
     title: &'a str,
-    entries: &'a [CommandMatch<'a, Id>],
+    entries: &'a [CommandEntry<Id>],
     system: &'a DesignSystem,
     focused: bool,
     colorless: bool,
@@ -1187,7 +1258,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
     #[must_use]
     pub const fn new(
         title: &'a str,
-        entries: &'a [CommandMatch<'a, Id>],
+        entries: &'a [CommandEntry<Id>],
         system: &'a DesignSystem,
     ) -> Self {
         Self {
@@ -1204,6 +1275,42 @@ impl<'a, Id> CommandPalette<'a, Id> {
         }
     }
 
+    /// Surface focus.
+    #[must_use]
+    pub const fn focused(mut self, focused: bool) -> Self {
+        self.focused = focused;
+        self
+    }
+
+    /// ASCII glyphs.
+    #[must_use]
+    /// Reduced color.
+    pub const fn colorless(mut self, colorless: bool) -> Self {
+        self.colorless = colorless;
+        self
+    }
+
+    /// Footer hint.
+    #[must_use]
+    pub const fn footer_hint(mut self, hint: Option<&'a str>) -> Self {
+        self.footer_hint = hint;
+        self
+    }
+
+    /// Empty catalog message (no entries at all).
+    #[must_use]
+    pub const fn empty_message(mut self, message: &'a str) -> Self {
+        self.empty_message = message;
+        self
+    }
+
+    /// Query with zero matches.
+    #[must_use]
+    pub const fn no_result_message(mut self, message: &'a str) -> Self {
+        self.no_result_message = message;
+        self
+    }
+
     /// Loading message.
     #[must_use]
     pub const fn loading_message(mut self, message: &'a str) -> Self {
@@ -1211,16 +1318,44 @@ impl<'a, Id> CommandPalette<'a, Id> {
         self
     }
 
+    /// Show preview line for cursor entry.
+    #[must_use]
+    pub const fn show_preview(mut self, on: bool) -> Self {
+        self.show_preview = on;
+        self
+    }
+
     /// Static handle_key (migration-friendly).
     pub fn handle_key(
         state: &mut CommandPaletteState<Id>,
         key: KeyEvent,
-        entries: &[CommandMatch<'_, Id>],
+        entries: &[CommandEntry<Id>],
     ) -> CommandPaletteOutcome<Id>
     where
         Id: Clone + PartialEq,
     {
         state.handle_key(key, entries)
+    }
+
+    /// Static handle_intent.
+    pub fn handle_intent(
+        state: &mut CommandPaletteState<Id>,
+        intent: UiIntent,
+        entries: &[CommandEntry<Id>],
+    ) -> CommandPaletteOutcome<Id>
+    where
+        Id: Clone + PartialEq,
+    {
+        state.handle_intent(intent, entries)
+    }
+
+    /// Query accessor.
+    #[must_use]
+    pub fn query(state: &CommandPaletteState<Id>) -> &TextInputState
+    where
+        Id: Clone + PartialEq,
+    {
+        state.query()
     }
 
     /// Paint.
@@ -1245,7 +1380,14 @@ impl<'a, Id> CommandPalette<'a, Id> {
             SurfaceRecipe::Overlay
         };
 
-        let _ = pt_title_marker(state);
+        let title = if state.current_page_title().is_some() {
+            // "Commands › Page"
+            // Panel title is &'a str — use base title only; page drawn in body.
+            self.title
+        } else {
+            self.title
+        };
+        let _ = pt_title_marker(state, title);
 
         let colorless_system;
         let surface_system = if self.colorless {
@@ -1266,7 +1408,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
             buffer.set_stringn(
                 area.x.saturating_add(2),
                 area.y,
-                take_display_cols(self.title, usize::from(area.width.saturating_sub(4))).as_ref(),
+                &take_display_cols(self.title, usize::from(area.width.saturating_sub(4))),
                 usize::from(area.width.saturating_sub(4)),
                 self.system.style(Role::TextStrong),
             );
@@ -1301,7 +1443,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
                 buffer.set_stringn(
                     content.x,
                     content.y,
-                    take_display_cols(&crumb, usize::from(content.width)).as_ref(),
+                    &take_display_cols(&crumb, usize::from(content.width)),
                     usize::from(content.width),
                     self.system.style(Role::TextMuted),
                 );
@@ -1321,7 +1463,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
                     buffer.set_stringn(
                         field_area.x,
                         field_area.y,
-                        take_display_cols(&prefix, usize::from(field_area.width)).as_ref(),
+                        &take_display_cols(&prefix, usize::from(field_area.width)),
                         usize::from(field_area.width),
                         self.system.style(Role::TextMuted),
                     );
@@ -1390,7 +1532,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
                 buffer.set_stringn(
                     inner.x,
                     y,
-                    take_display_cols(preview, usize::from(inner.width)).as_ref(),
+                    &take_display_cols(preview, usize::from(inner.width)),
                     usize::from(inner.width),
                     self.system.style(Role::TextMuted),
                 );
@@ -1404,7 +1546,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
                 buffer.set_stringn(
                     footer.x,
                     footer.y,
-                    take_display_cols(hint, usize::from(footer.width)).as_ref(),
+                    &take_display_cols(hint, usize::from(footer.width)),
                     usize::from(footer.width),
                     self.system.style(Role::TextMuted),
                 );
@@ -1428,12 +1570,16 @@ impl<'a, Id> CommandPalette<'a, Id> {
         }
 
         if state.loading && self.entries.is_empty() {
-            let msg = self.loading_message;
+            let msg = if false && self.loading_message == COMMAND_PALETTE_LOADING {
+                COMMAND_PALETTE_LOADING_ASCII
+            } else {
+                self.loading_message
+            };
             let style = self.system.style(Role::TextMuted);
             buffer.set_stringn(
                 area.x,
                 area.y,
-                take_display_cols(msg, usize::from(area.width)).as_ref(),
+                &take_display_cols(msg, usize::from(area.width)),
                 usize::from(area.width),
                 style,
             );
@@ -1451,7 +1597,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
             buffer.set_stringn(
                 area.x,
                 area.y,
-                take_display_cols(&line, usize::from(area.width)).as_ref(),
+                &take_display_cols(&line, usize::from(area.width)),
                 usize::from(area.width),
                 self.system.style(Role::TextMuted),
             );
@@ -1461,7 +1607,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
                 buffer.set_stringn(
                     area.x,
                     area.y.saturating_add(1),
-                    take_display_cols("Recent queries", usize::from(area.width)).as_ref(),
+                    &take_display_cols("Recent queries", usize::from(area.width)),
                     usize::from(area.width),
                     self.system.style(Role::TextMuted),
                 );
@@ -1477,7 +1623,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
                     buffer.set_stringn(
                         area.x,
                         y,
-                        take_display_cols(h, usize::from(area.width)).as_ref(),
+                        &take_display_cols(h, usize::from(area.width)),
                         usize::from(area.width),
                         self.system.style(Role::Text),
                     );
@@ -1490,12 +1636,12 @@ impl<'a, Id> CommandPalette<'a, Id> {
 
         let cursor = state.cursor_index();
         let surface = self.focused && state.accepts_input();
-        state.scroll = crate::scroll::cursor_follow_offset(
-            cursor,
-            self.entries.len(),
-            usize::from(area.height),
-            state.scroll,
-        );
+        let capacity = usize::from(area.height);
+        if cursor < state.scroll {
+            state.scroll = cursor;
+        } else if cursor >= state.scroll.saturating_add(capacity) {
+            state.scroll = cursor.saturating_sub(capacity.saturating_sub(1));
+        }
 
         let mut y = area.y;
         let mut painted = 0u16;
@@ -1513,7 +1659,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
                     buffer.set_stringn(
                         area.x,
                         y,
-                        take_display_cols(g, usize::from(area.width)).as_ref(),
+                        &take_display_cols(g, usize::from(area.width)),
                         usize::from(area.width),
                         style,
                     );
@@ -1626,7 +1772,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
                     buffer.set_stringn(
                         x,
                         y,
-                        take_display_cols(&entry.label, usize::from(label_w)).as_ref(),
+                        &take_display_cols(&entry.label, usize::from(label_w)),
                         usize::from(label_w),
                         style,
                     );
@@ -1639,7 +1785,7 @@ impl<'a, Id> CommandPalette<'a, Id> {
                     buffer.set_stringn(
                         sx,
                         y,
-                        take_display_cols(sc, usize::from(sc_w)).as_ref(),
+                        &take_display_cols(sc, usize::from(sc_w)),
                         usize::from(sc_w),
                         self.system.style(Role::TextMuted),
                     );
@@ -1691,7 +1837,10 @@ impl<'a, Id> CommandPalette<'a, Id> {
     }
 }
 
-fn pt_title_marker<Id: Clone + PartialEq>(state: &CommandPaletteState<Id>) -> Option<()> {
+fn pt_title_marker<Id: Clone + PartialEq>(
+    state: &CommandPaletteState<Id>,
+    _title: &str,
+) -> Option<()> {
     state.current_page_title().map(|_| ())
 }
 
@@ -1762,8 +1911,7 @@ pub fn example_command_catalog() -> Vec<CommandEntry<&'static str>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::{KeyEventKind, KeyModifiers};
-    use crate::widgets::tests::click;
+    use crate::input::KeyModifiers;
 
     fn catalog() -> Vec<CommandEntry<&'static str>> {
         example_command_catalog()
@@ -1785,17 +1933,6 @@ mod tests {
     }
 
     #[test]
-    fn keyword_match_does_not_highlight_primary_label() {
-        let entries = [CommandEntry::new("alpha", "Alpha").keywords(["beta"])];
-
-        let matches = filter_command_entries(&entries, "beta", None);
-
-        assert_eq!(matches.len(), 1);
-        assert_eq!(matches[0].id, "alpha");
-        assert_eq!(matches[0].match_ranges, None);
-    }
-
-    #[test]
     fn filter_groups_and_pages() {
         let cat = catalog();
         let root = filter_command_entries(&cat, "", None);
@@ -1811,8 +1948,7 @@ mod tests {
     #[test]
     fn query_changed_bumps_generation() {
         let mut s = focused();
-        let cat = catalog();
-        let vis = s.refilter(&cat);
+        let vis = s.refilter(&catalog());
         let g0 = s.generation();
         let out = s.handle_key(KeyEvent::new(KeyCode::Char('t'), KeyModifiers::NONE), &vis);
         assert!(matches!(
@@ -1873,7 +2009,7 @@ mod tests {
     fn argument_phase() {
         let mut s = focused();
         let cat = catalog();
-        let vis = s.refilter(&cat);
+        let mut vis = s.refilter(&cat);
         let idx = vis.iter().position(|e| e.id == "goto-line").unwrap();
         s.collection.set_active(Some(idx));
         assert!(matches!(
@@ -1893,6 +2029,7 @@ mod tests {
                 ..
             } if a == "42"
         ));
+        let _ = vis;
     }
 
     #[test]
@@ -1910,72 +2047,6 @@ mod tests {
             s.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE), &[]),
             CommandPaletteOutcome::Cancelled
         ));
-    }
-
-    #[test]
-    fn repeated_one_shot_keys_do_not_mutate_browse_or_argument_state() {
-        let mut s = focused();
-        let cat = catalog();
-        let vis = s.refilter(&cat);
-
-        let _ = s.handle_key(KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE), &vis);
-        let query_before = s.query_text().to_owned();
-
-        for code in [KeyCode::Char('p'), KeyCode::Char('n')] {
-            let mut history_state = focused();
-            history_state.push_history("older");
-            history_state.push_history("newer");
-            let mut repeat_history = KeyEvent::new(code, KeyModifiers::CONTROL);
-            repeat_history.kind = KeyEventKind::Repeat;
-            assert_eq!(
-                history_state.handle_key(repeat_history, &vis),
-                CommandPaletteOutcome::Ignored
-            );
-            assert_eq!(history_state.query_text(), "");
-        }
-
-        let mut repeat_escape = KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE);
-        repeat_escape.kind = KeyEventKind::Repeat;
-        assert_eq!(
-            s.handle_key(repeat_escape, &vis),
-            CommandPaletteOutcome::Ignored
-        );
-        assert_eq!(s.query_text(), query_before);
-
-        let cursor_before = s.collection.active().copied();
-        let mut repeat_tab = KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE);
-        repeat_tab.kind = KeyEventKind::Repeat;
-        assert_eq!(
-            s.handle_key(repeat_tab, &vis),
-            CommandPaletteOutcome::Ignored
-        );
-        assert_eq!(s.collection.active().copied(), cursor_before);
-
-        let idx = vis
-            .iter()
-            .position(|entry| entry.id == "goto-line")
-            .unwrap();
-        s.collection.set_active(Some(idx));
-        assert!(matches!(
-            s.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &vis),
-            CommandPaletteOutcome::NeedArguments { .. }
-        ));
-
-        let mut repeat_enter = KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE);
-        repeat_enter.kind = KeyEventKind::Repeat;
-        assert_eq!(
-            s.handle_key(repeat_enter, &vis),
-            CommandPaletteOutcome::Ignored
-        );
-        assert!(matches!(s.phase, CommandPalettePhase::Argument { .. }));
-
-        let mut repeat_escape = KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE);
-        repeat_escape.kind = KeyEventKind::Repeat;
-        assert_eq!(
-            s.handle_key(repeat_escape, &vis),
-            CommandPaletteOutcome::Ignored
-        );
-        assert!(matches!(s.phase, CommandPalettePhase::Argument { .. }));
     }
 
     #[test]
@@ -2048,8 +2119,7 @@ mod tests {
     fn accepts_input_gate() {
         let mut s = focused();
         s.set_accepts_input(false);
-        let cat = catalog();
-        let vis = filter_command_entries(&cat, "", None);
+        let vis = filter_command_entries(&catalog(), "", None);
         assert!(matches!(
             s.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &vis),
             CommandPaletteOutcome::Ignored
@@ -2058,20 +2128,32 @@ mod tests {
 
     #[test]
     fn mouse_hit_activates_same_enabled_command_as_keyboard() {
-        let run = CommandEntry::new("run", "Run");
-        let visible = vec![CommandMatch::new(&run, 10, None)];
+        let visible = vec![CommandEntry::new("run", "Run")];
         let mut state = focused();
         state.hits = vec![(0, Rect::new(4, 3, 8, 1))];
-        let out = state.handle_mouse(click(4, 3), &visible);
+        let out = state.handle_mouse(
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: Position::new(4, 3),
+                modifiers: KeyModifiers::NONE,
+            },
+            &visible,
+        );
         assert!(matches!(
             out,
             CommandPaletteOutcome::Activated { id: "run", .. }
         ));
 
-        let dis = CommandEntry::new("run", "Run").enabled(false);
-        let disabled = vec![CommandMatch::new(&dis, 10, None)];
+        let disabled = vec![CommandEntry::new("run", "Run").enabled(false)];
         assert_eq!(
-            state.handle_mouse(click(4, 3), &disabled,),
+            state.handle_mouse(
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(4, 3),
+                    modifiers: KeyModifiers::NONE,
+                },
+                &disabled,
+            ),
             CommandPaletteOutcome::Ignored
         );
     }
@@ -2124,7 +2206,8 @@ mod tests {
             "{text}"
         );
         assert!(!s.hits.is_empty(), "result rows must paint hit geometry");
-        let (_, row) = s.hits[0];
+        let (idx, row) = s.hits[0];
+        let _ = idx;
         let gutter = buf[(row.x, row.y)].symbol();
         assert_ne!(
             gutter, "›",

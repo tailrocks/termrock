@@ -14,7 +14,10 @@ mod render;
 
 pub use render::{
     SCROLLBAR_HORIZONTAL_THUMB, SCROLLBAR_TRACK, ScrollbarGeometry, ScrollbarSpec, ScrollbarStyle,
-    paint_overflow_scrollbar, paint_scrollbar, viewport_height, viewport_width,
+    apply_scroll_delta, apply_scroll_delta_unclamped, apply_term_width_scroll_delta,
+    clamp_scroll_offset, horizontal_scrollbar_area, paint_overflow_scrollbar,
+    render_line_with_fixed_prefix_scroll, render_lines_with_offset_in_area, render_scrollbar,
+    scrollbar_offset_for_track_position, vertical_scrollbar_area, viewport_height, viewport_width,
 };
 
 use ratatui_core::{layout::Rect, text::Line};
@@ -245,6 +248,31 @@ impl ScrollAxes {
             horizontal: false,
         }
     }
+
+    #[must_use]
+    /// Returns whether at least one scroll axis is enabled.
+    pub const fn any(self) -> bool {
+        self.vertical || self.horizontal
+    }
+}
+
+/// Derive available scroll axes for a one-cell-bordered dialog body.
+#[must_use]
+pub const fn dialog_scroll_axes(
+    content_width: usize,
+    content_height: usize,
+    block_area: ratatui_core::layout::Rect,
+) -> ScrollAxes {
+    ScrollAxes {
+        vertical: is_scrollable(content_height, viewport_height(block_area)),
+        horizontal: is_scrollable(content_width, viewport_width(block_area)),
+    }
+}
+
+/// Scroll-key hint spans reflecting per-axis availability.
+#[must_use]
+pub fn scroll_hint_spans(axes: ScrollAxes) -> Vec<crate::widgets::HintSpan<'static>> {
+    crate::keymap::SCROLL_HINT_KEYMAP.hint_spans_for_axes(axes)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -276,6 +304,28 @@ impl DialogScroll {
             scroll_y: 0,
             measurement: Measured::new(),
         }
+    }
+
+    /// Applies canonical two-axis navigation keys within content bounds.
+    pub fn handle_key(
+        &mut self,
+        key: crate::input::KeyEvent,
+        content_height: usize,
+        viewport_height: usize,
+        content_width: usize,
+        viewport_width: usize,
+    ) -> bool {
+        self.handle_key_for_axes(
+            key,
+            content_height,
+            viewport_height,
+            content_width,
+            viewport_width,
+            ScrollAxes {
+                vertical: is_scrollable(content_height, viewport_height),
+                horizontal: is_scrollable(content_width, viewport_width),
+            },
+        )
     }
 
     /// Applies navigation keys only on axes currently allowed to move.
@@ -335,12 +385,8 @@ impl DialogScroll {
             return false;
         };
         match delta.axis {
-            ScrollAxis::Vertical => {
-                apply_delta_unclamped_u16(&mut self.scroll_y, i32::from(delta.amount))
-            }
-            ScrollAxis::Horizontal => {
-                apply_delta_unclamped_u16(&mut self.scroll_x, i32::from(delta.amount))
-            }
+            ScrollAxis::Vertical => apply_delta_unclamped_u16(&mut self.scroll_y, delta.amount),
+            ScrollAxis::Horizontal => apply_delta_unclamped_u16(&mut self.scroll_x, delta.amount),
         }
         true
     }
@@ -359,6 +405,47 @@ impl DialogScroll {
         self.scroll_x = self
             .scroll_x
             .min(max_offset_u16(content_width, viewport_width));
+    }
+
+    /// Render vertical and/or horizontal scrollbars on the block border.
+    pub fn render_scrollbars(
+        &self,
+        frame: &mut ratatui_core::terminal::Frame<'_>,
+        block_area: ratatui_core::layout::Rect,
+        content_height: usize,
+        content_width: usize,
+        system: &crate::style::DesignSystem,
+    ) {
+        if is_scrollable(content_height, viewport_height(block_area)) {
+            render_scrollbar(
+                frame.buffer_mut(),
+                vertical_scrollbar_area(block_area),
+                ScrollbarSpec::new(
+                    ScrollAxis::Vertical,
+                    ScrollbarGeometry::new(
+                        content_height,
+                        viewport_height(block_area),
+                        self.scroll_y,
+                    ),
+                ),
+                system,
+            );
+        }
+        if is_scrollable(content_width, viewport_width(block_area)) {
+            render_scrollbar(
+                frame.buffer_mut(),
+                horizontal_scrollbar_area(block_area),
+                ScrollbarSpec::new(
+                    ScrollAxis::Horizontal,
+                    ScrollbarGeometry::new(
+                        content_width,
+                        viewport_width(block_area),
+                        self.scroll_x,
+                    ),
+                ),
+                system,
+            );
+        }
     }
 }
 
@@ -481,6 +568,60 @@ pub fn mouse_scroll_delta_with_step(
     }
 }
 
+/// Applies a pointer-wheel delta when its axis is visible.
+pub fn apply_mouse_scroll_u16(
+    kind: MouseEventKind,
+    modifiers: KeyModifiers,
+    axes: ScrollAxes,
+    horizontal: ScrollSpan,
+    vertical: ScrollSpan,
+    scroll_x: &mut u16,
+    scroll_y: &mut u16,
+) -> bool {
+    let Some(delta) = mouse_scroll_delta(kind, modifiers, axes) else {
+        return false;
+    };
+    match delta.axis {
+        ScrollAxis::Horizontal => {
+            apply_delta_u16(
+                horizontal.content_len,
+                horizontal.viewport_len,
+                scroll_x,
+                isize::from(delta.amount),
+            );
+        }
+        ScrollAxis::Vertical => {
+            apply_delta_u16(
+                vertical.content_len,
+                vertical.viewport_len,
+                scroll_y,
+                isize::from(delta.amount),
+            );
+        }
+    }
+    true
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Content and viewport lengths used to derive bounded scroll geometry.
+pub struct ScrollSpan {
+    /// Total content length in cells or rows.
+    pub content_len: usize,
+    /// Visible viewport length in cells or rows.
+    pub viewport_len: usize,
+}
+
+impl ScrollSpan {
+    #[must_use]
+    /// Creates a scroll span from content and viewport lengths.
+    pub const fn new(content_len: usize, viewport_len: usize) -> Self {
+        Self {
+            content_len,
+            viewport_len,
+        }
+    }
+}
+
 /// Scroll a selectable list by wheel while keeping selection and viewport
 /// coherent.
 ///
@@ -543,16 +684,11 @@ pub const fn clamp_offset_u16(content_len: usize, viewport_len: usize, offset: &
 }
 
 /// No upper clamp: render paths that know viewport/content clamp later.
-///
-/// Accepts `i32` so surfaces scrolling by page (viewport-height deltas) or by
-/// an unbounded host value share one offset stepper; magnitudes beyond the
-/// `u16` offset space saturate.
-pub fn apply_delta_unclamped_u16(offset: &mut u16, delta: i32) {
-    let mag = u16::try_from(delta.unsigned_abs()).unwrap_or(u16::MAX);
+pub const fn apply_delta_unclamped_u16(offset: &mut u16, delta: i16) {
     *offset = if delta.is_negative() {
-        offset.saturating_sub(mag)
+        offset.saturating_sub(delta.unsigned_abs())
     } else {
-        offset.saturating_add(mag)
+        offset.saturating_add(delta.unsigned_abs())
     };
 }
 

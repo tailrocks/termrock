@@ -17,12 +17,13 @@
 //! Recipes: section, settings, logs, FAQ.
 //!
 //! References: Radix Accordion, mutual collapsibles, settings/help TUIs.
-use ratatui_core::{buffer::Buffer, layout::Rect};
+#![allow(unused_variables, unused_mut)] // unit-test fixtures
+use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{
-    HitRegion, RovingEntry, RovingFocusGroup, RovingOrientation, RovingOutcome, UiIntent,
-    default_button_intent, default_list_intent,
+    EventResult, HitRegion, RovingEntry, RovingFocusGroup, RovingOrientation, RovingOutcome,
+    UiIntent, default_button_intent, default_list_intent,
 };
 use crate::style::DesignSystem;
 use crate::widgets::collapsible::{
@@ -38,6 +39,17 @@ pub enum AccordionMode {
     Single,
     /// Any subset may be open.
     Multiple,
+}
+
+impl AccordionMode {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Single => "single",
+            Self::Multiple => "multiple",
+        }
+    }
 }
 
 /// Visual / product recipes for common surfaces.
@@ -204,6 +216,14 @@ pub enum AccordionOutcome<Id> {
     },
 }
 
+impl<Id> AccordionOutcome<Id> {
+    /// Whether navigation or expansion changed.
+    #[must_use]
+    pub const fn changed(&self) -> bool {
+        !matches!(self, Self::Ignored)
+    }
+}
+
 /// Interaction + uncontrolled open set + roving cursor.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AccordionState<Id> {
@@ -269,6 +289,12 @@ impl<Id: Clone + PartialEq> AccordionState<Id> {
     pub fn is_open(&self, id: &Id) -> bool {
         self.open.iter().any(|x| x == id)
     }
+
+    /// Replace uncontrolled open set.
+    pub fn set_open_ids(&mut self, ids: impl IntoIterator<Item = Id>) {
+        self.open = ids.into_iter().collect();
+    }
+
     /// Seed initially open ids (builder-style).
     #[must_use]
     pub fn initially_open(mut self, ids: impl IntoIterator<Item = Id>) -> Self {
@@ -281,10 +307,10 @@ impl<Id: Clone + PartialEq> AccordionState<Id> {
         self.open.retain(|id| items.iter().any(|i| &i.id == id));
     }
 
-    fn roving_entries<'a>(items: &'a [AccordionItem<'a, Id>]) -> Vec<RovingEntry<'a, Id>> {
+    fn roving_entries(items: &[AccordionItem<'_, Id>]) -> Vec<RovingEntry<Id>> {
         items
             .iter()
-            .map(|i| RovingEntry::new(i.id.clone(), i.trigger).enabled(!i.disabled))
+            .map(|i| RovingEntry::new(i.id.clone(), i.trigger.to_string()).enabled(!i.disabled))
             .collect()
     }
 
@@ -443,6 +469,20 @@ impl<'a, Id> Accordion<'a, Id> {
         self
     }
 
+    /// Open mode.
+    #[must_use]
+    pub const fn mode(mut self, mode: AccordionMode) -> Self {
+        self.mode = mode;
+        self
+    }
+
+    /// Single-open.
+    #[must_use]
+    pub const fn single(mut self) -> Self {
+        self.mode = AccordionMode::Single;
+        self
+    }
+
     /// Multi-open.
     #[must_use]
     pub const fn multiple(mut self) -> Self {
@@ -457,11 +497,44 @@ impl<'a, Id> Accordion<'a, Id> {
         self
     }
 
+    /// Content policy while closed.
+    #[must_use]
+    pub const fn content_policy(mut self, policy: CollapsedContentPolicy) -> Self {
+        self.content_policy = policy;
+        self
+    }
+
+    /// Keep child domain state while closed.
+    #[must_use]
+    pub const fn keep_mounted(mut self) -> Self {
+        self.content_policy = CollapsedContentPolicy::KeepMounted;
+        self
+    }
+
+    /// Trigger paint variant.
+    #[must_use]
+    pub const fn variant(mut self, variant: CollapsibleVariant) -> Self {
+        self.variant = variant;
+        self
+    }
+
     /// Cap open body height (scroll host for overflow).
     #[must_use]
     pub const fn max_content_height(mut self, rows: u16) -> Self {
         self.max_content_height = rows;
         self
+    }
+
+    /// Mode.
+    #[must_use]
+    pub const fn open_mode(&self) -> AccordionMode {
+        self.mode
+    }
+
+    /// Recipe id.
+    #[must_use]
+    pub const fn recipe_kind(&self) -> AccordionRecipe {
+        self.recipe
     }
 }
 
@@ -723,6 +796,18 @@ impl<'a, Id: Clone + PartialEq> Accordion<'a, Id> {
         }
     }
 
+    /// Key with EventResult.
+    pub fn handle_key_result(
+        &self,
+        state: &mut AccordionState<Id>,
+        key: KeyEvent,
+    ) -> EventResult<AccordionOutcome<Id>> {
+        match self.handle_key(state, key) {
+            AccordionOutcome::Ignored => EventResult::ignored(),
+            other => EventResult::emit(other),
+        }
+    }
+
     /// Mouse down on trigger: focus surface cursor + toggle.
     pub fn handle_mouse(
         &self,
@@ -820,12 +905,27 @@ impl<'a, Id: Clone + PartialEq> Accordion<'a, Id> {
     }
 }
 
+impl<Id: Clone + PartialEq> Widget for &Accordion<'_, Id> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        let mut state = AccordionState::new();
+        if let Some(ids) = self.controlled_open {
+            state.set_open_ids(ids.iter().cloned());
+        }
+        let _ = self.paint(area, buffer, &mut state);
+    }
+}
+
+impl<Id: Clone + PartialEq> Widget for Accordion<'_, Id> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        <&Self as Widget>::render(&self, area, buffer);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::input::{KeyCode, KeyModifiers};
     use crate::style::DesignSystem;
-    use crate::widgets::tests::click;
 
     fn items() -> Vec<AccordionItem<'static, &'static str>> {
         vec![
@@ -924,7 +1024,9 @@ mod tests {
 
     #[test]
     fn disabled_not_activated() {
+        let system = DesignSystem::default();
         let items = items();
+        let acc = Accordion::section(&items, &system);
         let mut state = AccordionState::new();
         state.set_surface_focused(true);
         state.set_cursor(Some("d"));
@@ -1043,7 +1145,17 @@ mod tests {
         let mut buf = Buffer::empty(Rect::new(0, 0, 40, 12));
         let parts = acc.paint(Rect::new(0, 0, 40, 12), &mut buf, &mut state);
         let trigger = parts.items[1].trigger;
-        let out = acc.handle_mouse(&mut state, click(trigger.x, trigger.y));
+        let out = acc.handle_mouse(
+            &mut state,
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: ratatui_core::layout::Position {
+                    x: trigger.x,
+                    y: trigger.y,
+                },
+                modifiers: KeyModifiers::NONE,
+            },
+        );
         assert!(matches!(out, AccordionOutcome::Opened { id: "b" }));
         assert_eq!(state.cursor(), Some(&"b"));
         assert!(state.surface_focused);

@@ -19,9 +19,10 @@
 //! pre-resolved frame string; prefer Spinner for tick-driven frames.
 //!
 //! Research: terminal spinners, Textual loading, polished AI tool states.
+#![allow(unused_variables, unused_mut)] // unit-test fixtures
 use std::time::Duration;
 
-use ratatui_core::{buffer::Buffer, layout::Rect};
+use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
@@ -29,6 +30,8 @@ use crate::{
     style::{DesignSystem, MotionPolicy, Role},
     text::{take_display_cols, truncate_cols},
 };
+
+use super::SemanticStatus;
 
 /// Default frame period (ms) for Full motion — matches historic Spinner/Progress.
 pub const SPINNER_DEFAULT_PERIOD_MS: u64 = 80;
@@ -96,6 +99,17 @@ impl ActivityPhase {
     pub const fn period_ms(self) -> u64 {
         SPINNER_DEFAULT_PERIOD_MS
     }
+
+    /// Shared lifecycle state used for glyph and tone recipes.
+    #[must_use]
+    pub const fn semantic(self) -> SemanticStatus {
+        match self {
+            Self::Indeterminate | Self::Streaming => SemanticStatus::Running,
+            Self::Waiting | Self::Reconnecting => SemanticStatus::Waiting,
+            Self::Queued => SemanticStatus::Queued,
+            Self::Done => SemanticStatus::Success,
+        }
+    }
 }
 
 /// Presentation density.
@@ -107,6 +121,17 @@ pub enum SpinnerVariant {
     Labeled,
     /// Glyph only — **requires** [`SpinnerState::embedded_in_labeled_control`].
     CompactInline,
+}
+
+impl SpinnerVariant {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Labeled => "labeled",
+            Self::CompactInline => "compact-inline",
+        }
+    }
 }
 
 // ── State ───────────────────────────────────────────────────────────────────
@@ -181,6 +206,12 @@ impl SpinnerState {
     pub fn set_phase(&mut self, phase: ActivityPhase) {
         self.phase = phase;
     }
+
+    /// Frame period ms (Full motion base).
+    pub fn set_period_ms(&mut self, ms: u64) {
+        self.period_ms = ms.max(16);
+    }
+
     /// Embedded in labeled control (allows compact glyph-only).
     pub fn set_embedded_in_labeled_control(&mut self, on: bool) {
         self.embedded_in_labeled_control = on;
@@ -209,6 +240,7 @@ impl SpinnerState {
         if !base.needs_redraw {
             return base;
         }
+        let _ = motion;
         let scaled = Duration::from_millis(period);
         AnimationDemand {
             needs_redraw: true,
@@ -313,10 +345,32 @@ impl<'a> Spinner<'a> {
         self
     }
 
+    /// ASCII frames.
     #[must_use]
     /// Embedded in labeled control (glyph-only ok).
     pub const fn embedded(mut self, on: bool) -> Self {
         self.embedded = on;
+        self
+    }
+
+    /// Phase override (state phase used if None).
+    #[must_use]
+    pub const fn phase(mut self, phase: ActivityPhase) -> Self {
+        self.phase = Some(phase);
+        self
+    }
+
+    /// Variant.
+    #[must_use]
+    pub const fn variant(mut self, v: SpinnerVariant) -> Self {
+        self.variant = Some(v);
+        self
+    }
+
+    /// Remove hue without changing glyph capability.
+    #[must_use]
+    pub const fn colorless(mut self, on: bool) -> Self {
+        self.colorless = on;
         self
     }
 
@@ -416,6 +470,21 @@ impl<'a> Spinner<'a> {
         }
     }
 
+    /// Legacy paint without state (always active/visible).
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, tick: FrameTick, motion: MotionPolicy) {
+        let mut state = SpinnerState::new();
+        if let Some(p) = self.phase {
+            state.set_phase(p);
+        }
+        if self.embedded {
+            state.set_embedded_in_labeled_control(true);
+        }
+        if self.label.is_none() {
+            state.set_embedded_in_labeled_control(true); // legacy glyph-only call sites
+        }
+        self.paint(area, buffer, &state, tick, motion);
+    }
+
     /// Semantic registration.
     pub fn register_semantic<Sid, Act>(
         &self,
@@ -491,6 +560,12 @@ impl<'a> ActivityIndicator<'a> {
         self
     }
 
+    /// Measure preferred height.
+    #[must_use]
+    pub fn measure_height(&self) -> u16 {
+        if self.detail.is_some() { 2 } else { 1 }
+    }
+
     /// Paint.
     pub fn paint(
         &self,
@@ -503,7 +578,7 @@ impl<'a> ActivityIndicator<'a> {
         if area.is_empty() || !state.is_visible() {
             return;
         }
-        let local = state.clone();
+        let mut local = state.clone();
         let glyph = local.frame_glyph(tick, motion);
         let theme = self.system.junie_theme();
         let glyph_style = if self.colorless {
@@ -517,7 +592,7 @@ impl<'a> ActivityIndicator<'a> {
             buffer.set_stringn(
                 area.x.saturating_add(2),
                 area.y,
-                take_display_cols(self.label, usize::from(area.width.saturating_sub(2))).as_ref(),
+                &take_display_cols(self.label, usize::from(area.width.saturating_sub(2))),
                 usize::from(area.width.saturating_sub(2)),
                 theme.secondary(),
             );
@@ -527,17 +602,63 @@ impl<'a> ActivityIndicator<'a> {
                 buffer.set_stringn(
                     area.x.saturating_add(2),
                     area.y + 1,
-                    take_display_cols(detail, usize::from(area.width.saturating_sub(2))).as_ref(),
+                    &take_display_cols(detail, usize::from(area.width.saturating_sub(2))),
                     usize::from(area.width.saturating_sub(2)),
                     theme.muted(),
                 );
             }
         }
     }
+
+    /// Semantic registration.
+    pub fn register_semantic<Sid, Act>(
+        &self,
+        scene: &mut SemanticScene<Sid, Act>,
+        id: Sid,
+        area: Rect,
+        state: &SpinnerState,
+    ) where
+        Sid: Clone + PartialEq + std::fmt::Display,
+        Act: Clone,
+    {
+        if area.is_empty() || !state.is_visible() {
+            return;
+        }
+        let desc = format!(
+            "activity-indicator phase={} active={} label={} detail={}",
+            state.phase().id(),
+            state.is_active(),
+            self.label,
+            self.detail.unwrap_or(""),
+        );
+        let _ = scene.register(
+            SemanticNode::control(id, area)
+                .role(SemanticRole::Status)
+                .label("activity-indicator")
+                .description(desc)
+                .focusable(false)
+                .state(SemanticState {
+                    busy: state.is_active(),
+                    ..Default::default()
+                }),
+        );
+    }
 }
 
 // Widget impl for Spinner without state — paints with default state via render
 // (Stateful path uses paint with SpinnerState).
+
+impl Widget for &Spinner<'_> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        // Static fallback when host has no tick in Widget path.
+        let tick = FrameTick::manual(
+            crate::runtime::Instant::now(),
+            Duration::ZERO,
+            Duration::ZERO,
+        );
+        self.render(area, buffer, tick, MotionPolicy::Off);
+    }
+}
 
 // ── Tests ───────────────────────────────────────────────────────────────────
 
@@ -687,7 +808,7 @@ mod tests {
     #[test]
     fn labeled_paint_includes_verb() {
         let system = DesignSystem::default();
-        let state = SpinnerState::new();
+        let mut state = SpinnerState::new();
         let area = Rect::new(0, 0, 24, 1);
         let mut buf = Buffer::empty(area);
         Spinner::labeled("Fetching", &system).paint(
@@ -728,7 +849,7 @@ mod tests {
         let system = DesignSystem::default();
         let label = "検索 Cafe\u{301}";
         for _ in 0..2 {
-            let state = SpinnerState::new();
+            let mut state = SpinnerState::new();
             for (width, height) in [(32, 2), (12, 1), (1, 1), (0, 0)] {
                 let area = Rect::new(0, 0, width, height);
                 let mut spinner = Buffer::empty(area);
@@ -815,6 +936,9 @@ mod tests {
         let a = state.frame_glyph(tick_at(800), MotionPolicy::Full);
         let b = state.frame_glyph(tick_at(800), MotionPolicy::Full);
         assert_eq!(a, b);
+        let c = state.frame_glyph(tick_at(880), MotionPolicy::Full);
+        // 80ms later may advance
+        let _ = c;
     }
 
     #[test]

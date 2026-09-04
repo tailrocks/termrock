@@ -9,7 +9,7 @@
     {
       "source": "src/lib.rs",
       "dest": "src/ui/blocks/ops_dashboard.rs",
-      "sha256": "b842bf8f46dd298c02e846cf281c2c6812c69a4b4a54a5905f859614c710ef5f"
+      "sha256": "90c86b0c109fd5daa5a54f756a11c65eeb87b91e8711200b4d87c011fe9f79cb"
     }
   ]
 }

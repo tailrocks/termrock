@@ -4,11 +4,19 @@
 //! Callers own data fetching, editing, sort/filter policy, and page models.
 //! The grid never allocates the full data set; render cost is bounded by the
 //! painted viewport.
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Style, widgets::StatefulWidget};
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+use ratatui_core::{
+    buffer::Buffer,
+    layout::Rect,
+    style::{Modifier, Style},
+    widgets::StatefulWidget,
+};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
-    style::{DesignSystem, Role},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
+    style::{DesignSystem, Role, RolePalette},
     text::take_display_cols,
     widgets::virtualizer::Virtualizer2D,
 };
@@ -85,6 +93,13 @@ impl<'a> GridCell<'a> {
             style: None,
             pending: true,
         }
+    }
+
+    /// Optional style override.
+    #[must_use]
+    pub const fn style(mut self, style: Style) -> Self {
+        self.style = Some(style);
+        self
     }
 }
 
@@ -253,6 +268,12 @@ impl<RowId, ColId> VirtualGridState<RowId, ColId> {
         self.cursor_row
     }
 
+    /// Cursor column list index.
+    #[must_use]
+    pub const fn cursor_col(&self) -> usize {
+        self.cursor_col
+    }
+
     /// Range selection anchor, when active.
     #[must_use]
     pub const fn anchor(&self) -> Option<(u64, usize)> {
@@ -271,9 +292,34 @@ impl<RowId, ColId> VirtualGridState<RowId, ColId> {
         self.virt.cols.offset() as usize
     }
 
+    /// Canonical 2D virtualizer (row/col windows, semantic budget).
+    #[must_use]
+    pub const fn virtualizer(&self) -> &Virtualizer2D {
+        &self.virt
+    }
+
     /// Mutable virtualizer (overscan, sticky, anchors).
     pub fn virtualizer_mut(&mut self) -> &mut Virtualizer2D {
         &mut self.virt
+    }
+
+    /// Caller-persisted column widths (display columns).
+    #[must_use]
+    pub fn column_widths(&self) -> &[u16] {
+        &self.column_widths
+    }
+
+    /// Replaces column widths (caller-owned persistence).
+    pub fn set_column_widths(&mut self, widths: Vec<u16>) {
+        self.column_widths = widths;
+        self.column_widths_policy.clear();
+        self.column_widths_available = None;
+        self.column_widths_explicit = true;
+    }
+
+    /// Clears range selection anchor.
+    pub fn clear_anchor(&mut self) {
+        self.anchor = None;
     }
 
     fn clamp_cursor(&mut self) {
@@ -842,6 +888,23 @@ impl<'a, RowId, ColId> VirtualGrid<'a, RowId, ColId> {
         }
     }
 
+    /// Line shown when there is nothing to show.
+    ///
+    /// A collection that paints nothing when empty reads as broken; it has to
+    /// say that it is empty.
+    #[must_use]
+    pub const fn empty_message(mut self, message: &'a str) -> Self {
+        self.empty_message = message;
+        self
+    }
+
+    /// Whether this surface owns keyboard focus this frame (host / scene).
+    #[must_use]
+    pub const fn focused(mut self, focused: bool) -> Self {
+        self.focused = focused;
+        self
+    }
+
     /// Declares a known total row count (unknown totals omit this).
     #[must_use]
     pub const fn total_rows(mut self, total: u64) -> Self {
@@ -853,6 +916,13 @@ impl<'a, RowId, ColId> VirtualGrid<'a, RowId, ColId> {
     #[must_use]
     pub const fn gutter(mut self, show: bool) -> Self {
         self.show_gutter = show;
+        self
+    }
+
+    /// Shows or hides the header row.
+    #[must_use]
+    pub const fn header(mut self, show: bool) -> Self {
+        self.show_header = show;
         self
     }
 }
@@ -1069,8 +1139,6 @@ impl<RowId: Clone + Eq, ColId: Clone + Eq> StatefulWidget for &VirtualGrid<'_, R
 mod tests {
     use super::*;
     use crate::input::{KeyCode, KeyEvent, KeyModifiers, MouseEventKind};
-    use crate::style::RolePalette;
-    use crate::widgets::tests::{click, mouse};
     use ratatui_core::{backend::TestBackend, layout::Position, terminal::Terminal};
 
     fn columns() -> Vec<GridColumn<'static, &'static str>> {
@@ -1338,7 +1406,18 @@ mod tests {
             .unwrap();
         assert!(!state.cell_regions.is_empty());
         let target = state.cell_regions[0].area;
-        let outcome = state.handle_mouse(click(target.x, target.y), &columns, &rows);
+        let outcome = state.handle_mouse(
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: Position {
+                    x: target.x,
+                    y: target.y,
+                },
+                modifiers: KeyModifiers::NONE,
+            },
+            &columns,
+            &rows,
+        );
         assert!(matches!(
             outcome,
             VirtualGridOutcome::CursorMoved {
@@ -1374,7 +1453,11 @@ mod tests {
 
         let position = Position::new(8, 2);
         let edge = state.handle_mouse(
-            mouse(MouseEventKind::ScrollLeft, position.x, position.y),
+            MouseEvent {
+                kind: MouseEventKind::ScrollLeft,
+                position,
+                modifiers: KeyModifiers::NONE,
+            },
             &columns,
             &rows,
         );
@@ -1572,7 +1655,14 @@ mod tests {
             .find(|region| region.row_index == 1)
             .expect("disabled row painted");
         let click = state.handle_mouse(
-            click(disabled_region.area.x, disabled_region.area.y),
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: Position {
+                    x: disabled_region.area.x,
+                    y: disabled_region.area.y,
+                },
+                modifiers: KeyModifiers::NONE,
+            },
             &columns,
             &rows,
         );

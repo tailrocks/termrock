@@ -63,6 +63,16 @@ pub enum AuthEntryMode {
 }
 
 impl AuthEntryMode {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::SignUp => "sign-up",
+            Self::SignIn => "sign-in",
+            Self::EmailOnly => "email-only",
+        }
+    }
+
     /// Title chrome.
     #[must_use]
     pub const fn title(self) -> &'static str {
@@ -112,6 +122,19 @@ pub enum AuthEntryField {
     Confirm,
     /// Accept terms (sign-up when required).
     Terms,
+}
+
+impl AuthEntryField {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Identity => "identity",
+            Self::Password => "password",
+            Self::Confirm => "confirm",
+            Self::Terms => "terms",
+        }
+    }
 }
 
 /// Field-level validation message (no secrets).
@@ -283,16 +306,86 @@ impl AuthEntryState {
         self.focus
     }
 
+    /// Identity text (public, non-secret).
+    #[must_use]
+    pub fn identity(&self) -> &str {
+        self.identity.value()
+    }
+
     /// Password secret (host-only; do not log).
     #[must_use]
     pub fn password_secret(&self) -> &str {
         self.secrets.password.secret()
     }
 
+    /// Take password secret (clears password field).
+    pub fn take_password_secret(&mut self) -> String {
+        self.secrets.password.take_secret()
+    }
+
+    /// Confirm secret (sign-up).
+    #[must_use]
+    pub fn confirm_secret(&self) -> &str {
+        self.secrets.confirm.secret()
+    }
+
     /// Terms accepted.
     #[must_use]
     pub fn terms_accepted(&self) -> bool {
         self.terms.is_checked()
+    }
+
+    /// Field errors from last validate/submit.
+    #[must_use]
+    pub fn field_errors(&self) -> &[AuthFieldError] {
+        &self.field_errors
+    }
+
+    /// Host-set banner error (auth failure projection).
+    #[must_use]
+    pub fn host_error(&self) -> Option<&str> {
+        self.host_error.as_deref()
+    }
+
+    /// Set host auth failure message (no secrets).
+    pub fn set_host_error(&mut self, msg: impl Into<String>) {
+        self.host_error = Some(msg.into());
+    }
+
+    /// Clear host error.
+    pub fn clear_host_error(&mut self) {
+        self.host_error = None;
+    }
+
+    /// Require password confirm (sign-up).
+    pub fn set_require_confirm(&mut self, on: bool) {
+        self.require_confirm = on;
+        self.clamp_focus();
+    }
+
+    /// Require terms checkbox (sign-up).
+    pub fn set_require_terms(&mut self, on: bool) {
+        self.require_terms = on;
+        self.clamp_focus();
+    }
+
+    /// Pending remote verify (blocks edits).
+    pub fn set_pending(&mut self, on: bool) {
+        self.pending = on;
+        self.secrets.password.set_pending(on);
+        self.secrets.confirm.set_pending(on);
+        self.identity.set_loading(on);
+    }
+
+    /// Shell focus gate.
+    pub fn set_shell_focused(&mut self, on: bool) {
+        self.shell_focused = on;
+        self.sync_field_focus();
+    }
+
+    /// Input gate.
+    pub fn set_accepts_input(&mut self, on: bool) {
+        self.accepts_input = on;
     }
 
     /// Switch mode (clears secrets + errors; keeps identity).
@@ -332,6 +425,14 @@ impl AuthEntryState {
             v.push(AuthEntryField::Terms);
         }
         v
+    }
+
+    fn clamp_focus(&mut self) {
+        let order = self.field_order();
+        if !order.contains(&self.focus) {
+            self.focus = order.first().copied().unwrap_or(AuthEntryField::Identity);
+        }
+        self.sync_field_focus();
     }
 
     fn sync_field_focus(&mut self) {
@@ -641,7 +742,7 @@ fn mask_placeholder() -> String {
 }
 
 /// Paint auth entry panel.
-pub fn paint_auth_entry(buffer: &mut Buffer, area: Rect, surfaces: AuthEntrySurfaces<'_>) {
+pub fn render_auth_entry(buffer: &mut Buffer, area: Rect, surfaces: AuthEntrySurfaces<'_>) {
     if area.is_empty() {
         return;
     }
@@ -851,13 +952,16 @@ pub fn paint_auth_entry(buffer: &mut Buffer, area: Rect, surfaces: AuthEntrySurf
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::widgets::tests::press;
+
+    fn press(c: char) -> KeyEvent {
+        KeyEvent::new(KeyCode::Char(c), KeyModifiers::NONE)
+    }
 
     fn type_identity(st: &mut AuthEntryState, s: &str) {
         st.focus = AuthEntryField::Identity;
         st.sync_field_focus();
         for c in s.chars() {
-            let _ = st.handle_key(press(KeyCode::Char(c)));
+            let _ = st.handle_key(press(c));
         }
     }
 
@@ -865,7 +969,7 @@ mod tests {
         st.focus = AuthEntryField::Password;
         st.sync_field_focus();
         for c in s.chars() {
-            let out = st.handle_key(press(KeyCode::Char(c)));
+            let out = st.handle_key(press(c));
             assert!(
                 matches!(
                     out,
@@ -882,7 +986,7 @@ mod tests {
         st.focus = AuthEntryField::Confirm;
         st.sync_field_focus();
         for c in s.chars() {
-            let out = st.handle_key(press(KeyCode::Char(c)));
+            let out = st.handle_key(press(c));
             assert!(
                 matches!(
                     out,
@@ -949,7 +1053,7 @@ mod tests {
         let mut st = AuthEntryState::sign_in();
         st.focus = AuthEntryField::Password;
         st.sync_field_focus();
-        let out = st.handle_key(press(KeyCode::Char('s')));
+        let out = st.handle_key(press('s'));
         match out {
             AuthEntryOutcome::FieldChanged {
                 field: AuthEntryField::Password,
@@ -1118,7 +1222,7 @@ mod tests {
         type_identity(&mut st, "a@b.c");
         let area = Rect::new(0, 0, 60, 16);
         let mut buf = Buffer::empty(area);
-        paint_auth_entry(&mut buf, area, AuthEntrySurfaces::english(&system, &mut st));
+        render_auth_entry(&mut buf, area, AuthEntrySurfaces::english(&system, &mut st));
         let mut sample = String::new();
         for y in 0..3 {
             for x in 0..16 {
@@ -1185,7 +1289,7 @@ mod tests {
         let aside = example_auth_aside_lines();
         let mut surfaces = AuthEntrySurfaces::english(&system, &mut st);
         surfaces.aside_lines = aside;
-        paint_auth_entry(&mut buf, area, surfaces);
+        render_auth_entry(&mut buf, area, surfaces);
         // title / email chrome should appear
         let mut sample = String::new();
         for y in 0..4 {

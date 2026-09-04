@@ -20,6 +20,7 @@
 //!
 //! Research: LSP completion UIs, prompt-toolkit, terminal editors, Grok Build
 //! prompt completion.
+#![allow(unused_variables, unused_mut)] // unit-test fixtures
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -339,8 +340,8 @@ pub fn default_completion_intent(key: KeyEvent) -> Option<UiIntent> {
         KeyCode::Tab if is_press && key.modifiers.is_empty() => Some(UiIntent::Activate),
         KeyCode::Enter if is_press => Some(UiIntent::Activate),
         KeyCode::Esc if is_press => Some(UiIntent::Cancel),
-        KeyCode::Up | KeyCode::Char('k' | 'K') => Some(UiIntent::Move(NavigationMove::Previous)),
-        KeyCode::Down | KeyCode::Char('j' | 'J') => Some(UiIntent::Move(NavigationMove::Next)),
+        KeyCode::Up => Some(UiIntent::Move(NavigationMove::Previous)),
+        KeyCode::Down => Some(UiIntent::Move(NavigationMove::Next)),
         KeyCode::Home => Some(UiIntent::Move(NavigationMove::First)),
         KeyCode::End => Some(UiIntent::Move(NavigationMove::Last)),
         KeyCode::PageUp => Some(UiIntent::Page(PageMove::Backward)),
@@ -535,10 +536,34 @@ impl<Id> CompletionMenuState<Id> {
         self.selected = selected;
     }
 
+    /// Painted geometry.
+    #[must_use]
+    pub const fn painted(&self) -> Rect {
+        self.painted
+    }
+
+    /// Scroll offset.
+    #[must_use]
+    pub const fn offset(&self) -> usize {
+        self.offset
+    }
+
     /// Status.
     #[must_use]
     pub const fn status(&self) -> CompletionStatus {
         self.status
+    }
+
+    /// Current generation.
+    #[must_use]
+    pub const fn generation(&self) -> u64 {
+        self.generation
+    }
+
+    /// Presentation.
+    #[must_use]
+    pub const fn presentation(&self) -> CompletionPresentation {
+        self.presentation
     }
 
     /// Slots after paint.
@@ -547,9 +572,23 @@ impl<Id> CompletionMenuState<Id> {
         self.slots
     }
 
+    /// Commit characters string.
+    #[must_use]
+    pub fn commit_characters(&self) -> &str {
+        &self.commit_characters
+    }
+
     /// Input gate (menu routes keys while editor keeps focus).
     pub fn set_accepts_input(&mut self, on: bool) {
         self.accepts_input = on;
+    }
+
+    /// Force presentation.
+    pub fn set_presentation_override(&mut self, p: Option<CompletionPresentation>) {
+        self.presentation_override = p;
+        if let Some(p) = p {
+            self.presentation = p;
+        }
     }
 
     /// Characters that auto-commit selection (empty = disabled).
@@ -561,6 +600,19 @@ impl<Id> CompletionMenuState<Id> {
     pub fn set_show_docs(&mut self, on: bool) {
         self.show_docs = on;
     }
+
+    /// Status message overrides.
+    pub fn set_status_messages(
+        &mut self,
+        loading: impl Into<String>,
+        empty: impl Into<String>,
+        stale: impl Into<String>,
+    ) {
+        self.loading_message = loading.into();
+        self.empty_message = empty.into();
+        self.stale_message = stale.into();
+    }
+
     /// Begin async fetch; returns generation token for [`Self::apply_results`].
     pub fn begin_async(&mut self) -> u64 {
         self.generation = self.generation.saturating_add(1);
@@ -900,6 +952,34 @@ impl<Id: Clone + PartialEq> CompletionMenuState<Id> {
             .find(|(_, rect)| rect.contains(position))
             .map(|(id, _)| id.clone())
     }
+
+    /// Open on stack helper.
+    pub fn open_on_stack<F: Clone>(
+        &mut self,
+        stack: &mut OverlayStack<F>,
+        bounds: Rect,
+        anchor: Rect,
+        preferred: CompletionMenuSize,
+        opener_focus: Option<F>,
+    ) -> OverlayOutcome<F> {
+        self.open = true;
+        let _ = self.sync_presentation(bounds);
+        open_completion_configured(
+            stack,
+            bounds,
+            anchor,
+            preferred,
+            opener_focus,
+            self.presentation_override.or(Some(self.presentation)),
+            None,
+        )
+    }
+
+    /// Close on stack.
+    pub fn close_on_stack<F: Clone>(&mut self, stack: &mut OverlayStack<F>) -> OverlayOutcome<F> {
+        self.set_open(false);
+        dismiss_completion_overlay(stack)
+    }
 }
 
 // ── Widget ──────────────────────────────────────────────────────────────────
@@ -954,6 +1034,25 @@ impl<'a, Id> CompletionMenu<'a, Id> {
     #[must_use]
     pub const fn empty_message(mut self, message: &'a str) -> Self {
         self.empty_message = message;
+        self
+    }
+
+    /// ASCII glyphs.
+    #[must_use]
+    /// Whether the menu itself owns focus.
+    ///
+    /// Defaults to `false`: a completion menu floats under an editor that
+    /// keeps the keyboard, and only the interaction owner wears the focused
+    /// border.
+    pub const fn focused(mut self, focused: bool) -> Self {
+        self.focused = focused;
+        self
+    }
+
+    /// Reduced-color roles.
+    #[must_use]
+    pub const fn colorless(mut self, on: bool) -> Self {
+        self.colorless = on;
         self
     }
 
@@ -1257,6 +1356,7 @@ impl<'a, Id> CompletionMenu<'a, Id> {
                 label_x,
                 y,
                 &shown,
+                candidate.label,
                 candidate.match_ranges.unwrap_or(&[]),
                 style,
                 cursor,
@@ -1266,7 +1366,14 @@ impl<'a, Id> CompletionMenu<'a, Id> {
             if show_detail && let Some(detail) = candidate.detail {
                 let dtext = take_display_cols(detail, detail_cols);
                 let dw = display_cols(&dtext) as u16;
-                let dx = row_rect.right().saturating_sub(dw.saturating_add(1));
+                let right_reserve = if self.candidates.len() > state.viewport_height {
+                    2
+                } else {
+                    1
+                };
+                let dx = row_rect
+                    .right()
+                    .saturating_sub(dw.saturating_add(right_reserve));
                 if dx >= label_x {
                     buffer.set_stringn(dx, y, &dtext, usize::from(dw), detail_style);
                 }
@@ -1406,7 +1513,7 @@ fn paint_status_line<Id>(
     buffer.set_stringn(
         strip.x.saturating_add(1),
         strip.y,
-        take_display_cols(msg, usize::from(strip.width.saturating_sub(2))).as_ref(),
+        &take_display_cols(msg, usize::from(strip.width.saturating_sub(2))),
         usize::from(strip.width.saturating_sub(2)),
         menu.system.style(Role::TextMuted),
     );
@@ -1442,7 +1549,7 @@ fn paint_docs(buffer: &mut Buffer, area: Rect, docs: &str, scroll: u16, system: 
         buffer.set_stringn(
             area.x,
             y,
-            take_display_cols(line, width).as_ref(),
+            &take_display_cols(line, width),
             width,
             system.style(Role::Text),
         );
@@ -1455,11 +1562,13 @@ fn paint_matched_label(
     mut x: u16,
     y: u16,
     shown: &str,
+    full: &str,
     ranges: &[crate::widgets::MatchRange],
     style: Style,
     selected: bool,
 ) {
     // Byte indices in `shown` match `full` while we truncate from the end.
+    let _ = full;
     for (bi, ch) in shown.char_indices() {
         let mut cs = style;
         let matched = ranges.iter().any(|r| bi >= r.start && bi < r.end);
@@ -1481,7 +1590,6 @@ fn paint_matched_label(
 mod tests {
     use super::*;
     use crate::input::KeyModifiers;
-    use crate::widgets::tests::click;
 
     fn rect_intersects(a: Rect, b: Rect) -> bool {
         let a_x2 = a.x.saturating_add(a.width);
@@ -1699,7 +1807,11 @@ mod tests {
             ("one", Rect::new(0, 0, 20, 1)),
             ("two", Rect::new(0, 1, 20, 1)),
         ];
-        let event = click(2, 1);
+        let event = MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: Position { x: 2, y: 1 },
+            modifiers: KeyModifiers::NONE,
+        };
         assert_eq!(
             state.handle_mouse(event, &items),
             CompletionMenuOutcome::Committed("two")
@@ -1780,7 +1892,7 @@ mod tests {
         assert!(policy.owns_input); // can route keys when host grants
         let system = DesignSystem::default();
         let items = candidates(&["a"]);
-        let state = CompletionMenuState::new(Some("a"));
+        let mut state = CompletionMenuState::new(Some("a"));
         let mut scene = SemanticScene::<&str, ()>::default();
         CompletionMenu::new(
             &items,

@@ -20,13 +20,20 @@
 //!
 //! Research: Grok Build permissions, Amp plugin prompts, browser permissions,
 //! sudo, security review UIs.
-use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+use ratatui_core::{
+    buffer::Buffer,
+    layout::Rect,
+    widgets::{StatefulWidget, Widget},
+};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     interaction::{OverlayId, OverlayKind, OverlayOutcome, OverlaySize, OverlaySpec, OverlayStack},
-    style::{DesignSystem, Role},
-    text::take_display_cols,
+    style::{DesignSystem, Role, RolePalette},
+    text::{display_cols, take_display_cols},
     widgets::{Action, ActionBar, ActionBarState, ActionVariant, Panel, PanelChrome, PanelVariant},
 };
 
@@ -394,6 +401,8 @@ pub enum PermissionOutcome {
         /// Generation at cancel time.
         generation: u64,
     },
+    /// Queue advanced (request dismissed as stale/resolved externally).
+    QueueChanged,
     /// Attempted to confirm a stale generation.
     StaleIgnored {
         /// Generation that was attempted.
@@ -617,6 +626,13 @@ impl PermissionRequest {
         self
     }
 
+    /// Custom destructive / egress banner (overrides defaults).
+    #[must_use]
+    pub fn notice(mut self, notice: impl Into<String>) -> Self {
+        self.destructive_notice = Some(notice.into());
+        self
+    }
+
     /// Default action strip for this risk.
     #[must_use]
     pub fn actions_for_risk(&self) -> Vec<PermissionAction> {
@@ -726,6 +742,12 @@ impl PermissionQueue {
     #[must_use]
     pub fn is_empty(&self) -> bool {
         self.pending.is_empty()
+    }
+
+    /// Pending requests oldest-first.
+    #[must_use]
+    pub fn pending(&self) -> &[PermissionRequest] {
+        &self.pending
     }
 
     /// Audit log (oldest first).
@@ -948,6 +970,18 @@ impl PermissionPromptState {
         self.scope
     }
 
+    /// Whether detail lines are shown.
+    #[must_use]
+    pub const fn details_expanded(&self) -> bool {
+        self.details_expanded
+    }
+
+    /// Current edit buffer contents.
+    #[must_use]
+    pub fn edit_buffer(&self) -> &str {
+        &self.edit_buffer
+    }
+
     /// Generation of the head request, if any.
     #[must_use]
     pub fn head_generation(&self) -> Option<u64> {
@@ -998,6 +1032,14 @@ impl PermissionPromptState {
                 policy: None,
             },
         )
+    }
+
+    /// Dismisses the permission overlay (does **not** cancel the queue — host must
+    /// still run gate-cancel / [`Self::handle_key`] Esc / dismiss_head per KD-26).
+    pub fn dismiss_overlay<FocusId: Clone>(
+        stack: &mut OverlayStack<FocusId>,
+    ) -> OverlayOutcome<FocusId> {
+        stack.dismiss(&OverlayId::from_static(PERMISSION_OVERLAY_ID))
     }
 
     /// Keyboard routing.
@@ -1375,6 +1417,21 @@ impl<'a> PermissionPrompt<'a> {
         self.danger_chrome = chrome;
         self
     }
+
+    /// Prefer ASCII risk markers.
+    #[must_use]
+    /// Reduced-color paint (non-color risk still has glyphs).
+    pub const fn colorless(mut self, colorless: bool) -> Self {
+        self.colorless = colorless;
+        self
+    }
+
+    /// Surface focus chrome (action cursor is separate).
+    #[must_use]
+    pub const fn focused(mut self, focused: bool) -> Self {
+        self.focused = focused;
+        self
+    }
 }
 
 impl StatefulWidget for &PermissionPrompt<'_> {
@@ -1397,7 +1454,7 @@ impl StatefulWidget for &PermissionPrompt<'_> {
                 } else {
                     PanelChrome::Normal
                 });
-            panel.paint(area, buffer, None);
+            Widget::render(&panel, area, buffer);
             let inner = panel.inner(area);
             if !inner.is_empty() {
                 let mark = { "∅ " };
@@ -1405,7 +1462,7 @@ impl StatefulWidget for &PermissionPrompt<'_> {
                 buffer.set_stringn(
                     inner.x,
                     inner.y,
-                    take_display_cols(&msg, usize::from(inner.width)).as_ref(),
+                    &take_display_cols(&msg, usize::from(inner.width)),
                     usize::from(inner.width),
                     self.system.style(Role::TextMuted),
                 );
@@ -1443,7 +1500,7 @@ impl StatefulWidget for &PermissionPrompt<'_> {
             .title(title.as_str())
             .emphasis(emphasis);
         let inner = panel.inner(content_area);
-        panel.paint(content_area, buffer, None);
+        Widget::render(&panel, content_area, buffer);
         if inner.is_empty() {
             return;
         }
@@ -1768,8 +1825,7 @@ fn paint_line(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::style::RolePalette;
-    use crate::widgets::tests::click;
+    use ratatui_core::layout::Position;
 
     fn press(code: KeyCode) -> KeyEvent {
         KeyEvent::new(code, KeyModifiers::NONE)
@@ -2114,7 +2170,14 @@ mod tests {
             .find(|r| r.action == PermissionAction::Deny)
             .unwrap()
             .area;
-        let event = click(deny.x, deny.y);
+        let event = MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: Position {
+                x: deny.x,
+                y: deny.y,
+            },
+            modifiers: KeyModifiers::NONE,
+        };
         let out = state.handle_mouse(event);
         assert!(matches!(
             out,

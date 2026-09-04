@@ -25,6 +25,15 @@ pub enum KeyReleaseReporting {
 }
 
 impl KeyReleaseReporting {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::PressOnly => "press-only",
+            Self::Reported => "reported",
+        }
+    }
+
     /// Whether a control may wait for a release before activating.
     #[must_use]
     pub const fn can_wait_for_release(self) -> bool {

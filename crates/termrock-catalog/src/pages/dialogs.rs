@@ -319,15 +319,10 @@ impl Page for DialogsPage {
             self.dialog.set_open(true);
             self.dialog.set_accepts_input(true);
             let actions = Self::actions(kind);
-            // Junie's modal canvas reserves the top chrome row before
-            // centering the dialog. Keep the page body and source dialog
-            // geometry on the same cell grid.
-            let modal_screen = Rect::new(
-                buf.area().x,
-                buf.area().y.saturating_add(1),
-                buf.area().width,
-                buf.area().height.saturating_sub(1),
-            );
+            // The source host places the modal against the full terminal
+            // canvas. The footer is part of the modal contract, not a second
+            // inset screen; using a shortened canvas shifts the frame down.
+            let modal_screen = *buf.area();
             match kind {
                 Kind::Confirm => {
                     Dialog::confirm(
@@ -386,6 +381,10 @@ impl Page for DialogsPage {
                         ),
                         ctx.system,
                     )
+                    .preferred_size(DialogSize {
+                        width: 54,
+                        height: 10,
+                    })
                     .paint_modal(modal_screen, buf, &mut self.dialog, &actions);
                 }
             }
@@ -468,5 +467,20 @@ impl Page for DialogsPage {
 
     fn hints(&self, _focus: Option<WidgetId>) -> Vec<Hint> {
         vec![("Enter", "Open")]
+    }
+
+    fn overlaying(&self) -> bool {
+        self.open.is_some()
+    }
+
+    fn capture_cursor(&self) -> Option<ratatui::layout::Position> {
+        (self.open == Some(Kind::Delete)).then(|| {
+            self.dialog
+                .action_regions()
+                .first()
+                .map_or(ratatui::layout::Position::ORIGIN, |region| {
+                    ratatui::layout::Position::new(region.area.right(), region.area.y)
+                })
+        })
     }
 }

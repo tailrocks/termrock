@@ -35,15 +35,22 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::fmt;
 
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
+use ratatui_core::{
+    buffer::Buffer,
+    layout::{Position, Rect},
+    style::Modifier,
+    widgets::StatefulWidget,
+};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
-    interaction::CursorWindow,
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     style::{DesignSystem, ListRowVisualState, PanelChrome, Role},
-    text::display_cols,
+    text::{display_cols, take_display_cols},
     widgets::{
         ConnectivityPhase, Panel, PasswordInput, PasswordInputState, ReconnectingState,
         RevealPolicy, SemanticStatus, StatusIndicator,
@@ -56,8 +63,6 @@ pub const CONNECTION_MANAGER_OVERLAY_ID: &str = "termrock.connection_manager";
 pub const CONNECTION_MANAGER_LAUNCHER_OVERLAY_ID: &str = "termrock.connection_manager_launcher";
 /// Visible list window for large catalogs.
 pub const CONNECTION_MANAGER_WINDOW: usize = 64;
-/// Rows per PageUp/PageDown (viewport is paint-measured; page step is fixed).
-pub const CONNECTION_MANAGER_PAGE: usize = 8;
 /// Max recent entries surfaced in Recent view (by host `recent_rank`).
 pub const CONNECTION_MANAGER_RECENT_CAP: usize = 32;
 /// Redacted paint marker for masked secrets / list chrome (never the secret).
@@ -106,6 +111,27 @@ impl ConnectionKind {
             Self::Api => "API",
             Self::Service => "Svc",
             Self::Custom => "Custom",
+        }
+    }
+
+    /// Glyph.
+    #[must_use]
+    pub const fn glyph(self, ascii: bool) -> &'static str {
+        if ascii {
+            return match self {
+                Self::Database => "D",
+                Self::Ssh => "S",
+                Self::Api => "A",
+                Self::Service => "V",
+                Self::Custom => "C",
+            };
+        }
+        match self {
+            Self::Database => "▣",
+            Self::Ssh => "⌘",
+            Self::Api => "⇄",
+            Self::Service => "⬡",
+            Self::Custom => "◆",
         }
     }
 }
@@ -157,6 +183,20 @@ impl ConnectionStatus {
             Self::Error => "error",
             Self::AuthRequired => "auth required",
             Self::Offline => "offline",
+        }
+    }
+
+    /// Letter (colorless).
+    #[must_use]
+    pub const fn letter(self) -> char {
+        match self {
+            Self::Connected => 'C',
+            Self::Disconnected => 'D',
+            Self::Connecting => '~',
+            Self::Reconnecting => 'R',
+            Self::Error => 'E',
+            Self::AuthRequired => '!',
+            Self::Offline => 'O',
         }
     }
 
@@ -222,6 +262,16 @@ impl ConnectionStatus {
                 | Self::Connecting
         )
     }
+
+    /// Whether connect is a sensible request.
+    #[must_use]
+    pub const fn can_connect(self) -> bool {
+        matches!(
+            self,
+            Self::Disconnected | Self::Offline | Self::Error | Self::AuthRequired
+        )
+    }
+
     /// Whether reconnect is a sensible request.
     #[must_use]
     pub const fn can_reconnect(self) -> bool {
@@ -288,6 +338,23 @@ impl ConnectionCredentialMeta {
             has_secret: true,
             redacted_marker: CONNECTION_SECRET_REDACTED.into(),
         }
+    }
+
+    /// Missing required secret.
+    #[must_use]
+    pub fn missing(kind_label: impl Into<String>) -> Self {
+        Self {
+            kind_label: kind_label.into(),
+            has_secret: false,
+            redacted_marker: "missing".into(),
+        }
+    }
+
+    /// Custom marker.
+    #[must_use]
+    pub fn marker(mut self, m: impl Into<String>) -> Self {
+        self.redacted_marker = m.into();
+        self
     }
 }
 
@@ -440,6 +507,13 @@ impl ConnectionEntry {
         self.enabled = false;
         self
     }
+
+    /// Target + environment chrome line.
+    #[must_use]
+    pub fn identity_line(&self) -> String {
+        format!("{} · {}", self.target, self.environment)
+    }
+
     /// Semantic / scene-safe credential label (never raw secret).
     #[must_use]
     pub fn credential_scene_label(&self) -> String {
@@ -462,7 +536,7 @@ impl ConnectionEntry {
             return true;
         }
         let q = q.to_ascii_lowercase();
-        let hit = |s: &str| crate::text::contains_lower(&s, &q);
+        let hit = |s: &str| s.to_ascii_lowercase().contains(&q);
         hit(&self.name)
             || hit(&self.target)
             || hit(&self.environment)
@@ -488,6 +562,17 @@ pub enum ConnectionManagerPresentation {
     Full,
 }
 
+impl ConnectionManagerPresentation {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Launcher => "launcher",
+            Self::Full => "full",
+        }
+    }
+}
+
 /// List scope filter.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -504,6 +589,17 @@ pub enum ConnectionListView {
 }
 
 impl ConnectionListView {
+    /// Stable id.
+    #[must_use]
+    pub fn id(&self) -> String {
+        match self {
+            Self::All => "all".into(),
+            Self::Favorites => "favorites".into(),
+            Self::Recent => "recent".into(),
+            Self::Group(g) => format!("group:{g}"),
+        }
+    }
+
     /// Chrome label.
     #[must_use]
     pub fn label(&self) -> String {
@@ -533,6 +629,20 @@ pub enum ConnectionManagerPhase {
     ConfirmDelete,
 }
 
+impl ConnectionManagerPhase {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Browse => "browse",
+            Self::Add => "add",
+            Self::Edit => "edit",
+            Self::TestBusy => "test_busy",
+            Self::ConfirmDelete => "confirm_delete",
+        }
+    }
+}
+
 /// Which form field is focused in add/edit.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -553,6 +663,19 @@ pub enum ConnectionFormField {
 }
 
 impl ConnectionFormField {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Name => "name",
+            Self::Protocol => "protocol",
+            Self::Target => "target",
+            Self::Environment => "environment",
+            Self::Group => "group",
+            Self::Secret => "secret",
+        }
+    }
+
     fn next(self) -> Self {
         match self {
             Self::Name => Self::Protocol,
@@ -713,8 +836,10 @@ pub struct ConnectionManagerState {
     pub query: String,
     /// Filtered indices into `connections`.
     filtered: Vec<usize>,
-    /// Cursor + scroll window into `filtered`.
-    pub window: CursorWindow,
+    /// Cursor into `filtered`.
+    pub cursor: usize,
+    /// Scroll offset.
+    pub scroll: usize,
     /// Phase.
     pub phase: ConnectionManagerPhase,
     /// Presentation.
@@ -751,7 +876,8 @@ impl fmt::Debug for ConnectionManagerState {
             .field("connections", &self.connections)
             .field("query", &self.query)
             .field("filtered_len", &self.filtered.len())
-            .field("window", &self.window)
+            .field("cursor", &self.cursor)
+            .field("scroll", &self.scroll)
             .field("phase", &self.phase)
             .field("presentation", &self.presentation)
             .field("list_view", &self.list_view)
@@ -775,7 +901,8 @@ impl Clone for ConnectionManagerState {
             connections: self.connections.clone(),
             query: self.query.clone(),
             filtered: self.filtered.clone(),
-            window: self.window,
+            cursor: self.cursor,
+            scroll: self.scroll,
             phase: self.phase,
             presentation: self.presentation,
             list_view: self.list_view.clone(),
@@ -798,7 +925,8 @@ impl PartialEq for ConnectionManagerState {
         self.connections == other.connections
             && self.query == other.query
             && self.filtered == other.filtered
-            && self.window == other.window
+            && self.cursor == other.cursor
+            && self.scroll == other.scroll
             && self.phase == other.phase
             && self.presentation == other.presentation
             && self.list_view == other.list_view
@@ -831,7 +959,8 @@ impl ConnectionManagerState {
             connections: Vec::new(),
             query: String::new(),
             filtered: Vec::new(),
-            window: CursorWindow::new(),
+            cursor: 0,
+            scroll: 0,
             phase: ConnectionManagerPhase::Browse,
             presentation: ConnectionManagerPresentation::Full,
             list_view: ConnectionListView::All,
@@ -874,8 +1003,7 @@ impl ConnectionManagerState {
                 .iter()
                 .position(|&si| self.connections.get(si).is_some_and(|c| c.id == id))
             {
-                self.window
-                    .set_cursor(fi, self.filtered.len(), CONNECTION_MANAGER_WINDOW);
+                self.cursor = fi;
             }
         }
         self.clamp_cursor();
@@ -918,7 +1046,7 @@ impl ConnectionManagerState {
     /// Current connection.
     #[must_use]
     pub fn current(&self) -> Option<&ConnectionEntry> {
-        let si = *self.filtered.get(self.window.cursor())?;
+        let si = *self.filtered.get(self.cursor)?;
         self.connections.get(si)
     }
 
@@ -1040,8 +1168,18 @@ impl ConnectionManagerState {
     }
 
     fn clamp_cursor(&mut self) {
-        self.window
-            .clamp(self.filtered.len(), CONNECTION_MANAGER_WINDOW);
+        if self.filtered.is_empty() {
+            self.cursor = 0;
+            self.scroll = 0;
+            return;
+        }
+        self.cursor = self.cursor.min(self.filtered.len() - 1);
+        let window = CONNECTION_MANAGER_WINDOW;
+        if self.cursor < self.scroll {
+            self.scroll = self.cursor;
+        } else if self.cursor >= self.scroll + window {
+            self.scroll = self.cursor + 1 - window;
+        }
     }
 
     fn select_cursor(&mut self) -> ConnectionManagerOutcome {
@@ -1053,8 +1191,12 @@ impl ConnectionManagerState {
     }
 
     fn move_cursor(&mut self, delta: isize) -> ConnectionManagerOutcome {
-        self.window
-            .move_by(delta, self.filtered.len(), CONNECTION_MANAGER_WINDOW);
+        if self.filtered.is_empty() {
+            return ConnectionManagerOutcome::Ignored;
+        }
+        let n = self.filtered.len() as isize;
+        self.cursor = (self.cursor as isize + delta).clamp(0, n - 1) as usize;
+        self.clamp_cursor();
         self.select_cursor()
     }
 
@@ -1231,7 +1373,7 @@ impl ConnectionManagerState {
                 let Some((id, fav)) = self.current().map(|c| (c.id.clone(), !c.favorite)) else {
                     return ConnectionManagerOutcome::Ignored;
                 };
-                if let Some(si) = self.filtered.get(self.window.cursor()).copied() {
+                if let Some(si) = self.filtered.get(self.cursor).copied() {
                     if let Some(e) = self.connections.get_mut(si) {
                         e.favorite = fav;
                     }
@@ -1324,16 +1466,18 @@ impl ConnectionManagerState {
                     query: self.query.clone(),
                 }
             }
-            KeyCode::PageDown => self.move_cursor(CONNECTION_MANAGER_PAGE as isize),
-            KeyCode::PageUp => self.move_cursor(-(CONNECTION_MANAGER_PAGE as isize)),
+            KeyCode::PageDown => self.move_cursor(8),
+            KeyCode::PageUp => self.move_cursor(-8),
             KeyCode::Home => {
-                self.window
-                    .move_first(self.filtered.len(), CONNECTION_MANAGER_WINDOW);
+                self.cursor = 0;
+                self.clamp_cursor();
                 self.select_cursor()
             }
             KeyCode::End => {
-                self.window
-                    .move_last(self.filtered.len(), CONNECTION_MANAGER_WINDOW);
+                if !self.filtered.is_empty() {
+                    self.cursor = self.filtered.len() - 1;
+                    self.clamp_cursor();
+                }
                 self.select_cursor()
             }
             _ => ConnectionManagerOutcome::Ignored,
@@ -1495,9 +1639,9 @@ impl ConnectionManagerState {
             .iter()
             .position(|&si| self.connections.get(si).is_some_and(|c| c.id == id))
         {
-            let already = self.window.cursor() == fi;
-            self.window
-                .set_cursor(fi, self.filtered.len(), CONNECTION_MANAGER_WINDOW);
+            let already = self.cursor == fi;
+            self.cursor = fi;
+            self.clamp_cursor();
             if already {
                 if let Some(c) = self.current() {
                     if c.enabled {
@@ -1625,7 +1769,8 @@ impl<'a> ConnectionManager<'a> {
         };
         let panel = Panel::new(self.system).title(title).emphasis(emphasis);
         let inner = panel.inner(area);
-        panel.paint(area, buffer, None);
+        use ratatui_core::widgets::Widget;
+        Widget::render(&panel, area, buffer);
         if inner.is_empty() {
             return;
         }
@@ -1642,7 +1787,7 @@ impl<'a> ConnectionManager<'a> {
                 StatusIndicator::new(c.status.semantic(), self.system)
                     .label(&line)
                     .colorless(self.colorless)
-                    .paint(Rect::new(inner.x, y, inner.width, 1), buffer, None);
+                    .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
                 y = y.saturating_add(1);
             }
         }
@@ -1783,11 +1928,13 @@ impl<'a> ConnectionManager<'a> {
             return;
         }
 
-        // Read-only projection: re-derive the visible slice against the
-        // painted viewport without mutating state during paint.
-        let mut view = state.window;
-        view.clamp(state.filtered.len(), viewport);
-        let offset = view.scroll();
+        let mut offset = state.scroll;
+        if state.cursor < offset {
+            offset = state.cursor;
+        } else if viewport > 0 && state.cursor >= offset + viewport {
+            offset = state.cursor + 1 - viewport;
+        }
+        state.scroll = offset;
 
         let narrow = area.width < 40;
         let tiny = area.width < 28;
@@ -1805,7 +1952,7 @@ impl<'a> ConnectionManager<'a> {
             let Some(c) = state.connections.get(si) else {
                 continue;
             };
-            let selected = row_i == state.window.cursor();
+            let selected = row_i == state.cursor;
             let indicator = StatusIndicator::new(c.status.semantic(), self.system)
                 .label(c.status.label())
                 .colorless(self.colorless);
@@ -1869,7 +2016,6 @@ impl<'a> ConnectionManager<'a> {
                 indicator.paint(
                     Rect::new(status_x, y, area.right().saturating_sub(status_x), 1),
                     buffer,
-                    None,
                 );
             }
             state.row_hits.push((
@@ -1972,7 +2118,7 @@ impl<'a> ConnectionManager<'a> {
                 StatusIndicator::new(semantic, self.system)
                     .label(&label)
                     .colorless(self.colorless)
-                    .paint(Rect::new(area.x, y, area.width, 1), buffer, None);
+                    .paint(Rect::new(area.x, y, area.width, 1), buffer);
             }
             y = y.saturating_add(1);
         }
@@ -2099,7 +2245,7 @@ impl<'a> ConnectionManager<'a> {
         StatusIndicator::new(SemanticStatus::Warning, self.system)
             .label(&warning)
             .colorless(self.colorless)
-            .paint(Rect::new(area.x, y, area.width, 1), buffer, None);
+            .paint(Rect::new(area.x, y, area.width, 1), buffer);
         let bar_y = area.bottom().saturating_sub(1);
         let cancel = if !state.confirm_proceed_focused {
             "[Cancel]"
@@ -2260,7 +2406,10 @@ pub mod bench {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::widgets::tests::{click, press};
+
+    fn press(code: KeyCode) -> KeyEvent {
+        KeyEvent::new(code, KeyModifiers::NONE)
+    }
 
     fn open() -> ConnectionManagerState {
         let mut st = ConnectionManagerState::new();
@@ -2351,8 +2500,7 @@ mod tests {
             .iter()
             .position(|&si| st.connections[si].id == "c4")
             .unwrap();
-        st.window
-            .set_cursor(i, st.filtered.len(), CONNECTION_MANAGER_WINDOW);
+        st.cursor = i;
         let out = st.handle_key(press(KeyCode::Char('t')));
         assert!(matches!(
             out,
@@ -2599,8 +2747,7 @@ mod tests {
             .iter()
             .position(|&si| st.connections[si].id == "c5")
             .unwrap();
-        st.window
-            .set_cursor(i, st.filtered.len(), CONNECTION_MANAGER_WINDOW);
+        st.cursor = i;
         let rs = st.reconnecting_state_for(None).unwrap();
         assert_eq!(rs.phase(), ConnectivityPhase::Disconnected);
         assert!(rs.target().contains("Offline replica"));
@@ -2615,8 +2762,7 @@ mod tests {
             .iter()
             .position(|&si| st.connections[si].id == "c4")
             .unwrap();
-        st.window
-            .set_cursor(i, st.filtered.len(), CONNECTION_MANAGER_WINDOW);
+        st.cursor = i;
         let d = st.diagnostic_for_current().unwrap();
         assert_eq!(d.connection_id, "c4");
         assert!(d.message.contains("refused"));
@@ -2652,8 +2798,7 @@ mod tests {
             .iter()
             .position(|&si| st.connections[si].id == "c6")
             .unwrap();
-        st.window
-            .set_cursor(i, st.filtered.len(), CONNECTION_MANAGER_WINDOW);
+        st.cursor = i;
         assert!(matches!(
             st.handle_key(press(KeyCode::Enter)),
             ConnectionManagerOutcome::Ignored
@@ -2703,7 +2848,7 @@ mod tests {
         ] {
             assert!(!s.id().is_empty());
             let _ = s.glyph(true);
-            let _ = s.glyph(true);
+            let _ = s.glyph(false);
             let _ = s.to_connectivity_phase();
         }
         for k in [
@@ -2773,6 +2918,8 @@ mod tests {
         }
         let elapsed = start.elapsed();
         assert!(elapsed.as_secs() < 3, "{elapsed:?}");
+        // Also record-friendly: always succeed if under budget
+        let _ = elapsed;
     }
 
     #[test]
@@ -2784,7 +2931,11 @@ mod tests {
         ConnectionManager::new(&system).paint(area, &mut buf, &mut st);
         assert!(!st.row_hits.is_empty());
         let (id, r) = st.row_hits[0].clone();
-        let out = st.handle_mouse(click(r.x, r.y));
+        let out = st.handle_mouse(MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: Position { x: r.x, y: r.y },
+            modifiers: KeyModifiers::NONE,
+        });
         assert!(
             matches!(
                 out,
@@ -2793,7 +2944,11 @@ mod tests {
             ),
             "{out:?} {id}"
         );
-        let out = st.handle_mouse(click(r.x, r.y));
+        let out = st.handle_mouse(MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: Position { x: r.x, y: r.y },
+            modifiers: KeyModifiers::NONE,
+        });
         assert!(
             matches!(out, ConnectionManagerOutcome::ConnectRequested { .. }),
             "{out:?}"
@@ -2855,8 +3010,7 @@ mod tests {
     #[test]
     fn selection_stable_on_set() {
         let mut st = open();
-        st.window
-            .set_cursor(1, st.filtered.len(), CONNECTION_MANAGER_WINDOW);
+        st.cursor = 1;
         let id = st.current_id().unwrap();
         let mut next = example_connections();
         next.push(ConnectionEntry::new(

@@ -2,4 +2,4 @@
 mod session;
 
 pub use ratatui_crossterm::CrosstermBackend;
-pub use session::{Session, SessionOptions};
+pub use session::{Session, SessionOptions, key_release_reporting};

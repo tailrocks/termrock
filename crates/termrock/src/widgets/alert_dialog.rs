@@ -21,16 +21,17 @@
 //!
 //! Research: Radix AlertDialog, database drop/truncate UX, cloud consoles,
 //! permission surfaces.
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect, text::Text, widgets::StatefulWidget};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers},
+    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
     interaction::{
-        HitRegion, NavigationMove, OverlayId, OverlayOutcome, OverlayStack, SemanticNode,
-        SemanticRole, SemanticScene, SemanticState, UiIntent,
+        HitRegion, NavigationMove, OverlayId, OverlayKind, OverlayOutcome, OverlaySize,
+        OverlayStack, SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent,
     },
     style::{DesignSystem, Role},
-    text::take_display_cols,
+    text::{display_cols, take_display_cols},
     widgets::Hint,
 };
 
@@ -112,6 +113,12 @@ impl AlertKind {
             Self::Custom => "Cancel",
         }
     }
+
+    /// Whether countdown is commonly justified (destructive bulk / egress).
+    #[must_use]
+    pub const fn countdown_justified(self) -> bool {
+        matches!(self, Self::Delete | Self::DataEgress | Self::Terminate)
+    }
 }
 
 /// Whether the action can be undone.
@@ -128,6 +135,16 @@ pub enum AlertReversibility {
 }
 
 impl AlertReversibility {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Irreversible => "irreversible",
+            Self::Recoverable => "recoverable",
+            Self::Reversible => "reversible",
+        }
+    }
+
     /// User-facing line.
     #[must_use]
     pub const fn label(self) -> &'static str {
@@ -342,11 +359,34 @@ pub struct AlertDialogState<Id> {
 }
 
 impl<Id> AlertDialogState<Id> {
+    /// Kind.
+    #[must_use]
+    pub const fn kind(&self) -> AlertKind {
+        self.kind
+    }
+
+    /// Scope.
+    #[must_use]
+    pub fn scope(&self) -> &AlertScope {
+        &self.scope
+    }
+
+    /// Replace scope.
+    pub fn set_scope(&mut self, scope: AlertScope) {
+        self.scope = scope;
+    }
+
     /// Confirm gates (typed / countdown).
     pub fn set_gates(&mut self, gates: AlertConfirmGates) {
         self.countdown_left_ms = gates.countdown_ms;
         self.gates = gates;
         self.typed_buffer.clear();
+    }
+
+    /// Gates.
+    #[must_use]
+    pub fn gates(&self) -> &AlertConfirmGates {
+        &self.gates
     }
 
     /// Non-dismissable critical state (Esc always trapped; no soft cancel via Esc).
@@ -358,6 +398,13 @@ impl<Id> AlertDialogState<Id> {
             DialogClosePolicy::ConfirmOnly
         });
     }
+
+    /// Whether locked.
+    #[must_use]
+    pub const fn is_locked(&self) -> bool {
+        self.locked
+    }
+
     /// Override title.
     pub fn set_title(&mut self, title: impl Into<String>) {
         self.title_override = Some(title.into());
@@ -367,6 +414,18 @@ impl<Id> AlertDialogState<Id> {
     pub fn set_action_labels(&mut self, confirm: impl Into<String>, cancel: impl Into<String>) {
         self.confirm_label = confirm.into();
         self.cancel_label = cancel.into();
+    }
+
+    /// Typed buffer contents.
+    #[must_use]
+    pub fn typed_buffer(&self) -> &str {
+        &self.typed_buffer
+    }
+
+    /// Remaining countdown ms.
+    #[must_use]
+    pub const fn countdown_remaining_ms(&self) -> Option<u64> {
+        self.countdown_left_ms
     }
 
     /// Whether typed phrase matches (or no typed gate).
@@ -408,6 +467,12 @@ impl<Id> AlertDialogState<Id> {
     /// Input gate.
     pub fn set_accepts_input(&mut self, on: bool) {
         self.dialog.set_accepts_input(on);
+    }
+
+    /// Underlying dialog engine.
+    #[must_use]
+    pub fn dialog(&self) -> &DialogState<Id> {
+        &self.dialog
     }
 
     /// Title for paint.
@@ -761,6 +826,14 @@ impl<'a, Id> AlertDialog<'a, Id> {
         }
     }
 
+    /// ASCII markers.
+    #[must_use]
+    /// Reduced color.
+    pub const fn colorless(mut self, on: bool) -> Self {
+        self.colorless = on;
+        self
+    }
+
     /// Paint full alert.
     pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut AlertDialogState<Id>)
     where
@@ -820,7 +893,7 @@ impl<'a, Id> AlertDialog<'a, Id> {
                     buffer.set_stringn(
                         x,
                         y,
-                        take_display_cols(&msg, usize::from(w)).as_ref(),
+                        &take_display_cols(&msg, usize::from(w)),
                         usize::from(w),
                         self.system.style(Role::TextMuted),
                     );
@@ -1024,7 +1097,7 @@ fn paint_typed_field(
         buffer.set_stringn(
             body.x,
             y.saturating_sub(1),
-            take_display_cols(&ask, usize::from(body.width)).as_ref(),
+            &take_display_cols(&ask, usize::from(body.width)),
             usize::from(body.width),
             system.style(Role::TextMuted),
         );
@@ -1044,7 +1117,7 @@ fn paint_typed_field(
     buffer.set_stringn(
         body.x,
         y,
-        take_display_cols(&line, usize::from(body.width)).as_ref(),
+        &take_display_cols(&line, usize::from(body.width)),
         usize::from(body.width),
         style,
     );
@@ -1052,12 +1125,43 @@ fn paint_typed_field(
 
 // ── Overlay helpers ─────────────────────────────────────────────────────────
 
+/// Open default alert overlay id with confirm-only policy.
+pub fn open_alert_dialog_widget_overlay<FocusId: Clone>(
+    stack: &mut OverlayStack<FocusId>,
+    bounds: Rect,
+    opener_focus: Option<FocusId>,
+    locked: bool,
+) -> OverlayOutcome<FocusId> {
+    open_dialog_configured(
+        stack,
+        bounds,
+        DialogSize {
+            width: ALERT_DIALOG_DEFAULT_WIDTH,
+            height: ALERT_DIALOG_DEFAULT_HEIGHT,
+        },
+        opener_focus,
+        if locked {
+            DialogClosePolicy::Locked
+        } else {
+            DialogClosePolicy::ConfirmOnly
+        },
+        Some(DialogRecipe::Destructive),
+        Some(ALERT_DIALOG_OVERLAY_ID.to_string()),
+    )
+}
+
+/// Dismiss alert widget overlay.
+pub fn dismiss_alert_dialog_overlay<FocusId: Clone>(
+    stack: &mut OverlayStack<FocusId>,
+) -> OverlayOutcome<FocusId> {
+    stack.dismiss(&OverlayId::from_static(ALERT_DIALOG_OVERLAY_ID))
+}
+
 // ── Tests ───────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::interaction::OverlayKind;
     use crate::interaction::OverlayOutcome;
     use ratatui_core::layout::Position;
 

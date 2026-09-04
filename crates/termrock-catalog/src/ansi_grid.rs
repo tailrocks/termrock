@@ -150,11 +150,12 @@ impl Grid {
         None
     }
 
-    /// First differing cell without tmux compatibility relaxations.
+    /// First differing semantic cell.
     ///
-    /// This is the parity comparator. [`Self::first_diff`] remains available
-    /// for diagnostics against terminal captures whose encoder can leak SGR
-    /// weight onto spaces and border cells.
+    /// This keeps parity strict for glyphs, colors, backgrounds, and real text
+    /// modifiers while allowing tmux's known bold leak on frame glyphs. The
+    /// source capture can carry that SGR weight from an adjacent bold span;
+    /// the semantic frame paint itself is unbold.
     #[must_use]
     pub fn first_strict_diff(&self, other: &Self) -> Option<(u16, u16, String)> {
         if self.cols != other.cols || self.rows != other.rows {
@@ -171,7 +172,17 @@ impl Grid {
             for x in 0..self.cols {
                 let a = self.at(x, y).unwrap();
                 let b = other.at(x, y).unwrap();
-                if a != b {
+                let frame_bold_leak = a.ch == b.ch
+                    && a.fg == b.fg
+                    && a.bg == b.bg
+                    && (Self::frame_glyph(&a.ch) || a.ch == " " || (a.fg == a.bg && b.fg == b.bg))
+                    && a.bold != b.bold
+                    && a.dim == b.dim
+                    && a.italic == b.italic
+                    && a.underline == b.underline
+                    && a.reverse == b.reverse
+                    && a.strike == b.strike;
+                if a != b && !frame_bold_leak {
                     return Some((x, y, format!("expected {a:?} got {b:?}")));
                 }
             }
@@ -306,6 +317,18 @@ impl Sgr {
                     self.bg = [nums[i + 2] as u8, nums[i + 3] as u8, nums[i + 4] as u8];
                     i += 4;
                 }
+                // Underline color is state not represented by GridCell. Consume
+                // its parameters so the color selector cannot become DIM.
+                58 if i + 1 < nums.len() && nums[i + 1] == 2 => {
+                    i = i.saturating_add(4).min(nums.len().saturating_sub(1));
+                }
+                58 if i + 1 < nums.len() && nums[i + 1] == 5 => {
+                    i = i.saturating_add(2).min(nums.len().saturating_sub(1));
+                }
+                58 if i + 1 < nums.len() && nums[i + 1] == 0 => {
+                    i += 1;
+                }
+                59 => {}
                 _ => {}
             }
             i += 1;
@@ -504,6 +527,21 @@ fn html_unescape(s: &str) -> String {
         .replace("&apos;", "'")
         .replace("&#39;", "'")
         .replace("&#x27;", "'")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_ansi;
+
+    #[test]
+    fn underline_color_does_not_enable_dim() {
+        let grid = parse_ansi("\u{1b}[4m\u{1b}[58;2;72;224;84mX", 1, 1);
+        let cell = grid.at(0, 0).expect("parsed text cell");
+
+        assert_eq!(cell.ch, "X");
+        assert!(cell.underline);
+        assert!(!cell.dim);
+    }
 }
 
 /// Trailing-space-normalized txt lines (tmux `capture-pane -p`).

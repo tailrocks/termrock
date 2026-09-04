@@ -22,7 +22,8 @@
 //!
 //! Composes: [`crate::widgets::DiffHunk`], [`crate::widgets::DiffReview`],
 //! [`crate::widgets::DiffReviewOutcome`],
-//! [`crate::widgets::DiffReviewState`],
+//! [`crate::widgets::DiffReviewState`], [`crate::widgets::List`],
+//! [`crate::widgets::ListRow`], [`crate::widgets::ListState`],
 //! [`crate::widgets::ModeRibbon`], and 30 more.
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
@@ -30,6 +31,7 @@
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
+    text::Line,
     widgets::{StatefulWidget, Widget},
 };
 
@@ -38,7 +40,7 @@ use crate::{
     input::{KeyCode, KeyEvent},
     interaction::{
         InteractionElement, InteractionLayer, InteractionOutcome, InteractionScene,
-        LayerDismissPolicy, LayerKind, SemanticRole,
+        LayerDismissPolicy, LayerKind, Outcome, SemanticRole,
     },
     layout::{
         ModalSpec, PaneConstraint, PaneGeom, PaneId, Workspace, WorkspaceAxis, WorkspaceNode,
@@ -51,10 +53,11 @@ use crate::{
     },
     style::{DesignSystem, PanelChrome},
     widgets::{
-        DiffHunk, DiffReview, DiffReviewState, ModeRibbon, Panel, PermissionOutcome,
-        PermissionPrompt, PermissionPromptState, PromptComposer, PromptComposerOutcome,
-        PromptComposerState, QuestionFlow, QuestionFlowState, StatusBar, StatusBarState,
-        StatusSlot, Transcript, TranscriptBlock, TranscriptOutcome, TranscriptState, WorkbenchMode,
+        DiffHunk, DiffReview, DiffReviewState, List, ListRow, ListState, ModeRibbon,
+        ModeRibbonState, Panel, PermissionOutcome, PermissionPrompt, PermissionPromptState,
+        PromptComposer, PromptComposerOutcome, PromptComposerState, QuestionFlow,
+        QuestionFlowState, StatusBar, StatusBarState, StatusSlot, Transcript, TranscriptBlock,
+        TranscriptOutcome, TranscriptState, WorkbenchMode,
     },
 };
 
@@ -129,6 +132,16 @@ impl WorkbenchDensity {
             Self::Normal
         }
     }
+
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Normal => "normal",
+            Self::Narrow => "narrow",
+            Self::Tiny => "tiny",
+        }
+    }
 }
 
 // ── Key outcomes ────────────────────────────────────────────────────────────
@@ -155,6 +168,8 @@ pub enum WorkbenchKeyOutcome {
     Session,
     /// Elevated task rail.
     Task(TaskRailOutcome),
+    /// Legacy list task rail.
+    TaskList(Outcome<&'static str>),
     /// Transcript / thread.
     Transcript(TranscriptOutcome<&'static str>),
     /// Activity shelf.
@@ -179,10 +194,14 @@ pub struct AgentWorkbenchState {
     pub scene: InteractionScene<&'static str, &'static str, ()>,
     /// Elevated TaskRail state.
     pub task_rail: TaskRailState,
+    /// Legacy list selection when host still feeds ListRow.
+    pub task_list: ListState<&'static str>,
     /// Activity shelf.
     pub activity: ActivityShelfState,
     /// Working-state card.
     pub working: WorkingStateCardState,
+    /// Mode ribbon selection (plan/build/…).
+    pub mode_ribbon: ModeRibbonState<&'static str>,
     /// Question-flow state (never owns composer draft).
     pub question: QuestionFlowState,
     /// Plan review state.
@@ -218,8 +237,10 @@ impl AgentWorkbenchState {
             workspace: WorkspaceState::new(),
             scene: InteractionScene::default(),
             task_rail: TaskRailState::new(),
+            task_list: ListState::default(),
             activity: ActivityShelfState::new(),
             working: WorkingStateCardState::new(),
+            mode_ribbon: ModeRibbonState::default(),
             question: QuestionFlowState::new(),
             plan: PlanReviewState::new(),
             diff: DiffReviewState::default(),
@@ -260,6 +281,49 @@ impl AgentWorkbenchState {
     #[must_use]
     pub const fn plan_open(&self) -> bool {
         self.plan_open
+    }
+
+    /// Diff overlay.
+    #[must_use]
+    pub const fn diff_open(&self) -> bool {
+        self.diff_open
+    }
+
+    /// Session picker overlay.
+    #[must_use]
+    pub const fn session_open(&self) -> bool {
+        self.session_open
+    }
+
+    /// Command palette overlay flag.
+    #[must_use]
+    pub const fn command_open(&self) -> bool {
+        self.command_open
+    }
+
+    /// Host opens/closes session picker (draft stays in composer).
+    pub const fn set_session_open(&mut self, open: bool) {
+        self.session_open = open;
+    }
+
+    /// Host opens/closes plan review.
+    pub const fn set_plan_open(&mut self, open: bool) {
+        self.plan_open = open;
+    }
+
+    /// Host opens/closes diff review.
+    pub const fn set_diff_open(&mut self, open: bool) {
+        self.diff_open = open;
+    }
+
+    /// Host opens/closes question flow.
+    pub const fn set_question_open(&mut self, open: bool) {
+        self.question_open = open;
+    }
+
+    /// Host opens/closes command surface.
+    pub const fn set_command_open(&mut self, open: bool) {
+        self.command_open = open;
     }
 
     /// Any dismissible overlay owning input.
@@ -345,7 +409,8 @@ impl AgentWorkbenchState {
         transcript: &mut TranscriptState<&'static str>,
         transcript_blocks: &[TranscriptBlock<'_, &'static str>],
         permission: Option<&mut PermissionPromptState>,
-        task_models: &[ActivityModel],
+        task_models: Option<&[ActivityModel]>,
+        legacy_tasks: Option<&[ListRow<'_, &'static str>]>,
         activities: Option<&[ActivityItem]>,
         diff_hunks: Option<&[DiffHunk]>,
     ) -> WorkbenchKeyOutcome {
@@ -464,11 +529,22 @@ impl AgentWorkbenchState {
                 }
             }
             Some("task_rail") => {
-                let out = self.task_rail.handle_key(key, task_models);
-                if matches!(out, TaskRailOutcome::Ignored) {
-                    WorkbenchKeyOutcome::Ignored
+                if let Some(models) = task_models {
+                    let out = self.task_rail.handle_key(key, models);
+                    if matches!(out, TaskRailOutcome::Ignored) {
+                        WorkbenchKeyOutcome::Ignored
+                    } else {
+                        WorkbenchKeyOutcome::Task(out)
+                    }
+                } else if let Some(tasks) = legacy_tasks {
+                    let out = self.task_list.handle_key(tasks, key);
+                    if matches!(out, Outcome::Ignored) {
+                        WorkbenchKeyOutcome::Ignored
+                    } else {
+                        WorkbenchKeyOutcome::TaskList(out)
+                    }
                 } else {
-                    WorkbenchKeyOutcome::Task(out)
+                    WorkbenchKeyOutcome::Ignored
                 }
             }
             Some("transcript") => {
@@ -506,6 +582,12 @@ impl AgentWorkbenchState {
 }
 
 // ── Layout ──────────────────────────────────────────────────────────────────
+
+/// Resolves workbench geometry for the current area and density.
+#[must_use]
+pub fn agent_workbench_layout(area: Rect, state: &WorkspaceState) -> Vec<PaneGeom> {
+    agent_workbench_layout_density(area, state, WorkbenchDensity::for_width(area.width))
+}
 
 /// Layout with explicit density (stories / tests).
 #[must_use]
@@ -748,6 +830,14 @@ pub fn sync_workbench_scene(
     scene.reconcile();
 }
 
+/// Registers workbench panes (prefer [`sync_workbench_scene`] with owned state).
+pub fn register_workbench_scene(
+    scene: &mut InteractionScene<&'static str, &'static str, ()>,
+    panes: &[PaneGeom],
+) {
+    sync_workbench_scene(scene, panes, WorkbenchModals::default());
+}
+
 // ── Surfaces ────────────────────────────────────────────────────────────────
 
 /// Borrowed surfaces for one workbench paint (public widgets only).
@@ -758,8 +848,10 @@ pub struct WorkbenchSurfaces<'a, 'b> {
     pub system: &'a DesignSystem,
     /// Persistent workbench state.
     pub state: &'a mut AgentWorkbenchState,
-    /// Task models for the rail.
-    pub task_models: &'a [ActivityModel],
+    /// Elevated task models (preferred over `tasks`).
+    pub task_models: Option<&'a [ActivityModel]>,
+    /// Legacy list rows (fallback TaskRail).
+    pub tasks: &'a [ListRow<'a, &'static str>],
     /// Mode ribbon modes.
     pub modes: &'a [WorkbenchMode<'a, &'static str>],
     /// Transcript widget (MessageThread may paint in place via host).
@@ -791,11 +883,16 @@ pub struct WorkbenchSurfaces<'a, 'b> {
 }
 
 /// Paints a composed workbench frame from borrowed public surfaces.
-pub fn paint_agent_workbench(buffer: &mut Buffer, area: Rect, surfaces: WorkbenchSurfaces<'_, '_>) {
+pub fn render_agent_workbench(
+    buffer: &mut Buffer,
+    area: Rect,
+    surfaces: WorkbenchSurfaces<'_, '_>,
+) {
     let WorkbenchSurfaces {
         system,
         state,
         task_models,
+        tasks,
         modes,
         transcript,
         transcript_state,
@@ -817,8 +914,9 @@ pub fn paint_agent_workbench(buffer: &mut Buffer, area: Rect, surfaces: Workbenc
         .unwrap_or_else(|| WorkbenchDensity::for_width(area.width));
     let panes = agent_workbench_layout_density(area, &state.workspace, density);
 
-    let permission_rect = permission.as_ref().and_then(|(_, perm_state)| {
+    let permission_rect = permission.as_ref().and_then(|(widget, perm_state)| {
         if perm_state.is_empty() {
+            let _ = widget;
             None
         } else {
             Some(permission_modal_rect(area))
@@ -867,11 +965,29 @@ pub fn paint_agent_workbench(buffer: &mut Buffer, area: Rect, surfaces: Workbenc
         match pane.id.0.as_str() {
             "task_rail" => {
                 let is_focused = focused == Some("task_rail") && !overlay;
-                state.task_rail.focused = is_focused;
-                TaskRail::new(task_models, system)
-                    .title("Tasks")
-                    .colorless(colorless)
-                    .paint(pane.area, buffer, &mut state.task_rail);
+                if let Some(models) = task_models {
+                    state.task_rail.focused = is_focused;
+                    TaskRail::new(models, system)
+                        .title("Tasks")
+                        .colorless(colorless)
+                        .paint(pane.area, buffer, &mut state.task_rail);
+                } else {
+                    let panel = Panel::new(system).title("Tasks").emphasis(if is_focused {
+                        PanelChrome::Focused
+                    } else {
+                        PanelChrome::Normal
+                    });
+                    let inner = panel.inner(pane.area);
+                    Widget::render(&panel, pane.area, buffer);
+                    if !inner.is_empty() {
+                        StatefulWidget::render(
+                            &List::new(tasks, system).focused(is_focused),
+                            inner,
+                            buffer,
+                            &mut state.task_list,
+                        );
+                    }
+                }
             }
             "transcript" => {
                 let is_focused = focused == Some("transcript") && !overlay;
@@ -883,7 +999,7 @@ pub fn paint_agent_workbench(buffer: &mut Buffer, area: Rect, surfaces: Workbenc
                         PanelChrome::Normal
                     });
                 let inner = panel.inner(pane.area);
-                panel.paint(pane.area, buffer, None);
+                Widget::render(&panel, pane.area, buffer);
                 transcript_state.set_focused(is_focused);
                 StatefulWidget::render(
                     &transcript.focused(is_focused),
@@ -965,6 +1081,14 @@ pub fn paint_agent_workbench(buffer: &mut Buffer, area: Rect, surfaces: Workbenc
 
 // ── Helpers / fixtures ──────────────────────────────────────────────────────
 
+/// Convenience: empty task-rail placeholder row.
+#[must_use]
+pub fn empty_task_row() -> ListRow<'static, &'static str> {
+    let mut row = ListRow::item("empty", Line::from("No tasks"));
+    row.enabled = false;
+    row
+}
+
 /// Default plan/build modes for demos.
 #[must_use]
 pub fn default_modes(active: &'static str) -> [WorkbenchMode<'static, &'static str>; 2] {
@@ -1039,7 +1163,7 @@ mod tests {
     fn paint(
         workbench: &mut AgentWorkbenchState,
         system: &DesignSystem,
-        task_models: &[ActivityModel],
+        tasks: &[ListRow<'_, &'static str>],
         modes: &[WorkbenchMode<'_, &'static str>],
         blocks: &[TranscriptBlock<'_, &str>],
         permission: Option<(&PermissionPrompt<'_>, &mut PermissionPromptState)>,
@@ -1058,13 +1182,14 @@ mod tests {
         terminal
             .draw(|f| {
                 let area = f.area();
-                paint_agent_workbench(
+                render_agent_workbench(
                     f.buffer_mut(),
                     area,
                     WorkbenchSurfaces {
                         system,
                         state: workbench,
-                        task_models,
+                        task_models: None,
+                        tasks,
                         modes,
                         transcript: &transcript,
                         transcript_state: &mut tstate,
@@ -1126,12 +1251,16 @@ mod tests {
         let lines = ["hello", "world"];
         let blocks = [TranscriptBlock::new("b1", TranscriptKind::User, &lines)];
         let mut workbench = AgentWorkbenchState::new();
-        let models = example_workbench_tasks();
+        let tasks = [
+            ListRow::item("t1", Line::from("Plan review")),
+            ListRow::item("t2", Line::from("Tool: cargo test")),
+        ];
+        workbench.task_list.select(Some("t1"));
         let modes = default_modes("plan");
         let terminal = paint(
             &mut workbench,
             &system,
-            &models,
+            &tasks,
             &modes,
             &blocks,
             None,
@@ -1158,6 +1287,7 @@ mod tests {
         let lines = ["x"];
         let blocks = [TranscriptBlock::new("b1", TranscriptKind::User, &lines)];
         let mut workbench = AgentWorkbenchState::new();
+        let tasks: [ListRow<'_, &str>; 0] = [];
         let modes = default_modes("build");
         let prompt_w = PermissionPrompt::new(&system);
         let mut pstate = PermissionPromptState::new();
@@ -1165,7 +1295,7 @@ mod tests {
         let _ = paint(
             &mut workbench,
             &system,
-            &[],
+            &tasks,
             &modes,
             &blocks,
             Some((&prompt_w, &mut pstate)),
@@ -1202,7 +1332,7 @@ mod tests {
         let _ = paint(
             &mut workbench,
             &system,
-            &[],
+            &tasks,
             &modes,
             &blocks,
             None,
@@ -1235,10 +1365,11 @@ mod tests {
         let blocks = [TranscriptBlock::new("b1", TranscriptKind::User, &lines)];
         let modes = default_modes("plan");
         let prompt_w = PermissionPrompt::new(&system);
+        let tasks: [ListRow<'_, &str>; 0] = [];
         let _ = paint(
             &mut workbench,
             &system,
-            &[],
+            &tasks,
             &modes,
             &blocks,
             Some((&prompt_w, &mut perm)),
@@ -1256,7 +1387,8 @@ mod tests {
             &mut tstate,
             &blocks,
             Some(&mut perm),
-            &[],
+            None,
+            None,
             None,
             None,
         );
@@ -1285,7 +1417,8 @@ mod tests {
             &mut tstate,
             &blocks,
             None,
-            &[],
+            None,
+            None,
             None,
             None,
         );
@@ -1319,15 +1452,17 @@ mod tests {
         let modes = default_modes("build");
         let slots = [StatusSlot::connection("s", "ready")];
         let mut sstate = StatusBarState::default();
+        let tasks: [ListRow<'_, &str>; 0] = [];
         let area = Rect::new(0, 0, 100, 28);
         let mut buf = Buffer::empty(area);
-        paint_agent_workbench(
+        render_agent_workbench(
             &mut buf,
             area,
             WorkbenchSurfaces {
                 system: &system,
                 state: &mut workbench,
-                task_models: &models,
+                task_models: Some(&models),
+                tasks: &tasks,
                 modes: &modes,
                 transcript: &transcript,
                 transcript_state: &mut tstate,
@@ -1370,15 +1505,17 @@ mod tests {
         let modes = default_modes("plan");
         let slots = [];
         let mut sstate = StatusBarState::default();
+        let tasks: [ListRow<'_, &str>; 0] = [];
         let area = Rect::new(0, 0, 80, 24);
         let mut buf = Buffer::empty(area);
-        paint_agent_workbench(
+        render_agent_workbench(
             &mut buf,
             area,
             WorkbenchSurfaces {
                 system: &system,
                 state: &mut workbench,
-                task_models: &[],
+                task_models: None,
+                tasks: &tasks,
                 modes: &modes,
                 transcript: &transcript,
                 transcript_state: &mut tstate,
@@ -1416,15 +1553,17 @@ mod tests {
         let modes = default_modes("build");
         let slots = [];
         let mut sstate = StatusBarState::default();
+        let tasks: [ListRow<'_, &str>; 0] = [];
         let area = Rect::new(0, 0, 90, 28);
         let mut buf = Buffer::empty(area);
-        paint_agent_workbench(
+        render_agent_workbench(
             &mut buf,
             area,
             WorkbenchSurfaces {
                 system: &system,
                 state: &mut workbench,
-                task_models: &[],
+                task_models: None,
+                tasks: &tasks,
                 modes: &modes,
                 transcript: &transcript,
                 transcript_state: &mut tstate,
@@ -1503,15 +1642,17 @@ mod tests {
         let modes = default_modes("build");
         let slots = [StatusSlot::connection("s", "ok")];
         let mut sstate = StatusBarState::default();
+        let tasks: [ListRow<'_, &str>; 0] = [];
         let area = Rect::new(0, 0, 100, 28);
         let mut buf = Buffer::empty(area);
-        paint_agent_workbench(
+        render_agent_workbench(
             &mut buf,
             area,
             WorkbenchSurfaces {
                 system: &system,
                 state: &mut workbench,
-                task_models: &models,
+                task_models: Some(&models),
+                tasks: &tasks,
                 modes: &modes,
                 transcript: &transcript,
                 transcript_state: &mut tstate,
@@ -1551,15 +1692,17 @@ mod tests {
         let modes = default_modes("build");
         let slots = [];
         let mut sstate = StatusBarState::default();
+        let tasks: [ListRow<'_, &str>; 0] = [];
         let area = Rect::new(0, 0, 80, 24);
         let mut buf = Buffer::empty(area);
-        paint_agent_workbench(
+        render_agent_workbench(
             &mut buf,
             area,
             WorkbenchSurfaces {
                 system: &system,
                 state: &mut workbench,
-                task_models: &[],
+                task_models: None,
+                tasks: &tasks,
                 modes: &modes,
                 transcript: &transcript,
                 transcript_state: &mut tstate,
@@ -1614,4 +1757,26 @@ mod tests {
             assert!(r.width >= 1 && r.height >= 1);
         }
     }
+}
+
+/// Agent workbench nav sample.
+#[must_use]
+pub fn example_agent_workbench_nav() -> Vec<crate::widgets::NavItem<&'static str>> {
+    use crate::widgets::{NavItem, NavItemStatus};
+
+    vec![
+        NavItem::new("chat", "Chat").icon("💬").command("wb.chat"),
+        NavItem::new("plan", "Plan")
+            .icon("📋")
+            .status(NavItemStatus::Running)
+            .command("wb.plan"),
+        NavItem::new("files", "Files")
+            .icon("📁")
+            .command("wb.files"),
+        NavItem::separator("sep1"),
+        NavItem::new("sessions", "Sessions")
+            .badge("2")
+            .command("wb.sessions"),
+        NavItem::new("settings", "Settings").command("wb.settings"),
+    ]
 }

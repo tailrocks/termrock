@@ -23,6 +23,20 @@ pub struct VirtRange {
     pub end: u64,
 }
 
+impl VirtRange {
+    /// Length.
+    #[must_use]
+    pub const fn len(self) -> u64 {
+        self.end.saturating_sub(self.start)
+    }
+
+    /// Empty?
+    #[must_use]
+    pub const fn is_empty(self) -> bool {
+        self.len() == 0
+    }
+}
+
 /// How each logical item maps to display extent (rows or columns).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
@@ -85,6 +99,12 @@ impl VirtSlice {
     #[must_use]
     pub const fn len(self) -> u64 {
         self.end.saturating_sub(self.start)
+    }
+
+    /// Whether the visible window is empty.
+    #[must_use]
+    pub const fn is_empty(self) -> bool {
+        self.len() == 0
     }
 
     /// Measure/prefetch length (includes overscan).
@@ -252,6 +272,11 @@ impl Virtualizer {
     pub fn set_viewport_extent(&mut self, viewport_extent: u16) {
         self.viewport_extent = viewport_extent.max(1);
         self.restore_or_clamp();
+    }
+
+    /// Overscan for measure/prefetch.
+    pub fn set_overscan(&mut self, overscan: u16) {
+        self.overscan = overscan;
     }
 
     /// Sticky leading/trailing.

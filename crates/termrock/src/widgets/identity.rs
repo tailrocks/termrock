@@ -122,6 +122,19 @@ pub enum PresenceStatus {
 }
 
 impl PresenceStatus {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::None => "none",
+            Self::Online => "online",
+            Self::Away => "away",
+            Self::Busy => "busy",
+            Self::Offline => "offline",
+            Self::Error => "error",
+        }
+    }
+
     /// Shared vocabulary projection (`None` → [`SemanticStatus::Unknown`]).
     #[must_use]
     pub const fn semantic(self) -> SemanticStatus {
@@ -137,7 +150,7 @@ impl PresenceStatus {
 
     /// 1-cell paint character from shared [`SemanticStatus`] glyphs.
     #[must_use]
-    pub const fn glyph_char(self) -> Option<&'static str> {
+    pub const fn glyph_char(self, _ascii: bool) -> Option<&'static str> {
         match self {
             Self::None => None,
             other => Some(other.semantic().glyph()),
@@ -181,6 +194,16 @@ pub enum AvatarSize {
 }
 
 impl AvatarSize {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Compact => "compact",
+            Self::Normal => "normal",
+            Self::Presence => "presence",
+        }
+    }
+
     /// Avatar body width in cells (not including presence).
     #[must_use]
     pub const fn body_cols(self) -> u16 {
@@ -202,6 +225,18 @@ pub enum AvatarFace {
     RoleGlyph,
     /// Explicit catalog glyph.
     Glyph(Glyph),
+}
+
+impl AvatarFace {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Initials => "initials",
+            Self::RoleGlyph => "role-glyph",
+            Self::Glyph(_) => "glyph",
+        }
+    }
 }
 
 // ── Initials / hash ─────────────────────────────────────────────────────────
@@ -329,6 +364,13 @@ impl<'a> AvatarGlyph<'a> {
         self
     }
 
+    /// Explicit glyph face.
+    #[must_use]
+    pub const fn glyph(mut self, glyph: Glyph) -> Self {
+        self.face = AvatarFace::Glyph(glyph);
+        self
+    }
+
     /// Explicit initials (overrides derivation).
     #[must_use]
     pub const fn initials(mut self, initials: &'a str) -> Self {
@@ -362,6 +404,13 @@ impl<'a> AvatarGlyph<'a> {
     #[must_use]
     pub const fn presence(mut self, status: PresenceStatus) -> Self {
         self.presence = status;
+        self
+    }
+
+    /// Bracket the face (`[AB]`) — stronger no-color / ASCII.
+    #[must_use]
+    pub const fn bracketed(mut self, on: bool) -> Self {
+        self.bracketed = on;
         self
     }
 
@@ -412,34 +461,35 @@ impl<'a> AvatarGlyph<'a> {
                     while display_cols(&s) < cols {
                         s.push(' ');
                     }
-                    take_display_cols(&s, cols).into_owned()
+                    take_display_cols(&s, cols)
                 }
             }
             AvatarFace::RoleGlyph => {
                 let g = self.system.glyphs.resolve(self.role.glyph());
-                fit_glyph_text(g.text, cols)
+                fit_glyph_text(g.text, cols, ascii)
             }
             AvatarFace::Glyph(glyph) => {
                 let g = self.system.glyphs.resolve(glyph);
-                fit_glyph_text(g.text, cols)
+                fit_glyph_text(g.text, cols, ascii)
             }
         };
-        // Bracketed 2-cell face: use [A] style for 2 cols? That is 3 cols.
-        // Keep raw for width contract; bracket only when compact uses 1 cell
-        // or when explicitly requested and we can fit in body via single-char.
-        // Explicit bracketed with 2 cols: first initial only centered as "A "
-        // Prefer no expand beyond cols — skip brackets to honor width guarantee.
-        if (self.bracketed || (ascii && matches!(self.face, AvatarFace::Initials) && cols >= 2))
-            && cols == 1
-        {
-            return raw;
+        if self.bracketed || (ascii && matches!(self.face, AvatarFace::Initials) && cols >= 2) {
+            // Bracketed 2-cell face: use [A] style for 2 cols? That is 3 cols.
+            // Keep raw for width contract; bracket only when compact uses 1 cell
+            // or when explicitly requested and we can fit in body via single-char.
+            if cols == 1 {
+                return raw;
+            }
+            // Explicit bracketed with 2 cols: first initial only centered as "A "
+            // Prefer no expand beyond cols — skip brackets to honor width guarantee.
+            let _ = ascii;
         }
         // Final clamp to exact cols
-        let mut out = take_display_cols(&raw, cols).into_owned();
+        let mut out = take_display_cols(&raw, cols);
         while display_cols(&out) < cols {
             out.push(' ');
         }
-        take_display_cols(&out, cols).into_owned()
+        take_display_cols(&out, cols)
     }
 
     /// Paint role for the face (deterministic from seed unless role-forced).
@@ -529,7 +579,7 @@ impl<'a> AvatarGlyph<'a> {
             style,
         );
         if parts.presence.width > 0 {
-            if let Some(ch) = self.presence.glyph_char() {
+            if let Some(ch) = self.presence.glyph_char(false) {
                 let mut ps = self.system.style(self.presence.role());
                 ps = ratatui_core::style::Style { bg: None, ..ps };
                 if matches!(
@@ -565,12 +615,13 @@ impl Widget for AvatarGlyph<'_> {
     }
 }
 
-fn fit_glyph_text(text: &str, cols: usize) -> String {
-    let mut out = take_display_cols(text, cols).into_owned();
+fn fit_glyph_text(text: &str, cols: usize, _ascii: bool) -> String {
+    let t = take_display_cols(text, cols);
+    let mut out = t;
     while display_cols(&out) < cols {
         out.push(' ');
     }
-    take_display_cols(&out, cols).into_owned()
+    take_display_cols(&out, cols)
 }
 
 // ── Identity ────────────────────────────────────────────────────────────────
@@ -630,6 +681,13 @@ impl<'a> Identity<'a> {
         }
     }
 
+    /// Stable id seed for color (defaults to name).
+    #[must_use]
+    pub const fn seed(mut self, seed: &'a str) -> Self {
+        self.seed = Some(seed);
+        self
+    }
+
     /// Secondary line (handle, model, email).
     #[must_use]
     pub const fn secondary(mut self, text: &'a str) -> Self {
@@ -641,6 +699,20 @@ impl<'a> Identity<'a> {
     #[must_use]
     pub const fn role(mut self, role: IdentityRole) -> Self {
         self.role = role;
+        self
+    }
+
+    /// Face.
+    #[must_use]
+    pub const fn face(mut self, face: AvatarFace) -> Self {
+        self.face = face;
+        self
+    }
+
+    /// Avatar size.
+    #[must_use]
+    pub const fn size(mut self, size: AvatarSize) -> Self {
+        self.size = size;
         self
     }
 
@@ -658,11 +730,25 @@ impl<'a> Identity<'a> {
         self
     }
 
+    /// Hide avatar (name-only).
+    #[must_use]
+    pub const fn avatar(mut self, on: bool) -> Self {
+        self.show_avatar = on;
+        self
+    }
+
     /// Compact recipe: compact avatar, no secondary.
     #[must_use]
     pub const fn compact(mut self) -> Self {
         self.compact = true;
         self.size = AvatarSize::Compact;
+        self
+    }
+
+    /// Initials override.
+    #[must_use]
+    pub const fn initials(mut self, initials: &'a str) -> Self {
+        self.initials = Some(initials);
         self
     }
 
@@ -713,6 +799,22 @@ impl<'a> Identity<'a> {
         s
     }
 
+    /// Measure minimum width.
+    #[must_use]
+    pub fn measure_width(&self) -> u16 {
+        let mut w = 0u16;
+        if self.show_avatar {
+            w = w.saturating_add(self.avatar_glyph().measure_width());
+            w = w.saturating_add(1); // gap
+        }
+        w = w.saturating_add(u16::try_from(display_cols(self.name)).unwrap_or(1));
+        if self.show_badge {
+            w = w.saturating_add(2);
+            w = w.saturating_add(u16::try_from(display_cols(self.role.badge_label())).unwrap_or(1));
+        }
+        w.max(1)
+    }
+
     /// Layout.
     #[must_use]
     pub fn layout(&self, area: Rect) -> IdentityParts {
@@ -732,7 +834,7 @@ impl<'a> Identity<'a> {
             };
             x = x.saturating_add(aw).saturating_add(1);
         }
-        let rest = area.width.saturating_sub(x.saturating_sub(area.x));
+        let rest = area.width.saturating_sub(x.saturating_sub(area.x)).max(0);
         let badge_w = if self.show_badge {
             let bl = self.role.badge_label();
             u16::try_from(display_cols(bl).saturating_add(2)).unwrap_or(4)

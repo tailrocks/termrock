@@ -30,7 +30,7 @@ use std::collections::BTreeSet;
 use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::StatefulWidget};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers},
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseEvent},
     style::{DesignSystem, Role},
     widgets::{
         BreadcrumbItem, EmptyKind, EmptyState, QuickOpenItem, QuickOpenPreview, SemanticStatus,
@@ -108,7 +108,7 @@ impl SchemaNodeKind {
 
     /// Leading glyph.
     #[must_use]
-    pub const fn glyph(self) -> &'static str {
+    pub const fn glyph(self, _ascii: bool) -> &'static str {
         {
             match self {
                 Self::Connection => "⬡",
@@ -124,6 +124,24 @@ impl SchemaNodeKind {
                 Self::Group => "▸",
                 Self::Other => "?",
             }
+        }
+    }
+
+    /// Semantic role for kind chrome.
+    #[must_use]
+    pub const fn role(self) -> Role {
+        match self {
+            Self::Connection => Role::TextStrong,
+            Self::Database | Self::Schema => Role::TextSecondary,
+            Self::Table => Role::TextStrong,
+            Self::View => Role::Text,
+            Self::Column => Role::TextMuted,
+            // Object kind is taxonomy, not operational health. Keep it
+            // neutral so warning chrome remains reserved for an actual
+            // caution with a glyph and verb.
+            Self::Index | Self::Constraint => Role::TextMuted,
+            Self::Routine | Self::Sequence => Role::TextStrong,
+            Self::Group | Self::Other => Role::TextMuted,
         }
     }
 }
@@ -157,6 +175,31 @@ impl SchemaConnStatus {
             Self::Stale => "stale",
         }
     }
+
+    /// Short letter.
+    #[must_use]
+    pub const fn letter(self) -> char {
+        match self {
+            Self::Connected => '●',
+            Self::Connecting => '…',
+            Self::Offline => '○',
+            Self::Error => '!',
+            Self::Stale => '~',
+        }
+    }
+
+    /// ASCII letter.
+    #[must_use]
+    pub const fn letter_ascii(self) -> char {
+        match self {
+            Self::Connected => '*',
+            Self::Connecting => '.',
+            Self::Offline => 'o',
+            Self::Error => '!',
+            Self::Stale => '~',
+        }
+    }
+
     /// Shared lifecycle projection for recipe-owned status paint.
     #[must_use]
     pub const fn semantic(self) -> SemanticStatus {
@@ -351,6 +394,22 @@ impl<'a, Id> SchemaBrowserEntry<'a, Id> {
         self
     }
 
+    /// Loading.
+    #[must_use]
+    pub const fn loading(mut self) -> Self {
+        self.status = TreeNodeStatus::Loading;
+        self.enabled = false;
+        self
+    }
+
+    /// Error.
+    #[must_use]
+    pub const fn error_msg(mut self, msg: &'a str) -> Self {
+        self.error = Some(msg);
+        self.status = TreeNodeStatus::Error;
+        self
+    }
+
     /// Connection status.
     #[must_use]
     pub const fn conn_status(mut self, s: SchemaConnStatus) -> Self {
@@ -371,6 +430,7 @@ impl<'a, Id> SchemaBrowserEntry<'a, Id> {
         self.nullable = Some(n);
         self
     }
+
     /// Key badge (`PK`, `FK`, `UQ`).
     #[must_use]
     pub const fn key_badge(mut self, b: &'a str) -> Self {
@@ -382,6 +442,20 @@ impl<'a, Id> SchemaBrowserEntry<'a, Id> {
     #[must_use]
     pub const fn secondary(mut self, s: &'a str) -> Self {
         self.secondary = Some(s);
+        self
+    }
+
+    /// Disabled.
+    #[must_use]
+    pub const fn disabled(mut self) -> Self {
+        self.enabled = false;
+        self
+    }
+
+    /// Status override.
+    #[must_use]
+    pub const fn with_status(mut self, s: TreeNodeStatus) -> Self {
+        self.status = s;
         self
     }
 }
@@ -400,7 +474,8 @@ pub fn filter_schema_entries<'a, Id: Clone + PartialEq>(
     }
     let mut keep = vec![false; entries.len()];
     for (i, e) in entries.iter().enumerate() {
-        if crate::text::contains_lower_all(&[e.name, e.path, e.kind.id()], &q) {
+        let hay = format!("{} {} {}", e.name, e.path, e.kind.id()).to_ascii_lowercase();
+        if hay.contains(&q) {
             keep[i] = true;
             let mut parent = e.parent.clone();
             while let Some(pid) = parent {
@@ -425,6 +500,7 @@ pub fn filter_schema_entries<'a, Id: Clone + PartialEq>(
 #[must_use]
 pub fn schema_entries_to_tree_nodes<'a, Id: Clone>(
     entries: &[&'a SchemaBrowserEntry<'a, Id>],
+    _ascii: bool,
 ) -> Vec<TreeNode<'a, Id>> {
     entries
         .iter()
@@ -445,7 +521,7 @@ pub fn schema_entries_to_tree_nodes<'a, Id: Clone>(
             } else if !e.enabled {
                 node = node.disabled();
             }
-            let lead = e.kind.glyph();
+            let lead = e.kind.glyph(false);
             node = node.leading(Line::from(lead));
             // Badge: key or connection letter
             if let Some(kb) = e.key_badge {
@@ -528,6 +604,18 @@ pub fn schema_to_quick_open_items<Id: Clone>(
         .collect()
 }
 
+/// Collect expanded branch ids from projection (host may merge into preserve set).
+#[must_use]
+pub fn expanded_ids_from_entries<Id: Clone + Ord>(
+    entries: &[SchemaBrowserEntry<'_, Id>],
+) -> BTreeSet<Id> {
+    entries
+        .iter()
+        .filter(|e| e.expanded && e.branch)
+        .map(|e| e.id.clone())
+        .collect()
+}
+
 /// Apply preserved expansion to a mutable host list (ids present become expanded).
 pub fn apply_expanded_set<Id: Clone + PartialEq + Ord>(
     entries: &mut [SchemaBrowserEntry<'_, Id>],
@@ -536,8 +624,9 @@ pub fn apply_expanded_set<Id: Clone + PartialEq + Ord>(
     for e in entries {
         if e.branch && expanded.contains(&e.id) {
             e.expanded = true;
-            // Lazy nodes stay lazy until the host loads them; expanded+lazy
-            // reads as "pending open".
+            if matches!(e.status, TreeNodeStatus::Lazy) {
+                // stay lazy until host loads; expanded+lazy means "pending open"
+            }
         }
     }
 }
@@ -657,12 +746,44 @@ impl<Id: Clone + Ord + PartialEq> SchemaBrowserState<Id> {
         self.accepts_input = on;
     }
 
+    /// Accepts input.
+    #[must_use]
+    pub const fn accepts_input(&self) -> bool {
+        self.accepts_input
+    }
+
+    /// Selected.
+    #[must_use]
+    pub const fn selected(&self) -> Option<&Id> {
+        self.tree.selected()
+    }
+
+    /// Select.
+    pub fn select(&mut self, id: Option<Id>) {
+        self.tree.select(id);
+    }
+
+    /// Multi-select.
+    pub fn enable_multi_select(&mut self) {
+        self.tree.enable_multi_select();
+    }
+
     /// Effective presentation (override or auto).
     #[must_use]
     pub fn effective_presentation(&self, area: Rect) -> SchemaBrowserPresentation {
         self.presentation_override
             .unwrap_or_else(|| SchemaBrowserPresentation::for_bounds(area.width, area.height))
     }
+
+    /// Record expansion for preserve set.
+    pub fn mark_expanded(&mut self, id: Id, expanded: bool) {
+        if expanded {
+            self.expanded.insert(id);
+        } else {
+            self.expanded.remove(&id);
+        }
+    }
+
     /// Merge host projection expansion into preserve set.
     pub fn sync_expanded_from_entries(&mut self, entries: &[SchemaBrowserEntry<'_, Id>]) {
         for e in entries {
@@ -807,9 +928,18 @@ impl<Id: Clone + Ord + PartialEq> SchemaBrowserState<Id> {
 
         // Project to tree for nav
         let visible = self.visible_entries(entries);
-        let nodes = schema_entries_to_tree_nodes(&visible);
+        let nodes = schema_entries_to_tree_nodes(&visible, false);
         let out = self.tree.handle_key(&nodes, key);
         map_tree_outcome(out, entries, &mut self.expanded)
+    }
+
+    /// Mouse: Tree has no pointer API yet — host may select via hit regions after paint.
+    pub fn handle_mouse(
+        &mut self,
+        _entries: &[SchemaBrowserEntry<'_, Id>],
+        _event: MouseEvent,
+    ) -> SchemaBrowserOutcome<Id> {
+        SchemaBrowserOutcome::Ignored
     }
 }
 
@@ -921,7 +1051,7 @@ impl<'a, Id: Clone + PartialEq + Ord> SchemaBrowser<'a, Id> {
     /// ASCII.
     #[must_use]
     /// Paint.
-    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut SchemaBrowserState<Id>)
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut SchemaBrowserState<Id>)
     where
         Id: Clone + PartialEq + Eq,
     {
@@ -985,15 +1115,11 @@ impl<'a, Id: Clone + PartialEq + Ord> SchemaBrowser<'a, Id> {
         if visible.is_empty() {
             EmptyState::new("No objects", self.system)
                 .kind(EmptyKind::NoData)
-                .paint(
-                    Rect::new(body.x, body.y, body.width, 1),
-                    buffer,
-                    &mut crate::widgets::EmptyStateState::new(),
-                );
+                .paint(Rect::new(body.x, body.y, body.width, 1), buffer);
             return;
         }
 
-        let nodes = schema_entries_to_tree_nodes(&visible);
+        let nodes = schema_entries_to_tree_nodes(&visible, false);
         Tree::new(&nodes, self.system)
             .focused(self.focused && state.accepts_input)
             .render(body, buffer, &mut state.tree);
@@ -1006,6 +1132,10 @@ impl<'a, Id: Clone + PartialEq + Ord> SchemaBrowser<'a, Id> {
 pub mod bench {
     /// Objects in a large projection window.
     pub const OBJECT_COUNT: usize = 5_000;
+    /// Viewport rows.
+    pub const VIEWPORT: u16 = 40;
+    /// Paint frames.
+    pub const PAINT_FRAMES: u32 = 40;
 }
 
 #[cfg(test)]
@@ -1090,6 +1220,8 @@ mod tests {
         let entries = sample();
         let mut state = SchemaBrowserState::with_selected(Some("orders"));
         // Activate lazy table
+        let nodes = schema_entries_to_tree_nodes(&entries.iter().collect::<Vec<_>>(), true);
+        let _ = nodes;
         let out = state.handle_key(&entries, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
         assert!(
             matches!(
@@ -1177,7 +1309,7 @@ mod tests {
         let mut buf = Buffer::empty(area);
         let _ = SchemaBrowser::new(&entries, &system)
             .title("Catalog")
-            .paint(area, &mut buf, &mut state);
+            .render(area, &mut buf, &mut state);
         let text: String = buf
             .content()
             .iter()
@@ -1243,14 +1375,14 @@ mod tests {
         assert!(!vis.is_empty());
         let area = Rect::new(0, 0, 48, 24);
         let mut buf = Buffer::empty(area);
-        let _ = SchemaBrowser::new(&entries, &system).paint(area, &mut buf, &mut state);
+        let _ = SchemaBrowser::new(&entries, &system).render(area, &mut buf, &mut state);
     }
 
     #[test]
     fn tree_nodes_have_kind_glyphs() {
         let entries = sample();
         let refs: Vec<_> = entries.iter().collect();
-        let nodes = schema_entries_to_tree_nodes(&refs);
+        let nodes = schema_entries_to_tree_nodes(&refs, true);
         assert!(!nodes.is_empty());
         assert!(nodes.iter().any(|n| n.leading.is_some()));
     }

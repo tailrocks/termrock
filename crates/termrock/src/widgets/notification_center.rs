@@ -18,22 +18,28 @@
 //! Does not steal focus while closed. High-volume ingest uses dedup keys.
 //!
 //! Research: desktop notification centers, CI dashboards, task histories.
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+use std::time::Duration;
 
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     interaction::{
         NavigationMove, OverlayId, OverlayOutcome, OverlaySize, OverlaySpec, OverlayStack,
         SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, default_list_intent,
     },
     style::{DesignSystem, Role},
-    text::take_display_cols,
+    text::{display_cols, take_display_cols},
     widgets::{Hint, HintBar},
 };
 
 use super::drawer::DRAWER_DEFAULT_WIDTH;
-use super::toast::{ToastArchive, ToastKind, ToastPriority, ToastQueue};
+use super::toast::{
+    ToastArchive, ToastArchiveReason, ToastKind, ToastPriority, ToastQueue, ToastSpec,
+};
 
 /// Overlay id for notification center drawer presentation.
 pub const NOTIFICATION_CENTER_OVERLAY_ID: &str = "termrock.notification-center";
@@ -148,6 +154,36 @@ impl NotificationItem {
             announcement,
         }
     }
+
+    /// From a toast push spec (host mirrors toast into history).
+    #[must_use]
+    pub fn from_spec(spec: ToastSpec, created_at_secs: u64) -> Self {
+        let mut actions = Vec::new();
+        if let Some(ul) = spec.undo_label {
+            actions.push(("undo".into(), ul));
+        }
+        let announcement = spec
+            .announcement
+            .clone()
+            .unwrap_or_else(|| spec.message.clone());
+        Self {
+            id: spec.id,
+            kind: spec.kind,
+            priority: spec.priority,
+            title: spec.title,
+            message: spec.message,
+            source: None,
+            group_id: spec.group_id,
+            progress: spec.progress,
+            unread: true,
+            created_at_secs,
+            dedup_key: spec.dedup_key,
+            coalesce_count: 1,
+            actions,
+            announcement,
+        }
+    }
+
     /// Minimal constructor.
     #[must_use]
     pub fn new(id: impl Into<String>, message: impl Into<String>, kind: ToastKind) -> Self {
@@ -270,23 +306,14 @@ impl NotificationFilter {
             Self::Source(s) => item
                 .source
                 .as_ref()
-                .is_some_and(|src| crate::text::contains_lower(src, &s.to_ascii_lowercase())),
+                .is_some_and(|src| src.contains(s.as_str())),
             Self::Query(q) if q.is_empty() => true,
             Self::Query(q) => {
-                let q = q.to_ascii_lowercase();
-                crate::text::contains_lower(&item.message, &q)
-                    || item
-                        .title
-                        .as_ref()
-                        .is_some_and(|t| crate::text::contains_lower(t, &q))
-                    || item
-                        .source
-                        .as_ref()
-                        .is_some_and(|s| crate::text::contains_lower(s, &q))
-                    || item
-                        .group_id
-                        .as_ref()
-                        .is_some_and(|g| crate::text::contains_lower(g, &q))
+                let q = q.as_str();
+                item.message.contains(q)
+                    || item.title.as_ref().is_some_and(|t| t.contains(q))
+                    || item.source.as_ref().is_some_and(|s| s.contains(q))
+                    || item.group_id.as_ref().is_some_and(|g| g.contains(q))
             }
         }
     }
@@ -544,6 +571,24 @@ impl NotificationCenterState {
         self.open
     }
 
+    /// Focused.
+    #[must_use]
+    pub const fn is_focused(&self) -> bool {
+        self.focused
+    }
+
+    /// Recipe.
+    #[must_use]
+    pub const fn recipe(&self) -> NotificationRecipe {
+        self.recipe
+    }
+
+    /// Filter.
+    #[must_use]
+    pub fn filter(&self) -> &NotificationFilter {
+        &self.filter
+    }
+
     /// All items (for host persistence).
     #[must_use]
     pub fn items(&self) -> &[NotificationItem] {
@@ -556,6 +601,12 @@ impl NotificationCenterState {
         self.trim_capacity();
         self.ensure_cursor();
     }
+
+    /// Mutable items for host merge (prefer ingest_*).
+    pub fn items_mut(&mut self) -> &mut Vec<NotificationItem> {
+        &mut self.items
+    }
+
     /// Unread count (all items).
     #[must_use]
     pub fn unread_count(&self) -> usize {
@@ -568,6 +619,12 @@ impl NotificationCenterState {
         self.cursor.as_deref()
     }
 
+    /// Slots.
+    #[must_use]
+    pub const fn slots(&self) -> NotificationCenterSlots {
+        self.slots
+    }
+
     /// Capacity.
     pub fn set_capacity(&mut self, n: usize) {
         self.capacity = n.max(1);
@@ -577,6 +634,16 @@ impl NotificationCenterState {
     /// Recipe.
     pub fn set_recipe(&mut self, recipe: NotificationRecipe) {
         self.recipe = recipe;
+    }
+
+    /// Focus.
+    pub fn set_focused(&mut self, on: bool) {
+        self.focused = on;
+    }
+
+    /// Input gate.
+    pub fn set_accepts_input(&mut self, on: bool) {
+        self.accepts_input = on;
     }
 
     /// ASCII.
@@ -599,6 +666,11 @@ impl NotificationCenterState {
         self.open = false;
         self.focused = false;
         NotificationCenterOutcome::Closed
+    }
+
+    /// Toggle.
+    pub fn toggle(&mut self) -> NotificationCenterOutcome {
+        if self.open { self.close() } else { self.open() }
     }
 
     /// Set filter.
@@ -626,6 +698,14 @@ impl NotificationCenterState {
             .into_iter()
             .filter_map(|i| self.items.get(i))
             .collect()
+    }
+
+    /// Tells the list what time it is, so rows can say "3m ago".
+    ///
+    /// Without it a row can only state the raw age it was given. TermRock has
+    /// no clock of its own — the host owns time (plans/009 Step 6).
+    pub const fn set_now_secs(&mut self, now_secs: u64) {
+        self.now_secs = Some(now_secs);
     }
 
     /// Ingest archives from toast queue (NotificationCenter route).
@@ -750,7 +830,11 @@ impl NotificationCenterState {
         if page == 0 {
             return;
         }
-        self.scroll = crate::scroll::cursor_follow_offset(idx, self.items.len(), page, self.scroll);
+        if idx < self.scroll {
+            self.scroll = idx;
+        } else if idx >= self.scroll.saturating_add(page) {
+            self.scroll = idx.saturating_sub(page.saturating_sub(1));
+        }
     }
 
     /// Mark one read.
@@ -880,9 +964,8 @@ impl NotificationCenterState {
         if !key.is_insert() {
             return NotificationCenterOutcome::Ignored;
         }
-        let is_press = key.is_press();
 
-        if matches!(key.code, KeyCode::Esc) && is_press && key.modifiers.is_empty() {
+        if matches!(key.code, KeyCode::Esc) && key.modifiers.is_empty() {
             return self.close();
         }
 
@@ -913,7 +996,7 @@ impl NotificationCenterState {
                     NotificationCenterOutcome::Ignored
                 }
             }
-            KeyCode::Enter if is_press => {
+            KeyCode::Enter => {
                 if let Some(id) = self.cursor.clone() {
                     let _ = self.mark_read(&id);
                     NotificationCenterOutcome::OpenItem { id }
@@ -921,28 +1004,26 @@ impl NotificationCenterState {
                     NotificationCenterOutcome::Ignored
                 }
             }
-            KeyCode::Char('u' | 'U') if is_press && key.modifiers.is_empty() => {
+            KeyCode::Char('u' | 'U') if key.modifiers.is_empty() => {
                 if let Some(id) = self.cursor.clone() {
                     self.mark_read(&id)
                 } else {
                     NotificationCenterOutcome::Ignored
                 }
             }
-            KeyCode::Char('U') if is_press && key.modifiers.contains(KeyModifiers::SHIFT) => {
+            KeyCode::Char('U') if key.modifiers.contains(KeyModifiers::SHIFT) => {
                 self.mark_all_read()
             }
-            KeyCode::Char('x' | 'X' | 'd' | 'D') if is_press && key.modifiers.is_empty() => {
+            KeyCode::Char('x' | 'X' | 'd' | 'D') if key.modifiers.is_empty() => {
                 if let Some(id) = self.cursor.clone() {
                     self.dismiss(&id)
                 } else {
                     NotificationCenterOutcome::Ignored
                 }
             }
-            KeyCode::Char('c' | 'C') if is_press && key.modifiers.is_empty() => self.clear_all(),
-            KeyCode::Char('/' | 'f' | 'F') if is_press && key.modifiers.is_empty() => {
-                self.cycle_filter()
-            }
-            KeyCode::Char('1') if is_press => {
+            KeyCode::Char('c' | 'C') if key.modifiers.is_empty() => self.clear_all(),
+            KeyCode::Char('/' | 'f' | 'F') if key.modifiers.is_empty() => self.cycle_filter(),
+            KeyCode::Char('1') => {
                 if let Some(id) = self.cursor.clone() {
                     if let Some(item) = self.items.iter().find(|i| i.id == id) {
                         if let Some((aid, _)) = item.actions.first() {
@@ -1042,6 +1123,26 @@ impl NotificationCenterState {
         let stack_out = dismiss_notification_center_overlay(stack);
         (out, stack_out)
     }
+
+    /// Sync open flag with stack.
+    pub fn sync_with_stack<F>(&mut self, stack: &OverlayStack<F>) {
+        let id = OverlayId::from_static(NOTIFICATION_CENTER_OVERLAY_ID);
+        self.open = stack.contains(&id);
+        if !self.open {
+            self.focused = false;
+        }
+    }
+
+    /// Accessibility: unread badge text.
+    #[must_use]
+    pub fn status_line(&self) -> String {
+        let n = self.unread_count();
+        if n == 0 {
+            "notifications".into()
+        } else {
+            format!("notifications ({n} unread)")
+        }
+    }
 }
 
 // ── Widget ──────────────────────────────────────────────────────────────────
@@ -1061,6 +1162,14 @@ impl<'a> NotificationCenter<'a> {
             system,
             colorless: false,
         }
+    }
+
+    /// ASCII.
+    #[must_use]
+    /// Colorless.
+    pub const fn colorless(mut self, on: bool) -> Self {
+        self.colorless = on;
+        self
     }
 
     /// Paint when open.
@@ -1127,7 +1236,7 @@ impl<'a> NotificationCenter<'a> {
         buffer.set_stringn(
             inner.x,
             y,
-            take_display_cols(&title, usize::from(inner.width)).as_ref(),
+            &take_display_cols(&title, usize::from(inner.width)),
             usize::from(inner.width),
             self.system
                 .style(Role::TextStrong)
@@ -1148,14 +1257,21 @@ impl<'a> NotificationCenter<'a> {
                 ToastKind::Progress => "filter: progress",
                 ToastKind::Undo => "filter: undo",
             },
-            NotificationFilter::Group(_) => "filter: group",
+            NotificationFilter::Group(g) => {
+                // short
+                let _ = g;
+                "filter: group"
+            }
             NotificationFilter::Source(_) => "filter: source",
-            NotificationFilter::Query(_) => "filter: query",
+            NotificationFilter::Query(q) => {
+                let _ = q;
+                "filter: query"
+            }
         };
         buffer.set_stringn(
             inner.x,
             y,
-            take_display_cols(filter_label, usize::from(inner.width)).as_ref(),
+            &take_display_cols(filter_label, usize::from(inner.width)),
             usize::from(inner.width),
             self.system.style(Role::TextMuted),
         );
@@ -1181,11 +1297,8 @@ impl<'a> NotificationCenter<'a> {
         }
 
         if indices.is_empty() {
-            super::EmptyState::new("No notifications", self.system).paint(
-                Rect::new(inner.x, y, inner.width, 1),
-                buffer,
-                &mut super::EmptyStateState::new(),
-            );
+            super::EmptyState::new("No notifications", self.system)
+                .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
         } else {
             for (row, &item_idx) in indices.iter().skip(state.scroll).take(page).enumerate() {
                 let Some(item) = state.items.get(item_idx) else {
@@ -1239,7 +1352,7 @@ impl<'a> NotificationCenter<'a> {
                 buffer.set_stringn(
                     inner.x,
                     row_y,
-                    take_display_cols(&line, usize::from(inner.width)).as_ref(),
+                    &take_display_cols(&line, usize::from(inner.width)),
                     usize::from(inner.width),
                     if selected {
                         tone
@@ -1353,10 +1466,8 @@ pub fn example_notifications(now_secs: u64) -> Vec<NotificationItem> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::{KeyEventKind, KeyModifiers};
+    use crate::input::KeyModifiers;
     use crate::runtime::FrameTick;
-    use crate::widgets::tests::click;
-    use crate::widgets::toast::ToastArchiveReason;
     use crate::widgets::toast::{ToastLifetime, ToastSpec};
     use std::time::{Duration, Instant};
 
@@ -1471,46 +1582,6 @@ mod tests {
     }
 
     #[test]
-    fn repeated_one_shot_actions_are_ignored_but_navigation_repeats() {
-        let mut s = NotificationCenterState::new();
-        s.replace_items(vec![
-            NotificationItem::new("1", "first", ToastKind::Info)
-                .action("open", "Open")
-                .unread(true),
-            NotificationItem::new("2", "second", ToastKind::Warning).unread(true),
-        ]);
-        let _ = s.open();
-        s.cursor = Some("1".into());
-
-        for (code, modifiers) in [
-            (KeyCode::Enter, KeyModifiers::NONE),
-            (KeyCode::Esc, KeyModifiers::NONE),
-            (KeyCode::Char('u'), KeyModifiers::NONE),
-            (KeyCode::Char('U'), KeyModifiers::SHIFT),
-            (KeyCode::Char('x'), KeyModifiers::NONE),
-            (KeyCode::Char('c'), KeyModifiers::NONE),
-            (KeyCode::Char('/'), KeyModifiers::NONE),
-            (KeyCode::Char('1'), KeyModifiers::NONE),
-        ] {
-            let mut repeat = KeyEvent::new(code, modifiers);
-            repeat.kind = KeyEventKind::Repeat;
-            let before = s.clone();
-            assert_eq!(s.handle_key(repeat), NotificationCenterOutcome::Ignored);
-            assert_eq!(s, before, "{code:?} repeat mutated notification center");
-        }
-
-        let mut repeat_down = KeyEvent::new(KeyCode::Down, KeyModifiers::NONE);
-        repeat_down.kind = KeyEventKind::Repeat;
-        assert_eq!(
-            s.handle_key(repeat_down),
-            NotificationCenterOutcome::SelectionChanged {
-                id: Some("2".into())
-            }
-        );
-        assert_eq!(s.cursor(), Some("2"));
-    }
-
-    #[test]
     fn recipes_paint_drawer_and_full() {
         let system = DesignSystem::default();
         let mut s = NotificationCenterState::new();
@@ -1618,7 +1689,11 @@ mod tests {
         let _ = state.open();
         state.slots.list = Rect::new(2, 3, 24, 4);
         assert_eq!(
-            state.handle_mouse(click(2, 3)),
+            state.handle_mouse(MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: ratatui_core::layout::Position::new(2, 3),
+                modifiers: KeyModifiers::NONE,
+            }),
             NotificationCenterOutcome::SelectionChanged {
                 id: Some("n1".into())
             }

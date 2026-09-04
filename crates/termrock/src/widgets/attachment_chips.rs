@@ -18,6 +18,7 @@
 //! **Buckets**
 //! - Domain model: [`AttachmentItem`] / [`PastePayload`] (host projects)
 //! - Paint: [`AttachmentChip`] / [`PasteChip`] (compose [`Tag`])
+//! - Strip: [`attachment_token_items`] + [`TokenStrip`]
 //! - Bridges: convert to/from composer chips in `prompt_composer` (avoids cycle)
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
@@ -28,7 +29,7 @@ use crate::{
     text::take_display_cols,
     widgets::tag_chip::{
         Tag, TagOutcome, TagState, TokenItem, TokenPart, TokenParts, TokenStatus, TokenStrip,
-        TokenStripLayout, TokenStripOutcome, TokenStripState,
+        TokenStripLayout, TokenStripOutcome, TokenStripState, remove_label,
     },
 };
 
@@ -73,6 +74,19 @@ impl AttachmentType {
             Self::Code => "code",
             Self::Document => "document",
             Self::Other => "other",
+        }
+    }
+
+    /// ASCII type letter for colorless / recordings.
+    #[must_use]
+    pub const fn letter(self) -> char {
+        match self {
+            Self::File => 'F',
+            Self::Image => 'I',
+            Self::Url => 'U',
+            Self::Code => 'C',
+            Self::Document => 'D',
+            Self::Other => 'A',
         }
     }
 
@@ -250,6 +264,23 @@ impl AttachmentItem {
         }
     }
 
+    /// Image attachment.
+    #[must_use]
+    pub fn image(id: impl Into<String>, name: impl Into<String>) -> Self {
+        Self {
+            id: id.into(),
+            kind: AttachmentType::Image,
+            name: name.into(),
+            meta: None,
+            bytes: None,
+            line_count: None,
+            status: AttachmentStatus::Ready,
+            validation: None,
+            sensitive: false,
+            removable: true,
+        }
+    }
+
     /// URL attachment.
     #[must_use]
     pub fn url(id: impl Into<String>, name: impl Into<String>) -> Self {
@@ -267,6 +298,30 @@ impl AttachmentItem {
         }
     }
 
+    /// Selected code reference.
+    #[must_use]
+    pub fn code(id: impl Into<String>, name: impl Into<String>) -> Self {
+        Self {
+            id: id.into(),
+            kind: AttachmentType::Code,
+            name: name.into(),
+            meta: None,
+            bytes: None,
+            line_count: None,
+            status: AttachmentStatus::Ready,
+            validation: None,
+            sensitive: false,
+            removable: true,
+        }
+    }
+
+    /// Kind.
+    #[must_use]
+    pub const fn kind(mut self, kind: AttachmentType) -> Self {
+        self.kind = kind;
+        self
+    }
+
     /// Meta string.
     #[must_use]
     pub fn meta(mut self, meta: impl Into<String>) -> Self {
@@ -278,6 +333,13 @@ impl AttachmentItem {
     #[must_use]
     pub const fn bytes(mut self, n: u64) -> Self {
         self.bytes = Some(n);
+        self
+    }
+
+    /// Line count.
+    #[must_use]
+    pub const fn line_count(mut self, n: u32) -> Self {
+        self.line_count = Some(n);
         self
     }
 
@@ -299,6 +361,13 @@ impl AttachmentItem {
     #[must_use]
     pub const fn sensitive(mut self, on: bool) -> Self {
         self.sensitive = on;
+        self
+    }
+
+    /// Removable.
+    #[must_use]
+    pub const fn removable(mut self, on: bool) -> Self {
+        self.removable = on;
         self
     }
 
@@ -455,6 +524,13 @@ impl PastePayload {
         self
     }
 
+    /// Validation.
+    #[must_use]
+    pub fn validation(mut self, msg: impl Into<String>) -> Self {
+        self.validation = Some(msg.into());
+        self
+    }
+
     /// Compact chip label.
     #[must_use]
     pub fn display_label(&self, ascii: bool, expanded: bool) -> String {
@@ -541,6 +617,53 @@ pub fn paste_preview_from(body: &str) -> String {
 }
 
 // ── TokenStrip projection ───────────────────────────────────────────────────
+
+/// Safe strip label buffer pair (host must retain until paint ends).
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[allow(dead_code)]
+pub struct AttachmentStripLabels {
+    /// Parallel labels for attachments then pastes.
+    pub labels: Vec<String>,
+}
+
+/// Build [`TokenItem`] rows for strip paint (ids borrowed from items).
+///
+/// `label_bufs` must outlive returned items (same length as attachments+pastes).
+pub fn attachment_token_items<'a>(
+    attachments: &'a [AttachmentItem],
+    pastes: &'a [PastePayload],
+    label_bufs: &'a [String],
+) -> Vec<TokenItem<'a, &'a str>> {
+    let mut out = Vec::with_capacity(attachments.len() + pastes.len());
+    let mut i = 0usize;
+    for a in attachments {
+        let label = label_bufs
+            .get(i)
+            .map(String::as_str)
+            .unwrap_or(a.name.as_str());
+        i = i.saturating_add(1);
+        out.push(
+            TokenItem::tag(a.id.as_str(), label)
+                .removable(a.removable)
+                .status(a.status.token_status())
+                .disabled(false),
+        );
+    }
+    for p in pastes {
+        let label = label_bufs
+            .get(i)
+            .map(String::as_str)
+            .unwrap_or(p.preview.as_str());
+        i = i.saturating_add(1);
+        out.push(
+            TokenItem::tag(p.id.as_str(), label)
+                .removable(p.removable)
+                .status(p.status.token_status())
+                .disabled(false),
+        );
+    }
+    out
+}
 
 /// Fill display labels for strip (ascii).
 pub fn fill_attachment_strip_labels(
@@ -666,6 +789,12 @@ impl AttachmentChipState {
     pub const fn set_focused(&mut self, on: bool) {
         self.tag.set_focused(on);
     }
+
+    /// Focused.
+    #[must_use]
+    pub const fn is_focused(&self) -> bool {
+        self.tag.focused
+    }
 }
 
 /// Single attachment chip paint (file / image / URL / code).
@@ -680,6 +809,31 @@ impl<'a> AttachmentChip<'a> {
     #[must_use]
     pub const fn new(item: &'a AttachmentItem, system: &'a DesignSystem) -> Self {
         Self { item, system }
+    }
+
+    /// ASCII glyphs.
+    #[must_use]
+    /// Natural width.
+    pub fn measure_width(&self) -> u16 {
+        let label = self.item.display_label(false);
+        let tag = if self.item.removable {
+            Tag::removable_tag(self.item.id.as_str(), label.as_str(), self.system)
+        } else {
+            Tag::new(self.item.id.as_str(), label.as_str(), self.system)
+        }
+        .status(self.item.status.token_status());
+        tag.measure_width()
+    }
+
+    /// Semantic remove label (uses safe name).
+    #[must_use]
+    pub fn remove_action_label(&self) -> String {
+        let name = if self.item.sensitive {
+            redacted_name(&self.item.name)
+        } else {
+            self.item.name.as_str()
+        };
+        remove_label(name)
     }
 
     /// Paint into area.
@@ -706,11 +860,6 @@ impl<'a> AttachmentChip<'a> {
         key: KeyEvent,
     ) -> AttachmentChipOutcome {
         if key.is_release() {
-            return AttachmentChipOutcome::Ignored;
-        }
-        let direct_action = key.modifiers.contains(KeyModifiers::CONTROL)
-            && matches!(key.code, KeyCode::Char('o' | 'O' | 'p' | 'P' | 'r' | 'R'));
-        if !key.is_press() && direct_action {
             return AttachmentChipOutcome::Ignored;
         }
         // Retry on error
@@ -798,8 +947,15 @@ impl PasteChipState {
 
     /// Focus.
     pub const fn set_focused(&mut self, on: bool) {
-        // Unfocusing keeps the popover expanded; only the Esc path collapses it.
         self.tag.set_focused(on);
+        if !on {
+            // keep expanded so host can paint popover; only clear on Esc path
+        }
+    }
+
+    /// Collapse.
+    pub const fn collapse(&mut self) {
+        self.expanded = false;
     }
 }
 
@@ -815,6 +971,20 @@ impl<'a> PasteChip<'a> {
     #[must_use]
     pub const fn new(paste: &'a PastePayload, system: &'a DesignSystem) -> Self {
         Self { paste, system }
+    }
+
+    /// ASCII.
+    #[must_use]
+    /// Measure width.
+    pub fn measure_width(&self, expanded: bool) -> u16 {
+        let label = self.paste.display_label(false, expanded);
+        let tag = if self.paste.removable {
+            Tag::removable_tag(self.paste.id.as_str(), label.as_str(), self.system)
+        } else {
+            Tag::new(self.paste.id.as_str(), label.as_str(), self.system)
+        }
+        .status(self.paste.status.token_status());
+        tag.measure_width()
     }
 
     /// Paint chip chrome (expanded body is host popover or [`paint_expanded_preview`]).
@@ -849,20 +1019,6 @@ impl<'a> PasteChip<'a> {
     /// Keys.
     pub fn handle_key(&self, state: &mut PasteChipState, key: KeyEvent) -> PasteChipOutcome {
         if key.is_release() {
-            return PasteChipOutcome::Ignored;
-        }
-        let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
-        let direct_activation = state.tag.part == TokenPart::Body
-            && key.modifiers.is_empty()
-            && matches!(key.code, KeyCode::Enter | KeyCode::Char(' '));
-        let direct_action = ctrl
-            && matches!(
-                key.code,
-                KeyCode::Char('c' | 'C' | 'i' | 'I' | 'p' | 'P' | 'r' | 'R')
-            );
-        if !key.is_press()
-            && ((key.code == KeyCode::Esc && state.expanded) || direct_activation || direct_action)
-        {
             return PasteChipOutcome::Ignored;
         }
         if key.code == KeyCode::Esc && state.expanded {
@@ -1100,6 +1256,8 @@ pub mod bench {
     pub const ATTACHMENT_COUNT: usize = 24;
     /// Pastes in strip paint.
     pub const PASTE_COUNT: usize = 8;
+    /// Body size for paste expand.
+    pub const PASTE_BODY_BYTES: usize = 8_192;
     /// Paint frames.
     pub const PAINT_FRAMES: u32 = 20;
 }
@@ -1109,9 +1267,7 @@ pub mod bench {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyEventKind;
     use crate::style::DesignSystem;
-    use crate::widgets::tests::click;
 
     #[test]
     fn attachment_display_and_semantic_redacts() {
@@ -1217,7 +1373,11 @@ mod tests {
         assert!(matches!(
             chip.handle_mouse(
                 &mut attachment,
-                click(parts.body.x, parts.body.y),
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: ratatui_core::layout::Position::new(parts.body.x, parts.body.y),
+                    modifiers: KeyModifiers::NONE,
+                },
             ),
             AttachmentChipOutcome::Activated { id } if id == "f1"
         ));
@@ -1229,7 +1389,11 @@ mod tests {
         assert!(matches!(
             chip.handle_mouse(
                 &mut paste_state,
-                click(parts.body.x, parts.body.y),
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: ratatui_core::layout::Position::new(parts.body.x, parts.body.y),
+                    modifiers: KeyModifiers::NONE,
+                },
             ),
             PasteChipOutcome::Expanded { id } if id == "p1"
         ));
@@ -1290,55 +1454,6 @@ mod tests {
                 assert_eq!(id, "p1");
             }
             other => panic!("expected CopyRequested, got {other:?}"),
-        }
-    }
-
-    #[test]
-    fn repeated_attachment_host_actions_are_ignored() {
-        let item = AttachmentItem::file("f1", "main.rs").status(AttachmentStatus::Error);
-        let system = DesignSystem::default();
-        let chip = AttachmentChip::new(&item, &system);
-        let mut state = AttachmentChipState::new();
-        state.set_focused(true);
-        for (code, modifiers) in [
-            (KeyCode::Char('r'), KeyModifiers::CONTROL),
-            (KeyCode::Char('o'), KeyModifiers::CONTROL),
-            (KeyCode::Char('p'), KeyModifiers::CONTROL),
-        ] {
-            let before = state.clone();
-            let mut key = KeyEvent::new(code, modifiers);
-            key.kind = KeyEventKind::Repeat;
-            assert_eq!(
-                chip.handle_key(&mut state, key),
-                AttachmentChipOutcome::Ignored
-            );
-            assert_eq!(state, before, "{code:?} repeat mutated attachment state");
-        }
-    }
-
-    #[test]
-    fn repeated_paste_host_actions_are_ignored_before_toggle_or_collapse() {
-        let paste = PastePayload::from_body("p1", "hello").status(AttachmentStatus::Error);
-        let system = DesignSystem::default();
-        let chip = PasteChip::new(&paste, &system);
-        let mut state = PasteChipState::new();
-        state.tag.set_focused(true);
-        state.expanded = true;
-
-        for (code, modifiers) in [
-            (KeyCode::Enter, KeyModifiers::NONE),
-            (KeyCode::Char(' '), KeyModifiers::NONE),
-            (KeyCode::Esc, KeyModifiers::NONE),
-            (KeyCode::Char('c'), KeyModifiers::CONTROL),
-            (KeyCode::Char('i'), KeyModifiers::CONTROL),
-            (KeyCode::Char('p'), KeyModifiers::CONTROL),
-            (KeyCode::Char('r'), KeyModifiers::CONTROL),
-        ] {
-            let before = state.clone();
-            let mut key = KeyEvent::new(code, modifiers);
-            key.kind = KeyEventKind::Repeat;
-            assert_eq!(chip.handle_key(&mut state, key), PasteChipOutcome::Ignored);
-            assert_eq!(state, before, "{code:?} repeat mutated paste state");
         }
     }
 

@@ -34,11 +34,12 @@ pub enum KeyCode {
     Delete,
     /// The esc key.
     Esc,
+    /// A function key (`F1` through `F24`, depending on the backend).
+    F(u8),
     /// The char key.
     Char(char),
-    /// A key the neutral vocabulary does not model (function keys, media
-    /// keys, lock keys, and similar keys). Widgets and keymaps must treat it
-    /// as non-actionable.
+    /// A key the neutral vocabulary does not model (media keys, lock keys,
+    /// and similar keys). Widgets and keymaps must treat it as non-actionable.
     Unknown,
 }
 
@@ -56,12 +57,6 @@ impl KeyModifiers {
     pub const CONTROL: Self = Self(2);
     /// The Alt or Option key is held.
     pub const ALT: Self = Self(4);
-    /// The Super or Command key is held.
-    pub const SUPER: Self = Self(8);
-    /// The Hyper key is held.
-    pub const HYPER: Self = Self(16);
-    /// The Meta key is held.
-    pub const META: Self = Self(32);
 
     #[must_use]
     /// Adds the Control modifier while preserving existing flags.
@@ -79,24 +74,6 @@ impl KeyModifiers {
     /// Adds the Shift modifier while preserving existing flags.
     pub const fn with_shift(self) -> Self {
         Self(self.0 | Self::SHIFT.0)
-    }
-
-    #[must_use]
-    /// Adds the Super modifier while preserving existing flags.
-    pub const fn with_super(self) -> Self {
-        Self(self.0 | Self::SUPER.0)
-    }
-
-    #[must_use]
-    /// Adds the Hyper modifier while preserving existing flags.
-    pub const fn with_hyper(self) -> Self {
-        Self(self.0 | Self::HYPER.0)
-    }
-
-    #[must_use]
-    /// Adds the Meta modifier while preserving existing flags.
-    pub const fn with_meta(self) -> Self {
-        Self(self.0 | Self::META.0)
     }
 
     #[must_use]
@@ -119,12 +96,7 @@ impl<'de> serde::Deserialize<'de> for KeyModifiers {
         D: serde::Deserializer<'de>,
     {
         let bits = <u8 as serde::Deserialize>::deserialize(deserializer)?;
-        let allowed = Self::SHIFT.0
-            | Self::CONTROL.0
-            | Self::ALT.0
-            | Self::SUPER.0
-            | Self::HYPER.0
-            | Self::META.0;
+        let allowed = Self::SHIFT.0 | Self::CONTROL.0 | Self::ALT.0;
         if bits & !allowed != 0 {
             return Err(serde::de::Error::custom(format_args!(
                 "unknown key modifier bits: {:#04x}",
@@ -337,6 +309,7 @@ mod adapter {
                 crossterm::event::KeyCode::BackTab => Self::BackTab,
                 crossterm::event::KeyCode::Delete => Self::Delete,
                 crossterm::event::KeyCode::Esc => Self::Esc,
+                crossterm::event::KeyCode::F(number) => Self::F(number),
                 crossterm::event::KeyCode::Char(c) => Self::Char(c),
                 _ => Self::Unknown,
             }
@@ -354,15 +327,6 @@ mod adapter {
             }
             if value.contains(crossterm::event::KeyModifiers::ALT) {
                 out |= Self::ALT;
-            }
-            if value.contains(crossterm::event::KeyModifiers::SUPER) {
-                out |= Self::SUPER;
-            }
-            if value.contains(crossterm::event::KeyModifiers::HYPER) {
-                out |= Self::HYPER;
-            }
-            if value.contains(crossterm::event::KeyModifiers::META) {
-                out |= Self::META;
             }
             out
         }
@@ -405,6 +369,10 @@ mod adapter {
 
     impl From<crossterm::event::Event> for Event {
         fn from(value: crossterm::event::Event) -> Self {
+            #[allow(
+                unreachable_patterns,
+                reason = "future Crossterm event variants must degrade to Unknown"
+            )]
             match value {
                 crossterm::event::Event::Key(event) => Self::Key(event.into()),
                 crossterm::event::Event::Mouse(event) => Self::Mouse(event.into()),
@@ -412,6 +380,7 @@ mod adapter {
                 crossterm::event::Event::Resize(width, height) => Self::Resize { width, height },
                 crossterm::event::Event::FocusGained => Self::FocusGained,
                 crossterm::event::Event::FocusLost => Self::FocusLost,
+                _ => Self::Unknown,
             }
         }
     }
@@ -441,42 +410,5 @@ mod kind_predicates {
         assert!(!key(KeyEventKind::Repeat).is_release());
         assert!(key(KeyEventKind::Repeat).is_repeat());
         assert!(!key(KeyEventKind::Press).is_repeat());
-    }
-}
-
-#[cfg(all(test, feature = "crossterm"))]
-mod crossterm_modifiers {
-    use super::KeyModifiers;
-
-    #[test]
-    fn adapter_preserves_extended_crossterm_modifiers() {
-        let cases = [
-            (crossterm::event::KeyModifiers::SUPER, KeyModifiers::SUPER),
-            (crossterm::event::KeyModifiers::HYPER, KeyModifiers::HYPER),
-            (crossterm::event::KeyModifiers::META, KeyModifiers::META),
-        ];
-
-        for (backend, neutral) in cases {
-            assert_eq!(KeyModifiers::from(backend), neutral);
-        }
-    }
-
-    #[test]
-    fn adapter_preserves_extended_modifiers_in_combinations() {
-        let backend = crossterm::event::KeyModifiers::SHIFT
-            | crossterm::event::KeyModifiers::CONTROL
-            | crossterm::event::KeyModifiers::ALT
-            | crossterm::event::KeyModifiers::SUPER
-            | crossterm::event::KeyModifiers::HYPER
-            | crossterm::event::KeyModifiers::META;
-        let expected = KeyModifiers::NONE
-            .with_shift()
-            .with_ctrl()
-            .with_alt()
-            .with_super()
-            .with_hyper()
-            .with_meta();
-
-        assert_eq!(KeyModifiers::from(backend), expected);
     }
 }

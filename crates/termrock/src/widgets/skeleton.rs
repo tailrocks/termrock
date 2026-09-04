@@ -14,7 +14,7 @@
 //!
 //! Research: shadcn Skeleton, terminal loading placeholders — no gratuitous
 //! web shimmer mimicry.
-use ratatui_core::{buffer::Buffer, layout::Rect};
+use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
@@ -133,7 +133,17 @@ pub struct SkeletonLayout {
 }
 
 impl SkeletonLayout {
-    /// Classic staggered list lines ([`Skeleton::new`] shape).
+    /// Empty layout.
+    #[must_use]
+    pub fn new() -> Self {
+        Self {
+            shapes: Vec::new(),
+            gap: 0,
+            reserved_height: None,
+        }
+    }
+
+    /// Classic staggered list lines (legacy `Skeleton::new(n)`).
     #[must_use]
     pub fn lines(n: u16) -> Self {
         let mut shapes = Vec::with_capacity(usize::from(n));
@@ -179,6 +189,13 @@ impl SkeletonLayout {
             gap: 0,
             reserved_height: None,
         }
+    }
+
+    /// Gap between shapes.
+    #[must_use]
+    pub const fn gap(mut self, g: u16) -> Self {
+        self.gap = g;
+        self
     }
 
     /// Reserve at least this many rows (layout stability).
@@ -313,6 +330,16 @@ impl SkeletonState {
         self.shimmer
     }
 
+    /// Visible.
+    pub fn set_visible(&mut self, on: bool) {
+        self.visible = on;
+    }
+
+    /// Active.
+    pub fn set_active(&mut self, on: bool) {
+        self.active = on;
+    }
+
     /// Whether host should schedule redraw for pulse.
     #[must_use]
     pub fn should_tick(&self, motion: MotionPolicy) -> bool {
@@ -345,7 +372,7 @@ impl SkeletonState {
 /// use termrock::widgets::Skeleton;
 ///
 /// let system = DesignSystem::default();
-/// let sk = Skeleton::new(4, &system); // staggered lines
+/// let sk = Skeleton::new(4, &system); // legacy staggered lines
 /// ```
 #[derive(Debug, Clone)]
 pub struct Skeleton<'a> {
@@ -358,7 +385,7 @@ pub struct Skeleton<'a> {
 impl<'a> Skeleton<'a> {
     /// Creates a skeleton with the requested row count (staggered lines).
     ///
-    /// Staggered lines; the shape Panel / lookbook reach for by default.
+    /// **Preserved** constructor used by Panel / lookbook.
     #[must_use]
     pub fn new(rows: u16, system: &'a DesignSystem) -> Self {
         Self {
@@ -406,12 +433,37 @@ impl<'a> Skeleton<'a> {
     pub fn measure_height(&self) -> u16 {
         self.layout.measure_height()
     }
-    /// Paint skeleton bars for this frame.
-    ///
-    /// `state.visible` gates the paint; shimmer motion is the host's concern
-    /// (the bars themselves are static filler), so there is no tick/motion
-    /// parameter to ignore.
-    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &SkeletonState) {
+
+    /// Borrow layout.
+    #[must_use]
+    pub fn skeleton_layout(&self) -> &SkeletonLayout {
+        &self.layout
+    }
+
+    /// Paint static (default path).
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer) {
+        self.paint_with_state(
+            area,
+            buffer,
+            &SkeletonState::new(),
+            FrameTick::manual(
+                crate::runtime::Instant::now(),
+                std::time::Duration::ZERO,
+                std::time::Duration::ZERO,
+            ),
+            MotionPolicy::Off,
+        );
+    }
+
+    /// Paint with optional shimmer state.
+    pub fn paint_with_state(
+        &self,
+        area: Rect,
+        buffer: &mut Buffer,
+        state: &SkeletonState,
+        tick: FrameTick,
+        motion: MotionPolicy,
+    ) {
         if area.is_empty() || !state.visible {
             return;
         }
@@ -419,6 +471,7 @@ impl<'a> Skeleton<'a> {
         let shimmer = Shimmer {
             base: self.system.style(Role::TextDisabled),
         };
+        let _ = (tick, motion, state);
 
         let mut y = area.y;
         let bottom = area.bottom();
@@ -641,6 +694,18 @@ impl Shimmer {
     }
 }
 
+impl Widget for &Skeleton<'_> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        self.paint(area, buffer);
+    }
+}
+
+impl Widget for Skeleton<'_> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        <&Self as Widget>::render(&self, area, buffer);
+    }
+}
+
 // ── Tests ───────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -657,7 +722,7 @@ mod tests {
         let system = system();
         let area = Rect::new(0, 0, 20, 4);
         let mut buf = Buffer::empty(area);
-        Skeleton::new(4, &system).paint(area, &mut buf, &SkeletonState::new());
+        Widget::render(&Skeleton::new(4, &system), area, &mut buf);
         // Row 0 starts at x=0 with fill; row 1 indented
         assert_eq!(buf[(0, 0)].symbol(), "░");
         // indent 2 on odd rows
@@ -685,7 +750,7 @@ mod tests {
             let sk = Skeleton::recipe(recipe, 3, &system);
             let area = Rect::new(0, 0, 30, 10);
             let mut buf = Buffer::empty(area);
-            sk.paint(area, &mut buf, &SkeletonState::new());
+            sk.paint(area, &mut buf);
             assert!(sk.measure_height() >= 1);
         }
     }
@@ -726,7 +791,17 @@ mod tests {
         state.set_shimmer(true);
         let area = Rect::new(0, 0, 24, 4);
         let mut buf = Buffer::empty(area);
-        Skeleton::card(2, &system).paint(area, &mut buf, &state);
+        Skeleton::card(2, &system).paint_with_state(
+            area,
+            &mut buf,
+            &state,
+            FrameTick::manual(
+                Instant::now(),
+                Duration::from_millis(320),
+                Duration::from_millis(16),
+            ),
+            MotionPolicy::Full,
+        );
         let painted: String = buf.content().iter().map(|c| c.symbol()).collect();
         for frame in crate::style::SPINNER_BRAILLE_FRAMES.iter() {
             assert!(
@@ -740,14 +815,10 @@ mod tests {
     fn tiny_size_safe() {
         let system = system();
         let mut buf = Buffer::empty(Rect::new(0, 0, 8, 8));
-        Skeleton::new(3, &system).paint(Rect::new(0, 0, 0, 0), &mut buf, &SkeletonState::new());
-        Skeleton::new(3, &system).paint(Rect::new(0, 0, 1, 1), &mut buf, &SkeletonState::new());
-        Skeleton::table(4, 4, &system).paint(
-            Rect::new(0, 0, 2, 2),
-            &mut buf,
-            &SkeletonState::new(),
-        );
-        Skeleton::card(2, &system).paint(Rect::new(0, 0, 3, 2), &mut buf, &SkeletonState::new());
+        Skeleton::new(3, &system).paint(Rect::new(0, 0, 0, 0), &mut buf);
+        Skeleton::new(3, &system).paint(Rect::new(0, 0, 1, 1), &mut buf);
+        Skeleton::table(4, 4, &system).paint(Rect::new(0, 0, 2, 2), &mut buf);
+        Skeleton::card(2, &system).paint(Rect::new(0, 0, 3, 2), &mut buf);
     }
 
     #[test]
@@ -762,7 +833,7 @@ mod tests {
         assert_eq!(sk.measure_height(), 2);
         let area = Rect::new(0, 0, 10, 3);
         let mut buf = Buffer::empty(area);
-        sk.paint(area, &mut buf, &SkeletonState::new());
+        sk.paint(area, &mut buf);
         assert_eq!(buf[(1, 0)].symbol(), "░");
     }
 
@@ -808,7 +879,7 @@ mod tests {
             let h = (seed % 12) as u16 + 1;
             let area = Rect::new(0, 0, w, h);
             let mut buf = Buffer::empty(area);
-            sk.paint(area, &mut buf, &SkeletonState::new());
+            sk.paint(area, &mut buf);
         }
     }
 
@@ -823,7 +894,7 @@ mod tests {
         for _ in 0..200 {
             terminal
                 .draw(|f| {
-                    sk.paint(f.area(), f.buffer_mut(), &SkeletonState::new());
+                    sk.paint(f.area(), f.buffer_mut());
                 })
                 .unwrap();
         }
@@ -838,8 +909,7 @@ mod tests {
         let paint = || {
             let mut t = Terminal::new(TestBackend::new(24, 6)).unwrap();
             t.draw(|f| {
-                let st = SkeletonState::new();
-                Skeleton::new(4, &system).paint(f.area(), f.buffer_mut(), &st);
+                Skeleton::new(4, &system).paint(f.area(), f.buffer_mut());
             })
             .unwrap();
             t.backend()
@@ -858,7 +928,7 @@ mod tests {
         let system = system();
         let area = Rect::new(0, 0, 8, 3);
         let mut buf = Buffer::empty(area);
-        Skeleton::new(3, &system).paint(area, &mut buf, &SkeletonState::new());
+        Skeleton::new(3, &system).paint(area, &mut buf);
         let text: String = buf
             .content()
             .iter()

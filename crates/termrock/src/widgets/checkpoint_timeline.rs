@@ -19,16 +19,27 @@
 //!
 //! Research: Grok Build rewind, IDE local history, Git reflog, notebook
 //! checkpoints. Uses Timeline substrate for list paint projection.
-use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+use std::collections::BTreeMap;
+
+use ratatui_core::{
+    buffer::Buffer,
+    layout::{Position, Rect},
+    style::Modifier,
+    widgets::StatefulWidget,
+};
 
 use crate::{
-    input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     style::{DesignSystem, ListRowVisualState, PanelChrome, Role},
     text::{display_cols, take_display_cols},
     widgets::panel::Panel,
     widgets::tiered_row::TieredRow,
     widgets::timeline::{
-        Timeline, TimelineEvent, TimelineOutcome, TimelineRecipe, TimelineState, TimelineStatus,
+        Timeline, TimelineEvent, TimelineOutcome, TimelineRecipe, TimelineRowKind, TimelineState,
+        TimelineStatus,
     },
 };
 
@@ -69,6 +80,19 @@ impl CheckpointKind {
             Self::Manual => "manual",
             Self::Branch => "branch",
             Self::System => "system",
+        }
+    }
+
+    /// Compact letter (colorless / rail).
+    #[must_use]
+    pub const fn letter(self) -> char {
+        match self {
+            Self::Turn => 'T',
+            Self::FileState => 'F',
+            Self::Action => 'A',
+            Self::Manual => 'M',
+            Self::Branch => 'B',
+            Self::System => 'S',
         }
     }
 
@@ -368,6 +392,16 @@ pub enum CheckpointTimelineMode {
 }
 
 impl CheckpointTimelineMode {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Browse => "browse",
+            Self::Preview => "preview",
+            Self::Confirm => "confirm",
+        }
+    }
+
     /// Whether this mode mutates session (always false in-widget; host acts).
     #[must_use]
     pub const fn is_mutating_request(self) -> bool {
@@ -417,6 +451,15 @@ pub enum CheckpointTimelineRecipe {
 }
 
 impl CheckpointTimelineRecipe {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Rail => "rail",
+            Self::Detailed => "detailed",
+        }
+    }
+
     fn to_timeline(self) -> TimelineRecipe {
         match self {
             Self::Rail => TimelineRecipe::Rail,
@@ -641,6 +684,12 @@ impl CheckpointTimelineState {
         self.checkpoints.get(self.cursor)
     }
 
+    /// By id.
+    #[must_use]
+    pub fn get(&self, id: &str) -> Option<&Checkpoint> {
+        self.checkpoints.iter().find(|c| c.id == id)
+    }
+
     /// HEAD checkpoint.
     #[must_use]
     pub fn head(&self) -> Option<&Checkpoint> {
@@ -659,6 +708,10 @@ impl CheckpointTimelineState {
     fn sync_timeline_cursor(&mut self) {
         self.timeline.cursor = self.cursor;
         self.timeline.following = self.following;
+        if let Some(id) = self.selected.clone() {
+            // TimelineState selected is private — cursor drives paint selection
+            let _ = id;
+        }
     }
 
     fn select_cursor(&mut self) -> CheckpointTimelineOutcome {
@@ -1069,17 +1122,15 @@ impl<'a> CheckpointTimeline<'a> {
             .title(title.as_str())
             .emphasis(emphasis);
         let inner = panel.inner(area);
-        panel.paint(area, buffer, None);
+        use ratatui_core::widgets::Widget;
+        Widget::render(&panel, area, buffer);
         if inner.is_empty() {
             return;
         }
 
         if state.checkpoints.is_empty() {
-            super::EmptyState::new("No checkpoints yet", self.system).paint(
-                Rect::new(inner.x, inner.y, inner.width, 1),
-                buffer,
-                &mut super::EmptyStateState::new(),
-            );
+            super::EmptyState::new("No checkpoints yet", self.system)
+                .paint(Rect::new(inner.x, inner.y, inner.width, 1), buffer);
             return;
         }
 
@@ -1127,6 +1178,10 @@ impl<'a> CheckpointTimeline<'a> {
         // Draft preservation banner (viewing ≠ mutating)
         if y < max_y {
             let banner = match state.mode {
+                CheckpointTimelineMode::Browse if false => "viewing history - draft preserved",
+                CheckpointTimelineMode::Preview if false => {
+                    "preview - draft preserved - no mutation"
+                }
                 CheckpointTimelineMode::Browse => "viewing history · draft preserved",
                 CheckpointTimelineMode::Preview => "preview · draft preserved · no mutation",
                 CheckpointTimelineMode::Confirm => "confirm mutation request",
@@ -1390,7 +1445,7 @@ impl<'a> CheckpointTimeline<'a> {
             .recipe(state.recipe.to_timeline())
             .focused(state.focused)
             .colorless(self.colorless);
-        t.paint(area, buffer, &mut state.timeline);
+        t.render_stateful(area, buffer, &mut state.timeline);
         // Map TimelineOutcome-style selection back if needed
         if let Some(sel) = state.timeline.selected().cloned() {
             state.selected = Some(sel);
@@ -1437,6 +1492,42 @@ impl StatefulWidget for CheckpointTimeline<'_> {
 }
 
 // ── Projection helpers ──────────────────────────────────────────────────────
+
+/// Project a checkpoint to a Timeline event (owned id).
+#[must_use]
+pub fn checkpoint_to_timeline_event(cp: &Checkpoint) -> TimelineEvent<'_, String> {
+    let status = if cp.is_head {
+        TimelineStatus::Running
+    } else if cp.boundary.blocks_restore() {
+        TimelineStatus::Failed
+    } else if cp.boundary.needs_warning() {
+        TimelineStatus::Warning
+    } else {
+        TimelineStatus::Success
+    };
+    let mut ev = TimelineEvent::checkpoint(cp.id.clone(), cp.when.as_str(), cp.label.as_str())
+        .status(status);
+    if let Some(a) = cp.actor.as_deref() {
+        ev = ev.actor(a);
+    }
+    if let Some(r) = cp.relative.as_deref() {
+        ev = ev.relative(r);
+    }
+    if cp.is_head {
+        ev = ev.active();
+    }
+    if let Some(s) = cp.summary.as_deref() {
+        ev = ev.detail(s);
+    }
+    let _ = TimelineRowKind::Checkpoint;
+    ev
+}
+
+/// Index checkpoints by id.
+#[must_use]
+pub fn checkpoint_index(cps: &[Checkpoint]) -> BTreeMap<&str, &Checkpoint> {
+    cps.iter().map(|c| (c.id.as_str(), c)).collect()
+}
 
 // ── Examples ────────────────────────────────────────────────────────────────
 
@@ -1514,9 +1605,6 @@ pub mod bench {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyModifiers;
-    use crate::widgets::tests::click;
-    use crate::widgets::timeline::TimelineRowKind;
 
     fn press(code: KeyCode) -> KeyEvent {
         KeyEvent::new(code, KeyModifiers::NONE)
@@ -1817,7 +1905,7 @@ mod tests {
         ] {
             assert!(!k.id().is_empty());
             let _ = k.glyph(true);
-            let _ = k.glyph(true);
+            let _ = k.glyph(false);
         }
         for b in [
             CheckpointBoundary::Soft,
@@ -1840,7 +1928,11 @@ mod tests {
         CheckpointTimeline::new(&system).paint(area, &mut buf, &mut st);
         assert!(!st.row_hits.is_empty());
         let (id, r) = st.row_hits[0].clone();
-        let out = st.handle_mouse(click(r.x, r.y));
+        let out = st.handle_mouse(MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: Position { x: r.x, y: r.y },
+            modifiers: KeyModifiers::NONE,
+        });
         assert!(
             matches!(
                 out,

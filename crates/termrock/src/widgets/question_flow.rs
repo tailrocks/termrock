@@ -173,10 +173,31 @@ impl Question {
         self
     }
 
+    /// Required.
+    #[must_use]
+    pub const fn required(mut self, on: bool) -> Self {
+        self.required = on;
+        self
+    }
+
     /// Allow other.
     #[must_use]
     pub const fn allow_other(mut self, on: bool) -> Self {
         self.allow_other = on;
+        self
+    }
+
+    /// Validation hint.
+    #[must_use]
+    pub fn validation_hint(mut self, h: impl Into<String>) -> Self {
+        self.validation_hint = Some(h.into());
+        self
+    }
+
+    /// Help.
+    #[must_use]
+    pub fn help(mut self, h: impl Into<String>) -> Self {
+        self.help = Some(h.into());
         self
     }
 }
@@ -404,6 +425,18 @@ pub enum QuestionFlowPresentation {
     Fullscreen,
 }
 
+impl QuestionFlowPresentation {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Steps => "steps",
+            Self::Tabs => "tabs",
+            Self::Fullscreen => "fullscreen",
+        }
+    }
+}
+
 /// Flow phase.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -458,6 +491,11 @@ pub enum QuestionFlowOutcome {
     Cancelled,
     /// Fullscreen promote request.
     FullscreenRequested,
+    /// Queued set advanced after submit/cancel.
+    QueueChanged {
+        /// Remaining sets.
+        remaining: usize,
+    },
 }
 
 // ── Per-question interaction state ──────────────────────────────────────────
@@ -535,6 +573,12 @@ impl QuestionFlowState {
         }
     }
 
+    /// Sized empty legacy helper (no set yet).
+    #[must_use]
+    pub fn with_capacity(_step_count: usize) -> Self {
+        Self::new()
+    }
+
     /// Gate.
     pub fn set_accepts_input(&mut self, on: bool) {
         self.accepts_input = on;
@@ -552,6 +596,11 @@ impl QuestionFlowState {
     #[must_use]
     pub const fn is_enabled(&self) -> bool {
         self.enabled
+    }
+
+    /// Focus.
+    pub const fn set_focused(&mut self, on: bool) {
+        self.focused = on;
     }
 
     /// Whether a set is open.
@@ -1017,6 +1066,7 @@ impl QuestionFlowState {
 #[derive(Debug, Clone, Copy)]
 pub struct QuestionFlow<'a> {
     system: &'a DesignSystem,
+    colorless: bool,
 }
 
 /// Footer chords for the question flow, painted through [`HintBar`].
@@ -1057,7 +1107,18 @@ impl<'a> QuestionFlow<'a> {
     /// System only — questions live in state.
     #[must_use]
     pub const fn new(system: &'a DesignSystem) -> Self {
-        Self { system }
+        Self {
+            system,
+            colorless: false,
+        }
+    }
+
+    /// ASCII.
+    #[must_use]
+    /// Colorless.
+    pub const fn colorless(mut self, on: bool) -> Self {
+        self.colorless = on;
+        self
     }
 
     /// Paint.
@@ -1073,7 +1134,8 @@ impl<'a> QuestionFlow<'a> {
                 .title("Questions")
                 .emphasis(PanelChrome::Normal);
             let inner = panel.inner(area);
-            panel.paint(area, buffer, None);
+            use ratatui_core::widgets::Widget;
+            Widget::render(&panel, area, buffer);
             if !inner.is_empty() {
                 let m = { "∅ idle" };
                 buffer.set_stringn(
@@ -1103,7 +1165,8 @@ impl<'a> QuestionFlow<'a> {
             .title(title.as_str())
             .emphasis(emphasis);
         let inner = panel.inner(area);
-        panel.paint(area, buffer, None);
+        use ratatui_core::widgets::Widget;
+        Widget::render(&panel, area, buffer);
         if inner.is_empty() {
             return;
         }
@@ -1213,6 +1276,7 @@ impl<'a> QuestionFlow<'a> {
                         } else {
                             ControlState::Default
                         },
+                        state.last_error.is_some(),
                         false,
                     );
                     let row = Rect::new(inner.x, y, inner.width, 1);
@@ -1294,6 +1358,7 @@ impl<'a> QuestionFlow<'a> {
                         } else {
                             ControlState::Default
                         },
+                        state.last_error.is_some(),
                         true,
                     );
                     let row = Rect::new(inner.x, y, inner.width, 1);
@@ -1324,6 +1389,7 @@ impl<'a> QuestionFlow<'a> {
                 buffer,
             );
         }
+        let _ = display_cols;
     }
 
     fn paint_review(&self, area: Rect, buffer: &mut Buffer, state: &QuestionFlowState) {
@@ -1378,6 +1444,11 @@ impl<'a> QuestionFlow<'a> {
             );
             y = y.saturating_add(1);
         }
+    }
+
+    /// Render alias.
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut QuestionFlowState) {
+        self.paint(area, buffer, state);
     }
 }
 
@@ -1446,7 +1517,6 @@ pub mod bench {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::widgets::tests::click;
 
     #[test]
     fn single_choice_answer_and_advance() {
@@ -1618,7 +1688,11 @@ mod tests {
         QuestionFlow::new(&system).paint(area, &mut buffer, &mut state);
         let (id, hit) = state.option_hits[1].clone();
 
-        let outcome = state.handle_mouse(click(hit.x, hit.y));
+        let outcome = state.handle_mouse(MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: ratatui_core::layout::Position::new(hit.x, hit.y),
+            modifiers: KeyModifiers::NONE,
+        });
 
         assert!(matches!(
             outcome,
@@ -1680,7 +1754,11 @@ mod tests {
             QuestionFlowOutcome::Ignored
         );
         assert_eq!(
-            state.handle_mouse(click(option.x, option.y)),
+            state.handle_mouse(MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: ratatui_core::layout::Position::new(option.x, option.y),
+                modifiers: KeyModifiers::NONE,
+            }),
             QuestionFlowOutcome::Ignored
         );
         assert_eq!(state.step_index, 0);

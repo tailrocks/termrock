@@ -13,11 +13,18 @@
 //! contraction, and redaction. Prefer KeyValueList for new settings/summary UI.
 //!
 //! Research: system-info TUIs, detail panels, shadcn DescriptionList patterns.
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+use ratatui_core::{
+    buffer::Buffer,
+    layout::{Position, Rect},
+    style::Modifier,
+};
 
-use crate::input::{KeyEvent, MouseButton, MouseEvent, MouseEventKind};
-use crate::interaction::{NavigationMove, PageMove, UiIntent, default_list_intent};
-use crate::scroll;
+use crate::input::{KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind};
+use crate::interaction::{
+    EventResult, NavigationMove, PageMove, SemanticNode, SemanticRole, SemanticScene,
+    SemanticState, UiIntent, default_list_intent,
+};
 use crate::style::{DesignSystem, Role};
 use crate::text::{display_cols, take_display_cols, wrap_display_cols};
 
@@ -40,6 +47,18 @@ pub enum KvLayout {
     Stacked,
 }
 
+impl KvLayout {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Auto => "auto",
+            Self::Columns => "columns",
+            Self::Stacked => "stacked",
+        }
+    }
+}
+
 /// Status tone for value emphasis.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -58,6 +77,18 @@ pub enum KvStatus {
 }
 
 impl KvStatus {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Neutral => "neutral",
+            Self::Success => "success",
+            Self::Warning => "warning",
+            Self::Danger => "danger",
+            Self::Info => "info",
+        }
+    }
+
     fn role(self) -> Role {
         match self {
             Self::Neutral => Role::Text,
@@ -163,6 +194,13 @@ impl<'a, Id> KvEntry<'a, Id> {
     #[must_use]
     pub const fn status(mut self, status: KvStatus) -> Self {
         self.status = Some(status);
+        self
+    }
+
+    /// Nesting depth.
+    #[must_use]
+    pub const fn depth(mut self, depth: u8) -> Self {
+        self.depth = depth;
         self
     }
 
@@ -291,7 +329,15 @@ impl<Id: Clone + PartialEq> KeyValueListState<Id> {
     /// Scroll by display rows.
     pub fn scroll_by(&mut self, delta: i32) -> bool {
         let before = self.scroll_y;
-        scroll::apply_delta_unclamped_u16(&mut self.scroll_y, delta);
+        if delta >= 0 {
+            self.scroll_y = self
+                .scroll_y
+                .saturating_add(u16::try_from(delta).unwrap_or(u16::MAX));
+        } else {
+            self.scroll_y = self
+                .scroll_y
+                .saturating_sub(u16::try_from(-delta).unwrap_or(u16::MAX));
+        }
         self.clamp();
         before != self.scroll_y
     }
@@ -373,6 +419,20 @@ impl<'a, Id> KeyValueList<'a, Id> {
     #[must_use]
     pub const fn layout(mut self, layout: KvLayout) -> Self {
         self.layout = layout;
+        self
+    }
+
+    /// Fixed key column width.
+    #[must_use]
+    pub const fn key_width(mut self, width: u16) -> Self {
+        self.key_width = width;
+        self
+    }
+
+    /// Column separator (default two spaces — whitespace before chrome).
+    #[must_use]
+    pub const fn separator(mut self, sep: &'a str) -> Self {
+        self.separator = sep;
         self
     }
 
@@ -477,6 +537,22 @@ impl<'a, Id: Clone + PartialEq> KeyValueList<'a, Id> {
                 u16::try_from(lines).unwrap_or(1)
             }
         }
+    }
+
+    /// Total display rows.
+    #[must_use]
+    pub fn measure_height(&self, width: u16, state: &KeyValueListState<Id>) -> u16 {
+        let layout = self.resolved_layout(width);
+        // For measure_entry Stacked branch when Auto resolves to Stacked
+        let layout = if matches!(layout, KvLayout::Stacked) {
+            KvLayout::Stacked
+        } else {
+            KvLayout::Columns
+        };
+        self.entries
+            .iter()
+            .map(|e| self.measure_entry_height(e, width, layout, state))
+            .fold(0u16, |a, h| a.saturating_add(h))
     }
 
     /// Paint.
@@ -1081,6 +1157,45 @@ impl<'a, Id: Clone + PartialEq> KeyValueList<'a, Id> {
         }
         KeyValueListOutcome::Ignored
     }
+
+    /// EventResult wrapper.
+    pub fn handle_key_result(
+        &self,
+        state: &mut KeyValueListState<Id>,
+        key: KeyEvent,
+    ) -> EventResult<KeyValueListOutcome<Id>> {
+        match self.handle_key(state, key) {
+            KeyValueListOutcome::Ignored => EventResult::ignored(),
+            other => EventResult::emit(other),
+        }
+    }
+
+    /// Semantic registration.
+    pub fn register_semantic<Action>(
+        &self,
+        scene: &mut SemanticScene<Id, Action>,
+        root_id: Id,
+        area: Rect,
+        state: &KeyValueListState<Id>,
+    ) where
+        Id: Clone + PartialEq + std::fmt::Display,
+        Action: Clone,
+    {
+        if area.is_empty() {
+            return;
+        }
+        let _ = scene.register(
+            SemanticNode::control(root_id, area)
+                .role(SemanticRole::List)
+                .label("key-value list")
+                .description(format!("{} entries", self.entries.len()))
+                .focusable(true)
+                .state(SemanticState {
+                    selected: state.focused,
+                    ..Default::default()
+                }),
+        );
+    }
 }
 
 /// Absolute display row `idx` as `(entry, sub_row)`, from entry heights.
@@ -1112,7 +1227,6 @@ fn paint_entry_chrome(
 mod tests {
     use super::*;
     use crate::input::{KeyCode, KeyModifiers};
-    use crate::widgets::tests::click;
 
     #[test]
     fn separator_comes_from_the_shared_key_value_token() {
@@ -1311,7 +1425,14 @@ mod tests {
         let mut state = KeyValueListState::new();
         let mut buf = Buffer::empty(Rect::new(0, 0, 40, 3));
         let _ = list.paint(Rect::new(0, 0, 40, 3), &mut buf, &mut state);
-        let out = list.handle_mouse(&mut state, click(5, 0));
+        let out = list.handle_mouse(
+            &mut state,
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: Position { x: 5, y: 0 },
+                modifiers: KeyModifiers::NONE,
+            },
+        );
         assert!(matches!(out, KeyValueListOutcome::Copy { id: "name", .. }));
     }
 }

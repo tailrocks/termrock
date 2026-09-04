@@ -19,11 +19,13 @@ use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
     style::Modifier,
+    widgets::Widget,
 };
 
 use crate::input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{
-    SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, default_button_intent,
+    EventResult, SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent,
+    default_button_intent,
 };
 use crate::style::{ControlState, DesignSystem, Role};
 use crate::text::{display_cols, take_display_cols};
@@ -44,6 +46,17 @@ pub enum SliderOrientation {
     Horizontal,
     /// Bottom → top (volume / side panels).
     Vertical,
+}
+
+impl SliderOrientation {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Horizontal => "horizontal",
+            Self::Vertical => "vertical",
+        }
+    }
 }
 
 /// Inclusive bounds + step.
@@ -313,6 +326,11 @@ impl SliderState {
         }
     }
 
+    /// Controlled value.
+    pub const fn set_value(&mut self, value: f64) {
+        self.value = value;
+    }
+
     /// Whether activatable.
     #[must_use]
     pub const fn can_edit(&self) -> bool {
@@ -352,7 +370,12 @@ pub(crate) struct SliderChrome {
     pub(crate) thumb: ratatui_core::style::Style,
 }
 
-pub(crate) fn slider_chrome(system: &DesignSystem, enabled: bool, active: bool) -> SliderChrome {
+pub(crate) fn slider_chrome(
+    system: &DesignSystem,
+    _colorless: bool,
+    enabled: bool,
+    active: bool,
+) -> SliderChrome {
     let recipe = system.input_recipe(
         if !enabled {
             ControlState::Disabled
@@ -361,6 +384,7 @@ pub(crate) fn slider_chrome(system: &DesignSystem, enabled: bool, active: bool) 
         } else {
             ControlState::Default
         },
+        false,
         false,
     );
     let thumb = if active { recipe.cursor } else { recipe.value }.add_modifier(Modifier::BOLD);
@@ -405,10 +429,38 @@ impl<'a> Slider<'a> {
         self
     }
 
+    /// Orientation.
+    #[must_use]
+    pub const fn orientation(mut self, orientation: SliderOrientation) -> Self {
+        self.orientation = orientation;
+        self
+    }
+
     /// Vertical track.
     #[must_use]
     pub const fn vertical(mut self) -> Self {
         self.orientation = SliderOrientation::Vertical;
+        self
+    }
+
+    /// Show trailing/current value text (default true).
+    #[must_use]
+    pub const fn show_value(mut self, on: bool) -> Self {
+        self.show_value = on;
+        self
+    }
+
+    /// Override page step.
+    #[must_use]
+    pub const fn page_step(mut self, step: f64) -> Self {
+        self.page_step = Some(step);
+        self
+    }
+
+    /// Monochrome emphasis.
+    #[must_use]
+    pub const fn colorless(mut self, on: bool) -> Self {
+        self.colorless = on;
         self
     }
 
@@ -438,9 +490,8 @@ impl<'a> Slider<'a> {
                 numeric_only: true,
             };
         }
-        // Host-projected value may be off-step; snap for display only and
-        // never write back — paint must not mutate host-owned state.
         let value = self.bounds.snap(state.value);
+        state.value = value;
 
         if self.numeric_only(area) || state.editing {
             return self.paint_numeric(area, buffer, state, value);
@@ -578,7 +629,11 @@ impl<'a> Slider<'a> {
             buffer.set_stringn(track.x.saturating_add(i), track.y, ch, 1, style);
         }
 
-        // No-color tracks stay readable via the =/-/* glyphs alone.
+        // Bracket ends for no-color structure
+        if track_w >= 2 && mono(self.system, self.colorless) {
+            // already using =/-/* which is clear
+        }
+
         let mut value_area = None;
         if !value_str.is_empty() && track.right() < area.right() {
             let vx = track
@@ -725,6 +780,7 @@ impl<'a> Slider<'a> {
                 ControlState::Default
             },
             false,
+            false,
         );
         if state.focused {
             recipe.value.add_modifier(Modifier::BOLD)
@@ -742,6 +798,7 @@ impl<'a> Slider<'a> {
             } else {
                 ControlState::Default
             },
+            false,
             state.editing,
         );
         if state.editing || state.focused {
@@ -752,7 +809,12 @@ impl<'a> Slider<'a> {
     }
 
     fn chrome(&self, state: &SliderState) -> SliderChrome {
-        slider_chrome(self.system, state.enabled, state.focused || state.dragging)
+        slider_chrome(
+            self.system,
+            self.colorless,
+            state.enabled,
+            state.focused || state.dragging,
+        )
     }
 
     fn track_style(&self, state: &SliderState) -> ratatui_core::style::Style {
@@ -963,6 +1025,18 @@ impl<'a> Slider<'a> {
         }
     }
 
+    /// EventResult wrapper.
+    pub fn handle_key_result(
+        &self,
+        state: &mut SliderState,
+        key: KeyEvent,
+    ) -> EventResult<SliderOutcome> {
+        match self.handle_key(state, key) {
+            SliderOutcome::Ignored => EventResult::ignored(),
+            other => EventResult::emit(other),
+        }
+    }
+
     /// Semantic.
     pub fn register_semantic<Id, Action>(
         &self,
@@ -996,6 +1070,13 @@ impl<'a> Slider<'a> {
     }
 }
 
+impl Widget for &Slider<'_> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        let mut state = SliderState::new(self.bounds.min);
+        let _ = self.paint(area, buffer, &mut state);
+    }
+}
+
 // ── RangeSlider ─────────────────────────────────────────────────────────────
 
 /// Which thumb is active for keyboard.
@@ -1010,6 +1091,15 @@ pub enum RangeThumb {
 }
 
 impl RangeThumb {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Start => "start",
+            Self::End => "end",
+        }
+    }
+
     /// Toggle.
     #[must_use]
     pub const fn other(self) -> Self {
@@ -1110,6 +1200,30 @@ impl RangeSliderState {
         }
     }
 
+    /// Enabled.
+    pub const fn set_enabled(&mut self, on: bool) {
+        self.enabled = on;
+    }
+
+    /// Read-only.
+    pub fn set_read_only(&mut self, on: bool) {
+        self.read_only = on;
+        if on {
+            self.dragging = false;
+        }
+    }
+
+    /// Controlled range.
+    pub fn set_range(&mut self, start: f64, end: f64) {
+        if start <= end {
+            self.start = start;
+            self.end = end;
+        } else {
+            self.start = end;
+            self.end = start;
+        }
+    }
+
     /// Whether editable.
     #[must_use]
     pub const fn can_edit(&self) -> bool {
@@ -1123,6 +1237,7 @@ pub struct RangeSlider<'a> {
     bounds: SliderBounds,
     system: &'a DesignSystem,
     label: Option<&'a str>,
+    marks: &'a [SliderMark<'a>],
     show_value: bool,
     page_step: Option<f64>,
     colorless: bool,
@@ -1136,6 +1251,7 @@ impl<'a> RangeSlider<'a> {
             bounds,
             system,
             label: None,
+            marks: &[],
             show_value: true,
             page_step: None,
             colorless: false,
@@ -1146,6 +1262,34 @@ impl<'a> RangeSlider<'a> {
     #[must_use]
     pub const fn label(mut self, label: &'a str) -> Self {
         self.label = Some(label);
+        self
+    }
+
+    /// Marks.
+    #[must_use]
+    pub const fn marks(mut self, marks: &'a [SliderMark<'a>]) -> Self {
+        self.marks = marks;
+        self
+    }
+
+    /// Show value text.
+    #[must_use]
+    pub const fn show_value(mut self, on: bool) -> Self {
+        self.show_value = on;
+        self
+    }
+
+    /// Page step.
+    #[must_use]
+    pub const fn page_step(mut self, step: f64) -> Self {
+        self.page_step = Some(step);
+        self
+    }
+
+    /// Colorless.
+    #[must_use]
+    pub const fn colorless(mut self, on: bool) -> Self {
+        self.colorless = on;
         self
     }
 
@@ -1191,6 +1335,7 @@ impl<'a> RangeSlider<'a> {
                     ControlState::Default
                 },
                 false,
+                false,
             );
             let style = if state.focused {
                 recipe.value.add_modifier(Modifier::BOLD)
@@ -1226,6 +1371,7 @@ impl<'a> RangeSlider<'a> {
                             } else {
                                 ControlState::Default
                             },
+                            false,
                             false,
                         )
                         .value,
@@ -1275,7 +1421,12 @@ impl<'a> RangeSlider<'a> {
             // Same chrome answer as Slider: the thumb the operator is moving
             // carries the accent, the range between them is data
             // (plans/008 Step 4).
-            let chrome = slider_chrome(self.system, state.enabled, state.focused && active);
+            let chrome = slider_chrome(
+                self.system,
+                self.colorless,
+                state.enabled,
+                state.focused && active,
+            );
             let style = if is_start || is_end {
                 chrome.thumb
             } else if in_range {
@@ -1303,6 +1454,7 @@ impl<'a> RangeSlider<'a> {
                         } else {
                             ControlState::Default
                         },
+                        false,
                         false,
                     )
                     .placeholder,
@@ -1488,6 +1640,55 @@ impl<'a> RangeSlider<'a> {
         }
         self.emit_range(state)
     }
+
+    /// EventResult.
+    pub fn handle_key_result(
+        &self,
+        state: &mut RangeSliderState,
+        key: KeyEvent,
+    ) -> EventResult<RangeSliderOutcome> {
+        match self.handle_key(state, key) {
+            RangeSliderOutcome::Ignored => EventResult::ignored(),
+            other => EventResult::emit(other),
+        }
+    }
+
+    /// Semantic.
+    pub fn register_semantic<Id, Action>(
+        &self,
+        scene: &mut SemanticScene<Id, Action>,
+        id: Id,
+        area: Rect,
+        state: &RangeSliderState,
+    ) where
+        Id: Clone + PartialEq + std::fmt::Display,
+        Action: Clone,
+    {
+        if area.is_empty() {
+            return;
+        }
+        let desc = format!("{}–{}", format_value(state.start), format_value(state.end));
+        let _ = scene.register(
+            SemanticNode::control(id, area)
+                .role(SemanticRole::Progress)
+                .label(self.label.unwrap_or("range slider"))
+                .description(&desc)
+                .focusable(state.can_edit())
+                .disabled(!state.enabled)
+                .state(SemanticState {
+                    selected: state.focused,
+                    pressed: state.dragging,
+                    ..Default::default()
+                }),
+        );
+    }
+}
+
+impl Widget for &RangeSlider<'_> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        let mut state = RangeSliderState::new(self.bounds.min, self.bounds.max);
+        let _ = self.paint(area, buffer, &mut state);
+    }
 }
 
 // ── Tests ───────────────────────────────────────────────────────────────────
@@ -1495,7 +1696,6 @@ impl<'a> RangeSlider<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::widgets::tests::click;
 
     #[test]
     fn bounds_snap_and_fraction() {
@@ -1594,11 +1794,18 @@ mod tests {
         let mut buf = Buffer::empty(Rect::new(0, 0, 30, 1));
         let parts = s.paint(Rect::new(0, 0, 30, 1), &mut buf, &mut state);
         let track = parts.track.unwrap();
-        let pos = Position::new(
-            track.x.saturating_add(track.width.saturating_sub(1)),
-            track.y,
+        let pos = Position {
+            x: track.x.saturating_add(track.width.saturating_sub(1)),
+            y: track.y,
+        };
+        let out = s.handle_mouse(
+            &mut state,
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: pos,
+                modifiers: KeyModifiers::NONE,
+            },
         );
-        let out = s.handle_mouse(&mut state, click(pos.x, pos.y));
         assert!(matches!(out, SliderOutcome::ValueChanged { .. }));
         assert!(state.value > 50.0);
     }
@@ -1661,7 +1868,14 @@ mod tests {
         let end = parts.end_handle.expect("end handle");
 
         assert!(matches!(
-            slider.handle_mouse(&mut state, click(end.x, end.y),),
+            slider.handle_mouse(
+                &mut state,
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(end.x, end.y),
+                    modifiers: KeyModifiers::NONE,
+                },
+            ),
             RangeSliderOutcome::ValueChanged { .. }
         ));
         assert_eq!(state.active_thumb, RangeThumb::End);

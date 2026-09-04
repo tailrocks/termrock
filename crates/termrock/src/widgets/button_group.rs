@@ -16,12 +16,18 @@
 //! command catalogs; ButtonGroup is a focused action cluster (OK/Cancel/Delete).
 //!
 //! Research: shadcn button groups, desktop dialog action bars, terminal prompt rows.
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+use ratatui_core::{
+    buffer::Buffer,
+    layout::{Position, Rect},
+    style::Modifier,
+    widgets::Widget,
+};
 
-use crate::input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind};
+use crate::input::{KeyCode, KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{
-    NavigationMove, RovingEntry, RovingFocusGroup, RovingOrientation, RovingOutcome, SemanticNode,
-    SemanticRole, SemanticScene, SemanticState, UiIntent, default_button_intent,
+    EventResult, NavigationMove, RovingEntry, RovingFocusGroup, RovingOrientation, RovingOutcome,
+    SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, default_button_intent,
 };
 use crate::style::{ButtonRecipeVariant, ControlState, DesignSystem, Role};
 use crate::text::{display_cols, take_display_cols};
@@ -49,14 +55,23 @@ pub enum ButtonGroupRecipe {
 }
 
 impl ButtonGroupRecipe {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Connected => "connected",
+            Self::Separated => "separated",
+        }
+    }
+
     /// Columns between faces: connected uses a 1-col separator glyph; separated uses a gap.
     fn inter_cols(self) -> u16 {
         1
     }
 
-    fn separator_glyph(self) -> Option<&'static str> {
+    fn separator_glyph(self, ascii: bool) -> Option<&'static str> {
         match self {
-            Self::Connected => Some("│"),
+            Self::Connected => Some(if ascii { "|" } else { "│" }),
             Self::Separated => None,
         }
     }
@@ -71,6 +86,17 @@ pub enum ButtonGroupOrientation {
     Horizontal,
     /// One action per row (very narrow).
     Vertical,
+}
+
+impl ButtonGroupOrientation {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Horizontal => "horizontal",
+            Self::Vertical => "vertical",
+        }
+    }
 }
 
 // ── Items ───────────────────────────────────────────────────────────────────
@@ -163,6 +189,13 @@ impl<'a, Id> ButtonGroupItem<'a, Id> {
         }
     }
 
+    /// Variant override.
+    #[must_use]
+    pub const fn variant(mut self, variant: ButtonVariant) -> Self {
+        self.variant = variant;
+        self
+    }
+
     /// Enabled flag.
     #[must_use]
     pub const fn enabled(mut self, on: bool) -> Self {
@@ -181,6 +214,30 @@ impl<'a, Id> ButtonGroupItem<'a, Id> {
     #[must_use]
     pub const fn priority(mut self, priority: u8) -> Self {
         self.priority = priority;
+        self
+    }
+
+    /// Mark as default submit (Enter when group focused).
+    #[must_use]
+    pub const fn default_action(mut self, on: bool) -> Self {
+        self.is_default = on;
+        if on && self.priority < 90 {
+            self.priority = 90;
+        }
+        self
+    }
+
+    /// Leading glyph.
+    #[must_use]
+    pub const fn leading(mut self, glyph: &'a str) -> Self {
+        self.leading = Some(glyph);
+        self
+    }
+
+    /// Host command id.
+    #[must_use]
+    pub const fn command(mut self, command: &'a str) -> Self {
+        self.command = Some(command);
         self
     }
 
@@ -330,6 +387,20 @@ impl<'a, Id> ButtonGroup<'a, Id> {
         self
     }
 
+    /// Separated recipe.
+    #[must_use]
+    pub const fn separated(mut self) -> Self {
+        self.recipe = ButtonGroupRecipe::Separated;
+        self
+    }
+
+    /// Recipe override.
+    #[must_use]
+    pub const fn recipe(mut self, recipe: ButtonGroupRecipe) -> Self {
+        self.recipe = recipe;
+        self
+    }
+
     /// Orientation.
     #[must_use]
     pub const fn orientation(mut self, orientation: ButtonGroupOrientation) -> Self {
@@ -341,6 +412,13 @@ impl<'a, Id> ButtonGroup<'a, Id> {
     #[must_use]
     pub const fn stack_below(mut self, width: u16) -> Self {
         self.stack_below = width;
+        self
+    }
+
+    /// Overflow trigger label (default `…`).
+    #[must_use]
+    pub const fn overflow_label(mut self, label: &'a str) -> Self {
+        self.overflow_label = label;
         self
     }
 }
@@ -525,7 +603,7 @@ impl<'a, Id: Clone + PartialEq> ButtonGroup<'a, Id> {
         }
 
         // Roving entries for visible only
-        let roving_entries: Vec<RovingEntry<'_, Id>> = visible
+        let roving_entries: Vec<RovingEntry<Id>> = visible
             .iter()
             .map(|&i| {
                 let it = &self.items[i];
@@ -562,7 +640,7 @@ impl<'a, Id: Clone + PartialEq> ButtonGroup<'a, Id> {
             }
             ButtonGroupOrientation::Horizontal => {
                 let gap = self.recipe.inter_cols();
-                let sep = self.recipe.separator_glyph();
+                let sep = self.recipe.separator_glyph(false);
                 let mut x = area.x;
                 let mut first = true;
                 // Paint in source order among visible
@@ -697,7 +775,7 @@ impl<'a, Id: Clone + PartialEq> ButtonGroup<'a, Id> {
 
         // Build roving list from visible items
         let parts = state.parts.clone();
-        let visible: Vec<RovingEntry<'_, Id>> = if let Some(p) = &parts {
+        let visible: Vec<RovingEntry<Id>> = if let Some(p) = &parts {
             p.items
                 .iter()
                 .filter(|it| !it.overflowed)
@@ -879,6 +957,18 @@ impl<'a, Id: Clone + PartialEq> ButtonGroup<'a, Id> {
         ButtonGroupOutcome::Ignored
     }
 
+    /// EventResult wrapper.
+    pub fn handle_key_result(
+        &self,
+        state: &mut ButtonGroupState<Id>,
+        key: KeyEvent,
+    ) -> EventResult<ButtonGroupOutcome<Id>> {
+        match self.handle_key(state, key) {
+            ButtonGroupOutcome::Ignored => EventResult::ignored(),
+            other => EventResult::emit(other),
+        }
+    }
+
     /// Semantic: group + each visible command as Button.
     pub fn register_semantic<Action>(
         &self,
@@ -929,11 +1019,17 @@ impl<'a, Id: Clone + PartialEq> ButtonGroup<'a, Id> {
     }
 }
 
+impl<'a, Id: Clone + PartialEq> Widget for &ButtonGroup<'a, Id> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        let mut state = ButtonGroupState::new();
+        let _ = self.paint(area, buffer, &mut state);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::input::{KeyCode, KeyModifiers};
-    use crate::widgets::tests::click;
 
     fn sample() -> [ButtonGroupItem<'static, &'static str>; 4] {
         [
@@ -1036,7 +1132,17 @@ mod tests {
         let mut buf = Buffer::empty(Rect::new(0, 0, 40, 1));
         let parts = g.paint(Rect::new(0, 0, 40, 1), &mut buf, &mut state);
         let area = parts.items.iter().find(|i| i.id == "b").unwrap().area;
-        let out = g.handle_mouse(&mut state, click(area.x, area.y));
+        let out = g.handle_mouse(
+            &mut state,
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: Position {
+                    x: area.x,
+                    y: area.y,
+                },
+                modifiers: KeyModifiers::NONE,
+            },
+        );
         assert!(matches!(out, ButtonGroupOutcome::Activated { id: "b" }));
     }
 

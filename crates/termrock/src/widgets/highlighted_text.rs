@@ -14,7 +14,7 @@
 //! hosts only know visual columns.
 //!
 //! Research: fzf, television, command palettes.
-use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::style::{DesignSystem, Role};
@@ -123,6 +123,12 @@ impl MatchRange {
     #[must_use]
     pub const fn is_empty(self) -> bool {
         self.end <= self.start
+    }
+
+    /// Byte length.
+    #[must_use]
+    pub const fn len(self) -> usize {
+        self.end.saturating_sub(self.start)
     }
 
     /// Clamp to `source` length and ensure `start <= end`.
@@ -257,6 +263,14 @@ impl MatchRanges {
         }
     }
 
+    /// Single range convenience.
+    #[must_use]
+    pub fn single(range: MatchRange) -> Self {
+        Self {
+            ranges: vec![range],
+        }
+    }
+
     /// Borrowed slice.
     #[must_use]
     pub fn as_slice(&self) -> &[MatchRange] {
@@ -353,6 +367,17 @@ impl MatchRanges {
     pub fn prepare(self, source: &str) -> Self {
         self.normalized(source).resolve_overlaps(source)
     }
+
+    /// Indices of original ranges containing `byte` (before resolve).
+    #[must_use]
+    pub fn covering(&self, byte: usize) -> Vec<usize> {
+        self.ranges
+            .iter()
+            .enumerate()
+            .filter(|(_, r)| r.start <= byte && byte < r.end)
+            .map(|(i, _)| i)
+            .collect()
+    }
 }
 
 impl FromIterator<MatchRange> for MatchRanges {
@@ -376,6 +401,18 @@ pub enum HighlightVisual {
     Inactive,
 }
 
+impl HighlightVisual {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Normal => "normal",
+            Self::Selected => "selected",
+            Self::Inactive => "inactive",
+        }
+    }
+}
+
 /// Truncation policy for match-aware clipping.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -389,6 +426,19 @@ pub enum MatchTruncate {
     KeepFocusedMatch,
     /// Middle ellipsis when both ends matter (long paths).
     Middle,
+}
+
+impl MatchTruncate {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::End => "end",
+            Self::KeepFirstMatch => "keep-first",
+            Self::KeepFocusedMatch => "keep-focused",
+            Self::Middle => "middle",
+        }
+    }
 }
 
 /// Painted geometry.
@@ -473,11 +523,41 @@ impl<'a> HighlightedText<'a> {
         self
     }
 
+    /// Focused original range index (for KeepFocusedMatch).
+    #[must_use]
+    pub const fn focused_index(mut self, index: Option<usize>) -> Self {
+        self.focused_index = index;
+        self
+    }
+
+    /// Base role for non-match runs.
+    #[must_use]
+    pub const fn base_role(mut self, role: Role) -> Self {
+        self.base_role = role;
+        self
+    }
+
+    /// Original source (copy / semantics).
+    #[must_use]
+    pub const fn source(&self) -> &'a str {
+        self.source
+    }
+
     /// Full plain source for clipboard.
     #[must_use]
     pub const fn plain(&self) -> &'a str {
         self.source
     }
+
+    /// Prepare owned ranges for reuse across frames.
+    #[must_use]
+    pub fn prepare_ranges(&self) -> MatchRanges {
+        MatchRanges {
+            ranges: self.ranges.to_vec(),
+        }
+        .prepare(self.source)
+    }
+
     /// Build TextSpans for the full source (no width truncation).
     #[must_use]
     pub fn to_spans(&self) -> Vec<TextSpan<'a>> {
@@ -529,10 +609,10 @@ impl<'a> HighlightedText<'a> {
             .ranges
         };
 
-        let (start_byte, end_byte) = match self.truncate {
+        let (start_byte, end_byte, mode) = match self.truncate {
             MatchTruncate::End => {
                 let s = take_display_cols(source, budget);
-                (0, s.len())
+                (0, s.len(), "end")
             }
             MatchTruncate::Middle => {
                 let half = budget / 2;
@@ -541,13 +621,14 @@ impl<'a> HighlightedText<'a> {
                 let tail = take_display_cols_end(source, tail_budget);
                 let start_tail = source.len().saturating_sub(tail.len());
                 // Represent as head + ellipsis + tail specially below
-                return middle_truncate(source, &prepared, &head, &tail, start_tail);
+                return middle_truncate(source, &prepared, &head, &tail, start_tail, self);
             }
             MatchTruncate::KeepFirstMatch | MatchTruncate::KeepFocusedMatch => {
                 let anchor = anchor_byte(self, &prepared);
                 window_around(source, anchor, budget)
             }
         };
+        let _ = mode;
 
         let visible = MatchRange::new(start_byte, end_byte).snap_graphemes(source);
         let mut text = source
@@ -566,7 +647,7 @@ impl<'a> HighlightedText<'a> {
         }
         // Final col clamp
         if display_cols(&text) > max {
-            text = take_display_cols(&text, max).into_owned();
+            text = take_display_cols(&text, max);
         }
         (text, shifted, visible)
     }
@@ -609,7 +690,9 @@ impl<'a> HighlightedText<'a> {
             MatchTruncate::Middle => t.overflow(TextOverflow::Clip),
             _ => t.overflow(TextOverflow::Clip),
         };
-        // Selection chrome is the host row background; matches are styled above.
+        if matches!(self.visual, HighlightVisual::Selected) {
+            // selection chrome is host row bg; we strengthen match styles already
+        }
         let _ = t.paint(area, buffer);
         HighlightedTextParts {
             root: Rect {
@@ -654,7 +737,7 @@ fn anchor_byte(ht: &HighlightedText<'_>, prepared: &[MatchRange]) -> usize {
     prepared.first().map(|r| r.start).unwrap_or(0)
 }
 
-fn window_around(source: &str, anchor: usize, budget_cols: usize) -> (usize, usize) {
+fn window_around(source: &str, anchor: usize, budget_cols: usize) -> (usize, usize, &'static str) {
     // Find grapheme window of budget_cols containing anchor near start of window
     let anchor = anchor.min(source.len());
     // Prefer anchor near 1/3 of window so context before match exists
@@ -702,7 +785,7 @@ fn window_around(source: &str, anchor: usize, budget_cols: usize) -> (usize, usi
             used += w;
         }
     }
-    (start, end.max(start))
+    (start, end.max(start), "window")
 }
 
 fn take_display_cols_end(s: &str, max_cols: usize) -> String {
@@ -729,6 +812,7 @@ fn middle_truncate(
     head: &str,
     tail: &str,
     start_tail: usize,
+    ht: &HighlightedText<'_>,
 ) -> (String, Vec<MatchRange>, MatchRange) {
     let ellipsis = "…";
     let text = format!("{head}{ellipsis}{tail}");
@@ -746,6 +830,7 @@ fn middle_truncate(
             ));
         }
     }
+    let _ = ht;
     (
         text,
         shifted,
@@ -876,6 +961,7 @@ fn match_span<'a>(piece: &'a str, kind: MatchKind, ht: &HighlightedText<'_>) -> 
     {
         s = s.reverse(true);
     }
+    let _ = Modifier::BOLD; // style via strong
     s
 }
 
@@ -892,6 +978,59 @@ pub fn substring_ranges(source: &str, query: &str) -> MatchRanges {
         ranges.push(MatchRange::new(abs, abs + query.len()));
         start = abs + query.len().max(1);
         if start >= source.len() {
+            break;
+        }
+    }
+    ranges.prepare(source)
+}
+
+/// Case-insensitive substring matches (ASCII-oriented; Unicode lowercases per char).
+#[must_use]
+pub fn substring_ranges_ignore_ascii_case(source: &str, query: &str) -> MatchRanges {
+    if query.is_empty() {
+        return MatchRanges::new();
+    }
+    let q: String = query.chars().flat_map(char::to_lowercase).collect();
+    let mut ranges = MatchRanges::new();
+    let mut byte = 0;
+    let lower_source: String = source.chars().flat_map(char::to_lowercase).collect();
+    // Map lower_source indices carefully — for ASCII-heavy labels only.
+    // Safer approach: walk source graphemes
+    let _ = lower_source;
+    let ql = q.len();
+    while byte < source.len() {
+        let rest = &source[byte..];
+        if let Some(rel) = rest.to_lowercase().find(&q) {
+            // find byte offset: walk chars in rest
+            let mut abs = byte;
+            let mut skipped = 0usize;
+            for (i, c) in rest.char_indices() {
+                if skipped == rel {
+                    abs = byte + i;
+                    break;
+                }
+                skipped += c.to_lowercase().next().map(|x| x.len_utf8()).unwrap_or(1);
+            }
+            // end: walk query length in lower space — approximate by taking query.chars count from abs
+            let end = {
+                let mut e = abs;
+                let mut need = ql;
+                for c in source[abs..].chars() {
+                    let lw: String = c.to_lowercase().collect();
+                    if need < lw.len() {
+                        break;
+                    }
+                    need -= lw.len();
+                    e += c.len_utf8();
+                    if need == 0 {
+                        break;
+                    }
+                }
+                e
+            };
+            ranges.push(MatchRange::new(abs, end).snap_graphemes(source));
+            byte = end.max(abs + 1);
+        } else {
             break;
         }
     }

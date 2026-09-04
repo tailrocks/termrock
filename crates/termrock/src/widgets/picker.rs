@@ -131,8 +131,6 @@ pub enum PickerOutcome<Id> {
     ActivatedAlt(Id),
     /// Tab: host should cycle the picker scope (junie `NextScope`).
     NextScope,
-    /// Delete: host secondary (junie `PickerEvent::Secondary`, close-tab).
-    Secondary(Id),
     /// Escape was pressed while the query was already empty.
     Cancelled,
 }
@@ -175,6 +173,12 @@ impl<Id: Clone + PartialEq> PickerState<Id> {
         self.accepts_input = accepts;
     }
 
+    /// Whether host granted input.
+    #[must_use]
+    pub const fn accepts_input(&self) -> bool {
+        self.accepts_input
+    }
+
     /// Whether printable keys edit the query (junie `searchable`; default true).
     ///
     /// When false, `j`/`k` move the list. [`Picker::searchable`] copies this
@@ -183,16 +187,38 @@ impl<Id: Clone + PartialEq> PickerState<Id> {
         self.searchable = on;
     }
 
+    /// Whether the query field is live.
+    #[must_use]
+    pub const fn searchable(&self) -> bool {
+        self.searchable
+    }
+
     /// Returns the query used by the caller-owned projection.
     #[must_use]
     pub fn query_text(&self) -> &str {
         self.query.value()
     }
 
+    /// Returns the text-input state for cursor and validation inspection.
+    #[must_use]
+    pub const fn query(&self) -> &TextInputState {
+        &self.query
+    }
+
+    /// Returns mutable query state for consumer-specific constraints.
+    pub const fn query_mut(&mut self) -> &mut TextInputState {
+        &mut self.query
+    }
+
     /// Returns the list state for selection and painted-geometry inspection.
     #[must_use]
     pub const fn list(&self) -> &ListState<Id> {
         &self.list
+    }
+
+    /// Returns mutable list state for focus, scrolling, and pointer integration.
+    pub const fn list_mut(&mut self) -> &mut ListState<Id> {
+        &mut self.list
     }
 }
 
@@ -267,18 +293,6 @@ impl<Id: Clone + PartialEq> PickerState<Id> {
         }
         let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
         let alt = key.modifiers.contains(KeyModifiers::ALT);
-        // Activation, cancellation, scope handoff, secondary actions, and
-        // query clearing are one-shot. Consume repeats before they can reach
-        // the picker state machine; text editing and navigation stay held-key
-        // repeatable below.
-        if !key.is_press()
-            && (matches!(
-                key.code,
-                KeyCode::Esc | KeyCode::Enter | KeyCode::Tab | KeyCode::Delete
-            ) || (ctrl && self.searchable && matches!(key.code, KeyCode::Char('u'))))
-        {
-            return PickerOutcome::Ignored;
-        }
         match key.code {
             KeyCode::Esc => self.handle_intent(visible, UiIntent::Cancel),
             KeyCode::Enter if alt => self.activate(visible, true),
@@ -292,10 +306,6 @@ impl<Id: Clone + PartialEq> PickerState<Id> {
             KeyCode::PageDown => self.handle_intent(visible, UiIntent::Page(PageMove::Forward)),
             KeyCode::PageUp => self.handle_intent(visible, UiIntent::Page(PageMove::Backward)),
             KeyCode::Tab => PickerOutcome::NextScope,
-            KeyCode::Delete if !ctrl && !alt => match self.list.selected() {
-                Some(id) => PickerOutcome::Secondary(id.clone()),
-                None => PickerOutcome::Ignored,
-            },
             KeyCode::Backspace if self.searchable && !ctrl && !alt => self.route_query(key),
             KeyCode::Char('n' | 'j') if ctrl => {
                 self.handle_intent(visible, UiIntent::Move(NavigationMove::Next))
@@ -371,6 +381,30 @@ impl<Id: Clone + PartialEq> PickerState<Id> {
             }
             UiIntent::Expand | UiIntent::Collapse => PickerOutcome::Ignored,
             _ => PickerOutcome::Ignored,
+        }
+    }
+
+    /// Key path with [`crate::interaction::EventResult`] envelope.
+    pub fn handle_key_result(
+        &mut self,
+        visible: &[ListRow<'_, Id>],
+        key: KeyEvent,
+    ) -> crate::interaction::EventResult<PickerOutcome<Id>> {
+        match self.handle_key(visible, key) {
+            PickerOutcome::Ignored => crate::interaction::EventResult::ignored(),
+            other => crate::interaction::EventResult::emit(other),
+        }
+    }
+
+    /// Intent path with [`crate::interaction::EventResult`] envelope.
+    pub fn handle_intent_result(
+        &mut self,
+        visible: &[ListRow<'_, Id>],
+        intent: crate::interaction::UiIntent,
+    ) -> crate::interaction::EventResult<PickerOutcome<Id>> {
+        match self.handle_intent(visible, intent) {
+            PickerOutcome::Ignored => crate::interaction::EventResult::ignored(),
+            other => crate::interaction::EventResult::emit(other),
         }
     }
 
@@ -471,6 +505,13 @@ impl<'a, Id> Picker<'a, Id> {
         self
     }
 
+    /// Replaces the semantic query label.
+    #[must_use]
+    pub const fn label(mut self, label: &'a str) -> Self {
+        self.label = label;
+        self
+    }
+
     /// Replaces the empty-query placeholder.
     #[must_use]
     pub const fn placeholder(mut self, placeholder: &'a str) -> Self {
@@ -478,10 +519,25 @@ impl<'a, Id> Picker<'a, Id> {
         self
     }
 
+    /// Replaces the cue rendered when the projection is empty.
+    #[must_use]
+    pub const fn empty_message(mut self, empty_message: &'a str) -> Self {
+        self.empty_message = empty_message;
+        self
+    }
+
     /// Scene surface focus chrome (list selection still uses list cursor).
     #[must_use]
     pub const fn focused(mut self, focused: bool) -> Self {
         self.focused = focused;
+        self
+    }
+
+    /// ASCII empty / list recipes.
+    #[must_use]
+    /// Reduced-color paint.
+    pub const fn colorless(mut self, colorless: bool) -> Self {
+        self.colorless = colorless;
         self
     }
 }
@@ -531,7 +587,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
                 buffer.set_stringn(
                     list_area.x,
                     list_area.y,
-                    take_display_cols(&msg, usize::from(list_area.width)).as_ref(),
+                    &take_display_cols(&msg, usize::from(list_area.width)),
                     usize::from(list_area.width),
                     self.system.style(Role::TextMuted),
                 );
@@ -579,7 +635,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
         buffer.set_stringn(
             inner.x,
             y,
-            take_display_cols(self.title, usize::from(inner.width)).as_ref(),
+            &take_display_cols(self.title, usize::from(inner.width)),
             usize::from(inner.width),
             theme.title().bg(bg),
         );
@@ -624,7 +680,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
                     buffer.set_stringn(
                         text_x,
                         y,
-                        take_display_cols(self.placeholder, usize::from(text_w)).as_ref(),
+                        &take_display_cols(self.placeholder, usize::from(text_w)),
                         usize::from(text_w),
                         theme.placeholder(visual),
                     );
@@ -632,7 +688,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
                     buffer.set_stringn(
                         text_x,
                         y,
-                        take_display_cols(query, usize::from(text_w)).as_ref(),
+                        &take_display_cols(query, usize::from(text_w)),
                         usize::from(text_w),
                         fs.add_modifier(Modifier::UNDERLINED)
                             .underline_color(theme.accent),
@@ -684,7 +740,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
             buffer.set_stringn(
                 list_area.x,
                 list_area.y,
-                take_display_cols(&msg, usize::from(list_area.width)).as_ref(),
+                &take_display_cols(&msg, usize::from(list_area.width)),
                 usize::from(list_area.width),
                 theme.muted().bg(bg),
             );
@@ -703,7 +759,9 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
                 .map(|row| display_cols(&row.plain_label()) as u16)
                 .max()
                 .unwrap_or(6)
-                .clamp(6, (row_w * 45 / 100).max(6));
+                // Quick-open keeps a 29-cell label rail in its 60-cell
+                // inner pane, leaving the source's two-cell detail gap.
+                .clamp(6, (row_w * 49 / 100).max(6));
             let tag_col = self
                 .rows
                 .iter()
@@ -770,7 +828,10 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
                 let tag = row.status.as_ref().map(line_plain).unwrap_or_default();
                 let tag_w = display_cols(&tag);
                 let label_plain = row.plain_label();
-                let label = truncate_cols(&label_plain, usize::from(label_col), "…");
+                // Junie's fixed rail leaves one spare cell before detail; a
+                // label may therefore use the rail plus that separator.
+                let label =
+                    truncate_cols(&label_plain, usize::from(label_col.saturating_add(1)), "…");
                 let matched = super::fuzzy_match_label(state.query.value(), &label_plain)
                     .map(|(_, ranges)| ranges)
                     .unwrap_or_default();
@@ -796,10 +857,11 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
                     x = x.saturating_add(gw.max(1));
                     byte = byte.saturating_add(ch.len_utf8());
                 }
+                let _ = x;
                 let mut rx = row_rect.right();
-                if group_col > 0 {
+                if group_col > 0 && show_group {
                     rx = rx.saturating_sub(group_col.saturating_add(1));
-                    if show_group && rx < row_rect.right() {
+                    if rx < row_rect.right() {
                         buffer.set_stringn(
                             rx,
                             ry,
@@ -809,9 +871,9 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
                         );
                     }
                 }
-                if tag_col > 0 {
+                if tag_col > 0 && tag_w > 0 {
                     rx = rx.saturating_sub(tag_col.saturating_add(2));
-                    if tag_w > 0 && rx < row_rect.right() {
+                    if rx < row_rect.right() {
                         buffer.set_stringn(
                             rx,
                             ry,
@@ -822,14 +884,35 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Picker<'_, Id> {
                     }
                 }
                 if !detail.is_empty() {
-                    let dx = row_rect
+                    let label_width = display_cols(label.as_ref()) as u16;
+                    let rail_dx = row_rect
                         .x
                         .saturating_add(3)
                         .saturating_add(label_col)
                         .saturating_add(2);
-                    let room = rx.saturating_sub(dx.saturating_add(1));
-                    if room >= 4 && dx < row_rect.right() {
+                    let min_dx = if self.searchable {
+                        row_rect
+                            .x
+                            .saturating_add(3)
+                            .saturating_add(label_width)
+                            .saturating_add(2)
+                    } else {
+                        // Fixed-choice pickers keep their descriptions after
+                        // the full label rail; quick-open metadata is packed
+                        // from the right edge instead.
+                        rail_dx
+                    };
+                    let room = rx.saturating_sub(min_dx.saturating_add(1));
+                    if room >= 4 && min_dx < row_rect.right() {
                         let shown = truncate_cols(&detail, usize::from(room), "…");
+                        // Searchable metadata is right-aligned against the
+                        // active trailing rail, keeping short values aligned.
+                        let dx = if self.searchable {
+                            rx.saturating_sub(display_cols(shown.as_ref()) as u16)
+                                .saturating_sub(2)
+                        } else {
+                            min_dx
+                        };
                         buffer.set_stringn(
                             dx,
                             ry,
@@ -1032,39 +1115,6 @@ mod tests {
             ),
             PickerOutcome::Ignored
         );
-        assert_eq!(state.list().selected(), Some(&"alpha"));
-    }
-
-    #[test]
-    fn repeated_one_shot_actions_are_ignored() {
-        let visible = rows(&["alpha", "beta"]);
-        let mut state = PickerState::new(Some("alpha"));
-        assert_eq!(
-            state.handle_key(
-                &visible,
-                KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE)
-            ),
-            PickerOutcome::QueryChanged
-        );
-
-        for (code, modifiers) in [
-            (KeyCode::Esc, KeyModifiers::NONE),
-            (KeyCode::Enter, KeyModifiers::NONE),
-            (KeyCode::Enter, KeyModifiers::ALT),
-            (KeyCode::Tab, KeyModifiers::NONE),
-            (KeyCode::Delete, KeyModifiers::NONE),
-            (KeyCode::Char('u'), KeyModifiers::CONTROL),
-        ] {
-            let mut repeat = KeyEvent::new(code, modifiers);
-            repeat.kind = KeyEventKind::Repeat;
-            assert_eq!(
-                state.handle_key(&visible, repeat),
-                PickerOutcome::Ignored,
-                "repeat of {code:?} with {modifiers:?} must not fire a one-shot action"
-            );
-        }
-
-        assert_eq!(state.query_text(), "x");
         assert_eq!(state.list().selected(), Some(&"alpha"));
     }
 
@@ -1321,17 +1371,6 @@ mod tests {
             state.handle_key(&visible, KeyEvent::new(KeyCode::Enter, KeyModifiers::ALT)),
             PickerOutcome::ActivatedAlt("beta")
         );
-    }
-
-    #[test]
-    fn delete_is_junie_secondary() {
-        let visible = rows(&["alpha", "beta"]);
-        let mut state = PickerState::new(Some("alpha"));
-        assert_eq!(
-            state.handle_key(&visible, KeyEvent::new(KeyCode::Delete, KeyModifiers::NONE)),
-            PickerOutcome::Secondary("alpha")
-        );
-        assert_eq!(state.list().selected(), Some(&"alpha"));
     }
 
     #[test]

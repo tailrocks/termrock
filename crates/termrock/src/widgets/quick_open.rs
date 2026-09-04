@@ -24,14 +24,20 @@
 //! Research: fzf, television, VS Code Quick Open, Yazi, launchers.
 use std::collections::HashMap;
 
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
+use ratatui_core::{
+    buffer::Buffer,
+    layout::{Position, Rect},
+    style::Modifier,
+    widgets::StatefulWidget,
+};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{
-        CollectionItem, CollectionState, NavigationMove, OverlayOutcome, OverlaySize, OverlaySpec,
-        OverlayStack, PageMove, RovingOrientation, SemanticNode, SemanticRole, SemanticScene,
-        SemanticState, UiIntent, default_palette_intent,
+        CollectionItem, CollectionState, NavigationMove, OverlayId, OverlayKind, OverlayOutcome,
+        OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, PageMove, RovingOrientation,
+        SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, default_palette_intent,
+        place_overlay,
     },
     style::{DesignSystem, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
@@ -57,6 +63,7 @@ pub const QUICK_OPEN_PROVIDER_STRIP_COMPACT_MAX: u16 = 40;
 /// Two constants rather than one gated literal so host-supplied copy survives
 /// the ASCII profile: only the *default* is swapped.
 const QUICK_OPEN_SEARCHING: &str = "Searching…";
+const QUICK_OPEN_SEARCHING_ASCII: &str = "Searching...";
 
 // ── Size / placement ────────────────────────────────────────────────────────
 
@@ -102,6 +109,17 @@ pub enum QuickOpenPresentation {
     Fullscreen,
 }
 
+impl QuickOpenPresentation {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Centered => "centered",
+            Self::Fullscreen => "fullscreen",
+        }
+    }
+}
+
 /// Derive presentation from bounds.
 #[must_use]
 pub fn quick_open_presentation_for_bounds(bounds: Rect) -> QuickOpenPresentation {
@@ -112,6 +130,38 @@ pub fn quick_open_presentation_for_bounds(bounds: Rect) -> QuickOpenPresentation
     } else {
         QuickOpenPresentation::Centered
     }
+}
+
+/// Place using CommandPalette-class center policy (upper third; may fullscreen).
+#[must_use]
+pub fn place_quick_open(bounds: Rect, preferred: QuickOpenSize) -> Rect {
+    if bounds.is_empty() || preferred.width == 0 || preferred.height == 0 {
+        return Rect::default();
+    }
+    if bounds.width <= QUICK_OPEN_FULLSCREEN_MAX_WIDTH
+        || bounds.height <= QUICK_OPEN_FULLSCREEN_MAX_HEIGHT
+    {
+        return place_overlay(
+            bounds,
+            None,
+            OverlaySize::from(preferred),
+            OverlayPolicy::for_kind(OverlayKind::CommandPalette),
+        );
+    }
+    let width = preferred.width.min(bounds.width.saturating_sub(4)).max(28);
+    let height = preferred.height.min(bounds.height.saturating_sub(2)).max(8);
+    let x = bounds
+        .x
+        .saturating_add(bounds.width.saturating_sub(width) / 2);
+    let y = bounds
+        .y
+        .saturating_add((bounds.height.saturating_sub(height) / 3).max(1));
+    Rect::new(
+        x,
+        y.min(bounds.bottom().saturating_sub(height)),
+        width,
+        height,
+    )
 }
 
 /// Open as centered command-palette-class overlay.
@@ -143,6 +193,13 @@ pub fn open_quick_open_fullscreen<FocusId: Clone>(
     )
 }
 
+/// Dismiss default overlay.
+pub fn dismiss_quick_open_overlay<FocusId: Clone>(
+    stack: &mut OverlayStack<FocusId>,
+) -> OverlayOutcome<FocusId> {
+    stack.dismiss(&OverlayId::from_static(QUICK_OPEN_OVERLAY_ID))
+}
+
 // ── Providers & query syntax ────────────────────────────────────────────────
 
 /// One search provider (files, symbols, sessions, …).
@@ -156,6 +213,8 @@ pub struct QuickOpenProvider {
     pub glyph: Option<String>,
     /// Whether a preview pane is meaningful.
     pub supports_preview: bool,
+    /// Whether host understands query syntax beyond plain text.
+    pub supports_query_syntax: bool,
 }
 
 impl QuickOpenProvider {
@@ -167,6 +226,7 @@ impl QuickOpenProvider {
             label: label.into(),
             glyph: None,
             supports_preview: true,
+            supports_query_syntax: true,
         }
     }
 
@@ -183,6 +243,13 @@ impl QuickOpenProvider {
         self.supports_preview = on;
         self
     }
+
+    /// Query syntax support.
+    #[must_use]
+    pub const fn supports_query_syntax(mut self, on: bool) -> Self {
+        self.supports_query_syntax = on;
+        self
+    }
 }
 
 /// Parsed query with optional provider override and filter body.
@@ -192,12 +259,15 @@ pub struct ParsedQuickOpenQuery {
     pub provider_override: Option<String>,
     /// Remaining filter text (after syntax prefix).
     pub filter: String,
+    /// Raw full query string.
+    pub raw: String,
 }
 
 /// Parse query syntax: `@files foo`, `#symbols bar` ( `#` alias for symbols),
 /// plain text otherwise. Leading `@id` or `#id` switches provider.
 #[must_use]
 pub fn parse_quick_open_query(raw: &str) -> ParsedQuickOpenQuery {
+    let raw_owned = raw.to_string();
     let trimmed = raw.trim_start();
     if let Some(rest) = trimmed
         .strip_prefix('@')
@@ -214,6 +284,7 @@ pub fn parse_quick_open_query(raw: &str) -> ParsedQuickOpenQuery {
                 return ParsedQuickOpenQuery {
                     provider_override: Some(id.to_string()),
                     filter,
+                    raw: raw_owned,
                 };
             }
         }
@@ -221,6 +292,7 @@ pub fn parse_quick_open_query(raw: &str) -> ParsedQuickOpenQuery {
     ParsedQuickOpenQuery {
         provider_override: None,
         filter: raw.to_string(),
+        raw: raw_owned,
     }
 }
 
@@ -327,62 +399,6 @@ impl<Id> QuickOpenItem<Id> {
     }
 }
 
-/// One scored result row: the borrowed [`QuickOpenItem`] plus the score and
-/// highlight ranges selected for the current window.
-///
-/// The local filter used to clone every matching item per keystroke; the
-/// window now borrows the host's items and carries only the match metadata.
-/// Hosts streaming their own searcher results wrap each record with
-/// [`QuickOpenMatch::of`].
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct QuickOpenMatch<'a, Id> {
-    /// The underlying result row.
-    pub item: &'a QuickOpenItem<Id>,
-    /// Sort score (lower is better).
-    pub score: u32,
-    /// Fuzzy ranges into [`QuickOpenItem::label`] (byte offsets).
-    pub match_ranges: Option<MatchRanges>,
-    /// Fuzzy ranges into [`QuickOpenItem::detail`].
-    pub detail_match_ranges: Option<MatchRanges>,
-}
-
-impl<'a, Id> QuickOpenMatch<'a, Id> {
-    /// Wrap an item with match metadata.
-    #[must_use]
-    pub const fn new(
-        item: &'a QuickOpenItem<Id>,
-        score: u32,
-        match_ranges: Option<MatchRanges>,
-        detail_match_ranges: Option<MatchRanges>,
-    ) -> Self {
-        Self {
-            item,
-            score,
-            match_ranges,
-            detail_match_ranges,
-        }
-    }
-
-    /// Wrap an item that already carries its score and ranges (host searcher path).
-    #[must_use]
-    pub fn of(item: &'a QuickOpenItem<Id>) -> Self {
-        Self {
-            item,
-            score: item.score,
-            match_ranges: item.match_ranges.clone(),
-            detail_match_ranges: item.detail_match_ranges.clone(),
-        }
-    }
-}
-
-impl<Id> std::ops::Deref for QuickOpenMatch<'_, Id> {
-    type Target = QuickOpenItem<Id>;
-
-    fn deref(&self) -> &Self::Target {
-        self.item
-    }
-}
-
 /// Typed search request — **host performs I/O / index query**.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct QuickOpenSearchRequest {
@@ -439,33 +455,45 @@ impl QuickOpenSearchRequest {
 /// For multi-million corpora the host should run its own searcher and only
 /// push the top window via [`QuickOpenState::apply_results`].
 #[must_use]
-pub fn filter_quick_open_items<'a, Id>(
-    items: &'a [QuickOpenItem<Id>],
+pub fn filter_quick_open_items<Id: Clone>(
+    items: &[QuickOpenItem<Id>],
     filter: &str,
-) -> Vec<QuickOpenMatch<'a, Id>> {
+) -> Vec<QuickOpenItem<Id>> {
     let q = filter.trim();
-    let mut out: Vec<QuickOpenMatch<'a, Id>> = items
+    let mut out: Vec<QuickOpenItem<Id>> = items
         .iter()
         .filter_map(|it| {
             if q.is_empty() {
-                let score = if it.recent { 0 } else { 10 };
-                return Some(QuickOpenMatch::new(it, score, None, None));
+                let mut c = it.clone();
+                c.match_ranges = None;
+                c.detail_match_ranges = None;
+                c.score = if c.recent { 0 } else { 10 };
+                return Some(c);
             }
-            let label_hit = fuzzy_match_label(q, &it.label);
-            let detail_hit = it.detail.as_ref().and_then(|d| fuzzy_match_label(q, d));
-            // A detail hit wins only past a 3-point margin, and its ranges
-            // stay on the detail field — never on the label.
-            match (label_hit, detail_hit) {
-                (None, None) => None,
-                (Some((ls, lr)), Some((ds, dr))) if ls <= ds.saturating_add(3) => {
-                    Some((ls, Some(lr), Some(dr)))
+            let mut best = fuzzy_match_label(q, &it.label);
+            if let Some(d) = &it.detail {
+                if let Some((s, r)) = fuzzy_match_label(q, d) {
+                    best = Some(match best {
+                        Some((bs, br)) if bs <= s.saturating_add(3) => (bs, br),
+                        _ => (s.saturating_add(3), r),
+                    });
                 }
-                (Some((_, _)), Some((ds, dr))) => Some((ds.saturating_add(3), None, Some(dr))),
-                (Some((ls, lr)), None) => Some((ls, Some(lr), None)),
-                (None, Some((ds, dr))) => Some((ds.saturating_add(3), None, Some(dr))),
             }
-            .map(|(score, label_ranges, detail_ranges)| {
-                QuickOpenMatch::new(it, score, label_ranges, detail_ranges)
+            best.map(|(score, ranges)| {
+                let mut c = it.clone();
+                c.score = score;
+                // If match was on detail only, leave label ranges empty.
+                if fuzzy_match_label(q, &it.label).is_some() {
+                    c.match_ranges = Some(ranges);
+                    c.detail_match_ranges = it
+                        .detail
+                        .as_ref()
+                        .and_then(|d| fuzzy_match_label(q, d).map(|(_, r)| r));
+                } else {
+                    c.match_ranges = None;
+                    c.detail_match_ranges = Some(ranges);
+                }
+                c
             })
         })
         .collect();
@@ -535,6 +563,11 @@ pub enum QuickOpenOutcome<Id> {
     },
     /// Dismissed.
     Cancelled,
+    /// Loading flag toggled.
+    LoadingChanged {
+        /// Loading.
+        loading: bool,
+    },
 }
 
 // ── Per-provider memory ─────────────────────────────────────────────────────
@@ -644,6 +677,31 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
         self.focused = on;
     }
 
+    /// Focused.
+    #[must_use]
+    pub const fn is_focused(&self) -> bool {
+        self.focused
+    }
+
+    /// Show preview pane.
+    pub fn set_show_preview(&mut self, on: bool) {
+        self.show_preview = on;
+    }
+
+    /// Window limit for requests.
+    pub fn set_limit(&mut self, n: usize) {
+        self.limit = n.max(1);
+    }
+
+    /// Loading.
+    pub fn set_loading(&mut self, loading: bool) -> QuickOpenOutcome<Id> {
+        if self.loading == loading {
+            return QuickOpenOutcome::Ignored;
+        }
+        self.loading = loading;
+        QuickOpenOutcome::LoadingChanged { loading }
+    }
+
     /// Loading?
     #[must_use]
     pub const fn is_loading(&self) -> bool {
@@ -656,15 +714,59 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
         self.generation
     }
 
+    /// Applied generation.
+    #[must_use]
+    pub const fn applied_generation(&self) -> u64 {
+        self.applied_generation
+    }
+
+    /// Stream complete?
+    #[must_use]
+    pub const fn stream_complete(&self) -> bool {
+        self.stream_complete
+    }
+
+    /// Total hint.
+    #[must_use]
+    pub const fn total_hint(&self) -> Option<u64> {
+        self.total_hint
+    }
+
     /// Query text.
     #[must_use]
     pub fn query_text(&self) -> &str {
         self.query.value()
     }
 
+    /// Query state.
+    #[must_use]
+    pub const fn query(&self) -> &TextInputState {
+        &self.query
+    }
+
     /// Mutable query.
     pub const fn query_mut(&mut self) -> &mut TextInputState {
         &mut self.query
+    }
+
+    /// Provider index.
+    #[must_use]
+    pub const fn provider_index(&self) -> usize {
+        self.provider_index
+    }
+
+    /// Presentation.
+    #[must_use]
+    pub const fn presentation(&self) -> QuickOpenPresentation {
+        self.presentation
+    }
+
+    /// Override presentation.
+    pub fn set_presentation_override(&mut self, p: Option<QuickOpenPresentation>) {
+        self.presentation_override = p;
+        if let Some(p) = p {
+            self.presentation = p;
+        }
     }
 
     /// Cursor index into visible window.
@@ -677,23 +779,27 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
         self.accepts_input && self.focused
     }
 
-    fn collection_items<'a>(
-        visible: &'a [QuickOpenMatch<'_, Id>],
-    ) -> Vec<CollectionItem<'a, usize>> {
+    fn collection_items(visible: &[QuickOpenItem<Id>]) -> Vec<CollectionItem<usize>>
+    where
+        Id: Clone,
+    {
         visible
             .iter()
             .enumerate()
             .map(|(i, it)| CollectionItem {
                 id: i,
                 enabled: true,
-                label: &it.label,
+                label: it.label.clone(),
                 parent: None,
             })
             .collect()
     }
 
-    fn bump_generation(&mut self) {
+    fn bump_generation(&mut self) -> u64 {
+        let prev = self.generation;
         self.generation = self.generation.saturating_add(1);
+        let _ = prev;
+        self.generation
     }
 
     fn active_provider<'a>(
@@ -703,7 +809,7 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
         providers.get(self.provider_index)
     }
 
-    fn save_memory(&mut self, provider_id: &str, visible: &[QuickOpenMatch<'_, Id>]) {
+    fn save_memory(&mut self, provider_id: &str, visible: &[QuickOpenItem<Id>]) {
         let selected_label = visible.get(self.cursor_index()).map(|i| i.label.clone());
         self.memory.insert(
             provider_id.to_string(),
@@ -761,7 +867,7 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
     pub fn apply_results(
         &mut self,
         generation: u64,
-        visible: &[QuickOpenMatch<'_, Id>],
+        visible: &[QuickOpenItem<Id>],
         complete: bool,
         total_hint: Option<u64>,
     ) -> bool {
@@ -784,12 +890,23 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
         self.scroll = self.scroll.min(visible.len().saturating_sub(1));
         true
     }
+
+    /// Append stream chunk (same generation); host concatenates then re-applies
+    /// full window, or uses this to extend indices.
+    pub fn note_stream_progress(&mut self, generation: u64, complete: bool) -> bool {
+        if generation != self.generation {
+            return false;
+        }
+        self.stream_complete = complete;
+        true
+    }
+
     /// Switch provider by index (preserves per-provider query/cursor).
     pub fn set_provider(
         &mut self,
         providers: &[QuickOpenProvider],
         index: usize,
-        visible: &[QuickOpenMatch<'_, Id>],
+        visible: &[QuickOpenItem<Id>],
     ) -> QuickOpenOutcome<Id> {
         if providers.is_empty() || index >= providers.len() {
             return QuickOpenOutcome::Ignored;
@@ -802,12 +919,12 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
         self.provider_index = index;
         let to = providers[index].id.clone();
         self.restore_memory(&to);
-        self.bump_generation();
+        let generation = self.bump_generation();
         self.loading = true;
         self.stream_complete = false;
         let request = self
             .build_request(providers, 0)
-            .unwrap_or_else(|| QuickOpenSearchRequest::new(&to, "", "", self.generation));
+            .unwrap_or_else(|| QuickOpenSearchRequest::new(&to, "", "", generation));
         QuickOpenOutcome::ProviderChanged { from, to, request }
     }
 
@@ -816,7 +933,7 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
         &mut self,
         providers: &[QuickOpenProvider],
         delta: isize,
-        visible: &[QuickOpenMatch<'_, Id>],
+        visible: &[QuickOpenItem<Id>],
     ) -> QuickOpenOutcome<Id> {
         if providers.is_empty() {
             return QuickOpenOutcome::Ignored;
@@ -833,7 +950,7 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
         if let Some(ref override_id) = parsed.provider_override {
             if let Some(idx) = providers.iter().position(|p| &p.id == override_id) {
                 if idx != self.provider_index {
-                    let dummy: &[QuickOpenMatch<'_, Id>] = &[];
+                    let dummy: &[QuickOpenItem<Id>] = &[];
                     let from = providers
                         .get(self.provider_index)
                         .map(|p| p.id.clone())
@@ -844,7 +961,8 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
                 }
             }
         }
-        self.bump_generation();
+        let generation = self.bump_generation();
+        let _ = generation;
         self.loading = true;
         self.stream_complete = false;
         match self.build_request(providers, 0) {
@@ -858,30 +976,13 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
         &mut self,
         key: KeyEvent,
         providers: &[QuickOpenProvider],
-        visible: &[QuickOpenMatch<'_, Id>],
+        visible: &[QuickOpenItem<Id>],
     ) -> QuickOpenOutcome<Id> {
         if !self.live() || key.is_release() {
             return QuickOpenOutcome::Ignored;
         }
         let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
         let alt = key.modifiers.contains(KeyModifiers::ALT);
-
-        // Confirmation, cancellation, result focus traversal, provider-cycle,
-        // jump-mode entry, and presentation toggles are one-shot actions.
-        // Consume repeats before TextInputState can submit or cancel the query
-        // draft.
-        if !key.is_press()
-            && (matches!(
-                key.code,
-                KeyCode::Enter | KeyCode::Esc | KeyCode::Tab | KeyCode::BackTab
-            ) || (ctrl
-                && matches!(
-                    key.code,
-                    KeyCode::Char('j' | 'J' | 'p' | 'P' | 'n' | 'N' | '\\')
-                )))
-        {
-            return QuickOpenOutcome::Ignored;
-        }
 
         // Ctrl+P / Ctrl+N — provider cycle (VS Code-ish) when Alt not held.
         if ctrl && !alt && matches!(key.code, KeyCode::Char('p' | 'P')) {
@@ -1000,7 +1101,7 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
     fn activate(
         &mut self,
         providers: &[QuickOpenProvider],
-        visible: &[QuickOpenMatch<'_, Id>],
+        visible: &[QuickOpenItem<Id>],
         idx: usize,
     ) -> QuickOpenOutcome<Id> {
         let item = match visible.get(idx) {
@@ -1025,7 +1126,7 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
         &mut self,
         intent: UiIntent,
         providers: &[QuickOpenProvider],
-        visible: &[QuickOpenMatch<'_, Id>],
+        visible: &[QuickOpenItem<Id>],
     ) -> QuickOpenOutcome<Id> {
         if !self.live() {
             return QuickOpenOutcome::Ignored;
@@ -1046,13 +1147,13 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
                 }
                 let out = self.collection.handle_intent(intent, &entries);
                 if out.active_changed() {
-                    self.scroll = crate::scroll::cursor_follow_offset(
-                        self.cursor_index(),
-                        visible.len(),
-                        usize::from(self.painted_rows),
-                        self.scroll,
-                    );
                     let cur = self.cursor_index();
+                    let vis = usize::from(self.painted_rows.max(1));
+                    if cur < self.scroll {
+                        self.scroll = cur;
+                    } else if cur >= self.scroll.saturating_add(vis) {
+                        self.scroll = cur.saturating_sub(vis.saturating_sub(1));
+                    }
                     // Stream more near end
                     if !self.stream_complete
                         && cur + 5 >= visible.len()
@@ -1099,7 +1200,7 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
         &mut self,
         event: MouseEvent,
         providers: &[QuickOpenProvider],
-        visible: &[QuickOpenMatch<'_, Id>],
+        visible: &[QuickOpenItem<Id>],
     ) -> QuickOpenOutcome<Id> {
         if !self.live() {
             return QuickOpenOutcome::Ignored;
@@ -1107,12 +1208,12 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
         match event.kind {
             MouseEventKind::Down(MouseButton::Left) => {
                 for (idx, rect) in &self.provider_hits {
-                    if rect.contains(event.position) {
+                    if rect_contains(*rect, event.position) {
                         return self.set_provider(providers, *idx, visible);
                     }
                 }
                 for (idx, rect) in &self.hits {
-                    if rect.contains(event.position) {
+                    if rect_contains(*rect, event.position) {
                         self.collection.set_active(Some(*idx));
                         return self.activate(providers, visible, *idx);
                     }
@@ -1130,10 +1231,10 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
                 self.hovered = self
                     .hits
                     .iter()
-                    .find(|(_, rect)| rect.contains(event.position))
+                    .find(|(_, rect)| rect_contains(*rect, event.position))
                     .map(|(idx, _)| *idx);
                 for (idx, rect) in &self.hits {
-                    if rect.contains(event.position) && self.cursor_index() != *idx {
+                    if rect_contains(*rect, event.position) && self.cursor_index() != *idx {
                         self.collection.set_active(Some(*idx));
                         return QuickOpenOutcome::CursorMoved;
                     }
@@ -1159,10 +1260,17 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
     }
 }
 
+fn rect_contains(rect: Rect, pos: Position) -> bool {
+    pos.x >= rect.x
+        && pos.y >= rect.y
+        && pos.x < rect.x.saturating_add(rect.width)
+        && pos.y < rect.y.saturating_add(rect.height)
+}
+
 /// Build [`JumpTarget`]s from last painted result hits (JumpMode integration).
 #[must_use]
 pub fn quick_open_jump_targets<Id: Clone>(
-    visible: &[QuickOpenMatch<'_, Id>],
+    visible: &[QuickOpenItem<Id>],
     hits: &[(usize, Rect)],
     badges: &[char],
 ) -> Vec<JumpTarget<Id>> {
@@ -1182,7 +1290,7 @@ pub fn quick_open_jump_targets<Id: Clone>(
 #[derive(Debug, Clone, Copy)]
 pub struct QuickOpen<'a, Id> {
     providers: &'a [QuickOpenProvider],
-    items: &'a [QuickOpenMatch<'a, Id>],
+    items: &'a [QuickOpenItem<Id>],
     system: &'a DesignSystem,
     focused: bool,
     colorless: bool,
@@ -1198,7 +1306,7 @@ impl<'a, Id> QuickOpen<'a, Id> {
     #[must_use]
     pub const fn new(
         providers: &'a [QuickOpenProvider],
-        items: &'a [QuickOpenMatch<'a, Id>],
+        items: &'a [QuickOpenItem<Id>],
         system: &'a DesignSystem,
     ) -> Self {
         Self {
@@ -1216,6 +1324,56 @@ impl<'a, Id> QuickOpen<'a, Id> {
             loading_message: QUICK_OPEN_SEARCHING,
             title: "Quick Open",
         }
+    }
+
+    /// Title.
+    #[must_use]
+    pub const fn title(mut self, t: &'a str) -> Self {
+        self.title = t;
+        self
+    }
+
+    /// Focused chrome.
+    #[must_use]
+    pub const fn focused(mut self, on: bool) -> Self {
+        self.focused = on;
+        self
+    }
+
+    /// ASCII.
+    #[must_use]
+    /// Colorless.
+    pub const fn colorless(mut self, on: bool) -> Self {
+        self.colorless = on;
+        self
+    }
+
+    /// Footer.
+    #[must_use]
+    pub const fn footer_hint(mut self, h: Option<&'a str>) -> Self {
+        self.footer_hint = h;
+        self
+    }
+
+    /// Empty catalog message.
+    #[must_use]
+    pub const fn empty_message(mut self, m: &'a str) -> Self {
+        self.empty_message = m;
+        self
+    }
+
+    /// No results.
+    #[must_use]
+    pub const fn no_result_message(mut self, m: &'a str) -> Self {
+        self.no_result_message = m;
+        self
+    }
+
+    /// Loading.
+    #[must_use]
+    pub const fn loading_message(mut self, m: &'a str) -> Self {
+        self.loading_message = m;
+        self
     }
 
     /// Paint.
@@ -1244,7 +1402,7 @@ impl<'a, Id> QuickOpen<'a, Id> {
             .title(self.title)
             .emphasis(emphasis);
         let inner = panel.inner(area);
-        panel.paint(area, buffer, None);
+        ratatui_core::widgets::Widget::render(&panel, area, buffer);
         if inner.is_empty() {
             return;
         }
@@ -1354,7 +1512,7 @@ impl<'a, Id> QuickOpen<'a, Id> {
                 buffer.set_stringn(
                     inner.x,
                     inner.bottom().saturating_sub(1),
-                    take_display_cols(&line, usize::from(inner.width)).as_ref(),
+                    &take_display_cols(&line, usize::from(inner.width)),
                     usize::from(inner.width),
                     self.system.style(Role::TextMuted),
                 );
@@ -1413,7 +1571,7 @@ impl<'a, Id> QuickOpen<'a, Id> {
             buffer.set_stringn(
                 x,
                 area.y,
-                take_display_cols(&text, usize::from(w)).as_ref(),
+                &take_display_cols(&text, usize::from(w)),
                 usize::from(w),
                 style,
             );
@@ -1432,11 +1590,15 @@ impl<'a, Id> QuickOpen<'a, Id> {
         }
 
         if state.loading && self.items.is_empty() {
-            let msg = self.loading_message;
+            let msg = if false && self.loading_message == QUICK_OPEN_SEARCHING {
+                QUICK_OPEN_SEARCHING_ASCII
+            } else {
+                self.loading_message
+            };
             buffer.set_stringn(
                 area.x,
                 area.y,
-                take_display_cols(msg, usize::from(area.width)).as_ref(),
+                &take_display_cols(msg, usize::from(area.width)),
                 usize::from(area.width),
                 self.system.style(Role::TextMuted),
             );
@@ -1453,7 +1615,7 @@ impl<'a, Id> QuickOpen<'a, Id> {
             buffer.set_stringn(
                 area.x,
                 area.y,
-                take_display_cols(msg, usize::from(area.width)).as_ref(),
+                &take_display_cols(msg, usize::from(area.width)),
                 usize::from(area.width),
                 self.system.style(Role::TextMuted),
             );
@@ -1463,12 +1625,12 @@ impl<'a, Id> QuickOpen<'a, Id> {
 
         let cursor = state.cursor_index();
         let surface = self.focused && state.accepts_input();
-        state.scroll = crate::scroll::cursor_follow_offset(
-            cursor,
-            self.items.len(),
-            usize::from(area.height),
-            state.scroll,
-        );
+        let capacity = usize::from(area.height);
+        if cursor < state.scroll {
+            state.scroll = cursor;
+        } else if cursor >= state.scroll.saturating_add(capacity) {
+            state.scroll = cursor.saturating_sub(capacity.saturating_sub(1));
+        }
 
         let mut y = area.y;
         let mut painted = 0u16;
@@ -1529,7 +1691,7 @@ impl<'a, Id> QuickOpen<'a, Id> {
                 buffer.set_stringn(
                     x,
                     y,
-                    take_display_cols(&badge, usize::from(bw)).as_ref(),
+                    &take_display_cols(&badge, usize::from(bw)),
                     usize::from(bw),
                     self.system.style(Role::TextMuted),
                 );
@@ -1559,7 +1721,7 @@ impl<'a, Id> QuickOpen<'a, Id> {
                     buffer.set_stringn(
                         x,
                         y,
-                        take_display_cols(&item.label, usize::from(label_w)).as_ref(),
+                        &take_display_cols(&item.label, usize::from(label_w)),
                         usize::from(label_w),
                         base,
                     );
@@ -1605,7 +1767,7 @@ impl<'a, Id> QuickOpen<'a, Id> {
         buffer.set_stringn(
             area.x,
             area.y,
-            take_display_cols(header, usize::from(area.width)).as_ref(),
+            &take_display_cols(header, usize::from(area.width)),
             usize::from(area.width),
             self.system.style(Role::TextMuted),
         );
@@ -1622,7 +1784,7 @@ impl<'a, Id> QuickOpen<'a, Id> {
                     buffer.set_stringn(
                         area.x,
                         y,
-                        take_display_cols(line.as_str(), usize::from(area.width)).as_ref(),
+                        &take_display_cols(line.as_str(), usize::from(area.width)),
                         usize::from(area.width),
                         self.system.style(Role::Text),
                     );
@@ -1634,7 +1796,7 @@ impl<'a, Id> QuickOpen<'a, Id> {
                     buffer.set_stringn(
                         area.x,
                         y,
-                        take_display_cols(s.as_str(), usize::from(area.width)).as_ref(),
+                        &take_display_cols(s.as_str(), usize::from(area.width)),
                         usize::from(area.width),
                         self.system.style(Role::TextMuted),
                     );
@@ -1646,7 +1808,7 @@ impl<'a, Id> QuickOpen<'a, Id> {
                     buffer.set_stringn(
                         area.x,
                         y,
-                        take_display_cols(msg, usize::from(area.width)).as_ref(),
+                        &take_display_cols(msg, usize::from(area.width)),
                         usize::from(area.width),
                         self.system.style(Role::TextMuted),
                     );
@@ -1658,7 +1820,7 @@ impl<'a, Id> QuickOpen<'a, Id> {
                         buffer.set_stringn(
                             area.x,
                             y,
-                            take_display_cols(d, usize::from(area.width)).as_ref(),
+                            &take_display_cols(d, usize::from(area.width)),
                             usize::from(area.width),
                             self.system.style(Role::TextMuted),
                         );
@@ -1667,6 +1829,13 @@ impl<'a, Id> QuickOpen<'a, Id> {
             }
         }
     }
+
+    /// Access last painted result hits (for JumpMode).
+    #[must_use]
+    pub fn hits_from_state(state: &QuickOpenState<Id>) -> &[(usize, Rect)] {
+        &state.hits
+    }
+
     /// Semantic registration.
     pub fn register_semantic<Sid, Action>(
         &self,
@@ -1796,9 +1965,7 @@ pub fn example_quick_open_symbols() -> Vec<QuickOpenItem<&'static str>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::{KeyEventKind, KeyModifiers};
-    use crate::interaction::OverlayKind;
-    use crate::widgets::tests::click;
+    use crate::input::KeyModifiers;
 
     fn providers() -> Vec<QuickOpenProvider> {
         example_quick_open_providers()
@@ -1811,22 +1978,15 @@ mod tests {
         s
     }
 
-    fn matches_of<'a>(
-        items: &'a [QuickOpenItem<&'static str>],
-    ) -> Vec<QuickOpenMatch<'a, &'static str>> {
-        items.iter().map(QuickOpenMatch::of).collect()
-    }
-
     #[test]
     fn narrow_paths_keep_their_filename() {
         use ratatui_core::buffer::Buffer;
         let system = crate::style::DesignSystem::default();
         let items = example_quick_open_files();
-        let vis = matches_of(&items);
         let mut state = focused();
         let area = Rect::new(0, 0, 40, 14);
         let mut buffer = Buffer::empty(area);
-        QuickOpen::new(&providers(), &vis, &system).paint(area, &mut buffer, &mut state);
+        QuickOpen::new(&providers(), &items, &system).paint(area, &mut buffer, &mut state);
         let painted: String = buffer
             .content()
             .iter()
@@ -1879,9 +2039,8 @@ mod tests {
         let stale = s.generation();
         let _ = s.request_search(&p);
         let items = example_quick_open_files();
-        let vis = matches_of(&items);
-        assert!(!s.apply_results(stale, &vis, true, Some(5)));
-        assert!(s.apply_results(s.generation(), &vis, true, Some(5)));
+        assert!(!s.apply_results(stale, &items, true, Some(5)));
+        assert!(s.apply_results(s.generation(), &items, true, Some(5)));
     }
 
     #[test]
@@ -1891,8 +2050,7 @@ mod tests {
         *s.query_mut() = TextInputState::new("main")
             .with_allow_empty(true)
             .with_editing();
-        let files = example_quick_open_files();
-        let items = filter_quick_open_items(&files, "main");
+        let items = filter_quick_open_items(&example_quick_open_files(), "main");
         let _ = s.apply_results(s.generation(), &items, true, None);
         // switch to symbols
         let out = s.set_provider(&p, 1, &items);
@@ -1910,8 +2068,7 @@ mod tests {
         *s.query_mut() = TextInputState::new("paint")
             .with_allow_empty(true)
             .with_editing();
-        let file_syms = example_quick_open_symbols();
-        let sym = filter_quick_open_items(&file_syms, "paint");
+        let sym = filter_quick_open_items(&example_quick_open_symbols(), "paint");
         let _ = s.apply_results(s.generation(), &sym, true, None);
         // back to files — restores "main"
         let out = s.set_provider(&p, 0, &sym);
@@ -1924,13 +2081,12 @@ mod tests {
         let mut s = focused();
         let p = providers();
         let items = example_quick_open_files();
-        let vis = matches_of(&items);
-        let _ = s.apply_results(0, &vis, true, None);
+        let _ = s.apply_results(0, &items, true, None);
         assert!(matches!(
             s.handle_key(
                 KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
                 &p,
-                &vis
+                &items
             ),
             QuickOpenOutcome::Activated {
                 provider_id,
@@ -1940,48 +2096,16 @@ mod tests {
     }
 
     #[test]
-    fn repeated_one_shot_keys_are_ignored() {
-        let mut s = focused();
-        let p = providers();
-        let items = example_quick_open_files();
-        let vis = matches_of(&items);
-        let _ = s.apply_results(0, &vis, true, None);
-
-        let cases = [
-            (KeyCode::Esc, KeyModifiers::NONE),
-            (KeyCode::Enter, KeyModifiers::NONE),
-            (KeyCode::Tab, KeyModifiers::NONE),
-            (KeyCode::BackTab, KeyModifiers::NONE),
-            (KeyCode::Tab, KeyModifiers::CONTROL),
-            (KeyCode::Char('j'), KeyModifiers::CONTROL),
-            (KeyCode::Char('\\'), KeyModifiers::CONTROL),
-            (KeyCode::Char('p'), KeyModifiers::CONTROL),
-            (KeyCode::Char('n'), KeyModifiers::CONTROL),
-        ];
-
-        for (code, modifiers) in cases {
-            let mut repeat = KeyEvent::new(code, modifiers);
-            repeat.kind = KeyEventKind::Repeat;
-            assert_eq!(
-                s.handle_key(repeat, &p, &vis),
-                QuickOpenOutcome::Ignored,
-                "repeat of {code:?} with {modifiers:?} must not fire a one-shot action"
-            );
-        }
-    }
-
-    #[test]
     fn jump_mode_and_targets() {
         let mut s = focused();
         let p = providers();
         let items = example_quick_open_files();
-        let vis = matches_of(&items);
-        let _ = s.apply_results(0, &vis, true, None);
+        let _ = s.apply_results(0, &items, true, None);
         assert!(matches!(
             s.handle_key(
                 KeyEvent::new(KeyCode::Char('j'), KeyModifiers::CONTROL),
                 &p,
-                &vis
+                &items
             ),
             QuickOpenOutcome::JumpModeRequested
         ));
@@ -1989,9 +2113,9 @@ mod tests {
         let system = DesignSystem::default();
         let area = Rect::new(0, 0, 60, 16);
         let mut buf = Buffer::empty(area);
-        QuickOpen::new(&p, &vis, &system).paint(area, &mut buf, &mut s);
+        QuickOpen::new(&p, &items, &system).paint(area, &mut buf, &mut s);
         let badges: Vec<char> = ('a'..='z').take(s.hits.len()).collect();
-        let targets = quick_open_jump_targets(&vis, &s.hits, &badges);
+        let targets = quick_open_jump_targets(&items, &s.hits, &badges);
         assert!(!targets.is_empty());
         assert_eq!(targets[0].badge(), badges[0]);
     }
@@ -2033,13 +2157,12 @@ mod tests {
             })
             .collect();
         s.stream_complete = false;
-        let vis = matches_of(&items);
-        let _ = s.apply_results(0, &vis, false, Some(10_000));
+        let _ = s.apply_results(0, &items, false, Some(10_000));
         // move to end
         for _ in 0..20 {
-            let _ = s.handle_intent(UiIntent::Move(NavigationMove::Next), &p, &vis);
+            let _ = s.handle_intent(UiIntent::Move(NavigationMove::Next), &p, &items);
         }
-        let out = s.handle_intent(UiIntent::Move(NavigationMove::Next), &p, &vis);
+        let out = s.handle_intent(UiIntent::Move(NavigationMove::Next), &p, &items);
         // may be StreamMore or Ignored if already at end without change
         assert!(
             matches!(
@@ -2070,12 +2193,11 @@ mod tests {
         let system = DesignSystem::default();
         let p = providers();
         let items = example_quick_open_files();
-        let vis = matches_of(&items);
         let mut s = focused();
-        let _ = s.apply_results(0, &vis, true, Some(5));
+        let _ = s.apply_results(0, &items, true, Some(5));
         let area = Rect::new(0, 0, 72, 18);
         let mut buf = Buffer::empty(area);
-        QuickOpen::new(&p, &vis, &system).paint(area, &mut buf, &mut s);
+        QuickOpen::new(&p, &items, &system).paint(area, &mut buf, &mut s);
         let text: String = buf
             .content()
             .iter()
@@ -2092,8 +2214,7 @@ mod tests {
         let mut s = focused();
         let p = providers();
         let items = example_quick_open_files();
-        let vis = matches_of(&items);
-        let _ = s.apply_results(0, &vis, true, None);
+        let _ = s.apply_results(0, &items, true, None);
         let keys = [
             KeyCode::Char('a'),
             KeyCode::Down,
@@ -2114,7 +2235,7 @@ mod tests {
             } else {
                 KeyModifiers::NONE
             };
-            let _ = s.handle_key(KeyEvent::new(k, mods), &p, &vis);
+            let _ = s.handle_key(KeyEvent::new(k, mods), &p, &items);
         }
     }
 
@@ -2144,9 +2265,12 @@ mod tests {
         s.set_accepts_input(false);
         let p = providers();
         let items = example_quick_open_files();
-        let vis = matches_of(&items);
         assert!(matches!(
-            s.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &p, &vis),
+            s.handle_key(
+                KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
+                &p,
+                &items
+            ),
             QuickOpenOutcome::Ignored
         ));
     }
@@ -2154,13 +2278,16 @@ mod tests {
     #[test]
     fn mouse_result_hit_activates_the_canonical_provider_item() {
         let providers = providers();
-        let items = example_quick_open_files();
-        let visible = matches_of(&items);
+        let visible = example_quick_open_files();
         let mut state = focused();
         state.hits = vec![(0, Rect::new(5, 6, 20, 1))];
         assert!(matches!(
             state.handle_mouse(
-                click(5, 6),
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(5, 6),
+                    modifiers: KeyModifiers::NONE,
+                },
                 &providers,
                 &visible,
             ),

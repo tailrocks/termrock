@@ -4,11 +4,12 @@
 //! Studio-oriented design inspector (lookbook/debug). Not a production shell.
 //!
 //! Multi-panel studio shell: focus/layers, tokens, capabilities, recipes.
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{
     style::DesignSystem,
-    style::{ColorCapability, Role},
+    style::{ColorCapability, Role, RolePalette},
     text::truncate_cols,
 };
 
@@ -50,7 +51,21 @@ pub struct DesignInspectorFrame<'a> {
     pub focus_graph: &'a [&'a str],
 }
 
-impl DesignInspectorFrame<'_> {}
+impl DesignInspectorFrame<'_> {
+    /// Reads the chrome facts off the system that is actually painting.
+    ///
+    /// The inspector used to hardcode `gutter`, `compact` and `Truecolor`, so
+    /// it reported the same three answers whatever the host had configured —
+    /// an inspector that cannot be trusted is worse than none (plans/011
+    /// Step 4).
+    #[must_use]
+    pub fn from_system(system: &DesignSystem) -> Self {
+        Self {
+            capability: system.capability,
+            ..Self::default()
+        }
+    }
+}
 
 impl Default for DesignInspectorFrame<'_> {
     fn default() -> Self {
@@ -91,11 +106,20 @@ impl<'a> DesignInspector<'a> {
         self.panel = panel;
         self
     }
+
+    /// Convenience from a design system.
+    #[must_use]
+    pub fn from_system(system: &'a DesignSystem, frame: DesignInspectorFrame<'a>) -> Self {
+        Self {
+            frame,
+            system,
+            panel: InspectorPanel::Focus,
+        }
+    }
 }
 
-impl DesignInspector<'_> {
-    /// Paint (single public entry; the [`Widget`] impl delegates here).
-    pub fn paint(&self, area: Rect, buffer: &mut Buffer) {
+impl Widget for &DesignInspector<'_> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
         if area.width == 0 || area.height == 0 {
             return;
         }
@@ -202,15 +226,9 @@ impl DesignInspector<'_> {
     }
 }
 
-impl Widget for &DesignInspector<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        DesignInspector::paint(self, area, buffer);
-    }
-}
-
 impl Widget for DesignInspector<'_> {
     fn render(self, area: Rect, buffer: &mut Buffer) {
-        DesignInspector::paint(&self, area, buffer);
+        Widget::render(&self, area, buffer);
     }
 }
 

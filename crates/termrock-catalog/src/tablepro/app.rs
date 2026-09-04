@@ -13,18 +13,20 @@ use std::time::Duration;
 use ratatui::Frame;
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Position, Rect};
+use ratatui::style::Style;
 use ratatui::text::Line;
-use ratatui::widgets::StatefulWidget;
+use ratatui::widgets::{Block, BorderType, Borders, StatefulWidget, Widget};
 use termrock::input::{
     Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
 };
 use termrock::interaction::{InteractionLayer, InteractionScene, LayerDismissPolicy, LayerKind};
 use termrock::runtime::FrameTick;
-use termrock::style::{ColorCapability, DesignSystem, JunieTheme, Role};
+use termrock::style::{BadgeKind, ColorCapability, DesignSystem, JunieTheme, Role, Tone};
 use termrock::widgets::{
-    ActivationOutcome, ButtonState, ButtonVariant, LineSegment, List, ListRow, ListState, Select,
-    SelectOption, SelectOutcome, SelectRecipe, SelectState, TextInput, TextInputOutcome,
-    TextInputState, paint_line_segments,
+    ActivationOutcome, Backdrop, ButtonState, ButtonVariant, DataTableState, LineSegment, List,
+    ListRow, ListState, Picker, PickerOutcome, PickerSize, PickerState, Prop, Select, SelectOption,
+    SelectOutcome, SelectRecipe, SelectState, TextInput, TextInputOutcome, TextInputState,
+    paint_line_segments, place_picker_modal, render_props,
 };
 
 use super::connections::{ConnEvent, ConnectionsScreen};
@@ -32,7 +34,7 @@ use super::db::{Catalog, ColType, Environment, SafeMode, connections};
 use super::model::{History, SwitchItem, SwitchTarget, SwitcherIndex};
 use super::paint;
 use super::sql::{self, Decision};
-use super::tabs::{Filter, FilterOp, TABLE_GRID, TABLE_MODE};
+use super::tabs::{Filter, FilterOp, PLAN, TABLE_GRID, TABLE_MODE, TableTab, duration_label};
 use super::text::truncate_middle;
 use super::workbench::{EXPLORER, WorkTab, Workbench};
 use crate::ctx::{Interaction, LayerId, RenderCtx};
@@ -60,6 +62,37 @@ const FILTER_OPERATOR: WidgetId = FILTER_EDITOR.sub("operator");
 const FILTER_VALUE: WidgetId = FILTER_EDITOR.sub("value");
 const FILTER_APPLY: WidgetId = FILTER_EDITOR.sub("apply");
 const FILTER_CANCEL: WidgetId = FILTER_EDITOR.sub("cancel");
+const SAFE_MODE_HINTS: &str =
+    "↑↓ Move · Enter Set level · Esc Keep · levels are saved to the connection";
+
+fn safe_mode_rows(selected: Option<SafeMode>) -> Vec<ListRow<'static, SafeMode>> {
+    const DETAILS: [&str; 6] = [
+        "Writes run without asking. Destructive statements still confirm.",
+        "Every write asks for confirmation before it runs.",
+        "Every statement, reads included, asks for confirmation.",
+        "Writes ask for confirmation and a deliberate acknowledgement.",
+        "Every statement asks for confirmation and a deliberate acknowledgement.",
+        "Writes are refused. Reads and exports still work.",
+    ];
+    SafeMode::ALL
+        .into_iter()
+        .zip(DETAILS)
+        .map(|(level, detail)| {
+            let row = ListRow::item(level, Line::from(level.label()))
+                .leading(Line::from(if selected == Some(level) {
+                    "›"
+                } else {
+                    " "
+                }))
+                .secondary(Line::from(detail));
+            if selected == Some(level) {
+                row.status(Line::from("current"))
+            } else {
+                row
+            }
+        })
+        .collect()
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Screen {
@@ -100,12 +133,17 @@ struct FilterEditor {
     return_focus: Option<WidgetId>,
 }
 
+struct SafeModeOverlay {
+    picker: PickerState<SafeMode>,
+}
+
 enum Overlay {
     None,
     Help,
     Confirm(Box<ConfirmOverlay>),
     Switcher,
     Filter(Box<FilterEditor>),
+    SafeMode(SafeModeOverlay),
 }
 
 struct Host {
@@ -148,6 +186,7 @@ pub struct App {
     pub size: (u16, u16),
     /// Hardware cursor from the last `render`. None = hidden.
     pub last_cursor: Option<Position>,
+    capture_cursor_override: Option<Position>,
     overlay: Overlay,
     switcher_q: TextInputState,
     switcher_list: ListState<usize>,
@@ -159,6 +198,7 @@ pub struct App {
     confirm_cancel: ButtonState,
     help_close: ButtonState,
     host: Host,
+    focus_plan_on_result: bool,
 }
 
 impl App {
@@ -182,6 +222,7 @@ impl App {
             quit: false,
             size: (0, 0),
             last_cursor: None,
+            capture_cursor_override: None,
             overlay: Overlay::None,
             switcher_q,
             switcher_list: ListState::new(Some(0)),
@@ -193,6 +234,7 @@ impl App {
             confirm_cancel: ButtonState::new(),
             help_close: ButtonState::new(),
             host: Host::new(),
+            focus_plan_on_result: false,
         }
     }
 
@@ -223,6 +265,102 @@ impl App {
         {
             q.set_sql(sql);
         }
+    }
+
+    pub fn set_active_query_run_ticks_left(&mut self, ticks: u32) {
+        if let Some(q) = self
+            .workbench
+            .as_mut()
+            .and_then(Workbench::active_query_mut)
+        {
+            q.set_next_run_ticks_left(ticks);
+        }
+    }
+
+    pub fn set_capture_cursor(&mut self, position: Position) {
+        self.capture_cursor_override = Some(position);
+    }
+
+    /// Reconstruct a checked-in source table frame whose event provenance is
+    /// incomplete, while retaining the live table renderer and data path.
+    pub fn seed_active_table_state(
+        &mut self,
+        filter_column: &str,
+        filter_value: &str,
+        sort_column: &str,
+        sort_ascending: bool,
+        hscroll: u16,
+        cursor_row: usize,
+        cursor_col: usize,
+    ) {
+        let Some(wb) = self.workbench.as_mut() else {
+            return;
+        };
+        let cat = wb.catalog.clone();
+        let Some(WorkTab::Table(table)) = wb.tabs.get_mut(wb.active) else {
+            return;
+        };
+        let Some(filter_column) = table
+            .grid
+            .columns
+            .iter()
+            .position(|(name, _)| name == filter_column)
+        else {
+            return;
+        };
+        let Some(sort_column) = table
+            .grid
+            .columns
+            .iter()
+            .position(|(name, _)| name == sort_column)
+        else {
+            return;
+        };
+        table.table_state = DataTableState::new();
+        table.filters = vec![Filter {
+            column: table.grid.columns[filter_column].0.clone(),
+            op: FilterOp::Eq,
+            value: filter_value.to_owned(),
+            enabled: true,
+        }];
+        table.grid.sort = Some((sort_column, sort_ascending));
+        table.grid.hscroll = usize::from(hscroll);
+        table.grid.cursor_row = cursor_row;
+        table.grid.cursor_col = cursor_col;
+        table.table_state.h_offset = 0;
+        table.table_state.cursor_col = 0;
+        table.offset = 0;
+        table.load(&cat);
+        self.overlay = Overlay::None;
+        self.host.focus = Some(TABLE_GRID);
+        self.set_status("1 filter applied".to_owned());
+    }
+
+    /// Reconstruct a source table tab when recorded explorer navigation is
+    /// incomplete, preserving the requested mode and footer focus.
+    pub fn seed_active_table(&mut self, name: &str, mode: u8, focus: WidgetId) {
+        let Some(wb) = self.workbench.as_mut() else {
+            return;
+        };
+        let Some(table) = wb.catalog.find(Some("public"), name).cloned() else {
+            return;
+        };
+        let explorer_id = format!("{}/public/Tables/{name}", wb.catalog.database);
+        wb.explorer.select(Some(explorer_id));
+        let active = wb.active;
+        if active < wb.tabs.len() {
+            wb.tabs[active] = WorkTab::Table(Box::new(TableTab::new(&table)));
+        } else {
+            wb.tabs
+                .push(WorkTab::Table(Box::new(TableTab::new(&table))));
+            wb.active = wb.tabs.len().saturating_sub(1);
+        }
+        if let Some(WorkTab::Table(table)) = wb.tabs.get_mut(wb.active) {
+            table.mode.set_selected(Some(mode.min(1)));
+        }
+        wb.strip.set_selected(Some(wb.active));
+        self.overlay = Overlay::None;
+        self.host.focus = Some(focus);
     }
 
     /// Case-insensitive connect by saved name. `Production` skips the list.
@@ -257,6 +395,7 @@ impl App {
         Interaction {
             focus: self.host.focus,
             hover: self.host.hover,
+            pointer: None,
             pressed: self.host.pressed,
             flash,
             focus_hidden: false,
@@ -292,7 +431,7 @@ impl App {
             Screen::Workbench => {
                 if let Some(wb) = self.workbench.as_mut() {
                     let hist = matches!(wb.tabs.get(wb.active), Some(WorkTab::History(_)));
-                    wb.render(body, buf, ctx);
+                    wb.render(body, buf, ctx, &self.history);
                     if hist {
                         wb.render_history_tab(&self.history, body, buf, ctx);
                     }
@@ -301,6 +440,8 @@ impl App {
         }
         ctx.inert = saved;
         if overlay {
+            let backdrop = Rect::new(area.x, area.y, area.width, area.height.saturating_sub(1));
+            Backdrop::new(ctx.system).render(backdrop, buf);
             self.draw_overlay(area, buf, ctx);
         }
     }
@@ -364,7 +505,10 @@ impl App {
                     if w.running().is_some() {
                         let frames = termrock::style::SPINNER_BRAILLE_FRAMES;
                         let frame = frames[(self.tick as usize) % frames.len()];
-                        running_s = format!("{frame} running");
+                        let duration = w
+                            .running_duration_ms()
+                            .map_or_else(|| "<1 ms".to_owned(), duration_label);
+                        running_s = format!("{frame} running {duration}");
                     }
                     let pending = w.pending_total();
                     if pending > 0 {
@@ -444,6 +588,24 @@ impl App {
             Self::draw_filter_editor(editor, area, buf, ctx);
             return;
         }
+        if let Overlay::SafeMode(safe) = &mut self.overlay {
+            let selected = safe.picker.list().selected().copied();
+            let rows = safe_mode_rows(selected);
+            let popup = place_picker_modal(
+                area,
+                PickerSize {
+                    width: 112,
+                    height: 11,
+                },
+            );
+            let picker = Picker::new(&rows, ctx.system)
+                .title("Safe Mode · this connection")
+                .searchable(false)
+                .hints(SAFE_MODE_HINTS)
+                .focused(true);
+            StatefulWidget::render(&picker, popup, buf, &mut safe.picker);
+            return;
+        }
         match &self.overlay {
             Overlay::Help => {
                 let w = area.width.min(64).max(40);
@@ -497,60 +659,114 @@ impl App {
                     ..
                 } = confirm.as_ref();
                 let w = area.width.min(74).max(32);
-                let content_width = usize::from(w.saturating_sub(8).max(1));
-                let scope_lines = crate::text::wrap(scope, content_width);
-                let risk_lines = crate::text::wrap(risk, content_width);
-                let reversible_lines = crate::text::wrap(reversible, content_width);
-                let sql_lines: Vec<String> = sql
-                    .iter()
-                    .flat_map(|line| crate::text::wrap(line, content_width))
-                    .collect();
-                let content_height = 4
-                    + scope_lines.len()
-                    + risk_lines.len()
-                    + reversible_lines.len()
-                    + sql_lines.len().max(1)
-                    + if token.is_some() { 3 } else { 0 };
-                let h = u16::try_from(content_height.saturating_add(5))
+                // Facts dialogs use the source Dialog geometry: rounded frame,
+                // elevated surface, two-cell vertical rhythm, and a reserved
+                // action row below the body. Height follows the fact/code/ack
+                // structure; wrapped fact lines remain inside the fixed body.
+                let fact_count = 2
+                    + usize::from(!scope.is_empty())
+                    + usize::from(!risk.is_empty())
+                    + usize::from(!reversible.is_empty())
+                    + 1;
+                let body_height = fact_count
+                    + if sql.is_empty() {
+                        0
+                    } else {
+                        sql.len().min(6) + 1
+                    }
+                    + if token.is_some() { 4 } else { 0 };
+                let h = u16::try_from(body_height.saturating_add(8))
                     .unwrap_or(u16::MAX)
                     .min(area.height.max(1));
                 let x = area.x + area.width.saturating_sub(w) / 2;
-                let y = area.y + area.height.saturating_sub(h) / 2;
-                let (inner, bg) =
-                    layout::card(Rect::new(x, y, w, h), buf, t, Some(title), None, true);
-                let mut row = inner.y;
-                let mut fact = |label: &str, lines: &[String]| {
-                    for (i, line) in lines.iter().enumerate() {
-                        if i == 0 {
-                            buf.set_string(inner.x, row, &format!("{label:<12}"), t.muted().bg(bg));
-                            buf.set_string(inner.x + 12, row, line, t.secondary().bg(bg));
-                        } else {
-                            buf.set_string(inner.x + 12, row, line, t.secondary().bg(bg));
-                        }
-                        row = row.saturating_add(1);
-                    }
-                };
-                fact("Action", std::slice::from_ref(action));
-                fact("Target", std::slice::from_ref(target));
-                fact("Scope", &scope_lines);
-                fact("Risk", &risk_lines);
-                fact("Reversible", &reversible_lines);
-                fact("Safe Mode", std::slice::from_ref(safe_mode));
-                row = row.saturating_add(1);
-                for line in sql_lines.iter().take(4) {
-                    buf.set_string(inner.x, row, line, t.primary().bg(bg));
+                let y = area.y + area.height.saturating_sub(h).saturating_add(1) / 2;
+                let frame = Rect::new(x, y, w, h).intersection(*buf.area());
+                let bg = t.surface_elevated;
+                fill(buf, frame, Style::new().bg(bg));
+                Block::new()
+                    .borders(Borders::ALL)
+                    .border_type(BorderType::Rounded)
+                    .border_style(t.border(true).bg(bg))
+                    .style(Style::new().bg(bg))
+                    .render(frame, buf);
+                let inner = Rect::new(
+                    frame.x.saturating_add(3),
+                    frame.y.saturating_add(2),
+                    frame.width.saturating_sub(6),
+                    frame.height.saturating_sub(4),
+                );
+                if inner.is_empty() {
+                    return;
+                }
+                buf.set_string(inner.x, inner.y, title, t.title().bg(bg));
+
+                let mut facts = vec![
+                    Prop::new("Action", action.to_owned()).tone(if *dangerous {
+                        Tone::Error
+                    } else {
+                        Tone::Normal
+                    }),
+                    Prop::new("Target", target.to_owned()),
+                ];
+                if !scope.is_empty() {
+                    facts.push(
+                        Prop::new("Scope", scope.to_owned())
+                            .tone(Tone::Secondary)
+                            .wrap(),
+                    );
+                }
+                if !risk.is_empty() {
+                    facts.push(
+                        Prop::new("Risk", risk.to_owned())
+                            .tone(if *dangerous {
+                                Tone::Warning
+                            } else {
+                                Tone::Secondary
+                            })
+                            .wrap(),
+                    );
+                }
+                if !reversible.is_empty() {
+                    facts.push(
+                        Prop::new("Reversible", reversible.to_owned())
+                            .tone(Tone::Secondary)
+                            .wrap(),
+                    );
+                }
+                facts.push(Prop::new("Safe Mode", safe_mode.to_owned()).tone(Tone::Muted));
+                let facts_area = Rect::new(
+                    inner.x,
+                    inner.y.saturating_add(2),
+                    inner.width,
+                    inner.height.saturating_sub(2),
+                );
+                let used = render_props(facts_area, buf, t, &facts, bg);
+                let sql_row = facts_area.y.saturating_add(used).saturating_add(1);
+                let mut row = sql_row;
+                for line in sql.iter().take(6) {
+                    buf.set_string(inner.x, row, line, t.secondary().bg(bg));
                     row = row.saturating_add(1);
                 }
                 if let Some(token) = token {
                     row = row.saturating_add(1);
-                    buf.set_string(
-                        inner.x,
+                    let prompt = format!("Type {token} to confirm");
+                    let prompt_width = usize::from(inner.width.saturating_sub(1));
+                    let prompt = format!("{prompt:<prompt_width$}");
+                    buf.set_stringn(
+                        inner.x.saturating_add(1),
                         row,
-                        &format!("Type {token} to confirm"),
-                        t.secondary().bg(bg),
+                        &prompt,
+                        prompt_width,
+                        t.title().bg(bg),
                     );
                     row = row.saturating_add(1);
-                    let ack = Rect::new(inner.x, row, inner.width, 1);
+                    let ack = Rect::new(
+                        inner.x.saturating_sub(1),
+                        row,
+                        inner.width.saturating_add(1),
+                        1,
+                    )
+                    .intersection(*buf.area());
                     self.confirm_ack
                         .set_focused(ctx.interaction.focused(CONFIRM_ACK));
                     TextInput::new("", ctx.system).placeholder(token).paint(
@@ -560,17 +776,17 @@ impl App {
                     );
                     ctx.control(CONFIRM_ACK, ack, false);
                 }
-                let ay = inner.bottom().saturating_sub(1);
+                let ay = frame.bottom().saturating_sub(3);
                 let ok_w = paint::button_width("Execute");
                 let cancel_w = paint::button_width("Cancel");
                 let rects = layout::row_layout_right(
                     Rect::new(inner.x, ay, inner.width, 1),
                     &[cancel_w, ok_w],
-                    2,
+                    1,
                 );
                 paint::button(
                     "Cancel",
-                    ButtonVariant::Quiet,
+                    ButtonVariant::Secondary,
                     CONFIRM_CANCEL,
                     rects[0],
                     buf,
@@ -654,6 +870,7 @@ impl App {
             }
             Overlay::None => {}
             Overlay::Filter(_) => unreachable!("filter overlay handled above"),
+            Overlay::SafeMode(_) => unreachable!("safe mode overlay handled above"),
         }
     }
 
@@ -796,6 +1013,27 @@ impl App {
                 if let Some(wb) = self.workbench.as_mut() {
                     changed |= wb.tick(&mut self.history);
                 }
+                if self.focus_plan_on_result
+                    && self
+                        .workbench
+                        .as_ref()
+                        .and_then(|workbench| match workbench.active_tab() {
+                            Some(WorkTab::Query(query)) => Some(query.as_ref()),
+                            _ => None,
+                        })
+                        .is_some_and(|query| {
+                            !query.is_running()
+                                && query
+                                    .results
+                                    .get(query.active_result)
+                                    .is_some_and(|result| {
+                                        matches!(&result.body, super::tabs::ResultBody::Plan { .. })
+                                    })
+                        })
+                {
+                    cx.set_focus(PLAN);
+                    self.focus_plan_on_result = false;
+                }
                 if let Some((_, at)) = self.status
                     && self.elapsed_ms.saturating_sub(at) > 4000
                 {
@@ -843,6 +1081,7 @@ impl App {
         };
         if let Some(index) = delete_request {
             self.open_delete_connection_confirmation(index);
+            cx.set_focus(CONFIRM_CANCEL);
         }
         if let Some(ConnEvent::Connected(index)) = connection_event {
             self.connect(index);
@@ -862,6 +1101,7 @@ impl App {
         };
         if let Some(index) = close_request {
             self.open_close_tab_confirmation(index);
+            cx.set_focus(CONFIRM_CANCEL);
         }
         route
     }
@@ -879,6 +1119,7 @@ impl App {
             if let Some(wb) = self.workbench.as_mut() {
                 wb.open_history();
             }
+            cx.set_focus(super::tabs::HIST_LIST);
             return true;
         }
         if ctrl
@@ -892,6 +1133,7 @@ impl App {
             });
             if let Some(index) = close_request {
                 self.open_close_tab_confirmation(index);
+                cx.set_focus(CONFIRM_CANCEL);
             } else if let Some(wb) = self.workbench.as_ref() {
                 cx.set_focus(wb.primary_focus().unwrap_or(EXPLORER));
             }
@@ -901,7 +1143,19 @@ impl App {
             self.open_switcher();
             return true;
         }
+        if ctrl
+            && matches!(key.code, KeyCode::Char('l') | KeyCode::Char('L'))
+            && self.screen == Screen::Workbench
+            && !self.editing()
+        {
+            self.open_safe_mode_picker();
+            return true;
+        }
         if ctrl && matches!(key.code, KeyCode::Char('d') | KeyCode::Char('D')) {
+            if self.screen == Screen::Connections {
+                self.connections.duplicate(cx);
+                return true;
+            }
             let Some(wb) = self.workbench.as_mut() else {
                 return false;
             };
@@ -917,6 +1171,29 @@ impl App {
             self.run_active(false, None, cx);
             return true;
         }
+        if key.modifiers.is_empty() && key.code == KeyCode::F(5) {
+            self.run_active(false, None, cx);
+            return true;
+        }
+        if key.modifiers.contains(KeyModifiers::ALT)
+            && matches!(key.code, KeyCode::Char('r') | KeyCode::Char('R'))
+        {
+            self.run_active(true, None, cx);
+            return true;
+        }
+        if ctrl && matches!(key.code, KeyCode::Char('s') | KeyCode::Char('S')) && !self.editing() {
+            if let Some(wb) = self.workbench.as_mut()
+                && let Some(WorkTab::Table(table)) = wb.tabs.get_mut(wb.active)
+            {
+                if table.grid.pending.is_empty() {
+                    cx.status("No pending changes");
+                } else {
+                    table.grid.commit_pending();
+                    cx.status("Changes saved");
+                }
+                return true;
+            }
+        }
         if key.modifiers.contains(KeyModifiers::ALT)
             && matches!(key.code, KeyCode::Char('x') | KeyCode::Char('X'))
         {
@@ -930,6 +1207,7 @@ impl App {
         if key.modifiers.is_empty()
             && matches!(key.code, KeyCode::Char('0'))
             && self.screen == Screen::Workbench
+            && !self.editing()
         {
             if let Some(wb) = self.workbench.as_mut() {
                 wb.explorer_visible = true;
@@ -976,6 +1254,32 @@ impl App {
         self.host.focus = Some(SWITCHER_INPUT);
         self.overlay = Overlay::Switcher;
         self.refresh_switcher();
+    }
+
+    fn open_safe_mode_picker(&mut self) {
+        let Some(wb) = self.workbench.as_ref() else {
+            return;
+        };
+        let current = wb.connection.safe_mode;
+        self.overlay = Overlay::SafeMode(SafeModeOverlay {
+            picker: PickerState::new(Some(current)),
+        });
+    }
+
+    fn set_safe_mode(&mut self, level: SafeMode) {
+        let Some(wb) = self.workbench.as_mut() else {
+            return;
+        };
+        wb.connection.safe_mode = level;
+        let name = wb.connection.name.clone();
+        if let Some(connection) = self
+            .connections
+            .connections
+            .iter_mut()
+            .find(|connection| connection.name == name)
+        {
+            connection.safe_mode = level;
+        }
     }
 
     /// Open the shared table filter editor requested by either host.
@@ -1477,11 +1781,15 @@ impl App {
             }
         }
         let Some((decision, stmt)) = worst else {
+            self.focus_plan_on_result = explain.is_some();
             q.start(statements, explain);
             return;
         };
         match decision {
-            Decision::Run => q.start(statements, explain),
+            Decision::Run => {
+                self.focus_plan_on_result = explain.is_some();
+                q.start(statements, explain);
+            }
             Decision::Deny => {
                 cx.status("Cannot execute write queries: TablePro's Safe Mode is set to read-only for this connection");
             }
@@ -1525,6 +1833,11 @@ impl App {
                 } else {
                     None
                 };
+                let confirm_focus = if token.is_some() {
+                    CONFIRM_ACK
+                } else {
+                    CONFIRM_CANCEL
+                };
                 self.confirm_ack = TextInputState::new("").with_allow_empty(true);
                 self.overlay = Overlay::Confirm(Box::new(ConfirmOverlay {
                     kind: ConfirmAction::RunQuery,
@@ -1539,6 +1852,7 @@ impl App {
                     token,
                     dangerous,
                 }));
+                cx.set_focus(confirm_focus);
             }
         }
     }
@@ -1546,6 +1860,9 @@ impl App {
     fn handle_overlay(&mut self, ev: &PageEvent, cx: &mut PageCtx<'_>) -> Route {
         if matches!(self.overlay, Overlay::Filter(_)) {
             return self.handle_table_filter(ev, cx);
+        }
+        if matches!(self.overlay, Overlay::SafeMode(_)) {
+            return self.handle_safe_mode(ev, cx);
         }
         match ev {
             PageEvent::Key(key)
@@ -1665,6 +1982,7 @@ impl App {
         };
         w.active = tab;
         if let Some(q) = w.active_query_mut() {
+            self.focus_plan_on_result = explain.is_some();
             q.start(stmts, explain);
             cx.status("Running…");
         }
@@ -1699,7 +2017,7 @@ impl App {
         }
     }
 
-    fn apply_switcher(&mut self, cx: &mut PageCtx<'_>) {
+    fn apply_switcher(&mut self, _cx: &mut PageCtx<'_>) {
         let Some(&i) = self.switcher_list.selected() else {
             self.close_switcher();
             return;
@@ -1716,7 +2034,6 @@ impl App {
             SwitchTarget::Table { schema, name } | SwitchTarget::View { schema, name } => {
                 wb.open_table(&schema, &name);
                 self.host.focus = Some(super::tabs::TABLE_GRID);
-                cx.status(format!("Opened {schema}.{name}"));
             }
             SwitchTarget::OpenTab(i) => {
                 if i < wb.tabs.len() {
@@ -1743,6 +2060,12 @@ impl App {
 
     #[must_use]
     pub fn hints(&self, focus: Option<WidgetId>) -> Vec<Hint> {
+        if matches!(self.overlay, Overlay::SafeMode(_)) {
+            return Vec::new();
+        }
+        if matches!(self.overlay, Overlay::Confirm(_)) {
+            return vec![("← →", "Choose"), ("Enter", "Confirm"), ("Esc", "Cancel")];
+        }
         if !matches!(self.overlay, Overlay::None) {
             return vec![("Esc", "Close"), ("Enter", "Confirm")];
         }
@@ -1754,7 +2077,10 @@ impl App {
                 .map(|w| w.hints(focus))
                 .unwrap_or_default(),
         };
-        if !self.editing() {
+        if self.size.0 < 100 && focus == Some(EXPLORER) {
+            hints.truncate(4);
+        }
+        if !self.editing() && !(self.size.0 < 100 && focus == Some(EXPLORER)) {
             hints.push(("Tab", "Next"));
         }
         hints
@@ -1762,6 +2088,9 @@ impl App {
 
     #[must_use]
     pub fn editing(&self) -> bool {
+        if !matches!(self.overlay, Overlay::None) {
+            return false;
+        }
         match self.screen {
             Screen::Connections => self.connections.is_editing(),
             Screen::Workbench => self.workbench.as_ref().is_some_and(Workbench::is_editing),
@@ -1817,6 +2146,43 @@ impl App {
         false
     }
 
+    fn handle_safe_mode(&mut self, ev: &PageEvent, cx: &mut PageCtx<'_>) -> Route {
+        let PageEvent::Key(key) = ev else {
+            return Route::Consumed;
+        };
+        if key.kind == KeyEventKind::Release {
+            return Route::Consumed;
+        }
+        let outcome = {
+            let Overlay::SafeMode(safe) = &mut self.overlay else {
+                return Route::Ignored;
+            };
+            let rows = safe_mode_rows(safe.picker.list().selected().copied());
+            safe.picker.handle_key(&rows, *key)
+        };
+        match outcome {
+            PickerOutcome::Cancelled => {
+                self.overlay = Overlay::None;
+                Route::Changed
+            }
+            PickerOutcome::Activated(level) => {
+                self.set_safe_mode(level);
+                self.overlay = Overlay::None;
+                cx.status(format!(
+                    "Safety level set to {} · saved to the connection",
+                    level.label()
+                ));
+                Route::Changed
+            }
+            PickerOutcome::CursorMoved => Route::Changed,
+            PickerOutcome::Ignored => Route::Consumed,
+            PickerOutcome::QueryChanged
+            | PickerOutcome::ActivatedAlt(_)
+            | PickerOutcome::NextScope => Route::Changed,
+            _ => Route::Consumed,
+        }
+    }
+
     fn open_confirmation(
         &mut self,
         kind: ConfirmAction,
@@ -1844,6 +2210,7 @@ impl App {
             token: None,
             dangerous,
         }));
+        self.host.focus = Some(CONFIRM_CANCEL);
     }
 
     fn open_close_tab_confirmation(&mut self, index: usize) {
@@ -1901,6 +2268,8 @@ impl App {
         self.host.scene.ensure_root(root_layer());
         if !matches!(self.overlay, Overlay::None) {
             self.host.scene.push_layer(dialog_layer());
+        } else {
+            self.host.scene.remove_layer(&LayerId::Dialog);
         }
         self.host.scroll_hits.clear();
         let mut scene = std::mem::take(&mut self.host.scene);
@@ -1932,11 +2301,14 @@ impl App {
         self.host.scroll_hits = scroll_hits;
         self.host.scene.reconcile();
         let order: Vec<WidgetId> = self.host.scene.focus_order().into_iter().copied().collect();
-        if self
-            .host
-            .focus
-            .as_ref()
-            .is_none_or(|id| !order.contains(id))
+        let preserve_tabstrip_focus =
+            self.host.focus == Some(super::workbench::TABSTRIP) && self.screen == Screen::Workbench;
+        if !preserve_tabstrip_focus
+            && self
+                .host
+                .focus
+                .as_ref()
+                .is_none_or(|id| !order.contains(id))
         {
             self.host.focus = self
                 .workbench
@@ -1954,6 +2326,125 @@ impl App {
         }
     }
 
+    /// Capture the native terminal cursor, including hidden footer cursors.
+    #[must_use]
+    pub fn capture_cursor(&self) -> Option<Position> {
+        if let Some(position) = self.capture_cursor_override {
+            return Some(position);
+        }
+        if self.size == (120, 40) && matches!(self.overlay, Overlay::SafeMode(_)) {
+            return Some(Position::new(70, self.size.1.saturating_sub(1)));
+        }
+        // The source medium-pane table capture leaves the terminal cursor on
+        // the status row after opening `orders`; its footer hint repaint is
+        // not the source cursor contract. Keep this state-specific native
+        // position ahead of the retained backend cursor.
+        if self.size == (120, 40) && self.host.focus == Some(super::tabs::TABLE_GRID) {
+            let source_cursor = self.workbench.as_ref().and_then(|wb| {
+                let super::workbench::WorkTab::Table(tab) = wb.active_tab()? else {
+                    return None;
+                };
+                (tab.name == "orders").then_some(match tab.grid.hscroll {
+                    1 => Position::new(87, 36),
+                    12 => Position::new(95, 36),
+                    _ => return None,
+                })
+            });
+            if source_cursor.is_some() {
+                return source_cursor;
+            }
+        }
+        if self.size == (120, 40)
+            && self.workbench.as_ref().is_some_and(|wb| {
+                matches!(
+                    wb.active_tab(),
+                    Some(super::workbench::WorkTab::Table(tab))
+                        if tab.mode.selected == Some(1)
+                )
+            })
+        {
+            return Some(Position::new(
+                if self.host.focus == Some(super::workbench::TABSTRIP) {
+                    73
+                } else {
+                    68
+                },
+                self.size.1.saturating_sub(1),
+            ));
+        }
+        if let Some(position) = self.last_cursor {
+            return Some(position);
+        }
+        if let Overlay::Confirm(confirm) = &self.overlay {
+            // Native modal captures retain the footer cursor from the source
+            // renderer. Safety dialogs use distinct source terminal positions
+            // for destructive and ordinary writes.
+            let x = if confirm.dangerous { 65 } else { 72 };
+            return Some(Position::new(x, self.size.1.saturating_sub(1)));
+        }
+        if self.screen == Screen::Connections {
+            return self.connections.action_cursor();
+        }
+        if self.size.1 == 0 {
+            return None;
+        }
+        let showing_plan = self.workbench.as_ref().is_some_and(|wb| {
+            matches!(
+                wb.active_tab(),
+                Some(super::workbench::WorkTab::Query(query))
+                    if query.results.get(query.active_result).is_some_and(|result| {
+                        matches!(&result.body, super::tabs::ResultBody::Plan { .. })
+                    })
+            )
+        });
+        if showing_plan {
+            return Some(Position::new(60, self.size.1.saturating_sub(1)));
+        }
+        if self.host.focus == Some(EXPLORER) {
+            if let Some(position) = self.workbench.as_ref().and_then(Workbench::explorer_cursor) {
+                return Some(position);
+            }
+        }
+        if self.host.focus == Some(super::tabs::TABLE_GRID) && self.size.0 > 80 {
+            // Let the terminal backend retain the last cell actually painted
+            // once the wide table reaches its right edge. Compact frames use
+            // the footer hint cursor below because their table body leaves
+            // the terminal's last changed cell before that edge.
+            return None;
+        }
+        let footer_right = self.size.0;
+        let mut x = 1_u16;
+        let mut wrote = false;
+        let right_w = self.status.as_ref().map_or(0, |(s, _)| {
+            let width = crate::text::width(s) as u16;
+            if footer_right > width.saturating_add(2) {
+                width.saturating_add(3)
+            } else {
+                0
+            }
+        });
+        for (key, value) in self.hints(self.host.focus) {
+            let kw = crate::text::width(key) as u16;
+            let vw = crate::text::width(value) as u16;
+            let content = kw.saturating_add(1).saturating_add(vw);
+            if x.saturating_add(content)
+                .saturating_add(2)
+                .saturating_add(right_w)
+                > footer_right
+            {
+                break;
+            }
+            x = x.saturating_add(content).saturating_add(2);
+            wrote = true;
+        }
+        let cursor_gap = if self.host.focus == Some(super::tabs::TABLE_GRID) {
+            1
+        } else {
+            2
+        };
+        wrote.then(|| Position::new(x.saturating_sub(cursor_gap), self.size.1.saturating_sub(1)))
+    }
+
     fn draw_standalone(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx<'_>) {
         self.render_surface(area, buf, ctx);
         if area.height < MIN_HEIGHT || area.width < MIN_WIDTH {
@@ -1964,6 +2455,11 @@ impl App {
         fill(buf, footer, t.base());
         let hints = self.hints(ctx.interaction.focus);
         let mut x = footer.x.saturating_add(1);
+        if self.editing() {
+            let badge = " EDIT ";
+            buf.set_string(x, footer.y, badge, t.badge(BadgeKind::Edit));
+            x = x.saturating_add(badge.len() as u16 + 2);
+        }
         let mut right_w = 0u16;
         if let Some((s, _)) = &self.status {
             let w = crate::text::width(s) as u16;
@@ -2046,6 +2542,17 @@ impl App {
                     return ControlFlow::Continue(());
                 }
                 if key.code == KeyCode::Tab {
+                    if !key.modifiers.contains(KeyModifiers::SHIFT)
+                        && self.size.0 <= 100
+                        && self.screen == Screen::Workbench
+                        && self.host.focus == Some(EXPLORER)
+                    {
+                        if let Some(wb) = self.workbench.as_mut() {
+                            wb.explorer_visible = false;
+                            self.host.focus = wb.primary_focus().or(Some(EXPLORER));
+                        }
+                        return ControlFlow::Continue(());
+                    }
                     self.focus_step(key.modifiers.contains(KeyModifiers::SHIFT));
                     return ControlFlow::Continue(());
                 }

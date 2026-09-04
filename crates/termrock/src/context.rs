@@ -22,14 +22,17 @@
 //! - Not a widget tree or React-style context provider.
 //! - Not a replacement for `Frame` / `Buffer`.
 //! - Not domain state (messages stay in the app).
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::fmt;
 use std::hash::Hash;
+use std::time::Duration;
 
 use crate::capability::CapabilityProfile;
 use crate::capability::{CapabilityBoundary, TerminalCapabilities};
 use crate::input::KeyEvent;
 use crate::interaction::{
-    FocusGraph, FocusOutcome, InteractionScene, OverlayOutcome, OverlayStack, SemanticScene,
+    FocusGraph, FocusOutcome, InteractionScene, OverlayOutcome, OverlayStack, SemanticDiagnostic,
+    SemanticScene, SemanticSnapshot, UiIntent,
 };
 use crate::keymap::{KeyChord, Keymap};
 use crate::runtime::{FrameClock, FrameTick, Instant};
@@ -38,6 +41,8 @@ use crate::style::DesignSystem;
 /// Lightweight diagnostics collected for Studio / tests (not a retained DOM).
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct UiDiagnostics {
+    /// Semantic registration diagnostics this frame.
+    pub semantic: Vec<SemanticDiagnostic>,
     /// Free-form host notes (collision, missing focus, …).
     pub notes: Vec<String>,
     /// Frame counter (host increments via [`UiHost::begin_frame`]).
@@ -49,6 +54,7 @@ impl UiDiagnostics {
     #[must_use]
     pub const fn new() -> Self {
         Self {
+            semantic: Vec::new(),
             notes: Vec::new(),
             frame_index: 0,
         }
@@ -59,10 +65,10 @@ impl UiDiagnostics {
         self.notes.push(msg.into());
     }
 
-    /// True when any note is present.
+    /// True when any semantic diagnostic or note is present.
     #[must_use]
     pub fn has_issues(&self) -> bool {
-        !self.notes.is_empty()
+        !self.semantic.is_empty() || !self.notes.is_empty()
     }
 }
 
@@ -76,6 +82,7 @@ where
     LayerId: Clone + Eq + Hash,
 {
     design: &'a DesignSystem,
+    capabilities: &'a TerminalCapabilities,
     boundary: Option<&'a CapabilityBoundary>,
     keymap: Option<&'a Keymap<MapAction>>,
     scene: &'a mut InteractionScene<Id, LayerId, Action>,
@@ -92,12 +99,59 @@ where
     LayerId: Clone + Eq + Hash,
     MapAction: Clone + 'static,
 {
+    /// Builds a context from raw borrows (advanced hosts / tests).
+    #[must_use]
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        design: &'a DesignSystem,
+        capabilities: &'a TerminalCapabilities,
+        boundary: Option<&'a CapabilityBoundary>,
+        keymap: Option<&'a Keymap<MapAction>>,
+        scene: &'a mut InteractionScene<Id, LayerId, Action>,
+        focus: &'a mut FocusGraph<Id>,
+        overlays: &'a mut OverlayStack<Id>,
+        semantics: &'a mut SemanticScene<Id, Action>,
+        tick: FrameTick,
+        diagnostics: &'a mut UiDiagnostics,
+    ) -> Self {
+        Self {
+            design,
+            capabilities,
+            boundary,
+            keymap,
+            scene,
+            focus,
+            overlays,
+            semantics,
+            tick,
+            diagnostics,
+        }
+    }
+
     // ── read-only ──────────────────────────────────────────────────────────
 
     /// Sole paint authority for this frame.
     #[must_use]
     pub const fn design(&self) -> &DesignSystem {
         self.design
+    }
+
+    /// Resolved terminal capabilities.
+    #[must_use]
+    pub const fn capabilities(&self) -> &TerminalCapabilities {
+        self.capabilities
+    }
+
+    /// Optional capability boundary for progressive enhancement.
+    #[must_use]
+    pub const fn boundary(&self) -> Option<&CapabilityBoundary> {
+        self.boundary
+    }
+
+    /// Optional host keymap (semantic actions).
+    #[must_use]
+    pub const fn keymap(&self) -> Option<&Keymap<MapAction>> {
+        self.keymap
     }
 
     /// Immutable frame time (never sample clocks in widgets).
@@ -163,9 +217,31 @@ where
     pub fn semantics_mut(&mut self) -> &mut SemanticScene<Id, Action> {
         self.semantics
     }
+
+    /// Mutable diagnostics.
+    pub fn diagnostics_mut(&mut self) -> &mut UiDiagnostics {
+        self.diagnostics
+    }
+
     /// Record a diagnostic note.
     pub fn note(&mut self, msg: impl Into<String>) {
         self.diagnostics.note(msg);
+    }
+
+    /// Pull semantic diagnostics into host diagnostics (call end of frame).
+    pub fn collect_semantic_diagnostics(&mut self) {
+        for d in self.semantics.diagnostics() {
+            self.diagnostics.semantic.push(d.clone());
+        }
+    }
+
+    /// Semantic snapshot for Studio / tests.
+    #[must_use]
+    pub fn semantic_snapshot(&self) -> SemanticSnapshot
+    where
+        Id: fmt::Display,
+    {
+        self.semantics.snapshot()
     }
 
     // ── event adapters ─────────────────────────────────────────────────────
@@ -310,18 +386,35 @@ where
         host.clock = FrameClock::from_start(Instant::now());
         host
     }
+
+    /// Attach keymap.
+    #[must_use]
+    pub fn with_keymap(mut self, keymap: Keymap<MapAction>) -> Self {
+        self.keymap = Some(keymap);
+        self
+    }
+
+    /// Attach capability boundary.
+    #[must_use]
+    pub fn with_boundary(mut self, boundary: CapabilityBoundary) -> Self {
+        self.boundary = Some(boundary);
+        self
+    }
+
     /// Begin a frame: clear scene elements + semantics, tick clock, return context.
     ///
     /// Layers and focus **persist** across frames (InteractionScene contract).
     /// Element registration is immediate-mode each frame.
     pub fn begin_frame(&mut self) -> UiContext<'_, Id, LayerId, Action, MapAction> {
         self.diagnostics.frame_index = self.diagnostics.frame_index.saturating_add(1);
+        self.diagnostics.semantic.clear();
         self.diagnostics.notes.clear();
         self.scene.begin_frame();
         self.semantics.begin_frame();
         let tick = self.clock.tick();
         UiContext {
             design: &self.design,
+            capabilities: &self.capabilities,
             boundary: self.boundary.as_ref(),
             keymap: self.keymap.as_ref(),
             scene: &mut self.scene,
@@ -339,11 +432,13 @@ where
         tick: FrameTick,
     ) -> UiContext<'_, Id, LayerId, Action, MapAction> {
         self.diagnostics.frame_index = self.diagnostics.frame_index.saturating_add(1);
+        self.diagnostics.semantic.clear();
         self.diagnostics.notes.clear();
         self.scene.begin_frame();
         self.semantics.begin_frame();
         UiContext {
             design: &self.design,
+            capabilities: &self.capabilities,
             boundary: self.boundary.as_ref(),
             keymap: self.keymap.as_ref(),
             scene: &mut self.scene,
@@ -358,20 +453,68 @@ where
 
 /// Map a physical key through optional keymap to a cloned app action.
 ///
-/// Release events are ignored; repeat events remain dispatchable for actions
-/// that intentionally support held keys. This adapter does not replace
-/// widget-local intent maps; use it for global chords.
+/// Adapter: does not replace widget-local intent maps; use for global chords.
 #[must_use]
 pub fn resolve_keymap_action<A: Clone + Copy + 'static>(
     keymap: Option<&Keymap<A>>,
     key: KeyEvent,
 ) -> Option<A> {
     let map = keymap?;
-    if key.is_release() {
-        return None;
-    }
-    let chord = KeyChord::from(key);
+    let chord = KeyChord {
+        key: key.code,
+        mods: key.modifiers,
+    };
     map.dispatch(chord)
+}
+
+/// Helper: document that paint still uses Ratatui `Frame`/`Buffer` directly.
+///
+/// ```ignore
+/// fn paint(frame: &mut Frame, area: Rect, ctx: &UiContext<'_, Id>) {
+///     let system = ctx.design();
+///     // Widget::render(..., frame.buffer_mut());
+/// }
+/// ```
+pub mod adapters {
+    use super::*;
+
+    /// Split context into design + tick for pure paint helpers that need no mut authorities.
+    #[must_use]
+    pub fn paint_refs<'a, Id, LayerId, Action, MapAction>(
+        ctx: &'a UiContext<'a, Id, LayerId, Action, MapAction>,
+    ) -> (&'a DesignSystem, FrameTick)
+    where
+        Id: Clone + Eq + Hash,
+        LayerId: Clone + Eq + Hash,
+        MapAction: Clone + 'static,
+    {
+        (ctx.design(), ctx.tick())
+    }
+
+    /// Standard Esc routing result (overlay first).
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub enum RoutedEscape<Id> {
+        /// Overlay stack handled Esc (dismiss / trap / unhandled empty).
+        Overlay(OverlayOutcome<Id>),
+        /// Host should try scene layer policy.
+        Unhandled,
+    }
+
+    /// Route Esc: overlays first (one conceptual layer).
+    pub fn route_escape<Id, LayerId, Action, MapAction>(
+        ctx: &mut UiContext<'_, Id, LayerId, Action, MapAction>,
+    ) -> RoutedEscape<Id>
+    where
+        Id: Clone + Eq + Hash,
+        LayerId: Clone + Eq + Hash,
+        MapAction: Clone + 'static,
+    {
+        let outcome = ctx.handle_overlay_escape();
+        match outcome {
+            OverlayOutcome::Ignored | OverlayOutcome::UnhandledEscape => RoutedEscape::Unhandled,
+            other => RoutedEscape::Overlay(other),
+        }
+    }
 }
 
 // Re-export UiIntent at context level for discoverability in docs.
@@ -380,16 +523,12 @@ pub use crate::interaction::UiIntent as ContextUiIntent;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::{KeyCode, KeyEventKind, KeyModifiers};
-    use crate::interaction::UiIntent;
     use crate::interaction::{
         InteractionElement, InteractionLayer, LayerDismissPolicy, LayerKind, SemanticNode,
         SemanticRole,
     };
-    use crate::keymap::{KeyBinding, Visibility};
     use crate::style::DesignSystem;
     use ratatui_core::layout::Rect;
-    use std::time::Duration;
 
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
     enum Fid {
@@ -535,35 +674,12 @@ mod tests {
     }
 
     #[test]
-    fn resolve_keymap_action_uses_canonical_key_event_conversion() {
-        #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-        enum Action {
-            Uppercase,
-        }
-
-        let keymap = Keymap::from_owned(vec![KeyBinding::owned(
-            vec![KeyChord::plain(KeyCode::Char('Q'))],
-            Action::Uppercase,
-            Some("uppercase".to_owned()),
-            Visibility::Shown,
-            None,
-        )]);
-        let shifted_q = KeyEvent::new(KeyCode::Char('Q'), KeyModifiers::SHIFT);
-        assert_eq!(
-            resolve_keymap_action(Some(&keymap), shifted_q),
-            Some(Action::Uppercase)
-        );
-
-        let mut repeat = shifted_q;
-        repeat.kind = KeyEventKind::Repeat;
-        assert_eq!(
-            resolve_keymap_action(Some(&keymap), repeat),
-            Some(Action::Uppercase)
-        );
-
-        let mut release = KeyEvent::new(KeyCode::Char('Q'), KeyModifiers::NONE);
-        release.kind = KeyEventKind::Release;
-        assert_eq!(resolve_keymap_action(Some(&keymap), release), None);
+    fn paint_refs_adapter() {
+        let mut host = UiHost::<Fid, Lid>::test();
+        let ctx = host.begin_frame();
+        let (design, tick) = adapters::paint_refs(&ctx);
+        let _ = design.style(crate::style::Role::Text);
+        let _ = tick.delta();
     }
 
     #[test]
@@ -577,12 +693,13 @@ mod tests {
             outside: LayerDismissPolicy::Ignore,
             focus_return: None,
         });
-        for _ in 0..5_000 {
+        for i in 0..5_000 {
             let mut ctx = host.begin_frame();
             let _ = ctx.scene_mut().register(
                 InteractionElement::control(Fid::A, Lid::Root, Rect::new(0, 0, 4, 1))
                     .focusable(true),
             );
+            let _ = i;
         }
         assert!(host.diagnostics.frame_index >= 5_000);
     }

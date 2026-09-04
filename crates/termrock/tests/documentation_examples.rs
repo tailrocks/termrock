@@ -1,3 +1,4 @@
+#![allow(unused_variables)]
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
@@ -20,7 +21,7 @@ use termrock::{
     widgets::{
         Action, ActionBar, ActionBarState, ActionVariant, ActivationOutcome, Anchor, Button,
         ButtonState, CellAlignment, ChoiceDialog, ChoiceDialogState, Column, ColumnWidth,
-        CommandEntry, CommandMatch, CommandPalette, CommandPaletteOutcome, CommandPaletteSize,
+        CommandEntry, CommandPalette, CommandPaletteOutcome, CommandPaletteSize,
         CommandPaletteState, Dialog, DialogSize, InitiatorKind, List, ListRow, ListState,
         ModeIndicator, ModelIndicator, PermissionAction, PermissionOutcome, PermissionPromptState,
         PermissionProvenance, PermissionRequest, PermissionRisk, PromptComposer,
@@ -158,15 +159,14 @@ fn handbook_dialog_examples() {
 fn handbook_command_palette_example() {
     let tokens = DesignSystem::default();
     let entries = [CommandEntry::new("quit", "Quit")];
-    let matches = [CommandMatch::new(&entries[0], 10, None)];
-    let palette = CommandPalette::new("Commands", &matches, &tokens);
+    let palette = CommandPalette::new("Commands", &entries, &tokens);
     let rect = place_command_palette(Rect::new(0, 0, 80, 24), CommandPaletteSize::default());
     assert!(rect.width > 0);
     let mut state = CommandPaletteState::new(Some("quit"));
     let outcome = CommandPalette::handle_key(
         &mut state,
         KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
-        &matches,
+        &entries,
     );
     assert!(matches!(
         outcome,
@@ -178,6 +178,7 @@ fn handbook_command_palette_example() {
 #[test]
 fn handbook_prompt_composer_example() {
     let theme = RolePalette::default();
+    let system = DesignSystem::new(theme.clone());
     let tokens = DesignSystem::new(theme.clone());
     let mut state = PromptComposerState::new();
     state.set_placeholder("Ask anything…");
@@ -237,6 +238,7 @@ fn handbook_permission_prompt_example() {
 #[test]
 fn theme_documentation_example() {
     let theme = RolePalette::default().with_role(Role::Accent, Style::new().fg(Color::Cyan));
+    let system = DesignSystem::new(theme.clone());
     assert_eq!(theme.style(Role::Accent).fg, Some(Color::Cyan));
 }
 

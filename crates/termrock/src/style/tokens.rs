@@ -72,18 +72,6 @@ impl GlyphSet {
         super::glyph::Glyph::RuleV.resolve().text
     }
 
-    /// Strong vertical rule.
-    #[must_use]
-    pub const fn rule_v_strong(self) -> &'static str {
-        super::glyph::Glyph::RuleVStrong.resolve().text
-    }
-
-    /// Double vertical rule (focus zone separators).
-    #[must_use]
-    pub const fn rule_v_double(self) -> &'static str {
-        super::glyph::Glyph::RuleVDouble.resolve().text
-    }
-
     /// Checkbox well (`[✓]`). List membership is [`Glyph::Success`], not this.
     #[must_use]
     pub const fn check_on(self) -> &'static str {
@@ -153,6 +141,8 @@ pub enum FocusEmphasis {
     /// `Role::BorderFocused` on the container's own edge (panels, inputs).
     #[default]
     BrightBorder,
+    /// Full selection fill — opt-in only, never a resting default.
+    SelectionFill,
     /// `Role::SelectionTint` behind the row plus its gutter glyph.
     FocusTint,
     /// Reversed cell — a cell cursor is a cell (tables, grids).
@@ -164,6 +154,19 @@ pub enum FocusEmphasis {
 }
 
 impl FocusEmphasis {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::BrightBorder => "bright-border",
+            Self::SelectionFill => "selection-fill",
+            Self::FocusTint => "focus-tint",
+            Self::Reversed => "reversed",
+            Self::BoldKey => "bold-key",
+            Self::PillGlyph => "pill-glyph",
+        }
+    }
+
     /// The cue a surface family wears by default.
     #[must_use]
     pub const fn for_family(family: SurfaceFamily) -> Self {
@@ -207,6 +210,19 @@ impl SurfaceFamily {
             Self::Cell => 3,
             Self::Token => 4,
             Self::Chord => 5,
+        }
+    }
+
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Container => "container",
+            Self::Field => "field",
+            Self::Row => "row",
+            Self::Cell => "cell",
+            Self::Token => "token",
+            Self::Chord => "chord",
         }
     }
 }
@@ -596,13 +612,6 @@ pub struct PanelRecipe {
     pub pad_y: u16,
     /// Optional surface fill style.
     pub surface: ratatui_core::style::Style,
-    /// Resolved paint fill for this panel plane.
-    ///
-    /// Design-system recipes populate this for every [`Elevation`], including
-    /// [`Elevation::Canvas`] and [`Elevation::Overlay`]. A transparent panel
-    /// variant may clear this at the widget boundary while retaining
-    /// [`Self::surface`] as its base token.
-    pub fill: Option<ratatui_core::style::Style>,
     /// Glyph the title carries when the chrome itself is a warning.
     ///
     /// Danger chrome must not rely on a red border alone: colorless and
@@ -859,6 +868,12 @@ impl DesignSystem {
         Self::new(RolePalette::junie()).capability(ColorCapability::Truecolor)
     }
 
+    /// The canonical system resolved for the operator's terminal capability.
+    #[must_use]
+    pub fn adaptive() -> Self {
+        Self::junie().quantize(ColorCapability::detect_from_env())
+    }
+
     /// The junie theme resolved for this system's colour capability.
     ///
     /// Widgets that need a resolver (`lift`, `backdrop`, `button`, …) call the
@@ -1052,6 +1067,24 @@ impl DesignSystem {
             }
         }
     }
+
+    /// One step down the junie text ladder.
+    ///
+    /// [`Role::Text`] → [`Role::TextSecondary`] → [`Role::TextMuted`] →
+    /// [`Role::TextFaint`] → [`Role::TextGhost`]. Any role off the ladder —
+    /// semantic colours, surfaces — returns itself: de-emphasis never invents
+    /// a new tone, and it never reaches for a DIM modifier.
+    #[must_use]
+    pub const fn lower_text(role: Role) -> Role {
+        match role {
+            Role::Text => Role::TextSecondary,
+            Role::TextSecondary => Role::TextMuted,
+            Role::TextMuted => Role::TextFaint,
+            Role::TextFaint | Role::TextGhost => Role::TextGhost,
+            other => other,
+        }
+    }
+
     /// Builds from a palette with the junie spacing, glyphs, and motion.
     #[must_use]
     pub fn new(palette: RolePalette) -> Self {
@@ -1165,6 +1198,18 @@ impl DesignSystem {
             },
         }
     }
+
+    /// Overrides one family's focus cue (themes state the vocabulary).
+    #[must_use]
+    pub const fn with_focus_emphasis(
+        mut self,
+        family: SurfaceFamily,
+        emphasis: FocusEmphasis,
+    ) -> Self {
+        self.focus[family.index()] = emphasis;
+        self
+    }
+
     /// Supplies this frame's time to every widget painted with this system.
     ///
     /// Call once per frame in the host's render function:
@@ -1253,6 +1298,13 @@ impl DesignSystem {
         matches!(self.capability, ColorCapability::Monochrome)
     }
 
+    /// Breakpoint scale.
+    #[must_use]
+    pub const fn breakpoints(mut self, breakpoints: BreakpointScale) -> Self {
+        self.breakpoints = breakpoints;
+        self
+    }
+
     /// Force monochrome capability + quantize (NO_COLOR path).
     #[must_use]
     pub fn no_color(self) -> Self {
@@ -1320,7 +1372,6 @@ impl DesignSystem {
             PanelChrome::Focused => self.style(Role::BorderFocused),
             PanelChrome::Danger => self.style(Role::Danger),
         };
-        let surface = self.style(elevation.role());
         PanelRecipe {
             border,
             title: if focused {
@@ -1330,8 +1381,7 @@ impl DesignSystem {
             },
             pad_x: self.spacing.card_inset,
             pad_y: 1,
-            surface,
-            fill: Some(surface),
+            surface: self.style(elevation.role()),
             title_prefix: match emphasis {
                 PanelChrome::Danger => Some(self.glyphs.resolve(Glyph::Error).text),
                 PanelChrome::Focused | PanelChrome::Normal => None,
@@ -1526,10 +1576,10 @@ impl DesignSystem {
     ///
     /// Keyboard focus is the gutter. `editing` is the insert session: accent
     /// underline. A focused-but-not-editing field is the well plus `▎` only.
-    /// Invalid state is a widget concern (the trailing bold `!`), never a
-    /// recipe input.
+    /// `invalid` does not change the recipe — idle invalid is a trailing bold
+    /// `!` (widget paint), not a red underline (junie `input.rs`).
     #[must_use]
-    pub fn input_recipe(&self, state: ControlState, editing: bool) -> InputRecipe {
+    pub fn input_recipe(&self, state: ControlState, invalid: bool, editing: bool) -> InputRecipe {
         let theme = self.junie_theme();
         let focused = matches!(state, ControlState::Focused);
         let disabled = matches!(state, ControlState::Disabled);
@@ -1571,9 +1621,11 @@ impl DesignSystem {
             role_with_fg(&self.palette, Role::TextMuted, theme.text_muted)
         };
         // A field has no frame; the border slot carries the underline
-        // affordance. Underline ONLY while editing, always accent — never an
-        // error tone. Resting is the subtle hairline. Nav-focus is the
-        // gutter, not an underline. Focus snaps; there is no cross-fade.
+        // affordance. Underline ONLY while editing, always accent. Invalid
+        // does not set UNDERLINED — idle invalid border matches resting/nav.
+        // Resting is the subtle hairline. Nav-focus is the gutter, not an
+        // underline. Focus snaps; there is no cross-fade.
+        let _ = invalid;
         let border = if visual_editing {
             let accent = self.palette.style(Role::Accent);
             let underline = accent.underline_color.unwrap_or(theme.accent);
@@ -1711,6 +1763,7 @@ impl DesignSystem {
             check_on: self.glyphs.check_on(),
             check_off: self.glyphs.check_off(),
             loading_glyph: self.glyphs.loading(),
+            show_gutter_slot: true,
             checked: state.checked,
             loading: state.loading,
             // Law P6: a row's actions appear when the row is the one you are
@@ -1758,6 +1811,8 @@ pub struct ListRowRecipe {
     pub check_off: &'static str,
     /// Loading leading glyph.
     pub loading_glyph: &'static str,
+    /// Reserve leading gutter columns even when unselected (stable alignment).
+    pub show_gutter_slot: bool,
     /// Multi-select membership for check paint.
     pub checked: bool,
     /// Loading flag for leading glyph override.
@@ -2055,7 +2110,7 @@ mod tests {
         assert!(primary.label.add_modifier.contains(Modifier::UNDERLINED));
         assert_eq!(primary.fill.bg, Some(Color::Rgb(100, 150, 200)));
 
-        let input = system.input_recipe(ControlState::Default, false);
+        let input = system.input_recipe(ControlState::Default, false, false);
         assert_eq!(input.value.fg, Some(Color::LightRed));
         assert_eq!(input.fill.bg, Some(Color::Rgb(10, 20, 30)));
         assert!(input.value.add_modifier.contains(Modifier::ITALIC));
@@ -2356,7 +2411,7 @@ mod tests {
     fn input_recipe_follows_the_junie_field() {
         let system = DesignSystem::junie();
         let theme = system.junie_theme();
-        let idle = system.input_recipe(ControlState::Default, false);
+        let idle = system.input_recipe(ControlState::Default, false, false);
         assert_eq!(idle.fill.bg, Some(theme.field));
         assert_eq!(idle.value.fg, Some(theme.text_primary));
         assert_eq!(idle.placeholder.fg, Some(theme.text_muted));
@@ -2368,7 +2423,7 @@ mod tests {
             "idle gutter is reserved, fg=bg"
         );
 
-        let nav = system.input_recipe(ControlState::Focused, false);
+        let nav = system.input_recipe(ControlState::Focused, false, false);
         assert!(
             !nav.border.add_modifier.contains(Modifier::UNDERLINED),
             "nav-focus does not underline"
@@ -2378,7 +2433,7 @@ mod tests {
             Some(theme.focus)
         );
 
-        let editing = system.input_recipe(ControlState::Focused, true);
+        let editing = system.input_recipe(ControlState::Focused, false, true);
         assert!(
             editing.border.add_modifier.contains(Modifier::UNDERLINED),
             "editing underlines"
@@ -2407,15 +2462,49 @@ mod tests {
                     .underline_color(custom_underline),
             ),
         );
-        let custom_editing = custom.input_recipe(ControlState::Focused, true);
+        let custom_editing = custom.input_recipe(ControlState::Focused, false, true);
         assert_eq!(custom_editing.border.fg, Some(custom_accent));
         assert_eq!(
             custom_editing.border.underline_color,
             Some(custom_underline)
         );
 
-        let hovered = system.input_recipe(ControlState::Hovered, false);
+        let hovered = system.input_recipe(ControlState::Hovered, false, false);
         assert_eq!(hovered.fill.bg, Some(theme.field_hover));
+
+        let bad = system.input_recipe(ControlState::Default, true, false);
+        assert!(
+            !bad.border.add_modifier.contains(Modifier::UNDERLINED),
+            "idle invalid does not underline"
+        );
+        assert_eq!(
+            bad.border, idle.border,
+            "idle invalid border matches resting"
+        );
+
+        let nav_bad = system.input_recipe(ControlState::Focused, true, false);
+        assert!(
+            !nav_bad.border.add_modifier.contains(Modifier::UNDERLINED),
+            "input_recipe(Focused, true, false) must not be UNDERLINED"
+        );
+        assert_eq!(
+            nav_bad.border, nav.border,
+            "idle invalid border matches nav"
+        );
+
+        let editing_bad = system.input_recipe(ControlState::Focused, true, true);
+        assert!(
+            editing_bad
+                .border
+                .add_modifier
+                .contains(Modifier::UNDERLINED),
+            "input_recipe(Focused, true, true) is underlined: editing wins"
+        );
+        assert_eq!(
+            editing_bad.border.underline_color,
+            Some(theme.accent),
+            "editing invalid stays accent, not error"
+        );
     }
 
     #[test]
@@ -2436,35 +2525,6 @@ mod tests {
             system.elevation(Elevation::Surface),
             system.elevation(Elevation::Raised)
         );
-    }
-
-    #[test]
-    fn panel_recipe_fill_matches_surface_for_every_elevation_and_chrome() {
-        let system = DesignSystem::junie();
-        let elevations = [
-            Elevation::Canvas,
-            Elevation::Surface,
-            Elevation::Raised,
-            Elevation::Overlay,
-        ];
-        let emphases = [
-            PanelChrome::Normal,
-            PanelChrome::Focused,
-            PanelChrome::Danger,
-        ];
-
-        for elevation in elevations {
-            for emphasis in emphases {
-                let recipe = system.panel_recipe(emphasis, elevation);
-                assert_eq!(
-                    recipe.fill,
-                    Some(recipe.surface),
-                    "fill follows the resolved {} plane for {emphasis:?}",
-                    elevation.id()
-                );
-                assert_eq!(recipe.fill, Some(system.elevation(elevation)));
-            }
-        }
     }
 
     #[test]

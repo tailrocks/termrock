@@ -8,17 +8,19 @@
 //! `termrock::scroll` (scrollbar paint, `TailScroll`, dialog dual-axis) remain
 //! available; this module owns **policy**: follow/pause, anchors, chaining,
 //! visible ranges, and new-content indication.
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers, MouseEvent},
+    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent, MouseEventKind},
     interaction::{NavigationMove, PageMove, UiIntent},
     perf::{
         FollowMode, NewContentIndicator, ScrollAnchor, ScrollAnchorKind,
         pause_follow_on_user_scroll,
     },
     scroll::{ScrollAxis, apply_delta_u16, max_offset},
-    style::DesignSystem,
+    style::{DesignSystem, Role},
+    text::take_display_cols,
 };
 
 /// Scrollbar visibility policy.
@@ -73,6 +75,12 @@ impl ScrollOutcome {
     #[must_use]
     pub const fn consumed(self) -> bool {
         matches!(self, Self::Scrolled | Self::FollowChanged)
+    }
+
+    /// Parent should try chaining.
+    #[must_use]
+    pub const fn chains(self) -> bool {
+        matches!(self, Self::ChainToParent)
     }
 }
 
@@ -217,6 +225,12 @@ impl ScrollAreaState {
             }
         }
     }
+
+    /// Notify horizontal content growth (no follow-tail semantics by default).
+    pub fn on_content_grown_x(&mut self, _appended: u64) {
+        self.clamp();
+    }
+
     fn stick_to_tail_y(&mut self) {
         self.offset_y = max_offset(self.content_h as usize, self.viewport_h as usize) as u16;
         self.anchor = Some(ScrollAnchor::from_end(0));
@@ -292,9 +306,27 @@ impl ScrollAreaState {
     }
 
     #[must_use]
+    /// Content width.
+    pub const fn content_w(&self) -> u16 {
+        self.content_w
+    }
+
+    #[must_use]
     /// Viewport height.
     pub const fn viewport_h(&self) -> u16 {
         self.viewport_h
+    }
+
+    #[must_use]
+    /// Viewport width.
+    pub const fn viewport_w(&self) -> u16 {
+        self.viewport_w
+    }
+
+    #[must_use]
+    /// Follow mode.
+    pub const fn follow_mode(&self) -> FollowMode {
+        self.follow
     }
 
     #[must_use]
@@ -302,6 +334,19 @@ impl ScrollAreaState {
     pub const fn new_content(&self) -> NewContentIndicator {
         self.indicator
     }
+
+    #[must_use]
+    /// Nesting chain policy.
+    pub const fn chain_policy(&self) -> ScrollChain {
+        self.chain
+    }
+
+    #[must_use]
+    /// Current anchor, if any.
+    pub const fn anchor(&self) -> Option<&ScrollAnchor> {
+        self.anchor.as_ref()
+    }
+
     /// Visible vertical half-open range `[start, end)` in content rows.
     #[must_use]
     pub fn visible_range_y(&self) -> VisibleRange {
@@ -314,6 +359,20 @@ impl ScrollAreaState {
             .min(u64::from(self.content_h));
         VisibleRange { start, end }
     }
+
+    /// Visible horizontal half-open range in content columns.
+    #[must_use]
+    pub fn visible_range_x(&self) -> VisibleRange {
+        if self.viewport_w == 0 || self.content_w == 0 {
+            return VisibleRange::empty();
+        }
+        let start = u64::from(self.offset_x);
+        let end = start
+            .saturating_add(u64::from(self.viewport_w))
+            .min(u64::from(self.content_w));
+        VisibleRange { start, end }
+    }
+
     /// Whether vertical content overflows the viewport.
     #[must_use]
     pub fn overflows_y(&self) -> bool {
@@ -409,7 +468,7 @@ impl ScrollAreaState {
     }
 
     fn pause_follow_user(&mut self) {
-        self.follow = pause_follow_on_user_scroll();
+        self.follow = pause_follow_on_user_scroll(self.follow);
     }
 
     /// Scroll by signed deltas (negative = up/left). Pauses follow on Y motion.
@@ -495,6 +554,12 @@ impl ScrollAreaState {
         self.follow = FollowMode::Paused;
         self.capture_from_end_anchor();
     }
+
+    /// Resume follow (jumps to tail).
+    pub fn resume_follow(&mut self) {
+        self.follow_tail();
+    }
+
     #[must_use]
     /// Following tail.
     pub const fn is_following(&self) -> bool {
@@ -606,6 +671,7 @@ impl ScrollAreaState {
 pub struct ScrollArea<'a> {
     tokens: &'a DesignSystem,
     bar: ScrollBarVisibility,
+    show_new_content: bool,
     focused: bool,
     hovered: bool,
 }
@@ -617,9 +683,24 @@ impl<'a> ScrollArea<'a> {
         Self {
             tokens,
             bar: ScrollBarVisibility::Auto,
+            show_new_content: true,
             focused: false,
             hovered: false,
         }
+    }
+
+    /// Bar policy.
+    #[must_use]
+    pub const fn bar(mut self, bar: ScrollBarVisibility) -> Self {
+        self.bar = bar;
+        self
+    }
+
+    /// Whether to paint new-content indicator when paused+unseen.
+    #[must_use]
+    pub const fn show_new_content(mut self, show: bool) -> Self {
+        self.show_new_content = show;
+        self
     }
 
     /// Keyboard owner: the thumb uses the primary rung.
@@ -671,7 +752,7 @@ impl<'a> ScrollArea<'a> {
     }
 
     /// Paint vertical/horizontal scrollbar gutters when policy requires.
-    pub fn paint_bars(&self, area: Rect, buffer: &mut Buffer, state: &ScrollAreaState) {
+    pub fn render_bars(&self, area: Rect, buffer: &mut Buffer, state: &ScrollAreaState) {
         if area.is_empty() {
             return;
         }
@@ -685,7 +766,7 @@ impl<'a> ScrollArea<'a> {
             } else {
                 area.height
             };
-            crate::scroll::paint_scrollbar(
+            crate::scroll::render_scrollbar(
                 buffer,
                 Rect::new(area.right().saturating_sub(1), area.y, 1, bar_h),
                 crate::scroll::ScrollbarSpec::new(
@@ -708,7 +789,7 @@ impl<'a> ScrollArea<'a> {
             } else {
                 area.width
             };
-            crate::scroll::paint_scrollbar(
+            crate::scroll::render_scrollbar(
                 buffer,
                 Rect::new(area.x, area.bottom().saturating_sub(1), bar_w, 1),
                 crate::scroll::ScrollbarSpec::new(
@@ -725,12 +806,24 @@ impl<'a> ScrollArea<'a> {
             );
         }
     }
+
+    /// Paint new-content indicator with a structural down cue and warning role.
+    pub fn render_new_content(&self, area: Rect, buffer: &mut Buffer, state: &ScrollAreaState) {
+        if !self.show_new_content || !state.indicator.visible || area.height == 0 {
+            return;
+        }
+        let style = self.tokens.style(Role::Warning);
+        let marker = "↓";
+        let label = format!("{marker} {} new", state.indicator.unseen);
+        let y = area.bottom().saturating_sub(1);
+        let text = take_display_cols(&label, usize::from(area.width));
+        buffer.set_stringn(area.x, y, &text, usize::from(area.width), style);
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::MouseEventKind;
     use crate::input::{KeyEvent, KeyModifiers};
     use crate::scroll::max_line_width;
     use ratatui_core::text::Line;
@@ -916,7 +1009,7 @@ mod tests {
         let mut buffer = Buffer::empty(area);
         ScrollArea::new(&system)
             .focused(true)
-            .paint_bars(area, &mut buffer, &state);
+            .render_bars(area, &mut buffer, &state);
         let gutter: Vec<&str> = (0..area.height)
             .map(|y| buffer[(area.right() - 1, y)].symbol())
             .collect();
@@ -941,7 +1034,7 @@ mod tests {
         state.set_viewport(10, 8);
         let area = Rect::new(0, 0, 10, 8);
         let mut buffer = Buffer::empty(area);
-        ScrollArea::new(&system).paint_bars(area, &mut buffer, &state);
+        ScrollArea::new(&system).render_bars(area, &mut buffer, &state);
         for y in 0..area.height {
             assert_eq!(buffer[(area.right() - 1, y)].symbol(), " ");
         }

@@ -1,4 +1,11 @@
-use ratatui_core::{buffer::Buffer, layout::Rect};
+use ratatui_core::{
+    backend::TestBackend,
+    buffer::Buffer,
+    layout::Rect,
+    style::{Color, Style},
+    terminal::Terminal,
+    text::{Line, Span},
+};
 
 use super::*;
 
@@ -14,7 +21,7 @@ fn vertical_thumb_moves_and_keeps_length() {
     let render = |offset| {
         let mut buffer = Buffer::empty(Rect::new(0, 0, 1, 10));
         let area = buffer.area;
-        paint_scrollbar(
+        render_scrollbar(
             &mut buffer,
             area,
             ScrollbarSpec::new(
@@ -38,7 +45,7 @@ fn vertical_thumb_moves_and_keeps_length() {
 fn block_style_only_changes_vertical_thumb() {
     let mut buffer = Buffer::empty(Rect::new(0, 0, 1, 5));
     let area = buffer.area;
-    paint_scrollbar(
+    render_scrollbar(
         &mut buffer,
         area,
         ScrollbarSpec::new(
@@ -57,7 +64,7 @@ fn scrollbar_uses_semantic_theme_roles() {
     let theme = system.junie_theme();
     let mut buffer = Buffer::empty(Rect::new(0, 0, 1, 5));
     let area = buffer.area;
-    paint_scrollbar(
+    render_scrollbar(
         &mut buffer,
         area,
         ScrollbarSpec::new(
@@ -75,6 +82,42 @@ fn scrollbar_uses_semantic_theme_roles() {
         theme.scrollbar_thumb(true, true).fg.unwrap()
     );
     assert_eq!(buffer[(0, 4)].fg, theme.scrollbar_track().fg.unwrap());
+}
+
+#[test]
+fn fixed_prefix_scroll_preserves_prefix_and_unicode_cells() {
+    let backend = TestBackend::new(8, 1);
+    let mut terminal = Terminal::new(backend).unwrap();
+    terminal
+        .draw(|frame| {
+            render_line_with_fixed_prefix_scroll(
+                frame,
+                Rect::new(0, 0, 8, 1),
+                0,
+                Line::from(vec![
+                    Span::styled("P:", Style::new().fg(Color::Green)),
+                    Span::raw("東京-tail"),
+                ]),
+                2,
+                2,
+            );
+        })
+        .unwrap();
+    let buffer = terminal.backend().buffer();
+    assert_eq!(buffer[(0, 0)].symbol(), "P");
+    assert_eq!(buffer[(1, 0)].symbol(), ":");
+    assert_eq!(buffer[(2, 0)].symbol(), "京");
+}
+
+#[test]
+fn delta_helpers_clamp_or_preserve_overshoot_as_named() {
+    let mut clamped = 4;
+    apply_scroll_delta(&mut clamped, 10, 5, 12);
+    assert_eq!(clamped, 7);
+    let mut free = 4;
+    apply_scroll_delta_unclamped(&mut free, 10);
+    assert_eq!(free, 14);
+    assert_eq!(clamp_scroll_offset(12, 5, &mut free), 7);
 }
 
 #[test]

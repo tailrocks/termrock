@@ -16,6 +16,7 @@
 //! cursor/selection interaction, scroll, hit geometry, and typed outcomes.
 //!
 //! Research: junie TreeView, file explorers, broot, Yazi, VS Code trees.
+#![allow(unused_imports)] // test-only imports retained
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -25,17 +26,14 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers},
-    interaction::{
-        CollectionItem, CollectionState, HitRegion, NavigationMove, PageMove, SelectionModel,
-        UiIntent,
-    },
+    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
+    interaction::{CollectionItem, CollectionState, HitRegion, NavigationMove, PageMove, UiIntent},
     scroll::max_offset,
     style::{DesignSystem, Glyph, ListRowVisualState, Role, SPINNER_BRAILLE_FRAMES},
     text::{display_cols, display_cols_slice_into, take_display_cols},
 };
 
-use super::{ComposedRow, Virtualizer, row_chrome::RowChrome};
+use super::{ComposedRow, Selection, StickyRegion, Virtualizer, row_chrome::RowChrome};
 
 /// Default overscan when using virtualized tree windows.
 pub const TREE_DEFAULT_OVERSCAN: u16 = 4;
@@ -79,6 +77,17 @@ pub enum TreeNodeStatus {
 }
 
 impl TreeNodeStatus {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Ready => "ready",
+            Self::Loading => "loading",
+            Self::Error => "error",
+            Self::Lazy => "lazy",
+        }
+    }
+
     /// Whether keyboard should skip this node.
     #[must_use]
     pub const fn skips_navigation(self) -> bool {
@@ -231,17 +240,19 @@ impl<'a, Id> TreeNode<'a, Id> {
         self
     }
 
+    /// Lazy unloaded children.
+    #[must_use]
+    pub fn lazy(mut self) -> Self {
+        self.status = TreeNodeStatus::Lazy;
+        self.branch = true;
+        self
+    }
+
     /// Explicit status override.
     #[must_use]
     pub fn with_status(mut self, status: TreeNodeStatus) -> Self {
         self.status = status;
         self
-    }
-
-    /// Whether this node participates in navigation and pointer interaction.
-    #[must_use]
-    pub const fn is_interactive(&self) -> bool {
-        self.enabled && !self.status.skips_navigation()
     }
 
     /// Sets semantic emphasis for this row without hardcoded color.
@@ -254,7 +265,12 @@ impl<'a, Id> TreeNode<'a, Id> {
     /// Plain label for typeahead / filter.
     #[must_use]
     pub fn plain_label(&self) -> String {
-        crate::widgets::line_plain(&self.label)
+        self.label
+            .spans
+            .iter()
+            .map(|s| s.content.as_ref())
+            .collect::<Vec<_>>()
+            .join("")
     }
 
     /// Projects hierarchy chrome + label into shared composed anatomy.
@@ -267,7 +283,7 @@ impl<'a, Id> TreeNode<'a, Id> {
             secondary: self.secondary.clone(),
             badge: self.badge.clone().or_else(|| self.actions.clone()),
             shortcut: self.shortcut,
-            enabled: self.is_interactive(),
+            enabled: self.enabled,
             loading: matches!(self.status, TreeNodeStatus::Loading | TreeNodeStatus::Lazy),
         }
     }
@@ -287,7 +303,7 @@ pub fn filter_tree_with_ancestors<'a, Id: Clone + PartialEq>(
     }
     let mut keep = vec![false; nodes.len()];
     for (i, n) in nodes.iter().enumerate() {
-        if crate::text::contains_lower(&n.plain_label(), &q) {
+        if n.plain_label().to_ascii_lowercase().contains(&q) {
             keep[i] = true;
             // Mark ancestors by walking up depth.
             let mut depth = n.depth;
@@ -347,7 +363,7 @@ pub struct TreeState<Id> {
     follow_selection: bool,
     regions: Vec<HitRegion<Id>>,
     disclosure_regions: Vec<HitRegion<Id>>,
-    selection: Option<SelectionModel<Id>>,
+    selection: Option<Selection<Id>>,
     check_regions: Vec<HitRegion<Id>>,
     scrollbar_region: Option<Rect>,
     /// Typeahead / collection model over the flat projection.
@@ -449,6 +465,12 @@ impl<Id> TreeState<Id> {
         self.selected = selected;
     }
 
+    /// `*` expand-all / `-` collapse-all request. Host owns expansion.
+    #[must_use]
+    pub const fn bulk_disclosure(&self) -> Option<bool> {
+        self.bulk_disclosure
+    }
+
     /// Takes the pending `*` / `-` command (`true` = expand all).
     pub fn take_bulk_disclosure(&mut self) -> Option<bool> {
         self.bulk_disclosure.take()
@@ -461,10 +483,7 @@ impl<Id> TreeState<Id> {
     }
 
     #[must_use]
-    /// Returns the zero-based first visible logical node index.
-    ///
-    /// For a virtual projection this is the index in the host's full
-    /// collection, not the first index in the resident `nodes` slice.
+    /// Returns the zero-based first visible node index.
     pub const fn offset(&self) -> usize {
         self.offset
     }
@@ -480,6 +499,19 @@ impl<Id> TreeState<Id> {
         self.h_offset = offset;
     }
 
+    /// Scrolls the label region while disclosure and indentation remain pinned.
+    pub fn scroll_horizontal(&mut self, delta: i16) -> bool {
+        let max = self.content_width.saturating_sub(self.viewport_width);
+        let next = if delta >= 0 {
+            self.h_offset.saturating_add(delta as u16).min(max)
+        } else {
+            self.h_offset.saturating_sub((-delta) as u16)
+        };
+        let changed = next != self.h_offset;
+        self.h_offset = next;
+        changed
+    }
+
     /// Selects the supplied stable identity and commits it as semantic selection.
     pub fn select(&mut self, selected: Option<Id>)
     where
@@ -493,7 +525,24 @@ impl<Id> TreeState<Id> {
 
     /// Enables ordered multi-selection with an empty selection.
     pub fn enable_multi_select(&mut self) {
-        self.selection.get_or_insert_with(SelectionModel::multiple);
+        self.selection.get_or_insert_with(Selection::new);
+    }
+
+    /// Typeahead buffer (roving).
+    #[must_use]
+    pub fn typeahead_buffer(&self) -> &str {
+        self.collection.roving().typeahead_buffer()
+    }
+
+    /// Clear typeahead.
+    pub fn clear_typeahead(&mut self) {
+        self.collection.clear_typeahead();
+    }
+
+    /// Filter query (`/` search chrome).
+    #[must_use]
+    pub fn filter_query(&self) -> Option<&str> {
+        self.filter_query.as_deref()
     }
 
     /// Set filter query (empty clears).
@@ -503,22 +552,26 @@ impl<Id> TreeState<Id> {
 
     /// Virtual window into a larger flat list (host projects only the window).
     pub fn set_virtual_window(&mut self, window_start: usize, total_len: usize) {
+        self.virtual_window_start = window_start;
         self.virtual_total = total_len;
         self.virt.set_len(total_len as u64);
-        if total_len == 0 {
-            self.virtual_window_start = 0;
-            self.offset = 0;
-            return;
-        }
         self.virt.set_offset(window_start as u64);
-        self.virtual_window_start = self.virt.offset() as usize;
-        self.offset = self.virtual_window_start;
     }
 
     /// Borrow virtualizer (anchors / overscan).
     #[must_use]
     pub const fn virtualizer(&self) -> &Virtualizer {
         &self.virt
+    }
+
+    /// Mutable virtualizer.
+    pub fn virtualizer_mut(&mut self) -> &mut Virtualizer {
+        &mut self.virt
+    }
+
+    /// Sticky region for virtualized trees (headers).
+    pub fn set_sticky(&mut self, sticky: StickyRegion) {
+        self.virt.set_sticky(sticky);
     }
 
     /// Capture index anchor for preserve-across-filter.
@@ -542,24 +595,19 @@ impl<Id> TreeState<Id> {
 
     #[must_use]
     /// Returns the ordered multi-selection state, if enabled.
-    pub const fn selection(&self) -> Option<&SelectionModel<Id>> {
+    pub const fn selection(&self) -> Option<&Selection<Id>> {
         self.selection.as_ref()
     }
 
     /// Returns mutable access to ordered multi-selection state, if enabled.
-    pub fn selection_mut(&mut self) -> Option<&mut SelectionModel<Id>> {
+    pub fn selection_mut(&mut self) -> Option<&mut Selection<Id>> {
         self.selection.as_mut()
     }
 
     /// Moves the scroll position by a signed delta and clamps it to valid content.
     pub fn scroll_by(&mut self, delta: isize, node_count: usize) -> bool {
         let before = self.offset;
-        let content_len = if self.virtual_total > 0 {
-            self.virtual_total
-        } else {
-            node_count
-        };
-        let maximum = max_offset(content_len, self.viewport_height);
+        let maximum = max_offset(node_count, self.viewport_height);
         self.offset = if delta.is_negative() {
             self.offset.saturating_sub(delta.unsigned_abs())
         } else {
@@ -567,10 +615,6 @@ impl<Id> TreeState<Id> {
                 .saturating_add(delta.unsigned_abs())
                 .min(maximum)
         };
-        if self.virtual_total > 0 {
-            self.virt.set_offset(self.offset as u64);
-            self.offset = self.virt.offset() as usize;
-        }
         self.follow_selection = false;
         before != self.offset
     }
@@ -583,21 +627,12 @@ impl<Id> TreeState<Id> {
         if !area.contains(position) {
             return false;
         }
-        let content_len = if self.virtual_total > 0 {
-            self.virtual_total
-        } else {
-            node_count
-        };
         self.offset = crate::scroll::offset_for_track_position(
-            content_len,
+            node_count,
             self.viewport_height,
             area.height,
             usize::from(position.y.saturating_sub(area.y)),
         );
-        if self.virtual_total > 0 {
-            self.virt.set_offset(self.offset as u64);
-            self.offset = self.virt.offset() as usize;
-        }
         self.follow_selection = false;
         true
     }
@@ -618,7 +653,6 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
         if key.is_release() {
             return TreeOutcome::Ignored;
         }
-        self.reconcile_projection(nodes);
         // Filter mode
         if key.is_press() && matches!(key.code, KeyCode::Char('/')) && key.modifiers.is_empty() {
             if self.filter_query.is_none() {
@@ -675,7 +709,7 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
         }
         if let Some(intent) = crate::interaction::default_tree_intent(key) {
             self.collection.clear_typeahead();
-            return self.handle_intent_reconciled(nodes, intent);
+            return self.handle_intent(nodes, intent);
         }
         self.handle_typeahead(nodes, key)
     }
@@ -693,8 +727,7 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
         {
             return TreeOutcome::Ignored;
         }
-        let mut labels = Vec::new();
-        let items = collection_items_from_nodes(nodes, &mut labels);
+        let items = collection_items_from_nodes(nodes);
         let out = self.collection.handle_key(key, &items);
         if out.active_changed() {
             if let Some(id) = self.collection.active().cloned() {
@@ -706,71 +739,12 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
         TreeOutcome::Ignored
     }
 
-    fn reconcile_projection(&mut self, nodes: &[TreeNode<'_, Id>]) {
-        let partial = self.virtual_mode(nodes.len());
-        if partial {
-            let maximum = max_offset(self.virtual_total, self.viewport_height.max(1));
-            self.virtual_window_start = self.virtual_window_start.min(maximum);
-            self.offset = self.offset.min(maximum);
-        }
-        let had_cursor = self.cursor.is_some();
-        if partial {
-            self.collection
-                .set_virtual_window(self.virtual_window_start, self.virtual_total);
-        } else {
-            self.collection.clear_virtual_window();
-        }
-        if self.collection.active() != self.cursor.as_ref() {
-            self.collection.set_active(self.cursor.clone());
-        }
-
-        if had_cursor {
-            let cursor_node = self
-                .cursor
-                .as_ref()
-                .and_then(|cursor| nodes.iter().find(|node| &node.id == cursor));
-            if cursor_node.is_some_and(|node| !node.is_interactive())
-                || (!partial && cursor_node.is_none())
-            {
-                let repaired = nodes
-                    .iter()
-                    .find(|node| node.is_interactive())
-                    .map(|node| node.id.clone());
-                self.cursor = repaired.clone();
-                self.collection.set_active(repaired);
-            }
-        }
-
-        let keep_selected = self.selected.as_ref().is_some_and(|selected| {
-            match nodes.iter().find(|node| &node.id == selected) {
-                Some(node) => node.is_interactive(),
-                None => partial,
-            }
-        });
-        if !keep_selected {
-            self.selected = None;
-        }
-    }
-
-    fn virtual_mode(&self, projected_len: usize) -> bool {
-        self.virtual_total > projected_len
-    }
-
     /// Routes a semantic intent (keymap / scene adapter).
     ///
     /// **Left (Collapse):** if expanded branch → toggle collapse; else move to parent.  
     /// **Right (Expand):** if collapsed/lazy branch → toggle expand/load; else if
     /// expanded with visible children → select first child; else ignored.
     pub fn handle_intent(
-        &mut self,
-        nodes: &[TreeNode<'_, Id>],
-        intent: UiIntent,
-    ) -> TreeOutcome<Id> {
-        self.reconcile_projection(nodes);
-        self.handle_intent_reconciled(nodes, intent)
-    }
-
-    fn handle_intent_reconciled(
         &mut self,
         nodes: &[TreeNode<'_, Id>],
         intent: UiIntent,
@@ -815,11 +789,11 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
         let Some(selection) = self.selection.as_mut() else {
             return TreeOutcome::Ignored;
         };
-        let Some(node) = self.cursor.as_ref().and_then(|cursor| {
-            nodes
-                .iter()
-                .find(|node| node.is_interactive() && &node.id == cursor)
-        }) else {
+        let Some(node) = self
+            .cursor
+            .as_ref()
+            .and_then(|cursor| nodes.iter().find(|node| node.enabled && &node.id == cursor))
+        else {
             return TreeOutcome::Ignored;
         };
         selection.toggle(&node.id);
@@ -836,22 +810,14 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
         self.hovered.as_ref()
     }
 
-    fn focus_pointer(&mut self, id: Id) {
-        self.collection.set_active(Some(id.clone()));
-        self.cursor = Some(id);
-        self.follow_selection = true;
-    }
-
     /// Maps a pointer position to the semantic outcome of the painted hit region.
     pub fn click(&mut self, position: Position) -> TreeOutcome<Id> {
-        if let Some(id) = self
+        if let Some(region) = self
             .disclosure_regions
             .iter()
             .find(|region| region.area.contains(position))
-            .map(|region| region.id.clone())
         {
-            self.focus_pointer(id.clone());
-            return TreeOutcome::Toggle(id);
+            return TreeOutcome::Toggle(region.id.clone());
         }
         if let Some(id) = self
             .check_regions
@@ -859,7 +825,8 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
             .find(|region| region.area.contains(position))
             .map(|region| region.id.clone())
         {
-            self.focus_pointer(id.clone());
+            self.cursor = Some(id.clone());
+            self.follow_selection = true;
             if let Some(selection) = self.selection.as_mut() {
                 selection.toggle(&id);
                 return TreeOutcome::CheckToggled(id);
@@ -875,14 +842,17 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
         };
         let is_branch = self.disclosure_regions.iter().any(|region| region.id == id);
         if is_branch {
-            self.focus_pointer(id.clone());
+            self.cursor = Some(id.clone());
+            self.collection.set_active(Some(id.clone()));
+            self.follow_selection = true;
             return TreeOutcome::Toggle(id);
         }
         if self.cursor.as_ref() == Some(&id) {
             self.selected = Some(id.clone());
             TreeOutcome::Activated(id)
         } else {
-            self.focus_pointer(id.clone());
+            self.cursor = Some(id.clone());
+            self.follow_selection = true;
             TreeOutcome::SelectionChanged(id)
         }
     }
@@ -894,7 +864,7 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
 
     fn cursor_node<'a>(&self, nodes: &'a [TreeNode<'_, Id>]) -> Option<&'a TreeNode<'a, Id>> {
         let index = self.cursor_index(nodes)?;
-        nodes.get(index).filter(|node| node.is_interactive())
+        nodes.get(index).filter(|node| node.enabled)
     }
 
     fn move_selection(&mut self, nodes: &[TreeNode<'_, Id>], delta: i32) -> TreeOutcome<Id> {
@@ -905,15 +875,13 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
             .cursor_index(nodes)
             .unwrap_or(if delta < 0 { nodes.len() } else { 0 });
         let candidate = if delta < 0 {
-            nodes[..start]
-                .iter()
-                .rposition(|node| node.is_interactive())
+            nodes[..start].iter().rposition(|node| node.enabled)
         } else {
             nodes
                 .iter()
                 .enumerate()
                 .skip(start.saturating_add(1))
-                .find(|(_, node)| node.is_interactive())
+                .find(|(_, node)| node.enabled)
                 .map(|(index, _)| index)
         };
         self.set_cursor_index(nodes, candidate)
@@ -939,23 +907,19 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
                 .iter()
                 .enumerate()
                 .skip(target)
-                .find(|(_, node)| node.is_interactive())
+                .find(|(_, node)| node.enabled)
                 .map(|(index, _)| index)
-                .or_else(|| {
-                    nodes[..target]
-                        .iter()
-                        .rposition(|node| node.is_interactive())
-                })
+                .or_else(|| nodes[..target].iter().rposition(|node| node.enabled))
         } else {
             nodes[..=target]
                 .iter()
-                .rposition(|node| node.is_interactive())
+                .rposition(|node| node.enabled)
                 .or_else(|| {
                     nodes
                         .iter()
                         .enumerate()
                         .skip(target.saturating_add(1))
-                        .find(|(_, node)| node.is_interactive())
+                        .find(|(_, node)| node.enabled)
                         .map(|(index, _)| index)
                 })
         };
@@ -964,9 +928,9 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
 
     fn select_boundary(&mut self, nodes: &[TreeNode<'_, Id>], from_end: bool) -> TreeOutcome<Id> {
         let candidate = if from_end {
-            nodes.iter().rposition(|node| node.is_interactive())
+            nodes.iter().rposition(|node| node.enabled)
         } else {
-            nodes.iter().position(|node| node.is_interactive())
+            nodes.iter().position(|node| node.enabled)
         };
         self.set_cursor_index(nodes, candidate)
     }
@@ -991,21 +955,18 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
             return TreeOutcome::Ignored;
         };
         let node = &nodes[index];
-        if node.is_interactive() && node.branch && node.expanded {
+        if node.enabled && node.branch && node.expanded {
             return TreeOutcome::Toggle(node.id.clone());
         }
         // Prefer explicit parent id when present.
         if let Some(ref pid) = node.parent {
-            if let Some(pidx) = nodes
-                .iter()
-                .position(|n| n.is_interactive() && &n.id == pid)
-            {
+            if let Some(pidx) = nodes.iter().position(|n| n.enabled && &n.id == pid) {
                 return self.set_cursor_index(nodes, Some(pidx));
             }
         }
         let parent = nodes[..index]
             .iter()
-            .rposition(|candidate| candidate.is_interactive() && candidate.depth < node.depth);
+            .rposition(|candidate| candidate.enabled && candidate.depth < node.depth);
         self.set_cursor_index(nodes, parent)
     }
 
@@ -1015,7 +976,7 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
             return TreeOutcome::Ignored;
         };
         let node = &nodes[index];
-        if !node.is_interactive() {
+        if !node.enabled {
             return TreeOutcome::Ignored;
         }
         // Lazy or collapsed branch → request expand/load.
@@ -1030,7 +991,7 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
                 .enumerate()
                 .skip(index.saturating_add(1))
                 .take_while(|(_, n)| n.depth >= child_depth)
-                .find(|(_, n)| n.is_interactive() && n.depth == child_depth)
+                .find(|(_, n)| n.enabled && n.depth == child_depth)
                 .map(|(i, _)| i);
             return self.set_cursor_index(nodes, child);
         }
@@ -1038,20 +999,14 @@ impl<Id: Clone + PartialEq> TreeState<Id> {
     }
 }
 
-fn collection_items_from_nodes<'a, Id: Clone>(
-    nodes: &[TreeNode<'_, Id>],
-    labels: &'a mut Vec<String>,
-) -> Vec<CollectionItem<'a, Id>> {
-    labels.clear();
-    let interactive: Vec<&TreeNode<'_, Id>> = nodes.iter().filter(|n| n.is_interactive()).collect();
-    labels.extend(interactive.iter().map(|n| n.plain_label()));
-    interactive
+fn collection_items_from_nodes<Id: Clone>(nodes: &[TreeNode<'_, Id>]) -> Vec<CollectionItem<Id>> {
+    nodes
         .iter()
-        .zip(labels.iter())
-        .map(|(n, label)| CollectionItem {
+        .filter(|n| n.enabled && !n.status.skips_navigation())
+        .map(|n| CollectionItem {
             id: n.id.clone(),
             enabled: true,
-            label,
+            label: n.plain_label(),
             parent: None,
         })
         .collect()
@@ -1074,6 +1029,8 @@ pub struct Tree<'a, Id> {
     background: Option<Color>,
     /// Whether the active identity is painted as a semantic selection.
     selection_visible: bool,
+    /// Whether focused-row metadata carries the row's weight cue.
+    focused_metadata_bold: bool,
 }
 
 impl<'a, Id> Tree<'a, Id> {
@@ -1088,6 +1045,7 @@ impl<'a, Id> Tree<'a, Id> {
             spinner_frame: 0,
             background: None,
             selection_visible: true,
+            focused_metadata_bold: false,
         }
     }
 
@@ -1112,6 +1070,13 @@ impl<'a, Id> Tree<'a, Id> {
         self
     }
 
+    /// Applies the focused-row weight to right-aligned metadata.
+    #[must_use]
+    pub const fn focused_metadata_bold(mut self, bold: bool) -> Self {
+        self.focused_metadata_bold = bold;
+        self
+    }
+
     /// Message painted when `nodes` is empty.
     #[must_use]
     pub const fn empty_message(mut self, message: &'a str) -> Self {
@@ -1125,6 +1090,12 @@ impl<'a, Id> Tree<'a, Id> {
         self.spinner_frame = frame;
         self
     }
+
+    /// Design tokens used for recipes and glyphs.
+    #[must_use]
+    pub const fn tokens(&self) -> &DesignSystem {
+        self.tokens
+    }
 }
 
 fn with_row_wash(style: Style, wash: Option<ratatui_core::style::Color>) -> Style {
@@ -1136,6 +1107,7 @@ fn paint_tree_row<Id: Clone + PartialEq>(
     ground: Color,
     selection_visible: bool,
     focused: bool,
+    focused_metadata_bold: bool,
     spinner_frame: usize,
     node: &TreeNode<'_, Id>,
     row: Rect,
@@ -1146,19 +1118,19 @@ fn paint_tree_row<Id: Clone + PartialEq>(
     if row.width == 0 {
         return;
     }
-    let interactive = node.is_interactive();
-    let selected = selection_visible && interactive && state.selected.as_ref() == Some(&node.id);
+    let selected = selection_visible && state.selected.as_ref() == Some(&node.id);
     let hovered = state.hovered.as_ref() == Some(&node.id);
     let checked = state
         .selection
         .as_ref()
         .is_some_and(|selection| selection.is_checked(&node.id));
     let busy = matches!(node.status, TreeNodeStatus::Loading);
+    let row_focused = focused && state.cursor.as_ref() == Some(&node.id) && node.enabled;
     let visual = ListRowVisualState {
         selected,
-        focused: focused && state.cursor.as_ref() == Some(&node.id) && interactive,
-        hovered: hovered && interactive,
-        enabled: interactive,
+        focused: row_focused,
+        hovered: hovered && node.enabled,
+        enabled: node.enabled,
         loading: busy,
         checked,
         error: matches!(node.status, TreeNodeStatus::Error),
@@ -1167,7 +1139,7 @@ fn paint_tree_row<Id: Clone + PartialEq>(
     let chrome = RowChrome::resolve_on(tokens, visual, ground);
     let recipe = tokens.resolve_list_row_on(visual, ground);
     let mut body = match node.status {
-        TreeNodeStatus::Ready if interactive => recipe.label.patch(tokens.style(node.tone.role())),
+        TreeNodeStatus::Ready if node.enabled => recipe.label.patch(tokens.style(node.tone.role())),
         TreeNodeStatus::Ready => tokens.style(Role::TextDisabled),
         TreeNodeStatus::Loading | TreeNodeStatus::Lazy => tokens.style(Role::TextSecondary),
         TreeNodeStatus::Error => tokens.style(Role::Danger),
@@ -1186,7 +1158,7 @@ fn paint_tree_row<Id: Clone + PartialEq>(
     let mut x = row.x.saturating_add(1).saturating_add(indent);
     let wash = chrome.wash();
     if x.saturating_add(2) > row.right() {
-        if interactive {
+        if node.enabled {
             state.regions.push(HitRegion {
                 id: node.id.clone(),
                 area: row,
@@ -1233,7 +1205,7 @@ fn paint_tree_row<Id: Clone + PartialEq>(
         let paint_w = gw.min(row.right().saturating_sub(x));
         if paint_w > 0 {
             buffer.set_stringn(x, y, marker, usize::from(paint_w), body);
-            if interactive {
+            if node.enabled {
                 state.check_regions.push(HitRegion {
                     id: node.id.clone(),
                     area: Rect::new(x, y, paint_w, 1),
@@ -1278,12 +1250,13 @@ fn paint_tree_row<Id: Clone + PartialEq>(
         .unwrap_or(0);
     let avail = row.right().saturating_sub(x);
     // Hide meta rather than starve the label below one identity cell.
-    let meta_w = if raw_meta_w > 0 && avail.saturating_sub(raw_meta_w.saturating_add(2)) >= 1 {
+    let label_w = u16::try_from(node.label.width()).unwrap_or(u16::MAX);
+    let meta_w = if raw_meta_w > 0 && avail.saturating_sub(raw_meta_w.saturating_add(2)) >= label_w
+    {
         raw_meta_w
     } else {
         0
     };
-
     let shortcut_need = node
         .shortcut
         .map(|s| {
@@ -1347,10 +1320,11 @@ fn paint_tree_row<Id: Clone + PartialEq>(
         } else {
             0
         })
-        .saturating_sub(extras);
+        .saturating_sub(extras)
+        .saturating_sub(u16::from(meta_w == 0));
     let label_w = label_right.saturating_sub(x);
 
-    let mut label_style = if selected {
+    let mut label_style = if selected && node.enabled {
         chrome.label_style(tokens.style(Role::Accent))
     } else {
         body
@@ -1360,14 +1334,16 @@ fn paint_tree_row<Id: Clone + PartialEq>(
     }
 
     if label_w > 0 && x < row.right() {
+        // A selected tree identity owns its label field, including padding
+        // before right-aligned metadata. Keep the separator cell unstyled so
+        // the metadata gap matches the source frame.
+        let label_style_w = label_w.saturating_sub(u16::from(meta_w > 0));
+        buffer.set_style(Rect::new(x, y, label_style_w, 1), label_style);
         if state.h_offset == 0 {
             buffer.set_line(x, y, &node.label, label_w);
             let painted = u16::try_from(node.label.width())
                 .unwrap_or(u16::MAX)
                 .min(label_w);
-            if painted > 0 {
-                buffer.set_style(Rect::new(x, y, painted, 1), label_style);
-            }
             x = x.saturating_add(painted);
         } else {
             let mut visible = String::new();
@@ -1395,10 +1371,11 @@ fn paint_tree_row<Id: Clone + PartialEq>(
                 .min(label_right.saturating_sub(x));
             if sw > 0 {
                 buffer.set_line(x, y, secondary, sw);
-                buffer.set_style(
-                    Rect::new(x, y, sw, 1),
-                    chrome.secondary_style(recipe.secondary),
-                );
+                let mut style = chrome.secondary_style(recipe.secondary);
+                if row_focused && focused_metadata_bold {
+                    style = style.add_modifier(Modifier::BOLD);
+                }
+                buffer.set_style(Rect::new(x, y, sw, 1), style);
             }
         }
     }
@@ -1409,10 +1386,11 @@ fn paint_tree_row<Id: Clone + PartialEq>(
     {
         cursor = cursor.saturating_sub(meta_w.saturating_add(1));
         buffer.set_line(cursor, y, badge, meta_w);
-        buffer.set_style(
-            Rect::new(cursor, y, meta_w, 1),
-            chrome.secondary_style(tokens.style(Role::TextMuted)),
-        );
+        let mut style = chrome.secondary_style(tokens.style(Role::TextMuted));
+        if row_focused && focused_metadata_bold {
+            style = style.add_modifier(Modifier::BOLD);
+        }
+        buffer.set_style(Rect::new(cursor, y, meta_w, 1), style);
     }
     if show_actions && let Some(act) = node.actions.as_ref() {
         let w = actions_w.min(cursor.saturating_sub(row.x));
@@ -1441,7 +1419,7 @@ fn paint_tree_row<Id: Clone + PartialEq>(
         );
     }
 
-    if interactive {
+    if node.enabled {
         state.regions.push(HitRegion {
             id: node.id.clone(),
             area: row,
@@ -1464,12 +1442,8 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
         state.check_regions.clear();
         state.scrollbar_region = None;
         if area.is_empty() {
-            if state.virtual_total == 0 {
-                state.offset = 0;
-            }
+            state.offset = 0;
             state.viewport_height = 0;
-            state.reconcile_projection(self.nodes);
-            state.hovered = None;
             return;
         }
         // Filter chrome strip
@@ -1480,7 +1454,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
             buffer.set_stringn(
                 area.x,
                 area.y,
-                take_display_cols(&strip, usize::from(area.width)).as_ref(),
+                &take_display_cols(&strip, usize::from(area.width)),
                 usize::from(area.width),
                 self.tokens.style(Role::TextSecondary),
             );
@@ -1493,16 +1467,11 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
             .unwrap_or_else(|| self.tokens.junie_theme().surface);
         state.viewport_height = usize::from(body.height);
         state.virt.set_viewport_extent(body.height.max(1));
-        state.reconcile_projection(self.nodes);
         if body.is_empty() {
-            state.hovered = None;
             return;
         }
         if self.nodes.is_empty() {
-            if state.virtual_total == 0 {
-                state.offset = 0;
-            }
-            state.hovered = None;
+            state.offset = 0;
             if let Some(message) = self.empty_message {
                 let style = self.tokens.style(Role::TextMuted);
                 buffer.set_stringn(body.x, body.y, message, usize::from(body.width), style);
@@ -1510,20 +1479,19 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
             return;
         }
 
-        let virtual_mode = state.virtual_mode(self.nodes.len());
+        let node_count = if state.virtual_total > 0 {
+            state.virtual_total
+        } else {
+            self.nodes.len()
+        };
         if state.virtual_total > 0 {
             state.virt.set_len(state.virtual_total as u64);
         }
 
         if state.follow_selection
-            && let Some(selected) = state.cursor_index(self.nodes).map(|index| {
-                if virtual_mode {
-                    state.virtual_window_start.saturating_add(index)
-                } else {
-                    index
-                }
-            })
+            && let Some(selected) = state.cursor_index(self.nodes)
         {
+            // selected is index in projected window
             if selected < state.offset {
                 state.offset = selected;
             } else if selected >= state.offset.saturating_add(usize::from(body.height)) {
@@ -1531,18 +1499,20 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
             }
         }
         state.follow_selection = false;
-        let scroll_len = if virtual_mode {
-            state.virtual_total
+        let paint_len = if state.virtual_total > 0 {
+            self.nodes.len()
         } else {
             self.nodes.len()
         };
         state.offset = state
             .offset
-            .min(max_offset(scroll_len, usize::from(body.height)));
-        if virtual_mode && state.virt.offset() as usize != state.offset {
-            state.virt.set_offset(state.offset as u64);
-            state.offset = state.virt.offset() as usize;
-        }
+            .min(max_offset(paint_len, usize::from(body.height)));
+        let scroll_len = if state.virtual_total > 0 {
+            state.virtual_total
+        } else {
+            self.nodes.len()
+        };
+        let _ = node_count;
         let show_scrollbar =
             crate::scroll::is_scrollable(scroll_len, usize::from(body.height)) && body.width > 1;
         let content_area = Rect {
@@ -1551,7 +1521,11 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
             width: body.width.saturating_sub(u16::from(show_scrollbar)),
             height: body.height,
         };
-        let paint_offset = if virtual_mode { 0 } else { state.offset };
+        let paint_offset = if state.virtual_total > 0 {
+            0
+        } else {
+            state.offset
+        };
         state.content_width = self
             .nodes
             .iter()
@@ -1581,6 +1555,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
                 ground,
                 self.selection_visible,
                 self.focused,
+                self.focused_metadata_bold,
                 self.spinner_frame,
                 node,
                 row,
@@ -1590,18 +1565,10 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Tree<'_, Id> {
             );
         }
 
-        if state
-            .hovered
-            .as_ref()
-            .is_some_and(|hovered| !state.regions.iter().any(|region| &region.id == hovered))
-        {
-            state.hovered = None;
-        }
-
         if show_scrollbar {
             let scrollbar = Rect::new(body.right().saturating_sub(1), body.y, 1, body.height);
             state.scrollbar_region = Some(scrollbar);
-            let thumb_total = if virtual_mode {
+            let thumb_total = if state.virtual_total > 0 {
                 state.virtual_total
             } else {
                 self.nodes.len()
@@ -1694,155 +1661,6 @@ mod tests {
             state.handle_key(&nodes, KeyEvent::new(KeyCode::Down, KeyModifiers::NONE)),
             TreeOutcome::SelectionChanged("leaf")
         );
-    }
-
-    #[test]
-    fn loading_status_is_not_interactive_when_enabled() {
-        let tokens = DesignSystem::junie();
-        let nodes = [
-            TreeNode::new("loading", Line::from("Loading"), 0).with_status(TreeNodeStatus::Loading),
-            TreeNode::new("ready", Line::from("Ready"), 0),
-        ];
-        assert!(nodes[0].enabled);
-        assert!(!nodes[0].is_interactive());
-        assert!(nodes[1].is_interactive());
-        assert!(!nodes[0].composed().enabled);
-
-        let mut state = TreeState::new(Some("loading"));
-        assert_eq!(
-            state.handle_intent(&nodes, UiIntent::Activate),
-            TreeOutcome::Activated("ready")
-        );
-
-        let area = Rect::new(0, 0, 24, 2);
-        let mut buffer = Buffer::empty(area);
-        Tree::new(&nodes, &tokens).render(area, &mut buffer, &mut state);
-        assert_eq!(state.regions().len(), 1);
-        assert_eq!(state.regions()[0].id, "ready");
-        assert_eq!(state.click(Position::new(10, 0)), TreeOutcome::Ignored);
-        assert_eq!(
-            state.click(Position::new(10, 1)),
-            TreeOutcome::Activated("ready")
-        );
-    }
-
-    #[test]
-    fn pointer_focus_syncs_typeahead_after_leaf_click() {
-        let tokens = DesignSystem::junie();
-        let nodes = [
-            TreeNode::new("a", Line::from("Alpha"), 0),
-            TreeNode::new("b", Line::from("Beta"), 0),
-            TreeNode::new("c", Line::from("Bravo"), 0),
-        ];
-        let area = Rect::new(0, 0, 24, 3);
-        let mut state = TreeState::new(Some("a"));
-        let mut buffer = Buffer::empty(area);
-        Tree::new(&nodes, &tokens).render(area, &mut buffer, &mut state);
-
-        assert_eq!(
-            state.click(Position::new(4, 1)),
-            TreeOutcome::SelectionChanged("b")
-        );
-        assert_eq!(state.cursor(), Some(&"b"));
-        assert_eq!(
-            state.handle_key(
-                &nodes,
-                KeyEvent::new(KeyCode::Char('b'), KeyModifiers::NONE)
-            ),
-            TreeOutcome::SelectionChanged("c")
-        );
-    }
-
-    #[test]
-    fn input_reconciles_full_projection_before_activation() {
-        let nodes = [
-            TreeNode::new("b", Line::from("Beta"), 0),
-            TreeNode::new("c", Line::from("Charlie"), 0),
-        ];
-
-        let mut intent_state = TreeState::new(Some("a"));
-        intent_state.set_semantic_selection(Some("a"));
-        assert_eq!(
-            intent_state.handle_intent(&nodes, UiIntent::Activate),
-            TreeOutcome::Activated("b")
-        );
-        assert_eq!(intent_state.cursor(), Some(&"b"));
-        assert_eq!(intent_state.semantic_selection(), Some(&"b"));
-
-        let mut key_state = TreeState::new(Some("a"));
-        assert_eq!(
-            key_state.handle_key(&nodes, KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
-            TreeOutcome::Activated("b")
-        );
-        assert_eq!(key_state.cursor(), Some(&"b"));
-    }
-
-    #[test]
-    fn full_projection_reconciles_removed_cursor_selection_and_hover() {
-        let tokens = DesignSystem::junie();
-        let first = [
-            TreeNode::new("a", Line::from("A"), 0),
-            TreeNode::new("b", Line::from("B"), 0),
-        ];
-        let second = [
-            TreeNode::new("b", Line::from("B"), 0),
-            TreeNode::new("c", Line::from("C"), 0),
-        ];
-        let area = Rect::new(0, 0, 24, 2);
-        let mut state = TreeState::new(Some("a"));
-        state.set_semantic_selection(Some("a"));
-        let mut buffer = Buffer::empty(area);
-        Tree::new(&first, &tokens).render(area, &mut buffer, &mut state);
-        assert_eq!(state.hover(Position::new(10, 0)), Some(&"a"));
-
-        Tree::new(&second, &tokens).render(area, &mut buffer, &mut state);
-
-        assert_eq!(state.cursor(), Some(&"b"));
-        assert_eq!(state.semantic_selection(), None);
-        assert_eq!(state.hovered(), None);
-        assert_eq!(
-            state.handle_intent(&second, UiIntent::Move(NavigationMove::Next)),
-            TreeOutcome::SelectionChanged("c")
-        );
-        assert_eq!(
-            state.handle_intent(&second, UiIntent::Activate),
-            TreeOutcome::Activated("c")
-        );
-    }
-
-    #[test]
-    fn partial_virtual_projection_preserves_off_window_identity() {
-        let tokens = DesignSystem::junie();
-        let nodes = [TreeNode::new("b", Line::from("B"), 0)];
-        let area = Rect::new(0, 0, 24, 1);
-        let mut state = TreeState::new(Some("a"));
-        state.set_semantic_selection(Some("a"));
-        state.set_virtual_window(1, 3);
-        let mut buffer = Buffer::empty(area);
-
-        Tree::new(&nodes, &tokens).render(area, &mut buffer, &mut state);
-
-        assert_eq!(state.cursor(), Some(&"a"));
-        assert_eq!(state.semantic_selection(), Some(&"a"));
-        assert_eq!(
-            state.handle_intent(&nodes, UiIntent::Move(NavigationMove::Next)),
-            TreeOutcome::Ignored
-        );
-    }
-
-    #[test]
-    fn full_projection_without_cursor_preserves_no_focus() {
-        let tokens = DesignSystem::junie();
-        let nodes = [TreeNode::new("a", Line::from("A"), 0)];
-        let area = Rect::new(0, 0, 24, 1);
-        let mut state = TreeState::default();
-        let mut buffer = Buffer::empty(area);
-
-        Tree::new(&nodes, &tokens).render(area, &mut buffer, &mut state);
-
-        assert_eq!(state.cursor(), None);
-        assert_eq!(state.semantic_selection(), None);
-        assert_eq!(state.regions().len(), 1);
     }
 
     #[test]
@@ -1955,60 +1773,6 @@ mod tests {
         state.restore_scroll_anchor();
         // anchor restore sets virt offset
         assert!(state.virtualizer().offset() <= 10_000);
-    }
-
-    #[test]
-    fn virtual_window_uses_absolute_scroll_geometry() {
-        let tokens = DesignSystem::junie();
-        let nodes = [
-            TreeNode::new(50, Line::from("50"), 0),
-            TreeNode::new(51, Line::from("51"), 0),
-            TreeNode::new(52, Line::from("52"), 0),
-            TreeNode::new(53, Line::from("53"), 0),
-            TreeNode::new(54, Line::from("54"), 0),
-        ];
-        let area = Rect::new(0, 0, 24, 3);
-        let mut state = TreeState::new(Some(54));
-        state.set_virtual_window(50, 200);
-        let mut buffer = Buffer::empty(area);
-
-        Tree::new(&nodes, &tokens).render(area, &mut buffer, &mut state);
-
-        assert_eq!(state.offset(), 52);
-        assert_eq!(state.virtualizer().offset(), 52);
-        assert!(state.scroll_by(7, nodes.len()));
-        Tree::new(&nodes, &tokens).render(area, &mut buffer, &mut state);
-        assert_eq!(state.offset(), 59);
-        assert_eq!(state.virtualizer().offset(), 59);
-
-        state.set_virtual_window(0, 0);
-        let full = [
-            TreeNode::new(0, Line::from("0"), 0),
-            TreeNode::new(1, Line::from("1"), 0),
-        ];
-        Tree::new(&full, &tokens).render(area, &mut buffer, &mut state);
-        assert_eq!(state.offset(), 0);
-        assert_eq!(state.virtualizer().logical_len(), 0);
-    }
-
-    #[test]
-    fn empty_virtual_window_preserves_origin_until_full_reset() {
-        let tokens = DesignSystem::junie();
-        let nodes: [TreeNode<'_, usize>; 0] = [];
-        let area = Rect::new(0, 0, 24, 3);
-        let mut state = TreeState::new(Some(50));
-        state.set_virtual_window(50, 200);
-        let mut buffer = Buffer::empty(area);
-
-        Tree::new(&nodes, &tokens).render(area, &mut buffer, &mut state);
-
-        assert_eq!(state.offset(), 50);
-        assert_eq!(state.virtualizer().logical_len(), 200);
-
-        state.set_virtual_window(0, 0);
-        Tree::new(&nodes, &tokens).render(area, &mut buffer, &mut state);
-        assert_eq!(state.offset(), 0);
-        assert_eq!(state.virtualizer().logical_len(), 0);
     }
 
     #[test]

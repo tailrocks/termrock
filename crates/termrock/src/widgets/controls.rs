@@ -6,17 +6,26 @@
 //! [`Checkbox`] is the form-field boolean/tri-state control (label + description).
 //! Prefer [`crate::widgets::Toggle`] for sticky toolbar tools and
 //! [`Switch`] for settings On/Off.
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+use ratatui_core::{
+    buffer::Buffer,
+    layout::{Position, Rect},
+    style::Modifier,
+    widgets::StatefulWidget,
+};
 
 use crate::{
-    input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     interaction::{
-        SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, default_button_intent,
+        EventResult, SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent,
+        default_button_intent,
     },
     style::{
         ButtonRecipeVariant, ControlState, DesignSystem, ListRowVisualState, Role, VisualState,
     },
-    text::{display_cols, take_display_cols},
+    text::{display_cols, take_display_cols, truncate_cols},
 };
 
 // ── Checkbox ────────────────────────────────────────────────────────────────
@@ -54,6 +63,13 @@ impl CheckboxValue {
     pub const fn is_checked(self) -> bool {
         matches!(self, Self::Checked)
     }
+
+    /// Mixed.
+    #[must_use]
+    pub const fn is_indeterminate(self) -> bool {
+        matches!(self, Self::Indeterminate)
+    }
+
     /// From bool (no indeterminate).
     #[must_use]
     pub const fn from_bool(checked: bool) -> Self {
@@ -61,6 +77,16 @@ impl CheckboxValue {
             Self::Checked
         } else {
             Self::Unchecked
+        }
+    }
+
+    /// `Some(true/false)` when determinate; `None` when indeterminate.
+    #[must_use]
+    pub const fn as_bool(self) -> Option<bool> {
+        match self {
+            Self::Checked => Some(true),
+            Self::Unchecked => Some(false),
+            Self::Indeterminate => None,
         }
     }
 
@@ -112,6 +138,17 @@ pub enum CheckboxOutcome<Id> {
     },
 }
 
+impl<Id> CheckboxOutcome<Id> {
+    /// Convenience: checked flag when determinate change.
+    #[must_use]
+    pub const fn checked(&self) -> Option<bool> {
+        match self {
+            Self::ValueChanged { value, .. } => value.as_bool(),
+            Self::Ignored => None,
+        }
+    }
+}
+
 /// Paint geometry for a checkbox.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct CheckboxParts {
@@ -128,7 +165,7 @@ pub struct CheckboxParts {
 /// Checkbox state (interaction + projected value).
 ///
 /// Domain persistence is host-owned: apply [`CheckboxOutcome::ValueChanged`] to
-/// your model. Paint may optimistically mirror for UX.
+/// your model, then [`Self::set_value`]. Paint may optimistically mirror for UX.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct CheckboxState {
     /// Projected value.
@@ -186,9 +223,20 @@ impl CheckboxState {
         self.value.is_checked()
     }
 
+    /// Current value.
+    #[must_use]
+    pub const fn value(&self) -> CheckboxValue {
+        self.value
+    }
+
     /// Controlled set (bool).
     pub const fn set_checked(&mut self, checked: bool) {
         self.value = CheckboxValue::from_bool(checked);
+    }
+
+    /// Controlled set (tri-state).
+    pub const fn set_value(&mut self, value: CheckboxValue) {
+        self.value = value;
     }
 
     /// Focus.
@@ -215,6 +263,12 @@ impl CheckboxState {
     #[must_use]
     pub const fn can_activate(&self) -> bool {
         self.enabled && !self.read_only
+    }
+
+    /// Hit root.
+    #[must_use]
+    pub const fn region(&self) -> Option<Rect> {
+        self.region
     }
 
     fn apply_activate<Id: Clone>(&mut self, id: &Id) -> CheckboxOutcome<Id> {
@@ -266,6 +320,18 @@ impl CheckboxState {
             _ => CheckboxOutcome::Ignored,
         }
     }
+
+    /// EventResult wrapper.
+    pub fn handle_key_result<Id: Clone>(
+        &mut self,
+        key: KeyEvent,
+        id: &Id,
+    ) -> EventResult<CheckboxOutcome<Id>> {
+        match self.handle_key(key, id) {
+            CheckboxOutcome::Ignored => EventResult::ignored(),
+            other => EventResult::emit(other),
+        }
+    }
 }
 
 /// Form-field checkbox: box + label + optional description.
@@ -281,6 +347,8 @@ pub struct Checkbox<'a, Id> {
     label: &'a str,
     description: Option<&'a str>,
     system: &'a DesignSystem,
+    /// Force monochrome / no-color emphasis.
+    colorless: bool,
 }
 
 impl<'a, Id> Checkbox<'a, Id> {
@@ -292,6 +360,7 @@ impl<'a, Id> Checkbox<'a, Id> {
             label,
             description: None,
             system,
+            colorless: false,
         }
     }
 
@@ -300,6 +369,32 @@ impl<'a, Id> Checkbox<'a, Id> {
     pub const fn description(mut self, description: &'a str) -> Self {
         self.description = Some(description);
         self
+    }
+
+    /// Colorless emphasis (brackets always from glyph ASCII path when mono).
+    #[must_use]
+    pub const fn colorless(mut self, on: bool) -> Self {
+        self.colorless = on;
+        self
+    }
+
+    /// Preferred height: 2 when description present, else 1.
+    #[must_use]
+    pub fn preferred_height(&self) -> u16 {
+        if self.description.is_some_and(|d| !d.is_empty()) {
+            2
+        } else {
+            1
+        }
+    }
+
+    /// Preferred width for box + gap + label (description not included).
+    #[must_use]
+    pub fn preferred_width(&self, state: &CheckboxState) -> u16 {
+        let _ = state;
+        // gutter + `[✓]` + space + label
+        let label_w = display_cols(self.label) as u16;
+        5u16.saturating_add(label_w).max(5)
     }
 
     fn box_mark(&self, value: CheckboxValue) -> &'static str {
@@ -371,7 +466,7 @@ impl<'a, Id> Checkbox<'a, Id> {
         if label_x < area.right() && area.height > 0 && !self.label.is_empty() {
             let lw = area.right().saturating_sub(label_x);
             label_area = Rect::new(label_x, area.y, lw, 1);
-            let text = take_display_cols(self.label, usize::from(lw));
+            let text = truncate_cols(self.label, usize::from(lw), "…");
             buffer.set_stringn(
                 label_area.x,
                 label_area.y,
@@ -436,12 +531,37 @@ impl<'a, Id> Checkbox<'a, Id> {
         parts
     }
 
+    /// Paint + StatefulWidget path.
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut CheckboxState) {
+        let _ = self.paint(area, buffer, state);
+    }
+
+    /// Keys via widget (delegates to state with owned id).
+    pub fn handle_key(&self, state: &mut CheckboxState, key: KeyEvent) -> CheckboxOutcome<Id>
+    where
+        Id: Clone,
+    {
+        state.handle_key(key, &self.id)
+    }
+
     /// Mouse via widget.
     pub fn handle_mouse(&self, state: &mut CheckboxState, event: MouseEvent) -> CheckboxOutcome<Id>
     where
         Id: Clone,
     {
         state.handle_mouse(event, &self.id)
+    }
+
+    /// EventResult wrapper.
+    pub fn handle_key_result(
+        &self,
+        state: &mut CheckboxState,
+        key: KeyEvent,
+    ) -> EventResult<CheckboxOutcome<Id>>
+    where
+        Id: Clone,
+    {
+        state.handle_key_result(key, &self.id)
     }
 
     /// Semantic: checkbox control with checked/mixed state.
@@ -537,6 +657,17 @@ pub enum RadioGroupOrientation {
     Horizontal,
 }
 
+impl RadioGroupOrientation {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Vertical => "vertical",
+            Self::Horizontal => "horizontal",
+        }
+    }
+}
+
 /// One option in a [`RadioGroup`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct RadioOption<'a, Id> {
@@ -584,6 +715,16 @@ impl<'a, Id> RadioOption<'a, Id> {
     pub const fn enabled(mut self, on: bool) -> Self {
         self.enabled = on;
         self
+    }
+
+    /// Typeahead / a11y label.
+    #[must_use]
+    pub fn a11y(&self) -> &str {
+        if self.label.is_empty() {
+            "option"
+        } else {
+            self.label
+        }
     }
 }
 
@@ -647,7 +788,7 @@ pub struct RadioState<Id> {
     hovered: Option<Id>,
     /// Last parts.
     parts: Option<RadioGroupParts<Id>>,
-    /// Hit regions (same order as painted options).
+    /// Legacy hit regions (same order as painted options).
     regions: Vec<Rect>,
 }
 
@@ -684,6 +825,32 @@ impl<Id: Clone + PartialEq> RadioState<Id> {
         self.collection.active()
     }
 
+    /// Selection policy.
+    #[must_use]
+    pub const fn policy(&self) -> RadioSelectionPolicy {
+        self.policy
+    }
+
+    /// Surface focus.
+    #[must_use]
+    pub const fn is_surface_focused(&self) -> bool {
+        self.surface_focused
+    }
+
+    /// Parts from last paint.
+    #[must_use]
+    pub const fn parts(&self) -> Option<&RadioGroupParts<Id>> {
+        self.parts.as_ref()
+    }
+
+    /// Controlled select (also moves active when `Some`).
+    pub fn set_selected(&mut self, selected: Option<Id>) {
+        self.selected = selected.clone();
+        if selected.is_some() {
+            self.collection.set_active(selected);
+        }
+    }
+
     /// Surface focus.
     pub fn set_surface_focused(&mut self, on: bool) {
         self.surface_focused = on;
@@ -702,11 +869,22 @@ impl<Id: Clone + PartialEq> RadioState<Id> {
         self.invalid = on;
     }
 
+    /// Selection policy.
+    pub const fn set_policy(&mut self, policy: RadioSelectionPolicy) {
+        self.policy = policy;
+    }
+
     /// Builder-style policy.
     #[must_use]
     pub const fn policy_mode(mut self, policy: RadioSelectionPolicy) -> Self {
         self.policy = policy;
         self
+    }
+
+    /// Hit regions (legacy).
+    #[must_use]
+    pub fn regions(&self) -> &[Rect] {
+        &self.regions
     }
 }
 
@@ -728,6 +906,7 @@ pub struct RadioGroup<'a, Id> {
     orientation: RadioGroupOrientation,
     /// Auto-vertical when width &lt; this (0 = never). Default 28.
     stack_below: u16,
+    colorless: bool,
 }
 
 impl<'a, Id> RadioGroup<'a, Id> {
@@ -740,6 +919,7 @@ impl<'a, Id> RadioGroup<'a, Id> {
             legend: None,
             orientation: RadioGroupOrientation::Vertical,
             stack_below: 28,
+            colorless: false,
         }
     }
 
@@ -750,6 +930,13 @@ impl<'a, Id> RadioGroup<'a, Id> {
         self
     }
 
+    /// Orientation.
+    #[must_use]
+    pub const fn orientation(mut self, orientation: RadioGroupOrientation) -> Self {
+        self.orientation = orientation;
+        self
+    }
+
     /// Horizontal layout.
     #[must_use]
     pub const fn horizontal(mut self) -> Self {
@@ -757,10 +944,24 @@ impl<'a, Id> RadioGroup<'a, Id> {
         self
     }
 
+    /// Vertical layout (default).
+    #[must_use]
+    pub const fn vertical(mut self) -> Self {
+        self.orientation = RadioGroupOrientation::Vertical;
+        self
+    }
+
     /// Force vertical when width &lt; `cols` (0 disables).
     #[must_use]
     pub const fn stack_below(mut self, cols: u16) -> Self {
         self.stack_below = cols;
+        self
+    }
+
+    /// Force ASCII-style marks.
+    #[must_use]
+    pub const fn colorless(mut self, on: bool) -> Self {
+        self.colorless = on;
         self
     }
 
@@ -780,14 +981,15 @@ impl<'a, Id> RadioGroup<'a, Id> {
     /// `○` empty → `◎` the cursor is on it but nothing is committed → `●`
     /// chosen. The middle rung existed in the model and was never painted, so
     /// a roving cursor looked identical to a made choice (plans/015 Step 5).
-    fn mark(&self, selected: bool) -> &'static str {
+    fn mark(&self, selected: bool, previewed: bool) -> &'static str {
         // junie choice.rs: `(●)` / `( )`. Preview keeps the empty form so
         // FollowFocus (move = select) is the painted truth. No ASCII profile.
+        let _ = previewed;
         if selected { "(●)" } else { "( )" }
     }
 
-    fn mark_cols(&self, selected: bool) -> u16 {
-        display_cols(self.mark(selected)) as u16
+    fn mark_cols(&self, selected: bool, previewed: bool) -> u16 {
+        display_cols(self.mark(selected, previewed)) as u16
     }
 
     fn option_label_line(&self, opt: &RadioOption<'a, Id>, max_cols: usize) -> String {
@@ -800,10 +1002,10 @@ impl<'a, Id> RadioGroup<'a, Id> {
                 s.push(']');
             }
         }
-        take_display_cols(&s, max_cols).into_owned()
+        take_display_cols(&s, max_cols)
     }
 
-    fn collection_items(&self) -> Vec<crate::interaction::CollectionItem<'_, Id>>
+    fn collection_items(&self) -> Vec<crate::interaction::CollectionItem<Id>>
     where
         Id: Clone,
     {
@@ -812,7 +1014,7 @@ impl<'a, Id> RadioGroup<'a, Id> {
             .map(|o| crate::interaction::CollectionItem {
                 id: o.id.clone(),
                 enabled: o.enabled,
-                label: &o.label,
+                label: o.label.to_string(),
                 parent: None,
             })
             .collect()
@@ -902,7 +1104,10 @@ impl<'a, Id: Clone + PartialEq> RadioGroup<'a, Id> {
                     let visual = VisualState {
                         focused,
                         hovered,
-                        selected,
+                        // Selection is carried by the radio mark. The row's
+                        // selected state is reserved for a focused selection
+                        // tint, which Junie's choice widget does not apply.
+                        selected: false,
                         disabled: !state.enabled || !opt.enabled,
                         error: state.invalid && selected,
                         ..VisualState::default()
@@ -917,7 +1122,7 @@ impl<'a, Id: Clone + PartialEq> RadioGroup<'a, Id> {
                         1,
                         self.system.gutter(visual, style.bg.unwrap_or(bg), false),
                     );
-                    let mark = self.mark(selected);
+                    let mark = self.mark(selected, focused && !selected);
                     let mark_w = 3u16.min(area.width.saturating_sub(1)).max(1);
                     let mark_area = Rect::new(area.x.saturating_add(1), y, mark_w, 1);
                     let mark_style = if !state.enabled || !opt.enabled {
@@ -984,8 +1189,8 @@ impl<'a, Id: Clone + PartialEq> RadioGroup<'a, Id> {
                     let selected = state.selected.as_ref() == Some(&opt.id);
                     let focused = state.surface_focused && state.active() == Some(&opt.id);
                     let hovered = state.hovered.as_ref() == Some(&opt.id);
-                    let mark = self.mark(selected);
-                    let mark_w = self.mark_cols(selected);
+                    let mark = self.mark(selected, focused && !selected);
+                    let mark_w = self.mark_cols(selected, focused && !selected);
                     let label = self.option_label_line(opt, 24);
                     let label_w = display_cols(&label) as u16;
                     let w = mark_w
@@ -1060,6 +1265,11 @@ impl<'a, Id: Clone + PartialEq> RadioGroup<'a, Id> {
         style
     }
 
+    /// Prefer [`Self::paint`].
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut RadioState<Id>) {
+        let _ = self.paint(area, buffer, state);
+    }
+
     fn commit_selected(&self, state: &mut RadioState<Id>, id: Id) -> RadioOutcome<Id> {
         if let Some(opt) = self.option_by_id(&id) {
             if !opt.enabled {
@@ -1114,25 +1324,25 @@ impl<'a, Id: Clone + PartialEq> RadioGroup<'a, Id> {
                 KeyCode::Down | KeyCode::Right | KeyCode::Char('j' | 'J') => {
                     let _ = state.collection.move_next(&items);
                     if state.collection.active() != before.as_ref() {
-                        return self.after_cursor_move(state);
+                        return self.after_cursor_move(state, before);
                     }
                 }
                 KeyCode::Up | KeyCode::Left | KeyCode::Char('k' | 'K') => {
                     let _ = state.collection.move_previous(&items);
                     if state.collection.active() != before.as_ref() {
-                        return self.after_cursor_move(state);
+                        return self.after_cursor_move(state, before);
                     }
                 }
                 KeyCode::Home => {
                     let _ = state.collection.move_first(&items);
                     if state.collection.active() != before.as_ref() {
-                        return self.after_cursor_move(state);
+                        return self.after_cursor_move(state, before);
                     }
                 }
                 KeyCode::End => {
                     let _ = state.collection.move_last(&items);
                     if state.collection.active() != before.as_ref() {
-                        return self.after_cursor_move(state);
+                        return self.after_cursor_move(state, before);
                     }
                 }
                 _ => {}
@@ -1143,18 +1353,49 @@ impl<'a, Id: Clone + PartialEq> RadioGroup<'a, Id> {
         let before = state.collection.active().cloned();
         let _ = state.collection.handle_key(key, &items);
         if state.collection.active() != before.as_ref() {
-            return self.after_cursor_move(state);
+            return self.after_cursor_move(state, before);
         }
         RadioOutcome::Ignored
     }
 
-    fn after_cursor_move(&self, state: &mut RadioState<Id>) -> RadioOutcome<Id> {
+    fn after_cursor_move(
+        &self,
+        state: &mut RadioState<Id>,
+        _before: Option<Id>,
+    ) -> RadioOutcome<Id> {
         let Some(id) = state.collection.active().cloned() else {
             return RadioOutcome::Ignored;
         };
         match state.policy {
             RadioSelectionPolicy::FollowFocus => self.commit_selected(state, id),
             RadioSelectionPolicy::ActivateToSelect => RadioOutcome::CursorMoved { id },
+        }
+    }
+
+    /// Intent path.
+    pub fn handle_intent(&self, state: &mut RadioState<Id>, intent: UiIntent) -> RadioOutcome<Id> {
+        if !state.enabled || self.options.is_empty() {
+            return RadioOutcome::Ignored;
+        }
+        let items = self.collection_items();
+        let _ = state.collection.reconcile(&items);
+        match intent {
+            UiIntent::Activate | UiIntent::Submit | UiIntent::Toggle => {
+                if let Some(id) = state.collection.active().cloned() {
+                    self.commit_selected(state, id)
+                } else {
+                    RadioOutcome::Ignored
+                }
+            }
+            other => {
+                let before = state.collection.active().cloned();
+                let _ = state.collection.handle_intent(other, &items);
+                if state.collection.active() != before.as_ref() {
+                    self.after_cursor_move(state, before)
+                } else {
+                    RadioOutcome::Ignored
+                }
+            }
         }
     }
 
@@ -1188,6 +1429,18 @@ impl<'a, Id: Clone + PartialEq> RadioGroup<'a, Id> {
                 RadioOutcome::Ignored
             }
             _ => RadioOutcome::Ignored,
+        }
+    }
+
+    /// EventResult wrapper.
+    pub fn handle_key_result(
+        &self,
+        state: &mut RadioState<Id>,
+        key: KeyEvent,
+    ) -> EventResult<RadioOutcome<Id>> {
+        match self.handle_key(state, key) {
+            RadioOutcome::Ignored => EventResult::ignored(),
+            other => EventResult::emit(other),
         }
     }
 
@@ -1243,13 +1496,13 @@ impl<'a, Id: Clone + PartialEq> RadioGroup<'a, Id> {
 }
 
 impl<Id: Clone + PartialEq> RadioState<Id> {
-    fn collection_items(options: &[Id]) -> Vec<crate::interaction::CollectionItem<'_, Id>> {
+    fn collection_items(options: &[Id]) -> Vec<crate::interaction::CollectionItem<Id>> {
         options
             .iter()
             .map(|id| crate::interaction::CollectionItem {
                 id: id.clone(),
                 enabled: true,
-                label: "",
+                label: String::new(),
                 parent: None,
             })
             .collect()
@@ -1293,6 +1546,44 @@ impl<Id: Clone + PartialEq> RadioState<Id> {
         }
         RadioOutcome::Ignored
     }
+
+    /// Intent path (headless ids).
+    pub fn handle_intent(&mut self, intent: UiIntent, options: &[Id]) -> RadioOutcome<Id> {
+        if !self.enabled || options.is_empty() {
+            return RadioOutcome::Ignored;
+        }
+        self.surface_focused = true;
+        let items = Self::collection_items(options);
+        let _ = self.collection.reconcile(&items);
+        match intent {
+            UiIntent::Activate | UiIntent::Submit | UiIntent::Toggle => {
+                if let Some(id) = self.collection.active().cloned() {
+                    self.selected = Some(id.clone());
+                    RadioOutcome::Selected(id)
+                } else {
+                    RadioOutcome::Ignored
+                }
+            }
+            other => {
+                let before = self.collection.active().cloned();
+                let _ = self.collection.handle_intent(other, &items);
+                if self.collection.active() != before.as_ref() {
+                    if let Some(id) = self.collection.active().cloned() {
+                        return match self.policy {
+                            RadioSelectionPolicy::FollowFocus => {
+                                self.selected = Some(id.clone());
+                                RadioOutcome::Selected(id)
+                            }
+                            RadioSelectionPolicy::ActivateToSelect => {
+                                RadioOutcome::CursorMoved { id }
+                            }
+                        };
+                    }
+                }
+                RadioOutcome::Ignored
+            }
+        }
+    }
 }
 
 // ── Switch ──────────────────────────────────────────────────────────────────
@@ -1306,6 +1597,17 @@ pub enum SwitchRecipe {
     SettingsRow,
     /// Compact: track + label on one tight line (leading track).
     Compact,
+}
+
+impl SwitchRecipe {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::SettingsRow => "settings-row",
+            Self::Compact => "compact",
+        }
+    }
 }
 
 /// Switch outcome (controlled: host applies `on`).
@@ -1438,6 +1740,12 @@ impl SwitchState {
         self.enabled && !self.read_only && !self.loading
     }
 
+    /// Hit root.
+    #[must_use]
+    pub const fn region(&self) -> Option<Rect> {
+        self.region
+    }
+
     fn apply_toggle<Id: Clone>(&mut self, id: &Id) -> SwitchOutcome<Id> {
         if !self.can_activate() {
             return SwitchOutcome::Ignored;
@@ -1515,6 +1823,18 @@ impl SwitchState {
             }
         }
     }
+
+    /// EventResult wrapper.
+    pub fn handle_key_result<Id: Clone>(
+        &mut self,
+        key: KeyEvent,
+        id: &Id,
+    ) -> EventResult<SwitchOutcome<Id>> {
+        match self.handle_key(key, id) {
+            SwitchOutcome::Ignored => EventResult::ignored(),
+            other => EventResult::emit(other),
+        }
+    }
 }
 
 /// Immediate on/off settings control.
@@ -1539,6 +1859,9 @@ pub struct Switch<'a, Id> {
     description: Option<&'a str>,
     system: &'a DesignSystem,
     recipe: SwitchRecipe,
+    /// Paint explicit ON/OFF (or On/Off) text in the track (default true).
+    show_value_text: bool,
+    colorless: bool,
 }
 
 impl<'a, Id> Switch<'a, Id> {
@@ -1551,7 +1874,23 @@ impl<'a, Id> Switch<'a, Id> {
             description: None,
             system,
             recipe: SwitchRecipe::SettingsRow,
+            show_value_text: true,
+            colorless: false,
         }
+    }
+
+    /// Secondary help line (settings-row; dropped when height &lt; 2).
+    #[must_use]
+    pub const fn description(mut self, description: &'a str) -> Self {
+        self.description = Some(description);
+        self
+    }
+
+    /// Recipe.
+    #[must_use]
+    pub const fn recipe(mut self, recipe: SwitchRecipe) -> Self {
+        self.recipe = recipe;
+        self
     }
 
     /// Compact leading-track layout.
@@ -1566,6 +1905,32 @@ impl<'a, Id> Switch<'a, Id> {
     pub const fn settings_row(mut self) -> Self {
         self.recipe = SwitchRecipe::SettingsRow;
         self
+    }
+
+    /// Show explicit On/Off text in the track (default true — avoids color-only meaning).
+    #[must_use]
+    pub const fn show_value_text(mut self, on: bool) -> Self {
+        self.show_value_text = on;
+        self
+    }
+
+    /// Force monochrome / ASCII track emphasis.
+    #[must_use]
+    pub const fn colorless(mut self, on: bool) -> Self {
+        self.colorless = on;
+        self
+    }
+
+    /// Preferred height.
+    #[must_use]
+    pub fn preferred_height(&self) -> u16 {
+        if matches!(self.recipe, SwitchRecipe::SettingsRow)
+            && self.description.is_some_and(|d| !d.is_empty())
+        {
+            2
+        } else {
+            1
+        }
     }
 
     /// Preferred track width (cells).
@@ -1702,6 +2067,7 @@ impl<'a, Id> Switch<'a, Id> {
                 } else {
                     row_style.fg(theme.text_muted)
                 };
+                let _ = track_style;
                 buffer.set_stringn(
                     track.x,
                     track.y,
@@ -1825,12 +2191,37 @@ impl<'a, Id> Switch<'a, Id> {
         parts
     }
 
+    /// Paint + StatefulWidget path.
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut SwitchState) {
+        let _ = self.paint(area, buffer, state);
+    }
+
+    /// Keys via widget.
+    pub fn handle_key(&self, state: &mut SwitchState, key: KeyEvent) -> SwitchOutcome<Id>
+    where
+        Id: Clone,
+    {
+        state.handle_key(key, &self.id)
+    }
+
     /// Mouse via widget (Down arm / Up-in-region).
     pub fn handle_mouse(&self, state: &mut SwitchState, event: MouseEvent) -> SwitchOutcome<Id>
     where
         Id: Clone,
     {
         state.handle_mouse(event, &self.id)
+    }
+
+    /// EventResult wrapper.
+    pub fn handle_key_result(
+        &self,
+        state: &mut SwitchState,
+        key: KeyEvent,
+    ) -> EventResult<SwitchOutcome<Id>>
+    where
+        Id: Clone,
+    {
+        state.handle_key_result(key, &self.id)
     }
 
     /// Semantic registration.
@@ -1893,9 +2284,6 @@ impl<Id: Clone> StatefulWidget for &Switch<'_, Id> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyModifiers;
-    use crate::widgets::tests::{click, mouse};
-    use ratatui_core::layout::Position;
 
     #[test]
     fn checkbox_space_toggles_outcome() {
@@ -2004,7 +2392,17 @@ mod tests {
         let mut state = CheckboxState::new(false);
         let mut buf = Buffer::empty(Rect::new(0, 0, 24, 1));
         let parts = cb.paint(Rect::new(0, 0, 24, 1), &mut buf, &mut state);
-        let out = cb.handle_mouse(&mut state, click(parts.root.x, parts.root.y));
+        let out = cb.handle_mouse(
+            &mut state,
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: Position {
+                    x: parts.root.x,
+                    y: parts.root.y,
+                },
+                modifiers: KeyModifiers::NONE,
+            },
+        );
         assert!(matches!(
             out,
             CheckboxOutcome::ValueChanged {
@@ -2131,8 +2529,40 @@ mod tests {
         assert!(parts.legend.is_some());
         assert!(parts.options.len() >= 2);
         let b = parts.options.iter().find(|o| o.id == "b").unwrap();
-        let out = g.handle_mouse(&mut state, click(b.area.x, b.area.y));
+        let out = g.handle_mouse(
+            &mut state,
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: Position {
+                    x: b.area.x,
+                    y: b.area.y,
+                },
+                modifiers: KeyModifiers::NONE,
+            },
+        );
         assert_eq!(out, RadioOutcome::Selected("b"));
+    }
+
+    #[test]
+    fn radio_focused_selection_marks_without_row_tint() {
+        let system = DesignSystem::junie();
+        let options = [
+            RadioOption::new("a", "Alpha"),
+            RadioOption::new("b", "Beta"),
+        ];
+        let group = RadioGroup::new(&options, &system);
+        let mut state = RadioState::new(Some("a"));
+        state.set_surface_focused(true);
+        let area = Rect::new(0, 0, 24, 2);
+        let mut buffer = Buffer::empty(area);
+
+        group.paint(area, &mut buffer, &mut state);
+
+        let theme = system.junie_theme();
+        assert_eq!(buffer[(5, 0)].bg, theme.surface);
+        assert_eq!(buffer[(2, 0)].symbol(), "●");
+        assert_eq!(buffer[(2, 0)].fg, theme.accent);
+        assert!(buffer[(2, 0)].modifier.contains(Modifier::BOLD));
     }
 
     #[test]
@@ -2295,15 +2725,29 @@ mod tests {
         let mut state = SwitchState::new(false);
         let mut buf = Buffer::empty(Rect::new(0, 0, 40, 1));
         let parts = sw.paint(Rect::new(0, 0, 40, 1), &mut buf, &mut state);
-        let pos = Position::new(parts.track.x, parts.track.y);
+        let pos = Position {
+            x: parts.track.x,
+            y: parts.track.y,
+        };
         // Down only arms
-        let out = sw.handle_mouse(&mut state, click(pos.x, pos.y));
+        let out = sw.handle_mouse(
+            &mut state,
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: pos,
+                modifiers: KeyModifiers::NONE,
+            },
+        );
         assert!(matches!(out, SwitchOutcome::Ignored));
         assert!(!state.is_on());
         // Up in region toggles
         let out = sw.handle_mouse(
             &mut state,
-            mouse(MouseEventKind::Up(MouseButton::Left), pos.x, pos.y),
+            MouseEvent {
+                kind: MouseEventKind::Up(MouseButton::Left),
+                position: pos,
+                modifiers: KeyModifiers::NONE,
+            },
         );
         assert!(matches!(
             out,
@@ -2321,23 +2765,41 @@ mod tests {
         let mut state = SwitchState::new(false);
         let mut buf = Buffer::empty(Rect::new(0, 0, 40, 1));
         let parts = sw.paint(Rect::new(0, 0, 40, 1), &mut buf, &mut state);
-        let inside = Position::new(parts.root.x, parts.root.y);
-        let outside = Position::new(
-            parts
+        let inside = Position {
+            x: parts.root.x,
+            y: parts.root.y,
+        };
+        let outside = Position {
+            x: parts
                 .root
                 .x
                 .saturating_add(parts.root.width)
                 .saturating_add(2),
-            parts.root.y,
-        );
-        let _ = sw.handle_mouse(&mut state, click(inside.x, inside.y));
+            y: parts.root.y,
+        };
         let _ = sw.handle_mouse(
             &mut state,
-            mouse(MouseEventKind::Moved, outside.x, outside.y),
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: inside,
+                modifiers: KeyModifiers::NONE,
+            },
+        );
+        let _ = sw.handle_mouse(
+            &mut state,
+            MouseEvent {
+                kind: MouseEventKind::Moved,
+                position: outside,
+                modifiers: KeyModifiers::NONE,
+            },
         );
         let out = sw.handle_mouse(
             &mut state,
-            mouse(MouseEventKind::Up(MouseButton::Left), outside.x, outside.y),
+            MouseEvent {
+                kind: MouseEventKind::Up(MouseButton::Left),
+                position: outside,
+                modifiers: KeyModifiers::NONE,
+            },
         );
         assert!(matches!(out, SwitchOutcome::Ignored));
         assert!(!state.is_on());
@@ -2385,7 +2847,7 @@ mod tests {
         let mut buffer = Buffer::empty(area);
         RadioGroup::new(&options, &system)
             .legend("Density")
-            .paint(area, &mut buffer, &mut state);
+            .render(area, &mut buffer, &mut state);
 
         let rows: Vec<String> = (0..area.height)
             .map(|y| (0..area.width).map(|x| buffer[(x, y)].symbol()).collect())

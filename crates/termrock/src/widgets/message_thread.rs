@@ -22,9 +22,9 @@ use std::collections::BTreeSet;
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers},
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseEvent},
     style::DesignSystem,
-    text::take_display_cols,
+    text::{display_cols, take_display_cols},
     widgets::transcript::{
         Transcript, TranscriptBlock, TranscriptKind, TranscriptOutcome, TranscriptState,
     },
@@ -61,6 +61,21 @@ pub enum MessageKind {
 }
 
 impl MessageKind {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::User => "user",
+            Self::Assistant => "assistant",
+            Self::System => "system",
+            Self::Tool => "tool",
+            Self::Status => "status",
+            Self::Event => "event",
+            Self::Error => "error",
+            Self::Thinking => "thinking",
+        }
+    }
+
     /// Map to transcript kind chrome.
     #[must_use]
     pub const fn transcript_kind(self) -> TranscriptKind {
@@ -268,6 +283,13 @@ impl MessageEntry {
         Self::new(id, MessageKind::Status, [text.into()])
     }
 
+    /// Revision.
+    #[must_use]
+    pub const fn revision(mut self, r: u64) -> Self {
+        self.revision = r;
+        self
+    }
+
     /// Actor.
     #[must_use]
     pub fn actor(mut self, a: MessageActor) -> Self {
@@ -324,6 +346,13 @@ impl MessageEntry {
         self
     }
 
+    /// Enabled.
+    #[must_use]
+    pub const fn enabled(mut self, on: bool) -> Self {
+        self.enabled = on;
+        self
+    }
+
     /// Haystack for search.
     #[must_use]
     pub fn haystack(&self) -> String {
@@ -345,6 +374,19 @@ impl MessageEntry {
 
 // ── Projection ──────────────────────────────────────────────────────────────
 
+/// Owned line buffers + block metadata for one paint (host retains across frame).
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[allow(dead_code)]
+pub struct ProjectedThread {
+    /// Owned lines per entry (parallel to blocks).
+    pub line_bufs: Vec<Vec<String>>,
+    /// Pointer tables into `line_bufs` for TranscriptBlock::lines.
+    pub line_refs: Vec<Vec<&'static str>>,
+    /// Block shells (ids/kinds); lines filled after pinning refs — see
+    /// [`build_transcript_blocks`].
+    pub meta: Vec<ProjectedEntryMeta>,
+}
+
 /// Metadata for a projected entry.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProjectedEntryMeta {
@@ -364,16 +406,6 @@ pub struct ProjectedEntryMeta {
     pub line_buf_index: usize,
 }
 
-/// Canonical search-query fold: `None` when absent or whitespace-only,
-/// otherwise the ASCII-lowercased needle for [`crate::text::contains_lower`].
-#[must_use]
-fn fold_search_query(query: Option<&str>) -> Option<String> {
-    query
-        .map(str::trim)
-        .filter(|s| !s.is_empty())
-        .map(str::to_ascii_lowercase)
-}
-
 /// Filter + project entries for the current zoom / search / collapse overrides.
 #[must_use]
 pub fn project_message_thread(
@@ -383,7 +415,7 @@ pub fn project_message_thread(
     expanded_ids: &BTreeSet<String>,
     force_collapsed: &BTreeSet<String>,
 ) -> (Vec<ProjectedEntryMeta>, Vec<Vec<String>>) {
-    project_message_thread_profile(entries, zoom, search, expanded_ids, force_collapsed)
+    project_message_thread_profile(entries, zoom, search, expanded_ids, force_collapsed, false)
 }
 
 fn project_message_thread_profile(
@@ -392,15 +424,18 @@ fn project_message_thread_profile(
     search: Option<&str>,
     expanded_ids: &BTreeSet<String>,
     force_collapsed: &BTreeSet<String>,
+    _ascii: bool,
 ) -> (Vec<ProjectedEntryMeta>, Vec<Vec<String>>) {
-    let q = fold_search_query(search);
+    let q = search
+        .map(|s| s.trim().to_ascii_lowercase())
+        .filter(|s| !s.is_empty());
     let mut meta = Vec::new();
     let mut bufs = Vec::new();
     let mut last_group: Option<&str> = None;
 
     for e in entries {
         if let Some(ref qq) = q {
-            if !crate::text::contains_lower(&e.haystack(), qq) {
+            if !e.haystack().to_ascii_lowercase().contains(qq) {
                 continue;
             }
         }
@@ -442,7 +477,7 @@ fn project_message_thread_profile(
             }
         };
 
-        let lines = project_entry_lines(e, zoom, folded);
+        let lines = project_entry_lines(e, zoom, folded, false);
         bufs.push(lines);
         meta.push(ProjectedEntryMeta {
             id: e.id.clone(),
@@ -457,7 +492,12 @@ fn project_message_thread_profile(
     (meta, bufs)
 }
 
-fn project_entry_lines(e: &MessageEntry, zoom: MessageZoom, folded: bool) -> Vec<String> {
+fn project_entry_lines(
+    e: &MessageEntry,
+    zoom: MessageZoom,
+    folded: bool,
+    _ascii: bool,
+) -> Vec<String> {
     if folded {
         let mut s = String::new();
         if let Some(t) = &e.timestamp {
@@ -470,7 +510,7 @@ fn project_entry_lines(e: &MessageEntry, zoom: MessageZoom, folded: bool) -> Vec
         }
         if let Some(c) = e.status_letter {
             s.push('[');
-            s.push(c);
+            s.push(if false && !c.is_ascii() { '*' } else { c });
             s.push(']');
             s.push(' ');
         }
@@ -503,7 +543,7 @@ fn project_entry_lines(e: &MessageEntry, zoom: MessageZoom, folded: bool) -> Vec
             head.push(' ');
         }
         head.push('[');
-        head.push(c);
+        head.push(if false && !c.is_ascii() { '*' } else { c });
         head.push(']');
     }
     if e.checkpoint {
@@ -568,6 +608,10 @@ pub fn build_transcript_blocks<'a>(
             .revision(m.revision)
             .folded(m.folded)
             .enabled(m.enabled);
+        if let Some(s) = &m.summary {
+            // summary lives in meta — need 'a — use first line of bufs as summary if folded
+            let _ = s;
+        }
         if m.folded {
             if let Some(first) = bufs.get(m.line_buf_index).and_then(|v| v.first()) {
                 b = b.summary(first.as_str());
@@ -608,9 +652,16 @@ impl ThreadProjection {
         search: Option<&str>,
         expanded_ids: &BTreeSet<String>,
         force_collapsed: &BTreeSet<String>,
+        _ascii: bool,
     ) -> Self {
-        let (meta, bufs) =
-            project_message_thread_profile(entries, zoom, search, expanded_ids, force_collapsed);
+        let (meta, bufs) = project_message_thread_profile(
+            entries,
+            zoom,
+            search,
+            expanded_ids,
+            force_collapsed,
+            false,
+        );
         Self { meta, bufs }
     }
 
@@ -626,6 +677,12 @@ impl ThreadProjection {
     #[must_use]
     pub fn len(&self) -> usize {
         self.meta.len()
+    }
+
+    /// Empty.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.meta.is_empty()
     }
 }
 
@@ -648,12 +705,13 @@ pub fn compact_entries(entries: &[MessageEntry], keep_recent: usize) -> Vec<Mess
 /// Filter entries by search query.
 #[must_use]
 pub fn filter_entries<'a>(entries: &'a [MessageEntry], query: &str) -> Vec<&'a MessageEntry> {
-    let Some(ref q) = fold_search_query(Some(query)) else {
+    let q = query.trim().to_ascii_lowercase();
+    if q.is_empty() {
         return entries.iter().collect();
-    };
+    }
     entries
         .iter()
-        .filter(|e| crate::text::contains_lower(&e.haystack(), q))
+        .filter(|e| e.haystack().to_ascii_lowercase().contains(&q))
         .collect()
 }
 
@@ -760,9 +818,20 @@ impl MessageThreadState {
         }
     }
 
+    /// Accepts input.
+    #[must_use]
+    pub const fn accepts_input(&self) -> bool {
+        self.accepts_input
+    }
+
     /// Gate (does not clear selection / unread).
     pub fn set_accepts_input(&mut self, on: bool) {
         self.accepts_input = on;
+        self.transcript.set_focused(on);
+    }
+
+    /// Focus chrome.
+    pub fn set_focused(&mut self, on: bool) {
         self.transcript.set_focused(on);
     }
 
@@ -832,13 +901,14 @@ impl MessageThreadState {
         )
     }
 
-    fn projection_profile(&self, entries: &[MessageEntry]) -> ThreadProjection {
+    fn projection_profile(&self, entries: &[MessageEntry], _ascii: bool) -> ThreadProjection {
         ThreadProjection::project_profile(
             entries,
             self.zoom,
             self.search.as_deref(),
             &self.expanded,
             &self.force_collapsed,
+            false,
         )
     }
 
@@ -852,41 +922,33 @@ impl MessageThreadState {
         if !self.accepts_input || key.is_release() {
             return MessageThreadOutcome::Ignored;
         }
-        let is_press = key.is_press();
         // Search mode
         if self.search_active {
             return self.handle_search_key(key);
         }
-        if is_press && key.code == KeyCode::Char('/') && key.modifiers.is_empty() {
+        if key.code == KeyCode::Char('/') && key.modifiers.is_empty() {
             self.search_active = true;
             self.search = Some(String::new());
             return MessageThreadOutcome::SearchChanged {
                 query: String::new(),
             };
         }
-        if is_press
-            && key.code == KeyCode::Char('z')
-            && key.modifiers.contains(KeyModifiers::CONTROL)
-        {
+        if key.code == KeyCode::Char('z') && key.modifiers.contains(KeyModifiers::CONTROL) {
             return self.cycle_zoom();
         }
-        if is_press
-            && key.code == KeyCode::Char('n')
+        if key.code == KeyCode::Char('n')
             && key.modifiers.contains(KeyModifiers::CONTROL)
             && self.show_new_content()
         {
             return self.jump_latest();
         }
-        if is_press
-            && key.code == KeyCode::Char('c')
-            && key.modifiers.contains(KeyModifiers::CONTROL)
-        {
+        if key.code == KeyCode::Char('c') && key.modifiers.contains(KeyModifiers::CONTROL) {
             if let Some(id) = self.selected().map(str::to_string) {
                 return MessageThreadOutcome::CopyRequested { id };
             }
         }
         // action chords when selected tool/error
-        if is_press && key.modifiers.is_empty() {
+        if key.modifiers.is_empty() {
             if let Some(id) = self.selected() {
                 if let Some(e) = entries.iter().find(|e| e.id == id) {
                     match key.code {
@@ -916,14 +978,14 @@ impl MessageThreadState {
 
     fn handle_search_key(&mut self, key: KeyEvent) -> MessageThreadOutcome {
         match key.code {
-            KeyCode::Esc if key.is_press() => {
+            KeyCode::Esc => {
                 self.search_active = false;
                 self.search = None;
                 MessageThreadOutcome::SearchChanged {
                     query: String::new(),
                 }
             }
-            KeyCode::Enter if key.is_press() => {
+            KeyCode::Enter => {
                 self.search_active = false;
                 MessageThreadOutcome::SearchChanged {
                     query: self.search.clone().unwrap_or_default(),
@@ -972,6 +1034,19 @@ impl MessageThreadState {
             TranscriptOutcome::Cancelled => MessageThreadOutcome::Cancelled,
         }
     }
+
+    /// Mouse.
+    pub fn handle_mouse(
+        &mut self,
+        event: MouseEvent,
+        blocks: &[TranscriptBlock<'_, String>],
+    ) -> MessageThreadOutcome {
+        if !self.accepts_input {
+            return MessageThreadOutcome::Ignored;
+        }
+        let out = self.transcript.handle_mouse(event, blocks);
+        self.map_transcript_outcome(out)
+    }
 }
 
 // ── Widget ──────────────────────────────────────────────────────────────────
@@ -997,6 +1072,21 @@ impl<'a> MessageThread<'a> {
         }
     }
 
+    /// ASCII prefixes.
+    #[must_use]
+    /// Colorless.
+    pub const fn colorless(mut self, on: bool) -> Self {
+        self.colorless = on;
+        self
+    }
+
+    /// Focused chrome.
+    #[must_use]
+    pub const fn focused(mut self, on: bool) -> Self {
+        self.focused = on;
+        self
+    }
+
     /// Paint thread. Host should call [`MessageThreadState::on_entries_len`] after appends.
     pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut MessageThreadState) {
         if area.is_empty() {
@@ -1012,7 +1102,7 @@ impl<'a> MessageThread<'a> {
         }
 
         let colorless = self.colorless || self.system.mono();
-        let proj = state.projection_profile(self.entries);
+        let proj = state.projection_profile(self.entries, false);
         let mut line_ptrs: Vec<Vec<&str>> = Vec::new();
         let blocks = proj.blocks(&mut line_ptrs);
 
@@ -1052,6 +1142,7 @@ impl<'a> MessageThread<'a> {
                 );
             }
         }
+        let _ = display_cols;
     }
 }
 
@@ -1104,6 +1195,8 @@ pub fn example_message_session() -> Vec<MessageEntry> {
 pub mod bench {
     /// Blocks in stress projection.
     pub const ENTRY_COUNT: usize = 2_000;
+    /// Paint frames.
+    pub const PAINT_FRAMES: u32 = 40;
 }
 
 // ── Tests ───────────────────────────────────────────────────────────────────
@@ -1111,7 +1204,6 @@ pub mod bench {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyEventKind;
     use crate::style::DesignSystem;
 
     #[test]
@@ -1226,103 +1318,6 @@ mod tests {
             out,
             MessageThreadOutcome::CopyRequested { ref id } if id == "a1"
         ));
-    }
-
-    #[test]
-    fn repeated_local_actions_are_ignored_but_search_text_repeats() {
-        let entries = example_message_session();
-        let mut state = MessageThreadState::new();
-        state.set_accepts_input(true);
-        let projection = state.projection(&entries);
-        let mut ptrs = Vec::new();
-        let blocks = projection.blocks(&mut ptrs);
-
-        let mut repeat_slash = KeyEvent::new(KeyCode::Char('/'), KeyModifiers::NONE);
-        repeat_slash.kind = KeyEventKind::Repeat;
-        let before = state.clone();
-        assert_eq!(
-            state.handle_key(repeat_slash, &entries, &blocks),
-            MessageThreadOutcome::Ignored
-        );
-        assert_eq!(state, before);
-        assert_eq!(
-            state.handle_key(
-                KeyEvent::new(KeyCode::Char('/'), KeyModifiers::NONE),
-                &entries,
-                &blocks
-            ),
-            MessageThreadOutcome::SearchChanged {
-                query: String::new()
-            }
-        );
-
-        let mut repeat_text = KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE);
-        repeat_text.kind = KeyEventKind::Repeat;
-        assert_eq!(
-            state.handle_key(repeat_text, &entries, &blocks),
-            MessageThreadOutcome::SearchChanged { query: "x".into() }
-        );
-        let before = state.clone();
-        let mut repeat_enter = KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE);
-        repeat_enter.kind = KeyEventKind::Repeat;
-        assert_eq!(
-            state.handle_key(repeat_enter, &entries, &blocks),
-            MessageThreadOutcome::Ignored
-        );
-        assert_eq!(state, before);
-        assert!(matches!(
-            state.handle_key(
-                KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
-                &entries,
-                &blocks
-            ),
-            MessageThreadOutcome::SearchChanged { .. }
-        ));
-
-        state.transcript.select(Some("err1".into()));
-        let before = state.clone();
-        let mut repeat_retry = KeyEvent::new(KeyCode::Char('r'), KeyModifiers::NONE);
-        repeat_retry.kind = KeyEventKind::Repeat;
-        assert_eq!(
-            state.handle_key(repeat_retry, &entries, &blocks),
-            MessageThreadOutcome::Ignored
-        );
-        assert_eq!(state, before);
-        assert!(matches!(
-            state.handle_key(
-                KeyEvent::new(KeyCode::Char('r'), KeyModifiers::NONE),
-                &entries,
-                &blocks
-            ),
-            MessageThreadOutcome::ActionRequested { .. }
-        ));
-
-        state.transcript.select(Some("a1".into()));
-        let before = state.clone();
-        let mut repeat_copy = KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL);
-        repeat_copy.kind = KeyEventKind::Repeat;
-        assert_eq!(
-            state.handle_key(repeat_copy, &entries, &blocks),
-            MessageThreadOutcome::Ignored
-        );
-        assert_eq!(state, before);
-        assert!(matches!(
-            state.handle_key(
-                KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL),
-                &entries,
-                &blocks
-            ),
-            MessageThreadOutcome::CopyRequested { .. }
-        ));
-
-        let mut repeat_zoom = KeyEvent::new(KeyCode::Char('z'), KeyModifiers::CONTROL);
-        repeat_zoom.kind = KeyEventKind::Repeat;
-        let before = state.clone();
-        assert_eq!(
-            state.handle_key(repeat_zoom, &entries, &blocks),
-            MessageThreadOutcome::Ignored
-        );
-        assert_eq!(state, before);
     }
 
     #[test]

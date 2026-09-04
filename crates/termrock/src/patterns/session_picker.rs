@@ -26,12 +26,20 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+use ratatui_core::{
+    buffer::Buffer,
+    layout::{Position, Rect},
+    style::Modifier,
+    widgets::StatefulWidget,
+};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
-    interaction::CursorWindow,
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     style::{DesignSystem, PanelChrome, Role},
+    text::{display_cols, take_display_cols},
     widgets::{
         ConfirmFocus, ConfirmPrompt, EmptyKind, EmptyState, Panel, SemanticStatus, StatusIndicator,
     },
@@ -43,8 +51,6 @@ pub const SESSION_PICKER_OVERLAY_ID: &str = "termrock.session_picker";
 pub const SESSION_PICKER_POPOVER_OVERLAY_ID: &str = "termrock.session_picker_popover";
 /// Visible list window for large catalogs (virtualization).
 pub const SESSION_PICKER_WINDOW: usize = 64;
-/// Rows per PageUp/PageDown (viewport is paint-measured; page step is fixed).
-pub const SESSION_PICKER_PAGE: usize = 8;
 /// Provider-search query length hint before host should search remotely.
 pub const SESSION_PICKER_PROVIDER_SEARCH_MIN: usize = 2;
 
@@ -80,6 +86,19 @@ impl SessionStatus {
             Self::Completed => "completed",
             Self::Failed => "failed",
             Self::Archived => "archived",
+        }
+    }
+
+    /// Letter (colorless).
+    #[must_use]
+    pub const fn letter(self) -> char {
+        match self {
+            Self::Active => 'A',
+            Self::Idle => 'I',
+            Self::ActionRequired => '!',
+            Self::Completed => 'S',
+            Self::Failed => 'F',
+            Self::Archived => 'Z',
         }
     }
 
@@ -191,6 +210,19 @@ pub enum SessionLoadState {
     Searching,
     /// Load failed.
     Error,
+}
+
+impl SessionLoadState {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Ready => "ready",
+            Self::Loading => "loading",
+            Self::Searching => "searching",
+            Self::Error => "error",
+        }
+    }
 }
 
 /// One agent session projection (host-owned data).
@@ -362,7 +394,7 @@ impl SessionEntry {
             return true;
         }
         let q = q.to_ascii_lowercase();
-        let hit = |s: &str| crate::text::contains_lower(&s, &q);
+        let hit = |s: &str| s.to_ascii_lowercase().contains(&q);
         hit(&self.title)
             || self.project.as_deref().is_some_and(hit)
             || self.branch.as_deref().is_some_and(hit)
@@ -386,6 +418,18 @@ pub enum SessionPickerPresentation {
     Popover,
     /// Fullscreen host overlay.
     Fullscreen,
+}
+
+impl SessionPickerPresentation {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Dialog => "dialog",
+            Self::Popover => "popover",
+            Self::Fullscreen => "fullscreen",
+        }
+    }
 }
 
 /// Interaction phase.
@@ -536,8 +580,10 @@ pub struct SessionPickerState {
     pub query: String,
     /// Filtered indices into `sessions` (recomputed).
     filtered: Vec<usize>,
-    /// Cursor + scroll window into `filtered`.
-    pub window: CursorWindow,
+    /// Cursor into `filtered`.
+    pub cursor: usize,
+    /// Scroll offset into filtered window.
+    pub scroll: usize,
     /// Phase.
     pub phase: SessionPickerPhase,
     /// Presentation.
@@ -584,7 +630,8 @@ impl SessionPickerState {
             total_count: None,
             query: String::new(),
             filtered: Vec::new(),
-            window: CursorWindow::new(),
+            cursor: 0,
+            scroll: 0,
             phase: SessionPickerPhase::Browse,
             presentation: SessionPickerPresentation::Dialog,
             load_state: SessionLoadState::Ready,
@@ -603,6 +650,12 @@ impl SessionPickerState {
         }
     }
 
+    /// Set search query and refilter (host or tests).
+    pub fn set_query(&mut self, q: impl Into<String>) {
+        self.query = q.into();
+        self.refilter();
+    }
+
     /// Replace sessions and refilter.
     pub fn set_sessions(&mut self, sessions: Vec<SessionEntry>) {
         let keep = self.current_id();
@@ -614,16 +667,31 @@ impl SessionPickerState {
                 .iter()
                 .position(|&si| self.sessions.get(si).is_some_and(|s| s.id == id))
             {
-                self.window
-                    .set_cursor(fi, self.filtered.len(), SESSION_PICKER_WINDOW);
+                self.cursor = fi;
             }
         }
         self.clamp_cursor();
     }
+
+    /// Append page (virtualization).
+    pub fn append_sessions(&mut self, more: Vec<SessionEntry>) {
+        self.sessions.extend(more);
+        self.refilter();
+    }
+
     /// Total count for chrome.
     pub fn set_total_count(&mut self, n: Option<usize>) {
         self.total_count = n;
     }
+
+    /// Load state.
+    pub fn set_load_state(&mut self, s: SessionLoadState) {
+        self.load_state = s;
+        if matches!(s, SessionLoadState::Ready) {
+            self.load_error = None;
+        }
+    }
+
     /// Error.
     pub fn set_error(&mut self, msg: impl Into<String>) {
         self.load_state = SessionLoadState::Error;
@@ -640,6 +708,11 @@ impl SessionPickerState {
         self.focused = on;
     }
 
+    /// Presentation.
+    pub const fn set_presentation(&mut self, p: SessionPickerPresentation) {
+        self.presentation = p;
+    }
+
     /// Current session id.
     #[must_use]
     pub fn current_id(&self) -> Option<String> {
@@ -649,7 +722,7 @@ impl SessionPickerState {
     /// Current session.
     #[must_use]
     pub fn current(&self) -> Option<&SessionEntry> {
-        let si = *self.filtered.get(self.window.cursor())?;
+        let si = *self.filtered.get(self.cursor)?;
         self.sessions.get(si)
     }
 
@@ -692,8 +765,18 @@ impl SessionPickerState {
     }
 
     fn clamp_cursor(&mut self) {
-        self.window
-            .clamp(self.filtered.len(), SESSION_PICKER_WINDOW);
+        if self.filtered.is_empty() {
+            self.cursor = 0;
+            self.scroll = 0;
+            return;
+        }
+        self.cursor = self.cursor.min(self.filtered.len() - 1);
+        let window = SESSION_PICKER_WINDOW;
+        if self.cursor < self.scroll {
+            self.scroll = self.cursor;
+        } else if self.cursor >= self.scroll + window {
+            self.scroll = self.cursor + 1 - window;
+        }
     }
 
     fn select_cursor(&mut self) -> SessionPickerOutcome {
@@ -705,11 +788,15 @@ impl SessionPickerState {
     }
 
     fn move_cursor(&mut self, delta: isize) -> SessionPickerOutcome {
-        self.window
-            .move_by(delta, self.filtered.len(), SESSION_PICKER_WINDOW);
+        if self.filtered.is_empty() {
+            return SessionPickerOutcome::Ignored;
+        }
+        let n = self.filtered.len() as isize;
+        self.cursor = (self.cursor as isize + delta).clamp(0, n - 1) as usize;
+        self.clamp_cursor();
         // Near end → ask host for more
         let out = self.select_cursor();
-        if self.window.cursor() + 8 >= self.filtered.len() {
+        if self.cursor + 8 >= self.filtered.len() {
             if let Some(total) = self.total_count {
                 if self.sessions.len() < total {
                     return SessionPickerOutcome::LoadMore {
@@ -779,8 +866,16 @@ impl SessionPickerState {
 
         match key.code {
             KeyCode::Esc => SessionPickerOutcome::Cancelled,
-            KeyCode::Up | KeyCode::Char('k') if key.modifiers.is_empty() => self.move_cursor(-1),
-            KeyCode::Down | KeyCode::Char('j') if key.modifiers.is_empty() => self.move_cursor(1),
+            KeyCode::Up | KeyCode::Char('k')
+                if key.modifiers.is_empty() && !self.is_typing_search(key) =>
+            {
+                self.move_cursor(-1)
+            }
+            KeyCode::Down | KeyCode::Char('j')
+                if key.modifiers.is_empty() && !self.query_consuming_char(key) =>
+            {
+                self.move_cursor(1)
+            }
             KeyCode::Enter => {
                 let Some(s) = self.current() else {
                     return SessionPickerOutcome::Ignored;
@@ -813,7 +908,7 @@ impl SessionPickerState {
                     return SessionPickerOutcome::Ignored;
                 };
                 // Optimistic local flip
-                if let Some(si) = self.filtered.get(self.window.cursor()).copied() {
+                if let Some(si) = self.filtered.get(self.cursor).copied() {
                     if let Some(e) = self.sessions.get_mut(si) {
                         e.pinned = pinned;
                     }
@@ -878,20 +973,33 @@ impl SessionPickerState {
                 }
                 self.push_query_char(c)
             }
-            KeyCode::PageDown => self.move_cursor(SESSION_PICKER_PAGE as isize),
-            KeyCode::PageUp => self.move_cursor(-(SESSION_PICKER_PAGE as isize)),
+            KeyCode::PageDown => self.move_cursor(8),
+            KeyCode::PageUp => self.move_cursor(-8),
             KeyCode::Home => {
-                self.window
-                    .move_first(self.filtered.len(), SESSION_PICKER_WINDOW);
+                self.cursor = 0;
+                self.clamp_cursor();
                 self.select_cursor()
             }
             KeyCode::End => {
-                self.window
-                    .move_last(self.filtered.len(), SESSION_PICKER_WINDOW);
+                if !self.filtered.is_empty() {
+                    self.cursor = self.filtered.len() - 1;
+                    self.clamp_cursor();
+                }
                 self.select_cursor()
             }
             _ => SessionPickerOutcome::Ignored,
         }
+    }
+
+    fn is_typing_search(&self, _key: KeyEvent) -> bool {
+        // when query non-empty, j/k still navigate (like most pickers)
+        false
+    }
+
+    fn query_consuming_char(&self, key: KeyEvent) -> bool {
+        // When query non-empty, plain j/k navigate not type — already handled
+        let _ = key;
+        false
     }
 
     fn push_query_char(&mut self, c: char) -> SessionPickerOutcome {
@@ -1027,9 +1135,9 @@ impl SessionPickerState {
             .iter()
             .position(|&si| self.sessions.get(si).is_some_and(|s| s.id == id))
         {
-            let already = self.window.cursor() == fi;
-            self.window
-                .set_cursor(fi, self.filtered.len(), SESSION_PICKER_WINDOW);
+            let already = self.cursor == fi;
+            self.cursor = fi;
+            self.clamp_cursor();
             if already {
                 if let Some(s) = self.current() {
                     if s.enabled {
@@ -1099,7 +1207,8 @@ impl<'a> SessionPicker<'a> {
         };
         let panel = Panel::new(self.system).title(title).emphasis(emphasis);
         let inner = panel.inner(area);
-        panel.paint(area, buffer, None);
+        use ratatui_core::widgets::Widget;
+        Widget::render(&panel, area, buffer);
         if inner.is_empty() {
             return;
         }
@@ -1162,7 +1271,7 @@ impl<'a> SessionPicker<'a> {
             StatusIndicator::new(SemanticStatus::Running, self.system)
                 .label(m)
                 .colorless(self.colorless)
-                .paint(Rect::new(inner.x, y, inner.width, 1), buffer, None);
+                .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
             y = y.saturating_add(1);
         }
         if matches!(state.load_state, SessionLoadState::Error) && y < max_y {
@@ -1173,7 +1282,7 @@ impl<'a> SessionPicker<'a> {
             StatusIndicator::new(SemanticStatus::Failed, self.system)
                 .label(msg)
                 .colorless(self.colorless)
-                .paint(Rect::new(inner.x, y, inner.width, 1), buffer, None);
+                .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
             y = y.saturating_add(1);
         }
 
@@ -1267,11 +1376,13 @@ impl<'a> SessionPicker<'a> {
             return;
         }
 
-        // Read-only projection: re-derive the visible slice against the
-        // painted viewport without mutating state during paint.
-        let mut view = state.window;
-        view.clamp(state.filtered.len(), viewport);
-        let offset = view.scroll();
+        let mut offset = state.scroll;
+        if state.cursor < offset {
+            offset = state.cursor;
+        } else if viewport > 0 && state.cursor >= offset + viewport {
+            offset = state.cursor + 1 - viewport;
+        }
+        state.scroll = offset;
 
         for (fi, &si) in state.filtered.iter().enumerate().skip(offset) {
             if y >= max_y {
@@ -1280,7 +1391,7 @@ impl<'a> SessionPicker<'a> {
             let Some(s) = state.sessions.get(si) else {
                 continue;
             };
-            let selected = fi == state.window.cursor();
+            let selected = fi == state.cursor;
             let pin = if s.pinned { "★" } else { " " };
             let semantic = if s.action_required {
                 SemanticStatus::Waiting
@@ -1327,7 +1438,6 @@ impl<'a> SessionPicker<'a> {
                 indicator.paint(
                     Rect::new(area.x.saturating_add(2), y, area.width.saturating_sub(2), 1),
                     buffer,
-                    None,
                 );
             }
             state.row_hits.push((
@@ -1381,11 +1491,7 @@ impl<'a> SessionPicker<'a> {
         let Some(s) = state.current() else {
             EmptyState::new("No session selected", self.system)
                 .kind(EmptyKind::NoData)
-                .paint(
-                    Rect::new(area.x, y, area.width, 1),
-                    buffer,
-                    &mut crate::widgets::EmptyStateState::new(),
-                );
+                .paint(Rect::new(area.x, y, area.width, 1), buffer);
             return;
         };
         // Default frame: five quiet lines. Everything else is one keypress
@@ -1464,7 +1570,7 @@ impl<'a> SessionPicker<'a> {
                 StatusIndicator::new(semantic, self.system)
                     .label(s.status.id())
                     .colorless(self.colorless)
-                    .paint(Rect::new(area.x, y, area.width, 1), buffer, None);
+                    .paint(Rect::new(area.x, y, area.width, 1), buffer);
             }
             y = y.saturating_add(1);
         }
@@ -1591,7 +1697,10 @@ pub mod bench {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::widgets::tests::{click, press};
+
+    fn press(code: KeyCode) -> KeyEvent {
+        KeyEvent::new(code, KeyModifiers::NONE)
+    }
 
     fn open() -> SessionPickerState {
         let mut st = SessionPickerState::new();
@@ -1778,8 +1887,7 @@ mod tests {
             .collect();
         st.set_sessions(many);
         st.set_total_count(Some(100));
-        st.window
-            .set_cursor(18, st.filtered.len(), SESSION_PICKER_WINDOW);
+        st.cursor = 18;
         let out = st.handle_key(press(KeyCode::Down));
         assert!(
             matches!(out, SessionPickerOutcome::LoadMore { offset: 20 })
@@ -1796,8 +1904,7 @@ mod tests {
             .iter()
             .position(|&si| st.sessions[si].id == "s6")
             .unwrap();
-        st.window
-            .set_cursor(i, st.filtered.len(), SESSION_PICKER_WINDOW);
+        st.cursor = i;
         assert!(matches!(
             st.handle_key(press(KeyCode::Enter)),
             SessionPickerOutcome::Ignored
@@ -1931,7 +2038,11 @@ mod tests {
         assert!(!st.row_hits.is_empty());
         let (id, r) = st.row_hits[0].clone();
         // first click select
-        let out = st.handle_mouse(click(r.x, r.y));
+        let out = st.handle_mouse(MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: Position { x: r.x, y: r.y },
+            modifiers: KeyModifiers::NONE,
+        });
         assert!(
             matches!(
                 out,
@@ -1940,7 +2051,11 @@ mod tests {
             "{out:?} {id}"
         );
         // second click open
-        let out = st.handle_mouse(click(r.x, r.y));
+        let out = st.handle_mouse(MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: Position { x: r.x, y: r.y },
+            modifiers: KeyModifiers::NONE,
+        });
         assert!(
             matches!(out, SessionPickerOutcome::Opened { .. }),
             "{out:?}"
@@ -1974,8 +2089,7 @@ mod tests {
     #[test]
     fn selection_stable_on_set() {
         let mut st = open();
-        st.window
-            .set_cursor(1, st.filtered.len(), SESSION_PICKER_WINDOW);
+        st.cursor = 1;
         let id = st.current_id().unwrap();
         let mut next = example_sessions();
         next.push(SessionEntry::new("s9", "Extra"));

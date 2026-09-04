@@ -7,10 +7,11 @@
 //! bytes from [`Widget::render`]. Callers supply metadata; this widget paints a
 //! product-neutral cell fallback. Pair with [`crate::style::CapabilityPreviewHost`]
 //! for generation-safe placement planning and session commands.
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{
-    style::{DesignSystem, Role},
+    style::{DesignSystem, PreviewPresentation, Role, RolePalette},
     text::take_display_cols,
 };
 
@@ -29,6 +30,30 @@ pub enum ImageProtocol {
     Sixel,
     /// iTerm2 inline images.
     ITerm2,
+}
+
+impl ImageProtocol {
+    /// Maps a host presentation plan to the protocol enum.
+    #[must_use]
+    pub const fn from_presentation(presentation: PreviewPresentation) -> Self {
+        match presentation {
+            PreviewPresentation::CellFallback => Self::Placeholder,
+            PreviewPresentation::Kitty => Self::Kitty,
+            PreviewPresentation::ITerm2 => Self::ITerm2,
+            PreviewPresentation::Sixel => Self::Sixel,
+        }
+    }
+
+    /// Maps to a host presentation plan.
+    #[must_use]
+    pub const fn presentation(self) -> PreviewPresentation {
+        match self {
+            Self::Placeholder => PreviewPresentation::CellFallback,
+            Self::Kitty => PreviewPresentation::Kitty,
+            Self::ITerm2 => PreviewPresentation::ITerm2,
+            Self::Sixel => PreviewPresentation::Sixel,
+        }
+    }
 }
 
 /// Borrowed image metadata for layout (pixels stay caller-owned).
@@ -79,6 +104,12 @@ impl<'a> ImageSurface<'a> {
     pub const fn new(meta: ImageMeta<'a>, system: &'a DesignSystem) -> Self {
         Self { meta, system }
     }
+
+    /// Meta borrow.
+    #[must_use]
+    pub const fn meta(&self) -> &ImageMeta<'a> {
+        &self.meta
+    }
 }
 
 /// Describes intended protocol emission for a consumer-owned media session.
@@ -115,6 +146,7 @@ impl Widget for &ImageSurface<'_> {
             ImageProtocol::ITerm2 => "iterm2",
         };
         let dims = match (self.meta.pixel_width, self.meta.pixel_height) {
+            (Some(w), Some(h)) if false => format!("{w}x{h}"),
             (Some(w), Some(h)) => format!("{w}×{h}"),
             _ => "size unknown".to_owned(),
         };

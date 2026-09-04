@@ -31,22 +31,29 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::StatefulWidget};
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+use ratatui_core::{
+    buffer::Buffer,
+    layout::Rect,
+    text::Line,
+    widgets::{StatefulWidget, Widget},
+};
 
 use crate::{
     capability::{DoctorFinding, DoctorReport, DoctorSeverity},
-    input::{KeyCode, KeyEvent, KeyModifiers},
+    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
     interaction::Outcome,
     layout::{
         PaneConstraint, PaneGeom, PaneId, Workspace, WorkspaceAxis, WorkspaceNode, WorkspaceState,
     },
-    style::{DesignSystem, PanelChrome},
+    style::{DesignSystem, PanelChrome, Role},
+    text::take_display_cols,
     widgets::{
         CommandEntry, EmptyKind, EmptyState, HelpEntry, KeyboardHelp, KeyboardHelpMode,
-        KeyboardHelpOutcome, KeyboardHelpState, List, ListRow, ListState, MarkdownOutcome,
-        MarkdownView, MarkdownViewState, Panel, SearchInput, SearchInputOutcome, SearchInputState,
-        StatusBar, StatusBarState, StatusSlot, example_help_entries, filter_help_entries,
-        project_markdown,
+        KeyboardHelpOutcome, KeyboardHelpState, List, ListRow, ListState, MarkdownBlock,
+        MarkdownOutcome, MarkdownView, MarkdownViewState, Panel, SearchInput, SearchInputOutcome,
+        SearchInputState, StatusBar, StatusBarState, StatusRegion, StatusSlot,
+        example_help_entries, filter_help_entries, project_markdown,
     },
 };
 
@@ -85,6 +92,19 @@ impl HelpCenterPane {
             Self::Diagnostics => "diagnostics",
             Self::Status => "status",
         }
+    }
+
+    /// Default Tab cycle (status chrome-only).
+    #[must_use]
+    pub fn focus_order() -> &'static [HelpCenterPane] {
+        &[
+            Self::Search,
+            Self::Nav,
+            Self::Keyboard,
+            Self::Commands,
+            Self::Body,
+            Self::Diagnostics,
+        ]
     }
 }
 
@@ -133,6 +153,16 @@ impl HelpCenterDensity {
             Self::Narrow
         } else {
             Self::Normal
+        }
+    }
+
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Normal => "normal",
+            Self::Narrow => "narrow",
+            Self::Tiny => "tiny",
         }
     }
 }
@@ -257,15 +287,15 @@ impl HelpTopic {
         if q.is_empty() {
             return true;
         }
-        crate::text::contains_lower_all(
-            &[
-                &self.title,
-                &self.markdown,
-                self.group.id(),
-                &self.anchors.join(" "),
-            ],
-            &q,
+        let hay = format!(
+            "{} {} {} {}",
+            self.title,
+            self.markdown,
+            self.group.id(),
+            self.anchors.join(" ")
         )
+        .to_ascii_lowercase();
+        hay.contains(&q)
     }
 }
 
@@ -321,35 +351,7 @@ pub fn command_entries_from_help(entries: &[HelpEntry]) -> Vec<CommandEntry<Stri
 
 /// Command list rows from metadata-derived command entries.
 #[must_use]
-pub fn filter_command_entries<'a>(
-    commands: &'a [CommandEntry<String>],
-    query: &str,
-) -> Vec<&'a CommandEntry<String>> {
-    let q = query.trim().to_ascii_lowercase();
-    commands
-        .iter()
-        .filter(|c| {
-            if q.is_empty() {
-                return true;
-            }
-            crate::text::contains_lower_all(
-                &[
-                    &c.label,
-                    c.shortcut.as_deref().unwrap_or(""),
-                    &c.keywords.join(" "),
-                ],
-                &q,
-            )
-        })
-        .collect()
-}
-
-/// Project (filtered) commands to [`List`] rows with group headers.
-///
-/// Takes references — filtering yields references, and cloning whole
-/// [`CommandEntry`] values per frame was the old hot path.
-#[must_use]
-pub fn command_list_rows<'a>(commands: &[&'a CommandEntry<String>]) -> Vec<ListRow<'a, String>> {
+pub fn command_list_rows<'a>(commands: &'a [CommandEntry<String>]) -> Vec<ListRow<'a, String>> {
     let mut rows = Vec::new();
     let mut last_group: Option<&str> = None;
     for c in commands {
@@ -403,7 +405,7 @@ pub fn component_inspect_rows(ids: &[String]) -> Vec<ListRow<'_, String>> {
 
 /// **Single list for paint + handle_key:** findings then component inspect rows.
 ///
-/// Must stay identical in `paint_help_center` and `handle_diagnostics_key` so
+/// Must stay identical in `render_help_center` and `handle_diagnostics_key` so
 /// keyboard navigation can reach painted component ids when both are present.
 #[must_use]
 pub fn diagnostics_rows<'a>(
@@ -535,6 +537,8 @@ pub struct HelpCenterState {
     pub density: Option<HelpCenterDensity>,
     /// Selected topic id.
     pub selected_topic: Option<String>,
+    /// Selected command id.
+    pub selected_command: Option<String>,
     /// Context help line (host: current focus widget).
     pub context_label: Option<String>,
     /// Host wants diagnostics pane when content exists.
@@ -581,6 +585,7 @@ impl HelpCenterState {
             focus: HelpCenterPane::Nav.id(),
             density: None,
             selected_topic: None,
+            selected_command: None,
             context_label: None,
             show_diagnostics: true,
             diagnostics_live: false,
@@ -588,6 +593,16 @@ impl HelpCenterState {
             last_panes: Vec::new(),
             last_area_width: None,
         }
+    }
+
+    /// Compact overlay factory.
+    #[must_use]
+    pub fn compact() -> Self {
+        let mut s = Self::new();
+        s.mode = HelpCenterMode::Compact;
+        s.focus = HelpCenterPane::Search.id();
+        // Modal already open from new()
+        s
     }
 
     /// Whether diagnostics pane is painted this frame (same predicate as layout).
@@ -697,6 +712,22 @@ impl HelpCenterState {
         self.body.set_focused(f == "body");
     }
 
+    /// Set focus.
+    pub fn set_focus(&mut self, pane: HelpCenterPane) -> HelpCenterOutcome {
+        let density = self.effective_density();
+        let visible = self.visible_focus_panes(density);
+        if !visible.contains(&pane) {
+            return HelpCenterOutcome::Ignored;
+        }
+        if self.focus == pane.id() {
+            self.apply_focus_gates();
+            return HelpCenterOutcome::Ignored;
+        }
+        self.focus = pane.id();
+        self.apply_focus_gates();
+        HelpCenterOutcome::FocusChanged(self.focus)
+    }
+
     /// Tab cycle.
     pub fn cycle_focus(&mut self, reverse: bool) -> HelpCenterOutcome {
         let density = self.effective_density();
@@ -744,8 +775,8 @@ impl HelpCenterState {
             )
             .priority(10),
         ];
-        if self.context_label.is_some() {
-            // content is &'static in StatusSlot — use fixed label
+        if let Some(ctx) = &self.context_label {
+            let _ = ctx; // content is &'static in StatusSlot — use fixed label
             slots.push(StatusSlot::context("ctx", "context").priority(40));
         }
         slots
@@ -919,8 +950,25 @@ impl HelpCenterState {
         key: KeyEvent,
         commands: &[CommandEntry<String>],
     ) -> HelpCenterOutcome {
-        let filtered = filter_command_entries(commands, self.search.query());
-        let rows = command_list_rows(&filtered);
+        let q = self.search.query().to_string();
+        let filtered: Vec<&CommandEntry<String>> = commands
+            .iter()
+            .filter(|c| {
+                if q.trim().is_empty() {
+                    return true;
+                }
+                let hay = format!(
+                    "{} {} {}",
+                    c.label,
+                    c.shortcut.as_deref().unwrap_or(""),
+                    c.keywords.join(" ")
+                )
+                .to_ascii_lowercase();
+                hay.contains(&q.to_ascii_lowercase())
+            })
+            .collect();
+        let owned: Vec<CommandEntry<String>> = filtered.into_iter().cloned().collect();
+        let rows = command_list_rows(&owned);
 
         if key.is_press() {
             match key.code {
@@ -929,16 +977,18 @@ impl HelpCenterState {
                         .commands
                         .selected()
                         .cloned()
-                        .or_else(|| filtered.first().map(|c| c.id.clone()))
+                        .or_else(|| owned.first().map(|c| c.id.clone()))
                     {
                         if id.starts_with("g-") {
                             return HelpCenterOutcome::Ignored;
                         }
+                        self.selected_command = Some(id.clone());
                         return HelpCenterOutcome::CommandRun { id };
                     }
                 }
                 KeyCode::Char('c') if key.modifiers.is_empty() => {
                     if let Some(id) = self.commands.selected().cloned() {
+                        self.selected_command = Some(id.clone());
                         return HelpCenterOutcome::CommandSelected { id };
                     }
                 }
@@ -954,12 +1004,14 @@ impl HelpCenterState {
                 if id.is_empty() || id.starts_with("g-") {
                     return HelpCenterOutcome::Ignored;
                 }
+                self.selected_command = Some(id.clone());
                 HelpCenterOutcome::CommandSelected { id }
             }
             Outcome::Activated(id) => {
                 if id.starts_with("g-") {
                     return HelpCenterOutcome::Ignored;
                 }
+                self.selected_command = Some(id.clone());
                 HelpCenterOutcome::CommandRun { id }
             }
             Outcome::Cancelled => HelpCenterOutcome::Cancelled,
@@ -1092,6 +1144,18 @@ impl HelpCenterState {
 
 /// Search strip height.
 pub const HELP_CENTER_SEARCH_HEIGHT: u16 = 3;
+
+/// Width-derived layout.
+#[must_use]
+pub fn help_center_layout(area: Rect, state: &WorkspaceState) -> Vec<PaneGeom> {
+    help_center_layout_density(
+        area,
+        state,
+        HelpCenterDensity::for_width(area.width),
+        HelpCenterMode::Full,
+        true,
+    )
+}
 
 /// Explicit density + mode layout.
 #[must_use]
@@ -1323,7 +1387,7 @@ fn pane_area(panes: &[PaneGeom], id: &str) -> Option<Rect> {
 // ── Render ──────────────────────────────────────────────────────────────────
 
 /// Paint help center (public children only; shortcuts from HelpEntry SoT).
-pub fn paint_help_center(buffer: &mut Buffer, area: Rect, surfaces: HelpCenterSurfaces<'_>) {
+pub fn render_help_center(buffer: &mut Buffer, area: Rect, surfaces: HelpCenterSurfaces<'_>) {
     let HelpCenterSurfaces {
         system,
         state,
@@ -1388,11 +1452,7 @@ pub fn paint_help_center(buffer: &mut Buffer, area: Rect, surfaces: HelpCenterSu
             if rows.is_empty() {
                 EmptyState::new("No topics", system)
                     .kind(EmptyKind::NoResults)
-                    .paint(
-                        Rect::new(inner.x, inner.y, inner.width, 1),
-                        buffer,
-                        &mut crate::widgets::EmptyStateState::new(),
-                    );
+                    .paint(Rect::new(inner.x, inner.y, inner.width, 1), buffer);
             } else {
                 let list = List::new(&rows, system).focused(focused);
                 StatefulWidget::render(&list, inner, buffer, &mut state.nav);
@@ -1420,16 +1480,28 @@ pub fn paint_help_center(buffer: &mut Buffer, area: Rect, surfaces: HelpCenterSu
             .emphasis(PanelChrome::for_focus(focused))
             .paint(r, buffer, None);
         if !inner.is_empty() {
-            let filtered = filter_command_entries(commands, &query);
+            let filtered: Vec<CommandEntry<String>> = commands
+                .iter()
+                .filter(|c| {
+                    if query.trim().is_empty() {
+                        return true;
+                    }
+                    let hay = format!(
+                        "{} {} {}",
+                        c.label,
+                        c.shortcut.as_deref().unwrap_or(""),
+                        c.keywords.join(" ")
+                    )
+                    .to_ascii_lowercase();
+                    hay.contains(&query.to_ascii_lowercase())
+                })
+                .cloned()
+                .collect();
             let rows = command_list_rows(&filtered);
             if rows.is_empty() {
                 EmptyState::new("No commands", system)
                     .kind(EmptyKind::NoResults)
-                    .paint(
-                        Rect::new(inner.x, inner.y, inner.width, 1),
-                        buffer,
-                        &mut crate::widgets::EmptyStateState::new(),
-                    );
+                    .paint(Rect::new(inner.x, inner.y, inner.width, 1), buffer);
             } else {
                 let list = List::new(&rows, system).focused(focused);
                 StatefulWidget::render(&list, inner, buffer, &mut state.commands);
@@ -1459,11 +1531,7 @@ pub fn paint_help_center(buffer: &mut Buffer, area: Rect, surfaces: HelpCenterSu
             } else {
                 EmptyState::new("Pick a topic", system)
                     .kind(EmptyKind::NoData)
-                    .paint(
-                        Rect::new(inner.x, inner.y, inner.width, 1),
-                        buffer,
-                        &mut crate::widgets::EmptyStateState::new(),
-                    );
+                    .paint(Rect::new(inner.x, inner.y, inner.width, 1), buffer);
             }
         }
     }
@@ -1481,11 +1549,7 @@ pub fn paint_help_center(buffer: &mut Buffer, area: Rect, surfaces: HelpCenterSu
                 EmptyState::new("No findings", system)
                     .kind(EmptyKind::NoData)
                     .explanation("d opens the doctor")
-                    .paint(
-                        Rect::new(inner.x, inner.y, inner.width, 1),
-                        buffer,
-                        &mut crate::widgets::EmptyStateState::new(),
-                    );
+                    .paint(Rect::new(inner.x, inner.y, inner.width, 1), buffer);
             } else {
                 let list = List::new(&rows, system).focused(focused);
                 StatefulWidget::render(&list, inner, buffer, &mut state.diagnostics);
@@ -1563,8 +1627,14 @@ pub fn example_help_topics() -> Vec<HelpTopic> {
 
 /// Live help entries from example keymap (SoT for stories/tests).
 #[must_use]
-pub fn example_help_center_entries() -> Vec<HelpEntry> {
-    example_help_entries()
+pub fn example_help_center_entries(system: &DesignSystem) -> Vec<HelpEntry> {
+    example_help_entries(system)
+}
+
+/// Commands derived from help entries (same chords).
+#[must_use]
+pub fn example_help_center_commands(system: &DesignSystem) -> Vec<CommandEntry<String>> {
+    command_entries_from_help(&example_help_entries(system))
 }
 
 /// Sample doctor report for projection (real build_doctor_report over a pure
@@ -1604,6 +1674,18 @@ pub fn burst_help_topics(n: usize) -> Vec<HelpTopic> {
         .collect()
 }
 
+/// Seed compact overlay mode.
+pub fn seed_compact_mode(state: &mut HelpCenterState) {
+    let _ = state.set_mode(HelpCenterMode::Compact);
+}
+
+/// Seed diagnostics-visible story.
+pub fn seed_diagnostics_state(state: &mut HelpCenterState) {
+    state.show_diagnostics = true;
+    state.mode = HelpCenterMode::Full;
+    state.context_label = Some("focus: editor".into());
+}
+
 // ── Bench ───────────────────────────────────────────────────────────────────
 
 /// Paint stress targets.
@@ -1622,7 +1704,10 @@ pub mod bench {
 mod tests {
     use super::*;
     use crate::style::DesignSystem;
-    use crate::widgets::tests::press;
+
+    fn press(code: KeyCode) -> KeyEvent {
+        KeyEvent::new(code, KeyModifiers::NONE)
+    }
 
     fn open() -> HelpCenterState {
         let mut st = HelpCenterState::new();
@@ -1634,8 +1719,9 @@ mod tests {
     #[test]
     fn focus_cycle_visits_visible_panes_only() {
         let mut st = open();
+        let system = DesignSystem::default();
         let topics = example_help_topics();
-        let help = example_help_center_entries();
+        let help = example_help_center_entries(&system);
         let cmds = command_entries_from_help(&help);
         let doctor = example_help_doctor_report();
         st.focus = "nav";
@@ -1665,7 +1751,7 @@ mod tests {
         let mut st = open();
         let system = DesignSystem::default();
         let topics = example_help_topics();
-        let help = example_help_center_entries();
+        let help = example_help_center_entries(&system);
         let cmds = command_entries_from_help(&help);
         st.density = Some(HelpCenterDensity::Tiny);
         st.focus = "keyboard";
@@ -1679,7 +1765,7 @@ mod tests {
         let area = Rect::new(0, 0, 40, 20);
         let mut buf = Buffer::empty(area);
         st.density = None;
-        paint_help_center(
+        render_help_center(
             &mut buf,
             area,
             HelpCenterSurfaces {
@@ -1744,8 +1830,9 @@ mod tests {
     #[test]
     fn topic_open_and_filter() {
         let mut st = open();
+        let system = DesignSystem::default();
         let topics = example_help_topics();
-        let help = example_help_center_entries();
+        let help = example_help_center_entries(&system);
         let cmds = command_entries_from_help(&help);
         st.focus = "nav";
         st.nav = ListState::new(Some("getting-started".into()));
@@ -1776,8 +1863,9 @@ mod tests {
     #[test]
     fn command_run_from_metadata_help_entries() {
         let mut st = open();
+        let system = DesignSystem::default();
         let topics = example_help_topics();
-        let help = example_help_center_entries();
+        let help = example_help_center_entries(&system);
         let cmds = command_entries_from_help(&help);
         assert!(!cmds.is_empty(), "commands must derive from HelpEntry");
         // Every command shortcut must match a HelpEntry chord (SoT)
@@ -1805,7 +1893,8 @@ mod tests {
 
     #[test]
     fn keyboard_map_from_live_help_entries_not_static_table() {
-        let help = example_help_center_entries();
+        let system = DesignSystem::default();
+        let help = example_help_center_entries(&system);
         // example_help_entries uses help_entries_from_keymap — chords are formatted live
         assert!(!help.is_empty());
         for e in &help {
@@ -1836,8 +1925,9 @@ mod tests {
     #[test]
     fn link_and_anchor_outcomes() {
         let mut st = open();
+        let system = DesignSystem::default();
         let topics = example_help_topics();
-        let help = example_help_center_entries();
+        let help = example_help_center_entries(&system);
         let cmds = command_entries_from_help(&help);
         st.selected_topic = Some("getting-started".into());
         st.focus = "body";
@@ -1856,8 +1946,9 @@ mod tests {
     #[test]
     fn doctor_and_inspect_outcomes() {
         let mut st = open();
+        let system = DesignSystem::default();
         let topics = example_help_topics();
-        let help = example_help_center_entries();
+        let help = example_help_center_entries(&system);
         let cmds = command_entries_from_help(&help);
         let doctor = example_help_doctor_report();
         let components = vec!["keyboard-help".into(), "command-palette".into()];
@@ -1928,12 +2019,12 @@ mod tests {
         let system = DesignSystem::default();
         let mut st = open();
         let topics = example_help_topics();
-        let help = example_help_center_entries();
+        let help = example_help_center_entries(&system);
         let cmds = command_entries_from_help(&help);
         let doctor = example_help_doctor_report();
         let area = Rect::new(0, 0, 120, 40);
         let mut buf = Buffer::empty(area);
-        paint_help_center(
+        render_help_center(
             &mut buf,
             area,
             HelpCenterSurfaces {
@@ -1977,13 +2068,13 @@ mod tests {
         );
 
         let topics = example_help_topics();
-        let help = example_help_center_entries();
+        let help = example_help_center_entries(&system);
         assert!(!help.is_empty(), "need HelpEntry content");
         let cmds = command_entries_from_help(&help);
         let area = Rect::new(0, 0, 120, 40);
         let mut buf = Buffer::empty(area);
         st.focus = "keyboard";
-        paint_help_center(
+        render_help_center(
             &mut buf,
             area,
             HelpCenterSurfaces {
@@ -2051,8 +2142,9 @@ mod tests {
     #[test]
     fn diagnostics_tab_not_when_unpainted() {
         let mut st = open();
+        let system = DesignSystem::default();
         let topics = example_help_topics();
-        let help = example_help_center_entries();
+        let help = example_help_center_entries(&system);
         let cmds = command_entries_from_help(&help);
         // No doctor findings, no components → diagnostics not live
         st.show_diagnostics = true;
@@ -2079,8 +2171,9 @@ mod tests {
     #[test]
     fn inspect_only_for_component_ids_not_findings() {
         let mut st = open();
+        let system = DesignSystem::default();
         let topics = example_help_topics();
-        let help = example_help_center_entries();
+        let help = example_help_center_entries(&system);
         let cmds = command_entries_from_help(&help);
         let doctor = example_help_doctor_report();
         let components = vec!["keyboard-help".into()];
@@ -2125,8 +2218,9 @@ mod tests {
     #[test]
     fn diagnostics_down_reaches_component_when_findings_present() {
         let mut st = open();
+        let system = DesignSystem::default();
         let topics = example_help_topics();
-        let help = example_help_center_entries();
+        let help = example_help_center_entries(&system);
         let cmds = command_entries_from_help(&help);
         let doctor = example_help_doctor_report();
         assert!(
@@ -2195,13 +2289,13 @@ mod tests {
         let mut st = open();
         st.density = Some(HelpCenterDensity::Normal);
         let topics = burst_help_topics(bench::BURST_TOPICS);
-        let help = example_help_center_entries();
+        let help = example_help_center_entries(&system);
         let cmds = command_entries_from_help(&help);
         let area = Rect::new(0, 0, bench::VIEWPORT.0, bench::VIEWPORT.1);
         let mut buf = Buffer::empty(area);
         let start = std::time::Instant::now();
         for _ in 0..bench::PAINT_FRAMES {
-            paint_help_center(
+            render_help_center(
                 &mut buf,
                 area,
                 HelpCenterSurfaces {

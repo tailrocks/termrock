@@ -6,11 +6,24 @@
 //! **Law:** Enter/Space or one pointer gesture activates once; disabled and
 //! loading never activate. Press confirms; Release never activates. Effects
 //! remain consumer-owned outcomes.
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+use ratatui_core::{
+    buffer::Buffer,
+    layout::Rect,
+    style::Modifier,
+    widgets::{StatefulWidget, Widget},
+};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind},
-    style::{ButtonRecipeVariant, ControlState, DesignSystem, Glyph, Role, VisualState},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
+    interaction::{HitRegion, SemanticNode, SemanticRole, SemanticScene, SemanticState},
+    runtime::FrameTick,
+    style::{
+        ButtonRecipeVariant, ControlState, DesignSystem, Glyph, GlyphSet, MotionPolicy, Role,
+        VisualState,
+    },
     text::{display_cols, take_display_cols},
 };
 
@@ -29,6 +42,17 @@ pub enum ActivationOutcome {
     ConfirmRequired,
     /// Visual press/arm state changed without activation.
     Pressed,
+}
+
+impl ActivationOutcome {
+    /// Wraps in the standard [`crate::interaction::EventResult`] envelope.
+    #[must_use]
+    pub fn into_event_result(self) -> crate::interaction::EventResult<Self> {
+        match self {
+            Self::Ignored => crate::interaction::EventResult::ignored(),
+            other => crate::interaction::EventResult::emit(other),
+        }
+    }
 }
 
 /// Armed/loading/disabled activation model shared by Button and IconButton.
@@ -219,6 +243,22 @@ impl ActivationState {
         ActivationOutcome::Ignored
     }
 
+    /// Key path with [`crate::interaction::EventResult`].
+    pub fn handle_key_result(
+        &mut self,
+        key: KeyEvent,
+    ) -> crate::interaction::EventResult<ActivationOutcome> {
+        self.handle_key(key).into_event_result()
+    }
+
+    /// Intent path with [`crate::interaction::EventResult`].
+    pub fn handle_intent_result(
+        &mut self,
+        intent: crate::interaction::UiIntent,
+    ) -> crate::interaction::EventResult<ActivationOutcome> {
+        self.handle_intent(intent).into_event_result()
+    }
+
     /// Pointer activation: Down arms; Up inside region activates once.
     pub fn handle_mouse(&mut self, event: MouseEvent, region: Option<Rect>) -> ActivationOutcome {
         if !self.can_activate() {
@@ -306,6 +346,15 @@ pub enum ButtonSize {
 }
 
 impl ButtonSize {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Compact => "compact",
+            Self::Normal => "normal",
+        }
+    }
+
     /// junie has exactly one density: the leading pad cell **is** the `▎`
     /// gutter column and one air cell trails, so a button is `label + 2`
     /// wide. Both names resolve to it; the knob survives only because
@@ -344,6 +393,7 @@ pub struct Button<'a> {
     variant: ButtonVariant,
     size: ButtonSize,
     leading: Option<&'a str>,
+    leading_role: Option<Role>,
     trailing: Option<&'a str>,
     full_width: bool,
     /// Required when label is empty (icon-only).
@@ -364,6 +414,7 @@ impl<'a> Button<'a> {
             variant: ButtonVariant::Secondary,
             size: ButtonSize::Normal,
             leading: None,
+            leading_role: None,
             trailing: None,
             full_width: false,
             accessible_label: None,
@@ -400,6 +451,28 @@ impl<'a> Button<'a> {
         self.variant = ButtonVariant::Secondary;
         self
     }
+
+    /// Fluent Quiet.
+    #[must_use]
+    pub const fn as_quiet(mut self) -> Self {
+        self.variant = ButtonVariant::Quiet;
+        self
+    }
+
+    /// Fluent Destructive.
+    #[must_use]
+    pub const fn as_destructive(mut self) -> Self {
+        self.variant = ButtonVariant::Destructive;
+        self
+    }
+
+    /// Size / pad.
+    #[must_use]
+    pub const fn size(mut self, size: ButtonSize) -> Self {
+        self.size = size;
+        self
+    }
+
     /// Compact density.
     #[must_use]
     pub const fn compact(mut self) -> Self {
@@ -411,6 +484,14 @@ impl<'a> Button<'a> {
     #[must_use]
     pub const fn leading(mut self, glyph: &'a str) -> Self {
         self.leading = Some(glyph);
+        self
+    }
+
+    /// Semantic role for the leading glyph foreground (for example, muted
+    /// when a toggle is off and accent when it is on).
+    #[must_use]
+    pub const fn leading_role(mut self, role: Role) -> Self {
+        self.leading_role = Some(role);
         self
     }
 
@@ -428,6 +509,13 @@ impl<'a> Button<'a> {
         self
     }
 
+    /// Accessible name (required for empty / icon-only labels).
+    #[must_use]
+    pub const fn accessible_label(mut self, label: &'a str) -> Self {
+        self.accessible_label = Some(label);
+        self
+    }
+
     /// ASCII chrome / loading fallback.
     #[must_use]
     /// Reduced-color paint (force non-color cues).
@@ -442,6 +530,16 @@ impl<'a> Button<'a> {
     #[must_use]
     pub const fn is_safe_default_focus(self) -> bool {
         !matches!(self.variant, ButtonVariant::Destructive)
+    }
+
+    /// Semantic name for a11y / HintBar (label or accessible_label).
+    #[must_use]
+    pub fn a11y_name(&self) -> &str {
+        if !self.label.is_empty() {
+            self.label
+        } else {
+            self.accessible_label.unwrap_or("")
+        }
     }
 
     /// Preferred width in cells (label + chrome + glyphs).
@@ -521,6 +619,14 @@ impl ButtonState {
             }
         }
         self.activation.handle_mouse(event, self.region)
+    }
+
+    /// EventResult key path.
+    pub fn handle_key_result(
+        &mut self,
+        key: KeyEvent,
+    ) -> crate::interaction::EventResult<ActivationOutcome> {
+        self.activation.handle_key_result(key)
     }
 }
 
@@ -650,6 +756,23 @@ impl Button<'_> {
             usize::from(paint_w),
             style.bg(fill_bg),
         );
+        if !loading
+            && show_leading
+            && let (Some(glyph), Some(role)) = (self.leading, self.leading_role)
+            && let Some(fg) = theme.style(role).fg
+            && let Some(x) = area.x.checked_add(u16::try_from(pad).unwrap_or(u16::MAX))
+            && x < area.right()
+        {
+            // The role owns only the marker's foreground. Keep the resolved
+            // button face for its background and interaction modifiers.
+            buffer.set_stringn(
+                x,
+                area.y,
+                glyph,
+                usize::from(paint_w.saturating_sub(u16::try_from(pad).unwrap_or(u16::MAX))),
+                style.fg(fg).bg(fill_bg),
+            );
+        }
         let theme_t = theme.junie_theme();
         let on_accent =
             matches!(recipe_variant, ButtonRecipeVariant::Primary) && !disabled && !loading;
@@ -691,6 +814,36 @@ impl Button<'_> {
         state.region = Some(root);
         ButtonParts { root, label: root }
     }
+
+    /// Semantic registration.
+    pub fn register_semantic<Id, Action>(
+        &self,
+        scene: &mut SemanticScene<Id, Action>,
+        id: Id,
+        area: Rect,
+        state: &ButtonState,
+    ) where
+        Id: Clone + PartialEq + std::fmt::Display,
+        Action: Clone,
+    {
+        if area.is_empty() {
+            return;
+        }
+        let name = self.a11y_name();
+        let _ = scene.register(
+            SemanticNode::control(id, state.region.unwrap_or(area))
+                .role(SemanticRole::Button)
+                .label(if name.is_empty() { "button" } else { name })
+                .description(self.variant.id())
+                .focusable(state.activation.accepts_input() && state.activation.is_enabled())
+                .state(SemanticState {
+                    selected: state.activation.accepts_input(),
+                    pressed: state.activation.is_armed(),
+                    busy: state.activation.is_loading(),
+                    ..Default::default()
+                }),
+        );
+    }
 }
 
 impl StatefulWidget for Button<'_> {
@@ -723,6 +876,17 @@ pub enum IconButtonSize {
     Toolbar,
 }
 
+impl IconButtonSize {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Compact => "compact",
+            Self::Toolbar => "toolbar",
+        }
+    }
+}
+
 /// Painted vs hit geometry for [`IconButton`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub struct IconButtonParts {
@@ -738,7 +902,7 @@ pub struct IconButtonParts {
 ///
 /// Visual width stays 1–2 cells (plus optional badge); pointer hit is expanded
 /// to at least [`ICON_BUTTON_MIN_HIT`] **without** stretching the painted glyph
-/// (slop pads empty cells). Hosts wire [`Self::accessible_label`] into [`crate::widgets::Tooltip`]
+/// (slop pads empty cells). Hosts wire [`Self::help`] into [`crate::widgets::Tooltip`]
 /// / HintBar; this widget does not steal focus for tooltips.
 ///
 /// Activation law is shared with [`Button`] via [`ActivationState`].
@@ -750,6 +914,8 @@ pub struct IconButton<'a> {
     /// When visual width cannot fit glyph, paint this text (1–2 cells ideal).
     text_fallback: Option<&'a str>,
     accessible_label: &'a str,
+    /// Tooltip / HintBar copy (defaults to accessible_label).
+    help: Option<&'a str>,
     system: &'a DesignSystem,
     variant: ButtonVariant,
     size: IconButtonSize,
@@ -774,6 +940,7 @@ impl<'a> IconButton<'a> {
             ascii_glyph: None,
             text_fallback: None,
             accessible_label,
+            help: None,
             system,
             variant: ButtonVariant::Quiet,
             size: IconButtonSize::Toolbar,
@@ -784,10 +951,68 @@ impl<'a> IconButton<'a> {
         }
     }
 
+    /// Names the plane this icon button sits on (junie resolvers take the
+    /// container, so a toolbar on a panel is not pinned to the surface).
+    #[must_use]
+    pub const fn container(mut self, container: ratatui_core::style::Color) -> Self {
+        self.container = Some(container);
+        self
+    }
+
+    /// Variant (quiet / primary / destructive common).
+    #[must_use]
+    pub const fn variant(mut self, variant: ButtonVariant) -> Self {
+        self.variant = variant;
+        self
+    }
+
+    /// Destructive recipe (never safe default focus for dialogs).
+    #[must_use]
+    pub const fn destructive(mut self) -> Self {
+        self.variant = ButtonVariant::Destructive;
+        self
+    }
+
+    /// Quiet toolbar recipe (default).
+    #[must_use]
+    pub const fn quiet(mut self) -> Self {
+        self.variant = ButtonVariant::Quiet;
+        self
+    }
+
+    /// Size / density.
+    #[must_use]
+    pub const fn size(mut self, size: IconButtonSize) -> Self {
+        self.size = size;
+        self
+    }
+
+    /// Compact data-row recipe.
+    #[must_use]
+    pub const fn compact(mut self) -> Self {
+        self.size = IconButtonSize::Compact;
+        self
+    }
+
     /// ASCII glyph override (also forced when design system is ASCII).
     #[must_use]
     pub const fn ascii_glyph(mut self, glyph: &'a str) -> Self {
         self.ascii_glyph = Some(glyph);
+        self
+    }
+
+    /// Force ASCII path.
+    #[must_use]
+    /// Text fallback when glyph cannot fit (low capability / 1-col squeeze).
+    pub const fn text_fallback(mut self, text: &'a str) -> Self {
+        self.text_fallback = Some(text);
+        self
+    }
+
+    /// Tooltip / help string (HintBar / [`crate::widgets::Tooltip`] host content).
+    #[must_use]
+    pub const fn help(mut self, help: &'a str) -> Self {
+        self.help = Some(help);
         self
     }
 
@@ -805,10 +1030,23 @@ impl<'a> IconButton<'a> {
         self
     }
 
+    /// Reduced-color paint.
+    #[must_use]
+    pub const fn colorless(mut self, colorless: bool) -> Self {
+        self.colorless = colorless;
+        self
+    }
+
     /// Accessible name (always the constructor label).
     #[must_use]
     pub const fn a11y_name(&self) -> &'a str {
         self.accessible_label
+    }
+
+    /// Help / tooltip text (help or a11y name).
+    #[must_use]
+    pub fn help_text(&self) -> &'a str {
+        self.help.unwrap_or(self.accessible_label)
     }
 
     /// Whether label contract is satisfied.
@@ -816,6 +1054,33 @@ impl<'a> IconButton<'a> {
     pub const fn has_accessible_label(&self) -> bool {
         !self.accessible_label.is_empty()
     }
+
+    /// Safe default focus (destructive → false).
+    #[must_use]
+    pub const fn is_safe_default_focus(self) -> bool {
+        !matches!(self.variant, ButtonVariant::Destructive)
+    }
+
+    /// Preferred **visual** width (glyph + optional badge), not hit slop.
+    #[must_use]
+    pub fn preferred_visual_width(&self) -> u16 {
+        let face = display_cols(self.face_glyph());
+        let badge = self.badge.map(|b| display_cols(b).min(2)).unwrap_or(0);
+        // Badge overlays corner; visual footprint stays max(face, 2) when badge
+        let w = if badge > 0 {
+            face.max(2).max(badge)
+        } else {
+            face.max(1)
+        };
+        u16::try_from(w.min(4)).unwrap_or(2)
+    }
+
+    /// Minimum hit width for pointer (slop).
+    #[must_use]
+    pub const fn min_hit_width(&self) -> u16 {
+        ICON_BUTTON_MIN_HIT
+    }
+
     fn mono(&self) -> bool {
         self.colorless
             || matches!(
@@ -837,10 +1102,10 @@ impl<'a> IconButton<'a> {
         let g = self.face_glyph();
         let gw = display_cols(g);
         if gw <= max_cols && gw > 0 {
-            return take_display_cols(g, max_cols).into_owned();
+            return take_display_cols(g, max_cols);
         }
         if let Some(fb) = self.text_fallback {
-            return take_display_cols(fb, max_cols.max(1)).into_owned();
+            return take_display_cols(fb, max_cols.max(1));
         }
         // First char of a11y name as last-resort fallback
         let ch = self
@@ -849,7 +1114,7 @@ impl<'a> IconButton<'a> {
             .next()
             .unwrap_or('?')
             .to_ascii_uppercase();
-        take_display_cols(&ch.to_string(), max_cols.max(1)).into_owned()
+        take_display_cols(&ch.to_string(), max_cols.max(1))
     }
 }
 
@@ -889,6 +1154,26 @@ impl IconButtonState {
         self.pressed = on;
     }
 
+    /// Compat: region = hit (for [`button_hit`] / older hosts).
+    #[must_use]
+    pub const fn region(&self) -> Option<Rect> {
+        self.hit
+    }
+
+    /// Key routing.
+    pub fn handle_key(&mut self, key: KeyEvent) -> ActivationOutcome {
+        let out = self.activation.handle_key(key);
+        if matches!(out, ActivationOutcome::Activated) {
+            // Host may flip toggle; we do not auto-toggle (caller owns domain).
+        }
+        out
+    }
+
+    /// Intent routing.
+    pub fn handle_intent(&mut self, intent: crate::interaction::UiIntent) -> ActivationOutcome {
+        self.activation.handle_intent(intent)
+    }
+
     /// Mouse against **hit** region (slop-aware).
     pub fn handle_mouse(&mut self, event: MouseEvent) -> ActivationOutcome {
         if let Some(area) = self.hit {
@@ -903,6 +1188,14 @@ impl IconButtonState {
             }
         }
         self.activation.handle_mouse(event, self.hit)
+    }
+
+    /// EventResult key path.
+    pub fn handle_key_result(
+        &mut self,
+        key: KeyEvent,
+    ) -> crate::interaction::EventResult<ActivationOutcome> {
+        self.activation.handle_key_result(key)
     }
 }
 
@@ -1035,6 +1328,48 @@ impl<'a> IconButton<'a> {
             badge: badge_rect,
         }
     }
+
+    /// Paint and update hit geometry.
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut IconButtonState) {
+        let _ = self.paint(area, buffer, state);
+    }
+
+    /// Semantic registration (label = accessible name).
+    pub fn register_semantic<Id, Action>(
+        &self,
+        scene: &mut SemanticScene<Id, Action>,
+        id: Id,
+        area: Rect,
+        state: &IconButtonState,
+    ) where
+        Id: Clone + PartialEq + std::fmt::Display,
+        Action: Clone,
+    {
+        let hit = state.hit.unwrap_or(area);
+        if hit.is_empty() {
+            return;
+        }
+        let _ = scene.register(
+            SemanticNode::control(id, hit)
+                .role(SemanticRole::Button)
+                .label(self.accessible_label)
+                .description(self.help_text())
+                .focusable(state.activation.accepts_input() && state.activation.is_enabled())
+                .state(SemanticState {
+                    selected: state.pressed || state.activation.accepts_input(),
+                    pressed: state.activation.is_armed(),
+                    checked: state.pressed,
+                    busy: state.activation.is_loading(),
+                    ..Default::default()
+                }),
+        );
+    }
+
+    /// Accessible label for toolbar overflow / overflow menus (same as a11y).
+    #[must_use]
+    pub const fn to_toolbar_label(&self) -> &'a str {
+        self.accessible_label
+    }
 }
 
 /// Build a toolbar action that prefers icon + keeps label for a11y/overflow.
@@ -1060,14 +1395,18 @@ pub fn toolbar_icon_action<'a, Id>(
 
 // Spinner: `widgets/spinner.rs`.
 
+/// Hit helper for button registration.
+#[must_use]
+pub fn button_hit<Id: Clone>(id: Id, state: &ButtonState) -> Option<HitRegion<Id>> {
+    state.region.map(|area| HitRegion { id, area })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::input::KeyModifiers;
-    use crate::widgets::tests::click;
-    use crate::widgets::tests::mouse;
     use ratatui_core::layout::Position;
-    use ratatui_core::widgets::Widget;
+    use std::time::{Duration, Instant};
 
     fn press(code: KeyCode) -> KeyEvent {
         KeyEvent::new(code, KeyModifiers::NONE)
@@ -1250,9 +1589,17 @@ mod tests {
         state.activation.set_accepts_input(true);
         state.activation.set_enabled(true);
         state.region = Some(Rect::new(0, 0, 8, 1));
-        let down = click(1, 0);
+        let down = MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: Position::new(1, 0),
+            modifiers: KeyModifiers::NONE,
+        };
         assert_eq!(state.handle_mouse(down), ActivationOutcome::Pressed);
-        let up = mouse(MouseEventKind::Up(MouseButton::Left), 1, 0);
+        let up = MouseEvent {
+            kind: MouseEventKind::Up(MouseButton::Left),
+            position: Position::new(1, 0),
+            modifiers: KeyModifiers::NONE,
+        };
         assert_eq!(state.handle_mouse(up), ActivationOutcome::Activated);
     }
 
@@ -1277,6 +1624,41 @@ mod tests {
         let mut tbuf = Buffer::empty(tiny);
         Button::new("SaveChanges", &system).render(tiny, &mut tbuf, &mut state);
         assert!(state.region.is_some());
+    }
+
+    #[test]
+    fn leading_role_survives_button_face_paint() {
+        let system = DesignSystem::junie();
+        let area = Rect::new(0, 0, 20, 1);
+
+        let mut off = Buffer::empty(area);
+        let mut off_state = ButtonState::new();
+        Button::new("Auto-approve", &system)
+            .leading("○")
+            .leading_role(Role::TextMuted)
+            .paint(area, &mut off, &mut off_state);
+        assert_eq!(
+            off[(1, 0)].fg,
+            system.style(Role::TextMuted).fg.unwrap(),
+            "off marker keeps its semantic muted foreground"
+        );
+        assert_eq!(
+            off[(3, 0)].fg,
+            system.style(Role::Text).fg.unwrap(),
+            "button label keeps the resolved face foreground"
+        );
+
+        let mut on = Buffer::empty(area);
+        let mut on_state = ButtonState::new();
+        Button::new("Verbose", &system)
+            .leading("●")
+            .leading_role(Role::Accent)
+            .paint(area, &mut on, &mut on_state);
+        assert_eq!(
+            on[(1, 0)].fg,
+            system.style(Role::Accent).fg.unwrap(),
+            "on marker keeps its semantic accent foreground"
+        );
     }
 
     #[test]
@@ -1329,9 +1711,17 @@ mod tests {
         let mut state = ButtonState::new();
         state.activation.set_accepts_input(true);
         state.region = Some(Rect::new(0, 0, 8, 1));
-        let down = click(1, 0);
+        let down = MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: Position::new(1, 0),
+            modifiers: KeyModifiers::NONE,
+        };
         assert_eq!(state.handle_mouse(down), ActivationOutcome::Pressed);
-        let up = mouse(MouseEventKind::Up(MouseButton::Left), 20, 0);
+        let up = MouseEvent {
+            kind: MouseEventKind::Up(MouseButton::Left),
+            position: Position::new(20, 0),
+            modifiers: KeyModifiers::NONE,
+        };
         assert_eq!(state.handle_mouse(up), ActivationOutcome::Ignored);
     }
 
@@ -1355,7 +1745,7 @@ mod tests {
         state.activation.set_accepts_input(true);
         let area = Rect::new(0, 0, 4, 1);
         let mut buffer = Buffer::empty(area);
-        IconButton::new("×", "Close", &system).paint(area, &mut buffer, &mut state);
+        IconButton::new("×", "Close", &system).render(area, &mut buffer, &mut state);
         assert_eq!(IconButton::new("×", "Close", &system).a11y_name(), "Close");
         assert!(state.hit.map(|r| r.width >= 3).unwrap_or(false));
     }
@@ -1408,7 +1798,11 @@ mod tests {
         // Click on slop cell (right of visual if centered)
         let hit = state.hit.unwrap();
         let pos = Position::new(hit.x.saturating_add(hit.width.saturating_sub(1)), hit.y);
-        let down = click(pos.x, pos.y);
+        let down = MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: pos,
+            modifiers: KeyModifiers::NONE,
+        };
         assert_eq!(state.handle_mouse(down), ActivationOutcome::Pressed);
         let up = MouseEvent {
             kind: MouseEventKind::Up(MouseButton::Left),

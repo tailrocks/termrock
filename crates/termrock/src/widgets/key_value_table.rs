@@ -16,15 +16,23 @@
 //! - [`super::ObjectInspector`] — nested structure paths (uses KV leaves later).
 //!
 //! Research: inspector panels, HTTP clients, cloud consoles, TermRock DetailTable.
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::collections::BTreeSet;
 
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
+use ratatui_core::{
+    buffer::Buffer,
+    layout::{Position, Rect},
+    style::Modifier,
+    widgets::StatefulWidget,
+};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     interaction::{NavigationMove, PageMove, UiIntent},
     style::{DesignSystem, Glyph, ListRowVisualState, MASK_CELLS, Role},
-    text::{contains_lower_all, display_cols, take_display_cols, wrap_display_cols},
+    text::{display_cols, take_display_cols, wrap_display_cols},
     widgets::{
         data_view::LoadState,
         key_value_list::{KvLayout, KvStatus, kv_stack_below},
@@ -49,6 +57,16 @@ pub enum KvtValidation {
 }
 
 impl KvtValidation {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Ok => "ok",
+            Self::Warning => "warning",
+            Self::Error => "error",
+        }
+    }
+
     fn role(self) -> Option<Role> {
         match self {
             Self::Ok => None,
@@ -177,6 +195,29 @@ impl<'a, Id> KvtField<'a, Id> {
         }
     }
 
+    /// Separator.
+    #[must_use]
+    pub const fn separator(id: Id) -> Self {
+        Self {
+            id,
+            key: "",
+            value: "",
+            value_type: None,
+            source: None,
+            annotation: None,
+            href: None,
+            compare: None,
+            copyable: false,
+            secret: false,
+            editable: false,
+            status: None,
+            validation: KvtValidation::Ok,
+            validation_message: None,
+            depth: 0,
+            kind: KvtRowKind::Separator,
+        }
+    }
+
     /// Sets the type label column.
     #[must_use]
     pub const fn value_type(mut self, t: &'a str) -> Self {
@@ -188,6 +229,20 @@ impl<'a, Id> KvtField<'a, Id> {
     #[must_use]
     pub const fn source(mut self, s: &'a str) -> Self {
         self.source = Some(s);
+        self
+    }
+
+    /// Sets secondary annotation text.
+    #[must_use]
+    pub const fn annotation(mut self, a: &'a str) -> Self {
+        self.annotation = Some(a);
+        self
+    }
+
+    /// Sets an activatable hyperlink for the value.
+    #[must_use]
+    pub const fn href(mut self, href: &'a str) -> Self {
+        self.href = Some(href);
         self
     }
 
@@ -216,6 +271,13 @@ impl<'a, Id> KvtField<'a, Id> {
     #[must_use]
     pub const fn editable(mut self) -> Self {
         self.editable = true;
+        self
+    }
+
+    /// Sets status tone for the primary value.
+    #[must_use]
+    pub const fn status(mut self, status: KvStatus) -> Self {
+        self.status = Some(status);
         self
     }
 
@@ -383,6 +445,17 @@ impl<Id: Clone + PartialEq + Ord> KeyValueTableState<Id> {
         self
     }
 
+    /// Cursor id.
+    #[must_use]
+    pub const fn cursor(&self) -> Option<&Id> {
+        self.cursor.as_ref()
+    }
+
+    /// Sets cursor.
+    pub fn set_cursor(&mut self, id: Option<Id>) {
+        self.cursor = id;
+    }
+
     /// Whether secret is revealed.
     #[must_use]
     pub fn is_revealed(&self, id: &Id) -> bool {
@@ -447,6 +520,44 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
         }
     }
 
+    /// Line shown when there is nothing to show.
+    ///
+    /// A collection that paints nothing when empty reads as broken; it has to
+    /// say that it is empty.
+    #[must_use]
+    pub const fn empty_message(mut self, message: &'a str) -> Self {
+        self.empty_message = message;
+        self
+    }
+
+    /// Fixed key column width (0 = auto).
+    #[must_use]
+    pub const fn key_width(mut self, w: u16) -> Self {
+        self.key_width = w;
+        self
+    }
+
+    /// Show type column when width allows.
+    #[must_use]
+    pub const fn show_type(mut self, on: bool) -> Self {
+        self.show_type = on;
+        self
+    }
+
+    /// Show source column when width allows.
+    #[must_use]
+    pub const fn show_source(mut self, on: bool) -> Self {
+        self.show_source = on;
+        self
+    }
+
+    /// Separator between key and value in columns mode.
+    #[must_use]
+    pub const fn separator(mut self, sep: &'a str) -> Self {
+        self.separator = sep;
+        self
+    }
+
     fn resolved_layout(&self, width: u16, state: &KeyValueTableState<Id>) -> KvLayout {
         match state.layout {
             KvLayout::Auto => {
@@ -508,16 +619,15 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
         // Keep matching fields and their ancestor groups by depth walk.
         let mut keep = vec![false; self.fields.len()];
         for (i, f) in self.fields.iter().enumerate() {
-            if contains_lower_all(
-                &[
-                    f.key,
-                    f.value,
-                    f.value_type.unwrap_or(""),
-                    f.source.unwrap_or(""),
-                ],
-                &q,
-            ) && f.focusable()
-            {
+            let hay = format!(
+                "{} {} {} {}",
+                f.key,
+                f.value,
+                f.value_type.unwrap_or(""),
+                f.source.unwrap_or("")
+            )
+            .to_ascii_lowercase();
+            if hay.contains(&q) && f.focusable() {
                 keep[i] = true;
                 let mut depth = f.depth;
                 let mut j = i;
@@ -910,7 +1020,7 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
     }
 
     /// Paint O(viewport) display rows.
-    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut KeyValueTableState<Id>) {
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut KeyValueTableState<Id>) {
         state.regions.clear();
         state.painted = area;
         if area.is_empty() {
@@ -1310,7 +1420,7 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
                     x,
                     area.y,
                     u16::try_from(key_w).unwrap_or(8),
-                    take_display_cols(field.key, key_w).as_ref(),
+                    &take_display_cols(field.key, key_w),
                     self.system.style(Role::TextMuted),
                 );
                 x = x.saturating_add(u16::try_from(key_w).unwrap_or(8));
@@ -1330,7 +1440,7 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
                         x,
                         area.y,
                         TYPE_W,
-                        take_display_cols(t, usize::from(TYPE_W)).as_ref(),
+                        &take_display_cols(t, usize::from(TYPE_W)),
                         self.system.style(Role::TextMuted),
                     );
                     x = x.saturating_add(TYPE_W + 1);
@@ -1342,7 +1452,7 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
                         x,
                         area.y,
                         SOURCE_W,
-                        take_display_cols(s, usize::from(SOURCE_W)).as_ref(),
+                        &take_display_cols(s, usize::from(SOURCE_W)),
                         self.system.style(Role::TextMuted),
                     );
                     x = x.saturating_add(SOURCE_W + 1);
@@ -1360,7 +1470,7 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
                         x,
                         area.y,
                         half.saturating_sub(1),
-                        take_display_cols(&body, usize::from(half.saturating_sub(1))).as_ref(),
+                        &take_display_cols(&body, usize::from(half.saturating_sub(1))),
                         value_style,
                     );
                     x = x.saturating_add(half);
@@ -1371,8 +1481,7 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
                         x,
                         area.y,
                         area.right().saturating_sub(x),
-                        take_display_cols(other, usize::from(area.right().saturating_sub(x)))
-                            .as_ref(),
+                        &take_display_cols(other, usize::from(area.right().saturating_sub(x))),
                         if changed {
                             self.system.style(Role::Warning)
                         } else {
@@ -1386,8 +1495,7 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
                         value
                     };
                     // copy affordance when selected + copyable
-                    let mut text = take_display_cols(&body, usize::from(remain.saturating_sub(3)))
-                        .into_owned();
+                    let mut text = take_display_cols(&body, usize::from(remain.saturating_sub(3)));
                     if selected && field.copyable {
                         if state.copied.as_ref() == Some(&field.id) {
                             text.push_str(" ✓");
@@ -1396,6 +1504,7 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
                         }
                     }
                     paint_line(buffer, x, area.y, remain, &text, value_style);
+                    let _ = remain;
                 }
             }
         }
@@ -1456,21 +1565,21 @@ fn paint_line(
 impl<'a, Id: Clone + PartialEq + Ord> StatefulWidget for KeyValueTable<'a, Id> {
     type State = KeyValueTableState<Id>;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        KeyValueTable::paint(&self, area, buffer, state);
+        KeyValueTable::render(&self, area, buffer, state);
     }
 }
 
 impl<'a, Id: Clone + PartialEq + Ord> StatefulWidget for &KeyValueTable<'a, Id> {
     type State = KeyValueTableState<Id>;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        KeyValueTable::paint(self, area, buffer, state);
+        KeyValueTable::render(self, area, buffer, state);
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::widgets::tests::click;
+    use ratatui_core::layout::Position;
 
     #[test]
     fn separator_comes_from_the_shared_key_value_token() {
@@ -1676,7 +1785,14 @@ mod tests {
             .first()
             .map(|r| (r.area.x, r.area.y))
             .expect("region");
-        let out = table.handle_mouse(&mut state, click(rx, ry));
+        let out = table.handle_mouse(
+            &mut state,
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: Position { x: rx, y: ry },
+                modifiers: KeyModifiers::NONE,
+            },
+        );
         assert!(matches!(out, KeyValueTableOutcome::Selected(_)));
     }
 

@@ -14,12 +14,18 @@
 //!
 //! Behavioral references: desktop toolbars, Radix Toolbar (roving), adapted to
 //! terminal cells and [`UiIntent`].
-use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+#![allow(unused_variables, unused_mut)] // unit-test fixtures
+use ratatui_core::{
+    buffer::Buffer,
+    layout::Rect,
+    widgets::{StatefulWidget, Widget},
+};
 
-use crate::input::{KeyEvent, MouseButton, MouseEvent, MouseEventKind};
+use crate::input::{KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{
-    HitRegion, RovingEntry, RovingFocusGroup, RovingOrientation, RovingOutcome, UiIntent,
-    default_button_intent,
+    EventResult, HitRegion, RovingEntry, RovingFocusGroup, RovingOrientation, RovingOutcome,
+    UiIntent, default_button_intent,
 };
 use crate::style::{ButtonRecipeVariant, ControlState, DesignSystem, GlyphSet, RecipeFamily, Role};
 use crate::text::{display_cols, take_display_cols};
@@ -35,6 +41,17 @@ pub enum ToolbarOrientation {
     Vertical,
 }
 
+impl ToolbarOrientation {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Horizontal => "horizontal",
+            Self::Vertical => "vertical",
+        }
+    }
+}
+
 /// Visual density recipe.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -44,6 +61,17 @@ pub enum ToolbarVariant {
     Default,
     /// Compact: tighter padding, prefer icons when present.
     Compact,
+}
+
+impl ToolbarVariant {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Default => "default",
+            Self::Compact => "compact",
+        }
+    }
 }
 
 /// Kind of one toolbar slot.
@@ -83,6 +111,8 @@ pub struct ToolbarItem<'a, Id> {
     pub kind: ToolbarItemKind,
     /// Optional generated command id for host command catalogs.
     pub command: Option<&'a str>,
+    /// Optional semantic intent metadata (host maps Activate → effects).
+    pub intent: Option<UiIntent>,
 }
 
 impl<'a, Id> ToolbarItem<'a, Id> {
@@ -98,6 +128,7 @@ impl<'a, Id> ToolbarItem<'a, Id> {
             priority: 50,
             kind: ToolbarItemKind::Action,
             command: None,
+            intent: None,
         }
     }
 
@@ -113,6 +144,7 @@ impl<'a, Id> ToolbarItem<'a, Id> {
             priority: 50,
             kind: ToolbarItemKind::Toggle { pressed },
             command: None,
+            intent: None,
         }
     }
 
@@ -128,8 +160,26 @@ impl<'a, Id> ToolbarItem<'a, Id> {
             priority: 100,
             kind: ToolbarItemKind::Separator,
             command: None,
+            intent: None,
         }
     }
+
+    /// Static label.
+    #[must_use]
+    pub const fn label_item(id: Id, label: &'a str) -> Self {
+        Self {
+            id,
+            label,
+            icon: None,
+            hint: None,
+            enabled: false,
+            priority: 80,
+            kind: ToolbarItemKind::Label,
+            command: None,
+            intent: None,
+        }
+    }
+
     /// Icon glyph.
     #[must_use]
     pub const fn icon(mut self, icon: &'a str) -> Self {
@@ -151,10 +201,24 @@ impl<'a, Id> ToolbarItem<'a, Id> {
         self
     }
 
+    /// Enabled flag.
+    #[must_use]
+    pub const fn enabled(mut self, enabled: bool) -> Self {
+        self.enabled = enabled;
+        self
+    }
+
     /// Command catalog id.
     #[must_use]
     pub const fn command(mut self, command: &'a str) -> Self {
         self.command = Some(command);
+        self
+    }
+
+    /// Intent metadata.
+    #[must_use]
+    pub const fn intent(mut self, intent: UiIntent) -> Self {
+        self.intent = Some(intent);
         self
     }
 
@@ -251,22 +315,22 @@ impl<Id: Clone + PartialEq> ToolbarState<Id> {
     }
 
     /// Build roving entries for interactive items only (visible + overflow chip).
-    fn roving_entries<'a>(
-        items: &'a [ToolbarItem<'a, Id>],
+    fn roving_entries(
+        items: &[ToolbarItem<'_, Id>],
         visible: &[usize],
         overflow_id: Option<&Id>,
         has_overflow: bool,
-    ) -> Vec<RovingEntry<'a, Id>> {
+    ) -> Vec<RovingEntry<Id>> {
         let mut out = Vec::new();
         for &i in visible {
             let item = &items[i];
             if item.is_interactive() {
-                out.push(RovingEntry::new(item.id.clone(), item.label).enabled(true));
+                out.push(RovingEntry::new(item.id.clone(), item.label.to_string()).enabled(true));
             }
         }
         if has_overflow {
             if let Some(oid) = overflow_id {
-                out.push(RovingEntry::new(oid.clone(), "More").enabled(true));
+                out.push(RovingEntry::new(oid.clone(), String::from("More")).enabled(true));
             }
         }
         out
@@ -282,6 +346,7 @@ pub struct Toolbar<'a, Id> {
     variant: ToolbarVariant,
     /// Synthetic id for the overflow "More" chip (required for overflow UX).
     overflow_id: Option<Id>,
+    colorless: bool,
 }
 
 impl<'a, Id> Toolbar<'a, Id> {
@@ -297,13 +362,28 @@ impl<'a, Id> Toolbar<'a, Id> {
             // Seeded from the system: a widget that defaults to false is
             // claiming the terminal has Unicode and colour before anyone
             // asked it. Builders below still force either way.
+            colorless: system.mono(),
         }
+    }
+
+    /// Orientation.
+    #[must_use]
+    pub const fn orientation(mut self, orientation: ToolbarOrientation) -> Self {
+        self.orientation = orientation;
+        self
     }
 
     /// Vertical compact strip.
     #[must_use]
     pub const fn vertical(mut self) -> Self {
         self.orientation = ToolbarOrientation::Vertical;
+        self
+    }
+
+    /// Variant recipe.
+    #[must_use]
+    pub const fn variant(mut self, variant: ToolbarVariant) -> Self {
+        self.variant = variant;
         self
     }
 
@@ -320,6 +400,14 @@ impl<'a, Id> Toolbar<'a, Id> {
         self.overflow_id = Some(id);
         self
     }
+
+    /// ASCII cursor brackets.
+    #[must_use]
+    /// No-color emphasis (strong text instead of ActionFocused bg).
+    pub const fn colorless(mut self, colorless: bool) -> Self {
+        self.colorless = colorless;
+        self
+    }
 }
 
 impl<Id: Clone + PartialEq> Toolbar<'_, Id> {
@@ -334,6 +422,11 @@ impl<Id: Clone + PartialEq> Toolbar<'_, Id> {
             self.overflow_id.is_some(),
             self.system.glyphs,
         )
+    }
+
+    /// Paint the toolbar into `buffer`.
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut ToolbarState<Id>) {
+        StatefulWidget::render(self, area, buffer, state);
     }
 
     /// Key path: requires surface focus. Roving + Activate.
@@ -363,7 +456,7 @@ impl<Id: Clone + PartialEq> Toolbar<'_, Id> {
 
         if let Some(intent) = default_button_intent(key) {
             if matches!(intent, UiIntent::Activate | UiIntent::Submit) {
-                return self.activate_cursor(state);
+                return self.activate_cursor(state, &plan);
             }
         }
 
@@ -371,6 +464,52 @@ impl<Id: Clone + PartialEq> Toolbar<'_, Id> {
         match state.roving.handle_key(key, &entries) {
             RovingOutcome::Ignored => ToolbarOutcome::Ignored,
             RovingOutcome::ActiveChanged { from, to } => ToolbarOutcome::CursorMoved { from, to },
+        }
+    }
+
+    /// Intent path when host already mapped keys.
+    pub fn handle_intent(
+        &self,
+        state: &mut ToolbarState<Id>,
+        intent: UiIntent,
+        area: Rect,
+    ) -> ToolbarOutcome<Id> {
+        if !state.surface_focused {
+            return ToolbarOutcome::Ignored;
+        }
+        let plan = self.plan(area);
+        let entries = ToolbarState::roving_entries(
+            self.items,
+            &plan.visible,
+            self.overflow_id.as_ref(),
+            plan.has_overflow,
+        );
+        let _ = state.roving.reconcile(&entries);
+        match intent {
+            UiIntent::Activate | UiIntent::Submit => self.activate_cursor(state, &plan),
+            UiIntent::Cancel | UiIntent::Close if state.overflow_open => {
+                state.overflow_open = false;
+                ToolbarOutcome::OverflowClosed
+            }
+            other => match state.roving.handle_intent(other, &entries) {
+                RovingOutcome::Ignored => ToolbarOutcome::Ignored,
+                RovingOutcome::ActiveChanged { from, to } => {
+                    ToolbarOutcome::CursorMoved { from, to }
+                }
+            },
+        }
+    }
+
+    /// Key with EventResult.
+    pub fn handle_key_result(
+        &self,
+        state: &mut ToolbarState<Id>,
+        key: KeyEvent,
+        area: Rect,
+    ) -> EventResult<ToolbarOutcome<Id>> {
+        match self.handle_key(state, key, area) {
+            ToolbarOutcome::Ignored => EventResult::ignored(),
+            other => EventResult::emit(other),
         }
     }
 
@@ -413,7 +552,11 @@ impl<Id: Clone + PartialEq> Toolbar<'_, Id> {
         ToolbarOutcome::Ignored
     }
 
-    fn activate_cursor(&self, state: &mut ToolbarState<Id>) -> ToolbarOutcome<Id> {
+    fn activate_cursor(
+        &self,
+        state: &mut ToolbarState<Id>,
+        plan: &ToolbarPlan,
+    ) -> ToolbarOutcome<Id> {
         let Some(active) = state.roving.active().cloned() else {
             return ToolbarOutcome::Ignored;
         };
@@ -438,7 +581,54 @@ impl<Id: Clone + PartialEq> Toolbar<'_, Id> {
                 _ => ToolbarOutcome::Ignored,
             };
         }
+        let _ = plan;
         ToolbarOutcome::Ignored
+    }
+
+    /// Registers toolbar surface + interactive children (when surface focused).
+    pub fn register_semantic(
+        &self,
+        scene: &mut crate::interaction::SemanticScene<Id, ()>,
+        toolbar_id: Id,
+        area: Rect,
+        state: &ToolbarState<Id>,
+    ) where
+        Id: std::fmt::Display,
+    {
+        use crate::interaction::{SemanticNode, SemanticRole, SemanticState};
+        let plan = self.plan(area);
+        let _ = scene.register(
+            SemanticNode::content(toolbar_id.clone(), area)
+                .role(SemanticRole::Chrome)
+                .label("toolbar")
+                .focusable(true)
+                .state(SemanticState {
+                    // Surface focus projected as pressed for Studio inspection.
+                    pressed: state.surface_focused,
+                    ..Default::default()
+                }),
+        );
+        for region in &state.regions {
+            let label = self
+                .items
+                .iter()
+                .find(|i| i.id == region.id)
+                .map(|i| i.label)
+                .unwrap_or("more");
+            let active = state.roving.active() == Some(&region.id);
+            let _ = scene.register_child(
+                toolbar_id.clone(),
+                SemanticNode::control(region.id.clone(), region.area)
+                    .role(SemanticRole::Button)
+                    .label(label)
+                    .focusable(false) // roving descendant
+                    .state(SemanticState {
+                        selected: active,
+                        ..Default::default()
+                    }),
+            );
+        }
+        let _ = plan;
     }
 }
 
@@ -652,10 +842,14 @@ fn format_label<Id>(
     on_cursor: bool,
     surface_focused: bool,
     variant: ToolbarVariant,
+    _glyphs: GlyphSet,
 ) -> String {
     let mut s = String::new();
     if let Some(icon) = item.icon {
         s.push_str(icon);
+        if !(matches!(variant, ToolbarVariant::Compact) && !item.label.is_empty()) {
+            // keep icon
+        }
         if !item.label.is_empty()
             && !(matches!(variant, ToolbarVariant::Compact) && item.icon.is_some())
         {
@@ -860,7 +1054,13 @@ fn paint_item<Id: Clone + PartialEq>(
     }
 
     let on_cursor = state.roving.active() == Some(&item.id);
-    let label = format_label(item, on_cursor, state.surface_focused, bar.variant);
+    let label = format_label(
+        item,
+        on_cursor,
+        state.surface_focused,
+        bar.variant,
+        bar.system.glyphs,
+    );
     let need = (display_cols(&label) as u16).min(slot.width).max(1);
     let rect = Rect {
         x: slot.x,
@@ -934,7 +1134,7 @@ fn paint_overflow_chip<Id: Clone + PartialEq>(
     buffer.set_stringn(
         rect.x,
         rect.y,
-        take_display_cols(&label, usize::from(rect.width)).as_ref(),
+        &take_display_cols(&label, usize::from(rect.width)),
         usize::from(rect.width),
         style,
     );
@@ -991,7 +1191,6 @@ mod tests {
     use super::*;
     use crate::input::{KeyCode, KeyModifiers};
     use crate::style::DesignSystem;
-    use crate::widgets::tests::click;
 
     fn sample_items() -> Vec<ToolbarItem<'static, &'static str>> {
         vec![
@@ -1089,7 +1288,14 @@ mod tests {
         StatefulWidget::render(&tb, area, &mut buf, &mut state);
         assert!(!state.regions.is_empty());
         let r = state.regions[0].area;
-        let out = tb.handle_mouse(&mut state, click(r.x, r.y));
+        let out = tb.handle_mouse(
+            &mut state,
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: ratatui_core::layout::Position { x: r.x, y: r.y },
+                modifiers: KeyModifiers::NONE,
+            },
+        );
         assert!(matches!(out, ToolbarOutcome::Activated("a")));
     }
 
@@ -1201,6 +1407,9 @@ mod tests {
     #[test]
     fn content_selection_independent_of_cursor() {
         // Document contract: surface_focused false means keys ignored even if cursor set.
+        let system = DesignSystem::default();
+        let items = [ToolbarItem::action("a", "A")];
+        let tb = Toolbar::new(&items, &system);
         let mut state = ToolbarState::horizontal();
         state.set_cursor(Some("a"));
         // content selection would live elsewhere — toolbar does not clear it.

@@ -17,67 +17,6 @@ pub fn is_terminal_control_char(c: char) -> bool {
     code < 0x20 || c == '\x7f' || (0x80..0xa0).contains(&code)
 }
 
-/// Case-folded substring test: `hay` is ASCII-lowercased and tested for
-/// `needle_lower`.
-///
-/// `needle_lower` must already be ASCII-lowercase — filters fold the query
-/// once, then test every row. This is the crate's single definition of what a
-/// case-insensitive text filter match means.
-#[must_use]
-pub fn contains_lower(hay: &str, needle_lower: &str) -> bool {
-    hay.to_ascii_lowercase().contains(needle_lower)
-}
-
-/// Case-folded substring test across all `fields`, joined with spaces.
-///
-/// The fields are matched as one space-joined haystack, so a query may span
-/// a field boundary (`"auth termrock"` matches name `auth` + group
-/// `termrock`). `needle_lower` must already be ASCII-lowercase — fold the
-/// query once per change, exactly like [`contains_lower`].
-#[must_use]
-pub fn contains_lower_all(fields: &[&str], needle_lower: &str) -> bool {
-    if needle_lower.is_empty() {
-        return true;
-    }
-    let mut hay = String::new();
-    for field in fields {
-        if !hay.is_empty() {
-            hay.push(' ');
-        }
-        hay.push_str(&field.to_ascii_lowercase());
-        if hay.contains(needle_lower) {
-            return true;
-        }
-    }
-    false
-}
-
-/// Case-folded prefix test for typeahead: `hay` starts with `needle_lower`.
-///
-/// Unlike [`contains_lower`] this folds with full Unicode `to_lowercase`,
-/// char by char, allocating nothing — typeahead tests every row on every
-/// printable keypress. The fold is per-char, so it matches
-/// `hay.to_lowercase().starts_with(..)` except for the rare multi-char
-/// expansions (`İ`, `ẞ`). `needle_lower` must already be lowercased (fold the
-/// typeahead buffer once per keypress).
-#[must_use]
-pub fn starts_with_lower(hay: &str, needle_lower: &str) -> bool {
-    let mut rest = needle_lower;
-    for hc in hay.chars() {
-        if rest.is_empty() {
-            return true;
-        }
-        let mut folded = hc.to_lowercase();
-        match folded.next() {
-            Some(fc) if folded.next().is_none() && rest.starts_with(fc) => {
-                rest = &rest[fc.len_utf8()..];
-            }
-            _ => return false,
-        }
-    }
-    rest.is_empty()
-}
-
 /// Display-column width of `s`, excluding terminal control bytes.
 #[must_use]
 pub fn display_cols(s: &str) -> usize {
@@ -94,15 +33,9 @@ pub fn display_cols(s: &str) -> usize {
 
 /// Take the longest prefix of `s` whose display width fits inside
 /// `max_cols`, skipping control bytes.
-///
-/// Borrows `s` unchanged when it already fits — the common case at paint
-/// time — and allocates only when a prefix must be carved out.
 #[must_use]
-pub fn take_display_cols(s: &str, max_cols: usize) -> std::borrow::Cow<'_, str> {
+pub fn take_display_cols(s: &str, max_cols: usize) -> String {
     use unicode_width::UnicodeWidthChar;
-    if display_cols(s) <= max_cols && !s.chars().any(is_terminal_control_char) {
-        return std::borrow::Cow::Borrowed(s);
-    }
     let mut out = String::new();
     let mut used = 0usize;
     for c in s.chars() {
@@ -116,7 +49,7 @@ pub fn take_display_cols(s: &str, max_cols: usize) -> std::borrow::Cow<'_, str> 
         out.push(c);
         used += width;
     }
-    std::borrow::Cow::Owned(out)
+    out
 }
 
 /// Truncate to display columns without splitting a grapheme, appending the
@@ -128,7 +61,7 @@ pub fn truncate_cols<'a>(s: &'a str, max_cols: usize, ellipsis: &str) -> Cow<'a,
     }
     let ellipsis_width = display_cols(ellipsis);
     if ellipsis_width > max_cols {
-        return Cow::Owned(take_display_cols(ellipsis, max_cols).into_owned());
+        return Cow::Owned(take_display_cols(ellipsis, max_cols));
     }
     let budget = max_cols - ellipsis_width;
     let mut out = String::new();
@@ -215,6 +148,75 @@ where
         .map(|part| display_cols(part.as_ref()))
         .sum::<usize>()
         + leading_space_cols(parts)
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// A source-byte segment and its measured display-column placement.
+pub struct FixedPrefixSegment {
+    /// Inclusive UTF-8 byte offset in the source string.
+    pub start_byte: usize,
+    /// Exclusive UTF-8 byte offset in the source string.
+    pub end_byte: usize,
+    /// Zero-based output display column.
+    pub target_col: usize,
+    /// Width of the segment in terminal display columns.
+    pub display_cols: usize,
+}
+
+/// Visible byte ranges for a horizontally scrolled line whose prefix remains
+/// fixed while the suffix scrolls by display columns.
+#[must_use]
+pub fn fixed_prefix_scroll_segments(
+    text: &str,
+    base_col: usize,
+    fixed_prefix_cols: usize,
+    scroll_cols: usize,
+    viewport_cols: usize,
+) -> Vec<FixedPrefixSegment> {
+    use unicode_width::UnicodeWidthChar;
+
+    let prefix_cols = fixed_prefix_cols.min(viewport_cols);
+    let suffix_cols = viewport_cols.saturating_sub(prefix_cols);
+    let suffix_start = fixed_prefix_cols.saturating_add(scroll_cols);
+    let suffix_end = suffix_start.saturating_add(suffix_cols);
+    let mut segments: Vec<FixedPrefixSegment> = Vec::new();
+    let mut col = base_col;
+
+    for (start_byte, ch) in text.char_indices() {
+        if is_terminal_control_char(ch) {
+            continue;
+        }
+        let end_byte = start_byte + ch.len_utf8();
+        let width = ch.width().unwrap_or(0);
+        if width == 0 {
+            if let Some(last) = segments.last_mut()
+                && last.end_byte == start_byte
+            {
+                last.end_byte = end_byte;
+            }
+            continue;
+        }
+
+        let target_col = if col < prefix_cols && col + width <= prefix_cols {
+            col
+        } else if col >= suffix_start && col + width <= suffix_end {
+            prefix_cols + (col - suffix_start)
+        } else {
+            col += width;
+            continue;
+        };
+        if target_col + width <= viewport_cols {
+            segments.push(FixedPrefixSegment {
+                start_byte,
+                end_byte,
+                target_col,
+                display_cols: width,
+            });
+        }
+        col += width;
+    }
+
+    segments
 }
 
 /// Expand ASCII tabs to spaces (`tab_width` columns, default 4 when 0 → 4).
@@ -323,16 +325,16 @@ pub fn truncate_display_cols(
     let full = display_cols(s);
     if full <= max_cols {
         // Still strip controls for copy-safe consistency.
-        return take_display_cols(s, max_cols).into_owned();
+        return take_display_cols(s, max_cols);
     }
     let ell_w = display_cols(ellipsis);
     if ell_w >= max_cols {
-        return take_display_cols(ellipsis, max_cols).into_owned();
+        return take_display_cols(ellipsis, max_cols);
     }
     let budget = max_cols.saturating_sub(ell_w);
     match mode {
         TruncateMode::End => {
-            let mut out = take_display_cols(s, budget).into_owned();
+            let mut out = take_display_cols(s, budget);
             out.push_str(ellipsis);
             out
         }
@@ -348,7 +350,7 @@ pub fn truncate_display_cols(
             let head = budget / 2;
             let tail = budget.saturating_sub(head);
             let total = display_cols(s);
-            let mut out = take_display_cols(s, head).into_owned();
+            let mut out = take_display_cols(s, head);
             out.push_str(ellipsis);
             let skip = total.saturating_sub(tail);
             out.push_str(&display_cols_slice(s, skip, tail));
@@ -420,6 +422,13 @@ impl<'a> LinePlacement<'a> {
     #[must_use]
     pub const fn align(mut self, alignment: CellAlignment) -> Self {
         self.alignment = alignment;
+        self
+    }
+
+    /// Chooses whether contraction is silent or marked.
+    #[must_use]
+    pub const fn overflow(mut self, overflow: CellOverflow) -> Self {
+        self.overflow = overflow;
         self
     }
 }
@@ -649,18 +658,6 @@ mod tests {
     /// Row content without the blank continuation cell of a wide grapheme.
     fn row_glyphs(buffer: &Buffer, row: u16) -> String {
         row_text(buffer, row).replace(' ', "")
-    }
-
-    #[test]
-    fn starts_with_lower_folds_ascii_and_unicode_prefixes() {
-        assert!(starts_with_lower("Apple", "app"));
-        assert!(starts_with_lower("Éclair", "é"));
-        assert!(!starts_with_lower("Apple", "apples"));
-        assert!(!starts_with_lower("", "a"));
-        assert!(starts_with_lower("", ""));
-        assert!(starts_with_lower("anything", ""));
-        // Multi-char expansion is the documented divergence from a full fold.
-        assert!(!starts_with_lower("İstanbul", "i̇"));
     }
 
     #[test]
@@ -896,5 +893,24 @@ mod tests {
         let combining = truncate_cols("e\u{301}clair", 4, "…");
         assert!(display_cols(&combining) <= 4);
         assert!(combining.starts_with("e\u{301}"));
+    }
+
+    #[test]
+    fn fixed_prefix_segments_cover_scroll_and_combining_boundaries() {
+        let fit = fixed_prefix_scroll_segments("ab", 0, 1, 0, 2);
+        assert_eq!(fit.len(), 2);
+        assert_eq!((fit[0].target_col, fit[1].target_col), (0, 1));
+
+        let past_end = fixed_prefix_scroll_segments("ab", 0, 1, 10, 2);
+        assert_eq!(past_end.len(), 1);
+        assert_eq!(past_end[0].start_byte, 0);
+
+        let combining = fixed_prefix_scroll_segments("e\u{301}x", 0, 1, 0, 2);
+        assert_eq!(combining[0].end_byte, "e\u{301}".len());
+        assert_eq!(combining[1].target_col, 1);
+
+        let no_prefix = fixed_prefix_scroll_segments("ab", 0, 0, 1, 1);
+        assert_eq!(no_prefix.len(), 1);
+        assert_eq!(no_prefix[0].target_col, 0);
     }
 }

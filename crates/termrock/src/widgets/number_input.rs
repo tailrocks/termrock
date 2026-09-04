@@ -14,7 +14,7 @@
 //! Research: shadcn numeric inputs, Textual numeric fields, desktop form UX.
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
-    interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
+    interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
     style::{ButtonRecipeVariant, ControlState, DesignSystem},
     text::{display_cols, take_display_cols},
 };
@@ -46,6 +46,15 @@ impl NumberKind {
             max_fraction_digits: 2,
         }
     }
+
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Integer => "integer",
+            Self::Decimal { .. } => "decimal",
+        }
+    }
 }
 
 /// Min / max / step (locale-independent `f64` storage).
@@ -70,6 +79,12 @@ impl Default for NumberConstraints {
 }
 
 impl NumberConstraints {
+    /// Unbounded with step 1.
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
     /// Min and max inclusive.
     #[must_use]
     pub fn bounded(min: f64, max: f64, step: f64) -> Self {
@@ -91,6 +106,28 @@ impl NumberConstraints {
             step: sanitize_step(bounds.step),
         }
     }
+
+    /// Builder: min.
+    #[must_use]
+    pub const fn with_min(mut self, min: f64) -> Self {
+        self.min = Some(min);
+        self
+    }
+
+    /// Builder: max.
+    #[must_use]
+    pub const fn with_max(mut self, max: f64) -> Self {
+        self.max = Some(max);
+        self
+    }
+
+    /// Builder: step.
+    #[must_use]
+    pub fn with_step(mut self, step: f64) -> Self {
+        self.step = sanitize_step(step);
+        self
+    }
+
     /// Clamp + optional snap to step grid when both bounds present.
     #[must_use]
     pub fn clamp_snap(self, value: f64) -> f64 {
@@ -300,6 +337,18 @@ impl NumberInputState {
         self
     }
 
+    /// Kind.
+    #[must_use]
+    pub const fn kind(&self) -> NumberKind {
+        self.kind
+    }
+
+    /// Constraints.
+    #[must_use]
+    pub const fn constraints(&self) -> NumberConstraints {
+        self.constraints
+    }
+
     /// Committed value.
     #[must_use]
     pub const fn value(&self) -> Option<f64> {
@@ -310,6 +359,54 @@ impl NumberInputState {
     #[must_use]
     pub fn draft_text(&self) -> &str {
         self.draft.value()
+    }
+
+    /// Whether empty is allowed.
+    #[must_use]
+    pub const fn allow_empty(&self) -> bool {
+        self.allow_empty
+    }
+
+    /// Focused.
+    #[must_use]
+    pub const fn is_focused(&self) -> bool {
+        self.focused
+    }
+
+    /// Enabled.
+    #[must_use]
+    pub const fn is_enabled(&self) -> bool {
+        self.enabled
+    }
+
+    /// Read-only.
+    #[must_use]
+    pub const fn is_read_only(&self) -> bool {
+        self.read_only
+    }
+
+    /// Editing draft (vs idle display of committed).
+    #[must_use]
+    pub const fn is_editing(&self) -> bool {
+        self.editing
+    }
+
+    /// Paint geometry.
+    #[must_use]
+    pub const fn parts(&self) -> Option<&NumberInputParts> {
+        self.parts.as_ref()
+    }
+
+    /// Enabled.
+    pub fn set_enabled(&mut self, on: bool) {
+        self.enabled = on;
+        self.sync_draft_gates();
+    }
+
+    /// Read-only.
+    pub fn set_read_only(&mut self, on: bool) {
+        self.read_only = on;
+        self.sync_draft_gates();
     }
 
     /// Focus flag. Does not begin the draft edit session.
@@ -484,47 +581,29 @@ impl NumberInputState {
         self.step_by(if forward { pages } else { -pages })
     }
 
+    /// Insert text into draft (paste).
+    pub fn insert_str(&mut self, text: &str) -> NumberInputOutcome {
+        if !self.enabled || self.read_only {
+            return NumberInputOutcome::Ignored;
+        }
+        self.begin_edit();
+        let filtered = filter_numeric_paste(self.kind, text);
+        match self.draft.insert_str(&filtered) {
+            TextInputOutcome::Changed => NumberInputOutcome::Changed,
+            _ => NumberInputOutcome::Ignored,
+        }
+    }
+
     /// Key adapter.
     pub fn handle_key(&mut self, key: KeyEvent) -> NumberInputOutcome {
         if key.is_release() || !self.enabled {
             return NumberInputOutcome::Ignored;
         }
+        self.sync_draft_gates();
+
         let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
         let alt = key.modifiers.contains(KeyModifiers::ALT);
         let shift = key.modifiers.contains(KeyModifiers::SHIFT);
-
-        // Submit, cancel, host clipboard requests, and destructive editor
-        // chords are one-shot physical actions. Filter them before draft
-        // synchronization or any fallback editor path can mutate state on
-        // Repeat.
-        if !key.is_press()
-            && (matches!(
-                key.code,
-                KeyCode::Enter | KeyCode::Esc | KeyCode::Tab | KeyCode::BackTab
-            ) || (ctrl
-                && matches!(
-                    key.code,
-                    KeyCode::Char(
-                        'c' | 'C'
-                            | 'k'
-                            | 'K'
-                            | 'm'
-                            | 'M'
-                            | 'u'
-                            | 'U'
-                            | 'v'
-                            | 'V'
-                            | 'w'
-                            | 'W'
-                            | 'x'
-                            | 'X',
-                    )
-                )))
-        {
-            return NumberInputOutcome::Ignored;
-        }
-
-        self.sync_draft_gates();
 
         // Steppers via arrows / page (when not shifting selection in draft)
         if !ctrl && !alt && !shift {
@@ -626,6 +705,45 @@ impl NumberInputState {
                     TextInputOutcome::Ignored => NumberInputOutcome::Ignored,
                 }
             }
+        }
+    }
+
+    /// Intent path (step / submit).
+    pub fn handle_intent(&mut self, intent: UiIntent) -> NumberInputOutcome {
+        if !self.enabled {
+            return NumberInputOutcome::Ignored;
+        }
+        match intent {
+            UiIntent::Submit | UiIntent::Activate => {
+                if self.commit_draft() || self.can_commit() {
+                    NumberInputOutcome::Submitted { value: self.value }
+                } else {
+                    NumberInputOutcome::Ignored
+                }
+            }
+            UiIntent::Cancel | UiIntent::Close => {
+                self.cancel_edit();
+                NumberInputOutcome::Cancelled
+            }
+            UiIntent::Page(crate::interaction::PageMove::Forward) => self.page_by(true),
+            UiIntent::Page(crate::interaction::PageMove::Backward) => self.page_by(false),
+            UiIntent::Move(crate::interaction::NavigationMove::Next)
+            | UiIntent::Move(crate::interaction::NavigationMove::Right) => {
+                self.begin_edit();
+                match self.draft.handle_intent(intent) {
+                    TextInputOutcome::Changed => NumberInputOutcome::Changed,
+                    _ => NumberInputOutcome::Ignored,
+                }
+            }
+            UiIntent::Move(crate::interaction::NavigationMove::Previous)
+            | UiIntent::Move(crate::interaction::NavigationMove::Left) => {
+                self.begin_edit();
+                match self.draft.handle_intent(intent) {
+                    TextInputOutcome::Changed => NumberInputOutcome::Changed,
+                    _ => NumberInputOutcome::Ignored,
+                }
+            }
+            _ => NumberInputOutcome::Ignored,
         }
     }
 
@@ -774,6 +892,33 @@ fn is_allowed_char(kind: NumberKind, c: char, draft: &str) -> bool {
     }
 }
 
+fn filter_numeric_paste(kind: NumberKind, text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    let mut started = false;
+    let mut saw_dot = false;
+    for c in text.chars() {
+        if c == '\n' || c == '\r' || c.is_control() {
+            break;
+        }
+        if c.is_ascii_digit() {
+            out.push(c);
+            started = true;
+            continue;
+        }
+        if matches!(c, '+' | '-') && !started && out.is_empty() {
+            out.push(c);
+            started = true;
+            continue;
+        }
+        if c == '.' && matches!(kind, NumberKind::Decimal { .. }) && !saw_dot {
+            out.push('.');
+            saw_dot = true;
+            started = true;
+        }
+    }
+    out
+}
+
 // ── Widget ──────────────────────────────────────────────────────────────────
 
 /// Hit geometry.
@@ -818,6 +963,13 @@ impl<'a> NumberInput<'a> {
         }
     }
 
+    /// Placeholder.
+    #[must_use]
+    pub const fn placeholder(mut self, placeholder: &'a str) -> Self {
+        self.placeholder = placeholder;
+        self
+    }
+
     /// Unit suffix (`px`, `%`, `ms`).
     #[must_use]
     pub const fn unit(mut self, unit: &'a str) -> Self {
@@ -829,6 +981,13 @@ impl<'a> NumberInput<'a> {
     #[must_use]
     pub const fn validation(mut self, validation: Validation<'a>) -> Self {
         self.validation = validation;
+        self
+    }
+
+    /// Show +/- steppers.
+    #[must_use]
+    pub const fn show_steppers(mut self, on: bool) -> Self {
+        self.show_steppers = on;
         self
     }
 
@@ -866,6 +1025,7 @@ impl<'a> NumberInput<'a> {
             } else {
                 ControlState::Default
             },
+            invalid,
             state.editing,
         );
 
@@ -999,6 +1159,7 @@ impl<'a> NumberInput<'a> {
             cursor: ti.cursor,
         };
         state.parts = Some(parts.clone());
+        let _ = ti;
         parts
     }
 
@@ -1065,10 +1226,8 @@ impl StatefulWidget for NumberInput<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyEventKind;
     use crate::style::RolePalette;
     use crate::widgets::Validation;
-    use crate::widgets::tests::click;
 
     #[test]
     fn draft_separate_from_committed() {
@@ -1180,44 +1339,6 @@ mod tests {
     }
 
     #[test]
-    fn repeated_lifecycle_and_clipboard_actions_are_ignored() {
-        let mut state = NumberInputState::new().with_value(7.0);
-        state.set_focused(true);
-        state.begin_edit();
-        let actions = [
-            (KeyCode::Enter, KeyModifiers::NONE),
-            (KeyCode::Esc, KeyModifiers::NONE),
-            (KeyCode::Tab, KeyModifiers::NONE),
-            (KeyCode::BackTab, KeyModifiers::NONE),
-            (KeyCode::Char('m'), KeyModifiers::CONTROL),
-            (
-                KeyCode::Char('m'),
-                KeyModifiers::CONTROL | KeyModifiers::ALT,
-            ),
-            (KeyCode::Char('k'), KeyModifiers::CONTROL),
-            (KeyCode::Char('u'), KeyModifiers::CONTROL),
-            (KeyCode::Char('w'), KeyModifiers::CONTROL),
-            (KeyCode::Char('c'), KeyModifiers::CONTROL),
-            (KeyCode::Char('x'), KeyModifiers::CONTROL),
-            (KeyCode::Char('v'), KeyModifiers::CONTROL),
-        ];
-        for (code, modifiers) in actions {
-            let before = state.clone();
-            let mut key = KeyEvent::new(code, modifiers);
-            key.kind = KeyEventKind::Repeat;
-            assert_eq!(state.handle_key(key), NumberInputOutcome::Ignored);
-            assert_eq!(state, before, "{code:?} repeat mutated number state");
-        }
-
-        let mut key = KeyEvent::new(KeyCode::Up, KeyModifiers::NONE);
-        key.kind = KeyEventKind::Repeat;
-        assert_eq!(
-            state.handle_key(key),
-            NumberInputOutcome::ValueChanged { value: Some(8.0) }
-        );
-    }
-
-    #[test]
     fn slider_roundtrip() {
         let bounds = SliderBounds::new(0.0, 100.0, 5.0);
         let mut state = NumberInputState::new().with_kind(NumberKind::Integer);
@@ -1253,7 +1374,11 @@ mod tests {
         let parts = NumberInput::new("N", &system).paint(area, &mut buf, &mut state);
         let dec = parts.decrement.unwrap();
         assert_eq!(
-            state.handle_mouse(click(dec.x, dec.y)),
+            state.handle_mouse(MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: ratatui_core::layout::Position::new(dec.x, dec.y),
+                modifiers: KeyModifiers::NONE,
+            }),
             NumberInputOutcome::ValueChanged { value: Some(0.0) }
         );
     }

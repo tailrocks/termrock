@@ -26,17 +26,14 @@ independent options that default on; inline integrations may enable either
 without owning the alternate screen, while alternate-screen integrations may
 disable either. Screens and widgets never emit lifecycle commands.
 
-`SplitPane` normalizes its expanded ratio to 5–95%, then maps horizontal or
-vertical direction and caller minimums into feasible first-pane, one-cell
-divider, and second-pane rectangles. If the minimums are impossible, it uses a
-direction-specific full-pane fallback with no divider. Whenever either pane is
-empty—including empty or zero-axis layouts, collapsed layouts, and
-impossible-minimum fallbacks—the divider/handle is empty too. `SplitPaneState`
-owns the ratio, divider focus/hover/drag, collapse side, and last painted
-geometry; render alone publishes direction-tagged pointer hit geometry.
-Keyboard resize and pointer methods emit semantic ratio/focus outcomes;
-explicit `collapse`/`expand` methods preserve the remembered ratio. The caller
-maps collapse bindings and owns pane content, persistence, focus routing, and
+`SplitPane` maps an integer remembered ratio, horizontal/vertical direction,
+and caller minimums into bounded first/divider/second rectangles. Tiny areas
+degrade proportionally without escaping the input rectangle. `SplitPaneState`
+owns ratio, divider focus/hover/drag, collapse side, and last painted geometry;
+render alone publishes direction-tagged pointer hit geometry. Keyboard resize
+and pointer methods emit semantic ratio/focus outcomes; explicit
+`collapse`/`expand` methods preserve the remembered ratio. The caller maps
+collapse bindings and owns pane content, persistence, focus routing, and
 collapse policy.
 
 `Form` consumes caller-owned borrowed sections and stable-ID fields. It renders

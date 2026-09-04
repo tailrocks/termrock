@@ -13,7 +13,7 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::input::{KeyEvent, MouseButton, MouseEvent, MouseEventKind};
-use crate::interaction::{UiIntent, default_button_intent, default_list_intent};
+use crate::interaction::{EventResult, UiIntent, default_button_intent, default_list_intent};
 use crate::style::{DesignSystem, Role};
 use crate::text::{display_cols, take_display_cols};
 use crate::widgets::panel::PanelAction;
@@ -29,6 +29,18 @@ pub enum SectionVariant {
     Emphasized,
     /// Always paint a divider under the header band (even when quiet title).
     Divided,
+}
+
+impl SectionVariant {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Quiet => "quiet",
+            Self::Emphasized => "emphasized",
+            Self::Divided => "divided",
+        }
+    }
 }
 
 /// Header action (stable id + label). Same shape as panel header actions.
@@ -55,6 +67,14 @@ pub struct SectionParts {
     pub clip: Rect,
     /// Hit region for collapse / section-level interaction.
     pub hit: Rect,
+}
+
+impl SectionParts {
+    /// True when body has positive area.
+    #[must_use]
+    pub const fn has_body(self) -> bool {
+        self.body.width > 0 && self.body.height > 0
+    }
 }
 
 /// Typed outcomes (no side effects).
@@ -152,6 +172,18 @@ impl SectionState {
         }
     }
 
+    /// Key path with [`EventResult`].
+    pub fn handle_key_result(
+        &mut self,
+        key: KeyEvent,
+        collapsible: bool,
+    ) -> EventResult<SectionOutcome> {
+        match self.handle_key(key, collapsible) {
+            SectionOutcome::Ignored => EventResult::ignored(),
+            other => EventResult::emit(other),
+        }
+    }
+
     /// Mouse: actions first, then header toggle when collapsible.
     pub fn handle_mouse(&mut self, event: MouseEvent, collapsible: bool) -> SectionOutcome {
         if event.kind != MouseEventKind::Down(MouseButton::Left) {
@@ -239,6 +271,13 @@ impl<'a> Section<'a> {
         self
     }
 
+    /// Quiet recipe.
+    #[must_use]
+    pub const fn quiet(mut self) -> Self {
+        self.variant = SectionVariant::Quiet;
+        self
+    }
+
     /// Emphasized recipe.
     #[must_use]
     pub const fn emphasized(mut self) -> Self {
@@ -257,6 +296,20 @@ impl<'a> Section<'a> {
     #[must_use]
     pub const fn depth(mut self, depth: u8) -> Self {
         self.depth = depth;
+        self
+    }
+
+    /// Extra left indent.
+    #[must_use]
+    pub const fn indent(mut self, indent: u16) -> Self {
+        self.indent = indent;
+        self
+    }
+
+    /// Force divider on/off (None = variant default).
+    #[must_use]
+    pub const fn divider(mut self, show: bool) -> Self {
+        self.show_divider = Some(show);
         self
     }
 
@@ -617,7 +670,6 @@ mod tests {
     use super::*;
     use crate::input::{KeyCode, KeyModifiers};
     use crate::style::DesignSystem;
-    use crate::widgets::tests::click;
 
     #[test]
     fn quiet_layout_has_header_and_body() {
@@ -696,7 +748,17 @@ mod tests {
         assert!(!state.action_hits.is_empty());
         let (id, rect) = &state.action_hits[0];
         assert_eq!(id, "reset");
-        let out = state.handle_mouse(click(rect.x, rect.y), false);
+        let out = state.handle_mouse(
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: ratatui_core::layout::Position {
+                    x: rect.x,
+                    y: rect.y,
+                },
+                modifiers: KeyModifiers::NONE,
+            },
+            false,
+        );
         assert!(matches!(out, SectionOutcome::HeaderAction { id } if id == "reset"));
     }
 

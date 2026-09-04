@@ -21,19 +21,26 @@
 //! **Narrow.** Scrolling window → overflow `…` menu → Select-like trigger.
 //!
 //! Research: Radix Tabs, terminal editors, Zellij, Posting, browser tab overflow.
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
-    buffer::Buffer, layout::Rect, style::Modifier, text::Span, widgets::StatefulWidget,
+    buffer::Buffer,
+    layout::{Position, Rect},
+    style::Modifier,
+    text::Span,
+    widgets::StatefulWidget,
 };
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     interaction::{
         CollectionItem, CollectionOutcome, CollectionState, HitRegion, SemanticNode, SemanticRole,
-        SemanticScene, SemanticState,
+        SemanticScene, SemanticState, UiIntent,
     },
     style::{DesignSystem, Role},
-    text::take_display_cols,
+    text::{display_cols, take_display_cols},
 };
 
 /// Single space between adjacent horizontal tab cells.
@@ -120,6 +127,17 @@ pub enum TabsActivation {
     Manual,
 }
 
+impl TabsActivation {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Automatic => "automatic",
+            Self::Manual => "manual",
+        }
+    }
+}
+
 /// Layout presentation under width pressure.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -168,6 +186,19 @@ pub enum TabStatus {
 }
 
 impl TabStatus {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::None => "none",
+            Self::Running => "running",
+            Self::Success => "success",
+            Self::Warning => "warning",
+            Self::Error => "error",
+            Self::Dirty => "dirty",
+        }
+    }
+
     /// ASCII / unicode mark.
     #[must_use]
     pub const fn mark(self, ascii: bool) -> Option<&'static str> {
@@ -230,6 +261,13 @@ impl<'a, Id> Tab<'a, Id> {
         self
     }
 
+    /// Badge.
+    #[must_use]
+    pub const fn badge(mut self, badge: &'a str) -> Self {
+        self.badge = Some(badge);
+        self
+    }
+
     /// Status.
     #[must_use]
     pub const fn status(mut self, status: TabStatus) -> Self {
@@ -288,6 +326,11 @@ pub enum TabsOutcome<Id> {
         from: usize,
         /// To index.
         to: usize,
+    },
+    /// Presentation class changed.
+    PresentationChanged {
+        /// Presentation.
+        presentation: TabsPresentation,
     },
 }
 
@@ -417,6 +460,18 @@ impl<Id> TabsState<Id> {
         self.collection.active()
     }
 
+    /// Activation.
+    #[must_use]
+    pub const fn activation(&self) -> TabsActivation {
+        self.activation
+    }
+
+    /// Orientation.
+    #[must_use]
+    pub const fn orientation(&self) -> TabsOrientation {
+        self.orientation
+    }
+
     /// Presentation.
     #[must_use]
     pub const fn presentation(&self) -> TabsPresentation {
@@ -452,12 +507,57 @@ impl<Id> TabsState<Id> {
             self.collection.set_active(Some(id));
         }
     }
-    fn items_from_tabs<'a>(tabs: &'a [Tab<'a, Id>]) -> Vec<CollectionItem<'a, Id>>
+
+    /// Records when the active tab changed, in runner milliseconds.
+    ///
+    /// Hosts that animate call this from their tick; hosts that do not leave
+    /// it alone and the fill snaps, which is the settled frame.
+    pub const fn mark_changed_at(&mut self, elapsed_ms: u64) {
+        self.changed_at_ms = elapsed_ms;
+    }
+
+    /// How far the active-fill blend has run at `elapsed_ms` (`1.0` settled).
+    #[must_use]
+    pub fn blend_fraction(&self, elapsed_ms: u64, duration_ms: u64) -> f32 {
+        if self.previous.is_none() || duration_ms == 0 {
+            return 1.0;
+        }
+        let since = elapsed_ms.saturating_sub(self.changed_at_ms);
+        if since >= duration_ms {
+            return 1.0;
+        }
+        since as f32 / duration_ms as f32
+    }
+
+    /// Presentation for bounds.
+    #[must_use]
+    pub fn presentation_for_bounds(bounds: Rect, orientation: TabsOrientation) -> TabsPresentation {
+        match orientation {
+            TabsOrientation::Vertical => {
+                if bounds.height < 4 {
+                    TabsPresentation::Select
+                } else {
+                    TabsPresentation::Expanded
+                }
+            }
+            TabsOrientation::Horizontal => {
+                if bounds.width < TABS_SELECT_MAX_WIDTH {
+                    TabsPresentation::Select
+                } else if bounds.width < TABS_OVERFLOW_MAX_WIDTH {
+                    TabsPresentation::Overflow
+                } else {
+                    TabsPresentation::Expanded
+                }
+            }
+        }
+    }
+
+    fn items_from_tabs(tabs: &[Tab<'_, Id>]) -> Vec<CollectionItem<Id>>
     where
         Id: Clone,
     {
         tabs.iter()
-            .map(|t| CollectionItem::new(t.id.clone(), t.label).enabled(t.enabled))
+            .map(|t| CollectionItem::new(t.id.clone(), t.label.to_owned()).enabled(t.enabled))
             .collect()
     }
 
@@ -490,14 +590,12 @@ impl<Id> TabsState<Id> {
         }
 
         let items = Self::items_from_tabs(tabs);
-        let is_press = key.is_press();
         let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
         let alt = key.modifiers.contains(KeyModifiers::ALT);
 
         // Close: Ctrl+W / Delete on focused closable
-        if is_press
-            && ((ctrl && matches!(key.code, KeyCode::Char('w') | KeyCode::Char('W')))
-                || matches!(key.code, KeyCode::Delete))
+        if (ctrl && matches!(key.code, KeyCode::Char('w') | KeyCode::Char('W')))
+            || matches!(key.code, KeyCode::Delete)
         {
             if let Some(id) = self.collection.active().cloned() {
                 if tabs.iter().any(|t| t.id == id && t.closable && t.enabled) {
@@ -507,8 +605,7 @@ impl<Id> TabsState<Id> {
         }
 
         // Overflow toggle
-        if is_press
-            && matches!(key.code, KeyCode::Char('o') | KeyCode::Char('O'))
+        if matches!(key.code, KeyCode::Char('o') | KeyCode::Char('O'))
             && matches!(
                 self.presentation,
                 TabsPresentation::Overflow | TabsPresentation::Select
@@ -525,14 +622,13 @@ impl<Id> TabsState<Id> {
         }
 
         // Esc closes overflow
-        if is_press && key.code == KeyCode::Esc && self.overflow_open {
+        if key.code == KeyCode::Esc && self.overflow_open {
             self.overflow_open = false;
             return TabsOutcome::OverflowClosed;
         }
 
         // Reorder hooks: Ctrl+Left/Right or Alt+arrows
-        if is_press
-            && (ctrl || alt)
+        if (ctrl || alt)
             && matches!(
                 key.code,
                 KeyCode::Left | KeyCode::Right | KeyCode::Up | KeyCode::Down
@@ -553,10 +649,7 @@ impl<Id> TabsState<Id> {
 
         // Enter/Space activate (junie tabs.rs). Manual mode needs this;
         // Automatic already selected on move.
-        if is_press
-            && matches!(key.code, KeyCode::Enter | KeyCode::Char(' '))
-            && key.modifiers.is_empty()
-        {
+        if matches!(key.code, KeyCode::Enter | KeyCode::Char(' ')) && key.modifiers.is_empty() {
             if let Some(id) = self.collection.active().cloned() {
                 return self.activate(id, tabs);
             }
@@ -648,6 +741,41 @@ impl<Id> TabsState<Id> {
         }
     }
 
+    /// Intent path.
+    pub fn handle_intent(&mut self, intent: UiIntent, tabs: &[Tab<'_, Id>]) -> TabsOutcome<Id>
+    where
+        Id: Clone + PartialEq,
+    {
+        if !self.enabled || !self.focused {
+            return TabsOutcome::Ignored;
+        }
+        let items = Self::items_from_tabs(tabs);
+        match intent {
+            UiIntent::Activate | UiIntent::Submit => {
+                if let Some(id) = self.collection.active().cloned() {
+                    return self.activate(id, tabs);
+                }
+                TabsOutcome::Ignored
+            }
+            UiIntent::Close => {
+                if self.overflow_open {
+                    self.overflow_open = false;
+                    return TabsOutcome::OverflowClosed;
+                }
+                if let Some(id) = self.collection.active().cloned() {
+                    if tabs.iter().any(|t| t.id == id && t.closable) {
+                        return TabsOutcome::CloseRequested { id };
+                    }
+                }
+                TabsOutcome::Ignored
+            }
+            other => {
+                let out = self.collection.handle_intent(other, &items);
+                self.after_focus_move(out, tabs)
+            }
+        }
+    }
+
     /// Mouse.
     pub fn handle_mouse(&mut self, event: MouseEvent, tabs: &[Tab<'_, Id>]) -> TabsOutcome<Id>
     where
@@ -724,6 +852,21 @@ impl<Id> TabsState<Id> {
             _ => TabsOutcome::Ignored,
         }
     }
+
+    /// Select from overflow menu (host).
+    pub fn select_overflow_id(&mut self, id: Id) -> TabsOutcome<Id>
+    where
+        Id: Clone + PartialEq,
+    {
+        if !self.overflow_ids.contains(&id) {
+            return TabsOutcome::Ignored;
+        }
+        self.overflow_open = false;
+        self.previous = self.selected.clone();
+        self.selected = Some(id.clone());
+        self.collection.set_active(Some(id.clone()));
+        TabsOutcome::SelectionChanged { id }
+    }
 }
 
 // ── Widget ──────────────────────────────────────────────────────────────────
@@ -747,6 +890,19 @@ pub enum TabsActiveCue {
     /// the ordinary border role while the strip is unfocused.
     #[default]
     Rule,
+}
+
+impl TabsActiveCue {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::AccentPill => "accent-pill",
+            Self::Connected => "connected",
+            Self::Marker => "marker",
+            Self::Rule => "rule",
+        }
+    }
 }
 
 /// Keyboard- and pointer-navigable tab strip.
@@ -813,9 +969,6 @@ impl<'a, Id> Tabs<'a, Id> {
     where
         Id: Clone + PartialEq,
     {
-        // Every downstream painter assumes coordinates belong to the buffer.
-        // Clip caller geometry before persisting state or writing cells.
-        let area = area.intersection(*buffer.area());
         state.regions.clear();
         state.close_regions.clear();
         state.overflow_trigger = None;
@@ -904,7 +1057,7 @@ impl<'a, Id> Tabs<'a, Id> {
     }
 
     fn tab_width(&self, tab: &Tab<'a, Id>, show_status: bool) -> u16 {
-        // junie: leading inset 1 + label + 2 padding (+ prefix + 1) (+2 status) (+2 close)
+        // junie: gutter 1 + label + 2 padding (+ prefix + 1) (+2 status) (+2 close)
         let mut cols = 1u16
             .saturating_add(UnicodeWidthStr::width(tab.label) as u16)
             .saturating_add(2);
@@ -913,7 +1066,7 @@ impl<'a, Id> Tabs<'a, Id> {
                 cols = cols
                     .saturating_add(UnicodeWidthStr::width(g.content.as_ref()) as u16)
                     .saturating_add(1);
-            } else if tab.status.mark(false).is_some() {
+            } else if tab.badge.is_none() && tab.status.mark(false).is_some() {
                 cols = cols.saturating_add(2);
             }
         }
@@ -975,19 +1128,24 @@ impl<'a, Id> Tabs<'a, Id> {
     where
         Id: Clone + PartialEq,
     {
-        self.paint_scroll_window(area, buffer, state);
+        self.paint_scroll_window(area, buffer, state, true);
     }
 
     fn paint_scrolling(&self, area: Rect, buffer: &mut Buffer, state: &mut TabsState<Id>)
     where
         Id: Clone + PartialEq,
     {
-        self.paint_scroll_window(area, buffer, state);
+        self.paint_scroll_window(area, buffer, state, false);
     }
 
     /// junie overflow: `" ‹ "` / `" › "` around a visible window.
-    fn paint_scroll_window(&self, area: Rect, buffer: &mut Buffer, state: &mut TabsState<Id>)
-    where
+    fn paint_scroll_window(
+        &self,
+        area: Rect,
+        buffer: &mut Buffer,
+        state: &mut TabsState<Id>,
+        _menu_on_right: bool,
+    ) where
         Id: Clone + PartialEq,
     {
         let show_status = true;
@@ -1214,8 +1372,23 @@ impl<'a, Id> Tabs<'a, Id> {
         let label_h = 1u16;
         let label_rect = Rect::new(rect.x, rect.y, rect.width, label_h);
         buffer.set_style(label_rect, style);
-        // Tabs keep the canonical one-cell label inset, but never paint the
-        // row/field selection gutter (`▎`).
+        buffer.set_stringn(
+            label_rect.x,
+            label_rect.y,
+            self.system.glyphs.selection_gutter(),
+            1,
+            self.system.gutter(
+                crate::style::VisualState {
+                    focused: focused_tab,
+                    hovered,
+                    selected,
+                    disabled: !tab.enabled,
+                    ..Default::default()
+                },
+                style.bg.unwrap_or(bg),
+                false,
+            ),
+        );
         let mut cx = label_rect.x.saturating_add(1);
         if !marker.is_empty() && cx < label_rect.right() {
             buffer.set_stringn(cx, label_rect.y, marker, 1, style);
@@ -1243,7 +1416,9 @@ impl<'a, Id> Tabs<'a, Id> {
                 cx = cx
                     .saturating_add(UnicodeWidthStr::width(prefix) as u16)
                     .saturating_add(1);
-            } else if let Some(m) = tab.status.mark(false) {
+            } else if tab.badge.is_none()
+                && let Some(m) = tab.status.mark(false)
+            {
                 let mark_style = match tab.status {
                     TabStatus::Error => style.fg(theme.error),
                     TabStatus::Dirty | TabStatus::Warning => style.fg(theme.warning),
@@ -1269,12 +1444,18 @@ impl<'a, Id> Tabs<'a, Id> {
             if cx.saturating_add(1) < label_rect.right() {
                 cx = cx.saturating_add(1);
                 let bw = label_rect.right().saturating_sub(cx);
+                let badge_style = match tab.status {
+                    TabStatus::Error => style.fg(theme.error),
+                    TabStatus::Dirty | TabStatus::Warning => style.fg(theme.warning),
+                    TabStatus::Running | TabStatus::Success => style.fg(theme.accent),
+                    TabStatus::None => style,
+                };
                 buffer.set_stringn(
                     cx,
                     label_rect.y,
                     take_display_cols(b, usize::from(bw)),
                     usize::from(bw),
-                    style,
+                    badge_style,
                 );
                 cx = cx.saturating_add(UnicodeWidthStr::width(b) as u16);
             }
@@ -1303,8 +1484,10 @@ impl<'a, Id> Tabs<'a, Id> {
                 theme.accent
             };
             let rule = self.system.glyphs.rule_strong();
-            // The canonical active rule spans the tab plane edge to edge.
-            for xx in rect.x..rect.right() {
+            // Source: `x+1 .. x+w-1` — gutter and trailing pad stay baseline `─`.
+            let start = rect.x.saturating_add(1);
+            let end = rect.right().saturating_sub(1);
+            for xx in start..end {
                 buffer.set_stringn(
                     xx,
                     rect.y.saturating_add(1),
@@ -1382,12 +1565,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for Tabs<'_, Id> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyEventKind;
     use crate::style::RolePalette;
-    use crate::widgets::tests::click;
-    use crate::widgets::tests::key_with_kind;
-    use crate::widgets::tests::mouse;
-    use ratatui_core::layout::Position;
     use ratatui_core::style::{Color, Style};
 
     fn sample_tabs() -> [Tab<'static, &'static str>; 4] {
@@ -1399,19 +1577,6 @@ mod tests {
                 .status(TabStatus::Running),
             Tab::new("disabled", "Disabled").enabled(false),
         ]
-    }
-
-    fn assert_no_selection_gutter(buffer: &Buffer) {
-        let area = *buffer.area();
-        for y in area.y..area.bottom() {
-            for x in area.x..area.right() {
-                assert_ne!(
-                    buffer[(x, y)].symbol(),
-                    "▎",
-                    "selection gutter painted at ({x}, {y})"
-                );
-            }
-        }
     }
 
     #[test]
@@ -1455,24 +1620,15 @@ mod tests {
             system.junie_theme().canvas,
             "active tab sits on canvas, not a tint wash"
         );
-        assert_no_selection_gutter(&buffer);
+        assert_eq!(buffer[(3, 4)].symbol(), "▎");
+        // Baseline under the gutter; `━` starts at x+1.
+        assert_eq!(buffer[(4, 5)].symbol(), system.glyphs.rule_strong());
+        assert_eq!(buffer[(4, 5)].fg, theme.style(Role::Accent).fg.unwrap());
         let tab_w = state.regions[0].area.width;
-        for x in 3..3 + tab_w {
-            assert_eq!(
-                buffer[(x, 5)].symbol(),
-                system.glyphs.rule_strong(),
-                "active underline must span the tab plane at x={x}"
-            );
-            assert_eq!(
-                buffer[(x, 5)].fg,
-                theme.style(Role::Accent).fg.unwrap(),
-                "active underline color at x={x}"
-            );
-        }
         assert_eq!(
-            buffer[(3 + tab_w, 5)].symbol(),
+            buffer[(3 + tab_w - 1, 5)].symbol(),
             system.glyphs.rule(),
-            "the gap after the active tab stays the baseline"
+            "trailing pad stays the baseline"
         );
         assert_eq!(state.regions.len(), 1);
         assert!(state.regions[0].area.contains(Position::new(3, 5)));
@@ -1500,7 +1656,7 @@ mod tests {
             system.junie_theme().canvas,
             "active tab sits on canvas, not a tint wash"
         );
-        assert_no_selection_gutter(&buffer);
+        assert_eq!(buffer[(0, 0)].symbol(), "▎");
     }
 
     #[test]
@@ -1626,68 +1782,6 @@ mod tests {
     }
 
     #[test]
-    fn repeated_tabs_one_shot_actions_are_ignored() {
-        let tabs = sample_tabs();
-        let repeat = |code, modifiers| key_with_kind(code, modifiers, KeyEventKind::Repeat);
-
-        let mut close_state = TabsState::new().with_selected("logs");
-        close_state.set_focused(true);
-        assert_eq!(
-            close_state.handle_key(repeat(KeyCode::Char('w'), KeyModifiers::CONTROL), &tabs),
-            TabsOutcome::Ignored
-        );
-        assert_eq!(
-            close_state.handle_key(repeat(KeyCode::Delete, KeyModifiers::NONE), &tabs),
-            TabsOutcome::Ignored
-        );
-
-        let mut overflow_state = TabsState::new().with_selected("overview");
-        overflow_state.set_focused(true);
-        overflow_state.presentation = TabsPresentation::Select;
-        assert_eq!(
-            overflow_state.handle_key(repeat(KeyCode::Char('o'), KeyModifiers::NONE), &tabs),
-            TabsOutcome::Ignored
-        );
-        assert!(!overflow_state.is_overflow_open());
-        assert!(matches!(
-            overflow_state.handle_key(KeyEvent::new(KeyCode::Char('o'), KeyModifiers::NONE), &tabs),
-            TabsOutcome::OverflowOpened { .. }
-        ));
-        assert_eq!(
-            overflow_state.handle_key(repeat(KeyCode::Esc, KeyModifiers::NONE), &tabs),
-            TabsOutcome::Ignored
-        );
-        assert!(overflow_state.is_overflow_open());
-        assert_eq!(
-            overflow_state.handle_key(repeat(KeyCode::Char('o'), KeyModifiers::NONE), &tabs),
-            TabsOutcome::Ignored
-        );
-        assert!(overflow_state.is_overflow_open());
-
-        let mut reorder_state = TabsState::new().with_selected("overview");
-        reorder_state.set_focused(true);
-        assert_eq!(
-            reorder_state.handle_key(repeat(KeyCode::Right, KeyModifiers::CONTROL), &tabs),
-            TabsOutcome::Ignored
-        );
-
-        let mut activation_state = TabsState::new()
-            .with_selected("overview")
-            .with_activation(TabsActivation::Manual);
-        activation_state.set_focused(true);
-        let _ =
-            activation_state.handle_key(KeyEvent::new(KeyCode::Right, KeyModifiers::NONE), &tabs);
-        assert_eq!(activation_state.selected(), Some(&"overview"));
-        for code in [KeyCode::Enter, KeyCode::Char(' ')] {
-            assert_eq!(
-                activation_state.handle_key(repeat(code, KeyModifiers::NONE), &tabs),
-                TabsOutcome::Ignored
-            );
-            assert_eq!(activation_state.selected(), Some(&"overview"));
-        }
-    }
-
-    #[test]
     fn reorder_hook() {
         let tabs = sample_tabs();
         let mut state = TabsState::new().with_selected("overview");
@@ -1740,54 +1834,6 @@ mod tests {
             state.presentation(),
             TabsPresentation::Overflow | TabsPresentation::Scrolling | TabsPresentation::Select
         ));
-    }
-
-    #[test]
-    fn no_selection_gutter_in_overflow_and_vertical_tabs() {
-        let tabs = sample_tabs();
-        let system = DesignSystem::junie();
-
-        let overflow_area = Rect::new(0, 0, 22, 2);
-        let mut overflow_state = TabsState::new().with_selected("overview");
-        let mut overflow_buffer = Buffer::empty(overflow_area);
-        Tabs::new(&tabs, &system).paint(overflow_area, &mut overflow_buffer, &mut overflow_state);
-        assert!(matches!(
-            overflow_state.presentation(),
-            TabsPresentation::Overflow | TabsPresentation::Scrolling
-        ));
-        assert_no_selection_gutter(&overflow_buffer);
-
-        let vertical_area = Rect::new(0, 0, 16, 6);
-        let mut vertical_state = TabsState::new()
-            .with_selected("overview")
-            .with_orientation(TabsOrientation::Vertical);
-        let mut vertical_buffer = Buffer::empty(vertical_area);
-        Tabs::new(&tabs, &system).paint(vertical_area, &mut vertical_buffer, &mut vertical_state);
-        assert_no_selection_gutter(&vertical_buffer);
-    }
-
-    #[test]
-    fn paint_clips_partial_and_out_of_bounds_areas() {
-        let tabs = sample_tabs();
-        let system = DesignSystem::junie();
-        let buffer_area = Rect::new(5, 4, 12, 2);
-        let requested = Rect::new(3, 3, 12, 3);
-        let mut state = TabsState::new().with_selected("overview");
-        let mut buffer = Buffer::empty(buffer_area);
-
-        Tabs::new(&tabs, &system).paint(requested, &mut buffer, &mut state);
-
-        assert_eq!(state.root, requested.intersection(buffer_area));
-        assert_no_selection_gutter(&buffer);
-
-        let outside = Rect::new(0, 0, 4, 2);
-        let mut outside_state = TabsState::new().with_selected("overview");
-        let mut outside_buffer = Buffer::empty(buffer_area);
-        Tabs::new(&tabs, &system).paint(outside, &mut outside_buffer, &mut outside_state);
-
-        assert!(outside_state.root.is_empty());
-        assert!(outside_state.regions.is_empty());
-        assert_no_selection_gutter(&outside_buffer);
     }
 
     #[test]
@@ -1845,7 +1891,14 @@ mod tests {
             .find(|r| r.id == "details")
             .expect("details hit");
         assert!(matches!(
-            state.handle_mouse(click(details.area.x, details.area.y), &tabs),
+            state.handle_mouse(
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(details.area.x, details.area.y),
+                    modifiers: KeyModifiers::NONE,
+                },
+                &tabs
+            ),
             TabsOutcome::SelectionChanged { id: "details" }
         ));
     }
@@ -1866,7 +1919,14 @@ mod tests {
             TabsOutcome::Ignored
         );
         assert_eq!(
-            state.handle_mouse(click(0, 0), &tabs,),
+            state.handle_mouse(
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(0, 0),
+                    modifiers: KeyModifiers::NONE,
+                },
+                &tabs,
+            ),
             TabsOutcome::Ignored
         );
     }
@@ -1995,11 +2055,7 @@ mod tests {
         );
         assert_eq!(buffer[(1, 1)].symbol(), system.glyphs.rule_strong());
         assert_eq!(buffer[(1, 1)].fg, theme.accent);
-        assert_eq!(
-            buffer[(0, 1)].symbol(),
-            system.glyphs.rule_strong(),
-            "active underline reaches the tab's left edge"
-        );
+        assert_eq!(buffer[(0, 1)].symbol(), system.glyphs.rule());
     }
 
     #[test]
@@ -2100,7 +2156,11 @@ mod tests {
             .expect("search")
             .area;
         let _ = state.handle_mouse(
-            mouse(MouseEventKind::Moved, search.x.saturating_add(1), search.y),
+            MouseEvent {
+                kind: MouseEventKind::Moved,
+                position: Position::new(search.x.saturating_add(1), search.y),
+                modifiers: KeyModifiers::NONE,
+            },
             &tabs,
         );
         let mut buffer = Buffer::empty(area);

@@ -15,11 +15,12 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::StatefulWidget};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers},
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseEvent},
     style::{DesignSystem, Role},
-    text::{contains_lower_all, take_display_cols},
+    text::take_display_cols,
     widgets::{
         breadcrumbs::BreadcrumbItem,
+        file_picker::FileEntryKind,
         quick_open::{QuickOpenItem, QuickOpenPreview},
         tree::{Tree, TreeNode, TreeNodeStatus, TreeOutcome, TreeState},
     },
@@ -61,6 +62,24 @@ impl FileTreeKind {
     #[must_use]
     pub const fn is_dir(self) -> bool {
         matches!(self, Self::Directory | Self::SymlinkDir)
+    }
+
+    /// Symlink of any target.
+    #[must_use]
+    pub const fn is_symlink(self) -> bool {
+        matches!(self, Self::SymlinkFile | Self::SymlinkDir)
+    }
+
+    /// Map from file-picker kind.
+    #[must_use]
+    pub const fn from_entry_kind(kind: FileEntryKind) -> Self {
+        match kind {
+            FileEntryKind::File => Self::File,
+            FileEntryKind::Directory => Self::Directory,
+            FileEntryKind::SymlinkFile => Self::SymlinkFile,
+            FileEntryKind::SymlinkDir => Self::SymlinkDir,
+            FileEntryKind::Other => Self::Other,
+        }
     }
 
     /// Leading glyph.
@@ -110,6 +129,22 @@ pub enum FileGitStatus {
 }
 
 impl FileGitStatus {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Clean => "clean",
+            Self::Modified => "modified",
+            Self::Added => "added",
+            Self::Deleted => "deleted",
+            Self::Renamed => "renamed",
+            Self::Untracked => "untracked",
+            Self::Ignored => "ignored",
+            Self::Conflict => "conflict",
+            Self::Unknown => "unknown",
+        }
+    }
+
     /// Single-letter status (lazygit/VS Code class).
     #[must_use]
     pub const fn letter(self) -> char {
@@ -122,6 +157,19 @@ impl FileGitStatus {
             Self::Untracked => '?',
             Self::Ignored => '!',
             Self::Conflict => 'U',
+        }
+    }
+
+    /// Role for badge.
+    #[must_use]
+    pub const fn role(self) -> Role {
+        match self {
+            Self::Clean | Self::Unknown => Role::TextMuted,
+            Self::Modified | Self::Renamed => Role::Warning,
+            Self::Added => Role::Success,
+            Self::Deleted | Self::Conflict => Role::Danger,
+            Self::Untracked => Role::TextSecondary,
+            Self::Ignored => Role::TextDisabled,
         }
     }
 }
@@ -296,6 +344,13 @@ impl<'a, Id> FileTreeEntry<'a, Id> {
         self.size = Some(n);
         self
     }
+
+    /// Status.
+    #[must_use]
+    pub const fn with_status(mut self, status: TreeNodeStatus) -> Self {
+        self.status = status;
+        self
+    }
 }
 
 // ── Filter / path helpers ───────────────────────────────────────────────────
@@ -381,7 +436,8 @@ pub fn filter_file_tree_entries<'a, Id: Clone + PartialEq>(
     }
     let mut keep = vec![false; base.len()];
     for (i, e) in base.iter().enumerate() {
-        if contains_lower_all(&[e.name, e.path], &q) {
+        let hay = format!("{} {}", e.name, e.path).to_ascii_lowercase();
+        if hay.contains(&q) {
             keep[i] = true;
             let mut parent = e.parent.clone();
             while let Some(pid) = parent {
@@ -637,6 +693,12 @@ impl<Id: Clone + PartialEq> FileTreeState<Id> {
         self.accepts_input = on;
     }
 
+    /// Accepts input.
+    #[must_use]
+    pub const fn accepts_input(&self) -> bool {
+        self.accepts_input
+    }
+
     /// Selected id.
     #[must_use]
     pub const fn selected(&self) -> Option<&Id> {
@@ -651,6 +713,11 @@ impl<Id: Clone + PartialEq> FileTreeState<Id> {
     /// Select id.
     pub fn select(&mut self, id: Option<Id>) {
         self.tree.select(id);
+    }
+
+    /// Programmatic reveal: select id if present.
+    pub fn reveal(&mut self, id: Id) {
+        self.tree.select(Some(id));
     }
 
     /// Keys + product chords.
@@ -834,6 +901,15 @@ impl<Id: Clone + PartialEq> FileTreeState<Id> {
         let out = self.tree.handle_key(&nodes, key);
         map_tree_outcome(out, &view)
     }
+
+    /// Mouse: no tree mouse API — host may call select via hit regions after paint.
+    pub fn handle_mouse(
+        &mut self,
+        _entries: &[FileTreeEntry<'_, Id>],
+        _event: MouseEvent,
+    ) -> FileTreeOutcome<Id> {
+        FileTreeOutcome::Ignored
+    }
 }
 
 fn parent_for_create<'a, Id: Clone + PartialEq>(
@@ -991,7 +1067,7 @@ impl<'a, Id> FileTree<'a, Id> {
     }
 
     /// Paint.
-    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut FileTreeState<Id>)
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut FileTreeState<Id>)
     where
         Id: Clone + PartialEq + Eq,
     {
@@ -1083,8 +1159,12 @@ impl<'a, Id> FileTree<'a, Id> {
 
 /// Host paging / huge-dir targets.
 pub mod bench {
+    /// Viewport rows.
+    pub const VIEWPORT: u16 = 40;
     /// Entries in a huge directory host should window.
     pub const HUGE_DIR: usize = 50_000;
+    /// Max paint cells.
+    pub const MAX_PAINT_CELLS: u32 = 40 * 80;
 }
 
 #[cfg(test)]
@@ -1258,7 +1338,7 @@ mod tests {
         FileTree::new(&e, &system)
             .title("Repo")
             .focused(true)
-            .paint(area, &mut buf, &mut state);
+            .render(area, &mut buf, &mut state);
         let text: String = buf
             .content()
             .iter()
@@ -1318,7 +1398,7 @@ mod tests {
         let mut buf = Buffer::empty(area);
         let view = FileTree::new(&e, &system);
         for _ in 0..30 {
-            view.paint(area, &mut buf, &mut state);
+            view.render(area, &mut buf, &mut state);
         }
     }
 }

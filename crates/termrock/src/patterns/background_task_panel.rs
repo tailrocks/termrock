@@ -36,7 +36,7 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers},
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     patterns::{ActivityKind, ActivityModel, ActivityScope},
     style::{DesignSystem, PanelChrome, Role},
     text::{display_cols, take_display_cols},
@@ -152,7 +152,7 @@ impl BackgroundTaskStatus {
 
     /// Glyph.
     #[must_use]
-    pub const fn glyph(self) -> &'static str {
+    pub const fn glyph(self, _ascii: bool) -> &'static str {
         {
             match self {
                 Self::Pending => "·",
@@ -242,6 +242,16 @@ impl BackgroundOutputLine {
         }
     }
 
+    /// Stderr.
+    #[must_use]
+    pub fn stderr(id: impl Into<String>, text: impl Into<String>) -> Self {
+        Self {
+            id: id.into(),
+            stream: TerminalStream::Stderr,
+            text: text.into(),
+        }
+    }
+
     /// System.
     #[must_use]
     pub fn system(id: impl Into<String>, text: impl Into<String>) -> Self {
@@ -282,10 +292,22 @@ impl BackgroundOutputBuffer {
         Self::new(BACKGROUND_TASK_DEFAULT_HISTORY)
     }
 
+    /// Max lines.
+    #[must_use]
+    pub const fn max_lines(&self) -> usize {
+        self.max_lines
+    }
+
     /// Current retained lines.
     #[must_use]
     pub fn len(&self) -> usize {
         self.lines.len()
+    }
+
+    /// Empty?
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.lines.is_empty()
     }
 
     /// Slice.
@@ -303,9 +325,17 @@ impl BackgroundOutputBuffer {
         }
         self.lines.push_back(line);
     }
+
+    /// Append many.
+    pub fn append_all<I: IntoIterator<Item = BackgroundOutputLine>>(&mut self, it: I) {
+        for l in it {
+            self.append(l);
+        }
+    }
+
     /// Dropped-line indicator text.
     #[must_use]
-    pub fn dropped_banner(&self) -> Option<String> {
+    pub fn dropped_banner(&self, _ascii: bool) -> Option<String> {
         if self.dropped == 0 {
             return None;
         }
@@ -407,6 +437,13 @@ impl BackgroundTask {
         self
     }
 
+    /// Cwd.
+    #[must_use]
+    pub fn cwd(mut self, c: impl Into<String>) -> Self {
+        self.cwd = Some(c.into());
+        self
+    }
+
     /// Restarts.
     #[must_use]
     pub const fn restart_count(mut self, n: u32) -> Self {
@@ -462,12 +499,37 @@ impl BackgroundTask {
         self.output = buf;
         self
     }
+
+    /// Header for rail row.
+    #[must_use]
+    pub fn row_label(&self, _ascii: bool) -> String {
+        let g = self.status.glyph(false);
+        let mut s = format!(
+            "| {g} {} · {} {}",
+            self.status.id(),
+            self.kind.letter(),
+            self.title
+        );
+        if self.restart_count > 0 {
+            s.push_str(&format!(" ×{}", self.restart_count));
+        }
+        if let Some(ms) = self.duration_ms {
+            s.push(' ');
+            s.push_str(&format_duration_ms(ms));
+        }
+        if !self.ports.is_empty() {
+            s.push_str(" :");
+            s.push_str(&self.ports[0]);
+        }
+        s
+    }
+
     /// Meta line.
     #[must_use]
     pub fn meta_line(&self) -> String {
         let mut parts = Vec::new();
         if let Some(c) = &self.command {
-            parts.push(take_display_cols(c, 40).into_owned());
+            parts.push(take_display_cols(c, 40));
         }
         if let Some(r) = &self.resources {
             parts.push(r.clone());
@@ -568,6 +630,16 @@ pub enum BackgroundTaskPresentation {
 }
 
 impl BackgroundTaskPresentation {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::CompactRail => "compact-rail",
+            Self::Pane => "pane",
+            Self::Fullscreen => "fullscreen",
+        }
+    }
+
     /// Auto.
     #[must_use]
     pub const fn for_width(width: u16) -> Self {
@@ -688,11 +760,22 @@ impl BackgroundTaskPanelState {
         self.output.set_accepts_input(on);
     }
 
+    /// Focus.
+    pub const fn set_focused(&mut self, on: bool) {
+        self.focused = on;
+    }
+
     /// Close panel.
     pub fn close(&mut self) -> BackgroundTaskPanelOutcome {
         self.open = false;
         BackgroundTaskPanelOutcome::Closed
     }
+
+    /// Open panel.
+    pub fn open_panel(&mut self) {
+        self.open = true;
+    }
+
     /// Selected id.
     #[must_use]
     pub fn selected_id(&self) -> Option<&str> {
@@ -708,7 +791,7 @@ impl BackgroundTaskPanelState {
             .collect()
     }
 
-    fn list_rows(&self, tasks: &[BackgroundTask]) -> Vec<ListRow<'static, String>> {
+    fn list_rows(&self, tasks: &[BackgroundTask], _ascii: bool) -> Vec<ListRow<'static, String>> {
         let vis = self.visible_tasks(tasks);
         vis.into_iter()
             .map(|t| {
@@ -825,7 +908,7 @@ impl BackgroundTaskPanelState {
             _ => {}
         }
 
-        let rows = self.list_rows(tasks);
+        let rows = self.list_rows(tasks, false);
         use crate::interaction::Outcome;
         match self.list.handle_key(&rows, key) {
             Outcome::Activated(id) => BackgroundTaskPanelOutcome::Opened { id },
@@ -885,10 +968,70 @@ impl BackgroundTaskPanelState {
                             };
                         }
                     }
+                    let _ = term_lines;
                 }
                 BackgroundTaskPanelOutcome::Ignored
             }
         }
+    }
+
+    /// Mouse.
+    pub fn handle_mouse(
+        &mut self,
+        event: MouseEvent,
+        tasks: &[BackgroundTask],
+    ) -> BackgroundTaskPanelOutcome {
+        if !self.accepts_input || !self.open {
+            return BackgroundTaskPanelOutcome::Ignored;
+        }
+        if event.kind != MouseEventKind::Down(MouseButton::Left)
+            && !matches!(
+                event.kind,
+                MouseEventKind::ScrollUp | MouseEventKind::ScrollDown
+            )
+        {
+            return BackgroundTaskPanelOutcome::Ignored;
+        }
+        if event.kind == MouseEventKind::Down(MouseButton::Left) {
+            use crate::interaction::Outcome;
+            match self.list.click(event.position) {
+                Outcome::Activated(id) => return BackgroundTaskPanelOutcome::Opened { id },
+                Outcome::Changed => {
+                    if let Some(id) = self.list.selected() {
+                        return BackgroundTaskPanelOutcome::Selected { id: id.clone() };
+                    }
+                }
+                _ => {}
+            }
+        }
+        // output scroll
+        if let Some(task) = self
+            .selected_id()
+            .and_then(|id| tasks.iter().find(|t| t.id == id))
+        {
+            let term_owned = task.output.as_terminal_lines();
+            let term_lines: Vec<TerminalLine<'_>> = term_owned
+                .iter()
+                .map(|(id, stream, text)| TerminalLine {
+                    id: id.as_str(),
+                    stream: *stream,
+                    text: text.as_str(),
+                    ansi: None,
+                })
+                .collect();
+            let out = self.output.handle_mouse(event, &term_lines);
+            use crate::widgets::TerminalOutputOutcome;
+            match out {
+                TerminalOutputOutcome::Detach => {
+                    return BackgroundTaskPanelOutcome::ScrollDetached;
+                }
+                TerminalOutputOutcome::Follow => {
+                    return BackgroundTaskPanelOutcome::FollowChanged { following: true };
+                }
+                _ => {}
+            }
+        }
+        BackgroundTaskPanelOutcome::Ignored
     }
 }
 
@@ -926,6 +1069,13 @@ impl<'a> BackgroundTaskPanel<'a> {
         }
     }
 
+    /// Title.
+    #[must_use]
+    pub const fn title(mut self, t: &'a str) -> Self {
+        self.title = t;
+        self
+    }
+
     /// ASCII.
     #[must_use]
     /// Colorless.
@@ -949,7 +1099,7 @@ impl<'a> BackgroundTaskPanel<'a> {
 
         if matches!(state.presentation, BackgroundTaskPresentation::CompactRail) || area.height <= 3
         {
-            self.paint_rail(area, buffer, state);
+            self.paint_rail(area, buffer, state, false);
             return;
         }
 
@@ -979,7 +1129,8 @@ impl<'a> BackgroundTaskPanel<'a> {
             .title(title.as_str())
             .emphasis(emphasis);
         let inner = panel.inner(area);
-        panel.paint(area, buffer, None);
+        use ratatui_core::widgets::Widget;
+        Widget::render(&panel, area, buffer);
         if inner.is_empty() {
             return;
         }
@@ -1000,7 +1151,7 @@ impl<'a> BackgroundTaskPanel<'a> {
         };
         let foot_y = inner.bottom().saturating_sub(1);
 
-        let rows = state.list_rows(self.tasks);
+        let rows = state.list_rows(self.tasks, false);
         StatefulWidget::render(
             &List::new(&rows, self.system).focused(state.focused && state.accepts_input),
             list_area,
@@ -1014,15 +1165,11 @@ impl<'a> BackgroundTaskPanel<'a> {
                 .selected_id()
                 .and_then(|id| self.tasks.iter().find(|t| t.id == id))
             {
-                self.paint_detail(detail_area, buffer, state, task);
+                self.paint_detail(detail_area, buffer, state, task, false);
             } else {
                 EmptyState::new("Pick a task", self.system)
                     .kind(EmptyKind::NoData)
-                    .paint(
-                        detail_area,
-                        buffer,
-                        &mut crate::widgets::EmptyStateState::new(),
-                    );
+                    .paint(detail_area, buffer);
             }
         }
 
@@ -1035,8 +1182,14 @@ impl<'a> BackgroundTaskPanel<'a> {
         );
     }
 
-    fn paint_rail(&self, area: Rect, buffer: &mut Buffer, state: &mut BackgroundTaskPanelState) {
-        let rows = state.list_rows(self.tasks);
+    fn paint_rail(
+        &self,
+        area: Rect,
+        buffer: &mut Buffer,
+        state: &mut BackgroundTaskPanelState,
+        _ascii: bool,
+    ) {
+        let rows = state.list_rows(self.tasks, false);
         let emphasis = if state.focused {
             PanelChrome::Focused
         } else {
@@ -1044,7 +1197,8 @@ impl<'a> BackgroundTaskPanel<'a> {
         };
         let panel = Panel::new(self.system).title(self.title).emphasis(emphasis);
         let inner = panel.inner(area);
-        panel.paint(area, buffer, None);
+        use ratatui_core::widgets::Widget;
+        Widget::render(&panel, area, buffer);
         if !inner.is_empty() {
             StatefulWidget::render(
                 &List::new(&rows, self.system).focused(state.focused),
@@ -1061,6 +1215,7 @@ impl<'a> BackgroundTaskPanel<'a> {
         buffer: &mut Buffer,
         state: &mut BackgroundTaskPanelState,
         task: &BackgroundTask,
+        _ascii: bool,
     ) {
         let mut y = area.y;
         let max_y = area.bottom();
@@ -1069,7 +1224,7 @@ impl<'a> BackgroundTaskPanel<'a> {
             .label(task.status.id())
             .colorless(self.colorless);
         let status_width = status.measure_width(None).min(area.width);
-        status.paint(Rect::new(area.x, y, status_width, 1), buffer, None);
+        status.paint(Rect::new(area.x, y, status_width, 1), buffer);
         let command_x = area
             .x
             .saturating_add(status_width)
@@ -1079,11 +1234,10 @@ impl<'a> BackgroundTaskPanel<'a> {
             self.system.paint_row(
                 buffer,
                 Rect::new(command_x, y, command_width, 1),
-                take_display_cols(
+                &take_display_cols(
                     task.command.as_deref().unwrap_or(&task.title),
                     usize::from(command_width),
-                )
-                .as_ref(),
+                ),
                 self.system.style(Role::Text),
             );
         }
@@ -1115,12 +1269,12 @@ impl<'a> BackgroundTaskPanel<'a> {
             y = y.saturating_add(1);
         }
 
-        if let Some(banner) = task.output.dropped_banner() {
+        if let Some(banner) = task.output.dropped_banner(false) {
             if y < max_y {
                 StatusIndicator::new(SemanticStatus::Warning, self.system)
                     .label(&banner)
                     .colorless(self.colorless)
-                    .paint(Rect::new(area.x, y, area.width, 1), buffer, None);
+                    .paint(Rect::new(area.x, y, area.width, 1), buffer);
                 y = y.saturating_add(1);
             }
         }
@@ -1140,7 +1294,7 @@ impl<'a> BackgroundTaskPanel<'a> {
             StatusIndicator::new(task.status.semantic(), self.system)
                 .label(note)
                 .colorless(self.colorless)
-                .paint(Rect::new(area.x, y, area.width, 1), buffer, None);
+                .paint(Rect::new(area.x, y, area.width, 1), buffer);
             y = y.saturating_add(1);
         }
 
@@ -1167,6 +1321,9 @@ impl<'a> BackgroundTaskPanel<'a> {
             task.command.as_deref().unwrap_or(task.title.as_str()),
         )
         .status(task.status.to_terminal_status());
+        if let Some(ms) = task.duration_ms {
+            let _ = ms;
+        }
         state.output.colorless = self.colorless;
         if state.output.is_following() {
             state
@@ -1182,6 +1339,11 @@ impl<'a> BackgroundTaskPanel<'a> {
             .show_chrome(false)
             .render(out_area, buffer, &mut state.output);
         let _ = (display_cols, TerminalPaintMode::Ansi, Modifier::BOLD);
+    }
+
+    /// Render alias.
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut BackgroundTaskPanelState) {
+        self.paint(area, buffer, state);
     }
 }
 
@@ -1287,7 +1449,7 @@ mod tests {
         }
         assert_eq!(buf.len(), 3);
         assert_eq!(buf.dropped, 2);
-        assert!(buf.dropped_banner().unwrap().contains("2"));
+        assert!(buf.dropped_banner(true).unwrap().contains("2"));
         let texts: Vec<_> = buf.lines().iter().map(|l| l.text.as_str()).collect();
         assert_eq!(texts, ["L2", "L3", "L4"]);
     }
@@ -1568,7 +1730,7 @@ mod tests {
         ] {
             assert!(!s.id().is_empty());
             let _ = s.to_terminal_status();
-            let _ = s.glyph();
+            let _ = s.glyph(true);
         }
     }
 

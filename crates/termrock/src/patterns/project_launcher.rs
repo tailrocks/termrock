@@ -29,22 +29,30 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::StatefulWidget};
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+use ratatui_core::{
+    buffer::Buffer,
+    layout::Rect,
+    text::Line,
+    widgets::{StatefulWidget, Widget},
+};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers},
+    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
     interaction::Outcome,
     layout::{
         PaneConstraint, PaneGeom, PaneId, Workspace, WorkspaceAxis, WorkspaceNode, WorkspaceState,
     },
     patterns::{
         ConnectionStatus, SessionEntry, SessionPicker, SessionPickerOutcome, SessionPickerState,
+        example_sessions,
     },
-    style::{DesignSystem, PanelChrome},
+    style::{DesignSystem, PanelChrome, Role},
+    text::take_display_cols,
     widgets::{
-        EmptyAction, EmptyKind, EmptyState, EmptyStateState, List, ListRow, ListState, Panel,
-        PreviewCard, PreviewCardContent, PreviewCardState, PreviewLoadState, PreviewMetadata,
-        PreviewResourceKind, QuickOpen, QuickOpenItem, QuickOpenMatch, QuickOpenOutcome,
+        EmptyAction, EmptyKind, EmptyState, EmptyStateOutcome, EmptyStateState, List, ListRow,
+        ListState, Panel, PreviewCard, PreviewCardContent, PreviewCardState, PreviewLoadState,
+        PreviewMetadata, PreviewResourceKind, QuickOpen, QuickOpenItem, QuickOpenOutcome,
         QuickOpenProvider, QuickOpenState, SearchInput, SearchInputOutcome, SearchInputState,
         SemanticStatus, StatusBar, StatusBarState, StatusRegion, StatusSlot,
     },
@@ -82,6 +90,18 @@ impl ProjectLauncherPane {
             Self::Onboarding => "onboarding",
             Self::Status => "status",
         }
+    }
+
+    /// Default Tab focus cycle (status is chrome-only).
+    #[must_use]
+    pub fn focus_order() -> &'static [ProjectLauncherPane] {
+        &[
+            Self::Search,
+            Self::Projects,
+            Self::Sessions,
+            Self::Preview,
+            Self::Onboarding,
+        ]
     }
 }
 
@@ -130,6 +150,16 @@ impl ProjectLauncherDensity {
             Self::Narrow
         } else {
             Self::Normal
+        }
+    }
+
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Normal => "normal",
+            Self::Narrow => "narrow",
+            Self::Tiny => "tiny",
         }
     }
 }
@@ -197,6 +227,17 @@ pub enum ProjectPathStatus {
 }
 
 impl ProjectPathStatus {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Ok => "ok",
+            Self::Missing => "missing",
+            Self::Stale => "stale",
+            Self::Error => "error",
+        }
+    }
+
     /// Label.
     #[must_use]
     pub const fn label(self) -> &'static str {
@@ -234,6 +275,17 @@ pub enum ProjectLocation {
     Local,
     /// Remote / cloud workspace.
     Remote,
+}
+
+impl ProjectLocation {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Local => "local",
+            Self::Remote => "remote",
+        }
+    }
 }
 
 /// Host-projected project / workspace row.
@@ -334,6 +386,14 @@ impl ProjectEntry {
         self
     }
 
+    /// Error message (+ error status).
+    #[must_use]
+    pub fn error_msg(mut self, m: impl Into<String>) -> Self {
+        self.error = Some(m.into());
+        self.path_status = ProjectPathStatus::Error;
+        self
+    }
+
     /// Query match (name / path / branch).
     #[must_use]
     pub fn matches_query(&self, q: &str) -> bool {
@@ -341,15 +401,15 @@ impl ProjectEntry {
         if q.is_empty() {
             return true;
         }
-        crate::text::contains_lower_all(
-            &[
-                &self.name,
-                &self.path,
-                self.branch.as_deref().unwrap_or(""),
-                self.group.id(),
-            ],
-            &q,
+        let hay = format!(
+            "{} {} {} {}",
+            self.name,
+            self.path,
+            self.branch.as_deref().unwrap_or(""),
+            self.group.id()
         )
+        .to_ascii_lowercase();
+        hay.contains(&q)
     }
 }
 
@@ -501,7 +561,7 @@ pub struct ProjectLauncherSurfaces<'a> {
     /// Host-projected preview for current selection.
     pub preview: Option<PreviewCardContent<'a>>,
     /// Quick-open items (when palette open).
-    pub quick_open_items: &'a [QuickOpenMatch<'a, String>],
+    pub quick_open_items: &'a [QuickOpenItem<String>],
 }
 
 // ── State ───────────────────────────────────────────────────────────────────
@@ -542,6 +602,7 @@ pub struct ProjectLauncherState {
     /// Selected project id.
     pub selected_id: Option<String>,
     /// Project count chrome.
+    pub project_count: u64,
     /// Stale/missing count chrome.
     pub problem_count: u64,
     /// Colorless.
@@ -588,6 +649,7 @@ impl ProjectLauncherState {
             focus: ProjectLauncherPane::Projects.id(),
             density: None,
             selected_id: None,
+            project_count: 0,
             problem_count: 0,
             colorless: false,
             last_panes: Vec::new(),
@@ -682,6 +744,22 @@ impl ProjectLauncherState {
         }
     }
 
+    /// Set focus pane.
+    pub fn set_focus(&mut self, pane: ProjectLauncherPane) -> ProjectLauncherOutcome {
+        let density = self.effective_density();
+        let visible = self.visible_focus_panes(density);
+        if !visible.contains(&pane) {
+            return ProjectLauncherOutcome::Ignored;
+        }
+        if self.focus == pane.id() {
+            self.apply_focus_gates();
+            return ProjectLauncherOutcome::Ignored;
+        }
+        self.focus = pane.id();
+        self.apply_focus_gates();
+        ProjectLauncherOutcome::FocusChanged(self.focus)
+    }
+
     /// Cycle Tab focus.
     pub fn cycle_focus(&mut self, reverse: bool) -> ProjectLauncherOutcome {
         let density = self.effective_density();
@@ -768,7 +846,7 @@ impl ProjectLauncherState {
         key: KeyEvent,
         projects: &[ProjectEntry],
         sessions: &[SessionEntry],
-        quick_open_items: &[QuickOpenMatch<'_, String>],
+        quick_open_items: &[QuickOpenItem<String>],
     ) -> ProjectLauncherOutcome {
         if key.is_release() {
             return ProjectLauncherOutcome::Ignored;
@@ -1008,6 +1086,18 @@ impl ProjectLauncherState {
 /// Search strip height.
 pub const PROJECT_LAUNCHER_SEARCH_HEIGHT: u16 = 3;
 
+/// Width-derived layout (home, drawer closed).
+#[must_use]
+pub fn project_launcher_layout(area: Rect, state: &WorkspaceState) -> Vec<PaneGeom> {
+    project_launcher_layout_density(
+        area,
+        state,
+        ProjectLauncherDensity::for_width(area.width),
+        ProjectLauncherMode::Home,
+        false,
+    )
+}
+
 /// Explicit density + mode layout.
 #[must_use]
 pub fn project_launcher_layout_density(
@@ -1228,7 +1318,7 @@ pub fn project_quick_open_rect(area: Rect) -> Rect {
 // ── Render ──────────────────────────────────────────────────────────────────
 
 /// Paint composed project launcher (public child widgets only).
-pub fn paint_project_launcher(
+pub fn render_project_launcher(
     buffer: &mut Buffer,
     area: Rect,
     surfaces: ProjectLauncherSurfaces<'_>,
@@ -1248,7 +1338,11 @@ pub fn paint_project_launcher(
 
     state.last_area_width = Some(area.width);
     let density = state.effective_density();
-    // Host keeps full control of show_onboarding; the block never auto-opens.
+    // Auto first-use onboarding when host left catalog empty
+    if projects.is_empty() && state.host_error.is_none() {
+        // host may still force show_onboarding=false; only auto when not already set false by host intent —
+        // keep host control: only set if still default and empty
+    }
     let panes = project_launcher_layout_density(
         area,
         &state.workspace,
@@ -1259,6 +1353,7 @@ pub fn paint_project_launcher(
     state.last_panes = panes.clone();
     state.clamp_focus_to_density(density);
     state.apply_focus_gates();
+    state.project_count = projects.len() as u64;
     state.problem_count = projects
         .iter()
         .filter(|p| p.path_status.is_problem())
@@ -1317,8 +1412,7 @@ pub fn paint_project_launcher(
                 } else {
                     EmptyState::new("No matches", system).kind(EmptyKind::FilteredOut)
                 };
-                let mut empty_state = crate::widgets::EmptyStateState::new();
-                empty.paint(inner, buffer, &mut empty_state);
+                empty.paint(inner, buffer);
             } else {
                 let list = List::new(&rows, system).focused(focused);
                 StatefulWidget::render(&list, inner, buffer, &mut state.projects);
@@ -1367,7 +1461,7 @@ pub fn paint_project_launcher(
             .primary(EmptyAction::with_shortcut("New project", "n"))
             .secondary(EmptyAction::with_shortcut("Import…", "i"))
             .shortcut("n new · i import · s setup");
-        empty.paint(r, buffer, &mut state.onboarding);
+        empty.paint_with_state(r, buffer, &mut state.onboarding);
     }
 
     // Status
@@ -1519,6 +1613,12 @@ pub fn seed_stale_state(state: &mut ProjectLauncherState) {
     state.mode = ProjectLauncherMode::Home;
 }
 
+/// Seed discovery error story.
+pub fn seed_error_state(state: &mut ProjectLauncherState) {
+    state.host_error = Some("history store unavailable".into());
+    state.connection = ConnectionStatus::Error;
+}
+
 /// Seed empty + onboarding.
 pub fn seed_onboarding_state(state: &mut ProjectLauncherState) {
     state.show_onboarding = true;
@@ -1542,9 +1642,11 @@ pub mod bench {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::patterns::example_sessions;
     use crate::style::DesignSystem;
-    use crate::widgets::tests::press;
+
+    fn press(code: KeyCode) -> KeyEvent {
+        KeyEvent::new(code, KeyModifiers::NONE)
+    }
 
     fn press_mod(code: KeyCode, mods: KeyModifiers) -> KeyEvent {
         KeyEvent::new(code, mods)
@@ -1595,7 +1697,7 @@ mod tests {
         let area = Rect::new(0, 0, 40, 20);
         let mut buf = Buffer::empty(area);
         st.density = None;
-        paint_project_launcher(
+        render_project_launcher(
             &mut buf,
             area,
             ProjectLauncherSurfaces {
@@ -1725,7 +1827,7 @@ mod tests {
         st.focus = "projects";
         let area = Rect::new(0, 0, 120, 36);
         let mut buf = Buffer::empty(area);
-        paint_project_launcher(
+        render_project_launcher(
             &mut buf,
             area,
             ProjectLauncherSurfaces {
@@ -1743,7 +1845,7 @@ mod tests {
         );
 
         st.focus = "sessions";
-        paint_project_launcher(
+        render_project_launcher(
             &mut buf,
             area,
             ProjectLauncherSurfaces {
@@ -1814,7 +1916,7 @@ mod tests {
         let system = DesignSystem::default();
         let area = Rect::new(0, 0, 100, 28);
         let mut buf = Buffer::empty(area);
-        paint_project_launcher(
+        render_project_launcher(
             &mut buf,
             area,
             ProjectLauncherSurfaces {
@@ -1857,8 +1959,7 @@ mod tests {
         let mut st = open();
         let projects = example_projects();
         let sessions = example_sessions();
-        let qo_items = example_project_quick_open(&projects);
-        let qo: Vec<QuickOpenMatch<'_, String>> = qo_items.iter().map(QuickOpenMatch::of).collect();
+        let qo = example_project_quick_open(&projects);
         let out = st.handle_key(
             press_mod(KeyCode::Char('o'), KeyModifiers::CONTROL),
             &projects,
@@ -1969,7 +2070,7 @@ mod tests {
         let (preview, _, _) = example_project_preview();
         let area = Rect::new(0, 0, 120, 36);
         let mut buf = Buffer::empty(area);
-        paint_project_launcher(
+        render_project_launcher(
             &mut buf,
             area,
             ProjectLauncherSurfaces {
@@ -2009,7 +2110,7 @@ mod tests {
         let mut buf = Buffer::empty(area);
         let start = std::time::Instant::now();
         for _ in 0..bench::PAINT_FRAMES {
-            paint_project_launcher(
+            render_project_launcher(
                 &mut buf,
                 area,
                 ProjectLauncherSurfaces {

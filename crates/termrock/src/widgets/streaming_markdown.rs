@@ -24,11 +24,12 @@
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
+    input::{KeyEvent, MouseEvent},
     style::{DesignSystem, Role},
-    text::take_display_cols,
+    text::{take_display_cols, wrap_display_cols},
     widgets::markdown::{
-        MarkdownBlock, MarkdownBlockKind, MarkdownView, MarkdownViewState, SourceAnchor,
-        project_markdown,
+        MarkdownBlock, MarkdownBlockKind, MarkdownOutcome, MarkdownView, MarkdownViewState,
+        SourceAnchor, project_markdown,
     },
 };
 
@@ -58,6 +59,19 @@ pub enum StreamPhase {
     Failed,
 }
 
+impl StreamPhase {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Idle => "idle",
+            Self::Streaming => "streaming",
+            Self::Done => "done",
+            Self::Failed => "failed",
+        }
+    }
+}
+
 /// Host-injected non-markdown insertion (tool/status) at a stream offset.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StreamInsertion {
@@ -67,6 +81,8 @@ pub struct StreamInsertion {
     pub kind: String,
     /// Display lines (already projected).
     pub lines: Vec<String>,
+    /// Byte offset into committed+tail where insertion anchors (best-effort).
+    pub at_byte: usize,
 }
 
 impl StreamInsertion {
@@ -81,7 +97,15 @@ impl StreamInsertion {
             id: id.into(),
             kind: kind.into(),
             lines: lines.into_iter().map(Into::into).collect(),
+            at_byte: 0,
         }
+    }
+
+    /// Anchor byte.
+    #[must_use]
+    pub const fn at_byte(mut self, b: usize) -> Self {
+        self.at_byte = b;
+        self
     }
 }
 
@@ -232,6 +256,12 @@ impl StreamingMarkdownState {
     #[must_use]
     pub fn tail_len(&self) -> usize {
         self.tail.len()
+    }
+
+    /// Gate.
+    pub fn set_accepts_input(&mut self, on: bool) {
+        self.accepts_input = on;
+        self.view.focused = on;
     }
 
     /// Push token/delta (coalesced).
@@ -486,6 +516,22 @@ impl StreamingMarkdownState {
         }
         lines
     }
+
+    /// Keys → markdown view (scroll/select/copy).
+    pub fn handle_key(&mut self, key: KeyEvent, view: &MarkdownView<'_>) -> MarkdownOutcome {
+        if !self.accepts_input {
+            return MarkdownOutcome::Ignored;
+        }
+        view.handle_key(&mut self.view, key)
+    }
+
+    /// Mouse.
+    pub fn handle_mouse(&mut self, event: MouseEvent, view: &MarkdownView<'_>) -> MarkdownOutcome {
+        if !self.accepts_input {
+            return MarkdownOutcome::Ignored;
+        }
+        view.handle_mouse(&mut self.view, event)
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -595,7 +641,8 @@ fn find_complete_fence_in_tail(tail: &str) -> Option<usize> {
     for line in tail.split_inclusive('\n') {
         let content = line.trim_end_matches(['\n', '\r']);
         if open_ticks.is_none() {
-            if strip_fence_open(content).is_some() {
+            if let Some(lang) = strip_fence_open(content) {
+                let _ = lang;
                 open_ticks = Some(fence_tick_count(content));
             }
             offset += line.len();
@@ -670,6 +717,28 @@ fn is_fence_close_ticks(line: &str, ticks: usize) -> bool {
     n >= ticks && t.chars().skip(n).all(|c| c.is_whitespace())
 }
 
+// ── Outcomes ────────────────────────────────────────────────────────────────
+
+/// Streaming markdown surface outcomes.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum StreamingMarkdownOutcome {
+    /// Ignored.
+    Ignored,
+    /// Content/revision changed.
+    Changed {
+        /// New revision.
+        revision: u64,
+    },
+    /// Markdown view outcome passthrough.
+    View(MarkdownOutcome),
+    /// Citation activated (fullscreen reader).
+    CitationActivated {
+        /// Id.
+        id: String,
+    },
+}
+
 // ── Widget ──────────────────────────────────────────────────────────────────
 
 /// Streaming markdown paint host.
@@ -689,13 +758,21 @@ impl<'a> StreamingMarkdown<'a> {
         }
     }
 
+    /// ASCII.
+    #[must_use]
+    /// Colorless.
+    pub const fn colorless(mut self, on: bool) -> Self {
+        self.colorless = on;
+        self
+    }
+
     /// Runs `f` over the blocks this stream currently projects.
     ///
     /// The projection borrows buffers that only live for the call, so the
     /// blocks cannot be returned. Hosts that need to measure a stream before
-    /// they lay it out — the case GAP-MD-1 named — reach it through here,
-    /// rather than reparsing the document themselves and disagreeing with the
-    /// paint.
+    /// they lay it out — the case GAP-MD-1 named — reach it through here or
+    /// through [`Self::measure_height`], rather than reparsing the document
+    /// themselves and disagreeing with the paint.
     pub fn with_blocks<R>(
         &self,
         state: &StreamingMarkdownState,
@@ -719,6 +796,14 @@ impl<'a> StreamingMarkdown<'a> {
             blocks.push(b);
         }
         f(&blocks)
+    }
+
+    /// Display rows this stream needs at `width`, including an open fence.
+    #[must_use]
+    pub fn measure_height(&self, state: &StreamingMarkdownState, width: u16) -> u16 {
+        self.with_blocks(state, |blocks| {
+            MarkdownView::new(blocks, self.system).measure_height(width)
+        })
     }
 
     /// Paint streaming document.
@@ -793,10 +878,26 @@ impl<'a> StreamingMarkdown<'a> {
                 );
             }
         }
+        let _ = wrap_display_cols;
     }
 }
 
 // ── Public helpers ──────────────────────────────────────────────────────────
+
+/// Re-export stable boundary for tests.
+#[must_use]
+pub fn streaming_stable_prefix_len(committed: &str, tail: &str) -> usize {
+    let mut c = committed.to_string();
+    let mut t = tail.to_string();
+    while let Some(split) = find_stable_boundary(&c, &t) {
+        if split == 0 || split > t.len() {
+            break;
+        }
+        c.push_str(&t[..split]);
+        t = t[split..].to_string();
+    }
+    c.len()
+}
 
 /// Whether open fence is present.
 #[must_use]

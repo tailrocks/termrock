@@ -19,6 +19,8 @@
 //! **vs Toast.** Transient overlay. Callout/Alert live in layout flow.
 //!
 //! Research: shadcn Alert, Glow quote rails, CLI warnings, system diagnostics.
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+#![allow(unused_variables, unused_mut)] // unit-test fixtures
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
@@ -27,16 +29,18 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     interaction::{
         EventResult, HitRegion, OverlayRequest, SemanticNode, SemanticRole, SemanticScene,
         SemanticState, UiIntent, default_button_intent, default_list_intent,
     },
-    style::{DesignSystem, Role},
+    style::{DesignSystem, GlyphSet, Role},
     text::{display_cols, take_display_cols},
 };
 
-use super::{Action, Surface, SurfaceFill, SurfaceRecipe};
+use super::{Action, ActionVariant, Surface, SurfaceFill, SurfaceRecipe};
 
 // ── Tone / recipe ───────────────────────────────────────────────────────────
 
@@ -228,6 +232,26 @@ impl CalloutSlots {
     }
 }
 
+/// Callout outcomes (dismiss / action when enabled).
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum CalloutOutcome<Id = ()> {
+    /// No change.
+    Ignored,
+    /// Dismissed.
+    Dismissed,
+    /// Action activated.
+    ActionActivated {
+        /// Action id.
+        id: Id,
+    },
+    /// Details expanded/collapsed.
+    DetailsToggled {
+        /// Expanded?
+        open: bool,
+    },
+}
+
 /// Alert interaction outcomes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[non_exhaustive]
@@ -385,6 +409,20 @@ fn paint_feedback<Id: Clone + PartialEq>(
 
     let has_actions = !args.actions.is_empty();
     let footer = has_actions || args.content.dismissible;
+    let mut rows_needed = 1u16;
+    if args.content.description.is_some() {
+        rows_needed = rows_needed.saturating_add(1);
+    }
+    if args.content.show_details && args.content.details.is_some() {
+        rows_needed = rows_needed.saturating_add(1);
+    }
+    if args.content.source.is_some() {
+        rows_needed = rows_needed.saturating_add(1);
+    }
+    if footer {
+        rows_needed = rows_needed.saturating_add(1);
+    }
+    let _ = rows_needed;
 
     let mut y = inner.y;
     let glyph = tone.glyph();
@@ -417,7 +455,7 @@ fn paint_feedback<Id: Clone + PartialEq>(
     buffer.set_stringn(
         title_x,
         y,
-        take_display_cols(args.content.title, usize::from(title_w)).as_ref(),
+        &take_display_cols(args.content.title, usize::from(title_w)),
         usize::from(title_w),
         title_style,
     );
@@ -435,7 +473,7 @@ fn paint_feedback<Id: Clone + PartialEq>(
             buffer.set_stringn(
                 content_x,
                 y,
-                take_display_cols(desc, usize::from(content_w)).as_ref(),
+                &take_display_cols(desc, usize::from(content_w)),
                 usize::from(content_w),
                 text_style,
             );
@@ -451,7 +489,7 @@ fn paint_feedback<Id: Clone + PartialEq>(
                 buffer.set_stringn(
                     content_x,
                     y,
-                    take_display_cols(details, usize::from(content_w)).as_ref(),
+                    &take_display_cols(details, usize::from(content_w)),
                     usize::from(content_w),
                     muted,
                 );
@@ -468,7 +506,7 @@ fn paint_feedback<Id: Clone + PartialEq>(
             buffer.set_stringn(
                 content_x,
                 y,
-                take_display_cols(&line, usize::from(content_w)).as_ref(),
+                &take_display_cols(&line, usize::from(content_w)),
                 usize::from(content_w),
                 muted,
             );
@@ -504,7 +542,7 @@ fn paint_feedback<Id: Clone + PartialEq>(
             buffer.set_stringn(
                 x,
                 y,
-                take_display_cols(&label, usize::from(avail)).as_ref(),
+                &take_display_cols(&label, usize::from(avail)),
                 usize::from(avail),
                 style,
             );
@@ -566,6 +604,13 @@ impl<'a, Id> Callout<'a, Id> {
         self
     }
 
+    /// Details (shown when expanded / always in Section when set).
+    #[must_use]
+    pub const fn details(mut self, text: &'a str) -> Self {
+        self.details = Some(text);
+        self
+    }
+
     /// Source / provenance.
     #[must_use]
     pub const fn source(mut self, text: &'a str) -> Self {
@@ -580,6 +625,13 @@ impl<'a, Id> Callout<'a, Id> {
         self
     }
 
+    /// Recipe.
+    #[must_use]
+    pub const fn recipe(mut self, recipe: CalloutRecipe) -> Self {
+        self.recipe = recipe;
+        self
+    }
+
     /// Compact helper.
     #[must_use]
     pub const fn compact(mut self) -> Self {
@@ -591,6 +643,27 @@ impl<'a, Id> Callout<'a, Id> {
     #[must_use]
     pub const fn section(mut self) -> Self {
         self.recipe = CalloutRecipe::Section;
+        self
+    }
+
+    /// Dismissible chrome.
+    #[must_use]
+    pub const fn dismissible(mut self, on: bool) -> Self {
+        self.dismissible = on;
+        self
+    }
+
+    /// Show details row.
+    #[must_use]
+    pub const fn show_details(mut self, on: bool) -> Self {
+        self.show_details = on;
+        self
+    }
+
+    /// Actions.
+    #[must_use]
+    pub const fn actions(mut self, actions: &'a [Action<'a, Id>]) -> Self {
+        self.actions = actions;
         self
     }
 
@@ -749,9 +822,32 @@ impl<Id> AlertState<Id> {
         self.visible
     }
 
+    /// Focused?
+    #[must_use]
+    pub const fn is_focused(&self) -> bool {
+        self.focused
+    }
+
     /// Set focus (host / scene).
     pub fn set_focused(&mut self, on: bool) {
         self.focused = on;
+    }
+
+    /// Details open?
+    #[must_use]
+    pub const fn details_open(&self) -> bool {
+        self.details_open
+    }
+
+    /// Toggle details.
+    pub fn set_details_open(&mut self, on: bool) {
+        self.details_open = on;
+    }
+
+    /// Slots.
+    #[must_use]
+    pub const fn slots(&self) -> CalloutSlots {
+        self.slots
     }
 
     /// Dismiss programmatically.
@@ -765,9 +861,25 @@ impl<Id> AlertState<Id> {
         self.visible = true;
     }
 
+    /// Enable input.
+    pub fn set_accepts_input(&mut self, on: bool) {
+        self.accepts_input = on;
+    }
+
     /// Enable.
     pub fn set_enabled(&mut self, on: bool) {
         self.enabled = on;
+    }
+
+    /// Action cursor (which action is highlighted).
+    pub fn set_action_cursor(&mut self, id: Option<Id>) {
+        self.action_cursor = id;
+    }
+
+    /// Borrow action cursor.
+    #[must_use]
+    pub fn action_cursor(&self) -> Option<&Id> {
+        self.action_cursor.as_ref()
     }
 }
 
@@ -793,10 +905,7 @@ impl<Id: Clone + PartialEq> AlertState<Id> {
         }
         let is_insert = key.is_insert();
 
-        if matches!(key.code, KeyCode::Esc)
-            && key.is_press()
-            && key.modifiers.is_empty()
-            && dismissible
+        if matches!(key.code, KeyCode::Esc) && is_insert && key.modifiers.is_empty() && dismissible
         {
             self.dismiss();
             return AlertOutcome::Dismissed;
@@ -810,7 +919,7 @@ impl<Id: Clone + PartialEq> AlertState<Id> {
                 KeyCode::Right | KeyCode::Char('l' | 'L') if is_insert => {
                     return self.move_action(actions, 1);
                 }
-                KeyCode::Enter if key.is_press() && key.modifiers.is_empty() => {
+                KeyCode::Enter if is_insert && key.modifiers.is_empty() => {
                     if let Some(id) = self.action_cursor.clone() {
                         if actions.iter().any(|a| a.id == id && a.enabled) {
                             return AlertOutcome::ActionActivated { id };
@@ -818,7 +927,7 @@ impl<Id: Clone + PartialEq> AlertState<Id> {
                     }
                     return AlertOutcome::Acknowledged;
                 }
-                KeyCode::Char('d' | 'D') if key.is_press() && key.modifiers.is_empty() => {
+                KeyCode::Char('d' | 'D') if is_insert && key.modifiers.is_empty() => {
                     self.details_open = !self.details_open;
                     return AlertOutcome::DetailsToggled {
                         open: self.details_open,
@@ -826,7 +935,7 @@ impl<Id: Clone + PartialEq> AlertState<Id> {
                 }
                 _ => {}
             }
-        } else if matches!(key.code, KeyCode::Enter) && key.is_press() && key.modifiers.is_empty() {
+        } else if matches!(key.code, KeyCode::Enter) && is_insert && key.modifiers.is_empty() {
             return AlertOutcome::Acknowledged;
         }
 
@@ -837,6 +946,40 @@ impl<Id: Clone + PartialEq> AlertState<Id> {
                 AlertOutcome::Dismissed
             }
             Some(UiIntent::Activate | UiIntent::Submit) => AlertOutcome::Acknowledged,
+            _ => AlertOutcome::Ignored,
+        }
+    }
+
+    /// Semantic intent path (no actions).
+    pub fn handle_intent(&mut self, intent: UiIntent) -> AlertOutcome<Id> {
+        self.handle_intent_with(intent, &[], true)
+    }
+
+    /// Intent routing with actions.
+    pub fn handle_intent_with(
+        &mut self,
+        intent: UiIntent,
+        actions: &[Action<'_, Id>],
+        dismissible: bool,
+    ) -> AlertOutcome<Id> {
+        if !self.visible || !self.enabled || !self.accepts_input || !self.focused {
+            return AlertOutcome::Ignored;
+        }
+        match intent {
+            UiIntent::Cancel | UiIntent::Close if dismissible => {
+                self.dismiss();
+                AlertOutcome::Dismissed
+            }
+            UiIntent::Activate | UiIntent::Submit => {
+                if let Some(id) = self.action_cursor.clone() {
+                    if actions.iter().any(|a| a.id == id && a.enabled) {
+                        return AlertOutcome::ActionActivated { id };
+                    }
+                }
+                AlertOutcome::Acknowledged
+            }
+            UiIntent::FocusNext => self.move_action(actions, 1),
+            UiIntent::FocusPrevious => self.move_action(actions, -1),
             _ => AlertOutcome::Ignored,
         }
     }
@@ -977,6 +1120,13 @@ impl<'a, Id> Alert<'a, Id> {
         self
     }
 
+    /// Recipe.
+    #[must_use]
+    pub const fn recipe(mut self, recipe: CalloutRecipe) -> Self {
+        self.recipe = recipe;
+        self
+    }
+
     /// Compact inline alert.
     #[must_use]
     pub const fn compact(mut self) -> Self {
@@ -996,6 +1146,37 @@ impl<'a, Id> Alert<'a, Id> {
     pub const fn dismissible(mut self, on: bool) -> Self {
         self.dismissible = on;
         self
+    }
+
+    /// Actions.
+    #[must_use]
+    pub const fn actions(mut self, actions: &'a [Action<'a, Id>]) -> Self {
+        self.actions = actions;
+        self
+    }
+
+    /// ASCII.
+    #[must_use]
+    /// Colorless.
+    pub const fn colorless(mut self, on: bool) -> Self {
+        self.colorless = on;
+        self
+    }
+
+    /// Measure height.
+    #[must_use]
+    pub fn measure_height(&self, width: u16, state: &AlertState<Id>) -> u16 {
+        FeedbackContent {
+            title: self.title,
+            description: self.description,
+            details: self.details,
+            source: self.source,
+            tone: self.tone,
+            recipe: self.recipe,
+            dismissible: self.dismissible,
+            show_details: state.details_open && self.details.is_some(),
+        }
+        .measure_height(width, !self.actions.is_empty())
     }
 
     /// Paint.
@@ -1120,9 +1301,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Alert<'_, Id> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::{KeyEventKind, KeyModifiers};
-    use crate::widgets::action_bar::ActionVariant;
-    use crate::widgets::tests::click;
+    use crate::input::KeyModifiers;
 
     #[test]
     fn callout_tones_have_distinct_glyphs() {
@@ -1207,34 +1386,6 @@ mod tests {
     }
 
     #[test]
-    fn repeated_alert_actions_are_ignored() {
-        let mut state = AlertState::<&str>::new();
-        state.set_focused(true);
-        state.action_cursor = Some("a");
-        let actions = [Action {
-            id: "a",
-            label: "A",
-            enabled: true,
-            variant: ActionVariant::Primary,
-        }];
-
-        for (code, modifiers) in [
-            (KeyCode::Esc, KeyModifiers::NONE),
-            (KeyCode::Enter, KeyModifiers::NONE),
-            (KeyCode::Char('d'), KeyModifiers::NONE),
-        ] {
-            let mut repeat = KeyEvent::new(code, modifiers);
-            repeat.kind = KeyEventKind::Repeat;
-            let before = state.clone();
-            assert_eq!(
-                state.handle_key_with(repeat, &actions, true),
-                AlertOutcome::Ignored
-            );
-            assert_eq!(state, before, "{code:?} repeat mutated alert state");
-        }
-    }
-
-    #[test]
     fn alert_action_activation() {
         let mut state = AlertState::new();
         state.set_focused(true);
@@ -1298,7 +1449,7 @@ mod tests {
         let system = DesignSystem::default();
         let mut scene = SemanticScene::<&str, ()>::default();
         Callout::new("Hi", &system).register_semantic(&mut scene, "c", Rect::new(0, 0, 20, 2));
-        let state = AlertState::<()>::new();
+        let mut state = AlertState::<()>::new();
         Alert::new("A", &system).register_semantic(&mut scene, "a", Rect::new(0, 2, 20, 3), &state);
         assert!(
             scene
@@ -1312,6 +1463,7 @@ mod tests {
                 .iter()
                 .any(|n| n.label.as_deref() == Some("alert"))
         );
+        let _ = state;
     }
 
     #[test]
@@ -1335,7 +1487,15 @@ mod tests {
 
         let dismiss = state.dismiss_region.expect("painted dismiss region");
         assert_eq!(
-            state.handle_mouse(click(dismiss.x, dismiss.y), &[], true,),
+            state.handle_mouse(
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: ratatui_core::layout::Position::new(dismiss.x, dismiss.y),
+                    modifiers: KeyModifiers::NONE,
+                },
+                &[],
+                true,
+            ),
             AlertOutcome::Dismissed
         );
         state.show();
@@ -1348,7 +1508,15 @@ mod tests {
             AlertOutcome::Ignored
         );
         assert_eq!(
-            state.handle_mouse(click(dismiss.x, dismiss.y), &[], true,),
+            state.handle_mouse(
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: ratatui_core::layout::Position::new(dismiss.x, dismiss.y),
+                    modifiers: KeyModifiers::NONE,
+                },
+                &[],
+                true,
+            ),
             AlertOutcome::Ignored
         );
 

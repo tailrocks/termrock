@@ -111,6 +111,13 @@ impl ContractionStage {
             _ => Self::Full,
         }
     }
+
+    /// Whether secondary labels should be abbreviated.
+    #[must_use]
+    pub const fn shorten_secondary(self) -> bool {
+        (self as u8) >= (Self::ShortenSecondary as u8)
+    }
+
     /// Human-readable stage name for tests/docs.
     #[must_use]
     pub const fn as_str(self) -> &'static str {
@@ -134,6 +141,8 @@ pub enum OverflowBehavior {
     /// Grapheme-safe ellipsis at the end (default for labels).
     #[default]
     Ellipsis,
+    /// Hard clip without ellipsis (rare; status meters).
+    Clip,
     /// Scroll within the allocated region.
     Scroll,
     /// Wrap to additional rows when height allows.
@@ -323,6 +332,19 @@ impl AdaptiveAnatomy {
             },
         }
     }
+
+    /// Whether a content priority tier is shown.
+    #[must_use]
+    pub const fn shows(self, priority: ContentPriority) -> bool {
+        match priority {
+            ContentPriority::Essential => self.essential,
+            ContentPriority::Important => self.important,
+            ContentPriority::Optional => self.optional_meta,
+            ContentPriority::Decorative => {
+                self.optional_meta && self.full_secondary_labels && self.secondary_actions
+            }
+        }
+    }
 }
 
 /// Viewport classification from width × height.
@@ -381,7 +403,7 @@ impl ViewportClass {
         if height > 0 && height <= policy.line_mode_max_height {
             stage = ContractionStage::LineMode;
         }
-        let anatomy = policy.refine_anatomy(AdaptiveAnatomy::from_stage(stage));
+        let anatomy = policy.refine_anatomy(AdaptiveAnatomy::from_stage(stage), stage);
         Self {
             width,
             height,
@@ -514,7 +536,11 @@ impl SurfaceResponsivePolicy {
 
     /// Surface-specific anatomy tweaks after baseline stage mapping.
     #[must_use]
-    pub const fn refine_anatomy(self, mut anatomy: AdaptiveAnatomy) -> AdaptiveAnatomy {
+    pub const fn refine_anatomy(
+        self,
+        mut anatomy: AdaptiveAnatomy,
+        _stage: ContractionStage,
+    ) -> AdaptiveAnatomy {
         anatomy.overflow = self.overflow;
         if !self.supports_multi_pane {
             anatomy.multi_pane = false;
@@ -912,6 +938,29 @@ impl AnatomyPart {
             overflow: OverflowBehavior::Hide,
         }
     }
+
+    /// Secondary action slot.
+    #[must_use]
+    pub const fn secondary_action(name: &'static str, preferred: u16) -> Self {
+        Self {
+            name,
+            priority: ContentPriority::Optional,
+            preferred_width: preferred,
+            min_width: 0,
+            overflow: OverflowBehavior::Hide,
+        }
+    }
+
+    /// Whether this part is shown under the given anatomy.
+    #[must_use]
+    pub const fn visible(self, anatomy: AdaptiveAnatomy) -> bool {
+        match self.priority {
+            ContentPriority::Essential => anatomy.essential,
+            ContentPriority::Important => anatomy.important,
+            ContentPriority::Optional => anatomy.optional_meta || anatomy.secondary_actions,
+            ContentPriority::Decorative => anatomy.optional_meta && anatomy.full_secondary_labels,
+        }
+    }
 }
 
 /// Standard composed-row anatomy (list / tree / task rail rows).
@@ -1131,6 +1180,19 @@ impl ResponsiveRecipe {
         ],
     };
 
+    /// Dense data tables / review surfaces.
+    pub const DATA_DENSE: Self = Self {
+        name: "data-dense",
+        surface: Some(ResponsiveSurface::DataTable),
+        breakpoints: &[
+            Breakpoint::width(20, ContractionStage::LineMode),
+            Breakpoint::width(48, ContractionStage::CollapseSecondaryActions),
+            Breakpoint::width(72, ContractionStage::HideOptionalMeta),
+            Breakpoint::width(100, ContractionStage::ShortenSecondary),
+            Breakpoint::width(130, ContractionStage::CompactSpacing),
+        ],
+    };
+
     /// Resolve stage: first matching band from the list (narrowest first), else Full.
     #[must_use]
     pub fn stage_for(self, width: u16, height: u16) -> ContractionStage {
@@ -1151,7 +1213,7 @@ impl ResponsiveRecipe {
             if height > 0 && height <= policy.line_mode_max_height {
                 stage = ContractionStage::LineMode;
             }
-            let anatomy = policy.refine_anatomy(AdaptiveAnatomy::from_stage(stage));
+            let anatomy = policy.refine_anatomy(AdaptiveAnatomy::from_stage(stage), stage);
             return ViewportClass {
                 width,
                 height,
@@ -1199,6 +1261,8 @@ pub enum OverflowAction {
     OverflowMenu,
     /// Open as drawer / overlay (`use_drawer`).
     PromoteDrawer,
+    /// Collapse pane (`Workspace` leaf).
+    CollapsePane,
     /// Switch to line-mode essential chrome.
     LineMode,
 }
@@ -1255,6 +1319,25 @@ impl ResponsiveSnapshot {
         Self {
             surface,
             recipe: "surface-policy",
+            class,
+            ladder,
+        }
+    }
+
+    /// Snapshot a named recipe.
+    #[must_use]
+    pub fn for_recipe(recipe: ResponsiveRecipe, width: u16, height: u16) -> Self {
+        let class = recipe.classify(width, height);
+        let ladder = WIDTH_LADDER
+            .iter()
+            .map(|&w| {
+                let c = recipe.classify(w, height.max(24));
+                format!("{w}->{}", c.stage.as_str())
+            })
+            .collect();
+        Self {
+            surface: recipe.surface.unwrap_or(ResponsiveSurface::AppShell),
+            recipe: recipe.name,
             class,
             ladder,
         }

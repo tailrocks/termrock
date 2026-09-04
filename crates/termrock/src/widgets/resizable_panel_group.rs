@@ -13,6 +13,7 @@
 //! side-panel → drawer recipes.
 //!
 //! Behavioral references: desktop workbench panes, Zellij pane management.
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -21,9 +22,9 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind},
-    style::{DesignSystem, Role},
-    widgets::SplitDirection,
+    input::{KeyCode, KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind},
+    style::{DesignSystem, GlyphSet, Role},
+    widgets::{SplitDirection, SplitRatio},
 };
 
 const RATIO_SCALE: u32 = 10_000;
@@ -64,6 +65,18 @@ pub enum PanelDock {
     Start,
     /// Trailing edge (right / bottom) — drawer candidate when narrow.
     End,
+}
+
+impl PanelDock {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Main => "main",
+            Self::Start => "start",
+            Self::End => "end",
+        }
+    }
 }
 
 /// One panel specification (content remains host-owned).
@@ -135,6 +148,20 @@ impl ResizablePanelSpec {
         self
     }
 
+    /// Max size.
+    #[must_use]
+    pub const fn max(mut self, max: u16) -> Self {
+        self.max = Some(max);
+        self
+    }
+
+    /// Collapsible flag.
+    #[must_use]
+    pub const fn collapsible(mut self, collapsible: bool) -> Self {
+        self.collapsible = collapsible;
+        self
+    }
+
     /// Collapse / drawer threshold on outer width (horizontal) or height (vertical).
     #[must_use]
     pub const fn collapse_threshold(mut self, threshold: u16) -> Self {
@@ -179,6 +206,19 @@ pub enum PanelGroupRecipe {
     Workbench,
     /// Dashboard: top metrics strip not used here — horizontal main+log style.
     Dashboard,
+}
+
+impl PanelGroupRecipe {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Fixed => "fixed",
+            Self::SideDrawers => "side-drawers",
+            Self::Workbench => "workbench",
+            Self::Dashboard => "dashboard",
+        }
+    }
 }
 
 /// One resolved panel rectangle.
@@ -254,6 +294,11 @@ pub enum ResizablePanelOutcome {
         /// Preset name.
         name: String,
     },
+    /// Responsive recipe suggests drawer presentation (host applies overlay).
+    DrawerSuggested {
+        /// Panel ids that should leave the in-flow group.
+        ids: Vec<PanelId>,
+    },
 }
 
 /// Runtime state: sizes, collapse, handle focus/drag, presets.
@@ -302,6 +347,24 @@ impl ResizablePanelGroupState {
         }
     }
 
+    /// Last layout.
+    #[must_use]
+    pub fn layout(&self) -> &ResizablePanelGroupLayout {
+        &self.layout
+    }
+
+    /// Panel sizes in cells.
+    #[must_use]
+    pub fn sizes(&self) -> &[u16] {
+        &self.sizes
+    }
+
+    /// Focused handle.
+    #[must_use]
+    pub const fn focused_handle(&self) -> Option<usize> {
+        self.focused_handle
+    }
+
     /// Sets handle focus.
     pub fn set_focused_handle(&mut self, handle: Option<usize>) {
         self.focused_handle = handle;
@@ -314,6 +377,12 @@ impl ResizablePanelGroupState {
     #[must_use]
     pub fn drawer_ids(&self) -> &[PanelId] {
         &self.drawer_ids
+    }
+
+    /// Whether panel index is collapsed.
+    #[must_use]
+    pub fn is_collapsed(&self, index: usize) -> bool {
+        self.collapsed.get(index).copied().unwrap_or(false)
     }
 
     /// Export current sizes as basis points for persistence.
@@ -414,10 +483,24 @@ impl<'a> ResizablePanelGroup<'a> {
         self
     }
 
+    /// Direction (horizontal = columns, vertical = rows).
+    #[must_use]
+    pub const fn direction(mut self, direction: SplitDirection) -> Self {
+        self.direction = direction;
+        self
+    }
+
     /// Vertical stack.
     #[must_use]
     pub const fn vertical(mut self) -> Self {
         self.direction = SplitDirection::Vertical;
+        self
+    }
+
+    /// Responsive recipe.
+    #[must_use]
+    pub const fn recipe(mut self, recipe: PanelGroupRecipe) -> Self {
+        self.recipe = recipe;
         self
     }
 
@@ -1046,12 +1129,16 @@ fn intersect_rect(inner: Rect, outer: Rect) -> Rect {
     }
 }
 
+// SplitRatio re-export bridge for preset interop with binary splits.
+#[allow(dead_code)]
+fn _ratio_bridge(r: SplitRatio) -> u16 {
+    r.basis_points()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::style::DesignSystem;
-    use crate::widgets::tests::click;
-    use crate::widgets::tests::mouse;
 
     #[test]
     fn three_panel_workbench_layout() {
@@ -1293,18 +1380,29 @@ mod tests {
         group.paint_handles(area, &mut buf, &mut state);
         assert!(!state.layout.handles.is_empty());
         let h = state.layout.handles[0];
-        let out = group.handle_mouse(&mut state, click(h.x, h.y), area);
+        let out = group.handle_mouse(
+            &mut state,
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: Position { x: h.x, y: h.y },
+                modifiers: crate::input::KeyModifiers::NONE,
+            },
+            area,
+        );
         assert!(matches!(
             out,
             ResizablePanelOutcome::HandleFocused { handle: 0 }
         ));
         let out = group.handle_mouse(
             &mut state,
-            mouse(
-                MouseEventKind::Drag(MouseButton::Left),
-                h.x.saturating_add(5),
-                h.y,
-            ),
+            MouseEvent {
+                kind: MouseEventKind::Drag(MouseButton::Left),
+                position: Position {
+                    x: h.x.saturating_add(5),
+                    y: h.y,
+                },
+                modifiers: crate::input::KeyModifiers::NONE,
+            },
             area,
         );
         assert!(

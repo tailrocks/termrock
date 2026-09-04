@@ -122,6 +122,8 @@ pub fn layout_agent_shell(area: Rect, config: AgentShellLayout) -> AgentShellSlo
 pub enum AgentShellFocus {
     /// The side rail.
     Rail,
+    /// The conversation stream.
+    Stream,
     /// The prompt composer.
     #[default]
     Prompt,
@@ -142,7 +144,7 @@ pub struct AgentShellView<'a, BlockId, NodeId> {
 ///
 /// Rail is a [`Tree`], stream a [`Transcript`], prompt a
 /// [`PromptComposer`], footer a [`StatusBar`]. Copy and swap.
-pub fn paint_agent_shell<BlockId: Clone + Eq, NodeId: Clone + Eq>(
+pub fn render_agent_shell<BlockId: Clone + Eq, NodeId: Clone + Eq>(
     area: Rect,
     buffer: &mut Buffer,
     system: &DesignSystem,
@@ -168,7 +170,7 @@ pub fn paint_agent_shell<BlockId: Clone + Eq, NodeId: Clone + Eq>(
     }
 
     if slots.prompt.height > 0 {
-        PromptComposer::new(system).paint(slots.prompt, buffer, prompt_state);
+        PromptComposer::new(system).render(slots.prompt, buffer, prompt_state);
     }
 
     if slots.status.height > 0 {
@@ -207,7 +209,7 @@ mod tests {
         let mut prompt_state = PromptComposerState::new();
         let area = Rect::new(0, 0, 80, 24);
         let mut buffer = Buffer::empty(area);
-        let slots = paint_agent_shell(
+        let slots = render_agent_shell(
             area,
             &mut buffer,
             &system,

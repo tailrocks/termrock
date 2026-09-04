@@ -8,9 +8,11 @@
 //! thresholds, drill-down, loading, partial failure, and responsive grid.
 //! Prioritize trend and exception readability. Keyboard spatial navigation and
 //! command-palette action ids. Narrow terminals collapse to a vertical summary.
-
-//! MetricsDashboard owns metric-card grid chrome, thresholds, comparison
-//! deltas, and layout contraction.
+//!
+//! **vs [`super::blocks::OpsDashboardState`].** OpsDashboard is a thin region
+//! router over DataTable + LogStream. MetricsDashboard owns metric-card grid
+//! chrome, thresholds, comparison deltas, and layout contraction.
+//!
 //! Research: btop, Grafana concepts, observability TUIs, operating dashboards.
 //!
 //! Teaches: how to compose reusable observability dashboard block.
@@ -24,7 +26,7 @@
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers},
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     style::{DesignSystem, Role},
     widgets::{
         CommandEntry, LoadState, MetricTile, MetricTileHealth, MetricTilePresentation,
@@ -137,6 +139,17 @@ pub enum MetricsComparison {
 }
 
 impl MetricsComparison {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::None => "none",
+            Self::PreviousPeriod => "prev",
+            Self::DayOverDay => "dod",
+            Self::WeekOverWeek => "wow",
+        }
+    }
+
     /// Short label.
     #[must_use]
     pub const fn label(self) -> &'static str {
@@ -186,6 +199,16 @@ impl MetricAlertSeverity {
         }
     }
 
+    /// Letter.
+    #[must_use]
+    pub const fn letter(self) -> char {
+        match self {
+            Self::Info => 'i',
+            Self::Warning => 'w',
+            Self::Critical => 'c',
+        }
+    }
+
     /// Shared severity projection for recipe-owned status paint.
     #[must_use]
     pub const fn semantic(self) -> SemanticStatus {
@@ -206,6 +229,8 @@ pub struct MetricAlert<'a> {
     pub severity: MetricAlertSeverity,
     /// Message.
     pub message: &'a str,
+    /// Optional related metric id.
+    pub metric_id: Option<&'a str>,
 }
 
 impl<'a> MetricAlert<'a> {
@@ -216,7 +241,15 @@ impl<'a> MetricAlert<'a> {
             id,
             severity,
             message,
+            metric_id: None,
         }
+    }
+
+    /// Link to metric.
+    #[must_use]
+    pub const fn metric(mut self, id: &'a str) -> Self {
+        self.metric_id = Some(id);
+        self
     }
 }
 
@@ -234,6 +267,15 @@ pub enum MetricsDashboardLayoutMode {
 }
 
 impl MetricsDashboardLayoutMode {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Grid => "grid",
+            Self::Summary => "summary",
+        }
+    }
+
     /// From width.
     #[must_use]
     pub const fn for_width(width: u16) -> Self {
@@ -600,12 +642,25 @@ impl MetricsDashboardState {
         self.accepts_input = on;
     }
 
+    /// Accepts input.
+    #[must_use]
+    pub const fn accepts_input(&self) -> bool {
+        self.accepts_input
+    }
+
     /// Effective layout mode.
     #[must_use]
     pub fn layout_mode(&self, width: u16) -> MetricsDashboardLayoutMode {
         self.layout_override
             .unwrap_or_else(|| MetricsDashboardLayoutMode::for_width(width))
     }
+
+    /// Focused metric id.
+    #[must_use]
+    pub fn focused_metric_id<'a>(&self, tiles: &[MetricTile<'a>]) -> Option<&'a str> {
+        tiles.get(self.focus_tile).map(|t| t.id)
+    }
+
     /// Keys.
     pub fn handle_key(
         &mut self,
@@ -800,6 +855,47 @@ impl MetricsDashboardState {
             _ => MetricsDashboardOutcome::Ignored,
         }
     }
+
+    /// Mouse click tiles/alerts.
+    pub fn handle_mouse(
+        &mut self,
+        event: MouseEvent,
+        tiles: &[MetricTile<'_>],
+        alerts: &[MetricAlert<'_>],
+    ) -> MetricsDashboardOutcome {
+        if !self.accepts_input {
+            return MetricsDashboardOutcome::Ignored;
+        }
+        if !matches!(event.kind, MouseEventKind::Down(MouseButton::Left)) {
+            return MetricsDashboardOutcome::Ignored;
+        }
+        let pos = event.position;
+        if !self.slots.toolbar.is_empty() && self.slots.toolbar.contains(pos) {
+            self.focus = MetricsFocus::Toolbar;
+            return MetricsDashboardOutcome::ToolbarFocused;
+        }
+        if !self.slots.alerts.is_empty() && self.slots.alerts.contains(pos) {
+            self.focus = MetricsFocus::Alerts;
+            // row by y
+            let rel = pos.y.saturating_sub(self.slots.alerts.y) as usize;
+            if rel < alerts.len() {
+                self.focus_alert = rel;
+            }
+            return MetricsDashboardOutcome::AlertsFocused;
+        }
+        for (i, rect) in self.slots.tiles.iter().enumerate() {
+            if rect.contains(pos) {
+                self.focus = MetricsFocus::Tiles;
+                self.focus_tile = i;
+                if let Some(t) = tiles.get(i) {
+                    return MetricsDashboardOutcome::TileFocused {
+                        id: t.id.to_string(),
+                    };
+                }
+            }
+        }
+        MetricsDashboardOutcome::Ignored
+    }
 }
 
 // ── Widget ──────────────────────────────────────────────────────────────────
@@ -861,7 +957,7 @@ impl<'a> MetricsDashboard<'a> {
     /// ASCII.
     #[must_use]
     /// Paint using public Sparkline/Gauge APIs only.
-    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut MetricsDashboardState) {
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut MetricsDashboardState) {
         if area.is_empty() {
             return;
         }
@@ -982,7 +1078,6 @@ impl<'a> MetricsDashboard<'a> {
                             1,
                         ),
                         buffer,
-                        None,
                     );
                 }
                 y = y.saturating_add(1);
@@ -1033,6 +1128,8 @@ pub mod bench {
     pub const TILE_COUNT: usize = 24;
     /// Samples per sparkline.
     pub const SAMPLE_LEN: usize = 64;
+    /// Paint frames.
+    pub const PAINT_FRAMES: u32 = 40;
 }
 
 #[cfg(test)]
@@ -1070,8 +1167,9 @@ mod tests {
 
     fn alerts() -> Vec<MetricAlert<'static>> {
         vec![
-            MetricAlert::new("a1", MetricAlertSeverity::Warning, "mem > 70%"),
-            MetricAlert::new("a2", MetricAlertSeverity::Critical, "error scrape failed"),
+            MetricAlert::new("a1", MetricAlertSeverity::Warning, "mem > 70%").metric("mem"),
+            MetricAlert::new("a2", MetricAlertSeverity::Critical, "error scrape failed")
+                .metric("err"),
         ]
     }
 
@@ -1160,7 +1258,7 @@ mod tests {
         let mut buf = Buffer::empty(area);
         let _ = MetricsDashboard::new(&tiles, &alerts, &system)
             .title("Ops")
-            .paint(area, &mut buf, &mut state);
+            .render(area, &mut buf, &mut state);
         assert!(!state.slots.tiles.is_empty());
         let text: String = buf
             .content()
@@ -1175,7 +1273,7 @@ mod tests {
         let area_n = Rect::new(0, 0, 40, 12);
         let mut buf_n = Buffer::empty(area_n);
         let _ =
-            MetricsDashboard::new(&tiles, &alerts, &system).paint(area_n, &mut buf_n, &mut state);
+            MetricsDashboard::new(&tiles, &alerts, &system).render(area_n, &mut buf_n, &mut state);
         assert_eq!(state.layout_mode(40), MetricsDashboardLayoutMode::Summary);
     }
 
@@ -1245,7 +1343,7 @@ mod tests {
         let area = Rect::new(0, 0, 120, 36);
         let mut buf = Buffer::empty(area);
         for _ in 0..6 {
-            let _ = MetricsDashboard::new(&tiles, &[], &system).paint(area, &mut buf, &mut state);
+            let _ = MetricsDashboard::new(&tiles, &[], &system).render(area, &mut buf, &mut state);
             let _ = state.handle_key(
                 KeyEvent::new(KeyCode::Right, KeyModifiers::NONE),
                 &tiles,

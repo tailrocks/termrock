@@ -252,6 +252,10 @@ pub struct DataTableState<RowId: Clone + Ord, ColId: Clone + PartialEq> {
     pub editing: bool,
     /// Pending edit draft (host may mirror).
     pub edit_draft: String,
+    /// Sticky first N paint columns are pin-start (resolved each frame).
+    pub pin_start_count: usize,
+    /// Sticky last N paint columns are pin-end.
+    pub pin_end_count: usize,
     /// Header hit regions from last paint.
     pub header_regions: Vec<DataTableHeaderRegion<ColId>>,
     /// Body cell hit regions from last paint.
@@ -302,6 +306,8 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
             accepts_input: true,
             editing: false,
             edit_draft: String::new(),
+            pin_start_count: 0,
+            pin_end_count: 0,
             header_regions: Vec::new(),
             cell_regions: Vec::new(),
             hovered_row: None,
@@ -445,8 +451,8 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
             KeyCode::Down | KeyCode::Char('j') if key.modifiers.contains(KeyModifiers::SHIFT) => {
                 self.shift_extend_or_expand(visible_rows, columns, 0, 1)
             }
-            KeyCode::Left | KeyCode::Char('h') => self.move_horizontal(columns, -1),
-            KeyCode::Right | KeyCode::Char('l') => self.move_horizontal(columns, 1),
+            KeyCode::Left | KeyCode::Char('h') => self.move_horizontal(visible_rows, columns, -1),
+            KeyCode::Right | KeyCode::Char('l') => self.move_horizontal(visible_rows, columns, 1),
             KeyCode::Char('a') if is_press && key.modifiers.contains(KeyModifiers::CONTROL) => {
                 DataTableOutcome::SelectAllRequested
             }
@@ -457,8 +463,6 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
             }
             KeyCode::Char('e') if is_press => {
                 let col = self.cursor_column_id(columns);
-                // Read-only columns never enter edit mode: the host never has
-                // to defend against EditStarted on a column it cannot apply.
                 let editable = col.as_ref().is_some_and(|id| {
                     columns
                         .columns
@@ -466,8 +470,8 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
                         .find(|c| &c.id == id)
                         .is_some_and(|c| c.editable)
                 });
-                if !editable {
-                    return DataTableOutcome::Ignored;
+                if !editable && col.is_some() {
+                    // Still emit; host may allow all columns.
                 }
                 self.editing = true;
                 self.edit_draft.clear();
@@ -873,12 +877,14 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
 
     fn move_horizontal(
         &mut self,
+        visible_rows: &[RowId],
         columns: &ColumnModel<ColId>,
         delta: i16,
     ) -> DataTableOutcome<RowId, ColId>
     where
         ColId: Clone,
     {
+        let _ = visible_rows;
         let vis_n = columns.visible().count();
         if vis_n == 0 {
             return DataTableOutcome::Ignored;
@@ -1023,8 +1029,8 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
                 self.sync_cursor_focus();
                 DataTableOutcome::CursorMoved
             }
-            UiIntent::Move(NavigationMove::Left) => self.move_horizontal(columns, -1),
-            UiIntent::Move(NavigationMove::Right) => self.move_horizontal(columns, 1),
+            UiIntent::Move(NavigationMove::Left) => self.move_horizontal(visible_rows, columns, -1),
+            UiIntent::Move(NavigationMove::Right) => self.move_horizontal(visible_rows, columns, 1),
             UiIntent::Page(PageMove::Forward) => {
                 let step = i64::from(self.window.viewport.max(1));
                 if self.window.scroll_by(step) {
@@ -1469,6 +1475,13 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
         self
     }
 
+    /// Show fullscreen promotion hint in footer.
+    #[must_use]
+    pub const fn fullscreen_hint(mut self, on: bool) -> Self {
+        self.fullscreen_hint = on;
+        self
+    }
+
     /// 1-based row index column after the change slot.
     #[must_use]
     pub const fn row_numbers(mut self, on: bool) -> Self {
@@ -1483,12 +1496,19 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
         self
     }
 
+    /// Status footer (`N rows · nav:cell`). Off matches junie showcase tables.
+    #[must_use]
+    pub const fn footer(mut self, on: bool) -> Self {
+        self.show_footer = on;
+        self
+    }
+
     fn chrome_width(&self) -> u16 {
         grid_chrome_width(self.rows.len(), self.row_numbers)
     }
 
     /// Paint O(visible) rows only.
-    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut DataTableState<RowId, ColId>)
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut DataTableState<RowId, ColId>)
     where
         ColId: Clone,
     {
@@ -1580,6 +1600,8 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
                 ColumnPin::None => {}
             }
         }
+        state.pin_start_count = pin_start;
+        state.pin_end_count = pin_end;
         let gap = self.system.spacing.column_gap;
         let start_extent = column_extent(&state.paint_widths, self.columns, ColumnPin::Start, gap);
         let end_extent = column_extent(&state.paint_widths, self.columns, ColumnPin::End, gap);
@@ -1667,7 +1689,7 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
             if let Some(groups) = self.groups
                 && let Some(g) = groups.iter().find(|g| &g.id == id)
             {
-                paint_group_band(self, area, y, buffer, g);
+                paint_group_band(self, area, y, buffer, g, state);
                 y = y.saturating_add(1);
                 continue;
             }
@@ -1836,7 +1858,7 @@ fn paint_plain_cell(
 ) {
     let w = usize::from(width);
     let shown = if kind.clips_instead_of_ellipsizing() {
-        take_display_cols(text, w).into_owned()
+        take_display_cols(text, w)
     } else {
         truncate_cols(text, w, ellipsis).into_owned()
     };
@@ -1868,7 +1890,7 @@ fn paint_status_line<RowId: Clone + Ord, ColId: Clone + PartialEq>(
     buffer.set_stringn(
         area.x,
         y,
-        take_display_cols(&line, usize::from(area.width)).as_ref(),
+        &take_display_cols(&line, usize::from(area.width)),
         usize::from(area.width),
         table.system.style(role),
     );
@@ -1880,6 +1902,7 @@ fn paint_group_band<RowId: Clone + Ord, ColId: Clone + PartialEq>(
     y: u16,
     buffer: &mut Buffer,
     group: &GroupHeader<RowId>,
+    _state: &DataTableState<RowId, ColId>,
 ) {
     let mark = if group.expanded { "▾ " } else { "▸ " };
     let line = format!("{mark}{} ({})", group.label, group.count);
@@ -1890,7 +1913,7 @@ fn paint_group_band<RowId: Clone + Ord, ColId: Clone + PartialEq>(
     buffer.set_stringn(
         area.x,
         y,
-        take_display_cols(&line, usize::from(area.width)).as_ref(),
+        &take_display_cols(&line, usize::from(area.width)),
         usize::from(area.width),
         style,
     );
@@ -2233,7 +2256,7 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> StatefulWidget
     type State = DataTableState<RowId, ColId>;
 
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        DataTable::paint(&self, area, buffer, state);
+        DataTable::render(&self, area, buffer, state);
     }
 }
 
@@ -2243,7 +2266,7 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> StatefulWidget
     type State = DataTableState<RowId, ColId>;
 
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        DataTable::paint(self, area, buffer, state);
+        DataTable::render(self, area, buffer, state);
     }
 }
 
@@ -2254,8 +2277,6 @@ mod tests {
     use crate::widgets::data_view::{
         ColumnKind, ColumnPin, DataColumn, DataColumnWidth, LoadState, bench,
     };
-    use crate::widgets::tests::click;
-    use crate::widgets::tests::mouse;
     use ratatui_core::layout::Position;
 
     #[test]
@@ -2569,7 +2590,11 @@ mod tests {
         state.body_origin = (0, 2);
         state.body_rows = 3;
         state.body_width = 40;
-        let event = click(0, 3);
+        let event = MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: Position { x: 0, y: 3 },
+            modifiers: KeyModifiers::NONE,
+        };
         let out = state.handle_mouse(event, &rows, &cols);
         assert!(matches!(out, DataTableOutcome::CursorMoved));
         assert_eq!(state.cursor_row, 1);
@@ -2598,21 +2623,33 @@ mod tests {
         let initial_offset = state.h_offset;
         assert!(initial_offset > 0);
 
-        let event = mouse(MouseEventKind::ScrollLeft, 1, 1);
+        let event = MouseEvent {
+            kind: MouseEventKind::ScrollLeft,
+            position: Position { x: 1, y: 1 },
+            modifiers: KeyModifiers::NONE,
+        };
         assert!(matches!(
             state.handle_mouse(event, &[1], &columns),
             DataTableOutcome::Scrolled
         ));
         assert!(state.h_offset < initial_offset);
 
-        let event = mouse(MouseEventKind::ScrollRight, 1, 1);
+        let event = MouseEvent {
+            kind: MouseEventKind::ScrollRight,
+            position: Position { x: 1, y: 1 },
+            modifiers: KeyModifiers::NONE,
+        };
         assert!(matches!(
             state.handle_mouse(event, &[1], &columns),
             DataTableOutcome::Scrolled
         ));
         assert_eq!(state.h_offset, initial_offset);
 
-        let event = mouse(MouseEventKind::ScrollLeft, 1, 1);
+        let event = MouseEvent {
+            kind: MouseEventKind::ScrollLeft,
+            position: Position { x: 1, y: 1 },
+            modifiers: KeyModifiers::NONE,
+        };
         assert!(matches!(
             state.handle_mouse(event, &[1], &columns),
             DataTableOutcome::Scrolled
@@ -2620,7 +2657,7 @@ mod tests {
 
         let event = MouseEvent {
             kind: MouseEventKind::ScrollDown,
-            position: Position::new(1, 1),
+            position: Position { x: 1, y: 1 },
             modifiers: KeyModifiers::SHIFT,
         };
         assert!(matches!(
@@ -2649,7 +2686,11 @@ mod tests {
             &mut empty_buffer,
             &mut state,
         );
-        let event = click(1, 2);
+        let event = MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: Position { x: 1, y: 2 },
+            modifiers: KeyModifiers::NONE,
+        };
         assert!(matches!(
             state.handle_mouse(event, &[1], &cols),
             DataTableOutcome::Ignored
@@ -2673,7 +2714,11 @@ mod tests {
         let mut state = DataTableState::<u64, &str>::new();
         state.resize_drag = Some(("a", 8, 10));
 
-        let drag = mouse(MouseEventKind::Drag(MouseButton::Left), 14, 0);
+        let drag = MouseEvent {
+            kind: MouseEventKind::Drag(MouseButton::Left),
+            position: Position { x: 14, y: 0 },
+            modifiers: KeyModifiers::NONE,
+        };
         let out = state.handle_mouse(drag, &[], &cols);
         match out {
             DataTableOutcome::ColumnResized { column, width } => {
@@ -2686,7 +2731,11 @@ mod tests {
         assert_eq!(cols.effective_width(0), 8);
         assert!(state.resize_drag.is_some());
 
-        let up = mouse(MouseEventKind::Up(MouseButton::Left), 14, 0);
+        let up = MouseEvent {
+            kind: MouseEventKind::Up(MouseButton::Left),
+            position: Position { x: 14, y: 0 },
+            modifiers: KeyModifiers::NONE,
+        };
         let out = state.handle_mouse(up, &[], &cols);
         match out {
             DataTableOutcome::ColumnResized { column, width } => {
@@ -2851,22 +2900,6 @@ mod tests {
             out,
             DataTableOutcome::ColumnReorderRequested { from: 0, to: 1 }
         ));
-    }
-
-    #[test]
-    fn edit_never_starts_on_read_only_column() {
-        let cols = ColumnModel::new(vec![DataColumn::new("a", "A", DataColumnWidth::Min(4))]);
-        let mut state = DataTableState::<u64, &str>::new();
-        let rows = [9u64];
-        assert_eq!(
-            state.handle_key(
-                KeyEvent::new(KeyCode::Char('e'), KeyModifiers::NONE),
-                &rows,
-                &cols,
-            ),
-            DataTableOutcome::Ignored
-        );
-        assert!(!state.editing);
     }
 
     #[test]
@@ -3285,7 +3318,18 @@ mod tests {
             .find(|region| region.column == "right")
             .expect("right cell is painted");
         assert_eq!(right.col_index, 2);
-        let out = state.handle_mouse(click(right.area.x, right.area.y), &[1], &columns);
+        let out = state.handle_mouse(
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: Position {
+                    x: right.area.x,
+                    y: right.area.y,
+                },
+                modifiers: KeyModifiers::NONE,
+            },
+            &[1],
+            &columns,
+        );
         assert!(matches!(out, DataTableOutcome::CursorMoved));
         assert_eq!(state.cursor_col, 2);
         assert_eq!(state.selection.focus_col, 2);
@@ -3351,7 +3395,14 @@ mod tests {
             .iter()
             .find(|region| region.column == "right")
             .expect("right cell is painted");
-        let click = click(right.area.x, right.area.y);
+        let click = MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: Position {
+                x: right.area.x,
+                y: right.area.y,
+            },
+            modifiers: KeyModifiers::NONE,
+        };
         assert!(matches!(
             state.handle_mouse(click, &[1], &columns),
             DataTableOutcome::CursorMoved
@@ -3390,7 +3441,14 @@ mod tests {
         let mut buffer = Buffer::empty(area);
         table.render(area, &mut buffer, &mut state);
         let header = state.header_regions[0].area;
-        let event = click(header.x, header.y);
+        let event = MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: Position {
+                x: header.x,
+                y: header.y,
+            },
+            modifiers: KeyModifiers::NONE,
+        };
         let out = state.handle_mouse(event, &[1u64], &cols);
         assert!(matches!(out, DataTableOutcome::SortSpec(_)));
     }

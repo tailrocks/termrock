@@ -198,13 +198,17 @@ pub fn run() -> std::io::Result<()> {
         }
         cli::Command::Capture(opts) => {
             std::fs::create_dir_all(&opts.out)?;
+            // `--all` is the source-shot contract: exactly the 63 scenes in
+            // the pinned manifest. Application-only smoke scenarios remain
+            // addressable through `--scenario` but must not pollute the
+            // strict comparator's target inventory.
             let selected: Vec<_> = match opts.scenario.as_deref() {
                 Some(id) => vec![
                     scenarios::capture_scenarios()
                         .find(|scenario| scenario.id == id)
                         .ok_or_else(|| std::io::Error::other(format!("unknown scenario {id:?}")))?,
                 ],
-                None => scenarios::capture_scenarios().collect(),
+                None => scenarios::ALL.iter().collect(),
             };
             for scenario in selected {
                 let stem = opts.out.join(scenario.id);

@@ -12,7 +12,7 @@ use termrock::runtime::FrameTick;
 use termrock::style::{JunieTheme, MotionPolicy};
 use termrock::widgets::{
     Badge, Callout, EmptyKind, EmptyState, Kbd, Label, ProgressBar, ProgressKind, ProgressStatus,
-    SemanticStatus, Separator, Skeleton, SkeletonState, Spinner, SpinnerState, StatusIndicator,
+    SemanticStatus, Separator, Skeleton, Spinner, SpinnerState, StatusIndicator,
 };
 
 use crate::catalog::PageId;
@@ -121,16 +121,16 @@ fn paint_demo(
         PublicUiId::EmptyState => {
             EmptyState::new("Nothing here", system)
                 .kind(EmptyKind::NoData)
-                .paint(inner, buf, &mut termrock::widgets::EmptyStateState::new());
+                .paint(inner, buf);
         }
         PublicUiId::Skeleton => {
-            Skeleton::new(inner.height.min(3), system).paint(inner, buf, &SkeletonState::new());
+            Skeleton::new(inner.height.min(3), system).paint(inner, buf);
         }
         PublicUiId::Separator => {
             Separator::new(system).paint(inner, buf);
         }
         PublicUiId::StatusIndicator => {
-            StatusIndicator::new(SemanticStatus::Success, system).paint(inner, buf, None);
+            StatusIndicator::new(SemanticStatus::Success, system).paint(inner, buf);
         }
         PublicUiId::Spinner => {
             let st = SpinnerState::new();

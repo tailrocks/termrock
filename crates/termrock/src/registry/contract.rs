@@ -40,6 +40,32 @@ impl RegistryItemKind {
             Self::Template => "template",
         }
     }
+
+    /// Parse kind string.
+    #[must_use]
+    pub fn parse(s: &str) -> Option<Self> {
+        match s.trim().to_ascii_lowercase().as_str() {
+            "primitive" => Some(Self::Primitive),
+            "component" => Some(Self::Component),
+            "behavior" => Some(Self::Behavior),
+            "block" => Some(Self::Block),
+            "theme" => Some(Self::Theme),
+            "keymap" | "key-map" => Some(Self::Keymap),
+            "template" => Some(Self::Template),
+            _ => None,
+        }
+    }
+
+    /// All kinds.
+    pub const ALL: [Self; 7] = [
+        Self::Primitive,
+        Self::Component,
+        Self::Behavior,
+        Self::Block,
+        Self::Theme,
+        Self::Keymap,
+        Self::Template,
+    ];
 }
 
 /// Role of a file in a contract / registry package.
@@ -51,8 +77,47 @@ pub enum ContractFileRole {
     Primary,
     /// Supporting module.
     Support,
+    /// Studio / lookbook story.
+    Story,
     /// Test or fixture.
     Fixture,
+    /// Documentation.
+    Docs,
+    /// Migration note.
+    Migration,
+    /// Other.
+    Other,
+}
+
+impl ContractFileRole {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Primary => "primary",
+            Self::Support => "support",
+            Self::Story => "story",
+            Self::Fixture => "fixture",
+            Self::Docs => "docs",
+            Self::Migration => "migration",
+            Self::Other => "other",
+        }
+    }
+
+    /// Parse.
+    #[must_use]
+    pub fn parse(s: &str) -> Option<Self> {
+        match s.trim().to_ascii_lowercase().as_str() {
+            "primary" => Some(Self::Primary),
+            "support" => Some(Self::Support),
+            "story" => Some(Self::Story),
+            "fixture" | "test" => Some(Self::Fixture),
+            "docs" | "doc" => Some(Self::Docs),
+            "migration" => Some(Self::Migration),
+            "other" => Some(Self::Other),
+            _ => None,
+        }
+    }
 }
 
 /// One file belonging to a contract or registry item.
@@ -220,5 +285,14 @@ impl ComponentContract {
     #[must_use]
     pub fn qualified_name(&self) -> String {
         format!("{}/{}", self.namespace, self.id)
+    }
+
+    /// Whether this is a kernel-hosted primitive/behavior/component (not copy-install).
+    #[must_use]
+    pub const fn is_kernel_hosted(&self) -> bool {
+        matches!(
+            self.kind,
+            RegistryItemKind::Primitive | RegistryItemKind::Behavior | RegistryItemKind::Component
+        ) && self.module.is_some()
     }
 }

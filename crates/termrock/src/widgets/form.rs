@@ -18,7 +18,7 @@
 //! desktop settings panels.
 use ratatui_core::{
     buffer::Buffer,
-    layout::Rect,
+    layout::{Position, Rect},
     style::{Modifier, Style},
     widgets::StatefulWidget,
 };
@@ -58,6 +58,27 @@ pub enum FieldStatus<'a> {
 }
 
 impl<'a> FieldStatus<'a> {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::None => "none",
+            Self::Help(_) => "help",
+            Self::Warning(_) => "warning",
+            Self::Error(_) => "error",
+            Self::Pending(_) => "pending",
+        }
+    }
+
+    /// Message text if any.
+    #[must_use]
+    pub const fn message(self) -> Option<&'a str> {
+        match self {
+            Self::None => None,
+            Self::Help(s) | Self::Warning(s) | Self::Error(s) | Self::Pending(s) => Some(s),
+        }
+    }
+
     /// Whether this is a blocking validation error.
     #[must_use]
     pub const fn is_error(self) -> bool {
@@ -152,6 +173,20 @@ impl<'a, Id> Field<'a, Id> {
         self
     }
 
+    /// Async validation pending.
+    #[must_use]
+    pub const fn pending(mut self, message: &'a str) -> Self {
+        self.status = FieldStatus::Pending(message);
+        self
+    }
+
+    /// Explicit status.
+    #[must_use]
+    pub const fn status(mut self, status: FieldStatus<'a>) -> Self {
+        self.status = status;
+        self
+    }
+
     /// Description under label (independent of status).
     #[must_use]
     pub const fn description(mut self, description: &'a str) -> Self {
@@ -166,10 +201,24 @@ impl<'a, Id> Field<'a, Id> {
         self
     }
 
+    /// Show optional mark.
+    #[must_use]
+    pub const fn optional(mut self, on: bool) -> Self {
+        self.show_optional = on;
+        self
+    }
+
     /// Enabled.
     #[must_use]
     pub const fn enabled(mut self, enabled: bool) -> Self {
         self.enabled = enabled;
+        self
+    }
+
+    /// Read-only.
+    #[must_use]
+    pub const fn read_only(mut self, on: bool) -> Self {
+        self.read_only = on;
         self
     }
 
@@ -256,8 +305,21 @@ pub enum FormLayout {
 }
 
 impl FormLayout {
-    /// Every layout stacks fields three rows apart.
-    const FIELD_ROW_HEIGHT: usize = 3;
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Responsive => "responsive",
+            Self::Stacked => "stacked",
+            Self::Compact => "compact",
+            Self::Inline => "inline",
+        }
+    }
+
+    fn field_row_height(self) -> usize {
+        let _ = self;
+        3
+    }
 
     fn section_header_height(self) -> usize {
         match self {
@@ -342,6 +404,18 @@ impl<Id> FormState<Id> {
         }
     }
 
+    /// Hovered field.
+    #[must_use]
+    pub const fn hovered(&self) -> Option<&Id> {
+        self.hovered.as_ref()
+    }
+
+    /// Accepts interaction.
+    #[must_use]
+    pub const fn accepts_input(&self) -> bool {
+        self.accepts_input
+    }
+
     /// Enable/disable surface.
     pub const fn set_accepts_input(&mut self, accepts: bool) {
         self.accepts_input = accepts;
@@ -350,6 +424,18 @@ impl<Id> FormState<Id> {
     /// Scroll target after host focus change.
     pub fn ensure_visible(&mut self, id: Option<Id>) {
         self.ensure_visible = id;
+    }
+
+    /// Scroll offset.
+    #[must_use]
+    pub const fn offset(&self) -> usize {
+        self.offset
+    }
+
+    /// Columns used.
+    #[must_use]
+    pub const fn column_count(&self) -> u8 {
+        self.column_count
     }
 
     /// Content height.
@@ -388,6 +474,23 @@ impl<Id> FormState<Id> {
                 .min(maximum)
         };
         before != self.offset
+    }
+
+    /// Scrollbar track click.
+    pub fn scroll_to_position(&mut self, position: Position) -> bool {
+        let Some(area) = self.scrollbar_region else {
+            return false;
+        };
+        if !area.contains(position) {
+            return false;
+        }
+        self.offset = crate::scroll::offset_for_track_position(
+            self.content_height,
+            self.viewport_height,
+            area.height,
+            usize::from(position.y.saturating_sub(area.y)),
+        );
+        true
     }
 }
 
@@ -528,6 +631,45 @@ impl<Id: Clone + PartialEq> FormState<Id> {
             _ => FormOutcome::Ignored,
         }
     }
+
+    /// Hover update.
+    pub fn hover(&mut self, position: Position) -> Option<&Id> {
+        self.hovered = self
+            .regions
+            .iter()
+            .find(|region| region.area.contains(position))
+            .map(|region| region.id.clone());
+        self.hovered.as_ref()
+    }
+
+    /// Activate if already host-focused.
+    pub fn click(&mut self, position: Position, focused_field: Option<&Id>) -> FormOutcome<Id> {
+        if !self.accepts_input {
+            return FormOutcome::Ignored;
+        }
+        let Some(id) = self
+            .regions
+            .iter()
+            .find(|region| region.area.contains(position))
+            .map(|region| region.id.clone())
+        else {
+            return FormOutcome::Ignored;
+        };
+        if focused_field == Some(&id) {
+            FormOutcome::Activated(id)
+        } else {
+            FormOutcome::Ignored
+        }
+    }
+
+    /// Hit id for host scene.focus.
+    #[must_use]
+    pub fn hit_id(&self, position: Position) -> Option<&Id> {
+        self.regions
+            .iter()
+            .find(|region| region.area.contains(position))
+            .map(|region| &region.id)
+    }
 }
 
 // ── Form widget ─────────────────────────────────────────────────────────────
@@ -563,6 +705,13 @@ impl<'a, Id> Form<'a, Id> {
         self
     }
 
+    /// Layout recipe.
+    #[must_use]
+    pub const fn layout(mut self, layout: FormLayout) -> Self {
+        self.layout = layout;
+        self
+    }
+
     /// Compact rows.
     #[must_use]
     pub const fn compact(mut self) -> Self {
@@ -577,11 +726,24 @@ impl<'a, Id> Form<'a, Id> {
         self
     }
 
+    /// Inline-preferring layout.
+    #[must_use]
+    pub const fn inline(mut self) -> Self {
+        self.layout = FormLayout::Inline;
+        self
+    }
+
     /// Toggle error summary strip.
     #[must_use]
     pub const fn show_error_summary(mut self, on: bool) -> Self {
         self.show_error_summary = on;
         self
+    }
+
+    /// Borrowed fieldsets.
+    #[must_use]
+    pub const fn fieldsets(&self) -> &'a [Fieldset<'a, Id>] {
+        self.fieldsets
     }
 }
 
@@ -713,7 +875,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Form<'_, Id> {
         } else {
             content_area.width
         };
-        let field_h = FormLayout::FIELD_ROW_HEIGHT;
+        let field_h = self.layout.field_row_height();
         let header_h = self.layout.section_header_height();
 
         for section in self.fieldsets {
@@ -772,6 +934,7 @@ impl<Id: Clone + PartialEq> StatefulWidget for &Form<'_, Id> {
                     field_area,
                     field,
                     self.system,
+                    self.layout,
                     is_focused,
                     state.hovered.as_ref() == Some(&field.id),
                 );
@@ -876,7 +1039,7 @@ fn columns_for(width: u16, layout: FormLayout) -> u8 {
 fn dimensions<Id>(fieldsets: &[Fieldset<'_, Id>], width: u16, layout: FormLayout) -> (u8, usize) {
     let columns = columns_for(width, layout);
     let header = layout.section_header_height();
-    let field_h = FormLayout::FIELD_ROW_HEIGHT;
+    let field_h = layout.field_row_height();
     let height = fieldsets.iter().fold(0usize, |height, section| {
         height.saturating_add(header).saturating_add(
             section
@@ -897,7 +1060,7 @@ fn field_bounds<Id: PartialEq>(
     focused: &Id,
 ) -> Option<(usize, usize)> {
     let header = layout.section_header_height();
-    let field_h = FormLayout::FIELD_ROW_HEIGHT;
+    let field_h = layout.field_row_height();
     let mut content_y = summary_rows;
     for section in fieldsets {
         content_y = content_y.saturating_add(header);
@@ -928,9 +1091,11 @@ fn paint_field<Id: Clone>(
     field_area: Rect,
     field: &Field<'_, Id>,
     system: &DesignSystem,
+    layout: FormLayout,
     focused: bool,
     hovered: bool,
 ) {
+    let _ = layout;
     let theme = system.junie_theme();
     let invalid = field.is_invalid();
     let enabled = field.enabled && !field.read_only;

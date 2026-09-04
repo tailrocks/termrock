@@ -35,7 +35,7 @@ use crate::{
         SemanticScene, SemanticState, UiIntent, place_overlay,
     },
     scroll::DialogScroll,
-    style::{DesignSystem, Role},
+    style::{DesignSystem, Role, RolePalette},
     text::{display_cols, more_note, take_display_cols, truncate_cols},
 };
 
@@ -50,11 +50,11 @@ const DIALOG_INSET_Y: u16 = 2;
 /// Cell gap between action buttons.
 const DIALOG_ACTION_GAP: u16 = 1;
 
-/// Footer chords while a confirm dialog is open (sentence case).
+/// Footer chords while a non-editing confirm dialog is open.
 const DIALOG_CONFIRM_HINTS: &[Hint<'static>] = &[
     Hint {
-        chord: "Esc",
-        label: "Cancel",
+        chord: "← →",
+        label: "Choose",
         priority: 10,
         visible: true,
     },
@@ -64,22 +64,34 @@ const DIALOG_CONFIRM_HINTS: &[Hint<'static>] = &[
         priority: 20,
         visible: true,
     },
-];
-
-/// Footer chords while a destructive dialog is open.
-const DIALOG_DESTRUCTIVE_HINTS: &[Hint<'static>] = DIALOG_CONFIRM_HINTS;
-
-/// Footer chords while a prompt dialog is open.
-const DIALOG_PROMPT_HINTS: &[Hint<'static>] = &[
     Hint {
         chord: "Esc",
         label: "Cancel",
+        priority: 30,
+        visible: true,
+    },
+    Hint {
+        chord: "y / n",
+        label: "Quick answer",
+        priority: 40,
+        visible: true,
+    },
+];
+
+/// Footer chords while a non-editing destructive dialog is open.
+const DIALOG_DESTRUCTIVE_HINTS: &[Hint<'static>] = DIALOG_CONFIRM_HINTS;
+
+/// Footer chords while a prompt/editing dialog is open.
+const DIALOG_PROMPT_HINTS: &[Hint<'static>] = &[
+    Hint {
+        chord: "Enter",
+        label: "Confirm",
         priority: 10,
         visible: true,
     },
     Hint {
-        chord: "Enter",
-        label: "Submit",
+        chord: "Esc",
+        label: "Cancel",
         priority: 20,
         visible: true,
     },
@@ -393,6 +405,22 @@ pub fn place_dialog(bounds: Rect, preferred: DialogSize) -> Rect {
     )
 }
 
+/// Place with recipe (fullscreen fills bounds).
+#[must_use]
+pub fn place_dialog_recipe(bounds: Rect, recipe: DialogRecipe) -> Rect {
+    let recipe = dialog_recipe_for_bounds(bounds, recipe);
+    match recipe {
+        DialogRecipe::Fullscreen => {
+            if bounds.is_empty() {
+                Rect::default()
+            } else {
+                bounds
+            }
+        }
+        other => place_dialog(bounds, DialogSize::for_recipe(other)),
+    }
+}
+
 /// Opens (or replaces) a dismissible dialog overlay.
 pub fn open_dialog_overlay<FocusId: Clone>(
     stack: &mut OverlayStack<FocusId>,
@@ -514,11 +542,26 @@ impl<'a> Backdrop<'a> {
             policy: BackdropPolicy::Dim,
         }
     }
+
+    /// Opaque backdrop for blocking/fullscreen layers.
+    #[must_use]
+    pub const fn occluding(system: &'a DesignSystem) -> Self {
+        Self {
+            system,
+            policy: BackdropPolicy::Occlude,
+        }
+    }
+
+    /// Selects the semantic policy requested by the overlay stack.
+    #[must_use]
+    pub const fn policy(mut self, policy: BackdropPolicy) -> Self {
+        self.policy = policy;
+        self
+    }
 }
 
-impl Backdrop<'_> {
-    /// Paint (single public entry; the [`Widget`] impl delegates here).
-    pub fn paint(&self, area: Rect, buffer: &mut Buffer) {
+impl Widget for &Backdrop<'_> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
         match self.policy {
             BackdropPolicy::None => {}
             BackdropPolicy::Occlude => {
@@ -546,12 +589,6 @@ impl Backdrop<'_> {
                 }
             }
         }
-    }
-}
-
-impl Widget for &Backdrop<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        self.paint(area, buffer);
     }
 }
 
@@ -751,7 +788,7 @@ fn paint_facts_body(
     if body.is_empty() {
         return;
     }
-    let used = super::props::paint(body, buffer, theme, facts, bg);
+    let used = super::props::render(body, buffer, theme, facts, bg);
     if code.is_empty() {
         return;
     }
@@ -801,7 +838,7 @@ fn paint_ack_field(
     buffer.set_stringn(
         body.x,
         y.saturating_sub(1),
-        take_display_cols(&ask, usize::from(body.width)).as_ref(),
+        &take_display_cols(&ask, usize::from(body.width)),
         usize::from(body.width),
         theme.muted().bg(bg),
     );
@@ -814,7 +851,7 @@ fn paint_ack_field(
     buffer.set_stringn(
         body.x,
         y,
-        take_display_cols(&field, usize::from(body.width)).as_ref(),
+        &take_display_cols(&field, usize::from(body.width)),
         usize::from(body.width),
         style,
     );
@@ -1014,9 +1051,21 @@ impl<Id> DialogState<Id> {
         self.close_policy = p;
     }
 
+    /// Current close policy.
+    #[must_use]
+    pub const fn close_policy(&self) -> DialogClosePolicy {
+        self.close_policy
+    }
+
     /// Layout recipe (also used at open for size).
     pub fn set_recipe(&mut self, r: DialogRecipe) {
         self.recipe = r;
+    }
+
+    /// Current recipe.
+    #[must_use]
+    pub const fn recipe(&self) -> DialogRecipe {
+        self.recipe
     }
 
     /// Explicit zone change (marks initial focus as applied).
@@ -1068,6 +1117,12 @@ impl<Id> DialogState<Id> {
         self.validation_message = msg;
     }
 
+    /// Current validation message, if any.
+    #[must_use]
+    pub fn validation_message(&self) -> Option<&str> {
+        self.validation_message.as_deref()
+    }
+
     /// Require typing `token` before the confirming action enables.
     pub fn set_ack_token(&mut self, token: Option<String>) {
         self.ack_token = token;
@@ -1078,6 +1133,12 @@ impl<Id> DialogState<Id> {
             self.initial_applied = true;
             self.require_action_focus_for_enter = true;
         }
+    }
+
+    /// Typed acknowledgement contents.
+    #[must_use]
+    pub fn typed_ack(&self) -> &str {
+        &self.typed_ack
     }
 
     /// Whether the acknowledgement matches (or none is required).
@@ -1101,12 +1162,51 @@ impl<Id> DialogState<Id> {
         &self.action_regions
     }
 
+    /// Body scroll state.
+    #[must_use]
+    pub fn scroll(&self) -> &DialogScroll {
+        &self.scroll
+    }
+
+    /// Mutable body scroll state.
+    pub fn scroll_mut(&mut self) -> &mut DialogScroll {
+        &mut self.scroll
+    }
+
     /// Apply initial focus once.
     pub fn ensure_initial_focus(&mut self) {
         if !self.initial_applied {
             self.focus_zone = self.initial_focus;
             self.initial_applied = true;
         }
+    }
+
+    /// Open on OverlayStack with opener restoration.
+    pub fn open_on_stack<F: Clone>(
+        &mut self,
+        stack: &mut OverlayStack<F>,
+        bounds: Rect,
+        preferred: DialogSize,
+        opener_focus: Option<F>,
+    ) -> OverlayOutcome<F> {
+        self.open = true;
+        self.initial_applied = false;
+        self.ensure_initial_focus();
+        open_dialog_configured(
+            stack,
+            bounds,
+            preferred,
+            opener_focus,
+            self.close_policy,
+            Some(self.recipe),
+            None,
+        )
+    }
+
+    /// Dismiss stack entry (opener restore).
+    pub fn close_on_stack<F: Clone>(&mut self, stack: &mut OverlayStack<F>) -> OverlayOutcome<F> {
+        self.open = false;
+        dismiss_dialog_overlay(stack)
     }
 }
 
@@ -1242,6 +1342,7 @@ impl<Id: Clone + PartialEq> DialogState<Id> {
             DialogClosePolicy::Dismissible => {
                 // Esc dismisses the modal (opener restore via stack). Hosts that
                 // want Esc to fire a Cancel *button* set ConfirmOnly + cancel_action.
+                let _ = actions;
                 self.open = false;
                 DialogOutcome::Cancelled
             }
@@ -1576,6 +1677,12 @@ impl<'a> Dialog<'a> {
         self
     }
 
+    /// Theme borrow for child widgets.
+    #[must_use]
+    pub const fn theme(&self) -> &RolePalette {
+        self.tokens.palette()
+    }
+
     /// Design tokens.
     #[must_use]
     pub const fn tokens(&self) -> &DesignSystem {
@@ -1586,6 +1693,13 @@ impl<'a> Dialog<'a> {
     #[must_use]
     pub const fn emphasis(mut self, emphasis: PanelChrome) -> Self {
         self.emphasis = emphasis;
+        self
+    }
+
+    /// Chrome variant.
+    #[must_use]
+    pub const fn variant(mut self, variant: DialogVariant) -> Self {
+        self.variant = variant;
         self
     }
 
@@ -1600,6 +1714,13 @@ impl<'a> Dialog<'a> {
     #[must_use]
     pub const fn preferred_size(mut self, size: DialogSize) -> Self {
         self.preferred_size = Some(size);
+        self
+    }
+
+    /// Paint body copy as muted (source DataGrid facts).
+    #[must_use]
+    pub const fn muted_body(mut self, on: bool) -> Self {
+        self.muted_body = on;
         self
     }
 
@@ -1724,7 +1845,7 @@ impl<'a> Dialog<'a> {
             buffer.set_stringn(
                 title_x,
                 title_y,
-                take_display_cols(&title, usize::from(title_w)).as_ref(),
+                &take_display_cols(&title, usize::from(title_w)),
                 usize::from(title_w),
                 title_style,
             );
@@ -1751,7 +1872,7 @@ impl<'a> Dialog<'a> {
                 buffer.set_stringn(
                     inner.x,
                     y,
-                    take_display_cols(d, usize::from(inner.width)).as_ref(),
+                    &take_display_cols(d, usize::from(inner.width)),
                     usize::from(inner.width),
                     theme.muted().bg(bg),
                 );
@@ -1797,12 +1918,13 @@ impl<'a> Dialog<'a> {
         };
         if !state.slots.body.is_empty() {
             if self.facts.is_empty() && self.code.is_empty() {
-                Paragraph::new(self.body.clone())
-                    .style(if self.muted_body {
-                        theme.muted().bg(bg)
-                    } else {
-                        theme.secondary().bg(bg)
-                    })
+                let body = self.body.clone().style(if self.muted_body {
+                    theme.muted().bg(bg)
+                } else {
+                    theme.secondary().bg(bg)
+                });
+                Paragraph::new(body)
+                    .style(Style::new().bg(bg))
                     .wrap(ratatui_widgets::paragraph::Wrap { trim: false })
                     .scroll((state.scroll.scroll_y, state.scroll.scroll_x))
                     .render(state.slots.body, buffer);
@@ -1840,7 +1962,7 @@ impl<'a> Dialog<'a> {
                 buffer.set_stringn(
                     inner.x,
                     y,
-                    take_display_cols(msg, usize::from(inner.width)).as_ref(),
+                    &take_display_cols(msg, usize::from(inner.width)),
                     usize::from(inner.width),
                     self.tokens.style(Role::Danger).bg(bg),
                 );
@@ -1925,6 +2047,12 @@ impl<'a> Dialog<'a> {
         }
         if screen.height > 0 && (!self.hints.is_empty() || self.footer_hint.is_some()) {
             let footer = Rect::new(screen.x, screen.bottom().saturating_sub(1), screen.width, 1);
+            let base = self.tokens.junie_theme().base();
+            for x in footer.left()..footer.right() {
+                let cell = &mut buffer[(x, footer.y)];
+                cell.reset();
+                cell.set_char(' ').set_style(base);
+            }
             if !self.hints.is_empty() {
                 ratatui_core::widgets::Widget::render(
                     &HintBar::new(self.hints, self.tokens),
@@ -1935,7 +2063,7 @@ impl<'a> Dialog<'a> {
                 buffer.set_stringn(
                     footer.x,
                     footer.y,
-                    take_display_cols(hint, usize::from(footer.width)).as_ref(),
+                    &take_display_cols(hint, usize::from(footer.width)),
                     usize::from(footer.width),
                     self.tokens.junie_theme().key_hint_action(),
                 );
@@ -2048,10 +2176,22 @@ impl<Id: Clone + PartialEq> ChoiceDialogState<Id> {
         }
     }
 
+    /// Action cursor id.
+    #[must_use]
+    pub fn cursor(&self) -> Option<&Id> {
+        self.cursor.as_ref()
+    }
+
     /// Host input gate.
     pub fn set_accepts_input(&mut self, accepts: bool) {
         self.accepts_input = accepts;
         self.dialog.set_accepts_input(accepts);
+    }
+
+    /// Whether host granted input.
+    #[must_use]
+    pub const fn accepts_input(&self) -> bool {
+        self.accepts_input
     }
 
     /// Async loading (blocks activation).
@@ -2060,11 +2200,23 @@ impl<Id: Clone + PartialEq> ChoiceDialogState<Id> {
         self.dialog.set_loading(loading);
     }
 
+    /// Whether activation is suppressed by loading.
+    #[must_use]
+    pub const fn is_loading(&self) -> bool {
+        self.loading
+    }
+
     /// Access full dialog engine.
     #[must_use]
     pub fn dialog(&self) -> &DialogState<Id> {
         &self.dialog
     }
+
+    /// Mutable access to the dialog engine (close policy, validation, zones).
+    pub fn dialog_mut(&mut self) -> &mut DialogState<Id> {
+        &mut self.dialog
+    }
+
     /// Routes keys via dialog engine → [`Outcome`].
     pub fn handle_key(&mut self, actions: &[Action<'_, Id>], key: KeyEvent) -> Outcome<Id> {
         if !self.accepts_input || key.is_release() {
@@ -2121,6 +2273,34 @@ impl<Id: Clone + PartialEq> ChoiceDialogState<Id> {
         out.into_choice_outcome()
     }
 
+    /// Move to next enabled action.
+    pub fn select_next(&mut self, actions: &[Action<'_, Id>]) -> Outcome<Id> {
+        self.handle_intent(actions, UiIntent::Move(NavigationMove::Next))
+    }
+
+    /// Move to previous enabled action.
+    pub fn select_previous(&mut self, actions: &[Action<'_, Id>]) -> Outcome<Id> {
+        self.handle_intent(actions, UiIntent::Move(NavigationMove::Previous))
+    }
+
+    /// Activate the current cursor action if enabled.
+    #[must_use]
+    pub fn activate_selected(&self, actions: &[Action<'_, Id>]) -> Outcome<Id> {
+        if self.loading || !self.accepts_input {
+            return Outcome::Ignored;
+        }
+        self.cursor
+            .as_ref()
+            .and_then(|cur| {
+                actions
+                    .iter()
+                    .find(|action| action.enabled && &action.id == cur)
+            })
+            .map_or(Outcome::Ignored, |action| {
+                Outcome::Activated(action.id.clone())
+            })
+    }
+
     /// Click a painted action hit region.
     #[must_use]
     pub fn click(&mut self, position: ratatui_core::layout::Position) -> Outcome<Id> {
@@ -2147,6 +2327,7 @@ impl<Id: Clone + PartialEq> ChoiceDialogState<Id> {
 pub struct ChoiceDialog<'a, Id> {
     dialog: Dialog<'a>,
     actions: &'a [Action<'a, Id>],
+    gap: &'a str,
     colorless: bool,
 }
 
@@ -2157,8 +2338,24 @@ impl<'a, Id> ChoiceDialog<'a, Id> {
         Self {
             dialog,
             actions,
+            gap: " ",
             colorless: false,
         }
+    }
+
+    /// Spacing between action labels.
+    #[must_use]
+    pub const fn gap(mut self, gap: &'a str) -> Self {
+        self.gap = gap;
+        self
+    }
+
+    /// ASCII action marks.
+    #[must_use]
+    /// Reduced-color action paint.
+    pub const fn colorless(mut self, colorless: bool) -> Self {
+        self.colorless = colorless;
+        self
     }
 }
 
@@ -2257,6 +2454,13 @@ impl<'a, Id> MessageDialog<'a, Id> {
             wrap: false,
             system,
         }
+    }
+
+    /// Fixed label column width for details.
+    #[must_use]
+    pub const fn label_width(mut self, label_width: u16) -> Self {
+        self.label_width = label_width;
+        self
     }
 
     /// Wrap long detail values.
@@ -3139,6 +3343,112 @@ mod backdrop_tests {
         );
         assert_eq!(state.action_cursor().copied(), Some("ok"));
         assert!(state.action_regions().iter().any(|r| r.id == "ok"));
+    }
+
+    #[test]
+    fn dialog_footer_hints_match_showcase_contract() {
+        fn footer(dialog: &Dialog<'_>) -> String {
+            let screen = Rect::new(0, 0, 80, 8);
+            let mut buffer = Buffer::empty(screen);
+            let mut state = DialogState::<()>::new();
+            dialog.paint_modal(screen, &mut buffer, &mut state, &[]);
+            (0..screen.width)
+                .map(|x| buffer[(x, screen.bottom() - 1)].symbol().to_string())
+                .collect::<String>()
+                .trim_end()
+                .to_owned()
+        }
+
+        let system = DesignSystem::junie();
+        assert_eq!(
+            footer(&Dialog::confirm(
+                "Confirm",
+                Text::from("Continue?"),
+                &system
+            )),
+            " ← → Choose  Enter Confirm  Esc Cancel  y / n Quick answer"
+        );
+        assert_eq!(
+            footer(&Dialog::destructive(
+                "Delete",
+                Text::from("Continue?"),
+                &system
+            )),
+            " ← → Choose  Enter Confirm  Esc Cancel  y / n Quick answer"
+        );
+        assert_eq!(
+            footer(&Dialog::prompt("Edit", Text::from("Value"), &system)),
+            " Enter Confirm  Esc Cancel"
+        );
+    }
+
+    #[test]
+    fn dialog_body_preserves_dimmed_blank_foreground_and_span_style() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let screen = Rect::new(0, 0, 80, 24);
+        let mut buffer = Buffer::empty(screen);
+        buffer.set_style(screen, system.style(Role::Text));
+        let body = Text::from(vec![ratatui_core::text::Line::from(vec![
+            ratatui_core::text::Span::styled(
+                "Delete",
+                Style::new().fg(Color::Green).add_modifier(Modifier::BOLD),
+            ),
+            ratatui_core::text::Span::raw(" branch?"),
+        ])]);
+        let mut state = DialogState::<()>::new();
+
+        Dialog::new("Confirm", body, &system)
+            .preferred_size(DialogSize {
+                width: 50,
+                height: 10,
+            })
+            .paint_modal(screen, &mut buffer, &mut state, &[]);
+
+        let body_area = state.slots().body;
+        assert_eq!(buffer[(body_area.x, body_area.y)].fg, Color::Green);
+        assert!(
+            buffer[(body_area.x, body_area.y)]
+                .modifier
+                .contains(Modifier::BOLD)
+        );
+        assert_eq!(
+            buffer[(body_area.x + 7, body_area.y)].fg,
+            theme.text_secondary
+        );
+        assert_eq!(
+            buffer[(body_area.right() - 1, body_area.y)].fg,
+            theme.text_muted
+        );
+        assert_eq!(
+            buffer[(body_area.right() - 1, body_area.y)].bg,
+            theme.surface_elevated
+        );
+    }
+
+    #[test]
+    fn modal_footer_clears_stale_hints_with_canvas_base_style() {
+        let system = DesignSystem::junie();
+        let screen = Rect::new(0, 0, 40, 8);
+        let mut buffer = Buffer::empty(screen);
+        let mut state = DialogState::<()>::new();
+        Dialog::new("Notice", Text::from("Saved"), &system)
+            .footer_hint("Esc Cancel extended")
+            .paint_modal(screen, &mut buffer, &mut state, &[]);
+        buffer[(8, screen.bottom() - 1)]
+            .set_char('x')
+            .set_style(Style::new().fg(Color::Red).add_modifier(Modifier::BOLD));
+
+        Dialog::new("Notice", Text::from("Saved"), &system)
+            .footer_hint("Esc")
+            .paint_modal(screen, &mut buffer, &mut state, &[]);
+
+        let base = system.junie_theme().base();
+        let stale_tail = &buffer[(8, screen.bottom() - 1)];
+        assert_eq!(stale_tail.symbol(), " ");
+        assert_eq!(stale_tail.fg, base.fg.unwrap());
+        assert_eq!(stale_tail.bg, base.bg.unwrap());
+        assert_eq!(stale_tail.modifier, Modifier::empty());
     }
 
     #[test]

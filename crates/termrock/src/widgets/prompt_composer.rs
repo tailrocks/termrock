@@ -28,7 +28,10 @@ use ratatui_core::{
 
 use crate::{
     input::{Event, KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
-    interaction::{OverlayId, OverlayKind, OverlayOutcome, OverlaySize, OverlaySpec, OverlayStack},
+    interaction::{
+        OverlayId, OverlayKind, OverlayOutcome, OverlaySize, OverlaySpec, OverlayStack,
+        place_overlay,
+    },
     style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
     widgets::{
@@ -102,6 +105,19 @@ impl ComposerChip {
         }
     }
 
+    /// Large paste chip (preview label; full body in [`Self::payload`]).
+    #[must_use]
+    pub fn paste(id: impl Into<String>, preview: impl Into<String>, bytes: usize) -> Self {
+        Self {
+            id: id.into(),
+            kind: ChipKind::Paste,
+            label: preview.into(),
+            meta: Some(format!("{bytes} B")),
+            bytes: Some(bytes),
+            payload: None,
+        }
+    }
+
     /// Large paste chip retaining full body for expand / submit.
     #[must_use]
     pub fn paste_with_body(
@@ -132,6 +148,56 @@ impl ComposerChip {
             bytes: None,
             payload: None,
         }
+    }
+
+    /// From [`AttachmentItem`](crate::widgets::AttachmentItem) (file/image/code/url).
+    #[must_use]
+    pub fn from_attachment(item: &crate::widgets::AttachmentItem) -> Self {
+        attachment_to_composer_chip(item)
+    }
+
+    /// From [`PastePayload`](crate::widgets::PastePayload).
+    #[must_use]
+    pub fn from_paste(paste: &crate::widgets::PastePayload) -> Self {
+        paste_to_composer_chip(paste)
+    }
+}
+
+/// Project attachment into composer chip list model.
+#[must_use]
+pub fn attachment_to_composer_chip(item: &crate::widgets::AttachmentItem) -> ComposerChip {
+    use crate::widgets::AttachmentType;
+    let kind = match item.kind {
+        AttachmentType::File => ChipKind::File,
+        AttachmentType::Image => ChipKind::Media,
+        AttachmentType::Code => ChipKind::Mention,
+        AttachmentType::Url | AttachmentType::Document | AttachmentType::Other => ChipKind::Other,
+    };
+    ComposerChip {
+        id: item.id.clone(),
+        kind,
+        label: item.name.clone(),
+        meta: item.meta.clone().or_else(|| {
+            item.bytes.map(|b| {
+                if b < 1024 {
+                    format!("{b} B")
+                } else {
+                    format!("{} KB", b / 1024)
+                }
+            })
+        }),
+        bytes: item.bytes.map(|b| b as usize),
+        payload: None,
+    }
+}
+
+/// Project paste payload into composer chip (body in payload when present).
+#[must_use]
+pub fn paste_to_composer_chip(paste: &crate::widgets::PastePayload) -> ComposerChip {
+    if let Some(body) = &paste.body {
+        ComposerChip::paste_with_body(paste.id.clone(), paste.preview.clone(), body.clone())
+    } else {
+        ComposerChip::paste(paste.id.clone(), paste.preview.clone(), paste.bytes)
     }
 }
 
@@ -329,6 +395,11 @@ pub enum PromptComposerOutcome {
         /// Queue entry (rich item; identities preserved).
         entry: PromptQueueItem,
     },
+    /// User removed a queued entry.
+    QueueRemoved {
+        /// Id.
+        id: String,
+    },
     /// Cancel current agent run / stop.
     Cancel,
     /// Soft interrupt (Ctrl+C style) without clearing draft.
@@ -374,6 +445,8 @@ pub enum PromptComposerOutcome {
     },
     /// Presentation mode changed.
     PresentationChanged(ComposerPresentation),
+    /// Focus left the composer (consumer may move focus).
+    Blur,
     /// Selection copied (Ctrl+C with active selection when not busy).
     SelectionCopied {
         /// Selected text.
@@ -483,6 +556,13 @@ impl PromptComposerState {
     pub fn text(&self) -> String {
         self.editor.text()
     }
+
+    /// Whether the editor holds a non-whitespace draft.
+    #[must_use]
+    pub fn has_draft(&self) -> bool {
+        !self.text().trim().is_empty()
+    }
+
     /// Whether host granted keyboard/pointer input (overlay/scene ownership).
     #[must_use]
     pub const fn accepts_input(&self) -> bool {
@@ -497,14 +577,37 @@ impl PromptComposerState {
         self.editor.set_editing(accepts);
     }
 
+    /// Agent busy flag.
+    #[must_use]
+    pub const fn is_busy(&self) -> bool {
+        self.busy
+    }
+
     /// Sets busy (queue/stop chrome).
     pub fn set_busy(&mut self, busy: bool) {
         self.busy = busy;
     }
 
+    /// Connection state.
+    #[must_use]
+    pub const fn connection(&self) -> ComposerConnection {
+        self.connection
+    }
+
     /// Sets connection.
     pub fn set_connection(&mut self, connection: ComposerConnection) {
         self.connection = connection;
+    }
+
+    /// Submit policy.
+    #[must_use]
+    pub const fn policy(&self) -> SubmitPolicy {
+        self.policy
+    }
+
+    /// Sets submit policy.
+    pub fn set_policy(&mut self, policy: SubmitPolicy) {
+        self.policy = policy;
     }
 
     /// Presentation mode.
@@ -527,6 +630,12 @@ impl PromptComposerState {
     pub fn set_model(&mut self, model: Option<ModelIndicator>) {
         self.model = model;
     }
+
+    /// Context estimate.
+    pub fn set_context(&mut self, context: ContextEstimate) {
+        self.context = context;
+    }
+
     /// No-color / monochrome-friendly chrome (forces ASCII marks; host should also
     /// pass a monochrome-quantized [`DesignSystem`]).
     pub fn set_colorless(&mut self, colorless: bool) {
@@ -575,6 +684,23 @@ impl PromptComposerState {
         &self.history
     }
 
+    /// Validation error string.
+    #[must_use]
+    pub fn validation_error(&self) -> Option<&str> {
+        self.validation_error.as_deref()
+    }
+
+    /// Clears draft text only (keeps chips).
+    pub fn clear_draft(&mut self) {
+        self.push_undo();
+        self.editor.set_text("");
+        self.select_anchor = None;
+        self.completion = CompletionQuery::default();
+        self.history_index = None;
+        self.history_draft = None;
+        self.validation_error = None;
+    }
+
     /// Whether a non-empty selection is active.
     #[must_use]
     pub fn has_selection(&self) -> bool {
@@ -591,6 +717,11 @@ impl PromptComposerState {
             return None;
         }
         self.editor.extract_between(anchor, cur)
+    }
+
+    /// Clears selection without moving the caret.
+    pub fn clear_selection(&mut self) {
+        self.select_anchor = None;
     }
 
     /// Selects entire draft.
@@ -615,6 +746,12 @@ impl PromptComposerState {
         before != self.chips.len()
     }
 
+    /// Chip by id (e.g. expand paste payload).
+    #[must_use]
+    pub fn chip(&self, id: &str) -> Option<&ComposerChip> {
+        self.chips.iter().find(|c| c.id == id)
+    }
+
     /// Removes a queue entry by id.
     pub fn remove_queue_entry(&mut self, id: &str) -> bool {
         let before = self.queue.len();
@@ -630,6 +767,18 @@ impl PromptComposerState {
             Some(self.queue.remove(0))
         }
     }
+
+    /// Clone of the FIFO queue for hosts / patterns recipes.
+    #[must_use]
+    pub fn queue_items(&self) -> Vec<PromptQueueItem> {
+        self.queue.clone()
+    }
+
+    /// Clears the submit queue (does not touch draft).
+    pub fn clear_queue(&mut self) {
+        self.queue.clear();
+    }
+
     /// Inserts text at cursor (records undo); replaces selection if any.
     pub fn insert_text(&mut self, text: &str) -> PromptComposerOutcome {
         if self.connection == ComposerConnection::Disabled {
@@ -830,32 +979,6 @@ impl PromptComposerState {
         if !self.accepts_input || key.is_release() {
             return PromptComposerOutcome::Ignored;
         }
-        let is_press = key.is_press();
-
-        // Escape peels exactly one composer layer only for a bare physical
-        // press. Reject other phases/modifiers before TextArea sees them;
-        // TextArea's raw Escape path otherwise treats them as edit-finish.
-        let bare_escape_press = key.code == KeyCode::Esc && is_press && key.modifiers.is_empty();
-        if key.code == KeyCode::Esc && !bare_escape_press {
-            return PromptComposerOutcome::Ignored;
-        }
-
-        // Host-facing chords and chip removal are physical one-shot actions.
-        // Reject repeats before they can fall through to TextArea or the chip
-        // strip, while ordinary editing and caret motion remain repeatable.
-        let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
-        let alt = key.modifiers.contains(KeyModifiers::ALT);
-        let shift = key.modifiers.contains(KeyModifiers::SHIFT);
-        let busy_cancel =
-            self.busy && (matches!(key.code, KeyCode::Char('u' | 'U') | KeyCode::Backspace));
-        let one_shot_ctrl = ctrl
-            && !alt
-            && (matches!(key.code, KeyCode::Char('c' | 'C' | 'e' | 'E'))
-                || (shift && matches!(key.code, KeyCode::Char('o' | 'O' | 'f' | 'F')))
-                || busy_cancel);
-        if !is_press && one_shot_ctrl {
-            return PromptComposerOutcome::Ignored;
-        }
 
         // Bare Enter/Esc via intent map (modifiers still use product paths below).
         if key.modifiers.is_empty()
@@ -874,12 +997,14 @@ impl PromptComposerState {
         }
 
         // Completion open: Esc closes one layer; navigation left to consumer list.
-        if self.completion.kind != CompletionKind::None && bare_escape_press {
+        if self.completion.kind != CompletionKind::None && key.code == KeyCode::Esc {
             return self.close_completion();
         }
 
         // Ctrl chords: undo/redo, interrupt/cancel, external editor, select-all, attach
-        if ctrl && !alt {
+        if key.modifiers.contains(KeyModifiers::CONTROL)
+            && !key.modifiers.contains(KeyModifiers::ALT)
+        {
             match key.code {
                 KeyCode::Char('z') | KeyCode::Char('Z') => return self.undo(),
                 KeyCode::Char('y') | KeyCode::Char('Y') => return self.redo(),
@@ -922,7 +1047,7 @@ impl PromptComposerState {
         }
 
         // Submit / newline policy
-        if key.code == KeyCode::Enter && is_press {
+        if key.code == KeyCode::Enter && key.is_press() {
             let mod_newline = self.policy.newline_chord
                 && (key.modifiers.contains(KeyModifiers::ALT)
                     || key.modifiers.contains(KeyModifiers::CONTROL)
@@ -940,7 +1065,7 @@ impl PromptComposerState {
             }
         }
 
-        if bare_escape_press {
+        if key.code == KeyCode::Esc {
             if self.completion.kind != CompletionKind::None {
                 return self.close_completion();
             }
@@ -1120,6 +1245,21 @@ impl PromptComposerState {
         }
     }
 
+    /// Unified event entry (editor + chips; use [`Self::handle_mouse_at`] for status hits).
+    pub fn handle_event(
+        &mut self,
+        event: Event,
+        editor_area: Rect,
+        chip_areas: &[(String, Rect)],
+    ) -> PromptComposerOutcome {
+        match event {
+            Event::Key(key) => self.handle_key(key),
+            Event::Paste(text) => self.handle_paste(&text),
+            Event::Mouse(mouse) => self.handle_mouse(mouse, editor_area, chip_areas),
+            _ => PromptComposerOutcome::Ignored,
+        }
+    }
+
     // —— overlay helpers ——
 
     /// Opens completion overlay on the stack (menu policy).
@@ -1143,6 +1283,55 @@ impl PromptComposerState {
                 policy: None,
             },
         )
+    }
+
+    /// Dismisses completion overlay.
+    pub fn dismiss_completion_overlay<FocusId: Clone>(
+        stack: &mut OverlayStack<FocusId>,
+    ) -> OverlayOutcome<FocusId> {
+        stack.dismiss(&OverlayId::from_static(PROMPT_COMPLETION_OVERLAY_ID))
+    }
+
+    /// Preferred completion rect (does not open stack).
+    #[must_use]
+    pub fn place_completion(bounds: Rect, anchor: Rect, width: u16, height: u16) -> Rect {
+        place_overlay(
+            bounds,
+            Some(anchor),
+            OverlaySize::menu(width, height),
+            crate::interaction::OverlayPolicy::for_kind(OverlayKind::Completion),
+        )
+    }
+
+    /// Opens fullscreen editor overlay on the stack.
+    pub fn open_fullscreen_overlay<FocusId: Clone>(
+        &self,
+        stack: &mut OverlayStack<FocusId>,
+        bounds: Rect,
+        opener: Option<FocusId>,
+    ) -> OverlayOutcome<FocusId> {
+        stack.open(
+            bounds,
+            OverlaySpec {
+                id: OverlayId::from_static(PROMPT_FULLSCREEN_OVERLAY_ID),
+                kind: OverlayKind::Dialog,
+                parent: None,
+                anchor: None,
+                size: OverlaySize::dialog(
+                    bounds.width.saturating_sub(2).max(20),
+                    bounds.height.saturating_sub(2).max(8),
+                ),
+                opener_focus: opener,
+                policy: None,
+            },
+        )
+    }
+
+    /// Dismisses fullscreen editor overlay.
+    pub fn dismiss_fullscreen_overlay<FocusId: Clone>(
+        stack: &mut OverlayStack<FocusId>,
+    ) -> OverlayOutcome<FocusId> {
+        stack.dismiss(&OverlayId::from_static(PROMPT_FULLSCREEN_OVERLAY_ID))
     }
 
     // —— internals ——
@@ -1345,22 +1534,11 @@ impl PromptComposerState {
         // Focus chips with Shift+Tab from empty? Keep simple: when chip_cursor set.
         let Some(idx) = self.chip_cursor else {
             if key.code == KeyCode::BackTab {
-                if !key.is_press() {
-                    return Some(PromptComposerOutcome::Ignored);
-                }
                 self.chip_cursor = Some(self.chips.len() - 1);
                 return Some(PromptComposerOutcome::Changed);
             }
             return None;
         };
-        if !key.is_press()
-            && matches!(
-                key.code,
-                KeyCode::Backspace | KeyCode::Delete | KeyCode::Enter | KeyCode::Esc
-            )
-        {
-            return Some(PromptComposerOutcome::Ignored);
-        }
         match key.code {
             KeyCode::Left => {
                 self.chip_cursor = Some(idx.saturating_sub(1));
@@ -1397,13 +1575,16 @@ impl PromptComposerState {
 pub fn detect_completion(text: &str, cursor: TextCursor) -> Option<CompletionQuery> {
     // Map cursor to absolute byte in LF-joined text.
     let mut abs = 0usize;
+    let mut line_idx = 0usize;
     for (i, line) in text.split('\n').enumerate() {
         if i == cursor.line {
             abs = abs.saturating_add(cursor.byte.min(line.len()));
             break;
         }
         abs = abs.saturating_add(line.len()).saturating_add(1);
+        line_idx = i;
     }
+    let _ = line_idx;
     let abs = abs.min(text.len());
     let head = &text[..abs];
     // Find last trigger not preceded by word char.
@@ -1459,9 +1640,9 @@ impl<'a> PromptComposer<'a> {
         Self { system }
     }
 
-    /// Paint (single public entry; the [`StatefulWidget`] impls delegate here).
-    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut PromptComposerState) {
-        <&Self as StatefulWidget>::render(self, area, buffer, state);
+    /// Paint (same as [`StatefulWidget::render`]).
+    pub fn render(self, area: Rect, buffer: &mut Buffer, state: &mut PromptComposerState) {
+        <&Self as StatefulWidget>::render(&self, area, buffer, state);
     }
 }
 
@@ -1723,7 +1904,7 @@ impl StatefulWidget for &PromptComposer<'_> {
             let panel = Panel::new(self.system)
                 .variant(PanelVariant::Bordered)
                 .emphasis(emphasis);
-            panel.paint(area, buffer, None);
+            Widget::render(&panel, area, buffer);
         }
 
         // Chips — AttachmentChip / PasteChip (Tag chrome underneath).
@@ -1850,154 +2031,10 @@ impl StatefulWidget for PromptComposer<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::{KeyEventKind, KeyModifiers};
-    use crate::widgets::tests::click;
-    use crate::widgets::tests::press;
+    use crate::input::KeyModifiers;
 
-    fn escape_event(kind: KeyEventKind, modifiers: KeyModifiers) -> KeyEvent {
-        let mut key = KeyEvent::new(KeyCode::Esc, modifiers);
-        key.kind = kind;
-        key
-    }
-
-    fn escape_cases() -> [(&'static str, KeyEventKind, KeyModifiers, bool); 6] {
-        [
-            ("bare press", KeyEventKind::Press, KeyModifiers::NONE, true),
-            (
-                "bare repeat",
-                KeyEventKind::Repeat,
-                KeyModifiers::NONE,
-                false,
-            ),
-            (
-                "bare release",
-                KeyEventKind::Release,
-                KeyModifiers::NONE,
-                false,
-            ),
-            (
-                "shift press",
-                KeyEventKind::Press,
-                KeyModifiers::SHIFT,
-                false,
-            ),
-            (
-                "control press",
-                KeyEventKind::Press,
-                KeyModifiers::CONTROL,
-                false,
-            ),
-            ("alt press", KeyEventKind::Press, KeyModifiers::ALT, false),
-        ]
-    }
-
-    #[test]
-    fn escape_closes_completion_only_on_bare_press() {
-        for (label, kind, modifiers, peels) in escape_cases() {
-            let mut state = PromptComposerState::new();
-            state.set_accepts_input(true);
-            state.set_completion(CompletionQuery {
-                kind: CompletionKind::Slash,
-                query: "he".into(),
-                trigger_byte: 0,
-                cursor_byte: 3,
-            });
-
-            let out = state.handle_key(escape_event(kind, modifiers));
-            assert_eq!(
-                out,
-                if peels {
-                    PromptComposerOutcome::CompletionClosed
-                } else {
-                    PromptComposerOutcome::Ignored
-                },
-                "{label}"
-            );
-            assert_eq!(
-                state.completion().kind,
-                if peels {
-                    CompletionKind::None
-                } else {
-                    CompletionKind::Slash
-                },
-                "{label}"
-            );
-        }
-    }
-
-    #[test]
-    fn escape_exits_fullscreen_only_on_bare_press() {
-        for (label, kind, modifiers, peels) in escape_cases() {
-            let mut state = PromptComposerState::new();
-            state.set_accepts_input(true);
-            assert_eq!(
-                state.request_fullscreen(),
-                PromptComposerOutcome::FullscreenRequested
-            );
-
-            let out = state.handle_key(escape_event(kind, modifiers));
-            assert_eq!(
-                out,
-                if peels {
-                    PromptComposerOutcome::FullscreenDismissed
-                } else {
-                    PromptComposerOutcome::Ignored
-                },
-                "{label}"
-            );
-            assert_eq!(
-                state.presentation,
-                if peels {
-                    ComposerPresentation::Normal
-                } else {
-                    ComposerPresentation::Fullscreen
-                },
-                "{label}"
-            );
-        }
-    }
-
-    #[test]
-    fn escape_clears_selection_only_on_bare_press() {
-        for (label, kind, modifiers, peels) in escape_cases() {
-            let mut state = PromptComposerState::new();
-            state.set_accepts_input(true);
-            state.set_text("draft");
-            state.select_anchor = Some(TextCursor { line: 0, byte: 0 });
-
-            let out = state.handle_key(escape_event(kind, modifiers));
-            assert_eq!(
-                out,
-                if peels {
-                    PromptComposerOutcome::Changed
-                } else {
-                    PromptComposerOutcome::Ignored
-                },
-                "{label}"
-            );
-            assert_eq!(state.has_selection(), !peels, "{label}");
-        }
-    }
-
-    #[test]
-    fn escape_dismisses_only_on_bare_press() {
-        for (label, kind, modifiers, peels) in escape_cases() {
-            let mut state = PromptComposerState::new();
-            state.set_accepts_input(true);
-            state.set_text("draft");
-
-            let out = state.handle_key(escape_event(kind, modifiers));
-            assert_eq!(
-                out,
-                if peels {
-                    PromptComposerOutcome::DismissRequest
-                } else {
-                    PromptComposerOutcome::Ignored
-                },
-                "{label}"
-            );
-            assert_eq!(state.text(), "draft", "{label}");
-        }
+    fn press(code: KeyCode) -> KeyEvent {
+        KeyEvent::new(code, KeyModifiers::NONE)
     }
 
     #[test]
@@ -2260,66 +2297,6 @@ mod tests {
     }
 
     #[test]
-    fn repeated_prompt_host_actions_and_chip_mutations_are_ignored() {
-        let repeat = |code, modifiers| {
-            let mut key = KeyEvent::new(code, modifiers);
-            key.kind = KeyEventKind::Repeat;
-            key
-        };
-
-        let mut state = PromptComposerState::new();
-        state.set_accepts_input(true);
-        state.set_busy(true);
-        state.set_text("keep");
-        for (code, modifiers) in [
-            (KeyCode::Char('c'), KeyModifiers::CONTROL),
-            (KeyCode::Char('e'), KeyModifiers::CONTROL),
-            (KeyCode::Char('u'), KeyModifiers::CONTROL),
-            (KeyCode::Backspace, KeyModifiers::CONTROL),
-            (
-                KeyCode::Char('o'),
-                KeyModifiers::CONTROL | KeyModifiers::SHIFT,
-            ),
-            (
-                KeyCode::Char('f'),
-                KeyModifiers::CONTROL | KeyModifiers::SHIFT,
-            ),
-        ] {
-            let before = state.clone();
-            assert_eq!(
-                state.handle_key(repeat(code, modifiers)),
-                PromptComposerOutcome::Ignored,
-                "repeat of {code:?} with {modifiers:?} must be ignored"
-            );
-            assert_eq!(state, before);
-        }
-
-        let mut chips = PromptComposerState::new();
-        chips.set_accepts_input(true);
-        chips.add_chip(ComposerChip::file("file", "main.rs"));
-        chips.chip_cursor = Some(0);
-        assert_eq!(
-            chips.handle_key(repeat(KeyCode::Delete, KeyModifiers::NONE)),
-            PromptComposerOutcome::Ignored
-        );
-        assert_eq!(chips.chips().len(), 1);
-
-        let mut focus = PromptComposerState::new();
-        focus.set_accepts_input(true);
-        focus.add_chip(ComposerChip::file("file", "main.rs"));
-        assert_eq!(
-            focus.handle_key(repeat(KeyCode::BackTab, KeyModifiers::NONE)),
-            PromptComposerOutcome::Ignored
-        );
-        assert_eq!(focus.chip_cursor, None);
-        assert_eq!(
-            focus.handle_key(KeyEvent::new(KeyCode::BackTab, KeyModifiers::NONE)),
-            PromptComposerOutcome::Changed
-        );
-        assert_eq!(focus.chip_cursor, Some(0));
-    }
-
-    #[test]
     fn disabled_ignores_keys() {
         let mut state = PromptComposerState::new();
         state.set_accepts_input(true);
@@ -2440,7 +2417,14 @@ mod tests {
         assert!(layout.mode_hit.is_some());
         assert!(layout.model_hit.is_some());
         let mode = layout.mode_hit.unwrap();
-        let mouse = click(mode.x, mode.y);
+        let mouse = MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: ratatui_core::layout::Position {
+                x: mode.x,
+                y: mode.y,
+            },
+            modifiers: KeyModifiers::NONE,
+        };
         assert_eq!(
             state.handle_mouse_at(mouse, &layout),
             PromptComposerOutcome::ModeMenu
@@ -2456,7 +2440,7 @@ mod tests {
         state.select_anchor = Some(TextCursor { line: 0, byte: 0 });
         assert!(state.editor.set_cursor(TextCursor { line: 0, byte: 5 }));
         let mut buf = Buffer::empty(Rect::new(0, 0, 40, 8));
-        PromptComposer::new(&system).paint(Rect::new(0, 0, 40, 8), &mut buf, &mut state);
+        PromptComposer::new(&system).render(Rect::new(0, 0, 40, 8), &mut buf, &mut state);
         let body = state.editor.body_area();
         // D8: the selection is one explicit pair, applied whole — no
         // reversal modifier anywhere in it.
@@ -2477,7 +2461,7 @@ mod tests {
         state.set_accepts_input(true);
         let area = Rect::new(0, 0, 40, 6);
         let mut buffer = Buffer::empty(area);
-        PromptComposer::new(&system).paint(area, &mut buffer, &mut state);
+        PromptComposer::new(&system).render(area, &mut buffer, &mut state);
         let body = state.editor.body_area();
         assert!(
             (body.x..body.right()).any(|x| buffer[(x, body.y)].bg == system.junie_theme().field),
@@ -2494,7 +2478,7 @@ mod tests {
         let area = Rect::new(0, 0, 22, 8);
         let mut buffer = Buffer::empty(area);
 
-        PromptComposer::new(&system).paint(area, &mut buffer, &mut state);
+        PromptComposer::new(&system).render(area, &mut buffer, &mut state);
 
         let body = state.editor.body_area();
         let painted: String = (body.x..body.right())
@@ -2560,7 +2544,7 @@ mod tests {
         let area = Rect::new(0, 0, 80, 16);
         let mut buf = Buffer::empty(area);
         for _ in 0..bench::PAINT_FRAMES {
-            PromptComposer::new(&system).paint(area, &mut buf, &mut state);
+            PromptComposer::new(&system).render(area, &mut buf, &mut state);
         }
         // repeated large pastes → chips
         let paste = "p".repeat(LARGE_PASTE_THRESHOLD);

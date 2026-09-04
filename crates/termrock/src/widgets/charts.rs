@@ -14,10 +14,11 @@
 //!
 //! Research: btop, bottom, gping, Ratatui charts, shadcn Recharts demos (area/
 //! bar/line/pie/radar peers), observability dashboards.
+#![allow(unused_imports)] // test-only imports retained
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
 
 use crate::{
-    style::{DesignSystem, Role},
+    style::{DesignSystem, Role, RolePalette},
     text::{display_cols, take_display_cols},
 };
 
@@ -303,6 +304,8 @@ pub struct Sparkline<'a> {
     threshold: Option<f64>,
     /// Selected sample index (absolute into samples, not windowed).
     selected: Option<usize>,
+    /// When true, treat values as already `0..=1` (legacy).
+    pre_normalized: bool,
     /// Time-window: only last N samples (0 = all / width fit).
     window: usize,
     role: Role,
@@ -319,15 +322,44 @@ impl<'a> Sparkline<'a> {
             glyphs: VizGlyphSet::Auto,
             threshold: None,
             selected: None,
+            pre_normalized: false,
             window: 0,
             role: Role::ChartSeries1,
         }
+    }
+
+    /// Force pre-normalized `0..=1` path (old API semantics).
+    #[must_use]
+    pub const fn pre_normalized(mut self, on: bool) -> Self {
+        self.pre_normalized = on;
+        self
+    }
+
+    /// Scale mode.
+    #[must_use]
+    pub const fn scale(mut self, scale: ScaleMode) -> Self {
+        self.scale = scale;
+        self
+    }
+
+    /// Glyph set.
+    #[must_use]
+    pub const fn glyphs(mut self, glyphs: VizGlyphSet) -> Self {
+        self.glyphs = glyphs;
+        self
     }
 
     /// Threshold in domain units.
     #[must_use]
     pub const fn threshold(mut self, t: f64) -> Self {
         self.threshold = Some(t);
+        self
+    }
+
+    /// Selected absolute index.
+    #[must_use]
+    pub const fn selected(mut self, index: usize) -> Self {
+        self.selected = Some(index);
         self
     }
 
@@ -346,9 +378,8 @@ impl<'a> Sparkline<'a> {
     }
 }
 
-impl Sparkline<'_> {
-    /// Paint (single public entry; the [`Widget`] impl delegates here).
-    pub fn paint(&self, area: Rect, buffer: &mut Buffer) {
+impl Widget for &Sparkline<'_> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
         if area.is_empty() || self.samples.is_empty() {
             return;
         }
@@ -361,7 +392,11 @@ impl Sparkline<'_> {
         let samples = window_samples(self.samples, win_n);
         let base = self.samples.len().saturating_sub(samples.len());
 
-        let domain = resolve_domain(self.scale, samples.iter().copied());
+        let domain = if self.pre_normalized {
+            ScaleDomain::unit()
+        } else {
+            resolve_domain(self.scale, samples.iter().copied())
+        };
         let gset = self.glyphs.resolve();
         let ladder = gset.ladder();
         let miss = gset.missing_mark();
@@ -375,7 +410,11 @@ impl Sparkline<'_> {
             let abs_i = base + index;
             let sample = samples.get(index).copied().unwrap_or(f64::NAN);
             let missing = !sample.is_finite();
-            let fraction = domain.normalize(sample);
+            let fraction = if self.pre_normalized && sample.is_finite() {
+                Some(sample.clamp(0.0, 1.0))
+            } else {
+                domain.normalize(sample)
+            };
             let mut glyph = glyph_for_fraction(fraction.unwrap_or(0.0), ladder, missing, miss);
             // threshold band: use threshold mark when close
             if thr_f >= 0.0 {
@@ -413,12 +452,6 @@ impl Sparkline<'_> {
     }
 }
 
-impl Widget for &Sparkline<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        self.paint(area, buffer);
-    }
-}
-
 impl Widget for Sparkline<'_> {
     #[expect(
         clippy::needless_borrows_for_generic_args,
@@ -444,6 +477,18 @@ pub enum ChartFill {
     AreaStacked,
 }
 
+impl ChartFill {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::None => "none",
+            Self::Area => "area",
+            Self::AreaStacked => "area-stacked",
+        }
+    }
+}
+
 /// How multi-column samples map along X (shadcn line linear/step peer).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -458,6 +503,16 @@ pub enum ChartInterpolation {
 }
 
 impl ChartInterpolation {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Nearest => "nearest",
+            Self::Linear => "linear",
+            Self::Step => "step",
+        }
+    }
+
     /// Sample value at column `col` of `width` for `samples` (non-empty).
     #[must_use]
     pub fn sample_at(self, samples: &[f64], col: usize, width: usize) -> f64 {
@@ -561,6 +616,77 @@ impl<'a> Chart<'a> {
         self.fill = ChartFill::Area;
         self
     }
+
+    /// Stacked area: series sum then fill under cumulative outline.
+    #[must_use]
+    pub const fn area_stacked(mut self) -> Self {
+        self.fill = ChartFill::AreaStacked;
+        self
+    }
+
+    /// Explicit fill mode.
+    #[must_use]
+    pub const fn fill(mut self, fill: ChartFill) -> Self {
+        self.fill = fill;
+        self
+    }
+
+    /// X-path interpolation (line linear / step peers).
+    #[must_use]
+    pub const fn interpolation(mut self, interp: ChartInterpolation) -> Self {
+        self.interpolation = interp;
+        self
+    }
+
+    /// Linear lerp between samples (shadcn chart-line-linear peer).
+    #[must_use]
+    pub const fn linear(mut self) -> Self {
+        self.interpolation = ChartInterpolation::Linear;
+        self
+    }
+
+    /// Step hold between samples (shadcn chart-line-step peer).
+    #[must_use]
+    pub const fn step(mut self) -> Self {
+        self.interpolation = ChartInterpolation::Step;
+        self
+    }
+
+    /// Scale.
+    #[must_use]
+    pub const fn scale(mut self, scale: ScaleMode) -> Self {
+        self.scale = scale;
+        self
+    }
+
+    /// Glyphs.
+    #[must_use]
+    pub const fn glyphs(mut self, glyphs: VizGlyphSet) -> Self {
+        self.glyphs = glyphs;
+        self
+    }
+
+    /// Thresholds in domain units.
+    #[must_use]
+    pub const fn thresholds(mut self, t: &'a [f64]) -> Self {
+        self.thresholds = t;
+        self
+    }
+
+    /// Selected series index.
+    #[must_use]
+    pub const fn selected_series(mut self, i: usize) -> Self {
+        self.selected_series = Some(i);
+        self
+    }
+
+    /// Selected sample index (into each series / window).
+    #[must_use]
+    pub const fn selected_index(mut self, i: usize) -> Self {
+        self.selected_index = Some(i);
+        self
+    }
+
     /// Legend row.
     #[must_use]
     pub const fn show_legend(mut self, on: bool) -> Self {
@@ -574,11 +700,24 @@ impl<'a> Chart<'a> {
         self.show_axes = on;
         self
     }
+
+    /// Streaming window.
+    #[must_use]
+    pub const fn window(mut self, n: usize) -> Self {
+        self.window = n;
+        self
+    }
+
+    /// Title.
+    #[must_use]
+    pub const fn title(mut self, title: &'a str) -> Self {
+        self.title = Some(title);
+        self
+    }
 }
 
-impl Chart<'_> {
-    /// Paint (single public entry; the [`Widget`] impl delegates here).
-    pub fn paint(&self, area: Rect, buffer: &mut Buffer) {
+impl Widget for &Chart<'_> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
         if area.is_empty() || self.series.is_empty() {
             return;
         }
@@ -920,12 +1059,6 @@ impl Chart<'_> {
     }
 }
 
-impl Widget for &Chart<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        self.paint(area, buffer);
-    }
-}
-
 impl Widget for Chart<'_> {
     #[expect(
         clippy::needless_borrows_for_generic_args,
@@ -1017,10 +1150,24 @@ impl<'a> Gauge<'a> {
         self
     }
 
+    /// Glyphs.
+    #[must_use]
+    pub const fn glyphs(mut self, glyphs: VizGlyphSet) -> Self {
+        self.glyphs = glyphs;
+        self
+    }
+
     /// Label.
     #[must_use]
     pub const fn label(mut self, label: &'a str) -> Self {
         self.label = Some(label);
+        self
+    }
+
+    /// Unit suffix.
+    #[must_use]
+    pub const fn unit(mut self, unit: &'a str) -> Self {
+        self.unit = Some(unit);
         self
     }
 
@@ -1039,9 +1186,8 @@ impl<'a> Gauge<'a> {
     }
 }
 
-impl Gauge<'_> {
-    /// Paint (single public entry; the [`Widget`] impl delegates here).
-    pub fn paint(&self, area: Rect, buffer: &mut Buffer) {
+impl Widget for &Gauge<'_> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
         if area.is_empty() {
             return;
         }
@@ -1165,12 +1311,6 @@ impl Gauge<'_> {
     }
 }
 
-impl Widget for &Gauge<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        self.paint(area, buffer);
-    }
-}
-
 impl Widget for Gauge<'_> {
     #[expect(
         clippy::needless_borrows_for_generic_args,
@@ -1227,6 +1367,20 @@ impl<'a> Histogram<'a> {
         }
     }
 
+    /// Scale for counts.
+    #[must_use]
+    pub const fn scale(mut self, scale: ScaleMode) -> Self {
+        self.scale = scale;
+        self
+    }
+
+    /// Glyphs.
+    #[must_use]
+    pub const fn glyphs(mut self, glyphs: VizGlyphSet) -> Self {
+        self.glyphs = glyphs;
+        self
+    }
+
     /// Vertical columns (default) vs horizontal bars.
     #[must_use]
     pub const fn vertical(mut self, on: bool) -> Self {
@@ -1249,9 +1403,8 @@ impl<'a> Histogram<'a> {
     }
 }
 
-impl Histogram<'_> {
-    /// Paint (single public entry; the [`Widget`] impl delegates here).
-    pub fn paint(&self, area: Rect, buffer: &mut Buffer) {
+impl Widget for &Histogram<'_> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
         if area.is_empty() || self.buckets.is_empty() {
             return;
         }
@@ -1396,12 +1549,6 @@ impl Histogram<'_> {
     }
 }
 
-impl Widget for &Histogram<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        self.paint(area, buffer);
-    }
-}
-
 impl Widget for Histogram<'_> {
     #[expect(
         clippy::needless_borrows_for_generic_args,
@@ -1427,6 +1574,38 @@ pub struct BarDatum<'a> {
 }
 
 impl<'a> BarDatum<'a> {
+    /// Normalized solid bar (0..=1).
+    #[must_use]
+    pub const fn new(label: &'a str, fraction: f64) -> Self {
+        Self {
+            label,
+            fraction,
+            segments: &[],
+        }
+    }
+
+    /// Raw solid value (pair with [`BarSeries::scale`]).
+    #[must_use]
+    pub const fn value(label: &'a str, value: f64) -> Self {
+        Self {
+            label,
+            fraction: value,
+            segments: &[],
+        }
+    }
+
+    /// Stacked bar: segment weights (shadcn `chart-bar-stacked` peer).
+    ///
+    /// Segments should be non-negative; domain uses sum (and baseline 0).
+    #[must_use]
+    pub const fn stacked(label: &'a str, segments: &'a [f64]) -> Self {
+        Self {
+            label,
+            fraction: 0.0,
+            segments,
+        }
+    }
+
     /// Whether this bar uses multi-segment stack paint.
     #[must_use]
     pub const fn is_stacked(self) -> bool {
@@ -1445,9 +1624,45 @@ pub struct BarSeries<'a> {
     pre_normalized: bool,
 }
 
-impl BarSeries<'_> {
-    /// Paint (single public entry; the [`Widget`] impl delegates here).
-    pub fn paint(&self, area: Rect, buffer: &mut Buffer) {
+impl<'a> BarSeries<'a> {
+    /// Creates a bar series (default: values treated as fractions 0..=1).
+    #[must_use]
+    pub const fn new(bars: &'a [BarDatum<'a>], system: &'a DesignSystem) -> Self {
+        Self {
+            bars,
+            system,
+            scale: ScaleMode::Fixed { min: 0.0, max: 1.0 },
+            glyphs: VizGlyphSet::Auto,
+            selected: None,
+            pre_normalized: true,
+        }
+    }
+
+    /// Treat `fraction` / segments as raw values with scale.
+    #[must_use]
+    pub const fn scale(mut self, scale: ScaleMode) -> Self {
+        self.scale = scale;
+        self.pre_normalized = false;
+        self
+    }
+
+    /// Glyphs.
+    #[must_use]
+    pub const fn glyphs(mut self, glyphs: VizGlyphSet) -> Self {
+        self.glyphs = glyphs;
+        self
+    }
+
+    /// Selected bar.
+    #[must_use]
+    pub const fn selected(mut self, i: usize) -> Self {
+        self.selected = Some(i);
+        self
+    }
+}
+
+impl Widget for &BarSeries<'_> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
         if area.is_empty() {
             return;
         }
@@ -1712,12 +1927,6 @@ impl BarSeries<'_> {
     }
 }
 
-impl Widget for &BarSeries<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        self.paint(area, buffer);
-    }
-}
-
 impl Widget for BarSeries<'_> {
     #[expect(
         clippy::needless_borrows_for_generic_args,
@@ -1742,6 +1951,16 @@ pub struct MeterSegment<'a> {
 }
 
 impl<'a> MeterSegment<'a> {
+    /// Construct.
+    #[must_use]
+    pub const fn new(label: &'a str, weight: f64, role: Role) -> Self {
+        Self {
+            label,
+            weight,
+            role,
+        }
+    }
+
     /// Finite positive weight, else 0.
     #[must_use]
     pub fn effective_weight(self) -> f64 {
@@ -1810,9 +2029,59 @@ pub struct SegmentedMeter<'a> {
     center: Option<&'a str>,
 }
 
-impl SegmentedMeter<'_> {
-    /// Paint (single public entry; the [`Widget`] impl delegates here).
-    pub fn paint(&self, area: Rect, buffer: &mut Buffer) {
+impl<'a> SegmentedMeter<'a> {
+    /// Creates a segmented meter (continuous segments, no separators).
+    #[must_use]
+    pub const fn new(segments: &'a [MeterSegment<'a>], system: &'a DesignSystem) -> Self {
+        Self {
+            segments,
+            system,
+            glyphs: VizGlyphSet::Auto,
+            selected: None,
+            show_labels: false,
+            separators: false,
+            center: None,
+        }
+    }
+
+    /// Glyphs.
+    #[must_use]
+    pub const fn glyphs(mut self, glyphs: VizGlyphSet) -> Self {
+        self.glyphs = glyphs;
+        self
+    }
+
+    /// Selected / active segment (chart-pie-interactive / donut-active peer).
+    #[must_use]
+    pub const fn selected(mut self, i: usize) -> Self {
+        self.selected = Some(i);
+        self
+    }
+
+    /// Show per-segment labels on row under the bar when height ≥ 2.
+    #[must_use]
+    pub const fn show_labels(mut self, on: bool) -> Self {
+        self.show_labels = on;
+        self
+    }
+
+    /// 1-column gaps between segments (default off = separator-none continuous).
+    #[must_use]
+    pub const fn separators(mut self, on: bool) -> Self {
+        self.separators = on;
+        self
+    }
+
+    /// Center caption under the meter (donut-text peer; needs height ≥ 2).
+    #[must_use]
+    pub const fn center(mut self, text: &'a str) -> Self {
+        self.center = Some(text);
+        self
+    }
+}
+
+impl Widget for &SegmentedMeter<'_> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
         if area.is_empty() || self.segments.is_empty() {
             return;
         }
@@ -1914,12 +2183,6 @@ impl SegmentedMeter<'_> {
     }
 }
 
-impl Widget for &SegmentedMeter<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        self.paint(area, buffer);
-    }
-}
-
 impl Widget for SegmentedMeter<'_> {
     #[expect(
         clippy::needless_borrows_for_generic_args,
@@ -1939,6 +2202,14 @@ pub struct MetricAxis<'a> {
     pub label: &'a str,
 }
 
+impl<'a> MetricAxis<'a> {
+    /// Construct.
+    #[must_use]
+    pub const fn new(label: &'a str) -> Self {
+        Self { label }
+    }
+}
+
 /// One series of values aligned with axes (len should match axis count).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct MetricSeries<'a> {
@@ -1946,6 +2217,14 @@ pub struct MetricSeries<'a> {
     pub label: &'a str,
     /// Per-axis values (non-finite = missing).
     pub values: &'a [f64],
+}
+
+impl<'a> MetricSeries<'a> {
+    /// Construct.
+    #[must_use]
+    pub const fn new(label: &'a str, values: &'a [f64]) -> Self {
+        Self { label, values }
+    }
 }
 
 /// Multi-metric / multi-axis comparison chart (shadcn **radar** job without polar theater).
@@ -1966,9 +2245,72 @@ pub struct MetricRadar<'a> {
     title: Option<&'a str>,
 }
 
-impl MetricRadar<'_> {
-    /// Paint (single public entry; the [`Widget`] impl delegates here).
-    pub fn paint(&self, area: Rect, buffer: &mut Buffer) {
+impl<'a> MetricRadar<'a> {
+    /// Axes + series + design system.
+    #[must_use]
+    pub const fn new(
+        axes: &'a [MetricAxis<'a>],
+        series: &'a [MetricSeries<'a>],
+        system: &'a DesignSystem,
+    ) -> Self {
+        Self {
+            axes,
+            series,
+            system,
+            scale: ScaleMode::Auto,
+            glyphs: VizGlyphSet::Auto,
+            selected_axis: None,
+            selected_series: None,
+            show_legend: true,
+            title: None,
+        }
+    }
+
+    /// Scale (Auto fits finite values across all series; Fixed for unit scores).
+    #[must_use]
+    pub const fn scale(mut self, scale: ScaleMode) -> Self {
+        self.scale = scale;
+        self
+    }
+
+    /// Glyphs.
+    #[must_use]
+    pub const fn glyphs(mut self, glyphs: VizGlyphSet) -> Self {
+        self.glyphs = glyphs;
+        self
+    }
+
+    /// Highlight axis row.
+    #[must_use]
+    pub const fn selected_axis(mut self, i: usize) -> Self {
+        self.selected_axis = Some(i);
+        self
+    }
+
+    /// Highlight series (emphasizes that series' bars).
+    #[must_use]
+    pub const fn selected_series(mut self, i: usize) -> Self {
+        self.selected_series = Some(i);
+        self
+    }
+
+    /// Legend row under title.
+    #[must_use]
+    pub const fn show_legend(mut self, on: bool) -> Self {
+        self.show_legend = on;
+        self
+    }
+
+    /// Title.
+    #[must_use]
+    pub const fn title(mut self, title: &'a str) -> Self {
+        self.title = Some(title);
+        self
+    }
+}
+
+impl Widget for &MetricRadar<'_> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
         if area.is_empty() || self.axes.is_empty() || self.series.is_empty() {
             return;
         }
@@ -2134,12 +2476,6 @@ impl MetricRadar<'_> {
     }
 }
 
-impl Widget for &MetricRadar<'_> {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        self.paint(area, buffer);
-    }
-}
-
 impl Widget for MetricRadar<'_> {
     #[expect(
         clippy::needless_borrows_for_generic_args,
@@ -2167,7 +2503,6 @@ pub mod bench {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::style::RolePalette;
 
     fn system() -> DesignSystem {
         DesignSystem::new(RolePalette::default())
@@ -2210,7 +2545,9 @@ mod tests {
         let system = system();
         let samples = [0.0, 0.5, 1.0];
         let mut buffer = Buffer::empty(Rect::new(0, 0, 3, 1));
-        Sparkline::new(&samples, &system).render(Rect::new(0, 0, 3, 1), &mut buffer);
+        Sparkline::new(&samples, &system)
+            .pre_normalized(true)
+            .render(Rect::new(0, 0, 3, 1), &mut buffer);
         assert_ne!(buffer[(0, 0)].symbol(), buffer[(2, 0)].symbol());
     }
 

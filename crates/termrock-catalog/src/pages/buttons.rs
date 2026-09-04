@@ -9,7 +9,7 @@
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use termrock::input::{KeyCode, KeyEventKind};
-use termrock::style::{ButtonKind, VisualState};
+use termrock::style::{ButtonKind, Role, VisualState};
 use termrock::widgets::{Button, ButtonState, ButtonVariant};
 
 use crate::ctx::RenderCtx;
@@ -206,7 +206,11 @@ impl Page for ButtonsPage {
                     .variant(b.variant())
                     .container(bg);
                 if let Some(g) = leading {
-                    btn = btn.leading(g);
+                    btn = btn.leading(g).leading_role(if b.on == Some(true) {
+                        Role::Accent
+                    } else {
+                        Role::TextMuted
+                    });
                 }
                 let _ = btn.paint(r, buf, &mut b.state);
                 ctx.control(b.id, r, b.disabled);

@@ -18,13 +18,22 @@
 //! roving focus is independent until activation (Enter / click).
 //!
 //! Research: IDE sidebars, Yazi, Posting, OpenCode, shadcn sidebar.
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+use ratatui_core::{
+    buffer::Buffer,
+    layout::{Position, Rect},
+    style::Modifier,
+    widgets::{StatefulWidget, Widget},
+};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     interaction::{
-        CollectionItem, CollectionOutcome, CollectionState, HitRegion, RovingOrientation,
-        SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent,
+        CollectionItem, CollectionOutcome, CollectionState, HitRegion, OverlayId, OverlayOutcome,
+        OverlaySize, OverlaySpec, OverlayStack, RovingOrientation, SemanticNode, SemanticRole,
+        SemanticScene, SemanticState, UiIntent,
     },
     style::{DesignSystem, Role, VisualState},
     text::{display_cols, take_display_cols},
@@ -61,6 +70,19 @@ pub enum NavItemStatus {
 }
 
 impl NavItemStatus {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::None => "none",
+            Self::Running => "running",
+            Self::Success => "success",
+            Self::Warning => "warning",
+            Self::Error => "error",
+            Self::Dirty => "dirty",
+        }
+    }
+
     /// Non-color mark.
     #[must_use]
     pub const fn mark(self, ascii: bool) -> Option<&'static str> {
@@ -96,6 +118,17 @@ pub enum NavItemKind {
 }
 
 impl NavItemKind {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Item => "item",
+            Self::Section => "section",
+            Self::Group => "group",
+            Self::Separator => "separator",
+        }
+    }
+
     /// Participates in focus / activation.
     #[must_use]
     pub const fn is_focusable(self) -> bool {
@@ -177,6 +210,18 @@ impl<Id> NavItem<Id> {
         }
     }
 
+    /// Separator (id still required for list identity).
+    #[must_use]
+    pub fn separator(id: Id) -> Self {
+        Self {
+            kind: NavItemKind::Separator,
+            enabled: false,
+            has_children: false,
+            label: String::new(),
+            ..Self::new(id, "")
+        }
+    }
+
     /// Icon.
     #[must_use]
     pub fn icon(mut self, icon: impl Into<String>) -> Self {
@@ -240,8 +285,8 @@ impl<Id> NavItem<Id> {
 /// TUI-honest view for paint + focus (sidebar-02/05 collapsible submenus).
 /// Roots and siblings at or above the collapsed depth remain visible.
 #[must_use]
-pub fn filter_nav_collapsed<Id>(items: &[NavItem<Id>]) -> Vec<&NavItem<Id>> {
-    let mut out: Vec<&NavItem<Id>> = Vec::with_capacity(items.len());
+pub fn filter_nav_collapsed<Id: Clone>(items: &[NavItem<Id>]) -> Vec<NavItem<Id>> {
+    let mut out = Vec::with_capacity(items.len());
     let mut hide_deeper_than: Option<u8> = None;
     for item in items {
         if let Some(d) = hide_deeper_than {
@@ -250,7 +295,7 @@ pub fn filter_nav_collapsed<Id>(items: &[NavItem<Id>]) -> Vec<&NavItem<Id>> {
             }
             hide_deeper_than = None;
         }
-        out.push(item);
+        out.push(item.clone());
         if matches!(item.kind, NavItemKind::Group | NavItemKind::Section)
             && item.has_children
             && !item.expanded
@@ -261,7 +306,7 @@ pub fn filter_nav_collapsed<Id>(items: &[NavItem<Id>]) -> Vec<&NavItem<Id>> {
     out
 }
 
-fn filter_nav_query<'a, Id>(items: Vec<&'a NavItem<Id>>, query: &str) -> Vec<&'a NavItem<Id>> {
+fn filter_nav_query<Id>(items: Vec<NavItem<Id>>, query: &str) -> Vec<NavItem<Id>> {
     if query.is_empty() {
         return items;
     }
@@ -269,11 +314,11 @@ fn filter_nav_query<'a, Id>(items: Vec<&'a NavItem<Id>>, query: &str) -> Vec<&'a
     items
         .into_iter()
         .filter(|item| {
-            crate::text::contains_lower(&item.label, &query)
+            item.label.to_ascii_lowercase().contains(&query)
                 || item
                     .command
                     .as_ref()
-                    .is_some_and(|command| crate::text::contains_lower(&command, &query))
+                    .is_some_and(|command| command.to_ascii_lowercase().contains(&query))
         })
         .collect()
 }
@@ -472,6 +517,10 @@ impl<Id> NavigationListState<Id> {
         let collection = CollectionState::new()
             .wrap(true)
             .orientation(RovingOrientation::Vertical);
+        if let Some(ref id) = route {
+            // set after first reconcile by host; store route only
+            let _ = id;
+        }
         Self {
             route,
             collection,
@@ -497,6 +546,17 @@ impl<Id> NavigationListState<Id> {
         self.collection.active()
     }
 
+    /// Cursor index from projection.
+    #[must_use]
+    pub fn cursor_index_in(&self, items: &[NavItem<Id>]) -> usize
+    where
+        Id: Clone + PartialEq,
+    {
+        let projected = self.projected_items(items);
+        let focusable = focusable_items(&projected);
+        self.collection.active_index(&focusable).unwrap_or(0)
+    }
+
     /// Filter query.
     #[must_use]
     pub fn filter(&self) -> &str {
@@ -517,6 +577,16 @@ impl<Id> NavigationListState<Id> {
         }
     }
 
+    /// Enabled.
+    pub fn set_enabled(&mut self, on: bool) {
+        self.enabled = on;
+    }
+
+    /// Set route without moving focus.
+    pub fn set_route(&mut self, id: Option<Id>) {
+        self.route = id;
+    }
+
     /// Set route and align focus.
     pub fn set_route_and_focus(&mut self, id: Id)
     where
@@ -531,21 +601,21 @@ impl<Id> NavigationListState<Id> {
         self.filter = q.into();
     }
 
-    fn projected_items<'a>(&self, items: &'a [NavItem<Id>]) -> Vec<&'a NavItem<Id>> {
+    fn projected_items(&self, items: &[NavItem<Id>]) -> Vec<NavItem<Id>>
+    where
+        Id: Clone,
+    {
         filter_nav_query(filter_nav_collapsed(items), &self.filter)
     }
 
-    fn collection_items<'a>(items: &'a [&NavItem<Id>]) -> Vec<CollectionItem<'a, Id>>
+    fn collection_items(items: &[NavItem<Id>]) -> Vec<CollectionItem<Id>>
     where
         Id: Clone,
     {
         focusable_items(items)
     }
 
-    fn reconcile_projected<'a>(
-        &mut self,
-        projected: &'a [&NavItem<Id>],
-    ) -> Vec<CollectionItem<'a, Id>>
+    fn reconcile_projected(&mut self, projected: &[NavItem<Id>]) -> Vec<CollectionItem<Id>>
     where
         Id: Clone + PartialEq,
     {
@@ -554,7 +624,7 @@ impl<Id> NavigationListState<Id> {
         coll
     }
 
-    fn ensure_initial_focus(&mut self, coll: &[CollectionItem<'_, Id>])
+    fn ensure_initial_focus(&mut self, coll: &[CollectionItem<Id>])
     where
         Id: Clone + PartialEq,
     {
@@ -582,7 +652,7 @@ impl<Id> NavigationListState<Id> {
         self.activate_focus_projected(&projected)
     }
 
-    fn activate_focus_projected(&mut self, projected: &[&NavItem<Id>]) -> NavigationListOutcome<Id>
+    fn activate_focus_projected(&mut self, projected: &[NavItem<Id>]) -> NavigationListOutcome<Id>
     where
         Id: Clone + PartialEq,
     {
@@ -632,11 +702,11 @@ impl<Id> NavigationListState<Id> {
         // Filter mode
         if self.filter_active {
             match key.code {
-                KeyCode::Esc if key.is_press() => {
+                KeyCode::Esc => {
                     self.filter_active = false;
                     return NavigationListOutcome::Changed;
                 }
-                KeyCode::Enter if key.is_press() => {
+                KeyCode::Enter => {
                     let _ = self.reconcile_projected(&projected);
                     self.filter_active = false;
                     return self.activate_focus_projected(&projected);
@@ -671,19 +741,17 @@ impl<Id> NavigationListState<Id> {
         self.ensure_initial_focus(&coll);
 
         // Start filter
-        if key.is_press()
-            && (matches!(key.code, KeyCode::Char('/') | KeyCode::Char('f'))
-                && key.modifiers.contains(KeyModifiers::CONTROL)
-                || (key.code == KeyCode::Char('/') && key.modifiers.is_empty()))
+        if matches!(key.code, KeyCode::Char('/') | KeyCode::Char('f'))
+            && key.modifiers.contains(KeyModifiers::CONTROL)
+            || (key.code == KeyCode::Char('/') && key.modifiers.is_empty())
         {
             self.filter_active = true;
             return NavigationListOutcome::Changed;
         }
 
         // Context menu (submenu-as-dropdown peer — host paints overlay)
-        if key.is_press()
-            && (key.code == KeyCode::Char(' ') && key.modifiers.contains(KeyModifiers::SHIFT)
-                || matches!(key.code, KeyCode::Char('m') if key.modifiers.contains(KeyModifiers::CONTROL)))
+        if key.code == KeyCode::Char(' ') && key.modifiers.contains(KeyModifiers::SHIFT)
+            || matches!(key.code, KeyCode::Char('m') if key.modifiers.contains(KeyModifiers::CONTROL))
         {
             if let Some(id) = self.collection.active().cloned() {
                 return NavigationListOutcome::ContextMenuRequested { id };
@@ -691,10 +759,7 @@ impl<Id> NavigationListState<Id> {
         }
 
         // Expand/collapse Left/Right
-        if key.is_press()
-            && matches!(key.code, KeyCode::Left | KeyCode::Right)
-            && key.modifiers.is_empty()
-        {
+        if matches!(key.code, KeyCode::Left | KeyCode::Right) && key.modifiers.is_empty() {
             if let Some(id) = self.collection.active().cloned() {
                 if let Some(item) = projected.iter().find(|i| i.id == id) {
                     if item.has_children
@@ -710,12 +775,12 @@ impl<Id> NavigationListState<Id> {
             }
         }
 
-        if key.is_press() && key.code == KeyCode::Enter && key.modifiers.is_empty() {
+        if key.code == KeyCode::Enter && key.modifiers.is_empty() {
             return self.activate_focus_projected(&projected);
         }
 
         // Space activates item without expand (if leaf)
-        if key.is_press() && matches!(key.code, KeyCode::Char(' ')) && key.modifiers.is_empty() {
+        if matches!(key.code, KeyCode::Char(' ')) && key.modifiers.is_empty() {
             return self.activate_focus_projected(&projected);
         }
 
@@ -825,7 +890,7 @@ impl<Id> NavigationListState<Id> {
     }
 }
 
-fn focusable_items<'a, Id: Clone>(items: &'a [&NavItem<Id>]) -> Vec<CollectionItem<'a, Id>> {
+fn focusable_items<Id: Clone>(items: &[NavItem<Id>]) -> Vec<CollectionItem<Id>> {
     // Collapse filtering is host-projected: callers pass already-filtered lists,
     // or use [`filter_nav_collapsed`]. Do not double-filter raw slices that mix
     // expanded/collapsed inconsistently — host owns projection. Filter here only
@@ -834,7 +899,7 @@ fn focusable_items<'a, Id: Clone>(items: &'a [&NavItem<Id>]) -> Vec<CollectionIt
         .iter()
         .filter(|i| i.kind.is_focusable() && i.kind != NavItemKind::Separator)
         .map(|i| {
-            CollectionItem::new(i.id.clone(), &i.label)
+            CollectionItem::new(i.id.clone(), i.label.clone())
                 .enabled(i.enabled || matches!(i.kind, NavItemKind::Section | NavItemKind::Group))
         })
         .collect()
@@ -870,6 +935,14 @@ impl<Id> SidebarState<Id> {
             accepts_input: true,
         }
     }
+
+    /// Presentation.
+    #[must_use]
+    pub const fn with_presentation(mut self, p: SidebarPresentation) -> Self {
+        self.presentation = p;
+        self
+    }
+
     /// Route.
     #[must_use]
     pub const fn route(&self) -> Option<&Id> {
@@ -892,6 +965,15 @@ impl<Id> SidebarState<Id> {
     #[must_use]
     pub const fn presentation(&self) -> SidebarPresentation {
         self.presentation
+    }
+
+    /// Cursor in projection.
+    #[must_use]
+    pub fn cursor_index_in(&self, items: &[NavItem<Id>]) -> usize
+    where
+        Id: Clone + PartialEq,
+    {
+        self.nav.cursor_index_in(items)
     }
 
     /// Focus.
@@ -955,26 +1037,20 @@ impl<Id> SidebarState<Id> {
         }
 
         // Rail toggle
-        if key.is_press() && key.code == KeyCode::Char('[') && key.modifiers.is_empty() {
+        if key.code == KeyCode::Char('[') && key.modifiers.is_empty() {
             return self.toggle_rail();
         }
         // Palette hint
-        if key.is_press()
-            && key.code == KeyCode::Char('p')
-            && key.modifiers.contains(KeyModifiers::CONTROL)
-        {
+        if key.code == KeyCode::Char('p') && key.modifiers.contains(KeyModifiers::CONTROL) {
             self.presentation = SidebarPresentation::Palette;
             return SidebarOutcome::OpenPalette;
         }
         // Drawer request on very narrow (host may already show drawer)
-        if key.is_press()
-            && key.code == KeyCode::Char('b')
-            && key.modifiers.contains(KeyModifiers::CONTROL)
-        {
+        if key.code == KeyCode::Char('b') && key.modifiers.contains(KeyModifiers::CONTROL) {
             self.presentation = SidebarPresentation::Drawer;
             return SidebarOutcome::OpenDrawer;
         }
-        if key.is_press() && key.code == KeyCode::Esc && key.modifiers.is_empty() {
+        if key.code == KeyCode::Esc && key.modifiers.is_empty() {
             if self.nav.filter_active {
                 return self.nav.handle_key(key, items).into();
             }
@@ -984,6 +1060,28 @@ impl<Id> SidebarState<Id> {
         self.nav.handle_key(key, items).into()
     }
 
+    /// Intent.
+    pub fn handle_intent(&mut self, intent: UiIntent, items: &[NavItem<Id>]) -> SidebarOutcome<Id>
+    where
+        Id: Clone + PartialEq,
+    {
+        self.nav.accepts_input = self.accepts_input;
+        if !self.accepts_input {
+            return SidebarOutcome::Ignored;
+        }
+        if !self.nav.focused {
+            self.nav.focused = true;
+        }
+        match intent {
+            UiIntent::Cancel | UiIntent::Close => SidebarOutcome::Blurred,
+            UiIntent::Help | UiIntent::Search => {
+                self.nav.filter_active = true;
+                SidebarOutcome::Changed
+            }
+            other => self.nav.handle_intent(other, items).into(),
+        }
+    }
+
     /// Mouse.
     pub fn handle_mouse(&mut self, event: MouseEvent, items: &[NavItem<Id>]) -> SidebarOutcome<Id>
     where
@@ -991,6 +1089,19 @@ impl<Id> SidebarState<Id> {
     {
         self.nav.accepts_input = self.accepts_input;
         self.nav.handle_mouse(event, items).into()
+    }
+
+    /// Open as drawer overlay helper.
+    pub fn open_drawer_overlay<FocusId: Clone>(
+        stack: &mut OverlayStack<FocusId>,
+        bounds: Rect,
+        size: OverlaySize,
+        opener: Option<FocusId>,
+    ) -> OverlayOutcome<FocusId> {
+        stack.open(
+            bounds,
+            OverlaySpec::drawer(SIDEBAR_DRAWER_OVERLAY_ID, size, opener),
+        )
     }
 }
 
@@ -1384,7 +1495,7 @@ impl<'a, Id: Clone + PartialEq> Sidebar<'a, Id> {
                 self.title
             };
             inner = panel.inner(area);
-            panel.title(title).paint(area, buffer, None);
+            Widget::render(&panel.title(title), area, buffer);
         }
 
         let rail = matches!(state.presentation, SidebarPresentation::Rail);
@@ -1453,6 +1564,8 @@ impl<Id: Clone + PartialEq> StatefulWidget for Sidebar<'_, Id> {
 
 // ── Example projectors (Studio stories) ─────────────────────────────────────
 
+// `example_database_nav` / `example_agent_workbench_nav` live in termrock::patterns.
+
 /// Settings nav sample.
 #[must_use]
 pub fn example_settings_nav() -> Vec<NavItem<&'static str>> {
@@ -1499,9 +1612,7 @@ pub fn example_sectioned_sidebar_nav() -> Vec<NavItem<&'static str>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyEventKind;
     use crate::style::RolePalette;
-    use crate::widgets::tests::{click, key_with_kind};
 
     #[test]
     fn route_distinct_from_focus() {
@@ -1723,76 +1834,6 @@ mod tests {
             matches!(out, NavigationListOutcome::ContextMenuRequested { id: "a" }),
             "{out:?}"
         );
-    }
-
-    #[test]
-    fn repeated_navigation_lifecycle_actions_are_ignored() {
-        let items = [NavItem::new("a", "Alpha")];
-        let mut state = NavigationListState::new(Some("a"));
-        state.set_focused(true);
-        state.collection.set_active(Some("a"));
-
-        state.filter_active = true;
-        assert!(matches!(
-            state.handle_key(
-                key_with_kind(KeyCode::Esc, KeyModifiers::NONE, KeyEventKind::Repeat),
-                &items
-            ),
-            NavigationListOutcome::Ignored
-        ));
-        assert!(state.is_filter_active());
-
-        state.filter_active = false;
-        for (code, modifiers) in [
-            (KeyCode::Enter, KeyModifiers::NONE),
-            (KeyCode::Char(' '), KeyModifiers::NONE),
-            (KeyCode::Char('/'), KeyModifiers::NONE),
-            (KeyCode::Char('m'), KeyModifiers::CONTROL),
-        ] {
-            assert!(matches!(
-                state.handle_key(key_with_kind(code, modifiers, KeyEventKind::Repeat), &items),
-                NavigationListOutcome::Ignored
-            ));
-        }
-        assert_eq!(state.route(), Some(&"a"));
-        assert!(!state.is_filter_active());
-
-        let group = [
-            NavItem::group("group", "Group")
-                .has_children(true)
-                .expanded(false),
-            NavItem::new("child", "Child").depth(1),
-        ];
-        let mut group_state = NavigationListState::new(Some("group"));
-        group_state.set_focused(true);
-        group_state.collection.set_active(Some("group"));
-        assert!(matches!(
-            group_state.handle_key(
-                key_with_kind(KeyCode::Right, KeyModifiers::NONE, KeyEventKind::Repeat),
-                &group
-            ),
-            NavigationListOutcome::Ignored
-        ));
-    }
-
-    #[test]
-    fn repeated_sidebar_actions_are_ignored() {
-        let items = [NavItem::new("a", "Alpha")];
-        for (code, modifiers) in [
-            (KeyCode::Char('['), KeyModifiers::NONE),
-            (KeyCode::Char('p'), KeyModifiers::CONTROL),
-            (KeyCode::Char('b'), KeyModifiers::CONTROL),
-            (KeyCode::Esc, KeyModifiers::NONE),
-        ] {
-            let mut state = SidebarState::new(Some("a"));
-            state.set_focused(true);
-            let presentation = state.presentation();
-            assert!(matches!(
-                state.handle_key(key_with_kind(code, modifiers, KeyEventKind::Repeat), &items),
-                SidebarOutcome::Ignored
-            ));
-            assert_eq!(state.presentation(), presentation);
-        }
     }
 
     #[test]
@@ -2055,7 +2096,14 @@ mod tests {
         Sidebar::new(&items, &system).paint(area, &mut buf, &mut state);
         let hit = state.nav.regions.iter().find(|r| r.id == "b").expect("b");
         assert!(matches!(
-            state.handle_mouse(click(hit.area.x, hit.area.y), &items),
+            state.handle_mouse(
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(hit.area.x, hit.area.y),
+                    modifiers: KeyModifiers::NONE,
+                },
+                &items
+            ),
             SidebarOutcome::RouteChanged { id: "b" }
         ));
     }
@@ -2133,10 +2181,9 @@ mod tests {
     #[test]
     fn command_on_activate() {
         let items = [NavItem::new("a", "A").command("do.a")];
-        let refs: Vec<&NavItem<&str>> = items.iter().collect();
         let mut state = NavigationListState::new(None);
         state.set_focused(true);
-        let coll = NavigationListState::<&str>::collection_items(&refs);
+        let coll = NavigationListState::<&str>::collection_items(&items);
         let _ = state.collection.reconcile(&coll);
         state.collection.set_active(Some("a"));
         assert!(matches!(

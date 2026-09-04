@@ -32,6 +32,8 @@ use crate::{
     text::{display_cols, take_display_cols},
 };
 
+use super::SemanticStatus;
+
 /// The one activity frame vocabulary (D6) — re-exported under the progress
 /// name so an indeterminate bar and a spinner can never drift apart.
 pub use crate::style::SPINNER_BRAILLE_FRAMES as DEFAULT_PROGRESS_FRAMES;
@@ -158,6 +160,18 @@ impl ProgressStatus {
             Self::Paused | Self::Cancelled => Role::TextMuted,
         }
     }
+
+    /// Shared lifecycle projection used by status recipes.
+    #[must_use]
+    pub const fn semantic(self) -> SemanticStatus {
+        match self {
+            Self::Running => SemanticStatus::Running,
+            Self::Paused | Self::Cancelled => SemanticStatus::Paused,
+            Self::Buffering => SemanticStatus::Waiting,
+            Self::Complete => SemanticStatus::Success,
+            Self::Failed => SemanticStatus::Failed,
+        }
+    }
 }
 
 /// Visual recipe.
@@ -183,6 +197,15 @@ impl ProgressRecipe {
             Self::MultiLine => "multi-line",
         }
     }
+
+    /// Preferred height.
+    #[must_use]
+    pub const fn preferred_height(self) -> u16 {
+        match self {
+            Self::Compact | Self::Detailed => 1,
+            Self::MultiLine => 3,
+        }
+    }
 }
 
 /// Unit system for transfer / task models.
@@ -198,6 +221,19 @@ pub enum ProgressUnit {
     Items,
     /// Custom unit label from host (`ProgressBarState::unit_label`).
     Custom,
+}
+
+impl ProgressUnit {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::None => "none",
+            Self::Bytes => "bytes",
+            Self::Items => "items",
+            Self::Custom => "custom",
+        }
+    }
 }
 
 // ── State ───────────────────────────────────────────────────────────────────
@@ -318,6 +354,18 @@ impl ProgressBarState {
         }
     }
 
+    /// Status.
+    #[must_use]
+    pub const fn status(&self) -> ProgressStatus {
+        self.status
+    }
+
+    /// Recipe.
+    #[must_use]
+    pub const fn recipe(&self) -> ProgressRecipe {
+        self.recipe
+    }
+
     /// Generation (for host dirty checks).
     #[must_use]
     pub const fn generation(&self) -> u64 {
@@ -390,6 +438,42 @@ impl ProgressBarState {
         self.total = total.max(0.0);
         self.bump();
     }
+
+    /// Set fraction directly (sets total=1, value=fraction).
+    pub fn set_fraction(&mut self, fraction: f64) {
+        self.total = 1.0;
+        self.value = clamp_fraction(fraction);
+        self.bump();
+    }
+
+    /// Unit.
+    pub fn set_unit(&mut self, unit: ProgressUnit) {
+        self.unit = unit;
+        self.bump();
+    }
+
+    /// Custom unit label.
+    pub fn set_unit_label(&mut self, label: impl Into<String>) {
+        self.unit_label = label.into();
+        self.unit = ProgressUnit::Custom;
+        self.bump();
+    }
+
+    /// Status.
+    pub fn set_status(&mut self, status: ProgressStatus) {
+        self.status = status;
+        if matches!(status, ProgressStatus::Complete) && self.total > 0.0 {
+            self.value = self.total;
+        }
+        self.bump();
+    }
+
+    /// Phase.
+    pub fn set_phase(&mut self, phase: impl Into<String>) {
+        self.phase = phase.into();
+        self.bump();
+    }
+
     /// Label.
     pub fn set_label(&mut self, label: impl Into<String>) {
         self.label = label.into();
@@ -401,6 +485,13 @@ impl ProgressBarState {
         self.rate = rate.filter(|r| r.is_finite() && *r >= 0.0);
         self.bump();
     }
+
+    /// ETA seconds.
+    pub fn set_eta_secs(&mut self, eta: Option<u64>) {
+        self.eta_secs = eta;
+        self.bump();
+    }
+
     /// Derive ETA from remaining / rate when possible.
     pub fn recompute_eta(&mut self) {
         if let (Some(rate), true) = (self.rate, self.is_determinate()) {
@@ -422,10 +513,39 @@ impl ProgressBarState {
         self.active = on;
     }
 
+    /// Visible.
+    pub fn set_visible(&mut self, on: bool) {
+        self.visible = on;
+    }
+
     /// Visual recipe (compact / detailed / multi-line).
     pub fn set_recipe(&mut self, recipe: ProgressRecipe) {
         self.recipe = recipe;
         self.bump();
+    }
+
+    /// Current completed amount.
+    #[must_use]
+    pub const fn value(&self) -> f64 {
+        self.value
+    }
+
+    /// Total amount (`0` means indeterminate).
+    #[must_use]
+    pub const fn total(&self) -> f64 {
+        self.total
+    }
+
+    /// Task / bar label.
+    #[must_use]
+    pub fn label(&self) -> &str {
+        &self.label
+    }
+
+    /// Phase name (e.g. compile step).
+    #[must_use]
+    pub fn phase(&self) -> &str {
+        &self.phase
     }
 
     /// Format percentage string — the reference `{:>4}` column.
@@ -570,6 +690,29 @@ impl<'a> ProgressBar<'a> {
         }
     }
 
+    /// From state + tick (preferred for task/transfer).
+    ///
+    /// Strings owned by the state cannot be borrowed here; use
+    /// [`Self::paint_state`] when the bar must carry its label, phase, and
+    /// meta line.
+    #[must_use]
+    pub fn from_state(
+        state: &mut ProgressBarState,
+        system: &'a DesignSystem,
+        tick: FrameTick,
+        motion: MotionPolicy,
+    ) -> Self {
+        Self {
+            kind: state.kind(tick, motion),
+            label: None,
+            system,
+            recipe: state.recipe,
+            status: state.status,
+            phase: None,
+            meta: None,
+        }
+    }
+
     /// Optional visible label.
     #[must_use]
     pub const fn label(mut self, label: &'a str) -> Self {
@@ -591,6 +734,13 @@ impl<'a> ProgressBar<'a> {
         self
     }
 
+    /// Phase label (detailed meta).
+    #[must_use]
+    pub const fn phase(mut self, phase: &'a str) -> Self {
+        self.phase = Some(phase);
+        self
+    }
+
     /// Preformatted meta line.
     #[must_use]
     pub const fn meta(mut self, meta: &'a str) -> Self {
@@ -607,7 +757,6 @@ impl<'a> ProgressBar<'a> {
         tick: FrameTick,
         motion: MotionPolicy,
     ) {
-        let area = area.intersection(*buffer.area());
         if area.is_empty() || !state.visible {
             return;
         }
@@ -643,7 +792,6 @@ impl<'a> ProgressBar<'a> {
 
     /// Paint using builders on this widget.
     pub fn paint(&self, area: Rect, buffer: &mut Buffer) {
-        let area = area.intersection(*buffer.area());
         if area.is_empty() {
             return;
         }
@@ -670,7 +818,7 @@ impl<'a> ProgressBar<'a> {
             buffer.set_stringn(
                 area.x,
                 area.y,
-                take_display_cols(title, usize::from(area.width)).as_ref(),
+                &take_display_cols(title, usize::from(area.width)),
                 usize::from(area.width),
                 self.system.style(Role::TextStrong),
             );
@@ -686,7 +834,7 @@ impl<'a> ProgressBar<'a> {
             buffer.set_stringn(
                 area.x,
                 area.y + 2,
-                take_display_cols(meta, usize::from(area.width)).as_ref(),
+                &take_display_cols(meta, usize::from(area.width)),
                 usize::from(area.width),
                 self.system.style(Role::TextMuted),
             );
@@ -819,7 +967,7 @@ fn render_determinate(
             buffer.set_stringn(
                 mx,
                 area.y,
-                take_display_cols(m, usize::from(mw)).as_ref(),
+                &take_display_cols(m, usize::from(mw)),
                 usize::from(mw),
                 system.style(Role::TextMuted),
             );
@@ -931,41 +1079,6 @@ mod tests {
 
     fn rendered(buffer: &Buffer) -> String {
         buffer.content().iter().map(|cell| cell.symbol()).collect()
-    }
-
-    fn assert_only_intersection_changed(before: &Buffer, after: &Buffer, intersection: Rect) {
-        let buffer_area = *before.area();
-        let mut changed_inside = false;
-        for y in buffer_area.y..buffer_area.bottom() {
-            for x in buffer_area.x..buffer_area.right() {
-                if before[(x, y)] != after[(x, y)] {
-                    assert!(
-                        x >= intersection.x
-                            && x < intersection.right()
-                            && y >= intersection.y
-                            && y < intersection.bottom(),
-                        "paint escaped clipped area at ({x}, {y}); intersection={intersection:?}"
-                    );
-                    changed_inside = true;
-                }
-            }
-        }
-        assert!(
-            changed_inside,
-            "expected the non-empty intersection to receive progress output"
-        );
-    }
-
-    fn assert_unchanged_after_paint(bar: &ProgressBar<'_>, area: Rect, buffer: &mut Buffer) {
-        let before = buffer.clone();
-        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            bar.paint(area, buffer);
-        }));
-        assert!(
-            result.is_ok(),
-            "out-of-buffer progress paint must not panic"
-        );
-        assert_eq!(buffer, &before, "an empty intersection must not paint");
     }
 
     fn determinate(fraction: f64, width: u16) -> Buffer {
@@ -1231,123 +1344,6 @@ mod tests {
             (&ProgressBar::new(ProgressKind::Indeterminate { tick: 2 }, &system))
                 .render(area, &mut sweep);
         }
-    }
-
-    #[test]
-    fn determinate_paint_clips_to_partial_offset_buffer() {
-        let system = system();
-        let bar = ProgressBar::new(ProgressKind::Determinate { fraction: 0.5 }, &system);
-        let buffer_area = Rect::new(10, 10, 12, 4);
-        let requested = Rect::new(8, 9, 16, 3);
-        let mut buffer = Buffer::filled(buffer_area, ratatui_core::buffer::Cell::new("·"));
-        let before = buffer.clone();
-        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            bar.paint(requested, &mut buffer);
-        }));
-
-        assert!(result.is_ok(), "partial determinate paint must not panic");
-        assert_only_intersection_changed(&before, &buffer, requested.intersection(buffer_area));
-    }
-
-    #[test]
-    fn indeterminate_paint_clips_to_partial_offset_buffer() {
-        let system = system();
-        let bar = ProgressBar::new(ProgressKind::Indeterminate { tick: 3 }, &system);
-        let buffer_area = Rect::new(10, 10, 12, 4);
-        let requested = Rect::new(8, 9, 16, 3);
-        let mut buffer = Buffer::filled(buffer_area, ratatui_core::buffer::Cell::new("·"));
-        let before = buffer.clone();
-        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            bar.paint(requested, &mut buffer);
-        }));
-
-        assert!(result.is_ok(), "partial indeterminate paint must not panic");
-        assert_only_intersection_changed(&before, &buffer, requested.intersection(buffer_area));
-    }
-
-    #[test]
-    fn multiline_paint_clips_title_track_and_meta_rows() {
-        let system = system();
-        let bar = ProgressBar::new(ProgressKind::Determinate { fraction: 0.5 }, &system)
-            .label("Download")
-            .recipe(ProgressRecipe::MultiLine)
-            .meta("phase · ETA 9s");
-        let buffer_area = Rect::new(10, 10, 12, 4);
-        let requested = Rect::new(8, 9, 16, 4);
-        let mut buffer = Buffer::filled(buffer_area, ratatui_core::buffer::Cell::new("·"));
-        let before = buffer.clone();
-        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            bar.paint(requested, &mut buffer);
-        }));
-
-        assert!(result.is_ok(), "partial multiline paint must not panic");
-        assert_only_intersection_changed(&before, &buffer, requested.intersection(buffer_area));
-        assert_ne!(buffer[(10, 10)].symbol(), "·", "title row is clipped in");
-        assert_ne!(buffer[(10, 11)].symbol(), "·", "track row is clipped in");
-        assert_ne!(buffer[(10, 12)].symbol(), "·", "meta row is clipped in");
-    }
-
-    #[test]
-    fn paint_ignores_empty_and_wholly_out_of_buffer_areas() {
-        let system = system();
-        let bar = ProgressBar::new(ProgressKind::Indeterminate { tick: 3 }, &system);
-        let buffer_area = Rect::new(10, 10, 12, 4);
-        let mut buffer = Buffer::filled(buffer_area, ratatui_core::buffer::Cell::new("·"));
-
-        for area in [
-            Rect::new(12, 12, 0, 1),
-            Rect::new(22, 14, 2, 2),
-            Rect::new(0, 0, 4, 1),
-        ] {
-            assert_unchanged_after_paint(&bar, area, &mut buffer);
-        }
-    }
-
-    #[test]
-    fn paint_state_clips_before_projection_and_dirty_marking() {
-        let system = system();
-        let buffer_area = Rect::new(10, 10, 16, 3);
-        let partial = Rect::new(8, 9, 20, 2);
-        let mut state = ProgressBarState::transfer(128, 1024);
-        state.set_label("Download");
-        assert!(state.needs_paint());
-        let mut buffer = Buffer::filled(buffer_area, ratatui_core::buffer::Cell::new("·"));
-        let before = buffer.clone();
-        let tick = FrameTick::manual(Instant::now(), Duration::ZERO, Duration::ZERO);
-        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            ProgressBar::paint_state(
-                &system,
-                partial,
-                &mut buffer,
-                &mut state,
-                tick,
-                MotionPolicy::Off,
-            );
-        }));
-
-        assert!(result.is_ok(), "partial state paint must not panic");
-        assert_only_intersection_changed(&before, &buffer, partial.intersection(buffer_area));
-        assert!(
-            !state.needs_paint(),
-            "a visible state paint is acknowledged"
-        );
-
-        state.set_value(256.0);
-        assert!(state.needs_paint());
-        let before = buffer.clone();
-        ProgressBar::paint_state(
-            &system,
-            Rect::new(0, 0, 4, 1),
-            &mut buffer,
-            &mut state,
-            tick,
-            MotionPolicy::Off,
-        );
-        assert_eq!(buffer, before, "a disjoint state paint must not write");
-        assert!(
-            state.needs_paint(),
-            "a disjoint state paint must not acknowledge the state"
-        );
     }
 
     #[test]

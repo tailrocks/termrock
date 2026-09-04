@@ -12,7 +12,7 @@ use std::num::NonZeroU16;
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
-    style::Style,
+    style::{Modifier, Style},
     text::Line,
     widgets::StatefulWidget,
 };
@@ -48,6 +48,17 @@ pub enum TableRecipe {
 }
 
 impl TableRecipe {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Quiet => "quiet",
+            Self::Bordered => "bordered",
+            Self::Striped => "striped",
+            Self::Compact => "compact",
+        }
+    }
+
     /// Default inter-column gap.
     #[must_use]
     pub const fn default_gap(self) -> u16 {
@@ -69,6 +80,18 @@ pub enum TableBodyState {
     Loading,
     /// Body error placeholder.
     Error,
+}
+
+impl TableBodyState {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Ready => "ready",
+            Self::Loading => "loading",
+            Self::Error => "error",
+        }
+    }
 }
 
 /// Width policy for one table column.
@@ -206,6 +229,53 @@ impl<'a, Id> TableRow<'a, Id> {
             emphasis: false,
             style: None,
         }
+    }
+
+    /// Projects identity anatomy for narrow / status chrome.
+    #[must_use]
+    pub fn composed(&self) -> super::ComposedRow<'a, ()>
+    where
+        Id: Clone,
+    {
+        let primary = self
+            .cells
+            .first()
+            .cloned()
+            .unwrap_or_else(|| Line::from(""));
+        super::ComposedRow {
+            id: (),
+            leading: self.leading.clone(),
+            primary,
+            secondary: self.cells.get(1).cloned(),
+            badge: self
+                .badge
+                .clone()
+                .or_else(|| self.cells.last().filter(|_| self.cells.len() > 2).cloned()),
+            shortcut: None,
+            enabled: self.enabled,
+            loading: false,
+        }
+    }
+
+    /// Sets whether interaction may reach the row.
+    #[must_use]
+    pub const fn enabled(mut self, enabled: bool) -> Self {
+        self.enabled = enabled;
+        self
+    }
+
+    /// Sets semantic accent emphasis.
+    #[must_use]
+    pub const fn emphasis(mut self, emphasis: bool) -> Self {
+        self.emphasis = emphasis;
+        self
+    }
+
+    /// Overrides the row-wide style.
+    #[must_use]
+    pub const fn style(mut self, style: Style) -> Self {
+        self.style = Some(style);
+        self
     }
 }
 
@@ -402,6 +472,11 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> TableState<RowId, ColumnId> {
         self.h_offset
     }
 
+    /// Sets horizontal content scroll (clamped on next paint).
+    pub fn set_h_offset(&mut self, offset: u16) {
+        self.h_offset = offset;
+    }
+
     /// Scrolls horizontally by `delta` display columns. Returns whether offset changed.
     pub fn scroll_horizontal(&mut self, delta: i16) -> bool {
         let max = self.content_width.saturating_sub(self.viewport_width);
@@ -414,6 +489,13 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> TableState<RowId, ColumnId> {
         self.h_offset = next;
         changed
     }
+
+    /// Indices of columns kept after the last layout pass (declaration order).
+    #[must_use]
+    pub fn visible_column_indices(&self) -> &[usize] {
+        &self.visible_columns
+    }
+
     /// Reconciles selection after caller sorting, filtering, or replacement.
     ///
     /// Call this after every in-place change to row identity, order, or enabled
@@ -826,10 +908,24 @@ impl<'a, RowId, ColumnId> Table<'a, RowId, ColumnId> {
         self
     }
 
+    /// Keep the header row pinned while the body scrolls (default true).
+    #[must_use]
+    pub const fn sticky_header(mut self, sticky: bool) -> Self {
+        self.sticky_header = sticky;
+        self
+    }
+
     /// Cell overflow policy.
     #[must_use]
     pub const fn overflow(mut self, overflow: CellOverflow) -> Self {
         self.overflow = overflow;
+        self
+    }
+
+    /// Overrides the blank gap between visible columns (else recipe default).
+    #[must_use]
+    pub const fn column_gap(mut self, gap: u16) -> Self {
+        self.column_gap = Some(gap);
         self
     }
 
@@ -997,11 +1093,16 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
         };
         if let Some((message, role)) = placeholder {
             let msg_area = Rect::new(area.x, body_y.saturating_add(body_h / 2), area.width, 1);
+            let mut message = message;
+            let message_style = self.tokens.palette.style(role);
+            for span in &mut message.spans {
+                span.style = message_style.patch(span.style);
+            }
             render_line(
                 &message,
                 msg_area,
                 CellAlignment::Center,
-                self.tokens.palette.style(role),
+                self.tokens.palette.style(Role::Text),
                 buffer,
                 &mut state.scratch_text,
             );
@@ -1035,11 +1136,14 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
             // "a column happens to be focused" — Left/Right on a row-select
             // table must not drop › and tint.
             let cell_nav = state.cell_nav;
+            let focused_row = !cell_nav
+                && self.focused
+                && (selected || (state.selected.is_none() && row_index == state.offset));
             let chrome = super::row_chrome::RowChrome::resolve(
                 self.tokens,
                 ListRowVisualState {
                     selected: selected && !cell_nav,
-                    focused: selected && self.focused,
+                    focused: focused_row,
                     hovered,
                     enabled: row.enabled,
                     loading: false,
@@ -1052,7 +1156,11 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
             let quiet = if !row.enabled || row.style.is_some() {
                 style
             } else {
-                chrome.secondary_style(style)
+                let mut quiet = chrome.secondary_style(style);
+                if style.add_modifier.contains(Modifier::BOLD) {
+                    quiet = quiet.add_modifier(Modifier::BOLD);
+                }
+                quiet
             };
             // Fill first so colour-only gutter inherits BOLD from the row
             // style (junie fill-then-stamp). Cell-nav skips the accent wash.
@@ -1065,7 +1173,7 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
                 row_area,
                 self.tokens,
                 selected && !cell_nav,
-                selected && self.focused,
+                focused_row,
                 hovered,
                 row.enabled,
                 style,
@@ -1137,9 +1245,11 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> StatefulWidget for &Table<'_, RowI
             }
         }
         if v_scroll {
+            let scrollbar_area = Rect::new(area.right().saturating_sub(1), body_y, 1, body_h);
+            buffer.set_style(scrollbar_area, self.tokens.style(Role::Surface));
             crate::scroll::paint_overflow_scrollbar(
                 buffer,
-                Rect::new(area.right().saturating_sub(1), body_y, 1, body_h),
+                scrollbar_area,
                 self.rows.len(),
                 state.viewport_rows.max(1),
                 u16::try_from(state.offset).unwrap_or(u16::MAX),
@@ -1246,7 +1356,6 @@ fn paint_header_row<RowId: Clone + Eq, ColumnId: Clone + Eq>(
     bordered: bool,
     column_budget: u16,
 ) {
-    let idle_header = super::table_chrome::header_style(table.tokens);
     buffer.set_style(
         Rect::new(area.x, area.y, area.width, 1),
         super::table_chrome::header_band(table.tokens),
@@ -1259,7 +1368,7 @@ fn paint_header_row<RowId: Clone + Eq, ColumnId: Clone + Eq>(
         area.y,
         "   ",
         usize::from(MARKER_WIDTH),
-        idle_header,
+        super::table_chrome::header_band(table.tokens),
     );
     let mut logical_x: i32 = i32::from(origin_x) - i32::from(state.h_offset);
     let mut shown_sort = false;
@@ -1313,7 +1422,14 @@ fn paint_header_row<RowId: Clone + Eq, ColumnId: Clone + Eq>(
                     );
                 }
                 if suffix_w > 0 && (col_right as u16) <= clip_right {
-                    let suffix_x = paint_end.saturating_sub(suffix_w);
+                    let suffix_x = if column.alignment == CellAlignment::Left {
+                        let title_width = u16::try_from(column.title.width())
+                            .unwrap_or(title_w)
+                            .min(title_w);
+                        paint_x.saturating_add(title_width)
+                    } else {
+                        paint_end.saturating_sub(suffix_w)
+                    };
                     buffer.set_stringn(
                         suffix_x,
                         area.y,
@@ -1397,7 +1513,25 @@ fn paint_data_cells<RowId: Clone + Eq, ColumnId: Clone + Eq>(
                         .as_ref()
                         .is_some_and(|id| id == &table.columns[column_index].id);
                 let kind = table.columns[column_index].kind;
-                let mut cell_style = kind.cell_style(style, quiet);
+                // An explicitly styled cell owns its whole canvas, including
+                // alignment padding. This keeps a numeric value's authored
+                // tone from leaving quiet padding behind (or vice versa).
+                let authored_style = row.cells.get(column_index).and_then(|line| {
+                    line.spans
+                        .iter()
+                        .find(|span| span.style.fg.is_some())
+                        .map(|span| style.patch(span.style))
+                });
+                let mut cell_style = if matches!(kind, ColumnKind::Numeric | ColumnKind::Id) {
+                    authored_style.unwrap_or(quiet)
+                } else {
+                    kind.cell_style(style, quiet)
+                };
+                if matches!(kind, ColumnKind::Numeric)
+                    && style.add_modifier.contains(Modifier::BOLD)
+                {
+                    cell_style = style;
+                }
                 if cell_focused {
                     // A cell cursor is a cell: the explicit reversal pair.
                     // Rows use gutter + tint and never reverse.
@@ -1763,7 +1897,6 @@ mod tests {
     use crate::input::{KeyCode, KeyModifiers};
 
     use super::*;
-    use crate::widgets::tests::mouse;
     fn fill(weight: u16) -> ColumnWidth {
         ColumnWidth::Fill(NonZeroU16::new(weight).unwrap())
     }
@@ -2460,7 +2593,11 @@ mod tests {
         assert_eq!(state.hovered_column(), Some(&"cpu"));
 
         state.offset = 1;
-        let outside_wheel = mouse(MouseEventKind::ScrollDown, 0, 0);
+        let outside_wheel = MouseEvent {
+            kind: MouseEventKind::ScrollDown,
+            position: Position::new(0, 0),
+            modifiers: KeyModifiers::NONE,
+        };
         let _ = state.handle_mouse(outside_wheel, rows.len());
         assert_eq!(state.offset(), 1);
     }

@@ -18,11 +18,13 @@
 //! **Streaming.** Incomplete fences/tables set [`MarkdownBlock::incomplete`];
 //! layout measures only closed content rows + a one-row streaming cue so
 //! appending does not thrash unrelated block geometry.
-use ratatui_core::{buffer::Buffer, layout::Rect};
+use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::input::{KeyEvent, MouseButton, MouseEvent, MouseEventKind};
-use crate::interaction::{NavigationMove, PageMove, UiIntent, default_list_intent};
-use crate::scroll;
+use crate::interaction::{
+    EventResult, NavigationMove, PageMove, SemanticNode, SemanticRole, SemanticScene,
+    SemanticState, UiIntent, default_list_intent,
+};
 use crate::style::{DesignSystem, Glyph, Role};
 use crate::text::{display_cols, take_display_cols, wrap_display_cols};
 use crate::widgets::{
@@ -58,6 +60,26 @@ pub enum MarkdownBlockKind {
     Table,
     /// Vertical breathing room (Glow-style spacing before borders/sections).
     Blank,
+}
+
+impl MarkdownBlockKind {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Paragraph => "paragraph",
+            Self::Heading => "heading",
+            Self::Code => "code",
+            Self::Fence => "fence",
+            Self::Quote => "quote",
+            Self::ListItem => "list-item",
+            Self::OrderedItem => "ordered-item",
+            Self::TaskItem => "task-item",
+            Self::Rule => "rule",
+            Self::Table => "table",
+            Self::Blank => "blank",
+        }
+    }
 }
 
 /// Source map into the original markdown buffer (line numbers, 1-based).
@@ -117,6 +139,58 @@ pub struct MarkdownInline<'a> {
     pub kind: MarkdownInlineKind,
     /// Destination when [`MarkdownInlineKind::Link`].
     pub href: Option<&'a str>,
+}
+
+impl<'a> MarkdownInline<'a> {
+    /// Plain text run.
+    #[must_use]
+    pub const fn text(text: &'a str) -> Self {
+        Self {
+            text,
+            kind: MarkdownInlineKind::Text,
+            href: None,
+        }
+    }
+
+    /// Strong.
+    #[must_use]
+    pub const fn strong(text: &'a str) -> Self {
+        Self {
+            text,
+            kind: MarkdownInlineKind::Strong,
+            href: None,
+        }
+    }
+
+    /// Emphasis.
+    #[must_use]
+    pub const fn emphasis(text: &'a str) -> Self {
+        Self {
+            text,
+            kind: MarkdownInlineKind::Emphasis,
+            href: None,
+        }
+    }
+
+    /// Inline code.
+    #[must_use]
+    pub const fn code(text: &'a str) -> Self {
+        Self {
+            text,
+            kind: MarkdownInlineKind::Code,
+            href: None,
+        }
+    }
+
+    /// Link.
+    #[must_use]
+    pub const fn link(text: &'a str, href: &'a str) -> Self {
+        Self {
+            text,
+            kind: MarkdownInlineKind::Link,
+            href: Some(href),
+        }
+    }
 }
 
 /// One borrowed markdown block (may span multiple display rows).
@@ -257,6 +331,20 @@ impl<'a> MarkdownBlock<'a> {
         self
     }
 
+    /// Builder: language.
+    #[must_use]
+    pub const fn language(mut self, language: &'a str) -> Self {
+        self.language = Some(language);
+        self
+    }
+
+    /// Builder: inlines.
+    #[must_use]
+    pub const fn spans(mut self, spans: &'a [MarkdownInline<'a>]) -> Self {
+        self.spans = Some(spans);
+        self
+    }
+
     /// Plain clipboard text for this block.
     #[must_use]
     pub fn plain(&self) -> String {
@@ -338,10 +426,23 @@ impl MarkdownViewState {
         }
     }
 
+    /// Seed scroll.
+    #[must_use]
+    pub const fn with_scroll_y(mut self, y: u16) -> Self {
+        self.scroll_y = y;
+        self
+    }
+
     /// Focus.
     pub const fn set_focused(&mut self, on: bool) {
         self.focused = on;
     }
+
+    /// Cursor block.
+    pub const fn set_cursor_block(&mut self, idx: Option<usize>) {
+        self.cursor_block = idx;
+    }
+
     /// Max scroll.
     #[must_use]
     pub fn max_scroll_y(&self) -> u16 {
@@ -359,7 +460,15 @@ impl MarkdownViewState {
     /// Scroll by display rows.
     pub fn scroll_by(&mut self, delta: i32) -> bool {
         let before = self.scroll_y;
-        scroll::apply_delta_unclamped_u16(&mut self.scroll_y, delta);
+        if delta >= 0 {
+            self.scroll_y = self
+                .scroll_y
+                .saturating_add(u16::try_from(delta).unwrap_or(u16::MAX));
+        } else {
+            self.scroll_y = self
+                .scroll_y
+                .saturating_sub(u16::try_from(-delta).unwrap_or(u16::MAX));
+        }
         self.clamp();
         before != self.scroll_y
     }
@@ -453,16 +562,6 @@ pub struct MarkdownView<'a> {
     section_gap: bool,
 }
 
-/// One document cell to paint: block, its index, and sub-row.
-struct BlockCell<'a> {
-    /// Block being painted.
-    block: &'a MarkdownBlock<'a>,
-    /// Document index of `block`.
-    block_index: usize,
-    /// Display row within `block`.
-    sub: u16,
-}
-
 impl<'a> MarkdownView<'a> {
     /// Creates a markdown view.
     #[must_use]
@@ -478,11 +577,51 @@ impl<'a> MarkdownView<'a> {
         }
     }
 
+    /// Sets the first visible **block** index (Widget / simple hosts).
+    #[must_use]
+    pub const fn first(mut self, first: usize) -> Self {
+        self.first_block = first;
+        self
+    }
+
+    /// Compact heading recipe (ASCII `#` prefixes).
+    #[must_use]
+    pub const fn compact_headings(mut self, on: bool) -> Self {
+        self.compact_headings = on;
+        self
+    }
+
+    /// Show line numbers inside fenced code.
+    #[must_use]
+    pub const fn fence_line_numbers(mut self, on: bool) -> Self {
+        self.fence_line_numbers = on;
+        self
+    }
+
+    /// Copyable / selectable policy for prose.
+    #[must_use]
+    pub const fn selectable(mut self, on: bool) -> Self {
+        self.selectable = on;
+        self
+    }
+
     /// Glow-style blank row before H1/H2 and rules (default true).
     #[must_use]
     pub const fn section_gap(mut self, on: bool) -> Self {
         self.section_gap = on;
         self
+    }
+
+    /// Block count.
+    #[must_use]
+    pub const fn len(&self) -> usize {
+        self.blocks.len()
+    }
+
+    /// Empty.
+    #[must_use]
+    pub const fn is_empty(&self) -> bool {
+        self.blocks.is_empty()
     }
 
     /// Measure display rows for one block at `width`.
@@ -673,17 +812,7 @@ impl<'a> MarkdownView<'a> {
             let selected = state.selection.is_some_and(|(a, b)| bi >= a && bi < b)
                 || state.cursor_block == Some(bi) && state.focused;
 
-            self.paint_block_row(
-                BlockCell {
-                    block,
-                    block_index: bi,
-                    sub,
-                },
-                line,
-                buffer,
-                selected,
-                &mut links,
-            );
+            self.paint_block_row(block, bi, sub, line, buffer, selected, &mut links);
             painted = painted.saturating_add(1);
         }
 
@@ -699,19 +828,17 @@ impl<'a> MarkdownView<'a> {
         parts
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn paint_block_row(
         &self,
-        cell: BlockCell<'a>,
+        block: &MarkdownBlock<'a>,
+        block_index: usize,
+        sub: u16,
         area: Rect,
         buffer: &mut Buffer,
         selected: bool,
         links: &mut Vec<MarkdownLinkRegion>,
     ) {
-        let BlockCell {
-            block,
-            block_index,
-            sub,
-        } = cell;
         if area.is_empty() {
             return;
         }
@@ -952,18 +1079,21 @@ impl<'a> MarkdownView<'a> {
         } else {
             body_sub
         };
-        // nth() walks the source once per painted row; collecting lines() into
-        // a Vec allocated a full document split on every row of every frame.
-        if let Some(src) = block.text.lines().nth(usize::from(line_sub)) {
+        let lines: Vec<&str> = block.text.lines().collect();
+        if let Some(src) = lines.get(usize::from(line_sub)) {
             // Single-line CodeBlock paint for syntax
             let hi = RoleTokenSyntax::new(self.system, block.language, &[]);
-            let slice = [src];
+            let slice = [*src];
             let mut st = CodeBlockState::new();
             let mut cb = CodeBlock::new(&slice, self.system)
                 .wrap(CodeWrap::Clip)
                 .highlighter(&hi);
             if self.fence_line_numbers {
                 cb = cb.line_numbers(true);
+            }
+            if let Some(lang) = block.language {
+                // language already in header
+                let _ = lang;
             }
             let _ = cb.paint(area, buffer, &mut st);
             return;
@@ -1202,6 +1332,18 @@ impl<'a> MarkdownView<'a> {
         MarkdownOutcome::Ignored
     }
 
+    /// EventResult wrapper.
+    pub fn handle_key_result(
+        &self,
+        state: &mut MarkdownViewState,
+        key: KeyEvent,
+    ) -> EventResult<MarkdownOutcome> {
+        match self.handle_key(state, key) {
+            MarkdownOutcome::Ignored => EventResult::ignored(),
+            other => EventResult::emit(other),
+        }
+    }
+
     /// Activate a painted link by index (host / tests).
     pub fn activate_link(&self, state: &MarkdownViewState, index: usize) -> MarkdownOutcome {
         let Some(parts) = &state.parts else {
@@ -1215,11 +1357,65 @@ impl<'a> MarkdownView<'a> {
             href: link.href.clone(),
         }
     }
+
+    /// Semantic registration.
+    pub fn register_semantic<Id, Action>(
+        &self,
+        scene: &mut SemanticScene<Id, Action>,
+        id: Id,
+        area: Rect,
+        state: &MarkdownViewState,
+    ) where
+        Id: Clone + PartialEq + std::fmt::Display,
+        Action: Clone,
+    {
+        if area.is_empty() {
+            return;
+        }
+        let desc = format!(
+            "markdown {} blocks{}",
+            self.blocks.len(),
+            if state.parts.as_ref().is_some_and(|p| p.streaming) {
+                " streaming"
+            } else {
+                ""
+            }
+        );
+        let _ = scene.register(
+            SemanticNode::control(id, area)
+                .role(SemanticRole::Content)
+                .label("markdown")
+                .description(desc)
+                .focusable(true)
+                .state(SemanticState {
+                    selected: state.focused,
+                    ..Default::default()
+                }),
+        );
+    }
 }
 
-// MarkdownView paints only through `MarkdownView::paint(area, buffer, state)`;
-// a stateless render would rebuild MarkdownViewState per frame and lose
-// scroll, selection, and link geometry between frames.
+impl Widget for &MarkdownView<'_> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        let scroll = if self.first_block > 0 {
+            self.block_start_row(self.first_block, area.width)
+        } else {
+            0
+        };
+        let mut state = MarkdownViewState::new().with_scroll_y(scroll);
+        let _ = self.paint(area, buffer, &mut state);
+    }
+}
+
+impl Widget for MarkdownView<'_> {
+    #[expect(
+        clippy::needless_borrows_for_generic_args,
+        reason = "explicitly delegate the owned contract to the borrowed renderer"
+    )]
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        <&Self as Widget>::render(&self, area, buffer);
+    }
+}
 
 // ── Projection ──────────────────────────────────────────────────────────────
 
@@ -1617,7 +1813,7 @@ fn table_display_rows(raw: &str, width: u16) -> Vec<String> {
         }
     }
     if parsed.is_empty() {
-        return vec![take_display_cols(raw, usize::from(width.max(1))).into_owned()];
+        return vec![take_display_cols(raw, usize::from(width.max(1)))];
     }
     let cols = parsed.iter().map(Vec::len).max().unwrap_or(1);
     // Responsive: drop trailing columns until row fits
@@ -1701,9 +1897,9 @@ fn paint_table_row(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::{KeyCode, KeyModifiers};
+    use crate::input::{KeyCode, KeyModifiers, MouseEventKind};
     use crate::style::RolePalette;
-    use crate::widgets::tests::click;
+    use ratatui_core::layout::Position;
 
     #[test]
     fn project_plain_lines_classifies_common_markers() {
@@ -1773,8 +1969,7 @@ fn x() {}
         let system = crate::style::DesignSystem::new(theme.clone());
         let blocks = [MarkdownBlock::heading("Hello", HeadingLevel::H1)];
         let mut buffer = Buffer::empty(Rect::new(0, 0, 20, 2));
-        let mut state = MarkdownViewState::new();
-        MarkdownView::new(&blocks, &system).paint(Rect::new(0, 0, 20, 2), &mut buffer, &mut state);
+        MarkdownView::new(&blocks, &system).render(Rect::new(0, 0, 20, 2), &mut buffer);
         let row0: String = (0..20)
             .map(|x| buffer[(x, 0)].symbol().to_owned())
             .collect();
@@ -1796,8 +1991,7 @@ fn x() {}
             MarkdownBlock::new(MarkdownBlockKind::ListItem, "item"),
         ];
         let mut buffer = Buffer::empty(Rect::new(0, 0, 24, 2));
-        let mut state = MarkdownViewState::new();
-        MarkdownView::new(&blocks, &system).paint(Rect::new(0, 0, 24, 2), &mut buffer, &mut state);
+        MarkdownView::new(&blocks, &system).render(Rect::new(0, 0, 24, 2), &mut buffer);
         let r0: String = (0..24)
             .map(|x| buffer[(x, 0)].symbol().to_owned())
             .collect();
@@ -1872,7 +2066,14 @@ fn x() {}
         let mut state = MarkdownViewState::new();
         let mut buf = Buffer::empty(Rect::new(0, 0, 20, 4));
         let _ = view.paint(Rect::new(0, 0, 20, 4), &mut buf, &mut state);
-        let out = view.handle_mouse(&mut state, click(0, 1));
+        let out = view.handle_mouse(
+            &mut state,
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: Position { x: 0, y: 1 },
+                modifiers: KeyModifiers::NONE,
+            },
+        );
         assert!(matches!(out, MarkdownOutcome::SelectionChanged { .. }));
     }
 

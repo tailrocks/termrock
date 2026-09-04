@@ -22,11 +22,13 @@ use std::collections::BTreeMap;
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers},
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     style::{DesignSystem, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
     widgets::{
-        link::DestinationDisplay, markdown::SourceAnchor, streaming_markdown::StreamCitation,
+        link::{DestinationDisplay, Link},
+        markdown::SourceAnchor,
+        streaming_markdown::StreamCitation,
     },
 };
 
@@ -57,9 +59,37 @@ pub enum CitationSourceType {
 }
 
 impl CitationSourceType {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::File => "file",
+            Self::Url => "url",
+            Self::Docs => "docs",
+            Self::Issue => "issue",
+            Self::Paper => "paper",
+            Self::Message => "message",
+            Self::Other => "other",
+        }
+    }
+
+    /// ASCII letter.
+    #[must_use]
+    pub const fn letter(self) -> char {
+        match self {
+            Self::File => 'F',
+            Self::Url => 'U',
+            Self::Docs => 'D',
+            Self::Issue => 'I',
+            Self::Paper => 'P',
+            Self::Message => 'M',
+            Self::Other => '?',
+        }
+    }
+
     /// Glyph.
     #[must_use]
-    pub const fn glyph(self) -> &'static str {
+    pub const fn glyph(self, _ascii: bool) -> &'static str {
         match self {
             // One column each (plans/013).
             Self::File => "▤",
@@ -313,20 +343,6 @@ impl CitationSource {
             .unwrap_or(self.destination.as_str())
     }
 
-    /// Whether the raw destination follows the label under `policy`.
-    ///
-    /// Single resolver for both the compact chip ([`SourceCitation`]) and the
-    /// expanded list rows: `Auto` falls back to external / sensitive /
-    /// no-hyperlink sources.
-    #[must_use]
-    pub fn shows_destination(&self, policy: DestinationDisplay, no_hyperlink: bool) -> bool {
-        match policy {
-            DestinationDisplay::Always => true,
-            DestinationDisplay::Never => false,
-            DestinationDisplay::Auto => self.external || self.sensitive || no_hyperlink,
-        }
-    }
-
     /// Inline label: `[1]` or `[1:title]`.
     #[must_use]
     pub fn inline_label(&self, show_title: bool) -> String {
@@ -345,9 +361,9 @@ impl CitationSource {
 
     /// Compact meta line (type · range · conf · offline).
     #[must_use]
-    pub fn meta_line(&self) -> String {
+    pub fn meta_line(&self, _ascii: bool) -> String {
         let mut parts = Vec::new();
-        parts.push(self.kind.glyph().to_string());
+        parts.push(self.kind.glyph(false).to_string());
         if let Some(r) = self.range {
             if r.line_start == r.line_end {
                 parts.push(format!("L{}", r.line_start));
@@ -365,6 +381,12 @@ impl CitationSource {
             parts.push(self.availability.id().into());
         }
         parts.join(" · ")
+    }
+
+    /// Destination for display (never empty for external).
+    #[must_use]
+    pub fn destination_display(&self) -> &str {
+        &self.destination
     }
 
     /// Text for copy (title + dest + range).
@@ -469,6 +491,27 @@ pub fn citation_to_stream(c: &CitationSource) -> StreamCitation {
     s
 }
 
+/// Build a [`Link`] for a citation destination (host keeps label/dest storage).
+#[must_use]
+pub fn citation_link<'a>(
+    label: &'a str,
+    destination: &'a str,
+    system: &'a DesignSystem,
+    hyperlinks: bool,
+) -> Link<'a> {
+    let mut link = if destination.starts_with("http://") || destination.starts_with("https://") {
+        Link::url(label, destination, system)
+    } else {
+        Link::app_route(label, destination, system)
+    };
+    // A citation is a link: the link role already carries the rule.
+    link = link.hyperlinks(hyperlinks);
+    if !hyperlinks {
+        link = link.always_show_destination();
+    }
+    link
+}
+
 // ── Outcomes ────────────────────────────────────────────────────────────────
 
 /// Inline citation outcomes.
@@ -497,6 +540,11 @@ pub enum SourceCitationOutcome {
         id: String,
         /// Text (includes raw dest).
         text: String,
+    },
+    /// Focus / hover changed.
+    Focused {
+        /// Id.
+        id: String,
     },
     /// Jump to markdown anchor in parent reader.
     JumpToAnchor {
@@ -566,6 +614,11 @@ impl SourceCitationState {
             },
         }
     }
+
+    /// Focus.
+    pub const fn set_focused(&mut self, on: bool) {
+        self.focused = on;
+    }
 }
 
 /// Compact inline citation (`[1]` / chip).
@@ -594,10 +647,18 @@ impl<'a> SourceCitation<'a> {
         }
     }
 
-    /// Destination display policy.
+    /// ASCII glyphs.
     #[must_use]
+    /// Destination display policy.
     pub const fn show_destination(mut self, d: DestinationDisplay) -> Self {
         self.show_destination = d;
+        self
+    }
+
+    /// No OSC 8 / hyperlink capability.
+    #[must_use]
+    pub const fn no_hyperlink(mut self, on: bool) -> Self {
+        self.no_hyperlink = on;
         self
     }
 
@@ -611,11 +672,15 @@ impl<'a> SourceCitation<'a> {
     /// Decorated string for measure/paint.
     #[must_use]
     pub fn decorated(&self) -> String {
-        let g = self.source.kind.glyph();
+        let g = self.source.kind.glyph(false);
         let mut s = format!("{}{}", g, self.source.inline_label(false));
-        let show_dest = self
-            .source
-            .shows_destination(self.show_destination, self.no_hyperlink);
+        let show_dest = match self.show_destination {
+            DestinationDisplay::Always => true,
+            DestinationDisplay::Never => false,
+            DestinationDisplay::Auto => {
+                self.source.external || self.source.sensitive || self.no_hyperlink
+            }
+        };
         if show_dest && !self.source.destination.is_empty() {
             s.push(' ');
             s.push_str(&truncate_dest(
@@ -630,6 +695,14 @@ impl<'a> SourceCitation<'a> {
             s.push_str(avail.id());
         }
         s
+    }
+
+    /// Natural width.
+    #[must_use]
+    pub fn measure_width(&self) -> u16 {
+        u16::try_from(display_cols(&self.decorated()))
+            .unwrap_or(1)
+            .max(1)
     }
 
     /// Whether open is allowed under current flags.
@@ -730,6 +803,26 @@ impl<'a> SourceCitation<'a> {
         }
     }
 
+    /// Mouse click.
+    pub fn handle_mouse(
+        &self,
+        state: &mut SourceCitationState,
+        event: MouseEvent,
+    ) -> SourceCitationOutcome {
+        if event.kind != MouseEventKind::Down(MouseButton::Left) {
+            if event.kind == MouseEventKind::Moved && state.area.contains(event.position) {
+                state.hovered = true;
+                return SourceCitationOutcome::Ignored;
+            }
+            return SourceCitationOutcome::Ignored;
+        }
+        if !state.area.contains(event.position) && state.area.width > 0 {
+            return SourceCitationOutcome::Ignored;
+        }
+        state.focused = true;
+        self.open_outcome(state)
+    }
+
     fn open_outcome(&self, state: &mut SourceCitationState) -> SourceCitationOutcome {
         if !self.can_open() {
             // still allow preview
@@ -813,6 +906,11 @@ impl CitationListState {
     /// Expand list.
     pub fn expand(&mut self) {
         self.expanded = true;
+    }
+
+    /// Collapse.
+    pub fn collapse(&mut self) {
+        self.expanded = false;
     }
 
     /// Toggle.
@@ -929,6 +1027,42 @@ impl CitationListState {
             _ => CitationListOutcome::Ignored,
         }
     }
+
+    /// Mouse.
+    pub fn handle_mouse(
+        &mut self,
+        event: MouseEvent,
+        sources: &[CitationSource],
+    ) -> CitationListOutcome {
+        if !self.accepts_input || event.kind != MouseEventKind::Down(MouseButton::Left) {
+            return CitationListOutcome::Ignored;
+        }
+        if !self.expanded {
+            self.expanded = true;
+            return CitationListOutcome::ExpandChanged { expanded: true };
+        }
+        for (i, (id, rect)) in self.row_hits.iter().enumerate() {
+            if rect.contains(event.position) {
+                self.cursor = i;
+                if let Some(src) = sources.iter().find(|s| s.id == *id) {
+                    let avail = effective_availability(src, self.offline);
+                    if avail.can_open() && !src.sensitive {
+                        return CitationListOutcome::Citation(
+                            SourceCitationOutcome::OpenRequested {
+                                id: src.id.clone(),
+                                destination: src.destination.clone(),
+                                external: src.external,
+                            },
+                        );
+                    }
+                    return CitationListOutcome::Citation(
+                        SourceCitationOutcome::PreviewRequested { id: src.id.clone() },
+                    );
+                }
+            }
+        }
+        CitationListOutcome::Ignored
+    }
 }
 
 /// Citation list paint.
@@ -937,7 +1071,6 @@ pub struct CitationList<'a> {
     sources: &'a [CitationSource],
     system: &'a DesignSystem,
     title: Option<&'a str>,
-    show_destination: DestinationDisplay,
 }
 
 impl<'a> CitationList<'a> {
@@ -948,10 +1081,11 @@ impl<'a> CitationList<'a> {
             sources,
             system,
             title: None,
-            show_destination: DestinationDisplay::Auto,
         }
     }
 
+    /// ASCII.
+    #[must_use]
     /// Title.
     pub const fn title(mut self, t: &'a str) -> Self {
         self.title = Some(t);
@@ -1008,9 +1142,15 @@ impl<'a> CitationList<'a> {
             };
             let selected = state.focused && i == state.cursor;
             let mark = " ";
-            let g = src.kind.glyph();
+            let g = src.kind.glyph(false);
             let mut line = format!("{mark}{} {} {}", src.inline_label(false), g, src.title);
-            if src.shows_destination(self.show_destination, state.no_hyperlink) {
+            // always show dest for external / no_hyperlink / sensitive
+            let show_dest = src.external
+                || src.sensitive
+                || state.no_hyperlink
+                || matches!(self.show_dest_policy(), DestinationDisplay::Always);
+            let _ = show_dest;
+            if src.external || src.sensitive || state.no_hyperlink {
                 line.push(' ');
                 line.push_str(&truncate_dest(
                     &src.destination,
@@ -1018,7 +1158,7 @@ impl<'a> CitationList<'a> {
                     self.system.glyphs.ellipsis(),
                 ));
             }
-            let meta = src.meta_line();
+            let meta = src.meta_line(false);
             if !meta.is_empty() && area.width > 40 {
                 line.push_str(" · ");
                 line.push_str(&meta);
@@ -1058,6 +1198,10 @@ impl<'a> CitationList<'a> {
             ));
             y = y.saturating_add(1);
         }
+    }
+
+    fn show_dest_policy(&self) -> DestinationDisplay {
+        DestinationDisplay::Auto
     }
 }
 

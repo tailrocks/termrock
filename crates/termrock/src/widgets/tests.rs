@@ -1,44 +1,14 @@
+#![allow(unused_variables, unused_mut)] // unit-test fixtures
 use ratatui_core::{
     buffer::Buffer,
-    layout::{Position, Rect},
+    layout::Rect,
     style::Style,
     text::Line,
     widgets::{StatefulWidget, Widget},
 };
 
 use super::*;
-use crate::input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
 use crate::style::{DesignSystem, Role, RolePalette};
-
-/// Shared press/repeat/release key factory for widget tests.
-pub(crate) fn key_with_kind(
-    code: KeyCode,
-    modifiers: KeyModifiers,
-    kind: crate::input::KeyEventKind,
-) -> KeyEvent {
-    let mut key = KeyEvent::new(code, modifiers);
-    key.kind = kind;
-    key
-}
-
-/// Shared plain-press key factory for tests.
-pub(crate) fn press(code: KeyCode) -> KeyEvent {
-    KeyEvent::new(code, KeyModifiers::NONE)
-}
-
-/// Shared pointer-event factory for tests.
-pub(crate) fn mouse(kind: MouseEventKind, x: u16, y: u16) -> MouseEvent {
-    MouseEvent {
-        kind,
-        position: Position::new(x, y),
-        modifiers: KeyModifiers::NONE,
-    }
-}
-
-/// Shared left-click factory for tests.
-pub(crate) fn click(x: u16, y: u16) -> MouseEvent {
-    mouse(MouseEventKind::Down(MouseButton::Left), x, y)
-}
 
 #[cfg(feature = "serde")]
 #[test]
@@ -62,8 +32,9 @@ fn areas() -> [Rect; 5] {
 
 #[test]
 fn leaf_widgets_render_at_tiny_and_off_origin_areas() {
-    let panel_tokens = DesignSystem::new(RolePalette::default());
-    let system = panel_tokens.clone();
+    let theme = RolePalette::default();
+    let system = crate::style::DesignSystem::new(theme.clone());
+    let panel_tokens = DesignSystem::new(theme.clone());
     let panel = Panel::new(&panel_tokens)
         .title("Title")
         .emphasis(PanelChrome::Focused);
@@ -78,7 +49,7 @@ fn leaf_widgets_render_at_tiny_and_off_origin_areas() {
     let backdrop = Backdrop::new(&system);
     for area in areas() {
         let mut buffer = Buffer::empty(Rect::new(0, 0, 100, 30));
-        panel.paint(area, &mut buffer, None);
+        (&panel).render(area, &mut buffer);
         (&hint_bar).render(area, &mut buffer);
         (&toast).render(area, &mut buffer);
         (&backdrop).render(area, &mut buffer);
@@ -87,20 +58,24 @@ fn leaf_widgets_render_at_tiny_and_off_origin_areas() {
 
 #[test]
 fn focused_quiet_panel_remains_borderless() {
-    let panel_tokens = DesignSystem::new(RolePalette::default());
+    let theme = RolePalette::default();
+    let system = crate::style::DesignSystem::new(theme.clone());
+    let panel_tokens = DesignSystem::new(theme.clone());
     let area = Rect::new(0, 0, 10, 3);
     let mut buffer = Buffer::empty(area);
     let panel = Panel::new(&panel_tokens).emphasis(PanelChrome::Focused);
-    panel.paint(area, &mut buffer, None);
+    (&panel).render(area, &mut buffer);
     assert_quiet_panel_has_no_box(&buffer, area);
 }
 
 #[test]
 fn inactive_quiet_panel_remains_borderless() {
-    let panel_tokens = DesignSystem::new(RolePalette::default());
+    let theme = RolePalette::default();
+    let system = crate::style::DesignSystem::new(theme.clone());
+    let panel_tokens = DesignSystem::new(theme.clone());
     let area = Rect::new(0, 0, 10, 3);
     let mut buffer = Buffer::empty(area);
-    Panel::new(&panel_tokens).paint(area, &mut buffer, None);
+    Panel::new(&panel_tokens).render(area, &mut buffer);
     assert_quiet_panel_has_no_box(&buffer, area);
 }
 
@@ -303,8 +278,7 @@ fn viewport_clamps_scroll_and_paints_an_overflow_thumb() {
     let viewport = Viewport::new(&lines, &system).title(" Log ");
     let area = Rect::new(0, 0, 12, 4);
     let mut buffer = Buffer::empty(area);
-    let mut state = crate::widgets::ViewportState::default();
-    state.scroll = crate::scroll::DialogScroll {
+    let mut state = crate::scroll::DialogScroll {
         scroll_x: 0,
         scroll_y: 1,
         ..crate::scroll::DialogScroll::default()
@@ -312,7 +286,7 @@ fn viewport_clamps_scroll_and_paints_an_overflow_thumb() {
 
     StatefulWidget::render(&viewport, area, &mut buffer, &mut state);
 
-    assert_eq!(state.scroll.scroll_y, 1);
+    assert_eq!(state.scroll_y, 1);
     assert_eq!(buffer[(1, 1)].symbol(), "o");
     let (start, len) = crate::scroll::overflow_thumb(4, 2, 2, 1).expect("4 lines overflow 2");
     assert_eq!((start, len), (1, 1));
@@ -331,7 +305,7 @@ fn viewport_emphasis_focused_uses_border_focused_role() {
         .emphasis(PanelChrome::Focused);
     let area = Rect::new(0, 0, 16, 4);
     let mut buffer = Buffer::empty(area);
-    let mut state = crate::widgets::ViewportState::default();
+    let mut state = crate::scroll::DialogScroll::default();
 
     StatefulWidget::render(&viewport, area, &mut buffer, &mut state);
 
@@ -377,16 +351,16 @@ fn theme_override_reaches_active_tab_cells() {
 
 #[test]
 fn owned_panel_render_matches_borrowed_render() {
-    let panel_tokens = DesignSystem::new(RolePalette::default());
+    let theme = RolePalette::default();
+    let system = crate::style::DesignSystem::new(theme.clone());
+    let panel_tokens = DesignSystem::new(theme.clone());
     let area = Rect::new(0, 0, 12, 3);
     let mut owned = Buffer::empty(area);
     let mut borrowed = Buffer::empty(area);
 
-    Panel::new(&panel_tokens)
-        .title("Panel")
-        .paint(area, &mut owned, None);
+    Widget::render(Panel::new(&panel_tokens).title("Panel"), area, &mut owned);
     let panel = Panel::new(&panel_tokens).title("Panel");
-    panel.paint(area, &mut borrowed, None);
+    Widget::render(&panel, area, &mut borrowed);
 
     assert_eq!(owned, borrowed);
 }

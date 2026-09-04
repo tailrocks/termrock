@@ -39,6 +39,17 @@ pub enum FrameRate {
 }
 
 impl FrameRate {
+    /// Frames per second for this rung (`0` for [`Self::Idle`]).
+    #[must_use]
+    pub const fn fps(self) -> u16 {
+        match self {
+            Self::Idle => 0,
+            Self::Ambient => 12,
+            Self::Active => 30,
+            Self::Ceiling => 60,
+        }
+    }
+
     /// Interval between frames, or `None` when nothing should wake the loop.
     #[must_use]
     pub const fn interval(self) -> Option<Duration> {
@@ -337,6 +348,21 @@ impl<B> QuietBackend<B> {
             hidden: None,
             position: None,
         }
+    }
+
+    /// Borrow the wrapped backend.
+    pub const fn inner(&self) -> &B {
+        &self.inner
+    }
+
+    /// Mutably borrow the wrapped backend.
+    pub const fn inner_mut(&mut self) -> &mut B {
+        &mut self.inner
+    }
+
+    /// Unwrap.
+    pub fn into_inner(self) -> B {
+        self.inner
     }
 
     /// Forget what we believe about the terminal's cursor.

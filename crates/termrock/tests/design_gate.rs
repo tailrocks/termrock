@@ -31,11 +31,11 @@ use ratatui_core::buffer::{Buffer, Cell};
 use ratatui_core::layout::Rect;
 use ratatui_core::style::{Color, Modifier};
 use ratatui_core::text::Line;
-use ratatui_core::widgets::StatefulWidget;
+use ratatui_core::widgets::{StatefulWidget, Widget};
 use termrock::runtime::{FrameTick, Instant};
 use termrock::scroll::{
     SCROLLBAR_TRACK, ScrollAxis, ScrollbarGeometry, ScrollbarSpec, ScrollbarStyle,
-    paint_overflow_scrollbar, paint_scrollbar,
+    paint_overflow_scrollbar, render_scrollbar,
 };
 use termrock::style::{
     ACTION_FLASH_MS, AccentUsage, ActionFlash, BadgeKind, BorderShape, ButtonKind,
@@ -907,7 +907,7 @@ fn pressed_is_an_explicit_reversal() {
         assert_eq!(recipe.fill.bg, Some(WHITE), "{variant:?} pressed");
         assert!(!recipe.label.add_modifier.contains(Modifier::REVERSED));
     }
-    let input = system.input_recipe(ControlState::Focused, false);
+    let input = system.input_recipe(ControlState::Focused, false, false);
     assert_eq!(input.cursor.fg, Some(BLACK));
     assert_eq!(input.cursor.bg, Some(WHITE));
 }
@@ -923,7 +923,7 @@ fn glyph_vocabulary_is_the_junie_table() {
         "▾", "▸", "‹", "›", "▴", "▾", "→", "↓", // status / choice
         "✓", "•", "!", "·", "⠋", "[✓]", "[ ]", "●", "○", // action
         "×", "+", "−", // rules
-        "─", "│", "━", "┃", "║", // selection chrome
+        "─", "│", "━", // selection chrome
         "▎", "›", // meta
         "•", "·", "…", // marks
         "●", "○", "◆", "┃", "◇", "●", // slider
@@ -1129,8 +1129,7 @@ fn collections_share_one_gutter_glyph() {
         TimelineEvent::new("12:02", "Running"),
     ];
     let mut timeline_buffer = Buffer::empty(area);
-    let mut timeline_state = termrock::widgets::TimelineState::new();
-    Timeline::new(&events, &system).paint(area, &mut timeline_buffer, &mut timeline_state);
+    Widget::render(&Timeline::new(&events, &system), area, &mut timeline_buffer);
     assert_eq!(
         timeline_buffer[(area.x, area.y)].symbol(),
         gutter,
@@ -1271,6 +1270,16 @@ fn motion_policy_off_paints_static_frames() {
         spinner.paint(area, b, &state, second, MotionPolicy::Off)
     });
     assert_eq!(a, c, "Spinner animated under MotionPolicy::Off");
+
+    let skeleton = Skeleton::new(2, &system);
+    let skeleton_state = SkeletonState::new();
+    let a = painted(area, |b| {
+        skeleton.paint_with_state(area, b, &skeleton_state, first, MotionPolicy::Off);
+    });
+    let c = painted(area, |b| {
+        skeleton.paint_with_state(area, b, &skeleton_state, second, MotionPolicy::Off);
+    });
+    assert_eq!(a, c, "Skeleton animated under MotionPolicy::Off");
 
     let a = painted(area, |b| {
         ProgressBar::new(
@@ -1587,13 +1596,13 @@ fn a_focused_field_says_so() {
         Modifier::BOLD
     );
     assert_eq!(system.junie_theme().label(false).fg, Some(WHITE_70));
-    let recipe = system.input_recipe(ControlState::Focused, false);
+    let recipe = system.input_recipe(ControlState::Focused, false, false);
     assert!(recipe.prompt.is_some(), "the recipe ships the prompt glyph");
     assert!(
         !recipe.border.add_modifier.contains(Modifier::UNDERLINED),
         "nav-focus does not underline"
     );
-    let editing = system.input_recipe(ControlState::Focused, true);
+    let editing = system.input_recipe(ControlState::Focused, false, true);
     assert!(
         editing.border.add_modifier.contains(Modifier::UNDERLINED),
         "editing underlines"
@@ -1778,19 +1787,37 @@ fn interaction_underline_is_three_color() {
         assert_eq!(style.fg, Some(fg), "{role:?} stays on the ladder");
     }
 
-    // The field side: underline is the insert session (accent). Invalid is
-    // not a recipe concern at all — it is a trailing bold `!` painted by the
-    // widget (junie `input.rs`). Nav-focus and resting do not underline.
-    let nav = system.input_recipe(ControlState::Focused, false);
+    // The field side: underline is the insert session (accent). Idle invalid
+    // is a trailing bold `!` (widget paint), not a red underline — junie
+    // `input.rs`. Nav-focus and resting do not underline. Editing wins even
+    // when the value is invalid.
+    let nav = system.input_recipe(ControlState::Focused, false, false);
     assert!(
         !nav.border.add_modifier.contains(Modifier::UNDERLINED),
         "nav-focus does not underline"
     );
-    let editing = system.input_recipe(ControlState::Focused, true);
+    let editing = system.input_recipe(ControlState::Focused, false, true);
     assert!(editing.border.add_modifier.contains(Modifier::UNDERLINED));
+    let invalid = system.input_recipe(ControlState::Focused, true, false);
+    assert!(
+        !invalid.border.add_modifier.contains(Modifier::UNDERLINED),
+        "input_recipe(Focused, true, false) must not be UNDERLINED"
+    );
+    let editing_invalid = system.input_recipe(ControlState::Focused, true, true);
+    assert!(
+        editing_invalid
+            .border
+            .add_modifier
+            .contains(Modifier::UNDERLINED),
+        "input_recipe(Focused, true, true) is underlined: editing wins"
+    );
+    assert_eq!(
+        editing_invalid.border.underline_color, editing.border.underline_color,
+        "editing invalid stays accent, not error"
+    );
     assert!(
         !system
-            .input_recipe(ControlState::Default, false)
+            .input_recipe(ControlState::Default, false, false)
             .border
             .add_modifier
             .contains(Modifier::UNDERLINED),
@@ -1803,7 +1830,7 @@ fn interaction_underline_is_three_color() {
 #[test]
 fn editing_underline_is_accent() {
     let system = DesignSystem::junie();
-    let editing = system.input_recipe(ControlState::Focused, true);
+    let editing = system.input_recipe(ControlState::Focused, false, true);
     assert_eq!(
         editing.border.underline_color,
         Some(GREEN),
@@ -2709,15 +2736,7 @@ fn priority_pattern_frames(system: &DesignSystem) -> Vec<(&'static str, Buffer)>
     let rows = example_result_row_refs(&raw_rows, &mut cell_store);
     let db_fields = example_inspect_fields();
     let history = example_db_history();
-    let history_matches: Vec<termrock::widgets::HistoryMatch<'_, &'static str>> = history
-        .iter()
-        .map(|e| termrock::widgets::HistoryMatch::new(e, None))
-        .collect();
     let commands = example_db_commands();
-    let command_matches: Vec<termrock::widgets::CommandMatch<'_, &'static str>> = commands
-        .iter()
-        .map(|c| termrock::widgets::CommandMatch::new(c, 0, None))
-        .collect();
 
     let mut observability = ObservabilityDashboardState::new();
     let logs = example_observability_logs();
@@ -2760,7 +2779,7 @@ fn priority_pattern_frames(system: &DesignSystem) -> Vec<(&'static str, Buffer)>
         (
             "database_workbench",
             painted(wide, |buffer| {
-                paint_database_workbench(
+                render_database_workbench(
                     buffer,
                     wide,
                     DatabaseWorkbenchSurfaces {
@@ -2770,8 +2789,8 @@ fn priority_pattern_frames(system: &DesignSystem) -> Vec<(&'static str, Buffer)>
                         result_columns: &columns,
                         result_rows: &rows,
                         inspect_fields: &db_fields,
-                        history: &history_matches,
-                        commands: &command_matches,
+                        history: &history,
+                        commands: &commands,
                     },
                 );
             }),
@@ -2779,7 +2798,7 @@ fn priority_pattern_frames(system: &DesignSystem) -> Vec<(&'static str, Buffer)>
         (
             "observability_dashboard",
             painted(wide, |buffer| {
-                paint_observability_dashboard(
+                render_observability_dashboard(
                     buffer,
                     wide,
                     ObservabilityDashboardSurfaces {
@@ -2912,7 +2931,7 @@ fn data_rows_have_ladder() {
     frames.push((
         "TraceWaterfall",
         painted(area, |buffer| {
-            let _ = TraceWaterfall::new(&spans, &system).focused(true).paint(
+            let _ = TraceWaterfall::new(&spans, &system).focused(true).render(
                 area,
                 buffer,
                 &mut trace_state,
@@ -3118,7 +3137,7 @@ fn truncation_has_ellipsis() {
     ] {
         let area = Rect::new(0, 0, 24, 4);
         let buffer = painted(area, |buffer| {
-            Panel::paint(&panel, area, buffer, None);
+            Widget::render(&panel, area, buffer);
         });
         let painted_text: String = buffer
             .content()
@@ -3155,11 +3174,10 @@ fn flagship_widgets_survive_tiny_and_random_geometry() {
         };
         let area = Rect::new(0, 0, width, height);
         let _ = painted(area, |buffer| {
-            Panel::paint(
+            Widget::render(
                 &Panel::new(&system).title("panel").footer("esc close"),
                 area,
                 buffer,
-                None,
             );
         });
         let _ = painted(area, |buffer| {
@@ -3220,10 +3238,10 @@ fn modal_geometry_never_escapes_its_terminal() {
 #[test]
 fn workbench_overlays_survive_tiny_and_random_geometry() {
     use termrock::patterns::{
-        AgentWorkbenchState, WorkbenchSurfaces, default_modes, paint_agent_workbench,
+        AgentWorkbenchState, WorkbenchSurfaces, default_modes, render_agent_workbench,
     };
     use termrock::widgets::{
-        PermissionPrompt, PermissionPromptState, PermissionRequest, PromptComposer,
+        ListRow, PermissionPrompt, PermissionPromptState, PermissionRequest, PromptComposer,
         PromptComposerState, StatusBarState, StatusSlot, Transcript, TranscriptState,
     };
 
@@ -3256,15 +3274,17 @@ fn workbench_overlays_survive_tiny_and_random_geometry() {
         let mut status_state = StatusBarState::<&str>::new();
         let slots = [StatusSlot::mode("mode", "busy")];
         let modes = default_modes("build");
+        let tasks: [ListRow<'_, &'static str>; 0] = [];
 
         let _ = painted(area, |buffer| {
-            paint_agent_workbench(
+            render_agent_workbench(
                 buffer,
                 area,
                 WorkbenchSurfaces {
                     system: &system,
                     state: &mut workbench,
-                    task_models: &[],
+                    task_models: None,
+                    tasks: &tasks,
                     modes: &modes,
                     transcript: &transcript,
                     transcript_state: &mut transcript_state,
@@ -3324,7 +3344,7 @@ fn a_scrolled_region_says_it_continues() {
     // shared painter, both in the scroll roles.
     let area = Rect::new(0, 0, 1, 5);
     let buffer = painted(area, |buffer| {
-        paint_scrollbar(
+        render_scrollbar(
             buffer,
             area,
             ScrollbarSpec::new(ScrollAxis::Vertical, ScrollbarGeometry::new(20, 5, 2)),
@@ -3399,7 +3419,7 @@ fn a_scrolled_region_says_it_continues() {
             .to_string_lossy()
             .to_string();
         let paints_bar = source.lines.iter().any(|(_, line)| {
-            line.contains("paint_overflow_scrollbar(") || line.contains("paint_scrollbar(")
+            line.contains("paint_overflow_scrollbar(") || line.contains("render_scrollbar(")
         });
         let goes_through_the_authority = source
             .lines
@@ -3606,6 +3626,7 @@ fn public_ui_inventory_has_exact_recipe_and_monochrome_evidence() {
     };
 
     fn recipe_family(family: ComponentFamily) -> RecipeFamily {
+        #[allow(unreachable_patterns)]
         match family {
             ComponentFamily::Action => RecipeFamily::Action,
             ComponentFamily::Input => RecipeFamily::Input,
@@ -3700,7 +3721,7 @@ fn family_focus_and_selection_survive_monochrome() {
     );
 
     // Field: the prompt glyph survives the collapse.
-    let field = mono.input_recipe(ControlState::Focused, false);
+    let field = mono.input_recipe(ControlState::Focused, false, false);
     assert_eq!(
         field.prompt.expect("prompt glyph").0,
         "▎",
@@ -3801,7 +3822,7 @@ fn bold_budget_per_row() {
 use termrock::widgets::{
     List, ListRow, ListState, ProgressBar, ProgressKind, RowRole,
     SPINNER_BRAILLE_FRAMES as SPINNER_FRAMES, SPINNER_DEFAULT_PERIOD_MS as SPINNER_PERIOD_MS,
-    Spinner, SpinnerState, TextInput, TextInputState,
+    Skeleton, SkeletonState, Spinner, SpinnerState, TextInput, TextInputState,
 };
 
 /// An enabled row in the three interaction states every gate varies.
@@ -3846,6 +3867,6 @@ use termrock::patterns::{
     example_observability_alerts, example_observability_events, example_observability_logs,
     example_observability_tiles, example_plan_document, example_result_columns,
     example_result_row_refs, example_result_rows, example_schema_entries, example_sessions,
-    paint_database_workbench, paint_observability_dashboard,
+    render_database_workbench, render_observability_dashboard,
 };
 use termrock::widgets::{Panel, Tab, Tabs, TabsState};

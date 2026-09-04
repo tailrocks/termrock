@@ -2115,3 +2115,18 @@ pub fn official_kernel_contracts() -> Vec<ComponentContract> {
         },
     ]
 }
+
+/// Lookup by id in the official kernel catalog.
+#[must_use]
+pub fn official_contract(id: &str) -> Option<ComponentContract> {
+    official_kernel_contracts().into_iter().find(|c| c.id == id)
+}
+
+/// All official ids.
+#[must_use]
+pub fn official_ids() -> Vec<String> {
+    official_kernel_contracts()
+        .into_iter()
+        .map(|c| c.id)
+        .collect()
+}

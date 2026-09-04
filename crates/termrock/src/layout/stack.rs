@@ -17,6 +17,8 @@
 //! is set for Studio and hosts.
 use ratatui_core::layout::Rect;
 
+use crate::style::{DesignSystem, SpacingScale};
+
 /// Soft cap for stack-allocated main-size scratch (above → heap `Vec`).
 const INLINE_SCRATCH: usize = 64;
 
@@ -29,6 +31,26 @@ pub enum StackDirection {
     Vertical,
     /// Left → right (Inline).
     Horizontal,
+}
+
+impl StackDirection {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Vertical => "vertical",
+            Self::Horizontal => "horizontal",
+        }
+    }
+
+    /// Flip for responsive contracts (narrow → stack, wide → inline).
+    #[must_use]
+    pub const fn flipped(self) -> Self {
+        match self {
+            Self::Vertical => Self::Horizontal,
+            Self::Horizontal => Self::Vertical,
+        }
+    }
 }
 
 /// Cross-axis alignment (perpendicular to main).
@@ -87,6 +109,18 @@ pub enum FlexSize {
 }
 
 impl FlexSize {
+    /// Fixed helper.
+    #[must_use]
+    pub const fn fixed(n: u16) -> Self {
+        Self::Fixed(n)
+    }
+
+    /// Weight helper (zero treated as 1 when allocated).
+    #[must_use]
+    pub const fn weight(w: u16) -> Self {
+        Self::Weight(w)
+    }
+
     /// Fill residual equally (weight 1).
     #[must_use]
     pub const fn fill() -> Self {
@@ -113,6 +147,42 @@ impl FlexSize {
             Self::Collapsed => 0,
         }
     }
+
+    /// Ideal main-axis claim (preferred or fixed; weight → 0).
+    #[must_use]
+    pub const fn ideal_main(self) -> u16 {
+        match self {
+            Self::Fixed(n) => n,
+            Self::Weight(_) => 0,
+            Self::Preferred {
+                min,
+                preferred,
+                max,
+            } => {
+                let lo = min;
+                let hi = if max < min { min } else { max };
+                if preferred < lo {
+                    lo
+                } else if preferred > hi {
+                    hi
+                } else {
+                    preferred
+                }
+            }
+            Self::Collapsed => 0,
+        }
+    }
+
+    /// Maximum main-axis claim (fixed = exact; weight unbounded as 0 meaning flex).
+    #[must_use]
+    pub const fn max_main(self) -> Option<u16> {
+        match self {
+            Self::Fixed(n) => Some(n),
+            Self::Weight(_) => None,
+            Self::Preferred { min, max, .. } => Some(if max < min { min } else { max }),
+            Self::Collapsed => Some(0),
+        }
+    }
 }
 
 /// Behavior when fixed/preferred children exceed the main axis.
@@ -126,6 +196,18 @@ pub enum OverflowPolicy {
     ClipTail,
     /// Reduce fixed/preferred toward min, from the end, one cell at a time.
     EqualShare,
+}
+
+impl OverflowPolicy {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::ShrinkFromEnd => "shrink-from-end",
+            Self::ClipTail => "clip-tail",
+            Self::EqualShare => "equal-share",
+        }
+    }
 }
 
 /// Layout knobs for [`layout_stack`] / builders.
@@ -165,6 +247,12 @@ impl Default for StackSpec {
 }
 
 impl StackSpec {
+    /// Resolves gap and padding from the frame design system.
+    #[must_use]
+    pub const fn from_system(system: &DesignSystem) -> Self {
+        Self::vertical().with_spacing(system.spacing)
+    }
+
     /// Vertical stack defaults.
     #[must_use]
     pub const fn vertical() -> Self {
@@ -194,6 +282,16 @@ impl StackSpec {
             overflow: OverflowPolicy::ShrinkFromEnd,
         }
     }
+
+    /// Spacing scale from design system.
+    #[must_use]
+    pub const fn with_spacing(mut self, spacing: SpacingScale) -> Self {
+        self.gap = spacing.gap;
+        self.pad_x = spacing.card_inset;
+        self.pad_y = 1;
+        self
+    }
+
     /// Responsive direction from outer width.
     #[must_use]
     pub const fn responsive(mut self, width: u16, inline_min_width: u16) -> Self {
@@ -218,10 +316,27 @@ pub struct StackLayout {
 }
 
 impl StackLayout {
+    /// Child count.
+    #[must_use]
+    pub fn len(&self) -> usize {
+        self.children.len()
+    }
+
+    /// Empty layout.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.children.is_empty()
+    }
+
     /// Child rect by index.
     #[must_use]
     pub fn get(&self, index: usize) -> Option<Rect> {
         self.children.get(index).copied()
+    }
+
+    /// Iterate child rects with stable indices.
+    pub fn iter(&self) -> impl Iterator<Item = (usize, Rect)> + '_ {
+        self.children.iter().copied().enumerate()
     }
 
     /// Hit-test: first child containing the cell, if any.
@@ -232,6 +347,14 @@ impl StackLayout {
             .iter()
             .position(|r| r.width > 0 && r.height > 0 && r.contains(pos))
     }
+
+    /// Group hit (padded content).
+    #[must_use]
+    pub fn contains_group(&self, col: u16, row: u16) -> bool {
+        self.content
+            .contains(ratatui_core::layout::Position { x: col, y: row })
+    }
+
     /// Project non-empty children into hit regions (id = stable index).
     #[must_use]
     pub fn hit_regions(&self) -> Vec<crate::interaction::HitRegion<usize>> {
@@ -294,6 +417,13 @@ impl Stack {
         }
     }
 
+    /// Main-axis direction (for responsive flip without rebuilding).
+    #[must_use]
+    pub const fn direction(mut self, direction: StackDirection) -> Self {
+        self.spec.direction = direction;
+        self
+    }
+
     /// Responsive direction from outer width.
     #[must_use]
     pub const fn responsive(mut self, width: u16, inline_min_width: u16) -> Self {
@@ -305,6 +435,13 @@ impl Stack {
     #[must_use]
     pub const fn gap(mut self, gap: u16) -> Self {
         self.spec.gap = gap;
+        self
+    }
+
+    /// Cross-axis align.
+    #[must_use]
+    pub const fn align(mut self, align: Align) -> Self {
+        self.spec.align = align;
         self
     }
 
@@ -334,6 +471,17 @@ impl Stack {
     #[must_use]
     pub fn layout(self, area: Rect, children: &[FlexSize]) -> StackLayout {
         layout_stack(area, &self.spec, children)
+    }
+
+    /// Layout with per-child cross-axis preferred sizes (ignored under [`Align::Stretch`]).
+    #[must_use]
+    pub fn layout_with_cross(
+        self,
+        area: Rect,
+        children: &[FlexSize],
+        cross: &[u16],
+    ) -> StackLayout {
+        layout_stack_with_cross(area, &self.spec, children, Some(cross))
     }
 }
 
@@ -365,6 +513,13 @@ impl Inline {
         self
     }
 
+    /// Responsive direction from outer width.
+    #[must_use]
+    pub const fn responsive(mut self, width: u16, inline_min_width: u16) -> Self {
+        self.spec = self.spec.responsive(width, inline_min_width);
+        self
+    }
+
     /// Enable wrapping (fixed/preferred sizes only; weights treated as preferred=1).
     #[must_use]
     pub const fn wrap(mut self, wrap: bool) -> Self {
@@ -390,6 +545,21 @@ impl Inline {
     #[must_use]
     pub const fn justify(mut self, justify: Justify) -> Self {
         self.spec.justify = justify;
+        self
+    }
+
+    /// Overflow policy.
+    #[must_use]
+    pub const fn overflow(mut self, policy: OverflowPolicy) -> Self {
+        self.spec.overflow = policy;
+        self
+    }
+
+    /// Padding.
+    #[must_use]
+    pub const fn padding(mut self, pad_x: u16, pad_y: u16) -> Self {
+        self.spec.pad_x = pad_x;
+        self.spec.pad_y = pad_y;
         self
     }
 
@@ -616,6 +786,7 @@ fn layout_single_line(
         if residual > 0 {
             grow_preferred(children, main_sizes, &mut residual);
         }
+        let _ = residual;
     }
 
     let used_main: u16 = main_sizes.iter().copied().sum::<u16>().saturating_add(gaps);
@@ -654,6 +825,7 @@ fn layout_single_line(
                 .saturating_add(between_extra);
         }
     }
+    let _ = overflowed;
 }
 
 fn apply_overflow(

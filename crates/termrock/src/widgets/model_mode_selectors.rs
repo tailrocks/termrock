@@ -25,7 +25,7 @@ use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{NavigationMove, UiIntent, default_button_intent, default_list_intent},
     style::{ButtonRecipeVariant, ControlState, DesignSystem, ListRowVisualState, Role},
-    text::{contains_lower_all, display_cols, take_display_cols},
+    text::{display_cols, take_display_cols},
     widgets::{
         agent_blocks::WorkbenchMode,
         prompt_composer::{ModeIndicator, ModelIndicator},
@@ -114,6 +114,18 @@ pub enum ReasoningEffort {
 }
 
 impl ReasoningEffort {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Default => "default",
+            Self::Low => "low",
+            Self::Medium => "medium",
+            Self::High => "high",
+            Self::Max => "max",
+        }
+    }
+
     /// Compact status token.
     #[must_use]
     pub const fn short(self) -> &'static str {
@@ -225,6 +237,20 @@ impl ModelOption {
         self
     }
 
+    /// Group.
+    #[must_use]
+    pub fn group(mut self, g: impl Into<String>) -> Self {
+        self.group = Some(g.into());
+        self
+    }
+
+    /// Detail.
+    #[must_use]
+    pub fn detail(mut self, d: impl Into<String>) -> Self {
+        self.detail = Some(d.into());
+        self
+    }
+
     /// Recent.
     #[must_use]
     pub const fn recent(mut self, on: bool) -> Self {
@@ -296,15 +322,15 @@ pub fn filter_model_options<'a>(options: &'a [ModelOption], query: &str) -> Vec<
                 .map(|c| c.label.as_str())
                 .collect::<Vec<_>>()
                 .join(" ");
-            contains_lower_all(
-                &[
-                    o.id.as_str(),
-                    o.label.as_str(),
-                    o.provider.as_deref().unwrap_or(""),
-                    caps.as_str(),
-                ],
-                &q,
+            let hay = format!(
+                "{} {} {} {}",
+                o.id,
+                o.label,
+                o.provider.as_deref().unwrap_or(""),
+                caps
             )
+            .to_ascii_lowercase();
+            hay.contains(&q)
         })
         .collect()
 }
@@ -387,6 +413,19 @@ impl AgentModeKind {
     pub const fn is_warning(self) -> bool {
         matches!(self, Self::FullAuto)
     }
+
+    /// Parse common short labels.
+    #[must_use]
+    pub fn from_short(s: &str) -> Option<Self> {
+        match s.to_ascii_uppercase().as_str() {
+            "ASK" => Some(Self::Ask),
+            "PLAN" => Some(Self::Plan),
+            "EDIT" => Some(Self::Edit),
+            "AUTO" => Some(Self::Auto),
+            "FULL" | "FULLAUTO" | "FULL-AUTO" => Some(Self::FullAuto),
+            _ => None,
+        }
+    }
 }
 
 /// Execution policy display (host-owned meaning).
@@ -407,6 +446,18 @@ pub enum ExecutionPolicyKind {
 }
 
 impl ExecutionPolicyKind {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Default => "default",
+            Self::ReadOnly => "read-only",
+            Self::WorkspaceWrite => "workspace-write",
+            Self::Network => "network",
+            Self::Unrestricted => "unrestricted",
+        }
+    }
+
     /// Warning chrome.
     #[must_use]
     pub const fn is_warning(self) -> bool {
@@ -476,6 +527,53 @@ impl AgentModeOption {
             enabled: true,
             execution_policy: None,
         }
+    }
+
+    /// Custom mode.
+    #[must_use]
+    pub fn custom(
+        id: impl Into<String>,
+        label: impl Into<String>,
+        short: impl Into<String>,
+    ) -> Self {
+        Self {
+            id: id.into(),
+            kind: AgentModeKind::Custom,
+            label: label.into(),
+            short_label: short.into(),
+            consequence: None,
+            warning: None,
+            enabled: true,
+            execution_policy: None,
+        }
+    }
+
+    /// Consequence text.
+    #[must_use]
+    pub fn consequence(mut self, c: impl Into<String>) -> Self {
+        self.consequence = Some(c.into());
+        self
+    }
+
+    /// Warning.
+    #[must_use]
+    pub fn warning(mut self, w: impl Into<String>) -> Self {
+        self.warning = Some(w.into());
+        self
+    }
+
+    /// Enabled.
+    #[must_use]
+    pub const fn enabled(mut self, on: bool) -> Self {
+        self.enabled = on;
+        self
+    }
+
+    /// Execution policy.
+    #[must_use]
+    pub const fn execution_policy(mut self, p: ExecutionPolicyKind) -> Self {
+        self.execution_policy = Some(p);
+        self
     }
 
     /// Whether warning role applies.
@@ -567,6 +665,8 @@ pub enum ModelSelectorOutcome {
         /// Effort.
         effort: ReasoningEffort,
     },
+    /// Compact status activated (open request).
+    ActivateCompact,
 }
 
 /// Agent mode selector outcomes.
@@ -602,6 +702,8 @@ pub enum AgentModeSelectorOutcome {
         /// Warning.
         warning: bool,
     },
+    /// Compact badge activated.
+    ActivateCompact,
 }
 
 // ── ModelSelector state / paint ─────────────────────────────────────────────
@@ -615,6 +717,17 @@ pub enum ModelSelectorPresentation {
     Compact,
     /// Expanded searchable list.
     Expanded,
+}
+
+impl ModelSelectorPresentation {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Compact => "compact",
+            Self::Expanded => "expanded",
+        }
+    }
 }
 
 /// Model selector state.
@@ -677,9 +790,38 @@ impl ModelSelectorState {
         self.selected.as_deref()
     }
 
+    /// Highlight id.
+    #[must_use]
+    pub fn highlight(&self) -> Option<&str> {
+        self.highlight.as_deref()
+    }
+
+    /// Accepts input.
+    #[must_use]
+    pub const fn accepts_input(&self) -> bool {
+        self.accepts_input
+    }
+
     /// Gate (does not clear selection).
     pub fn set_accepts_input(&mut self, on: bool) {
         self.accepts_input = on;
+    }
+
+    /// Focus.
+    pub const fn set_focused(&mut self, on: bool) {
+        self.focused = on;
+    }
+
+    /// Set selected without outcome.
+    pub fn set_selected(&mut self, id: Option<String>) {
+        self.selected = id.clone();
+        self.highlight = id;
+    }
+
+    /// Recent ids.
+    #[must_use]
+    pub fn recent(&self) -> &[String] {
+        &self.recent
     }
 
     /// Open expanded list.
@@ -933,6 +1075,14 @@ impl<'a> ModelSelector<'a> {
         }
     }
 
+    /// ASCII.
+    #[must_use]
+    /// Include reasoning token in compact line.
+    pub const fn show_reasoning(mut self, on: bool) -> Self {
+        self.show_reasoning = on;
+        self
+    }
+
     /// Compact status string for external chrome.
     #[must_use]
     pub fn compact_status(&self, state: &ModelSelectorState) -> String {
@@ -994,7 +1144,7 @@ impl<'a> ModelSelector<'a> {
                     } else {
                         ControlState::Default
                     };
-                    let recipe = self.system.input_recipe(control_state, false);
+                    let recipe = self.system.input_recipe(control_state, false, false);
                     let search_area = Rect::new(area.x, y, area.width, 1);
                     buffer.set_style(search_area, recipe.fill);
                     if area.width > 0 {
@@ -1111,6 +1261,11 @@ impl<'a> ModelSelector<'a> {
         }
         hits
     }
+
+    /// Render alias.
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut ModelSelectorState) {
+        let _ = self.paint(area, buffer, state);
+    }
 }
 
 // ── AgentModeSelector ───────────────────────────────────────────────────────
@@ -1126,6 +1281,18 @@ pub enum AgentModePresentation {
     Ribbon,
     /// Expandable list menu.
     Menu,
+}
+
+impl AgentModePresentation {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Compact => "compact",
+            Self::Ribbon => "ribbon",
+            Self::Menu => "menu",
+        }
+    }
 }
 
 /// Agent mode selector state.
@@ -1182,6 +1349,17 @@ impl AgentModeSelectorState {
     /// Gate.
     pub fn set_accepts_input(&mut self, on: bool) {
         self.accepts_input = on;
+    }
+
+    /// Focus.
+    pub const fn set_focused(&mut self, on: bool) {
+        self.focused = on;
+    }
+
+    /// Set selected silently.
+    pub fn set_selected(&mut self, id: Option<String>) {
+        self.selected = id.clone();
+        self.highlight = id;
     }
 
     /// Open menu.
@@ -1572,6 +1750,11 @@ impl<'a> AgentModeSelector<'a> {
         }
         hits
     }
+
+    /// Render alias.
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut AgentModeSelectorState) {
+        let _ = self.paint(area, buffer, state);
+    }
 }
 
 // ── Composed presentation ───────────────────────────────────────────────────
@@ -1695,7 +1878,6 @@ pub mod bench {
 mod tests {
     use super::*;
     use crate::style::DesignSystem;
-    use crate::widgets::tests::click;
 
     #[test]
     fn model_filter_and_confirm() {
@@ -1867,7 +2049,11 @@ mod tests {
     fn model_and_mode_mouse_confirm_only_hit_options() {
         let models = example_model_catalog();
         let hit = Rect::new(3, 2, 10, 1);
-        let mouse = click(hit.x, hit.y);
+        let mouse = MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: ratatui_core::layout::Position::new(hit.x, hit.y),
+            modifiers: KeyModifiers::NONE,
+        };
         let mut model = ModelSelectorState::new();
         model.presentation = ModelSelectorPresentation::Expanded;
         assert!(matches!(

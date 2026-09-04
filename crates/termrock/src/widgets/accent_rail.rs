@@ -30,6 +30,13 @@ impl<'a> AccentRail<'a> {
         }
     }
 
+    /// Selects a catalog glyph for the rail.
+    #[must_use]
+    pub const fn glyph(mut self, glyph: Glyph) -> Self {
+        self.glyph = glyph;
+        self
+    }
+
     /// Selects the compact collapsed-block rail glyph.
     #[must_use]
     pub const fn collapsed(mut self, collapsed: bool) -> Self {

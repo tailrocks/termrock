@@ -26,13 +26,17 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers},
+    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
     style::{DesignSystem, PanelChrome, Role},
     text::take_display_cols,
-    widgets::{NavItem, Panel, PanelVariant, Sidebar, SidebarOutcome, SidebarState},
+    widgets::{
+        NavItem, Panel, PanelVariant, Sidebar, SidebarOutcome, SidebarPresentation, SidebarState,
+        filter_nav_collapsed,
+    },
 };
 
 use super::app_shell::{AppShellConfig, AppShellRecipe, AppShellSlots, layout_app_shell};
@@ -50,6 +54,18 @@ pub enum AppDashboardPane {
     Main,
     /// Optional metrics strip (host paint; rarely focused).
     Metrics,
+}
+
+impl AppDashboardPane {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Sidebar => "sidebar",
+            Self::Main => "main",
+            Self::Metrics => "metrics",
+        }
+    }
 }
 
 /// Host-facing outcomes.
@@ -118,6 +134,22 @@ impl<Id> AppDashboardState<Id> {
     #[must_use]
     pub const fn pane(&self) -> AppDashboardPane {
         self.pane
+    }
+
+    /// Show metrics strip.
+    pub fn set_show_metrics(&mut self, on: bool) {
+        self.show_metrics = on;
+    }
+
+    /// Sidebar dock width (cols).
+    pub fn set_sidebar_width(&mut self, w: u16) {
+        self.sidebar_width = w.max(4);
+    }
+
+    /// Input gate.
+    pub fn set_accepts_input(&mut self, on: bool) {
+        self.accepts_input = on;
+        self.sync_sidebar_focus();
     }
 
     /// Focus a pane.
@@ -354,7 +386,7 @@ pub fn example_dashboard_nav() -> Vec<NavItem<&'static str>> {
 }
 
 /// Paint shell chrome + sidebar; main shows placeholder (host overlays data).
-pub fn paint_app_dashboard<Id: Clone + PartialEq>(
+pub fn render_app_dashboard<Id: Clone + PartialEq>(
     buffer: &mut Buffer,
     area: Rect,
     surfaces: AppDashboardSurfaces<'_, Id>,
@@ -387,6 +419,7 @@ pub fn paint_app_dashboard<Id: Clone + PartialEq>(
 
     // Sidebar
     if !slots.sidebar.is_empty() {
+        let rail = matches!(state.sidebar.presentation(), SidebarPresentation::Rail);
         let mut panel_state = crate::widgets::PanelState::default();
         let body = Panel::new(system)
             .title("Nav")
@@ -399,6 +432,7 @@ pub fn paint_app_dashboard<Id: Clone + PartialEq>(
             .paint(slots.sidebar, buffer, Some(&mut panel_state));
         // Prefer painting into body if panel carved space; else full sidebar.
         let nav_area = if body.height > 0 { body } else { slots.sidebar };
+        let _ = rail;
         Sidebar::new(surfaces.nav, system)
             .focused(state.pane == AppDashboardPane::Sidebar)
             .show_panel(false)
@@ -467,8 +501,6 @@ pub fn paint_app_dashboard<Id: Clone + PartialEq>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::widgets::SidebarPresentation;
-    use crate::widgets::filter_nav_collapsed;
 
     fn press(c: char) -> KeyEvent {
         KeyEvent::new(KeyCode::Char(c), KeyModifiers::NONE)
@@ -620,7 +652,7 @@ mod tests {
         assert!(filter_nav_collapsed(&nav).len() < nav.len() || !nav.is_empty());
         let area = Rect::new(0, 0, 80, 24);
         let mut buf = Buffer::empty(area);
-        paint_app_dashboard(
+        render_app_dashboard(
             &mut buf,
             area,
             AppDashboardSurfaces {

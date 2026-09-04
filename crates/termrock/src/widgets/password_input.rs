@@ -13,20 +13,25 @@
 //! [`PasswordInput`] for any real credential.
 //!
 //! Research: secure CLI prompts, password managers, desktop secret fields.
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::fmt;
 
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
+use unicode_segmentation::UnicodeSegmentation;
 
 use crate::{
     input::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
-    interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
-    style::{ButtonRecipeVariant, ControlState, DesignSystem, Role},
+    interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
+    style::{ButtonRecipeVariant, ControlState, DesignSystem, MASK_CELLS, Role},
     text::take_display_cols,
 };
 
-use super::{TextInput, TextInputOutcome, TextInputState, TextInputValidity, Validation};
+use super::{
+    TextInput, TextInputOutcome, TextInputParts, TextInputState, TextInputValidity, Validation,
+    edit_core,
+};
 
 // ── Policies ────────────────────────────────────────────────────────────────
 
@@ -41,6 +46,18 @@ pub enum RevealPolicy {
     Explicit,
     /// Revealed only while the hold chord is pressed (Alt+H press/release).
     Hold,
+}
+
+impl RevealPolicy {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Never => "never",
+            Self::Explicit => "explicit",
+            Self::Hold => "hold",
+        }
+    }
 }
 
 /// Clipboard / OSC-52 policy for secrets.
@@ -58,6 +75,18 @@ pub enum ClipboardPolicy {
     /// Host may copy via `secret()` after a denied outcome probe — still never
     /// embeds the secret in an outcome. Prefer avoiding this.
     AllowHostCopy,
+}
+
+impl ClipboardPolicy {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::DenyAll => "deny-all",
+            Self::PasteOnly => "paste-only",
+            Self::AllowHostCopy => "allow-host-copy",
+        }
+    }
 }
 
 /// Host-owned strength / quality cue (never derived by logging the secret).
@@ -138,6 +167,20 @@ impl PasswordStrengthHint {
             Self::Good => "good",
             Self::Strong => "strong",
             Self::Pending => "checking…",
+        }
+    }
+
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::None => "none",
+            Self::Empty => "empty",
+            Self::Weak => "weak",
+            Self::Fair => "fair",
+            Self::Good => "good",
+            Self::Strong => "strong",
+            Self::Pending => "pending",
         }
     }
 }
@@ -250,9 +293,24 @@ impl PasswordInputState {
         state
     }
 
+    /// Live typing. [`Self::new`] stays idle (`editing: false`).
+    #[must_use]
+    pub fn with_editing(mut self) -> Self {
+        self.editor.begin_edit();
+        self
+    }
+
     /// Start the insert session (Junie Enter on an idle field).
     pub fn begin_edit(&mut self) {
         self.editor.begin_edit();
+    }
+
+    /// Max graphemes.
+    #[must_use]
+    pub fn with_max_graphemes(mut self, max: usize) -> Self {
+        let editor = std::mem::replace(&mut self.editor, TextInputState::new(""));
+        self.editor = editor.with_max_graphemes(max);
+        self
     }
 
     fn sync_editor_gates(&mut self) {
@@ -277,6 +335,12 @@ impl PasswordInputState {
         self.set_reveal_policy(policy);
         self
     }
+
+    /// Clipboard policy.
+    pub const fn set_clipboard_policy(&mut self, policy: ClipboardPolicy) {
+        self.clipboard = policy;
+    }
+
     /// Clipboard policy (builder).
     #[must_use]
     pub const fn with_clipboard_policy(mut self, policy: ClipboardPolicy) -> Self {
@@ -313,6 +377,13 @@ impl PasswordInputState {
     pub fn is_empty(&self) -> bool {
         self.editor.value().is_empty()
     }
+
+    /// Grapheme count (not in Debug).
+    #[must_use]
+    pub fn grapheme_len(&self) -> usize {
+        self.editor.value().graphemes(true).count()
+    }
+
     /// Whether plaintext is currently visible per policy.
     #[must_use]
     pub const fn is_revealed(&self) -> bool {
@@ -321,6 +392,42 @@ impl PasswordInputState {
             RevealPolicy::Explicit => self.revealed,
             RevealPolicy::Hold => self.hold_reveal,
         }
+    }
+
+    /// Policy.
+    #[must_use]
+    pub const fn reveal_policy(&self) -> RevealPolicy {
+        self.reveal_policy
+    }
+
+    /// Clipboard policy.
+    #[must_use]
+    pub const fn clipboard_policy(&self) -> ClipboardPolicy {
+        self.clipboard
+    }
+
+    /// Enabled.
+    #[must_use]
+    pub const fn is_enabled(&self) -> bool {
+        self.enabled
+    }
+
+    /// Read-only.
+    #[must_use]
+    pub const fn is_read_only(&self) -> bool {
+        self.read_only
+    }
+
+    /// Pending.
+    #[must_use]
+    pub const fn is_pending(&self) -> bool {
+        self.pending
+    }
+
+    /// Focused.
+    #[must_use]
+    pub const fn is_focused(&self) -> bool {
+        self.focused
     }
 
     /// Whether edits allowed.
@@ -359,6 +466,12 @@ impl PasswordInputState {
         self.editor.validity()
     }
 
+    /// Last paint geometry from the inner editor.
+    #[must_use]
+    pub fn parts(&self) -> Option<&TextInputParts> {
+        self.editor.parts()
+    }
+
     /// Clear secret (secure).
     pub fn clear(&mut self) -> bool {
         if self.is_empty() {
@@ -366,6 +479,13 @@ impl PasswordInputState {
         }
         self.editor.secure_clear();
         true
+    }
+
+    /// Securely clear.
+    pub fn secure_clear(&mut self) {
+        self.editor.secure_clear();
+        self.revealed = false;
+        self.hold_reveal = false;
     }
 
     /// Toggle explicit reveal.
@@ -378,6 +498,19 @@ impl PasswordInputState {
             revealed: self.revealed,
         }
     }
+
+    /// Set explicit reveal.
+    pub fn set_revealed(&mut self, on: bool) -> PasswordInputOutcome {
+        if !matches!(self.reveal_policy, RevealPolicy::Explicit) {
+            return PasswordInputOutcome::Ignored;
+        }
+        if self.revealed == on {
+            return PasswordInputOutcome::Ignored;
+        }
+        self.revealed = on;
+        PasswordInputOutcome::RevealChanged { revealed: on }
+    }
+
     /// Insert paste payload.
     pub fn insert_str(&mut self, text: &str) -> PasswordInputOutcome {
         if matches!(self.clipboard, ClipboardPolicy::DenyAll) {
@@ -392,11 +525,12 @@ impl PasswordInputState {
 
     /// Default key adapter with secret policies.
     pub fn handle_key(&mut self, key: KeyEvent) -> PasswordInputOutcome {
+        self.sync_editor_gates();
+
         // Hold reveal: Alt+H press/release (neutral KeyCode has no function keys).
         let alt_hold = key.modifiers.contains(KeyModifiers::ALT)
             && matches!(key.code, KeyCode::Char('h' | 'H'));
         if matches!(self.reveal_policy, RevealPolicy::Hold) && alt_hold {
-            self.sync_editor_gates();
             match key.kind {
                 KeyEventKind::Press | KeyEventKind::Repeat => {
                     if !self.hold_reveal {
@@ -425,40 +559,6 @@ impl PasswordInputState {
 
         let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
         let alt = key.modifiers.contains(KeyModifiers::ALT);
-        let explicit_reveal = alt && !ctrl && matches!(key.code, KeyCode::Char('r' | 'R'));
-
-        // Explicit reveal, submit/cancel, clipboard outcomes, and destructive
-        // editor chords are one-shot physical actions. Keep ordinary editor
-        // repeats and Hold reveal above.
-        if !key.is_press()
-            && (matches!(
-                key.code,
-                KeyCode::Enter | KeyCode::Esc | KeyCode::Tab | KeyCode::BackTab
-            ) || (ctrl
-                && matches!(
-                    key.code,
-                    KeyCode::Char(
-                        'c' | 'C'
-                            | 'k'
-                            | 'K'
-                            | 'm'
-                            | 'M'
-                            | 'u'
-                            | 'U'
-                            | 'v'
-                            | 'V'
-                            | 'w'
-                            | 'W'
-                            | 'x'
-                            | 'X',
-                    )
-                ))
-                || explicit_reveal)
-        {
-            return PasswordInputOutcome::Ignored;
-        }
-
-        self.sync_editor_gates();
 
         // Explicit reveal: Alt+R
         if alt
@@ -532,6 +632,33 @@ impl PasswordInputState {
             TextInputOutcome::ClipboardPasteRequest => match self.clipboard {
                 ClipboardPolicy::DenyAll => PasswordInputOutcome::ClipboardDenied,
                 _ => PasswordInputOutcome::ClipboardPasteRequest,
+            },
+        }
+    }
+
+    /// Intent path.
+    pub fn handle_intent(&mut self, intent: UiIntent) -> PasswordInputOutcome {
+        self.sync_editor_gates();
+        if !self.enabled {
+            return PasswordInputOutcome::Ignored;
+        }
+        match intent {
+            UiIntent::Submit | UiIntent::Activate => {
+                if !self.editor.is_editing() {
+                    self.editor.begin_edit();
+                    PasswordInputOutcome::Changed
+                } else if self.editor.is_valid() {
+                    PasswordInputOutcome::Submitted
+                } else {
+                    PasswordInputOutcome::Ignored
+                }
+            }
+            UiIntent::Cancel | UiIntent::Close => PasswordInputOutcome::Cancelled,
+            other => match self.editor.handle_intent(other) {
+                TextInputOutcome::Changed => PasswordInputOutcome::Changed,
+                TextInputOutcome::Cancelled => PasswordInputOutcome::Cancelled,
+                TextInputOutcome::Submitted(_) => PasswordInputOutcome::Submitted,
+                _ => PasswordInputOutcome::Ignored,
             },
         }
     }
@@ -620,6 +747,8 @@ impl PasswordConfirmState {
 pub struct PasswordInput<'a> {
     label: &'a str,
     placeholder: &'a str,
+    show_optional: bool,
+    help: &'a str,
     validation: Validation<'a>,
     system: &'a DesignSystem,
     mask: char,
@@ -647,6 +776,8 @@ impl<'a> PasswordInput<'a> {
         Self {
             label,
             placeholder: "",
+            show_optional: false,
+            help: "",
             validation: Validation::Valid,
             system,
             mask: '●',
@@ -659,6 +790,20 @@ impl<'a> PasswordInput<'a> {
     #[must_use]
     pub const fn placeholder(mut self, placeholder: &'a str) -> Self {
         self.placeholder = placeholder;
+        self
+    }
+
+    /// Paint the optional suffix when it fits beside the label.
+    #[must_use]
+    pub const fn optional(mut self, on: bool) -> Self {
+        self.show_optional = on;
+        self
+    }
+
+    /// Helper text painted below the field.
+    #[must_use]
+    pub const fn help(mut self, help: &'a str) -> Self {
+        self.help = help;
         self
     }
 
@@ -680,6 +825,13 @@ impl<'a> PasswordInput<'a> {
     #[must_use]
     pub const fn strength(mut self, hint: PasswordStrengthHint) -> Self {
         self.strength = hint;
+        self
+    }
+
+    /// Show reveal glyph when policy is Explicit.
+    #[must_use]
+    pub const fn show_reveal(mut self, on: bool) -> Self {
+        self.show_reveal = on;
         self
     }
 
@@ -707,6 +859,8 @@ impl<'a> PasswordInput<'a> {
 
         let input = TextInput::new(self.label, self.system)
             .placeholder(self.placeholder)
+            .optional(self.show_optional)
+            .help(self.help)
             .validation(self.validation)
             .secret(!revealed)
             .secret_mask(mask);
@@ -857,8 +1011,6 @@ impl StatefulWidget for PasswordInput<'_> {
 mod tests {
     use super::*;
     use crate::style::{MASK_CELLS, RolePalette};
-    use crate::widgets::edit_core;
-    use crate::widgets::tests::click;
 
     #[test]
     fn debug_never_contains_secret() {
@@ -1002,46 +1154,17 @@ mod tests {
     }
 
     #[test]
-    fn repeated_lifecycle_reveal_and_clipboard_actions_are_ignored() {
-        let mut state =
-            PasswordInputState::with_secret("abc").with_reveal_policy(RevealPolicy::Explicit);
-        state.set_focused(true);
-        state.begin_edit();
-        let actions = [
-            (KeyCode::Char('r'), KeyModifiers::ALT),
-            (KeyCode::Enter, KeyModifiers::NONE),
-            (KeyCode::Esc, KeyModifiers::NONE),
-            (KeyCode::Tab, KeyModifiers::NONE),
-            (KeyCode::BackTab, KeyModifiers::NONE),
-            (KeyCode::Char('m'), KeyModifiers::CONTROL),
-            (
-                KeyCode::Char('m'),
-                KeyModifiers::CONTROL | KeyModifiers::ALT,
-            ),
-            (KeyCode::Char('k'), KeyModifiers::CONTROL),
-            (KeyCode::Char('u'), KeyModifiers::CONTROL),
-            (KeyCode::Char('w'), KeyModifiers::CONTROL),
-            (KeyCode::Char('c'), KeyModifiers::CONTROL),
-            (KeyCode::Char('x'), KeyModifiers::CONTROL),
-            (KeyCode::Char('v'), KeyModifiers::CONTROL),
-        ];
-        for (code, modifiers) in actions {
-            let before = state.clone();
-            let mut key = KeyEvent::new(code, modifiers);
-            key.kind = KeyEventKind::Repeat;
-            assert_eq!(state.handle_key(key), PasswordInputOutcome::Ignored);
-            assert_eq!(state, before, "{code:?} repeat mutated password state");
-        }
-    }
-
-    #[test]
     fn mouse_reveal_uses_explicit_policy_and_exact_hit_region() {
         let mut state =
             PasswordInputState::with_secret("ab").with_reveal_policy(RevealPolicy::Explicit);
         let reveal = Rect::new(12, 3, 2, 1);
         assert_eq!(
             state.handle_mouse(
-                click(reveal.x, reveal.y),
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: ratatui_core::layout::Position::new(reveal.x, reveal.y),
+                    modifiers: KeyModifiers::NONE,
+                },
                 Rect::new(0, 3, 12, 1),
                 Some(reveal),
             ),
@@ -1058,10 +1181,6 @@ mod tests {
             state.handle_key(KeyEvent::new(KeyCode::Char('h'), KeyModifiers::ALT)),
             PasswordInputOutcome::RevealChanged { revealed: true }
         );
-        assert!(state.is_revealed());
-        let mut repeat = KeyEvent::new(KeyCode::Char('h'), KeyModifiers::ALT);
-        repeat.kind = KeyEventKind::Repeat;
-        assert_eq!(state.handle_key(repeat), PasswordInputOutcome::Ignored);
         assert!(state.is_revealed());
         let mut release = KeyEvent::new(KeyCode::Char('h'), KeyModifiers::ALT);
         release.kind = KeyEventKind::Release;

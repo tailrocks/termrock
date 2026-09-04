@@ -28,6 +28,18 @@ pub enum MetricViz {
     ValueOnly,
 }
 
+impl MetricViz {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Sparkline => "sparkline",
+            Self::Gauge => "gauge",
+            Self::ValueOnly => "value",
+        }
+    }
+}
+
 /// Health of one tile (partial failure support).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -58,6 +70,32 @@ impl MetricTileHealth {
             Self::Loading => "loading",
             Self::Failed => "failed",
             Self::Stale => "stale",
+        }
+    }
+
+    /// Letter (never color alone).
+    #[must_use]
+    pub const fn letter(self) -> char {
+        match self {
+            Self::Ok => '·',
+            Self::Warning => '!',
+            Self::Danger => '‼',
+            Self::Loading => '…',
+            Self::Failed => 'x',
+            Self::Stale => '~',
+        }
+    }
+
+    /// ASCII letter.
+    #[must_use]
+    pub const fn letter_ascii(self) -> char {
+        match self {
+            Self::Ok => '.',
+            Self::Warning => '!',
+            Self::Danger => 'X',
+            Self::Loading => '.',
+            Self::Failed => 'x',
+            Self::Stale => '~',
         }
     }
 
@@ -227,6 +265,14 @@ impl<'a> MetricTileView<'a> {
         self.focused = focused;
         self
     }
+
+    /// Forces the ASCII glyph profile.
+    #[must_use]
+    /// The health letter under the active glyph profile.
+    pub fn health_letter(&self) -> char {
+        self.tile.health.letter()
+    }
+
     /// The delta's direction glyph, so a delta reads without color.
     #[must_use]
     pub fn delta_glyph(&self) -> &'static str {
@@ -298,7 +344,6 @@ impl<'a> MetricTileView<'a> {
                     1,
                 ),
                 buffer,
-                None,
             );
         }
     }
@@ -334,7 +379,7 @@ impl<'a> MetricTileView<'a> {
             system.style(Role::TextStrong),
         );
         title.paint_tiers(buffer, Rect::new(inner_x, area.y, inner_w, 1), 0);
-        status.paint(Rect::new(inner_x, area.y, inner_w, 1), buffer, None);
+        status.paint(Rect::new(inner_x, area.y, inner_w, 1), buffer);
 
         let mut y = area.y.saturating_add(1);
         if y < area.bottom() {

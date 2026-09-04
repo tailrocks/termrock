@@ -9,10 +9,11 @@
 //!
 //! Callout / Alert: [`crate::widgets::Callout`], [`crate::widgets::Alert`].
 //! Section chrome: [`crate::widgets::Section`].
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{
-    style::{DesignSystem, Role},
+    style::{DesignSystem, GlyphSet, Role},
     text::{display_cols, take_display_cols},
     widgets::text::{SelectablePolicy, Text, TextSpan},
 };
@@ -42,6 +43,17 @@ impl HeadingLevel {
             Self::H3 => "h3",
         }
     }
+
+    /// Markdown `#` count (1–3).
+    #[must_use]
+    pub const fn hash_depth(self) -> u8 {
+        match self {
+            Self::H1 => 1,
+            Self::H2 => 2,
+            Self::H3 => 3,
+        }
+    }
+
     /// From markdown hash depth (clamped 1–3).
     #[must_use]
     pub const fn from_hash_depth(n: u8) -> Self {
@@ -133,6 +145,27 @@ impl<'a> Heading<'a> {
         self
     }
 
+    /// H2 convenience.
+    #[must_use]
+    pub const fn h2(mut self) -> Self {
+        self.level = HeadingLevel::H2;
+        self
+    }
+
+    /// H3 convenience.
+    #[must_use]
+    pub const fn h3(mut self) -> Self {
+        self.level = HeadingLevel::H3;
+        self
+    }
+
+    /// Recipe.
+    #[must_use]
+    pub const fn recipe(mut self, recipe: HeadingRecipe) -> Self {
+        self.recipe = recipe;
+        self
+    }
+
     /// Compact single-line recipe (ASCII-friendly prefixes on by default).
     #[must_use]
     pub const fn compact(mut self) -> Self {
@@ -148,11 +181,44 @@ impl<'a> Heading<'a> {
         self
     }
 
+    /// Show markdown-style `#` depth prefix (no-color hierarchy cue).
+    #[must_use]
+    pub const fn prefix(mut self, on: bool) -> Self {
+        self.prefix = on;
+        self
+    }
+
     /// Force rule under title (`None` = recipe default).
     #[must_use]
     pub const fn rule(mut self, on: bool) -> Self {
         self.rule = Some(on);
         self
+    }
+
+    /// Copyable title plain text.
+    #[must_use]
+    pub const fn copyable(mut self) -> Self {
+        self.selectable = SelectablePolicy::Copyable;
+        self
+    }
+
+    /// Selectable policy.
+    #[must_use]
+    pub const fn selectable(mut self, policy: SelectablePolicy) -> Self {
+        self.selectable = policy;
+        self
+    }
+
+    /// Level of this heading.
+    #[must_use]
+    pub const fn level_of(&self) -> HeadingLevel {
+        self.level
+    }
+
+    /// Recipe.
+    #[must_use]
+    pub const fn recipe_of(&self) -> HeadingRecipe {
+        self.recipe
     }
 
     /// Whether a rule row is requested for this paint.
@@ -191,6 +257,12 @@ impl<'a> Heading<'a> {
             HeadingLevel::H2 => "## ",
             HeadingLevel::H3 => "### ",
         }
+    }
+
+    /// Copy-safe plain title (no prefix).
+    #[must_use]
+    pub fn plain(&self) -> &str {
+        self.text
     }
 
     /// Full plain including prefix (clipboard for compact hierarchy).
@@ -316,6 +388,19 @@ pub enum ParagraphKind {
     OrderedItem,
 }
 
+impl ParagraphKind {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Body => "body",
+            Self::Quote => "quote",
+            Self::ListItem => "list-item",
+            Self::OrderedItem => "ordered-item",
+        }
+    }
+}
+
 /// Editorial density for paragraphs.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -325,6 +410,17 @@ pub enum ParagraphRecipe {
     Compact,
     /// Reading mode: quote/list hanging indents, slightly wider breathing.
     Reading,
+}
+
+impl ParagraphRecipe {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Compact => "compact",
+            Self::Reading => "reading",
+        }
+    }
 }
 
 /// Named geometry for a paragraph.
@@ -404,6 +500,20 @@ impl<'a> Paragraph<'a> {
         self
     }
 
+    /// Recipe.
+    #[must_use]
+    pub const fn recipe(mut self, recipe: ParagraphRecipe) -> Self {
+        self.recipe = recipe;
+        self
+    }
+
+    /// Compact recipe.
+    #[must_use]
+    pub const fn compact(mut self) -> Self {
+        self.recipe = ParagraphRecipe::Compact;
+        self
+    }
+
     /// Reading recipe.
     #[must_use]
     pub const fn reading(mut self) -> Self {
@@ -418,11 +528,52 @@ impl<'a> Paragraph<'a> {
         self
     }
 
+    /// Extra left indent.
+    #[must_use]
+    pub const fn indent(mut self, cols: u16) -> Self {
+        self.indent = cols;
+        self
+    }
+
+    /// Hanging wrap after the first line (default true for quote/list).
+    #[must_use]
+    pub const fn hanging(mut self, on: bool) -> Self {
+        self.hanging = Some(on);
+        self
+    }
+
+    /// Override prefix (including trailing space if desired).
+    #[must_use]
+    pub const fn prefix(mut self, prefix: &'a str) -> Self {
+        self.prefix = Some(prefix);
+        self
+    }
+
+    /// Ordered list index (1-based).
+    #[must_use]
+    pub const fn list_index(mut self, index: u32) -> Self {
+        self.list_index = if index == 0 { 1 } else { index };
+        self
+    }
+
     /// Copyable plain text.
     #[must_use]
     pub const fn copyable(mut self) -> Self {
         self.selectable = SelectablePolicy::Copyable;
         self
+    }
+
+    /// Selectable policy.
+    #[must_use]
+    pub const fn selectable(mut self, policy: SelectablePolicy) -> Self {
+        self.selectable = policy;
+        self
+    }
+
+    /// Kind of this paragraph.
+    #[must_use]
+    pub const fn kind_of(&self) -> ParagraphKind {
+        self.kind
     }
 
     /// Resolved prefix for the first line.
@@ -465,6 +616,12 @@ impl<'a> Paragraph<'a> {
     #[must_use]
     pub fn plain(&self) -> &str {
         self.text
+    }
+
+    /// Plain with prefix (clipboard for list/quote).
+    #[must_use]
+    pub fn plain_with_prefix(&self) -> String {
+        format!("{}{}", self.resolved_prefix(), self.text)
     }
 
     /// Wrap body into display lines for `width` (full area width).
@@ -601,6 +758,8 @@ fn advance_by_display(s: &str, cols: usize) -> &str {
     if cols == 0 || s.is_empty() {
         return s;
     }
+    let taken = take_display_cols(s, cols);
+    // Map display take back to byte length: walk chars same as take_display_cols.
     use crate::text::is_terminal_control_char;
     use unicode_width::UnicodeWidthChar;
     let mut used = 0usize;
@@ -620,6 +779,7 @@ fn advance_by_display(s: &str, cols: usize) -> &str {
             return &s[idx..];
         }
     }
+    let _ = taken;
     &s[idx..]
 }
 
@@ -630,6 +790,7 @@ fn advance_by_display(s: &str, cols: usize) -> &str {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::style::GlyphSet;
     use crate::text::display_cols;
 
     #[test]

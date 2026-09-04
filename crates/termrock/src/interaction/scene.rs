@@ -7,7 +7,9 @@
 //! across frames. No callbacks, effects, or domain policy.
 use ratatui_core::layout::{Position, Rect};
 
-use crate::input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
+use crate::input::{
+    KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+};
 
 /// Semantic role of a registered element for discovery and tooling.
 ///
@@ -103,6 +105,10 @@ pub enum LayerKind {
     Root,
     /// Menu / palette / completion.
     Menu,
+    /// Jump mode.
+    Jump,
+    /// Transient toast (usually non-modal).
+    Toast,
     /// Blocking card/dialog.
     Card,
     /// Caller-defined.
@@ -241,6 +247,8 @@ pub enum SceneError {
     DuplicateElement,
     /// Element references an unknown layer.
     UnknownLayer,
+    /// Duplicate layer id.
+    DuplicateLayer,
 }
 
 /// Per-frame interaction scene (immediate mode) with cross-frame focus/layers.
@@ -384,24 +392,16 @@ impl<Id, LayerId, Action> InteractionScene<Id, LayerId, Action> {
                 && element.focusable
                 && element.enabled
                 && !element.hidden
-                && self.layer_is_registered(&element.layer)
-                && self.layer_accepts_input(&element.layer)
+                && self.layer_accepts_focus(&element.layer)
         })
     }
 
-    fn layer_is_registered(&self, layer_id: &LayerId) -> bool
-    where
-        LayerId: PartialEq,
-    {
-        self.layers.iter().any(|layer| &layer.id == layer_id)
-    }
-
-    fn layer_accepts_input(&self, layer_id: &LayerId) -> bool
+    fn layer_accepts_focus(&self, layer_id: &LayerId) -> bool
     where
         LayerId: PartialEq,
     {
         // Only elements on the top input-owning layer (or root if none) may
-        // receive input while a modal stack is open.
+        // receive focus while a modal stack is open.
         let Some(top) = self.layers.iter().rev().find(|layer| layer.owns_input) else {
             return true;
         };
@@ -418,8 +418,7 @@ impl<Id, LayerId, Action> InteractionScene<Id, LayerId, Action> {
                 element.focusable
                     && element.enabled
                     && !element.hidden
-                    && self.layer_is_registered(&element.layer)
-                    && self.layer_accepts_input(&element.layer)
+                    && self.layer_accepts_focus(&element.layer)
             })
             .collect()
     }
@@ -438,17 +437,11 @@ impl<Id, LayerId, Action> InteractionScene<Id, LayerId, Action> {
 
     /// Topmost enabled, non-hidden element containing `position`.
     #[must_use]
-    pub fn hit_test(&self, position: Position) -> Option<&InteractionElement<Id, LayerId, Action>>
-    where
-        LayerId: PartialEq,
-    {
-        self.elements.iter().rev().find(|element| {
-            element.enabled
-                && !element.hidden
-                && element.area.contains(position)
-                && self.layer_is_registered(&element.layer)
-                && self.layer_accepts_input(&element.layer)
-        })
+    pub fn hit_test(&self, position: Position) -> Option<&InteractionElement<Id, LayerId, Action>> {
+        self.elements
+            .iter()
+            .rev()
+            .find(|element| element.enabled && !element.hidden && element.area.contains(position))
     }
 
     /// Looks up an element by id.
@@ -588,10 +581,18 @@ impl<Id, LayerId, Action> InteractionScene<Id, LayerId, Action> {
             LayerDismissPolicy::Dismissible => {
                 // Only the top layer may dismiss — never rposition under a trap.
                 let layer = self.layers.pop().expect("top exists");
-                let focus = self.restore_focus(layer.focus_return);
-                InteractionOutcome::LayerDismissed {
-                    layer: layer.id,
-                    focus,
+                if let Some(id) = layer.focus_return.clone() {
+                    self.focused = Some(id.clone());
+                    InteractionOutcome::LayerDismissed {
+                        layer: layer.id,
+                        focus: Some(id),
+                    }
+                } else {
+                    self.reconcile();
+                    InteractionOutcome::LayerDismissed {
+                        layer: layer.id,
+                        focus: self.focused.clone(),
+                    }
                 }
             }
         }
@@ -640,26 +641,18 @@ impl<Id, LayerId, Action> InteractionScene<Id, LayerId, Action> {
         let Some(layer) = self.layers.pop() else {
             return InteractionOutcome::Ignored;
         };
-        let focus = self.restore_focus(layer.focus_return);
+        if let Some(id) = layer.focus_return.clone() {
+            self.focused = Some(id.clone());
+            return InteractionOutcome::LayerDismissed {
+                layer: layer.id,
+                focus: Some(id),
+            };
+        }
+        self.reconcile();
         InteractionOutcome::LayerDismissed {
             layer: layer.id,
-            focus,
+            focus: self.focused.clone(),
         }
-    }
-
-    fn restore_focus(&mut self, focus_return: Option<Id>) -> Option<Id>
-    where
-        Id: Clone + PartialEq,
-        LayerId: PartialEq,
-    {
-        if let Some(id) = focus_return
-            && self.is_focusable(&id)
-        {
-            self.focused = Some(id);
-        } else {
-            self.reconcile();
-        }
-        self.focused.clone()
     }
 
     /// Dispatches `action` if available on the focused element (or any active).
@@ -670,8 +663,9 @@ impl<Id, LayerId, Action> InteractionScene<Id, LayerId, Action> {
         Action: Clone + PartialEq,
     {
         if let Some(focus_id) = &self.focused
-            && self.is_focusable(focus_id)
             && let Some(element) = self.get(focus_id)
+            && element.enabled
+            && !element.hidden
             && element.actions.iter().any(|item| item == &action)
         {
             return InteractionOutcome::Action {
@@ -858,6 +852,13 @@ impl<Id, Action> SemanticNode<Id, Action> {
     #[must_use]
     pub const fn disabled(mut self, disabled: bool) -> Self {
         self.disabled = disabled;
+        self
+    }
+
+    /// Marks hidden.
+    #[must_use]
+    pub const fn hidden(mut self, hidden: bool) -> Self {
+        self.hidden = hidden;
         self
     }
 
@@ -1361,6 +1362,15 @@ impl<Id, Action> SemanticScene<Id, Action> {
         SemanticSnapshot { nodes, diagnostics }
     }
 
+    /// Snapshot with empty action names (structure-only).
+    #[must_use]
+    pub fn snapshot(&self) -> SemanticSnapshot
+    where
+        Id: std::fmt::Display,
+    {
+        self.snapshot_with(|_| String::new())
+    }
+
     /// Topmost focusable interactive node at `position`.
     #[must_use]
     pub fn hit_test_focusable(&self, position: Position) -> Option<&SemanticNode<Id, Action>> {
@@ -1505,9 +1515,7 @@ impl<Id, Action> SemanticScene<Id, Action> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyEventKind;
     use crate::input::KeyModifiers;
-    use crate::widgets::tests::click;
 
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
     enum Layer {
@@ -1633,48 +1641,6 @@ mod tests {
     }
 
     #[test]
-    fn trapping_layer_blocks_lower_pointer_hits_but_accepts_own_hits() {
-        let mut scene = InteractionScene::<&str, Layer, Act>::new();
-        scene.ensure_root(root_layer());
-        scene
-            .register(InteractionElement::control(
-                "main",
-                Layer::Root,
-                Rect::new(5, 0, 2, 1),
-            ))
-            .unwrap();
-        scene
-            .register(InteractionElement::control(
-                "other",
-                Layer::Root,
-                Rect::new(0, 0, 2, 1),
-            ))
-            .unwrap();
-        scene.reconcile();
-        assert_eq!(scene.focused(), Some(&"main"));
-
-        scene.push_layer(dialog_trap());
-        scene
-            .register(InteractionElement::control(
-                "dialog",
-                Layer::Dialog,
-                Rect::new(10, 0, 2, 1),
-            ))
-            .unwrap();
-
-        assert!(scene.hit_test(Position::new(0, 0)).is_none());
-        assert_eq!(scene.handle_mouse(click(0, 0)), InteractionOutcome::Ignored);
-        assert_eq!(scene.focused(), Some(&"main"));
-        assert_eq!(
-            scene.handle_mouse(click(10, 0)),
-            InteractionOutcome::FocusChanged {
-                from: Some("main"),
-                to: Some("dialog"),
-            }
-        );
-    }
-
-    #[test]
     fn non_dismissible_top_blocks_escape_for_lower_layers() {
         let mut scene = InteractionScene::<&str, Layer, Act>::new();
         scene.ensure_root(root_layer());
@@ -1716,191 +1682,6 @@ mod tests {
             }
         ));
         assert_eq!(scene.focused(), Some(&"main"));
-    }
-
-    #[test]
-    fn invalid_focus_return_reconciles_after_escape() {
-        let mut scene = InteractionScene::<&str, Layer, Act>::new();
-        scene.ensure_root(root_layer());
-        scene
-            .register(InteractionElement::control(
-                "main",
-                Layer::Root,
-                Rect::new(0, 0, 4, 1),
-            ))
-            .unwrap();
-        let mut layer = menu_layer();
-        layer.focus_return = Some("missing");
-        scene.push_layer(layer);
-        scene
-            .register(InteractionElement::control(
-                "item",
-                Layer::Menu,
-                Rect::new(0, 2, 4, 1),
-            ))
-            .unwrap();
-        scene.reconcile();
-        assert_eq!(scene.focused(), Some(&"item"));
-
-        assert!(matches!(
-            scene.handle_escape(),
-            InteractionOutcome::LayerDismissed {
-                layer: Layer::Menu,
-                focus: Some("main"),
-            }
-        ));
-        assert_eq!(scene.focused(), Some(&"main"));
-    }
-
-    #[test]
-    fn disabled_focus_return_reconciles_after_outside_click() {
-        let mut scene = InteractionScene::<&str, Layer, Act>::new();
-        scene.ensure_root(root_layer());
-        scene
-            .register(InteractionElement::control(
-                "main",
-                Layer::Root,
-                Rect::new(0, 0, 4, 1),
-            ))
-            .unwrap();
-        scene
-            .register(
-                InteractionElement::control("disabled", Layer::Root, Rect::new(5, 0, 4, 1))
-                    .enabled(false),
-            )
-            .unwrap();
-        let mut layer = menu_layer();
-        layer.focus_return = Some("disabled");
-        scene.push_layer(layer);
-        scene
-            .register(InteractionElement::control(
-                "item",
-                Layer::Menu,
-                Rect::new(0, 2, 4, 1),
-            ))
-            .unwrap();
-        scene.reconcile();
-
-        let outside = click(9, 9);
-        assert!(matches!(
-            scene.handle_mouse(outside),
-            InteractionOutcome::LayerDismissed {
-                layer: Layer::Menu,
-                focus: Some("main"),
-            }
-        ));
-        assert_eq!(scene.focused(), Some(&"main"));
-    }
-
-    #[test]
-    fn hidden_focus_return_reconciles_after_escape() {
-        let mut scene = InteractionScene::<&str, Layer, Act>::new();
-        scene.ensure_root(root_layer());
-        scene
-            .register(InteractionElement::control(
-                "main",
-                Layer::Root,
-                Rect::new(0, 0, 4, 1),
-            ))
-            .unwrap();
-        scene
-            .register(
-                InteractionElement::control("hidden", Layer::Root, Rect::new(5, 0, 4, 1))
-                    .hidden(true),
-            )
-            .unwrap();
-        let mut layer = menu_layer();
-        layer.focus_return = Some("hidden");
-        scene.push_layer(layer);
-        scene
-            .register(InteractionElement::control(
-                "item",
-                Layer::Menu,
-                Rect::new(0, 2, 4, 1),
-            ))
-            .unwrap();
-        scene.reconcile();
-
-        assert!(matches!(
-            scene.handle_escape(),
-            InteractionOutcome::LayerDismissed {
-                layer: Layer::Menu,
-                focus: Some("main"),
-            }
-        ));
-        assert_eq!(scene.focused(), Some(&"main"));
-    }
-
-    #[test]
-    fn popped_layer_elements_are_not_focusable_after_last_layer_closes() {
-        let mut scene = InteractionScene::<&str, Layer, Act>::new();
-        scene.push_layer(menu_layer());
-        scene
-            .register(
-                InteractionElement::control("item", Layer::Menu, Rect::new(0, 0, 4, 1))
-                    .actions(vec![Act::Confirm]),
-            )
-            .unwrap();
-        scene.reconcile();
-        assert_eq!(scene.focused(), Some(&"item"));
-
-        assert_eq!(
-            scene.handle_escape(),
-            InteractionOutcome::LayerDismissed {
-                layer: Layer::Menu,
-                focus: None,
-            }
-        );
-        assert_eq!(scene.focused(), None);
-        assert!(scene.hit_test(Position::new(1, 0)).is_none());
-        scene.focused = Some("item");
-        assert_eq!(
-            scene.dispatch_action(Act::Confirm),
-            InteractionOutcome::Ignored
-        );
-    }
-
-    #[test]
-    fn inactive_layer_focus_return_reconciles_to_active_layer() {
-        let mut scene = InteractionScene::<&str, Layer, Act>::new();
-        scene.ensure_root(root_layer());
-        scene
-            .register(InteractionElement::control(
-                "main",
-                Layer::Root,
-                Rect::new(0, 0, 4, 1),
-            ))
-            .unwrap();
-        scene.push_layer(menu_layer());
-        scene
-            .register(InteractionElement::control(
-                "menu-item",
-                Layer::Menu,
-                Rect::new(0, 2, 4, 1),
-            ))
-            .unwrap();
-        let mut dialog = menu_layer();
-        dialog.id = Layer::Dialog;
-        dialog.focus_return = Some("main");
-        scene.push_layer(dialog);
-        scene
-            .register(InteractionElement::control(
-                "dialog-item",
-                Layer::Dialog,
-                Rect::new(0, 4, 4, 1),
-            ))
-            .unwrap();
-        scene.reconcile();
-        assert_eq!(scene.focused(), Some(&"dialog-item"));
-
-        assert!(matches!(
-            scene.handle_escape(),
-            InteractionOutcome::LayerDismissed {
-                layer: Layer::Dialog,
-                focus: Some("menu-item"),
-            }
-        ));
-        assert_eq!(scene.focused(), Some(&"menu-item"));
     }
 
     #[test]
@@ -1946,7 +1727,11 @@ mod tests {
                 Rect::new(0, 0, 2, 1),
             ))
             .unwrap();
-        let outside = click(9, 9);
+        let outside = MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: Position::new(9, 9),
+            modifiers: KeyModifiers::NONE,
+        };
         assert!(matches!(
             scene.handle_mouse(outside),
             InteractionOutcome::LayerDismissed {

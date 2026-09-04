@@ -11,7 +11,8 @@
 //! into [`SemanticStatus`] so components do not invent private status sets.
 //!
 //! Research: btop, process monitors, collaboration presence, agent status.
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
+#![allow(unused_variables, unused_mut)] // unit-test fixtures
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
 
 use crate::{
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
@@ -145,6 +146,12 @@ impl StatusIndicatorState {
             accessible_label: None,
         }
     }
+
+    /// Set elapsed seconds.
+    pub fn set_elapsed_secs(&mut self, secs: Option<u64>) {
+        self.elapsed_secs = secs;
+    }
+
     /// Elapsed.
     #[must_use]
     pub const fn elapsed_secs(&self) -> Option<u64> {
@@ -264,6 +271,12 @@ impl<'a> StatusIndicator<'a> {
         self
     }
 
+    /// Resolved kind.
+    #[must_use]
+    pub const fn kind(self) -> SemanticStatus {
+        self.kind
+    }
+
     /// Glyph for current capability.
     #[must_use]
     pub fn glyph(&self) -> &'static str {
@@ -310,8 +323,18 @@ impl<'a> StatusIndicator<'a> {
         display_cols(&self.text(state)) as u16
     }
 
-    /// Paint; `state` carries host-clock elapsed time and a11y text.
-    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: Option<&StatusIndicatorState>) {
+    /// Paint.
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer) {
+        self.paint_with_state(area, buffer, None);
+    }
+
+    /// Paint with state (elapsed / a11y).
+    pub fn paint_with_state(
+        &self,
+        area: Rect,
+        buffer: &mut Buffer,
+        state: Option<&StatusIndicatorState>,
+    ) {
         if area.is_empty() {
             return;
         }
@@ -325,7 +348,7 @@ impl<'a> StatusIndicator<'a> {
         buffer.set_stringn(
             area.x,
             area.y,
-            take_display_cols(&text, usize::from(area.width)).as_ref(),
+            &take_display_cols(&text, usize::from(area.width)),
             usize::from(area.width),
             style,
         );
@@ -397,6 +420,22 @@ impl<'a> StatusIndicator<'a> {
                     ..Default::default()
                 }),
         );
+    }
+}
+
+impl Widget for &StatusIndicator<'_> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        self.paint(area, buffer);
+    }
+}
+
+impl Widget for StatusIndicator<'_> {
+    #[expect(
+        clippy::needless_borrows_for_generic_args,
+        reason = "explicitly delegate the owned contract to the borrowed renderer"
+    )]
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        <&Self as Widget>::render(&self, area, buffer);
     }
 }
 
@@ -605,7 +644,7 @@ mod tests {
         let mut buf = Buffer::empty(area);
         StatusIndicator::new(SemanticStatus::Failed, &system)
             .label("err")
-            .paint(area, &mut buf, None);
+            .paint(area, &mut buf);
         let text: String = buf
             .content()
             .iter()
@@ -647,16 +686,10 @@ mod tests {
     fn tiny_width_safe() {
         let system = system();
         let mut buf = Buffer::empty(Rect::new(0, 0, 8, 2));
-        StatusIndicator::compact(SemanticStatus::Online, &system).paint(
-            Rect::new(0, 0, 1, 1),
-            &mut buf,
-            None,
-        );
-        StatusIndicator::new(SemanticStatus::Unknown, &system).paint(
-            Rect::new(0, 0, 0, 0),
-            &mut buf,
-            None,
-        );
+        StatusIndicator::compact(SemanticStatus::Online, &system)
+            .paint(Rect::new(0, 0, 1, 1), &mut buf);
+        StatusIndicator::new(SemanticStatus::Unknown, &system)
+            .paint(Rect::new(0, 0, 0, 0), &mut buf);
     }
 
     #[test]
@@ -670,7 +703,7 @@ mod tests {
             for width in [32, 12, 1, 0] {
                 let area = Rect::new(0, 0, width, 1);
                 let mut buffer = Buffer::empty(area);
-                indicator.paint(area, &mut buffer, None);
+                indicator.paint(area, &mut buffer);
                 if width == 32 {
                     let text: String = buffer.content().iter().map(|cell| cell.symbol()).collect();
                     assert!(text.contains('実'), "{text:?}");
@@ -699,7 +732,7 @@ mod tests {
             let w = (seed % 20) as u16 + 1;
             let area = Rect::new(0, 0, w, 1);
             let mut buf = Buffer::empty(area);
-            ind.paint(area, &mut buf, None);
+            ind.paint(area, &mut buf);
             assert!(!ind.glyph().is_empty());
         }
     }
@@ -719,11 +752,8 @@ mod tests {
                         if y >= f.area().bottom() {
                             break;
                         }
-                        StatusIndicator::new(k, &system).paint(
-                            Rect::new(f.area().x, y, f.area().width, 1),
-                            f.buffer_mut(),
-                            None,
-                        );
+                        StatusIndicator::new(k, &system)
+                            .paint(Rect::new(f.area().x, y, f.area().width, 1), f.buffer_mut());
                         y = y.saturating_add(1);
                     }
                 })
@@ -743,7 +773,7 @@ mod tests {
                 StatusIndicator::new(SemanticStatus::Running, &system)
                     .label("agent")
                     .elapsed_secs(42)
-                    .paint(f.area(), f.buffer_mut(), None);
+                    .paint(f.area(), f.buffer_mut());
             })
             .unwrap();
             t.backend()

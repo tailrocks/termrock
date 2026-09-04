@@ -538,7 +538,9 @@ fn viewport(frame: &mut Frame<'_>, area: Rect, theme: &Theme) {
     let theme = theme.clone().with_role(Role::Border, border_style);
     let mut state = DialogScroll::default();
     frame.render_stateful_widget(
-        &Viewport::new(&lines, &theme).title("Viewport"),
+        &Viewport::new(&lines, &theme)
+            .title("Viewport")
+            .content_style(Style::new()),
         area,
         &mut state,
     );

@@ -7,7 +7,7 @@
 //! Sortable task table plus an empty-state table.
 
 use ratatui::buffer::Buffer;
-use ratatui::layout::Rect;
+use ratatui::layout::{Position, Rect};
 use ratatui::style::Style;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::StatefulWidget;
@@ -306,13 +306,14 @@ pub fn status_text(s: TaskStatus) -> &'static str {
 
 #[must_use]
 pub fn status_line(s: TaskStatus, t: &JunieTheme) -> Line<'static> {
-    match s {
-        TaskStatus::Running => Line::from("▸ Running"),
-        TaskStatus::Failed => Line::from(Span::styled("Failed", t.error_fg())),
-        TaskStatus::Paused => Line::from(Span::styled("Paused", Style::new().fg(t.warning))),
-        TaskStatus::Queued => Line::from(Span::styled("Queued", t.muted())),
-        TaskStatus::Done => Line::from(Span::styled("Done", t.secondary())),
-    }
+    let (text, style) = match s {
+        TaskStatus::Running => ("▸ Running", t.primary()),
+        TaskStatus::Failed => ("Failed", t.error_fg()),
+        TaskStatus::Paused => ("Paused", Style::new().fg(t.warning)),
+        TaskStatus::Queued => ("Queued", t.muted()),
+        TaskStatus::Done => ("Done", t.secondary()),
+    };
+    Line::from(Span::styled(format!("{text:<9}"), style))
 }
 
 fn col_title(col: Col) -> &'static str {
@@ -371,18 +372,21 @@ pub struct TablesPage {
     empty_state: TableState<u32, &'static str>,
     sort: Option<(Col, SortDirection)>,
     tasks_view: usize,
+    capture_cursor: Option<Position>,
 }
 
 impl TablesPage {
     #[must_use]
     pub fn new() -> Self {
-        let tasks = tasks();
+        let mut tasks = tasks();
+        sort_tasks(&mut tasks, Col::Id, SortDirection::Ascending);
         Self {
             tasks,
             tasks_state: TableState::new(None),
             empty_state: TableState::new(None),
-            sort: None,
+            sort: Some((Col::Id, SortDirection::Ascending)),
             tasks_view: 0,
+            capture_cursor: None,
         }
     }
 
@@ -447,6 +451,21 @@ impl Page for TablesPage {
         };
         let focused = ctx.interaction.focused(TASKS);
         let (inner, bg) = layout::card(rows[0], buf, t, Some("Tasks"), Some(&meta), focused);
+        self.capture_cursor = ctx.interaction.pointer;
+
+        // The source treats the right padding cell as part of the row hover
+        // band. Map that half-open boundary into the painted row before the
+        // stateful table resolves hover.
+        let pointer = ctx.interaction.pointer.map(|position| {
+            if position.x == inner.right() && position.y >= inner.y && position.y < inner.bottom() {
+                Position::new(position.x.saturating_sub(2), position.y)
+            } else {
+                position
+            }
+        });
+        if let Some(pointer) = pointer {
+            self.tasks_state.hover(pointer);
+        }
 
         let columns: Vec<Column<'_, Col>> = COLS
             .iter()
@@ -487,7 +506,7 @@ impl Page for TablesPage {
                     Line::from(r.name.as_str()),
                     Line::from(r.owner.as_str()),
                     status_line(r.status, t),
-                    Line::from(Span::styled(r.branch.as_str(), branch_tone)),
+                    Line::from(Span::styled(format!("{:<20}", r.branch), branch_tone)),
                     Line::from(Span::styled(chg_s[i].as_str(), chg_tone)),
                     Line::from(dur_s[i].as_str()),
                 ]
@@ -607,5 +626,9 @@ impl Page for TablesPage {
             ("s", "Sort column"),
             ("Enter", "Select"),
         ]
+    }
+
+    fn capture_cursor(&self) -> Option<Position> {
+        self.capture_cursor
     }
 }

@@ -24,7 +24,7 @@ use std::collections::BTreeSet;
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers},
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{NavigationMove, PageMove, UiIntent},
     style::{DesignSystem, ListRowVisualState, Role},
     text::{display_cols, take_display_cols},
@@ -92,7 +92,7 @@ impl DiagnosticSeverity {
 
     /// Glyph (ASCII uses letter).
     #[must_use]
-    pub const fn glyph(self) -> &'static str {
+    pub const fn glyph(self, _ascii: bool) -> &'static str {
         match self {
             Self::Error => "x",
             Self::Warning => "!",
@@ -113,6 +113,16 @@ impl DiagnosticSeverity {
             // Hints assist; they do not compete with the current intent.
             Self::Hint | Self::Help => Role::TextSecondary,
             Self::Note => Role::TextMuted,
+        }
+    }
+
+    /// Map toast-style severity when hosts only have four levels.
+    #[must_use]
+    pub const fn from_toast(severity: crate::widgets::Severity) -> Self {
+        match severity {
+            crate::widgets::Severity::Error => Self::Error,
+            crate::widgets::Severity::Warning => Self::Warning,
+            crate::widgets::Severity::Info | crate::widgets::Severity::Success => Self::Info,
         }
     }
 }
@@ -142,7 +152,7 @@ impl SpanStyle {
 
     /// Underline glyph row (ASCII-safe).
     #[must_use]
-    pub const fn underline_char(self) -> char {
+    pub const fn underline_char(self, _ascii: bool) -> char {
         match (self, false) {
             (Self::Primary, true) | (Self::Primary, false) => '^',
             (Self::Secondary, true) => '-',
@@ -255,6 +265,13 @@ impl<'a> SourceLabel<'a> {
         self.label = Some(label);
         self
     }
+
+    /// Style override.
+    #[must_use]
+    pub const fn style(mut self, style: SpanStyle) -> Self {
+        self.style = style;
+        self
+    }
 }
 
 /// Related location (another file/line).
@@ -268,6 +285,25 @@ pub struct RelatedLocation<'a> {
     pub message: &'a str,
 }
 
+impl<'a> RelatedLocation<'a> {
+    /// Construct.
+    #[must_use]
+    pub const fn new(message: &'a str, range: SourceRange) -> Self {
+        Self {
+            file: None,
+            range,
+            message,
+        }
+    }
+
+    /// File.
+    #[must_use]
+    pub const fn file(mut self, file: &'a str) -> Self {
+        self.file = Some(file);
+        self
+    }
+}
+
 /// Note / help / context line under a diagnostic.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DiagnosticNote<'a> {
@@ -275,6 +311,58 @@ pub struct DiagnosticNote<'a> {
     pub severity: DiagnosticSeverity,
     /// Body.
     pub message: &'a str,
+}
+
+impl<'a> DiagnosticNote<'a> {
+    /// Note.
+    #[must_use]
+    pub const fn note(message: &'a str) -> Self {
+        Self {
+            severity: DiagnosticSeverity::Note,
+            message,
+        }
+    }
+
+    /// Help.
+    #[must_use]
+    pub const fn help(message: &'a str) -> Self {
+        Self {
+            severity: DiagnosticSeverity::Help,
+            message,
+        }
+    }
+
+    /// Custom severity.
+    #[must_use]
+    pub const fn with_severity(mut self, severity: DiagnosticSeverity) -> Self {
+        self.severity = severity;
+        self
+    }
+}
+
+/// Suggested fix applicability (rustc-like).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum FixApplicability {
+    /// Machine-applicable.
+    MachineApplicable,
+    /// Maybe incorrect.
+    MaybeIncorrect,
+    /// Unspecified / human only.
+    #[default]
+    Unspecified,
+}
+
+impl FixApplicability {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::MachineApplicable => "machine",
+            Self::MaybeIncorrect => "maybe",
+            Self::Unspecified => "unspecified",
+        }
+    }
 }
 
 /// Suggested fix (host applies).
@@ -286,6 +374,8 @@ pub struct SuggestedFix<'a> {
     pub message: &'a str,
     /// Optional replacement snippet (preview).
     pub replacement: Option<&'a str>,
+    /// Applicability.
+    pub applicability: FixApplicability,
 }
 
 impl<'a> SuggestedFix<'a> {
@@ -296,6 +386,7 @@ impl<'a> SuggestedFix<'a> {
             id,
             message,
             replacement: None,
+            applicability: FixApplicability::Unspecified,
         }
     }
 
@@ -303,6 +394,13 @@ impl<'a> SuggestedFix<'a> {
     #[must_use]
     pub const fn replacement(mut self, text: &'a str) -> Self {
         self.replacement = Some(text);
+        self
+    }
+
+    /// Applicability.
+    #[must_use]
+    pub const fn applicability(mut self, a: FixApplicability) -> Self {
+        self.applicability = a;
         self
     }
 }
@@ -386,6 +484,34 @@ impl<'a> Diagnostic<'a> {
         self
     }
 
+    /// Related.
+    #[must_use]
+    pub const fn related(mut self, related: &'a [RelatedLocation<'a>]) -> Self {
+        self.related = related;
+        self
+    }
+
+    /// Notes.
+    #[must_use]
+    pub const fn notes(mut self, notes: &'a [DiagnosticNote<'a>]) -> Self {
+        self.notes = notes;
+        self
+    }
+
+    /// Help.
+    #[must_use]
+    pub const fn help(mut self, help: &'a str) -> Self {
+        self.help = Some(help);
+        self
+    }
+
+    /// Docs URL.
+    #[must_use]
+    pub const fn docs_url(mut self, url: &'a str) -> Self {
+        self.docs_url = Some(url);
+        self
+    }
+
     /// Fixes.
     #[must_use]
     pub const fn fixes(mut self, fixes: &'a [SuggestedFix<'a>]) -> Self {
@@ -415,6 +541,18 @@ pub enum DiagnosticRecipe {
     Inline,
     /// Full miette/rustc code-frame + notes + fixes.
     Full,
+}
+
+impl DiagnosticRecipe {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::List => "list",
+            Self::Inline => "inline",
+            Self::Full => "full",
+        }
+    }
 }
 
 // ── CodeFrame ───────────────────────────────────────────────────────────────
@@ -514,9 +652,18 @@ impl<'a> CodeFrame<'a> {
         self
     }
 
+    /// ASCII underlines.
+    #[must_use]
     /// Colorless.
     pub const fn colorless(mut self, colorless: bool) -> Self {
         self.colorless = colorless;
+        self
+    }
+
+    /// Tab stop.
+    #[must_use]
+    pub const fn tab_stop(mut self, n: usize) -> Self {
+        self.tab_stop = if n == 0 { CODE_FRAME_TAB_STOP } else { n };
         self
     }
 
@@ -535,11 +682,11 @@ impl<'a> CodeFrame<'a> {
     }
 
     /// Paint. Returns rows used.
-    pub fn paint(&self, area: Rect, buffer: &mut Buffer) -> u16 {
+    pub fn render(&self, area: Rect, buffer: &mut Buffer) -> u16 {
         if !self.colorless && self.system.mono() {
             let mut effective = self.clone();
             effective.colorless |= self.system.mono();
-            return effective.paint(area, buffer);
+            return effective.render(area, buffer);
         }
         if area.is_empty() {
             return 0;
@@ -633,7 +780,7 @@ impl<'a> CodeFrame<'a> {
                 let (sc, ec) = cols_on_line(lab.range, line.number, expanded.chars().count());
                 let start = sc.saturating_sub(1) as usize;
                 let end = (ec.saturating_sub(1) as usize).max(start + 1);
-                let ch = lab.style.underline_char();
+                let ch = lab.style.underline_char(false);
                 for i in start..end.min(row.len()) {
                     row[i] = ch;
                     if lab.style == SpanStyle::Primary {
@@ -857,16 +1004,38 @@ impl DiagnosticState {
         self.accepts_input = accepts;
     }
 
+    /// Accepts input.
+    #[must_use]
+    pub const fn accepts_input(&self) -> bool {
+        self.accepts_input
+    }
+
     /// Offset.
     #[must_use]
     pub const fn offset(&self) -> u16 {
         self.scroll.offset_y()
     }
 
+    /// Expanded set.
+    #[must_use]
+    pub fn expanded(&self) -> &BTreeSet<String> {
+        &self.expanded
+    }
+
     /// Whether id is expanded.
     #[must_use]
     pub fn is_expanded(&self, id: &str) -> bool {
         self.expanded.contains(id)
+    }
+
+    /// Set expanded state for an id (stories / host hydrate).
+    pub fn set_expanded(&mut self, id: impl Into<String>, on: bool) {
+        let id = id.into();
+        if on {
+            self.expanded.insert(id);
+        } else {
+            self.expanded.remove(&id);
+        }
     }
 
     fn sync_metrics(&mut self, total: u16, viewport: u16) {
@@ -1055,6 +1224,40 @@ impl DiagnosticState {
             _ => DiagnosticOutcome::Ignored,
         }
     }
+
+    /// Mouse.
+    pub fn handle_mouse(
+        &mut self,
+        event: MouseEvent,
+        items: &[Diagnostic<'_>],
+    ) -> DiagnosticOutcome {
+        if !self.accepts_input {
+            return DiagnosticOutcome::Ignored;
+        }
+        match event.kind {
+            MouseEventKind::ScrollDown => {
+                self.handle_intent(UiIntent::Move(NavigationMove::Next), items)
+            }
+            MouseEventKind::ScrollUp => {
+                self.handle_intent(UiIntent::Move(NavigationMove::Previous), items)
+            }
+            MouseEventKind::Down(MouseButton::Left) => {
+                if let Some(r) = self
+                    .regions
+                    .iter()
+                    .find(|r| r.area.contains(event.position))
+                {
+                    self.cursor = r.index;
+                    if event.modifiers.contains(KeyModifiers::CONTROL) {
+                        return DiagnosticOutcome::Activated { id: r.id.clone() };
+                    }
+                    return DiagnosticOutcome::CursorMoved { index: self.cursor };
+                }
+                DiagnosticOutcome::Ignored
+            }
+            _ => DiagnosticOutcome::Ignored,
+        }
+    }
 }
 
 // ── Widget ──────────────────────────────────────────────────────────────────
@@ -1124,7 +1327,7 @@ impl<'a> DiagnosticView<'a> {
     }
 
     /// Paint.
-    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut DiagnosticState) {
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut DiagnosticState) {
         state.regions.clear();
         if area.is_empty() {
             return;
@@ -1182,7 +1385,7 @@ impl<'a> DiagnosticView<'a> {
             DiagnosticRecipe::Inline => {
                 // Single item or cursor item
                 let d = self.items.get(state.cursor).unwrap_or(&self.items[0]);
-                paint_inline(buffer, area, d, self.system, surface, colorless);
+                paint_inline(buffer, area, d, self.system, surface, false, colorless);
                 state.regions.push(DiagnosticRegion {
                     id: d.id.to_string(),
                     index: state.cursor.min(self.items.len() - 1),
@@ -1213,6 +1416,7 @@ impl<'a> DiagnosticView<'a> {
                         self.source_lines,
                         self.system,
                         surface,
+                        false,
                         colorless,
                         cursor,
                         expanded,
@@ -1236,9 +1440,10 @@ fn paint_inline(
     d: &Diagnostic<'_>,
     system: &DesignSystem,
     surface: bool,
+    _ascii: bool,
     colorless: bool,
 ) {
-    let g = d.severity.glyph();
+    let g = d.severity.glyph(false);
     let letter = d.severity.letter();
     let code = d.code.map(|c| format!("[{c}] ")).unwrap_or_default();
     let line = format!("{g}{letter} {code}{}", d.message);
@@ -1265,6 +1470,7 @@ fn paint_list_item(
     source_lines: &[CodeFrameLine<'_>],
     system: &DesignSystem,
     surface: bool,
+    _ascii: bool,
     colorless: bool,
     cursor: bool,
     expanded: bool,
@@ -1277,7 +1483,7 @@ fn paint_list_item(
     let mut y = area.y;
     // The cursor column is stamped by the shared row chrome.
     let gutter = " ";
-    let g = d.severity.glyph();
+    let g = d.severity.glyph(false);
     let letter = d.severity.letter();
     let code = d.code.map(|c| format!("[{c}] ")).unwrap_or_default();
     let loc = match (d.file, d.primary_range()) {
@@ -1345,7 +1551,7 @@ fn paint_list_item(
                 .colorless(colorless)
                 .truncated_above(true)
                 .truncated_below(true)
-                .paint(
+                .render(
                     Rect::new(area.x, y, area.width, area.bottom().saturating_sub(y)),
                     buffer,
                 );
@@ -1358,7 +1564,7 @@ fn paint_list_item(
         if y >= area.bottom() {
             break;
         }
-        let ng = note.severity.glyph();
+        let ng = note.severity.glyph(false);
         let msg = format!("  {ng} {}: {}", note.severity.label(), note.message);
         buffer.set_stringn(
             area.x,
@@ -1382,7 +1588,7 @@ fn paint_list_item(
             y = y.saturating_add(1);
         }
     }
-    for rel in d.related.iter() {
+    for (i, rel) in d.related.iter().enumerate() {
         if y >= area.bottom() {
             break;
         }
@@ -1399,6 +1605,7 @@ fn paint_list_item(
             system.style(Role::TextMuted),
         );
         y = y.saturating_add(1);
+        let _ = i;
     }
     for (i, fix) in d.fixes.iter().enumerate() {
         if y >= area.bottom() {
@@ -1452,14 +1659,14 @@ fn paint_list_item(
 impl StatefulWidget for &DiagnosticView<'_> {
     type State = DiagnosticState;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        DiagnosticView::paint(self, area, buffer, state);
+        DiagnosticView::render(self, area, buffer, state);
     }
 }
 
 impl StatefulWidget for DiagnosticView<'_> {
     type State = DiagnosticState;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        DiagnosticView::paint(&self, area, buffer, state);
+        DiagnosticView::render(&self, area, buffer, state);
     }
 }
 
@@ -1523,6 +1730,16 @@ pub fn format_diagnostic_plain(d: &Diagnostic<'_>) -> String {
     out
 }
 
+/// Format many diagnostics for ErrorState `details` / copy-all.
+#[must_use]
+pub fn format_diagnostics_plain(items: &[Diagnostic<'_>]) -> String {
+    items
+        .iter()
+        .map(format_diagnostic_plain)
+        .collect::<Vec<_>>()
+        .join("\n\n")
+}
+
 /// Map diagnostics into [`CodeHighlight`] overlays (0-based lines).
 #[must_use]
 pub fn diagnostics_to_highlights(items: &[Diagnostic<'_>]) -> Vec<CodeHighlight> {
@@ -1565,14 +1782,14 @@ pub fn diagnostics_to_highlights(items: &[Diagnostic<'_>]) -> Vec<CodeHighlight>
 
 /// Map diagnostics into gutter marks (severity glyph).
 #[must_use]
-pub fn diagnostics_to_gutter_marks(items: &[Diagnostic<'_>]) -> Vec<CodeGutterMark> {
+pub fn diagnostics_to_gutter_marks(items: &[Diagnostic<'_>], _ascii: bool) -> Vec<CodeGutterMark> {
     let mut out = Vec::new();
     let mut seen = BTreeSet::new();
     for d in items {
         if let Some(r) = d.primary_range() {
             let line = r.start_line.saturating_sub(1) as usize;
             if seen.insert(line) {
-                let g = d.severity.glyph().chars().next().unwrap_or('!');
+                let g = d.severity.glyph(false).chars().next().unwrap_or('!');
                 out.push(CodeGutterMark::new(line, g, d.severity.role()));
             }
         }
@@ -1622,6 +1839,10 @@ pub fn code_frame_window<'a>(
 pub mod bench {
     /// Viewport rows.
     pub const VIEWPORT: u16 = 30;
+    /// Diagnostics in a large problems list.
+    pub const LARGE_LIST: usize = 5_000;
+    /// Max paint cells.
+    pub const MAX_PAINT_CELLS: u32 = 30 * 100;
 }
 
 #[cfg(test)]
@@ -1646,8 +1867,8 @@ mod tests {
             DiagnosticSeverity::Help,
         ] {
             assert!(!s.letter().is_whitespace());
-            assert!(!s.glyph().is_empty());
-            assert!(!s.glyph().is_empty());
+            assert!(!s.glyph(true).is_empty());
+            assert!(!s.glyph(false).is_empty());
             assert!(!s.label().is_empty());
         }
     }
@@ -1673,7 +1894,7 @@ mod tests {
             .file("src/main.rs");
         let area = Rect::new(0, 0, 48, 12);
         let mut buf = Buffer::empty(area);
-        let used = frame.paint(area, &mut buf);
+        let used = frame.render(area, &mut buf);
         assert!(used >= 3);
         let text: String = buf
             .content()
@@ -1708,7 +1929,7 @@ mod tests {
         let frame = CodeFrame::new(&lines, &system).labels(&labels);
         let area = Rect::new(0, 0, 40, 16);
         let mut buf = Buffer::empty(area);
-        let _ = frame.paint(area, &mut buf);
+        let _ = frame.render(area, &mut buf);
     }
 
     #[test]
@@ -1781,7 +2002,7 @@ mod tests {
         let highs = diagnostics_to_highlights(&items);
         assert!(!highs.is_empty());
         assert_eq!(highs[0].line, 1);
-        let marks = diagnostics_to_gutter_marks(&items);
+        let marks = diagnostics_to_gutter_marks(&items, true);
         assert_eq!(marks[0].line, 1);
     }
 
@@ -1804,7 +2025,7 @@ mod tests {
         let frame = CodeFrame::new(&lines, &system).labels(&labels);
         let area = Rect::new(0, 0, 24, 4);
         let mut buf = Buffer::empty(area);
-        let _ = frame.paint(area, &mut buf);
+        let _ = frame.render(area, &mut buf);
     }
 
     #[test]

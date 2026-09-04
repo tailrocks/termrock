@@ -28,12 +28,20 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+use ratatui_core::{
+    buffer::Buffer,
+    layout::{Position, Rect},
+    style::Modifier,
+    widgets::StatefulWidget,
+};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
-    interaction::CursorWindow,
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     style::{DesignSystem, PanelChrome, Role},
+    text::{display_cols, take_display_cols},
     widgets::{ConfirmFocus, ConfirmPrompt, Panel, SemanticStatus, StatusIndicator},
 };
 
@@ -49,6 +57,23 @@ pub const PROMPT_QUEUE_SUMMARY_PREVIEW: usize = 28;
 // Domain model lives in widgets (PromptComposer must not depend on patterns).
 pub use crate::widgets::{AgentBusyState, PromptQueueItem, PromptQueueRef, PromptQueueStatus};
 
+/// Project a composer FIFO + busy flags into [`PromptQueueState`] for the management surface.
+#[must_use]
+pub fn project_prompt_queue_from_items(
+    items: impl IntoIterator<Item = PromptQueueItem>,
+    agent_busy: bool,
+    composer_busy: bool,
+) -> PromptQueueState {
+    let mut st = PromptQueueState::new();
+    st.set_items(items.into_iter().collect());
+    st.set_agent(if agent_busy || composer_busy {
+        AgentBusyState::Busy
+    } else {
+        AgentBusyState::Idle
+    });
+    st
+}
+
 // ── Presentation ────────────────────────────────────────────────────────────
 
 /// Compact strip vs expanded manager.
@@ -60,6 +85,17 @@ pub enum PromptQueuePresentation {
     Compact,
     /// Full management list.
     Expanded,
+}
+
+impl PromptQueuePresentation {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Compact => "compact",
+            Self::Expanded => "expanded",
+        }
+    }
 }
 
 /// Edit phase for one item.
@@ -162,8 +198,10 @@ pub enum PromptQueueOutcome {
 pub struct PromptQueueState {
     /// Queue entries (order = send order for Queued).
     pub items: Vec<PromptQueueItem>,
-    /// Cursor + scroll window.
-    pub window: CursorWindow,
+    /// Cursor.
+    pub cursor: usize,
+    /// Scroll.
+    pub scroll: usize,
     /// Presentation.
     pub presentation: PromptQueuePresentation,
     /// Phase.
@@ -197,7 +235,8 @@ impl PromptQueueState {
     pub fn new() -> Self {
         Self {
             items: Vec::new(),
-            window: CursorWindow::new(),
+            cursor: 0,
+            scroll: 0,
             presentation: PromptQueuePresentation::Compact,
             phase: PromptQueuePhase::Browse,
             agent: AgentBusyState::Idle,
@@ -217,11 +256,19 @@ impl PromptQueueState {
         self.items = items;
         if let Some(id) = keep {
             if let Some(i) = self.items.iter().position(|e| e.id == id) {
-                self.window
-                    .set_cursor(i, self.items.len(), PROMPT_QUEUE_WINDOW);
+                self.cursor = i;
             }
         }
         self.clamp_cursor();
+    }
+
+    /// Enqueue (host or composer bridge).
+    pub fn enqueue(&mut self, item: PromptQueueItem) {
+        self.items.push(item);
+        if self.presentation == PromptQueuePresentation::Expanded {
+            self.cursor = self.items.len().saturating_sub(1);
+            self.clamp_cursor();
+        }
     }
 
     /// Agent busy.
@@ -232,6 +279,11 @@ impl PromptQueueState {
     /// Gate.
     pub fn set_accepts_input(&mut self, on: bool) {
         self.accepts_input = on;
+    }
+
+    /// Focus.
+    pub const fn set_focused(&mut self, on: bool) {
+        self.focused = on;
     }
 
     /// Pending depth (queued/sending/blocked/failed/cancelled).
@@ -246,13 +298,13 @@ impl PromptQueueState {
     /// Current id.
     #[must_use]
     pub fn current_id(&self) -> Option<String> {
-        self.items.get(self.window.cursor()).map(|i| i.id.clone())
+        self.items.get(self.cursor).map(|i| i.id.clone())
     }
 
     /// Current item.
     #[must_use]
     pub fn current(&self) -> Option<&PromptQueueItem> {
-        self.items.get(self.window.cursor())
+        self.items.get(self.cursor)
     }
 
     /// Remove by id.
@@ -263,6 +315,13 @@ impl PromptQueueState {
         Some(item)
     }
 
+    /// Update status by id.
+    pub fn set_status(&mut self, id: &str, status: PromptQueueStatus) {
+        if let Some(e) = self.items.iter_mut().find(|e| e.id == id) {
+            e.status = status;
+        }
+    }
+
     /// Pop front pending for host drain (only Queued/Failed by host choice).
     pub fn pop_front_sendable(&mut self) -> Option<PromptQueueItem> {
         let i = self.items.iter().position(|e| e.status.can_send())?;
@@ -270,17 +329,29 @@ impl PromptQueueState {
     }
 
     fn clamp_cursor(&mut self) {
-        self.window.clamp(self.items.len(), PROMPT_QUEUE_WINDOW);
+        if self.items.is_empty() {
+            self.cursor = 0;
+            self.scroll = 0;
+            return;
+        }
+        self.cursor = self.cursor.min(self.items.len() - 1);
+        let window = PROMPT_QUEUE_WINDOW;
+        if self.cursor < self.scroll {
+            self.scroll = self.cursor;
+        } else if self.cursor >= self.scroll + window {
+            self.scroll = self.cursor + 1 - window;
+        }
     }
 
     fn move_cursor(&mut self, delta: isize) -> PromptQueueOutcome {
-        self.window
-            .move_by(delta, self.items.len(), PROMPT_QUEUE_WINDOW);
-        match self.items.get(self.window.cursor()) {
-            Some(item) => PromptQueueOutcome::Selected {
-                id: item.id.clone(),
-            },
-            None => PromptQueueOutcome::Ignored,
+        if self.items.is_empty() {
+            return PromptQueueOutcome::Ignored;
+        }
+        let n = self.items.len() as isize;
+        self.cursor = (self.cursor as isize + delta).clamp(0, n - 1) as usize;
+        self.clamp_cursor();
+        PromptQueueOutcome::Selected {
+            id: self.items[self.cursor].id.clone(),
         }
     }
 
@@ -288,7 +359,7 @@ impl PromptQueueState {
         if self.items.is_empty() {
             return PromptQueueOutcome::Ignored;
         }
-        let i = self.window.cursor();
+        let i = self.cursor;
         if !self.items[i].status.can_reorder() {
             return PromptQueueOutcome::Ignored;
         }
@@ -297,9 +368,7 @@ impl PromptQueueState {
             return PromptQueueOutcome::Ignored;
         }
         self.items.swap(i, j);
-        // Follow the moved item so it stays inside the painted window.
-        self.window
-            .set_cursor(j, self.items.len(), PROMPT_QUEUE_WINDOW);
+        self.cursor = j;
         let id = self.items[j].id.clone();
         PromptQueueOutcome::Reordered { id, index: j }
     }
@@ -576,8 +645,7 @@ impl PromptQueueState {
             .map(|(id, _)| id.clone());
         if let Some(id) = hit {
             if let Some(i) = self.items.iter().position(|e| e.id == id) {
-                self.window
-                    .set_cursor(i, self.items.len(), PROMPT_QUEUE_WINDOW);
+                self.cursor = i;
                 return PromptQueueOutcome::Selected { id };
             }
         }
@@ -664,7 +732,7 @@ impl<'a> PromptQueue<'a> {
         let indicator = StatusIndicator::new(semantic, self.system)
             .label(&summary)
             .colorless(self.colorless);
-        indicator.paint(Rect::new(area.x, area.y, area.width, 1), buffer, None);
+        indicator.paint(Rect::new(area.x, area.y, area.width, 1), buffer);
         state.compact_hit = Some(Rect {
             x: area.x,
             y: area.y,
@@ -688,7 +756,8 @@ impl<'a> PromptQueue<'a> {
             .title(title.as_str())
             .emphasis(emphasis);
         let inner = panel.inner(area);
-        panel.paint(area, buffer, None);
+        use ratatui_core::widgets::Widget;
+        Widget::render(&panel, area, buffer);
         if inner.is_empty() {
             return;
         }
@@ -747,17 +816,19 @@ impl<'a> PromptQueue<'a> {
             }
         } else {
             let viewport = list_bottom.saturating_sub(y) as usize;
-            // Read-only projection: re-derive the visible slice against the
-            // painted viewport without mutating state during paint.
-            let mut view = state.window;
-            view.clamp(state.items.len(), viewport);
-            let offset = view.scroll();
+            let mut offset = state.scroll;
+            if state.cursor < offset {
+                offset = state.cursor;
+            } else if viewport > 0 && state.cursor >= offset + viewport {
+                offset = state.cursor + 1 - viewport;
+            }
+            state.scroll = offset;
 
             for (i, item) in state.items.iter().enumerate().skip(offset) {
                 if y >= list_bottom {
                     break;
                 }
-                let selected = i == state.window.cursor();
+                let selected = i == state.cursor;
                 let mark = if selected { "›" } else { " " };
                 let att = if item.attachments.is_empty() && item.mentions.is_empty() {
                     String::new()
@@ -796,7 +867,6 @@ impl<'a> PromptQueue<'a> {
                             1,
                         ),
                         buffer,
-                        None,
                     );
                 }
                 state.row_hits.push((
@@ -901,6 +971,15 @@ pub fn queue_item_from_composer(
         .mentions(mentions)
 }
 
+/// Count pending for composer status chrome.
+#[must_use]
+pub fn pending_queue_len(items: &[PromptQueueItem]) -> usize {
+    items
+        .iter()
+        .filter(|i| i.status.counts_as_pending())
+        .count()
+}
+
 // ── Examples ────────────────────────────────────────────────────────────────
 
 /// Demo queue.
@@ -937,7 +1016,10 @@ pub mod bench {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::widgets::tests::{click, press};
+
+    fn press(code: KeyCode) -> KeyEvent {
+        KeyEvent::new(code, KeyModifiers::NONE)
+    }
 
     fn open() -> PromptQueueState {
         let mut st = PromptQueueState::new();
@@ -971,7 +1053,7 @@ mod tests {
     fn reorder_moves_queued() {
         let mut st = open();
         // q2 is index 1, can reorder
-        st.window.set_cursor(1, st.items.len(), PROMPT_QUEUE_WINDOW);
+        st.cursor = 1;
         let id = st.current_id().unwrap();
         let out = st.handle_key(press(KeyCode::Char('J')));
         match out {
@@ -983,7 +1065,7 @@ mod tests {
     #[test]
     fn send_next() {
         let mut st = open();
-        st.window.set_cursor(1, st.items.len(), PROMPT_QUEUE_WINDOW);
+        st.cursor = 1;
         let out = st.handle_key(press(KeyCode::Enter));
         assert!(matches!(
             out,
@@ -994,7 +1076,7 @@ mod tests {
     #[test]
     fn interrupt_and_send() {
         let mut st = open();
-        st.window.set_cursor(1, st.items.len(), PROMPT_QUEUE_WINDOW);
+        st.cursor = 1;
         let out = st.handle_key(press(KeyCode::Char('i')));
         assert!(matches!(
             out,
@@ -1005,7 +1087,7 @@ mod tests {
     #[test]
     fn edit_preserves_attachments() {
         let mut st = open();
-        st.window.set_cursor(1, st.items.len(), PROMPT_QUEUE_WINDOW);
+        st.cursor = 1;
         let att_before = st.current().unwrap().attachments.clone();
         let _ = st.handle_key(press(KeyCode::Char('e')));
         assert!(matches!(st.phase, PromptQueuePhase::Edit { .. }));
@@ -1022,7 +1104,7 @@ mod tests {
     #[test]
     fn delete_confirm_cancel_default() {
         let mut st = open();
-        st.window.set_cursor(1, st.items.len(), PROMPT_QUEUE_WINDOW);
+        st.cursor = 1;
         let out = st.handle_key(press(KeyCode::Char('d')));
         assert!(matches!(out, PromptQueueOutcome::ConfirmOpened { .. }));
         assert!(!st.confirm_proceed_focused);
@@ -1034,7 +1116,7 @@ mod tests {
     #[test]
     fn delete_confirm_proceed() {
         let mut st = open();
-        st.window.set_cursor(1, st.items.len(), PROMPT_QUEUE_WINDOW);
+        st.cursor = 1;
         let _ = st.handle_key(press(KeyCode::Char('d')));
         st.confirm_proceed_focused = true;
         let out = st.handle_key(press(KeyCode::Enter));
@@ -1070,7 +1152,7 @@ mod tests {
             .iter()
             .position(|e| e.status == PromptQueueStatus::Failed)
             .unwrap();
-        st.window.set_cursor(i, st.items.len(), PROMPT_QUEUE_WINDOW);
+        st.cursor = i;
         let out = st.handle_key(press(KeyCode::Char('r')));
         assert!(matches!(out, PromptQueueOutcome::Retry { ref id } if id == "q4"));
     }
@@ -1183,7 +1265,11 @@ mod tests {
         PromptQueue::new(&system).paint(area, &mut buf, &mut st);
         assert!(!st.row_hits.is_empty());
         let (id, r) = st.row_hits[0].clone();
-        let out = st.handle_mouse(click(r.x, r.y));
+        let out = st.handle_mouse(MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: Position { x: r.x, y: r.y },
+            modifiers: KeyModifiers::NONE,
+        });
         assert!(
             matches!(out, PromptQueueOutcome::Selected { .. }),
             "{out:?} {id}"
@@ -1207,7 +1293,7 @@ mod tests {
     #[test]
     fn sending_cannot_reorder() {
         let mut st = open();
-        st.window.set_cursor(0, st.items.len(), PROMPT_QUEUE_WINDOW); // sending
+        st.cursor = 0; // sending
         assert!(matches!(
             st.handle_key(press(KeyCode::Char('J'))),
             PromptQueueOutcome::Ignored

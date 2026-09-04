@@ -32,15 +32,21 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+use ratatui_core::{
+    buffer::Buffer,
+    layout::Rect,
+    widgets::{StatefulWidget, Widget},
+};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers},
+    input::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent},
     style::{DesignSystem, Role},
+    text::take_display_cols,
     widgets::{
-        CompletionMenuState, Diagnostic, DiagnosticSeverity, HelpEntry, HistoryEntry, HistoryKind,
-        SemanticStatus, StatusIndicator, TextArea, TextAreaOutcome, TextAreaState, TextCursor,
-        TextWrap,
+        CodeFrame, CodeFrameLine, CompletionMenuState, Diagnostic, DiagnosticSeverity, HelpEntry,
+        HistoryEntry, HistoryKind, SemanticStatus, SourceLabel, SourceRange, SpanStyle,
+        StatusIndicator, TextArea, TextAreaOutcome, TextAreaState, TextCursor, TextWrap,
     },
 };
 
@@ -69,6 +75,18 @@ impl QueryLanguage {
     #[must_use]
     pub fn sql() -> Self {
         Self::new("sql", "SQL")
+    }
+
+    /// Log query preset.
+    #[must_use]
+    pub fn logs() -> Self {
+        Self::new("logs", "Logs")
+    }
+
+    /// Search / filter language.
+    #[must_use]
+    pub fn search() -> Self {
+        Self::new("search", "Search")
     }
 }
 
@@ -241,6 +259,13 @@ impl QueryParameter {
     #[must_use]
     pub fn type_hint(mut self, t: impl Into<String>) -> Self {
         self.type_hint = Some(t.into());
+        self
+    }
+
+    /// Required.
+    #[must_use]
+    pub const fn required(mut self) -> Self {
+        self.required = true;
         self
     }
 
@@ -465,8 +490,20 @@ pub enum QueryEditorOutcome {
     },
     /// Open saved-query picker (host).
     OpenSavedQueries,
+    /// Load saved query into draft (host may call [`QueryEditorState::set_text`]).
+    SavedQuerySelected {
+        /// Saved id.
+        id: String,
+    },
     /// Open history picker.
     OpenHistory,
+    /// Apply history value (host may also call set_text).
+    HistoryApplied {
+        /// History entry id.
+        id: String,
+        /// Value text.
+        value: String,
+    },
     /// Completion surface should open/refresh.
     CompletionRequested {
         /// Prefix / token at cursor.
@@ -613,6 +650,12 @@ impl QueryEditorState {
         self.sync_editor_input();
     }
 
+    /// Whether workbench accepts input.
+    #[must_use]
+    pub const fn accepts_input(&self) -> bool {
+        self.accepts_input
+    }
+
     /// Sync TextArea accepts_input from focus + gate.
     fn sync_editor_input(&mut self) {
         let on =
@@ -719,6 +762,13 @@ impl QueryEditorState {
         self.completion_open = false;
         self.sync_editor_input();
         QueryEditorOutcome::CompletionClosed
+    }
+
+    /// Insert text at cursor (completion commit helper).
+    pub fn insert_text(&mut self, text: &str) {
+        self.editor.set_accepts_input(true);
+        let _ = self.editor.insert_text(text);
+        self.sync_editor_input();
     }
 
     /// Request run.
@@ -985,6 +1035,47 @@ impl QueryEditorState {
             _ => QueryEditorOutcome::Ignored,
         }
     }
+
+    /// Mouse: click focus zones; else forward to editor when focused.
+    pub fn handle_mouse(
+        &mut self,
+        event: MouseEvent,
+        diagnostics: &[Diagnostic<'_>],
+    ) -> QueryEditorOutcome {
+        if !self.accepts_input {
+            return QueryEditorOutcome::Ignored;
+        }
+        let pos = event.position;
+        let slots = self.slots;
+        if !slots.results.is_empty() && slots.results.contains(pos) {
+            return self.set_focus(QueryFocus::Results);
+        }
+        if !slots.diagnostics.is_empty() && slots.diagnostics.contains(pos) {
+            let _ = diagnostics;
+            return self.set_focus(QueryFocus::Diagnostics);
+        }
+        if !slots.parameters.is_empty() && slots.parameters.contains(pos) {
+            return self.set_focus(QueryFocus::Parameters);
+        }
+        if !slots.editor.is_empty() && slots.editor.contains(pos) {
+            let out = self.set_focus(QueryFocus::Editor);
+            if matches!(
+                out,
+                QueryEditorOutcome::Ignored | QueryEditorOutcome::FocusChanged(_)
+            ) && matches!(self.focus, QueryFocus::Editor)
+            {
+                self.sync_editor_input();
+                match self.editor.handle_event(Event::Mouse(event)) {
+                    TextAreaOutcome::Changed | TextAreaOutcome::Scrolled => {
+                        return QueryEditorOutcome::Changed;
+                    }
+                    _ => {}
+                }
+            }
+            return out;
+        }
+        QueryEditorOutcome::Ignored
+    }
 }
 
 /// Extract rough token at cursor for completion query.
@@ -1007,6 +1098,16 @@ pub fn token_at_cursor(editor: &TextAreaState) -> (String, TextCursor) {
         .unwrap_or(0);
     let token = before[start..].to_string();
     (token, cursor)
+}
+
+/// Map diagnostics into CodeFrame lines from the draft (host may pass richer windows).
+#[must_use]
+pub fn draft_code_frame_lines(editor: &TextAreaState) -> Vec<CodeFrameLine<'_>> {
+    editor
+        .lines()
+        .enumerate()
+        .map(|(i, text)| CodeFrameLine::new((i + 1) as u32, text))
+        .collect()
 }
 
 /// Default keyboard help entries for QueryEditor (host merges with live Keymap).
@@ -1115,7 +1216,7 @@ impl<'a> QueryEditor<'a> {
     /// ASCII.
     #[must_use]
     /// Paint workbench; host paints result grid into [`QueryEditorSlots::results`].
-    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut QueryEditorState) {
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut QueryEditorState) {
         if area.is_empty() {
             return;
         }
@@ -1139,7 +1240,7 @@ impl<'a> QueryEditor<'a> {
             let status =
                 StatusIndicator::new(state.run.semantic(), self.system).label(state.run.verb());
             let status_width = status.measure_width(None).min(area.width);
-            status.paint(Rect::new(area.x, y, status_width, 1), buffer, None);
+            Widget::render(&status, Rect::new(area.x, y, status_width, 1), buffer);
             let metadata_x = area.x.saturating_add(status_width.saturating_add(1));
             let metadata_width = area.right().saturating_sub(metadata_x);
             let line = format!(
@@ -1369,23 +1470,48 @@ impl<'a> QueryEditor<'a> {
 
         state.slots = slots;
     }
+
+    /// Optional CodeFrame for selected diagnostic over draft lines.
+    pub fn render_diagnostic_frame(
+        &self,
+        area: Rect,
+        buffer: &mut Buffer,
+        state: &QueryEditorState,
+        labels: &[SourceLabel<'a>],
+    ) {
+        if area.is_empty() || self.diagnostics.is_empty() {
+            return;
+        }
+        let lines = draft_code_frame_lines(&state.editor);
+        // CodeFrame needs 'a lines — draft_code_frame_lines returns owned refs into editor
+        // which is tied to state lifetime, not 'a. Paint via temporary borrow:
+        let line_refs: Vec<CodeFrameLine<'_>> = lines;
+        CodeFrame::new(&line_refs, self.system)
+            .labels(labels)
+            .render(area, buffer);
+    }
 }
 
 // ── Bench ───────────────────────────────────────────────────────────────────
 
 /// Large draft / frequent edit targets.
 pub mod bench {
+    /// Characters in a large SQL draft.
+    pub const DRAFT_CHARS: usize = 50_000;
     /// Lines in a large draft.
     pub const DRAFT_LINES: usize = 2_000;
+    /// Completion candidate count.
+    pub const COMPLETION_CANDIDATES: usize = 500;
+    /// Diagnostic count.
+    pub const DIAGNOSTIC_COUNT: usize = 100;
+    /// Paint frames for stress.
+    pub const PAINT_FRAMES: u32 = 60;
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::style::DesignSystem;
-    use crate::widgets::SourceLabel;
-    use crate::widgets::SourceRange;
-    use crate::widgets::SpanStyle;
 
     fn sample_diag() -> Diagnostic<'static> {
         static LABELS: &[SourceLabel<'static>] = &[SourceLabel {
@@ -1555,7 +1681,7 @@ mod tests {
         let _ = QueryEditor::new(&system)
             .diagnostics(&diags)
             .title("SQL")
-            .paint(area, &mut buf, &mut state);
+            .render(area, &mut buf, &mut state);
         assert!(!state.slots.editor.is_empty());
         assert!(!state.slots.results.is_empty() || state.mode != QueryEditorMode::Normal);
         let text: String = buf
@@ -1576,7 +1702,7 @@ mod tests {
         state.mode = QueryEditorMode::Compact;
         let area = Rect::new(0, 0, 40, 10);
         let mut buf = Buffer::empty(area);
-        let _ = QueryEditor::new(&system).paint(area, &mut buf, &mut state);
+        let _ = QueryEditor::new(&system).render(area, &mut buf, &mut state);
         assert!(state.slots.results.is_empty() || state.slots.results.height == 0);
     }
 
@@ -1628,7 +1754,7 @@ mod tests {
         let area = Rect::new(0, 0, 80, 24);
         let mut buf = Buffer::empty(area);
         for _ in 0..8 {
-            let _ = QueryEditor::new(&system).paint(area, &mut buf, &mut state);
+            let _ = QueryEditor::new(&system).render(area, &mut buf, &mut state);
         }
         assert!(!state.slots.editor.is_empty());
     }

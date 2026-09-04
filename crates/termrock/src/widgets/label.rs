@@ -11,11 +11,12 @@
 //! tight ([`DROP_DESCRIPTION_WIDTH`]). Compact layout prefers a single row.
 //!
 //! References: Radix/shadcn Label, accessible form labeling, terminal settings.
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState};
-use crate::style::{DesignSystem, Role};
-use crate::widgets::text::Text;
+use crate::style::{DesignSystem, GlyphSet, Role};
+use crate::widgets::text::{Text, TextSpan};
 
 /// Width below which descriptions are omitted (labels may remain).
 pub const DROP_DESCRIPTION_WIDTH: u16 = 28;
@@ -58,6 +59,18 @@ pub enum LabelMark {
     Required,
     /// Optional (dim `(opt)` when width allows).
     Optional,
+}
+
+impl LabelMark {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::None => "none",
+            Self::Required => "required",
+            Self::Optional => "optional",
+        }
+    }
 }
 
 /// Visual / semantic tone of the label.
@@ -241,6 +254,13 @@ impl<'a, Id> Label<'a, Id> {
         self
     }
 
+    /// Warning tone.
+    #[must_use]
+    pub const fn warning(mut self) -> Self {
+        self.tone = LabelTone::Warning;
+        self
+    }
+
     /// Focused tone.
     #[must_use]
     pub const fn focused(mut self) -> Self {
@@ -262,11 +282,37 @@ impl<'a, Id> Label<'a, Id> {
         self
     }
 
+    /// Inline recipe.
+    #[must_use]
+    pub const fn inline(mut self) -> Self {
+        self.layout = CaptionLayout::Inline;
+        self
+    }
+
+    /// Raw label text (without marks).
+    #[must_use]
+    pub const fn text(&self) -> &'a str {
+        self.text
+    }
+
     /// Tone.
     #[must_use]
     pub const fn tone_of(&self) -> LabelTone {
         self.tone
     }
+
+    /// Mark.
+    #[must_use]
+    pub const fn mark_of(&self) -> LabelMark {
+        self.mark
+    }
+
+    /// Layout mode.
+    #[must_use]
+    pub const fn layout_of(&self) -> CaptionLayout {
+        self.layout
+    }
+
     /// Whether marks should paint for this width / layout.
     #[must_use]
     pub fn show_mark(&self, width: u16) -> bool {
@@ -306,6 +352,12 @@ impl<'a, Id> Label<'a, Id> {
             }
         }
         out
+    }
+
+    /// Plain text for copy / help (includes mark glyphs when present).
+    #[must_use]
+    pub fn plain(&self) -> String {
+        self.decorated(80)
     }
 
     /// Help line for semantic scene / Studio (without target id).
@@ -371,12 +423,22 @@ impl<'a, Id> Label<'a, Id> {
         let theme = self.system.junie_theme();
         let width = parts.label.width;
         let name = crate::text::take_display_cols(self.text, usize::from(width));
+        // Match source label rows: fit the complete label style across the
+        // whole row, while retaining each cell's existing background.
+        let label_style = self.label_style();
+        let backgrounds: Vec<_> = (parts.label.x..parts.label.right())
+            .map(|x| buffer[(x, parts.label.y)].bg)
+            .collect();
+        for (offset, background) in backgrounds.iter().copied().enumerate() {
+            let x = parts.label.x.saturating_add(offset as u16);
+            buffer[(x, parts.label.y)].set_style(label_style.bg(background));
+        }
         buffer.set_stringn(
             parts.label.x,
             parts.label.y,
             &name,
             usize::from(width),
-            self.label_style(),
+            label_style,
         );
         if self.show_mark(width) {
             let name_w = crate::text::display_cols(&name) as u16;
@@ -400,6 +462,10 @@ impl<'a, Id> Label<'a, Id> {
                 }
                 _ => {}
             }
+        }
+        for (offset, background) in backgrounds.into_iter().enumerate() {
+            let x = parts.label.x.saturating_add(offset as u16);
+            buffer[(x, parts.label.y)].bg = background;
         }
         parts
     }
@@ -480,10 +546,39 @@ impl<'a, Id> Description<'a, Id> {
         }
     }
 
+    /// Warning description.
+    #[must_use]
+    pub const fn warning(text: &'a str, system: &'a DesignSystem) -> Self {
+        Self {
+            text,
+            for_id: None,
+            kind: DescriptionKind::Warning,
+            system,
+        }
+    }
+
+    /// Meta description.
+    #[must_use]
+    pub const fn meta(text: &'a str, system: &'a DesignSystem) -> Self {
+        Self {
+            text,
+            for_id: None,
+            kind: DescriptionKind::Meta,
+            system,
+        }
+    }
+
     /// Associate with control id.
     #[must_use]
     pub fn for_id(mut self, id: Id) -> Self {
         self.for_id = Some(id);
+        self
+    }
+
+    /// Kind.
+    #[must_use]
+    pub const fn kind(mut self, kind: DescriptionKind) -> Self {
+        self.kind = kind;
         self
     }
 
@@ -493,10 +588,34 @@ impl<'a, Id> Description<'a, Id> {
         self.kind
     }
 
+    /// Target id.
+    #[must_use]
+    pub const fn target(&self) -> Option<&Id> {
+        self.for_id.as_ref()
+    }
+
+    /// Body text.
+    #[must_use]
+    pub const fn text(&self) -> &'a str {
+        self.text
+    }
+
     /// Whether this description should paint at `width`.
     #[must_use]
     pub fn visible_at(&self, width: u16) -> bool {
         !self.text.is_empty() && width >= DROP_DESCRIPTION_WIDTH
+    }
+
+    /// Plain text.
+    #[must_use]
+    pub fn plain(&self) -> &str {
+        self.text
+    }
+
+    /// Semantic help string (kind only; target appended in `register_semantic`).
+    #[must_use]
+    pub fn semantic_description(&self) -> String {
+        self.kind.id().to_string()
     }
 
     /// Layout; contracts to zero height when too narrow.
@@ -538,6 +657,37 @@ impl<'a, Id> Description<'a, Id> {
             .paint(parts.description, buffer);
         parts
     }
+
+    /// Register semantic content node.
+    pub fn register_semantic<Action>(
+        &self,
+        scene: &mut SemanticScene<Id, Action>,
+        id: Id,
+        area: Rect,
+    ) where
+        Id: Clone + PartialEq + std::fmt::Display,
+        Action: Clone,
+    {
+        let parts = self.layout(area);
+        if parts.description.is_empty() {
+            return;
+        }
+        let desc = match &self.for_id {
+            Some(target) => format!("{} for {target}", self.semantic_description()),
+            None => self.semantic_description(),
+        };
+        let _ = scene.register(
+            SemanticNode::content(id, parts.description)
+                .role(SemanticRole::Content)
+                .label(self.text)
+                .description(desc)
+                .focusable(false)
+                .state(SemanticState {
+                    invalid: matches!(self.kind, DescriptionKind::Error),
+                    ..Default::default()
+                }),
+        );
+    }
 }
 
 impl<Id> Widget for &Description<'_, Id> {
@@ -572,6 +722,19 @@ impl<'a, Id: Clone> FieldCaption<'a, Id> {
             system,
         }
     }
+
+    /// From existing label.
+    #[must_use]
+    pub fn from_label(label: Label<'a, Id>, system: &'a DesignSystem) -> Self {
+        let layout = label.layout_of();
+        Self {
+            label,
+            description: None,
+            layout,
+            system,
+        }
+    }
+
     /// Associate both with control id.
     #[must_use]
     pub fn for_id(mut self, id: Id) -> Self {
@@ -618,6 +781,34 @@ impl<'a, Id: Clone> FieldCaption<'a, Id> {
         self
     }
 
+    /// Optional mark.
+    #[must_use]
+    pub fn optional(mut self) -> Self {
+        self.label = self.label.optional();
+        self
+    }
+
+    /// Disabled.
+    #[must_use]
+    pub fn disabled(mut self) -> Self {
+        self.label = self.label.disabled();
+        self
+    }
+
+    /// Focused label.
+    #[must_use]
+    pub fn focused(mut self) -> Self {
+        self.label = self.label.focused();
+        self
+    }
+
+    /// Warning label tone.
+    #[must_use]
+    pub fn warning(mut self) -> Self {
+        self.label = self.label.warning();
+        self
+    }
+
     /// Layout recipe.
     #[must_use]
     pub fn layout_mode(mut self, layout: CaptionLayout) -> Self {
@@ -630,6 +821,18 @@ impl<'a, Id: Clone> FieldCaption<'a, Id> {
     #[must_use]
     pub fn compact(self) -> Self {
         self.layout_mode(CaptionLayout::Compact)
+    }
+
+    /// Inline.
+    #[must_use]
+    pub fn inline(self) -> Self {
+        self.layout_mode(CaptionLayout::Inline)
+    }
+
+    /// Stacked.
+    #[must_use]
+    pub fn stacked(self) -> Self {
+        self.layout_mode(CaptionLayout::Stacked)
     }
 
     /// Label borrow.
@@ -733,6 +936,26 @@ impl<'a, Id: Clone> FieldCaption<'a, Id> {
         }
         parts
     }
+
+    /// Register label and description semantic nodes.
+    pub fn register_semantic<Action>(
+        &self,
+        scene: &mut SemanticScene<Id, Action>,
+        label_id: Id,
+        description_id: Option<Id>,
+        area: Rect,
+    ) where
+        Id: Clone + PartialEq + std::fmt::Display,
+        Action: Clone,
+    {
+        let parts = self.layout(area);
+        self.label.register_semantic(scene, label_id, parts.label);
+        if let (Some(d), Some(did)) = (&self.description, description_id)
+            && parts.description.height > 0
+        {
+            d.register_semantic(scene, did, parts.description);
+        }
+    }
 }
 
 impl<Id: Clone> Widget for &FieldCaption<'_, Id> {
@@ -760,7 +983,9 @@ pub fn line_plain(line: &ratatui_core::text::Line<'_>) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::style::GlyphSet;
     use ratatui_core::buffer::Buffer;
+    use ratatui_core::style::Color;
 
     #[test]
     fn required_mark_and_disabled_is_tone_not_glyph() {
@@ -801,6 +1026,36 @@ mod tests {
         assert_eq!(idle_buf[(0, 0)].fg, theme.text_secondary);
         assert!(
             !idle_buf[(0, 0)]
+                .style()
+                .add_modifier
+                .contains(ratatui_core::style::Modifier::BOLD)
+        );
+    }
+
+    #[test]
+    fn paint_styles_trailing_cells_without_changing_background() {
+        let system = DesignSystem::junie();
+        let theme = system.junie_theme();
+        let area = Rect::new(0, 0, 12, 1);
+        let mut buffer = Buffer::empty(area);
+        buffer.set_style(area, system.style(Role::Surface).fg(Color::Red));
+
+        Label::<()>::new("Name", &system)
+            .focused()
+            .paint(area, &mut buffer);
+
+        assert_eq!(buffer[(0, 0)].fg, theme.text_primary);
+        assert_eq!(buffer[(0, 0)].bg, theme.surface);
+        assert!(
+            buffer[(0, 0)]
+                .style()
+                .add_modifier
+                .contains(ratatui_core::style::Modifier::BOLD)
+        );
+        assert_eq!(buffer[(8, 0)].fg, theme.text_primary);
+        assert_eq!(buffer[(8, 0)].bg, theme.surface);
+        assert!(
+            buffer[(8, 0)]
                 .style()
                 .add_modifier
                 .contains(ratatui_core::style::Modifier::BOLD)

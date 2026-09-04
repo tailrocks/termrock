@@ -58,18 +58,77 @@ pub enum Severity {
     Error,
 }
 
+impl Severity {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Info => "info",
+            Self::Success => "success",
+            Self::Warning => "warning",
+            Self::Error => "error",
+        }
+    }
+
+    /// Footer-status paint role.
+    #[must_use]
+    pub const fn role(self) -> Role {
+        match self {
+            Self::Error => Role::Danger,
+            Self::Warning => Role::Warning,
+            Self::Info | Self::Success => Role::TextSecondary,
+        }
+    }
+
+    /// Marker painted before the sentence (`!` / `•` / `✓`; info is quiet).
+    #[must_use]
+    pub const fn glyph_ascii(self) -> &'static str {
+        self.glyph()
+    }
+
+    /// Marker painted before the sentence (`!` / `•` / `✓`; info is quiet).
+    #[must_use]
+    pub const fn glyph_unicode(self) -> &'static str {
+        self.glyph()
+    }
+
+    const fn glyph(self) -> &'static str {
+        match self {
+            Self::Info => "",
+            Self::Success => "✓",
+            Self::Warning => "•",
+            Self::Error => "!",
+        }
+    }
+}
+
 /// Horizontal edge used to place the footer sentence.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
 pub enum Anchor {
+    /// Footer left edge.
+    TopLeft,
     /// Footer right edge.
     TopRight,
+    /// Footer left edge.
+    BottomLeft,
     /// Footer right edge (junie).
     #[default]
     BottomRight,
 }
 
 impl Anchor {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::TopLeft => "top-left",
+            Self::TopRight => "top-right",
+            Self::BottomLeft => "bottom-left",
+            Self::BottomRight => "bottom-right",
+        }
+    }
+
     /// Whether the sentence sits on the right edge of the footer.
     #[must_use]
     pub const fn is_right(self) -> bool {
@@ -118,6 +177,19 @@ pub enum ToastKind {
 }
 
 impl ToastKind {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Info => "info",
+            Self::Success => "success",
+            Self::Warning => "warning",
+            Self::Error => "error",
+            Self::Progress => "progress",
+            Self::Undo => "undo",
+        }
+    }
+
     /// From classic severity.
     #[must_use]
     pub const fn from_severity(s: Severity) -> Self {
@@ -137,6 +209,12 @@ impl ToastKind {
             Self::Warning => Role::Warning,
             Self::Info | Self::Success | Self::Progress | Self::Undo => Role::TextSecondary,
         }
+    }
+
+    /// Marker painted before the sentence.
+    #[must_use]
+    pub const fn glyph_ascii(self) -> &'static str {
+        self.glyph()
     }
 
     /// Marker painted before the sentence.
@@ -167,6 +245,21 @@ pub enum ToastPriority {
     Normal,
     /// Prefer keep when queue is full.
     High,
+    /// Always keep; may archive lower when full.
+    Critical,
+}
+
+impl ToastPriority {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Low => "low",
+            Self::Normal => "normal",
+            Self::High => "high",
+            Self::Critical => "critical",
+        }
+    }
 }
 
 /// Host coordination for a single toast or queue.
@@ -190,11 +283,23 @@ pub enum ToastOutcome {
         /// Entry id.
         id: String,
     },
+    /// Action (e.g. undo) activated.
+    ActionActivated {
+        /// Toast id.
+        id: String,
+        /// Action id.
+        action: String,
+    },
     /// Replaced an existing entry with the same replace/dedup key.
     Replaced {
         /// Previous id.
         previous_id: String,
         /// New id.
+        id: String,
+    },
+    /// Archived to missed list (NotificationCenter route).
+    Archived {
+        /// Entry id.
         id: String,
     },
     /// Queue paused (host / unfocused window).
@@ -235,6 +340,12 @@ impl ToastState {
             ToastLifetime::ExpiresAfter(ttl) => Presence::toast(ttl),
         };
         Self { presence, lifetime }
+    }
+
+    /// Lifetime policy.
+    #[must_use]
+    pub const fn lifetime(self) -> ToastLifetime {
+        self.lifetime
     }
 
     /// Makes the toast visible starting at this frame.
@@ -345,6 +456,13 @@ impl ToastSpec {
         }
     }
 
+    /// Kind.
+    #[must_use]
+    pub const fn kind(mut self, kind: ToastKind) -> Self {
+        self.kind = kind;
+        self
+    }
+
     /// Severity helper.
     #[must_use]
     pub const fn severity(mut self, s: Severity) -> Self {
@@ -359,10 +477,24 @@ impl ToastSpec {
         self
     }
 
+    /// Title.
+    #[must_use]
+    pub fn title(mut self, t: impl Into<String>) -> Self {
+        self.title = Some(t.into());
+        self
+    }
+
     /// Lifetime.
     #[must_use]
     pub const fn lifetime(mut self, life: ToastLifetime) -> Self {
         self.lifetime = life;
+        self
+    }
+
+    /// Persistent until dismiss.
+    #[must_use]
+    pub const fn persistent(mut self) -> Self {
+        self.lifetime = ToastLifetime::Persistent;
         self
     }
 
@@ -411,6 +543,14 @@ impl ToastSpec {
         self.announcement = Some(text.into());
         self
     }
+
+    /// Announcement string for a11y hosts.
+    #[must_use]
+    pub fn announce_text(&self) -> &str {
+        self.announcement
+            .as_deref()
+            .unwrap_or(self.message.as_str())
+    }
 }
 
 /// Archived toast for NotificationCenter.
@@ -438,6 +578,8 @@ pub enum ToastArchiveReason {
     Expired,
     /// Evicted from full queue.
     Evicted,
+    /// Explicit archive / host move.
+    HostArchived,
     /// Dismissed (optional history).
     Dismissed,
 }
@@ -504,6 +646,23 @@ impl ToastQueue {
         self.max_visible = n.max(1);
     }
 
+    /// Placement edge for the footer sentence.
+    pub fn set_anchor(&mut self, anchor: Anchor) {
+        self.anchor = anchor;
+    }
+
+    /// Insets from the footer edge.
+    pub fn set_margins(&mut self, horizontal: u16, vertical: u16) {
+        self.h_margin = horizontal;
+        self.v_margin = vertical;
+    }
+
+    /// Anchor.
+    #[must_use]
+    pub const fn anchor(&self) -> Anchor {
+        self.anchor
+    }
+
     /// Live count.
     #[must_use]
     pub fn len(&self) -> usize {
@@ -522,10 +681,22 @@ impl ToastQueue {
         self.paused
     }
 
+    /// Generation.
+    #[must_use]
+    pub const fn generation(&self) -> u64 {
+        self.generation
+    }
+
     /// Missed / archived count (NotificationCenter inbox size).
     #[must_use]
     pub fn missed_len(&self) -> usize {
         self.missed.len()
+    }
+
+    /// Borrow missed list.
+    #[must_use]
+    pub fn missed(&self) -> &[ToastArchive] {
+        &self.missed
     }
 
     /// Drain missed into caller (NotificationCenter open).
@@ -669,6 +840,33 @@ impl ToastQueue {
             }
         }
         ToastOutcome::Ignored
+    }
+
+    /// Dismisses the newest live toast.
+    pub fn dismiss_top(&mut self) -> ToastOutcome {
+        let Some(id) = self.live.front().map(|t| t.id.clone()) else {
+            return ToastOutcome::Ignored;
+        };
+        self.dismiss(&id)
+    }
+
+    /// Pauses or resumes every live toast's TTL.
+    ///
+    /// Hosts wire this to terminal focus (`FocusGained` / `FocusLost`).
+    pub fn set_focus_paused(&mut self, tick: FrameTick, paused: bool) -> ToastOutcome {
+        self.set_paused(tick, paused)
+    }
+
+    /// Activate undo / action for matching id (host maps hotkey).
+    pub fn activate_action(&mut self, id: &str, action: impl Into<String>) -> ToastOutcome {
+        if self.live.iter().any(|t| t.id == id) {
+            ToastOutcome::ActionActivated {
+                id: id.to_string(),
+                action: action.into(),
+            }
+        } else {
+            ToastOutcome::Ignored
+        }
     }
 
     /// Advance all live toasts; expire and archive.
@@ -902,6 +1100,13 @@ impl<'a> Toast<'a> {
         self
     }
 
+    /// Optional title folded into the one sentence.
+    #[must_use]
+    pub const fn title(mut self, title: &'a str) -> Self {
+        self.title = Some(title);
+        self
+    }
+
     /// Override kind (default maps from severity).
     #[must_use]
     pub const fn kind(mut self, kind: ToastKind) -> Self {
@@ -917,7 +1122,8 @@ impl<'a> Toast<'a> {
         self
     }
 
-    /// Undo label (kind Undo). The sentence stays one row; the host owns the hotkey.
+    /// Undo label (kind Undo). The sentence stays one row; the host owns the
+    /// hotkey that fires [`ToastQueue::activate_action`].
     #[must_use]
     pub const fn undo(mut self, label: &'a str) -> Self {
         self.undo_label = Some(label);

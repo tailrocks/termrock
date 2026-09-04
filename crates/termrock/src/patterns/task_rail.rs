@@ -11,8 +11,8 @@
 //!
 //! **vs [`super::ActivityShelf`].** Shelf = glanceable strip of concurrent
 //! actives. Rail = full vertical inventory with groups + search + deps.
-//! Hosts project [`ActivityModel`]; the raw [`List`] row projection is an
-//! internal paint detail, not public API.
+//! **vs thin List façade (removed).** Hosts project [`ActivityModel`]; optional
+//! [`project_task_rail_list_rows`] still feeds raw [`List`] if needed.
 //!
 //! Research: Grok Build tasks pane, Amp sessions, OpenCode agents, CI lists,
 //! Zellij panes.
@@ -27,19 +27,26 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::collections::BTreeSet;
 
-use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::StatefulWidget};
+use ratatui_core::{
+    buffer::Buffer, layout::Rect, style::Modifier, text::Line, widgets::StatefulWidget,
+};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     patterns::{
         ActivityItem, ActivityKind, ActivityStatusProjection, activity_status_summary,
         project_activities_for_status_bar,
     },
     style::{DesignSystem, PanelChrome, Role},
+    text::{display_cols, take_display_cols},
     widgets::{
-        List, ListRow, ListState, Panel, SemanticStatus, StatusKind, StatusRegion, StatusSlot,
+        List, ListRow, ListState, Panel, RowRole, SemanticStatus, StatusKind, StatusRegion,
+        StatusSlot,
     },
 };
 
@@ -150,6 +157,34 @@ pub enum ActivityActionKind {
     InspectDeps,
     /// Promote to drawer/fullscreen host surface.
     Promote,
+}
+
+impl ActivityActionKind {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Open => "open",
+            Self::Cancel => "cancel",
+            Self::Retry => "retry",
+            Self::FocusTranscript => "focus-transcript",
+            Self::InspectDeps => "inspect-deps",
+            Self::Promote => "promote",
+        }
+    }
+
+    /// Chord hint.
+    #[must_use]
+    pub const fn chord(self) -> &'static str {
+        match self {
+            Self::Open => "Enter",
+            Self::Cancel => "x",
+            Self::Retry => "r",
+            Self::FocusTranscript => "t",
+            Self::InspectDeps => "d",
+            Self::Promote => "f",
+        }
+    }
 }
 
 /// Application-neutral activity / task node.
@@ -300,6 +335,13 @@ impl ActivityModel {
     #[must_use]
     pub fn detail(mut self, d: impl Into<String>) -> Self {
         self.detail = Some(d.into());
+        self
+    }
+
+    /// Group key.
+    #[must_use]
+    pub fn group_key(mut self, k: impl Into<String>) -> Self {
+        self.group_key = Some(k.into());
         self
     }
 
@@ -472,22 +514,21 @@ pub fn filter_activity_models<'a>(
     items
         .iter()
         .filter(|i| {
-            crate::text::contains_lower(&i.title, &q)
+            i.title.to_ascii_lowercase().contains(&q)
                 || i.actor
                     .as_ref()
-                    .is_some_and(|a| crate::text::contains_lower(&a, &q))
+                    .is_some_and(|a| a.to_ascii_lowercase().contains(&q))
                 || i.detail
                     .as_ref()
-                    .is_some_and(|d| crate::text::contains_lower(&d, &q))
+                    .is_some_and(|d| d.to_ascii_lowercase().contains(&q))
                 || i.waiting_reason
                     .as_ref()
-                    .is_some_and(|w| crate::text::contains_lower(&w, &q))
-                || crate::text::contains_lower(i.scope.id(), &q)
-                || crate::text::contains_lower(i.kind.id(), &q)
-                || i.dependencies.iter().any(|d| {
-                    crate::text::contains_lower(&d.label, &q)
-                        || crate::text::contains_lower(&d.id, &q)
-                })
+                    .is_some_and(|w| w.to_ascii_lowercase().contains(&q))
+                || i.scope.id().contains(q.as_str())
+                || i.kind.id().contains(q.as_str())
+                || i.dependencies
+                    .iter()
+                    .any(|d| d.label.to_ascii_lowercase().contains(&q) || d.id.contains(&q))
         })
         .collect()
 }
@@ -550,7 +591,7 @@ pub fn task_rail_status_summary(items: &[ActivityModel], ascii: bool) -> String 
         }
     }
     // Prefer shelf summary for active; append completed count
-    let base = activity_status_summary(&shelf);
+    let base = activity_status_summary(&shelf, ascii);
     let c = task_rail_counts(items);
     if c.completed > 0 {
         format!("{base} · {} done", c.completed)
@@ -566,7 +607,7 @@ pub fn project_task_rail_for_status_bar(
     ascii: bool,
 ) -> ActivityStatusProjection {
     let shelf = activity_models_to_shelf(items);
-    let mut p = project_activities_for_status_bar(&shelf);
+    let mut p = project_activities_for_status_bar(&shelf, ascii);
     p.badge_text = items.len().to_string();
     // Keep high priority when needs_input
     if items.iter().any(|i| i.needs_input) {
@@ -611,7 +652,7 @@ fn task_rail_status_text(items: &[ActivityModel]) -> String {
     let mut text = if shelf.is_empty() {
         "tasks idle".to_string()
     } else {
-        let summary = activity_status_summary(&shelf);
+        let summary = activity_status_summary(&shelf, true);
         summary
             .split_once(' ')
             .map_or(summary.clone(), |(_, words)| words.to_string())
@@ -649,7 +690,7 @@ pub enum TaskRailRow {
 /// Build ordered rows from filtered models + collapsed scopes.
 #[must_use]
 pub fn build_task_rail_rows(
-    items: &[&ActivityModel],
+    items: &[ActivityModel],
     collapsed: &BTreeSet<ActivityScope>,
     hide_completed: bool,
 ) -> Vec<TaskRailRow> {
@@ -664,7 +705,6 @@ pub fn build_task_rail_rows(
     ] {
         let mut group: Vec<&ActivityModel> = items
             .iter()
-            .copied()
             .filter(|i| i.scope == scope)
             .filter(|i| !(hide_completed && matches!(i.scope, ActivityScope::Completed)))
             .collect();
@@ -741,10 +781,10 @@ fn emit_tree<'a>(
     }
 }
 
-/// Project to List rows for the internal [`List`]-backed paint path.
+/// Project to List rows (migration / workbench List path).
 #[must_use]
-fn project_task_rail_list_rows(
-    items: &[&ActivityModel],
+pub fn project_task_rail_list_rows(
+    items: &[ActivityModel],
     rows: &[TaskRailRow],
     ascii: bool,
     detail: bool,
@@ -859,6 +899,15 @@ pub enum TaskRailZoom {
 }
 
 impl TaskRailZoom {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Compact => "compact",
+            Self::Detail => "detail",
+        }
+    }
+
     /// Auto from width.
     #[must_use]
     pub const fn for_width(width: u16) -> Self {
@@ -884,6 +933,16 @@ pub enum TaskRailPresentation {
 }
 
 impl TaskRailPresentation {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Panel => "panel",
+            Self::Drawer => "drawer",
+            Self::StatusSummary => "status-summary",
+        }
+    }
+
     /// Responsive recommendation.
     #[must_use]
     pub const fn for_width(width: u16) -> Self {
@@ -955,6 +1014,8 @@ pub enum TaskRailOutcome {
     },
     /// Prefer drawer (responsive hint).
     PreferDrawer,
+    /// Prefer status summary.
+    PreferStatusSummary,
     /// Hide completed toggled.
     HideCompletedChanged {
         /// On.
@@ -1035,12 +1096,14 @@ impl TaskRailState {
     }
 
     fn rebuild_rows(&mut self, items: &[ActivityModel]) -> Vec<ListRow<'static, String>> {
-        let filtered = filter_activity_models(items, &self.filter);
+        let filtered: Vec<ActivityModel> = filter_activity_models(items, &self.filter)
+            .into_iter()
+            .cloned()
+            .collect();
         let rows = build_task_rail_rows(&filtered, &self.collapsed, self.hide_completed);
+        self.last_rows = rows.clone();
         let detail = matches!(self.zoom, TaskRailZoom::Detail);
-        let list_rows = project_task_rail_list_rows(&filtered, &rows, false, detail);
-        self.last_rows = rows;
-        list_rows
+        project_task_rail_list_rows(&filtered, &rows, false, detail)
     }
 
     /// Keys.
@@ -1224,6 +1287,37 @@ impl TaskRailState {
         };
         TaskRailOutcome::GroupToggled { scope, collapsed }
     }
+
+    /// Mouse via list hits after paint (call after `paint` so regions exist).
+    pub fn handle_mouse(&mut self, event: MouseEvent, _items: &[ActivityModel]) -> TaskRailOutcome {
+        if !self.accepts_input || event.kind != MouseEventKind::Down(MouseButton::Left) {
+            return TaskRailOutcome::Ignored;
+        }
+        use crate::interaction::Outcome;
+        match self.list.click(event.position) {
+            Outcome::Activated(id) => {
+                if let Some(scope_id) = id.strip_prefix("g:") {
+                    if let Some(scope) = scope_from_id(scope_id) {
+                        return self.toggle_scope(scope);
+                    }
+                    return TaskRailOutcome::Ignored;
+                }
+                TaskRailOutcome::Activated { id }
+            }
+            Outcome::Changed => {
+                if let Some(id) = self.list.selected() {
+                    if id.starts_with("g:") {
+                        TaskRailOutcome::Ignored
+                    } else {
+                        TaskRailOutcome::Selected { id: id.clone() }
+                    }
+                } else {
+                    TaskRailOutcome::Ignored
+                }
+            }
+            _ => TaskRailOutcome::Ignored,
+        }
+    }
 }
 
 fn scope_from_id(id: &str) -> Option<ActivityScope> {
@@ -1317,7 +1411,8 @@ impl<'a> TaskRail<'a> {
             .title(title.as_str())
             .emphasis(emphasis);
         let inner = panel.inner(area);
-        panel.paint(area, buffer, None);
+        use ratatui_core::widgets::Widget;
+        Widget::render(&panel, area, buffer);
 
         if inner.is_empty() {
             return;
@@ -1333,11 +1428,14 @@ impl<'a> TaskRail<'a> {
         };
         let footer_y = inner.bottom().saturating_sub(1);
 
-        let filtered = filter_activity_models(self.items, &state.filter);
+        let filtered: Vec<ActivityModel> = filter_activity_models(self.items, &state.filter)
+            .into_iter()
+            .cloned()
+            .collect();
         let rows = build_task_rail_rows(&filtered, &state.collapsed, state.hide_completed);
+        state.last_rows = rows.clone();
         let detail = matches!(state.zoom, TaskRailZoom::Detail);
         let list_rows = project_task_rail_list_rows(&filtered, &rows, false, detail);
-        state.last_rows = rows;
 
         StatefulWidget::render(
             &List::new(&list_rows, self.system).focused(state.focused && state.accepts_input),
@@ -1367,6 +1465,12 @@ impl<'a> TaskRail<'a> {
                 style,
             );
         }
+        let _ = display_cols;
+    }
+
+    /// Render alias.
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut TaskRailState) {
+        self.paint(area, buffer, state);
     }
 }
 
@@ -1458,7 +1562,6 @@ pub mod bench {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::widgets::RowRole;
 
     #[test]
     fn needs_input_sorted_first_in_priority() {
@@ -1473,8 +1576,7 @@ mod tests {
         let items = example_activity_models();
         let mut collapsed = BTreeSet::new();
         collapsed.insert(ActivityScope::Completed);
-        let refs: Vec<&ActivityModel> = items.iter().collect();
-        let rows = build_task_rail_rows(&refs, &collapsed, false);
+        let rows = build_task_rail_rows(&items, &collapsed, false);
         assert!(rows.iter().any(|r| matches!(
             r,
             TaskRailRow::Group {
@@ -1501,8 +1603,7 @@ mod tests {
     #[test]
     fn tree_parent_indent() {
         let items = example_activity_models();
-        let refs: Vec<&ActivityModel> = items.iter().collect();
-        let rows = build_task_rail_rows(&refs, &BTreeSet::new(), true);
+        let rows = build_task_rail_rows(&items, &BTreeSet::new(), true);
         let s1 = rows.iter().find_map(|r| match r {
             TaskRailRow::Item { id, depth } if id == "s1" => Some(*depth),
             _ => None,
@@ -1605,9 +1706,8 @@ mod tests {
     #[test]
     fn list_projection_has_groups() {
         let items = example_activity_models();
-        let refs: Vec<&ActivityModel> = items.iter().collect();
-        let rows = build_task_rail_rows(&refs, &BTreeSet::new(), false);
-        let list = project_task_rail_list_rows(&refs, &rows, true, true);
+        let rows = build_task_rail_rows(&items, &BTreeSet::new(), false);
+        let list = project_task_rail_list_rows(&items, &rows, true, true);
         assert!(list.iter().any(|r| r.role == RowRole::GroupHeader));
         assert!(list.iter().any(|r| r.id == "p1"));
     }

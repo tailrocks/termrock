@@ -64,7 +64,13 @@ pub enum SelectionDelta<Id> {
     },
 }
 
-impl<Id> SelectionDelta<Id> {}
+impl<Id> SelectionDelta<Id> {
+    /// Whether membership is non-empty after a replace/range (best-effort).
+    #[must_use]
+    pub fn is_noop_clear(&self) -> bool {
+        matches!(self, Self::Cleared)
+    }
+}
 
 /// Visual recipe requirement — never color alone.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -137,6 +143,12 @@ impl<Id> SelectionModel<Id> {
         Self::new(SelectionKind::Range)
     }
 
+    /// Current kind.
+    #[must_use]
+    pub const fn kind(&self) -> SelectionKind {
+        self.kind
+    }
+
     /// Ordered selected identities.
     #[must_use]
     pub fn selected(&self) -> &[Id] {
@@ -186,6 +198,50 @@ impl<Id: Clone + PartialEq> SelectionModel<Id> {
     #[must_use]
     pub fn checked(&self) -> &[Id] {
         self.selected()
+    }
+
+    /// Sets kind (does not clear membership).
+    pub fn set_kind(&mut self, kind: SelectionKind) {
+        self.kind = kind;
+        if matches!(kind, SelectionKind::None) {
+            self.selected.clear();
+            self.anchor = None;
+        } else if matches!(kind, SelectionKind::Single) && self.selected.len() > 1 {
+            let last = self.selected.pop();
+            self.selected.clear();
+            if let Some(id) = last {
+                self.selected.push(id);
+            }
+        }
+    }
+
+    /// Application-controlled replace of the entire set.
+    pub fn replace(&mut self, ids: impl IntoIterator<Item = Id>) -> SelectionDelta<Id> {
+        if matches!(self.kind, SelectionKind::None) {
+            return SelectionDelta::Cleared;
+        }
+        self.selected.clear();
+        for id in ids {
+            if matches!(self.kind, SelectionKind::Single) {
+                self.selected.clear();
+                self.selected.push(id);
+                break;
+            }
+            if !self.selected.iter().any(|s| s == &id) {
+                self.selected.push(id);
+            }
+        }
+        if self.selected.is_empty() {
+            self.anchor = None;
+            SelectionDelta::Cleared
+        } else {
+            if self.anchor.is_none() {
+                self.anchor = self.selected.first().cloned();
+            }
+            SelectionDelta::Replaced {
+                selected: self.selected.clone(),
+            }
+        }
     }
 
     /// Selects one id (single replaces; multi/range adds).
@@ -329,6 +385,37 @@ impl<Id: Clone + PartialEq> SelectionModel<Id> {
         }
     }
 
+    /// Extends selection from `anchor` to `to` along `order` (visible/filtered order).
+    ///
+    /// Disabled items should already be omitted from `order`. Existing multi
+    /// members outside the range are kept (additive range, desktop-style).
+    pub fn extend_range(&mut self, order: &[Id], to: &Id) -> SelectionDelta<Id> {
+        if !matches!(self.kind, SelectionKind::Range | SelectionKind::Multiple) {
+            return self.select(to.clone());
+        }
+        let anchor = self.anchor.clone().unwrap_or_else(|| to.clone());
+        let Some(ai) = order.iter().position(|id| id == &anchor) else {
+            return self.select(to.clone());
+        };
+        let Some(ti) = order.iter().position(|id| id == to) else {
+            return SelectionDelta::Replaced {
+                selected: self.selected.clone(),
+            };
+        };
+        let (lo, hi) = if ai <= ti { (ai, ti) } else { (ti, ai) };
+        for id in &order[lo..=hi] {
+            if !self.is_selected(id) {
+                self.selected.push(id.clone());
+            }
+        }
+        self.anchor = Some(anchor.clone());
+        SelectionDelta::RangeApplied {
+            from: anchor,
+            to: to.clone(),
+            selected: self.selected.clone(),
+        }
+    }
+
     /// Replaces selection with exactly the range `[anchor, to]` along `order`.
     pub fn set_range(&mut self, order: &[Id], to: &Id) -> SelectionDelta<Id> {
         if !matches!(self.kind, SelectionKind::Range | SelectionKind::Multiple) {
@@ -380,6 +467,34 @@ impl<Id: Clone + PartialEq> SelectionModel<Id> {
                 selected: self.selected.clone(),
             }
         }
+    }
+
+    /// Removes only ids explicitly listed in `invalid` (filtered views keep rest).
+    pub fn reconcile_drop(&mut self, invalid: &[Id]) -> SelectionDelta<Id> {
+        let before = self.selected.len();
+        self.selected.retain(|id| !invalid.iter().any(|v| v == id));
+        if let Some(a) = &self.anchor
+            && invalid.iter().any(|v| v == a)
+        {
+            self.anchor = self.selected.first().cloned();
+        }
+        if self.selected.len() != before && self.selected.is_empty() {
+            SelectionDelta::Cleared
+        } else {
+            SelectionDelta::Replaced {
+                selected: self.selected.clone(),
+            }
+        }
+    }
+
+    /// Intersection of selection with `visible` (for paint / “selected in view”).
+    #[must_use]
+    pub fn selected_in_view(&self, visible: &[Id]) -> Vec<Id> {
+        visible
+            .iter()
+            .filter(|id| self.is_selected(id))
+            .cloned()
+            .collect()
     }
 }
 

@@ -19,7 +19,7 @@ use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::State
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
-    interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
+    interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
     style::{ButtonRecipeVariant, ControlState, DesignSystem, Glyph, Role},
     text::take_display_cols,
 };
@@ -59,6 +59,15 @@ impl PathStyle {
         match self {
             Self::Unix => '/',
             Self::Windows => '\\',
+        }
+    }
+
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Unix => "unix",
+            Self::Windows => "windows",
         }
     }
 }
@@ -337,6 +346,11 @@ pub enum PathInputOutcome {
         /// Recalled path.
         path: String,
     },
+    /// Host should re-resolve existence (after quiet edit or explicit).
+    LookupRequested {
+        /// Path to look up (raw).
+        path: String,
+    },
     /// Paste request.
     ClipboardPasteRequest,
     /// Copy.
@@ -440,15 +454,110 @@ impl PathInputState {
         self.base = Some(base.into());
         self
     }
+
+    /// Home directory string for `~` presentation/expansion helpers.
+    #[must_use]
+    pub fn with_home(mut self, home: impl Into<String>) -> Self {
+        self.home = Some(home.into());
+        self
+    }
+
+    /// History limit.
+    #[must_use]
+    pub fn with_history_limit(mut self, limit: usize) -> Self {
+        self.history_limit = limit.max(1);
+        while self.history.len() > self.history_limit {
+            self.history.pop_back();
+        }
+        self
+    }
+
     /// Raw path text.
     #[must_use]
     pub fn path(&self) -> &str {
         self.path.value()
     }
 
+    /// Mutable editor.
+    pub fn path_editor_mut(&mut self) -> &mut TextInputState {
+        &mut self.path
+    }
+
+    /// Style.
+    #[must_use]
+    pub const fn style(&self) -> PathStyle {
+        self.style
+    }
+
+    /// Expect.
+    #[must_use]
+    pub const fn expect(&self) -> PathExpect {
+        self.expect
+    }
+
+    /// Base.
+    #[must_use]
+    pub fn base(&self) -> Option<&str> {
+        self.base.as_deref()
+    }
+
+    /// FS status.
+    #[must_use]
+    pub const fn fs_status(&self) -> PathFsStatus {
+        self.fs_status
+    }
+
+    /// Risk.
+    #[must_use]
+    pub const fn risk(&self) -> PathRisk {
+        self.risk
+    }
+
+    /// Focused.
+    #[must_use]
+    pub const fn is_focused(&self) -> bool {
+        self.focused
+    }
+
+    /// Enabled.
+    #[must_use]
+    pub const fn is_enabled(&self) -> bool {
+        self.enabled
+    }
+
+    /// Read-only.
+    #[must_use]
+    pub const fn is_read_only(&self) -> bool {
+        self.read_only
+    }
+
+    /// Parts.
+    #[must_use]
+    pub const fn parts(&self) -> Option<&PathInputParts> {
+        self.parts.as_ref()
+    }
+
+    /// History (newest first).
+    #[must_use]
+    pub fn history(&self) -> impl Iterator<Item = &str> {
+        self.history.iter().map(String::as_str)
+    }
+
     /// Focus.
     pub fn set_focused(&mut self, on: bool) {
         self.focused = on;
+        self.sync_editor();
+    }
+
+    /// Enabled.
+    pub fn set_enabled(&mut self, on: bool) {
+        self.enabled = on;
+        self.sync_editor();
+    }
+
+    /// Read-only.
+    pub fn set_read_only(&mut self, on: bool) {
+        self.read_only = on;
         self.sync_editor();
     }
 
@@ -477,6 +586,17 @@ impl PathInputState {
     pub const fn set_risk(&mut self, risk: PathRisk) {
         self.risk = risk;
     }
+
+    /// Set base path context.
+    pub fn set_base(&mut self, base: Option<String>) {
+        self.base = base;
+    }
+
+    /// Set home for tilde helpers.
+    pub fn set_home(&mut self, home: Option<String>) {
+        self.home = home;
+    }
+
     /// Path with tilde expanded (presentation / resolve helper).
     #[must_use]
     pub fn expanded_tilde(&self) -> String {
@@ -596,48 +716,11 @@ impl PathInputState {
         if key.is_release() || !self.enabled {
             return PathInputOutcome::Ignored;
         }
+        self.sync_editor();
+
         let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
         let alt = key.modifiers.contains(KeyModifiers::ALT);
         let shift = key.modifiers.contains(KeyModifiers::SHIFT);
-
-        // PathInput owns browse and completion outcomes and wraps a
-        // TextInput lifecycle. Reject every physical one-shot path before
-        // synchronizing the nested editor; history/navigation/text repeats
-        // remain supported.
-        let one_shot = matches!(
-            key.code,
-            KeyCode::Enter
-                | KeyCode::Tab
-                | KeyCode::BackTab
-                | KeyCode::Esc
-                | KeyCode::Char(
-                    'c' | 'C'
-                        | 'k'
-                        | 'K'
-                        | 'm'
-                        | 'M'
-                        | 'o'
-                        | 'O'
-                        | 'u'
-                        | 'U'
-                        | 'v'
-                        | 'V'
-                        | 'w'
-                        | 'W'
-                        | 'x'
-                        | 'X',
-                )
-        );
-        if !key.is_press()
-            && (matches!(
-                key.code,
-                KeyCode::Enter | KeyCode::Tab | KeyCode::BackTab | KeyCode::Esc
-            ) || (ctrl && one_shot))
-        {
-            return PathInputOutcome::Ignored;
-        }
-
-        self.sync_editor();
 
         // Browse: Ctrl+O
         if ctrl && !alt && matches!(key.code, KeyCode::Char('o' | 'O')) {
@@ -688,6 +771,59 @@ impl PathInputState {
                 PathInputOutcome::ClipboardCopy { text }
             }
             TextInputOutcome::Ignored => PathInputOutcome::Ignored,
+        }
+    }
+
+    /// Intent path.
+    pub fn handle_intent(&mut self, intent: UiIntent) -> PathInputOutcome {
+        if !self.enabled {
+            return PathInputOutcome::Ignored;
+        }
+        match intent {
+            UiIntent::Submit | UiIntent::Activate => {
+                let path = self.path.value().to_owned();
+                self.push_history(path.clone());
+                PathInputOutcome::Submitted { path }
+            }
+            UiIntent::Cancel | UiIntent::Close => PathInputOutcome::Cancelled,
+            other => match self.path.handle_intent(other) {
+                TextInputOutcome::Changed => {
+                    self.fs_status = PathFsStatus::Pending;
+                    PathInputOutcome::Changed
+                }
+                TextInputOutcome::Submitted(path) => PathInputOutcome::Submitted { path },
+                TextInputOutcome::Cancelled => PathInputOutcome::Cancelled,
+                TextInputOutcome::Cleared => PathInputOutcome::Cleared,
+                _ => PathInputOutcome::Ignored,
+            },
+        }
+    }
+
+    /// Paste.
+    pub fn insert_str(&mut self, text: &str) -> PathInputOutcome {
+        if !self.enabled || self.read_only {
+            return PathInputOutcome::Ignored;
+        }
+        self.path.begin_edit();
+        // Strip newlines from multi-line paste
+        let cleaned: String = text
+            .chars()
+            .take_while(|c| !matches!(c, '\n' | '\r'))
+            .collect();
+        match self.path.insert_str(&cleaned) {
+            TextInputOutcome::Changed => {
+                self.fs_status = PathFsStatus::Pending;
+                PathInputOutcome::Changed
+            }
+            _ => PathInputOutcome::Ignored,
+        }
+    }
+
+    /// Request host lookup for current path.
+    #[must_use]
+    pub fn lookup_request(&self) -> PathInputOutcome {
+        PathInputOutcome::LookupRequested {
+            path: self.path.value().to_owned(),
         }
     }
 
@@ -797,10 +933,39 @@ impl<'a> PathInput<'a> {
         self
     }
 
+    /// Extra status / error message.
+    #[must_use]
+    pub const fn status_message(mut self, message: &'a str) -> Self {
+        self.status_message = Some(message);
+        self
+    }
+
     /// Browse control (`…` / Ctrl+O).
     #[must_use]
     pub const fn show_browse(mut self, on: bool) -> Self {
         self.show_browse = on;
+        self
+    }
+
+    /// Clear control.
+    #[must_use]
+    pub const fn show_clear(mut self, on: bool) -> Self {
+        self.show_clear = on;
+        self
+    }
+
+    /// Show base context when set and path is relative.
+    #[must_use]
+    pub const fn show_base(mut self, on: bool) -> Self {
+        self.show_base = on;
+        self
+    }
+
+    /// ASCII glyphs.
+    #[must_use]
+    /// Validation projection.
+    pub const fn validation(mut self, validation: Validation<'a>) -> Self {
+        self.validation = validation;
         self
     }
 
@@ -842,6 +1007,7 @@ impl<'a> PathInput<'a> {
             } else {
                 ControlState::Default
             },
+            invalid || destructive,
             state.path.is_editing(),
         );
 
@@ -1150,9 +1316,7 @@ impl StatefulWidget for PathInput<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyEventKind;
     use crate::style::RolePalette;
-    use crate::widgets::tests::click;
 
     #[test]
     fn separators_and_absolute() {
@@ -1217,46 +1381,6 @@ mod tests {
             }
             other => panic!("{other:?}"),
         }
-    }
-
-    #[test]
-    fn repeated_one_shot_actions_are_ignored_but_text_repeats() {
-        let mut state = PathInputState::new().with_path("src/li").with_editing();
-        state.set_focused(true);
-        let actions = [
-            (KeyCode::Enter, KeyModifiers::NONE),
-            (KeyCode::Tab, KeyModifiers::NONE),
-            (KeyCode::BackTab, KeyModifiers::NONE),
-            (KeyCode::Esc, KeyModifiers::NONE),
-            (KeyCode::Char('m'), KeyModifiers::CONTROL),
-            (
-                KeyCode::Char('m'),
-                KeyModifiers::CONTROL | KeyModifiers::ALT,
-            ),
-            (KeyCode::Char('o'), KeyModifiers::CONTROL),
-            (KeyCode::Char('c'), KeyModifiers::CONTROL),
-            (KeyCode::Char('v'), KeyModifiers::CONTROL),
-            (KeyCode::Char('x'), KeyModifiers::CONTROL),
-            (KeyCode::Char('u'), KeyModifiers::CONTROL),
-            (KeyCode::Char('k'), KeyModifiers::CONTROL),
-            (KeyCode::Char('w'), KeyModifiers::CONTROL),
-        ];
-        for (code, modifiers) in actions {
-            let before = state.clone();
-            let mut key = KeyEvent::new(code, modifiers);
-            key.kind = KeyEventKind::Repeat;
-            assert_eq!(state.handle_key(key), PathInputOutcome::Ignored);
-            assert_eq!(state, before, "{code:?} repeat mutated path state");
-        }
-
-        let mut repeat_text = KeyEvent::new(KeyCode::Char('!'), KeyModifiers::NONE);
-        repeat_text.kind = KeyEventKind::Repeat;
-        assert_eq!(
-            state.handle_key(repeat_text),
-            PathInputOutcome::Changed,
-            "ordinary text repeats remain supported"
-        );
-        assert_eq!(state.path(), "src/li!");
     }
 
     #[test]
@@ -1342,7 +1466,11 @@ mod tests {
         let parts = PathInput::new(&system).paint(area, &mut buf, &mut state);
         let browse = parts.browse.expect("browse");
         assert_eq!(
-            state.handle_mouse(click(browse.x, browse.y)),
+            state.handle_mouse(MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: ratatui_core::layout::Position::new(browse.x, browse.y),
+                modifiers: KeyModifiers::NONE,
+            }),
             PathInputOutcome::BrowseRequested
         );
     }

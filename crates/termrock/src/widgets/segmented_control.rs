@@ -33,16 +33,18 @@
 //! option menu).
 //!
 //! Research: desktop segmented controls, shadcn patterns, IDE mode selectors.
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
-    layout::Rect,
+    layout::{Position, Rect},
     style::{Color, Modifier, Style},
+    widgets::Widget,
 };
 
-use crate::input::{KeyEvent, MouseButton, MouseEvent, MouseEventKind};
+use crate::input::{KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{
-    NavigationMove, RovingEntry, RovingFocusGroup, RovingOrientation, RovingOutcome, SemanticNode,
-    SemanticRole, SemanticScene, SemanticState, UiIntent, default_button_intent,
+    EventResult, NavigationMove, RovingEntry, RovingFocusGroup, RovingOrientation, RovingOutcome,
+    SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, default_button_intent,
     default_list_intent,
 };
 use crate::style::{DesignSystem, Glyph, VisualState};
@@ -113,6 +115,13 @@ impl<'a, Id> SegmentedItem<'a, Id> {
     #[must_use]
     pub const fn icon(mut self, icon: &'a str) -> Self {
         self.icon = Some(icon);
+        self
+    }
+
+    /// A11y name (required for icon-only).
+    #[must_use]
+    pub const fn accessible_label(mut self, name: &'a str) -> Self {
+        self.accessible_label = Some(name);
         self
     }
 
@@ -273,6 +282,11 @@ impl<Id: Clone + PartialEq> SegmentedControlState<Id> {
 pub enum SegmentedControlOutcome<Id> {
     /// No change.
     Ignored,
+    /// Cursor moved without selection change (rare; reserved).
+    CursorMoved {
+        /// Active id.
+        id: Id,
+    },
     /// Selected value changed.
     Selected {
         /// New value id.
@@ -312,6 +326,20 @@ impl<'a, Id> SegmentedControl<'a, Id> {
     #[must_use]
     pub const fn collapse_below(mut self, cols: u16) -> Self {
         self.collapse_below = cols;
+        self
+    }
+
+    /// Overflow trigger label.
+    #[must_use]
+    pub const fn overflow_label(mut self, label: &'a str) -> Self {
+        self.overflow_label = label;
+        self
+    }
+
+    /// Force monochrome emphasis.
+    #[must_use]
+    pub const fn colorless(mut self, on: bool) -> Self {
+        self.colorless = on;
         self
     }
 
@@ -422,11 +450,10 @@ impl<'a, Id> SegmentedControl<'a, Id> {
             .map(|t| display_cols(t).saturating_add(1))
             .unwrap_or(0);
         let inner_budget = usize::from(rect.right().saturating_sub(x)).saturating_sub(trail_cols);
-        let face = item.face_inner();
-        let inner = take_display_cols(&face, inner_budget);
-        let iw = display_cols(inner.as_ref());
+        let inner = take_display_cols(&item.face_inner(), inner_budget);
+        let iw = display_cols(&inner);
         if iw > 0 {
-            buffer.set_stringn(x, rect.y, inner.as_ref(), iw, style);
+            buffer.set_stringn(x, rect.y, &inner, iw, style);
             x = x.saturating_add(u16::try_from(iw).unwrap_or(u16::MAX));
         }
         let Some(trail) = trailing else {
@@ -622,7 +649,7 @@ impl<'a, Id: Clone + PartialEq> SegmentedControl<'a, Id> {
                 .or_else(|| visible_ids.first().cloned());
         }
 
-        let roving_entries: Vec<RovingEntry<'_, Id>> = visible
+        let roving_entries: Vec<RovingEntry<Id>> = visible
             .iter()
             .map(|&i| {
                 let it = &self.items[i];
@@ -835,7 +862,7 @@ impl<'a, Id: Clone + PartialEq> SegmentedControl<'a, Id> {
         }
 
         // Build roving from visible
-        let visible: Vec<RovingEntry<'_, Id>> = if let Some(p) = &parts {
+        let visible: Vec<RovingEntry<Id>> = if let Some(p) = &parts {
             p.items
                 .iter()
                 .filter(|it| !it.overflowed)
@@ -891,6 +918,7 @@ impl<'a, Id: Clone + PartialEq> SegmentedControl<'a, Id> {
         }
 
         // Movement: FollowFocus — move cursor and select
+        let before = state.cursor.clone();
         if let Some(mv) = default_list_intent(key) {
             match mv {
                 UiIntent::Move(NavigationMove::Next | NavigationMove::Right) => {
@@ -956,6 +984,7 @@ impl<'a, Id: Clone + PartialEq> SegmentedControl<'a, Id> {
             state.cursor = Some(id.clone());
             return self.commit(state, id);
         }
+        let _ = before;
         SegmentedControlOutcome::Ignored
     }
 
@@ -1045,6 +1074,18 @@ impl<'a, Id: Clone + PartialEq> SegmentedControl<'a, Id> {
         SegmentedControlOutcome::Ignored
     }
 
+    /// EventResult wrapper.
+    pub fn handle_key_result(
+        &self,
+        state: &mut SegmentedControlState<Id>,
+        key: KeyEvent,
+    ) -> EventResult<SegmentedControlOutcome<Id>> {
+        match self.handle_key(state, key) {
+            SegmentedControlOutcome::Ignored => EventResult::ignored(),
+            other => EventResult::emit(other),
+        }
+    }
+
     /// Semantic: Tab-like list of segments.
     pub fn register_semantic<Action>(
         &self,
@@ -1101,13 +1142,19 @@ impl<'a, Id: Clone + PartialEq> SegmentedControl<'a, Id> {
     }
 }
 
+impl<'a, Id: Clone + PartialEq> Widget for &SegmentedControl<'a, Id> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        let mut state = SegmentedControlState::new(None);
+        let _ = self.paint(area, buffer, &mut state);
+    }
+}
+
 // ── Tests ───────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::input::{KeyCode, KeyModifiers};
-    use crate::widgets::tests::click;
 
     fn sample() -> [SegmentedItem<'static, &'static str>; 4] {
         [
@@ -1167,7 +1214,17 @@ mod tests {
         let mut buf = Buffer::empty(Rect::new(0, 0, 60, 1));
         let parts = g.paint(Rect::new(0, 0, 60, 1), &mut buf, &mut state);
         let grid = parts.items.iter().find(|i| i.id == "grid").unwrap();
-        let out = g.handle_mouse(&mut state, click(grid.area.x, grid.area.y));
+        let out = g.handle_mouse(
+            &mut state,
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: Position {
+                    x: grid.area.x,
+                    y: grid.area.y,
+                },
+                modifiers: KeyModifiers::NONE,
+            },
+        );
         assert!(matches!(
             out,
             SegmentedControlOutcome::Selected { id: "grid" }

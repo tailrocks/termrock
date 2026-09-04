@@ -44,6 +44,12 @@ impl FrameTick {
     pub fn elapsed_ms(self) -> u64 {
         self.elapsed.as_millis() as u64
     }
+
+    /// Delta as whole milliseconds (saturating).
+    #[must_use]
+    pub fn delta_ms(self) -> u64 {
+        self.delta.as_millis() as u64
+    }
 }
 
 /// Samples monotonic time once per frame for the application loop.
@@ -87,6 +93,12 @@ impl FrameClock {
         );
         self.previous_at = now;
         tick
+    }
+
+    /// Runner start instant.
+    #[must_use]
+    pub const fn started_at(&self) -> Instant {
+        self.started_at
     }
 }
 

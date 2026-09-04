@@ -145,6 +145,30 @@ pub fn place_popover(bounds: Rect, anchor: Rect, size: OverlaySize) -> Rect {
     )
 }
 
+/// Place using modality-specific policy.
+#[must_use]
+pub fn place_popover_with_modality(
+    bounds: Rect,
+    anchor: Option<Rect>,
+    size: OverlaySize,
+    modality: PopoverModality,
+    presentation: PopoverPresentation,
+) -> Rect {
+    if bounds.is_empty() {
+        return Rect::default();
+    }
+    match presentation {
+        PopoverPresentation::Fullscreen => bounds,
+        PopoverPresentation::Drawer => place_overlay(
+            bounds,
+            None,
+            size,
+            OverlayPolicy::for_kind(OverlayKind::Drawer),
+        ),
+        PopoverPresentation::Anchored => place_overlay(bounds, anchor, size, modality.policy()),
+    }
+}
+
 /// Opens an anchored non-modal popover on the stack (default).
 pub fn open_popover_overlay<FocusId: Clone>(
     stack: &mut OverlayStack<FocusId>,
@@ -396,6 +420,14 @@ impl PopoverState {
         }
     }
 
+    /// Modal factory.
+    #[must_use]
+    pub const fn modal() -> Self {
+        let mut s = Self::new();
+        s.modality = PopoverModality::Modal;
+        s
+    }
+
     /// Whether open (local flag; stack is source of truth for geometry).
     #[must_use]
     pub const fn is_open(&self) -> bool {
@@ -415,6 +447,12 @@ impl PopoverState {
     pub const fn modality(&self) -> PopoverModality {
         self.modality
     }
+
+    /// Set modality.
+    pub fn set_modality(&mut self, m: PopoverModality) {
+        self.modality = m;
+    }
+
     /// Presentation.
     #[must_use]
     pub const fn presentation(&self) -> PopoverPresentation {
@@ -439,6 +477,18 @@ impl PopoverState {
         self.footer_rows = rows;
     }
 
+    /// Slots after last paint.
+    #[must_use]
+    pub const fn slots(&self) -> PopoverSlots {
+        self.slots
+    }
+
+    /// Body area convenience.
+    #[must_use]
+    pub const fn body_area(&self) -> Rect {
+        self.slots.body
+    }
+
     /// Focused inside popover.
     pub fn set_focused(&mut self, on: bool) {
         self.focused = on;
@@ -448,6 +498,11 @@ impl PopoverState {
     #[must_use]
     pub const fn is_focused(&self) -> bool {
         self.focused
+    }
+
+    /// Input gate (mirror stack top_owns_input).
+    pub fn set_accepts_input(&mut self, on: bool) {
+        self.accepts_input = on;
     }
 
     /// Enable.
@@ -482,6 +537,18 @@ impl PopoverState {
         PopoverOutcome::CloseRequested
     }
 
+    /// Sync local open with stack presence.
+    pub fn sync_with_stack<F>(&mut self, stack: &OverlayStack<F>, id: &OverlayId) {
+        let on_stack = stack.contains(id);
+        self.open = on_stack;
+        if on_stack {
+            self.accepts_input = stack.top_owns_input() && stack.top().is_some_and(|t| &t.id == id);
+        } else {
+            self.focused = false;
+            self.accepts_input = false;
+        }
+    }
+
     /// Sync presentation from bounds.
     pub fn sync_presentation(&mut self, bounds: Rect, preferred: OverlaySize) -> PopoverOutcome {
         if self.presentation_override.is_some() {
@@ -507,7 +574,7 @@ impl PopoverState {
         if key.is_release() {
             return PopoverOutcome::Ignored;
         }
-        if key.code == KeyCode::Esc && key.is_press() && key.modifiers.is_empty() {
+        if key.code == KeyCode::Esc && key.modifiers.is_empty() {
             return self.request_close();
         }
         PopoverOutcome::Ignored
@@ -715,7 +782,7 @@ impl<'a> Popover<'a> {
                 buffer.set_stringn(
                     inner.x,
                     y,
-                    take_display_cols(ft, usize::from(inner.width)).as_ref(),
+                    &take_display_cols(ft, usize::from(inner.width)),
                     usize::from(inner.width),
                     self.system.style(Role::TextMuted),
                 );
@@ -782,7 +849,7 @@ impl StatefulWidget for Popover<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::{KeyEventKind, KeyModifiers};
+    use crate::input::KeyModifiers;
 
     #[test]
     fn modality_policies_differ() {
@@ -887,19 +954,6 @@ mod tests {
             PopoverOutcome::CloseRequested
         ));
         assert!(!state.is_open());
-    }
-
-    #[test]
-    fn repeated_escape_is_ignored() {
-        let mut state = PopoverState::new();
-        state.open = true;
-        state.focused = true;
-        state.accepts_input = true;
-
-        let mut repeat_escape = KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE);
-        repeat_escape.kind = KeyEventKind::Repeat;
-        assert_eq!(state.handle_key(repeat_escape), PopoverOutcome::Ignored);
-        assert!(state.is_open());
     }
 
     #[test]

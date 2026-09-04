@@ -108,6 +108,22 @@ pub enum ToolCallAction {
 }
 
 impl ToolCallAction {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::ToggleExpand => "toggle-expand",
+            Self::Cancel => "cancel",
+            Self::Retry => "retry",
+            Self::OpenDiff => "open-diff",
+            Self::OpenLog => "open-log",
+            Self::PermissionFocus => "permission-focus",
+            Self::CopyArgs => "copy-args",
+            Self::CopyResult => "copy-result",
+            Self::Fullscreen => "fullscreen",
+        }
+    }
+
     /// Chord hint.
     #[must_use]
     pub const fn chord(self) -> &'static str {
@@ -414,6 +430,11 @@ pub enum ToolCallCardOutcome {
         /// Call id.
         id: String,
     },
+    /// Activated (generic).
+    Activated {
+        /// Call id.
+        id: String,
+    },
 }
 
 /// Presentation / zoom.
@@ -427,6 +448,18 @@ pub enum ToolCallPresentation {
     Expanded,
     /// Fullscreen (host overlay; card paints dense).
     Fullscreen,
+}
+
+impl ToolCallPresentation {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Compact => "compact",
+            Self::Expanded => "expanded",
+            Self::Fullscreen => "fullscreen",
+        }
+    }
 }
 
 /// Interactive tool call card state.
@@ -469,6 +502,11 @@ impl ToolCallCardState {
     /// Gate.
     pub fn set_accepts_input(&mut self, on: bool) {
         self.accepts_input = on;
+    }
+
+    /// Focus.
+    pub const fn set_focused(&mut self, on: bool) {
+        self.focused = on;
     }
 
     /// Expanded?
@@ -682,6 +720,21 @@ impl<'a> ToolCallCard<'a> {
         }
     }
 
+    /// ASCII.
+    #[must_use]
+    /// Colorless.
+    pub const fn colorless(mut self, on: bool) -> Self {
+        self.colorless = on;
+        self
+    }
+
+    /// Supplies the host-owned deterministic paint tick.
+    #[must_use]
+    pub const fn tick(mut self, tick: u64) -> Self {
+        self.tick = tick;
+        self
+    }
+
     /// Paint.
     pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut ToolCallCardState) {
         state.action_hits.clear();
@@ -838,7 +891,6 @@ impl<'a> ToolCallCard<'a> {
                     .unwrap_or(call.args_summary.as_str()),
                 usize::from(body.width),
             )
-            .into_owned()
         };
         let style = self.system.style(Role::Text);
         buffer.set_stringn(body.x, y, &line1, usize::from(body.width), style);
@@ -928,6 +980,12 @@ impl<'a> ToolCallCard<'a> {
                 }
             }
         }
+        let _ = display_cols;
+    }
+
+    /// Render alias.
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut ToolCallCardState) {
+        self.paint(area, buffer, state);
     }
 }
 
@@ -982,10 +1040,10 @@ pub mod bench {
 mod tests {
     use super::*;
     use crate::style::DesignSystem;
-    use crate::widgets::tests::click;
 
     #[test]
     fn expand_collapse_outcomes() {
+        let call = ToolCall::new("t", "bash", "run").status(ToolStatus::Running);
         let mut st = ToolCallCardState::new();
         assert!(matches!(
             st.toggle_expand("t"),
@@ -996,6 +1054,7 @@ mod tests {
             st.toggle_expand("t"),
             ToolCallCardOutcome::Collapsed { .. }
         ));
+        let _ = call;
     }
 
     #[test]
@@ -1190,13 +1249,19 @@ mod tests {
 
     #[test]
     fn mouse_header_toggles_expand() {
+        use crate::input::{MouseButton, MouseEvent, MouseEventKind};
+        use ratatui_core::layout::Position;
         let call = ToolCall::new("t", "bash", "x");
         let system = DesignSystem::default();
         let mut st = ToolCallCardState::new();
         let area = Rect::new(0, 0, 40, 6);
         let mut buf = Buffer::empty(area);
         ToolCallCard::new(&call, &system).paint(area, &mut buf, &mut st);
-        let ev = click(st.header_hit.x, st.header_hit.y);
+        let ev = MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: Position::new(st.header_hit.x, st.header_hit.y),
+            modifiers: KeyModifiers::NONE,
+        };
         let out = st.handle_mouse(ev, &call);
         assert!(matches!(out, ToolCallCardOutcome::Expanded { .. }));
     }

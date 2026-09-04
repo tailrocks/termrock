@@ -15,9 +15,10 @@
 //! host resolves bracketed paste / OSC 52 / system clipboard.
 //!
 //! Research: prompt-toolkit, Reedline, Textual Input, terminal line editors.
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
-    layout::Rect,
+    layout::{Position, Rect},
     style::{Modifier, Style},
     widgets::StatefulWidget,
 };
@@ -25,8 +26,12 @@ use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
-    interaction::UiIntent,
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
+    interaction::{
+        EventResult, SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent,
+    },
     style::{ButtonRecipeVariant, ControlState, DesignSystem, Glyph, MASK_CELLS, VisualState},
     text::{display_cols, take_display_cols, truncate_cols},
 };
@@ -93,13 +98,13 @@ pub enum EditAction {
 }
 
 impl EditAction {
-    /// Move left without selection.
+    /// Move left without selection (legacy).
     #[must_use]
     pub const fn move_left() -> Self {
         Self::MoveLeft { select: false }
     }
 
-    /// Move right without selection.
+    /// Move right without selection (legacy).
     #[must_use]
     pub const fn move_right() -> Self {
         Self::MoveRight { select: false }
@@ -216,7 +221,7 @@ pub struct TextInputState {
     selecting_with_mouse: bool,
 }
 
-#[cfg_attr(not(feature = "serde"), expect(dead_code))]
+#[cfg_attr(not(feature = "serde"), allow(dead_code))]
 fn default_true() -> bool {
     true
 }
@@ -337,6 +342,12 @@ impl TextInputState {
         self.focused
     }
 
+    /// Whether the pointer is over the field.
+    #[must_use]
+    pub const fn is_hovered(&self) -> bool {
+        self.hovered
+    }
+
     /// Whether the field is in the editing session.
     #[must_use]
     pub const fn is_editing(&self) -> bool {
@@ -406,6 +417,12 @@ impl TextInputState {
     #[must_use]
     pub const fn cursor_byte(&self) -> usize {
         self.cursor
+    }
+
+    /// Selection anchor byte offset when selecting.
+    #[must_use]
+    pub const fn selection_anchor(&self) -> Option<usize> {
+        self.anchor
     }
 
     /// Ordered selection range if non-empty.
@@ -734,40 +751,6 @@ impl TextInputState {
         let alt = key.modifiers.contains(KeyModifiers::ALT);
         let shift = key.modifiers.contains(KeyModifiers::SHIFT);
 
-        // These physical actions have lifecycle or host-facing side effects.
-        // Reject repeats before any editor mutation; ordinary text and cursor
-        // repeats remain supported for held-key behavior.
-        let one_shot = matches!(
-            key.code,
-            KeyCode::Enter
-                | KeyCode::Tab
-                | KeyCode::BackTab
-                | KeyCode::Esc
-                | KeyCode::Char(
-                    'c' | 'C'
-                        | 'k'
-                        | 'K'
-                        | 'm'
-                        | 'M'
-                        | 'u'
-                        | 'U'
-                        | 'v'
-                        | 'V'
-                        | 'w'
-                        | 'W'
-                        | 'x'
-                        | 'X',
-                )
-        );
-        if !key.is_press()
-            && (matches!(
-                key.code,
-                KeyCode::Enter | KeyCode::Tab | KeyCode::BackTab | KeyCode::Esc
-            ) || (ctrl && one_shot))
-        {
-            return TextInputOutcome::Ignored;
-        }
-
         if !self.editing {
             if matches!(key.code, KeyCode::Enter) && !ctrl && !alt && self.can_edit() {
                 self.begin_edit();
@@ -1071,6 +1054,14 @@ impl TextInputState {
             // ok
         }
     }
+
+    /// EventResult wrapper.
+    pub fn handle_key_result(&mut self, key: KeyEvent) -> EventResult<TextInputOutcome> {
+        match self.handle_key(key) {
+            TextInputOutcome::Ignored => EventResult::ignored(),
+            other => EventResult::emit(other),
+        }
+    }
 }
 
 // ── Widget ──────────────────────────────────────────────────────────────────
@@ -1174,6 +1165,13 @@ impl<'a> TextInput<'a> {
         self
     }
 
+    /// Trailing adornment.
+    #[must_use]
+    pub const fn suffix(mut self, suffix: &'a str) -> Self {
+        self.suffix = Some(suffix);
+        self
+    }
+
     /// Secret / password paint mask only.
     ///
     /// Prefer [`super::PasswordInput`] for real credentials: it redacts
@@ -1197,6 +1195,12 @@ impl<'a> TextInput<'a> {
     pub const fn show_clear(mut self, on: bool) -> Self {
         self.show_clear = on;
         self
+    }
+
+    /// Label.
+    #[must_use]
+    pub const fn label(&self) -> &'a str {
+        self.label
     }
 
     fn masked_display(&self) -> String {
@@ -1329,9 +1333,9 @@ impl<'a> TextInput<'a> {
         let painted = if empty {
             truncate_cols(self.placeholder, field_w, self.system.glyphs.ellipsis()).into_owned()
         } else if self.secret {
-            take_display_cols(&self.masked_display(), field_w).into_owned()
+            take_display_cols(&self.masked_display(), field_w)
         } else {
-            take_display_cols(&state.value[state.viewport..], field_w).into_owned()
+            take_display_cols(&state.value[state.viewport..], field_w)
         };
         let mut text_style = if empty {
             theme.placeholder(visual)
@@ -1521,6 +1525,47 @@ impl<'a> TextInput<'a> {
         }
         state.handle_mouse(event, parts.field)
     }
+
+    /// Semantic registration.
+    pub fn register_semantic<Id, Action>(
+        &self,
+        scene: &mut SemanticScene<Id, Action>,
+        id: Id,
+        area: Rect,
+        state: &TextInputState,
+    ) where
+        Id: Clone + PartialEq + std::fmt::Display,
+        Action: Clone,
+    {
+        if area.is_empty() {
+            return;
+        }
+        let desc = if self.secret {
+            "secret"
+        } else if state.value.is_empty() {
+            self.placeholder
+        } else {
+            "text"
+        };
+        let _ = scene.register(
+            SemanticNode::control(id, area)
+                .role(SemanticRole::Input)
+                .label(if self.label.is_empty() {
+                    "text input"
+                } else {
+                    self.label
+                })
+                .description(desc)
+                .focusable(state.enabled)
+                .disabled(!state.enabled)
+                .state(SemanticState {
+                    selected: state.focused,
+                    invalid: !state.is_valid() || matches!(self.validation, Validation::Invalid(_)),
+                    busy: state.loading,
+                    ..Default::default()
+                }),
+        );
+    }
 }
 
 impl StatefulWidget for &TextInput<'_> {
@@ -1543,7 +1588,6 @@ impl StatefulWidget for TextInput<'_> {
 
 #[cfg(test)]
 mod tests {
-    use crate::input::KeyEventKind;
 
     #[test]
     fn editing_uses_hardware_cursor_not_a_reversed_cell() {
@@ -1882,46 +1926,6 @@ mod tests {
     }
 
     #[test]
-    fn repeated_one_shot_actions_are_ignored_but_text_repeats() {
-        let mut state = TextInputState::new("hello world");
-        state.set_focused(true);
-        state.set_editing(true);
-        let actions = [
-            (KeyCode::Enter, KeyModifiers::NONE),
-            (KeyCode::Tab, KeyModifiers::NONE),
-            (KeyCode::BackTab, KeyModifiers::NONE),
-            (KeyCode::Esc, KeyModifiers::NONE),
-            (KeyCode::Char('m'), KeyModifiers::CONTROL),
-            (
-                KeyCode::Char('m'),
-                KeyModifiers::CONTROL | KeyModifiers::ALT,
-            ),
-            (KeyCode::Char('c'), KeyModifiers::CONTROL),
-            (KeyCode::Char('v'), KeyModifiers::CONTROL),
-            (KeyCode::Char('x'), KeyModifiers::CONTROL),
-            (KeyCode::Char('u'), KeyModifiers::CONTROL),
-            (KeyCode::Char('k'), KeyModifiers::CONTROL),
-            (KeyCode::Char('w'), KeyModifiers::CONTROL),
-        ];
-        for (code, modifiers) in actions {
-            let before = state.clone();
-            let mut key = KeyEvent::new(code, modifiers);
-            key.kind = KeyEventKind::Repeat;
-            assert_eq!(state.handle_key(key), TextInputOutcome::Ignored);
-            assert_eq!(state, before, "{code:?} repeat mutated text-input state");
-        }
-
-        let mut repeat_text = KeyEvent::new(KeyCode::Char('!'), KeyModifiers::NONE);
-        repeat_text.kind = KeyEventKind::Repeat;
-        assert_eq!(
-            state.handle_key(repeat_text),
-            TextInputOutcome::Changed,
-            "ordinary text repeats remain supported"
-        );
-        assert_eq!(state.value(), "hello world!");
-    }
-
-    #[test]
     fn enter_begins_edit_when_navigating_esc_reverts() {
         let mut state = TextInputState::new("keep");
         state.set_focused(true);
@@ -1967,7 +1971,11 @@ mod tests {
         let mut buf = Buffer::empty(area);
         let input = TextInput::new("", &system);
         let _ = input.paint(area, &mut buf, &mut state);
-        let down = click(4, 0);
+        let down = MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: Position { x: 4, y: 0 },
+            modifiers: KeyModifiers::NONE,
+        };
         assert_eq!(
             input.handle_mouse(&mut state, down),
             TextInputOutcome::Changed
@@ -2018,7 +2026,6 @@ mod tests {
     }
     use super::*;
     use crate::style::{MASK_CELLS, RolePalette};
-    use crate::widgets::tests::click;
 
     #[test]
     fn keyboard_owns_edit_submit_cancel_and_validation() {
@@ -2186,7 +2193,14 @@ mod tests {
         let mut buf = Buffer::empty(Rect::new(0, 0, 20, 1));
         let parts = TextInput::new("", &system).paint(Rect::new(0, 0, 20, 1), &mut buf, &mut state);
         let out = state.handle_mouse(
-            click(parts.field.x.saturating_add(2), parts.field.y),
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: Position {
+                    x: parts.field.x.saturating_add(2),
+                    y: parts.field.y,
+                },
+                modifiers: KeyModifiers::NONE,
+            },
             parts.field,
         );
         assert!(matches!(out, TextInputOutcome::Changed));

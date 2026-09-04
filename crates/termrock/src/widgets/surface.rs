@@ -181,6 +181,12 @@ pub struct SurfaceParts {
 }
 
 impl SurfaceParts {
+    /// True when content has positive area.
+    #[must_use]
+    pub const fn has_content(self) -> bool {
+        self.content.width > 0 && self.content.height > 0
+    }
+
     /// Hit-test a cell.
     #[must_use]
     pub fn contains_hit(self, col: u16, row: u16) -> bool {
@@ -280,6 +286,13 @@ impl<'a> Surface<'a> {
         };
         self.pad_x = Some(inset.x);
         self.pad_y = Some(inset.y);
+        self
+    }
+
+    /// Hit region policy: full outer rect vs content only.
+    #[must_use]
+    pub const fn hit_full(mut self, hit_full: bool) -> Self {
+        self.hit_full = Some(hit_full);
         self
     }
 
@@ -383,6 +396,12 @@ impl<'a> Surface<'a> {
             }
         }
         parts.content
+    }
+
+    /// Hit-test helper after layout.
+    #[must_use]
+    pub fn hit_test(&self, area: Rect, col: u16, row: u16) -> bool {
+        self.layout(area).contains_hit(col, row)
     }
 }
 
@@ -626,10 +645,11 @@ mod tests {
     fn paint_does_not_panic_on_tiny() {
         let system = DesignSystem::default();
         let mut buf = Buffer::empty(Rect::new(0, 0, 2, 1));
-        // Tiny: content may be empty after border.
-        let _ = Surface::new(&system)
+        let content = Surface::new(&system)
             .recipe(SurfaceRecipe::Focused)
             .paint(Rect::new(0, 0, 2, 1), &mut buf);
+        // Tiny: content may be empty after border.
+        let _ = content;
     }
 
     #[test]

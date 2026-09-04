@@ -17,12 +17,18 @@
 //! semantic label (`remove {name}`) for inspection / help.
 //!
 //! References: token inputs, Grok paste/file chips, desktop filter chips.
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+use ratatui_core::{
+    buffer::Buffer,
+    layout::Rect,
+    style::{Color, Modifier},
+    widgets::Widget,
+};
 
-use crate::input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind};
+use crate::input::{KeyCode, KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{
-    RovingEntry, RovingFocusGroup, RovingOrientation, RovingOutcome, UiIntent,
-    default_button_intent,
+    EventResult, RovingEntry, RovingFocusGroup, RovingOrientation, RovingOutcome, SemanticNode,
+    SemanticRole, SemanticScene, SemanticState, UiIntent, default_button_intent,
 };
 use crate::style::{ButtonRecipeVariant, ControlState, DesignSystem, Glyph, Role};
 use crate::text::{display_cols, take_display_cols};
@@ -40,6 +46,17 @@ pub enum TokenPart {
     Remove,
 }
 
+impl TokenPart {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Body => "body",
+            Self::Remove => "remove",
+        }
+    }
+}
+
 /// Visual / semantic status for chips and tags.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -51,6 +68,18 @@ pub enum TokenStatus {
     Error,
     /// Loading / pending.
     Loading,
+}
+
+impl TokenStatus {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Default => "default",
+            Self::Error => "error",
+            Self::Loading => "loading",
+        }
+    }
 }
 
 /// Geometry for one painted token.
@@ -157,6 +186,20 @@ impl<'a, Id> Tag<'a, Id> {
         self
     }
 
+    /// Error tag.
+    #[must_use]
+    pub const fn error(mut self) -> Self {
+        self.status = TokenStatus::Error;
+        self
+    }
+
+    /// Loading tag.
+    #[must_use]
+    pub const fn loading(mut self) -> Self {
+        self.status = TokenStatus::Loading;
+        self
+    }
+
     /// Disabled.
     #[must_use]
     pub const fn disabled(mut self, on: bool) -> Self {
@@ -164,10 +207,22 @@ impl<'a, Id> Tag<'a, Id> {
         self
     }
 
+    /// Label text.
+    #[must_use]
+    pub const fn label(&self) -> &'a str {
+        self.label
+    }
+
     /// Whether removable.
     #[must_use]
     pub const fn is_removable(&self) -> bool {
         self.removable && !self.disabled
+    }
+
+    /// Semantic remove action label.
+    #[must_use]
+    pub fn remove_action_label(&self) -> String {
+        remove_label(self.label)
     }
 
     /// Measure natural width.
@@ -244,7 +299,18 @@ impl TagState {
 
 impl<'a, Id: Clone> Tag<'a, Id> {
     /// Paint; updates state geometry.
+    /// Paint; updates state geometry.
     pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut TagState) -> TokenParts {
+        self.paint_on(area, buffer, state, None)
+    }
+
+    fn paint_on(
+        &self,
+        area: Rect,
+        buffer: &mut Buffer,
+        state: &mut TagState,
+        background: Option<Color>,
+    ) -> TokenParts {
         state.parts = None;
         if area.is_empty() {
             return TokenParts::default();
@@ -263,6 +329,7 @@ impl<'a, Id: Clone> Tag<'a, Id> {
             part: state.part,
             hovered_remove: state.hovered_remove,
             overlay: false,
+            background,
         }
         .paint(area, buffer);
         state.parts = Some(parts);
@@ -345,6 +412,84 @@ impl<'a, Id: Clone> Tag<'a, Id> {
         }
         TagOutcome::Ignored
     }
+
+    /// EventResult wrapper.
+    pub fn handle_key_result(
+        &self,
+        state: &mut TagState,
+        key: KeyEvent,
+    ) -> EventResult<TagOutcome<Id>> {
+        match self.handle_key(state, key) {
+            TagOutcome::Ignored => EventResult::ignored(),
+            other => EventResult::emit(other),
+        }
+    }
+
+    /// Semantic registration (body + remove when present).
+    pub fn register_semantic<Action>(
+        &self,
+        scene: &mut SemanticScene<Id, Action>,
+        area: Rect,
+        state: &TagState,
+    ) where
+        Id: Clone + PartialEq + std::fmt::Display,
+        Action: Clone,
+    {
+        let mut st = TagState {
+            focused: state.focused,
+            part: state.part,
+            hovered_remove: state.hovered_remove,
+            parts: None,
+        };
+        // layout without paint
+        let parts = {
+            let mut buf = Buffer::empty(Rect::new(0, 0, area.width.max(1), 1));
+            self.paint(
+                Rect {
+                    x: 0,
+                    y: 0,
+                    width: area.width,
+                    height: 1,
+                },
+                &mut buf,
+                &mut st,
+            )
+        };
+        let body = offset_rect(parts.body, area.x, area.y);
+        let rem = offset_rect(parts.remove, area.x, area.y);
+        let _ = scene.register(
+            SemanticNode::content(self.id.clone(), body)
+                .role(SemanticRole::Content)
+                .label(self.label)
+                .description(format!("tag; {}", self.status.id()))
+                .focusable(false),
+        );
+        if parts.has_remove() {
+            let _ = scene.register(
+                SemanticNode::control(self.id.clone(), rem)
+                    .role(SemanticRole::Button)
+                    .label(self.remove_action_label())
+                    .description("remove action")
+                    .focusable(self.is_removable())
+                    .state(SemanticState {
+                        selected: matches!(state.part, TokenPart::Remove) && state.focused,
+                        ..Default::default()
+                    }),
+            );
+        }
+    }
+}
+
+fn offset_rect(r: Rect, ox: u16, oy: u16) -> Rect {
+    if r.width == 0 || r.height == 0 {
+        return r;
+    }
+    Rect {
+        x: ox.saturating_add(r.x),
+        y: oy.saturating_add(r.y),
+        width: r.width,
+        height: r.height,
+    }
 }
 
 /// Which brackets a token wears.
@@ -354,9 +499,32 @@ impl<'a, Id: Clone> Tag<'a, Id> {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
 pub enum BracketStyle {
+    /// `⟨ label ⟩` — a neutral tag (ASCII `< >`).
+    Angle,
     /// `[ label ]` — an interactive chip or keycap.
     #[default]
     Square,
+}
+
+impl BracketStyle {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Angle => "angle",
+            Self::Square => "square",
+        }
+    }
+
+    /// Opening and closing brackets under the active glyph profile.
+    #[must_use]
+    pub const fn pair(self, ascii: bool) -> (&'static str, &'static str) {
+        match (self, ascii) {
+            (Self::Angle, false) => ("⟨", "⟩"),
+            (Self::Angle, true) => ("<", ">"),
+            (Self::Square, _) => ("[", "]"),
+        }
+    }
 }
 
 /// One token's paint plan: gutter, an optional mark, a label, a remove slot.
@@ -379,6 +547,8 @@ struct TokenPaint<'a> {
     hovered_remove: bool,
     /// Chip wells sit on overlay (junie Toggle/Secondary). Tags stay quiet.
     overlay: bool,
+    /// Host surface used by a source chip bar.
+    background: Option<Color>,
 }
 
 impl TokenPaint<'_> {
@@ -425,7 +595,10 @@ impl TokenPaint<'_> {
             style,
         );
 
-        let fill_bg = style.bg.unwrap_or(self.system.junie_theme().surface);
+        let fill_bg = style
+            .bg
+            .or(self.background)
+            .unwrap_or(self.system.junie_theme().surface);
         let gutter_style = self.system.gutter(
             crate::style::VisualState {
                 focused: self.focused,
@@ -445,7 +618,7 @@ impl TokenPaint<'_> {
             buffer.set_stringn(
                 body_x,
                 area.y,
-                take_display_cols(&inner, usize::from(body_w)).as_ref(),
+                &take_display_cols(&inner, usize::from(body_w)),
                 usize::from(body_w),
                 style,
             );
@@ -612,6 +785,21 @@ impl<'a, Id> Chip<'a, Id> {
             interactive: true,
         }
     }
+
+    /// Static display chip (no toggle).
+    #[must_use]
+    pub const fn static_chip(id: Id, label: &'a str, system: &'a DesignSystem) -> Self {
+        Self {
+            id,
+            label,
+            system,
+            removable: false,
+            status: TokenStatus::Default,
+            disabled: false,
+            interactive: false,
+        }
+    }
+
     /// Removable.
     #[must_use]
     pub const fn removable(mut self, on: bool) -> Self {
@@ -633,6 +821,13 @@ impl<'a, Id> Chip<'a, Id> {
         self
     }
 
+    /// Loading chip.
+    #[must_use]
+    pub const fn loading(mut self) -> Self {
+        self.status = TokenStatus::Loading;
+        self
+    }
+
     /// Disabled.
     #[must_use]
     pub const fn disabled(mut self, on: bool) -> Self {
@@ -640,10 +835,29 @@ impl<'a, Id> Chip<'a, Id> {
         self
     }
 
+    /// Interactive toggle.
+    #[must_use]
+    pub const fn interactive(mut self, on: bool) -> Self {
+        self.interactive = on;
+        self
+    }
+
+    /// Label.
+    #[must_use]
+    pub const fn label(&self) -> &'a str {
+        self.label
+    }
+
     /// Removable and enabled.
     #[must_use]
     pub const fn is_removable(&self) -> bool {
         self.removable && !self.disabled
+    }
+
+    /// Semantic remove label.
+    #[must_use]
+    pub fn remove_action_label(&self) -> String {
+        remove_label(self.label)
     }
 
     /// Measure width for selected state.
@@ -716,9 +930,27 @@ impl ChipState {
         }
     }
 
+    /// Focused.
+    #[must_use]
+    pub const fn is_focused(&self) -> bool {
+        self.focused
+    }
+
+    /// Part.
+    #[must_use]
+    pub const fn part(&self) -> TokenPart {
+        self.part
+    }
+
     /// Set part.
     pub const fn set_part(&mut self, part: TokenPart) {
         self.part = part;
+    }
+
+    /// Parts.
+    #[must_use]
+    pub const fn parts(&self) -> Option<TokenParts> {
+        self.parts
     }
 
     /// Pointer over the remove glyph.
@@ -730,6 +962,16 @@ impl ChipState {
 impl<'a, Id: Clone> Chip<'a, Id> {
     /// Paint chip.
     pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut ChipState) -> TokenParts {
+        self.paint_on(area, buffer, state, None)
+    }
+
+    fn paint_on(
+        &self,
+        area: Rect,
+        buffer: &mut Buffer,
+        state: &mut ChipState,
+        background: Option<Color>,
+    ) -> TokenParts {
         state.parts = None;
         if area.is_empty() {
             return TokenParts::default();
@@ -747,6 +989,7 @@ impl<'a, Id: Clone> Chip<'a, Id> {
             part: state.part,
             hovered_remove: state.hovered_remove,
             overlay: true,
+            background,
         }
         .paint(area, buffer);
         state.parts = Some(parts);
@@ -843,6 +1086,33 @@ impl<'a, Id: Clone> Chip<'a, Id> {
         }
         ChipOutcome::Ignored
     }
+
+    /// EventResult.
+    pub fn handle_key_result(
+        &self,
+        state: &mut ChipState,
+        key: KeyEvent,
+    ) -> EventResult<ChipOutcome<Id>> {
+        match self.handle_key(state, key) {
+            ChipOutcome::Ignored => EventResult::ignored(),
+            other => EventResult::emit(other),
+        }
+    }
+}
+
+// Legacy paint entry points used by older call sites.
+impl<Id: Clone> Tag<'_, Id> {
+    /// Paint (legacy name).
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut TagState) {
+        let _ = self.paint(area, buffer, state);
+    }
+}
+
+impl<Id: Clone> Chip<'_, Id> {
+    /// Paint (legacy name).
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut ChipState) {
+        let _ = self.paint(area, buffer, state);
+    }
 }
 
 // ── TokenStrip (TokenField shared behavior) ──────────────────────────────────
@@ -856,6 +1126,17 @@ pub enum TokenStripLayout {
     Scroll,
     /// Wrap to next rows.
     Wrap,
+}
+
+impl TokenStripLayout {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Scroll => "scroll",
+            Self::Wrap => "wrap",
+        }
+    }
 }
 
 /// One strip entry (tag or chip projection).
@@ -924,6 +1205,13 @@ impl<'a, Id> TokenItem<'a, Id> {
     #[must_use]
     pub const fn status(mut self, status: TokenStatus) -> Self {
         self.status = status;
+        self
+    }
+
+    /// Disabled (skipped by roving).
+    #[must_use]
+    pub const fn disabled(mut self, on: bool) -> Self {
+        self.disabled = on;
         self
     }
 }
@@ -1048,6 +1336,8 @@ pub struct TokenStrip<'a, Id> {
     add_label: Option<&'a str>,
     /// Leading label such as `match all ▾` (source ChipBar `lead`).
     lead: Option<&'a str>,
+    /// Optional background for the host surface.
+    background: Option<Color>,
 }
 
 impl<'a, Id> TokenStrip<'a, Id> {
@@ -1062,6 +1352,7 @@ impl<'a, Id> TokenStrip<'a, Id> {
             gap: 1,
             add_label: Some("+ Add filter"),
             lead: None,
+            background: None,
         }
     }
 
@@ -1086,6 +1377,13 @@ impl<'a, Id> TokenStrip<'a, Id> {
         self
     }
 
+    /// Gap between tokens.
+    #[must_use]
+    pub const fn gap(mut self, gap: u16) -> Self {
+        self.gap = gap;
+        self
+    }
+
     /// Trailing add affordance (`+ Add filter`). `None` hides it.
     #[must_use]
     pub const fn add_label(mut self, label: Option<&'a str>) -> Self {
@@ -1100,14 +1398,21 @@ impl<'a, Id> TokenStrip<'a, Id> {
         self.lead = lead;
         self
     }
+
+    /// Paint the strip on an explicit host background.
+    #[must_use]
+    pub const fn background(mut self, background: Color) -> Self {
+        self.background = Some(background);
+        self
+    }
 }
 
 impl<'a, Id: Clone + PartialEq + std::fmt::Display> TokenStrip<'a, Id> {
-    fn entries<'b>(items: &'b [TokenItem<'b, Id>]) -> Vec<RovingEntry<'b, Id>> {
-        items
+    fn entries(&self) -> Vec<RovingEntry<Id>> {
+        self.items
             .iter()
             .filter(|i| !i.disabled)
-            .map(|i| RovingEntry::new(i.id.clone(), i.label).enabled(true))
+            .map(|i| RovingEntry::new(i.id.clone(), i.label.to_string()).enabled(true))
             .collect()
     }
 
@@ -1123,7 +1428,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> TokenStrip<'a, Id> {
         {
             return;
         }
-        let entries = Self::entries(&self.items);
+        let entries = self.entries();
         let _ = state.roving.reconcile(&entries);
 
         let max_v = if self.max_visible == 0 {
@@ -1166,10 +1471,8 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> TokenStrip<'a, Id> {
             return area;
         }
         let surface = self
-            .system
-            .style(Role::Surface)
-            .bg
-            .unwrap_or(ratatui_core::style::Color::Reset);
+            .background
+            .unwrap_or_else(|| self.system.style(Role::Surface).bg.unwrap_or(Color::Reset));
         let style = self.system.style(Role::TextMuted).bg(surface);
         buffer.set_string(area.x, area.y, &text, style);
         state.lead_region = Some(Rect {
@@ -1246,7 +1549,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> TokenStrip<'a, Id> {
                 width: ow.min(area.width),
                 height: 1.min(area.height),
             };
-            paint_subtle_chip(self.system, buffer, rect, &label, false);
+            paint_subtle_chip(self.system, buffer, rect, &label, false, self.background);
             state.overflow_region = Some(rect);
         }
         let next_x = state
@@ -1311,7 +1614,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> TokenStrip<'a, Id> {
                     width: ow.min(area.right().saturating_sub(x)),
                     height: 1,
                 };
-                paint_subtle_chip(self.system, buffer, rect, &label, false);
+                paint_subtle_chip(self.system, buffer, rect, &label, false, self.background);
                 state.overflow_region = Some(rect);
                 x = x.saturating_add(ow).saturating_add(self.gap);
             }
@@ -1349,7 +1652,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> TokenStrip<'a, Id> {
             if focused {
                 cs.set_part(state.part);
             }
-            let _ = chip.paint(rect, buffer, &mut cs);
+            let _ = chip.paint_on(rect, buffer, &mut cs, self.background);
         } else {
             let tag = Tag::new(item.id.clone(), item.label, self.system)
                 .removable(item.removable)
@@ -1361,7 +1664,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> TokenStrip<'a, Id> {
             if focused {
                 ts.set_part(state.part);
             }
-            let _ = tag.paint(rect, buffer, &mut ts);
+            let _ = tag.paint_on(rect, buffer, &mut ts, self.background);
         }
     }
 
@@ -1404,6 +1707,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> TokenStrip<'a, Id> {
             rect,
             label,
             state.surface_focused && state.add_focused,
+            self.background,
         );
         state.add_region = Some(rect);
     }
@@ -1417,7 +1721,7 @@ impl<'a, Id: Clone + PartialEq + std::fmt::Display> TokenStrip<'a, Id> {
         if !state.surface_focused || !key.is_press() {
             return TokenStripOutcome::Ignored;
         }
-        let entries = Self::entries(&self.items);
+        let entries = self.entries();
         let _ = state.roving.reconcile(&entries);
 
         // Source ChipBar: ← → move the chip cursor. TokenPart is mouse/Tab-internal,
@@ -1619,21 +1923,32 @@ fn paint_subtle_chip(
     rect: Rect,
     label: &str,
     focused: bool,
+    background: Option<Color>,
 ) {
     if rect.is_empty() {
         return;
     }
-    let mut style = system.style(Role::TextMuted);
+    let fill_bg = background.or_else(|| buffer.cell((rect.x, rect.y)).map(|cell| cell.bg));
+    let mut style = system.style(Role::TextSecondary);
+    if let Some(bg) = fill_bg {
+        style = style.bg(bg);
+    }
     if focused {
         style = system.style(Role::Text).add_modifier(Modifier::BOLD);
+        if let Some(bg) = fill_bg {
+            style = style.bg(bg);
+        }
     }
     buffer.set_style(rect, style);
     let gutter = system.glyphs.selection_gutter();
-    let gutter_style = if focused {
-        style.patch(system.style(Role::Focus))
-    } else {
-        style
-    };
+    let gutter_style = system.gutter(
+        crate::style::VisualState {
+            focused,
+            ..crate::style::VisualState::default()
+        },
+        fill_bg.unwrap_or(Color::Reset),
+        false,
+    );
     buffer.set_stringn(rect.x, rect.y, gutter, 1, gutter_style);
     if rect.width > 1 {
         buffer.set_stringn(
@@ -1666,7 +1981,7 @@ fn estimate_item_width<Id: Clone>(item: &TokenItem<'_, Id>, system: &DesignSyste
 mod tests {
     use super::*;
     use crate::input::KeyModifiers;
-    use crate::widgets::tests::click;
+    use crate::style::GlyphSet;
 
     #[test]
     fn remove_label_explicit() {
@@ -1740,7 +2055,14 @@ mod tests {
         let mut tag_state = TagState::new();
         let parts = tag.paint(area, &mut buffer, &mut tag_state);
         assert!(matches!(
-            tag.handle_mouse(&mut tag_state, click(parts.body.x, parts.body.y),),
+            tag.handle_mouse(
+                &mut tag_state,
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: ratatui_core::layout::Position::new(parts.body.x, parts.body.y),
+                    modifiers: KeyModifiers::NONE,
+                },
+            ),
             TagOutcome::Activated("tag")
         ));
 
@@ -1748,7 +2070,14 @@ mod tests {
         let mut chip_state = ChipState::new(false);
         let parts = chip.paint(area, &mut buffer, &mut chip_state);
         assert!(matches!(
-            chip.handle_mouse(&mut chip_state, click(parts.body.x, parts.body.y),),
+            chip.handle_mouse(
+                &mut chip_state,
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: ratatui_core::layout::Position::new(parts.body.x, parts.body.y),
+                    modifiers: KeyModifiers::NONE,
+                },
+            ),
             ChipOutcome::Selected("chip")
         ));
 
@@ -1758,7 +2087,14 @@ mod tests {
         strip.paint(area, &mut buffer, &mut strip_state);
         let hit = strip_state.regions[0].1;
         assert!(matches!(
-            strip.handle_mouse(&mut strip_state, click(hit.x, hit.y),),
+            strip.handle_mouse(
+                &mut strip_state,
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: ratatui_core::layout::Position::new(hit.x, hit.y),
+                    modifiers: KeyModifiers::NONE,
+                },
+            ),
             TokenStripOutcome::Selected("strip")
         ));
     }

@@ -30,24 +30,31 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+use ratatui_core::{
+    buffer::Buffer,
+    layout::Rect,
+    style::Modifier,
+    widgets::{StatefulWidget, Widget},
+};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers},
+    input::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
     layout::{
         ModalSpec, PaneConstraint, PaneGeom, PaneId, Workspace, WorkspaceAxis, WorkspaceNode,
         WorkspaceState, modal_rect,
     },
     style::{DesignSystem, Glyph, ListRowVisualState, PanelChrome, Role},
+    text::take_display_cols,
     widgets::{
         Checkpoint, CheckpointTimeline, CheckpointTimelineOutcome, CheckpointTimelineState,
         ConfirmFocus, ConfirmPrompt, Diagnostic, DiagnosticSeverity, DiagnosticState,
         DiagnosticView, DiffHunk, DiffLine, DiffReview, DiffReviewFileRow, DiffReviewOutcome,
-        DiffReviewState, DiffReviewUnit, FileGitStatus, FileTree, FileTreeEntry, FileTreeOutcome,
-        FileTreeState, HelpEntry, KeyboardHelp, KeyboardHelpOutcome, KeyboardHelpState, Panel,
-        StatusBar, StatusBarState, StatusRegion, StatusSlot, TerminalCommandMeta, TerminalLine,
-        TerminalOutput, TerminalOutputState, TerminalRunStatus, example_checkpoints,
-        example_help_entries,
+        DiffReviewState, DiffReviewUnit, DiffReviewUnitKind, FileGitStatus, FileTree,
+        FileTreeEntry, FileTreeOutcome, FileTreeState, HelpEntry, KeyboardHelp,
+        KeyboardHelpOutcome, KeyboardHelpState, Panel, StatusBar, StatusBarState, StatusRegion,
+        StatusSlot, TerminalCommandMeta, TerminalLine, TerminalOutput, TerminalOutputState,
+        TerminalRunStatus, example_checkpoints, example_help_entries,
     },
 };
 
@@ -87,6 +94,19 @@ impl GitWorkbenchPane {
             Self::Status => "status",
         }
     }
+
+    /// Default Tab focus cycle (status is chrome-only).
+    #[must_use]
+    pub fn focus_order() -> &'static [GitWorkbenchPane] {
+        &[
+            Self::Files,
+            Self::Diff,
+            Self::History,
+            Self::Branches,
+            Self::Output,
+            Self::Diagnostics,
+        ]
+    }
 }
 
 /// Responsive density.
@@ -112,6 +132,16 @@ impl GitWorkbenchDensity {
             Self::Narrow
         } else {
             Self::Normal
+        }
+    }
+
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Normal => "normal",
+            Self::Narrow => "narrow",
+            Self::Tiny => "tiny",
         }
     }
 }
@@ -405,8 +435,8 @@ pub struct GitWorkbenchSurfaces<'a> {
     pub terminal_meta: &'a TerminalCommandMeta<'a>,
     /// Terminal lines.
     pub terminal_lines: &'a [TerminalLine<'a>],
-    /// Keyboard help entries (host-filtered references).
-    pub help_entries: &'a [&'a HelpEntry],
+    /// Keyboard help entries.
+    pub help_entries: &'a [HelpEntry],
 }
 
 // ── State ───────────────────────────────────────────────────────────────────
@@ -436,6 +466,10 @@ pub struct GitWorkbenchState {
     pub branch_cursor: usize,
     /// Repo status chrome.
     pub repo_status: GitRepoStatus,
+    /// Current branch / HEAD label.
+    pub head_label: String,
+    /// Short SHA.
+    pub head_sha: Option<String>,
     /// Commit message draft.
     pub commit_message: String,
     /// Focused pane id.
@@ -484,6 +518,8 @@ impl GitWorkbenchState {
             branches: example_git_branches(),
             branch_cursor: 0,
             repo_status: GitRepoStatus::Dirty,
+            head_label: "main".into(),
+            head_sha: Some("a1b2c3d".into()),
             commit_message: String::new(),
             focus: GitWorkbenchPane::Files.id(),
             density: None,
@@ -723,7 +759,7 @@ impl GitWorkbenchState {
         hunks: &[DiffHunk],
         diff_lines: &[DiffLine<'_>],
         diff_files: &[DiffReviewFileRow<'_>],
-        help_entries: &[&HelpEntry],
+        help_entries: &[HelpEntry],
         diagnostics: &[Diagnostic<'_>],
         terminal_lines: &[TerminalLine<'_>],
         terminal_meta: &TerminalCommandMeta<'_>,
@@ -1003,11 +1039,24 @@ impl GitWorkbenchState {
                     .priority(100),
             );
         }
+        let _ = self.head_label.as_str();
         slots
     }
 }
 
 // ── Layout ──────────────────────────────────────────────────────────────────
+
+/// Layout width-derived.
+#[must_use]
+pub fn git_workbench_layout(area: Rect, state: &WorkspaceState) -> Vec<PaneGeom> {
+    git_workbench_layout_density(
+        area,
+        state,
+        GitWorkbenchDensity::for_width(area.width),
+        false,
+        false,
+    )
+}
 
 fn south_stack(include_diagnostics: bool, include_output: bool) -> WorkspaceNode {
     let status = WorkspaceNode::Leaf {
@@ -1178,7 +1227,7 @@ fn centered_modal(area: Rect) -> Rect {
 // ── Render ──────────────────────────────────────────────────────────────────
 
 /// Paint composed Git workbench (public child widgets only).
-pub fn paint_git_workbench(buffer: &mut Buffer, area: Rect, surfaces: GitWorkbenchSurfaces<'_>) {
+pub fn render_git_workbench(buffer: &mut Buffer, area: Rect, surfaces: GitWorkbenchSurfaces<'_>) {
     let GitWorkbenchSurfaces {
         system,
         state,
@@ -1223,11 +1272,11 @@ pub fn paint_git_workbench(buffer: &mut Buffer, area: Rect, surfaces: GitWorkben
             PanelChrome::Normal
         });
         let inner = panel.inner(r);
-        panel.paint(r, buffer, None);
+        Widget::render(&panel, r, buffer);
         FileTree::new(files, system)
             .title("Changes")
             .focused(focused)
-            .paint(inner, buffer, &mut state.files);
+            .render(inner, buffer, &mut state.files);
     }
 
     if let Some(r) = pane_area(&panes, "diff") {
@@ -1315,7 +1364,7 @@ fn paint_branch_list(
         PanelChrome::Normal
     });
     let inner = panel.inner(area);
-    panel.paint(area, buffer, None);
+    Widget::render(&panel, area, buffer);
     if inner.is_empty() {
         return;
     }
@@ -1438,6 +1487,18 @@ pub fn example_git_files() -> Vec<FileTreeEntry<'static, &'static str>> {
     ]
 }
 
+/// Conflict-only file list.
+#[must_use]
+pub fn example_conflict_files() -> Vec<FileTreeEntry<'static, &'static str>> {
+    vec![
+        FileTreeEntry::file("src/auth.rs", "auth.rs", "src/auth.rs", 0)
+            .file_type("rs")
+            .git(FileGitStatus::Conflict),
+        FileTreeEntry::file("Cargo.lock", "Cargo.lock", "Cargo.lock", 0)
+            .git(FileGitStatus::Conflict),
+    ]
+}
+
 /// Demo diff lines.
 #[must_use]
 pub fn example_git_diff_lines() -> Vec<DiffLine<'static>> {
@@ -1554,8 +1615,8 @@ pub fn example_git_terminal_lines() -> Vec<TerminalLine<'static>> {
 
 /// Git-oriented help entries (extends generic help).
 #[must_use]
-pub fn example_git_help_entries() -> Vec<HelpEntry> {
-    let mut e = example_help_entries();
+pub fn example_git_help_entries(system: &DesignSystem) -> Vec<HelpEntry> {
+    let mut e = example_help_entries(system);
     e.push(HelpEntry::new("stage", "Git", "t", "Stage selection (DiffReview)").priority(15));
     e.push(HelpEntry::new("unstage", "Git", "T", "Unstage selection").priority(15));
     e.push(HelpEntry::new("discard", "Git", "x", "Discard path (confirm)").priority(16));
@@ -1601,8 +1662,10 @@ pub mod bench {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::widgets::DiffReviewUnitKind;
-    use crate::widgets::tests::press;
+
+    fn press(code: KeyCode) -> KeyEvent {
+        KeyEvent::new(code, KeyModifiers::NONE)
+    }
 
     fn ctrl(code: KeyCode) -> KeyEvent {
         KeyEvent::new(code, KeyModifiers::CONTROL)
@@ -1629,7 +1692,7 @@ mod tests {
     fn hk_help(
         st: &mut GitWorkbenchState,
         key: KeyEvent,
-        help: &[&HelpEntry],
+        help: &[HelpEntry],
     ) -> GitWorkbenchOutcome {
         st.handle_key(key, &[], &[], &[], &[], help, &[], &[], &meta_empty())
     }
@@ -1681,13 +1744,12 @@ mod tests {
         let diags = example_conflict_diagnostics();
         let meta = example_git_terminal_meta();
         let tlines = example_git_terminal_lines();
-        let help = example_git_help_entries();
-        let help_refs: Vec<&HelpEntry> = help.iter().collect();
+        let help = example_git_help_entries(&system);
         let area = Rect::new(0, 0, 120, 36);
         let mut buf = Buffer::empty(area);
         st.focus = "files";
         st.history.set_focused(true); // corrupt; paint must correct via set_focused
-        paint_git_workbench(
+        render_git_workbench(
             &mut buf,
             area,
             GitWorkbenchSurfaces {
@@ -1701,15 +1763,15 @@ mod tests {
                 diagnostics: &diags,
                 terminal_meta: &meta,
                 terminal_lines: &tlines,
-                help_entries: &help_refs,
+                help_entries: &help,
             },
         );
         assert!(
             !st.history.focused,
-            "paint_git_workbench must set history.focused from workbench focus"
+            "render_git_workbench must set history.focused from workbench focus"
         );
         st.focus = "history";
-        paint_git_workbench(
+        render_git_workbench(
             &mut buf,
             area,
             GitWorkbenchSurfaces {
@@ -1723,7 +1785,7 @@ mod tests {
                 diagnostics: &diags,
                 terminal_meta: &meta,
                 terminal_lines: &tlines,
-                help_entries: &help_refs,
+                help_entries: &help,
             },
         );
         assert!(st.history.focused);
@@ -1900,12 +1962,11 @@ mod tests {
         let diags: Vec<Diagnostic<'static>> = Vec::new();
         let meta = example_git_terminal_meta();
         let tlines = example_git_terminal_lines();
-        let help = example_git_help_entries();
-        let help_refs: Vec<&HelpEntry> = help.iter().collect();
+        let help = example_git_help_entries(&system);
         let area = Rect::new(0, 0, 100, 28);
         let mut buf = Buffer::empty(area);
         // Clean paint
-        paint_git_workbench(
+        render_git_workbench(
             &mut buf,
             area,
             GitWorkbenchSurfaces {
@@ -1919,13 +1980,13 @@ mod tests {
                 diagnostics: &diags,
                 terminal_meta: &meta,
                 terminal_lines: &tlines,
-                help_entries: &help_refs,
+                help_entries: &help,
             },
         );
         assert!(!st.last_panes().is_empty());
         // Empty repo paint
         st.repo_status = GitRepoStatus::Clean;
-        paint_git_workbench(
+        render_git_workbench(
             &mut buf,
             area,
             GitWorkbenchSurfaces {
@@ -1939,7 +2000,7 @@ mod tests {
                 diagnostics: &diags,
                 terminal_meta: &meta,
                 terminal_lines: &[],
-                help_entries: &help_refs,
+                help_entries: &help,
             },
         );
     }
@@ -2019,8 +2080,7 @@ mod tests {
         let diags = example_conflict_diagnostics();
         let meta = example_git_terminal_meta();
         let tlines = example_git_terminal_lines();
-        let help = example_git_help_entries();
-        let help_refs: Vec<&HelpEntry> = help.iter().collect();
+        let help = example_git_help_entries(&system);
 
         for d in [
             GitWorkbenchDensity::Normal,
@@ -2035,7 +2095,7 @@ mod tests {
                 GitWorkbenchDensity::Tiny => Rect::new(0, 0, 40, 16),
             };
             let mut buf = Buffer::empty(area);
-            paint_git_workbench(
+            render_git_workbench(
                 &mut buf,
                 area,
                 GitWorkbenchSurfaces {
@@ -2049,7 +2109,7 @@ mod tests {
                     diagnostics: &diags,
                     terminal_meta: &meta,
                     terminal_lines: &tlines,
-                    help_entries: &help_refs,
+                    help_entries: &help,
                 },
             );
             assert!(!st.last_panes().is_empty());
@@ -2102,13 +2162,12 @@ mod tests {
         let diags = example_conflict_diagnostics();
         let meta = example_git_terminal_meta();
         let tlines = example_git_terminal_lines();
-        let help = example_git_help_entries();
-        let help_refs: Vec<&HelpEntry> = help.iter().collect();
+        let help = example_git_help_entries(&system);
         let area = Rect::new(0, 0, 120, 40);
         let mut buf = Buffer::empty(area);
         let start = std::time::Instant::now();
         for _ in 0..bench::PAINT_FRAMES {
-            paint_git_workbench(
+            render_git_workbench(
                 &mut buf,
                 area,
                 GitWorkbenchSurfaces {
@@ -2122,7 +2181,7 @@ mod tests {
                     diagnostics: &diags,
                     terminal_meta: &meta,
                     terminal_lines: &tlines,
-                    help_entries: &help_refs,
+                    help_entries: &help,
                 },
             );
         }
@@ -2133,14 +2192,13 @@ mod tests {
     #[test]
     fn help_and_refresh() {
         let mut st = open();
-        let help = example_git_help_entries();
-        let help_refs: Vec<&HelpEntry> = help.iter().collect();
-        let out = hk_help(&mut st, press(KeyCode::Char('?')), &help_refs);
+        let help = example_git_help_entries(&DesignSystem::default());
+        let out = hk_help(&mut st, press(KeyCode::Char('?')), &help);
         assert!(matches!(out, GitWorkbenchOutcome::OpenHelp));
         assert!(st.help_is_open());
         st.help_open = false;
         let _ = st.help.close_modal();
-        let out = hk_help(&mut st, ctrl(KeyCode::Char('r')), &help_refs);
+        let out = hk_help(&mut st, ctrl(KeyCode::Char('r')), &help);
         assert!(
             matches!(out, GitWorkbenchOutcome::RefreshRequested),
             "{out:?}"

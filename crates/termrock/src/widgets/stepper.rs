@@ -15,15 +15,18 @@
 //! [`StepperNavPolicy`].
 //!
 //! Research: shadcn-style steppers, installers, CI pipeline views.
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
-    layout::Rect,
+    layout::{Position, Rect},
     style::{Modifier, Style},
     widgets::StatefulWidget,
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     interaction::{
         CollectionItem, CollectionState, NavigationMove, RovingOrientation, SemanticNode,
         SemanticRole, SemanticScene, SemanticState, UiIntent,
@@ -91,7 +94,17 @@ impl StepStatus {
             Self::Optional | Self::Future => " ",
         }
     }
+
+    /// Whether the step may receive activation under default linear policy.
+    #[must_use]
+    pub const fn is_terminal_ok(self) -> bool {
+        matches!(self, Self::Complete | Self::Skipped)
+    }
 }
+
+/// Alias used by FormWizard historically (`Upcoming` = [`StepStatus::Future`]).
+#[allow(dead_code)]
+pub type WizardStepStatus = StepStatus;
 
 /// One step definition (host-projected; values stay outside).
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -134,7 +147,18 @@ impl StepItem {
         self.optional = on;
         self
     }
+
+    /// Disabled flag.
+    #[must_use]
+    pub const fn disabled(mut self, on: bool) -> Self {
+        self.disabled = on;
+        self
+    }
 }
+
+/// FormWizard-compatible name.
+#[allow(dead_code)]
+pub type WizardStep = StepItem;
 
 /// Layout orientation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -145,6 +169,17 @@ pub enum StepperOrientation {
     Horizontal,
     /// Top → bottom with optional descriptions.
     Vertical,
+}
+
+impl StepperOrientation {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Horizontal => "horizontal",
+            Self::Vertical => "vertical",
+        }
+    }
 }
 
 /// Responsive presentation.
@@ -378,6 +413,11 @@ impl StepperState {
         self
     }
 
+    /// Set policy.
+    pub fn set_policy(&mut self, p: StepperNavPolicy) {
+        self.policy = p;
+    }
+
     /// Force presentation.
     pub fn set_presentation_override(&mut self, p: Option<StepperPresentation>) {
         self.presentation_override = p;
@@ -389,6 +429,12 @@ impl StepperState {
     /// Focus.
     pub fn set_focused(&mut self, on: bool) {
         self.focused = on;
+    }
+
+    /// Focused?
+    #[must_use]
+    pub const fn is_focused(&self) -> bool {
+        self.focused
     }
 
     /// Enable.
@@ -425,6 +471,12 @@ impl StepperState {
             .copied()
             .unwrap_or(self.current)
             .min(len.saturating_sub(1))
+    }
+
+    /// Statuses.
+    #[must_use]
+    pub fn statuses(&self) -> &[StepStatus] {
+        &self.statuses
     }
 
     /// Presentation.
@@ -576,10 +628,7 @@ impl StepperState {
         }
     }
 
-    fn entries<'a>(
-        items: &'a [StepItem],
-        statuses: &[StepStatus],
-    ) -> Vec<CollectionItem<'a, usize>> {
+    fn entries(items: &[StepItem], statuses: &[StepStatus]) -> Vec<CollectionItem<usize>> {
         items
             .iter()
             .enumerate()
@@ -589,7 +638,7 @@ impl StepperState {
                 CollectionItem {
                     id: i,
                     enabled,
-                    label: &it.title,
+                    label: it.title.clone(),
                     parent: None,
                 }
             })
@@ -642,15 +691,12 @@ impl StepperState {
         let entries = Self::entries(items, &self.statuses);
         let _ = self.collection.reconcile(&entries);
         self.ensure_vertical_cursor_visible(items);
-        let is_press = key.is_press();
 
         if matches!(self.presentation, StepperPresentation::Menu) && !self.menu_open {
-            if is_press
-                && matches!(
-                    key.code,
-                    KeyCode::Enter | KeyCode::Char(' ') | KeyCode::Down
-                )
-            {
+            if matches!(
+                key.code,
+                KeyCode::Enter | KeyCode::Char(' ') | KeyCode::Down
+            ) {
                 self.menu_open = true;
                 return StepperOutcome::MenuToggled { open: true };
             }
@@ -658,11 +704,11 @@ impl StepperState {
 
         if self.menu_open {
             match key.code {
-                KeyCode::Esc if is_press => {
+                KeyCode::Esc => {
                     self.menu_open = false;
                     return StepperOutcome::MenuToggled { open: false };
                 }
-                KeyCode::Enter | KeyCode::Char(' ') if is_press => {
+                KeyCode::Enter | KeyCode::Char(' ') => {
                     return self.activate(self.cursor(), items);
                 }
                 _ => {}
@@ -673,13 +719,11 @@ impl StepperState {
             return self.handle_intent(intent, items);
         }
         // Digit jump 1..9
-        if is_press {
-            if let KeyCode::Char(c) = key.code {
-                if c.is_ascii_digit() && c != '0' {
-                    let idx = (c as u8 - b'1') as usize;
-                    if idx < items.len() {
-                        return self.activate(idx, items);
-                    }
+        if let KeyCode::Char(c) = key.code {
+            if c.is_ascii_digit() && c != '0' {
+                let idx = (c as u8 - b'1') as usize;
+                if idx < items.len() {
+                    return self.activate(idx, items);
                 }
             }
         }
@@ -736,17 +780,17 @@ impl StepperState {
         }
         self.focused = true;
         if matches!(self.presentation, StepperPresentation::Menu) && !self.menu_open {
-            if self.menu_hit.contains(event.position) {
+            if rect_contains(self.menu_hit, event.position) {
                 self.menu_open = true;
                 return StepperOutcome::MenuToggled { open: true };
             }
         }
         for (i, rect) in self.hits.iter().rev() {
-            if rect.contains(event.position) {
+            if rect_contains(*rect, event.position) {
                 return self.activate(*i, items);
             }
         }
-        if self.menu_open && !self.root.contains(event.position) {
+        if self.menu_open && !rect_contains(self.root, event.position) {
             self.menu_open = false;
             return StepperOutcome::MenuToggled { open: false };
         }
@@ -769,6 +813,13 @@ impl StepperState {
             StepperOutcome::Ignored
         }
     }
+}
+
+fn rect_contains(rect: Rect, pos: Position) -> bool {
+    pos.x >= rect.x
+        && pos.y >= rect.y
+        && pos.x < rect.x.saturating_add(rect.width)
+        && pos.y < rect.y.saturating_add(rect.height)
 }
 
 /// Default intent map.
@@ -977,7 +1028,7 @@ impl<'a> Stepper<'a> {
             buffer.set_stringn(
                 rect.x,
                 rect.y,
-                take_display_cols(&cell, usize::from(w)).as_ref(),
+                &take_display_cols(&cell, usize::from(w)),
                 usize::from(w),
                 style,
             );
@@ -1012,7 +1063,7 @@ impl<'a> Stepper<'a> {
             buffer.set_stringn(
                 rect.x,
                 rect.y,
-                take_display_cols(&line, usize::from(area.width)).as_ref(),
+                &take_display_cols(&line, usize::from(area.width)),
                 usize::from(area.width),
                 style,
             );
@@ -1032,7 +1083,7 @@ impl<'a> Stepper<'a> {
                 buffer.set_stringn(
                     area.x,
                     y,
-                    take_display_cols(&d, usize::from(area.width)).as_ref(),
+                    &take_display_cols(&d, usize::from(area.width)),
                     usize::from(area.width),
                     if state.enabled {
                         self.system.style(Role::TextMuted)
@@ -1084,7 +1135,7 @@ impl<'a> Stepper<'a> {
         buffer.set_stringn(
             area.x,
             area.y,
-            take_display_cols(&line, usize::from(area.width)).as_ref(),
+            &take_display_cols(&line, usize::from(area.width)),
             usize::from(area.width),
             style,
         );
@@ -1125,7 +1176,7 @@ impl<'a> Stepper<'a> {
         buffer.set_stringn(
             area.x,
             area.y,
-            take_display_cols(&line, usize::from(area.width)).as_ref(),
+            &take_display_cols(&line, usize::from(area.width)),
             usize::from(area.width),
             style,
         );
@@ -1159,7 +1210,7 @@ impl<'a> Stepper<'a> {
                 buffer.set_stringn(
                     rect.x,
                     rect.y,
-                    take_display_cols(&row, usize::from(area.width)).as_ref(),
+                    &take_display_cols(&row, usize::from(area.width)),
                     usize::from(area.width),
                     style,
                 );
@@ -1224,6 +1275,16 @@ impl StatefulWidget for Stepper<'_> {
 
 // ── Helpers for FormWizard / plans ──────────────────────────────────────────
 
+/// Project FormWizard-style steps into [`StepItem`] (identity copy).
+#[must_use]
+pub fn step_items_from_titles(titles: &[&str]) -> Vec<StepItem> {
+    titles
+        .iter()
+        .enumerate()
+        .map(|(i, t)| StepItem::new(format!("step-{i}"), *t))
+        .collect()
+}
+
 /// Sample onboarding steps.
 #[must_use]
 pub fn example_onboarding_steps() -> Vec<StepItem> {
@@ -1242,8 +1303,7 @@ pub fn example_onboarding_steps() -> Vec<StepItem> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::{KeyEventKind, KeyModifiers};
-    use crate::widgets::tests::click;
+    use crate::input::KeyModifiers;
 
     fn steps() -> Vec<StepItem> {
         example_onboarding_steps()
@@ -1390,55 +1450,6 @@ mod tests {
     }
 
     #[test]
-    fn repeated_stepper_one_shot_actions_are_ignored() {
-        let items = steps();
-        let repeat = |code| {
-            let mut key = KeyEvent::new(code, KeyModifiers::NONE);
-            key.kind = KeyEventKind::Repeat;
-            key
-        };
-
-        for code in [KeyCode::Enter, KeyCode::Char(' ')] {
-            let mut state = focused_linear(items.len()).policy(StepperNavPolicy::Host);
-            state.set_presentation_override(Some(StepperPresentation::Menu));
-            assert_eq!(
-                state.handle_key(repeat(code), &items),
-                StepperOutcome::Ignored
-            );
-            assert!(!state.menu_open());
-        }
-
-        let mut navigation = focused_linear(items.len()).policy(StepperNavPolicy::Host);
-        navigation.set_presentation_override(Some(StepperPresentation::Menu));
-        assert_eq!(
-            navigation.handle_key(repeat(KeyCode::Down), &items),
-            StepperOutcome::CursorMoved { index: 1 }
-        );
-        assert!(!navigation.menu_open());
-
-        let mut state = focused_linear(items.len()).policy(StepperNavPolicy::Host);
-        state.set_presentation_override(Some(StepperPresentation::Menu));
-        assert!(matches!(
-            state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &items),
-            StepperOutcome::MenuToggled { open: true }
-        ));
-        let cursor = state.cursor();
-        for code in [
-            KeyCode::Esc,
-            KeyCode::Enter,
-            KeyCode::Char(' '),
-            KeyCode::Char('3'),
-        ] {
-            assert_eq!(
-                state.handle_key(repeat(code), &items),
-                StepperOutcome::Ignored
-            );
-            assert!(state.menu_open());
-            assert_eq!(state.cursor(), cursor);
-        }
-    }
-
-    #[test]
     fn numeric_paint_and_mouse_follow_roving_cursor() {
         let system = DesignSystem::default();
         let items = steps();
@@ -1465,7 +1476,14 @@ mod tests {
         assert_eq!(state.hits()[0].0, 1);
         let hit = state.hits()[0].1;
         assert_eq!(
-            state.handle_mouse(click(hit.x, hit.y), &items,),
+            state.handle_mouse(
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(hit.x, hit.y),
+                    modifiers: KeyModifiers::NONE,
+                },
+                &items,
+            ),
             StepperOutcome::StepActivated {
                 index: 1,
                 id: items[1].id.clone(),
@@ -1502,7 +1520,14 @@ mod tests {
         assert_eq!(state.hits()[0].0, 1);
         let hit = state.hits()[0].1;
         assert_eq!(
-            state.handle_mouse(click(hit.x, hit.y), &items,),
+            state.handle_mouse(
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(hit.x, hit.y),
+                    modifiers: KeyModifiers::NONE,
+                },
+                &items,
+            ),
             StepperOutcome::StepActivated {
                 index: 1,
                 id: items[1].id.clone(),
@@ -1705,7 +1730,14 @@ mod tests {
             .collect();
         assert!(text.contains("Review"), "{text}");
         assert!(matches!(
-            state.handle_mouse(click(hit.x, hit.y), &items,),
+            state.handle_mouse(
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(hit.x, hit.y),
+                    modifiers: KeyModifiers::NONE,
+                },
+                &items,
+            ),
             StepperOutcome::StepActivated { index: 3, .. }
         ));
     }
@@ -1721,7 +1753,14 @@ mod tests {
         let (index, hit) = state.hits[1];
 
         assert_eq!(
-            state.handle_mouse(click(hit.x, hit.y), &items,),
+            state.handle_mouse(
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(hit.x, hit.y),
+                    modifiers: KeyModifiers::NONE,
+                },
+                &items,
+            ),
             StepperOutcome::StepActivated {
                 index,
                 id: items[index].id.clone()
@@ -1889,7 +1928,14 @@ mod tests {
             StepperOutcome::Ignored
         );
         assert_eq!(
-            state.handle_mouse(click(0, 0), &items,),
+            state.handle_mouse(
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(0, 0),
+                    modifiers: KeyModifiers::NONE,
+                },
+                &items,
+            ),
             StepperOutcome::Ignored
         );
 

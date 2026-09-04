@@ -32,6 +32,15 @@ impl AnimationDemand {
             next_deadline: None,
         }
     }
+
+    /// Merge two demands (OR redraw; earliest deadline).
+    #[must_use]
+    pub fn merge(self, other: Self) -> Self {
+        Self {
+            needs_redraw: self.needs_redraw || other.needs_redraw,
+            next_deadline: min_deadline(self.next_deadline, other.next_deadline),
+        }
+    }
 }
 
 /// Earliest of two optional instants.
@@ -187,6 +196,12 @@ impl Presence {
     pub const fn with_exit(mut self, duration: Duration) -> Self {
         self.exit_duration = duration;
         self
+    }
+
+    /// Configured exit duration.
+    #[must_use]
+    pub const fn exit_duration(self) -> Duration {
+        self.exit_duration
     }
 
     /// Progress `0.0..=1.0` through the current timed phase.
@@ -371,6 +386,18 @@ impl Presence {
             PresencePhase::Exiting { since } => since.checked_add(self.exit_duration),
         }
     }
+
+    /// Animation demand while present.
+    #[must_use]
+    pub fn demand(self) -> AnimationDemand {
+        match self.next_deadline() {
+            Some(d) => AnimationDemand {
+                needs_redraw: true,
+                next_deadline: Some(d),
+            },
+            None => AnimationDemand::idle(),
+        }
+    }
 }
 
 /// Visibility transition from [`Presence::advance`].
@@ -388,6 +415,13 @@ pub enum PresenceChange {
 
 /// FrameTick helpers for motion.
 impl FrameTick {
+    /// Milliseconds into a repeating period.
+    #[must_use]
+    pub fn phase_ms(self, period_ms: u64) -> u64 {
+        let p = period_ms.max(1);
+        self.elapsed().as_millis() as u64 % p
+    }
+
     /// Spinner frame index.
     #[must_use]
     pub fn spinner_step(self, frame_count: usize, period_ms: u64, motion: MotionPolicy) -> usize {

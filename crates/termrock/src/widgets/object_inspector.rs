@@ -16,15 +16,23 @@
 //! Research: browser devtools, jq/fx viewers, Textual trees, DB JSON inspectors.
 //! Leaves for pure metadata panels: [`super::KeyValueTable`]. Flat hierarchy:
 //! [`super::Tree`].
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::collections::BTreeSet;
 
-use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
+use ratatui_core::{
+    buffer::Buffer,
+    layout::{Position, Rect},
+    style::Modifier,
+    widgets::StatefulWidget,
+};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     interaction::{NavigationMove, PageMove, UiIntent},
-    style::{DesignSystem, Glyph, ListRowVisualState, MASK_CELLS, Role},
-    text::{contains_lower_all, display_cols, take_display_cols},
+    style::{DesignSystem, Glyph, GlyphSet, ListRowVisualState, MASK_CELLS, Role},
+    text::{display_cols, take_display_cols},
     widgets::{data_view::LoadState, scroll_area::ScrollAreaState, tiered_row::TieredRow},
 };
 
@@ -70,6 +78,27 @@ impl InspectKind {
             Self::Unknown => "unknown",
         }
     }
+
+    /// Short type glyph for chrome.
+    #[must_use]
+    pub const fn glyph(self, _ascii: bool) -> &'static str {
+        match self {
+            Self::Null => "∅",
+            Self::Bool => "⊤",
+            Self::Number => "#",
+            Self::String => "\"",
+            Self::Binary => "⬡",
+            Self::Object => "{}",
+            Self::Array => "[]",
+            Self::Unknown => "·",
+        }
+    }
+
+    /// Whether this kind is a branch container.
+    #[must_use]
+    pub const fn is_container(self) -> bool {
+        matches!(self, Self::Object | Self::Array)
+    }
 }
 
 /// Load / lazy state for a node body.
@@ -85,6 +114,19 @@ pub enum InspectNodeStatus {
     Loading,
     /// Load failed.
     Error,
+}
+
+impl InspectNodeStatus {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Ready => "ready",
+            Self::Lazy => "lazy",
+            Self::Loading => "loading",
+            Self::Error => "error",
+        }
+    }
 }
 
 /// Presentation mode.
@@ -118,6 +160,17 @@ pub enum InspectPresentation {
     Compact,
     /// Fullscreen / dedicated pane affordances.
     Fullscreen,
+}
+
+impl InspectPresentation {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Compact => "compact",
+            Self::Fullscreen => "fullscreen",
+        }
+    }
 }
 
 /// One flattened projected inspector node (host projects visible expanded tree).
@@ -222,6 +275,13 @@ impl<'a> InspectorField<'a> {
         self
     }
 
+    /// Branch capable of expansion.
+    #[must_use]
+    pub const fn branch(mut self) -> Self {
+        self.branch = true;
+        self
+    }
+
     /// Expanded branch.
     #[must_use]
     pub const fn expanded(mut self) -> Self {
@@ -235,6 +295,21 @@ impl<'a> InspectorField<'a> {
     pub const fn lazy(mut self) -> Self {
         self.status = InspectNodeStatus::Lazy;
         self.branch = true;
+        self
+    }
+
+    /// Loading children.
+    #[must_use]
+    pub const fn loading(mut self) -> Self {
+        self.status = InspectNodeStatus::Loading;
+        self.branch = true;
+        self
+    }
+
+    /// Error loading children.
+    #[must_use]
+    pub const fn error(mut self) -> Self {
+        self.status = InspectNodeStatus::Error;
         self
     }
 
@@ -268,7 +343,7 @@ impl<'a> InspectorField<'a> {
 
     /// Preview text for collapsed containers.
     #[must_use]
-    pub fn container_preview(&self) -> String {
+    pub fn container_preview(&self, _ascii: bool) -> String {
         match self.kind {
             InspectKind::Object => {
                 if let Some(n) = self.child_count {
@@ -322,6 +397,8 @@ pub enum ObjectInspectorOutcome {
         /// Projected index.
         index: usize,
     },
+    /// Viewport scrolled.
+    Scrolled,
     /// Expand / collapse / lazy load requested.
     ExpandToggled {
         /// Stable path.
@@ -459,6 +536,12 @@ impl ObjectInspectorState {
         self.cursor
     }
 
+    /// Sticky cursor path.
+    #[must_use]
+    pub fn cursor_path(&self) -> Option<&str> {
+        self.cursor_path.as_deref()
+    }
+
     /// Programmatic cursor by index.
     pub fn set_cursor(&mut self, index: usize) {
         self.cursor = index;
@@ -469,9 +552,28 @@ impl ObjectInspectorState {
         self.cursor_path = Some(path.into());
     }
 
+    /// Vertical scroll offset in fields.
+    #[must_use]
+    pub fn offset_y(&self) -> u16 {
+        self.scroll.offset_y()
+    }
+
+    /// Deprecated name for [`Self::cursor`].
+    #[deprecated(note = "use cursor")]
+    #[must_use]
+    pub const fn focus(&self) -> usize {
+        self.cursor
+    }
+
     /// Host input gate.
     pub fn set_accepts_input(&mut self, accepts: bool) {
         self.accepts_input = accepts;
+    }
+
+    /// Whether host granted input.
+    #[must_use]
+    pub const fn accepts_input(&self) -> bool {
+        self.accepts_input
     }
 
     /// Whether path is expanded.
@@ -495,6 +597,13 @@ impl ObjectInspectorState {
         }
     }
 
+    /// Toggle expansion; returns new expanded state.
+    pub fn toggle_expanded(&mut self, path: &str) -> bool {
+        let next = !self.is_expanded(path);
+        self.set_expanded(path, next);
+        next
+    }
+
     /// Whether secret path is revealed.
     #[must_use]
     pub fn is_revealed(&self, path: &str) -> bool {
@@ -511,6 +620,25 @@ impl ObjectInspectorState {
             false
         }
     }
+
+    /// Expanded path set (for host projection).
+    #[must_use]
+    pub fn expanded_paths(&self) -> &BTreeSet<String> {
+        &self.expanded
+    }
+
+    /// Search query.
+    #[must_use]
+    pub fn search(&self) -> Option<&str> {
+        self.search.as_deref()
+    }
+
+    /// Logical virtual window for huge flat projections.
+    pub fn set_virtual_window(&mut self, start: u64, total: u64) {
+        self.window_start = start;
+        self.logical_len = total;
+    }
+
     /// Reconcile cursor after host reprojects `fields`.
     pub fn reconcile(&mut self, fields: &[InspectorField<'_>]) {
         if fields.is_empty() {
@@ -934,6 +1062,87 @@ impl ObjectInspectorState {
             _ => ObjectInspectorOutcome::Ignored,
         }
     }
+
+    /// Mouse.
+    pub fn handle_mouse(
+        &mut self,
+        event: MouseEvent,
+        fields: &[InspectorField<'_>],
+    ) -> ObjectInspectorOutcome {
+        if !self.accepts_input || fields.is_empty() {
+            return ObjectInspectorOutcome::Ignored;
+        }
+        let field_count = fields.len();
+        let (ox, oy) = self.origin;
+        let body = Rect {
+            x: ox,
+            y: oy,
+            width: self.body_width.max(1),
+            height: self.body_rows.max(1),
+        };
+        match event.kind {
+            MouseEventKind::ScrollDown if body.contains(event.position) => {
+                self.handle_intent(UiIntent::Move(NavigationMove::Next), fields)
+            }
+            MouseEventKind::ScrollUp if body.contains(event.position) => {
+                self.handle_intent(UiIntent::Move(NavigationMove::Previous), fields)
+            }
+            MouseEventKind::Down(MouseButton::Left) => {
+                let hit = self
+                    .regions
+                    .iter()
+                    .find(|r| r.area.contains(event.position))
+                    .map(|r| {
+                        (
+                            r.index,
+                            r.path.clone(),
+                            r.disclosure.is_some_and(|d| d.contains(event.position)),
+                        )
+                    });
+                if let Some((index, path, on_disclosure)) = hit {
+                    if on_disclosure {
+                        let expanded = self.toggle_expanded(&path);
+                        return ObjectInspectorOutcome::ExpandToggled {
+                            path,
+                            index,
+                            expanded,
+                        };
+                    }
+                    if self.cursor == index {
+                        return ObjectInspectorOutcome::Activated { path, index };
+                    }
+                    self.cursor = index;
+                    self.cursor_path = Some(path.clone());
+                    self.ensure_cursor_visible(field_count);
+                    return ObjectInspectorOutcome::CursorMoved { index, path };
+                }
+                // Fallback row math
+                if body.contains(event.position) {
+                    let start = self.scroll.offset_y() as usize;
+                    let row = usize::from(event.position.y.saturating_sub(oy));
+                    let index = start.saturating_add(row);
+                    if index >= field_count {
+                        return ObjectInspectorOutcome::Ignored;
+                    }
+                    if self.cursor == index {
+                        return ObjectInspectorOutcome::Activated {
+                            path: path_at(fields, index),
+                            index,
+                        };
+                    }
+                    self.cursor = index;
+                    self.sync_path(fields);
+                    self.ensure_cursor_visible(field_count);
+                    return ObjectInspectorOutcome::CursorMoved {
+                        index,
+                        path: path_at(fields, index),
+                    };
+                }
+                ObjectInspectorOutcome::Ignored
+            }
+            _ => ObjectInspectorOutcome::Ignored,
+        }
+    }
 }
 
 fn path_at(fields: &[InspectorField<'_>], index: usize) -> String {
@@ -974,7 +1183,8 @@ pub fn filter_inspect_fields<'a>(
     }
     let mut keep = vec![false; fields.len()];
     for (i, f) in fields.iter().enumerate() {
-        if contains_lower_all(&[f.key, f.value, f.path], &q) {
+        let hay = format!("{} {} {}", f.key, f.value, f.path).to_ascii_lowercase();
+        if hay.contains(&q) {
             keep[i] = true;
             let mut depth = f.depth;
             let mut j = i;
@@ -1035,6 +1245,20 @@ impl<'a> ObjectInspector<'a> {
         self
     }
 
+    /// Compact vs fullscreen chrome.
+    #[must_use]
+    pub const fn presentation(mut self, p: InspectPresentation) -> Self {
+        self.presentation = p;
+        self
+    }
+
+    /// Show type glyphs / labels.
+    #[must_use]
+    pub const fn show_types(mut self, on: bool) -> Self {
+        self.show_types = on;
+        self
+    }
+
     /// Display value with redaction + escape.
     #[must_use]
     pub fn display_value(
@@ -1049,7 +1273,7 @@ impl<'a> ObjectInspector<'a> {
             return escape_inspect_value(&state.edit_draft);
         }
         if field.branch && !field.expanded {
-            return field.container_preview();
+            return field.container_preview(false);
         }
         if matches!(field.status, InspectNodeStatus::Loading) {
             return "…".into();
@@ -1068,7 +1292,7 @@ impl<'a> ObjectInspector<'a> {
     }
 
     /// Paint.
-    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut ObjectInspectorState) {
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut ObjectInspectorState) {
         state.regions.clear();
         if area.is_empty() {
             state.body_rows = 0;
@@ -1101,7 +1325,7 @@ impl<'a> ObjectInspector<'a> {
                 buffer.set_stringn(
                     area.x,
                     y,
-                    take_display_cols(&title, usize::from(area.width)).as_ref(),
+                    &take_display_cols(&title, usize::from(area.width)),
                     usize::from(area.width),
                     self.system.style(Role::TextStrong),
                 );
@@ -1134,7 +1358,12 @@ impl<'a> ObjectInspector<'a> {
         };
         // For paint we need owned projection slice — use view
         let field_count = view.len();
-        state.clamp_cursor(field_count);
+        state.clamp_cursor(field_count.max(1).saturating_sub(0));
+        if field_count > 0 {
+            state.cursor = state.cursor.min(field_count - 1);
+        } else {
+            state.cursor = 0;
+        }
         // Reconcile path against view
         if let Some(path) = state.cursor_path.as_ref() {
             if let Some(i) = view.iter().position(|f| f.path == path) {
@@ -1164,11 +1393,11 @@ impl<'a> ObjectInspector<'a> {
             buffer.set_stringn(
                 area.x,
                 y,
-                take_display_cols(&line, usize::from(area.width)).as_ref(),
+                &take_display_cols(&line, usize::from(area.width)),
                 usize::from(area.width),
                 self.system.style(Role::TextMuted),
             );
-            self.paint_footer(area, buffer, state);
+            self.paint_footer(area, buffer, state, false);
             return;
         }
 
@@ -1283,7 +1512,7 @@ impl<'a> ObjectInspector<'a> {
             buffer.set_stringn(
                 x,
                 y,
-                take_display_cols(&line, usize::from(remain)).as_ref(),
+                &take_display_cols(&line, usize::from(remain)),
                 usize::from(remain),
                 style,
             );
@@ -1299,10 +1528,16 @@ impl<'a> ObjectInspector<'a> {
             y = y.saturating_add(1);
         }
 
-        self.paint_footer(area, buffer, state);
+        self.paint_footer(area, buffer, state, false);
     }
 
-    fn paint_footer(&self, area: Rect, buffer: &mut Buffer, state: &ObjectInspectorState) {
+    fn paint_footer(
+        &self,
+        area: Rect,
+        buffer: &mut Buffer,
+        state: &ObjectInspectorState,
+        _ascii: bool,
+    ) {
         let y = area.bottom().saturating_sub(1);
         if y < area.y {
             return;
@@ -1323,7 +1558,7 @@ impl<'a> ObjectInspector<'a> {
         buffer.set_stringn(
             area.x,
             y,
-            take_display_cols(&line, usize::from(area.width)).as_ref(),
+            &take_display_cols(&line, usize::from(area.width)),
             usize::from(area.width),
             self.system.style(Role::TextMuted),
         );
@@ -1333,14 +1568,14 @@ impl<'a> ObjectInspector<'a> {
 impl StatefulWidget for ObjectInspector<'_> {
     type State = ObjectInspectorState;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        ObjectInspector::paint(&self, area, buffer, state);
+        ObjectInspector::render(&self, area, buffer, state);
     }
 }
 
 impl StatefulWidget for &ObjectInspector<'_> {
     type State = ObjectInspectorState;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        ObjectInspector::paint(self, area, buffer, state);
+        ObjectInspector::render(self, area, buffer, state);
     }
 }
 

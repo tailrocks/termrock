@@ -17,12 +17,12 @@
 use std::time::Duration;
 use web_time::Instant;
 
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
 
 use crate::{
     interaction::{
-        OverlayKind, OverlayOutcome, OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack,
-        place_overlay,
+        OverlayId, OverlayKind, OverlayOutcome, OverlayPolicy, OverlaySize, OverlaySpec,
+        OverlayStack, place_overlay,
     },
     runtime::{FrameTick, Presence},
     style::{DesignSystem, MotionPolicy, Role},
@@ -45,6 +45,19 @@ pub enum TooltipPrefer {
     /// Above anchor (default OverlayStack Tooltip policy).
     #[default]
     Above,
+    /// Below anchor.
+    Below,
+}
+
+impl TooltipPrefer {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Above => "above",
+            Self::Below => "below",
+        }
+    }
 }
 
 /// Places a tooltip relative to `anchor` (may hide on tiny terminals via policy).
@@ -73,6 +86,13 @@ pub fn open_tooltip_overlay<FocusId: Clone>(
         bounds,
         OverlaySpec::tooltip(TOOLTIP_OVERLAY_ID, anchor, size, opener_focus),
     )
+}
+
+/// Dismiss tooltip overlay when present.
+pub fn dismiss_tooltip_overlay<FocusId: Clone>(
+    stack: &mut OverlayStack<FocusId>,
+) -> OverlayOutcome<FocusId> {
+    stack.dismiss(&OverlayId::from_static(TOOLTIP_OVERLAY_ID))
 }
 
 /// Measure overlay size for content (clamped).
@@ -109,6 +129,18 @@ pub enum TooltipVariant {
     Rich,
 }
 
+impl TooltipVariant {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Plain => "plain",
+            Self::Shortcut => "shortcut",
+            Self::Rich => "rich",
+        }
+    }
+}
+
 /// What arms the show delay.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -123,6 +155,16 @@ pub enum TooltipTrigger {
 }
 
 impl TooltipTrigger {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Pointer => "pointer",
+            Self::Focus => "focus",
+            Self::Both => "both",
+        }
+    }
+
     fn armed(self, pointer: bool, focus: bool) -> bool {
         match self {
             Self::Pointer => pointer,
@@ -312,6 +354,11 @@ impl TooltipState {
         self
     }
 
+    /// Set trigger.
+    pub fn set_trigger(&mut self, t: TooltipTrigger) {
+        self.trigger = t;
+    }
+
     /// Disable (never shows).
     pub fn set_disabled(&mut self, on: bool) {
         self.disabled = on;
@@ -325,6 +372,13 @@ impl TooltipState {
     pub const fn is_disabled(&self) -> bool {
         self.disabled
     }
+
+    /// When true (default), showing content with `essential_elsewhere == false`
+    /// yields [`TooltipOutcome::EssentialRequiresNonHover`] and stays hidden.
+    pub fn set_enforce_essential_elsewhere(&mut self, on: bool) {
+        self.enforce_essential_elsewhere = on;
+    }
+
     /// Pointer is over the anchor region.
     pub fn set_pointer_over(&mut self, over: bool) {
         self.pointer_over = over;
@@ -351,6 +405,12 @@ impl TooltipState {
     #[must_use]
     pub const fn is_visible(&self) -> bool {
         self.presence.is_visible()
+    }
+
+    /// Presence deadline for host poll.
+    #[must_use]
+    pub fn next_deadline(&self) -> Option<Instant> {
+        self.presence.next_deadline()
     }
 
     /// Force hide immediately.
@@ -444,6 +504,29 @@ impl TooltipState {
         }
         self.visibility_outcome()
     }
+
+    /// Convenience: update triggers then advance.
+    pub fn advance_with_triggers(
+        &mut self,
+        tick: FrameTick,
+        pointer_over: bool,
+        focus_within: bool,
+        motion: MotionPolicy,
+    ) -> TooltipOutcome {
+        self.pointer_over = pointer_over;
+        self.focus_within = focus_within;
+        if !self.armed() {
+            let was = self.was_visible || self.is_visible();
+            self.force_hide();
+            return if was {
+                TooltipOutcome::Hidden
+            } else {
+                TooltipOutcome::Ignored
+            };
+        }
+        self.advance(tick, motion)
+    }
+
     fn visibility_outcome(&mut self) -> TooltipOutcome {
         let vis = self.is_visible();
         if vis && !self.was_visible {
@@ -498,6 +581,13 @@ impl<'a> Tooltip<'a> {
         }
     }
 
+    /// Variant.
+    #[must_use]
+    pub const fn variant(mut self, v: TooltipVariant) -> Self {
+        self.variant = v;
+        self
+    }
+
     /// Shortcut variant helper.
     #[must_use]
     pub const fn shortcut(mut self) -> Self {
@@ -520,6 +610,19 @@ impl<'a> Tooltip<'a> {
         self
     }
 
+    /// Max body width.
+    #[must_use]
+    pub const fn max_width(mut self, w: u16) -> Self {
+        self.max_width = w;
+        self
+    }
+
+    /// Content borrow.
+    #[must_use]
+    pub const fn body_content(&self) -> TooltipContent<'a> {
+        self.content
+    }
+
     /// Overlay size for current content.
     #[must_use]
     pub fn overlay_size(&self) -> OverlaySize {
@@ -530,14 +633,20 @@ impl<'a> Tooltip<'a> {
 
     /// Paint when visible (never steals focus).
     ///
-    /// Returns early if not visible, disabled, or essential-elsewhere policy
-    /// fails — the visibility gate is state-owned, so paint is the only entry
-    /// and an ungated render cannot bypass it.
+    /// Returns early if not visible, disabled, or essential-elsewhere policy fails.
     pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &TooltipState) {
         if area.is_empty() || !state.is_visible() || state.is_disabled() {
             return;
         }
         if state.enforce_essential_elsewhere && !self.content.essential_elsewhere {
+            return;
+        }
+        self.paint_always(area, buffer);
+    }
+
+    /// Paint without visibility gate (tests / host already gated).
+    pub fn paint_always(&self, area: Rect, buffer: &mut Buffer) {
+        if area.is_empty() {
             return;
         }
         // Every variant floats: a tooltip that writes bare text over live
@@ -605,21 +714,37 @@ impl<'a> Tooltip<'a> {
                     y = y.saturating_add(1);
                 }
                 if y < area.bottom() {
-                    let mut body =
-                        take_display_cols(self.content.body, usize::from(area.width)).into_owned();
+                    let mut body = take_display_cols(self.content.body, usize::from(area.width));
                     if let Some(sc) = self.content.shortcut {
                         let extra = format!("  {}", sc);
-                        let clipped = take_display_cols(
-                            self.content.body,
-                            usize::from(area.width.saturating_sub(display_cols(&extra) as u16)),
+                        let combined = format!(
+                            "{}{}",
+                            take_display_cols(
+                                self.content.body,
+                                usize::from(area.width.saturating_sub(display_cols(&extra) as u16))
+                            ),
+                            extra
                         );
-                        let combined = format!("{}{}", clipped, extra);
-                        body = take_display_cols(&combined, usize::from(area.width)).into_owned();
+                        body = take_display_cols(&combined, usize::from(area.width));
                     }
                     buffer.set_stringn(area.x, y, &body, usize::from(area.width), muted);
                 }
             }
         }
+    }
+}
+
+impl Widget for &Tooltip<'_> {
+    /// Paints body without visibility gate (host must gate). Prefer
+    /// [`Tooltip::paint`] with state.
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        self.paint_always(area, buffer);
+    }
+}
+
+impl Widget for Tooltip<'_> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        <&Self as Widget>::render(&self, area, buffer);
     }
 }
 
@@ -821,8 +946,9 @@ mod tests {
     fn place_clamps_or_hides_on_tiny() {
         let bounds = Rect::new(0, 0, 10, 5);
         let anchor = Rect::new(1, 2, 2, 1);
+        let r = place_tooltip(bounds, anchor, OverlaySize::menu(20, 1));
         // Policy may hide (empty) or clamp — both valid
-        let _ = place_tooltip(bounds, anchor, OverlaySize::menu(20, 1));
+        let _ = r;
     }
 
     #[test]

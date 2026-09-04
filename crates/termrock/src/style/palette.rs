@@ -64,3 +64,6 @@ pub fn contrast_ratio(a: Rgb, b: Rgb) -> f32 {
     };
     (high + 0.05) / (low + 0.05)
 }
+
+/// junie card plane: the preview surround sits on the elevated rung.
+pub(crate) const PREVIEW_CARD: Rgb = Rgb::new(0x18, 0x18, 0x1b);

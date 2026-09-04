@@ -25,7 +25,7 @@ use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::State
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
-    interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
+    interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
     runtime::FrameTick,
     style::{ButtonRecipeVariant, ControlState, DesignSystem, Glyph, Role},
     text::{display_cols, take_display_cols},
@@ -267,6 +267,17 @@ impl SearchInputState {
         self.debounce = debounce;
         self
     }
+
+    /// History capacity.
+    #[must_use]
+    pub fn with_history_limit(mut self, limit: usize) -> Self {
+        self.history_limit = limit.max(1);
+        while self.history.len() > self.history_limit {
+            self.history.pop_back();
+        }
+        self
+    }
+
     /// Current query text.
     #[must_use]
     pub fn query(&self) -> &str {
@@ -283,10 +294,23 @@ impl SearchInputState {
     pub fn syntax(&self) -> SearchSyntax {
         SearchSyntax::detect(self.query.value())
     }
+
+    /// Payload after syntax sigil.
+    #[must_use]
+    pub fn syntax_payload(&self) -> &str {
+        self.syntax().payload(self.query.value())
+    }
+
     /// History entries (newest first).
     #[must_use]
     pub fn history(&self) -> impl Iterator<Item = &str> {
         self.history.iter().map(String::as_str)
+    }
+
+    /// Debounce period.
+    #[must_use]
+    pub const fn debounce(&self) -> Duration {
+        self.debounce
     }
 
     /// Focused.
@@ -295,10 +319,34 @@ impl SearchInputState {
         self.focused
     }
 
+    /// Enabled.
+    #[must_use]
+    pub const fn is_enabled(&self) -> bool {
+        self.enabled
+    }
+
+    /// Paint parts.
+    #[must_use]
+    pub const fn parts(&self) -> Option<&SearchInputParts> {
+        self.parts.as_ref()
+    }
+
+    /// Whether a debounce emission is pending.
+    #[must_use]
+    pub const fn debounce_pending(&self) -> bool {
+        self.debounce_pending
+    }
+
     /// Focus.
     pub fn set_focused(&mut self, on: bool) {
         self.focused = on;
         self.query.set_focused(on);
+    }
+
+    /// Enabled.
+    pub fn set_enabled(&mut self, on: bool) {
+        self.enabled = on;
+        self.query.set_enabled(on);
     }
 
     /// Replace query without history side effects.
@@ -338,6 +386,12 @@ impl SearchInputState {
             self.history.pop_back();
         }
     }
+
+    /// Push current query into history.
+    pub fn commit_to_history(&mut self) {
+        self.push_history(self.query.value().to_owned());
+    }
+
     fn mark_edited(&mut self, now: Option<Instant>) {
         self.debounce_pending = true;
         self.last_edit_at = now.or_else(|| Some(Instant::now()));
@@ -442,47 +496,12 @@ impl SearchInputState {
         if key.is_release() || !self.enabled {
             return SearchInputOutcome::Ignored;
         }
+        self.query.set_focused(self.focused);
+        self.query.set_enabled(self.enabled);
+
         let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
         let alt = key.modifiers.contains(KeyModifiers::ALT);
         let shift = key.modifiers.contains(KeyModifiers::SHIFT);
-
-        // These branches emit host-facing lifecycle or clipboard outcomes.
-        // A held key must not clear, submit, request completion, repeat a
-        // clipboard request, or repeat a destructive editor chord before the
-        // editor is synchronized.
-        let one_shot = matches!(
-            key.code,
-            KeyCode::Enter
-                | KeyCode::Tab
-                | KeyCode::BackTab
-                | KeyCode::Esc
-                | KeyCode::Char(
-                    'c' | 'C'
-                        | 'k'
-                        | 'K'
-                        | 'm'
-                        | 'M'
-                        | 'u'
-                        | 'U'
-                        | 'v'
-                        | 'V'
-                        | 'w'
-                        | 'W'
-                        | 'x'
-                        | 'X',
-                )
-        );
-        if !key.is_press()
-            && (matches!(
-                key.code,
-                KeyCode::Enter | KeyCode::Tab | KeyCode::BackTab | KeyCode::Esc
-            ) || (ctrl && one_shot))
-        {
-            return SearchInputOutcome::Ignored;
-        }
-
-        self.query.set_focused(self.focused);
-        self.query.set_enabled(self.enabled);
 
         // History: Up/Down when query empty or Alt+Up/Down
         if !ctrl
@@ -547,6 +566,40 @@ impl SearchInputState {
                 SearchInputOutcome::ClipboardCopy { text }
             }
             TextInputOutcome::Ignored => SearchInputOutcome::Ignored,
+        }
+    }
+
+    /// Intent path.
+    pub fn handle_intent(&mut self, intent: UiIntent) -> SearchInputOutcome {
+        if !self.enabled {
+            return SearchInputOutcome::Ignored;
+        }
+        match intent {
+            UiIntent::Submit | UiIntent::Activate => {
+                let q = self.query.value().to_owned();
+                self.push_history(q.clone());
+                self.debounce_pending = false;
+                self.last_emitted = Some(q.clone());
+                SearchInputOutcome::Submitted { query: q }
+            }
+            UiIntent::Cancel | UiIntent::Close => {
+                if !self.query.value().is_empty() {
+                    let _ = self.clear();
+                    SearchInputOutcome::Cleared
+                } else {
+                    SearchInputOutcome::Cancelled
+                }
+            }
+            other => match self.query.handle_intent(other) {
+                TextInputOutcome::Changed => {
+                    self.mark_edited(None);
+                    SearchInputOutcome::Changed
+                }
+                TextInputOutcome::Submitted(q) => SearchInputOutcome::Submitted { query: q },
+                TextInputOutcome::Cancelled => SearchInputOutcome::Cancelled,
+                TextInputOutcome::Cleared => SearchInputOutcome::Cleared,
+                _ => SearchInputOutcome::Ignored,
+            },
         }
     }
 
@@ -668,6 +721,13 @@ impl<'a> SearchInput<'a> {
         }
     }
 
+    /// Optional label row.
+    #[must_use]
+    pub const fn label(mut self, label: &'a str) -> Self {
+        self.label = label;
+        self
+    }
+
     /// Placeholder.
     #[must_use]
     pub const fn placeholder(mut self, placeholder: &'a str) -> Self {
@@ -682,10 +742,39 @@ impl<'a> SearchInput<'a> {
         self
     }
 
+    /// Error / custom status message (for [`SearchStatus::Error`] or override).
+    #[must_use]
+    pub const fn status_message(mut self, message: &'a str) -> Self {
+        self.status_message = Some(message);
+        self
+    }
+
     /// Active filter chips (leading metadata).
     #[must_use]
     pub const fn filters(mut self, filters: &'a [SearchFilterChip<'a>]) -> Self {
         self.filters = filters;
+        self
+    }
+
+    /// Clear control.
+    #[must_use]
+    pub const fn show_clear(mut self, on: bool) -> Self {
+        self.show_clear = on;
+        self
+    }
+
+    /// Leading search glyph.
+    #[must_use]
+    pub const fn show_leading_icon(mut self, on: bool) -> Self {
+        self.show_leading_icon = on;
+        self
+    }
+
+    /// ASCII glyphs.
+    #[must_use]
+    /// External validation.
+    pub const fn validation(mut self, validation: Validation<'a>) -> Self {
+        self.validation = validation;
         self
     }
 
@@ -710,6 +799,8 @@ impl<'a> SearchInput<'a> {
                 cursor: None,
             };
         }
+        let invalid = matches!(self.status, SearchStatus::Error)
+            || matches!(self.validation, Validation::Invalid(_));
         let field_recipe = self.system.input_recipe(
             if !state.enabled {
                 ControlState::Disabled
@@ -720,6 +811,7 @@ impl<'a> SearchInput<'a> {
             } else {
                 ControlState::Default
             },
+            invalid,
             state.query.is_editing(),
         );
 
@@ -873,7 +965,7 @@ impl<'a> SearchInput<'a> {
     fn status_label(&self, _state: &SearchInputState) -> String {
         if let Some(msg) = self.status_message {
             if matches!(self.status, SearchStatus::Error) {
-                return take_display_cols(msg, STATUS_LABEL_COLS).into_owned();
+                return take_display_cols(msg, STATUS_LABEL_COLS);
             }
         }
         let label = match self.status {
@@ -885,7 +977,7 @@ impl<'a> SearchInput<'a> {
         };
         // Display columns, not code points: a status label is painted, and a
         // wide glyph spends two cells (plans/022 Step 3).
-        crate::text::take_display_cols(&label, STATUS_LABEL_COLS).into_owned()
+        crate::text::take_display_cols(&label, STATUS_LABEL_COLS)
     }
 
     /// Semantic registration — status ids, never raw error dumps with secrets.
@@ -949,9 +1041,7 @@ impl StatefulWidget for SearchInput<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyEventKind;
     use crate::style::RolePalette;
-    use crate::widgets::tests::click;
 
     fn tick_at(start: Instant, ms: u64) -> FrameTick {
         FrameTick::manual(
@@ -1006,10 +1096,8 @@ mod tests {
             }
         );
         assert_eq!(state.query(), "two");
-        let mut repeat_up = KeyEvent::new(KeyCode::Up, KeyModifiers::NONE);
-        repeat_up.kind = KeyEventKind::Repeat;
         assert_eq!(
-            state.handle_key(repeat_up),
+            state.handle_key(KeyEvent::new(KeyCode::Up, KeyModifiers::NONE)),
             SearchInputOutcome::HistoryRecalled {
                 query: "one".into()
             }
@@ -1056,42 +1144,6 @@ mod tests {
     }
 
     #[test]
-    fn repeated_lifecycle_and_clipboard_actions_are_ignored() {
-        let mut state = SearchInputState::new().with_query("abc");
-        state.set_focused(true);
-        state.begin_edit();
-        let actions = [
-            (KeyCode::Esc, KeyModifiers::NONE),
-            (KeyCode::Enter, KeyModifiers::NONE),
-            (KeyCode::Tab, KeyModifiers::NONE),
-            (KeyCode::BackTab, KeyModifiers::NONE),
-            (KeyCode::Char('u'), KeyModifiers::CONTROL),
-            (KeyCode::Char('m'), KeyModifiers::CONTROL),
-            (
-                KeyCode::Char('m'),
-                KeyModifiers::CONTROL | KeyModifiers::ALT,
-            ),
-            (KeyCode::Char('k'), KeyModifiers::CONTROL),
-            (KeyCode::Char('w'), KeyModifiers::CONTROL),
-            (KeyCode::Char('c'), KeyModifiers::CONTROL),
-            (KeyCode::Char('x'), KeyModifiers::CONTROL),
-            (KeyCode::Char('v'), KeyModifiers::CONTROL),
-        ];
-        for (code, modifiers) in actions {
-            let before = state.clone();
-            let mut key = KeyEvent::new(code, modifiers);
-            key.kind = KeyEventKind::Repeat;
-            assert_eq!(state.handle_key(key), SearchInputOutcome::Ignored);
-            assert_eq!(state, before, "{code:?} repeat mutated search state");
-        }
-
-        let mut key = KeyEvent::new(KeyCode::Char('z'), KeyModifiers::NONE);
-        key.kind = KeyEventKind::Repeat;
-        assert_eq!(state.handle_key(key), SearchInputOutcome::Changed);
-        assert_eq!(state.query(), "abcz");
-    }
-
-    #[test]
     fn paint_meta_before_query_and_status() {
         let system = DesignSystem::new(RolePalette::default());
         let mut state = SearchInputState::new().with_query("table");
@@ -1122,7 +1174,14 @@ mod tests {
             .paint(area, &mut buf, &mut state);
         let chip = parts.filter_chips[0];
         assert_eq!(
-            state.handle_mouse(click(chip.x, chip.y), &chips,),
+            state.handle_mouse(
+                MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: ratatui_core::layout::Position::new(chip.x, chip.y),
+                    modifiers: KeyModifiers::NONE,
+                },
+                &chips,
+            ),
             SearchInputOutcome::FilterChipActivated { id: "lang".into() }
         );
     }

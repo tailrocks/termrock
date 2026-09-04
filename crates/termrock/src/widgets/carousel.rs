@@ -8,10 +8,13 @@
 //! controls — arrows always keyboard-reachable.
 //!
 //! Research: shadcn Carousel, terminal wizards, slide decks in TUI.
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
 
 use crate::{
-    input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
 };
@@ -125,6 +128,21 @@ impl CarouselState {
     pub fn set_auto_ms(&mut self, ms: u64) {
         self.auto_ms = ms;
         self.elapsed_ms = 0;
+    }
+
+    /// Current index.
+    #[must_use]
+    pub const fn index(&self) -> usize {
+        self.index
+    }
+
+    /// Clamp index to slide count.
+    pub fn clamp_to(&mut self, n: usize) {
+        if n == 0 {
+            self.index = 0;
+        } else {
+            self.index = self.index.min(n - 1);
+        }
     }
 
     /// Go to index.
@@ -291,11 +309,7 @@ impl<'a> Carousel<'a> {
         if self.slides.is_empty() {
             // Empty bodies speak one language: glyph + sentence, through the
             // widget that owns it (plans/009 Step 2).
-            super::EmptyState::new("No slides", self.system).paint(
-                area,
-                buffer,
-                &mut super::EmptyStateState::new(),
-            );
+            super::EmptyState::new("No slides", self.system).paint(area, buffer);
             return;
         }
         let i = state.index.min(self.slides.len() - 1);
@@ -373,8 +387,9 @@ pub fn example_carousel_slides() -> Vec<CarouselSlide> {
 mod tests {
     use super::*;
 
-    use crate::widgets::tests::click;
-    use crate::widgets::tests::press;
+    fn press(code: KeyCode) -> KeyEvent {
+        KeyEvent::new(code, KeyModifiers::NONE)
+    }
 
     #[test]
     fn next_prev_wrap_and_activate() {
@@ -438,7 +453,11 @@ mod tests {
         let mut st = CarouselState::new();
         st.set_focused(false);
 
-        let second_indicator = click(2, area.bottom() - 1);
+        let second_indicator = MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: ratatui_core::layout::Position::new(2, area.bottom() - 1),
+            modifiers: KeyModifiers::NONE,
+        };
         assert!(matches!(
             st.handle_mouse(second_indicator, area, &slides),
             CarouselOutcome::Changed { index: 1, .. }

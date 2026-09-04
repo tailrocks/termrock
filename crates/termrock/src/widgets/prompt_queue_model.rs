@@ -41,6 +41,19 @@ impl PromptQueueStatus {
         }
     }
 
+    /// Letter (colorless).
+    #[must_use]
+    pub const fn letter(self) -> char {
+        match self {
+            Self::Queued => 'Q',
+            Self::Sending => 'S',
+            Self::Blocked => 'B',
+            Self::Failed => 'F',
+            Self::Cancelled => 'C',
+            Self::Sent => '+',
+        }
+    }
+
     /// Glyph.
     #[must_use]
     pub const fn glyph(self, ascii: bool) -> &'static str {
@@ -289,6 +302,17 @@ pub enum AgentBusyState {
 }
 
 impl AgentBusyState {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Idle => "idle",
+            Self::Busy => "busy",
+            Self::WaitingUser => "waiting_user",
+            Self::Interrupting => "interrupting",
+        }
+    }
+
     /// Human label.
     #[must_use]
     pub const fn label(self) -> &'static str {

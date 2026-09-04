@@ -21,10 +21,13 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
 
 use crate::{
-    input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
     widgets::{
@@ -248,7 +251,7 @@ impl ActivityItem {
             s.push(' ');
             s.push_str(e);
         }
-        take_display_cols(&s, max_cols).into_owned()
+        take_display_cols(&s, max_cols)
     }
 
     /// One-line detail for summary.
@@ -348,7 +351,7 @@ pub fn activity_counts(items: &[ActivityItem]) -> ActivityCounts {
 
 /// One-line summary for narrow StatusBar / shelf.
 #[must_use]
-pub fn activity_status_summary(items: &[ActivityItem]) -> String {
+pub fn activity_status_summary(items: &[ActivityItem], _ascii: bool) -> String {
     let c = activity_counts(items);
     if c.total == 0 {
         return "∅ idle".into();
@@ -410,7 +413,7 @@ const fn activity_semantic(counts: ActivityCounts) -> SemanticStatus {
 
 /// Tiny badge text (`!3` / `●3`).
 #[must_use]
-pub fn activity_badge_label(items: &[ActivityItem]) -> String {
+pub fn activity_badge_label(items: &[ActivityItem], _ascii: bool) -> String {
     let c = activity_counts(items);
     if c.total == 0 {
         return "·".into();
@@ -452,6 +455,17 @@ pub enum ActivityShelfPresentation {
 }
 
 impl ActivityShelfPresentation {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Chips => "chips",
+            Self::IconsOnly => "icons",
+            Self::Summary => "summary",
+            Self::Badge => "badge",
+        }
+    }
+
     /// Auto from width when host does not force.
     #[must_use]
     pub const fn for_width(width: u16) -> Self {
@@ -478,12 +492,24 @@ pub enum ActivityShelfOrientation {
     Vertical,
 }
 
+impl ActivityShelfOrientation {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Horizontal => "horizontal",
+            Self::Vertical => "vertical",
+        }
+    }
+}
+
 /// Plan visible chips for width (sorted items).
 #[must_use]
 pub fn plan_activity_shelf(
     sorted: &[&ActivityItem],
     width: u16,
     presentation: ActivityShelfPresentation,
+    _ascii: bool,
 ) -> ActivityShelfPlan {
     match presentation {
         ActivityShelfPresentation::Badge | ActivityShelfPresentation::Summary => {
@@ -556,7 +582,10 @@ pub struct ActivityStatusProjection {
 
 /// Project activities → StatusBar slot content.
 #[must_use]
-pub fn project_activities_for_status_bar(items: &[ActivityItem]) -> ActivityStatusProjection {
+pub fn project_activities_for_status_bar(
+    items: &[ActivityItem],
+    _ascii: bool,
+) -> ActivityStatusProjection {
     let c = activity_counts(items);
     let priority = if c.action_required > 0 {
         95
@@ -568,9 +597,9 @@ pub fn project_activities_for_status_bar(items: &[ActivityItem]) -> ActivityStat
         55
     };
     ActivityStatusProjection {
-        summary: activity_status_summary(items),
+        summary: activity_status_summary(items, false),
         summary_text: activity_status_text(items),
-        badge: activity_badge_label(items),
+        badge: activity_badge_label(items, false),
         badge_text: c.total.to_string(),
         priority,
         region: StatusRegion::Right,
@@ -668,6 +697,11 @@ pub enum ActivityShelfOutcome {
     OverflowOpen,
     /// Overflow closed.
     OverflowClosed,
+    /// Presentation auto-contracted.
+    PresentationChanged {
+        /// Mode.
+        presentation: ActivityShelfPresentation,
+    },
 }
 
 /// Interactive state.
@@ -718,6 +752,11 @@ impl ActivityShelfState {
     /// Gate.
     pub fn set_accepts_input(&mut self, on: bool) {
         self.accepts_input = on;
+    }
+
+    /// Focus.
+    pub const fn set_focused(&mut self, on: bool) {
+        self.focused = on;
     }
 
     fn clamp_selected(&mut self, len: usize) {
@@ -878,7 +917,7 @@ impl<'a> ActivityShelf<'a> {
         let presentation = state
             .force_presentation
             .unwrap_or_else(|| ActivityShelfPresentation::for_width(area.width));
-        let plan = plan_activity_shelf(&sorted, area.width, presentation);
+        let plan = plan_activity_shelf(&sorted, area.width, presentation, false);
         state.last_plan = Some(plan.clone());
 
         // fill muted bar background line
@@ -901,7 +940,7 @@ impl<'a> ActivityShelf<'a> {
                     .label(&label)
                     .colorless(self.colorless)
                     .strong(state.focused)
-                    .paint(Rect::new(area.x, area.y, area.width, 1), buffer, None);
+                    .paint(Rect::new(area.x, area.y, area.width, 1), buffer);
             }
             ActivityShelfPresentation::Summary => {
                 let counts = activity_counts(self.items);
@@ -910,10 +949,10 @@ impl<'a> ActivityShelf<'a> {
                     .label(&label)
                     .colorless(self.colorless)
                     .strong(state.focused)
-                    .paint(Rect::new(area.x, area.y, area.width, 1), buffer, None);
+                    .paint(Rect::new(area.x, area.y, area.width, 1), buffer);
             }
             ActivityShelfPresentation::Chips | ActivityShelfPresentation::IconsOnly => {
-                self.paint_chips(area, buffer, state, &sorted, &plan);
+                self.paint_chips(area, buffer, state, &sorted, &plan, false);
             }
         }
     }
@@ -925,6 +964,7 @@ impl<'a> ActivityShelf<'a> {
         state: &mut ActivityShelfState,
         sorted: &[&ActivityItem],
         plan: &ActivityShelfPlan,
+        _ascii: bool,
     ) {
         let icons = matches!(plan.presentation, ActivityShelfPresentation::IconsOnly);
         let vertical = matches!(state.orientation, ActivityShelfOrientation::Vertical);
@@ -961,7 +1001,7 @@ impl<'a> ActivityShelf<'a> {
                 StatusIndicator::new(activity_item_semantic(item), self.system)
                     .label(activity_item_verb(item))
                     .colorless(self.colorless)
-                    .paint(rect, buffer, None);
+                    .paint(rect, buffer);
                 state.hits.push((item.id.clone(), rect));
                 y = y.saturating_add(1);
             } else {
@@ -995,7 +1035,6 @@ impl<'a> ActivityShelf<'a> {
                                 1,
                             ),
                             buffer,
-                            None,
                         );
                 }
                 state.hits.push((item.id.clone(), rect));
@@ -1045,6 +1084,11 @@ impl<'a> ActivityShelf<'a> {
                 }
             }
         }
+    }
+
+    /// Render alias.
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut ActivityShelfState) {
+        self.paint(area, buffer, state);
     }
 }
 
@@ -1121,8 +1165,7 @@ pub mod bench {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyModifiers;
-    use crate::widgets::tests::click;
+    use ratatui_core::layout::Position;
 
     #[test]
     fn sort_prioritizes_action_and_blocked() {
@@ -1147,10 +1190,10 @@ mod tests {
         );
         let items = example_activities();
         let sorted = sort_activity_items(&items);
-        let p = plan_activity_shelf(&sorted, 20, ActivityShelfPresentation::Summary);
+        let p = plan_activity_shelf(&sorted, 20, ActivityShelfPresentation::Summary, true);
         assert!(p.visible.is_empty());
         assert_eq!(p.overflow, items.len());
-        let badge = activity_badge_label(&items);
+        let badge = activity_badge_label(&items, true);
         assert!(badge.chars().any(|c| c.is_ascii_digit()));
     }
 
@@ -1198,7 +1241,7 @@ mod tests {
     #[test]
     fn status_bar_projection() {
         let items = example_activities();
-        let p = project_activities_for_status_bar(&items);
+        let p = project_activities_for_status_bar(&items, true);
         assert!(p.summary.contains("action") || p.summary.contains("run"));
         assert!(p.priority >= 90);
         let slot = activity_status_slot("act", &p, false);
@@ -1282,7 +1325,11 @@ mod tests {
         assert!(!st.hits.is_empty());
         let id = st.hits[0].0.clone();
         let rect = st.hits[0].1;
-        let ev = click(rect.x, rect.y);
+        let ev = MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: Position::new(rect.x, rect.y),
+            modifiers: KeyModifiers::NONE,
+        };
         let out = st.handle_mouse(ev, &items);
         match out {
             ActivityShelfOutcome::Activated { id: aid } => assert_eq!(aid, id),
@@ -1368,9 +1415,9 @@ mod tests {
 
     #[test]
     fn empty_idle_summary() {
-        let s = activity_status_summary(&[]);
+        let s = activity_status_summary(&[], true);
         assert!(s.contains("idle"));
-        let b = activity_badge_label(&[]);
+        let b = activity_badge_label(&[], false);
         assert!(!b.is_empty());
     }
 

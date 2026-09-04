@@ -27,14 +27,22 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::collections::BTreeMap;
 
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
+use ratatui_core::{
+    buffer::Buffer,
+    layout::{Position, Rect},
+    style::Modifier,
+    widgets::StatefulWidget,
+};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     style::{DesignSystem, PanelChrome, Role},
-    text::display_cols,
+    text::{display_cols, take_display_cols},
     widgets::{
         AccentRail, Action, ActionBar, ActionBarState, ActionVariant, EmptyKind, EmptyState,
         FieldRow, FieldRowValue, Panel, PanelTitleSpec, PermissionRisk, tiered_row::TieredRow,
@@ -105,6 +113,17 @@ pub enum PlanTaskStatus {
 }
 
 impl PlanTaskStatus {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Pending => "pending",
+            Self::InProgress => "in_progress",
+            Self::Done => "done",
+            Self::Blocked => "blocked",
+        }
+    }
+
     /// Glyph.
     #[must_use]
     pub const fn glyph(self) -> &'static str {
@@ -257,6 +276,13 @@ impl PlanAffectedFile {
             change,
             rename_to: None,
         }
+    }
+
+    /// Rename target.
+    #[must_use]
+    pub fn rename_to(mut self, p: impl Into<String>) -> Self {
+        self.rename_to = Some(p.into());
+        self
     }
 }
 
@@ -486,6 +512,8 @@ pub struct PlanComment {
     pub id: String,
     /// Body text.
     pub body: String,
+    /// Optional author label.
+    pub author: Option<String>,
     /// Anchor.
     pub anchor: PlanCommentAnchor,
     /// Plan version when created.
@@ -506,10 +534,18 @@ impl PlanComment {
         Self {
             id: id.into(),
             body: body.into(),
+            author: None,
             anchor,
             created_at_version: version,
             preserved: true,
         }
+    }
+
+    /// Author.
+    #[must_use]
+    pub fn author(mut self, a: impl Into<String>) -> Self {
+        self.author = Some(a.into());
+        self
     }
 }
 
@@ -982,6 +1018,16 @@ impl PlanReviewState {
             orphaned_comments: orphaned,
         }
     }
+
+    /// Seed comments (host).
+    pub fn set_comments(&mut self, comments: Vec<PlanComment>) {
+        if let Some(plan) = self.plan.as_ref() {
+            self.comments = remap_plan_comments(&comments, plan);
+        } else {
+            self.comments = comments;
+        }
+    }
+
     /// Whether open.
     #[must_use]
     pub const fn is_open(&self) -> bool {
@@ -991,6 +1037,11 @@ impl PlanReviewState {
     /// Gate.
     pub fn set_accepts_input(&mut self, on: bool) {
         self.accepts_input = on;
+    }
+
+    /// Focus.
+    pub const fn set_focused(&mut self, on: bool) {
+        self.focused = on;
     }
 
     /// Action cursor.
@@ -1543,7 +1594,8 @@ impl<'a> PlanReview<'a> {
                 .title("Plan")
                 .emphasis(PanelChrome::Normal);
             let inner = panel.inner(area);
-            panel.paint(area, buffer, None);
+            use ratatui_core::widgets::Widget;
+            Widget::render(&panel, area, buffer);
             if !inner.is_empty() {
                 let m = "∅ no plan";
                 self.system.paint_row(
@@ -1580,7 +1632,7 @@ impl<'a> PlanReview<'a> {
             )
             .emphasis(emphasis);
         let inner = panel.inner(panel_area);
-        panel.paint(panel_area, buffer, None);
+        Widget::render(&panel, panel_area, buffer);
         if inner.is_empty() {
             state.plan = Some(plan);
             return;
@@ -1836,11 +1888,7 @@ impl<'a> PlanReview<'a> {
         if plan.tasks.is_empty() && y < max_y {
             EmptyState::new("No tasks", self.system)
                 .kind(EmptyKind::NoData)
-                .paint(
-                    Rect::new(area.x, y, area.width, 1),
-                    buffer,
-                    &mut crate::widgets::EmptyStateState::new(),
-                );
+                .paint(Rect::new(area.x, y, area.width, 1), buffer);
         }
     }
 
@@ -1975,11 +2023,7 @@ impl<'a> PlanReview<'a> {
         if plan.affected_files.is_empty() && y < max_y {
             EmptyState::new("No files", self.system)
                 .kind(EmptyKind::NoData)
-                .paint(
-                    Rect::new(area.x, y, area.width, 1),
-                    buffer,
-                    &mut crate::widgets::EmptyStateState::new(),
-                );
+                .paint(Rect::new(area.x, y, area.width, 1), buffer);
         }
     }
 
@@ -2295,8 +2339,10 @@ pub mod bench {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::widgets::tests::click;
-    use crate::widgets::tests::press;
+
+    fn press(code: KeyCode) -> KeyEvent {
+        KeyEvent::new(code, KeyModifiers::NONE)
+    }
 
     #[test]
     fn default_focus_never_grants() {
@@ -2685,7 +2731,11 @@ mod tests {
         assert!(!st.action_regions.is_empty());
         let (action, r) = st.action_regions[0];
         assert_eq!(action, PlanAction::Abandon);
-        let ev = click(r.x, r.y);
+        let ev = MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: Position { x: r.x, y: r.y },
+            modifiers: KeyModifiers::NONE,
+        };
         let out = st.handle_mouse(ev);
         assert!(matches!(out, PlanReviewOutcome::Abandoned));
     }

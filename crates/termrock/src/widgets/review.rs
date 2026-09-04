@@ -24,10 +24,13 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers},
+    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    interaction::UiIntent,
     style::{DesignSystem, ListRowVisualState, Role},
     text::take_display_cols,
-    widgets::diff::{DiffFile, DiffHunk, DiffLine, DiffView, DiffViewOutcome, DiffViewState},
+    widgets::diff::{
+        DiffFile, DiffHunk, DiffLine, DiffMode, DiffView, DiffViewOutcome, DiffViewState,
+    },
 };
 
 /// Maximum undo depth for review ops (not VCS ops).
@@ -117,7 +120,7 @@ impl DiffDecision {
 
     /// Compact mark (ascii uses letters).
     #[must_use]
-    pub const fn glyph(self) -> &'static str {
+    pub const fn glyph(self, _ascii: bool) -> &'static str {
         match self {
             Self::Pending => " ",
             Self::Approved => "✓",
@@ -160,6 +163,18 @@ pub enum DiffReviewUnitKind {
     Hunk,
     /// Line range (inclusive ids stored as start..end line ids).
     LineRange,
+}
+
+impl DiffReviewUnitKind {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::File => "file",
+            Self::Hunk => "hunk",
+            Self::LineRange => "line_range",
+        }
+    }
 }
 
 /// Stable unit key (`file:…`, `hunk:…`, `range:…`).
@@ -242,6 +257,18 @@ pub enum DiffCommentAnchor {
     },
 }
 
+impl DiffCommentAnchor {
+    /// Stable key for maps.
+    #[must_use]
+    pub fn key(&self) -> String {
+        match self {
+            Self::File { file_id } => format!("file:{file_id}"),
+            Self::Hunk { hunk_id } => format!("hunk:{hunk_id}"),
+            Self::Line { line_id } => format!("line:{line_id}"),
+        }
+    }
+}
+
 /// One review comment (host owns persistence; TermRock owns session chrome).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DiffComment {
@@ -251,6 +278,8 @@ pub struct DiffComment {
     pub anchor: DiffCommentAnchor,
     /// Body text.
     pub body: String,
+    /// Optional author label.
+    pub author: Option<String>,
     /// Resolved thread.
     pub resolved: bool,
 }
@@ -263,8 +292,16 @@ impl DiffComment {
             id: id.into(),
             anchor,
             body: body.into(),
+            author: None,
             resolved: false,
         }
+    }
+
+    /// Author.
+    #[must_use]
+    pub fn author(mut self, author: impl Into<String>) -> Self {
+        self.author = Some(author.into());
+        self
     }
 }
 
@@ -279,6 +316,8 @@ pub struct DiffReviewFileRow<'a> {
     pub added: u32,
     /// Removed line count (display).
     pub removed: u32,
+    /// Optional rename old path.
+    pub old_path: Option<&'a str>,
 }
 
 impl<'a> DiffReviewFileRow<'a> {
@@ -290,6 +329,7 @@ impl<'a> DiffReviewFileRow<'a> {
             path,
             added: 0,
             removed: 0,
+            old_path: None,
         }
     }
 
@@ -298,6 +338,13 @@ impl<'a> DiffReviewFileRow<'a> {
     pub const fn stats(mut self, added: u32, removed: u32) -> Self {
         self.added = added;
         self.removed = removed;
+        self
+    }
+
+    /// Rename.
+    #[must_use]
+    pub const fn old_path(mut self, old: &'a str) -> Self {
+        self.old_path = Some(old);
         self
     }
 }
@@ -354,6 +401,8 @@ enum ReviewOp {
         after_files: BTreeSet<String>,
     },
     CommentAdd(DiffComment),
+    #[allow(dead_code)]
+    CommentRemove(DiffComment),
     CommentResolve {
         id: String,
         before: bool,
@@ -460,6 +509,11 @@ pub enum DiffReviewOutcome {
         /// Resolved after.
         resolved: bool,
     },
+    /// Comment removed.
+    CommentRemoved {
+        /// Id.
+        id: String,
+    },
     /// Destructive confirm shown / updated.
     ConfirmRequired(DiffDestructiveConfirm),
     /// Confirm cancelled.
@@ -472,7 +526,7 @@ pub enum DiffReviewOutcome {
     Cancelled,
     /// Summary focus / bulk activate.
     SummaryActivated(DiffReviewSummary),
-    /// Current hunk activated — host may stage/open.
+    /// Legacy activate (current hunk) — host may stage/open.
     HunkActivated {
         /// Index.
         index: usize,
@@ -568,6 +622,48 @@ impl DiffReviewState {
         self.view.set_accepts_input(accepts);
     }
 
+    /// Whether host granted input.
+    #[must_use]
+    pub const fn accepts_input(&self) -> bool {
+        self.accepts_input
+    }
+
+    /// Hunk cursor (DiffView).
+    #[must_use]
+    pub const fn hunk_cursor(&self) -> usize {
+        self.view.hunk_cursor
+    }
+
+    /// Deprecated name.
+    #[deprecated(note = "use hunk_cursor")]
+    #[must_use]
+    pub const fn hunk_index(&self) -> usize {
+        self.view.hunk_cursor
+    }
+
+    /// Programmatic hunk cursor.
+    pub fn set_hunk_cursor(&mut self, index: usize) {
+        self.view.hunk_cursor = index;
+    }
+
+    /// Vertical offset.
+    #[must_use]
+    pub fn offset_y(&self) -> u16 {
+        self.view.offset()
+    }
+
+    /// Split mode preference.
+    #[must_use]
+    pub const fn is_split(&self) -> bool {
+        matches!(self.view.mode, DiffMode::Split)
+    }
+
+    /// Prefers split when wide.
+    #[must_use]
+    pub const fn prefers_split(&self) -> bool {
+        self.view.prefers_split()
+    }
+
     /// Decisions map (unit key → decision).
     #[must_use]
     pub fn decisions(&self) -> &BTreeMap<String, DiffDecision> {
@@ -584,6 +680,18 @@ impl DiffReviewState {
     #[must_use]
     pub fn selected_hunks(&self) -> &BTreeSet<String> {
         &self.selected_hunks
+    }
+
+    /// Selected line ids.
+    #[must_use]
+    pub fn selected_lines(&self) -> &BTreeSet<String> {
+        &self.selected_lines
+    }
+
+    /// Selected file ids.
+    #[must_use]
+    pub fn selected_files(&self) -> &BTreeSet<String> {
+        &self.selected_files
     }
 
     /// Derive summary.
@@ -611,6 +719,12 @@ impl DiffReviewState {
         }
         s
     }
+
+    /// Inject host-persisted comments (replaces session list).
+    pub fn set_comments(&mut self, comments: Vec<DiffComment>) {
+        self.comments = comments;
+    }
+
     /// Set decision without undo (host hydrate).
     pub fn hydrate_decision(&mut self, unit: DiffReviewUnit, decision: DiffDecision) {
         self.decisions.insert(unit.key(), decision);
@@ -655,6 +769,13 @@ impl DiffReviewState {
                     }
                 } else {
                     self.comments.retain(|x| x.id != c.id);
+                }
+            }
+            ReviewOp::CommentRemove(c) => {
+                if forward {
+                    self.comments.retain(|x| x.id != c.id);
+                } else if !self.comments.iter().any(|x| x.id == c.id) {
+                    self.comments.push(c.clone());
                 }
             }
             ReviewOp::CommentResolve { id, before, after } => {
@@ -1094,6 +1215,21 @@ impl DiffReviewState {
         self.handle_key_lines(key, &[], hunks, &[])
     }
 
+    /// Intent routing.
+    pub fn handle_intent(
+        &mut self,
+        intent: UiIntent,
+        lines: &[DiffLine<'_>],
+        hunks: &[DiffHunk],
+    ) -> DiffReviewOutcome {
+        if !self.accepts_input {
+            return DiffReviewOutcome::Ignored;
+        }
+        let refs: Vec<&DiffLine<'_>> = lines.iter().collect();
+        let out = self.view.handle_intent(intent, &refs, hunks);
+        self.map_view(out)
+    }
+
     fn handle_file_tree_key(
         &mut self,
         key: KeyEvent,
@@ -1215,6 +1351,51 @@ impl DiffReviewState {
             DiffReviewOutcome::ExternalEditorRequested { path, line }
         }
     }
+
+    /// Mouse.
+    pub fn handle_mouse_lines(
+        &mut self,
+        event: MouseEvent,
+        lines: &[DiffLine<'_>],
+        hunks: &[DiffHunk],
+        files: &[DiffReviewFileRow<'_>],
+    ) -> DiffReviewOutcome {
+        if !self.accepts_input {
+            return DiffReviewOutcome::Ignored;
+        }
+        // File tree hit
+        if let Some((id, _)) = self
+            .file_regions
+            .iter()
+            .find(|(_, r)| r.contains(event.position))
+        {
+            if matches!(event.kind, MouseEventKind::Down(MouseButton::Left)) {
+                if let Some(i) = files.iter().position(|f| f.id == id) {
+                    self.file_cursor = i;
+                    self.region = DiffReviewRegion::FileTree;
+                    return DiffReviewOutcome::FileCursorMoved { id: id.clone() };
+                }
+            }
+        }
+        if self.summary_area.contains(event.position)
+            && matches!(event.kind, MouseEventKind::Down(MouseButton::Left))
+        {
+            self.region = DiffReviewRegion::Summary;
+            return DiffReviewOutcome::SummaryActivated(self.summary(files.len(), hunks.len()));
+        }
+        let out = self.view.handle_mouse(event, lines, hunks);
+        self.map_view(out)
+    }
+
+    /// Legacy mouse.
+    pub fn handle_mouse(
+        &mut self,
+        event: MouseEvent,
+        hunks: &[DiffHunk],
+        _line_count: usize,
+    ) -> DiffReviewOutcome {
+        self.handle_mouse_lines(event, &[], hunks, &[])
+    }
 }
 
 /// Interactive DiffReview chrome.
@@ -1264,6 +1445,13 @@ impl<'a> DiffReview<'a> {
         self
     }
 
+    /// Diff file bands for DiffView.
+    #[must_use]
+    pub const fn diff_files(mut self, files: &'a [DiffFile<'a>]) -> Self {
+        self.diff_files = files;
+        self
+    }
+
     /// Title.
     #[must_use]
     pub const fn title(mut self, title: &'a str) -> Self {
@@ -1293,8 +1481,15 @@ impl<'a> DiffReview<'a> {
         self
     }
 
+    /// Show summary strip.
+    #[must_use]
+    pub const fn show_summary(mut self, on: bool) -> Self {
+        self.show_summary = on;
+        self
+    }
+
     /// Paint.
-    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut DiffReviewState) {
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut DiffReviewState) {
         state.file_regions.clear();
         if area.is_empty() {
             return;
@@ -1346,6 +1541,7 @@ impl<'a> DiffReview<'a> {
                 state,
                 self.system,
                 surface,
+                false,
                 colorless,
             );
         }
@@ -1361,7 +1557,16 @@ impl<'a> DiffReview<'a> {
         view.render(body, buffer, &mut state.view);
 
         // Overlay selection / comment / decision marks on visible regions
-        paint_review_marks(buffer, body, self.lines, state, self.system, colorless);
+        paint_review_marks(
+            buffer,
+            body,
+            self.lines,
+            self.hunks,
+            state,
+            self.system,
+            false,
+            colorless,
+        );
 
         let mut y = area.bottom().saturating_sub(bottom_h);
 
@@ -1435,6 +1640,7 @@ fn paint_file_tree(
     state: &mut DiffReviewState,
     system: &DesignSystem,
     surface: bool,
+    _ascii: bool,
     colorless: bool,
 ) {
     if area.is_empty() {
@@ -1466,7 +1672,7 @@ fn paint_file_tree(
             .unwrap_or(DiffDecision::Pending);
         let sel = state.selected_files.contains(f.id);
         let cur = i == state.file_cursor;
-        let mark = dec.glyph();
+        let mark = dec.glyph(false);
         let sel_m = if sel { "★" } else { " " };
         let gutter = " ";
         let stats = if area.width >= 20 {
@@ -1512,8 +1718,10 @@ fn paint_review_marks(
     buffer: &mut Buffer,
     body: Rect,
     lines: &[DiffLine<'_>],
+    hunks: &[DiffHunk],
     state: &DiffReviewState,
     system: &DesignSystem,
+    _ascii: bool,
     colorless: bool,
 ) {
     // Use DiffView regions if present
@@ -1532,7 +1740,7 @@ fn paint_review_marks(
             let key = DiffReviewUnit::hunk(hid).key();
             if let Some(d) = state.decisions.get(&key) {
                 if *d != DiffDecision::Pending {
-                    marks.push_str(d.glyph());
+                    marks.push_str(d.glyph(false));
                 }
             }
         }
@@ -1549,11 +1757,7 @@ fn paint_review_marks(
         // Paint at right edge of row
         let x = body
             .right()
-            .saturating_sub(
-                u16::try_from(crate::text::display_cols(&marks))
-                    .unwrap_or(u16::MAX)
-                    .saturating_add(1),
-            )
+            .saturating_sub(display_width_u16(&marks).saturating_add(1))
             .max(body.x);
         let style = if colorless {
             system.style(Role::TextStrong).add_modifier(Modifier::BOLD)
@@ -1561,20 +1765,25 @@ fn paint_review_marks(
             system.style(Role::Accent)
         };
         buffer.set_stringn(x, region.area.y, take_display_cols(&marks, 4), 4, style);
+        let _ = hunks;
     }
+}
+
+fn display_width_u16(s: &str) -> u16 {
+    u16::try_from(crate::text::display_cols(s)).unwrap_or(u16::MAX)
 }
 
 impl StatefulWidget for &DiffReview<'_> {
     type State = DiffReviewState;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        DiffReview::paint(self, area, buffer, state);
+        DiffReview::render(self, area, buffer, state);
     }
 }
 
 impl StatefulWidget for DiffReview<'_> {
     type State = DiffReviewState;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        DiffReview::paint(&self, area, buffer, state);
+        DiffReview::render(&self, area, buffer, state);
     }
 }
 
@@ -1582,6 +1791,12 @@ impl StatefulWidget for DiffReview<'_> {
 
 /// Review session paint targets.
 pub mod bench {
+    /// Viewport rows.
+    pub const VIEWPORT: u16 = 40;
+    /// Files in tree for host virtualization.
+    pub const FILE_TREE: usize = 200;
+    /// Comments per session budget.
+    pub const COMMENTS: usize = 500;
     /// Undo stack.
     pub const UNDO: usize = super::DIFF_REVIEW_UNDO_LIMIT;
 }
@@ -1589,7 +1804,7 @@ pub mod bench {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::widgets::diff::{DiffKind, DiffMode};
+    use crate::widgets::diff::DiffKind;
 
     /// GAP-DF-1: accepting in the file tree accepts the file you are on.
     #[test]
@@ -1934,7 +2149,7 @@ mod tests {
         assert!(DiffDecision::Rejected.safe_verb().contains("reject"));
         assert!(DiffDecision::Applied.is_destructive());
         assert!(!DiffDecision::Approved.is_destructive());
-        assert_eq!(DiffDecision::Staged.glyph(), "●");
+        assert_eq!(DiffDecision::Staged.glyph(true), "●");
     }
 
     #[test]

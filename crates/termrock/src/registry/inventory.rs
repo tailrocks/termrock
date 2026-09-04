@@ -45,6 +45,7 @@ define_public_ui_ids![
     AccentRail,
     Accordion,
     ActionBar,
+    ActionLink,
     ActivityIndicator,
     ActivityShelf,
     AgentModeSelector,
@@ -108,6 +109,7 @@ define_public_ui_ids![
     FilePicker,
     FileTree,
     FocusGraph,
+    FocusLens,
     Form,
     FormWizard,
     FullscreenViewer,
@@ -141,7 +143,6 @@ define_public_ui_ids![
     LoadingOverlay,
     LoadingView,
     LogPane,
-    Lockup,
     LogStream,
     MarkdownView,
     MenuBar,
@@ -458,12 +459,19 @@ pub static PUBLIC_UI_INVENTORY: &[PublicUiInventoryEntry] = &[
     ),
     public_ui!(
         Accordion,
-        Paint,
+        Widget,
         Navigation,
         "accordion",
         "accordion/section"
     ),
     public_ui!(ActionBar, Widget, Action, "action-bar", "action-bar/basic"),
+    public_ui!(
+        ActionLink,
+        Widget,
+        Action,
+        "action-link",
+        "action-link/basic"
+    ),
     public_ui!(
         ActivityIndicator,
         Paint,
@@ -556,13 +564,13 @@ pub static PUBLIC_UI_INVENTORY: &[PublicUiInventoryEntry] = &[
     public_ui!(Button, Widget, Action, "button", "button/activation"),
     public_ui!(
         ButtonGroup,
-        Paint,
+        Widget,
         Action,
         "button-group",
         "button-group/dialog"
     ),
     public_ui!(Callout, Widget, Feedback, "callout", "callout/basic"),
-    public_ui!(Card, Paint, Layout, "card", "card/basic"),
+    public_ui!(Card, Widget, Layout, "card", "card/basic"),
     public_ui!(Carousel, Paint, Navigation, "carousel", "carousel/basic"),
     public_ui!(Center, Layout, Layout, "center", "center/both"),
     public_ui!(Chart, Widget, Visualization, "chart", "chart/basic"),
@@ -590,7 +598,7 @@ pub static PUBLIC_UI_INVENTORY: &[PublicUiInventoryEntry] = &[
         "citation-list",
         "citation-list/expanded"
     ),
-    public_ui!(CodeBlock, Paint, Data, "code-block", "code-block/basic"),
+    public_ui!(CodeBlock, Widget, Data, "code-block", "code-block/basic"),
     public_ui!(
         CodeFrame,
         Paint,
@@ -600,7 +608,7 @@ pub static PUBLIC_UI_INVENTORY: &[PublicUiInventoryEntry] = &[
     ),
     public_ui!(
         Collapsible,
-        Paint,
+        Widget,
         Navigation,
         "collapsible",
         "collapsible/inline"
@@ -725,14 +733,14 @@ pub static PUBLIC_UI_INVENTORY: &[PublicUiInventoryEntry] = &[
     ),
     public_ui!(
         EmptyState,
-        Paint,
+        Widget,
         Feedback,
         "empty-state",
         "empty-state/basic"
     ),
     public_ui!(
         ErrorState,
-        Paint,
+        Widget,
         Feedback,
         "error-state",
         "error-state/network"
@@ -760,6 +768,13 @@ pub static PUBLIC_UI_INVENTORY: &[PublicUiInventoryEntry] = &[
         Navigation,
         "focus-graph",
         "focus-graph/workbench"
+    ),
+    public_ui!(
+        FocusLens,
+        Widget,
+        Feedback,
+        "focus-lens",
+        "focus-lens/combined"
     ),
     public_ui!(Form, Widget, Input, "form", "form/responsive"),
     public_ui!(
@@ -873,7 +888,7 @@ pub static PUBLIC_UI_INVENTORY: &[PublicUiInventoryEntry] = &[
         "keyboard-help/footer"
     ),
     public_ui!(Label, Widget, Layout, "label", "label/basic"),
-    public_ui!(Link, Paint, Action, "link", "link/basic"),
+    public_ui!(Link, Widget, Action, "link", "link/basic"),
     public_ui!(List, Widget, Navigation, "list", "list/selection"),
     public_ui!(
         LoadingOverlay,
@@ -889,12 +904,11 @@ pub static PUBLIC_UI_INVENTORY: &[PublicUiInventoryEntry] = &[
         "loading-view",
         "loading-view/basic"
     ),
-    public_ui!(Lockup, Widget, Content, "lockup", "lockup/basic"),
     public_ui!(LogPane, Widget, Data, "log-pane", "log-pane/follow"),
     public_ui!(LogStream, Widget, Data, "log-stream", "log-stream/follow"),
     public_ui!(
         MarkdownView,
-        Paint,
+        Widget,
         Data,
         "markdown-view",
         "markdown-view/basic"
@@ -1019,7 +1033,7 @@ pub static PUBLIC_UI_INVENTORY: &[PublicUiInventoryEntry] = &[
         "pagination",
         "pagination/full"
     ),
-    public_ui!(Panel, Paint, Layout, "panel", "panel/focused"),
+    public_ui!(Panel, Widget, Layout, "panel", "panel/focused"),
     public_ui!(Paragraph, Widget, Layout, "paragraph", "paragraph/basic"),
     public_ui!(
         PasswordInput,
@@ -1106,7 +1120,7 @@ pub static PUBLIC_UI_INVENTORY: &[PublicUiInventoryEntry] = &[
     public_ui!(RadioGroup, Paint, Input, "radio-group", "radio-group/basic"),
     public_ui!(
         RangeSlider,
-        Paint,
+        Widget,
         Input,
         "range-slider",
         "range-slider/basic"
@@ -1157,7 +1171,7 @@ pub static PUBLIC_UI_INVENTORY: &[PublicUiInventoryEntry] = &[
     public_ui!(Section, Widget, Layout, "section", "section/quiet"),
     public_ui!(
         SegmentedControl,
-        Paint,
+        Widget,
         Navigation,
         "segmented-control",
         "segmented-control/basic"
@@ -1200,7 +1214,7 @@ pub static PUBLIC_UI_INVENTORY: &[PublicUiInventoryEntry] = &[
         "shortcut-hint/footer"
     ),
     public_ui!(Sidebar, Widget, Navigation, "sidebar", "sidebar/settings"),
-    public_ui!(Skeleton, Paint, Feedback, "skeleton", "skeleton/basic"),
+    public_ui!(Skeleton, Widget, Feedback, "skeleton", "skeleton/basic"),
     public_ui!(
         SlashCommandMenu,
         Paint,
@@ -1208,7 +1222,7 @@ pub static PUBLIC_UI_INVENTORY: &[PublicUiInventoryEntry] = &[
         "slash-command-menu",
         "slash-command-menu/filter"
     ),
-    public_ui!(Slider, Paint, Input, "slider", "slider/basic"),
+    public_ui!(Slider, Widget, Input, "slider", "slider/basic"),
     public_ui!(
         SourceCitation,
         Paint,
@@ -1223,7 +1237,7 @@ pub static PUBLIC_UI_INVENTORY: &[PublicUiInventoryEntry] = &[
         "sparkline",
         "sparkline/basic"
     ),
-    public_ui!(Spinner, Paint, Feedback, "spinner", "spinner/labeled"),
+    public_ui!(Spinner, Widget, Feedback, "spinner", "spinner/labeled"),
     public_ui!(
         SplitPane,
         Widget,
@@ -1241,7 +1255,7 @@ pub static PUBLIC_UI_INVENTORY: &[PublicUiInventoryEntry] = &[
     ),
     public_ui!(
         StatusIndicator,
-        Paint,
+        Widget,
         Feedback,
         "status-indicator",
         "status-indicator/catalog"
@@ -1327,10 +1341,10 @@ pub static PUBLIC_UI_INVENTORY: &[PublicUiInventoryEntry] = &[
         "toast-stack",
         "toast-stack/basic"
     ),
-    public_ui!(Toggle, Paint, Action, "toggle", "toggle/pressed"),
+    public_ui!(Toggle, Widget, Action, "toggle", "toggle/pressed"),
     public_ui!(
         ToggleGroup,
-        Paint,
+        Widget,
         Action,
         "toggle-group",
         "toggle-group/format"
@@ -1359,7 +1373,7 @@ pub static PUBLIC_UI_INVENTORY: &[PublicUiInventoryEntry] = &[
     ),
     public_ui!(ToolCard, Widget, Content, "tool-card", "tool-card/basic"),
     public_ui!(Toolbar, Widget, Action, "toolbar", "toolbar/basic"),
-    public_ui!(Tooltip, Paint, Feedback, "tooltip", "tooltip/plain"),
+    public_ui!(Tooltip, Widget, Feedback, "tooltip", "tooltip/plain"),
     public_ui!(
         TraceWaterfall,
         Paint,
@@ -1821,7 +1835,7 @@ mod tests {
 
     #[test]
     fn public_inventory_is_complete_unique_and_joinable() {
-        assert_eq!(public_ui_inventory().len(), 209);
+        assert_eq!(public_ui_inventory().len(), 210);
         assert_eq!(public_ui_inventory().len(), PublicUiId::ALL.len());
         assert_eq!(
             PublicUiId::ALL.iter().copied().collect::<BTreeSet<_>>(),
@@ -1844,13 +1858,13 @@ mod tests {
                     counts[index] += 1;
                     counts
                 });
-        assert_eq!(kind_counts, [128, 67, 6, 8]);
+        assert_eq!(kind_counts, [148, 48, 6, 8]);
         assert_eq!(
             public_ui_inventory()
                 .iter()
                 .filter(|entry| entry.documentation == DocumentationKind::Component)
                 .count(),
-            191
+            192
         );
         assert_eq!(
             public_ui_inventory()

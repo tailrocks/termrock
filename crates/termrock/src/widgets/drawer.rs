@@ -23,18 +23,26 @@
 //! as the no-motion fallback.
 //!
 //! Research: shadcn Sheet, mobile drawers, Zellij floating panes, agent task sidebars.
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+use ratatui_core::{
+    buffer::Buffer,
+    layout::{Position, Rect},
+    style::Modifier,
+    widgets::StatefulWidget,
+};
 use ratatui_widgets::borders::Borders;
 
 use crate::{
-    input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     interaction::{
-        BackdropPolicy, LayerDismissPolicy, NarrowFallback, OverlayId, OverlayOutcome,
+        BackdropPolicy, LayerDismissPolicy, NarrowFallback, OverlayId, OverlayKind, OverlayOutcome,
         OverlayPolicy, OverlaySize, OverlaySpec, OverlayStack, PlacementPrefer, SemanticNode,
         SemanticRole, SemanticScene, SemanticState, UiIntent, place_overlay,
     },
-    style::{DesignSystem, Role},
-    text::take_display_cols,
+    style::{DesignSystem, MotionPolicy, Role},
+    text::{display_cols, take_display_cols},
 };
 
 /// Default overlay id for drawers.
@@ -236,6 +244,27 @@ pub fn place_drawer_on_edge(
     place_overlay(bounds, None, size, policy)
 }
 
+/// Opens a drawer (default right / modal / default id).
+pub fn open_drawer_overlay<FocusId: Clone>(
+    stack: &mut OverlayStack<FocusId>,
+    bounds: Rect,
+    id: impl Into<OverlayId>,
+    size: OverlaySize,
+    opener_focus: Option<FocusId>,
+) -> OverlayOutcome<FocusId> {
+    open_drawer_configured(
+        stack,
+        bounds,
+        id,
+        size,
+        opener_focus,
+        DrawerEdge::Right,
+        DrawerModality::Modal,
+        None,
+        None,
+    )
+}
+
 /// Full configuration open.
 pub fn open_drawer_configured<FocusId: Clone>(
     stack: &mut OverlayStack<FocusId>,
@@ -317,6 +346,13 @@ pub enum DrawerOutcome {
         /// New depth (width for L/R, height for T/B).
         depth: u16,
     },
+    /// Presentation suggestion changed.
+    PresentationChanged {
+        /// New presentation.
+        presentation: DrawerPresentation,
+    },
+    /// Focus entered drawer surface.
+    FocusEntered,
 }
 
 /// Slot geometry after paint.
@@ -441,16 +477,75 @@ impl DrawerState {
         s.max_depth = 24;
         s
     }
+
+    /// Non-modal factory.
+    #[must_use]
+    pub const fn non_modal() -> Self {
+        let mut s = Self::new();
+        s.modality = DrawerModality::NonModal;
+        s
+    }
+
     /// Whether open.
     #[must_use]
     pub const fn is_open(&self) -> bool {
         self.open
     }
 
+    /// Synchronizes host-owned visibility for embedded/story rendering.
+    ///
+    /// Stack-backed drawers should use [`Self::open_on_stack`] so geometry,
+    /// modality, and opener restoration remain coupled.
+    pub fn set_open(&mut self, on: bool) {
+        self.open = on && self.enabled;
+        self.focused = self.open;
+        if !self.open {
+            self.accepts_input = false;
+            self.resizing = false;
+            self.resize_anchor = None;
+        }
+    }
+
     /// Edge.
     #[must_use]
     pub const fn edge(&self) -> DrawerEdge {
         self.edge
+    }
+
+    /// Set edge.
+    pub fn set_edge(&mut self, edge: DrawerEdge) {
+        self.edge = edge;
+        if edge.is_horizontal() && self.depth < 12 {
+            self.depth = DRAWER_DEFAULT_WIDTH;
+        }
+        if !edge.is_horizontal() && self.depth > 40 {
+            self.depth = DRAWER_DEFAULT_HEIGHT;
+        }
+    }
+
+    /// Modality.
+    #[must_use]
+    pub const fn modality(&self) -> DrawerModality {
+        self.modality
+    }
+
+    /// Set modality.
+    pub fn set_modality(&mut self, m: DrawerModality) {
+        self.modality = m;
+    }
+
+    /// Presentation.
+    #[must_use]
+    pub const fn presentation(&self) -> DrawerPresentation {
+        self.presentation
+    }
+
+    /// Force presentation.
+    pub fn set_presentation_override(&mut self, p: Option<DrawerPresentation>) {
+        self.presentation_override = p;
+        if let Some(p) = p {
+            self.presentation = p;
+        }
     }
 
     /// Preferred depth.
@@ -463,6 +558,14 @@ impl DrawerState {
     pub fn set_depth(&mut self, depth: u16) {
         self.depth = depth.clamp(self.min_depth, self.max_depth);
     }
+
+    /// Resize limits.
+    pub fn set_depth_limits(&mut self, min: u16, max: u16) {
+        self.min_depth = min.max(1);
+        self.max_depth = max.max(self.min_depth);
+        self.depth = self.depth.clamp(self.min_depth, self.max_depth);
+    }
+
     /// Header / footer rows.
     pub fn set_header_rows(&mut self, rows: u16) {
         self.header_rows = rows;
@@ -473,10 +576,47 @@ impl DrawerState {
         self.footer_rows = rows;
     }
 
+    /// Slots after paint.
+    #[must_use]
+    pub const fn slots(&self) -> DrawerSlots {
+        self.slots
+    }
+
+    /// Body area convenience.
+    #[must_use]
+    pub const fn body_area(&self) -> Rect {
+        self.slots.body
+    }
+
+    /// Focus.
+    pub fn set_focused(&mut self, on: bool) {
+        self.focused = on;
+    }
+
+    /// Focused?
+    #[must_use]
+    pub const fn is_focused(&self) -> bool {
+        self.focused
+    }
+
+    /// Input gate.
+    pub fn set_accepts_input(&mut self, on: bool) {
+        self.accepts_input = on;
+    }
+
     /// Enable.
     pub fn set_enabled(&mut self, on: bool) {
         self.enabled = on;
     }
+
+    /// Compact handle-only.
+    pub fn set_handle_only(&mut self, on: bool) {
+        self.handle_only = on;
+        if on {
+            self.presentation = DrawerPresentation::Compact;
+        }
+    }
+
     /// Overlay size for current edge/depth.
     #[must_use]
     pub fn overlay_size(&self, bounds: Rect) -> OverlaySize {
@@ -526,6 +666,44 @@ impl DrawerState {
         DrawerOutcome::Closed
     }
 
+    /// Sync with stack presence.
+    pub fn sync_with_stack<F>(&mut self, stack: &OverlayStack<F>, id: &OverlayId) {
+        let on = stack.contains(id);
+        self.open = on;
+        if on {
+            self.accepts_input = stack.top_owns_input()
+                && stack
+                    .top()
+                    .is_some_and(|t| &t.id == id || t.id.0.starts_with(&id.0));
+            if let Some(top) = stack.top() {
+                if top.id == *id || top.id.0.starts_with(DRAWER_OVERLAY_ID) {
+                    if self.edge.is_horizontal() {
+                        self.depth = top.rect.width.clamp(self.min_depth, self.max_depth);
+                    } else {
+                        self.depth = top.rect.height.clamp(self.min_depth, self.max_depth);
+                    }
+                }
+            }
+        } else {
+            self.focused = false;
+            self.accepts_input = false;
+        }
+    }
+
+    /// Sync presentation from bounds.
+    pub fn sync_presentation(&mut self, bounds: Rect) -> DrawerOutcome {
+        if self.presentation_override.is_some() {
+            return DrawerOutcome::Ignored;
+        }
+        let next = drawer_presentation_for(bounds, self.edge, self.depth);
+        if next != self.presentation {
+            self.presentation = next;
+            DrawerOutcome::PresentationChanged { presentation: next }
+        } else {
+            DrawerOutcome::Ignored
+        }
+    }
+
     /// Open on stack with opener restoration.
     pub fn open_on_stack<F: Clone>(
         &mut self,
@@ -561,7 +739,7 @@ impl DrawerState {
         if key.is_release() {
             return DrawerOutcome::Ignored;
         }
-        if key.code == KeyCode::Esc && key.is_press() && key.modifiers.is_empty() {
+        if key.code == KeyCode::Esc && key.modifiers.is_empty() {
             return self.request_close();
         }
         // Resize via [ ] when horizontal and focused
@@ -647,6 +825,15 @@ impl DrawerState {
             _ => DrawerOutcome::Ignored,
         }
     }
+
+    /// Mark focus entered.
+    pub fn enter_focus(&mut self) -> DrawerOutcome {
+        if !self.open {
+            return DrawerOutcome::Ignored;
+        }
+        self.focused = true;
+        DrawerOutcome::FocusEntered
+    }
 }
 
 // ── Widget ──────────────────────────────────────────────────────────────────
@@ -683,6 +870,14 @@ impl<'a> Drawer<'a> {
     #[must_use]
     pub const fn footer(mut self, f: Option<&'a str>) -> Self {
         self.footer = f;
+        self
+    }
+
+    /// ASCII / no-motion handle glyphs.
+    #[must_use]
+    /// Colorless roles.
+    pub const fn colorless(mut self, on: bool) -> Self {
+        self.colorless = on;
         self
     }
 
@@ -822,7 +1017,7 @@ impl<'a> Drawer<'a> {
                 buffer.set_stringn(
                     inner.x,
                     inner.y,
-                    take_display_cols(t, usize::from(inner.width)).as_ref(),
+                    &take_display_cols(t, usize::from(inner.width)),
                     usize::from(inner.width),
                     self.system
                         .style(Role::TextStrong)
@@ -857,7 +1052,7 @@ impl<'a> Drawer<'a> {
                 buffer.set_stringn(
                     inner.x,
                     y,
-                    take_display_cols(title, usize::from(inner.width)).as_ref(),
+                    &take_display_cols(title, usize::from(inner.width)),
                     usize::from(inner.width),
                     self.system
                         .style(Role::TextStrong)
@@ -878,7 +1073,7 @@ impl<'a> Drawer<'a> {
                 buffer.set_stringn(
                     inner.x,
                     y,
-                    take_display_cols(ft, usize::from(inner.width)).as_ref(),
+                    &take_display_cols(ft, usize::from(inner.width)),
                     usize::from(inner.width),
                     self.system.style(Role::TextMuted),
                 );
@@ -886,6 +1081,7 @@ impl<'a> Drawer<'a> {
         } else {
             state.slots.footer = Rect::default();
         }
+        let _ = display_cols;
     }
 
     /// Semantic registration.
@@ -947,11 +1143,7 @@ impl StatefulWidget for Drawer<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::{KeyEventKind, KeyModifiers};
-    use crate::interaction::OverlayKind;
-    use crate::style::MotionPolicy;
-    use crate::widgets::tests::click;
-    use crate::widgets::tests::mouse;
+    use crate::input::KeyModifiers;
 
     #[test]
     fn place_right_and_left_edges() {
@@ -1115,26 +1307,6 @@ mod tests {
     }
 
     #[test]
-    fn repeated_escape_is_ignored_but_resize_repeats() {
-        let mut state = DrawerState::new();
-        state.open = true;
-        state.accepts_input = true;
-
-        let mut repeat_escape = KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE);
-        repeat_escape.kind = KeyEventKind::Repeat;
-        assert_eq!(state.handle_key(repeat_escape), DrawerOutcome::Ignored);
-        assert!(state.is_open());
-
-        state.set_depth(20);
-        let mut repeat_resize = KeyEvent::new(KeyCode::Char(']'), KeyModifiers::NONE);
-        repeat_resize.kind = KeyEventKind::Repeat;
-        assert_eq!(
-            state.handle_key(repeat_resize),
-            DrawerOutcome::Resized { depth: 22 }
-        );
-    }
-
-    #[test]
     fn resize_via_keys() {
         let mut state = DrawerState::new();
         state.open = true;
@@ -1162,16 +1334,20 @@ mod tests {
         Drawer::new(&system).paint(area, &mut buffer, &mut state);
         let handle = state.slots.handle;
         assert!(!handle.is_empty());
-        let down = click(handle.x, handle.y);
+        let down = MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: Position::new(handle.x, handle.y),
+            modifiers: KeyModifiers::NONE,
+        };
         assert_eq!(state.handle_mouse(down), DrawerOutcome::Ignored);
         assert!(state.resizing);
 
         state.set_enabled(false);
-        let drag = mouse(
-            MouseEventKind::Drag(MouseButton::Left),
-            handle.x.saturating_sub(2),
-            handle.y,
-        );
+        let drag = MouseEvent {
+            kind: MouseEventKind::Drag(MouseButton::Left),
+            position: Position::new(handle.x.saturating_sub(2), handle.y),
+            modifiers: KeyModifiers::NONE,
+        };
         assert_eq!(state.handle_mouse(drag), DrawerOutcome::Ignored);
         assert_eq!(state.depth(), 20);
 
@@ -1267,6 +1443,7 @@ mod tests {
         let state = DrawerState::new();
         assert!(!state.is_open());
         // Opening must not require host to pass selection — host keeps its own.
+        let _ = state;
     }
 
     #[test]

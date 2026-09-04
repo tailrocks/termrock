@@ -1,27 +1,29 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-//! Link — terminal-safe hyperlinks and inline actions.
+//! Link and ActionLink — terminal-safe hyperlinks and inline actions.
 //!
 //! **Link** — navigation to an external URL (OSC 8 when capable) or an
 //! application route. External destinations are **never hidden**: label paint
 //! always keeps a visible URL fallback when hyperlinks are off or when the
 //! host requests it.
 //!
+//! **ActionLink** — button-like inline action (no destination URL). Uses link
+//! chrome (underline / Link role) but outcomes are application activate only.
+//!
 //! Consumers own OSC emission via [`crate::osc::encode_hyperlink_open`] /
 //! [`crate::osc::Request::HyperlinkOpen`]. This widget produces regions and
 //! typed outcomes; it never writes raw OSC bytes to the PTY itself.
 //!
 //! References: Rich hyperlinks, OSC 8, CLI docs conventions.
-//!
-//! Link paints only through `Link::paint(area, buffer, state)`;
-//! a stateless render would rebuild `LinkState` per frame and drop focus and
-//! hit geometry between frames.
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
 
 use crate::input::{KeyEvent, MouseButton, MouseEvent, MouseEventKind};
-use crate::interaction::{UiIntent, default_button_intent};
-use crate::osc::{HyperlinkRegion, Request, encode_hyperlink_open};
+use crate::interaction::{
+    EventResult, SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent,
+    default_button_intent,
+};
+use crate::osc::{HyperlinkRegion, Request, encode_hyperlink_close, encode_hyperlink_open};
 use crate::style::{ButtonRecipeVariant, ControlState, DesignSystem, Role};
 use crate::text::{display_cols, take_display_cols};
 
@@ -38,6 +40,15 @@ pub enum LinkDestination<'a> {
 }
 
 impl<'a> LinkDestination<'a> {
+    /// Stable kind id.
+    #[must_use]
+    pub const fn kind_id(self) -> &'static str {
+        match self {
+            Self::Url(_) => "url",
+            Self::AppRoute(_) => "app-route",
+        }
+    }
+
     /// Destination string for display / copy / outcome.
     #[must_use]
     pub const fn as_str(self) -> &'a str {
@@ -72,6 +83,17 @@ pub enum LinkVariant {
     Bracketed,
 }
 
+impl LinkVariant {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Plain => "plain",
+            Self::Bracketed => "bracketed",
+        }
+    }
+}
+
 /// When a link draws the underline.
 ///
 /// How to show the destination string.
@@ -85,6 +107,18 @@ pub enum DestinationDisplay {
     Always,
     /// Never append destination text; external URLs still get a risk cue.
     Never,
+}
+
+impl DestinationDisplay {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Auto => "auto",
+            Self::Always => "always",
+            Self::Never => "never",
+        }
+    }
 }
 
 /// Painted geometry + optional OSC region.
@@ -156,6 +190,16 @@ impl LinkState {
         self.focused = on;
     }
 
+    /// Hover.
+    pub const fn set_hovered(&mut self, on: bool) {
+        self.hovered = on;
+    }
+
+    /// Visited.
+    pub const fn set_visited(&mut self, on: bool) {
+        self.visited = on;
+    }
+
     /// Disabled.
     pub const fn set_disabled(&mut self, on: bool) {
         self.disabled = on;
@@ -213,17 +257,59 @@ impl<'a> Link<'a> {
         }
     }
 
+    /// Variant chrome.
+    #[must_use]
+    pub const fn variant(mut self, variant: LinkVariant) -> Self {
+        self.variant = variant;
+        self
+    }
+
+    /// Destination display policy.
+    #[must_use]
+    pub const fn destination_display(mut self, display: DestinationDisplay) -> Self {
+        self.destination_display = display;
+        self
+    }
+
+    /// Always show destination text.
+    #[must_use]
+    pub const fn always_show_destination(mut self) -> Self {
+        self.destination_display = DestinationDisplay::Always;
+        self
+    }
+
     /// Terminal supports OSC 8 this frame.
     #[must_use]
     pub const fn hyperlinks(mut self, on: bool) -> Self {
         self.hyperlinks = on;
         self
     }
+
+    /// External risk cue (↗ / `^`).
+    #[must_use]
+    pub const fn external_cue(mut self, on: bool) -> Self {
+        self.show_external_cue = on;
+        self
+    }
+
     /// OSC hyperlink id.
     #[must_use]
     pub const fn osc_id(mut self, id: &'a str) -> Self {
         self.osc_id = Some(id);
         self
+    }
+
+    /// Truncation budget.
+    #[must_use]
+    pub const fn max_cols(mut self, cols: u16) -> Self {
+        self.max_cols = cols;
+        self
+    }
+
+    /// Destination.
+    #[must_use]
+    pub const fn destination(&self) -> LinkDestination<'a> {
+        self.destination
     }
 
     /// Whether destination string should paint this frame.
@@ -245,7 +331,8 @@ impl<'a> Link<'a> {
 
     /// Visible painted string (label + optional destination + external cue).
     #[must_use]
-    pub fn decorated(&self) -> String {
+    pub fn decorated(&self, state: &LinkState) -> String {
+        let _ = state;
         let mut s = match self.variant {
             LinkVariant::Bracketed => format!("[{}]", self.label.trim()),
             LinkVariant::Plain => self.label.trim().to_string(),
@@ -291,10 +378,26 @@ impl<'a> Link<'a> {
         }
     }
 
+    /// A11y plain description.
+    #[must_use]
+    pub fn plain(&self) -> String {
+        let kind = self.destination.kind_id();
+        format!(
+            "{} → {} ({kind}{})",
+            self.label.trim(),
+            self.destination.as_str(),
+            if self.destination.is_external() {
+                "; external"
+            } else {
+                ""
+            }
+        )
+    }
+
     /// Measure width.
     #[must_use]
-    pub fn measure_width(&self) -> u16 {
-        u16::try_from(display_cols(&self.decorated()))
+    pub fn measure_width(&self, state: &LinkState) -> u16 {
+        u16::try_from(display_cols(&self.decorated(state)))
             .unwrap_or(1)
             .max(1)
     }
@@ -370,6 +473,12 @@ impl<'a> Link<'a> {
         encode_hyperlink_open(self.osc_id, url)
     }
 
+    /// Encode OSC close bytes.
+    #[must_use]
+    pub fn encode_osc_close() -> Vec<u8> {
+        encode_hyperlink_close()
+    }
+
     /// Hyperlink region for hit testing / host OSC region lists.
     #[must_use]
     pub fn hyperlink_region<Id: Clone>(
@@ -398,7 +507,7 @@ impl<'a> Link<'a> {
                 osc8: false,
             };
         }
-        let text = self.decorated();
+        let text = self.decorated(state);
         let mut budget = usize::from(area.width);
         if self.max_cols > 0 {
             budget = budget.min(usize::from(self.max_cols));
@@ -428,8 +537,7 @@ impl<'a> Link<'a> {
         if parts.root.is_empty() {
             return parts;
         }
-        let decorated = self.decorated();
-        let text = take_display_cols(&decorated, usize::from(parts.root.width));
+        let text = take_display_cols(&self.decorated(state), usize::from(parts.root.width));
         let style = self.style(state);
         buffer.set_stringn(
             parts.root.x,
@@ -499,19 +607,286 @@ impl<'a> Link<'a> {
             _ => LinkOutcome::Ignored,
         }
     }
+
+    /// EventResult wrapper.
+    pub fn handle_key_result(
+        &self,
+        state: &mut LinkState,
+        key: KeyEvent,
+    ) -> EventResult<LinkOutcome> {
+        match self.handle_key(state, key) {
+            LinkOutcome::Ignored => EventResult::ignored(),
+            other => EventResult::emit(other),
+        }
+    }
+
+    /// Semantic registration.
+    pub fn register_semantic<Id, Action>(
+        &self,
+        scene: &mut SemanticScene<Id, Action>,
+        id: Id,
+        area: Rect,
+        state: &LinkState,
+    ) where
+        Id: Clone + PartialEq + std::fmt::Display,
+        Action: Clone,
+    {
+        let parts = self.layout(area, state);
+        if parts.root.is_empty() {
+            return;
+        }
+        let desc = self.plain();
+        let _ = scene.register(
+            SemanticNode::control(id, parts.root)
+                .role(SemanticRole::Button)
+                .label(self.label)
+                .description(desc)
+                .focusable(!state.disabled)
+                .state(SemanticState {
+                    selected: state.focused,
+                    ..Default::default()
+                }),
+        );
+    }
+}
+
+impl Widget for &Link<'_> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        let mut state = LinkState::new();
+        let _ = self.paint(area, buffer, &mut state);
+    }
+}
+
+impl Widget for Link<'_> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        <&Self as Widget>::render(&self, area, buffer);
+    }
+}
+
+// ── ActionLink ──────────────────────────────────────────────────────────────
+
+/// ActionLink outcomes (no external URL).
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum ActionLinkOutcome {
+    /// Ignored.
+    Ignored,
+    /// Activated.
+    Activated,
+}
+
+/// Lightweight inline action with link chrome (not a navigation destination).
+#[derive(Debug, Clone, Copy)]
+pub struct ActionLink<'a> {
+    label: &'a str,
+    system: &'a DesignSystem,
+    variant: LinkVariant,
+    /// Optional risk / scope note always visible when set (e.g. "runs cargo").
+    risk_note: Option<&'a str>,
+}
+
+impl<'a> ActionLink<'a> {
+    /// Inline action label.
+    #[must_use]
+    pub const fn new(label: &'a str, system: &'a DesignSystem) -> Self {
+        Self {
+            label,
+            system,
+            variant: LinkVariant::Plain,
+            risk_note: None,
+        }
+    }
+
+    /// Variant.
+    #[must_use]
+    pub const fn variant(mut self, variant: LinkVariant) -> Self {
+        self.variant = variant;
+        self
+    }
+
+    /// Visible risk / scope note (never hidden).
+    #[must_use]
+    pub const fn risk_note(mut self, note: &'a str) -> Self {
+        self.risk_note = Some(note);
+        self
+    }
+
+    /// Label.
+    #[must_use]
+    pub const fn label(&self) -> &'a str {
+        self.label
+    }
+
+    fn decorated(&self) -> String {
+        let mut s = match self.variant {
+            LinkVariant::Bracketed => format!("[{}]", self.label.trim()),
+            _ => self.label.trim().to_string(),
+        };
+        if let Some(note) = self.risk_note {
+            if !note.is_empty() {
+                s.push(' ');
+                s.push('(');
+                s.push_str(note);
+                s.push(')');
+            }
+        }
+        s
+    }
+
+    /// Plain a11y.
+    #[must_use]
+    pub fn plain(&self) -> String {
+        match self.risk_note {
+            Some(n) if !n.is_empty() => format!("action: {} ({n})", self.label),
+            _ => format!("action: {}", self.label),
+        }
+    }
+
+    /// Paint.
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut LinkState) -> LinkParts {
+        // Action links never use OSC 8.
+        let text = self.decorated();
+        if area.is_empty() {
+            let parts = LinkParts {
+                root: area,
+                label: area,
+                destination: Rect::default(),
+                osc8: false,
+            };
+            state.parts = Some(parts.clone());
+            return parts;
+        }
+        let clipped = take_display_cols(&text, usize::from(area.width));
+        let w = u16::try_from(display_cols(&clipped))
+            .unwrap_or(0)
+            .min(area.width);
+        let root = Rect {
+            x: area.x,
+            y: area.y,
+            width: w,
+            height: 1.min(area.height),
+        };
+        let control_state = if state.disabled {
+            ControlState::Disabled
+        } else if state.focused {
+            ControlState::Focused
+        } else if state.hovered {
+            ControlState::Hovered
+        } else {
+            ControlState::Default
+        };
+        let recipe = self.system.button_recipe(
+            ButtonRecipeVariant::Link,
+            control_state,
+            self.system.junie_theme().surface,
+        );
+        let mut style = recipe.fill.patch(recipe.label);
+        if state.focused {
+            style = style.add_modifier(Modifier::BOLD);
+        }
+        style = ratatui_core::style::Style { bg: None, ..style };
+        buffer.set_stringn(root.x, root.y, &clipped, usize::from(root.width), style);
+        let parts = LinkParts {
+            root,
+            label: root,
+            destination: Rect::default(),
+            osc8: false,
+        };
+        state.parts = Some(parts.clone());
+        parts
+    }
+
+    /// Keys.
+    pub fn handle_key(&self, state: &mut LinkState, key: KeyEvent) -> ActionLinkOutcome {
+        if state.disabled || !state.focused || !key.is_press() {
+            return ActionLinkOutcome::Ignored;
+        }
+        if default_button_intent(key)
+            .is_some_and(|i| matches!(i, UiIntent::Activate | UiIntent::Submit))
+        {
+            return ActionLinkOutcome::Activated;
+        }
+        ActionLinkOutcome::Ignored
+    }
+
+    /// Mouse click.
+    pub fn handle_mouse(&self, state: &mut LinkState, event: MouseEvent) -> ActionLinkOutcome {
+        if state.disabled {
+            return ActionLinkOutcome::Ignored;
+        }
+        let Some(parts) = &state.parts else {
+            return ActionLinkOutcome::Ignored;
+        };
+        let hit = parts.root.contains(event.position);
+        if matches!(event.kind, MouseEventKind::Moved | MouseEventKind::Drag(_)) {
+            state.hovered = hit;
+            return ActionLinkOutcome::Ignored;
+        }
+        if event.kind == MouseEventKind::Down(MouseButton::Left) && hit {
+            state.focused = true;
+            return ActionLinkOutcome::Activated;
+        }
+        ActionLinkOutcome::Ignored
+    }
+
+    /// Semantic.
+    pub fn register_semantic<Id, Action>(
+        &self,
+        scene: &mut SemanticScene<Id, Action>,
+        id: Id,
+        area: Rect,
+        state: &LinkState,
+    ) where
+        Id: Clone + PartialEq + std::fmt::Display,
+        Action: Clone,
+    {
+        let text = self.decorated();
+        let w = u16::try_from(display_cols(&text))
+            .unwrap_or(1)
+            .min(area.width);
+        let root = Rect {
+            x: area.x,
+            y: area.y,
+            width: w,
+            height: 1.min(area.height),
+        };
+        if root.is_empty() {
+            return;
+        }
+        let _ = scene.register(
+            SemanticNode::control(id, root)
+                .role(SemanticRole::Button)
+                .label(self.label)
+                .description(self.plain())
+                .focusable(!state.disabled),
+        );
+    }
+}
+
+impl Widget for &ActionLink<'_> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        let mut state = LinkState::new();
+        let _ = self.paint(area, buffer, &mut state);
+    }
+}
+
+impl Widget for ActionLink<'_> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        <&Self as Widget>::render(&self, area, buffer);
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::input::{KeyCode, KeyModifiers};
-    use crate::widgets::tests::click;
 
     #[test]
     fn external_always_shows_destination_or_cue() {
         let system = DesignSystem::default();
         let link = Link::url("docs", "https://example.invalid/path", &system);
-        let d = link.decorated();
+        let state = LinkState::new();
+        let d = link.decorated(&state);
         assert!(
             d.contains("example.invalid") || d.contains('↗'),
             "must not hide external dest: {d}"
@@ -523,7 +898,7 @@ mod tests {
         let system = DesignSystem::default();
         let link = Link::url("docs", "https://example.invalid", &system).hyperlinks(false);
         let state = LinkState::new();
-        assert!(link.decorated().contains("example.invalid"));
+        assert!(link.decorated(&state).contains("example.invalid"));
         assert!(!link.uses_osc8(&state));
     }
 
@@ -611,6 +986,23 @@ mod tests {
     }
 
     #[test]
+    fn action_link_not_navigation() {
+        let system = DesignSystem::default();
+        let action = ActionLink::new("Run tests", &system).risk_note("cargo test");
+        assert!(action.plain().contains("action:"));
+        assert!(action.decorated().contains("cargo test"));
+        let mut state = LinkState::new();
+        state.set_focused(true);
+        assert_eq!(
+            action.handle_key(
+                &mut state,
+                KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)
+            ),
+            ActionLinkOutcome::Activated
+        );
+    }
+
+    #[test]
     fn the_underline_belongs_to_the_link_not_to_focus() {
         // junie law: the rule is the link's identity at rest; focus speaks
         // through weight, hover through the hover tone.
@@ -635,7 +1027,7 @@ mod tests {
         let state = LinkState::new();
         for _ in 0..20_000 {
             let _ = link.layout(Rect::new(0, 0, 40, 1), &state);
-            let _ = link.decorated();
+            let _ = link.decorated(&state);
         }
     }
 
@@ -666,12 +1058,22 @@ mod tests {
 
     #[test]
     fn mouse_click_activates() {
+        use crate::input::{MouseButton, MouseEvent, MouseEventKind};
+        use ratatui_core::layout::Position;
+
         let system = DesignSystem::default();
         let link = Link::url("docs", "https://example.invalid", &system);
         let mut state = LinkState::new();
         let mut buf = Buffer::empty(Rect::new(0, 0, 40, 1));
         let _ = link.paint(Rect::new(0, 0, 40, 1), &mut buf, &mut state);
-        let out = link.handle_mouse(&mut state, click(1, 0));
+        let out = link.handle_mouse(
+            &mut state,
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: Position { x: 1, y: 0 },
+                modifiers: KeyModifiers::NONE,
+            },
+        );
         assert!(matches!(out, LinkOutcome::Activated { external: true, .. }));
         assert!(state.visited);
         assert!(state.focused);
@@ -695,8 +1097,9 @@ mod tests {
     fn unicode_label_measures() {
         let system = DesignSystem::default();
         let link = Link::url("文档 🔗", "https://example.invalid", &system);
-        assert!(link.measure_width() >= 2);
-        let d = link.decorated();
+        let state = LinkState::new();
+        assert!(link.measure_width(&state) >= 2);
+        let d = link.decorated(&state);
         assert!(d.contains('文') || d.contains("example"));
     }
 

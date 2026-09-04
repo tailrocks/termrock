@@ -167,7 +167,11 @@ struct SampleSyntax<'a> {
 }
 
 impl SyntaxHighlighter for SampleSyntax<'_> {
-    fn highlight_line<'line>(&self, line: &'line str) -> Vec<(&'line str, Style)> {
+    fn highlight_line<'line>(
+        &self,
+        line: &'line str,
+        _line_index: usize,
+    ) -> Vec<(&'line str, Style)> {
         let theme = self.system.junie_theme();
         let spans = highlight(line);
         let mut out = Vec::new();
@@ -614,7 +618,7 @@ impl Page for EditorPage {
                 EmptyState::new("Nothing flagged", ctx.system)
                     .kind(EmptyKind::NoData)
                     .explanation("Run the second block: its unwrap() gets a warning")
-                    .paint(inner, buf, &mut termrock::widgets::EmptyStateState::new());
+                    .paint(inner, buf);
             } else {
                 for (i, d) in self.diagnostics.iter().enumerate() {
                     let yy = inner.y + i as u16;

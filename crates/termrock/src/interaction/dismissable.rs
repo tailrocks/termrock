@@ -54,6 +54,16 @@ impl DismissAction {
             LayerDismissPolicy::Ignore => Self::Bubble,
         }
     }
+
+    /// Inverse map for hosts that still store [`LayerDismissPolicy`].
+    #[must_use]
+    pub const fn to_layer(self) -> LayerDismissPolicy {
+        match self {
+            Self::Dismiss => LayerDismissPolicy::Dismissible,
+            Self::Trap => LayerDismissPolicy::Trap,
+            Self::Bubble => LayerDismissPolicy::Ignore,
+        }
+    }
 }
 
 /// Full policy bundle (Radix-like knobs, terminal-shaped).
@@ -185,6 +195,14 @@ impl DismissDecision {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub struct DismissEventId(pub u64);
 
+impl DismissEventId {
+    /// Next id (host or stack owned counter).
+    #[must_use]
+    pub const fn next(self) -> Self {
+        Self(self.0.saturating_add(1))
+    }
+}
+
 /// Prevents double dismissal from a single logical input event.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub struct DismissGuard {
@@ -217,6 +235,12 @@ impl DismissGuard {
     /// Record that a dismiss occurred for the current event.
     pub fn mark_dismissed(&mut self) {
         self.dismissed = true;
+    }
+
+    /// Whether this event already produced a dismiss.
+    #[must_use]
+    pub const fn already_dismissed(&self) -> bool {
+        self.dismissed
     }
 }
 
@@ -267,14 +291,39 @@ impl DismissableLayer {
             ignore_empty_rect: true,
         }
     }
+
+    /// From esc/outside layer policies (overlay migration path).
+    #[must_use]
+    pub const fn from_layer_policies(esc: LayerDismissPolicy, outside: LayerDismissPolicy) -> Self {
+        Self::new(DismissPolicy::from_layer_pair(esc, outside))
+    }
+
+    /// Policy.
+    #[must_use]
+    pub const fn policy(&self) -> DismissPolicy {
+        self.policy
+    }
+
     /// Replace policy.
     pub fn set_policy(&mut self, policy: DismissPolicy) {
         self.policy = policy;
     }
 
+    /// Painted rect (outside hit testing).
+    #[must_use]
+    pub const fn rect(&self) -> Rect {
+        self.rect
+    }
+
     /// Update geometry after layout.
     pub fn set_rect(&mut self, rect: Rect) {
         self.rect = rect;
+    }
+
+    /// Current pointer gesture.
+    #[must_use]
+    pub const fn gesture(&self) -> PointerGesture {
+        self.gesture
     }
 
     /// Reset gesture (layer became non-top or dismissed).
@@ -316,6 +365,24 @@ impl DismissableLayer {
         }
         d
     }
+
+    /// Focus left this surface (host detected).
+    pub fn on_focus_leave(
+        &mut self,
+        guard: &mut DismissGuard,
+        event: DismissEventId,
+    ) -> DismissDecision {
+        if !guard.begin(event) {
+            return DismissDecision::None;
+        }
+        let d = self.decide(DismissReason::FocusLeave);
+        if d.should_dismiss() {
+            guard.mark_dismissed();
+            self.reset_gesture();
+        }
+        d
+    }
+
     /// Parent overlay closed — children always evaluate parent_closed policy.
     pub fn on_parent_closed(
         &mut self,
@@ -463,6 +530,16 @@ pub fn evaluate_escape_stack(
     }
 }
 
+/// Top-first outside click on nested rects (only the topmost outside-test runs).
+pub fn evaluate_outside_top(
+    top: &mut DismissableLayer,
+    pos: Position,
+    guard: &mut DismissGuard,
+    event: DismissEventId,
+) -> DismissDecision {
+    top.on_outside_click(pos, guard, event)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -604,10 +681,10 @@ mod tests {
     }
 
     #[test]
-    fn layer_policy_maps_to_actions() {
+    fn layer_policy_roundtrip() {
         assert_eq!(
-            DismissAction::from_layer(LayerDismissPolicy::Trap),
-            DismissAction::Trap
+            DismissAction::from_layer(LayerDismissPolicy::Trap).to_layer(),
+            LayerDismissPolicy::Trap
         );
         let p = DismissPolicy::from_layer_pair(
             LayerDismissPolicy::Dismissible,

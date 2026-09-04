@@ -11,15 +11,23 @@
 //! history ([`super::progress_steps`]).
 //!
 //! Research: Git history, CI timelines, observability tools, agent session views.
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::collections::BTreeSet;
 
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
+use ratatui_core::{
+    buffer::Buffer,
+    layout::{Position, Rect},
+    style::Modifier,
+    widgets::{StatefulWidget, Widget},
+};
 
 use crate::{
-    input::{KeyCode, KeyEvent},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     interaction::{NavigationMove, PageMove, UiIntent},
     style::{DesignSystem, ListRowVisualState, Role},
-    text::{contains_lower_all, take_display_cols},
+    text::take_display_cols,
 };
 
 const GUTTER: u16 = 2;
@@ -101,7 +109,7 @@ impl TimelineStatus {
 
     /// Marker glyph (unicode / ascii).
     #[must_use]
-    pub const fn marker(self, active: bool) -> &'static str {
+    pub const fn marker(self, active: bool, _ascii: bool) -> &'static str {
         match (self, active) {
             (_, true) => "●",
             (Self::Failed, _) => "✗",
@@ -273,6 +281,13 @@ impl<'a, Id> TimelineEvent<'a, Id> {
         self
     }
 
+    /// Sets active flag.
+    #[must_use]
+    pub const fn set_active(mut self, active: bool) -> Self {
+        self.active = active;
+        self
+    }
+
     /// Status.
     #[must_use]
     pub const fn status(mut self, status: TimelineStatus) -> Self {
@@ -328,6 +343,13 @@ impl<'a, Id> TimelineEvent<'a, Id> {
     #[must_use]
     pub const fn group_key(mut self, key: &'a str) -> Self {
         self.group_key = Some(key);
+        self
+    }
+
+    /// Disabled (skipped by keyboard).
+    #[must_use]
+    pub const fn disabled(mut self) -> Self {
+        self.enabled = false;
         self
     }
 
@@ -442,6 +464,12 @@ impl<Id: Clone + PartialEq + Ord> TimelineState<Id> {
         self.cursor
     }
 
+    /// Scroll offset.
+    #[must_use]
+    pub const fn offset(&self) -> usize {
+        self.offset
+    }
+
     /// Whether following live tail.
     #[must_use]
     pub const fn is_following(&self) -> bool {
@@ -458,6 +486,16 @@ impl<Id: Clone + PartialEq + Ord> TimelineState<Id> {
         self.checkpoint_mode = on;
     }
 
+    /// Follow newest.
+    pub fn follow(&mut self) {
+        self.following = true;
+    }
+
+    /// Pause follow (reading history).
+    pub fn unfollow(&mut self) {
+        self.following = false;
+    }
+
     /// Whether id is expanded.
     #[must_use]
     pub fn is_expanded(&self, id: &Id) -> bool {
@@ -472,6 +510,12 @@ impl<Id: Clone + PartialEq + Ord> TimelineState<Id> {
         } else {
             false
         }
+    }
+
+    /// Filter query.
+    #[must_use]
+    pub fn filter(&self) -> Option<&str> {
+        self.filter.as_deref()
     }
 
     /// Notify that new events were appended at the end (re-follow if following).
@@ -577,6 +621,7 @@ impl<Id: Clone + PartialEq + Ord> TimelineState<Id> {
                 KeyCode::Right | KeyCode::Left | KeyCode::Char('l' | 'h' | 'L' | 'H')
             )
         {
+            let expand = matches!(key.code, KeyCode::Right | KeyCode::Char('l' | 'L'));
             if let Some(e) = view.get(self.cursor) {
                 if e.expandable {
                     let id = e.id.clone();
@@ -584,6 +629,7 @@ impl<Id: Clone + PartialEq + Ord> TimelineState<Id> {
                     return TimelineOutcome::ExpandToggled(id);
                 }
             }
+            let _ = expand;
         }
 
         TimelineOutcome::Ignored
@@ -690,6 +736,47 @@ impl<Id: Clone + PartialEq + Ord> TimelineState<Id> {
         self.selected = Some(e.id.clone());
         TimelineOutcome::Selected(e.id.clone())
     }
+
+    /// Mouse.
+    pub fn handle_mouse(
+        &mut self,
+        event: MouseEvent,
+        events: &[TimelineEvent<'_, Id>],
+    ) -> TimelineOutcome<Id> {
+        if !self.accepts_input {
+            return TimelineOutcome::Ignored;
+        }
+        let view = filter_timeline_events(events, self.filter.as_deref().unwrap_or(""));
+        match event.kind {
+            MouseEventKind::ScrollUp if self.painted.contains(event.position) => {
+                self.following = false;
+                self.handle_intent(UiIntent::Move(NavigationMove::Previous), &view)
+            }
+            MouseEventKind::ScrollDown if self.painted.contains(event.position) => {
+                self.handle_intent(UiIntent::Move(NavigationMove::Next), &view)
+            }
+            MouseEventKind::Down(MouseButton::Left) => {
+                if let Some(r) = self
+                    .regions
+                    .iter()
+                    .find(|r| r.area.contains(event.position))
+                {
+                    if self.selected.as_ref() == Some(&r.id) {
+                        if self.checkpoint_mode {
+                            return TimelineOutcome::RestoreRequested(r.id.clone());
+                        }
+                        return TimelineOutcome::Activated(r.id.clone());
+                    }
+                    self.cursor = r.index;
+                    self.following = false;
+                    self.selected = Some(r.id.clone());
+                    return TimelineOutcome::Selected(r.id.clone());
+                }
+                TimelineOutcome::Ignored
+            }
+            _ => TimelineOutcome::Ignored,
+        }
+    }
 }
 
 /// Filter events by text/actor/correlation/status (keeps group headers for matches).
@@ -704,18 +791,17 @@ pub fn filter_timeline_events<'a, Id>(
     }
     let mut keep = vec![false; events.len()];
     for (i, e) in events.iter().enumerate() {
-        if contains_lower_all(
-            &[
-                e.when,
-                e.text,
-                e.actor.unwrap_or(""),
-                e.correlation.unwrap_or(""),
-                e.status.id(),
-                e.group_key.unwrap_or(""),
-            ],
-            &q,
-        ) && e.focusable()
-        {
+        let hay = format!(
+            "{} {} {} {} {} {}",
+            e.when,
+            e.text,
+            e.actor.unwrap_or(""),
+            e.correlation.unwrap_or(""),
+            e.status.id(),
+            e.group_key.unwrap_or("")
+        )
+        .to_ascii_lowercase();
+        if hay.contains(&q) && e.focusable() {
             keep[i] = true;
             // Keep preceding group header
             let mut j = i;
@@ -760,6 +846,16 @@ impl<'a> Timeline<'a, ()> {
             colorless: false,
         }
     }
+
+    /// Line shown when there is nothing to show.
+    ///
+    /// A collection that paints nothing when empty reads as broken; it has to
+    /// say that it is empty.
+    #[must_use]
+    pub const fn empty_message(mut self, message: &'a str) -> Self {
+        self.empty_message = message;
+        self
+    }
 }
 
 impl<'a, Id: Clone + PartialEq + Ord> Timeline<'a, Id> {
@@ -802,7 +898,7 @@ impl<'a, Id: Clone + PartialEq + Ord> Timeline<'a, Id> {
     }
 
     /// Stateful paint.
-    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut TimelineState<Id>) {
+    pub fn render_stateful(&self, area: Rect, buffer: &mut Buffer, state: &mut TimelineState<Id>) {
         state.regions.clear();
         state.painted = area;
         if area.is_empty() {
@@ -827,7 +923,7 @@ impl<'a, Id: Clone + PartialEq + Ord> Timeline<'a, Id> {
         state.reveal(len.max(1));
 
         let surface = self.focused && state.accepts_input;
-        let y = area.y;
+        let mut y = area.y;
         let start = state.offset;
         let end = (start + state.viewport).min(len);
 
@@ -843,7 +939,7 @@ impl<'a, Id: Clone + PartialEq + Ord> Timeline<'a, Id> {
                 usize::from(area.width),
                 self.system.style(Role::TextMuted),
             );
-            self.paint_footer(area, buffer, state);
+            self.paint_footer(area, buffer, state, false);
             return;
         }
 
@@ -858,11 +954,12 @@ impl<'a, Id: Clone + PartialEq + Ord> Timeline<'a, Id> {
             let cursor = idx == state.cursor;
 
             if matches!(event.kind, TimelineRowKind::Group) {
-                self.paint_group(area, row_y, buffer, event);
+                self.paint_group(area, row_y, buffer, event, false);
+                y = row_y;
                 continue;
             }
 
-            let marker = event.status.marker(event.active || selected);
+            let marker = event.status.marker(event.active || selected, false);
             let mut style = if colorless {
                 if selected || cursor {
                     self.system
@@ -892,7 +989,7 @@ impl<'a, Id: Clone + PartialEq + Ord> Timeline<'a, Id> {
             );
             let style = chrome.label_style(style);
 
-            let line = self.format_line(event, area.width, colorless);
+            let line = self.format_line(event, area.width, false, colorless);
             buffer.set_stringn(area.x, row_y, " ", 1, style);
             buffer.set_stringn(area.x.saturating_add(1), row_y, " ", 1, style);
             let body = format!("{marker} {line}");
@@ -918,12 +1015,23 @@ impl<'a, Id: Clone + PartialEq + Ord> Timeline<'a, Id> {
                 });
             }
 
-            // Detail rows are host-projected; the block itself never paints them.
+            // Expanded detail line
+            if (event.expanded || state.is_expanded(&event.id)) && event.detail.is_some() {
+                // detail consumes next paint slot only if room — host should project detail as rows
+            }
+            y = row_y;
         }
-        self.paint_footer(area, buffer, state);
+        let _ = y;
+        self.paint_footer(area, buffer, state, false);
     }
 
-    fn format_line(&self, event: &TimelineEvent<'a, Id>, width: u16, colorless: bool) -> String {
+    fn format_line(
+        &self,
+        event: &TimelineEvent<'a, Id>,
+        width: u16,
+        _ascii: bool,
+        colorless: bool,
+    ) -> String {
         let narrow = width < 36;
         let tiny = width < 22;
         match self.recipe {
@@ -972,7 +1080,14 @@ impl<'a, Id: Clone + PartialEq + Ord> Timeline<'a, Id> {
         }
     }
 
-    fn paint_group(&self, area: Rect, y: u16, buffer: &mut Buffer, event: &TimelineEvent<'a, Id>) {
+    fn paint_group(
+        &self,
+        area: Rect,
+        y: u16,
+        buffer: &mut Buffer,
+        event: &TimelineEvent<'a, Id>,
+        _ascii: bool,
+    ) {
         let mark = "▸ ";
         let line = format!("{mark}{}", event.when);
         buffer.set_stringn(
@@ -986,7 +1101,13 @@ impl<'a, Id: Clone + PartialEq + Ord> Timeline<'a, Id> {
         );
     }
 
-    fn paint_footer(&self, area: Rect, buffer: &mut Buffer, state: &TimelineState<Id>) {
+    fn paint_footer(
+        &self,
+        area: Rect,
+        buffer: &mut Buffer,
+        state: &TimelineState<Id>,
+        _ascii: bool,
+    ) {
         let y = area.bottom().saturating_sub(1);
         if y < area.y {
             return;
@@ -1016,17 +1137,34 @@ impl<'a, Id: Clone + PartialEq + Ord> Timeline<'a, Id> {
     }
 }
 
+// ── Stateless Widget for progress_steps / simple paint ──────────────────────
+
+impl Widget for &Timeline<'_, ()> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        let mut state: TimelineState<()> = TimelineState::new();
+        state.following = false;
+        // Stateless: show from start; footer still paints when height allows.
+        Timeline::render_stateful(self, area, buffer, &mut state);
+    }
+}
+
+impl Widget for Timeline<'_, ()> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        Widget::render(&self, area, buffer);
+    }
+}
+
 impl<Id: Clone + PartialEq + Ord> StatefulWidget for &Timeline<'_, Id> {
     type State = TimelineState<Id>;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        Timeline::paint(self, area, buffer, state);
+        Timeline::render_stateful(self, area, buffer, state);
     }
 }
 
 impl<Id: Clone + PartialEq + Ord> StatefulWidget for Timeline<'_, Id> {
     type State = TimelineState<Id>;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        Timeline::paint(&self, area, buffer, state);
+        Timeline::render_stateful(&self, area, buffer, state);
     }
 }
 
@@ -1036,7 +1174,6 @@ impl<Id: Clone + PartialEq + Ord> StatefulWidget for Timeline<'_, Id> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyModifiers;
 
     fn sample() -> Vec<TimelineEvent<'static, &'static str>> {
         vec![
@@ -1127,7 +1264,7 @@ mod tests {
                 .focused(true);
             let area = Rect::new(0, 0, 64, 10);
             let mut buf = Buffer::empty(area);
-            t.paint(area, &mut buf, &mut state);
+            t.render_stateful(area, &mut buf, &mut state);
             assert!(!state.regions.is_empty() || recipe == TimelineRecipe::Rail);
             let text: String = buf
                 .content()
@@ -1142,6 +1279,27 @@ mod tests {
     }
 
     #[test]
+    fn stateless_widget_compat() {
+        let system = DesignSystem::default();
+        let events = [
+            TimelineEvent::new("12:01", "Started"),
+            TimelineEvent::new("12:02", "Running").active(),
+        ];
+        let area = Rect::new(0, 0, 40, 4);
+        let mut buf = Buffer::empty(area);
+        Widget::render(&Timeline::new(&events, &system), area, &mut buf);
+        let text: String = buf
+            .content()
+            .iter()
+            .map(|c| c.symbol().to_string())
+            .collect();
+        assert!(
+            text.contains("Started") || text.contains("Running"),
+            "{text}"
+        );
+    }
+
+    #[test]
     fn colorless_uses_letters() {
         let system = DesignSystem::default();
         let events = sample();
@@ -1151,7 +1309,7 @@ mod tests {
         let t = Timeline::with_events(&events, &system).colorless(true);
         let area = Rect::new(0, 0, 56, 8);
         let mut buf = Buffer::empty(area);
-        t.paint(area, &mut buf, &mut state);
+        t.render_stateful(area, &mut buf, &mut state);
         let text: String = buf
             .content()
             .iter()
@@ -1192,7 +1350,7 @@ mod tests {
             TimelineStatus::Success,
             TimelineStatus::Failed,
         ] {
-            let _ = s.marker(true);
+            let _ = s.marker(true, false);
             let _ = s.letter();
         }
     }

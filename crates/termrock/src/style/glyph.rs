@@ -51,6 +51,18 @@ pub enum GlyphGroup {
 }
 
 impl GlyphGroup {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Directional => "directional",
+            Self::Status => "status",
+            Self::Action => "action",
+            Self::Disclosure => "disclosure",
+            Self::Chrome => "chrome",
+        }
+    }
+
     /// All groups in catalog order.
     pub const ALL: [Self; 5] = [
         Self::Directional,
@@ -111,10 +123,6 @@ pub enum Glyph {
     RuleV,
     /// Strong horizontal rule.
     RuleHStrong,
-    /// Strong vertical rule.
-    RuleVStrong,
-    /// Double vertical rule (focus zone separators).
-    RuleVDouble,
     /// Selection gutter bar.
     SelectionGutter,
     /// Chosen-row marker (`›`); `▸`/`▾` are tree disclosure only.
@@ -185,8 +193,6 @@ impl Glyph {
             Self::RuleH => "rule-h",
             Self::RuleV => "rule-v",
             Self::RuleHStrong => "rule-h-strong",
-            Self::RuleVStrong => "rule-v-strong",
-            Self::RuleVDouble => "rule-v-double",
             Self::SelectionGutter => "selection-gutter",
             Self::SelectionMarker => "selection-marker",
             Self::Bullet => "bullet",
@@ -237,8 +243,6 @@ impl Glyph {
             Self::RuleH => "horizontal rule",
             Self::RuleV => "vertical rule",
             Self::RuleHStrong => "strong horizontal rule",
-            Self::RuleVStrong => "strong vertical rule",
-            Self::RuleVDouble => "double vertical rule",
             Self::SelectionGutter => "selected",
             Self::SelectionMarker => "selected",
             Self::Bullet => "list item",
@@ -287,8 +291,6 @@ impl Glyph {
             Self::RuleH
             | Self::RuleV
             | Self::RuleHStrong
-            | Self::RuleVStrong
-            | Self::RuleVDouble
             | Self::SelectionGutter
             | Self::SelectionMarker
             | Self::Bullet
@@ -336,8 +338,6 @@ impl Glyph {
         Self::RuleH,
         Self::RuleV,
         Self::RuleHStrong,
-        Self::RuleVStrong,
-        Self::RuleVDouble,
         Self::SelectionGutter,
         Self::SelectionMarker,
         Self::Bullet,
@@ -417,8 +417,6 @@ impl Glyph {
             Self::RuleH => "─",
             Self::RuleV => "│",
             Self::RuleHStrong => "━",
-            Self::RuleVStrong => "┃",
-            Self::RuleVDouble => "║",
             Self::SelectionGutter => "▎",
             Self::SelectionMarker => "›",
             Self::Bullet => "•",
@@ -479,7 +477,7 @@ impl GlyphResolved {
     pub fn aligned(&self, width: u16) -> String {
         use crate::text::take_display_cols;
         let w = usize::from(width.max(1));
-        let mut s = take_display_cols(self.text, w).into_owned();
+        let mut s = take_display_cols(self.text, w);
         let used = display_cols(&s);
         if used < w {
             s.push_str(&" ".repeat(w - used));
@@ -569,8 +567,6 @@ mod tests {
             (Glyph::SelectionMarker, "›"),
             (Glyph::ChevronRight, "›"),
             (Glyph::RuleHStrong, "━"),
-            (Glyph::RuleVStrong, "┃"),
-            (Glyph::RuleVDouble, "║"),
             (Glyph::Error, "!"),
             (Glyph::Warning, "•"),
             (Glyph::Success, "✓"),

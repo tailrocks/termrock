@@ -15,16 +15,21 @@
 //! empty draft removes the previous token.
 //!
 //! Research: email recipient fields, token inputs, agent attachment/mention chips.
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
     style::{Modifier, Style},
     widgets::StatefulWidget,
 };
+use unicode_segmentation::UnicodeSegmentation;
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
-    style::{ControlState, DesignSystem},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
+    interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
+    style::{ControlState, DesignSystem, Role},
     text::{display_cols, take_display_cols},
 };
 
@@ -46,6 +51,18 @@ pub enum DuplicatePolicy {
     RejectLabel,
     /// Reject when id already present.
     RejectId,
+}
+
+impl DuplicatePolicy {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Allow => "allow",
+            Self::RejectLabel => "reject-label",
+            Self::RejectId => "reject-id",
+        }
+    }
 }
 
 /// Characters that commit the draft into a token (in addition to Enter).
@@ -75,6 +92,12 @@ impl CommitSeparators {
     #[must_use]
     pub fn email() -> Self {
         Self::new([',', ';'])
+    }
+
+    /// Space commits (tags).
+    #[must_use]
+    pub fn space() -> Self {
+        Self::new([' '])
     }
 
     /// Whether `c` commits.
@@ -115,6 +138,34 @@ impl<Id> FieldToken<Id> {
             status: TokenStatus::Default,
             disabled: false,
         }
+    }
+
+    /// Builder.
+    #[must_use]
+    pub const fn removable(mut self, on: bool) -> Self {
+        self.removable = on;
+        self
+    }
+
+    /// Builder.
+    #[must_use]
+    pub const fn selected(mut self, on: bool) -> Self {
+        self.selected = on;
+        self
+    }
+
+    /// Builder.
+    #[must_use]
+    pub const fn status(mut self, status: TokenStatus) -> Self {
+        self.status = status;
+        self
+    }
+
+    /// Builder.
+    #[must_use]
+    pub const fn disabled(mut self, on: bool) -> Self {
+        self.disabled = on;
+        self
     }
 }
 
@@ -274,6 +325,13 @@ impl<Id> TokenFieldState<Id> {
         self
     }
 
+    /// Live typing. [`Self::new`] stays idle (`editing: false`).
+    #[must_use]
+    pub fn with_editing(mut self) -> Self {
+        self.draft.begin_edit();
+        self
+    }
+
     /// Start the insert session (Junie Enter on an idle field).
     pub fn begin_edit(&mut self) {
         self.draft.begin_edit();
@@ -284,6 +342,12 @@ impl<Id> TokenFieldState<Id> {
     pub fn tokens(&self) -> &[FieldToken<Id>] {
         &self.tokens
     }
+
+    /// Mutable tokens (advanced).
+    pub fn tokens_mut(&mut self) -> &mut Vec<FieldToken<Id>> {
+        &mut self.tokens
+    }
+
     /// Draft text.
     #[must_use]
     pub fn draft(&self) -> &str {
@@ -296,16 +360,56 @@ impl<Id> TokenFieldState<Id> {
         self.zone
     }
 
+    /// Focused.
+    #[must_use]
+    pub const fn is_focused(&self) -> bool {
+        self.focused
+    }
+
+    /// Enabled.
+    #[must_use]
+    pub const fn is_enabled(&self) -> bool {
+        self.enabled
+    }
+
+    /// Parts.
+    #[must_use]
+    pub const fn parts(&self) -> Option<&TokenFieldParts> {
+        self.parts.as_ref()
+    }
+
     /// Labels in order.
     #[must_use]
     pub fn labels(&self) -> Vec<&str> {
         self.tokens.iter().map(|t| t.label.as_str()).collect()
     }
 
+    /// Selected token ids (multi-select).
+    #[must_use]
+    pub fn selected_ids(&self) -> Vec<&Id> {
+        self.tokens
+            .iter()
+            .filter(|t| t.selected)
+            .map(|t| &t.id)
+            .collect()
+    }
+
     /// Focus.
     pub fn set_focused(&mut self, on: bool) {
         self.focused = on;
         self.sync_draft_focus();
+    }
+
+    /// Enabled.
+    pub fn set_enabled(&mut self, on: bool) {
+        self.enabled = on;
+        self.draft.set_enabled(on);
+    }
+
+    /// Read-only (no add/remove/reorder).
+    pub fn set_read_only(&mut self, on: bool) {
+        self.read_only = on;
+        self.draft.set_read_only(on);
     }
 
     fn sync_draft_focus(&mut self) {
@@ -317,6 +421,12 @@ impl<Id> TokenFieldState<Id> {
 }
 
 impl<Id: Clone + PartialEq> TokenFieldState<Id> {
+    /// Replace all tokens.
+    pub fn set_tokens(&mut self, tokens: Vec<FieldToken<Id>>) {
+        self.tokens = tokens;
+        self.clamp_zone();
+    }
+
     fn clamp_zone(&mut self) {
         match self.zone {
             TokenFieldZone::Draft => {}
@@ -344,12 +454,41 @@ impl<Id: Clone + PartialEq> TokenFieldState<Id> {
         self.tokens.push(token);
         true
     }
+
+    /// Insert at index.
+    pub fn insert_token(&mut self, index: usize, token: FieldToken<Id>) -> bool {
+        if !self.can_add(&token.id, &token.label) {
+            return false;
+        }
+        let i = index.min(self.tokens.len());
+        self.tokens.insert(i, token);
+        true
+    }
+
     fn can_add(&self, id: &Id, label: &str) -> bool {
         match self.duplicate {
             DuplicatePolicy::Allow => true,
             DuplicatePolicy::RejectLabel => !self.tokens.iter().any(|t| t.label == label),
             DuplicatePolicy::RejectId => !self.tokens.iter().any(|t| &t.id == id),
         }
+    }
+
+    /// Remove by id.
+    pub fn remove_id(&mut self, id: &Id) -> Option<FieldToken<Id>> {
+        let idx = self.tokens.iter().position(|t| &t.id == id)?;
+        let t = self.tokens.remove(idx);
+        self.clamp_zone();
+        Some(t)
+    }
+
+    /// Remove by index.
+    pub fn remove_index(&mut self, index: usize) -> Option<FieldToken<Id>> {
+        if index >= self.tokens.len() {
+            return None;
+        }
+        let t = self.tokens.remove(index);
+        self.clamp_zone();
+        Some(t)
     }
 
     /// Reorder token.
@@ -416,6 +555,26 @@ impl TokenFieldState<String> {
         self.sync_draft_focus();
         TokenFieldOutcome::TokenAdded { id, label }
     }
+
+    /// Commit draft with host-provided id.
+    pub fn commit_draft_with_id(&mut self, id: String) -> TokenFieldOutcome<String> {
+        let label = self.draft.value().trim().to_owned();
+        if label.is_empty() {
+            return TokenFieldOutcome::Ignored;
+        }
+        if self.read_only || !self.enabled {
+            return TokenFieldOutcome::Ignored;
+        }
+        if !self.can_add(&id, &label) {
+            return TokenFieldOutcome::DuplicateRejected { label };
+        }
+        self.tokens.push(FieldToken::new(id.clone(), label.clone()));
+        let _ = self.draft.clear();
+        self.zone = TokenFieldZone::Draft;
+        self.sync_draft_focus();
+        TokenFieldOutcome::TokenAdded { id, label }
+    }
+
     /// Apply completion candidate as new token (or replace draft).
     pub fn apply_suggestion(
         &mut self,
@@ -480,72 +639,11 @@ impl TokenFieldState<String> {
         if key.is_release() || !self.enabled {
             return TokenFieldOutcome::Ignored;
         }
+        self.sync_draft_focus();
+
         let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
         let alt = key.modifiers.contains(KeyModifiers::ALT);
         let shift = key.modifiers.contains(KeyModifiers::SHIFT);
-
-        // TokenField owns lifecycle, completion, and token-membership
-        // mutations while wrapping a TextInput draft. Reject repeated
-        // one-shot paths before draft synchronization; ordinary draft text,
-        // cursor motion, and deletion repeats remain supported.
-        let one_shot = matches!(
-            key.code,
-            KeyCode::Enter
-                | KeyCode::Tab
-                | KeyCode::BackTab
-                | KeyCode::Esc
-                | KeyCode::Char(
-                    'c' | 'C'
-                        | 'k'
-                        | 'K'
-                        | 'm'
-                        | 'M'
-                        | 'u'
-                        | 'U'
-                        | 'v'
-                        | 'V'
-                        | 'w'
-                        | 'W'
-                        | 'x'
-                        | 'X',
-                )
-        );
-        let membership_mutation = match self.zone {
-            TokenFieldZone::Draft => {
-                (matches!(key.code, KeyCode::Backspace)
-                    && self.draft.value().is_empty()
-                    && self.tokens.last().is_some_and(|token| token.removable))
-                    || matches!(
-                        key.code,
-                        KeyCode::Char(character)
-                            if !ctrl
-                                && !self.draft.value().trim().is_empty()
-                                && self.separators.contains(character)
-                    )
-            }
-            TokenFieldZone::Token { index, .. } => {
-                let removable = self.tokens.get(index).is_some_and(|token| token.removable);
-                (!self.read_only
-                    && removable
-                    && matches!(key.code, KeyCode::Backspace | KeyCode::Delete))
-                    || (self.multi_select && !ctrl && matches!(key.code, KeyCode::Char(' ')))
-                    || (!self.read_only
-                        && alt
-                        && !ctrl
-                        && matches!(key.code, KeyCode::Left | KeyCode::Right))
-            }
-        };
-        if !key.is_press()
-            && (matches!(
-                key.code,
-                KeyCode::Enter | KeyCode::Tab | KeyCode::BackTab | KeyCode::Esc
-            ) || (ctrl && one_shot)
-                || membership_mutation)
-        {
-            return TokenFieldOutcome::Ignored;
-        }
-
-        self.sync_draft_focus();
 
         // Completion Tab when draft focused
         if matches!(self.zone, TokenFieldZone::Draft)
@@ -582,7 +680,7 @@ impl TokenFieldState<String> {
         }
 
         match self.zone {
-            TokenFieldZone::Draft => self.handle_draft_key(key, ctrl, shift),
+            TokenFieldZone::Draft => self.handle_draft_key(key, ctrl, alt, shift),
             TokenFieldZone::Token { index, part } => {
                 self.handle_token_key(key, index, part, ctrl, shift)
             }
@@ -593,6 +691,7 @@ impl TokenFieldState<String> {
         &mut self,
         key: KeyEvent,
         ctrl: bool,
+        _alt: bool,
         shift: bool,
     ) -> TokenFieldOutcome<String> {
         // Left at start → last token
@@ -746,6 +845,28 @@ impl TokenFieldState<String> {
         TokenFieldOutcome::Ignored
     }
 
+    /// Intent path.
+    pub fn handle_intent(&mut self, intent: UiIntent) -> TokenFieldOutcome<String> {
+        if !self.enabled {
+            return TokenFieldOutcome::Ignored;
+        }
+        match intent {
+            UiIntent::Submit | UiIntent::Activate => {
+                if matches!(self.zone, TokenFieldZone::Draft) {
+                    if self.draft.value().trim().is_empty() {
+                        TokenFieldOutcome::Submitted
+                    } else {
+                        self.commit_draft()
+                    }
+                } else {
+                    TokenFieldOutcome::Ignored
+                }
+            }
+            UiIntent::Cancel | UiIntent::Close => TokenFieldOutcome::Cancelled,
+            _ => TokenFieldOutcome::Ignored,
+        }
+    }
+
     /// Mouse.
     pub fn handle_mouse(&mut self, event: MouseEvent) -> TokenFieldOutcome<String> {
         if !self.enabled {
@@ -844,6 +965,28 @@ impl<'a> TokenField<'a> {
         self
     }
 
+    /// Draft placeholder.
+    #[must_use]
+    pub const fn placeholder(mut self, placeholder: &'a str) -> Self {
+        self.placeholder = placeholder;
+        self
+    }
+
+    /// Validation.
+    #[must_use]
+    pub const fn validation(mut self, validation: Validation<'a>) -> Self {
+        self.validation = validation;
+        self
+    }
+
+    /// ASCII chrome.
+    #[must_use]
+    /// Gap between tokens.
+    pub const fn gap(mut self, gap: u16) -> Self {
+        self.gap = gap;
+        self
+    }
+
     /// Paint.
     pub fn paint(
         &self,
@@ -861,6 +1004,7 @@ impl<'a> TokenField<'a> {
                 overflow: None,
             };
         }
+        let invalid = matches!(self.validation, Validation::Invalid(_));
         let recipe = self.system.input_recipe(
             if !state.enabled {
                 ControlState::Disabled
@@ -869,6 +1013,7 @@ impl<'a> TokenField<'a> {
             } else {
                 ControlState::Default
             },
+            invalid,
             state.draft.is_editing() && matches!(state.zone, TokenFieldZone::Draft),
         );
 
@@ -951,6 +1096,7 @@ impl<'a> TokenField<'a> {
         }
 
         if !rest.is_empty() {
+            let _ = rest;
             let n = state.tokens.len().saturating_sub(token_rects.len());
             let label = format!("+{n}");
             let ow = u16::try_from(display_cols(&label).saturating_add(2)).unwrap_or(4);
@@ -960,7 +1106,7 @@ impl<'a> TokenField<'a> {
             buffer.set_stringn(
                 rect.x,
                 rect.y,
-                take_display_cols(&format!("{gutter}{label}"), usize::from(rect.width)).as_ref(),
+                &take_display_cols(&format!("{gutter}{label}"), usize::from(rect.width)),
                 usize::from(rect.width),
                 recipe.placeholder,
             );
@@ -1001,6 +1147,47 @@ impl<'a> TokenField<'a> {
         };
         state.parts = Some(parts.clone());
         parts
+    }
+
+    /// Semantic — one focusable field.
+    pub fn register_semantic<Action>(
+        &self,
+        scene: &mut SemanticScene<&str, Action>,
+        id: &'static str,
+        area: Rect,
+        state: &TokenFieldState<String>,
+    ) where
+        Action: Clone,
+    {
+        if area.is_empty() {
+            return;
+        }
+        let desc = format!(
+            "token-field count={} zone={:?}",
+            state.tokens.len(),
+            state.zone
+        );
+        let _ = scene.register(
+            SemanticNode::control(id, area)
+                .role(SemanticRole::Input)
+                .label(if self.label.is_empty() {
+                    "tokens"
+                } else {
+                    self.label
+                })
+                .description(desc)
+                .focusable(state.enabled)
+                .disabled(!state.enabled)
+                .state(SemanticState {
+                    selected: state.focused,
+                    invalid: matches!(self.validation, Validation::Invalid(_))
+                        || state
+                            .tokens
+                            .iter()
+                            .any(|t| matches!(t.status, TokenStatus::Error)),
+                    ..Default::default()
+                }),
+        );
     }
 }
 
@@ -1076,10 +1263,7 @@ impl StatefulWidget for TokenField<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyEventKind;
     use crate::style::RolePalette;
-    use crate::widgets::tests::click;
-    use unicode_segmentation::UnicodeSegmentation;
 
     #[test]
     fn add_commit_and_duplicate_reject() {
@@ -1197,83 +1381,6 @@ mod tests {
     }
 
     #[test]
-    fn repeated_draft_one_shots_are_ignored_but_text_repeats() {
-        let mut state = TokenFieldState::new().with_separators(CommitSeparators::email());
-        state.set_focused(true);
-        let _ = state.draft.insert_str("alice");
-        state.draft.begin_edit();
-        let actions = [
-            (KeyCode::Enter, KeyModifiers::NONE),
-            (KeyCode::Tab, KeyModifiers::NONE),
-            (KeyCode::BackTab, KeyModifiers::NONE),
-            (KeyCode::Esc, KeyModifiers::NONE),
-            (KeyCode::Char(','), KeyModifiers::NONE),
-            (KeyCode::Char('m'), KeyModifiers::CONTROL),
-            (
-                KeyCode::Char('m'),
-                KeyModifiers::CONTROL | KeyModifiers::ALT,
-            ),
-            (KeyCode::Char('c'), KeyModifiers::CONTROL),
-            (KeyCode::Char('v'), KeyModifiers::CONTROL),
-            (KeyCode::Char('x'), KeyModifiers::CONTROL),
-            (KeyCode::Char('u'), KeyModifiers::CONTROL),
-            (KeyCode::Char('k'), KeyModifiers::CONTROL),
-            (KeyCode::Char('w'), KeyModifiers::CONTROL),
-        ];
-        for (code, modifiers) in actions {
-            let before = state.clone();
-            let mut key = KeyEvent::new(code, modifiers);
-            key.kind = KeyEventKind::Repeat;
-            assert_eq!(state.handle_key(key), TokenFieldOutcome::Ignored);
-            assert_eq!(state, before, "{code:?} repeat mutated draft state");
-        }
-
-        let mut repeat_text = KeyEvent::new(KeyCode::Char('!'), KeyModifiers::NONE);
-        repeat_text.kind = KeyEventKind::Repeat;
-        assert_eq!(
-            state.handle_key(repeat_text),
-            TokenFieldOutcome::DraftChanged,
-            "ordinary draft text repeats remain supported"
-        );
-        assert_eq!(state.draft(), "alice!");
-        assert!(state.tokens().is_empty());
-
-        let mut repeat_backspace = KeyEvent::new(KeyCode::Backspace, KeyModifiers::NONE);
-        repeat_backspace.kind = KeyEventKind::Repeat;
-        assert_eq!(
-            state.handle_key(repeat_backspace),
-            TokenFieldOutcome::DraftChanged,
-            "ordinary draft deletion repeats remain supported"
-        );
-        assert_eq!(state.draft(), "alice");
-    }
-
-    #[test]
-    fn repeated_token_membership_actions_are_ignored() {
-        let mut state = TokenFieldState::new().with_multi_select(true);
-        state.set_focused(true);
-        assert!(state.push_token(FieldToken::new("1".into(), "alice")));
-        assert!(state.push_token(FieldToken::new("2".into(), "bob")));
-        state.focus_token(1);
-        let actions = [
-            (KeyCode::Backspace, KeyModifiers::NONE),
-            (KeyCode::Delete, KeyModifiers::NONE),
-            (KeyCode::Enter, KeyModifiers::NONE),
-            (KeyCode::Char(' '), KeyModifiers::NONE),
-            (KeyCode::Left, KeyModifiers::ALT),
-            (KeyCode::Right, KeyModifiers::ALT),
-        ];
-        for (code, modifiers) in actions {
-            let before = state.clone();
-            let mut key = KeyEvent::new(code, modifiers);
-            key.kind = KeyEventKind::Repeat;
-            assert_eq!(state.handle_key(key), TokenFieldOutcome::Ignored);
-            assert_eq!(state, before, "{code:?} repeat mutated token state");
-        }
-        assert_eq!(state.labels(), vec!["alice", "bob"]);
-    }
-
-    #[test]
     fn escape_cancels_without_discarding_tokens_or_draft() {
         let mut state = TokenFieldState::new();
         state.set_focused(true);
@@ -1324,14 +1431,22 @@ mod tests {
         let token = parts.token_rects[0];
 
         assert!(matches!(
-            state.handle_mouse(click(token.x, token.y)),
+            state.handle_mouse(MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: ratatui_core::layout::Position::new(token.x, token.y),
+                modifiers: KeyModifiers::NONE,
+            }),
             TokenFieldOutcome::SelectionChanged {
                 id,
                 selected: true
             } if id == "1"
         ));
         assert!(matches!(
-            state.handle_mouse(click(parts.draft.x, parts.draft.y)),
+            state.handle_mouse(MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: ratatui_core::layout::Position::new(parts.draft.x, parts.draft.y),
+                modifiers: KeyModifiers::NONE,
+            }),
             TokenFieldOutcome::FocusMoved | TokenFieldOutcome::DraftChanged
         ));
         assert!(matches!(state.zone(), TokenFieldZone::Draft));

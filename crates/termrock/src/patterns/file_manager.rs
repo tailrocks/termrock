@@ -43,9 +43,9 @@ use crate::{
         Breadcrumbs, BreadcrumbsOutcome, BreadcrumbsState, EmptyKind, EmptyState, FileTree,
         FileTreeEntry, FileTreeOutcome, FileTreeState, List, ListRow, ListState, Panel,
         PreviewCard, PreviewCardContent, PreviewCardState, PreviewLoadState, PreviewMetadata,
-        PreviewResourceKind, QuickOpen, QuickOpenItem, QuickOpenMatch, QuickOpenOutcome,
-        QuickOpenProvider, QuickOpenState, SearchInput, SearchInputOutcome, SearchInputState,
-        StatusBar, StatusBarState, StatusRegion, StatusSlot, breadcrumbs_from_path,
+        PreviewResourceKind, QuickOpen, QuickOpenItem, QuickOpenOutcome, QuickOpenProvider,
+        QuickOpenState, SearchInput, SearchInputOutcome, SearchInputState, StatusBar,
+        StatusBarState, StatusRegion, StatusSlot, breadcrumbs_from_path,
         file_tree_to_quick_open_items, normalize_path_display,
     },
 };
@@ -89,6 +89,18 @@ impl FileManagerPane {
             Self::Status => "status",
         }
     }
+
+    /// Default Tab focus cycle (status is chrome-only).
+    #[must_use]
+    pub fn focus_order() -> &'static [FileManagerPane] {
+        &[
+            Self::Breadcrumbs,
+            Self::Search,
+            Self::Tree,
+            Self::Preview,
+            Self::Queue,
+        ]
+    }
 }
 
 /// Responsive density.
@@ -116,6 +128,16 @@ impl FileManagerDensity {
             Self::Normal
         }
     }
+
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Normal => "normal",
+            Self::Narrow => "narrow",
+            Self::Tiny => "tiny",
+        }
+    }
 }
 
 // ── Domain / operations ─────────────────────────────────────────────────────
@@ -139,6 +161,19 @@ pub enum FileOpKind {
 }
 
 impl FileOpKind {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Copy => "copy",
+            Self::Move => "move",
+            Self::Delete => "delete",
+            Self::Rename => "rename",
+            Self::NewFile => "new-file",
+            Self::NewDir => "new-dir",
+        }
+    }
+
     /// Label.
     #[must_use]
     pub const fn label(self) -> &'static str {
@@ -279,6 +314,19 @@ pub enum FileConflictResolution {
     Rename,
     /// Cancel whole op.
     Cancel,
+}
+
+impl FileConflictResolution {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Overwrite => "overwrite",
+            Self::Skip => "skip",
+            Self::Rename => "rename",
+            Self::Cancel => "cancel",
+        }
+    }
 }
 
 /// Dialog / overlay mode projected by workbench (host may set conflict).
@@ -460,7 +508,7 @@ pub struct FileManagerSurfaces<'a> {
     /// Host-projected preview content (selection-based).
     pub preview: Option<PreviewCardContent<'a>>,
     /// Quick-open items (when palette open).
-    pub quick_open_items: &'a [QuickOpenMatch<'a, String>],
+    pub quick_open_items: &'a [QuickOpenItem<String>],
 }
 
 // ── State ───────────────────────────────────────────────────────────────────
@@ -500,6 +548,10 @@ pub struct FileManagerState {
     pub density: Option<FileManagerDensity>,
     /// Narrow density: preview drawer open.
     pub drawer_open: bool,
+    /// Entry count chrome.
+    pub entry_count: u64,
+    /// Selected path chrome.
+    pub selected_path: Option<String>,
     /// Colorless.
     pub colorless: bool,
     /// Last panes.
@@ -548,6 +600,8 @@ impl FileManagerState {
             focus: FileManagerPane::Tree.id(),
             density: None,
             drawer_open: false,
+            entry_count: 0,
+            selected_path: None,
             colorless: false,
             last_panes: Vec::new(),
             last_area_width: None,
@@ -623,6 +677,22 @@ impl FileManagerState {
 
     fn dialog_blocks_tree(&self) -> bool {
         !matches!(self.dialog, FileManagerDialog::None)
+    }
+
+    /// Set focus pane.
+    pub fn set_focus(&mut self, pane: FileManagerPane) -> FileManagerOutcome {
+        let density = self.effective_density();
+        let visible = self.visible_focus_panes(density);
+        if !visible.contains(&pane) {
+            return FileManagerOutcome::Ignored;
+        }
+        if self.focus == pane.id() {
+            self.apply_focus_gates();
+            return FileManagerOutcome::Ignored;
+        }
+        self.focus = pane.id();
+        self.apply_focus_gates();
+        FileManagerOutcome::FocusChanged(self.focus)
     }
 
     /// Cycle Tab focus.
@@ -839,7 +909,7 @@ impl FileManagerState {
         key: KeyEvent,
         entries: &[FileTreeEntry<'_, String>],
         ops: &[FileOpItem],
-        quick_open_items: &[QuickOpenMatch<'_, String>],
+        quick_open_items: &[QuickOpenItem<String>],
     ) -> FileManagerOutcome {
         if key.is_release() {
             return FileManagerOutcome::Ignored;
@@ -1082,6 +1152,7 @@ impl FileManagerState {
                     if let Some(id) = self.tree.selected().cloned() {
                         self.drawer_open = true;
                         let _ = self.preview.set_selection(id.clone());
+                        self.selected_path = Some(id.clone());
                         return FileManagerOutcome::PreviewRequested { id };
                     }
                 }
@@ -1101,6 +1172,7 @@ impl FileManagerState {
         match out {
             FileTreeOutcome::Ignored => FileManagerOutcome::Ignored,
             FileTreeOutcome::SelectionChanged(id) => {
+                self.selected_path = Some(id.clone());
                 let _ = self.preview.set_selection(id.clone());
                 FileManagerOutcome::SelectionChanged { id }
             }
@@ -1110,6 +1182,7 @@ impl FileManagerState {
             FileTreeOutcome::PreviewRequested(id) => {
                 self.drawer_open = true;
                 let _ = self.preview.set_selection(id.clone());
+                self.selected_path = Some(id.clone());
                 FileManagerOutcome::PreviewRequested { id }
             }
             FileTreeOutcome::LoadChildrenRequested(id) => {
@@ -1253,6 +1326,17 @@ impl FileManagerState {
 pub const FILE_MANAGER_BREADCRUMBS_HEIGHT: u16 = 1;
 /// Search strip height (panel + input).
 pub const FILE_MANAGER_SEARCH_HEIGHT: u16 = 3;
+
+/// Width-derived layout.
+#[must_use]
+pub fn file_manager_layout(area: Rect, state: &WorkspaceState) -> Vec<PaneGeom> {
+    file_manager_layout_density(
+        area,
+        state,
+        FileManagerDensity::for_width(area.width),
+        false,
+    )
+}
 
 /// Explicit density layout.
 #[must_use]
@@ -1432,7 +1516,7 @@ fn pane_area(panes: &[PaneGeom], id: &str) -> Option<Rect> {
 // ── Render ──────────────────────────────────────────────────────────────────
 
 /// Paint composed file manager (public child widgets only).
-pub fn paint_file_manager(buffer: &mut Buffer, area: Rect, surfaces: FileManagerSurfaces<'_>) {
+pub fn render_file_manager(buffer: &mut Buffer, area: Rect, surfaces: FileManagerSurfaces<'_>) {
     let FileManagerSurfaces {
         system,
         state,
@@ -1452,6 +1536,7 @@ pub fn paint_file_manager(buffer: &mut Buffer, area: Rect, surfaces: FileManager
     state.last_panes = panes.clone();
     state.clamp_focus_to_density(density);
     state.apply_focus_gates();
+    state.entry_count = entries.len() as u64;
 
     // Breadcrumbs
     if let Some(r) = pane_area(&panes, "breadcrumbs") {
@@ -1493,7 +1578,7 @@ pub fn paint_file_manager(buffer: &mut Buffer, area: Rect, surfaces: FileManager
             .title("Files")
             .focused(focused)
             .show_filter_chrome(false)
-            .paint(r, buffer, &mut state.tree);
+            .render(r, buffer, &mut state.tree);
     }
 
     // Preview
@@ -1526,11 +1611,7 @@ pub fn paint_file_manager(buffer: &mut Buffer, area: Rect, surfaces: FileManager
             if rows.is_empty() {
                 EmptyState::new("No pending operations", system)
                     .kind(EmptyKind::NoData)
-                    .paint(
-                        Rect::new(inner.x, inner.y, inner.width, 1),
-                        buffer,
-                        &mut crate::widgets::EmptyStateState::new(),
-                    );
+                    .paint(Rect::new(inner.x, inner.y, inner.width, 1), buffer);
             } else {
                 let list = List::new(&rows, system).focused(focused);
                 StatefulWidget::render(&list, inner, buffer, &mut state.queue);
@@ -1743,7 +1824,10 @@ pub mod bench {
 mod tests {
     use super::*;
     use crate::style::DesignSystem;
-    use crate::widgets::tests::press;
+
+    fn press(code: KeyCode) -> KeyEvent {
+        KeyEvent::new(code, KeyModifiers::NONE)
+    }
 
     fn press_mod(code: KeyCode, mods: KeyModifiers) -> KeyEvent {
         KeyEvent::new(code, mods)
@@ -1796,7 +1880,7 @@ mod tests {
         let mut buf = Buffer::empty(area);
         st.density = None;
         st.drawer_open = false;
-        paint_file_manager(
+        render_file_manager(
             &mut buf,
             area,
             FileManagerSurfaces {
@@ -2040,8 +2124,7 @@ mod tests {
         let mut st = open();
         let entries = example_file_entries();
         let ops = example_empty_ops();
-        let qo_items = example_quick_open_from_entries(&entries);
-        let qo: Vec<QuickOpenMatch<'_, String>> = qo_items.iter().map(QuickOpenMatch::of).collect();
+        let qo = example_quick_open_from_entries(&entries);
         st.focus = "tree";
         st.apply_focus_gates();
         let out = st.handle_key(
@@ -2160,7 +2243,7 @@ mod tests {
         let (preview, _, _) = example_file_preview();
         let area = Rect::new(0, 0, 120, 36);
         let mut buf = Buffer::empty(area);
-        paint_file_manager(
+        render_file_manager(
             &mut buf,
             area,
             FileManagerSurfaces {
@@ -2211,7 +2294,7 @@ mod tests {
         let mut buf = Buffer::empty(area);
         let start = std::time::Instant::now();
         for _ in 0..bench::PAINT_FRAMES {
-            paint_file_manager(
+            render_file_manager(
                 &mut buf,
                 area,
                 FileManagerSurfaces {

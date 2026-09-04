@@ -91,7 +91,9 @@ impl SafeMode {
 
     pub fn description(self) -> &'static str {
         match self {
-            SafeMode::Silent => "Writes run without asking. Destructive statements still confirm.",
+            SafeMode::Silent => {
+                "Writes run without asking. DROP, TRUNCATE and DELETE without WHERE still confirm."
+            }
             SafeMode::Alert => "Every write asks for confirmation before it runs.",
             SafeMode::AlertFull => "Every statement, reads included, asks for confirmation.",
             SafeMode::Safe => "Writes ask for confirmation and a deliberate acknowledgement.",

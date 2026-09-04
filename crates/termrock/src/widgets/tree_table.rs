@@ -19,15 +19,25 @@
 //!
 //! Research: process trees, file trees with metadata, IDE outlines, DB schema browsers.
 //! Single-column hierarchy → [`super::Tree`]. Flat multi-column → [`super::DataTable`].
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+use ratatui_core::{
+    buffer::Buffer,
+    layout::{Position, Rect},
+    style::Modifier,
+    widgets::StatefulWidget,
+};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     interaction::{NavigationMove, PageMove, UiIntent},
     style::{DesignSystem, Glyph, ListRowVisualState, Role},
     text::take_display_cols,
     widgets::{
-        data_view::{ColumnModel, ColumnPin, LoadState, SelectionModel, SortSpec, VirtualWindow},
+        data_view::{
+            ColumnKind, ColumnModel, ColumnPin, LoadState, SelectionModel, SortSpec, VirtualWindow,
+        },
         tree::TreeNodeStatus,
     },
 };
@@ -188,6 +198,14 @@ impl<'a, Id> TreeTableRow<'a, Id> {
         self.enabled = false;
         self
     }
+
+    /// Loading children.
+    #[must_use]
+    pub const fn loading(mut self) -> Self {
+        self.status = TreeNodeStatus::Loading;
+        self.enabled = false;
+        self
+    }
 }
 
 /// Header hit region.
@@ -335,6 +353,11 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
         self.selected.as_ref()
     }
 
+    /// Sets selected id.
+    pub fn select(&mut self, id: Option<Id>) {
+        self.selected = id;
+    }
+
     /// Logical flattened universe size (expanded rows only).
     pub fn set_logical_rows(&mut self, logical_len: u64) {
         self.window.logical_len = logical_len;
@@ -366,19 +389,8 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
 
     /// Reconcile selection after host reprojects rows.
     pub fn reconcile(&mut self, rows: &[TreeTableRow<'_, Id>]) {
-        // Row IDs alone do not capture branch, depth, or disclosure geometry.
-        // Require a fresh render before pointer input can use the projection.
-        self.row_regions.clear();
         for row in rows.iter().filter(|row| !selectable(row)) {
             self.selection.remove_row(&row.id);
-        }
-        let partial_virtual_slice = self.window.logical_len > rows.len() as u64;
-        if partial_virtual_slice
-            && let Some(sel) = self.selected.as_ref()
-            && !rows.iter().any(|row| &row.id == sel)
-        {
-            self.cursor_row = self.cursor_row.min(rows.len().saturating_sub(1));
-            return;
         }
         if let Some(sel) = self.selected.as_ref()
             && let Some(idx) = rows.iter().position(|r| selectable(r) && &r.id == sel)
@@ -466,25 +478,17 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
             self.load,
             LoadState::Empty { .. } | LoadState::Error { .. } | LoadState::Loading { .. }
         ) {
-            if is_press
-                && matches!(key.code, KeyCode::Char('r' | 'R') | KeyCode::Enter)
-                && !matches!(
-                    self.load,
-                    LoadState::Error {
-                        retryable: false,
-                        ..
-                    }
-                )
-            {
+            if is_press && matches!(key.code, KeyCode::Char('r' | 'R') | KeyCode::Enter) {
                 return TreeTableOutcome::RetryLoad;
             }
             return TreeTableOutcome::Ignored;
         }
-        if !rows.is_empty() {
-            self.cursor_row = self.cursor_row.min(rows.len() - 1);
-            let vis_n = columns.visible().count().max(1);
-            self.cursor_col = self.cursor_col.min(vis_n - 1);
+        if rows.is_empty() {
+            return TreeTableOutcome::Ignored;
         }
+        self.cursor_row = self.cursor_row.min(rows.len() - 1);
+        let vis_n = columns.visible().count().max(1);
+        self.cursor_col = self.cursor_col.min(vis_n - 1);
 
         if is_press && matches!(key.code, KeyCode::Char('\\')) && key.modifiers.is_empty() {
             self.nav_mode = self.nav_mode.cycle();
@@ -492,8 +496,7 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
         }
 
         // Shift+Left/Right always hierarchy when in Cell mode
-        if !rows.is_empty()
-            && key.modifiers.contains(KeyModifiers::SHIFT)
+        if key.modifiers.contains(KeyModifiers::SHIFT)
             && matches!(
                 key.code,
                 KeyCode::Left | KeyCode::Right | KeyCode::Char('h' | 'l' | 'H' | 'L')
@@ -508,10 +511,6 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
             if !matches!(out, TreeTableOutcome::Ignored) {
                 return out;
             }
-        }
-
-        if rows.is_empty() {
-            return TreeTableOutcome::Ignored;
         }
 
         match key.code {
@@ -552,22 +551,8 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
     where
         ColId: Clone,
     {
-        if !self.accepts_input {
+        if !self.accepts_input || rows.is_empty() {
             return TreeTableOutcome::Ignored;
-        }
-        if rows.is_empty() {
-            let delta = match intent {
-                UiIntent::Move(NavigationMove::Next | NavigationMove::Down) => 1,
-                UiIntent::Move(NavigationMove::Previous | NavigationMove::Up) => -1,
-                UiIntent::Page(PageMove::Forward) => i64::from(self.window.viewport.max(1)),
-                UiIntent::Page(PageMove::Backward) => -i64::from(self.window.viewport.max(1)),
-                _ => return TreeTableOutcome::Ignored,
-            };
-            return if self.window.scroll_by(delta) {
-                TreeTableOutcome::Scrolled
-            } else {
-                TreeTableOutcome::Ignored
-            };
         }
         self.cursor_row = self.cursor_row.min(rows.len() - 1);
         match intent {
@@ -601,7 +586,7 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
             UiIntent::Collapse => self.hierarchy_step(rows, false),
             UiIntent::Activate | UiIntent::Submit | UiIntent::Open => {
                 let row = &rows[self.cursor_row];
-                if selectable(row) && self.selected.as_ref() == Some(&row.id) {
+                if selectable(row) {
                     TreeTableOutcome::Activated(row.id.clone())
                 } else {
                     TreeTableOutcome::Ignored
@@ -677,7 +662,7 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
         expand_or_enter: bool,
     ) -> TreeTableOutcome<Id, ColId> {
         let row = &rows[self.cursor_row];
-        if !hierarchy_interactive(row) || matches!(row.kind, TreeTableRowKind::Aggregate) {
+        if !row.enabled || matches!(row.kind, TreeTableRowKind::Aggregate) {
             return TreeTableOutcome::Ignored;
         }
         if expand_or_enter {
@@ -711,10 +696,7 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
                 return TreeTableOutcome::ExpandToggled(row.id.clone());
             }
             if let Some(parent) = row.parent.as_ref() {
-                if let Some(idx) = rows[..self.cursor_row]
-                    .iter()
-                    .position(|r| selectable(r) && r.depth < row.depth && &r.id == parent)
-                {
+                if let Some(idx) = rows.iter().position(|r| &r.id == parent) {
                     self.cursor_row = idx;
                     self.selected = Some(parent.clone());
                     self.previous_index = Some(idx);
@@ -731,7 +713,7 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
                 .iter()
                 .enumerate()
                 .rev()
-                .find(|(_, r)| r.depth < depth && selectable(r))
+                .find(|(_, r)| r.depth < depth)
             {
                 self.cursor_row = idx;
                 self.selected = Some(parent.id.clone());
@@ -755,30 +737,16 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
             .map(|(i, _)| i)
             .collect();
         if enabled.is_empty() {
-            if self.window.scroll_by(delta) {
-                return TreeTableOutcome::Scrolled;
-            }
             return TreeTableOutcome::Ignored;
         }
-        let next_pos = match enabled.binary_search(&self.cursor_row) {
-            Ok(cur_pos) if delta >= 0 => (cur_pos + delta as usize).min(enabled.len() - 1),
-            Ok(cur_pos) => cur_pos.saturating_sub((-delta) as usize),
-            Err(insertion) if delta >= 0 && insertion == enabled.len() => {
-                if self.window.scroll_by(delta) {
-                    return TreeTableOutcome::Scrolled;
-                }
-                return TreeTableOutcome::Ignored;
-            }
-            Err(insertion) if delta >= 0 => insertion
-                .saturating_add((delta as usize).saturating_sub(1))
-                .min(enabled.len() - 1),
-            Err(0) => {
-                if self.window.scroll_by(delta) {
-                    return TreeTableOutcome::Scrolled;
-                }
-                return TreeTableOutcome::Ignored;
-            }
-            Err(insertion) => insertion.saturating_sub((-delta) as usize),
+        let cur_pos = enabled
+            .iter()
+            .position(|&i| i == self.cursor_row)
+            .unwrap_or(0);
+        let next_pos = if delta >= 0 {
+            (cur_pos + delta as usize).min(enabled.len() - 1)
+        } else {
+            cur_pos.saturating_sub((-delta) as usize)
         };
         let idx = enabled[next_pos];
         if idx == self.cursor_row {
@@ -959,7 +927,7 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
                         .disclosure
                         .is_some_and(|d| d.contains(event.position))
                     {
-                        if hierarchy_interactive(row) {
+                        if row.enabled {
                             return TreeTableOutcome::ExpandToggled(region.id.clone());
                         }
                         return TreeTableOutcome::Ignored;
@@ -975,6 +943,7 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
                     self.previous_index = Some(region.index);
                     return TreeTableOutcome::Selected(region.id.clone());
                 }
+                let _ = columns;
                 TreeTableOutcome::Ignored
             }
             MouseEventKind::Down(MouseButton::Right) => {
@@ -1017,22 +986,13 @@ fn selectable<Id>(row: &TreeTableRow<'_, Id>) -> bool {
     row.enabled && navigable(row)
 }
 
-fn hierarchy_interactive<Id>(row: &TreeTableRow<'_, Id>) -> bool {
-    row.enabled && !matches!(row.status, TreeNodeStatus::Loading)
-}
-
 /// Intent map for TreeTable: mode-sensitive Left/Right.
 #[must_use]
 pub fn default_tree_table_intent(key: KeyEvent, mode: TreeTableNavMode) -> Option<UiIntent> {
     if key.is_release() {
         return None;
     }
-    if key.modifiers.contains(KeyModifiers::SHIFT)
-        && matches!(
-            key.code,
-            KeyCode::Left | KeyCode::Right | KeyCode::Char('h' | 'l' | 'H' | 'L')
-        )
-    {
+    if key.modifiers.contains(KeyModifiers::SHIFT) {
         return None; // handled as hierarchy chord
     }
     match key.code {
@@ -1083,10 +1043,27 @@ impl<'a, Id: Clone + Ord, ColId: Clone + PartialEq> TreeTable<'a, Id, ColId> {
         }
     }
 
+    /// Line shown when there is nothing to show.
+    ///
+    /// A collection that paints nothing when empty reads as broken; it has to
+    /// say that it is empty.
+    #[must_use]
+    pub const fn empty_message(mut self, message: &'a str) -> Self {
+        self.empty_message = message;
+        self
+    }
+
     /// Scene focus chrome for this surface.
     #[must_use]
     pub const fn focused(mut self, focused: bool) -> Self {
         self.focused = focused;
+        self
+    }
+
+    /// Keep column headers pinned above the body (default true).
+    #[must_use]
+    pub const fn sticky_header(mut self, sticky: bool) -> Self {
+        self.sticky_header = sticky;
         self
     }
 
@@ -1098,7 +1075,7 @@ impl<'a, Id: Clone + Ord, ColId: Clone + PartialEq> TreeTable<'a, Id, ColId> {
     }
 
     /// Paint O(projected) only.
-    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut TreeTableState<Id, ColId>)
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut TreeTableState<Id, ColId>)
     where
         ColId: Clone,
     {
@@ -1163,7 +1140,7 @@ impl<'a, Id: Clone + Ord, ColId: Clone + PartialEq> TreeTable<'a, Id, ColId> {
         );
 
         if self.sticky_header && y < area.bottom() {
-            paint_header(self, area, y, buffer, state);
+            paint_header(self, area, y, buffer, state, surface_focused);
             y = y.saturating_add(1);
         }
 
@@ -1260,7 +1237,7 @@ impl<'a, Id: Clone + Ord, ColId: Clone + PartialEq> TreeTable<'a, Id, ColId> {
             buffer.set_stringn(
                 area.x,
                 fy,
-                take_display_cols(&footer, usize::from(area.width)).as_ref(),
+                &take_display_cols(&footer, usize::from(area.width)),
                 usize::from(area.width),
                 self.system.style(Role::TextMuted),
             );
@@ -1401,7 +1378,7 @@ fn paint_msg<Id: Clone + Ord, ColId: Clone + PartialEq>(
     buffer.set_stringn(
         area.x,
         y,
-        take_display_cols(&line, usize::from(area.width)).as_ref(),
+        &take_display_cols(&line, usize::from(area.width)),
         usize::from(area.width),
         table.system.style(role),
     );
@@ -1413,6 +1390,7 @@ fn paint_header<Id: Clone + Ord, ColId: Clone + PartialEq>(
     y: u16,
     buffer: &mut Buffer,
     state: &mut TreeTableState<Id, ColId>,
+    _surface_focused: bool,
 ) where
     ColId: Clone,
 {
@@ -1441,7 +1419,7 @@ fn paint_header<Id: Clone + Ord, ColId: Clone + PartialEq>(
         buffer.set_stringn(
             paint_x,
             y,
-            take_display_cols(&title, usize::from(paint_w)).as_ref(),
+            &take_display_cols(&title, usize::from(paint_w)),
             usize::from(paint_w),
             style,
         );
@@ -1534,7 +1512,7 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
         buffer.set_stringn(
             origin,
             y,
-            take_display_cols(&line, usize::from(clip_right.saturating_sub(origin))).as_ref(),
+            &take_display_cols(&line, usize::from(clip_right.saturating_sub(origin))),
             usize::from(clip_right.saturating_sub(origin)),
             base_style,
         );
@@ -1555,11 +1533,6 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
             continue;
         }
         let col = &table.columns.columns[col_idx];
-        let cell_ordinal = table
-            .columns
-            .visible()
-            .position(|(visible_index, _)| visible_index == col_idx)
-            .unwrap_or(ord);
         let paint_x = rect.x;
         let paint_end = rect.right();
         let paint_w = rect.width;
@@ -1611,17 +1584,17 @@ fn paint_row<Id: Clone + Ord, ColId: Clone + PartialEq>(
                 buffer.set_stringn(
                     x,
                     y,
-                    take_display_cols(label, usize::from(remain)).as_ref(),
+                    &take_display_cols(label, usize::from(remain)),
                     usize::from(remain),
                     cell_style,
                 );
             }
         } else {
-            let text = row.cells.get(cell_ordinal).copied().unwrap_or("");
+            let text = row.cells.get(ord).copied().unwrap_or("");
             buffer.set_stringn(
                 paint_x,
                 y,
-                take_display_cols(text, usize::from(paint_w)).as_ref(),
+                &take_display_cols(text, usize::from(paint_w)),
                 usize::from(paint_w),
                 cell_style,
             );
@@ -1655,14 +1628,14 @@ fn paint_checked_marker(system: &DesignSystem, buffer: &mut Buffer, row: Rect, c
 impl<'a, Id: Clone + Ord, ColId: Clone + PartialEq> StatefulWidget for TreeTable<'a, Id, ColId> {
     type State = TreeTableState<Id, ColId>;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        TreeTable::paint(&self, area, buffer, state);
+        TreeTable::render(&self, area, buffer, state);
     }
 }
 
 impl<'a, Id: Clone + Ord, ColId: Clone + PartialEq> StatefulWidget for &TreeTable<'a, Id, ColId> {
     type State = TreeTableState<Id, ColId>;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        TreeTable::paint(self, area, buffer, state);
+        TreeTable::render(self, area, buffer, state);
     }
 }
 
@@ -1679,7 +1652,7 @@ pub fn filter_tree_table_with_ancestors<'a, Id: Clone + PartialEq>(
     let mut keep = vec![false; rows.len()];
     for (i, r) in rows.iter().enumerate() {
         let label = r.cells.first().copied().unwrap_or("");
-        if crate::text::contains_lower(&label, &q) {
+        if label.to_ascii_lowercase().contains(&q) {
             keep[i] = true;
             let mut depth = r.depth;
             let mut j = i;
@@ -1702,10 +1675,8 @@ pub fn filter_tree_table_with_ancestors<'a, Id: Clone + PartialEq>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyEventKind;
     use crate::widgets::data_view::{ColumnKind, DataColumn, DataColumnWidth, bench};
-    use crate::widgets::tests::click;
-    use crate::widgets::tests::mouse;
+    use ratatui_core::layout::Position;
 
     fn cols() -> ColumnModel<&'static str> {
         ColumnModel::new(vec![
@@ -1801,253 +1772,6 @@ mod tests {
     }
 
     #[test]
-    fn move_down_from_leading_group_selects_first_valid_row() {
-        let group_cells: &[&str] = &["group", "", ""];
-        let first_cells: &[&str] = &["first", "", ""];
-        let second_cells: &[&str] = &["second", "", ""];
-        let rows = [
-            TreeTableRow::new("group", 0, group_cells).group(),
-            TreeTableRow::new("first", 0, first_cells),
-            TreeTableRow::new("second", 0, second_cells),
-        ];
-        let columns = cols();
-        let mut state = TreeTableState::<&str, &str>::new(Some("group"));
-
-        let out = state.handle_intent(&rows, &columns, UiIntent::Move(NavigationMove::Down));
-
-        assert!(matches!(out, TreeTableOutcome::Selected("first")));
-        assert_eq!(state.cursor_row, 1);
-    }
-
-    #[test]
-    fn move_up_from_leading_nonselectable_row_is_inert() {
-        let group_cells: &[&str] = &["group", "", ""];
-        let first_cells: &[&str] = &["first", "", ""];
-        let rows = [
-            TreeTableRow::new("group", 0, group_cells).group(),
-            TreeTableRow::new("first", 0, first_cells),
-        ];
-        let columns = cols();
-        let mut state = TreeTableState::<&str, &str>::new(Some("off-window"));
-        state.set_logical_rows(100);
-        state.window.viewport = 2;
-
-        let out = state.handle_intent(&rows, &columns, UiIntent::Move(NavigationMove::Up));
-
-        assert!(matches!(out, TreeTableOutcome::Ignored));
-        assert_eq!(state.selected(), Some(&"off-window"));
-        assert_eq!(state.cursor_row, 0);
-    }
-
-    #[test]
-    fn move_up_from_leading_nonselectable_row_scrolls_virtual_window() {
-        let group_cells: &[&str] = &["group", "", ""];
-        let first_cells: &[&str] = &["first", "", ""];
-        let rows = [
-            TreeTableRow::new("group", 0, group_cells).group(),
-            TreeTableRow::new("first", 0, first_cells),
-        ];
-        let columns = cols();
-        let mut state = TreeTableState::<&str, &str>::new(Some("off-window"));
-        state.set_logical_rows(100);
-        state.window.viewport = 2;
-        state.window.offset = 10;
-
-        let out = state.handle_intent(&rows, &columns, UiIntent::Move(NavigationMove::Up));
-
-        assert!(matches!(out, TreeTableOutcome::Scrolled));
-        assert_eq!(state.window.offset, 9);
-        assert_eq!(state.selected(), Some(&"off-window"));
-        assert_eq!(state.cursor_row, 0);
-    }
-
-    #[test]
-    fn move_down_from_trailing_nonselectable_row_is_inert() {
-        let first_cells: &[&str] = &["first", "", ""];
-        let group_cells: &[&str] = &["group", "", ""];
-        let rows = [
-            TreeTableRow::new("first", 0, first_cells),
-            TreeTableRow::new("group", 0, group_cells).group(),
-        ];
-        let columns = cols();
-        let mut state = TreeTableState::<&str, &str>::new(Some("off-window"));
-        state.set_logical_rows(100);
-        state.window.viewport = 2;
-        state.window.offset = 98;
-        state.cursor_row = 1;
-
-        let out = state.handle_intent(&rows, &columns, UiIntent::Move(NavigationMove::Down));
-
-        assert!(matches!(out, TreeTableOutcome::Ignored));
-        assert_eq!(state.selected(), Some(&"off-window"));
-        assert_eq!(state.cursor_row, 1);
-    }
-
-    #[test]
-    fn move_down_from_trailing_nonselectable_row_scrolls_virtual_window() {
-        let first_cells: &[&str] = &["first", "", ""];
-        let group_cells: &[&str] = &["group", "", ""];
-        let rows = [
-            TreeTableRow::new("first", 0, first_cells),
-            TreeTableRow::new("group", 0, group_cells).group(),
-        ];
-        let columns = cols();
-        let mut state = TreeTableState::<&str, &str>::new(Some("off-window"));
-        state.set_logical_rows(100);
-        state.window.viewport = 2;
-        state.window.offset = 10;
-        state.cursor_row = 1;
-
-        let out = state.handle_intent(&rows, &columns, UiIntent::Move(NavigationMove::Down));
-
-        assert!(matches!(out, TreeTableOutcome::Scrolled));
-        assert_eq!(state.window.offset, 11);
-        assert_eq!(state.selected(), Some(&"off-window"));
-        assert_eq!(state.cursor_row, 1);
-    }
-
-    #[test]
-    fn movement_scrolls_virtual_window_when_projection_has_no_selectable_rows() {
-        let group_cells: &[&str] = &["group", "", ""];
-        let rows = [
-            TreeTableRow::new("group-a", 0, group_cells).group(),
-            TreeTableRow::new("group-b", 0, group_cells).group(),
-        ];
-        let columns = cols();
-        let mut state = TreeTableState::<&str, &str>::new(Some("off-window"));
-        state.set_logical_rows(100);
-        state.window.viewport = 2;
-        state.window.offset = 10;
-
-        let out = state.handle_intent(&rows, &columns, UiIntent::Move(NavigationMove::Down));
-
-        assert!(matches!(out, TreeTableOutcome::Scrolled));
-        assert_eq!(state.window.offset, 11);
-        assert_eq!(state.selected(), Some(&"off-window"));
-        assert_eq!(state.cursor_row, 0);
-    }
-
-    #[test]
-    fn page_scrolls_empty_virtual_projection() {
-        let columns = cols();
-        let rows: [TreeTableRow<'_, &str>; 0] = [];
-        let mut state = TreeTableState::<&str, &str>::new(Some("off-window"));
-        state.set_logical_rows(100);
-        state.window.viewport = 2;
-        state.window.offset = 10;
-
-        let out = state.handle_intent(&rows, &columns, UiIntent::Page(PageMove::Forward));
-
-        assert!(matches!(out, TreeTableOutcome::Scrolled));
-        assert_eq!(state.window.offset, 12);
-        assert_eq!(state.selected(), Some(&"off-window"));
-        assert_eq!(state.cursor_row, 0);
-    }
-
-    #[test]
-    fn page_key_scrolls_empty_virtual_projection() {
-        let columns = cols();
-        let rows: [TreeTableRow<'_, &str>; 0] = [];
-        let mut state = TreeTableState::<&str, &str>::new(Some("off-window"));
-        state.set_logical_rows(100);
-        state.window.viewport = 2;
-        state.window.offset = 10;
-
-        let out = state.handle_key(
-            &rows,
-            &columns,
-            KeyEvent::new(KeyCode::PageDown, KeyModifiers::NONE),
-        );
-
-        assert!(matches!(out, TreeTableOutcome::Scrolled));
-        assert_eq!(state.window.offset, 12);
-        assert_eq!(state.selected(), Some(&"off-window"));
-        assert_eq!(state.cursor_row, 0);
-    }
-
-    #[test]
-    fn nav_mode_cycles_on_empty_virtual_projection() {
-        let columns = cols();
-        let rows: [TreeTableRow<'_, &str>; 0] = [];
-        let mut state = TreeTableState::<&str, &str>::new(Some("off-window"));
-        state.set_logical_rows(100);
-        state.window.offset = 10;
-
-        let out = state.handle_key(
-            &rows,
-            &columns,
-            KeyEvent::new(KeyCode::Char('\\'), KeyModifiers::NONE),
-        );
-
-        assert!(matches!(
-            out,
-            TreeTableOutcome::NavModeChanged(TreeTableNavMode::Cell)
-        ));
-        assert_eq!(state.nav_mode, TreeTableNavMode::Cell);
-        assert_eq!(state.window.offset, 10);
-        assert_eq!(state.selected(), Some(&"off-window"));
-    }
-
-    #[test]
-    fn key_movement_scrolls_empty_virtual_projection() {
-        let columns = cols();
-        let rows: [TreeTableRow<'_, &str>; 0] = [];
-        let mut state = TreeTableState::<&str, &str>::new(Some("off-window"));
-        state.set_logical_rows(100);
-        state.window.viewport = 2;
-        state.window.offset = 10;
-
-        let down = state.handle_key(
-            &rows,
-            &columns,
-            KeyEvent::new(KeyCode::Down, KeyModifiers::NONE),
-        );
-        let up = state.handle_key(
-            &rows,
-            &columns,
-            KeyEvent::new(KeyCode::Up, KeyModifiers::NONE),
-        );
-
-        assert!(matches!(down, TreeTableOutcome::Scrolled));
-        assert!(matches!(up, TreeTableOutcome::Scrolled));
-        assert_eq!(state.window.offset, 10);
-        let out = state.handle_key(
-            &rows,
-            &columns,
-            KeyEvent::new(KeyCode::PageDown, KeyModifiers::SHIFT),
-        );
-
-        assert!(matches!(out, TreeTableOutcome::Scrolled));
-        assert_eq!(state.window.offset, 12);
-        assert_eq!(state.selected(), Some(&"off-window"));
-    }
-
-    #[test]
-    fn key_empty_virtual_projection_boundaries_are_inert() {
-        let columns = cols();
-        let rows: [TreeTableRow<'_, &str>; 0] = [];
-        let mut state = TreeTableState::<&str, &str>::new(Some("off-window"));
-        state.set_logical_rows(100);
-        state.window.viewport = 2;
-
-        let up = state.handle_key(
-            &rows,
-            &columns,
-            KeyEvent::new(KeyCode::Up, KeyModifiers::NONE),
-        );
-        state.window.offset = 98;
-        let page_down = state.handle_key(
-            &rows,
-            &columns,
-            KeyEvent::new(KeyCode::PageDown, KeyModifiers::NONE),
-        );
-
-        assert!(matches!(up, TreeTableOutcome::Ignored));
-        assert!(matches!(page_down, TreeTableOutcome::Ignored));
-        assert_eq!(state.window.offset, 98);
-    }
-
-    #[test]
     fn cell_mode_moves_columns() {
         let c0: &[&str] = &["a", "1", "2"];
         let rows = [TreeTableRow::new("r", 0, c0)];
@@ -2087,45 +1811,6 @@ mod tests {
                 .map(|(index, _)| *index)
                 .collect::<Vec<_>>(),
             [0, 1]
-        );
-    }
-
-    #[test]
-    fn responsive_paint_keeps_row_cells_aligned_with_surviving_headers() {
-        let columns = ColumnModel::new(vec![
-            DataColumn::new("left", "Left", DataColumnWidth::Min(12)).priority(100),
-            DataColumn::new("dropped", "Dropped", DataColumnWidth::Fixed(6)).priority(10),
-            DataColumn::new("right", "Right", DataColumnWidth::Fixed(6)).priority(100),
-        ]);
-        let cells: &[&str] = &["L", "wrong", "R"];
-        let rows = [TreeTableRow::new("r", 0, cells)];
-        let system = DesignSystem::default();
-        let area = Rect::new(0, 0, 22, 6);
-        let mut state = TreeTableState::<&str, &str>::new(Some("r"));
-        let mut buffer = Buffer::empty(area);
-
-        TreeTable::new(&system, &columns, &rows).render(area, &mut buffer, &mut state);
-
-        assert_eq!(
-            state
-                .paint_widths
-                .iter()
-                .map(|(index, _)| *index)
-                .collect::<Vec<_>>(),
-            [0, 2]
-        );
-        let right_header = state
-            .header_regions
-            .iter()
-            .find(|region| region.id == "right")
-            .expect("surviving right column has a header hit region");
-        assert_eq!(
-            buffer[(right_header.area.x, right_header.area.y)].symbol(),
-            "R"
-        );
-        assert_eq!(
-            buffer[(right_header.area.x, right_header.area.y + 1)].symbol(),
-            "R"
         );
     }
 
@@ -2212,28 +1897,6 @@ mod tests {
     }
 
     #[test]
-    fn loading_status_blocks_hierarchy_keyboard_and_pointer_actions() {
-        let cells: &[&str] = &["loading", "", ""];
-        let rows = [TreeTableRow::new("r", 0, cells)
-            .branch()
-            .with_status(TreeNodeStatus::Loading)];
-        let columns = cols();
-        let mut state = TreeTableState::<&str, &str>::new(Some("r"));
-
-        let key_out = state.handle_intent(&rows, &columns, UiIntent::Expand);
-        assert!(matches!(key_out, TreeTableOutcome::Ignored));
-
-        let system = DesignSystem::default();
-        let area = Rect::new(0, 0, 40, 6);
-        TreeTable::new(&system, &columns, &rows).render(area, &mut Buffer::empty(area), &mut state);
-        let disclosure = state.row_regions[0]
-            .disclosure
-            .expect("branch has disclosure");
-        let pointer_out = state.handle_mouse(click(disclosure.x, disclosure.y), &rows, &columns);
-        assert!(matches!(pointer_out, TreeTableOutcome::Ignored));
-    }
-
-    #[test]
     fn sort_skips_hierarchy_column() {
         let c0: &[&str] = &["n", "1", "2"];
         let rows = [TreeTableRow::new("r", 0, c0)];
@@ -2288,112 +1951,6 @@ mod tests {
     }
 
     #[test]
-    fn virtual_reconcile_preserves_selected_id_outside_projected_slice() {
-        let cells: &[&str] = &["row", "", ""];
-        let first = [
-            TreeTableRow::new(100u64, 0, cells),
-            TreeTableRow::new(101, 0, cells),
-        ];
-        let second = [
-            TreeTableRow::new(200u64, 0, cells),
-            TreeTableRow::new(201, 0, cells),
-        ];
-        let mut state = TreeTableState::<u64, &str>::new(Some(100));
-        state.set_logical_rows(1_000);
-        state.window.viewport = 2;
-        state.window.offset = 100;
-        state.reconcile(&first);
-
-        state.window.offset = 200;
-        state.reconcile(&second);
-
-        assert_eq!(state.selected(), Some(&100));
-        assert_eq!(state.cursor_row, 0);
-        assert_eq!(state.window.offset, 200);
-    }
-
-    #[test]
-    fn full_reconcile_repairs_removed_selected_id() {
-        let cells: &[&str] = &["row", "", ""];
-        let rows = [TreeTableRow::new(200u64, 0, cells)];
-        let mut state = TreeTableState::<u64, &str>::new(Some(100));
-        state.set_logical_rows(rows.len() as u64);
-
-        state.reconcile(&rows);
-
-        assert_eq!(state.selected(), Some(&200));
-        assert_eq!(state.cursor_row, 0);
-    }
-
-    #[test]
-    fn virtual_reconcile_clamps_cursor_when_slice_shrinks() {
-        let cells: &[&str] = &["row", "", ""];
-        let first = [
-            TreeTableRow::new(100u64, 0, cells),
-            TreeTableRow::new(101, 0, cells),
-            TreeTableRow::new(102, 0, cells),
-        ];
-        let second = [TreeTableRow::new(200u64, 0, cells)];
-        let mut state = TreeTableState::<u64, &str>::new(Some(100));
-        state.set_logical_rows(1_000);
-        state.reconcile(&first);
-        state.cursor_row = 2;
-
-        state.reconcile(&second);
-
-        assert_eq!(state.selected(), Some(&100));
-        assert_eq!(state.cursor_row, 0);
-    }
-
-    #[test]
-    fn virtual_off_window_selection_cannot_activate_visible_cursor() {
-        let cells: &[&str] = &["row", "", ""];
-        let first = [
-            TreeTableRow::new(100u64, 0, cells),
-            TreeTableRow::new(101, 0, cells),
-        ];
-        let second = [
-            TreeTableRow::new(200u64, 0, cells),
-            TreeTableRow::new(201, 0, cells),
-        ];
-        let columns = cols();
-        let mut state = TreeTableState::<u64, &str>::new(Some(101));
-        state.set_logical_rows(1_000);
-        state.window.viewport = 2;
-        state.reconcile(&first);
-        state.window.offset = 200;
-        state.reconcile(&second);
-
-        let out = state.handle_intent(&second, &columns, UiIntent::Activate);
-
-        assert!(matches!(out, TreeTableOutcome::Ignored));
-        assert_eq!(state.selected(), Some(&101));
-        assert_eq!(state.cursor_row, 1);
-    }
-
-    #[test]
-    fn reconcile_invalidates_disclosure_geometry_when_row_semantics_change() {
-        let system = DesignSystem::default();
-        let columns = cols();
-        let cells: &[&str] = &["row", "", ""];
-        let branch_rows = [TreeTableRow::new("r", 0, cells).branch()];
-        let leaf_rows = [TreeTableRow::new("r", 0, cells)];
-        let area = Rect::new(0, 0, 40, 6);
-        let mut state = TreeTableState::<&str, &str>::new(Some("r"));
-        state.set_logical_rows(10);
-        let table = TreeTable::new(&system, &columns, &branch_rows);
-        table.render(area, &mut Buffer::empty(area), &mut state);
-        let disclosure = state.row_regions[0]
-            .disclosure
-            .expect("branch has disclosure");
-
-        state.reconcile(&leaf_rows);
-
-        let out = state.handle_mouse(click(disclosure.x, disclosure.y), &leaf_rows, &columns);
-        assert!(matches!(out, TreeTableOutcome::Ignored));
-    }
-
-    #[test]
     fn non_ready_load_state_precedes_the_empty_projection_fallback() {
         let system = DesignSystem::junie().no_color();
         let columns = cols();
@@ -2419,47 +1976,6 @@ mod tests {
             })
             .contains("✗ failed")
         );
-    }
-
-    #[test]
-    fn non_retryable_error_does_not_emit_retry_load() {
-        let columns = cols();
-        let rows: [TreeTableRow<'_, &str>; 0] = [];
-        let mut state = TreeTableState::<&str, &str>::new(None);
-        state.load = LoadState::Error {
-            message: "failed".into(),
-            retryable: false,
-        };
-
-        assert!(matches!(
-            state.handle_key(
-                &rows,
-                &columns,
-                KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
-            ),
-            TreeTableOutcome::Ignored
-        ));
-        assert!(matches!(
-            state.handle_key(
-                &rows,
-                &columns,
-                KeyEvent::new(KeyCode::Char('r'), KeyModifiers::NONE),
-            ),
-            TreeTableOutcome::Ignored
-        ));
-
-        state.load = LoadState::Error {
-            message: "failed".into(),
-            retryable: true,
-        };
-        assert!(matches!(
-            state.handle_key(
-                &rows,
-                &columns,
-                KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
-            ),
-            TreeTableOutcome::RetryLoad
-        ));
     }
 
     #[test]
@@ -2507,7 +2023,18 @@ mod tests {
         let disc = state.row_regions[0]
             .disclosure
             .expect("branch has disclosure");
-        let out = state.handle_mouse(click(disc.x, disc.y), &rows, &columns);
+        let out = state.handle_mouse(
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: Position {
+                    x: disc.x,
+                    y: disc.y,
+                },
+                modifiers: KeyModifiers::NONE,
+            },
+            &rows,
+            &columns,
+        );
         assert!(matches!(out, TreeTableOutcome::ExpandToggled("r")));
     }
 
@@ -2521,7 +2048,15 @@ mod tests {
         let area = Rect::new(0, 0, 40, 6);
         TreeTable::new(&system, &columns, &rows).render(area, &mut Buffer::empty(area), &mut state);
         let row = state.row_regions[0].area;
-        let out = state.handle_mouse(mouse(MouseEventKind::Moved, row.x, row.y), &rows, &columns);
+        let out = state.handle_mouse(
+            MouseEvent {
+                kind: MouseEventKind::Moved,
+                position: Position { x: row.x, y: row.y },
+                modifiers: KeyModifiers::NONE,
+            },
+            &rows,
+            &columns,
+        );
         assert!(matches!(out, TreeTableOutcome::Ignored));
         assert_eq!(state.hovered, Some("r"));
     }
@@ -2541,7 +2076,11 @@ mod tests {
         TreeTable::new(&system, &columns, &old_rows).render(area, &mut buffer, &mut state);
         let old = state.row_regions[0].area;
         let _ = state.handle_mouse(
-            mouse(MouseEventKind::Moved, old.x, old.y),
+            MouseEvent {
+                kind: MouseEventKind::Moved,
+                position: Position { x: old.x, y: old.y },
+                modifiers: KeyModifiers::NONE,
+            },
             &old_rows,
             &columns,
         );
@@ -2599,23 +2138,6 @@ mod tests {
         );
         assert!(matches!(out, TreeTableOutcome::CheckToggled("r")));
         assert!(state.selection.is_row_selected(&"r"));
-    }
-
-    #[test]
-    fn repeated_space_does_not_toggle_multi_selection() {
-        let r0: &[&str] = &["a", "", ""];
-        let rows = [TreeTableRow::new("r", 0, r0)];
-        let columns = cols();
-        let mut state = TreeTableState::<&str, &str>::new(Some("r"));
-        state.enable_multi_select();
-
-        let mut repeat = KeyEvent::new(KeyCode::Char(' '), KeyModifiers::NONE);
-        repeat.kind = KeyEventKind::Repeat;
-
-        let out = state.handle_key(&rows, &columns, repeat);
-
-        assert!(matches!(out, TreeTableOutcome::Ignored));
-        assert!(!state.selection.is_row_selected(&"r"));
     }
 
     #[test]
@@ -2677,54 +2199,19 @@ mod tests {
         TreeTable::new(&system, &columns, &rows).render(area, &mut Buffer::empty(area), &mut state);
         let group = &state.row_regions[0];
         let out = state.handle_mouse(
-            click(group.area.x.saturating_add(8), group.area.y),
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: Position {
+                    x: group.area.x.saturating_add(8),
+                    y: group.area.y,
+                },
+                modifiers: KeyModifiers::NONE,
+            },
             &rows,
             &columns,
         );
         assert!(matches!(out, TreeTableOutcome::Ignored));
         assert_eq!(state.selected(), Some(&"row"));
-    }
-
-    #[test]
-    fn collapse_skips_nonselectable_group_parent() {
-        let root_cells: &[&str] = &["root", "", ""];
-        let group_cells: &[&str] = &["group", "", ""];
-        let child_cells: &[&str] = &["child", "", ""];
-        let rows = [
-            TreeTableRow::new("root", 0, root_cells).branch().expanded(),
-            TreeTableRow::new("group", 1, group_cells).group(),
-            TreeTableRow::new("child", 2, child_cells).parent("group"),
-        ];
-        let columns = cols();
-        let mut state = TreeTableState::<&str, &str>::new(Some("child"));
-        state.cursor_row = 2;
-
-        let out = state.handle_intent(&rows, &columns, UiIntent::Collapse);
-
-        assert!(matches!(out, TreeTableOutcome::Selected("root")));
-        assert_eq!(state.selected(), Some(&"root"));
-        assert_eq!(state.cursor_row, 0);
-    }
-
-    #[test]
-    fn collapse_ignores_forward_parent_metadata() {
-        let root_cells: &[&str] = &["root", "", ""];
-        let child_cells: &[&str] = &["child", "", ""];
-        let future_cells: &[&str] = &["future", "", ""];
-        let rows = [
-            TreeTableRow::new("root", 0, root_cells).branch().expanded(),
-            TreeTableRow::new("child", 1, child_cells).parent("future"),
-            TreeTableRow::new("future", 0, future_cells),
-        ];
-        let columns = cols();
-        let mut state = TreeTableState::<&str, &str>::new(Some("child"));
-        state.cursor_row = 1;
-
-        let out = state.handle_intent(&rows, &columns, UiIntent::Collapse);
-
-        assert!(matches!(out, TreeTableOutcome::Selected("root")));
-        assert_eq!(state.selected(), Some(&"root"));
-        assert_eq!(state.cursor_row, 0);
     }
 
     #[test]
@@ -2744,7 +2231,15 @@ mod tests {
         );
         let old = state.row_regions[0].area;
 
-        let out = state.handle_mouse(click(old.x, old.y), &new_rows, &columns);
+        let out = state.handle_mouse(
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: Position { x: old.x, y: old.y },
+                modifiers: KeyModifiers::NONE,
+            },
+            &new_rows,
+            &columns,
+        );
         assert!(matches!(out, TreeTableOutcome::Ignored));
         assert_eq!(state.selected(), None);
     }
@@ -2776,7 +2271,18 @@ mod tests {
             .expect("old cpu header has a hit region")
             .area;
 
-        let out = state.handle_mouse(click(header.x, header.y), &rows, &new_columns);
+        let out = state.handle_mouse(
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: Position {
+                    x: header.x,
+                    y: header.y,
+                },
+                modifiers: KeyModifiers::NONE,
+            },
+            &rows,
+            &new_columns,
+        );
 
         assert!(matches!(out, TreeTableOutcome::Ignored));
         assert_eq!(state.sort, None);

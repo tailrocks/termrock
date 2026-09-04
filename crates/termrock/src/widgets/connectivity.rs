@@ -11,15 +11,23 @@
 //! [`StatusBar`](super::StatusBar) and [`NotificationCenter`](super::NotificationCenter).
 //!
 //! Research: remote IDEs, database clients, SSH tools, collaborative agents.
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::Widget};
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+use ratatui_core::{
+    buffer::Buffer,
+    layout::{Position, Rect},
+    style::Modifier,
+    widgets::Widget,
+};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     interaction::{
         SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, default_button_intent,
     },
     layout::{Center, CenterAxis, FlexSize, Stack, center_line_x},
-    style::{DesignSystem, Role},
+    style::{DesignSystem, GlyphSet, Role},
     text::{display_cols, take_display_cols},
     widgets::{
         ActivityPhase, Button, ButtonState, ButtonVariant, NotificationItem, SemanticStatus,
@@ -162,6 +170,17 @@ pub enum ConnectivityPresentation {
     Banner,
     /// Full recoverable surface (long outage / auth / unavailable).
     Full,
+}
+
+impl ConnectivityPresentation {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Banner => "banner",
+            Self::Full => "full",
+        }
+    }
 }
 
 // ── Queued / capabilities ───────────────────────────────────────────────────
@@ -333,6 +352,19 @@ impl ReconnectingState {
         self.phase
     }
 
+    /// Set phase.
+    pub fn set_phase(&mut self, phase: ConnectivityPhase) {
+        self.phase = phase;
+        if matches!(phase, ConnectivityPhase::Online) {
+            self.attempt = 0;
+            self.next_retry_in_secs = None;
+            self.banner_dismissed = false;
+        }
+        if matches!(phase, ConnectivityPhase::Reconnecting) && self.attempt == 0 {
+            self.attempt = 1;
+        }
+    }
+
     /// Mark disconnected and optionally start auto-retry presentation as reconnecting.
     pub fn mark_disconnected(&mut self) {
         self.phase = ConnectivityPhase::Disconnected;
@@ -379,6 +411,12 @@ impl ReconnectingState {
         self.last_success_secs = secs;
     }
 
+    /// Last success.
+    #[must_use]
+    pub const fn last_success_secs(&self) -> Option<u64> {
+        self.last_success_secs
+    }
+
     /// Max attempts.
     pub fn set_max_attempts(&mut self, max: Option<u32>) {
         self.max_attempts = max;
@@ -387,6 +425,12 @@ impl ReconnectingState {
     /// Next retry countdown.
     pub fn set_next_retry_in_secs(&mut self, secs: Option<u64>) {
         self.next_retry_in_secs = secs;
+    }
+
+    /// Attempt.
+    #[must_use]
+    pub const fn attempt(&self) -> u32 {
+        self.attempt
     }
 
     /// Queue replace.
@@ -399,10 +443,23 @@ impl ReconnectingState {
         self.queued.push(action);
     }
 
+    /// Queued.
+    #[must_use]
+    pub fn queued(&self) -> &[QueuedConnectivityAction] {
+        &self.queued
+    }
+
     /// Offline capabilities.
     pub fn set_offline_capabilities(&mut self, caps: Vec<OfflineCapability>) {
         self.offline_caps = caps;
     }
+
+    /// Caps.
+    #[must_use]
+    pub fn offline_capabilities(&self) -> &[OfflineCapability] {
+        &self.offline_caps
+    }
+
     /// Drafts preserved (default true).
     pub fn set_drafts_preserved(&mut self, on: bool) {
         self.drafts_preserved = on;
@@ -424,9 +481,21 @@ impl ReconnectingState {
     pub const fn selection_preserved(&self) -> bool {
         self.selection_preserved
     }
+
+    /// Auto retry flag.
+    pub fn set_auto_retry(&mut self, on: bool) {
+        self.auto_retry = on;
+    }
+
     /// Presentation.
     pub fn set_presentation(&mut self, p: ConnectivityPresentation) {
         self.presentation = p;
+    }
+
+    /// Presentation.
+    #[must_use]
+    pub const fn presentation(&self) -> ConnectivityPresentation {
+        self.presentation
     }
 
     /// Force ASCII glyphs.
@@ -434,6 +503,17 @@ impl ReconnectingState {
     #[must_use]
     pub const fn banner_dismissed(&self) -> bool {
         self.banner_dismissed
+    }
+
+    /// Focus.
+    #[must_use]
+    pub const fn focus(&self) -> ConnectivityFocus {
+        self.focus
+    }
+
+    /// Set keyboard focus target for recovery actions.
+    pub fn set_focus(&mut self, f: ConnectivityFocus) {
+        self.focus = f;
     }
 
     // ── Formatters (StatusBar / NotificationCenter) ─────────────────────────
@@ -521,6 +601,12 @@ impl ReconnectingState {
             format!("last ok: {}d ago", delta / 86_400)
         };
         Some(text)
+    }
+
+    /// Shared status vocab.
+    #[must_use]
+    pub const fn semantic_status(&self) -> SemanticStatus {
+        self.phase.semantic_status()
     }
 
     /// Notification center item (dedup by target+phase).
@@ -729,7 +815,7 @@ impl<'a> OfflineBanner<'a> {
             usize::from(area.width),
             self.system.style(Role::Text),
         );
-        status.paint(Rect::new(area.x, area.y, area.width, 1), buffer, None);
+        status.paint(Rect::new(area.x, area.y, area.width, 1), buffer);
     }
 
     /// Semantic.
@@ -894,7 +980,6 @@ impl<'a> OfflineSurface<'a> {
                     status.paint(
                         Rect::new(x, r.y, row_area.right().saturating_sub(x), 1),
                         buffer,
-                        None,
                     );
                 } else {
                     let mut style = self.system.style(*role);
@@ -927,6 +1012,7 @@ impl<'a> OfflineSurface<'a> {
                 } else {
                     &mut state.retry_btn
                 },
+                false,
             );
         }
         idx += 1;
@@ -948,8 +1034,45 @@ impl<'a> OfflineSurface<'a> {
                     ConnectivityFocus::WorkOffline | ConnectivityFocus::ViewQueue
                 ),
                 &mut state.offline_btn,
+                false,
             );
         }
+        let _ = idx;
+    }
+
+    /// Semantic.
+    pub fn register_semantic<Sid, Act>(
+        &self,
+        scene: &mut SemanticScene<Sid, Act>,
+        id: Sid,
+        area: Rect,
+        state: &ReconnectingState,
+    ) where
+        Sid: Clone + PartialEq + std::fmt::Display,
+        Act: Clone,
+    {
+        if area.is_empty() || !state.phase.is_offline_like() {
+            return;
+        }
+        let desc = format!(
+            "offline-surface phase={} target={} attempt={} queued={} presentation={}",
+            state.phase.id(),
+            state.target,
+            state.attempt,
+            state.queued.len(),
+            state.presentation.id(),
+        );
+        let _ = scene.register(
+            SemanticNode::control(id, area)
+                .role(SemanticRole::Status)
+                .label("offline-surface")
+                .description(desc)
+                .focusable(true)
+                .state(SemanticState {
+                    busy: matches!(state.phase, ConnectivityPhase::Reconnecting),
+                    ..Default::default()
+                }),
+        );
     }
 }
 
@@ -978,6 +1101,7 @@ fn paint_action(
     primary: bool,
     focused: bool,
     btn_state: &mut ButtonState,
+    _ascii: bool,
 ) {
     if area.is_empty() {
         return;
@@ -1022,9 +1146,9 @@ impl OfflineChrome {
             OfflineSurface::new(system).paint(area, buffer, state);
         } else if state.should_show_banner() {
             OfflineBanner::new(state, system).paint(area, buffer);
+        } else if state.phase.is_offline_like() && state.banner_dismissed {
+            // still paint nothing; StatusBar carries the cue
         }
-        // A dismissed banner on an offline-like phase paints nothing on
-        // purpose; the StatusBar carries the cue.
     }
 }
 
@@ -1096,11 +1220,7 @@ pub fn example_disconnected() -> ReconnectingState {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    use crate::widgets::tests::click;
-    use crate::widgets::tests::press;
     use ratatui_core::backend::TestBackend;
-
     use ratatui_core::terminal::Terminal;
 
     fn system() -> DesignSystem {
@@ -1175,7 +1295,12 @@ mod tests {
     fn banner_hidden_when_dismissed() {
         let system = system();
         let mut s = example_disconnected();
-        let esc = press(KeyCode::Esc);
+        let esc = KeyEvent {
+            code: KeyCode::Esc,
+            modifiers: KeyModifiers::NONE,
+            kind: KeyEventKind::Press,
+            state: crate::input::KeyEventState::NONE,
+        };
         assert_eq!(s.handle_key(esc), ConnectivityOutcome::Dismiss);
         assert!(s.banner_dismissed());
         assert!(!s.should_show_banner());
@@ -1212,7 +1337,12 @@ mod tests {
             OfflineSurface::new(&system).paint(a, b, &mut s);
         });
         assert!(text.contains("auth") || text.contains("Sign"), "{text}");
-        let key = press(KeyCode::Char('a'));
+        let key = KeyEvent {
+            code: KeyCode::Char('a'),
+            modifiers: KeyModifiers::NONE,
+            kind: KeyEventKind::Press,
+            state: crate::input::KeyEventState::NONE,
+        };
         assert_eq!(s.handle_key(key), ConnectivityOutcome::Authenticate);
     }
 
@@ -1221,7 +1351,12 @@ mod tests {
         let mut s = example_reconnecting_agent();
         assert!(s.drafts_preserved());
         assert!(s.selection_preserved());
-        let key = press(KeyCode::Char('r'));
+        let key = KeyEvent {
+            code: KeyCode::Char('r'),
+            modifiers: KeyModifiers::NONE,
+            kind: KeyEventKind::Press,
+            state: crate::input::KeyEventState::NONE,
+        };
         assert_eq!(s.handle_key(key), ConnectivityOutcome::RetryNow);
     }
 
@@ -1372,7 +1507,11 @@ mod tests {
     fn mouse_retry_on_banner() {
         let mut s = example_disconnected();
         let area = Rect::new(0, 0, 40, 1);
-        let mouse = click(2, 0);
+        let mouse = MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: Position { x: 2, y: 0 },
+            modifiers: KeyModifiers::NONE,
+        };
         assert_eq!(s.handle_mouse(mouse, area), ConnectivityOutcome::RetryNow);
     }
 

@@ -41,6 +41,12 @@ impl CapabilityBoundary {
         }
     }
 
+    /// Explicit set + profile.
+    #[must_use]
+    pub const fn new(set: CapabilitySet, profile: CapabilityProfile) -> Self {
+        Self { set, profile }
+    }
+
     /// Disable chromatic color (NO_COLOR / monochrome).
     #[must_use]
     pub const fn colorless(self) -> bool {
@@ -52,11 +58,25 @@ impl CapabilityBoundary {
     pub const fn allow_mouse(self) -> bool {
         self.set.mouse
     }
+
+    /// Bracketed paste desired.
+    #[must_use]
+    pub const fn allow_bracketed_paste(self) -> bool {
+        self.set.bracketed_paste
+    }
+
     /// OSC 8 hyperlinks allowed.
     #[must_use]
     pub const fn allow_hyperlinks(self) -> bool {
         self.set.hyperlinks
     }
+
+    /// Image protocol emission allowed (host still chooses protocol).
+    #[must_use]
+    pub const fn allow_images(self) -> bool {
+        self.set.image_protocols
+    }
+
     /// Interactive keyboard session.
     #[must_use]
     pub const fn interactive(self) -> bool {
@@ -155,7 +175,8 @@ mod tests {
     fn modern_projects_truecolor_palette() {
         let b = CapabilityBoundary::from_profile(CapabilityProfile::Modern);
         assert!(!b.colorless());
-        let _ = b.project_palette(RolePalette::junie());
+        let q = b.project_palette(RolePalette::junie());
+        let _ = q;
     }
 
     #[test]

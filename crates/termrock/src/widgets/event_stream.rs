@@ -15,20 +15,23 @@
 //! EventStream optimizes sustained append rates and unread/backpressure.
 //!
 //! Research: observability event consoles, k8s events, agent activity streams.
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use std::collections::BTreeSet;
 
 use ratatui_core::{
     buffer::Buffer,
-    layout::Rect,
+    layout::{Position, Rect},
     style::{Modifier, Style},
     widgets::StatefulWidget,
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     interaction::{NavigationMove, PageMove, UiIntent},
     style::{DesignSystem, ListRowVisualState, Role},
-    text::{contains_lower_all, take_display_cols},
+    text::take_display_cols,
     widgets::{scroll_area::ScrollAreaState, tiered_row::TieredRow},
 };
 
@@ -66,6 +69,19 @@ pub enum EventSeverity {
 }
 
 impl EventSeverity {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Trace => "trace",
+            Self::Debug => "debug",
+            Self::Info => "info",
+            Self::Warn => "warn",
+            Self::Error => "error",
+            Self::Critical => "critical",
+        }
+    }
+
     /// No-color letter.
     #[must_use]
     pub const fn letter(self) -> char {
@@ -81,7 +97,7 @@ impl EventSeverity {
 
     /// Glyph for structured chrome.
     #[must_use]
-    pub const fn glyph(self) -> &'static str {
+    pub const fn glyph(self, _ascii: bool) -> &'static str {
         match self {
             Self::Trace => ".",
             Self::Debug => "·",
@@ -145,6 +161,28 @@ pub struct StreamEvent<'a, Id = ()> {
     pub batch_count: u32,
     /// Interactive.
     pub enabled: bool,
+}
+
+impl<'a> StreamEvent<'a, ()> {
+    /// Simple event without id.
+    #[must_use]
+    pub const fn new(event_type: &'a str, timestamp: &'a str, summary: &'a str) -> Self {
+        Self {
+            id: (),
+            event_type,
+            timestamp,
+            severity: EventSeverity::Info,
+            source: None,
+            summary,
+            fields: None,
+            correlation: None,
+            detail: None,
+            group_key: None,
+            kind: StreamRowKind::Event,
+            batch_count: 1,
+            enabled: true,
+        }
+    }
 }
 
 impl<'a, Id> StreamEvent<'a, Id> {
@@ -285,6 +323,13 @@ pub enum EventStreamOutcome<Id> {
     FilterChanged(String),
     /// Severity floor filter changed.
     SeverityFilter(EventSeverity),
+    /// Type filter toggled (host applies).
+    TypeFilterChanged {
+        /// Type key.
+        event_type: String,
+        /// Included after toggle.
+        included: bool,
+    },
     /// Cancel / clear filter.
     Cancelled,
     /// Backpressure dropped count acknowledged / cleared.
@@ -404,6 +449,12 @@ impl<Id: Clone + PartialEq + Ord> EventStreamState<Id> {
         self.batched
     }
 
+    /// Shared scroll (anchors, indicator).
+    #[must_use]
+    pub const fn scroll(&self) -> &ScrollAreaState {
+        &self.scroll
+    }
+
     /// Host input gate.
     pub fn set_accepts_input(&mut self, accepts: bool) {
         self.accepts_input = accepts;
@@ -429,6 +480,29 @@ impl<Id: Clone + PartialEq + Ord> EventStreamState<Id> {
         self.dropped = 0;
         self.batched = 0;
     }
+
+    /// Severity floor filter.
+    pub fn set_severity_floor(&mut self, floor: EventSeverity) {
+        self.severity_floor = floor;
+    }
+
+    /// Severity floor.
+    #[must_use]
+    pub const fn severity_floor(&self) -> EventSeverity {
+        self.severity_floor
+    }
+
+    /// Exclude / include event type.
+    pub fn toggle_type_filter(&mut self, event_type: &str) -> bool {
+        let key = event_type.to_string();
+        if !self.excluded_types.remove(&key) {
+            self.excluded_types.insert(key);
+            false
+        } else {
+            true
+        }
+    }
+
     /// Capture stable anchor at current cursor (host reprojects; restore later).
     pub fn capture_anchor(&mut self, events: &[StreamEvent<'_, Id>]) {
         let view = self.filtered_view(events);
@@ -696,6 +770,62 @@ impl<Id: Clone + PartialEq + Ord> EventStreamState<Id> {
             self.anchor_id = Some(e.id.clone());
         }
     }
+
+    /// Mouse.
+    pub fn handle_mouse(
+        &mut self,
+        event: MouseEvent,
+        events: &[StreamEvent<'_, Id>],
+    ) -> EventStreamOutcome<Id> {
+        if !self.accepts_input {
+            return EventStreamOutcome::Ignored;
+        }
+        let (ox, oy) = self.origin;
+        let hit = Rect {
+            x: ox,
+            y: oy,
+            width: 240,
+            height: self.area_rows.max(1),
+        };
+        if !hit.contains(event.position) {
+            return EventStreamOutcome::Ignored;
+        }
+        match event.kind {
+            MouseEventKind::ScrollDown => {
+                self.handle_intent(UiIntent::Move(NavigationMove::Next), events)
+            }
+            MouseEventKind::ScrollUp => {
+                self.handle_intent(UiIntent::Move(NavigationMove::Previous), events)
+            }
+            MouseEventKind::Down(MouseButton::Left) => {
+                let chip_y = oy.saturating_add(self.area_rows.saturating_sub(1));
+                if self.area_rows >= 2 && event.position.y == chip_y {
+                    if self.scroll.is_following() && self.dropped == 0 {
+                        return EventStreamOutcome::Ignored;
+                    }
+                    self.scroll.jump_to_new_content();
+                    return EventStreamOutcome::Follow;
+                }
+                if let Some(r) = self
+                    .regions
+                    .iter()
+                    .find(|r| r.area.contains(event.position))
+                {
+                    if self.selected.as_ref() == Some(&r.id) {
+                        self.detail_open = true;
+                        return EventStreamOutcome::Activated(r.id.clone());
+                    }
+                    self.cursor = r.index;
+                    self.selected = Some(r.id.clone());
+                    self.anchor_id = Some(r.id.clone());
+                    self.scroll.pause_follow();
+                    return EventStreamOutcome::Selected(r.id.clone());
+                }
+                EventStreamOutcome::Ignored
+            }
+            _ => EventStreamOutcome::Ignored,
+        }
+    }
 }
 
 /// Filter by query, severity floor, and excluded types.
@@ -719,17 +849,17 @@ pub fn filter_stream_events<'a, Id>(
             continue;
         }
         if !q.is_empty() {
-            if !contains_lower_all(
-                &[
-                    e.event_type,
-                    e.summary,
-                    e.fields.unwrap_or(""),
-                    e.source.unwrap_or(""),
-                    e.correlation.unwrap_or(""),
-                    e.timestamp,
-                ],
-                &q,
-            ) {
+            let hay = format!(
+                "{} {} {} {} {} {}",
+                e.event_type,
+                e.summary,
+                e.fields.unwrap_or(""),
+                e.source.unwrap_or(""),
+                e.correlation.unwrap_or(""),
+                e.timestamp
+            )
+            .to_ascii_lowercase();
+            if !hay.contains(&q) {
                 continue;
             }
         }
@@ -802,7 +932,7 @@ impl<'a, Id: Clone + PartialEq + Ord> EventStream<'a, Id> {
     }
 
     /// Paint O(visible).
-    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut EventStreamState<Id>) {
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut EventStreamState<Id>) {
         state.regions.clear();
         if area.is_empty() {
             state.body_rows = 0;
@@ -926,7 +1056,7 @@ impl<'a, Id: Clone + PartialEq + Ord> EventStream<'a, Id> {
                 );
                 buffer.set_stringn(area.x.saturating_add(1), y, " ", 1, style);
 
-                let sev = event.severity.glyph();
+                let sev = event.severity.glyph(false);
                 let batch = if event.batch_count > 1 {
                     format!("{}{}", "×", event.batch_count)
                 } else {
@@ -1074,14 +1204,14 @@ impl<'a, Id: Clone + PartialEq + Ord> EventStream<'a, Id> {
 impl<'a, Id: Clone + PartialEq + Ord> StatefulWidget for &EventStream<'a, Id> {
     type State = EventStreamState<Id>;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        EventStream::paint(self, area, buffer, state);
+        EventStream::render(self, area, buffer, state);
     }
 }
 
 impl<'a, Id: Clone + PartialEq + Ord> StatefulWidget for EventStream<'a, Id> {
     type State = EventStreamState<Id>;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        EventStream::paint(&self, area, buffer, state);
+        EventStream::render(&self, area, buffer, state);
     }
 }
 
@@ -1089,16 +1219,19 @@ impl<'a, Id: Clone + PartialEq + Ord> StatefulWidget for EventStream<'a, Id> {
 
 /// Sustained-rate bench targets (documentation / tests).
 pub mod bench {
+    /// Events per second target for host append loops.
+    pub const EVENTS_PER_SEC: u32 = 10_000;
     /// Viewport rows for paint budget.
     pub const VIEWPORT: u16 = 40;
     /// Burst batch size under backpressure.
     pub const BURST_BATCH: u32 = 64;
+    /// Max paint cells per frame (viewport × avg cols).
+    pub const MAX_PAINT_CELLS: u32 = 40 * 80;
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyModifiers;
 
     fn sample() -> Vec<StreamEvent<'static, &'static str>> {
         vec![
@@ -1233,7 +1366,8 @@ mod tests {
         let events: Vec<StreamEvent<'_, usize>> = owned
             .iter()
             .enumerate()
-            .map(|(i, (_, ts, sum))| {
+            .map(|(i, (id, ts, sum))| {
+                let _ = id;
                 StreamEvent::with_id(i, "Normal", ts, sum).severity(EventSeverity::Info)
             })
             .collect();

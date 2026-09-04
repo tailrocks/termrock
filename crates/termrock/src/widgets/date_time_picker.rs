@@ -16,16 +16,25 @@
 //! pick ranges, or choose from a stepped time list.
 //!
 //! Research: shadcn Calendar/DatePicker, Textual DateTimeInput patterns.
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+use ratatui_core::{
+    buffer::Buffer,
+    layout::{Position, Rect},
+    style::Modifier,
+    widgets::{StatefulWidget, Widget},
+};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     interaction::{
         CollectionItem, CollectionOutcome, CollectionState, OverlayId, OverlayOutcome, OverlaySize,
         OverlaySpec, OverlayStack, SemanticNode, SemanticRole, SemanticScene, SemanticState,
+        UiIntent,
     },
     style::{ControlState, DesignSystem, ListRowVisualState, Role},
-    text::take_display_cols,
+    text::{display_cols, take_display_cols},
 };
 
 use super::{
@@ -330,6 +339,17 @@ pub enum DateDisplayFormat {
 }
 
 impl DateDisplayFormat {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Iso => "iso",
+            Self::YmdSlash => "ymd-slash",
+            Self::MdySlash => "mdy-slash",
+            Self::DmySlash => "dmy-slash",
+        }
+    }
+
     /// Format date.
     #[must_use]
     pub fn format(self, d: CivilDate) -> String {
@@ -389,6 +409,16 @@ pub enum TimeDisplayFormat {
 }
 
 impl TimeDisplayFormat {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Hm24 => "hm24",
+            Self::Hms24 => "hms24",
+            Self::Hm12 => "hm12",
+        }
+    }
+
     /// Format time.
     #[must_use]
     pub fn format(self, t: CivilTime) -> String {
@@ -501,6 +531,12 @@ impl DateTimePickerKind {
     pub const fn has_time(self) -> bool {
         matches!(self, Self::Time | Self::DateTime)
     }
+
+    /// Range selection.
+    #[must_use]
+    pub const fn is_range(self) -> bool {
+        matches!(self, Self::DateRange)
+    }
 }
 
 /// Active interaction surface.
@@ -538,8 +574,22 @@ pub enum DateTimePickerPresentation {
     /// In-place expanded panel.
     #[default]
     Embedded,
+    /// Modal / popover overlay.
+    Modal,
     /// Fullscreen on tiny terminals.
     Fullscreen,
+}
+
+impl DateTimePickerPresentation {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Embedded => "embedded",
+            Self::Modal => "modal",
+            Self::Fullscreen => "fullscreen",
+        }
+    }
 }
 
 /// First day of week for grid headers.
@@ -554,6 +604,15 @@ pub enum WeekStart {
 }
 
 impl WeekStart {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Monday => "monday",
+            Self::Sunday => "sunday",
+        }
+    }
+
     /// Header labels (ASCII).
     #[must_use]
     pub const fn headers(self) -> [&'static str; 7] {
@@ -652,6 +711,11 @@ pub enum DateTimePickerOutcome {
     Closed,
     /// Cancelled (Esc from field / modal).
     Cancelled,
+    /// Presentation hint.
+    PresentationChanged {
+        /// Presentation.
+        presentation: DateTimePickerPresentation,
+    },
 }
 
 // ── State ───────────────────────────────────────────────────────────────────
@@ -754,6 +818,34 @@ impl DateTimePickerState {
         }
     }
 
+    /// Kind.
+    #[must_use]
+    pub const fn with_kind(mut self, kind: DateTimePickerKind) -> Self {
+        self.kind = kind;
+        self
+    }
+
+    /// Date display format.
+    #[must_use]
+    pub const fn with_date_format(mut self, fmt: DateDisplayFormat) -> Self {
+        self.date_fmt = fmt;
+        self
+    }
+
+    /// Time display format.
+    #[must_use]
+    pub const fn with_time_format(mut self, fmt: TimeDisplayFormat) -> Self {
+        self.time_fmt = fmt;
+        self
+    }
+
+    /// Week start.
+    #[must_use]
+    pub const fn with_week_start(mut self, w: WeekStart) -> Self {
+        self.week_start = w;
+        self
+    }
+
     /// Time list step.
     #[must_use]
     pub fn with_time_step_minutes(mut self, step: u32) -> Self {
@@ -765,6 +857,13 @@ impl DateTimePickerState {
     #[must_use]
     pub fn with_timezone_label(mut self, label: impl Into<String>) -> Self {
         self.timezone_label = Some(label.into());
+        self
+    }
+
+    /// Allow empty commit.
+    #[must_use]
+    pub const fn with_allow_empty(mut self, on: bool) -> Self {
+        self.allow_empty = on;
         self
     }
 
@@ -781,18 +880,92 @@ impl DateTimePickerState {
         self.max_date = Some(d);
         self
     }
+
+    /// Presentation.
+    #[must_use]
+    pub const fn with_presentation(mut self, p: DateTimePickerPresentation) -> Self {
+        self.presentation = p;
+        self
+    }
+
     /// Initial date value.
     #[must_use]
     pub fn with_date(mut self, d: CivilDate) -> Self {
         self.set_date(Some(d));
         self
     }
+
+    /// Initial time.
+    #[must_use]
+    pub fn with_time(mut self, t: CivilTime) -> Self {
+        self.set_time(Some(t));
+        self
+    }
+
+    /// Initial range.
+    #[must_use]
+    pub fn with_range(mut self, range: CivilDateRange) -> Self {
+        self.set_range(Some(range));
+        self
+    }
+
     // ── accessors ───────────────────────────────────────────────────────────
+
+    /// Kind.
+    #[must_use]
+    pub const fn kind(&self) -> DateTimePickerKind {
+        self.kind
+    }
 
     /// View.
     #[must_use]
     pub const fn view(&self) -> DateTimePickerView {
         self.view
+    }
+
+    /// Expanded.
+    #[must_use]
+    pub const fn is_open(&self) -> bool {
+        self.open
+    }
+
+    /// Validity of draft / value.
+    #[must_use]
+    pub const fn validity(&self) -> DateTimeValidity {
+        self.validity
+    }
+
+    /// Committed date.
+    #[must_use]
+    pub const fn date(&self) -> Option<CivilDate> {
+        self.value_date
+    }
+
+    /// Committed time.
+    #[must_use]
+    pub const fn time(&self) -> Option<CivilTime> {
+        self.value_time
+    }
+
+    /// Committed datetime.
+    #[must_use]
+    pub fn datetime(&self) -> Option<CivilDateTime> {
+        Some(CivilDateTime::new(self.value_date?, self.value_time?))
+    }
+
+    /// Committed range.
+    #[must_use]
+    pub fn range(&self) -> Option<CivilDateRange> {
+        Some(CivilDateRange {
+            start: self.value_date?,
+            end: self.value_end?,
+        })
+    }
+
+    /// Draft text.
+    #[must_use]
+    pub fn draft(&self) -> &str {
+        self.draft.value()
     }
 
     fn set_draft_text(&mut self, text: impl Into<String>) {
@@ -802,10 +975,40 @@ impl DateTimePickerState {
         self.draft = self.draft.reseed(text);
     }
 
+    /// Live typing. [`Self::new`] stays idle (`editing: false`).
+    #[must_use]
+    pub fn with_editing(mut self) -> Self {
+        self.draft.begin_edit();
+        self
+    }
+
+    /// Start the insert session (Junie Enter on an idle field).
+    pub fn begin_edit(&mut self) {
+        self.draft.begin_edit();
+    }
+
+    /// Today marker.
+    #[must_use]
+    pub const fn today(&self) -> Option<CivilDate> {
+        self.today
+    }
+
+    /// Timezone label.
+    #[must_use]
+    pub fn timezone_label(&self) -> Option<&str> {
+        self.timezone_label.as_deref()
+    }
+
     /// Focus date in calendar.
     #[must_use]
     pub const fn focus_date(&self) -> Option<CivilDate> {
         self.focus_date
+    }
+
+    /// Presentation.
+    #[must_use]
+    pub const fn presentation(&self) -> DateTimePickerPresentation {
+        self.presentation
     }
 
     /// Whether date is available (min/max).
@@ -831,6 +1034,24 @@ impl DateTimePickerState {
             self.view_month = d.month;
         }
     }
+
+    /// Min date.
+    pub fn set_min_date(&mut self, d: Option<CivilDate>) {
+        self.min_date = d;
+        self.refresh_validity();
+    }
+
+    /// Max date.
+    pub fn set_max_date(&mut self, d: Option<CivilDate>) {
+        self.max_date = d;
+        self.refresh_validity();
+    }
+
+    /// Timezone label.
+    pub fn set_timezone_label(&mut self, label: Option<String>) {
+        self.timezone_label = label;
+    }
+
     /// Set committed date and sync draft.
     pub fn set_date(&mut self, d: Option<CivilDate>) {
         self.value_date = d;
@@ -842,11 +1063,42 @@ impl DateTimePickerState {
         self.sync_draft_from_value();
         self.refresh_validity();
     }
+
+    /// Set committed time.
+    pub fn set_time(&mut self, t: Option<CivilTime>) {
+        self.value_time = t;
+        self.sync_draft_from_value();
+        self.refresh_validity();
+    }
+
+    /// Set range.
+    pub fn set_range(&mut self, range: Option<CivilDateRange>) {
+        if let Some(r) = range {
+            self.value_date = Some(r.start);
+            self.value_end = Some(r.end);
+            self.view_year = r.start.year;
+            self.view_month = r.start.month;
+            self.focus_date = Some(r.start);
+        } else {
+            self.value_date = None;
+            self.value_end = None;
+        }
+        self.range_picking_end = false;
+        self.sync_draft_from_value();
+        self.refresh_validity();
+    }
+
     /// Focus.
     pub fn set_focused(&mut self, on: bool) {
         self.focused = on;
         self.draft
             .set_focused(on && matches!(self.view, DateTimePickerView::Field));
+    }
+
+    /// Enabled.
+    pub fn set_enabled(&mut self, on: bool) {
+        self.enabled = on;
+        self.draft.set_enabled(on);
     }
 
     /// Auto presentation from bounds.
@@ -1024,15 +1276,14 @@ impl DateTimePickerState {
     }
 
     fn rebuild_collections(&mut self) {
-        let mut labels = Vec::new();
-        let times = self.time_list_items(&mut labels);
+        let times = self.time_list_items();
         let _ = self.time_collection.reconcile(&times);
         if let Some(t) = self.value_time {
             let id = t.minutes_since_midnight().to_string();
             self.time_collection.set_active(Some(id));
         }
 
-        let days = self.day_list_items(&mut labels);
+        let days = self.day_list_items();
         let _ = self.day_collection.reconcile(&days);
         if let Some(f) = self.focus_date {
             self.day_collection.set_active(Some(f.to_iso()));
@@ -1162,21 +1413,6 @@ impl DateTimePickerState {
         }
 
         let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
-        let opens_from_empty_field = !self.open
-            && matches!(self.view, DateTimePickerView::Field)
-            && self.draft.value().is_empty()
-            && key.modifiers.is_empty()
-            && matches!(key.code, KeyCode::Down | KeyCode::Char(' '));
-        let one_shot = matches!(
-            key.code,
-            KeyCode::Enter | KeyCode::Tab | KeyCode::BackTab | KeyCode::Esc
-        ) || (matches!(self.view, DateTimePickerView::Calendar)
-            && matches!(key.code, KeyCode::Char(' ')))
-            || (key.code == KeyCode::Down && key.modifiers.contains(KeyModifiers::ALT))
-            || opens_from_empty_field;
-        if !key.is_press() && one_shot {
-            return DateTimePickerOutcome::Ignored;
-        }
 
         // Alt+Down opens expanded view (neutral KeyCode has no F-keys).
         if key.code == KeyCode::Down && key.modifiers.contains(KeyModifiers::ALT) {
@@ -1375,8 +1611,7 @@ impl DateTimePickerState {
             self.rebuild_collections();
             return DateTimePickerOutcome::Changed;
         }
-        let mut labels = Vec::new();
-        let items = self.day_list_items(&mut labels);
+        let items = self.day_list_items();
         if key.code == KeyCode::Enter && key.modifiers.is_empty() {
             if let Some(id) = self.day_collection.active() {
                 if let Some(d) = CivilDate::parse_iso(id) {
@@ -1397,8 +1632,7 @@ impl DateTimePickerState {
     }
 
     fn handle_time_list_key(&mut self, key: KeyEvent) -> DateTimePickerOutcome {
-        let mut labels = Vec::new();
-        let items = self.time_list_items(&mut labels);
+        let items = self.time_list_items();
         if key.code == KeyCode::Enter && key.modifiers.is_empty() {
             if let Some(id) = self.time_collection.active() {
                 if let Ok(mins) = id.parse::<u32>() {
@@ -1414,9 +1648,10 @@ impl DateTimePickerState {
                 let d = c.to_digit(10).unwrap_or(0);
                 let hour = d.min(9);
                 let mins = hour * 60;
-                if CivilTime::from_minutes(mins).is_some() {
+                if let Some(t) = CivilTime::from_minutes(mins) {
                     let id = mins.to_string();
                     self.time_collection.set_active(Some(id));
+                    let _ = t;
                     return DateTimePickerOutcome::Changed;
                 }
             }
@@ -1429,42 +1664,32 @@ impl DateTimePickerState {
         }
     }
 
-    fn day_list_items<'a>(&self, labels: &'a mut Vec<String>) -> Vec<CollectionItem<'a, String>> {
-        labels.clear();
-        let mut ids: Vec<String> = Vec::new();
-        let mut enabled: Vec<bool> = Vec::new();
+    fn day_list_items(&self) -> Vec<CollectionItem<String>> {
+        let mut days = Vec::new();
         if let Some(dim) = days_in_month(self.view_year, self.view_month) {
             for day in 1..=dim {
                 if let Some(d) = CivilDate::new(self.view_year, self.view_month, day) {
-                    ids.push(d.to_iso());
-                    labels.push(format!("{day:02}"));
-                    enabled.push(self.is_available(d));
+                    days.push(
+                        CollectionItem::new(d.to_iso(), format!("{day:02}"))
+                            .enabled(self.is_available(d)),
+                    );
                 }
             }
         }
-        ids.into_iter()
-            .zip(labels.iter())
-            .zip(enabled)
-            .map(|((id, label), enabled)| CollectionItem::new(id, label).enabled(enabled))
-            .collect()
+        days
     }
 
-    fn time_list_items<'a>(&self, labels: &'a mut Vec<String>) -> Vec<CollectionItem<'a, String>> {
-        labels.clear();
+    fn time_list_items(&self) -> Vec<CollectionItem<String>> {
         let step = self.time_step_minutes.max(1);
-        let mut ids: Vec<String> = Vec::new();
+        let mut times = Vec::new();
         let mut m = 0u32;
         while m < 24 * 60 {
             if let Some(t) = CivilTime::from_minutes(m) {
-                ids.push(m.to_string());
-                labels.push(self.time_fmt.format(t));
+                times.push(CollectionItem::new(m.to_string(), self.time_fmt.format(t)));
             }
             m = m.saturating_add(step);
         }
-        ids.into_iter()
-            .zip(labels.iter())
-            .map(|(id, label)| CollectionItem::new(id, label))
-            .collect()
+        times
     }
 
     fn ensure_view_shows(&mut self, d: CivilDate) {
@@ -1479,6 +1704,37 @@ impl DateTimePickerState {
             .add_months(delta);
         self.view_year = d.year;
         self.view_month = d.month;
+    }
+
+    /// Intent path.
+    pub fn handle_intent(&mut self, intent: UiIntent) -> DateTimePickerOutcome {
+        if !self.enabled || !self.focused {
+            return DateTimePickerOutcome::Ignored;
+        }
+        match intent {
+            UiIntent::Cancel | UiIntent::Close => {
+                if self.open {
+                    self.close()
+                } else {
+                    DateTimePickerOutcome::Cancelled
+                }
+            }
+            UiIntent::Submit | UiIntent::Activate => {
+                if self.open && matches!(self.view, DateTimePickerView::Calendar) {
+                    if let Some(d) = self.focus_date {
+                        return self.select_date(d);
+                    }
+                }
+                self.commit_draft()
+            }
+            UiIntent::Fullscreen => {
+                self.presentation = DateTimePickerPresentation::Fullscreen;
+                DateTimePickerOutcome::PresentationChanged {
+                    presentation: DateTimePickerPresentation::Fullscreen,
+                }
+            }
+            _ => DateTimePickerOutcome::Ignored,
+        }
     }
 
     /// Mouse.
@@ -1619,6 +1875,14 @@ impl<'a> DateTimePicker<'a> {
         self
     }
 
+    /// ASCII glyphs for states.
+    #[must_use]
+    /// Show timezone label when present.
+    pub const fn show_timezone(mut self, on: bool) -> Self {
+        self.show_timezone = on;
+        self
+    }
+
     /// Paint.
     pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut DateTimePickerState) {
         state.cell_hits.clear();
@@ -1646,6 +1910,7 @@ impl<'a> DateTimePicker<'a> {
             } else {
                 ControlState::Default
             },
+            invalid,
             state.draft.is_editing(),
         );
         let mut y = area.y;
@@ -1758,7 +2023,7 @@ impl<'a> DateTimePicker<'a> {
                 PanelChrome::Normal
             });
         let inner = panel.inner(body);
-        panel.paint(body, buffer, None);
+        Widget::render(&panel, body, buffer);
         if inner.is_empty() {
             return;
         }
@@ -1917,8 +2182,7 @@ impl<'a> DateTimePicker<'a> {
             area.width,
             area.height.saturating_sub(1),
         );
-        let mut labels = Vec::new();
-        let items = state.day_list_items(&mut labels);
+        let items = state.day_list_items();
         let vp = usize::from(list.height).max(1);
         state
             .day_collection
@@ -1986,8 +2250,7 @@ impl<'a> DateTimePicker<'a> {
             area.width,
             area.height.saturating_sub(1),
         );
-        let mut labels = Vec::new();
-        let items = state.time_list_items(&mut labels);
+        let items = state.time_list_items();
         let vp = usize::from(list.height).max(1);
         state
             .time_collection
@@ -2114,9 +2377,7 @@ pub mod guidance {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyEventKind;
     use crate::style::RolePalette;
-    use crate::widgets::tests::click;
 
     #[test]
     fn civil_date_roundtrip_iso() {
@@ -2284,61 +2545,6 @@ mod tests {
     }
 
     #[test]
-    fn repeated_one_shot_actions_are_ignored_but_navigation_repeats() {
-        let mut state = DateTimePickerState::new(DateTimePickerKind::Date)
-            .with_date(CivilDate::new(2026, 8, 10).unwrap());
-        state.set_focused(true);
-        state.set_today(CivilDate::new(2026, 8, 10).unwrap());
-        let _ = state.open(Rect::new(0, 0, 40, 16));
-
-        for (code, modifiers) in [
-            (KeyCode::Enter, KeyModifiers::NONE),
-            (KeyCode::Tab, KeyModifiers::NONE),
-            (KeyCode::BackTab, KeyModifiers::NONE),
-            (KeyCode::Esc, KeyModifiers::NONE),
-            (KeyCode::Char(' '), KeyModifiers::NONE),
-            (KeyCode::Down, KeyModifiers::ALT),
-        ] {
-            let before = state.clone();
-            let mut key = KeyEvent::new(code, modifiers);
-            key.kind = KeyEventKind::Repeat;
-            assert_eq!(
-                state.handle_key(key),
-                DateTimePickerOutcome::Ignored,
-                "{code:?} repeat emitted a one-shot outcome"
-            );
-            assert_eq!(state, before, "{code:?} repeat mutated picker state");
-        }
-
-        let mut repeat_right = KeyEvent::new(KeyCode::Right, KeyModifiers::NONE);
-        repeat_right.kind = KeyEventKind::Repeat;
-        assert_eq!(
-            state.handle_key(repeat_right),
-            DateTimePickerOutcome::Changed,
-            "calendar navigation remains repeatable"
-        );
-        assert_eq!(state.focus_date().map(|date| date.day), Some(11));
-
-        let mut closed = DateTimePickerState::new(DateTimePickerKind::Date);
-        closed.set_focused(true);
-        for (code, modifiers) in [
-            (KeyCode::Down, KeyModifiers::NONE),
-            (KeyCode::Char(' '), KeyModifiers::NONE),
-            (KeyCode::Down, KeyModifiers::ALT),
-        ] {
-            let before = closed.clone();
-            let mut key = KeyEvent::new(code, modifiers);
-            key.kind = KeyEventKind::Repeat;
-            assert_eq!(
-                closed.handle_key(key),
-                DateTimePickerOutcome::Ignored,
-                "closed {code:?} repeat reopened the picker"
-            );
-            assert_eq!(closed, before, "closed {code:?} repeat mutated state");
-        }
-    }
-
-    #[test]
     fn fuzz_keys() {
         let mut state =
             DateTimePickerState::new(DateTimePickerKind::DateTime).with_timezone_label("UTC");
@@ -2425,7 +2631,11 @@ mod tests {
             .cloned()
             .expect("day 12 cell");
         assert!(matches!(
-            state.handle_mouse(click(rect.x, rect.y)),
+            state.handle_mouse(MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: Position::new(rect.x, rect.y),
+                modifiers: KeyModifiers::NONE,
+            }),
             DateTimePickerOutcome::DateChanged { date } if date == d
         ));
     }

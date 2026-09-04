@@ -33,6 +33,15 @@ pub enum OtpCharset {
 }
 
 impl OtpCharset {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Digits => "digits",
+            Self::Alphanumeric => "alphanumeric",
+        }
+    }
+
     /// Whether `c` is accepted.
     #[must_use]
     pub fn accepts(self, c: char) -> bool {
@@ -120,6 +129,17 @@ impl InputOtpState {
             accepts_input: true,
         }
     }
+
+    /// Charset.
+    pub fn set_charset(&mut self, c: OtpCharset) {
+        self.charset = c;
+    }
+
+    /// Mask paint (`•` instead of char).
+    pub fn set_masked(&mut self, on: bool) {
+        self.masked = on;
+    }
+
     /// Focus.
     pub fn set_focused(&mut self, on: bool) {
         self.focused = on;
@@ -139,6 +159,12 @@ impl InputOtpState {
     /// Input gate.
     pub fn set_accepts_input(&mut self, on: bool) {
         self.accepts_input = on;
+    }
+
+    /// Length.
+    #[must_use]
+    pub const fn length(&self) -> usize {
+        self.length
     }
 
     /// Cursor index.
@@ -327,6 +353,13 @@ impl<'a> InputOtp<'a> {
         self
     }
 
+    /// Preferred width for `n` slots.
+    #[must_use]
+    pub fn preferred_width(n: usize) -> u16 {
+        // Reserved prompt + each slot: [X] + gap = 4, last no gap.
+        (n as u16).saturating_mul(4).max(4)
+    }
+
     /// Paint.
     pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &InputOtpState) {
         if area.is_empty() {
@@ -339,7 +372,7 @@ impl<'a> InputOtp<'a> {
         } else {
             ControlState::Default
         };
-        let recipe = self.system.input_recipe(control_state, false);
+        let recipe = self.system.input_recipe(control_state, false, false);
         let mut y = area.y;
         if let Some(label) = self.label {
             if area.height >= 2 {

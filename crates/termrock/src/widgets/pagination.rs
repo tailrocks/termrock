@@ -15,11 +15,19 @@
 //! rows are in memory; prefer Pagination when the host must fetch page N.
 //!
 //! Research: shadcn Pagination, database clients, API result browsers.
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+use ratatui_core::{
+    buffer::Buffer,
+    layout::{Position, Rect},
+    style::Modifier,
+    widgets::StatefulWidget,
+};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
-    interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
+    interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
     style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
 };
@@ -87,6 +95,15 @@ impl PageTotal {
             Self::AtLeast(_) => "at-least",
         }
     }
+
+    /// Exact total when known.
+    #[must_use]
+    pub const fn exact(self) -> Option<u64> {
+        match self {
+            Self::Known(n) => Some(n),
+            _ => None,
+        }
+    }
 }
 
 /// Layout density for the control.
@@ -100,6 +117,18 @@ pub enum PaginationPresentation {
     Compact,
     /// Prev/next + short “p/n” only.
     Minimal,
+}
+
+impl PaginationPresentation {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Full => "full",
+            Self::Compact => "compact",
+            Self::Minimal => "minimal",
+        }
+    }
 }
 
 /// Focusable part inside the control (single host Tab stop).
@@ -121,6 +150,22 @@ pub enum PaginationPart {
     PageSize,
     /// Jump-to-page field.
     Jump,
+}
+
+impl PaginationPart {
+    /// Stable id.
+    #[must_use]
+    pub fn id(self) -> String {
+        match self {
+            Self::First => "first".into(),
+            Self::Prev => "prev".into(),
+            Self::PageButton(i) => format!("page-{i}"),
+            Self::Next => "next".into(),
+            Self::Last => "last".into(),
+            Self::PageSize => "page-size".into(),
+            Self::Jump => "jump".into(),
+        }
+    }
 }
 
 /// Outcomes — **no fetch** inside TermRock.
@@ -147,6 +192,11 @@ pub enum PaginationOutcome {
     JumpStarted,
     /// Jump cancelled.
     JumpCancelled,
+    /// Presentation auto-changed.
+    PresentationChanged {
+        /// Presentation.
+        presentation: PaginationPresentation,
+    },
 }
 
 // ── Guidance ────────────────────────────────────────────────────────────────
@@ -311,6 +361,24 @@ impl PaginationState {
         self.presentation
     }
 
+    /// Focused part.
+    #[must_use]
+    pub const fn part(&self) -> PaginationPart {
+        self.part
+    }
+
+    /// Jump draft.
+    #[must_use]
+    pub fn jump_draft(&self) -> &str {
+        &self.jump_draft
+    }
+
+    /// Jump active.
+    #[must_use]
+    pub const fn is_jump_active(&self) -> bool {
+        self.jump_active
+    }
+
     /// Focus control.
     pub fn set_focused(&mut self, on: bool) {
         self.focused = on;
@@ -325,6 +393,12 @@ impl PaginationState {
         self.enabled = on;
     }
 
+    /// Host projects total after fetch.
+    pub fn set_total(&mut self, total: PageTotal) {
+        self.total = total;
+        self.clamp_page();
+    }
+
     /// Host sets loading while fetch in flight.
     pub fn set_loading(&mut self, on: bool) {
         self.loading = on;
@@ -335,6 +409,13 @@ impl PaginationState {
         self.page = page.max(1);
         self.clamp_page();
     }
+
+    /// Host sets page size without emitting outcome.
+    pub fn set_page_size(&mut self, size: u32) {
+        self.page_size = size.max(1);
+        self.clamp_page();
+    }
+
     fn clamp_page(&mut self) {
         if let Some(n) = self.page_count() {
             self.page = self.page.min(n).max(1);
@@ -409,6 +490,11 @@ impl PaginationState {
         }
     }
 
+    /// Go to page (public).
+    pub fn go_to(&mut self, page: u32) -> PaginationOutcome {
+        self.emit_page(page)
+    }
+
     /// Next.
     pub fn next(&mut self) -> PaginationOutcome {
         if !self.can_next() {
@@ -474,9 +560,6 @@ impl PaginationState {
 
         // Jump entry mode
         if self.jump_active {
-            if !key.is_press() && matches!(key.code, KeyCode::Esc | KeyCode::Enter) {
-                return PaginationOutcome::Ignored;
-            }
             match key.code {
                 KeyCode::Esc => {
                     self.jump_active = false;
@@ -504,19 +587,6 @@ impl PaginationState {
                 }
                 _ => return PaginationOutcome::Ignored,
             }
-        }
-
-        let one_shot = match key.code {
-            KeyCode::Char('g' | 'G' | '/' | 's' | 'S' | ' ') | KeyCode::Enter => {
-                key.modifiers.is_empty()
-            }
-            KeyCode::Tab => !key.modifiers.contains(KeyModifiers::SHIFT),
-            KeyCode::BackTab => true,
-            KeyCode::Char(c) if c.is_ascii_digit() => true,
-            _ => false,
-        };
-        if !key.is_press() && one_shot {
-            return PaginationOutcome::Ignored;
         }
 
         match key.code {
@@ -670,6 +740,49 @@ impl PaginationState {
         }
     }
 
+    /// Intent.
+    pub fn handle_intent(&mut self, intent: UiIntent) -> PaginationOutcome {
+        if !self.enabled || !self.focused {
+            return PaginationOutcome::Ignored;
+        }
+        match intent {
+            UiIntent::Activate | UiIntent::Submit => self.activate_part(),
+            UiIntent::Page(p) => {
+                use crate::interaction::PageMove;
+                match p {
+                    PageMove::Forward => self.next(),
+                    PageMove::Backward => self.prev(),
+                }
+            }
+            UiIntent::Move(m) => {
+                use crate::interaction::NavigationMove;
+                match m {
+                    NavigationMove::Next => {
+                        self.part = self.next_part();
+                        PaginationOutcome::Changed
+                    }
+                    NavigationMove::Previous => {
+                        self.part = self.prev_part();
+                        PaginationOutcome::Changed
+                    }
+                    NavigationMove::First => self.first(),
+                    NavigationMove::Last => self.last(),
+                    _ => PaginationOutcome::Ignored,
+                }
+            }
+            UiIntent::Cancel | UiIntent::Close => {
+                if self.jump_active {
+                    self.jump_active = false;
+                    self.jump_draft.clear();
+                    PaginationOutcome::JumpCancelled
+                } else {
+                    PaginationOutcome::Ignored
+                }
+            }
+            _ => PaginationOutcome::Ignored,
+        }
+    }
+
     /// Mouse using last paint hits.
     pub fn handle_mouse(&mut self, event: MouseEvent) -> PaginationOutcome {
         if !self.enabled {
@@ -731,6 +844,21 @@ impl<'a> Pagination<'a> {
             show_summary: true,
             show_page_size: true,
         }
+    }
+
+    /// ASCII glyphs.
+    #[must_use]
+    /// Show item summary.
+    pub const fn show_summary(mut self, on: bool) -> Self {
+        self.show_summary = on;
+        self
+    }
+
+    /// Show page-size control.
+    #[must_use]
+    pub const fn show_page_size(mut self, on: bool) -> Self {
+        self.show_page_size = on;
+        self
     }
 
     /// Paint.
@@ -1078,9 +1206,7 @@ impl StatefulWidget for Pagination<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyEventKind;
     use crate::style::RolePalette;
-    use crate::widgets::tests::{click, key_with_kind};
 
     #[test]
     fn page_request_offset() {
@@ -1191,51 +1317,6 @@ mod tests {
     }
 
     #[test]
-    fn repeated_pagination_lifecycle_actions_are_ignored() {
-        let actions = [
-            (KeyCode::Char('g'), KeyModifiers::NONE),
-            (KeyCode::Char('/'), KeyModifiers::NONE),
-            (KeyCode::Char('s'), KeyModifiers::NONE),
-            (KeyCode::Enter, KeyModifiers::NONE),
-            (KeyCode::Char(' '), KeyModifiers::NONE),
-            (KeyCode::Tab, KeyModifiers::NONE),
-            (KeyCode::BackTab, KeyModifiers::NONE),
-            (KeyCode::Char('3'), KeyModifiers::NONE),
-        ];
-        for (code, modifiers) in actions {
-            let mut state = PaginationState::new(2, 10, PageTotal::Known(100));
-            state.set_focused(true);
-            let before = state.clone();
-            assert_eq!(
-                state.handle_key(key_with_kind(code, modifiers, KeyEventKind::Repeat)),
-                PaginationOutcome::Ignored,
-                "repeat of {code:?} must not fire a pagination lifecycle action"
-            );
-            assert_eq!(state, before);
-        }
-
-        let mut jump = PaginationState::new(2, 10, PageTotal::Known(100));
-        jump.set_focused(true);
-        assert_eq!(
-            jump.handle_key(KeyEvent::new(KeyCode::Char('g'), KeyModifiers::NONE)),
-            PaginationOutcome::JumpStarted
-        );
-        let _ = jump.handle_key(KeyEvent::new(KeyCode::Char('3'), KeyModifiers::NONE));
-        let before = jump.clone();
-        for code in [KeyCode::Esc, KeyCode::Enter] {
-            assert_eq!(
-                jump.handle_key(key_with_kind(
-                    code,
-                    KeyModifiers::NONE,
-                    KeyEventKind::Repeat
-                )),
-                PaginationOutcome::Ignored
-            );
-            assert_eq!(jump, before);
-        }
-    }
-
-    #[test]
     fn disabled_state_rejects_keyboard_mouse_and_registers_semantics() {
         let system = DesignSystem::default();
         let area = Rect::new(0, 0, 72, 1);
@@ -1256,7 +1337,11 @@ mod tests {
             PaginationOutcome::Ignored
         );
         assert_eq!(
-            state.handle_mouse(click(next.x, next.y)),
+            state.handle_mouse(MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: Position::new(next.x, next.y),
+                modifiers: KeyModifiers::NONE,
+            }),
             PaginationOutcome::Ignored
         );
 
@@ -1321,7 +1406,11 @@ mod tests {
             .find(|(p, _)| matches!(p, PaginationPart::Next))
         {
             assert!(matches!(
-                state.handle_mouse(click(rect.x, rect.y)),
+                state.handle_mouse(MouseEvent {
+                    kind: MouseEventKind::Down(MouseButton::Left),
+                    position: Position::new(rect.x, rect.y),
+                    modifiers: KeyModifiers::NONE,
+                }),
                 PaginationOutcome::PageRequested {
                     request: PageRequest { page: 4, .. }
                 }

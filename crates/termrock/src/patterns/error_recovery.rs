@@ -76,6 +76,17 @@ impl ErrorRecoveryPane {
             Self::Status => "status",
         }
     }
+
+    /// Tab focus order (status chrome-only).
+    #[must_use]
+    pub fn focus_order() -> &'static [ErrorRecoveryPane] {
+        &[
+            Self::Summary,
+            Self::Actions,
+            Self::Diagnostics,
+            Self::Preserved,
+        ]
+    }
 }
 
 /// Presentation mode.
@@ -123,6 +134,16 @@ impl ErrorRecoveryDensity {
             Self::Narrow
         } else {
             Self::Normal
+        }
+    }
+
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Normal => "normal",
+            Self::Narrow => "narrow",
+            Self::Tiny => "tiny",
         }
     }
 }
@@ -281,6 +302,24 @@ pub struct CrashReportSnapshot {
     pub capabilities_text: String,
     /// Failure class.
     pub class: FailureClass,
+}
+
+impl CrashReportSnapshot {
+    /// Minimal crash snapshot.
+    #[must_use]
+    pub fn crash(summary: impl Into<String>, technical: impl Into<String>) -> Self {
+        Self {
+            summary: summary.into(),
+            technical: technical.into(),
+            source: "termrock".into(),
+            preserved_note: "Session draft retained".into(),
+            work_preserved: true,
+            env_lines: Vec::new(),
+            log_lines: Vec::new(),
+            capabilities_text: String::new(),
+            class: FailureClass::Crash,
+        }
+    }
 }
 
 // ── Secret redaction (pure; used by copy + diagnostics paint) ───────────────
@@ -609,6 +648,16 @@ impl ErrorRecoveryState {
             last_area_width: None,
         }
     }
+
+    /// Inline fallback factory.
+    #[must_use]
+    pub fn inline_fallback() -> Self {
+        let mut s = Self::new();
+        s.mode = ErrorRecoveryMode::InlineFallback;
+        s.focus = ErrorRecoveryPane::Actions.id();
+        s
+    }
+
     /// Last panes.
     #[must_use]
     pub fn last_panes(&self) -> &[PaneGeom] {
@@ -951,6 +1000,17 @@ fn build_error_state_view<'a>(
 
 // ── Layout ──────────────────────────────────────────────────────────────────
 
+/// Width-derived layout.
+#[must_use]
+pub fn error_recovery_layout(area: Rect, state: &WorkspaceState) -> Vec<PaneGeom> {
+    error_recovery_layout_density(
+        area,
+        state,
+        ErrorRecoveryDensity::for_width(area.width),
+        ErrorRecoveryMode::Full,
+    )
+}
+
 /// Explicit density + mode.
 #[must_use]
 pub fn error_recovery_layout_density(
@@ -1098,7 +1158,7 @@ fn pane_area(panes: &[PaneGeom], id: &str) -> Option<Rect> {
 // ── Render ──────────────────────────────────────────────────────────────────
 
 /// Paint error recovery / crash report surface.
-pub fn paint_error_recovery(buffer: &mut Buffer, area: Rect, surfaces: ErrorRecoverySurfaces<'_>) {
+pub fn render_error_recovery(buffer: &mut Buffer, area: Rect, surfaces: ErrorRecoverySurfaces<'_>) {
     let ErrorRecoverySurfaces {
         system,
         state,
@@ -1119,7 +1179,7 @@ pub fn paint_error_recovery(buffer: &mut Buffer, area: Rect, surfaces: ErrorReco
     // Summary — ErrorState
     if let Some(r) = pane_area(&panes, "summary") {
         let view = build_error_state_view(snapshot, state, system);
-        view.paint(r, buffer, &mut state.error);
+        view.paint_with_state(r, buffer, &mut state.error);
     }
 
     // Preserved work strip
@@ -1267,6 +1327,26 @@ pub fn example_recovery_snapshot() -> CrashReportSnapshot {
     }
 }
 
+/// Terminal restore failure fixture.
+#[must_use]
+pub fn example_terminal_restore_failed_snapshot() -> CrashReportSnapshot {
+    let mut s = example_crash_snapshot_with_secrets();
+    s.class = FailureClass::TerminalRestoreFailed;
+    s.summary = "Terminal state may be inconsistent".into();
+    s
+}
+
+/// Seed terminal restore failed chrome.
+pub fn seed_terminal_restore_failed(state: &mut ErrorRecoveryState) {
+    state.terminal_restore_failed = true;
+    state.mode = ErrorRecoveryMode::Full;
+}
+
+/// Seed partial init.
+pub fn seed_partial_init(state: &mut ErrorRecoveryState) {
+    state.partial_init = true;
+}
+
 /// Seed inline fallback.
 pub fn seed_inline_fallback(state: &mut ErrorRecoveryState) {
     let _ = state.set_mode(ErrorRecoveryMode::InlineFallback);
@@ -1300,7 +1380,10 @@ pub fn burst_crash_snapshot(n_log: usize) -> CrashReportSnapshot {
 mod tests {
     use super::*;
     use crate::style::DesignSystem;
-    use crate::widgets::tests::press;
+
+    fn press(code: KeyCode) -> KeyEvent {
+        KeyEvent::new(code, KeyModifiers::NONE)
+    }
 
     fn open() -> ErrorRecoveryState {
         let mut st = ErrorRecoveryState::new();
@@ -1546,7 +1629,7 @@ mod tests {
         let mut st = open();
         let area = Rect::new(0, 0, 100, 36);
         let mut buf = Buffer::empty(area);
-        paint_error_recovery(
+        render_error_recovery(
             &mut buf,
             area,
             ErrorRecoverySurfaces {
@@ -1564,7 +1647,7 @@ mod tests {
 
         seed_inline_fallback(&mut st);
         let mut buf2 = Buffer::empty(area);
-        paint_error_recovery(
+        render_error_recovery(
             &mut buf2,
             area,
             ErrorRecoverySurfaces {
@@ -1592,7 +1675,7 @@ mod tests {
         let start = std::time::Instant::now();
         for _ in 0..bench::PAINT_FRAMES {
             st.invalidate_report_cache();
-            paint_error_recovery(
+            render_error_recovery(
                 &mut buf,
                 area,
                 ErrorRecoverySurfaces {

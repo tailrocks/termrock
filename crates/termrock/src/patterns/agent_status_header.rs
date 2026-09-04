@@ -28,10 +28,18 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+use ratatui_core::{
+    buffer::Buffer,
+    layout::{Position, Rect},
+    style::Modifier,
+    widgets::StatefulWidget,
+};
 
 use crate::{
-    input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
     widgets::AccentRail,
@@ -263,6 +271,21 @@ pub enum AgentStatusAction {
 }
 
 impl AgentStatusAction {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Sessions => "sessions",
+            Self::Model => "model",
+            Self::Mode => "mode",
+            Self::Tasks => "tasks",
+            Self::Help => "help",
+            Self::Context => "context",
+            Self::Project => "project",
+            Self::Acknowledge => "acknowledge",
+        }
+    }
+
     /// Chip label.
     #[must_use]
     pub const fn label(self) -> &'static str {
@@ -387,6 +410,13 @@ impl AgentStatusSnapshot {
         self
     }
 
+    /// Work label override.
+    #[must_use]
+    pub fn work_label(mut self, l: impl Into<String>) -> Self {
+        self.work_label = Some(l.into());
+        self
+    }
+
     /// Context budget.
     #[must_use]
     pub const fn context(mut self, used: u64, limit: u64) -> Self {
@@ -479,6 +509,15 @@ pub enum AgentStatusPresentation {
 }
 
 impl AgentStatusPresentation {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Header => "header",
+            Self::StatusBar => "status_bar",
+        }
+    }
+
     /// Auto-select from width.
     #[must_use]
     pub const fn for_width(width: u16) -> Self {
@@ -500,6 +539,10 @@ pub enum AgentStatusHeaderOutcome {
     Action(AgentStatusAction),
     /// Action cursor moved (does not fire).
     ActionFocused(AgentStatusAction),
+    /// Presentation changed.
+    PresentationChanged(AgentStatusPresentation),
+    /// Header focused.
+    Focused,
 }
 
 // ── State ───────────────────────────────────────────────────────────────────
@@ -566,6 +609,28 @@ impl AgentStatusHeaderState {
     /// Gate.
     pub fn set_accepts_input(&mut self, on: bool) {
         self.accepts_input = on;
+    }
+
+    /// Focus.
+    pub const fn set_focused(&mut self, on: bool) {
+        self.focused = on;
+    }
+
+    /// Force presentation.
+    pub const fn set_presentation(&mut self, p: AgentStatusPresentation) {
+        self.presentation = p;
+        self.auto_contract = false;
+    }
+
+    /// Re-enable auto contract.
+    pub const fn set_auto_contract(&mut self, on: bool) {
+        self.auto_contract = on;
+    }
+
+    /// Custom actions.
+    pub fn set_actions(&mut self, actions: Vec<AgentStatusAction>) {
+        self.actions = actions;
+        self.action_cursor = self.action_cursor.min(self.actions.len().saturating_sub(1));
     }
 
     fn current_action(&self) -> Option<AgentStatusAction> {
@@ -953,6 +1018,7 @@ impl<'a> AgentStatusHeader<'a> {
         // minimum the status keeps the first row and actions keep the second.
         if area.height >= 3 && y < max_y {
             let identity = match snap.agent.as_deref() {
+                Some(agent) if false => format!("{title} / {agent}"),
                 Some(agent) => format!("{title} — {agent}"),
                 None => title,
             };
@@ -1159,8 +1225,9 @@ pub mod bench {
 mod tests {
     use super::*;
 
-    use crate::widgets::tests::click;
-    use crate::widgets::tests::press;
+    fn press(code: KeyCode) -> KeyEvent {
+        KeyEvent::new(code, KeyModifiers::NONE)
+    }
 
     fn open_action() -> AgentStatusHeaderState {
         let mut st = AgentStatusHeaderState::new();
@@ -1345,7 +1412,11 @@ mod tests {
         let mut buf = Buffer::empty(area);
         AgentStatusHeader::new(&system).paint(area, &mut buf, &mut st);
         if let Some((action, r)) = st.action_hits.first().copied() {
-            let out = st.handle_mouse(click(r.x, r.y));
+            let out = st.handle_mouse(MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: Position { x: r.x, y: r.y },
+                modifiers: KeyModifiers::NONE,
+            });
             assert!(matches!(
                 out,
                 AgentStatusHeaderOutcome::Action(a) if a == action

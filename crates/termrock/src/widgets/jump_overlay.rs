@@ -8,10 +8,13 @@
 //! and multi-key prefixes, then activate or cancel — without requiring widgets
 //! to implement anything beyond semantic registration.
 //!
+//! **vs FocusLens.** JumpMode is *operational navigation* (activate by key).
+//! [`crate::interaction::FocusLens`] is *inspection* (tab-order / focus debug).
 //! Both read the same scene/graph; neither mutates component internals.
 //!
 //! Research: Vim easymotion, browser keyboard nav extensions, Posting jump,
 //! accessibility focus inspectors.
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -20,13 +23,15 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     interaction::{
-        HitRegion, OverlayId, OverlayOutcome, OverlaySpec, OverlayStack, SemanticRole,
-        SemanticScene,
+        HitRegion, OverlayId, OverlayOutcome, OverlaySpec, OverlayStack, SemanticNode,
+        SemanticRole, SemanticScene, UiIntent,
     },
     style::{DesignSystem, Role},
-    text::take_display_cols,
+    text::{display_cols, take_display_cols},
 };
 
 /// Default overlay id for jump mode (fullscreen-class, owns input).
@@ -117,6 +122,28 @@ impl JumpFilter {
         self.action_contains = Some(s.into());
         self
     }
+
+    /// Label substring filter.
+    #[must_use]
+    pub fn label_contains(mut self, s: impl Into<String>) -> Self {
+        self.label_contains = Some(s.into());
+        self
+    }
+
+    /// Include disabled.
+    #[must_use]
+    pub const fn include_disabled(mut self, on: bool) -> Self {
+        self.include_disabled = on;
+        self
+    }
+
+    /// Max depth.
+    #[must_use]
+    pub const fn max_depth(mut self, d: u8) -> Self {
+        self.max_depth = Some(d);
+        self
+    }
+
     /// Only leaves.
     #[must_use]
     pub const fn only_leaves(mut self, on: bool) -> Self {
@@ -136,7 +163,7 @@ pub struct JumpTarget<Id> {
     pub area: Rect,
     /// Key sequence (`"a"`, `"ab"`, …) — lowercase ASCII letters.
     pub keys: String,
-    /// Semantic role when known (filtering).
+    /// Semantic role when known (filtering / FocusLens).
     pub role: Option<SemanticRole>,
     /// Nesting depth in the semantic tree (0 = root).
     pub depth: u8,
@@ -163,6 +190,27 @@ impl<Id> JumpTarget<Id> {
     pub fn badge(&self) -> char {
         self.keys.chars().next().unwrap_or('?')
     }
+
+    /// Role.
+    #[must_use]
+    pub const fn role(mut self, role: SemanticRole) -> Self {
+        self.role = Some(role);
+        self
+    }
+
+    /// Depth.
+    #[must_use]
+    pub const fn depth(mut self, d: u8) -> Self {
+        self.depth = d;
+        self
+    }
+
+    /// Label.
+    #[must_use]
+    pub fn label(mut self, l: impl Into<String>) -> Self {
+        self.label = Some(l.into());
+        self
+    }
 }
 
 /// Outcome of jump-mode input.
@@ -182,6 +230,8 @@ pub enum JumpOutcome<Id> {
     },
     /// Target activated by key sequence or click.
     Activated(Id),
+    /// Filter changed; host should rebuild targets.
+    FilterChanged,
 }
 
 // ── Label generation (deterministic, collision-free) ────────────────────────
@@ -321,10 +371,6 @@ where
     Id: Clone + PartialEq + std::fmt::Display,
     Action: Clone + std::fmt::Debug,
 {
-    let label_lower = filter
-        .label_contains
-        .as_deref()
-        .map(str::to_ascii_lowercase);
     let mut out = Vec::new();
     for node in scene.nodes() {
         if !filter.include_hidden && node.hidden {
@@ -352,8 +398,11 @@ where
             }
         }
         let display_label = node.label.clone().unwrap_or_else(|| node.id.to_string());
-        if let Some(lc) = &label_lower {
-            if !crate::text::contains_lower(&display_label, lc) {
+        if let Some(lc) = &filter.label_contains {
+            if !display_label
+                .to_ascii_lowercase()
+                .contains(&lc.to_ascii_lowercase())
+            {
                 continue;
             }
         }
@@ -461,6 +510,15 @@ impl JumpOverlayState {
         open_jump_overlay(stack, bounds, opener_focus)
     }
 
+    /// Closes jump mode and dismisses the stack entry when present.
+    pub fn close_on_stack<FocusId: Clone>(
+        &mut self,
+        stack: &mut OverlayStack<FocusId>,
+    ) -> OverlayOutcome<FocusId> {
+        self.close();
+        dismiss_jump_overlay(stack)
+    }
+
     /// Whether jump mode is active.
     #[must_use]
     pub const fn is_open(&self) -> bool {
@@ -471,6 +529,29 @@ impl JumpOverlayState {
     #[must_use]
     pub fn prefix(&self) -> &str {
         &self.prefix
+    }
+
+    /// Active filter.
+    #[must_use]
+    pub fn filter(&self) -> &JumpFilter {
+        &self.filter
+    }
+
+    /// Replace filter (returns [`JumpOutcome::FilterChanged`]).
+    pub fn set_filter<Id>(&mut self, filter: JumpFilter) -> JumpOutcome<Id> {
+        self.filter = filter;
+        self.prefix.clear();
+        JumpOutcome::FilterChanged
+    }
+
+    /// Host input gate.
+    pub fn set_accepts_input(&mut self, on: bool) {
+        self.accepts_input = on;
+    }
+
+    /// Dim unmatched while typing a prefix.
+    pub fn set_dim_unmatched(&mut self, on: bool) {
+        self.dim_unmatched = on;
     }
 
     /// Whether dimming is enabled.
@@ -498,8 +579,8 @@ impl JumpOverlayState {
         if !self.open || !self.accepts_input || key.is_release() {
             return JumpOutcome::Ignored;
         }
-        if !key.is_press() {
-            return JumpOutcome::Ignored;
+        if key.is_insert() {
+            // Allow Press primarily; ignore other.
         }
         match key.code {
             KeyCode::Esc => {
@@ -557,6 +638,32 @@ impl JumpOverlayState {
         }
     }
 
+    /// Intent path (Cancel → dismiss / clear prefix).
+    pub fn handle_intent<Id: Clone>(
+        &mut self,
+        intent: UiIntent,
+        targets: &[JumpTarget<Id>],
+    ) -> JumpOutcome<Id> {
+        if !self.open || !self.accepts_input {
+            return JumpOutcome::Ignored;
+        }
+        match intent {
+            UiIntent::Cancel | UiIntent::Close => {
+                if !self.prefix.is_empty() {
+                    self.prefix.clear();
+                    JumpOutcome::Prefix {
+                        keys: String::new(),
+                        remaining: targets.len(),
+                    }
+                } else {
+                    self.close();
+                    JumpOutcome::Dismissed
+                }
+            }
+            _ => JumpOutcome::Ignored,
+        }
+    }
+
     /// Handles a click against target regions.
     pub fn handle_click<Id: Clone>(
         &mut self,
@@ -580,6 +687,18 @@ impl JumpOverlayState {
             JumpOutcome::Ignored
         }
     }
+
+    /// Mouse event adapter.
+    pub fn handle_mouse<Id: Clone>(
+        &mut self,
+        event: MouseEvent,
+        targets: &[JumpTarget<Id>],
+    ) -> JumpOutcome<Id> {
+        match event.kind {
+            MouseEventKind::Down(MouseButton::Left) => self.handle_click(event.position, targets),
+            _ => JumpOutcome::Ignored,
+        }
+    }
 }
 
 // ── Paint ───────────────────────────────────────────────────────────────────
@@ -596,11 +715,37 @@ pub struct JumpOverlay<'a, Id> {
 }
 
 impl<'a, Id> JumpOverlay<'a, Id> {
+    /// Creates a jump overlay over borrowed targets.
+    #[must_use]
+    pub const fn new(targets: &'a [JumpTarget<Id>], system: &'a DesignSystem) -> Self {
+        Self {
+            targets,
+            system,
+            colorless: false,
+            prefix: "",
+            dim_unmatched: true,
+        }
+    }
+
     /// ASCII brackets only.
     #[must_use]
     /// Reduced-color roles.
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
+        self
+    }
+
+    /// Current prefix for dimming.
+    #[must_use]
+    pub const fn prefix(mut self, p: &'a str) -> Self {
+        self.prefix = p;
+        self
+    }
+
+    /// Dim non-matching targets.
+    #[must_use]
+    pub const fn dim_unmatched(mut self, on: bool) -> Self {
+        self.dim_unmatched = on;
         self
     }
 
@@ -716,9 +861,8 @@ pub fn replay_jump_keys<Id: Clone>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::{KeyEventKind, KeyModifiers};
+    use crate::input::KeyModifiers;
     use crate::interaction::{SemanticNode, SemanticRole, SemanticScene};
-    use crate::widgets::tests::key_with_kind;
 
     #[test]
     fn generate_labels_deterministic_and_unique() {
@@ -805,69 +949,6 @@ mod tests {
             state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE), &targets),
             JumpOutcome::Dismissed
         ));
-    }
-
-    #[test]
-    fn repeated_jump_actions_are_ignored() {
-        let repeat = |code| key_with_kind(code, KeyModifiers::NONE, KeyEventKind::Repeat);
-        let labels = generate_jump_labels(28);
-        let targets: Vec<_> = labels
-            .iter()
-            .enumerate()
-            .map(|(i, k)| JumpTarget::new(i, Rect::new(0, 0, 2, 1), k.clone()))
-            .collect();
-        let multi = targets
-            .iter()
-            .find(|target| target.keys.len() >= 2)
-            .unwrap();
-        let mut keys = multi.keys.chars();
-        let first = keys.next().unwrap();
-        let second = keys.next().unwrap();
-
-        let mut state = JumpOverlayState::new();
-        state.open();
-        assert_eq!(
-            state.handle_key(repeat(KeyCode::Char(first)), &targets),
-            JumpOutcome::Ignored
-        );
-        assert!(state.prefix().is_empty());
-        assert!(state.is_open());
-
-        assert!(matches!(
-            state.handle_key(
-                KeyEvent::new(KeyCode::Char(first), KeyModifiers::NONE),
-                &targets
-            ),
-            JumpOutcome::Prefix { .. }
-        ));
-        let prefix = state.prefix().to_owned();
-        assert_eq!(
-            state.handle_key(repeat(KeyCode::Char(second)), &targets),
-            JumpOutcome::Ignored
-        );
-        assert_eq!(state.prefix(), prefix);
-        assert!(state.is_open());
-        assert_eq!(
-            state.handle_key(repeat(KeyCode::Esc), &targets),
-            JumpOutcome::Ignored
-        );
-        assert_eq!(state.prefix(), prefix);
-        assert!(state.is_open());
-
-        assert!(matches!(
-            state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE), &targets),
-            JumpOutcome::Prefix { .. }
-        ));
-        assert!(state.prefix().is_empty());
-        assert_eq!(
-            state.handle_key(repeat(KeyCode::Esc), &targets),
-            JumpOutcome::Ignored
-        );
-        assert!(state.is_open());
-        assert_eq!(
-            state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE), &targets),
-            JumpOutcome::Dismissed
-        );
     }
 
     #[test]

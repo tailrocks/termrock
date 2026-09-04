@@ -7,10 +7,11 @@
 //! Single and multiple selection, disabled items, scrolling, empty state.
 
 use ratatui::buffer::Buffer;
-use ratatui::layout::Rect;
+use ratatui::layout::{Position, Rect};
 use ratatui::text::Line;
 use ratatui::widgets::StatefulWidget;
 use termrock::input::KeyEventKind;
+use termrock::style::Role;
 use termrock::widgets::{
     List, ListClickPolicy, ListRow, ListSelectionMode, ListState, Outcome as ListOutcome,
 };
@@ -66,6 +67,61 @@ fn list_route<T>(out: ListOutcome<T>) -> Route {
     match out {
         ListOutcome::Ignored | ListOutcome::Cancelled => Route::Ignored,
         _ => Route::Changed,
+    }
+}
+
+/// Paint the source list contract: the card owns focus chrome, while the
+/// active row keeps the card surface and carries focus on its marker only.
+fn render_source_list(
+    rows: &[ListRow<'_, usize>],
+    area: Rect,
+    buf: &mut Buffer,
+    ctx: &mut RenderCtx<'_>,
+    state: &mut ListState<usize>,
+    focused: bool,
+    accent_marker: Option<usize>,
+) {
+    // The source card's right padding cell is part of its row hit band. The
+    // shared list reserves one scrollbar cell and uses half-open rectangles,
+    // so map that one boundary cell back into the row before stateful hover
+    // resolution.
+    let pointer = ctx.interaction.pointer.map(|position| {
+        if position.x == area.right() && position.y >= area.y && position.y < area.bottom() {
+            Position::new(position.x.saturating_sub(2), position.y)
+        } else {
+            position
+        }
+    });
+    if let Some(pointer) = pointer {
+        state.hover(pointer);
+    }
+    List::new(rows, ctx.system)
+        .focused(focused)
+        .render(area, buf, state);
+    if rows.len() > usize::from(area.height) {
+        termrock::scroll::paint_overflow_scrollbar(
+            buf,
+            Rect::new(area.right().saturating_sub(1), area.y, 1, area.height),
+            rows.len(),
+            usize::from(area.height),
+            u16::try_from(state.offset()).unwrap_or(u16::MAX),
+            true,
+            ctx.system,
+        );
+    }
+
+    let Some(active) = accent_marker else {
+        return;
+    };
+    let accent = ctx.system.style(Role::Accent);
+    for region in state.regions() {
+        if region.id != active || region.area.x.saturating_add(1) >= region.area.right() {
+            continue;
+        }
+        let cell = &mut buf[(region.area.x.saturating_add(1), region.area.y)];
+        let mut style = accent;
+        style.bg = cell.style().bg;
+        cell.set_style(style);
     }
 }
 
@@ -165,9 +221,17 @@ impl Page for ListsPage {
             .enumerate()
             .map(|(i, l)| ListRow::item(i, Line::from(*l)))
             .collect();
-        List::new(&lang_rows, ctx.system)
-            .focused(ctx.interaction.focused(ID.sub("single")))
-            .render(list_area, buf, &mut self.single);
+        let single_focused = ctx.interaction.focused(ID.sub("single"));
+        let single_chosen = self.single.chosen().copied();
+        render_source_list(
+            &lang_rows,
+            list_area,
+            buf,
+            ctx,
+            &mut self.single,
+            single_focused,
+            single_chosen.filter(|_| single_focused),
+        );
         ctx.control(ID.sub("single"), list_area, false);
         ctx.scrollable(ID.sub("single"), list_area);
         self.single_view = usize::from(list_area.height);
@@ -210,18 +274,29 @@ impl Page for ListsPage {
                 row
             })
             .collect();
-        List::new(&file_rows, ctx.system)
-            .focused(ctx.interaction.focused(ID.sub("multi")))
-            .render(list_area, buf, &mut self.multi);
+        render_source_list(
+            &file_rows,
+            list_area,
+            buf,
+            ctx,
+            &mut self.multi,
+            false,
+            None,
+        );
         ctx.control(ID.sub("multi"), list_area, false);
         ctx.scrollable(ID.sub("multi"), list_area);
 
         let (inner, _bg) = layout::card(cols[2], buf, t, Some("Search results"), None, false);
         let empty_rows: [ListRow<'_, usize>; 0] = [];
+        let empty_width = text::width("No results for “retry”") as u16;
+        let empty_area = Rect::new(inner.x, inner.y, inner.width.min(empty_width), inner.height);
+        if let Some(pointer) = ctx.interaction.pointer {
+            self.empty.hover(pointer);
+        }
         List::new(&empty_rows, ctx.system)
             .empty_message(Line::from("No results for “retry”"))
-            .focused(ctx.interaction.focused(ID.sub("empty")))
-            .render(inner, buf, &mut self.empty);
+            .focused(false)
+            .render(empty_area, buf, &mut self.empty);
         ctx.control(ID.sub("empty"), inner, false);
         ctx.scrollable(ID.sub("empty"), inner);
     }

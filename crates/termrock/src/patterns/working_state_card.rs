@@ -32,14 +32,21 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
-    buffer::Buffer, layout::Rect, style::Modifier, text::Line, widgets::StatefulWidget,
+    buffer::Buffer,
+    layout::{Position, Rect},
+    style::Modifier,
+    text::Line,
+    widgets::StatefulWidget,
 };
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     patterns::activity_shelf::{ActivityItem, ActivityKind},
-    style::{DesignSystem, Role},
+    style::{DesignSystem, MotionPolicy, Role},
     text::{display_cols, take_display_cols},
     widgets::SemanticStatus,
     widgets::{AccentRail, List, ListRow, ListState, StatusIndicator},
@@ -95,6 +102,29 @@ impl WorkingPhase {
             Self::Running => "running",
             Self::Waiting => "waiting",
             Self::Reviewing => "reviewing",
+        }
+    }
+
+    /// Glyph.
+    #[must_use]
+    pub const fn glyph(self, ascii: bool) -> &'static str {
+        if ascii {
+            return match self {
+                Self::Planning => "P",
+                Self::Searching => "/",
+                Self::Editing => "E",
+                Self::Running => "*",
+                Self::Waiting => "!",
+                Self::Reviewing => "R",
+            };
+        }
+        match self {
+            Self::Planning => "◇",
+            Self::Searching => "⌕",
+            Self::Editing => "✎",
+            Self::Running => "●",
+            Self::Waiting => "⏸",
+            Self::Reviewing => "◎",
         }
     }
 
@@ -249,6 +279,13 @@ impl WorkingState {
         self
     }
 
+    /// Inspect allowed.
+    #[must_use]
+    pub const fn can_inspect(mut self, on: bool) -> Self {
+        self.can_inspect = on;
+        self
+    }
+
     /// Actor.
     #[must_use]
     pub fn actor(mut self, a: impl Into<String>) -> Self {
@@ -285,6 +322,23 @@ impl WorkingState {
         }
         parts.join(". ")
     }
+
+    /// Compact one-line for collapsed chrome.
+    #[must_use]
+    pub fn compact_line(&self, ascii: bool, max_cols: usize) -> String {
+        let g = self.phase.glyph(ascii);
+        let el = self
+            .elapsed
+            .as_ref()
+            .map(|e| format!(" · {e}"))
+            .unwrap_or_default();
+        let mut s = format!("{g} {} · {}{el}", self.phase.label(), self.summary);
+        if display_cols(&s) > max_cols {
+            s = take_display_cols(&s, max_cols);
+        }
+        s
+    }
+
     /// Project into [`ActivityItem`] for ActivityShelf collapse.
     #[must_use]
     pub fn to_activity_item(&self) -> ActivityItem {
@@ -324,6 +378,17 @@ pub enum WorkingStatePresentation {
     Collapsed,
 }
 
+impl WorkingStatePresentation {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Expanded => "expanded",
+            Self::Collapsed => "collapsed",
+        }
+    }
+}
+
 /// Outcomes — requests only.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
@@ -356,6 +421,8 @@ pub enum WorkingStateOutcome {
         /// Resource id.
         resource_id: String,
     },
+    /// Presentation changed.
+    PresentationChanged(WorkingStatePresentation),
 }
 
 // ── State ───────────────────────────────────────────────────────────────────
@@ -442,6 +509,11 @@ impl WorkingStateCardState {
         self.accepts_input = on;
     }
 
+    /// Focus.
+    pub const fn set_focused(&mut self, on: bool) {
+        self.focused = on;
+    }
+
     /// Force collapsed (host paints shelf).
     pub fn collapse(&mut self) {
         self.presentation = WorkingStatePresentation::Collapsed;
@@ -456,6 +528,21 @@ impl WorkingStateCardState {
     #[must_use]
     pub const fn is_collapsed(&self) -> bool {
         matches!(self.presentation, WorkingStatePresentation::Collapsed)
+    }
+
+    /// Project for ActivityShelf when collapsed (or always for multi-activity).
+    #[must_use]
+    pub fn to_activity_item(&self) -> Option<ActivityItem> {
+        self.work.as_ref().map(WorkingState::to_activity_item)
+    }
+
+    /// Semantic description for a11y.
+    #[must_use]
+    pub fn semantic_description(&self) -> String {
+        self.work
+            .as_ref()
+            .map(WorkingState::semantic_description)
+            .unwrap_or_else(|| "Agent idle".into())
     }
 
     fn available_actions(&self) -> Vec<WorkingAction> {
@@ -650,6 +737,7 @@ impl WorkingStateCardState {
 pub struct WorkingStateCard<'a> {
     system: &'a DesignSystem,
     colorless: bool,
+    tick: u64,
 }
 
 impl<'a> WorkingStateCard<'a> {
@@ -659,6 +747,7 @@ impl<'a> WorkingStateCard<'a> {
         Self {
             system,
             colorless: false,
+            tick: 0,
         }
     }
 
@@ -670,10 +759,17 @@ impl<'a> WorkingStateCard<'a> {
         self
     }
 
+    /// Deterministic paint tick for active presence.
+    #[must_use]
+    pub const fn tick(mut self, tick: u64) -> Self {
+        self.tick = tick;
+        self
+    }
+
     /// Paint.
     ///
     /// When collapsed, paints a single non-invasive line; host should also
-    /// project [`WorkingState::to_activity_item`] into ActivityShelf.
+    /// feed [`WorkingStateCardState::to_activity_item`] into ActivityShelf.
     pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut WorkingStateCardState) {
         state.action_hits.clear();
         state.header_hit = None;
@@ -688,6 +784,11 @@ impl<'a> WorkingStateCard<'a> {
                 semantic.role()
             };
             let inner = AccentRail::new(self.system, rail_role).paint(area, buffer);
+            if false && area.width > 0 {
+                for y in area.y..area.bottom() {
+                    buffer.set_string(area.x, y, "|", self.system.style(rail_role));
+                }
+            }
             if !inner.is_empty() {
                 let glyph = semantic.glyph();
                 self.system.paint_row(
@@ -698,11 +799,7 @@ impl<'a> WorkingStateCard<'a> {
                 );
                 StatusIndicator::compact(semantic, self.system)
                     .colorless(self.colorless)
-                    .paint(
-                        Rect::new(inner.x, inner.y, inner.width.min(1), 1),
-                        buffer,
-                        None,
-                    );
+                    .paint(Rect::new(inner.x, inner.y, inner.width.min(1), 1), buffer);
             }
             return;
         };
@@ -728,6 +825,11 @@ impl<'a> WorkingStateCard<'a> {
             semantic.role()
         };
         let inner = AccentRail::new(self.system, rail_role).paint(area, buffer);
+        if false && area.width > 0 {
+            for y in area.y..area.bottom() {
+                buffer.set_string(area.x, y, "|", self.system.style(rail_role));
+            }
+        }
         if inner.is_empty() {
             return;
         }
@@ -741,16 +843,12 @@ impl<'a> WorkingStateCard<'a> {
         self.system.paint_row(
             buffer,
             Rect::new(inner.x, inner.y, inner.width, 1),
-            take_display_cols(&text, usize::from(inner.width)).as_ref(),
+            &take_display_cols(&text, usize::from(inner.width)),
             self.system.style(Role::Text),
         );
         StatusIndicator::compact(semantic, self.system)
             .colorless(self.colorless)
-            .paint(
-                Rect::new(inner.x, inner.y, inner.width.min(1), 1),
-                buffer,
-                None,
-            );
+            .paint(Rect::new(inner.x, inner.y, inner.width.min(1), 1), buffer);
         state.header_hit = Some(Rect {
             x: inner.x,
             y: inner.y,
@@ -775,6 +873,11 @@ impl<'a> WorkingStateCard<'a> {
             semantic.role()
         };
         let content_area = AccentRail::new(self.system, rail_role).paint(area, buffer);
+        if false && area.width > 0 {
+            for y in area.y..area.bottom() {
+                buffer.set_string(area.x, y, "|", self.system.style(rail_role));
+            }
+        }
         let inner = content_area;
         if inner.is_empty() {
             return;
@@ -810,7 +913,7 @@ impl<'a> WorkingStateCard<'a> {
             );
             StatusIndicator::compact(semantic, self.system)
                 .colorless(self.colorless)
-                .paint(Rect::new(inner.x, y, inner.width.min(1), 1), buffer, None);
+                .paint(Rect::new(inner.x, y, inner.width.min(1), 1), buffer);
             state.header_hit = Some(Rect {
                 x: inner.x,
                 y,
@@ -961,6 +1064,12 @@ impl StatefulWidget for WorkingStateCard<'_> {
 
 // ── Bridges ─────────────────────────────────────────────────────────────────
 
+/// Project working state into a one-item shelf list for collapse composition.
+#[must_use]
+pub fn working_state_to_shelf_items(work: &WorkingState) -> Vec<ActivityItem> {
+    vec![work.to_activity_item()]
+}
+
 /// Merge working state into existing shelf items (replace same id or push).
 pub fn merge_working_into_shelf(items: &mut Vec<ActivityItem>, work: &WorkingState) {
     let next = work.to_activity_item();
@@ -1010,9 +1119,10 @@ pub mod bench {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::style::MotionPolicy;
-    use crate::widgets::tests::click;
-    use crate::widgets::tests::press;
+
+    fn press(code: KeyCode) -> KeyEvent {
+        KeyEvent::new(code, KeyModifiers::NONE)
+    }
 
     fn open() -> WorkingStateCardState {
         let mut st = WorkingStateCardState::new();
@@ -1232,7 +1342,11 @@ mod tests {
         let mut buf = Buffer::empty(area);
         WorkingStateCard::new(&system).paint(area, &mut buf, &mut st);
         if let Some(h) = st.header_hit {
-            let out = st.handle_mouse(click(h.x, h.y));
+            let out = st.handle_mouse(MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: Position { x: h.x, y: h.y },
+                modifiers: KeyModifiers::NONE,
+            });
             assert!(matches!(out, WorkingStateOutcome::Collapsed));
         }
     }

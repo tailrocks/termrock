@@ -30,15 +30,22 @@
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+use ratatui_core::{
+    buffer::Buffer,
+    layout::{Position, Rect},
+    style::Modifier,
+    widgets::StatefulWidget,
+};
 
 use crate::{
-    input::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind},
-    interaction::CursorWindow,
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     patterns::ActivityKind,
     patterns::task_rail::{ActivityModel, ActivityScope},
     style::{DesignSystem, ListRowVisualState, PanelChrome, Role},
-    text::display_cols,
+    text::{display_cols, take_display_cols},
     widgets::NotificationItem,
     widgets::Panel,
     widgets::PermissionRisk,
@@ -144,6 +151,16 @@ pub enum ApprovalBlocking {
 }
 
 impl ApprovalBlocking {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::NonBlocking => "non_blocking",
+            Self::Blocking => "blocking",
+            Self::HardGate => "hard_gate",
+        }
+    }
+
     /// Label.
     #[must_use]
     pub const fn label(self) -> &'static str {
@@ -271,6 +288,13 @@ impl ApprovalItem {
         self
     }
 
+    /// Host quick-approve opt-in (still gated by risk).
+    #[must_use]
+    pub const fn host_allows_quick_approve(mut self, on: bool) -> Self {
+        self.host_allows_quick_approve = on;
+        self
+    }
+
     /// Effective sort score (higher first) for non-protocol items.
     #[must_use]
     pub fn sort_score(&self) -> u16 {
@@ -311,6 +335,18 @@ pub enum ApprovalQueuePresentation {
     /// Full management view.
     #[default]
     Full,
+}
+
+impl ApprovalQueuePresentation {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Badge => "badge",
+            Self::Drawer => "drawer",
+            Self::Full => "full",
+        }
+    }
 }
 
 // ── Outcomes ────────────────────────────────────────────────────────────────
@@ -393,8 +429,10 @@ pub struct ApprovalQueueState {
     pub items: Vec<ApprovalItem>,
     /// View order indices into `items`.
     view: Vec<usize>,
-    /// Cursor + scroll window into `view`.
-    pub window: CursorWindow,
+    /// Cursor into `view`.
+    pub cursor: usize,
+    /// Scroll.
+    pub scroll: usize,
     /// Multi-select set of item ids (for bulk — Low only).
     pub multi: Vec<String>,
     /// Presentation.
@@ -450,7 +488,8 @@ impl ApprovalQueueState {
         Self {
             items: Vec::new(),
             view: Vec::new(),
-            window: CursorWindow::new(),
+            cursor: 0,
+            scroll: 0,
             multi: Vec::new(),
             presentation: ApprovalQueuePresentation::Full,
             focused: true,
@@ -472,11 +511,39 @@ impl ApprovalQueueState {
                 .iter()
                 .position(|&i| self.items.get(i).is_some_and(|x| x.id == id))
             {
-                self.window
-                    .set_cursor(vi, self.view.len(), APPROVAL_QUEUE_WINDOW);
+                self.cursor = vi;
             }
         }
         self.clamp();
+    }
+
+    /// Push item (assign generation if 0).
+    pub fn push(&mut self, mut item: ApprovalItem) -> u64 {
+        if item.generation == 0 {
+            let g = self
+                .items
+                .iter()
+                .map(|i| i.generation)
+                .max()
+                .unwrap_or(0)
+                .saturating_add(1);
+            item.generation = g;
+        }
+        let g = item.generation;
+        self.items.push(item);
+        self.rebuild_view();
+        self.clamp();
+        g
+    }
+
+    /// Remove by id.
+    pub fn remove(&mut self, id: &str) -> Option<ApprovalItem> {
+        let i = self.items.iter().position(|x| x.id == id)?;
+        let item = self.items.remove(i);
+        self.multi.retain(|m| m != id);
+        self.rebuild_view();
+        self.clamp();
+        Some(item)
     }
 
     /// Gate.
@@ -484,10 +551,21 @@ impl ApprovalQueueState {
         self.accepts_input = on;
     }
 
+    /// Focus.
+    pub const fn set_focused(&mut self, on: bool) {
+        self.focused = on;
+    }
+
     /// Pending count.
     #[must_use]
     pub fn len(&self) -> usize {
         self.items.len()
+    }
+
+    /// Empty.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.items.is_empty()
     }
 
     /// Blocking count.
@@ -526,7 +604,7 @@ impl ApprovalQueueState {
     /// Current item.
     #[must_use]
     pub fn current(&self) -> Option<&ApprovalItem> {
-        let i = *self.view.get(self.window.cursor())?;
+        let i = *self.view.get(self.cursor)?;
         self.items.get(i)
     }
 
@@ -564,7 +642,19 @@ impl ApprovalQueueState {
     }
 
     fn clamp(&mut self) {
-        self.window.clamp(self.view.len(), APPROVAL_QUEUE_WINDOW);
+        if self.view.is_empty() {
+            self.cursor = 0;
+            self.scroll = 0;
+            self.action_cursor = 0;
+            return;
+        }
+        self.cursor = self.cursor.min(self.view.len() - 1);
+        let window = APPROVAL_QUEUE_WINDOW;
+        if self.cursor < self.scroll {
+            self.scroll = self.cursor;
+        } else if self.cursor >= self.scroll + window {
+            self.scroll = self.cursor + 1 - window;
+        }
         // Always default action to Open (index 0)
         self.action_cursor = 0;
     }
@@ -583,8 +673,11 @@ impl ApprovalQueueState {
     }
 
     fn move_cursor(&mut self, delta: isize) -> ApprovalQueueOutcome {
-        self.window
-            .move_by(delta, self.view.len(), APPROVAL_QUEUE_WINDOW);
+        if self.view.is_empty() {
+            return ApprovalQueueOutcome::Ignored;
+        }
+        let n = self.view.len() as isize;
+        self.cursor = (self.cursor as isize + delta).clamp(0, n - 1) as usize;
         self.action_cursor = 0;
         self.clamp();
         ApprovalQueueOutcome::Selected {
@@ -815,8 +908,7 @@ impl ApprovalQueueState {
                 .iter()
                 .position(|&i| self.items.get(i).is_some_and(|x| x.id == id))
             {
-                self.window
-                    .set_cursor(vi, self.view.len(), APPROVAL_QUEUE_WINDOW);
+                self.cursor = vi;
                 self.action_cursor = 0;
                 return ApprovalQueueOutcome::Selected { id };
             }
@@ -880,7 +972,7 @@ impl<'a> ApprovalQueue<'a> {
         StatusIndicator::new(semantic, self.system)
             .label(&text)
             .colorless(self.colorless)
-            .paint(Rect::new(area.x, area.y, area.width, 1), buffer, None);
+            .paint(Rect::new(area.x, area.y, area.width, 1), buffer);
     }
 
     fn paint_list(&self, area: Rect, buffer: &mut Buffer, state: &mut ApprovalQueueState) {
@@ -896,7 +988,8 @@ impl<'a> ApprovalQueue<'a> {
                 PanelChrome::Normal
             });
         let inner = panel.inner(area);
-        panel.paint(area, buffer, None);
+        use ratatui_core::widgets::Widget;
+        Widget::render(&panel, area, buffer);
         if inner.is_empty() {
             return;
         }
@@ -924,21 +1017,19 @@ impl<'a> ApprovalQueue<'a> {
         if state.view.is_empty() {
             EmptyState::new("Nothing to decide", self.system)
                 .kind(EmptyKind::NoData)
-                .paint(
-                    Rect::new(inner.x, y, inner.width, 1),
-                    buffer,
-                    &mut crate::widgets::EmptyStateState::new(),
-                );
+                .paint(Rect::new(inner.x, y, inner.width, 1), buffer);
             return;
         }
 
         let list_bottom = max_y.saturating_sub(2);
         let viewport = list_bottom.saturating_sub(y) as usize;
-        // Read-only projection: re-derive the visible slice against the
-        // painted viewport without mutating state during paint.
-        let mut view = state.window;
-        view.clamp(state.view.len(), viewport);
-        let offset = view.scroll();
+        let mut offset = state.scroll;
+        if state.cursor < offset {
+            offset = state.cursor;
+        } else if viewport > 0 && state.cursor >= offset + viewport {
+            offset = state.cursor + 1 - viewport;
+        }
+        state.scroll = offset;
 
         for (vi, &ii) in state.view.iter().enumerate().skip(offset) {
             if y >= list_bottom {
@@ -947,7 +1038,7 @@ impl<'a> ApprovalQueue<'a> {
             let Some(item) = state.items.get(ii) else {
                 continue;
             };
-            let selected = vi == state.window.cursor();
+            let selected = vi == state.cursor;
             let multi = state.multi.iter().any(|m| m == &item.id);
             let mark = if selected {
                 crate::style::Glyph::SelectionMarker.resolve().text
@@ -1189,6 +1280,21 @@ pub fn approval_items_to_activity_models(items: &[ApprovalItem]) -> Vec<Activity
         .collect()
 }
 
+/// Count badge for StatusBar / header.
+#[must_use]
+pub fn approval_queue_badge(items: &[ApprovalItem]) -> String {
+    let n = items.len();
+    if n == 0 {
+        return String::new();
+    }
+    let hi = items.iter().filter(|i| i.risk.is_destructive()).count();
+    if hi > 0 {
+        format!("approvals:{n} high:{hi}")
+    } else {
+        format!("approvals:{n}")
+    }
+}
+
 // ── Examples ────────────────────────────────────────────────────────────────
 
 /// Demo mixed decision queue (protocol perms first).
@@ -1267,7 +1373,10 @@ pub mod bench {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::widgets::tests::{click, press};
+
+    fn press(code: KeyCode) -> KeyEvent {
+        KeyEvent::new(code, KeyModifiers::NONE)
+    }
 
     fn open() -> ApprovalQueueState {
         let mut st = ApprovalQueueState::new();
@@ -1365,8 +1474,7 @@ mod tests {
             .iter()
             .position(|&ii| st.items[ii].id == "p2")
             .unwrap();
-        st.window
-            .set_cursor(i, st.view.len(), APPROVAL_QUEUE_WINDOW);
+        st.cursor = i;
         assert!(matches!(
             st.handle_key(press(KeyCode::Char('y'))),
             ApprovalQueueOutcome::Ignored
@@ -1491,7 +1599,11 @@ mod tests {
         ApprovalQueue::new(&system).paint(area, &mut buf, &mut st);
         assert!(!st.row_hits.is_empty());
         let (id, r) = st.row_hits[0].clone();
-        let out = st.handle_mouse(click(r.x, r.y));
+        let out = st.handle_mouse(MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: Position { x: r.x, y: r.y },
+            modifiers: KeyModifiers::NONE,
+        });
         assert!(
             matches!(out, ApprovalQueueOutcome::Selected { .. }),
             "{out:?} {id}"
@@ -1524,8 +1636,7 @@ mod tests {
             .iter()
             .position(|&ii| st.items[ii].id == "p2")
             .unwrap();
-        st.window
-            .set_cursor(i, st.view.len(), APPROVAL_QUEUE_WINDOW);
+        st.cursor = i;
         let out = st.handle_key(press(KeyCode::Char(' ')));
         assert!(matches!(
             out,
@@ -1543,8 +1654,7 @@ mod tests {
             .iter()
             .position(|&ii| st.items[ii].id == "p2")
             .unwrap();
-        st.window
-            .set_cursor(i, st.view.len(), APPROVAL_QUEUE_WINDOW);
+        st.cursor = i;
         let _ = st.handle_key(press(KeyCode::Char(' ')));
         let area = Rect::new(0, 0, 56, 14);
         let mut buf = Buffer::empty(area);

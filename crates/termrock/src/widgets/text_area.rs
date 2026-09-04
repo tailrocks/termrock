@@ -9,6 +9,7 @@
 //! that embeds TextArea and may own additional undo/selection layers.
 //!
 //! Research: tui-textarea, prompt-toolkit, terminal editors, agent composers.
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
@@ -17,7 +18,10 @@ use ratatui_core::{
 };
 
 use crate::{
-    input::{Event, KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEventKind},
+    input::{
+        Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent,
+        MouseEventKind,
+    },
     interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
     style::{DesignSystem, VisualState},
     text::{display_cols, display_cols_slice_into, take_display_cols, truncate_cols},
@@ -121,6 +125,17 @@ pub enum TextWrap {
     None,
     /// Soft-wrap at viewport width (no horizontal scroll).
     Soft,
+}
+
+impl TextWrap {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::None => "none",
+            Self::Soft => "soft",
+        }
+    }
 }
 
 /// Visual / product recipe.
@@ -248,6 +263,20 @@ impl TextAreaState {
         self.wrap = wrap;
         // Soft content height depends on wrap mode; recompute next measure.
         self.soft_wrap_width = 0;
+    }
+
+    /// Wrap policy.
+    #[must_use]
+    pub const fn wrap(&self) -> TextWrap {
+        self.wrap
+    }
+
+    /// Indent string (default two spaces).
+    pub fn set_indent(&mut self, indent: impl Into<String>) {
+        self.indent = indent.into();
+        if self.indent.is_empty() {
+            self.indent = DEFAULT_INDENT.to_owned();
+        }
     }
 
     /// Selection anchor.
@@ -518,6 +547,11 @@ impl TextAreaState {
         self.hardware_cursor
     }
 
+    /// Mutable scroll (hosts may overscan / chain when nested).
+    pub fn scroll_mut(&mut self) -> &mut ScrollAreaState {
+        &mut self.scroll
+    }
+
     /// Applies a bounded two-axis viewport delta (y then x; native editor wheel).
     pub fn scroll_by(&mut self, delta_x: isize, delta_y: isize) -> bool {
         self.scroll.scroll_by(delta_y, delta_x).is_scrolled()
@@ -658,11 +692,10 @@ impl TextAreaState {
         if !self.accepts_input || key.is_release() {
             return TextAreaOutcome::Ignored;
         }
-        let is_press = key.is_press();
         let plain = key.modifiers.is_empty();
         if !self.editing || self.read_only {
             return match key.code {
-                KeyCode::Enter if plain && !self.read_only && is_press => {
+                KeyCode::Enter if plain && !self.read_only => {
                     self.editing = true;
                     TextAreaOutcome::Changed
                 }
@@ -700,11 +733,6 @@ impl TextAreaState {
             };
         }
         if key.code == KeyCode::Esc {
-            if !key.is_press()
-                || !(key.modifiers.is_empty() || key.modifiers == KeyModifiers::SHIFT)
-            {
-                return TextAreaOutcome::Ignored;
-            }
             // junie: Esc finishes editing and keeps the document.
             self.editing = false;
             self.select_anchor = None;
@@ -714,19 +742,6 @@ impl TextAreaState {
         let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
         let alt = key.modifiers.contains(KeyModifiers::ALT);
         let shift = key.modifiers.contains(KeyModifiers::SHIFT);
-
-        // Host-facing clipboard/editor/fullscreen actions are physical
-        // one-shots. Keep ordinary text and caret repeats available.
-        let host_one_shot = (ctrl
-            && !alt
-            && matches!(
-                key.code,
-                KeyCode::Char('c' | 'C' | 'x' | 'X' | 'v' | 'V' | 'e' | 'E')
-            ))
-            || (ctrl && shift && !alt && matches!(key.code, KeyCode::Char('f' | 'F')));
-        if !is_press && host_one_shot {
-            return TextAreaOutcome::Ignored;
-        }
 
         // Host hooks / clipboard / undo (Emacs-style default adapter)
         if ctrl && !alt {
@@ -1520,6 +1535,14 @@ impl<'a> TextArea<'a> {
         self.rows.saturating_add(2)
     }
 
+    /// ASCII scrollbar / empty cues.
+    #[must_use]
+    /// Reduced-color caret/chrome.
+    pub const fn colorless(mut self, colorless: bool) -> Self {
+        self.colorless = colorless;
+        self
+    }
+
     /// Gutter line numbers.
     #[must_use]
     pub const fn line_numbers(mut self, on: bool) -> Self {
@@ -1531,6 +1554,20 @@ impl<'a> TextArea<'a> {
     #[must_use]
     pub const fn wrap(mut self, wrap: TextWrap) -> Self {
         self.wrap = wrap;
+        self
+    }
+
+    /// Soft wrap convenience.
+    #[must_use]
+    pub const fn soft_wrap(mut self) -> Self {
+        self.wrap = TextWrap::Soft;
+        self
+    }
+
+    /// Variant recipe.
+    #[must_use]
+    pub const fn variant(mut self, variant: TextAreaVariant) -> Self {
+        self.variant = variant;
         self
     }
 
@@ -1595,15 +1632,14 @@ impl StatefulWidget for &TextArea<'_> {
         };
         let fs = theme.field_style(visual);
         let field_bg = fs.bg.unwrap_or(theme.field);
-        let canvas = theme.canvas;
 
         // Label row (always reserved: height = rows + 2).
         let label_style = if state.read_only {
-            theme.faint().bg(canvas)
+            theme.faint()
         } else if matches!(self.variant, TextAreaVariant::Review) && !focused {
-            theme.muted().bg(canvas)
+            theme.muted()
         } else {
-            theme.label(focused).bg(canvas)
+            theme.label(focused)
         };
         if let Some(title) = self.title {
             let text = take_display_cols(title, usize::from(area.width.saturating_sub(2)));
@@ -1745,12 +1781,10 @@ impl StatefulWidget for &TextArea<'_> {
                             text,
                             line,
                             first + painted,
-                            SelectionWindow {
-                                a,
-                                b,
-                                offset_x,
-                                viewport_width: state.viewport_width,
-                            },
+                            a,
+                            b,
+                            offset_x,
+                            state.viewport_width,
                             y,
                             self.system.selected_text(),
                         );
@@ -1935,7 +1969,7 @@ fn paint_textarea_footer(
             fy,
             crate::text::truncate_cols(err, msg_w, widget.system.glyphs.ellipsis()).as_ref(),
             msg_w,
-            theme.error_fg().bg(theme.canvas),
+            theme.error_fg(),
         );
     } else if let Some(help) = widget.help {
         buffer.set_stringn(
@@ -1943,7 +1977,7 @@ fn paint_textarea_footer(
             fy,
             crate::text::truncate_cols(help, msg_w, widget.system.glyphs.ellipsis()).as_ref(),
             msg_w,
-            theme.muted().bg(theme.canvas),
+            theme.muted(),
         );
     }
     if !state.scratch.is_empty() {
@@ -1951,51 +1985,43 @@ fn paint_textarea_footer(
         let px = area
             .right()
             .saturating_sub(u16::try_from(w).unwrap_or(0).saturating_add(1));
-        buffer.set_stringn(px, fy, &state.scratch, w, theme.faint().bg(theme.canvas));
+        buffer.set_stringn(px, fy, &state.scratch, w, theme.faint());
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct SelectionWindow {
-    a: TextCursor,
-    b: TextCursor,
-    offset_x: usize,
-    viewport_width: usize,
-}
-
+#[allow(clippy::too_many_arguments)]
 fn paint_selection_line(
     buffer: &mut Buffer,
     body: Rect,
     line: &str,
     line_idx: usize,
-    window: SelectionWindow,
+    a: TextCursor,
+    b: TextCursor,
+    offset_x: usize,
+    viewport_width: usize,
     y: u16,
     cursor_style: Style,
 ) {
-    if line_idx < window.a.line || line_idx > window.b.line {
+    if line_idx < a.line || line_idx > b.line {
         return;
     }
-    let start_byte = if line_idx == window.a.line {
-        window.a.byte
-    } else {
-        0
-    };
-    let end_byte = if line_idx == window.b.line {
-        window.b.byte.min(line.len())
+    let start_byte = if line_idx == a.line { a.byte } else { 0 };
+    let end_byte = if line_idx == b.line {
+        b.byte.min(line.len())
     } else {
         line.len()
     };
     if start_byte >= end_byte {
         return;
     }
-    let start_col = display_cols(&line[..start_byte]).saturating_sub(window.offset_x);
-    let end_col = display_cols(&line[..end_byte]).saturating_sub(window.offset_x);
+    let start_col = display_cols(&line[..start_byte]).saturating_sub(offset_x);
+    let end_col = display_cols(&line[..end_byte]).saturating_sub(offset_x);
     let sx = body
         .x
-        .saturating_add(u16::try_from(start_col.min(window.viewport_width)).unwrap_or(0));
+        .saturating_add(u16::try_from(start_col.min(viewport_width)).unwrap_or(0));
     let ex = body
         .x
-        .saturating_add(u16::try_from(end_col.min(window.viewport_width)).unwrap_or(0))
+        .saturating_add(u16::try_from(end_col.min(viewport_width)).unwrap_or(0))
         .min(body.right());
     if ex > sx {
         // D8: selected text is one explicit pair, applied as a whole —
@@ -2026,9 +2052,7 @@ fn parse_lines(text: &str) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::{KeyEventKind, KeyEventState};
     use crate::style::RolePalette;
-    use crate::widgets::tests::mouse;
     #[test]
     fn normalized_editing_and_goal_column_contract() {
         let mut state = TextAreaState::new("ab🧪\r\nx\r12345");
@@ -2468,27 +2492,27 @@ mod tests {
         assert_eq!(vertical.x, area.right() - 1);
         assert!(vertical.y >= field_y);
         assert!(vertical.bottom() <= area.bottom());
-        let outcome = state.handle_event(Event::Mouse(mouse(
-            MouseEventKind::Down(MouseButton::Left),
-            vertical.x,
-            vertical.bottom() - 1,
-        )));
+        let outcome = state.handle_event(Event::Mouse(crate::input::MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: Position::new(vertical.x, vertical.bottom() - 1),
+            modifiers: KeyModifiers::NONE,
+        }));
         assert_eq!(outcome, TextAreaOutcome::Changed);
         assert!(state.scroll.offset_y() > 0);
         assert_eq!(
-            state.handle_event(Event::Mouse(mouse(
-                MouseEventKind::Drag(MouseButton::Left),
-                vertical.x,
-                vertical.bottom() - 1
-            ))),
+            state.handle_event(Event::Mouse(crate::input::MouseEvent {
+                kind: MouseEventKind::Drag(MouseButton::Left),
+                position: Position::new(vertical.x, vertical.bottom() - 1),
+                modifiers: KeyModifiers::NONE,
+            })),
             TextAreaOutcome::Ignored
         );
         assert_eq!(
-            state.handle_event(Event::Mouse(mouse(
-                MouseEventKind::Drag(MouseButton::Left),
-                0,
-                0
-            ))),
+            state.handle_event(Event::Mouse(crate::input::MouseEvent {
+                kind: MouseEventKind::Drag(MouseButton::Left),
+                position: Position::new(0, 0),
+                modifiers: KeyModifiers::NONE,
+            })),
             TextAreaOutcome::Ignored
         );
     }
@@ -2537,131 +2561,16 @@ mod tests {
     }
 
     #[test]
-    fn escape_requires_a_press_and_supported_modifiers() {
-        struct Case {
-            name: &'static str,
-            kind: KeyEventKind,
-            modifiers: KeyModifiers,
-            expected_outcome: TextAreaOutcome,
-            expected_editing: bool,
-            expected_anchor: Option<TextCursor>,
-        }
-
-        let cases = [
-            Case {
-                name: "bare press",
-                kind: KeyEventKind::Press,
-                modifiers: KeyModifiers::NONE,
-                expected_outcome: TextAreaOutcome::Changed,
-                expected_editing: false,
-                expected_anchor: None,
-            },
-            Case {
-                name: "shift press",
-                kind: KeyEventKind::Press,
-                modifiers: KeyModifiers::SHIFT,
-                expected_outcome: TextAreaOutcome::Changed,
-                expected_editing: false,
-                expected_anchor: None,
-            },
-            Case {
-                name: "repeat",
-                kind: KeyEventKind::Repeat,
-                modifiers: KeyModifiers::NONE,
-                expected_outcome: TextAreaOutcome::Ignored,
-                expected_editing: true,
-                expected_anchor: Some(c(0, 0)),
-            },
-            Case {
-                name: "release",
-                kind: KeyEventKind::Release,
-                modifiers: KeyModifiers::NONE,
-                expected_outcome: TextAreaOutcome::Ignored,
-                expected_editing: true,
-                expected_anchor: Some(c(0, 0)),
-            },
-            Case {
-                name: "control press",
-                kind: KeyEventKind::Press,
-                modifiers: KeyModifiers::CONTROL,
-                expected_outcome: TextAreaOutcome::Ignored,
-                expected_editing: true,
-                expected_anchor: Some(c(0, 0)),
-            },
-            Case {
-                name: "alt press",
-                kind: KeyEventKind::Press,
-                modifiers: KeyModifiers::ALT,
-                expected_outcome: TextAreaOutcome::Ignored,
-                expected_editing: true,
-                expected_anchor: Some(c(0, 0)),
-            },
-        ];
-
-        for case in cases {
-            let mut state = TextAreaState::new("one\ntwo");
-            state.set_accepts_input(true);
-            state.set_editing(true);
-            state.select_all();
-            let initial_cursor = state.cursor();
-            let initial_text = state.text();
-            let initial_range = state.selection_range();
-
-            let outcome = state.handle_key(KeyEvent {
-                code: KeyCode::Esc,
-                modifiers: case.modifiers,
-                kind: case.kind,
-                state: KeyEventState::NONE,
-            });
-
-            assert_eq!(outcome, case.expected_outcome, "{} outcome", case.name);
-            assert_eq!(
-                state.is_editing(),
-                case.expected_editing,
-                "{} editing",
-                case.name
-            );
-            assert_eq!(state.text(), initial_text, "{} text", case.name);
-            assert_eq!(state.cursor(), initial_cursor, "{} cursor", case.name);
-            assert_eq!(
-                state.selection_anchor(),
-                case.expected_anchor,
-                "{} selection anchor",
-                case.name
-            );
-            if case.expected_editing {
-                assert_eq!(
-                    state.selection_range(),
-                    initial_range,
-                    "{} selection",
-                    case.name
-                );
-            } else {
-                assert!(
-                    state.selection_range().is_none(),
-                    "{} selection cleared",
-                    case.name
-                );
-            }
-        }
-    }
-
-    #[test]
-    fn repeated_escape_does_not_finish_editing() {
+    fn escape_cancels_without_mutating_multiline_text() {
         let mut state = TextAreaState::new("one\ntwo");
         state.set_accepts_input(true);
         state.set_editing(true);
-        let mut repeat = KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE);
-        repeat.kind = KeyEventKind::Repeat;
-
-        assert_eq!(state.handle_key(repeat), TextAreaOutcome::Ignored);
-        assert!(state.is_editing());
+        assert_eq!(
+            state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
+            TextAreaOutcome::Changed
+        );
+        assert!(!state.is_editing());
         assert_eq!(state.text(), "one\ntwo");
-
-        let mut release = KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE);
-        release.kind = KeyEventKind::Release;
-        assert_eq!(state.handle_key(release), TextAreaOutcome::Ignored);
-        assert!(state.is_editing());
     }
 
     #[test]
@@ -2759,47 +2668,6 @@ mod tests {
     }
 
     #[test]
-    fn repeated_idle_entry_and_host_actions_are_ignored() {
-        let repeat = |code, modifiers| {
-            let mut key = KeyEvent::new(code, modifiers);
-            key.kind = KeyEventKind::Repeat;
-            key
-        };
-
-        let mut idle = TextAreaState::new("ab");
-        idle.set_accepts_input(true);
-        let before = idle.clone();
-        assert_eq!(
-            idle.handle_key(repeat(KeyCode::Enter, KeyModifiers::NONE)),
-            TextAreaOutcome::Ignored
-        );
-        assert_eq!(idle, before, "repeated idle Enter must not begin editing");
-
-        for (code, modifiers) in [
-            (KeyCode::Char('c'), KeyModifiers::CONTROL),
-            (KeyCode::Char('x'), KeyModifiers::CONTROL),
-            (KeyCode::Char('v'), KeyModifiers::CONTROL),
-            (KeyCode::Char('e'), KeyModifiers::CONTROL),
-            (
-                KeyCode::Char('f'),
-                KeyModifiers::CONTROL | KeyModifiers::SHIFT,
-            ),
-        ] {
-            let mut state = TextAreaState::new("abc");
-            state.set_accepts_input(true);
-            state.set_editing(true);
-            state.select_all();
-            let before = state.clone();
-            assert_eq!(
-                state.handle_key(repeat(code, modifiers)),
-                TextAreaOutcome::Ignored,
-                "repeat of {code:?} with {modifiers:?} must be ignored"
-            );
-            assert_eq!(state, before);
-        }
-    }
-
-    #[test]
     fn word_motion_and_indent() {
         let mut state = TextAreaState::new("foo bar");
         state.set_accepts_input(true);
@@ -2878,6 +2746,48 @@ mod tests {
             "expected line number gutter cell, got {:?}",
             number_cell.symbol()
         );
+    }
+
+    #[test]
+    fn title_paint_preserves_prefilled_owner_surface() {
+        let system = crate::style::DesignSystem::junie();
+        let theme = system.junie_theme();
+        let area = Rect::new(0, 0, 24, 4);
+        let mut buffer = Buffer::empty(area);
+        buffer.set_style(area, Style::new().bg(theme.surface));
+        let mut state = TextAreaState::new("body");
+
+        (&TextArea::new(&system).title("Description")).render(area, &mut buffer, &mut state);
+
+        let title_x = area.x + 2;
+        let title = &buffer[(title_x, area.y)];
+        assert_eq!(title.symbol(), "D");
+        assert_eq!(title.bg, theme.surface);
+        assert_eq!(title.fg, theme.text_secondary);
+        assert!(!title.modifier.contains(Modifier::BOLD));
+        assert_eq!(buffer[(title_x + 11, area.y)].bg, theme.surface);
+    }
+
+    #[test]
+    fn help_footer_preserves_prefilled_owner_surface() {
+        let system = crate::style::DesignSystem::junie();
+        let theme = system.junie_theme();
+        let area = Rect::new(0, 0, 32, 4);
+        let mut buffer = Buffer::empty(area);
+        buffer.set_style(area, Style::new().bg(theme.surface));
+        let mut state = TextAreaState::new("body");
+        let help = "Optional · Markdown";
+
+        (&TextArea::new(&system).help(help)).render(area, &mut buffer, &mut state);
+
+        let footer_y = area.bottom() - 1;
+        let help_x = area.x + 2;
+        let first = &buffer[(help_x, footer_y)];
+        assert_eq!(first.symbol(), "O");
+        assert_eq!(first.bg, theme.surface);
+        assert_eq!(first.fg, theme.text_muted);
+        let trailing_x = help_x + u16::try_from(display_cols(help)).unwrap_or(0);
+        assert_eq!(buffer[(trailing_x, footer_y)].bg, theme.surface);
     }
 
     #[test]

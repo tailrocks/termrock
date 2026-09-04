@@ -10,11 +10,13 @@
 //! Teaches: how to compose a resource browser's geometry — a tree or list
 //! rail, a detail pane, and an optional preview.
 //!
+//! Composes: [`crate::widgets::ScrollAreaState`],
 //! [`crate::widgets::NavItem`], [`crate::widgets::SidebarOutcome`],
 //! [`crate::widgets::SidebarState`].
 //!
 //! Copy-adapt: keep the widget composition and the focus routing;
 //! replace the domain types, the wording, and the effects with your own.
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
 use ratatui_core::layout::Rect;
 
 use ratatui_core::{buffer::Buffer, widgets::StatefulWidget};
@@ -148,6 +150,8 @@ pub enum ResourceBrowserFocus {
     /// The navigation rail.
     #[default]
     Rail,
+    /// The detail pane.
+    Detail,
 }
 
 /// Paints a reference resource browser over [`layout_resource_browser`].
@@ -155,7 +159,7 @@ pub enum ResourceBrowserFocus {
 /// The rail is a [`Tree`], the detail pane a [`DetailTable`], the preview a
 /// [`Panel`] body, and the footer a [`StatusBar`] — no chrome is invented
 /// here. Hosts wanting a different assembly copy this and swap the widgets.
-pub fn paint_resource_browser<NodeId: Clone + Eq, RowId: Clone + Eq>(
+pub fn render_resource_browser<NodeId: Clone + Eq, RowId: Clone + Eq>(
     area: Rect,
     buffer: &mut Buffer,
     system: &DesignSystem,
@@ -249,7 +253,7 @@ mod tests {
             preview_width: 24,
             ..ResourceBrowserLayout::default()
         };
-        let slots = paint_resource_browser(
+        let slots = render_resource_browser(
             area,
             &mut buffer,
             &system,
@@ -343,8 +347,8 @@ mod tests {
 // ── Resource browser state machine (example composite) ───────────────────────
 
 use crate::{
-    input::KeyEvent,
-    widgets::{NavItem, SidebarOutcome, SidebarState},
+    input::{KeyCode, KeyEvent, KeyEventKind},
+    widgets::{NavItem, ScrollAreaState, SidebarOutcome, SidebarState},
 };
 
 // ── ResourceBrowser ─────────────────────────────────────────────────────────
@@ -353,10 +357,14 @@ use crate::{
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum ResourceBrowserOutcome<Id> {
+    /// No change.
+    Ignored,
     /// Sidebar selection.
     Sidebar(SidebarOutcome<Id>),
     /// Request load of selection (consumer).
     LoadRequested(Id),
+    /// Open preview.
+    PreviewRequested(Id),
 }
 
 /// Resource browser state.
@@ -364,6 +372,8 @@ pub enum ResourceBrowserOutcome<Id> {
 pub struct ResourceBrowserState<Id: Clone + PartialEq> {
     /// Sidebar.
     pub sidebar: SidebarState<Id>,
+    /// List scroll.
+    pub list_scroll: ScrollAreaState,
     /// Generation for stale preview guard.
     pub selection_generation: u64,
 }
@@ -374,6 +384,7 @@ impl<Id: Clone + PartialEq> ResourceBrowserState<Id> {
     pub fn new() -> Self {
         Self {
             sidebar: SidebarState::new(None),
+            list_scroll: ScrollAreaState::new(),
             selection_generation: 0,
         }
     }

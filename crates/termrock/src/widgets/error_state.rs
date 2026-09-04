@@ -15,16 +15,24 @@
 //! Prefer [`ErrorState`] for hard failures; [`super::EmptyState`] for zero-data.
 //! For compiler/build diagnostics, project into [`super::Diagnostic`] /
 //! [`super::CodeFrame`] and feed plain text via
-//! diagnostics text into recovery copy-diagnostics.
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
+//! [`super::format_diagnostics_plain`] into recovery copy-diagnostics.
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+use ratatui_core::{
+    buffer::Buffer,
+    layout::{Position, Rect},
+    style::Modifier,
+    widgets::Widget,
+};
 
 use crate::{
-    input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
+    input::{
+        KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+    },
     interaction::{
         SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, default_button_intent,
     },
     layout::{Center, CenterAxis, FlexSize, Stack, center_line_x},
-    style::{DesignSystem, Role},
+    style::{DesignSystem, GlyphSet, Role},
     text::{display_cols, take_display_cols},
     widgets::{Button, ButtonState, ButtonVariant},
 };
@@ -359,23 +367,26 @@ impl<'a> Recovery<'a> {
 
     /// Focus targets in tab order.
     fn focus_targets(self) -> [ErrorFocus; 5] {
-        let candidates = [
-            self.retry.is_some().then_some(ErrorFocus::Retry),
-            self.alternative
-                .is_some()
-                .then_some(ErrorFocus::Alternative),
-            self.copy_diagnostics.then_some(ErrorFocus::CopyDiagnostics),
-            self.report_issue
-                .is_some()
-                .then_some(ErrorFocus::ReportIssue),
-        ];
         let mut out = [ErrorFocus::None; 5];
         let mut i = 0usize;
-        for target in candidates.into_iter().flatten() {
-            out[i] = target;
+        if self.retry.is_some() {
+            out[i] = ErrorFocus::Retry;
+            i += 1;
+        }
+        if self.alternative.is_some() {
+            out[i] = ErrorFocus::Alternative;
+            i += 1;
+        }
+        if self.copy_diagnostics {
+            out[i] = ErrorFocus::CopyDiagnostics;
+            i += 1;
+        }
+        if self.report_issue.is_some() {
+            out[i] = ErrorFocus::ReportIssue;
             i += 1;
         }
         // Toggle details is always available when technical present — added by state machine
+        let _ = i;
         out
     }
 }
@@ -458,6 +469,11 @@ impl ErrorStateState {
     #[must_use]
     pub const fn focus(&self) -> ErrorFocus {
         self.focus
+    }
+
+    /// Set focus.
+    pub fn set_focus(&mut self, focus: ErrorFocus) {
+        self.focus = focus;
     }
 
     /// Prefer retry when present.
@@ -562,15 +578,67 @@ impl<'a> ErrorState<'a> {
         self
     }
 
+    /// Inline strip.
+    #[must_use]
+    pub const fn inline(mut self) -> Self {
+        self.recipe = ErrorRecipe::Inline;
+        self
+    }
+
     /// Dialog recipe.
     #[must_use]
     pub const fn dialog(mut self) -> Self {
         self.recipe = ErrorRecipe::Dialog;
         self
     }
+
+    /// Full-screen recipe.
+    #[must_use]
+    pub const fn full_screen(mut self) -> Self {
+        self.recipe = ErrorRecipe::FullScreen;
+        self
+    }
+
+    /// Override illustration glyph.
+    #[must_use]
+    pub const fn glyph(mut self, glyph: &'a str) -> Self {
+        self.illustration = Some(glyph);
+        self
+    }
+
+    /// Summary text.
+    #[must_use]
+    pub const fn summary(self) -> &'a str {
+        self.summary
+    }
+
+    /// Kind.
+    #[must_use]
+    pub const fn error_kind(self) -> ErrorKind {
+        self.kind
+    }
+
+    /// Recovery borrow.
+    #[must_use]
+    pub const fn recovery_bundle(self) -> Recovery<'a> {
+        self.recovery
+    }
+
     fn use_ascii(&self) -> bool {
         false
     }
+
+    /// Resolved illustration.
+    #[must_use]
+    pub fn resolved_glyph(&self) -> &'static str {
+        if let Some(g) = self.illustration {
+            // Caller override may be non-static; paint path uses display string separately.
+            // For API, prefer kind glyph when override is temporary — still return kind for measure.
+            let _ = g;
+        }
+        self.kind.glyph(self.use_ascii())
+    }
+
     fn glyph_for_paint(&self) -> &str {
         self.illustration
             .unwrap_or_else(|| self.kind.glyph(self.use_ascii()))
@@ -609,8 +677,14 @@ impl<'a> ErrorState<'a> {
         self.kind.default_retry_safety()
     }
 
-    /// Paint; disclosure/focus state comes from `state`.
-    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut ErrorStateState) {
+    /// Passive paint.
+    pub fn paint(&self, area: Rect, buffer: &mut Buffer) {
+        let mut state = ErrorStateState::new();
+        self.paint_with_state(area, buffer, &mut state);
+    }
+
+    /// Paint with disclosure/focus state.
+    pub fn paint_with_state(&self, area: Rect, buffer: &mut Buffer, state: &mut ErrorStateState) {
         if area.is_empty() {
             return;
         }
@@ -747,6 +821,7 @@ impl<'a> ErrorState<'a> {
                     true, // dominant primary-like
                     matches!(state.focus, ErrorFocus::Retry),
                     &mut state.retry_btn,
+                    false, // never destructive
                 );
             }
             idx += 1;
@@ -760,6 +835,7 @@ impl<'a> ErrorState<'a> {
                     false,
                     matches!(state.focus, ErrorFocus::Alternative),
                     &mut state.alt_btn,
+                    false,
                 );
             }
             idx += 1;
@@ -773,6 +849,7 @@ impl<'a> ErrorState<'a> {
                     false,
                     matches!(state.focus, ErrorFocus::CopyDiagnostics),
                     &mut state.copy_btn,
+                    false,
                 );
             }
             idx += 1;
@@ -786,6 +863,7 @@ impl<'a> ErrorState<'a> {
                     false,
                     matches!(state.focus, ErrorFocus::ReportIssue),
                     &mut state.report_btn,
+                    false,
                 );
             }
         }
@@ -799,6 +877,7 @@ impl<'a> ErrorState<'a> {
         primary: bool,
         focused: bool,
         btn_state: &mut ButtonState,
+        _destructive: bool,
     ) {
         if area.is_empty() {
             return;
@@ -1057,6 +1136,22 @@ impl<'a> ErrorState<'a> {
     }
 }
 
+impl Widget for &ErrorState<'_> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        self.paint(area, buffer);
+    }
+}
+
+impl Widget for ErrorState<'_> {
+    #[expect(
+        clippy::needless_borrows_for_generic_args,
+        reason = "explicitly delegate the owned contract to the borrowed renderer"
+    )]
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        <&Self as Widget>::render(&self, area, buffer);
+    }
+}
+
 // ── Recipes ─────────────────────────────────────────────────────────────────
 
 /// Network failure pane with safe retry.
@@ -1185,11 +1280,7 @@ pub fn example_error_dialog(system: &DesignSystem) -> ErrorState<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    use crate::widgets::tests::click;
-    use crate::widgets::tests::press;
     use ratatui_core::backend::TestBackend;
-
     use ratatui_core::terminal::Terminal;
 
     fn system() -> DesignSystem {
@@ -1233,7 +1324,7 @@ mod tests {
         let text = painted(Rect::new(0, 0, 40, 5), |a, b| {
             ErrorState::new("Failed", &system)
                 .explanation("Timed out")
-                .paint(a, b, &mut ErrorStateState::new());
+                .paint(a, b);
         });
         assert!(text.contains("Failed"), "{text}");
         assert!(text.contains("Timed out"), "{text}");
@@ -1249,9 +1340,7 @@ mod tests {
         let e = ErrorState::new("Err", &system)
             .technical("secret stack trace XYZ")
             .explanation("human msg");
-        let collapsed = painted(Rect::new(0, 0, 48, 10), |a, b| {
-            e.paint(a, b, &mut ErrorStateState::new())
-        });
+        let collapsed = painted(Rect::new(0, 0, 48, 10), |a, b| e.paint(a, b));
         assert!(
             !collapsed.contains("secret stack"),
             "collapsed leaked tech: {collapsed}"
@@ -1264,7 +1353,7 @@ mod tests {
         let mut st = ErrorStateState::new();
         st.set_details_expanded(true);
         let expanded = painted(Rect::new(0, 0, 48, 12), |a, b| {
-            e.paint(a, b, &mut st);
+            e.paint_with_state(a, b, &mut st);
         });
         assert!(expanded.contains("secret stack"), "{expanded}");
     }
@@ -1275,7 +1364,12 @@ mod tests {
         let e = ErrorState::new("Err", &system).technical("tech");
         let mut st = ErrorStateState::new();
         assert!(!st.details_expanded());
-        let key = press(KeyCode::Char('d'));
+        let key = KeyEvent {
+            code: KeyCode::Char('d'),
+            modifiers: KeyModifiers::NONE,
+            kind: KeyEventKind::Press,
+            state: crate::input::KeyEventState::NONE,
+        };
         assert_eq!(e.handle_key(key, &mut st), ErrorStateOutcome::ToggleDetails);
         assert!(st.details_expanded());
     }
@@ -1285,9 +1379,7 @@ mod tests {
         let system = system();
         let e = example_error_network(&system);
         assert_eq!(e.retry_safety(), RetrySafety::Safe);
-        let text = painted(Rect::new(0, 0, 50, 14), |a, b| {
-            e.paint(a, b, &mut ErrorStateState::new())
-        });
+        let text = painted(Rect::new(0, 0, 50, 14), |a, b| e.paint(a, b));
         assert!(
             text.contains("retry safe") || text.contains("Retry"),
             "{text}"
@@ -1299,7 +1391,12 @@ mod tests {
 
         let mut st = ErrorStateState::new();
         st.focus_retry();
-        let key = press(KeyCode::Enter);
+        let key = KeyEvent {
+            code: KeyCode::Enter,
+            modifiers: KeyModifiers::NONE,
+            kind: KeyEventKind::Press,
+            state: crate::input::KeyEventState::NONE,
+        };
         assert_eq!(e.handle_key(key, &mut st), ErrorStateOutcome::Retry);
     }
 
@@ -1308,7 +1405,12 @@ mod tests {
         let system = system();
         let e = example_error_network(&system);
         let mut st = ErrorStateState::new();
-        let key = press(KeyCode::Enter);
+        let key = KeyEvent {
+            code: KeyCode::Enter,
+            modifiers: KeyModifiers::NONE,
+            kind: KeyEventKind::Press,
+            state: crate::input::KeyEventState::NONE,
+        };
         assert_eq!(e.handle_key(key, &mut st), ErrorStateOutcome::Retry);
     }
 
@@ -1317,7 +1419,12 @@ mod tests {
         let system = system();
         let e = example_error_network(&system);
         let mut st = ErrorStateState::new();
-        let key = press(KeyCode::Char('c'));
+        let key = KeyEvent {
+            code: KeyCode::Char('c'),
+            modifiers: KeyModifiers::NONE,
+            kind: KeyEventKind::Press,
+            state: crate::input::KeyEventState::NONE,
+        };
         assert_eq!(
             e.handle_key(key, &mut st),
             ErrorStateOutcome::CopyDiagnostics
@@ -1331,12 +1438,12 @@ mod tests {
     fn recipes_inline_dialog_fullscreen() {
         let system = system();
         let inline = painted(Rect::new(0, 0, 24, 2), |a, b| {
-            example_error_unsupported(&system).paint(a, b, &mut ErrorStateState::new());
+            example_error_unsupported(&system).paint(a, b);
         });
         assert!(!inline.trim().is_empty(), "{inline}");
 
         let dialog = painted(Rect::new(0, 0, 48, 12), |a, b| {
-            example_error_dialog(&system).paint(a, b, &mut ErrorStateState::new());
+            example_error_dialog(&system).paint(a, b);
         });
         assert!(
             dialog.contains("Request") || dialog.contains("failed"),
@@ -1344,7 +1451,7 @@ mod tests {
         );
 
         let full = painted(Rect::new(0, 0, 60, 16), |a, b| {
-            example_error_crash(&system).paint(a, b, &mut ErrorStateState::new());
+            example_error_crash(&system).paint(a, b);
         });
         assert!(
             full.contains("Unexpected") || full.contains("error"),
@@ -1364,9 +1471,7 @@ mod tests {
             example_error_crash(&system),
             example_error_unsupported(&system),
         ] {
-            let t = painted(Rect::new(0, 0, 52, 14), |a, b| {
-                e.paint(a, b, &mut ErrorStateState::new())
-            });
+            let t = painted(Rect::new(0, 0, 52, 14), |a, b| e.paint(a, b));
             assert!(!t.trim().is_empty(), "kind={}", e.kind.id());
         }
     }
@@ -1402,16 +1507,8 @@ mod tests {
     fn tiny_and_empty_safe() {
         let system = system();
         let mut buf = Buffer::empty(Rect::new(0, 0, 8, 2));
-        ErrorState::new("E", &system).paint(
-            Rect::new(0, 0, 1, 1),
-            &mut buf,
-            &mut ErrorStateState::new(),
-        );
-        ErrorState::new("E", &system).paint(
-            Rect::new(0, 0, 0, 0),
-            &mut buf,
-            &mut ErrorStateState::new(),
-        );
+        ErrorState::new("E", &system).paint(Rect::new(0, 0, 1, 1), &mut buf);
+        ErrorState::new("E", &system).paint(Rect::new(0, 0, 0, 0), &mut buf);
     }
 
     #[test]
@@ -1419,7 +1516,12 @@ mod tests {
         let system = system();
         let e = example_error_network(&system);
         let mut st = ErrorStateState::new();
-        let tab = press(KeyCode::Tab);
+        let tab = KeyEvent {
+            code: KeyCode::Tab,
+            modifiers: KeyModifiers::NONE,
+            kind: KeyEventKind::Press,
+            state: crate::input::KeyEventState::NONE,
+        };
         let _ = e.handle_key(tab, &mut st);
         assert_eq!(st.focus(), ErrorFocus::Retry);
         let _ = e.handle_key(tab, &mut st);
@@ -1457,7 +1559,7 @@ mod tests {
             if seed % 5 == 0 {
                 st.set_details_expanded(true);
             }
-            e.paint(area, &mut buf, &mut st);
+            e.paint_with_state(area, &mut buf, &mut st);
         }
     }
 
@@ -1467,11 +1569,7 @@ mod tests {
         let paint = || {
             let mut t = Terminal::new(TestBackend::new(48, 12)).unwrap();
             t.draw(|f| {
-                example_error_network(&system).paint(
-                    f.area(),
-                    f.buffer_mut(),
-                    &mut ErrorStateState::new(),
-                );
+                example_error_network(&system).paint(f.area(), f.buffer_mut());
             })
             .unwrap();
             t.backend()
@@ -1492,11 +1590,7 @@ mod tests {
         for _ in 0..100 {
             terminal
                 .draw(|f| {
-                    example_error_network(&system).paint(
-                        f.area(),
-                        f.buffer_mut(),
-                        &mut ErrorStateState::new(),
-                    );
+                    example_error_network(&system).paint(f.area(), f.buffer_mut());
                 })
                 .unwrap();
         }
@@ -1509,7 +1603,11 @@ mod tests {
         let e = example_error_network(&system);
         let mut st = ErrorStateState::new();
         let area = Rect::new(0, 0, 40, 12);
-        let mouse = click(5, 11);
+        let mouse = MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: Position { x: 5, y: 11 },
+            modifiers: KeyModifiers::NONE,
+        };
         let out = e.handle_mouse(mouse, area, &mut st);
         assert!(
             matches!(

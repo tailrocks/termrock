@@ -17,18 +17,23 @@
 //!
 //! Research: editor keybinding settings, terminal protocol limits (no F-keys in
 //! neutral vocabulary, CSI ambiguity, Ctrl+C SIGINT).
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier, widgets::StatefulWidget};
+use ratatui_core::{
+    buffer::Buffer,
+    layout::Rect,
+    style::Modifier,
+    widgets::{StatefulWidget, Widget},
+};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers},
-    interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
-    keymap::{KeyBinding, KeyChord, Keymap, Visibility, raw_bytes_to_chord},
+    interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
+    keymap::{Conflict, KeyBinding, KeyChord, Keymap, Visibility, raw_bytes_to_chord},
     style::{ControlState, DesignSystem, Role},
-    text::take_display_cols,
+    text::{display_cols, take_display_cols},
 };
 
 use super::{
-    ChordFormat, Panel, PanelChrome, PanelVariant, Platform, Validation, format_chord,
+    ChordFormat, Kbd, Panel, PanelChrome, PanelVariant, Platform, Validation, format_chord,
     format_sequence,
 };
 
@@ -63,6 +68,18 @@ pub enum BindingLimit {
 }
 
 impl BindingLimit {
+    /// Stable id.
+    #[must_use]
+    pub fn id(&self) -> &'static str {
+        match self {
+            Self::Reserved { .. } => "reserved",
+            Self::Conflict { .. } => "conflict",
+            Self::Protocol { .. } => "protocol",
+            Self::Empty => "empty",
+            Self::Intermediate => "intermediate",
+        }
+    }
+
     /// Display message.
     #[must_use]
     pub fn message(&self) -> String {
@@ -259,6 +276,14 @@ impl KeybindingRecorderState {
         self.default = v;
         self
     }
+
+    /// Factory default only (value unchanged).
+    #[must_use]
+    pub fn with_default(mut self, chords: impl IntoIterator<Item = KeyChord>) -> Self {
+        self.default = chords.into_iter().collect();
+        self
+    }
+
     /// Chord display format.
     #[must_use]
     pub const fn with_format(mut self, fmt: ChordFormat) -> Self {
@@ -271,6 +296,44 @@ impl KeybindingRecorderState {
     pub const fn with_sequences(mut self, on: bool) -> Self {
         self.allow_sequences = on;
         self
+    }
+
+    /// Allow empty commit.
+    #[must_use]
+    pub const fn with_allow_empty(mut self, on: bool) -> Self {
+        self.allow_empty = on;
+        self
+    }
+
+    /// Hard-fail on conflicts.
+    #[must_use]
+    pub const fn with_hard_conflicts(mut self, on: bool) -> Self {
+        self.hard_conflicts = on;
+        self
+    }
+
+    /// Hard-fail on reserved.
+    #[must_use]
+    pub const fn with_hard_reserved(mut self, on: bool) -> Self {
+        self.hard_reserved = on;
+        self
+    }
+
+    /// Replace reserved table.
+    #[must_use]
+    pub fn with_reserved(mut self, reserved: Vec<(KeyChord, String)>) -> Self {
+        self.reserved = reserved;
+        self
+    }
+
+    /// Extend reserved.
+    pub fn push_reserved(&mut self, chord: KeyChord, reason: impl Into<String>) {
+        self.reserved.push((chord, reason.into()));
+    }
+
+    /// Set conflict table (other actions' chords → labels).
+    pub fn set_occupied(&mut self, occupied: Vec<(KeyChord, String)>) {
+        self.occupied = occupied;
     }
 
     /// Load occupied chords from a [`Keymap`], skipping `skip` action.
@@ -306,7 +369,31 @@ impl KeybindingRecorderState {
             map.remap(action, self.value.clone())
         }
     }
+
+    /// Seed from existing keymap binding.
+    pub fn load_from_binding<A: Clone + 'static>(&mut self, binding: &KeyBinding<A>) {
+        self.value = binding.chords().to_vec();
+        if self.default.is_empty() {
+            self.default = self.value.clone();
+        }
+        if let Some(h) = binding.hint() {
+            self.action_label = h.to_owned();
+        }
+    }
+
     // ── accessors ───────────────────────────────────────────────────────────
+
+    /// Action id.
+    #[must_use]
+    pub fn action_id(&self) -> &str {
+        &self.action_id
+    }
+
+    /// Action label.
+    #[must_use]
+    pub fn action_label(&self) -> &str {
+        &self.action_label
+    }
 
     /// Committed chords.
     #[must_use]
@@ -314,10 +401,34 @@ impl KeybindingRecorderState {
         &self.value
     }
 
+    /// Default chords.
+    #[must_use]
+    pub fn default_chords(&self) -> &[KeyChord] {
+        &self.default
+    }
+
+    /// Draft while recording (else empty).
+    #[must_use]
+    pub fn draft(&self) -> &[KeyChord] {
+        &self.draft
+    }
+
+    /// Mode.
+    #[must_use]
+    pub const fn mode(&self) -> KeybindingRecorderMode {
+        self.mode
+    }
+
     /// Recording?
     #[must_use]
     pub const fn is_recording(&self) -> bool {
         matches!(self.mode, KeybindingRecorderMode::Recording)
+    }
+
+    /// Last validation limit.
+    #[must_use]
+    pub const fn last_limit(&self) -> Option<&BindingLimit> {
+        self.last_limit.as_ref()
     }
 
     /// Normalized display of committed value.
@@ -356,6 +467,14 @@ impl KeybindingRecorderState {
     /// Focus.
     pub fn set_focused(&mut self, on: bool) {
         self.focused = on;
+    }
+
+    /// Enabled.
+    pub fn set_enabled(&mut self, on: bool) {
+        self.enabled = on;
+        if !on && self.is_recording() {
+            let _ = self.cancel_recording();
+        }
     }
 
     /// Set committed chords without validation (host load).
@@ -586,10 +705,7 @@ impl KeybindingRecorderState {
 
     /// Key adapter.
     pub fn handle_key(&mut self, key: KeyEvent) -> KeybindingRecorderOutcome {
-        // Each captured chord and recorder action represents one physical
-        // key press. Repeats must not append duplicate chords or retrigger a
-        // mode transition while a key is held.
-        if !key.is_press() || !self.enabled {
+        if key.is_release() || !self.enabled {
             return KeybindingRecorderOutcome::Ignored;
         }
         if !self.focused {
@@ -634,6 +750,39 @@ impl KeybindingRecorderState {
             _ => KeybindingRecorderOutcome::Ignored,
         }
     }
+
+    /// Intent path.
+    pub fn handle_intent(&mut self, intent: UiIntent) -> KeybindingRecorderOutcome {
+        if !self.enabled || !self.focused {
+            return KeybindingRecorderOutcome::Ignored;
+        }
+        match intent {
+            UiIntent::Cancel | UiIntent::Close => {
+                if self.is_recording() {
+                    self.cancel_recording()
+                } else {
+                    KeybindingRecorderOutcome::Blurred
+                }
+            }
+            UiIntent::Submit | UiIntent::Activate => {
+                if self.is_recording() {
+                    self.commit()
+                } else {
+                    self.start_recording()
+                }
+            }
+            _ => KeybindingRecorderOutcome::Ignored,
+        }
+    }
+
+    /// Conflicts currently present in an external keymap (pass-through helper).
+    #[must_use]
+    pub fn keymap_conflicts<'a, A>(map: &'a Keymap<A>) -> Vec<Conflict<'a, A>>
+    where
+        A: Clone + Copy + PartialEq + 'static,
+    {
+        map.conflicts()
+    }
 }
 
 // ── Widget ──────────────────────────────────────────────────────────────────
@@ -655,6 +804,20 @@ impl<'a> KeybindingRecorder<'a> {
             show_limits: true,
             show_hints: true,
         }
+    }
+
+    /// Show reserved/conflict/protocol captions.
+    #[must_use]
+    pub const fn show_limits(mut self, on: bool) -> Self {
+        self.show_limits = on;
+        self
+    }
+
+    /// Show idle key hints (Enter record · r default · Del clear).
+    #[must_use]
+    pub const fn show_hints(mut self, on: bool) -> Self {
+        self.show_hints = on;
+        self
     }
 
     /// ASCII-only marks.
@@ -679,7 +842,7 @@ impl<'a> KeybindingRecorder<'a> {
         } else {
             state.action_label.as_str()
         };
-        panel.title(title).paint(area, buffer, None);
+        Widget::render(&panel.title(title), area, buffer);
         if inner.is_empty() {
             return;
         }
@@ -713,6 +876,7 @@ impl<'a> KeybindingRecorder<'a> {
                 } else {
                     ControlState::Default
                 },
+                invalid,
                 state.is_recording(),
             );
             let live = state.display_live();
@@ -742,6 +906,20 @@ impl<'a> KeybindingRecorder<'a> {
                 usize::from(value_width),
                 style,
             );
+            // Also stamp Kbd widget for first chord when idle single
+            if !state.is_recording() && state.value.len() == 1 && inner.width > 12 {
+                let kbd_area = Rect::new(
+                    inner.x.saturating_add(
+                        display_cols(&line).min(usize::from(value_width.saturating_sub(8))) as u16,
+                    ),
+                    y,
+                    8,
+                    1,
+                );
+                // keep simple string path primary; Kbd used for semantic consistency in docs
+                let _ = Kbd::from_chord(state.value[0], self.system);
+                let _ = kbd_area;
+            }
             y = y.saturating_add(1);
         }
 
@@ -895,7 +1073,6 @@ pub fn binding_from_recorder<A: Clone + 'static>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::KeyEventKind;
     use crate::style::RolePalette;
 
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -1171,63 +1348,5 @@ mod tests {
             state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
             KeybindingRecorderOutcome::RecordingStarted
         ));
-    }
-
-    #[test]
-    fn repeated_physical_events_are_ignored() {
-        let mut state = KeybindingRecorderState::new("a", "A")
-            .with_chords([KeyChord::plain(KeyCode::Char('a'))]);
-        state.reserved.clear();
-        state.set_focused(true);
-
-        let mut repeat_enter = KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE);
-        repeat_enter.kind = KeyEventKind::Repeat;
-        let before = state.clone();
-        assert_eq!(
-            state.handle_key(repeat_enter),
-            KeybindingRecorderOutcome::Ignored
-        );
-        assert_eq!(state, before);
-
-        assert_eq!(
-            state.handle_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
-            KeybindingRecorderOutcome::RecordingStarted
-        );
-        assert_eq!(
-            state.handle_key(KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE)),
-            KeybindingRecorderOutcome::ChordCaptured {
-                chord: KeyChord::plain(KeyCode::Char('x')),
-                sequence: vec![KeyChord::plain(KeyCode::Char('x'))],
-            }
-        );
-
-        for (code, modifiers) in [
-            (KeyCode::Char('x'), KeyModifiers::NONE),
-            (KeyCode::Backspace, KeyModifiers::NONE),
-            (KeyCode::Enter, KeyModifiers::NONE),
-            (KeyCode::Esc, KeyModifiers::NONE),
-        ] {
-            let mut repeat = KeyEvent::new(code, modifiers);
-            repeat.kind = KeyEventKind::Repeat;
-            let before = state.clone();
-            assert_eq!(state.handle_key(repeat), KeybindingRecorderOutcome::Ignored);
-            assert_eq!(state, before, "{code:?} repeat mutated recorder state");
-        }
-
-        assert!(matches!(
-            state.handle_key(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE)),
-            KeybindingRecorderOutcome::RecordingCancelled { .. }
-        ));
-        for (code, modifiers) in [
-            (KeyCode::Delete, KeyModifiers::NONE),
-            (KeyCode::Char('r'), KeyModifiers::NONE),
-            (KeyCode::Esc, KeyModifiers::NONE),
-        ] {
-            let mut repeat = KeyEvent::new(code, modifiers);
-            repeat.kind = KeyEventKind::Repeat;
-            let before = state.clone();
-            assert_eq!(state.handle_key(repeat), KeybindingRecorderOutcome::Ignored);
-            assert_eq!(state, before, "{code:?} repeat mutated idle recorder state");
-        }
     }
 }

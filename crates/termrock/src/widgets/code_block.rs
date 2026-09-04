@@ -19,10 +19,14 @@ use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
     style::{Modifier, Style},
+    widgets::Widget,
 };
 
-use crate::input::KeyEvent;
-use crate::interaction::{NavigationMove, PageMove, UiIntent, default_list_intent};
+use crate::input::{KeyEvent, MouseButton, MouseEvent, MouseEventKind};
+use crate::interaction::{
+    EventResult, NavigationMove, PageMove, SemanticNode, SemanticRole, SemanticScene,
+    SemanticState, UiIntent, default_list_intent,
+};
 use crate::style::{DesignSystem, Role, SyntaxTone, VisualState};
 use crate::text::{
     display_cols, expand_tabs, is_terminal_control_char, take_display_cols, truncate_cols,
@@ -39,7 +43,11 @@ use crate::text::{
 /// uses, or highlight against prepared text via [`prepare_code_display`].
 pub trait SyntaxHighlighter {
     /// Styles a single prepared source line. Return styled segments covering the line.
-    fn highlight_line<'line>(&self, line: &'line str) -> Vec<(&'line str, Style)>;
+    fn highlight_line<'line>(
+        &self,
+        line: &'line str,
+        line_index: usize,
+    ) -> Vec<(&'line str, Style)>;
 }
 
 /// Neutral highlighter — whole line as plain text role at paint time.
@@ -47,7 +55,11 @@ pub trait SyntaxHighlighter {
 pub struct PlainSyntax;
 
 impl SyntaxHighlighter for PlainSyntax {
-    fn highlight_line<'line>(&self, line: &'line str) -> Vec<(&'line str, Style)> {
+    fn highlight_line<'line>(
+        &self,
+        line: &'line str,
+        _line_index: usize,
+    ) -> Vec<(&'line str, Style)> {
         vec![(line, Style::default())]
     }
 }
@@ -83,6 +95,19 @@ pub enum CodeTokenKind {
 }
 
 impl CodeTokenKind {
+    /// Semantic role this kind paints through.
+    #[must_use]
+    pub const fn role(self) -> Role {
+        match self {
+            Self::Plain | Self::Ident | Self::Function => Role::Text,
+            Self::Comment => Role::SyntaxComment,
+            Self::String => Role::SyntaxString,
+            Self::Number => Role::SyntaxNumber,
+            Self::Keyword => Role::SyntaxKeyword,
+            Self::Operator | Self::Punct => Role::TextMuted,
+        }
+    }
+
     /// junie syntax class — weight + text ladder, never hue.
     #[must_use]
     pub const fn syntax_tone(self) -> SyntaxTone {
@@ -109,7 +134,11 @@ impl CodeTokenKind {
 pub struct AnsiSyntax;
 
 impl SyntaxHighlighter for AnsiSyntax {
-    fn highlight_line<'line>(&self, line: &'line str) -> Vec<(&'line str, Style)> {
+    fn highlight_line<'line>(
+        &self,
+        line: &'line str,
+        _line_index: usize,
+    ) -> Vec<(&'line str, Style)> {
         // Detect ANSI but cannot re-borrow owned span content; paint plain.
         // Hosts that need SGR fidelity should expand via ansi_text before
         // CodeBlock or provide a custom highlighter with owned styles.
@@ -131,6 +160,17 @@ pub enum CodeWrap {
     Wrap,
 }
 
+impl CodeWrap {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Clip => "clip",
+            Self::Wrap => "wrap",
+        }
+    }
+}
+
 /// How tabs and control characters become display cells.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -142,6 +182,18 @@ pub enum ControlRender {
     ExpandTabs,
     /// Expand tabs; replace other controls with `·` (U+00B7).
     Placeholder,
+}
+
+impl ControlRender {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Visible => "visible",
+            Self::ExpandTabs => "expand-tabs",
+            Self::Placeholder => "placeholder",
+        }
+    }
 }
 
 /// Kind of line / column highlight overlay.
@@ -165,6 +217,19 @@ pub enum CodeHighlightKind {
 }
 
 impl CodeHighlightKind {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Selection => "selection",
+            Self::Search => "search",
+            Self::Diagnostic => "diagnostic",
+            Self::Emphasis => "emphasis",
+            Self::DiffAdd => "diff-add",
+            Self::DiffRemove => "diff-remove",
+        }
+    }
+
     fn role(self) -> Role {
         match self {
             // A selected range washes; the code keeps its syntax tones.
@@ -253,6 +318,30 @@ impl<'a> CodeSourceMeta<'a> {
             path: None,
             start_line_number: 1,
         }
+    }
+
+    /// Language only.
+    #[must_use]
+    pub const fn language(language: &'a str) -> Self {
+        Self {
+            language: Some(language),
+            path: None,
+            start_line_number: 1,
+        }
+    }
+
+    /// Path + language.
+    #[must_use]
+    pub const fn with_path(mut self, path: &'a str) -> Self {
+        self.path = Some(path);
+        self
+    }
+
+    /// 1-based starting line number for gutter.
+    #[must_use]
+    pub const fn start_line_number(mut self, n: usize) -> Self {
+        self.start_line_number = if n == 0 { 1 } else { n };
+        self
     }
 
     /// Header text when space allows.
@@ -366,6 +455,8 @@ pub struct CodeBlockState {
     pub focused: bool,
     /// Document is being edited (cursor line wears the field underline).
     pub editing: bool,
+    /// Hovered absolute line.
+    pub hovered_line: Option<usize>,
     /// Last painted geometry.
     pub parts: Option<CodeBlockParts>,
     /// Acknowledgement owed after a copy fired.
@@ -394,6 +485,7 @@ impl CodeBlockState {
             selection: None,
             focused: false,
             editing: false,
+            hovered_line: None,
             parts: None,
             copied: crate::style::ActionFlash::new(),
             viewport_rows: 0,
@@ -426,6 +518,11 @@ impl CodeBlockState {
     /// Cursor column (0-based display cells).
     pub const fn set_cursor_col(&mut self, col: usize) {
         self.cursor_col = col;
+    }
+
+    /// Select exclusive-end line range.
+    pub const fn set_selection(&mut self, range: Option<(usize, usize)>) {
+        self.selection = range;
     }
 
     /// Max scroll_y for `logical_len` lines and current viewport.
@@ -479,6 +576,24 @@ impl CodeBlockState {
                 .saturating_sub(u16::try_from(-delta).unwrap_or(u16::MAX));
         }
         before != self.scroll_x
+    }
+
+    /// Keep a display-column caret visible with the source editor's margin.
+    pub fn reveal_column(&mut self, col: usize) {
+        // Hosts may update the caret before the first paint establishes the
+        // body geometry. Defer reveal until a real viewport is known; treating
+        // the unknown width as one column creates a persistent bogus offset.
+        if self.body_width == 0 {
+            return;
+        }
+        let width = usize::from(self.body_width);
+        let x = usize::from(self.scroll_x);
+        if col < x.saturating_add(4) {
+            self.scroll_x = u16::try_from(col.saturating_sub(4)).unwrap_or(u16::MAX);
+        } else if col.saturating_add(4) >= x.saturating_add(width) {
+            self.scroll_x =
+                u16::try_from(col.saturating_add(5).saturating_sub(width)).unwrap_or(u16::MAX);
+        }
     }
 
     /// Reveal absolute line in viewport.
@@ -535,35 +650,16 @@ pub enum CodeBlockOutcome {
         /// Absolute line.
         line: usize,
     },
+    /// Selection updated.
+    SelectionChanged {
+        /// Inclusive start, exclusive end.
+        range: (usize, usize),
+    },
     /// Copy request — host emits clipboard / OSC 52.
     Copy {
         /// Prepared plain text (tabs expanded; controls stripped for safety).
         text: String,
     },
-}
-
-/// Per-line content painted by one body row.
-struct BodyRowCells<'a> {
-    /// Visible row (wrap segment or clipped slice).
-    display_row: &'a str,
-    /// Full prepared line the highlighter tokenizes against.
-    prepared_full: &'a str,
-    /// Absolute logical line the row belongs to.
-    abs_line: usize,
-    /// Active highlight kinds for `abs_line`.
-    kinds: &'a [CodeHighlightKind],
-}
-
-/// Row paint environment: palette, base field style, horizontal clip state.
-struct BodyRowPaint {
-    /// Monochrome capability (weight cues, no hue).
-    mono: bool,
-    /// Field style the row paints through.
-    field: Style,
-    /// Prepared line exceeds the visible width → trailing ellipsis.
-    overflow: bool,
-    /// Horizontal scroll offset in display columns.
-    scroll_x: u16,
 }
 
 // ── Widget ──────────────────────────────────────────────────────────────────
@@ -587,11 +683,17 @@ pub struct CodeBlock<'a, H: SyntaxHighlighter = PlainSyntax> {
     gutter_marks: &'a [CodeGutterMark],
     /// Unfinished fence / streaming append.
     streaming: bool,
+    /// Legacy first-line when painting without state.
+    first_line: usize,
     /// Absolute inclusive-start / exclusive-end of the current statement block.
     /// `›` is painted on the first line; `▎` is focus-only.
     current_block: Option<(usize, usize)>,
+    /// Whether a focused cursor line without an explicit block gets `›`.
+    cursor_marker: bool,
     /// Footer-left diagnostic / status (source CodeEditor message row).
     footer_status: Option<(&'a str, Role)>,
+    /// Keep the editor well full-height when the document is shorter than it.
+    fill_body: bool,
 }
 
 impl<'a> CodeBlock<'a, PlainSyntax> {
@@ -612,8 +714,11 @@ impl<'a> CodeBlock<'a, PlainSyntax> {
             highlights: &[],
             gutter_marks: &[],
             streaming: false,
+            first_line: 0,
             current_block: None,
+            cursor_marker: true,
             footer_status: None,
+            fill_body: false,
         }
     }
 }
@@ -626,10 +731,31 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
         self
     }
 
+    /// Source path metadata.
+    #[must_use]
+    pub const fn path(mut self, path: &'a str) -> Self {
+        self.meta.path = Some(path);
+        self
+    }
+
+    /// Full metadata.
+    #[must_use]
+    pub const fn meta(mut self, meta: CodeSourceMeta<'a>) -> Self {
+        self.meta = meta;
+        self
+    }
+
     /// Gutter line numbers.
     #[must_use]
     pub const fn line_numbers(mut self, enabled: bool) -> Self {
         self.show_line_numbers = enabled;
+        self
+    }
+
+    /// Legacy first visible line (Widget path / seed). Prefer [`CodeBlockState::scroll_y`].
+    #[must_use]
+    pub const fn first_line(mut self, first_line: usize) -> Self {
+        self.first_line = first_line;
         self
     }
 
@@ -667,8 +793,11 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
             highlights: self.highlights,
             gutter_marks: self.gutter_marks,
             streaming: self.streaming,
+            first_line: self.first_line,
             current_block: self.current_block,
+            cursor_marker: self.cursor_marker,
             footer_status: self.footer_status,
+            fill_body: self.fill_body,
         }
     }
 
@@ -676,6 +805,20 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
     #[must_use]
     pub const fn wrap(mut self, wrap: CodeWrap) -> Self {
         self.wrap = wrap;
+        self
+    }
+
+    /// Tab stop width (0 → 4).
+    #[must_use]
+    pub const fn tab_width(mut self, width: u8) -> Self {
+        self.tab_width = width;
+        self
+    }
+
+    /// Control-character render policy.
+    #[must_use]
+    pub const fn controls(mut self, controls: ControlRender) -> Self {
+        self.controls = controls;
         self
     }
 
@@ -700,6 +843,13 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
         self
     }
 
+    /// Keeps a short document's editor well full-height before its footer.
+    #[must_use]
+    pub const fn fill_body(mut self, on: bool) -> Self {
+        self.fill_body = on;
+        self
+    }
+
     /// Streaming / unfinished fence cue.
     #[must_use]
     pub const fn streaming(mut self, on: bool) -> Self {
@@ -712,6 +862,13 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
     #[must_use]
     pub const fn current_block(mut self, start: usize, end: usize) -> Self {
         self.current_block = Some((start, if end < start { start } else { end }));
+        self
+    }
+
+    /// Controls the implicit `›` marker for a focused line without a block.
+    #[must_use]
+    pub const fn cursor_marker(mut self, on: bool) -> Self {
+        self.cursor_marker = on;
         self
     }
 
@@ -816,7 +973,11 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
         if let Some(b) = self.current_block {
             return Some(b);
         }
-        state.cursor_line.map(|line| (line, line.saturating_add(1)))
+        if self.cursor_marker {
+            state.cursor_line.map(|line| (line, line.saturating_add(1)))
+        } else {
+            None
+        }
     }
 
     fn highlights_for(&self, abs_line: usize, state: &CodeBlockState) -> Vec<CodeHighlightKind> {
@@ -837,7 +998,12 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
         kinds
     }
 
-    fn line_style_overlay(&self, base: Style, kinds: &[CodeHighlightKind]) -> Style {
+    fn line_style_overlay(
+        &self,
+        base: Style,
+        kinds: &[CodeHighlightKind],
+        monochrome_syntax: bool,
+    ) -> Style {
         let mut style = base;
         for kind in kinds {
             let role_style = self.system.style(kind.role());
@@ -876,6 +1042,11 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
                     }
                 }
             }
+        }
+        if monochrome_syntax && style.add_modifier == Modifier::empty() {
+            // Ensure colorless path still differentiates via underline on keywords
+            // when highlighter returns Syntax roles that quantize to same gray.
+            let _ = monochrome_syntax;
         }
         style
     }
@@ -925,14 +1096,20 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
         // every document line; leftover rows below the document still host
         // the `1–N of M` / `ln · col` footer.
         let doc = self.document_len();
-        let body_h = if doc > 0 && doc <= usize::from(content_h) {
+        let body_h = if self.fill_body && content_h > 1 {
+            content_h.saturating_sub(1)
+        } else if doc > 0 && doc <= usize::from(content_h) {
             u16::try_from(doc).unwrap_or(content_h).min(content_h)
         } else if content_h > 1 {
             content_h.saturating_sub(1)
         } else {
             content_h
         };
-        let first = state.scroll_y;
+        let first = if state.parts.is_some() || state.viewport_rows > 0 {
+            state.scroll_y
+        } else {
+            state.scroll_y.max(self.first_line)
+        };
         let gutter_w = self.gutter_width(body_h, first);
         let gutter = Rect {
             x: area.x,
@@ -979,6 +1156,8 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
         state.viewport_rows = parts.body.height;
         state.body_width = parts.body.width;
         state.clamp(self.document_len());
+        parts.first_line = state.scroll_y.max(self.first_line);
+        // Prefer state.scroll_y after clamp
         parts.first_line = state.scroll_y;
 
         let header_text = self.meta.header_text();
@@ -1015,6 +1194,8 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
             buffer.set_style(well, fs);
         }
         let block = self.resolved_block(state);
+        let marker_on_first = block.is_some_and(|(start, _)| start == parts.first_line);
+        let spinner_present = self.gutter_marks.iter().any(|mark| mark.glyph != '!');
 
         let mono = self.is_monochrome();
         let tab = usize::from(self.tab_width);
@@ -1028,9 +1209,9 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
         let mut abs = first;
         while row < body_h {
             let Some(win_i) = self.window_index(abs) else {
-                // Past the document: junie still walks the well; `▎` only if
-                // the cursor sits on that empty line (`code.rs` `li == cur.line`).
-                if parts.gutter.width > 0 && state.cursor_line == Some(abs) {
+                // Past the document: junie keeps the focus gutter across the
+                // remaining editor well, even though no line number exists.
+                if parts.gutter.width > 0 {
                     let y = parts.body.y.saturating_add(row);
                     let gx = parts.gutter.x;
                     let line_gutter = self.system.gutter(
@@ -1070,30 +1251,27 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
             if parts.gutter.width > 0 {
                 let y = parts.body.y.saturating_add(row);
                 let gx = parts.gutter.x;
-                if state.cursor_line == Some(abs) {
-                    let line_gutter = self.system.gutter(
-                        VisualState {
-                            focused: state.focused,
-                            ..visual
-                        },
-                        field_bg,
-                        false,
-                    );
-                    buffer.set_stringn(
-                        gx,
-                        y,
-                        self.system.glyphs.selection_gutter(),
-                        1,
-                        line_gutter,
-                    );
-                }
+                let line_gutter = self.system.gutter(
+                    VisualState {
+                        focused: state.focused,
+                        ..visual
+                    },
+                    field_bg,
+                    false,
+                );
+                buffer.set_stringn(gx, y, self.system.glyphs.selection_gutter(), 1, line_gutter);
                 // junie: numbers at `area.x + 3` via `fit_right`.
                 let num_w = if self.show_line_numbers && parts.gutter.width > 3 {
-                    parts.gutter.width.saturating_sub(4)
+                    let width = parts.gutter.width.saturating_sub(4);
+                    if marker_on_first { width } else { width.max(2) }
                 } else {
                     0
                 };
-                let num_x = gx.saturating_add(3);
+                let num_x = gx.saturating_add(if marker_on_first || spinner_present {
+                    2
+                } else {
+                    3
+                });
                 let spinner = self
                     .gutter_marks
                     .iter()
@@ -1105,8 +1283,7 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
                 if let Some(m) = spinner {
                     let mark_style = fs.patch(self.system.style(m.role));
                     buffer.set_stringn(gx.saturating_add(1), y, m.glyph.to_string(), 1, mark_style);
-                } else if bang_mark.is_none()
-                    && let Some((start, end)) = block
+                } else if let Some((start, end)) = block
                     && abs == start
                     && abs < end
                 {
@@ -1136,24 +1313,31 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
                     };
                     buffer.set_stringn(num_x, y, &number, usize::from(num_w), nstyle);
                     if let Some(m) = bang_mark {
-                        // s_editor_diag: `▎  1!` — bang overwrites the last number cell.
+                        // Focused query diagnostics keep the statement marker and append
+                        // the bang after the line number: `▎› 1!`. Standalone blocks
+                        // retain the compact `▎  1!` overwrite used by the widget API.
                         let mut mark_style = fs.patch(self.system.style(m.role));
                         mark_style = mark_style.add_modifier(Modifier::BOLD);
-                        buffer.set_stringn(
-                            num_x.saturating_add(num_w.saturating_sub(1)),
-                            y,
-                            m.glyph.to_string(),
-                            1,
-                            mark_style,
-                        );
+                        let bang_x = if marker_on_first {
+                            num_x.saturating_add(num_w)
+                        } else {
+                            num_x.saturating_add(num_w.saturating_sub(1))
+                        };
+                        buffer.set_stringn(bang_x, y, m.glyph.to_string(), 1, mark_style);
                     }
                 }
             }
 
             // Body rows for this logical line
+            let leading_ellipsis = state.scroll_x > 0 && !prepared.is_empty();
             let display_rows: Vec<String> = match self.wrap {
                 CodeWrap::Clip => {
-                    let sliced = horizontal_slice(&prepared, state.scroll_x, body_w);
+                    let text_width = body_w.saturating_sub(u16::from(leading_ellipsis));
+                    let sliced = horizontal_slice(
+                        &prepared,
+                        state.scroll_x.saturating_add(u16::from(leading_ellipsis)),
+                        text_width,
+                    );
                     vec![sliced]
                 }
                 CodeWrap::Wrap => {
@@ -1169,27 +1353,37 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
                 if row >= body_h {
                     break;
                 }
-                // Continuation wrap rows leave the (already blank) gutter alone.
+                // Only number first wrap row was already painted; continuation blank gutter
+                if wrap_i > 0 && parts.gutter.width > 0 {
+                    // leave gutter as-is (already empty for this row)
+                }
+                let text_x = parts.body.x.saturating_add(u16::from(leading_ellipsis));
+                let text_width = body_w.saturating_sub(u16::from(leading_ellipsis));
                 self.paint_body_row(
                     buffer,
-                    parts.body.x,
+                    text_x,
                     parts.body.y.saturating_add(row),
-                    body_w,
-                    BodyRowCells {
-                        display_row,
-                        prepared_full: &prepared,
-                        abs_line: abs,
-                        kinds: &kinds,
-                    },
-                    BodyRowPaint {
-                        mono,
-                        field: fs,
-                        overflow: display_cols(&prepared)
-                            .saturating_sub(usize::from(state.scroll_x))
-                            > usize::from(body_w),
-                        scroll_x: state.scroll_x,
-                    },
+                    text_width,
+                    display_row,
+                    &prepared,
+                    abs,
+                    &kinds,
+                    mono,
+                    fs,
+                    display_cols(&prepared).saturating_sub(usize::from(
+                        state.scroll_x.saturating_add(u16::from(leading_ellipsis)),
+                    )) > usize::from(text_width),
+                    state.scroll_x.saturating_add(u16::from(leading_ellipsis)),
                 );
+                if leading_ellipsis && text_width > 0 {
+                    buffer.set_stringn(
+                        parts.body.x,
+                        parts.body.y.saturating_add(row),
+                        self.system.glyphs.ellipsis(),
+                        1,
+                        fs.fg(theme.text_muted),
+                    );
+                }
                 if wrap_i == 0 && state.editing && state.cursor_line == Some(abs) {
                     let y = parts.body.y.saturating_add(row);
                     for x in parts.body.x..parts.body.right() {
@@ -1286,32 +1480,35 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
         parts
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn paint_body_row(
         &self,
         buffer: &mut Buffer,
         x: u16,
         y: u16,
         width: u16,
-        cells: BodyRowCells<'_>,
-        paint: BodyRowPaint,
+        _display_row: &str,
+        prepared_full: &str,
+        abs_line: usize,
+        kinds: &[CodeHighlightKind],
+        mono: bool,
+        field: Style,
+        overflow: bool,
+        scroll_x: u16,
     ) {
         if width == 0 {
             return;
         }
         // Highlight against full prepared line; paint only display_row segment styles.
-        let segments = self.highlighter.highlight_line(cells.prepared_full);
-        let paint_segments = if cells.display_row == cells.prepared_full {
-            segments
-        } else {
-            self.highlighter.highlight_line(cells.display_row)
-        };
-        let unstyled = paint_segments.iter().all(|(_, s)| *s == Style::default());
+        let segments = self.highlighter.highlight_line(prepared_full, abs_line);
+        let unstyled = segments.iter().all(|(_, s)| *s == Style::default());
         let fallback: Vec<(&str, Style)>;
-        let paint_segments = if unstyled {
+        let source_segments = if unstyled {
             // Fallback: language-agnostic tokens through `theme.syntax()` —
-            // weight + text ladder, never historical ANSI hues.
+            // weight + text ladder, never historical ANSI hues. Tokenize the
+            // full line so horizontal clipping cannot split a keyword's style.
             fallback = tokenize_line(
-                cells.display_row,
+                prepared_full,
                 self.meta.language,
                 keywords_for(self.meta.language),
             )
@@ -1320,19 +1517,20 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
             .collect();
             fallback
         } else {
-            paint_segments
+            segments
         };
+        let paint_segments = clip_syntax_segments(&source_segments, scroll_x, width);
 
         let mut col = 0u16;
         for (segment, mut style) in paint_segments {
             if style == Style::default() {
                 style = self.system.junie_theme().syntax(SyntaxTone::Plain);
             } else {
-                style = monochrome_syntax_style(style, paint.mono);
+                style = monochrome_syntax_style(style, mono);
             }
-            style = paint.field.patch(style);
-            style = self.line_style_overlay(style, cells.kinds);
-            if !cells.kinds.iter().any(|k| {
+            style = field.patch(style);
+            style = self.line_style_overlay(style, kinds, mono);
+            if !kinds.iter().any(|k| {
                 matches!(
                     k,
                     CodeHighlightKind::Selection
@@ -1341,7 +1539,7 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
                 )
             }) {
                 style = Style {
-                    bg: paint.field.bg,
+                    bg: field.bg,
                     ..style
                 };
             }
@@ -1349,22 +1547,22 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
                 break;
             }
             let remaining = usize::from(width.saturating_sub(col));
-            let clipped = take_display_cols(segment, remaining);
+            let clipped = take_display_cols(&segment, remaining);
             let used = u16::try_from(display_cols(&clipped))
                 .unwrap_or(0)
                 .min(width.saturating_sub(col));
             buffer.set_stringn(x.saturating_add(col), y, &clipped, remaining, style);
             col = col.saturating_add(used);
         }
-        self.paint_diagnostic_underlines(buffer, x, y, width, cells.abs_line, paint.scroll_x);
-        if paint.overflow && width > 0 {
+        self.paint_diagnostic_underlines(buffer, x, y, width, abs_line, scroll_x);
+        if overflow && width > 0 {
             let theme = self.system.junie_theme();
             buffer.set_stringn(
                 x.saturating_add(width.saturating_sub(1)),
                 y,
                 self.system.glyphs.ellipsis(),
                 1,
-                paint.field.fg(theme.text_muted),
+                field.fg(theme.text_muted),
             );
         }
     }
@@ -1381,7 +1579,6 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
         if width == 0 {
             return;
         }
-        let theme = self.system.junie_theme();
         for h in self.highlights {
             if h.line != abs_line || h.kind != CodeHighlightKind::Diagnostic {
                 continue;
@@ -1389,7 +1586,12 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
             let start = h.start_col.unwrap_or(0).saturating_sub(scroll_x);
             let end = h.end_col.unwrap_or(u16::MAX).saturating_sub(scroll_x);
             let end = end.min(width);
-            let color = theme.warning;
+            let color = self
+                .gutter_marks
+                .iter()
+                .find(|mark| mark.line == abs_line && mark.glyph == '!')
+                .and_then(|mark| self.system.style(mark.role).fg)
+                .unwrap_or(self.system.junie_theme().warning);
             for col in start..end {
                 if let Some(cell) = buffer.cell_mut((x.saturating_add(col), y)) {
                     cell.set_style(
@@ -1538,11 +1740,131 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
         state.reveal_line(next, doc);
         CodeBlockOutcome::CursorMoved { line: next }
     }
+
+    /// Mouse: wheel scroll, click select line.
+    pub fn handle_mouse(&self, state: &mut CodeBlockState, event: MouseEvent) -> CodeBlockOutcome {
+        let Some(parts) = state.parts.clone() else {
+            return CodeBlockOutcome::Ignored;
+        };
+        let doc = self.document_len();
+        match event.kind {
+            MouseEventKind::ScrollUp => {
+                if state.scroll_by_lines(-3, doc) {
+                    return CodeBlockOutcome::Scrolled {
+                        scroll_y: state.scroll_y,
+                        scroll_x: state.scroll_x,
+                    };
+                }
+            }
+            MouseEventKind::ScrollDown => {
+                if state.scroll_by_lines(3, doc) {
+                    return CodeBlockOutcome::Scrolled {
+                        scroll_y: state.scroll_y,
+                        scroll_x: state.scroll_x,
+                    };
+                }
+            }
+            MouseEventKind::ScrollLeft => {
+                if matches!(self.wrap, CodeWrap::Clip) && state.scroll_by_cols(-4) {
+                    return CodeBlockOutcome::Scrolled {
+                        scroll_y: state.scroll_y,
+                        scroll_x: state.scroll_x,
+                    };
+                }
+            }
+            MouseEventKind::ScrollRight => {
+                if matches!(self.wrap, CodeWrap::Clip) && state.scroll_by_cols(4) {
+                    return CodeBlockOutcome::Scrolled {
+                        scroll_y: state.scroll_y,
+                        scroll_x: state.scroll_x,
+                    };
+                }
+            }
+            MouseEventKind::Moved => {
+                if parts.body.contains(event.position) || parts.gutter.contains(event.position) {
+                    let row = event.position.y.saturating_sub(parts.body.y);
+                    state.hovered_line = Some(parts.first_line.saturating_add(usize::from(row)));
+                } else {
+                    state.hovered_line = None;
+                }
+            }
+            MouseEventKind::Down(MouseButton::Left) => {
+                if parts.body.contains(event.position) || parts.gutter.contains(event.position) {
+                    let row = event.position.y.saturating_sub(parts.body.y);
+                    let line = parts.first_line.saturating_add(usize::from(row));
+                    if line < doc {
+                        state.focused = true;
+                        state.cursor_line = Some(line);
+                        state.selection = Some((line, line.saturating_add(1)));
+                        return CodeBlockOutcome::SelectionChanged {
+                            range: (line, line.saturating_add(1)),
+                        };
+                    }
+                }
+            }
+            _ => {}
+        }
+        CodeBlockOutcome::Ignored
+    }
+
+    /// EventResult wrapper.
+    pub fn handle_key_result(
+        &self,
+        state: &mut CodeBlockState,
+        key: KeyEvent,
+    ) -> EventResult<CodeBlockOutcome> {
+        match self.handle_key(state, key) {
+            CodeBlockOutcome::Ignored => EventResult::ignored(),
+            other => EventResult::emit(other),
+        }
+    }
+
+    /// Semantic registration (content + focusable when interactive).
+    pub fn register_semantic<Id, Action>(
+        &self,
+        scene: &mut SemanticScene<Id, Action>,
+        id: Id,
+        area: Rect,
+        state: &CodeBlockState,
+    ) where
+        Id: Clone + PartialEq + std::fmt::Display,
+        Action: Clone,
+    {
+        let parts = self.layout(area, state);
+        if parts.root.is_empty() {
+            return;
+        }
+        let desc = format!(
+            "code block {} lines{}",
+            self.document_len(),
+            if self.streaming { " streaming" } else { "" }
+        );
+        let _ = scene.register(
+            SemanticNode::control(id, parts.root)
+                .role(SemanticRole::Content)
+                .label("code")
+                .description(desc)
+                .focusable(true)
+                .state(SemanticState {
+                    selected: state.focused,
+                    ..Default::default()
+                }),
+        );
+    }
 }
 
-// CodeBlock paints only through `CodeBlock::paint(area, buffer, state)`:
-// a stateless render would discard cursor geometry, viewport rows, and
-// copy-flash, and silently repaint a different block than the state path.
+impl<H: SyntaxHighlighter> Widget for &CodeBlock<'_, H> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        let mut state = CodeBlockState::new().with_scroll_y(self.first_line);
+        let _ = self.paint(area, buffer, &mut state);
+    }
+}
+
+impl<H: SyntaxHighlighter> Widget for CodeBlock<'_, H> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        <&Self as Widget>::render(&self, area, buffer);
+    }
+}
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -1552,7 +1874,53 @@ fn horizontal_slice(s: &str, scroll_x: u16, width: u16) -> String {
     }
     // Skip scroll_x columns then take width.
     let skipped = take_display_cols_from(s, usize::from(scroll_x));
-    take_display_cols(&skipped, usize::from(width)).into_owned()
+    take_display_cols(&skipped, usize::from(width))
+}
+
+fn clip_syntax_segments(
+    segments: &[(&str, Style)],
+    scroll_x: u16,
+    width: u16,
+) -> Vec<(String, Style)> {
+    let skip = usize::from(scroll_x);
+    let limit = usize::from(width);
+    if limit == 0 {
+        return Vec::new();
+    }
+    let mut offset = 0usize;
+    let mut out: Vec<(String, Style)> = Vec::new();
+    for (segment, style) in segments {
+        let segment_width = display_cols(segment);
+        let segment_end = offset.saturating_add(segment_width);
+        if segment_end <= skip {
+            offset = segment_end;
+            continue;
+        }
+        let local_skip = skip.saturating_sub(offset);
+        let visible_width = limit.saturating_sub(
+            out.iter()
+                .map(|(text, _)| display_cols(text))
+                .sum::<usize>(),
+        );
+        if visible_width == 0 {
+            break;
+        }
+        let visible =
+            take_display_cols(&take_display_cols_from(segment, local_skip), visible_width);
+        if !visible.is_empty() {
+            out.push((visible, *style));
+        }
+        offset = segment_end;
+        if out
+            .iter()
+            .map(|(text, _)| display_cols(text))
+            .sum::<usize>()
+            >= limit
+        {
+            break;
+        }
+    }
+    out
 }
 
 /// Drop the first `skip` display columns of `s`, return remainder.
@@ -1765,6 +2133,31 @@ fn tokenize_code_part<'a>(line: &'a str, keywords: &[&str]) -> Vec<(&'a str, Cod
 
 // ── Role-aware token paint helper for hosts ─────────────────────────────────
 
+/// Map a token kind's [`Role`] through `theme.syntax()` (weight + ladder, no hue).
+///
+/// Call from custom highlighters when building segments with [`Role`].
+#[must_use]
+pub fn syntax_role_style(system: &DesignSystem, role: Role) -> Style {
+    let theme = system.junie_theme();
+    let tone = match role {
+        Role::SyntaxKeyword => SyntaxTone::Keyword,
+        Role::SyntaxString => SyntaxTone::Str,
+        Role::SyntaxNumber => SyntaxTone::Number,
+        Role::SyntaxComment => SyntaxTone::Comment,
+        Role::SyntaxFunction => SyntaxTone::Ident,
+        Role::TextMuted => SyntaxTone::Operator,
+        _ => SyntaxTone::Plain,
+    };
+    let mut style = theme.syntax(tone);
+    style = Style { bg: None, ..style };
+    if matches!(system.capability, crate::style::ColorCapability::Monochrome)
+        && matches!(tone, SyntaxTone::Keyword)
+    {
+        style = style.add_modifier(Modifier::BOLD);
+    }
+    style
+}
+
 /// Role-based token highlighter (uses DesignSystem colors / mono fallbacks).
 #[derive(Debug, Clone, Copy)]
 pub struct RoleTokenSyntax<'a> {
@@ -1803,6 +2196,20 @@ impl<'a> RoleTokenSyntax<'a> {
         }
     }
 
+    /// Shell / command fence keywords + system.
+    #[must_use]
+    pub const fn shell(system: &'a DesignSystem) -> Self {
+        const KW: &[&str] = &[
+            "if", "then", "else", "fi", "for", "do", "done", "while", "case", "esac", "function",
+            "export", "local", "return", "exit", "cd", "echo", "cargo", "git",
+        ];
+        Self {
+            system,
+            language: Some("sh"),
+            keywords: KW,
+        }
+    }
+
     /// Tokenizes one prepared line into classified kinds.
     ///
     /// The kind is the fact; [`DesignSystem`] owns the only presentation.
@@ -1813,7 +2220,11 @@ impl<'a> RoleTokenSyntax<'a> {
 }
 
 impl SyntaxHighlighter for RoleTokenSyntax<'_> {
-    fn highlight_line<'line>(&self, line: &'line str) -> Vec<(&'line str, Style)> {
+    fn highlight_line<'line>(
+        &self,
+        line: &'line str,
+        _line_index: usize,
+    ) -> Vec<(&'line str, Style)> {
         self.tokens_for_line(line)
             .into_iter()
             .map(|(seg, kind)| (seg, self.system.junie_theme().syntax(kind.syntax_tone())))
@@ -1831,11 +2242,10 @@ mod tests {
         let system = DesignSystem::default();
         let lines = ["fn main() {}", "    // hi"];
         let mut buffer = Buffer::empty(Rect::new(0, 0, 30, 3));
-        let mut state = CodeBlockState::new();
         CodeBlock::new(&lines, &system)
             .line_numbers(true)
             .language("rust")
-            .paint(Rect::new(0, 0, 30, 3), &mut buffer, &mut state);
+            .render(Rect::new(0, 0, 30, 3), &mut buffer);
         let header: String = (0..30)
             .map(|x| buffer[(x, 0)].symbol().to_owned())
             .collect();
@@ -1947,12 +2357,12 @@ mod tests {
         let system = DesignSystem::junie();
         let theme = system.junie_theme();
         let hi = RoleTokenSyntax::rust(&system);
-        let segs = hi.highlight_line("fn main() { let x = 1; // c");
+        let segs = hi.highlight_line("fn main() { let x = 1; // c", 0);
         let keyword = segs.iter().find(|(s, _)| *s == "fn").map(|(_, st)| *st);
         let ident = segs.iter().find(|(s, _)| *s == "main").map(|(_, st)| *st);
-        let stringish = hi.highlight_line("\"hi\"");
-        let number = hi.highlight_line("42");
-        let comment = hi.highlight_line("// x");
+        let stringish = hi.highlight_line("\"hi\"", 0);
+        let number = hi.highlight_line("42", 0);
+        let comment = hi.highlight_line("// x", 0);
         assert_eq!(keyword, Some(theme.syntax(SyntaxTone::Keyword)));
         assert_eq!(ident, Some(theme.syntax(SyntaxTone::Ident)));
         assert_eq!(stringish[0].1, theme.syntax(SyntaxTone::Str));

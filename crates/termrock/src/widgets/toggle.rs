@@ -12,10 +12,6 @@
 //! label association and checked semantics (`[✓]` / `[ ]`). Toggle is a toolbar
 //! affordance (pressed reverse + label vs padded idle label). No `[inner]` wells.
 //!
-//! Toggle paints only through `Toggle::paint(area, buffer, state)`; a stateless
-//! render would rebuild `ToggleState` per frame and every frame would paint the
-//! switch idle regardless of the pressed state the host owns.
-//!
 //! **vs [`Switch`](crate::widgets::Switch).** Switch is an immediate On/Off
 //! setting (`▎──●` / `○──`). Toggle does not imply a persistent preference.
 //!
@@ -34,12 +30,18 @@
 //! - Exclusive options with long descriptions → RadioGroup
 //!
 //! Research: Radix Toggle/ToggleGroup, editor toolbars, terminal mode chips.
-use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
+#![allow(unused_imports)] // test-module imports kept for unit tests; lib path may not use them
+use ratatui_core::{
+    buffer::Buffer,
+    layout::{Position, Rect},
+    style::Modifier,
+    widgets::Widget,
+};
 
-use crate::input::{KeyEvent, MouseButton, MouseEvent, MouseEventKind};
+use crate::input::{KeyEvent, KeyEventKind, MouseButton, MouseEvent, MouseEventKind};
 use crate::interaction::{
-    NavigationMove, RovingEntry, RovingFocusGroup, RovingOrientation, RovingOutcome, SemanticNode,
-    SemanticRole, SemanticScene, SemanticState, UiIntent, default_button_intent,
+    EventResult, NavigationMove, RovingEntry, RovingFocusGroup, RovingOrientation, RovingOutcome,
+    SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, default_button_intent,
     default_list_intent,
 };
 use crate::style::{ButtonRecipeVariant, ControlState, DesignSystem, Role, VisualState};
@@ -80,6 +82,13 @@ impl ToggleValue {
     pub const fn is_pressed(self) -> bool {
         matches!(self, Self::Pressed)
     }
+
+    /// Whether mixed.
+    #[must_use]
+    pub const fn is_indeterminate(self) -> bool {
+        matches!(self, Self::Indeterminate)
+    }
+
     /// Next value after activate (indeterminate/off → on, on → off).
     #[must_use]
     pub const fn activate(self) -> Self {
@@ -111,6 +120,17 @@ pub enum ToggleSize {
     Compact,
 }
 
+impl ToggleSize {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Default => "default",
+            Self::Compact => "compact",
+        }
+    }
+}
+
 /// Face chrome recipe.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -124,6 +144,18 @@ pub enum ToggleRecipe {
     Solid,
 }
 
+impl ToggleRecipe {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Outline => "outline",
+            Self::Quiet => "quiet",
+            Self::Solid => "solid",
+        }
+    }
+}
+
 /// Group selection policy.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -133,6 +165,17 @@ pub enum ToggleGroupType {
     Single,
     /// Independent pressed flags (bold + italic).
     Multiple,
+}
+
+impl ToggleGroupType {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Single => "single",
+            Self::Multiple => "multiple",
+        }
+    }
 }
 
 /// Visual connection in a group.
@@ -147,13 +190,22 @@ pub enum ToggleGroupRecipe {
 }
 
 impl ToggleGroupRecipe {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Connected => "connected",
+            Self::Separated => "separated",
+        }
+    }
+
     fn inter_cols(self) -> u16 {
         1
     }
 
-    fn separator_glyph(self) -> Option<&'static str> {
+    fn separator_glyph(self, ascii: bool) -> Option<&'static str> {
         match self {
-            Self::Connected => Some("│"),
+            Self::Connected => Some(if ascii { "|" } else { "│" }),
             Self::Separated => None,
         }
     }
@@ -168,6 +220,17 @@ pub enum ToggleGroupOrientation {
     Horizontal,
     /// Stacked rows.
     Vertical,
+}
+
+impl ToggleGroupOrientation {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Horizontal => "horizontal",
+            Self::Vertical => "vertical",
+        }
+    }
 }
 
 // ── Single Toggle ───────────────────────────────────────────────────────────
@@ -299,10 +362,38 @@ impl<'a> Toggle<'a> {
         self
     }
 
+    /// Compact toolbar density.
+    #[must_use]
+    pub const fn compact(mut self) -> Self {
+        self.size = ToggleSize::Compact;
+        self
+    }
+
     /// Recipe.
     #[must_use]
     pub const fn recipe(mut self, recipe: ToggleRecipe) -> Self {
         self.recipe = recipe;
+        self
+    }
+
+    /// Quiet recipe.
+    #[must_use]
+    pub const fn quiet(mut self) -> Self {
+        self.recipe = ToggleRecipe::Quiet;
+        self
+    }
+
+    /// Solid pressed fill.
+    #[must_use]
+    pub const fn solid(mut self) -> Self {
+        self.recipe = ToggleRecipe::Solid;
+        self
+    }
+
+    /// Colorless emphasis.
+    #[must_use]
+    pub const fn colorless(mut self, on: bool) -> Self {
+        self.colorless = on;
         self
     }
 
@@ -336,17 +427,19 @@ impl<'a> Toggle<'a> {
 
     /// Preferred width for layout.
     #[must_use]
-    pub fn preferred_width(&self) -> u16 {
+    pub fn preferred_width(&self, value: ToggleValue) -> u16 {
         let inner = self.face_inner();
         let cols = display_cols(&inner).max(1);
         let chrome = match self.size {
             ToggleSize::Compact => 0,
             ToggleSize::Default => 2,
         };
+        let _ = (self.recipe, value);
         u16::try_from(cols.saturating_add(chrome).max(1)).unwrap_or(1)
     }
 
-    fn format_face(&self) -> String {
+    fn format_face(&self, value: ToggleValue) -> String {
+        let _ = value;
         let inner = self.face_inner();
         let inner = if inner.is_empty() { "·".into() } else { inner };
         match self.size {
@@ -526,6 +619,18 @@ impl<'a> Toggle<'a> {
         }
     }
 
+    /// EventResult wrapper.
+    pub fn handle_key_result(
+        &self,
+        state: &mut ToggleState,
+        key: KeyEvent,
+    ) -> EventResult<ToggleOutcome> {
+        match self.handle_key(state, key) {
+            ToggleOutcome::Ignored => EventResult::ignored(),
+            other => EventResult::emit(other),
+        }
+    }
+
     /// Semantic registration.
     pub fn register_semantic<Id, Action>(
         &self,
@@ -554,6 +659,13 @@ impl<'a> Toggle<'a> {
                     ..Default::default()
                 }),
         );
+    }
+}
+
+impl Widget for &Toggle<'_> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        let mut state = ToggleState::new();
+        let _ = self.paint(area, buffer, &mut state);
     }
 }
 
@@ -597,6 +709,34 @@ impl<'a, Id> ToggleGroupItem<'a, Id> {
     #[must_use]
     pub const fn pressed(mut self, on: bool) -> Self {
         self.value = ToggleValue::from_pressed(on);
+        self
+    }
+
+    /// Explicit value.
+    #[must_use]
+    pub const fn value(mut self, value: ToggleValue) -> Self {
+        self.value = value;
+        self
+    }
+
+    /// Icon.
+    #[must_use]
+    pub const fn icon(mut self, icon: &'a str) -> Self {
+        self.icon = Some(icon);
+        self
+    }
+
+    /// A11y name.
+    #[must_use]
+    pub const fn accessible_label(mut self, name: &'a str) -> Self {
+        self.accessible_label = Some(name);
+        self
+    }
+
+    /// Enabled.
+    #[must_use]
+    pub const fn enabled(mut self, on: bool) -> Self {
+        self.enabled = on;
         self
     }
 
@@ -770,6 +910,13 @@ impl<'a, Id> ToggleGroup<'a, Id> {
         self
     }
 
+    /// Group type.
+    #[must_use]
+    pub const fn group_type(mut self, t: ToggleGroupType) -> Self {
+        self.group_type = t;
+        self
+    }
+
     /// Connected faces.
     #[must_use]
     pub const fn connected(mut self) -> Self {
@@ -777,10 +924,38 @@ impl<'a, Id> ToggleGroup<'a, Id> {
         self
     }
 
+    /// Separated faces.
+    #[must_use]
+    pub const fn separated(mut self) -> Self {
+        self.recipe = ToggleGroupRecipe::Separated;
+        self
+    }
+
+    /// Orientation.
+    #[must_use]
+    pub const fn orientation(mut self, o: ToggleGroupOrientation) -> Self {
+        self.orientation = o;
+        self
+    }
+
     /// Compact toolbar density.
     #[must_use]
     pub const fn compact(mut self) -> Self {
         self.size = ToggleSize::Compact;
+        self
+    }
+
+    /// Face recipe.
+    #[must_use]
+    pub const fn face_recipe(mut self, recipe: ToggleRecipe) -> Self {
+        self.face_recipe = recipe;
+        self
+    }
+
+    /// Overflow label.
+    #[must_use]
+    pub const fn overflow_label(mut self, label: &'a str) -> Self {
+        self.overflow_label = label;
         self
     }
 
@@ -805,7 +980,7 @@ impl<'a, Id> ToggleGroup<'a, Id> {
     }
 
     fn item_width(&self, item: &ToggleGroupItem<'a, Id>) -> u16 {
-        self.item_toggle(item).preferred_width().max(2)
+        self.item_toggle(item).preferred_width(item.value).max(2)
     }
 
     fn overflow_trigger_width(&self) -> u16 {
@@ -929,7 +1104,7 @@ impl<'a, Id: Clone + PartialEq> ToggleGroup<'a, Id> {
                 .or_else(|| visible_ids.first().cloned());
         }
 
-        let roving_entries: Vec<RovingEntry<'_, Id>> = visible
+        let roving_entries: Vec<RovingEntry<Id>> = visible
             .iter()
             .map(|&i| {
                 let it = &self.items[i];
@@ -964,7 +1139,7 @@ impl<'a, Id: Clone + PartialEq> ToggleGroup<'a, Id> {
             }
             ToggleGroupOrientation::Horizontal => {
                 let gap = self.recipe.inter_cols();
-                let sep = self.recipe.separator_glyph();
+                let sep = self.recipe.separator_glyph(false);
                 let mut x = area.x;
                 let mut first = true;
                 for &idx in &visible {
@@ -1078,7 +1253,7 @@ impl<'a, Id: Clone + PartialEq> ToggleGroup<'a, Id> {
         ts.hovered = state.hovered.as_ref() == Some(&item.id);
         // Toolbar group is reverse+label (no `[inner]` wells). Form switch
         // lives on standalone [`Toggle::paint`].
-        let face = t.format_face();
+        let face = t.format_face(item.value);
         let text = take_display_cols(&face, usize::from(area.width));
         let style = t.face_style(&ts);
         buffer.set_stringn(area.x, area.y, &text, usize::from(area.width), style);
@@ -1126,7 +1301,7 @@ impl<'a, Id: Clone + PartialEq> ToggleGroup<'a, Id> {
         }
 
         let parts = state.parts.clone();
-        let visible: Vec<RovingEntry<'_, Id>> = if let Some(p) = &parts {
+        let visible: Vec<RovingEntry<Id>> = if let Some(p) = &parts {
             p.items
                 .iter()
                 .filter(|it| !it.overflowed)
@@ -1208,6 +1383,134 @@ impl<'a, Id: Clone + PartialEq> ToggleGroup<'a, Id> {
 
         ToggleGroupOutcome::Ignored
     }
+
+    /// Mouse.
+    pub fn handle_mouse(
+        &self,
+        state: &mut ToggleGroupState<Id>,
+        event: MouseEvent,
+    ) -> ToggleGroupOutcome<Id> {
+        let Some(parts) = state.parts.clone() else {
+            return ToggleGroupOutcome::Ignored;
+        };
+        if !parts.root.contains(event.position) {
+            if matches!(event.kind, MouseEventKind::Moved) {
+                state.hovered = None;
+            }
+            return ToggleGroupOutcome::Ignored;
+        }
+        match event.kind {
+            MouseEventKind::Moved | MouseEventKind::Drag(_) => {
+                state.hovered = parts
+                    .items
+                    .iter()
+                    .find(|it| !it.overflowed && it.area.contains(event.position))
+                    .map(|it| it.id.clone());
+                ToggleGroupOutcome::Ignored
+            }
+            MouseEventKind::Down(MouseButton::Left) => {
+                if let Some(tr) = parts.overflow_trigger {
+                    if tr.contains(event.position) {
+                        state.surface_focused = true;
+                        state.overflow_open = !state.overflow_open;
+                        return if state.overflow_open {
+                            ToggleGroupOutcome::OverflowOpened
+                        } else {
+                            ToggleGroupOutcome::OverflowClosed
+                        };
+                    }
+                }
+                if let Some(it) = parts
+                    .items
+                    .iter()
+                    .find(|it| !it.overflowed && it.area.contains(event.position))
+                {
+                    state.surface_focused = true;
+                    state.cursor = Some(it.id.clone());
+                    return self.activate_item(state, it.id.clone());
+                }
+                ToggleGroupOutcome::Ignored
+            }
+            _ => ToggleGroupOutcome::Ignored,
+        }
+    }
+
+    /// Host selected overflow menu item → activate.
+    pub fn activate_overflow(
+        &self,
+        state: &ToggleGroupState<Id>,
+        id: Id,
+    ) -> ToggleGroupOutcome<Id> {
+        if state
+            .parts
+            .as_ref()
+            .is_some_and(|p| p.overflow_ids.iter().any(|x| x == &id))
+        {
+            return self.activate_item(state, id);
+        }
+        ToggleGroupOutcome::Ignored
+    }
+
+    /// EventResult wrapper.
+    pub fn handle_key_result(
+        &self,
+        state: &mut ToggleGroupState<Id>,
+        key: KeyEvent,
+    ) -> EventResult<ToggleGroupOutcome<Id>> {
+        match self.handle_key(state, key) {
+            ToggleGroupOutcome::Ignored => EventResult::ignored(),
+            other => EventResult::emit(other),
+        }
+    }
+
+    /// Semantic: group + each visible toggle.
+    pub fn register_semantic<Action>(
+        &self,
+        scene: &mut SemanticScene<Id, Action>,
+        group_id: Id,
+        area: Rect,
+        state: &ToggleGroupState<Id>,
+    ) where
+        Id: Clone + PartialEq + std::fmt::Display,
+        Action: Clone,
+    {
+        if area.is_empty() {
+            return;
+        }
+        let _ = scene.register(
+            SemanticNode::control(group_id, area)
+                .role(SemanticRole::List)
+                .label("toggle group")
+                .description(self.group_type.id())
+                .focusable(true)
+                .state(SemanticState {
+                    selected: state.surface_focused,
+                    ..Default::default()
+                }),
+        );
+        if let Some(parts) = &state.parts {
+            for it in &parts.items {
+                if it.overflowed {
+                    continue;
+                }
+                let Some(item) = self.item_by_id(&it.id) else {
+                    continue;
+                };
+                let t = self.item_toggle(item);
+                let mut ts = ToggleState::with_value(item.value);
+                ts.enabled = item.enabled;
+                ts.focused = state.surface_focused && state.cursor.as_ref() == Some(&it.id);
+                t.register_semantic(scene, it.id.clone(), it.area, &ts);
+            }
+        }
+    }
+}
+
+impl<'a, Id: Clone + PartialEq> Widget for &ToggleGroup<'a, Id> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        let mut state = ToggleGroupState::new();
+        let _ = self.paint(area, buffer, &mut state);
+    }
 }
 
 // ── Tests ───────────────────────────────────────────────────────────────────
@@ -1216,7 +1519,6 @@ impl<'a, Id: Clone + PartialEq> ToggleGroup<'a, Id> {
 mod tests {
     use super::*;
     use crate::input::{KeyCode, KeyModifiers};
-    use crate::widgets::tests::click;
 
     #[test]
     fn value_activate_cycles() {
@@ -1284,7 +1586,17 @@ mod tests {
         let mut state = ToggleState::new();
         let mut buf = Buffer::empty(Rect::new(0, 0, 10, 1));
         let parts = t.paint(Rect::new(0, 0, 10, 1), &mut buf, &mut state);
-        let out = t.handle_mouse(&mut state, click(parts.root.x, parts.root.y));
+        let out = t.handle_mouse(
+            &mut state,
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: Position {
+                    x: parts.root.x,
+                    y: parts.root.y,
+                },
+                modifiers: KeyModifiers::NONE,
+            },
+        );
         assert!(matches!(
             out,
             ToggleOutcome::ValueChanged {
@@ -1586,12 +1898,18 @@ mod tests {
     fn format_face_is_padded_inner_without_wells() {
         let system = DesignSystem::junie();
         let t = Toggle::new("B", &system);
-        let face = t.format_face();
-        assert!(!face.contains('['), "well leaked: {face:?}");
-        assert!(!face.contains(']'), "well leaked: {face:?}");
-        assert!(face.contains('B'), "{face:?}");
+        for value in [
+            ToggleValue::Unpressed,
+            ToggleValue::Pressed,
+            ToggleValue::Indeterminate,
+        ] {
+            let face = t.format_face(value);
+            assert!(!face.contains('['), "well leaked: {face:?}");
+            assert!(!face.contains(']'), "well leaked: {face:?}");
+            assert!(face.contains('B'), "{face:?}");
+        }
         let compact = Toggle::new("B", &system).size(ToggleSize::Compact);
-        assert_eq!(compact.format_face(), "B");
+        assert_eq!(compact.format_face(ToggleValue::Pressed), "B");
     }
 
     #[test]

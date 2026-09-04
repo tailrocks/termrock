@@ -11,10 +11,6 @@
 //! **Controlled vs uncontrolled.** Pass [`Collapsible::open`] each frame for
 //! controlled open state; omit it and [`CollapsibleState`] owns open/closed.
 //!
-//! Collapsible paints only through `Collapsible::paint(area, buffer, state)`;
-//! a stateless render would rebuild `CollapsibleState` per frame and repaint
-//! the disclosure closed, losing animation and focus geometry.
-//!
 //! **Keep-mounted policy.** When closed, layout always collapses body height to
 //! zero. [`CollapsedContentPolicy::KeepMounted`] is a host signal: keep domain
 //! child *state* alive while not painting; [`Unmount`] allows dropping children.
@@ -22,10 +18,10 @@
 //! Glyphs use [`GlyphSet`] disclosure markers (ASCII fallbacks).
 //!
 //! References: Radix Collapsible, tree disclosures, agent tool-detail expansion.
-use ratatui_core::{buffer::Buffer, layout::Rect};
+use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::input::{KeyEvent, MouseButton, MouseEvent, MouseEventKind};
-use crate::interaction::{UiIntent, default_tree_intent};
+use crate::interaction::{EventResult, UiIntent, default_tree_intent};
 use crate::style::{DesignSystem, Role};
 use crate::text::take_display_cols;
 
@@ -97,6 +93,14 @@ pub struct CollapsibleParts {
     pub content_policy: CollapsedContentPolicy,
 }
 
+impl CollapsibleParts {
+    /// True when content has positive area.
+    #[must_use]
+    pub const fn has_content(self) -> bool {
+        self.content.width > 0 && self.content.height > 0
+    }
+}
+
 /// Typed outcomes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -110,6 +114,27 @@ pub enum CollapsibleOutcome {
     Closed,
 }
 
+impl CollapsibleOutcome {
+    /// Whether open state changed.
+    #[must_use]
+    pub const fn changed(self) -> bool {
+        matches!(self, Self::Opened | Self::Closed)
+    }
+
+    /// Resulting open flag if changed.
+    #[must_use]
+    pub const fn open(self) -> Option<bool> {
+        match self {
+            Self::Opened => Some(true),
+            Self::Closed => Some(false),
+            Self::Ignored => None,
+        }
+    }
+}
+
+/// How long a section takes to reveal its body.
+const REVEAL_MS: u64 = 120;
+
 /// Interaction + uncontrolled open state.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct CollapsibleState {
@@ -119,9 +144,29 @@ pub struct CollapsibleState {
     pub focused: bool,
     /// Cached parts from last paint.
     pub parts: Option<CollapsibleParts>,
+    /// When the section last toggled, in runner milliseconds.
+    toggled_at_ms: u64,
 }
 
 impl CollapsibleState {
+    /// Records a toggle so the next frames can reveal the body gradually.
+    pub const fn mark_toggled_at(&mut self, elapsed_ms: u64) {
+        self.toggled_at_ms = elapsed_ms;
+    }
+
+    /// How far the reveal has run at `elapsed_ms` (`1.0` settled).
+    #[must_use]
+    pub fn reveal_fraction(&self, elapsed_ms: u64, duration_ms: u64) -> f32 {
+        if duration_ms == 0 {
+            return 1.0;
+        }
+        let since = elapsed_ms.saturating_sub(self.toggled_at_ms);
+        if since >= duration_ms {
+            return 1.0;
+        }
+        since as f32 / duration_ms as f32
+    }
+
     /// Closed, unfocused.
     #[must_use]
     pub const fn new() -> Self {
@@ -129,6 +174,7 @@ impl CollapsibleState {
             open: false,
             focused: false,
             parts: None,
+            toggled_at_ms: 0,
         }
     }
 
@@ -153,6 +199,12 @@ impl CollapsibleState {
     /// Trigger focus.
     pub const fn set_focused(&mut self, focused: bool) {
         self.focused = focused;
+    }
+
+    /// Whether focused.
+    #[must_use]
+    pub const fn is_focused(&self) -> bool {
+        self.focused
     }
 
     fn apply_open(&mut self, open: bool) -> CollapsibleOutcome {
@@ -228,6 +280,19 @@ impl CollapsibleState {
                 self.apply_open(false)
             }
             _ => CollapsibleOutcome::Ignored,
+        }
+    }
+
+    /// Key with EventResult.
+    pub fn handle_key_result(
+        &mut self,
+        key: KeyEvent,
+        disabled: bool,
+        controlled_open: Option<bool>,
+    ) -> EventResult<CollapsibleOutcome> {
+        match self.handle_key(key, disabled, controlled_open) {
+            CollapsibleOutcome::Ignored => EventResult::ignored(),
+            other => EventResult::emit(other),
         }
     }
 
@@ -317,6 +382,13 @@ impl<'a> Collapsible<'a> {
         self
     }
 
+    /// Inline compact trigger.
+    #[must_use]
+    pub const fn inline(mut self) -> Self {
+        self.variant = CollapsibleVariant::Inline;
+        self
+    }
+
     /// Disabled (no toggle).
     #[must_use]
     pub const fn disabled(mut self, disabled: bool) -> Self {
@@ -345,11 +417,24 @@ impl<'a> Collapsible<'a> {
         self
     }
 
+    /// Extra left indent.
+    #[must_use]
+    pub const fn indent(mut self, indent: u16) -> Self {
+        self.indent = indent;
+        self
+    }
+
     /// Preferred content height when open (0 = fill remaining).
     #[must_use]
     pub const fn preferred_content_height(mut self, rows: u16) -> Self {
         self.preferred_content_height = rows;
         self
+    }
+
+    /// Whether this instance is disabled.
+    #[must_use]
+    pub const fn is_disabled(&self) -> bool {
+        self.disabled
     }
 
     /// Content policy.
@@ -363,6 +448,35 @@ impl<'a> Collapsible<'a> {
     pub fn resolved_open(&self, state: &CollapsibleState) -> bool {
         self.open.unwrap_or(state.open)
     }
+
+    /// How many body rows to reveal this frame.
+    ///
+    /// A section that snaps from zero rows to twelve moves everything below
+    /// it in one frame; revealing over ~120 ms keeps the reader's place. A
+    /// host that never calls [`CollapsibleState::mark_toggled_at`] gets the
+    /// settled count, which is the honest static answer (plans/014 Step 3b).
+    #[must_use]
+    pub fn reveal_rows(
+        &self,
+        state: &CollapsibleState,
+        content_rows: u16,
+        elapsed_ms: u64,
+        motion: crate::style::MotionPolicy,
+    ) -> u16 {
+        if !self.resolved_open(state) {
+            return 0;
+        }
+        if !motion.allows_transitions() {
+            return content_rows;
+        }
+        let settled = state.reveal_fraction(elapsed_ms, REVEAL_MS);
+        if settled >= 1.0 {
+            return content_rows;
+        }
+        let rows = f32::from(content_rows) * settled;
+        (rows.round() as u16).clamp(1, content_rows.max(1))
+    }
+
     fn left_pad(&self) -> u16 {
         self.indent
             .saturating_add(u16::from(self.depth).saturating_mul(2))
@@ -493,12 +607,11 @@ impl<'a> Collapsible<'a> {
                 let rule = self.system.glyphs.rule();
                 let fill_x = parts.trigger.x.saturating_add(used);
                 let fill_w = parts.trigger.width.saturating_sub(used);
-                let rule_fill = rule.repeat(usize::from(fill_w));
-                let pad = take_display_cols(&rule_fill, usize::from(fill_w));
+                let pad = take_display_cols(&rule.repeat(usize::from(fill_w)), usize::from(fill_w));
                 buffer.set_stringn(
                     fill_x,
                     parts.trigger.y,
-                    pad.as_ref(),
+                    &pad,
                     usize::from(fill_w),
                     self.system.style(Role::Border),
                 );
@@ -534,11 +647,26 @@ impl<'a> Collapsible<'a> {
     }
 }
 
+impl Widget for &Collapsible<'_> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        let mut state = CollapsibleState::new();
+        if let Some(open) = self.open {
+            state.open = open;
+        }
+        let _ = self.paint(area, buffer, &mut state);
+    }
+}
+
+impl Widget for Collapsible<'_> {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
+        <&Self as Widget>::render(&self, area, buffer);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::input::{KeyCode, KeyModifiers};
-    use crate::widgets::tests::click;
 
     #[test]
     fn uncontrolled_toggle_via_enter() {
@@ -624,7 +752,15 @@ mod tests {
         let mut buf = Buffer::empty(Rect::new(0, 0, 20, 4));
         let body = c.paint(Rect::new(0, 0, 20, 4), &mut buf, &mut state);
         assert_eq!(body.height, 0);
-        let out = state.handle_mouse(click(0, 0), true, None);
+        let out = state.handle_mouse(
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: ratatui_core::layout::Position { x: 0, y: 0 },
+                modifiers: KeyModifiers::NONE,
+            },
+            true,
+            None,
+        );
         assert_eq!(out, CollapsibleOutcome::Ignored);
     }
 
@@ -670,7 +806,15 @@ mod tests {
         let mut state = CollapsibleState::new();
         let mut buf = Buffer::empty(Rect::new(0, 0, 24, 5));
         let _ = c.paint(Rect::new(0, 0, 24, 5), &mut buf, &mut state);
-        let out = state.handle_mouse(click(1, 0), false, None);
+        let out = state.handle_mouse(
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                position: ratatui_core::layout::Position { x: 1, y: 0 },
+                modifiers: KeyModifiers::NONE,
+            },
+            false,
+            None,
+        );
         assert_eq!(out, CollapsibleOutcome::Opened);
     }
 

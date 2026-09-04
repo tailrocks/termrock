@@ -209,6 +209,27 @@ impl VirtualWindow {
     pub const fn visible_range(self) -> (u64, u64) {
         super::virtualizer::fixed_visible_range(self.offset, self.viewport, self.logical_len)
     }
+
+    /// Lift into the canonical [`crate::widgets::Virtualizer`] (fixed extent 1).
+    #[must_use]
+    pub fn to_virtualizer(self) -> super::virtualizer::Virtualizer {
+        super::virtualizer::Virtualizer::from_fixed_slots(
+            self.offset,
+            self.viewport,
+            self.logical_len,
+        )
+    }
+
+    /// Project from a fixed-extent virtualizer.
+    #[must_use]
+    pub fn from_virtualizer(v: &super::virtualizer::Virtualizer) -> Self {
+        let (offset, viewport, logical_len) = v.to_fixed_slots();
+        Self {
+            offset,
+            viewport,
+            logical_len,
+        }
+    }
 }
 
 // ── Column model ────────────────────────────────────────────────────────────
@@ -440,6 +461,19 @@ impl<Id: PartialEq> ColumnModel<Id> {
         self.width_overrides[i] = Some(width.max(1));
         true
     }
+
+    /// Clear width override for a column.
+    pub fn clear_width_override(&mut self, id: &Id) -> bool {
+        let Some(i) = self.index_of(id) else {
+            return false;
+        };
+        if let Some(slot) = self.width_overrides.get_mut(i) {
+            *slot = None;
+            return true;
+        }
+        false
+    }
+
     /// Reorder: move column at `from` so it lands at `to` (display order).
     pub fn move_column(&mut self, from: usize, to: usize) -> bool {
         if from >= self.columns.len() || to >= self.columns.len() || from == to {
@@ -465,6 +499,16 @@ impl<Id: PartialEq> ColumnModel<Id> {
         }
         false
     }
+
+    /// Builder-style sortable / editable markers.
+    pub fn set_sortable(&mut self, id: &Id, sortable: bool) -> bool {
+        if let Some(col) = self.columns.iter_mut().find(|c| &c.id == id) {
+            col.sortable = sortable;
+            return true;
+        }
+        false
+    }
+
     /// Drop lowest-priority unpinned columns until `budget` visible columns remain
     /// (or only essential priority ≥ `keep_min_priority` left).
     pub fn contract_to_budget(&mut self, budget: usize, keep_min_priority: u8) {
@@ -630,6 +674,8 @@ pub enum SelectionMode {
     /// No selection chrome.
     #[default]
     None,
+    /// Single row.
+    Row,
     /// Multiple rows.
     MultiRow,
     /// Single cell.
@@ -670,6 +716,17 @@ impl<RowId: Ord> Default for SelectionModel<RowId> {
 }
 
 impl<RowId: Ord + Clone> SelectionModel<RowId> {
+    /// Single-row mode.
+    #[must_use]
+    pub fn row() -> Self {
+        Self {
+            mode: SelectionMode::Row,
+            rows: crate::interaction::SelectionModel::single(),
+            cells: crate::interaction::CellSelectionModel::new(),
+            ..Self::default()
+        }
+    }
+
     /// Multi-row mode.
     #[must_use]
     pub fn multi_row() -> Self {
@@ -691,11 +748,30 @@ impl<RowId: Ord + Clone> SelectionModel<RowId> {
             ..Self::default()
         }
     }
+
+    /// Cell-range mode.
+    #[must_use]
+    pub fn cell_range() -> Self {
+        Self {
+            mode: SelectionMode::CellRange,
+            rows: crate::interaction::SelectionModel::new(crate::interaction::SelectionKind::None),
+            cells: crate::interaction::CellSelectionModel::range(),
+            ..Self::default()
+        }
+    }
+
     /// Selected row ids (ordered).
     #[must_use]
     pub fn selected_rows(&self) -> &[RowId] {
         self.rows.selected()
     }
+
+    /// BTreeSet view for callers that need set semantics (allocates).
+    #[must_use]
+    pub fn selected_rows_set(&self) -> BTreeSet<RowId> {
+        self.rows.selected().iter().cloned().collect()
+    }
+
     /// Move focus by delta; returns whether focus changed.
     pub fn move_focus(&mut self, d_row: i64, d_col: i32, max_row: u64, max_col: usize) -> bool {
         let before = (self.focus_row, self.focus_col);
@@ -723,6 +799,22 @@ impl<RowId: Ord + Clone> SelectionModel<RowId> {
     pub fn select_row(&mut self, id: RowId) {
         let _ = self.rows.select(id);
     }
+
+    /// Range-select rows along `order` from anchor to `to`.
+    pub fn select_row_range(&mut self, order: &[RowId], to: &RowId) {
+        let _ = self.rows.set_range(order, to);
+    }
+
+    /// Select all visible row ids.
+    pub fn select_all_rows(&mut self, visible: &[RowId]) {
+        let _ = self.rows.select_all(visible);
+    }
+
+    /// Drop row selection not in `still_valid`.
+    pub fn reconcile_rows(&mut self, still_valid: &[RowId]) {
+        let _ = self.rows.reconcile(still_valid);
+    }
+
     /// Clear selection sets (keeps focus cursor).
     pub fn clear_selection(&mut self) {
         let _ = self.rows.clear();
@@ -758,6 +850,11 @@ impl<RowId: Ord + Clone> SelectionModel<RowId> {
 
 /// Compatibility: field-like access for older code using `selected_rows` as set.
 impl<RowId: Ord + Clone> SelectionModel<RowId> {
+    /// Insert row id into multi selection (BTree-style).
+    pub fn insert_row(&mut self, id: RowId) {
+        let _ = self.rows.select(id);
+    }
+
     /// Remove row id.
     pub fn remove_row(&mut self, id: &RowId) {
         let _ = self.rows.deselect(id);
@@ -780,6 +877,8 @@ pub struct SortSpec<ColId> {
 pub struct FilterSpec {
     /// Free-text search.
     pub query: String,
+    /// Optional column-scoped filters as opaque key=value (consumer parses).
+    pub clauses: Vec<(String, String)>,
 }
 
 // ── Copy ────────────────────────────────────────────────────────────────────
@@ -792,6 +891,13 @@ pub enum CopyPayload {
     Cell {
         /// Text.
         text: String,
+    },
+    /// TSV/CSV-ish range.
+    Range {
+        /// Rows of cells.
+        rows: Vec<Vec<String>>,
+        /// `true` = tab-separated.
+        tsv: bool,
     },
     /// Whole focused row.
     Row {
@@ -842,16 +948,96 @@ impl<RowId: Ord + Clone> ExpandState<RowId> {
     }
 }
 
+// ── Shared outcomes (non-exhaustive building blocks) ────────────────────────
+
+/// Common navigation / chrome outcomes data views may emit.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum DataViewOutcome<RowId, ColId> {
+    /// Ignored.
+    Ignored,
+    /// Viewport scrolled.
+    Scrolled,
+    /// Focus moved.
+    FocusChanged,
+    /// Selection changed.
+    SelectionChanged,
+    /// Sort requested (consumer re-projects).
+    SortRequested(SortSpec<ColId>),
+    /// Filter/search changed.
+    FilterChanged(FilterSpec),
+    /// Column visibility toggled.
+    ColumnVisibility {
+        /// Column.
+        column: ColId,
+        /// Visible.
+        visible: bool,
+    },
+    /// Column resize.
+    ColumnResized {
+        /// Column.
+        column: ColId,
+        /// New width.
+        width: u16,
+    },
+    /// Row activated (Enter / double-click).
+    RowActivated(RowId),
+    /// Cell activated.
+    CellActivated {
+        /// Row.
+        row: RowId,
+        /// Column.
+        column: ColId,
+    },
+    /// Context menu requested at focus.
+    ContextMenu {
+        /// Row if any.
+        row: Option<RowId>,
+        /// Column if any.
+        column: Option<ColId>,
+    },
+    /// Inline edit started.
+    EditStarted {
+        /// Row.
+        row: RowId,
+        /// Column.
+        column: ColId,
+    },
+    /// Inline edit committed.
+    EditCommitted {
+        /// Row.
+        row: RowId,
+        /// Column.
+        column: ColId,
+        /// New text.
+        text: String,
+    },
+    /// Inline edit cancelled.
+    EditCancelled,
+    /// Copy requested.
+    Copy(CopyPayload),
+    /// Expand toggled.
+    ExpandToggled(RowId),
+    /// Retry load.
+    RetryLoad,
+}
+
 // ── Benchmark targets (documentation constants) ─────────────────────────────
 
 /// Story / bench row counts for data surfaces.
 pub mod bench {
+    /// Tiny fixture.
+    pub const ROWS_10: u64 = 10;
     /// Interactive medium table.
     pub const ROWS_10K: u64 = 10_000;
     /// Logical universe for virtualization (must not allocate per row).
     pub const ROWS_1M: u64 = 1_000_000;
+    /// Wide table column count target.
+    pub const COLS_WIDE: usize = 64;
     /// Paint budget: body rows visible on a large terminal.
     pub const VIEWPORT_ROWS: u16 = 40;
+    /// Target: frame paint O(viewport), not O(logical).
+    pub const MAX_PAINT_CELLS: u32 = 40 * 64;
 }
 
 #[cfg(test)]

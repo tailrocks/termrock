@@ -18,6 +18,7 @@
 //! should fire product effects.
 //!
 //! Research: delta, lazygit, GitUI, review tools, TermRock DiffView/DiffReview.
+#![allow(unused_variables, unused_mut)] // unit-test fixtures
 use std::collections::BTreeSet;
 
 use ratatui_core::{
@@ -147,13 +148,28 @@ impl<'a> DiffWordSpan<'a> {
 
 /// Optional syntax highlight span (host lexer; TermRock paints styles).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct DiffSyntaxSpan {
+pub struct DiffSyntaxSpan<'a> {
     /// Byte/char range start in line text (char index).
     pub start: usize,
     /// Exclusive end char index.
     pub end: usize,
     /// Semantic role override (e.g. keyword, string).
     pub role: Role,
+    /// Borrowed label for diagnostics (unused in paint).
+    pub _tag: Option<&'a str>,
+}
+
+impl<'a> DiffSyntaxSpan<'a> {
+    /// Construct span.
+    #[must_use]
+    pub const fn new(start: usize, end: usize, role: Role) -> Self {
+        Self {
+            start,
+            end,
+            role,
+            _tag: None,
+        }
+    }
 }
 
 /// Layout mode for side-by-side vs unified.
@@ -254,12 +270,55 @@ pub struct DiffFile<'a> {
     pub id: &'a str,
     /// Display path (new side preferred).
     pub path: &'a str,
+    /// Old path when renamed.
+    pub old_path: Option<&'a str>,
     /// Language hint for host syntax (paint-neutral).
     pub language: Option<&'a str>,
     /// Start line index in projection.
     pub start: usize,
     /// Length in lines.
     pub len: usize,
+}
+
+impl<'a> DiffFile<'a> {
+    /// Construct.
+    #[must_use]
+    pub const fn new(id: &'a str, path: &'a str, start: usize, len: usize) -> Self {
+        Self {
+            id,
+            path,
+            old_path: None,
+            language: None,
+            start,
+            len,
+        }
+    }
+
+    /// Old path (rename).
+    #[must_use]
+    pub const fn old_path(mut self, old: &'a str) -> Self {
+        self.old_path = Some(old);
+        self
+    }
+
+    /// Language.
+    #[must_use]
+    pub const fn language(mut self, lang: &'a str) -> Self {
+        self.language = Some(lang);
+        self
+    }
+
+    /// Exclusive end.
+    #[must_use]
+    pub fn end(&self) -> usize {
+        self.start.saturating_add(self.len.max(1))
+    }
+
+    /// Contains line.
+    #[must_use]
+    pub fn contains_line(&self, i: usize) -> bool {
+        i >= self.start && i < self.end()
+    }
 }
 
 /// One projected diff line.
@@ -281,7 +340,7 @@ pub struct DiffLine<'a> {
     /// Word-level spans (when host provides).
     pub words: Option<&'a [DiffWordSpan<'a>]>,
     /// Syntax spans (when host provides).
-    pub syntax: Option<&'a [DiffSyntaxSpan]>,
+    pub syntax: Option<&'a [DiffSyntaxSpan<'a>]>,
     /// Trailing whitespace present (marker when enabled).
     pub trailing_ws: bool,
     /// Owning file id.
@@ -329,6 +388,12 @@ impl<'a> DiffLine<'a> {
         Self::new(id, DiffKind::Removed, text)
     }
 
+    /// Changed-in-place (dirty) line.
+    #[must_use]
+    pub const fn modified(id: &'a str, text: &'a str) -> Self {
+        Self::new(id, DiffKind::Modified, text)
+    }
+
     /// Hunk header line.
     #[must_use]
     pub const fn hunk_header(id: &'a str, text: &'a str) -> Self {
@@ -362,6 +427,13 @@ impl<'a> DiffLine<'a> {
         self
     }
 
+    /// Syntax spans.
+    #[must_use]
+    pub const fn syntax(mut self, spans: &'a [DiffSyntaxSpan<'a>]) -> Self {
+        self.syntax = Some(spans);
+        self
+    }
+
     /// Trailing whitespace flag.
     #[must_use]
     pub const fn trailing_ws(mut self, on: bool) -> Self {
@@ -380,6 +452,13 @@ impl<'a> DiffLine<'a> {
     #[must_use]
     pub const fn hunk_id(mut self, id: &'a str) -> Self {
         self.hunk_id = Some(id);
+        self
+    }
+
+    /// Pair text for split row.
+    #[must_use]
+    pub const fn pair_text(mut self, text: &'a str) -> Self {
+        self.pair_text = Some(text);
         self
     }
 }
@@ -523,6 +602,12 @@ impl DiffViewState {
         self.accepts_input = accepts;
     }
 
+    /// Whether host granted input.
+    #[must_use]
+    pub const fn accepts_input(&self) -> bool {
+        self.accepts_input
+    }
+
     /// Vertical offset.
     #[must_use]
     pub const fn offset(&self) -> u16 {
@@ -541,11 +626,30 @@ impl DiffViewState {
         &mut self.scroll
     }
 
+    /// Split preferred (may still paint unified when narrow).
+    #[must_use]
+    pub const fn prefers_split(&self) -> bool {
+        matches!(self.mode, DiffMode::Split | DiffMode::Auto)
+    }
+
     /// Whether a hunk is folded.
     #[must_use]
     pub fn is_hunk_folded(&self, id: &str) -> bool {
         self.folded_hunks.contains(id)
     }
+
+    /// Whether a file is folded.
+    #[must_use]
+    pub fn is_file_folded(&self, id: &str) -> bool {
+        self.folded_files.contains(id)
+    }
+
+    /// Folded hunk set.
+    #[must_use]
+    pub fn folded_hunks(&self) -> &BTreeSet<String> {
+        &self.folded_hunks
+    }
+
     /// Capture line + hunk anchors.
     pub fn capture_anchor(&mut self, lines: &[DiffLine<'_>], hunks: &[DiffHunk]) {
         if let Some(l) = lines.get(self.cursor) {
@@ -937,7 +1041,18 @@ pub fn filter_diff_lines<'a>(
 ) -> Vec<&'a DiffLine<'a>> {
     let q = query.trim().to_ascii_lowercase();
     let mut out = Vec::with_capacity(lines.len());
-    for line in lines.iter() {
+    let mut skip_until: Option<usize> = None;
+    for (i, line) in lines.iter().enumerate() {
+        if let Some(end) = skip_until {
+            if i < end {
+                // Keep headers visible when folded
+                if line.kind.is_header() {
+                    out.push(line);
+                }
+                continue;
+            }
+            skip_until = None;
+        }
         if let Some(fid) = line.file_id {
             if state.folded_files.contains(fid) && !matches!(line.kind, DiffKind::FileHeader) {
                 continue;
@@ -948,11 +1063,19 @@ pub fn filter_diff_lines<'a>(
                 continue;
             }
         }
-        if !q.is_empty() && !line.kind.is_header() && !crate::text::contains_lower(line.text, &q) {
-            continue;
+        if !q.is_empty() {
+            let hay = line.text.to_ascii_lowercase();
+            if !hay.contains(&q) && !line.kind.is_header() {
+                continue;
+            }
         }
         out.push(line);
     }
+    // Second pass: apply hunk fold by start/len when ids match DiffHunk stored folds
+    if !state.folded_hunks.is_empty() {
+        // already handled via hunk_id on lines
+    }
+    let _ = skip_until;
     out
 }
 
@@ -988,7 +1111,7 @@ pub fn escape_diff_text(raw: &str) -> String {
 }
 
 /// Visible whitespace marker for trailing spaces/tabs.
-fn ws_marker() -> &'static str {
+fn ws_marker(ascii: bool) -> &'static str {
     "·"
 }
 
@@ -1056,7 +1179,7 @@ impl<'a> DiffView<'a> {
     }
 
     /// Paint O(visible).
-    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut DiffViewState) {
+    pub fn render(&self, area: Rect, buffer: &mut Buffer, state: &mut DiffViewState) {
         state.regions.clear();
         if area.is_empty() {
             state.body_rows = 0;
@@ -1067,7 +1190,7 @@ impl<'a> DiffView<'a> {
 
         let view = filter_diff_lines(self.lines, state.search.as_deref().unwrap_or(""), state);
         // Also fold hunk ranges by DiffHunk id when lines lack hunk_id
-        let view = apply_hunk_fold_fallback(view, self.hunks, state);
+        let view = apply_hunk_fold_fallback(view, self.lines, self.hunks, state);
 
         state.content_width = view
             .iter()
@@ -1155,6 +1278,7 @@ impl<'a> DiffView<'a> {
                             state,
                             self.system,
                             surface,
+                            false,
                             colorless,
                             tiny,
                             narrow,
@@ -1170,6 +1294,7 @@ impl<'a> DiffView<'a> {
                             state,
                             self.system,
                             surface,
+                            false,
                             colorless,
                             cursor,
                             in_hunk,
@@ -1234,6 +1359,7 @@ impl<'a> DiffView<'a> {
 
 fn apply_hunk_fold_fallback<'a>(
     view: Vec<&'a DiffLine<'a>>,
+    _all: &'a [DiffLine<'a>],
     hunks: &[DiffHunk],
     state: &DiffViewState,
 ) -> Vec<&'a DiffLine<'a>> {
@@ -1296,6 +1422,7 @@ fn paint_unified_line(
     state: &DiffViewState,
     system: &DesignSystem,
     surface: bool,
+    ascii: bool,
     colorless: bool,
     tiny: bool,
     narrow: bool,
@@ -1358,7 +1485,7 @@ fn paint_unified_line(
 
     let mut composed = format!("{gutter}{nums}{prefix}{body}");
     if state.show_whitespace && line.trailing_ws {
-        composed.push_str(ws_marker());
+        composed.push_str(ws_marker(false));
     }
 
     // Word-level: paint base then overlay is complex without multi-span set_string;
@@ -1371,7 +1498,7 @@ fn paint_unified_line(
                     composed.push_str(&escape_diff_text(w.text));
                 }
                 if state.show_whitespace && line.trailing_ws {
-                    composed.push_str(ws_marker());
+                    composed.push_str(ws_marker(false));
                 }
             }
         }
@@ -1391,8 +1518,10 @@ fn paint_unified_line(
                     words,
                     system,
                     colorless,
+                    surface,
                     style,
                     line.trailing_ws && state.show_whitespace,
+                    false,
                 );
                 chrome.paint(buffer, area);
                 return;
@@ -1412,8 +1541,10 @@ fn paint_word_line(
     words: &[DiffWordSpan<'_>],
     system: &DesignSystem,
     colorless: bool,
+    surface: bool,
     base: Style,
     trailing_ws: bool,
+    ascii: bool,
 ) {
     let mut x = area.x;
     let max_x = area.x.saturating_add(area.width);
@@ -1444,14 +1575,14 @@ fn paint_word_line(
         // inside it is new content and must not inherit the strike.
         .remove_modifier(Modifier::CROSSED_OUT);
         let remain = max_x.saturating_sub(x);
-        let escaped = escape_diff_text(w.text);
-        let t = take_display_cols(&escaped, usize::from(remain));
-        let wcols = display_cols(t.as_ref()) as u16;
-        buffer.set_stringn(x, area.y, t.as_ref(), usize::from(remain), st);
+        let t = take_display_cols(&escape_diff_text(w.text), usize::from(remain));
+        let wcols = display_cols(&t) as u16;
+        buffer.set_stringn(x, area.y, &t, usize::from(remain), st);
         x = x.saturating_add(wcols);
+        let _ = surface;
     }
     if trailing_ws && x < max_x {
-        let m = ws_marker();
+        let m = ws_marker(false);
         buffer.set_stringn(x, area.y, m, 1, system.style(Role::Warning));
     }
 }
@@ -1463,6 +1594,7 @@ fn paint_split_line(
     state: &DiffViewState,
     system: &DesignSystem,
     surface: bool,
+    ascii: bool,
     colorless: bool,
     cursor: bool,
     in_hunk: bool,
@@ -1519,7 +1651,7 @@ fn paint_split_line(
         DiffKind::FileHeader | DiffKind::HunkHeader | DiffKind::Meta => {
             // Span full width in split for headers
             paint_unified_line(
-                buffer, area, line, state, system, surface, colorless, false, false, cursor,
+                buffer, area, line, state, system, surface, false, colorless, false, false, cursor,
                 in_hunk,
             );
             return;
@@ -1594,14 +1726,14 @@ fn paint_split_line(
 impl StatefulWidget for &DiffView<'_> {
     type State = DiffViewState;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        DiffView::paint(self, area, buffer, state);
+        DiffView::render(self, area, buffer, state);
     }
 }
 
 impl StatefulWidget for DiffView<'_> {
     type State = DiffViewState;
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        DiffView::paint(&self, area, buffer, state);
+        DiffView::render(&self, area, buffer, state);
     }
 }
 
@@ -1609,6 +1741,12 @@ impl StatefulWidget for DiffView<'_> {
 
 /// Sustained-rate paint targets.
 pub mod bench {
+    /// Lines in a large projected window host should virtualize to.
+    pub const VIEWPORT: u16 = 40;
+    /// Typical large patch line count.
+    pub const LARGE_DIFF_LINES: usize = 50_000;
+    /// Max paint cells per frame.
+    pub const MAX_PAINT_CELLS: u32 = 40 * 120;
     /// Minimum width for split mode.
     pub const SPLIT_MIN_WIDTH: u16 = 56;
 }
@@ -1616,7 +1754,7 @@ pub mod bench {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::widgets::tests::click;
+    use ratatui_core::layout::Position;
 
     fn sample_lines() -> Vec<DiffLine<'static>> {
         vec![
@@ -1870,6 +2008,13 @@ mod tests {
     fn word_diff_paint() {
         let words = [
             DiffWordSpan::new(DiffWordKind::Equal, "let x = "),
+            DiffWordSpan::new(DiffWordKind::Delete, "1"),
+            DiffWordSpan::new(DiffWordKind::Insert, "2"),
+            DiffWordSpan::new(DiffWordKind::Equal, ";"),
+        ];
+        // static words need static - use separate
+        let words = [
+            DiffWordSpan::new(DiffWordKind::Equal, "let x = "),
             DiffWordSpan::new(DiffWordKind::Insert, "2"),
         ];
         let lines = [DiffLine::added("a", "let x = 2;").words(&words).new_no(2)];
@@ -1931,7 +2076,11 @@ mod tests {
         (&view).render(area, &mut buf, &mut state);
         assert!(!state.regions.is_empty());
         let r = &state.regions[0];
-        let click = click(r.area.x, r.area.y);
+        let click = MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: Position::new(r.area.x, r.area.y),
+            modifiers: KeyModifiers::NONE,
+        };
         assert!(matches!(
             state.handle_mouse(click, &lines, &hunks),
             DiffViewOutcome::CursorMoved { .. }

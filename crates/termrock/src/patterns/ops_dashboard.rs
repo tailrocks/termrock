@@ -133,7 +133,7 @@ mod tests {
         let mut state = OpsDashboardState::<u64, &str>::new();
         let area = Rect::new(0, 0, 80, 24);
         let mut buffer = Buffer::empty(area);
-        let slots = paint_ops_dashboard(
+        let slots = render_ops_dashboard(
             area,
             &mut buffer,
             &system,
@@ -161,7 +161,7 @@ mod tests {
         let mut moved = OpsDashboardState::<u64, &str>::new();
         moved.region = OpsRegion::Log;
         let mut other = Buffer::empty(area);
-        paint_ops_dashboard(
+        render_ops_dashboard(
             area,
             &mut other,
             &system,
@@ -281,7 +281,6 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> OpsDashboardState<RowId, ColI
         key: KeyEvent,
         visible_rows: &[RowId],
         columns: &ColumnModel<ColId>,
-        logs: &[LogLine<'_>],
     ) -> OpsDashboardOutcome<RowId, ColId> {
         if !key.is_press() {
             return OpsDashboardOutcome::Ignored;
@@ -306,8 +305,8 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> OpsDashboardState<RowId, ColI
             OpsRegion::Main => {
                 OpsDashboardOutcome::Table(self.table.handle_key(key, visible_rows, columns))
             }
-            // Log pane owns scroll/follow/cursor over the same lines the host paints.
-            OpsRegion::Log => OpsDashboardOutcome::Log(self.log.handle_key(key, logs)),
+            // Scroll/follow without a projected window (host may re-route with lines).
+            OpsRegion::Log => OpsDashboardOutcome::Log(self.log.handle_key_scroll(key)),
             _ => OpsDashboardOutcome::Ignored,
         }
     }
@@ -338,7 +337,7 @@ pub struct OpsDashboardView<'a, RowId, ColId> {
 /// This is the example: a host that wants a different assembly copies it and
 /// changes the widgets, and a host that only wants the geometry keeps calling
 /// [`layout_ops_dashboard`] and paints its own panes.
-pub fn paint_ops_dashboard<RowId: Clone + Ord, ColId: Clone + PartialEq>(
+pub fn render_ops_dashboard<RowId: Clone + Ord, ColId: Clone + PartialEq>(
     area: Rect,
     buffer: &mut Buffer,
     system: &DesignSystem,
@@ -404,7 +403,6 @@ mod state_tests {
             KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE),
             &rows,
             &cols,
-            &[],
         );
         assert!(matches!(
             out,

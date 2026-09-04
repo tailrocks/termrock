@@ -4,8 +4,9 @@
 //! Depends on the `termrock` kernel crate — not copied into this file.
 
 use termrock::input::KeyEvent;
-use termrock::patterns::{OpsDashboardOutcome, OpsDashboardState};
-use termrock::widgets::{ColumnModel, LogLine};
+use termrock::style::DesignSystem;
+use termrock::patterns::{OpsDashboardOutcome, OpsDashboardState, OpsRegion};
+use termrock::widgets::{BlockChrome, ColumnModel};
 
 /// Layout hint constants (consumer maps to `layout_ops_dashboard` or local geometry).
 pub mod slots {
@@ -21,7 +22,11 @@ pub fn handle_key<RowId: Clone + Ord, ColId: Clone + PartialEq>(
     key: KeyEvent,
     visible_rows: &[RowId],
     columns: &ColumnModel<ColId>,
-    logs: &[LogLine<'_>],
 ) -> OpsDashboardOutcome<RowId, ColId> {
-    state.handle_key(key, visible_rows, columns, logs)
+    state.handle_key(key, visible_rows, columns)
+}
+
+/// Block chrome tokens.
+pub fn chrome<'a>(system: &'a DesignSystem) -> BlockChrome<'a> {
+    BlockChrome::new(system)
 }

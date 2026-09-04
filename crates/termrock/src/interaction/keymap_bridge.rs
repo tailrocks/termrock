@@ -3,7 +3,7 @@
 
 //! Bridge Keymap chord resolution to InteractionScene action availability.
 use crate::{
-    input::KeyEvent,
+    input::{KeyEvent, KeyEventKind},
     interaction::{InteractionOutcome, InteractionScene},
     keymap::{KeyChord, Keymap},
 };

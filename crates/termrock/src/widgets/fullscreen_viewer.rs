@@ -80,6 +80,15 @@ impl ZoomLevel {
         }
     }
 
+    /// Demote one step (saturates at Compact).
+    #[must_use]
+    pub const fn demote(self) -> Self {
+        match self {
+            Self::Fullscreen => Self::Detail,
+            Self::Detail | Self::Compact => Self::Compact,
+        }
+    }
+
     /// Whether this level uses the fullscreen overlay chrome.
     #[must_use]
     pub const fn is_fullscreen(self) -> bool {
@@ -492,6 +501,11 @@ impl<Id> SemanticZoomState<Id> {
     pub fn source(&self) -> Option<&SourceContext<Id>> {
         self.source.as_ref()
     }
+
+    /// Snapshot source without changing level (host updates anchors while open).
+    pub fn update_source(&mut self, ctx: SourceContext<Id>) {
+        self.source = Some(ctx);
+    }
 }
 
 impl<Id: Clone> SemanticZoomState<Id> {
@@ -625,6 +639,17 @@ impl<Id> FullscreenViewerState<Id> {
         }
     }
 
+    /// Zoom engine.
+    #[must_use]
+    pub fn zoom(&self) -> &SemanticZoomState<Id> {
+        &self.zoom
+    }
+
+    /// Mutable zoom.
+    pub fn zoom_mut(&mut self) -> &mut SemanticZoomState<Id> {
+        &mut self.zoom
+    }
+
     /// Whether fullscreen chrome is open.
     #[must_use]
     pub const fn is_open(&self) -> bool {
@@ -635,6 +660,12 @@ impl<Id> FullscreenViewerState<Id> {
     #[must_use]
     pub const fn level(&self) -> ZoomLevel {
         self.zoom.level()
+    }
+
+    /// Slots after paint.
+    #[must_use]
+    pub const fn slots(&self) -> FullscreenViewerSlots {
+        self.slots
     }
 
     /// Body rect for host content.
@@ -649,10 +680,26 @@ impl<Id> FullscreenViewerState<Id> {
         &self.search_query
     }
 
+    /// Search open?
+    #[must_use]
+    pub const fn search_open(&self) -> bool {
+        self.search_open
+    }
+
     /// Help open?
     #[must_use]
     pub const fn help_open(&self) -> bool {
         self.help_open
+    }
+
+    /// Title.
+    pub fn set_title(&mut self, title: impl Into<String>) {
+        self.title = title.into();
+    }
+
+    /// Input gate.
+    pub fn set_accepts_input(&mut self, on: bool) {
+        self.accepts_input = on;
     }
 
     /// Enable.
@@ -666,6 +713,12 @@ impl<Id> FullscreenViewerState<Id> {
         self.nested_child_hint = on;
     }
 
+    /// Chrome focus band.
+    #[must_use]
+    pub const fn chrome_focus(&self) -> ViewerChromeFocus {
+        self.chrome_focus
+    }
+
     /// Source context for restore.
     #[must_use]
     pub fn source(&self) -> Option<&SourceContext<Id>> {
@@ -674,6 +727,29 @@ impl<Id> FullscreenViewerState<Id> {
 }
 
 impl<Id: Clone + PartialEq> FullscreenViewerState<Id> {
+    /// Promote / open path with source freeze.
+    pub fn promote(
+        &mut self,
+        ctx: SourceContext<Id>,
+        title: impl Into<String>,
+    ) -> FullscreenViewerOutcome<Id> {
+        if !self.enabled {
+            return FullscreenViewerOutcome::Ignored;
+        }
+        self.title = title.into();
+        let out = self.zoom.promote(ctx);
+        if matches!(
+            out,
+            FullscreenViewerOutcome::Opened { .. } | FullscreenViewerOutcome::Promoted { .. }
+        ) {
+            if self.zoom.level().is_fullscreen() {
+                self.open = true;
+                self.chrome_focus = ViewerChromeFocus::Body;
+            }
+        }
+        out
+    }
+
     /// Enter fullscreen directly.
     pub fn enter_fullscreen(
         &mut self,
@@ -1065,6 +1141,14 @@ impl<'a, Id> FullscreenViewer<'a, Id> {
         }
     }
 
+    /// ASCII chrome.
+    #[must_use]
+    /// Colorless.
+    pub const fn colorless(mut self, on: bool) -> Self {
+        self.colorless = on;
+        self
+    }
+
     /// Paint chrome; host follows with content in `state.body_area()`.
     pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut FullscreenViewerState<Id>)
     where
@@ -1171,7 +1255,7 @@ impl<'a, Id> FullscreenViewer<'a, Id> {
                 buffer.set_stringn(
                     inner.x,
                     y,
-                    take_display_cols(&path, usize::from(inner.width)).as_ref(),
+                    &take_display_cols(&path, usize::from(inner.width)),
                     usize::from(inner.width),
                     style,
                 );
@@ -1239,7 +1323,7 @@ impl<'a, Id> FullscreenViewer<'a, Id> {
             buffer.set_stringn(
                 inner.x,
                 y,
-                take_display_cols(&q, usize::from(inner.width)).as_ref(),
+                &take_display_cols(&q, usize::from(inner.width)),
                 usize::from(inner.width),
                 style,
             );
@@ -1267,7 +1351,7 @@ impl<'a, Id> FullscreenViewer<'a, Id> {
         buffer.set_stringn(
             inner.x,
             y,
-            take_display_cols(hint, usize::from(inner.width)).as_ref(),
+            &take_display_cols(hint, usize::from(inner.width)),
             usize::from(inner.width),
             style,
         );
@@ -1360,7 +1444,7 @@ impl<'a> SemanticZoomBadge<'a> {
         buffer.set_stringn(
             area.x,
             area.y,
-            take_display_cols(label, usize::from(area.width)).as_ref(),
+            &take_display_cols(label, usize::from(area.width)),
             usize::from(area.width),
             self.system.style(Role::TextMuted),
         );
@@ -1374,7 +1458,6 @@ mod tests {
     use super::*;
     use crate::input::KeyModifiers;
     use crate::interaction::{OverlayKind, OverlayOutcome, OverlaySize};
-    use crate::widgets::tests::click;
 
     fn ctx(id: &'static str) -> SourceContext<&'static str> {
         SourceContext::new(id)
@@ -1607,7 +1690,11 @@ mod tests {
             .find(|region| region.id == "copy")
             .expect("copy action region")
             .area;
-        let event = click(copy.x, copy.y);
+        let event = MouseEvent {
+            kind: MouseEventKind::Down(MouseButton::Left),
+            position: ratatui_core::layout::Position::new(copy.x, copy.y),
+            modifiers: KeyModifiers::NONE,
+        };
         assert!(matches!(
             state.handle_mouse(event, &actions),
             FullscreenViewerOutcome::ActionActivated { id: "copy" }
@@ -1661,7 +1748,7 @@ mod tests {
         buf.set_stringn(
             area.x,
             area.y,
-            take_display_cols(s, usize::from(area.width)).as_ref(),
+            &take_display_cols(s, usize::from(area.width)),
             usize::from(area.width),
             ratatui_core::style::Style::default(),
         );

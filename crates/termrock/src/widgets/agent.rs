@@ -77,7 +77,7 @@ impl Widget for &TokenMeter<'_> {
         if let Some(label) = warning {
             let status = StatusIndicator::new(SemanticStatus::Warning, self.system).label(label);
             let status_width = status.measure_width(None).min(area.width);
-            status.paint(Rect::new(area.x, area.y, status_width, 1), buffer, None);
+            Widget::render(&status, Rect::new(area.x, area.y, status_width, 1), buffer);
             let x = area.x.saturating_add(status_width.saturating_add(1));
             let width = area.right().saturating_sub(x);
             if width > 0 {
@@ -135,6 +135,20 @@ impl<'a> ThinkingBlock<'a> {
             frame: "·",
             system,
         }
+    }
+
+    /// Expands body text.
+    #[must_use]
+    pub const fn expanded(mut self, expanded: bool) -> Self {
+        self.expanded = expanded;
+        self
+    }
+
+    /// Sets body text shown when expanded.
+    #[must_use]
+    pub const fn body(mut self, body: &'a str) -> Self {
+        self.body = body;
+        self
     }
 
     /// Spinner/status frame while thinking.
@@ -244,6 +258,24 @@ pub enum ToolStatus {
 }
 
 impl ToolStatus {
+    /// Stable id.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Queued => "queued",
+            Self::Preparing => "preparing",
+            Self::Running => "running",
+            Self::WaitingInput => "waiting-input",
+            Self::WaitingPermission => "waiting-permission",
+            Self::Streaming => "streaming",
+            Self::Success => "success",
+            Self::Warning => "warning",
+            Self::Failed => "failed",
+            Self::Cancelled => "cancelled",
+            Self::Detached => "detached",
+        }
+    }
+
     /// Short badge label.
     #[must_use]
     pub const fn badge(self) -> &'static str {
@@ -353,6 +385,20 @@ impl<'a> ToolCard<'a> {
             expanded: false,
             system,
         }
+    }
+
+    /// Optional detail / stdout slice.
+    #[must_use]
+    pub const fn detail(mut self, detail: &'a str) -> Self {
+        self.detail = Some(detail);
+        self
+    }
+
+    /// Whether detail is shown.
+    #[must_use]
+    pub const fn expanded(mut self, expanded: bool) -> Self {
+        self.expanded = expanded;
+        self
     }
 }
 
