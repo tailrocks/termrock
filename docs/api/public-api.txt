@@ -154,7 +154,6 @@ pub termrock::ansi_text::AnsiSegment::href: core::option::Option<alloc::string::
 pub termrock::ansi_text::AnsiSegment::style: ratatui_core::style::Style
 pub termrock::ansi_text::AnsiSegment::text: alloc::string::String
 impl termrock::ansi_text::AnsiSegment
-pub fn termrock::ansi_text::AnsiSegment::plain(impl core::convert::Into<alloc::string::String>, ratatui_core::style::Style) -> Self
 impl core::clone::Clone for termrock::ansi_text::AnsiSegment
 pub fn termrock::ansi_text::AnsiSegment::clone(&self) -> termrock::ansi_text::AnsiSegment
 impl core::cmp::PartialEq for termrock::ansi_text::AnsiSegment
@@ -32307,7 +32306,6 @@ pub termrock::text::AnsiSegment::href: core::option::Option<alloc::string::Strin
 pub termrock::text::AnsiSegment::style: ratatui_core::style::Style
 pub termrock::text::AnsiSegment::text: alloc::string::String
 impl termrock::ansi_text::AnsiSegment
-pub fn termrock::ansi_text::AnsiSegment::plain(impl core::convert::Into<alloc::string::String>, ratatui_core::style::Style) -> Self
 impl core::clone::Clone for termrock::ansi_text::AnsiSegment
 pub fn termrock::ansi_text::AnsiSegment::clone(&self) -> termrock::ansi_text::AnsiSegment
 impl core::cmp::PartialEq for termrock::ansi_text::AnsiSegment
@@ -59106,7 +59104,6 @@ pub termrock::widgets::AnsiSegment::href: core::option::Option<alloc::string::St
 pub termrock::widgets::AnsiSegment::style: ratatui_core::style::Style
 pub termrock::widgets::AnsiSegment::text: alloc::string::String
 impl termrock::ansi_text::AnsiSegment
-pub fn termrock::ansi_text::AnsiSegment::plain(impl core::convert::Into<alloc::string::String>, ratatui_core::style::Style) -> Self
 impl core::clone::Clone for termrock::ansi_text::AnsiSegment
 pub fn termrock::ansi_text::AnsiSegment::clone(&self) -> termrock::ansi_text::AnsiSegment
 impl core::cmp::PartialEq for termrock::ansi_text::AnsiSegment
