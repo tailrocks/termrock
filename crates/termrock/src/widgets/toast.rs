@@ -363,13 +363,6 @@ impl ToastSpec {
         }
     }
 
-    /// Kind.
-    #[must_use]
-    pub const fn kind(mut self, kind: ToastKind) -> Self {
-        self.kind = kind;
-        self
-    }
-
     /// Severity helper.
     #[must_use]
     pub const fn severity(mut self, s: Severity) -> Self {

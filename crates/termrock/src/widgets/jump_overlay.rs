@@ -8,8 +8,6 @@
 //! and multi-key prefixes, then activate or cancel — without requiring widgets
 //! to implement anything beyond semantic registration.
 //!
-//! **vs FocusLens.** JumpMode is *operational navigation* (activate by key).
-//! [`crate::interaction::FocusLens`] is *inspection* (tab-order / focus debug).
 //! Both read the same scene/graph; neither mutates component internals.
 //!
 //! Research: Vim easymotion, browser keyboard nav extensions, Posting jump,
@@ -138,7 +136,7 @@ pub struct JumpTarget<Id> {
     pub area: Rect,
     /// Key sequence (`"a"`, `"ab"`, …) — lowercase ASCII letters.
     pub keys: String,
-    /// Semantic role when known (filtering / FocusLens).
+    /// Semantic role when known (filtering).
     pub role: Option<SemanticRole>,
     /// Nesting depth in the semantic tree (0 = root).
     pub depth: u8,

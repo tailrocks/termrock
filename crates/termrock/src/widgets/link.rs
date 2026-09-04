@@ -1,15 +1,12 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-//! Link and ActionLink — terminal-safe hyperlinks and inline actions.
+//! Link — terminal-safe hyperlinks and inline actions.
 //!
 //! **Link** — navigation to an external URL (OSC 8 when capable) or an
 //! application route. External destinations are **never hidden**: label paint
 //! always keeps a visible URL fallback when hyperlinks are off or when the
 //! host requests it.
-//!
-//! **ActionLink** — button-like inline action (no destination URL). Uses link
-//! chrome (underline / Link role) but outcomes are application activate only.
 //!
 //! Consumers own OSC emission via [`crate::osc::encode_hyperlink_open`] /
 //! [`crate::osc::Request::HyperlinkOpen`]. This widget produces regions and
@@ -17,8 +14,7 @@
 //!
 //! References: Rich hyperlinks, OSC 8, CLI docs conventions.
 //!
-//! Link and ActionLink paint only through
-//! `Link::paint(area, buffer, state)` / `ActionLink::paint(area, buffer, state)`;
+//! Link paints only through `Link::paint(area, buffer, state)`;
 //! a stateless render would rebuild `LinkState` per frame and drop focus and
 //! hit geometry between frames.
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Modifier};
@@ -42,15 +38,6 @@ pub enum LinkDestination<'a> {
 }
 
 impl<'a> LinkDestination<'a> {
-    /// Stable kind id.
-    #[must_use]
-    pub const fn kind_id(self) -> &'static str {
-        match self {
-            Self::Url(_) => "url",
-            Self::AppRoute(_) => "app-route",
-        }
-    }
-
     /// Destination string for display / copy / outcome.
     #[must_use]
     pub const fn as_str(self) -> &'a str {
@@ -169,10 +156,6 @@ impl LinkState {
         self.focused = on;
     }
 
-    /// Hover.
-    pub const fn set_hovered(&mut self, on: bool) {
-        self.hovered = on;
-    }
     /// Disabled.
     pub const fn set_disabled(&mut self, on: bool) {
         self.disabled = on;
@@ -230,13 +213,6 @@ impl<'a> Link<'a> {
         }
     }
 
-    /// Destination display policy.
-    #[must_use]
-    pub const fn destination_display(mut self, display: DestinationDisplay) -> Self {
-        self.destination_display = display;
-        self
-    }
-
     /// Terminal supports OSC 8 this frame.
     #[must_use]
     pub const fn hyperlinks(mut self, on: bool) -> Self {
@@ -247,13 +223,6 @@ impl<'a> Link<'a> {
     #[must_use]
     pub const fn osc_id(mut self, id: &'a str) -> Self {
         self.osc_id = Some(id);
-        self
-    }
-
-    /// Truncation budget.
-    #[must_use]
-    pub const fn max_cols(mut self, cols: u16) -> Self {
-        self.max_cols = cols;
         self
     }
 
@@ -532,140 +501,6 @@ impl<'a> Link<'a> {
     }
 }
 
-// ── ActionLink ──────────────────────────────────────────────────────────────
-
-/// ActionLink outcomes (no external URL).
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[non_exhaustive]
-pub enum ActionLinkOutcome {
-    /// Ignored.
-    Ignored,
-    /// Activated.
-    Activated,
-}
-
-/// Lightweight inline action with link chrome (not a navigation destination).
-#[derive(Debug, Clone, Copy)]
-pub struct ActionLink<'a> {
-    label: &'a str,
-    system: &'a DesignSystem,
-    variant: LinkVariant,
-    /// Optional risk / scope note always visible when set (e.g. "runs cargo").
-    risk_note: Option<&'a str>,
-}
-
-impl<'a> ActionLink<'a> {
-    /// Inline action label.
-    #[must_use]
-    pub const fn new(label: &'a str, system: &'a DesignSystem) -> Self {
-        Self {
-            label,
-            system,
-            variant: LinkVariant::Plain,
-            risk_note: None,
-        }
-    }
-
-    /// Visible risk / scope note (never hidden).
-    #[must_use]
-    pub const fn risk_note(mut self, note: &'a str) -> Self {
-        self.risk_note = Some(note);
-        self
-    }
-
-    fn decorated(&self) -> String {
-        let mut s = match self.variant {
-            LinkVariant::Bracketed => format!("[{}]", self.label.trim()),
-            _ => self.label.trim().to_string(),
-        };
-        if let Some(note) = self.risk_note {
-            if !note.is_empty() {
-                s.push(' ');
-                s.push('(');
-                s.push_str(note);
-                s.push(')');
-            }
-        }
-        s
-    }
-
-    /// Plain a11y.
-    #[must_use]
-    pub fn plain(&self) -> String {
-        match self.risk_note {
-            Some(n) if !n.is_empty() => format!("action: {} ({n})", self.label),
-            _ => format!("action: {}", self.label),
-        }
-    }
-
-    /// Paint.
-    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut LinkState) -> LinkParts {
-        // Action links never use OSC 8.
-        let text = self.decorated();
-        if area.is_empty() {
-            let parts = LinkParts {
-                root: area,
-                label: area,
-                destination: Rect::default(),
-                osc8: false,
-            };
-            state.parts = Some(parts.clone());
-            return parts;
-        }
-        let clipped = take_display_cols(&text, usize::from(area.width));
-        let w = u16::try_from(display_cols(&clipped))
-            .unwrap_or(0)
-            .min(area.width);
-        let root = Rect {
-            x: area.x,
-            y: area.y,
-            width: w,
-            height: 1.min(area.height),
-        };
-        let control_state = if state.disabled {
-            ControlState::Disabled
-        } else if state.focused {
-            ControlState::Focused
-        } else if state.hovered {
-            ControlState::Hovered
-        } else {
-            ControlState::Default
-        };
-        let recipe = self.system.button_recipe(
-            ButtonRecipeVariant::Link,
-            control_state,
-            self.system.junie_theme().surface,
-        );
-        let mut style = recipe.fill.patch(recipe.label);
-        if state.focused {
-            style = style.add_modifier(Modifier::BOLD);
-        }
-        style = ratatui_core::style::Style { bg: None, ..style };
-        buffer.set_stringn(root.x, root.y, &clipped, usize::from(root.width), style);
-        let parts = LinkParts {
-            root,
-            label: root,
-            destination: Rect::default(),
-            osc8: false,
-        };
-        state.parts = Some(parts.clone());
-        parts
-    }
-
-    /// Keys.
-    pub fn handle_key(&self, state: &mut LinkState, key: KeyEvent) -> ActionLinkOutcome {
-        if state.disabled || !state.focused || !key.is_press() {
-            return ActionLinkOutcome::Ignored;
-        }
-        if default_button_intent(key)
-            .is_some_and(|i| matches!(i, UiIntent::Activate | UiIntent::Submit))
-        {
-            return ActionLinkOutcome::Activated;
-        }
-        ActionLinkOutcome::Ignored
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -772,23 +607,6 @@ mod tests {
                 KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)
             ),
             LinkOutcome::Ignored
-        );
-    }
-
-    #[test]
-    fn action_link_not_navigation() {
-        let system = DesignSystem::default();
-        let action = ActionLink::new("Run tests", &system).risk_note("cargo test");
-        assert!(action.plain().contains("action:"));
-        assert!(action.decorated().contains("cargo test"));
-        let mut state = LinkState::new();
-        state.set_focused(true);
-        assert_eq!(
-            action.handle_key(
-                &mut state,
-                KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)
-            ),
-            ActionLinkOutcome::Activated
         );
     }
 

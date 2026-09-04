@@ -20,7 +20,6 @@ use ratatui_core::layout::{Position, Rect};
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers},
     interaction::{FocusRequest, InteractionScene, NavigationMove},
-    style::{DesignSystem, Role},
 };
 
 /// Result of a focus operation.
@@ -631,92 +630,6 @@ fn in_direction(from: (i32, i32), to: (i32, i32), dir: NavigationMove) -> bool {
         NavigationMove::Left => dx < 0 && dx.abs() >= dy.abs(),
         NavigationMove::Right => dx > 0 && dx.abs() >= dy.abs(),
         NavigationMove::First | NavigationMove::Last => false,
-    }
-}
-
-/// Focus Lens paint mode.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
-#[non_exhaustive]
-pub enum FocusLensMode {
-    /// Tab-order indices only (default Studio debug).
-    #[default]
-    TabOrder,
-    /// Focused outline marker only.
-    FocusedOnly,
-    /// Tab order + focused marker.
-    Combined,
-}
-
-/// Focus Lens: paints tab-order markers and focused outline for Studio debug.
-///
-/// Complements JumpMode: lens is **inspection** (order / focus), jump is
-/// **activation** (key labels). Neither mutates widgets beyond reading the
-/// graph / semantic scene hosts already maintain.
-#[derive(Debug, Clone, Copy)]
-pub struct FocusLens<'a, Id> {
-    graph: &'a FocusGraph<Id>,
-    system: &'a DesignSystem,
-    show_order: bool,
-    mode: FocusLensMode,
-    colorless: bool,
-}
-
-impl<Id: Clone + PartialEq + std::fmt::Display> ratatui_core::widgets::Widget
-    for &FocusLens<'_, Id>
-{
-    fn render(self, _area: Rect, buffer: &mut ratatui_core::buffer::Buffer) {
-        let accent = if self.colorless {
-            // Monochrome states the lens with weight; a reversal reads as a
-            // selection, and the lens is an overlay, not a selection.
-            self.system
-                .style(Role::TextStrong)
-                .add_modifier(ratatui_core::style::Modifier::BOLD)
-        } else {
-            self.system.style(Role::BorderFocused)
-        };
-        let muted = self.system.style(Role::TextMuted);
-        let order = self.graph.tab_order();
-        let show_order = self.show_order
-            && matches!(self.mode, FocusLensMode::TabOrder | FocusLensMode::Combined);
-        let show_focus = matches!(
-            self.mode,
-            FocusLensMode::FocusedOnly | FocusLensMode::Combined
-        );
-        for (i, id) in order.iter().enumerate() {
-            let Some(node) = self.graph.nodes().iter().find(|n| &n.id == *id) else {
-                continue;
-            };
-            let Some(area) = node.area else {
-                continue;
-            };
-            if area.width == 0 || area.height == 0 {
-                continue;
-            }
-            let focused = self.graph.is_focused(id);
-            let style = if focused { accent } else { muted };
-            if show_order {
-                let label = format!("{}", i + 1);
-                buffer.set_stringn(area.x, area.y, &label, usize::from(area.width), style);
-            }
-            if show_focus && focused {
-                let mark = "◈";
-                // Prefer trailing corner when order digit already at origin.
-                let mx = if show_order && area.width > 1 {
-                    area.x.saturating_add(area.width.saturating_sub(1))
-                } else {
-                    area.x
-                };
-                buffer.set_stringn(mx, area.y, mark, 1, accent);
-            }
-        }
-    }
-}
-
-impl<Id: Clone + PartialEq + std::fmt::Display> ratatui_core::widgets::Widget
-    for FocusLens<'_, Id>
-{
-    fn render(self, area: Rect, buffer: &mut ratatui_core::buffer::Buffer) {
-        ratatui_core::widgets::Widget::render(&self, area, buffer);
     }
 }
 

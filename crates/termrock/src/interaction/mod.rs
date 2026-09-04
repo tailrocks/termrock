@@ -22,9 +22,7 @@ pub use dismissable::{
 pub use event_result::{
     EventResult, FocusRequest, OverlayRequest, Propagation, Redraw, compose_bubble, compose_capture,
 };
-pub use focus_graph::{
-    FocusDebugSnapshot, FocusGraph, FocusLens, FocusLensMode, FocusNavMode, FocusNode, FocusOutcome,
-};
+pub use focus_graph::{FocusDebugSnapshot, FocusGraph, FocusNavMode, FocusNode, FocusOutcome};
 pub use roving::{
     RovingEntry, RovingFocusGroup, RovingOrientation, RovingOutcome, roving_hint_keymap,
     roving_hint_keymap_horizontal, roving_hint_keymap_vertical,

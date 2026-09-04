@@ -268,15 +268,6 @@ pub struct RelatedLocation<'a> {
     pub message: &'a str,
 }
 
-impl<'a> RelatedLocation<'a> {
-    /// File.
-    #[must_use]
-    pub const fn file(mut self, file: &'a str) -> Self {
-        self.file = Some(file);
-        self
-    }
-}
-
 /// Note / help / context line under a diagnostic.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DiagnosticNote<'a> {
@@ -284,26 +275,6 @@ pub struct DiagnosticNote<'a> {
     pub severity: DiagnosticSeverity,
     /// Body.
     pub message: &'a str,
-}
-
-impl<'a> DiagnosticNote<'a> {
-    /// Note.
-    #[must_use]
-    pub const fn note(message: &'a str) -> Self {
-        Self {
-            severity: DiagnosticSeverity::Note,
-            message,
-        }
-    }
-
-    /// Help.
-    #[must_use]
-    pub const fn help(message: &'a str) -> Self {
-        Self {
-            severity: DiagnosticSeverity::Help,
-            message,
-        }
-    }
 }
 
 /// Suggested fix (host applies).

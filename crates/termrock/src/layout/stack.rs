@@ -365,13 +365,6 @@ impl Inline {
         self
     }
 
-    /// Responsive direction from outer width.
-    #[must_use]
-    pub const fn responsive(mut self, width: u16, inline_min_width: u16) -> Self {
-        self.spec = self.spec.responsive(width, inline_min_width);
-        self
-    }
-
     /// Enable wrapping (fixed/preferred sizes only; weights treated as preferred=1).
     #[must_use]
     pub const fn wrap(mut self, wrap: bool) -> Self {
@@ -397,21 +390,6 @@ impl Inline {
     #[must_use]
     pub const fn justify(mut self, justify: Justify) -> Self {
         self.spec.justify = justify;
-        self
-    }
-
-    /// Overflow policy.
-    #[must_use]
-    pub const fn overflow(mut self, policy: OverflowPolicy) -> Self {
-        self.spec.overflow = policy;
-        self
-    }
-
-    /// Padding.
-    #[must_use]
-    pub const fn padding(mut self, pad_x: u16, pad_y: u16) -> Self {
-        self.spec.pad_x = pad_x;
-        self.spec.pad_y = pad_y;
         self
     }
 

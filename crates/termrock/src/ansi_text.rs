@@ -277,12 +277,6 @@ impl AnsiStream {
         &self.lines
     }
 
-    /// Incomplete line plain preview.
-    #[must_use]
-    pub fn pending_plain(&self) -> String {
-        self.cells.iter().map(|c| c.ch).collect()
-    }
-
     /// Feed raw bytes (may include partial escape at end).
     pub fn feed(&mut self, bytes: &[u8]) {
         if bytes.is_empty() {
@@ -349,12 +343,6 @@ impl AnsiStream {
         self.cells.clear();
         self.cursor = 0;
         self.push_line(line);
-    }
-
-    /// Reset style/href to defaults; clear partial line (keeps history).
-    pub fn reset_style(&mut self) {
-        self.style = self.options.default_style;
-        self.href = None;
     }
 
     /// Drain completed lines into a Vec.

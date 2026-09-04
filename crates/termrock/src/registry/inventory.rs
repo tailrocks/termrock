@@ -45,7 +45,6 @@ define_public_ui_ids![
     AccentRail,
     Accordion,
     ActionBar,
-    ActionLink,
     ActivityIndicator,
     ActivityShelf,
     AgentModeSelector,
@@ -109,7 +108,6 @@ define_public_ui_ids![
     FilePicker,
     FileTree,
     FocusGraph,
-    FocusLens,
     Form,
     FormWizard,
     FullscreenViewer,
@@ -467,13 +465,6 @@ pub static PUBLIC_UI_INVENTORY: &[PublicUiInventoryEntry] = &[
     ),
     public_ui!(ActionBar, Widget, Action, "action-bar", "action-bar/basic"),
     public_ui!(
-        ActionLink,
-        Paint,
-        Action,
-        "action-link",
-        "action-link/basic"
-    ),
-    public_ui!(
         ActivityIndicator,
         Paint,
         Feedback,
@@ -769,13 +760,6 @@ pub static PUBLIC_UI_INVENTORY: &[PublicUiInventoryEntry] = &[
         Navigation,
         "focus-graph",
         "focus-graph/workbench"
-    ),
-    public_ui!(
-        FocusLens,
-        Widget,
-        Feedback,
-        "focus-lens",
-        "focus-lens/combined"
     ),
     public_ui!(Form, Widget, Input, "form", "form/responsive"),
     public_ui!(
@@ -1837,7 +1821,7 @@ mod tests {
 
     #[test]
     fn public_inventory_is_complete_unique_and_joinable() {
-        assert_eq!(public_ui_inventory().len(), 211);
+        assert_eq!(public_ui_inventory().len(), 209);
         assert_eq!(public_ui_inventory().len(), PublicUiId::ALL.len());
         assert_eq!(
             PublicUiId::ALL.iter().copied().collect::<BTreeSet<_>>(),
@@ -1860,13 +1844,13 @@ mod tests {
                     counts[index] += 1;
                     counts
                 });
-        assert_eq!(kind_counts, [129, 68, 6, 8]);
+        assert_eq!(kind_counts, [128, 67, 6, 8]);
         assert_eq!(
             public_ui_inventory()
                 .iter()
                 .filter(|entry| entry.documentation == DocumentationKind::Component)
                 .count(),
-            193
+            191
         );
         assert_eq!(
             public_ui_inventory()

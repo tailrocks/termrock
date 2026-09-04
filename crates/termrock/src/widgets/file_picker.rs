@@ -201,16 +201,6 @@ impl FilePreview {
             error: None,
         }
     }
-
-    /// Error preview.
-    #[must_use]
-    pub fn error(msg: impl Into<String>) -> Self {
-        Self {
-            title: String::new(),
-            lines: Vec::new(),
-            error: Some(msg.into()),
-        }
-    }
 }
 
 // ── Mode / sort / status ────────────────────────────────────────────────────

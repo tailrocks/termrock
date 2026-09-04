@@ -262,14 +262,6 @@ pub struct DiffFile<'a> {
     pub len: usize,
 }
 
-impl<'a> DiffFile<'a> {
-    /// Exclusive end.
-    #[must_use]
-    pub fn end(&self) -> usize {
-        self.start.saturating_add(self.len.max(1))
-    }
-}
-
 /// One projected diff line.
 ///
 /// Prefer builders — new fields are additive.
@@ -547,12 +539,6 @@ impl DiffViewState {
     /// offset here; the render pass clamps it to the viewport).
     pub fn scroll_mut(&mut self) -> &mut ScrollAreaState {
         &mut self.scroll
-    }
-
-    /// Split preferred (may still paint unified when narrow).
-    #[must_use]
-    pub const fn prefers_split(&self) -> bool {
-        matches!(self.mode, DiffMode::Split | DiffMode::Auto)
     }
 
     /// Whether a hunk is folded.

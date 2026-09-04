@@ -216,13 +216,6 @@ impl<'a, Id> ListRow<'a, Id> {
         self
     }
 
-    /// Marks the row loading (leading becomes a busy glyph).
-    #[must_use]
-    pub fn loading(mut self) -> Self {
-        self.loading = true;
-        self
-    }
-
     /// Plain text for typeahead / search (primary spans).
     #[must_use]
     pub fn plain_label(&self) -> String {

@@ -64,16 +64,6 @@ impl CheckboxValue {
         }
     }
 
-    /// `Some(true/false)` when determinate; `None` when indeterminate.
-    #[must_use]
-    pub const fn as_bool(self) -> Option<bool> {
-        match self {
-            Self::Checked => Some(true),
-            Self::Unchecked => Some(false),
-            Self::Indeterminate => None,
-        }
-    }
-
     /// Next value after Space/Activate (Radix-like: mixed/off → on, on → off).
     #[must_use]
     pub const fn activate(self) -> Self {

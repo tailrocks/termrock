@@ -497,17 +497,6 @@ impl<Id> NavigationListState<Id> {
         self.collection.active()
     }
 
-    /// Cursor index from projection.
-    #[must_use]
-    pub fn cursor_index_in(&self, items: &[NavItem<Id>]) -> usize
-    where
-        Id: Clone + PartialEq,
-    {
-        let projected = self.projected_items(items);
-        let focusable = focusable_items(&projected);
-        self.collection.active_index(&focusable).unwrap_or(0)
-    }
-
     /// Filter query.
     #[must_use]
     pub fn filter(&self) -> &str {

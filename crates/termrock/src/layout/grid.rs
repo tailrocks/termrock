@@ -195,14 +195,6 @@ impl GridSpec {
         self
     }
 
-    /// Padding.
-    #[must_use]
-    pub const fn padding(mut self, pad_x: u16, pad_y: u16) -> Self {
-        self.pad_x = pad_x;
-        self.pad_y = pad_y;
-        self
-    }
-
     /// Auto row size when rows are generated.
     #[must_use]
     pub const fn auto_row(mut self, track: TrackSize) -> Self {

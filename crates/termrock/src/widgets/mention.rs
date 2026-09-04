@@ -303,27 +303,6 @@ impl MentionRef {
         }
     }
 
-    /// Symbol mention.
-    #[must_use]
-    pub fn symbol(
-        id: impl Into<String>,
-        label: impl Into<String>,
-        canonical: impl Into<String>,
-    ) -> Self {
-        Self {
-            id: id.into(),
-            kind: MentionType::Symbol,
-            label: label.into(),
-            canonical: canonical.into(),
-            validity: MentionValidity::Valid,
-            disambiguators: Vec::new(),
-            disambiguation_index: None,
-            preview: None,
-            removable: true,
-            sensitive: false,
-        }
-    }
-
     /// Entity (agent/tool/session/resource).
     #[must_use]
     pub fn entity(

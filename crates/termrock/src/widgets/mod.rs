@@ -523,8 +523,7 @@ pub use label::{
     line_plain,
 };
 pub use link::{
-    ActionLink, ActionLinkOutcome, DestinationDisplay, Link, LinkDestination, LinkOutcome,
-    LinkParts, LinkState, LinkVariant,
+    DestinationDisplay, Link, LinkDestination, LinkOutcome, LinkParts, LinkState, LinkVariant,
 };
 pub use list::{
     LIST_NARROW_DROP_ORDER, List, ListClickPolicy, ListRow, ListSelectionMode, ListState, RowRole,

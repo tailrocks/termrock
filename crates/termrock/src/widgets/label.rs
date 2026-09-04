@@ -499,12 +499,6 @@ impl<'a, Id> Description<'a, Id> {
         !self.text.is_empty() && width >= DROP_DESCRIPTION_WIDTH
     }
 
-    /// Semantic help string (kind only; target appended in `register_semantic`).
-    #[must_use]
-    pub fn semantic_description(&self) -> String {
-        self.kind.id().to_string()
-    }
-
     /// Layout; contracts to zero height when too narrow.
     #[must_use]
     pub fn layout(&self, area: Rect) -> DescriptionParts {

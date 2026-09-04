@@ -78,19 +78,6 @@ pub enum FocusRequest<Id = ()> {
     Previous,
 }
 
-impl<Id> FocusRequest<Id> {
-    /// Maps the focused identity type.
-    #[must_use]
-    pub fn map_id<J>(self, f: impl FnOnce(Id) -> J) -> FocusRequest<J> {
-        match self {
-            Self::Set(id) => FocusRequest::Set(f(id)),
-            Self::Clear => FocusRequest::Clear,
-            Self::Next => FocusRequest::Next,
-            Self::Previous => FocusRequest::Previous,
-        }
-    }
-}
-
 /// Framework overlay coordination (host owns [`crate::interaction::OverlayStack`]).
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[non_exhaustive]

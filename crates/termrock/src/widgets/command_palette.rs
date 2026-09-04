@@ -648,12 +648,6 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
         self.query.value()
     }
 
-    /// Query state.
-    #[must_use]
-    pub const fn query(&self) -> &TextInputState {
-        &self.query
-    }
-
     /// Argument draft.
     #[must_use]
     pub fn argument_text(&self) -> &str {

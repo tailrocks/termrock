@@ -305,13 +305,6 @@ impl TerminalRun {
         self
     }
 
-    /// Signal.
-    #[must_use]
-    pub fn signal(mut self, s: impl Into<String>) -> Self {
-        self.signal = Some(s.into());
-        self
-    }
-
     /// Pid.
     #[must_use]
     pub const fn pid(mut self, p: u32) -> Self {

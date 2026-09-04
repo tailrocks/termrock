@@ -497,13 +497,6 @@ impl ObjectInspectorState {
         }
     }
 
-    /// Toggle expansion; returns new expanded state.
-    pub fn toggle_expanded(&mut self, path: &str) -> bool {
-        let next = !self.is_expanded(path);
-        self.set_expanded(path, next);
-        next
-    }
-
     /// Whether secret path is revealed.
     #[must_use]
     pub fn is_revealed(&self, path: &str) -> bool {
