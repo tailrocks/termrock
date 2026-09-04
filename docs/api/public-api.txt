@@ -29308,7 +29308,6 @@ pub const termrock::scroll::SCROLLBAR_TRACK: &str
 pub const termrock::scroll::UNCACHED_REVISION: u64
 pub fn termrock::scroll::apply_delta_u16(usize, usize, &mut u16, isize) -> u16
 pub const fn termrock::scroll::apply_delta_unclamped_u16(&mut u16, i16)
-pub fn termrock::scroll::apply_mouse_scroll_u16(termrock::input::MouseEventKind, termrock::input::KeyModifiers, termrock::scroll::ScrollAxes, termrock::scroll::ScrollSpan, termrock::scroll::ScrollSpan, &mut u16, &mut u16) -> bool
 pub fn termrock::scroll::apply_scroll_delta(&mut u16, i16, usize, usize)
 pub const fn termrock::scroll::apply_scroll_delta_unclamped(&mut u16, i16)
 pub fn termrock::scroll::apply_term_width_scroll_delta(&mut u16, i16, u16, usize)
