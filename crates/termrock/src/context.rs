@@ -76,7 +76,6 @@ where
     LayerId: Clone + Eq + Hash,
 {
     design: &'a DesignSystem,
-    capabilities: &'a TerminalCapabilities,
     boundary: Option<&'a CapabilityBoundary>,
     keymap: Option<&'a Keymap<MapAction>>,
     scene: &'a mut InteractionScene<Id, LayerId, Action>,
@@ -99,24 +98,6 @@ where
     #[must_use]
     pub const fn design(&self) -> &DesignSystem {
         self.design
-    }
-
-    /// Resolved terminal capabilities.
-    #[must_use]
-    pub const fn capabilities(&self) -> &TerminalCapabilities {
-        self.capabilities
-    }
-
-    /// Optional capability boundary for progressive enhancement.
-    #[must_use]
-    pub const fn boundary(&self) -> Option<&CapabilityBoundary> {
-        self.boundary
-    }
-
-    /// Optional host keymap (semantic actions).
-    #[must_use]
-    pub const fn keymap(&self) -> Option<&Keymap<MapAction>> {
-        self.keymap
     }
 
     /// Immutable frame time (never sample clocks in widgets).
@@ -341,7 +322,6 @@ where
         let tick = self.clock.tick();
         UiContext {
             design: &self.design,
-            capabilities: &self.capabilities,
             boundary: self.boundary.as_ref(),
             keymap: self.keymap.as_ref(),
             scene: &mut self.scene,
@@ -364,7 +344,6 @@ where
         self.semantics.begin_frame();
         UiContext {
             design: &self.design,
-            capabilities: &self.capabilities,
             boundary: self.boundary.as_ref(),
             keymap: self.keymap.as_ref(),
             scene: &mut self.scene,

@@ -30,8 +30,6 @@ use crate::{
     text::{take_display_cols, truncate_cols},
 };
 
-use super::SemanticStatus;
-
 /// Default frame period (ms) for Full motion — matches historic Spinner/Progress.
 pub const SPINNER_DEFAULT_PERIOD_MS: u64 = 80;
 pub use crate::style::SPINNER_BRAILLE_FRAMES;
@@ -97,17 +95,6 @@ impl ActivityPhase {
     #[must_use]
     pub const fn period_ms(self) -> u64 {
         SPINNER_DEFAULT_PERIOD_MS
-    }
-
-    /// Shared lifecycle state used for glyph and tone recipes.
-    #[must_use]
-    pub const fn semantic(self) -> SemanticStatus {
-        match self {
-            Self::Indeterminate | Self::Streaming => SemanticStatus::Running,
-            Self::Waiting | Self::Reconnecting => SemanticStatus::Waiting,
-            Self::Queued => SemanticStatus::Queued,
-            Self::Done => SemanticStatus::Success,
-        }
     }
 }
 
@@ -326,18 +313,10 @@ impl<'a> Spinner<'a> {
         self
     }
 
-    /// ASCII frames.
     #[must_use]
     /// Embedded in labeled control (glyph-only ok).
     pub const fn embedded(mut self, on: bool) -> Self {
         self.embedded = on;
-        self
-    }
-
-    /// Phase override (state phase used if None).
-    #[must_use]
-    pub const fn phase(mut self, phase: ActivityPhase) -> Self {
-        self.phase = Some(phase);
         self
     }
 
@@ -510,12 +489,6 @@ impl<'a> ActivityIndicator<'a> {
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
         self
-    }
-
-    /// Measure preferred height.
-    #[must_use]
-    pub fn measure_height(&self) -> u16 {
-        if self.detail.is_some() { 2 } else { 1 }
     }
 
     /// Paint.

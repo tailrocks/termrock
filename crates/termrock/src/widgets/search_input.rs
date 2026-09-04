@@ -682,32 +682,10 @@ impl<'a> SearchInput<'a> {
         self
     }
 
-    /// Error / custom status message (for [`SearchStatus::Error`] or override).
-    #[must_use]
-    pub const fn status_message(mut self, message: &'a str) -> Self {
-        self.status_message = Some(message);
-        self
-    }
-
     /// Active filter chips (leading metadata).
     #[must_use]
     pub const fn filters(mut self, filters: &'a [SearchFilterChip<'a>]) -> Self {
         self.filters = filters;
-        self
-    }
-
-    /// Clear control.
-    #[must_use]
-    pub const fn show_clear(mut self, on: bool) -> Self {
-        self.show_clear = on;
-        self
-    }
-
-    /// ASCII glyphs.
-    #[must_use]
-    /// External validation.
-    pub const fn validation(mut self, validation: Validation<'a>) -> Self {
-        self.validation = validation;
         self
     }
 

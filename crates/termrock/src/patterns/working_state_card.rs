@@ -460,21 +460,6 @@ impl WorkingStateCardState {
         matches!(self.presentation, WorkingStatePresentation::Collapsed)
     }
 
-    /// Project for ActivityShelf when collapsed (or always for multi-activity).
-    #[must_use]
-    pub fn to_activity_item(&self) -> Option<ActivityItem> {
-        self.work.as_ref().map(WorkingState::to_activity_item)
-    }
-
-    /// Semantic description for a11y.
-    #[must_use]
-    pub fn semantic_description(&self) -> String {
-        self.work
-            .as_ref()
-            .map(WorkingState::semantic_description)
-            .unwrap_or_else(|| "Agent idle".into())
-    }
-
     fn available_actions(&self) -> Vec<WorkingAction> {
         let Some(w) = &self.work else {
             return Vec::new();
@@ -667,7 +652,6 @@ impl WorkingStateCardState {
 pub struct WorkingStateCard<'a> {
     system: &'a DesignSystem,
     colorless: bool,
-    tick: u64,
 }
 
 impl<'a> WorkingStateCard<'a> {
@@ -677,7 +661,6 @@ impl<'a> WorkingStateCard<'a> {
         Self {
             system,
             colorless: false,
-            tick: 0,
         }
     }
 
@@ -689,17 +672,10 @@ impl<'a> WorkingStateCard<'a> {
         self
     }
 
-    /// Deterministic paint tick for active presence.
-    #[must_use]
-    pub const fn tick(mut self, tick: u64) -> Self {
-        self.tick = tick;
-        self
-    }
-
     /// Paint.
     ///
     /// When collapsed, paints a single non-invasive line; host should also
-    /// feed [`WorkingStateCardState::to_activity_item`] into ActivityShelf.
+    /// project [`WorkingState::to_activity_item`] into ActivityShelf.
     pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut WorkingStateCardState) {
         state.action_hits.clear();
         state.header_hit = None;

@@ -70,18 +70,6 @@ impl QueryLanguage {
     pub fn sql() -> Self {
         Self::new("sql", "SQL")
     }
-
-    /// Log query preset.
-    #[must_use]
-    pub fn logs() -> Self {
-        Self::new("logs", "Logs")
-    }
-
-    /// Search / filter language.
-    #[must_use]
-    pub fn search() -> Self {
-        Self::new("search", "Search")
-    }
 }
 
 /// Presentation density.
@@ -253,13 +241,6 @@ impl QueryParameter {
     #[must_use]
     pub fn type_hint(mut self, t: impl Into<String>) -> Self {
         self.type_hint = Some(t.into());
-        self
-    }
-
-    /// Required.
-    #[must_use]
-    pub const fn required(mut self) -> Self {
-        self.required = true;
         self
     }
 
@@ -745,13 +726,6 @@ impl QueryEditorState {
         self.completion_open = false;
         self.sync_editor_input();
         QueryEditorOutcome::CompletionClosed
-    }
-
-    /// Insert text at cursor (completion commit helper).
-    pub fn insert_text(&mut self, text: &str) {
-        self.editor.set_accepts_input(true);
-        let _ = self.editor.insert_text(text);
-        self.sync_editor_input();
     }
 
     /// Request run.

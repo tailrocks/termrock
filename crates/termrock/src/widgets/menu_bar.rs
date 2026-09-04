@@ -288,13 +288,6 @@ impl<Id> MenuBarMenu<Id> {
         self.mnemonic = Some(ch);
         self
     }
-
-    /// Enabled flag.
-    #[must_use]
-    pub fn enabled(mut self, on: bool) -> Self {
-        self.enabled = on;
-        self
-    }
 }
 
 /// Layout density for the bar chrome.
@@ -515,12 +508,6 @@ impl MenuBarState {
     #[must_use]
     pub const fn mnemonic_armed(&self) -> bool {
         self.mnemonic_mode
-    }
-
-    /// Presentation.
-    #[must_use]
-    pub const fn presentation(&self) -> MenuBarPresentation {
-        self.presentation
     }
 
     /// Opener focus hint for host restore.

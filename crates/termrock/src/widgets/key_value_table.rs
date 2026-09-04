@@ -177,29 +177,6 @@ impl<'a, Id> KvtField<'a, Id> {
         }
     }
 
-    /// Separator.
-    #[must_use]
-    pub const fn separator(id: Id) -> Self {
-        Self {
-            id,
-            key: "",
-            value: "",
-            value_type: None,
-            source: None,
-            annotation: None,
-            href: None,
-            compare: None,
-            copyable: false,
-            secret: false,
-            editable: false,
-            status: None,
-            validation: KvtValidation::Ok,
-            validation_message: None,
-            depth: 0,
-            kind: KvtRowKind::Separator,
-        }
-    }
-
     /// Sets the type label column.
     #[must_use]
     pub const fn value_type(mut self, t: &'a str) -> Self {
@@ -211,20 +188,6 @@ impl<'a, Id> KvtField<'a, Id> {
     #[must_use]
     pub const fn source(mut self, s: &'a str) -> Self {
         self.source = Some(s);
-        self
-    }
-
-    /// Sets secondary annotation text.
-    #[must_use]
-    pub const fn annotation(mut self, a: &'a str) -> Self {
-        self.annotation = Some(a);
-        self
-    }
-
-    /// Sets an activatable hyperlink for the value.
-    #[must_use]
-    pub const fn href(mut self, href: &'a str) -> Self {
-        self.href = Some(href);
         self
     }
 
@@ -253,13 +216,6 @@ impl<'a, Id> KvtField<'a, Id> {
     #[must_use]
     pub const fn editable(mut self) -> Self {
         self.editable = true;
-        self
-    }
-
-    /// Sets status tone for the primary value.
-    #[must_use]
-    pub const fn status(mut self, status: KvStatus) -> Self {
-        self.status = Some(status);
         self
     }
 
@@ -427,17 +383,6 @@ impl<Id: Clone + PartialEq + Ord> KeyValueTableState<Id> {
         self
     }
 
-    /// Cursor id.
-    #[must_use]
-    pub const fn cursor(&self) -> Option<&Id> {
-        self.cursor.as_ref()
-    }
-
-    /// Sets cursor.
-    pub fn set_cursor(&mut self, id: Option<Id>) {
-        self.cursor = id;
-    }
-
     /// Whether secret is revealed.
     #[must_use]
     pub fn is_revealed(&self, id: &Id) -> bool {
@@ -500,20 +445,6 @@ impl<'a, Id: Clone + PartialEq + Ord> KeyValueTable<'a, Id> {
             show_source: true,
             separator: system.kv_separator().text(),
         }
-    }
-
-    /// Fixed key column width (0 = auto).
-    #[must_use]
-    pub const fn key_width(mut self, w: u16) -> Self {
-        self.key_width = w;
-        self
-    }
-
-    /// Separator between key and value in columns mode.
-    #[must_use]
-    pub const fn separator(mut self, sep: &'a str) -> Self {
-        self.separator = sep;
-        self
     }
 
     fn resolved_layout(&self, width: u16, state: &KeyValueTableState<Id>) -> KvLayout {

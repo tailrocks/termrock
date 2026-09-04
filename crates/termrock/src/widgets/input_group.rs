@@ -128,13 +128,6 @@ impl InputGroupState {
         }
     }
 
-    /// Live typing. [`Self::new`] stays idle (`editing: false`).
-    #[must_use]
-    pub fn with_editing(mut self) -> Self {
-        self.field.begin_edit();
-        self
-    }
-
     /// Start the insert session (Junie Enter on an idle field).
     pub fn begin_edit(&mut self) {
         self.field.begin_edit();

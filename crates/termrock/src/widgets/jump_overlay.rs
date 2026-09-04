@@ -165,20 +165,6 @@ impl<Id> JumpTarget<Id> {
     pub fn badge(&self) -> char {
         self.keys.chars().next().unwrap_or('?')
     }
-
-    /// Role.
-    #[must_use]
-    pub const fn role(mut self, role: SemanticRole) -> Self {
-        self.role = Some(role);
-        self
-    }
-
-    /// Depth.
-    #[must_use]
-    pub const fn depth(mut self, d: u8) -> Self {
-        self.depth = d;
-        self
-    }
 }
 
 /// Outcome of jump-mode input.
@@ -491,23 +477,6 @@ impl JumpOverlayState {
         &self.prefix
     }
 
-    /// Active filter.
-    #[must_use]
-    pub fn filter(&self) -> &JumpFilter {
-        &self.filter
-    }
-
-    /// Replace filter (returns [`JumpOutcome::FilterChanged`]).
-    pub fn set_filter<Id>(&mut self, filter: JumpFilter) -> JumpOutcome<Id> {
-        self.filter = filter;
-        self.prefix.clear();
-        JumpOutcome::FilterChanged
-    }
-
-    /// Host input gate.
-    pub fn set_accepts_input(&mut self, on: bool) {
-        self.accepts_input = on;
-    }
     /// Whether dimming is enabled.
     #[must_use]
     pub const fn dim_unmatched(&self) -> bool {
@@ -636,20 +605,6 @@ impl<'a, Id> JumpOverlay<'a, Id> {
     /// Reduced-color roles.
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
-        self
-    }
-
-    /// Current prefix for dimming.
-    #[must_use]
-    pub const fn prefix(mut self, p: &'a str) -> Self {
-        self.prefix = p;
-        self
-    }
-
-    /// Dim non-matching targets.
-    #[must_use]
-    pub const fn dim_unmatched(mut self, on: bool) -> Self {
-        self.dim_unmatched = on;
         self
     }
 

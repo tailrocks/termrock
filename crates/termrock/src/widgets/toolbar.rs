@@ -151,13 +151,6 @@ impl<'a, Id> ToolbarItem<'a, Id> {
         self
     }
 
-    /// Enabled flag.
-    #[must_use]
-    pub const fn enabled(mut self, enabled: bool) -> Self {
-        self.enabled = enabled;
-        self
-    }
-
     /// Command catalog id.
     #[must_use]
     pub const fn command(mut self, command: &'a str) -> Self {
@@ -307,13 +300,6 @@ impl<'a, Id> Toolbar<'a, Id> {
         }
     }
 
-    /// Orientation.
-    #[must_use]
-    pub const fn orientation(mut self, orientation: ToolbarOrientation) -> Self {
-        self.orientation = orientation;
-        self
-    }
-
     /// Vertical compact strip.
     #[must_use]
     pub const fn vertical(mut self) -> Self {
@@ -348,11 +334,6 @@ impl<Id: Clone + PartialEq> Toolbar<'_, Id> {
             self.overflow_id.is_some(),
             self.system.glyphs,
         )
-    }
-
-    /// Paint the toolbar into `buffer`.
-    pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut ToolbarState<Id>) {
-        StatefulWidget::render(self, area, buffer, state);
     }
 
     /// Key path: requires surface focus. Roving + Activate.

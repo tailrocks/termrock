@@ -11,15 +11,10 @@
 //! removing essential persistent slots.
 //!
 //! Behavioral references: Zellij mode bar, Vim/Helix status lines, btop footers.
-use ratatui_core::{
-    buffer::Buffer,
-    layout::{Position, Rect},
-    style::Style,
-    widgets::StatefulWidget,
-};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Style, widgets::StatefulWidget};
 
 use crate::{
-    interaction::{HitRegion, Outcome},
+    interaction::HitRegion,
     style::{DesignSystem, GlyphSet, Role},
     text::{TruncateMode, display_cols, take_display_cols, truncate_display_cols},
 };
@@ -285,13 +280,6 @@ impl<'a, Id> StatusSlot<'a, Id> {
         self
     }
 
-    /// Enabled.
-    #[must_use]
-    pub const fn enabled(mut self, enabled: bool) -> Self {
-        self.enabled = enabled;
-        self
-    }
-
     /// Glyph override.
     #[must_use]
     pub const fn glyph(mut self, glyph: &'a str) -> Self {
@@ -345,18 +333,6 @@ pub struct StatusBarState<Id> {
     pub transient_ttl_ms: u64,
 }
 
-impl<Id> StatusBarState<Id> {
-    /// Records a mode change so the next frames can cross-fade it.
-    pub fn set_mode(&mut self, mode: impl Into<String>, elapsed_ms: u64) {
-        let mode = mode.into();
-        if self.previous_mode.as_deref() == Some(mode.as_str()) {
-            return;
-        }
-        self.previous_mode = Some(mode);
-        self.mode_changed_at_ms = elapsed_ms;
-    }
-}
-
 impl<Id> Default for StatusBarState<Id> {
     fn default() -> Self {
         Self {
@@ -398,27 +374,6 @@ impl<Id: Clone> StatusBarState<Id> {
                 self.transient_set_at_ms = None;
             }
         }
-    }
-
-    /// Updates hover state from the current pointer position and painted hit regions.
-    pub fn hover(&mut self, position: Position) -> Option<&Id> {
-        self.hovered = self
-            .regions
-            .iter()
-            .find(|region| region.area.contains(position))
-            .map(|region| region.id.clone());
-        self.hovered.as_ref()
-    }
-
-    /// Maps a pointer position to the semantic outcome of the painted hit region.
-    #[must_use]
-    pub fn click(&mut self, position: Position) -> Outcome<Id> {
-        self.regions
-            .iter()
-            .find(|region| region.area.contains(position))
-            .map_or(Outcome::Ignored, |region| {
-                Outcome::Activated(region.id.clone())
-            })
     }
 }
 
@@ -501,13 +456,6 @@ impl<'a, Id> StatusBar<'a, Id> {
     #[must_use]
     pub const fn rich(mut self) -> Self {
         self.recipe = StatusBarRecipe::Rich;
-        self
-    }
-
-    /// Compact recipe (default).
-    #[must_use]
-    pub const fn compact(mut self) -> Self {
-        self.recipe = StatusBarRecipe::Compact;
         self
     }
 

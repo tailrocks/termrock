@@ -263,23 +263,10 @@ pub struct DiffFile<'a> {
 }
 
 impl<'a> DiffFile<'a> {
-    /// Language.
-    #[must_use]
-    pub const fn language(mut self, lang: &'a str) -> Self {
-        self.language = Some(lang);
-        self
-    }
-
     /// Exclusive end.
     #[must_use]
     pub fn end(&self) -> usize {
         self.start.saturating_add(self.len.max(1))
-    }
-
-    /// Contains line.
-    #[must_use]
-    pub fn contains_line(&self, i: usize) -> bool {
-        i >= self.start && i < self.end()
     }
 }
 
@@ -350,12 +337,6 @@ impl<'a> DiffLine<'a> {
         Self::new(id, DiffKind::Removed, text)
     }
 
-    /// Changed-in-place (dirty) line.
-    #[must_use]
-    pub const fn modified(id: &'a str, text: &'a str) -> Self {
-        Self::new(id, DiffKind::Modified, text)
-    }
-
     /// Hunk header line.
     #[must_use]
     pub const fn hunk_header(id: &'a str, text: &'a str) -> Self {
@@ -386,13 +367,6 @@ impl<'a> DiffLine<'a> {
     #[must_use]
     pub const fn words(mut self, words: &'a [DiffWordSpan<'a>]) -> Self {
         self.words = Some(words);
-        self
-    }
-
-    /// Syntax spans.
-    #[must_use]
-    pub const fn syntax(mut self, spans: &'a [DiffSyntaxSpan]) -> Self {
-        self.syntax = Some(spans);
         self
     }
 

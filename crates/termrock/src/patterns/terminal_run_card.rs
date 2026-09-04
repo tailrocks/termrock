@@ -347,13 +347,6 @@ impl TerminalRun {
         self
     }
 
-    /// Revision.
-    #[must_use]
-    pub const fn revision(mut self, r: u64) -> Self {
-        self.revision = r;
-        self
-    }
-
     /// Header summary line.
     #[must_use]
     pub fn header_line(&self) -> String {
@@ -683,12 +676,6 @@ impl TerminalRunCardState {
         self.output.set_accepts_input(on);
     }
 
-    /// Expanded?
-    #[must_use]
-    pub const fn is_expanded(&self) -> bool {
-        !matches!(self.presentation, TerminalRunPresentation::Compact)
-    }
-
     /// Following tail.
     #[must_use]
     pub const fn is_following(&self) -> bool {
@@ -846,7 +833,6 @@ pub struct TerminalRunCard<'a> {
     lines: &'a [TerminalLine<'a>],
     system: &'a DesignSystem,
     colorless: bool,
-    tick: u64,
 }
 
 impl<'a> TerminalRunCard<'a> {
@@ -862,7 +848,6 @@ impl<'a> TerminalRunCard<'a> {
             lines,
             system,
             colorless: false,
-            tick: 0,
         }
     }
 
@@ -871,13 +856,6 @@ impl<'a> TerminalRunCard<'a> {
     /// Colorless.
     pub const fn colorless(mut self, on: bool) -> Self {
         self.colorless = on;
-        self
-    }
-
-    /// Deterministic paint tick for active presence.
-    #[must_use]
-    pub const fn tick(mut self, tick: u64) -> Self {
-        self.tick = tick;
         self
     }
 

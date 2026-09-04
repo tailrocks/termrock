@@ -77,31 +77,6 @@ pub enum UiIntent {
     Fullscreen,
 }
 
-impl UiIntent {
-    /// Short stable token for help / palette rows.
-    #[must_use]
-    pub const fn as_str(self) -> &'static str {
-        match self {
-            Self::Move(_) => "move",
-            Self::Page(_) => "page",
-            Self::Activate => "activate",
-            Self::Toggle => "toggle",
-            Self::Open => "open",
-            Self::Close => "close",
-            Self::Cancel => "cancel",
-            Self::Submit => "submit",
-            Self::Expand => "expand",
-            Self::Collapse => "collapse",
-            Self::FocusNext => "focus_next",
-            Self::FocusPrevious => "focus_previous",
-            Self::Edit => "edit",
-            Self::Search => "search",
-            Self::Help => "help",
-            Self::Fullscreen => "fullscreen",
-        }
-    }
-}
-
 /// Maps a key event to a list-oriented intent using TermRock defaults.
 ///
 /// Applications may replace this with a keymap-driven adapter. Returns `None`

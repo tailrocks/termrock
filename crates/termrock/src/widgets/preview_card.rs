@@ -563,13 +563,6 @@ impl PreviewCardState {
         self.selection_debounce = d;
     }
 
-    /// Disable.
-    pub fn set_disabled(&mut self, on: bool) {
-        self.disabled = on;
-        if on {
-            self.force_hide();
-        }
-    }
     /// Pointer over anchor.
     pub fn set_pointer_over(&mut self, over: bool) {
         self.pointer_over = over;
@@ -610,12 +603,6 @@ impl PreviewCardState {
         self.pinned
     }
 
-    /// Disabled?
-    #[must_use]
-    pub const fn is_disabled(&self) -> bool {
-        self.disabled
-    }
-
     /// Current generation.
     #[must_use]
     pub const fn generation(&self) -> u64 {
@@ -638,18 +625,6 @@ impl PreviewCardState {
     #[must_use]
     pub const fn load(&self) -> PreviewLoadState {
         self.load
-    }
-
-    /// Body area for host-extended paint.
-    #[must_use]
-    pub const fn body_area(&self) -> Rect {
-        self.slots.body
-    }
-
-    /// Presence deadline for host poll.
-    #[must_use]
-    pub fn next_deadline(&self) -> Option<Instant> {
-        self.presence.next_deadline()
     }
 
     /// Force hide (also unpins).
@@ -692,25 +667,6 @@ impl PreviewCardState {
         }
     }
 
-    /// Clear selection (hides unpinned).
-    pub fn clear_selection(&mut self) -> PreviewCardOutcome {
-        self.selection_id = None;
-        self.selection_active = false;
-        self.pending_generation = None;
-        self.load = PreviewLoadState::Idle;
-        self.selection_dirty_at_ms = None;
-        if self.pinned {
-            return PreviewCardOutcome::Ignored;
-        }
-        let was = self.was_visible || self.is_visible();
-        self.force_hide();
-        if was {
-            PreviewCardOutcome::Hidden
-        } else {
-            PreviewCardOutcome::Ignored
-        }
-    }
-
     /// Begin async fetch for current selection; returns generation token.
     pub fn begin_fetch(&mut self) -> PreviewCardOutcome {
         if self.disabled || self.selection_id.is_none() {
@@ -734,13 +690,6 @@ impl PreviewCardState {
         self.load = PreviewLoadState::Ready;
         PreviewCardOutcome::ContentApplied { generation }
     }
-    /// Mark load stale (optional host cue).
-    pub fn mark_stale(&mut self) {
-        if self.load == PreviewLoadState::Ready {
-            self.load = PreviewLoadState::Stale;
-        }
-    }
-
     fn accepts_generation(&self, generation: u64) -> bool {
         if let Some(pending) = self.pending_generation {
             generation == pending
@@ -930,7 +879,6 @@ pub struct PreviewCard<'a> {
     content: PreviewCardContent<'a>,
     system: &'a DesignSystem,
     colorless: bool,
-    max_width: u16,
 }
 
 impl<'a> PreviewCard<'a> {
@@ -941,21 +889,7 @@ impl<'a> PreviewCard<'a> {
             content,
             system,
             colorless: false,
-            max_width: PREVIEW_CARD_DEFAULT_MAX_WIDTH,
         }
-    }
-
-    /// Max width.
-    #[must_use]
-    pub const fn max_width(mut self, w: u16) -> Self {
-        self.max_width = w;
-        self
-    }
-
-    /// Overlay size for current content.
-    #[must_use]
-    pub fn overlay_size(&self) -> OverlaySize {
-        preview_card_overlay_size(&self.content, self.max_width)
     }
 
     /// Paint when visible; no-op when hidden.

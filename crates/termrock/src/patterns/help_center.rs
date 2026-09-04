@@ -86,19 +86,6 @@ impl HelpCenterPane {
             Self::Status => "status",
         }
     }
-
-    /// Default Tab cycle (status chrome-only).
-    #[must_use]
-    pub fn focus_order() -> &'static [HelpCenterPane] {
-        &[
-            Self::Search,
-            Self::Nav,
-            Self::Keyboard,
-            Self::Commands,
-            Self::Body,
-            Self::Diagnostics,
-        ]
-    }
 }
 
 /// Presentation mode.
@@ -603,16 +590,6 @@ impl HelpCenterState {
         }
     }
 
-    /// Compact overlay factory.
-    #[must_use]
-    pub fn compact() -> Self {
-        let mut s = Self::new();
-        s.mode = HelpCenterMode::Compact;
-        s.focus = HelpCenterPane::Search.id();
-        // Modal already open from new()
-        s
-    }
-
     /// Whether diagnostics pane is painted this frame (same predicate as layout).
     #[must_use]
     pub fn diagnostics_pane_visible(
@@ -718,22 +695,6 @@ impl HelpCenterState {
         self.keyboard.set_focused(kb_on);
         self.keyboard.set_accepts_input(kb_on);
         self.body.set_focused(f == "body");
-    }
-
-    /// Set focus.
-    pub fn set_focus(&mut self, pane: HelpCenterPane) -> HelpCenterOutcome {
-        let density = self.effective_density();
-        let visible = self.visible_focus_panes(density);
-        if !visible.contains(&pane) {
-            return HelpCenterOutcome::Ignored;
-        }
-        if self.focus == pane.id() {
-            self.apply_focus_gates();
-            return HelpCenterOutcome::Ignored;
-        }
-        self.focus = pane.id();
-        self.apply_focus_gates();
-        HelpCenterOutcome::FocusChanged(self.focus)
     }
 
     /// Tab cycle.

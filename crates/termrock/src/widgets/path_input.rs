@@ -445,35 +445,6 @@ impl PathInputState {
     pub fn path(&self) -> &str {
         self.path.value()
     }
-    /// Style.
-    #[must_use]
-    pub const fn style(&self) -> PathStyle {
-        self.style
-    }
-
-    /// Expect.
-    #[must_use]
-    pub const fn expect(&self) -> PathExpect {
-        self.expect
-    }
-
-    /// Base.
-    #[must_use]
-    pub fn base(&self) -> Option<&str> {
-        self.base.as_deref()
-    }
-
-    /// Risk.
-    #[must_use]
-    pub const fn risk(&self) -> PathRisk {
-        self.risk
-    }
-
-    /// History (newest first).
-    #[must_use]
-    pub fn history(&self) -> impl Iterator<Item = &str> {
-        self.history.iter().map(String::as_str)
-    }
 
     /// Focus.
     pub fn set_focused(&mut self, on: bool) {
@@ -851,32 +822,10 @@ impl<'a> PathInput<'a> {
         self
     }
 
-    /// Extra status / error message.
-    #[must_use]
-    pub const fn status_message(mut self, message: &'a str) -> Self {
-        self.status_message = Some(message);
-        self
-    }
-
     /// Browse control (`…` / Ctrl+O).
     #[must_use]
     pub const fn show_browse(mut self, on: bool) -> Self {
         self.show_browse = on;
-        self
-    }
-
-    /// Clear control.
-    #[must_use]
-    pub const fn show_clear(mut self, on: bool) -> Self {
-        self.show_clear = on;
-        self
-    }
-
-    /// ASCII glyphs.
-    #[must_use]
-    /// Validation projection.
-    pub const fn validation(mut self, validation: Validation<'a>) -> Self {
-        self.validation = validation;
         self
     }
 

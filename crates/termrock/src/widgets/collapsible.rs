@@ -110,24 +110,6 @@ pub enum CollapsibleOutcome {
     Closed,
 }
 
-impl CollapsibleOutcome {
-    /// Whether open state changed.
-    #[must_use]
-    pub const fn changed(self) -> bool {
-        matches!(self, Self::Opened | Self::Closed)
-    }
-
-    /// Resulting open flag if changed.
-    #[must_use]
-    pub const fn open(self) -> Option<bool> {
-        match self {
-            Self::Opened => Some(true),
-            Self::Closed => Some(false),
-            Self::Ignored => None,
-        }
-    }
-}
-
 /// Interaction + uncontrolled open state.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct CollapsibleState {
@@ -335,13 +317,6 @@ impl<'a> Collapsible<'a> {
         self
     }
 
-    /// Inline compact trigger.
-    #[must_use]
-    pub const fn inline(mut self) -> Self {
-        self.variant = CollapsibleVariant::Inline;
-        self
-    }
-
     /// Disabled (no toggle).
     #[must_use]
     pub const fn disabled(mut self, disabled: bool) -> Self {
@@ -370,24 +345,11 @@ impl<'a> Collapsible<'a> {
         self
     }
 
-    /// Extra left indent.
-    #[must_use]
-    pub const fn indent(mut self, indent: u16) -> Self {
-        self.indent = indent;
-        self
-    }
-
     /// Preferred content height when open (0 = fill remaining).
     #[must_use]
     pub const fn preferred_content_height(mut self, rows: u16) -> Self {
         self.preferred_content_height = rows;
         self
-    }
-
-    /// Whether this instance is disabled.
-    #[must_use]
-    pub const fn is_disabled(&self) -> bool {
-        self.disabled
     }
 
     /// Content policy.

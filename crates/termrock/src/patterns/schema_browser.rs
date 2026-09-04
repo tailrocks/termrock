@@ -126,24 +126,6 @@ impl SchemaNodeKind {
             }
         }
     }
-
-    /// Semantic role for kind chrome.
-    #[must_use]
-    pub const fn role(self) -> Role {
-        match self {
-            Self::Connection => Role::TextStrong,
-            Self::Database | Self::Schema => Role::TextSecondary,
-            Self::Table => Role::TextStrong,
-            Self::View => Role::Text,
-            Self::Column => Role::TextMuted,
-            // Object kind is taxonomy, not operational health. Keep it
-            // neutral so warning chrome remains reserved for an actual
-            // caution with a glyph and verb.
-            Self::Index | Self::Constraint => Role::TextMuted,
-            Self::Routine | Self::Sequence => Role::TextStrong,
-            Self::Group | Self::Other => Role::TextMuted,
-        }
-    }
 }
 
 /// Connection / node health (host).
@@ -369,22 +351,6 @@ impl<'a, Id> SchemaBrowserEntry<'a, Id> {
         self
     }
 
-    /// Loading.
-    #[must_use]
-    pub const fn loading(mut self) -> Self {
-        self.status = TreeNodeStatus::Loading;
-        self.enabled = false;
-        self
-    }
-
-    /// Error.
-    #[must_use]
-    pub const fn error_msg(mut self, msg: &'a str) -> Self {
-        self.error = Some(msg);
-        self.status = TreeNodeStatus::Error;
-        self
-    }
-
     /// Connection status.
     #[must_use]
     pub const fn conn_status(mut self, s: SchemaConnStatus) -> Self {
@@ -405,7 +371,6 @@ impl<'a, Id> SchemaBrowserEntry<'a, Id> {
         self.nullable = Some(n);
         self
     }
-
     /// Key badge (`PK`, `FK`, `UQ`).
     #[must_use]
     pub const fn key_badge(mut self, b: &'a str) -> Self {
@@ -417,13 +382,6 @@ impl<'a, Id> SchemaBrowserEntry<'a, Id> {
     #[must_use]
     pub const fn secondary(mut self, s: &'a str) -> Self {
         self.secondary = Some(s);
-        self
-    }
-
-    /// Status override.
-    #[must_use]
-    pub const fn with_status(mut self, s: TreeNodeStatus) -> Self {
-        self.status = s;
         self
     }
 }
@@ -697,22 +655,6 @@ impl<Id: Clone + Ord + PartialEq> SchemaBrowserState<Id> {
     /// Host input gate.
     pub fn set_accepts_input(&mut self, on: bool) {
         self.accepts_input = on;
-    }
-
-    /// Selected.
-    #[must_use]
-    pub const fn selected(&self) -> Option<&Id> {
-        self.tree.selected()
-    }
-
-    /// Select.
-    pub fn select(&mut self, id: Option<Id>) {
-        self.tree.select(id);
-    }
-
-    /// Multi-select.
-    pub fn enable_multi_select(&mut self) {
-        self.tree.enable_multi_select();
     }
 
     /// Effective presentation (override or auto).

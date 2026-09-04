@@ -422,13 +422,6 @@ impl<'a> LinePlacement<'a> {
         self.alignment = alignment;
         self
     }
-
-    /// Chooses whether contraction is silent or marked.
-    #[must_use]
-    pub const fn overflow(mut self, overflow: CellOverflow) -> Self {
-        self.overflow = overflow;
-        self
-    }
 }
 
 /// Paints one row of plain `text`, contracting with `ellipsis` when the text is

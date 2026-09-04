@@ -337,12 +337,6 @@ impl TextInputState {
         self.focused
     }
 
-    /// Whether the pointer is over the field.
-    #[must_use]
-    pub const fn is_hovered(&self) -> bool {
-        self.hovered
-    }
-
     /// Whether the field is in the editing session.
     #[must_use]
     pub const fn is_editing(&self) -> bool {
@@ -412,12 +406,6 @@ impl TextInputState {
     #[must_use]
     pub const fn cursor_byte(&self) -> usize {
         self.cursor
-    }
-
-    /// Selection anchor byte offset when selecting.
-    #[must_use]
-    pub const fn selection_anchor(&self) -> Option<usize> {
-        self.anchor
     }
 
     /// Ordered selection range if non-empty.
@@ -1183,13 +1171,6 @@ impl<'a> TextInput<'a> {
     #[must_use]
     pub const fn prefix(mut self, prefix: &'a str) -> Self {
         self.prefix = Some(prefix);
-        self
-    }
-
-    /// Trailing adornment.
-    #[must_use]
-    pub const fn suffix(mut self, suffix: &'a str) -> Self {
-        self.suffix = Some(suffix);
         self
     }
 

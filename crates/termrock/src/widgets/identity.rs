@@ -644,20 +644,6 @@ impl<'a> Identity<'a> {
         self
     }
 
-    /// Face.
-    #[must_use]
-    pub const fn face(mut self, face: AvatarFace) -> Self {
-        self.face = face;
-        self
-    }
-
-    /// Avatar size.
-    #[must_use]
-    pub const fn size(mut self, size: AvatarSize) -> Self {
-        self.size = size;
-        self
-    }
-
     /// Presence.
     #[must_use]
     pub const fn presence(mut self, status: PresenceStatus) -> Self {
@@ -677,13 +663,6 @@ impl<'a> Identity<'a> {
     pub const fn compact(mut self) -> Self {
         self.compact = true;
         self.size = AvatarSize::Compact;
-        self
-    }
-
-    /// Initials override.
-    #[must_use]
-    pub const fn initials(mut self, initials: &'a str) -> Self {
-        self.initials = Some(initials);
         self
     }
 
@@ -732,22 +711,6 @@ impl<'a> Identity<'a> {
             s.push_str(self.presence.meaning());
         }
         s
-    }
-
-    /// Measure minimum width.
-    #[must_use]
-    pub fn measure_width(&self) -> u16 {
-        let mut w = 0u16;
-        if self.show_avatar {
-            w = w.saturating_add(self.avatar_glyph().measure_width());
-            w = w.saturating_add(1); // gap
-        }
-        w = w.saturating_add(u16::try_from(display_cols(self.name)).unwrap_or(1));
-        if self.show_badge {
-            w = w.saturating_add(2);
-            w = w.saturating_add(u16::try_from(display_cols(self.role.badge_label())).unwrap_or(1));
-        }
-        w.max(1)
     }
 
     /// Layout.

@@ -204,14 +204,6 @@ pub enum AccordionOutcome<Id> {
     },
 }
 
-impl<Id> AccordionOutcome<Id> {
-    /// Whether navigation or expansion changed.
-    #[must_use]
-    pub const fn changed(&self) -> bool {
-        !matches!(self, Self::Ignored)
-    }
-}
-
 /// Interaction + uncontrolled open set + roving cursor.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AccordionState<Id> {
@@ -451,20 +443,6 @@ impl<'a, Id> Accordion<'a, Id> {
         self
     }
 
-    /// Open mode.
-    #[must_use]
-    pub const fn mode(mut self, mode: AccordionMode) -> Self {
-        self.mode = mode;
-        self
-    }
-
-    /// Single-open.
-    #[must_use]
-    pub const fn single(mut self) -> Self {
-        self.mode = AccordionMode::Single;
-        self
-    }
-
     /// Multi-open.
     #[must_use]
     pub const fn multiple(mut self) -> Self {
@@ -476,20 +454,6 @@ impl<'a, Id> Accordion<'a, Id> {
     #[must_use]
     pub const fn open_ids(mut self, ids: &'a [Id]) -> Self {
         self.controlled_open = Some(ids);
-        self
-    }
-
-    /// Content policy while closed.
-    #[must_use]
-    pub const fn content_policy(mut self, policy: CollapsedContentPolicy) -> Self {
-        self.content_policy = policy;
-        self
-    }
-
-    /// Keep child domain state while closed.
-    #[must_use]
-    pub const fn keep_mounted(mut self) -> Self {
-        self.content_policy = CollapsedContentPolicy::KeepMounted;
         self
     }
 

@@ -568,12 +568,6 @@ impl TerminalOutputState {
         u64::from(self.scroll.new_content().unseen)
     }
 
-    /// Scroll.
-    #[must_use]
-    pub const fn scroll(&self) -> &ScrollAreaState {
-        &self.scroll
-    }
-
     /// Force follow.
     pub fn set_following(&mut self, following: bool) {
         if following {

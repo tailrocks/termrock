@@ -224,18 +224,6 @@ impl PromptQueueState {
         self.clamp_cursor();
     }
 
-    /// Enqueue (host or composer bridge).
-    pub fn enqueue(&mut self, item: PromptQueueItem) {
-        self.items.push(item);
-        if self.presentation == PromptQueuePresentation::Expanded {
-            self.window.set_cursor(
-                self.items.len().saturating_sub(1),
-                self.items.len(),
-                PROMPT_QUEUE_WINDOW,
-            );
-        }
-    }
-
     /// Agent busy.
     pub const fn set_agent(&mut self, a: AgentBusyState) {
         self.agent = a;
@@ -244,11 +232,6 @@ impl PromptQueueState {
     /// Gate.
     pub fn set_accepts_input(&mut self, on: bool) {
         self.accepts_input = on;
-    }
-
-    /// Focus.
-    pub const fn set_focused(&mut self, on: bool) {
-        self.focused = on;
     }
 
     /// Pending depth (queued/sending/blocked/failed/cancelled).
@@ -278,13 +261,6 @@ impl PromptQueueState {
         let item = self.items.remove(i);
         self.clamp_cursor();
         Some(item)
-    }
-
-    /// Update status by id.
-    pub fn set_status(&mut self, id: &str, status: PromptQueueStatus) {
-        if let Some(e) = self.items.iter_mut().find(|e| e.id == id) {
-            e.status = status;
-        }
     }
 
     /// Pop front pending for host drain (only Queued/Failed by host choice).

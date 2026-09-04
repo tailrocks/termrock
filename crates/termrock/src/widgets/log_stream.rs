@@ -159,13 +159,6 @@ impl<'a> LogLine<'a> {
         self
     }
 
-    /// Styled spans (ANSI path).
-    #[must_use]
-    pub const fn styled(mut self, line: &'a Line<'a>) -> Self {
-        self.styled = Some(line);
-        self
-    }
-
     /// Burst batch size.
     #[must_use]
     pub const fn batch_count(mut self, n: u32) -> Self {
@@ -346,12 +339,6 @@ impl LogStreamState {
     #[must_use]
     pub fn unread(&self) -> u64 {
         u64::from(self.scroll.new_content().unseen)
-    }
-
-    /// Scroll state (anchors, indicator).
-    #[must_use]
-    pub const fn scroll(&self) -> &ScrollAreaState {
-        &self.scroll
     }
 
     /// Selected ids.

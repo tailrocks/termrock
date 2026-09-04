@@ -219,11 +219,6 @@ impl<'a> TextSpan<'a> {
         self
     }
 
-    /// Content borrow.
-    #[must_use]
-    pub fn content(&self) -> &str {
-        self.content.as_ref()
-    }
     /// Annotation borrow.
     #[must_use]
     pub fn annotation_of(&self) -> Option<&str> {
@@ -334,15 +329,6 @@ impl<'a> Text<'a> {
     pub fn role(mut self, role: Role) -> Self {
         if let Some(s) = self.spans.first_mut() {
             s.role = role;
-        }
-        self
-    }
-
-    /// Emphasis for the first span.
-    #[must_use]
-    pub fn emphasis(mut self, emphasis: TextEmphasis) -> Self {
-        if let Some(s) = self.spans.first_mut() {
-            s.emphasis = emphasis;
         }
         self
     }

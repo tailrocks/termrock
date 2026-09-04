@@ -405,31 +405,10 @@ impl<'a> Slider<'a> {
         self
     }
 
-    /// Orientation.
-    #[must_use]
-    pub const fn orientation(mut self, orientation: SliderOrientation) -> Self {
-        self.orientation = orientation;
-        self
-    }
-
     /// Vertical track.
     #[must_use]
     pub const fn vertical(mut self) -> Self {
         self.orientation = SliderOrientation::Vertical;
-        self
-    }
-
-    /// Show trailing/current value text (default true).
-    #[must_use]
-    pub const fn show_value(mut self, on: bool) -> Self {
-        self.show_value = on;
-        self
-    }
-
-    /// Override page step.
-    #[must_use]
-    pub const fn page_step(mut self, step: f64) -> Self {
-        self.page_step = Some(step);
         self
     }
 
@@ -1131,17 +1110,6 @@ impl RangeSliderState {
         }
     }
 
-    /// Controlled range.
-    pub fn set_range(&mut self, start: f64, end: f64) {
-        if start <= end {
-            self.start = start;
-            self.end = end;
-        } else {
-            self.start = end;
-            self.end = start;
-        }
-    }
-
     /// Whether editable.
     #[must_use]
     pub const fn can_edit(&self) -> bool {
@@ -1155,7 +1123,6 @@ pub struct RangeSlider<'a> {
     bounds: SliderBounds,
     system: &'a DesignSystem,
     label: Option<&'a str>,
-    marks: &'a [SliderMark<'a>],
     show_value: bool,
     page_step: Option<f64>,
     colorless: bool,
@@ -1169,7 +1136,6 @@ impl<'a> RangeSlider<'a> {
             bounds,
             system,
             label: None,
-            marks: &[],
             show_value: true,
             page_step: None,
             colorless: false,
@@ -1180,27 +1146,6 @@ impl<'a> RangeSlider<'a> {
     #[must_use]
     pub const fn label(mut self, label: &'a str) -> Self {
         self.label = Some(label);
-        self
-    }
-
-    /// Marks.
-    #[must_use]
-    pub const fn marks(mut self, marks: &'a [SliderMark<'a>]) -> Self {
-        self.marks = marks;
-        self
-    }
-
-    /// Show value text.
-    #[must_use]
-    pub const fn show_value(mut self, on: bool) -> Self {
-        self.show_value = on;
-        self
-    }
-
-    /// Page step.
-    #[must_use]
-    pub const fn page_step(mut self, step: f64) -> Self {
-        self.page_step = Some(step);
         self
     }
 

@@ -119,48 +119,6 @@ pub struct MarkdownInline<'a> {
     pub href: Option<&'a str>,
 }
 
-impl<'a> MarkdownInline<'a> {
-    /// Plain text run.
-    #[must_use]
-    pub const fn text(text: &'a str) -> Self {
-        Self {
-            text,
-            kind: MarkdownInlineKind::Text,
-            href: None,
-        }
-    }
-
-    /// Strong.
-    #[must_use]
-    pub const fn strong(text: &'a str) -> Self {
-        Self {
-            text,
-            kind: MarkdownInlineKind::Strong,
-            href: None,
-        }
-    }
-
-    /// Emphasis.
-    #[must_use]
-    pub const fn emphasis(text: &'a str) -> Self {
-        Self {
-            text,
-            kind: MarkdownInlineKind::Emphasis,
-            href: None,
-        }
-    }
-
-    /// Inline code.
-    #[must_use]
-    pub const fn code(text: &'a str) -> Self {
-        Self {
-            text,
-            kind: MarkdownInlineKind::Code,
-            href: None,
-        }
-    }
-}
-
 /// One borrowed markdown block (may span multiple display rows).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct MarkdownBlock<'a> {
@@ -299,20 +257,6 @@ impl<'a> MarkdownBlock<'a> {
         self
     }
 
-    /// Builder: language.
-    #[must_use]
-    pub const fn language(mut self, language: &'a str) -> Self {
-        self.language = Some(language);
-        self
-    }
-
-    /// Builder: inlines.
-    #[must_use]
-    pub const fn spans(mut self, spans: &'a [MarkdownInline<'a>]) -> Self {
-        self.spans = Some(spans);
-        self
-    }
-
     /// Plain clipboard text for this block.
     #[must_use]
     pub fn plain(&self) -> String {
@@ -392,13 +336,6 @@ impl MarkdownViewState {
             total_rows: 0,
             viewport_rows: 0,
         }
-    }
-
-    /// Seed scroll.
-    #[must_use]
-    pub const fn with_scroll_y(mut self, y: u16) -> Self {
-        self.scroll_y = y;
-        self
     }
 
     /// Focus.
@@ -541,31 +478,11 @@ impl<'a> MarkdownView<'a> {
         }
     }
 
-    /// Sets the first visible **block** index (Widget / simple hosts).
-    #[must_use]
-    pub const fn first(mut self, first: usize) -> Self {
-        self.first_block = first;
-        self
-    }
-
-    /// Copyable / selectable policy for prose.
-    #[must_use]
-    pub const fn selectable(mut self, on: bool) -> Self {
-        self.selectable = on;
-        self
-    }
-
     /// Glow-style blank row before H1/H2 and rules (default true).
     #[must_use]
     pub const fn section_gap(mut self, on: bool) -> Self {
         self.section_gap = on;
         self
-    }
-
-    /// Block count.
-    #[must_use]
-    pub const fn len(&self) -> usize {
-        self.blocks.len()
     }
 
     /// Measure display rows for one block at `width`.

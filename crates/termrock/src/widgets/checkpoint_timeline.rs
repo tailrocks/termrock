@@ -641,12 +641,6 @@ impl CheckpointTimelineState {
         self.checkpoints.get(self.cursor)
     }
 
-    /// By id.
-    #[must_use]
-    pub fn get(&self, id: &str) -> Option<&Checkpoint> {
-        self.checkpoints.iter().find(|c| c.id == id)
-    }
-
     /// HEAD checkpoint.
     #[must_use]
     pub fn head(&self) -> Option<&Checkpoint> {

@@ -23,7 +23,6 @@ enum StatusSegmentTone {
     Metadata,
     Quiet,
     Strong,
-    Focus,
     Semantic(SemanticStatus),
 }
 
@@ -69,13 +68,6 @@ impl<'a> StatusSegment<'a> {
         self
     }
 
-    /// The one focused/actionable segment.
-    #[must_use]
-    pub const fn focus(mut self) -> Self {
-        self.tone = StatusSegmentTone::Focus;
-        self
-    }
-
     /// States survival priority (higher survives longer).
     #[must_use]
     pub const fn priority(mut self, priority: u8) -> Self {
@@ -88,7 +80,6 @@ impl<'a> StatusSegment<'a> {
             StatusSegmentTone::Metadata => Role::TextMuted,
             StatusSegmentTone::Quiet => Role::TextFaint,
             StatusSegmentTone::Strong => Role::TextStrong,
-            StatusSegmentTone::Focus => Role::Accent,
             StatusSegmentTone::Semantic(status) => status.role(),
         }
     }

@@ -52,15 +52,6 @@ impl KeyChord {
         }
     }
 
-    /// Chord with Shift held (typically only meaningful for non-Char keys).
-    #[must_use]
-    pub const fn shift(key: KeyCode) -> Self {
-        Self {
-            key,
-            mods: KeyModifiers::SHIFT,
-        }
-    }
-
     /// Chord with Alt-Shift held (used for pane-resize CSI sequences).
     #[must_use]
     pub const fn alt_shift(key: KeyCode) -> Self {

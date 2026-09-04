@@ -152,21 +152,6 @@ pub enum ActivityActionKind {
     Promote,
 }
 
-impl ActivityActionKind {
-    /// Chord hint.
-    #[must_use]
-    pub const fn chord(self) -> &'static str {
-        match self {
-            Self::Open => "Enter",
-            Self::Cancel => "x",
-            Self::Retry => "r",
-            Self::FocusTranscript => "t",
-            Self::InspectDeps => "d",
-            Self::Promote => "f",
-        }
-    }
-}
-
 /// Application-neutral activity / task node.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ActivityModel {
@@ -315,13 +300,6 @@ impl ActivityModel {
     #[must_use]
     pub fn detail(mut self, d: impl Into<String>) -> Self {
         self.detail = Some(d.into());
-        self
-    }
-
-    /// Group key.
-    #[must_use]
-    pub fn group_key(mut self, k: impl Into<String>) -> Self {
-        self.group_key = Some(k.into());
         self
     }
 

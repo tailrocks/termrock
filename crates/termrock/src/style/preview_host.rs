@@ -142,13 +142,6 @@ impl CapabilityPreviewHost {
         }
     }
 
-    /// Sets capability projection.
-    #[must_use]
-    pub const fn capability(mut self, capability: ColorCapability) -> Self {
-        self.capability = capability;
-        self
-    }
-
     /// Declares protocol support from consumer probe (never probes itself).
     #[must_use]
     pub const fn protocols(mut self, kitty: bool, iterm2: bool, sixel: bool) -> Self {
@@ -213,15 +206,6 @@ impl CapabilityPreviewHost {
         self.next_placement = self.next_placement.saturating_add(1);
         id
     }
-    /// Marks all surfaces of `kind` stale (e.g. after resource change).
-    pub fn mark_stale(&mut self, kind: PreviewSurfaceKind) {
-        for surface in &mut self.surfaces {
-            if surface.kind == kind {
-                surface.stale = true;
-            }
-        }
-    }
-
     /// Places an image surface; does not emit OSC protocols (consumer-owned).
     ///
     /// Placement id is stable for the same `resource_id` across frames so

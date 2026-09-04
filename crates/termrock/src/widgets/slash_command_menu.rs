@@ -101,17 +101,6 @@ impl SlashArgument {
         }
     }
 
-    /// Optional arg.
-    #[must_use]
-    pub fn optional(name: impl Into<String>) -> Self {
-        Self {
-            name: name.into(),
-            required: false,
-            hint: None,
-            values: Vec::new(),
-        }
-    }
-
     /// Hint.
     #[must_use]
     pub fn hint(mut self, h: impl Into<String>) -> Self {
@@ -760,10 +749,6 @@ impl SlashCommandMenuState {
         self.open = false;
         self.query = None;
         self.menu.set_open(false);
-    }
-    /// Begin async plugin fetch.
-    pub fn begin_async(&mut self) -> u64 {
-        self.menu.begin_async()
     }
     /// Set status (loading / empty / error chrome).
     pub fn set_status(&mut self, status: CompletionStatus) {

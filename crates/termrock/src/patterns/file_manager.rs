@@ -89,18 +89,6 @@ impl FileManagerPane {
             Self::Status => "status",
         }
     }
-
-    /// Default Tab focus cycle (status is chrome-only).
-    #[must_use]
-    pub fn focus_order() -> &'static [FileManagerPane] {
-        &[
-            Self::Breadcrumbs,
-            Self::Search,
-            Self::Tree,
-            Self::Preview,
-            Self::Queue,
-        ]
-    }
 }
 
 /// Responsive density.
@@ -635,22 +623,6 @@ impl FileManagerState {
 
     fn dialog_blocks_tree(&self) -> bool {
         !matches!(self.dialog, FileManagerDialog::None)
-    }
-
-    /// Set focus pane.
-    pub fn set_focus(&mut self, pane: FileManagerPane) -> FileManagerOutcome {
-        let density = self.effective_density();
-        let visible = self.visible_focus_panes(density);
-        if !visible.contains(&pane) {
-            return FileManagerOutcome::Ignored;
-        }
-        if self.focus == pane.id() {
-            self.apply_focus_gates();
-            return FileManagerOutcome::Ignored;
-        }
-        self.focus = pane.id();
-        self.apply_focus_gates();
-        FileManagerOutcome::FocusChanged(self.focus)
     }
 
     /// Cycle Tab focus.

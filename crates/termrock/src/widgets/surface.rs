@@ -384,12 +384,6 @@ impl<'a> Surface<'a> {
         }
         parts.content
     }
-
-    /// Hit-test helper after layout.
-    #[must_use]
-    pub fn hit_test(&self, area: Rect, col: u16, row: u16) -> bool {
-        self.layout(area).contains_hit(col, row)
-    }
 }
 
 impl Widget for &Surface<'_> {

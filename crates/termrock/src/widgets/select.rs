@@ -322,40 +322,10 @@ impl<Id> SelectState<Id> {
         self.collection.active()
     }
 
-    /// Presentation.
-    #[must_use]
-    pub const fn presentation(&self) -> SelectPresentation {
-        self.presentation
-    }
-
     /// Whether open.
     #[must_use]
     pub const fn is_open(&self) -> bool {
         self.presentation.is_open()
-    }
-
-    /// Search query.
-    #[must_use]
-    pub fn search_query(&self) -> &str {
-        self.search.value()
-    }
-
-    /// Collection model.
-    #[must_use]
-    pub const fn collection(&self) -> &CollectionState<Id> {
-        &self.collection
-    }
-
-    /// Trigger geometry.
-    #[must_use]
-    pub const fn trigger_area(&self) -> Rect {
-        self.trigger
-    }
-
-    /// Open list geometry.
-    #[must_use]
-    pub const fn panel_area(&self) -> Rect {
-        self.panel
     }
 
     /// Focus.

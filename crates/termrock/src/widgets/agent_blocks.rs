@@ -78,12 +78,6 @@ impl<Id: Clone + PartialEq> ModeRibbonState<Id> {
         }
     }
 
-    /// Selected mode id.
-    #[must_use]
-    pub const fn selected(&self) -> Option<&Id> {
-        self.selected.as_ref()
-    }
-
     /// Routes left/right/enter.
     pub fn handle_key(
         &mut self,

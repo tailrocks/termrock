@@ -84,22 +84,6 @@ impl ResultCellKind {
             Self::Json => InspectKind::Object,
         }
     }
-
-    /// Paint role for non-selected cells.
-    #[must_use]
-    pub const fn role(self) -> Role {
-        match self {
-            Self::Null => Role::TextDisabled,
-            Self::Bool => Role::TextMuted,
-            Self::Integer | Self::Float => Role::Text,
-            Self::Text | Self::Timestamp | Self::Uuid | Self::Other => Role::Text,
-            Self::Binary => Role::TextMuted,
-            Self::Json => Role::TextSecondary,
-            // Redaction is a value kind, not a warning state. Its literal
-            // label carries the distinction without spending warning color.
-            Self::Secret => Role::TextMuted,
-        }
-    }
 }
 
 /// One projected cell (borrowed display payload from host).
@@ -200,13 +184,6 @@ impl<'a> ResultCell<'a> {
             secret: true,
             truncated: false,
         }
-    }
-
-    /// Secret flag.
-    #[must_use]
-    pub const fn secret(mut self) -> Self {
-        self.secret = true;
-        self
     }
 }
 
@@ -928,10 +905,6 @@ impl ResultGridState {
         self.status = status;
     }
 
-    /// Logical universe for virtual window (unknown → 0 or resident).
-    pub fn set_logical_rows(&mut self, n: u64) {
-        self.table.set_logical_rows(n);
-    }
     /// Toggle stats strip.
     pub fn toggle_stats(&mut self) {
         self.show_stats = !self.show_stats;

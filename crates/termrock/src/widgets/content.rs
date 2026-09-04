@@ -148,13 +148,6 @@ impl<'a> Heading<'a> {
         self
     }
 
-    /// Show markdown-style `#` depth prefix (no-color hierarchy cue).
-    #[must_use]
-    pub const fn prefix(mut self, on: bool) -> Self {
-        self.prefix = on;
-        self
-    }
-
     /// Force rule under title (`None` = recipe default).
     #[must_use]
     pub const fn rule(mut self, on: bool) -> Self {
@@ -162,19 +155,6 @@ impl<'a> Heading<'a> {
         self
     }
 
-    /// Copyable title plain text.
-    #[must_use]
-    pub const fn copyable(mut self) -> Self {
-        self.selectable = SelectablePolicy::Copyable;
-        self
-    }
-
-    /// Selectable policy.
-    #[must_use]
-    pub const fn selectable(mut self, policy: SelectablePolicy) -> Self {
-        self.selectable = policy;
-        self
-    }
     /// Whether a rule row is requested for this paint.
     #[must_use]
     pub fn wants_rule(&self) -> bool {
@@ -424,13 +404,6 @@ impl<'a> Paragraph<'a> {
         self
     }
 
-    /// Compact recipe.
-    #[must_use]
-    pub const fn compact(mut self) -> Self {
-        self.recipe = ParagraphRecipe::Compact;
-        self
-    }
-
     /// Reading recipe.
     #[must_use]
     pub const fn reading(mut self) -> Self {
@@ -445,38 +418,11 @@ impl<'a> Paragraph<'a> {
         self
     }
 
-    /// Extra left indent.
-    #[must_use]
-    pub const fn indent(mut self, cols: u16) -> Self {
-        self.indent = cols;
-        self
-    }
-
-    /// Override prefix (including trailing space if desired).
-    #[must_use]
-    pub const fn prefix(mut self, prefix: &'a str) -> Self {
-        self.prefix = Some(prefix);
-        self
-    }
-
     /// Copyable plain text.
     #[must_use]
     pub const fn copyable(mut self) -> Self {
         self.selectable = SelectablePolicy::Copyable;
         self
-    }
-
-    /// Selectable policy.
-    #[must_use]
-    pub const fn selectable(mut self, policy: SelectablePolicy) -> Self {
-        self.selectable = policy;
-        self
-    }
-
-    /// Kind of this paragraph.
-    #[must_use]
-    pub const fn kind_of(&self) -> ParagraphKind {
-        self.kind
     }
 
     /// Resolved prefix for the first line.
@@ -519,12 +465,6 @@ impl<'a> Paragraph<'a> {
     #[must_use]
     pub fn plain(&self) -> &str {
         self.text
-    }
-
-    /// Plain with prefix (clipboard for list/quote).
-    #[must_use]
-    pub fn plain_with_prefix(&self) -> String {
-        format!("{}{}", self.resolved_prefix(), self.text)
     }
 
     /// Wrap body into display lines for `width` (full area width).

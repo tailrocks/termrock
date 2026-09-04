@@ -152,24 +152,10 @@ impl FileEntry {
         self
     }
 
-    /// Modified display string.
-    #[must_use]
-    pub fn modified(mut self, s: impl Into<String>) -> Self {
-        self.modified = Some(s.into());
-        self
-    }
-
     /// Permission error.
     #[must_use]
     pub fn error(mut self, msg: impl Into<String>) -> Self {
         self.error = Some(msg.into());
-        self
-    }
-
-    /// Selectable.
-    #[must_use]
-    pub const fn selectable(mut self, on: bool) -> Self {
-        self.selectable = on;
         self
     }
 }
@@ -421,7 +407,6 @@ pub struct FilePickerState {
     status: FileListingStatus,
     error_message: Option<String>,
     listing_generation: u64,
-    applied_generation: u64,
     preview_generation: u64,
     preview: Option<FilePreview>,
     preview_enabled: bool,
@@ -477,7 +462,6 @@ impl FilePickerState {
             status: FileListingStatus::Idle,
             error_message: None,
             listing_generation: 0,
-            applied_generation: 0,
             preview_generation: 0,
             preview: None,
             preview_enabled: true,
@@ -536,12 +520,6 @@ impl FilePickerState {
         self.preview_enabled = on;
         self
     }
-    /// Cwd.
-    #[must_use]
-    pub fn cwd(&self) -> &str {
-        &self.cwd
-    }
-
     /// Visible entries (after filter/sort).
     #[must_use]
     pub fn entries(&self) -> &[FileEntry] {
@@ -576,12 +554,6 @@ impl FilePickerState {
         self.status
     }
 
-    /// Applied generation.
-    #[must_use]
-    pub const fn applied_generation(&self) -> u64 {
-        self.applied_generation
-    }
-
     /// Current preview generation.
     #[must_use]
     pub const fn preview_generation(&self) -> u64 {
@@ -599,11 +571,6 @@ impl FilePickerState {
         self.preview.as_ref()
     }
 
-    /// Mode.
-    #[must_use]
-    pub const fn mode(&self) -> FilePickerMode {
-        self.mode
-    }
     /// Show hidden.
     #[must_use]
     pub const fn show_hidden(&self) -> bool {
@@ -616,11 +583,6 @@ impl FilePickerState {
         self.pane
     }
 
-    /// Presentation.
-    #[must_use]
-    pub const fn presentation(&self) -> FilePickerPresentation {
-        self.presentation
-    }
     /// Focus.
     pub fn set_focused(&mut self, on: bool) {
         self.focused = on;
@@ -751,7 +713,6 @@ impl FilePickerState {
         if generation != self.listing_generation {
             return false;
         }
-        self.applied_generation = generation;
         self.cwd = normalize_separators(&cwd.into(), self.path_style);
         self.path.set_path(&self.cwd);
         if let Some(b) = breadcrumbs {
@@ -771,7 +732,6 @@ impl FilePickerState {
         if generation != self.listing_generation {
             return false;
         }
-        self.applied_generation = generation;
         self.status = FileListingStatus::Error;
         self.error_message = Some(message.into());
         self.raw_entries.clear();

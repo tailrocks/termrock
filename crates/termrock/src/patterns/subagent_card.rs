@@ -314,13 +314,6 @@ impl SubagentRun {
         self
     }
 
-    /// Revision.
-    #[must_use]
-    pub const fn revision(mut self, r: u64) -> Self {
-        self.revision = r;
-        self
-    }
-
     /// Cancel meaningful?
     #[must_use]
     pub fn can_cancel(&self) -> bool {
@@ -777,7 +770,6 @@ pub struct SubagentCard<'a> {
     run: &'a SubagentRun,
     system: &'a DesignSystem,
     colorless: bool,
-    tick: u64,
 }
 
 impl<'a> SubagentCard<'a> {
@@ -788,15 +780,7 @@ impl<'a> SubagentCard<'a> {
             run,
             system,
             colorless: false,
-            tick: 0,
         }
-    }
-
-    /// Deterministic paint tick for active presence.
-    #[must_use]
-    pub const fn tick(mut self, tick: u64) -> Self {
-        self.tick = tick;
-        self
     }
 
     /// Paint.

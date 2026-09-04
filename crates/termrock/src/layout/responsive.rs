@@ -914,17 +914,6 @@ impl AnatomyPart {
             overflow: OverflowBehavior::Hide,
         }
     }
-
-    /// Whether this part is shown under the given anatomy.
-    #[must_use]
-    pub const fn visible(self, anatomy: AdaptiveAnatomy) -> bool {
-        match self.priority {
-            ContentPriority::Essential => anatomy.essential,
-            ContentPriority::Important => anatomy.important,
-            ContentPriority::Optional => anatomy.optional_meta || anatomy.secondary_actions,
-            ContentPriority::Decorative => anatomy.optional_meta && anatomy.full_secondary_labels,
-        }
-    }
 }
 
 /// Standard composed-row anatomy (list / tree / task rail rows).
@@ -1268,25 +1257,6 @@ impl ResponsiveSnapshot {
         Self {
             surface,
             recipe: "surface-policy",
-            class,
-            ladder,
-        }
-    }
-
-    /// Snapshot a named recipe.
-    #[must_use]
-    pub fn for_recipe(recipe: ResponsiveRecipe, width: u16, height: u16) -> Self {
-        let class = recipe.classify(width, height);
-        let ladder = WIDTH_LADDER
-            .iter()
-            .map(|&w| {
-                let c = recipe.classify(w, height.max(24));
-                format!("{w}->{}", c.stage.as_str())
-            })
-            .collect();
-        Self {
-            surface: recipe.surface.unwrap_or(ResponsiveSurface::AppShell),
-            recipe: recipe.name,
             class,
             ladder,
         }

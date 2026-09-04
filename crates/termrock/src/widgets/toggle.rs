@@ -1208,22 +1208,6 @@ impl<'a, Id: Clone + PartialEq> ToggleGroup<'a, Id> {
 
         ToggleGroupOutcome::Ignored
     }
-
-    /// Host selected overflow menu item → activate.
-    pub fn activate_overflow(
-        &self,
-        state: &ToggleGroupState<Id>,
-        id: Id,
-    ) -> ToggleGroupOutcome<Id> {
-        if state
-            .parts
-            .as_ref()
-            .is_some_and(|p| p.overflow_ids.iter().any(|x| x == &id))
-        {
-            return self.activate_item(state, id);
-        }
-        ToggleGroupOutcome::Ignored
-    }
 }
 
 // ── Tests ───────────────────────────────────────────────────────────────────

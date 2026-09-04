@@ -230,13 +230,6 @@ impl<'a, Id> Tab<'a, Id> {
         self
     }
 
-    /// Badge.
-    #[must_use]
-    pub const fn badge(mut self, badge: &'a str) -> Self {
-        self.badge = Some(badge);
-        self
-    }
-
     /// Status.
     #[must_use]
     pub const fn status(mut self, status: TabStatus) -> Self {
@@ -429,12 +422,6 @@ impl<Id> TabsState<Id> {
         self.collection.active()
     }
 
-    /// Orientation.
-    #[must_use]
-    pub const fn orientation(&self) -> TabsOrientation {
-        self.orientation
-    }
-
     /// Presentation.
     #[must_use]
     pub const fn presentation(&self) -> TabsPresentation {
@@ -470,29 +457,6 @@ impl<Id> TabsState<Id> {
             self.collection.set_active(Some(id));
         }
     }
-    /// Presentation for bounds.
-    #[must_use]
-    pub fn presentation_for_bounds(bounds: Rect, orientation: TabsOrientation) -> TabsPresentation {
-        match orientation {
-            TabsOrientation::Vertical => {
-                if bounds.height < 4 {
-                    TabsPresentation::Select
-                } else {
-                    TabsPresentation::Expanded
-                }
-            }
-            TabsOrientation::Horizontal => {
-                if bounds.width < TABS_SELECT_MAX_WIDTH {
-                    TabsPresentation::Select
-                } else if bounds.width < TABS_OVERFLOW_MAX_WIDTH {
-                    TabsPresentation::Overflow
-                } else {
-                    TabsPresentation::Expanded
-                }
-            }
-        }
-    }
-
     fn items_from_tabs<'a>(tabs: &'a [Tab<'a, Id>]) -> Vec<CollectionItem<'a, Id>>
     where
         Id: Clone,

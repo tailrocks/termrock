@@ -370,12 +370,6 @@ impl<'a> Viewport<'a> {
         );
     }
 
-    /// Returns the logical position under a terminal cell.
-    #[must_use]
-    pub fn pos_at(&self, state: &ViewportState, position: Position) -> Option<CellPos> {
-        state.pos_at(position)
-    }
-
     /// Returns the normalized logical selection, if it spans at least one cell.
     #[must_use]
     pub fn selection(&self, state: &ViewportState) -> Option<(CellPos, CellPos)> {

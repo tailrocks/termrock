@@ -135,20 +135,6 @@ impl ResizablePanelSpec {
         self
     }
 
-    /// Max size.
-    #[must_use]
-    pub const fn max(mut self, max: u16) -> Self {
-        self.max = Some(max);
-        self
-    }
-
-    /// Collapsible flag.
-    #[must_use]
-    pub const fn collapsible(mut self, collapsible: bool) -> Self {
-        self.collapsible = collapsible;
-        self
-    }
-
     /// Collapse / drawer threshold on outer width (horizontal) or height (vertical).
     #[must_use]
     pub const fn collapse_threshold(mut self, threshold: u16) -> Self {
@@ -316,12 +302,6 @@ impl ResizablePanelGroupState {
         }
     }
 
-    /// Last layout.
-    #[must_use]
-    pub fn layout(&self) -> &ResizablePanelGroupLayout {
-        &self.layout
-    }
-
     /// Sets handle focus.
     pub fn set_focused_handle(&mut self, handle: Option<usize>) {
         self.focused_handle = handle;
@@ -334,12 +314,6 @@ impl ResizablePanelGroupState {
     #[must_use]
     pub fn drawer_ids(&self) -> &[PanelId] {
         &self.drawer_ids
-    }
-
-    /// Whether panel index is collapsed.
-    #[must_use]
-    pub fn is_collapsed(&self, index: usize) -> bool {
-        self.collapsed.get(index).copied().unwrap_or(false)
     }
 
     /// Export current sizes as basis points for persistence.
@@ -437,13 +411,6 @@ impl<'a> ResizablePanelGroup<'a> {
     #[must_use]
     pub const fn handle_cells(mut self, cells: u16) -> Self {
         self.handle_cells = cells;
-        self
-    }
-
-    /// Direction (horizontal = columns, vertical = rows).
-    #[must_use]
-    pub const fn direction(mut self, direction: SplitDirection) -> Self {
-        self.direction = direction;
         self
     }
 

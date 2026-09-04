@@ -181,13 +181,6 @@ impl SkeletonLayout {
         }
     }
 
-    /// Gap between shapes.
-    #[must_use]
-    pub const fn gap(mut self, g: u16) -> Self {
-        self.gap = g;
-        self
-    }
-
     /// Reserve at least this many rows (layout stability).
     #[must_use]
     pub const fn reserved_height(mut self, h: u16) -> Self {
@@ -318,16 +311,6 @@ impl SkeletonState {
     #[must_use]
     pub const fn shimmer(&self) -> bool {
         self.shimmer
-    }
-
-    /// Visible.
-    pub fn set_visible(&mut self, on: bool) {
-        self.visible = on;
-    }
-
-    /// Active.
-    pub fn set_active(&mut self, on: bool) {
-        self.active = on;
     }
 
     /// Whether host should schedule redraw for pulse.

@@ -26,7 +26,7 @@ use crate::{
         SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent, default_button_intent,
     },
     layout::{Center, CenterAxis, center_line_x},
-    runtime::{AnimationDemand, FrameTick},
+    runtime::FrameTick,
     style::{DesignSystem, MotionPolicy, Role},
     text::{display_cols, take_display_cols},
     widgets::{ActivityPhase, SpinnerState},
@@ -340,15 +340,6 @@ impl BusyBoundaryState {
                 }
             }
         }
-    }
-
-    /// Animation demand from composed spinner.
-    #[must_use]
-    pub fn animation_demand(&self, tick: FrameTick, motion: MotionPolicy) -> AnimationDemand {
-        if !self.active {
-            return AnimationDemand::idle();
-        }
-        self.spinner.animation_demand(tick, motion)
     }
 
     /// Route a key against this boundary (region assumed focused/contains event).

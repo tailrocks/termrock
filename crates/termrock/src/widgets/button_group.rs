@@ -184,30 +184,6 @@ impl<'a, Id> ButtonGroupItem<'a, Id> {
         self
     }
 
-    /// Mark as default submit (Enter when group focused).
-    #[must_use]
-    pub const fn default_action(mut self, on: bool) -> Self {
-        self.is_default = on;
-        if on && self.priority < 90 {
-            self.priority = 90;
-        }
-        self
-    }
-
-    /// Leading glyph.
-    #[must_use]
-    pub const fn leading(mut self, glyph: &'a str) -> Self {
-        self.leading = Some(glyph);
-        self
-    }
-
-    /// Host command id.
-    #[must_use]
-    pub const fn command(mut self, command: &'a str) -> Self {
-        self.command = Some(command);
-        self
-    }
-
     /// Whether this item may receive activation.
     #[must_use]
     pub const fn can_activate(&self) -> bool {
@@ -365,13 +341,6 @@ impl<'a, Id> ButtonGroup<'a, Id> {
     #[must_use]
     pub const fn stack_below(mut self, width: u16) -> Self {
         self.stack_below = width;
-        self
-    }
-
-    /// Overflow trigger label (default `…`).
-    #[must_use]
-    pub const fn overflow_label(mut self, label: &'a str) -> Self {
-        self.overflow_label = label;
         self
     }
 }

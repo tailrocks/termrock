@@ -452,35 +452,6 @@ impl<Id: Clone + PartialEq> RovingFocusGroup<Id> {
         }
         RovingOutcome::Ignored
     }
-    /// Registers active-descendant geometry into a [`crate::interaction::SemanticScene`].
-    ///
-    /// Parent should be the collection surface id already registered on the semantic tree.
-    pub fn register_semantic(
-        &self,
-        scene: &mut crate::interaction::SemanticScene<Id>,
-        parent: &Id,
-        entries: &[RovingEntry<'_, Id>],
-        areas: &[ratatui_core::layout::Rect],
-    ) where
-        Id: Clone + PartialEq + std::fmt::Display,
-    {
-        for (i, e) in entries.iter().enumerate() {
-            let area = areas.get(i).copied().unwrap_or_default();
-            let mut node = crate::interaction::SemanticNode::control(e.id.clone(), area)
-                .role(crate::interaction::SemanticRole::ListItem)
-                .parent(parent.clone())
-                .focusable(e.enabled)
-                .disabled(!e.enabled)
-                .state(crate::interaction::SemanticState {
-                    selected: self.active.as_ref() == Some(&e.id),
-                    ..crate::interaction::SemanticState::default()
-                });
-            if !e.label.is_empty() {
-                node = node.label(e.label);
-            }
-            let _ = scene.register(node);
-        }
-    }
 }
 
 /// Default key chords advertised for a vertical roving group (hints / help).

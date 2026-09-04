@@ -183,13 +183,6 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
         self
     }
 
-    /// Recipe.
-    #[must_use]
-    pub const fn with_recipe(mut self, recipe: SelectRecipe) -> Self {
-        self.recipe = recipe;
-        self
-    }
-
     /// Maximum number of checked options.
     #[must_use]
     pub const fn with_max_selected(mut self, max: Option<usize>) -> Self {
@@ -209,6 +202,12 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
         self.selection.checked()
     }
 
+    /// Collection view (options / filtering).
+    #[must_use]
+    pub const fn collection(&self) -> &CollectionState<Id> {
+        &self.collection
+    }
+
     /// Whether id is checked.
     #[must_use]
     pub fn is_checked(&self, id: &Id) -> bool {
@@ -219,12 +218,6 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
     #[must_use]
     pub const fn highlight(&self) -> Option<&Id> {
         self.collection.active()
-    }
-
-    /// Presentation.
-    #[must_use]
-    pub const fn presentation(&self) -> SelectPresentation {
-        self.presentation
     }
 
     /// Open?
@@ -247,50 +240,11 @@ impl<Id: Clone + PartialEq> MultiSelectState<Id> {
         }
     }
 
-    /// Selection model.
-    #[must_use]
-    pub const fn selection(&self) -> &SelectionModel<Id> {
-        &self.selection
-    }
-
-    /// Mutable selection (advanced).
-    pub fn selection_mut(&mut self) -> &mut SelectionModel<Id> {
-        &mut self.selection
-    }
-
-    /// Collection.
-    #[must_use]
-    pub const fn collection(&self) -> &CollectionState<Id> {
-        &self.collection
-    }
-
-    /// Trigger area.
-    #[must_use]
-    pub const fn trigger_area(&self) -> Rect {
-        self.trigger
-    }
-
-    /// Panel area.
-    #[must_use]
-    pub const fn panel_area(&self) -> Rect {
-        self.panel
-    }
-
     /// Focus.
     pub fn set_focused(&mut self, on: bool) {
         self.focused = on;
         if !on {
             self.search.set_focused(false);
-        }
-    }
-
-    /// Replace membership (controlled).
-    pub fn set_selected(&mut self, ids: impl IntoIterator<Item = Id>) {
-        self.selection.clear();
-        for id in ids {
-            if !self.selection.is_checked(&id) {
-                let _ = self.selection.toggle(&id);
-            }
         }
     }
 
@@ -798,32 +752,10 @@ impl<'a, Id> MultiSelect<'a, Id> {
         }
     }
 
-    /// Placeholder when none selected.
-    #[must_use]
-    pub const fn placeholder(mut self, placeholder: &'a str) -> Self {
-        self.placeholder = placeholder;
-        self
-    }
-
     /// Label.
     #[must_use]
     pub const fn label(mut self, label: &'a str) -> Self {
         self.label = label;
-        self
-    }
-
-    /// Validation.
-    #[must_use]
-    pub const fn validation(mut self, validation: Validation<'a>) -> Self {
-        self.validation = validation;
-        self
-    }
-
-    /// ASCII glyphs.
-    #[must_use]
-    /// Clear affordance on trigger.
-    pub const fn show_clear(mut self, on: bool) -> Self {
-        self.show_clear = on;
         self
     }
 }

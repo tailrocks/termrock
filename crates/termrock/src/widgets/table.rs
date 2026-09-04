@@ -207,53 +207,6 @@ impl<'a, Id> TableRow<'a, Id> {
             style: None,
         }
     }
-
-    /// Projects identity anatomy for narrow / status chrome.
-    #[must_use]
-    pub fn composed(&self) -> super::ComposedRow<'a, ()>
-    where
-        Id: Clone,
-    {
-        let primary = self
-            .cells
-            .first()
-            .cloned()
-            .unwrap_or_else(|| Line::from(""));
-        super::ComposedRow {
-            id: (),
-            leading: self.leading.clone(),
-            primary,
-            secondary: self.cells.get(1).cloned(),
-            badge: self
-                .badge
-                .clone()
-                .or_else(|| self.cells.last().filter(|_| self.cells.len() > 2).cloned()),
-            shortcut: None,
-            enabled: self.enabled,
-            loading: false,
-        }
-    }
-
-    /// Sets whether interaction may reach the row.
-    #[must_use]
-    pub const fn enabled(mut self, enabled: bool) -> Self {
-        self.enabled = enabled;
-        self
-    }
-
-    /// Sets semantic accent emphasis.
-    #[must_use]
-    pub const fn emphasis(mut self, emphasis: bool) -> Self {
-        self.emphasis = emphasis;
-        self
-    }
-
-    /// Overrides the row-wide style.
-    #[must_use]
-    pub const fn style(mut self, style: Style) -> Self {
-        self.style = Some(style);
-        self
-    }
 }
 
 /// Semantic result of table interaction.
@@ -447,11 +400,6 @@ impl<RowId: Clone + Eq, ColumnId: Clone + Eq> TableState<RowId, ColumnId> {
     #[must_use]
     pub const fn h_offset(&self) -> u16 {
         self.h_offset
-    }
-
-    /// Sets horizontal content scroll (clamped on next paint).
-    pub fn set_h_offset(&mut self, offset: u16) {
-        self.h_offset = offset;
     }
 
     /// Scrolls horizontally by `delta` display columns. Returns whether offset changed.
@@ -878,24 +826,10 @@ impl<'a, RowId, ColumnId> Table<'a, RowId, ColumnId> {
         self
     }
 
-    /// Keep the header row pinned while the body scrolls (default true).
-    #[must_use]
-    pub const fn sticky_header(mut self, sticky: bool) -> Self {
-        self.sticky_header = sticky;
-        self
-    }
-
     /// Cell overflow policy.
     #[must_use]
     pub const fn overflow(mut self, overflow: CellOverflow) -> Self {
         self.overflow = overflow;
-        self
-    }
-
-    /// Overrides the blank gap between visible columns (else recipe default).
-    #[must_use]
-    pub const fn column_gap(mut self, gap: u16) -> Self {
-        self.column_gap = Some(gap);
         self
     }
 

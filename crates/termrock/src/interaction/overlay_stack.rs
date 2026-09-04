@@ -909,12 +909,6 @@ impl<FocusId> OverlayStack<FocusId> {
         }
     }
 
-    /// Pending modal queue (FIFO).
-    #[must_use]
-    pub fn queue(&self) -> &[OverlaySpec<FocusId>] {
-        &self.queue
-    }
-
     /// Number of deferred opens.
     #[must_use]
     pub fn queue_len(&self) -> usize {

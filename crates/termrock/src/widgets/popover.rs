@@ -396,14 +396,6 @@ impl PopoverState {
         }
     }
 
-    /// Modal factory.
-    #[must_use]
-    pub const fn modal() -> Self {
-        let mut s = Self::new();
-        s.modality = PopoverModality::Modal;
-        s
-    }
-
     /// Whether open (local flag; stack is source of truth for geometry).
     #[must_use]
     pub const fn is_open(&self) -> bool {
@@ -445,12 +437,6 @@ impl PopoverState {
     /// Footer rows (0 hides footer slot).
     pub fn set_footer_rows(&mut self, rows: u16) {
         self.footer_rows = rows;
-    }
-
-    /// Body area convenience.
-    #[must_use]
-    pub const fn body_area(&self) -> Rect {
-        self.slots.body
     }
 
     /// Focused inside popover.

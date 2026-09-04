@@ -687,13 +687,6 @@ impl<'a> ToolCallCard<'a> {
         }
     }
 
-    /// Supplies the host-owned deterministic paint tick.
-    #[must_use]
-    pub const fn tick(mut self, tick: u64) -> Self {
-        self.tick = tick;
-        self
-    }
-
     /// Paint.
     pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut ToolCallCardState) {
         state.action_hits.clear();

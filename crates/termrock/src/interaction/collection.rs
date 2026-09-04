@@ -89,12 +89,6 @@ pub enum CollectionOutcome<Id> {
 }
 
 impl<Id: PartialEq> CollectionOutcome<Id> {
-    /// Whether active id or scroll changed.
-    #[must_use]
-    pub fn changed(&self) -> bool {
-        !matches!(self, Self::Ignored)
-    }
-
     /// Whether the active id changed.
     #[must_use]
     pub fn active_changed(&self) -> bool {
@@ -232,11 +226,6 @@ impl<Id: Clone + PartialEq> CollectionState<Id> {
     /// Sets active / current id (clears typeahead).
     pub fn set_active(&mut self, id: Option<Id>) {
         self.roving.set_active(id);
-    }
-
-    /// Alias of [`Self::set_active`].
-    pub fn set_current(&mut self, id: Option<Id>) {
-        self.set_active(id);
     }
 
     /// Updates virtualization numbers (clamps offset).

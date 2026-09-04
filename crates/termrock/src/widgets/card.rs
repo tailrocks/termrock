@@ -185,13 +185,6 @@ impl<'a> Card<'a> {
         self
     }
 
-    /// Collapsible card header.
-    #[must_use]
-    pub const fn collapsible(mut self, collapsible: bool) -> Self {
-        self.collapsible = collapsible;
-        self
-    }
-
     /// Whole card is actionable (focus + activate).
     #[must_use]
     pub const fn interactive(mut self, interactive: bool) -> Self {

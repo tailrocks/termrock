@@ -83,18 +83,6 @@ impl ProjectLauncherPane {
             Self::Status => "status",
         }
     }
-
-    /// Default Tab focus cycle (status is chrome-only).
-    #[must_use]
-    pub fn focus_order() -> &'static [ProjectLauncherPane] {
-        &[
-            Self::Search,
-            Self::Projects,
-            Self::Sessions,
-            Self::Preview,
-            Self::Onboarding,
-        ]
-    }
 }
 
 /// Presentation mode.
@@ -343,14 +331,6 @@ impl ProjectEntry {
     #[must_use]
     pub fn recency(mut self, r: impl Into<String>) -> Self {
         self.recency = Some(r.into());
-        self
-    }
-
-    /// Error message (+ error status).
-    #[must_use]
-    pub fn error_msg(mut self, m: impl Into<String>) -> Self {
-        self.error = Some(m.into());
-        self.path_status = ProjectPathStatus::Error;
         self
     }
 
@@ -700,22 +680,6 @@ impl ProjectLauncherState {
         if f == "onboarding" && !qo {
             self.onboarding.focus_primary();
         }
-    }
-
-    /// Set focus pane.
-    pub fn set_focus(&mut self, pane: ProjectLauncherPane) -> ProjectLauncherOutcome {
-        let density = self.effective_density();
-        let visible = self.visible_focus_panes(density);
-        if !visible.contains(&pane) {
-            return ProjectLauncherOutcome::Ignored;
-        }
-        if self.focus == pane.id() {
-            self.apply_focus_gates();
-            return ProjectLauncherOutcome::Ignored;
-        }
-        self.focus = pane.id();
-        self.apply_focus_gates();
-        ProjectLauncherOutcome::FocusChanged(self.focus)
     }
 
     /// Cycle Tab focus.

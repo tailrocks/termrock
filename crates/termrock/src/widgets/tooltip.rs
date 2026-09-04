@@ -314,11 +314,6 @@ impl TooltipState {
         self
     }
 
-    /// Set trigger.
-    pub fn set_trigger(&mut self, t: TooltipTrigger) {
-        self.trigger = t;
-    }
-
     /// Disable (never shows).
     pub fn set_disabled(&mut self, on: bool) {
         self.disabled = on;
@@ -358,12 +353,6 @@ impl TooltipState {
     #[must_use]
     pub const fn is_visible(&self) -> bool {
         self.presence.is_visible()
-    }
-
-    /// Presence deadline for host poll.
-    #[must_use]
-    pub fn next_deadline(&self) -> Option<Instant> {
-        self.presence.next_deadline()
     }
 
     /// Force hide immediately.
@@ -533,12 +522,6 @@ impl<'a> Tooltip<'a> {
         self
     }
 
-    /// Max body width.
-    #[must_use]
-    pub const fn max_width(mut self, w: u16) -> Self {
-        self.max_width = w;
-        self
-    }
     /// Overlay size for current content.
     #[must_use]
     pub fn overlay_size(&self) -> OverlaySize {

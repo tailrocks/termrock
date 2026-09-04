@@ -32,15 +32,6 @@ impl AnimationDemand {
             next_deadline: None,
         }
     }
-
-    /// Merge two demands (OR redraw; earliest deadline).
-    #[must_use]
-    pub fn merge(self, other: Self) -> Self {
-        Self {
-            needs_redraw: self.needs_redraw || other.needs_redraw,
-            next_deadline: min_deadline(self.next_deadline, other.next_deadline),
-        }
-    }
 }
 
 /// Earliest of two optional instants.

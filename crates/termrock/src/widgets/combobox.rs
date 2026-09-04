@@ -323,22 +323,12 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
         self.applied_generation
     }
 
-    /// Mode.
-    #[must_use]
-    pub const fn mode(&self) -> ComboMode {
-        self.mode
-    }
     /// Focused.
     #[must_use]
     pub const fn is_focused(&self) -> bool {
         self.focused
     }
 
-    /// Menu state.
-    #[must_use]
-    pub const fn menu(&self) -> &CompletionMenuState<Id> {
-        &self.menu
-    }
     /// Recent values (newest first).
     #[must_use]
     pub fn recent(&self) -> impl Iterator<Item = (&Id, &str)> {
@@ -363,11 +353,6 @@ impl<Id: Clone + PartialEq> ComboboxState<Id> {
         self.draft = self.draft.reseed(text);
     }
 
-    /// Set committed value without changing draft.
-    pub fn set_value(&mut self, id: Option<Id>, label: Option<String>) {
-        self.value = id;
-        self.value_label = label;
-    }
     fn bump_generation(&mut self) -> u64 {
         self.generation = self.generation.saturating_add(1);
         self.status = SuggestionStatus::Loading;
@@ -812,20 +797,6 @@ impl<'a> Combobox<'a> {
     #[must_use]
     pub const fn label(mut self, label: &'a str) -> Self {
         self.label = label;
-        self
-    }
-
-    /// Placeholder.
-    #[must_use]
-    pub const fn placeholder(mut self, placeholder: &'a str) -> Self {
-        self.placeholder = placeholder;
-        self
-    }
-
-    /// Validation.
-    #[must_use]
-    pub const fn validation(mut self, validation: Validation<'a>) -> Self {
-        self.validation = validation;
         self
     }
 

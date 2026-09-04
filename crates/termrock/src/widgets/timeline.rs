@@ -273,13 +273,6 @@ impl<'a, Id> TimelineEvent<'a, Id> {
         self
     }
 
-    /// Sets active flag.
-    #[must_use]
-    pub const fn set_active(mut self, active: bool) -> Self {
-        self.active = active;
-        self
-    }
-
     /// Status.
     #[must_use]
     pub const fn status(mut self, status: TimelineStatus) -> Self {
@@ -449,12 +442,6 @@ impl<Id: Clone + PartialEq + Ord> TimelineState<Id> {
         self.cursor
     }
 
-    /// Scroll offset.
-    #[must_use]
-    pub const fn offset(&self) -> usize {
-        self.offset
-    }
-
     /// Whether following live tail.
     #[must_use]
     pub const fn is_following(&self) -> bool {
@@ -471,16 +458,6 @@ impl<Id: Clone + PartialEq + Ord> TimelineState<Id> {
         self.checkpoint_mode = on;
     }
 
-    /// Follow newest.
-    pub fn follow(&mut self) {
-        self.following = true;
-    }
-
-    /// Pause follow (reading history).
-    pub fn unfollow(&mut self) {
-        self.following = false;
-    }
-
     /// Whether id is expanded.
     #[must_use]
     pub fn is_expanded(&self, id: &Id) -> bool {
@@ -495,12 +472,6 @@ impl<Id: Clone + PartialEq + Ord> TimelineState<Id> {
         } else {
             false
         }
-    }
-
-    /// Filter query.
-    #[must_use]
-    pub fn filter(&self) -> Option<&str> {
-        self.filter.as_deref()
     }
 
     /// Notify that new events were appended at the end (re-follow if following).

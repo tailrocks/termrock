@@ -649,15 +649,6 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
         self.focused = on;
     }
 
-    /// Loading.
-    pub fn set_loading(&mut self, loading: bool) -> QuickOpenOutcome<Id> {
-        if self.loading == loading {
-            return QuickOpenOutcome::Ignored;
-        }
-        self.loading = loading;
-        QuickOpenOutcome::LoadingChanged { loading }
-    }
-
     /// Loading?
     #[must_use]
     pub const fn is_loading(&self) -> bool {
@@ -670,33 +661,15 @@ impl<Id: Clone + PartialEq> QuickOpenState<Id> {
         self.generation
     }
 
-    /// Applied generation.
-    #[must_use]
-    pub const fn applied_generation(&self) -> u64 {
-        self.applied_generation
-    }
-
     /// Query text.
     #[must_use]
     pub fn query_text(&self) -> &str {
         self.query.value()
     }
 
-    /// Query state.
-    #[must_use]
-    pub const fn query(&self) -> &TextInputState {
-        &self.query
-    }
-
     /// Mutable query.
     pub const fn query_mut(&mut self) -> &mut TextInputState {
         &mut self.query
-    }
-
-    /// Presentation.
-    #[must_use]
-    pub const fn presentation(&self) -> QuickOpenPresentation {
-        self.presentation
     }
 
     /// Cursor index into visible window.
@@ -1248,34 +1221,6 @@ impl<'a, Id> QuickOpen<'a, Id> {
             loading_message: QUICK_OPEN_SEARCHING,
             title: "Quick Open",
         }
-    }
-
-    /// Title.
-    #[must_use]
-    pub const fn title(mut self, t: &'a str) -> Self {
-        self.title = t;
-        self
-    }
-
-    /// Footer.
-    #[must_use]
-    pub const fn footer_hint(mut self, h: Option<&'a str>) -> Self {
-        self.footer_hint = h;
-        self
-    }
-
-    /// No results.
-    #[must_use]
-    pub const fn no_result_message(mut self, m: &'a str) -> Self {
-        self.no_result_message = m;
-        self
-    }
-
-    /// Loading.
-    #[must_use]
-    pub const fn loading_message(mut self, m: &'a str) -> Self {
-        self.loading_message = m;
-        self
     }
 
     /// Paint.

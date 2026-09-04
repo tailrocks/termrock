@@ -57,14 +57,6 @@ pub struct SectionParts {
     pub hit: Rect,
 }
 
-impl SectionParts {
-    /// True when body has positive area.
-    #[must_use]
-    pub const fn has_body(self) -> bool {
-        self.body.width > 0 && self.body.height > 0
-    }
-}
-
 /// Typed outcomes (no side effects).
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -247,13 +239,6 @@ impl<'a> Section<'a> {
         self
     }
 
-    /// Quiet recipe.
-    #[must_use]
-    pub const fn quiet(mut self) -> Self {
-        self.variant = SectionVariant::Quiet;
-        self
-    }
-
     /// Emphasized recipe.
     #[must_use]
     pub const fn emphasized(mut self) -> Self {
@@ -272,13 +257,6 @@ impl<'a> Section<'a> {
     #[must_use]
     pub const fn depth(mut self, depth: u8) -> Self {
         self.depth = depth;
-        self
-    }
-
-    /// Extra left indent.
-    #[must_use]
-    pub const fn indent(mut self, indent: u16) -> Self {
-        self.indent = indent;
         self
     }
 

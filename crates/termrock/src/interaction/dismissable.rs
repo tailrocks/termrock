@@ -185,14 +185,6 @@ impl DismissDecision {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub struct DismissEventId(pub u64);
 
-impl DismissEventId {
-    /// Next id (host or stack owned counter).
-    #[must_use]
-    pub const fn next(self) -> Self {
-        Self(self.0.saturating_add(1))
-    }
-}
-
 /// Prevents double dismissal from a single logical input event.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub struct DismissGuard {
@@ -275,21 +267,9 @@ impl DismissableLayer {
             ignore_empty_rect: true,
         }
     }
-    /// Policy.
-    #[must_use]
-    pub const fn policy(&self) -> DismissPolicy {
-        self.policy
-    }
-
     /// Replace policy.
     pub fn set_policy(&mut self, policy: DismissPolicy) {
         self.policy = policy;
-    }
-
-    /// Painted rect (outside hit testing).
-    #[must_use]
-    pub const fn rect(&self) -> Rect {
-        self.rect
     }
 
     /// Update geometry after layout.

@@ -364,24 +364,10 @@ impl MentionRef {
         self
     }
 
-    /// Preview.
-    #[must_use]
-    pub fn preview(mut self, p: impl Into<String>) -> Self {
-        self.preview = Some(p.into());
-        self
-    }
-
     /// Sensitive.
     #[must_use]
     pub const fn sensitive(mut self, on: bool) -> Self {
         self.sensitive = on;
-        self
-    }
-
-    /// Removable.
-    #[must_use]
-    pub const fn removable(mut self, on: bool) -> Self {
-        self.removable = on;
         self
     }
 
@@ -477,30 +463,6 @@ impl FileMention {
         }
     }
 
-    /// Symbol.
-    #[must_use]
-    pub fn symbol(
-        id: impl Into<String>,
-        label: impl Into<String>,
-        canonical: impl Into<String>,
-    ) -> Self {
-        Self {
-            mention: MentionRef::symbol(id, label, canonical),
-        }
-    }
-
-    /// Directory.
-    #[must_use]
-    pub fn directory(
-        id: impl Into<String>,
-        label: impl Into<String>,
-        path: impl Into<String>,
-    ) -> Self {
-        let mut m = MentionRef::file(id, label, path);
-        m.kind = MentionType::Directory;
-        Self { mention: m }
-    }
-
     /// Missing path.
     #[must_use]
     pub fn missing(
@@ -570,27 +532,10 @@ impl EntityMention {
         }
     }
 
-    /// Session.
-    #[must_use]
-    pub fn session(
-        id: impl Into<String>,
-        label: impl Into<String>,
-        canonical: impl Into<String>,
-    ) -> Self {
-        Self {
-            mention: MentionRef::entity(id, MentionType::Session, label, canonical),
-        }
-    }
-
     /// Borrow.
     #[must_use]
     pub const fn as_ref(&self) -> &MentionRef {
         &self.mention
-    }
-
-    /// Mut.
-    pub const fn as_mut(&mut self) -> &mut MentionRef {
-        &mut self.mention
     }
 }
 
@@ -1030,58 +975,6 @@ impl MentionDraft {
         }
     }
 
-    /// Move caret right (atomic over mentions).
-    pub fn move_right(&mut self) -> bool {
-        match self.cursor {
-            MentionCursor::End => false,
-            MentionCursor::OnMention { part } => {
-                let next = part + 1;
-                if next >= self.parts.len() {
-                    self.cursor = MentionCursor::End;
-                    return true;
-                }
-                match &self.parts[next] {
-                    MentionSegment::Mention(_) => {
-                        self.cursor = MentionCursor::OnMention { part: next };
-                    }
-                    MentionSegment::Text(_) => {
-                        self.cursor = MentionCursor::InText {
-                            part: next,
-                            byte: 0,
-                        };
-                    }
-                }
-                true
-            }
-            MentionCursor::InText { part, byte } => {
-                if let Some(MentionSegment::Text(t)) = self.parts.get(part) {
-                    if byte < t.len() {
-                        let b = next_char_boundary(t, byte);
-                        self.cursor = MentionCursor::InText { part, byte: b };
-                        return true;
-                    }
-                }
-                let next = part + 1;
-                if next >= self.parts.len() {
-                    self.cursor = MentionCursor::End;
-                    return true;
-                }
-                match &self.parts[next] {
-                    MentionSegment::Mention(_) => {
-                        self.cursor = MentionCursor::OnMention { part: next };
-                    }
-                    MentionSegment::Text(_) => {
-                        self.cursor = MentionCursor::InText {
-                            part: next,
-                            byte: 0,
-                        };
-                    }
-                }
-                true
-            }
-        }
-    }
-
     /// Backspace: deletes one char or whole mention.
     pub fn delete_backward(&mut self) -> bool {
         match self.cursor {
@@ -1319,25 +1212,6 @@ impl<'a> InlineMention<'a> {
     /// From file mention.
     pub const fn file(file: &'a FileMention, system: &'a DesignSystem) -> Self {
         Self::new(&file.mention, system)
-    }
-
-    /// From entity mention.
-    #[must_use]
-    pub const fn entity(entity: &'a EntityMention, system: &'a DesignSystem) -> Self {
-        Self::new(&entity.mention, system)
-    }
-
-    /// Measure width.
-    #[must_use]
-    pub fn measure_width(&self) -> u16 {
-        let label = self.mention.display_label(false);
-        let tag = if self.mention.removable {
-            Tag::removable_tag(self.mention.id.as_str(), label.as_str(), self.system)
-        } else {
-            Tag::new(self.mention.id.as_str(), label.as_str(), self.system)
-        }
-        .status(self.mention.validity.token_status());
-        tag.measure_width()
     }
 
     /// Paint token.
@@ -1579,12 +1453,6 @@ impl FileMentionState {
             }
         }
     }
-
-    /// Close.
-    pub fn close(&mut self) {
-        self.open = false;
-        self.query = None;
-    }
 }
 
 /// Entity mention completion session.
@@ -1596,35 +1464,6 @@ pub struct EntityMentionState {
     pub query: Option<MentionQuery>,
     /// Accepts input.
     pub accepts_input: bool,
-}
-
-impl EntityMentionState {
-    /// Sync.
-    pub fn sync_from_draft(&mut self, text: &str, cursor_byte: usize) -> bool {
-        if !self.accepts_input {
-            return false;
-        }
-        match detect_entity_mention_query(text, cursor_byte) {
-            Some(q) => {
-                let changed = self.query.as_ref() != Some(&q);
-                self.query = Some(q);
-                self.open = true;
-                changed
-            }
-            None => {
-                let was = self.open;
-                self.open = false;
-                self.query = None;
-                was
-            }
-        }
-    }
-
-    /// Close.
-    pub fn close(&mut self) {
-        self.open = false;
-        self.query = None;
-    }
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -1661,17 +1500,6 @@ fn prev_char_boundary(s: &str, byte: usize) -> usize {
     let mut i = byte - 1;
     while i > 0 && !s.is_char_boundary(i) {
         i -= 1;
-    }
-    i
-}
-
-fn next_char_boundary(s: &str, byte: usize) -> usize {
-    if byte >= s.len() {
-        return s.len();
-    }
-    let mut i = byte + 1;
-    while i < s.len() && !s.is_char_boundary(i) {
-        i += 1;
     }
     i
 }

@@ -544,12 +544,6 @@ impl NotificationCenterState {
         self.open
     }
 
-    /// Filter.
-    #[must_use]
-    pub fn filter(&self) -> &NotificationFilter {
-        &self.filter
-    }
-
     /// All items (for host persistence).
     #[must_use]
     pub fn items(&self) -> &[NotificationItem] {
@@ -607,11 +601,6 @@ impl NotificationCenterState {
         NotificationCenterOutcome::Closed
     }
 
-    /// Toggle.
-    pub fn toggle(&mut self) -> NotificationCenterOutcome {
-        if self.open { self.close() } else { self.open() }
-    }
-
     /// Set filter.
     pub fn set_filter(&mut self, filter: NotificationFilter) -> NotificationCenterOutcome {
         self.filter = filter;
@@ -637,14 +626,6 @@ impl NotificationCenterState {
             .into_iter()
             .filter_map(|i| self.items.get(i))
             .collect()
-    }
-
-    /// Tells the list what time it is, so rows can say "3m ago".
-    ///
-    /// Without it a row can only state the raw age it was given. TermRock has
-    /// no clock of its own — the host owns time (plans/009 Step 6).
-    pub const fn set_now_secs(&mut self, now_secs: u64) {
-        self.now_secs = Some(now_secs);
     }
 
     /// Ingest archives from toast queue (NotificationCenter route).
@@ -1060,17 +1041,6 @@ impl NotificationCenterState {
         let out = self.close();
         let stack_out = dismiss_notification_center_overlay(stack);
         (out, stack_out)
-    }
-
-    /// Accessibility: unread badge text.
-    #[must_use]
-    pub fn status_line(&self) -> String {
-        let n = self.unread_count();
-        if n == 0 {
-            "notifications".into()
-        } else {
-            format!("notifications ({n} unread)")
-        }
     }
 }
 

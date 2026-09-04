@@ -479,35 +479,6 @@ impl ApprovalQueueState {
         self.clamp();
     }
 
-    /// Push item (assign generation if 0).
-    pub fn push(&mut self, mut item: ApprovalItem) -> u64 {
-        if item.generation == 0 {
-            let g = self
-                .items
-                .iter()
-                .map(|i| i.generation)
-                .max()
-                .unwrap_or(0)
-                .saturating_add(1);
-            item.generation = g;
-        }
-        let g = item.generation;
-        self.items.push(item);
-        self.rebuild_view();
-        self.clamp();
-        g
-    }
-
-    /// Remove by id.
-    pub fn remove(&mut self, id: &str) -> Option<ApprovalItem> {
-        let i = self.items.iter().position(|x| x.id == id)?;
-        let item = self.items.remove(i);
-        self.multi.retain(|m| m != id);
-        self.rebuild_view();
-        self.clamp();
-        Some(item)
-    }
-
     /// Gate.
     pub fn set_accepts_input(&mut self, on: bool) {
         self.accepts_input = on;

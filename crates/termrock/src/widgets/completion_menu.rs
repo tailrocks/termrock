@@ -535,34 +535,10 @@ impl<Id> CompletionMenuState<Id> {
         self.selected = selected;
     }
 
-    /// Painted geometry.
-    #[must_use]
-    pub const fn painted(&self) -> Rect {
-        self.painted
-    }
-
-    /// Scroll offset.
-    #[must_use]
-    pub const fn offset(&self) -> usize {
-        self.offset
-    }
-
     /// Status.
     #[must_use]
     pub const fn status(&self) -> CompletionStatus {
         self.status
-    }
-
-    /// Current generation.
-    #[must_use]
-    pub const fn generation(&self) -> u64 {
-        self.generation
-    }
-
-    /// Presentation.
-    #[must_use]
-    pub const fn presentation(&self) -> CompletionPresentation {
-        self.presentation
     }
 
     /// Slots after paint.
@@ -571,23 +547,9 @@ impl<Id> CompletionMenuState<Id> {
         self.slots
     }
 
-    /// Commit characters string.
-    #[must_use]
-    pub fn commit_characters(&self) -> &str {
-        &self.commit_characters
-    }
-
     /// Input gate (menu routes keys while editor keeps focus).
     pub fn set_accepts_input(&mut self, on: bool) {
         self.accepts_input = on;
-    }
-
-    /// Force presentation.
-    pub fn set_presentation_override(&mut self, p: Option<CompletionPresentation>) {
-        self.presentation_override = p;
-        if let Some(p) = p {
-            self.presentation = p;
-        }
     }
 
     /// Characters that auto-commit selection (empty = disabled).

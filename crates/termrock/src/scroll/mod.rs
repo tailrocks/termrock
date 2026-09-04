@@ -245,12 +245,6 @@ impl ScrollAxes {
             horizontal: false,
         }
     }
-
-    #[must_use]
-    /// Returns whether at least one scroll axis is enabled.
-    pub const fn any(self) -> bool {
-        self.vertical || self.horizontal
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -282,28 +276,6 @@ impl DialogScroll {
             scroll_y: 0,
             measurement: Measured::new(),
         }
-    }
-
-    /// Applies canonical two-axis navigation keys within content bounds.
-    pub fn handle_key(
-        &mut self,
-        key: crate::input::KeyEvent,
-        content_height: usize,
-        viewport_height: usize,
-        content_width: usize,
-        viewport_width: usize,
-    ) -> bool {
-        self.handle_key_for_axes(
-            key,
-            content_height,
-            viewport_height,
-            content_width,
-            viewport_width,
-            ScrollAxes {
-                vertical: is_scrollable(content_height, viewport_height),
-                horizontal: is_scrollable(content_width, viewport_width),
-            },
-        )
     }
 
     /// Applies navigation keys only on axes currently allowed to move.

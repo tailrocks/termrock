@@ -316,12 +316,6 @@ impl PaginationState {
         self.presentation
     }
 
-    /// Focused part.
-    #[must_use]
-    pub const fn part(&self) -> PaginationPart {
-        self.part
-    }
-
     /// Focus control.
     pub fn set_focused(&mut self, on: bool) {
         self.focused = on;
@@ -334,12 +328,6 @@ impl PaginationState {
     /// Enabled.
     pub fn set_enabled(&mut self, on: bool) {
         self.enabled = on;
-    }
-
-    /// Host projects total after fetch.
-    pub fn set_total(&mut self, total: PageTotal) {
-        self.total = total;
-        self.clamp_page();
     }
 
     /// Host sets loading while fetch in flight.
@@ -424,11 +412,6 @@ impl PaginationState {
         PaginationOutcome::PageRequested {
             request: self.request(),
         }
-    }
-
-    /// Go to page (public).
-    pub fn go_to(&mut self, page: u32) -> PaginationOutcome {
-        self.emit_page(page)
     }
 
     /// Next.
@@ -753,14 +736,6 @@ impl<'a> Pagination<'a> {
             show_summary: true,
             show_page_size: true,
         }
-    }
-
-    /// ASCII glyphs.
-    #[must_use]
-    /// Show item summary.
-    pub const fn show_summary(mut self, on: bool) -> Self {
-        self.show_summary = on;
-        self
     }
 
     /// Paint.

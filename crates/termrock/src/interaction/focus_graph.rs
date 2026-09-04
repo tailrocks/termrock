@@ -19,7 +19,7 @@ use ratatui_core::layout::{Position, Rect};
 
 use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers},
-    interaction::{FocusRequest, InteractionScene, NavigationMove, UiIntent},
+    interaction::{FocusRequest, InteractionScene, NavigationMove},
     style::{DesignSystem, Role},
 };
 
@@ -141,13 +141,6 @@ impl<Id> FocusNode<Id> {
         self.enabled = enabled;
         self
     }
-
-    /// Focusable flag.
-    #[must_use]
-    pub const fn focusable(mut self, focusable: bool) -> Self {
-        self.focusable = focusable;
-        self
-    }
 }
 
 /// Debug / Studio snapshot of one frame's focus graph.
@@ -241,11 +234,6 @@ impl<Id> FocusGraph<Id> {
     /// Clears per-frame nodes (keeps focus id, traps, history).
     pub fn begin_frame(&mut self) {
         self.nodes.clear();
-    }
-
-    /// Reserves capacity for virtualized registration windows.
-    pub fn reserve(&mut self, additional: usize) {
-        self.nodes.reserve(additional);
     }
 
     /// Registers one node (duplicate id ignored; first wins).
@@ -544,16 +532,6 @@ impl<Id: Clone + PartialEq> FocusGraph<Id> {
         }
     }
 
-    /// Routes focus-related [`UiIntent`]s.
-    pub fn handle_intent(&mut self, intent: UiIntent) -> FocusOutcome<Id> {
-        match intent {
-            UiIntent::FocusNext => self.focus_next(),
-            UiIntent::FocusPrevious => self.focus_previous(),
-            UiIntent::Move(dir) if self.spatial_arrows_active() => self.focus_spatial(dir),
-            _ => FocusOutcome::Ignored,
-        }
-    }
-
     fn spatial_arrows_active(&self) -> bool {
         match self.mode {
             FocusNavMode::Spatial => true,
@@ -578,21 +556,6 @@ impl<Id: Clone + PartialEq> FocusGraph<Id> {
     #[must_use]
     pub fn focused_roving(&self) -> bool {
         self.focused_is_roving()
-    }
-
-    /// Jump badge candidates: focusable visible areas.
-    #[must_use]
-    pub fn jump_regions(&self) -> Vec<crate::interaction::HitRegion<Id>> {
-        self.nodes
-            .iter()
-            .filter(|n| n.focusable && n.enabled && self.in_trap(n))
-            .filter_map(|n| {
-                n.area.map(|area| crate::interaction::HitRegion {
-                    id: n.id.clone(),
-                    area,
-                })
-            })
-            .collect()
     }
 
     /// Debug snapshot for Studio / Focus Lens.
@@ -696,15 +659,6 @@ pub struct FocusLens<'a, Id> {
     show_order: bool,
     mode: FocusLensMode,
     colorless: bool,
-}
-
-impl<'a, Id> FocusLens<'a, Id> {
-    /// Lens mode.
-    #[must_use]
-    pub const fn mode(mut self, mode: FocusLensMode) -> Self {
-        self.mode = mode;
-        self
-    }
 }
 
 impl<Id: Clone + PartialEq + std::fmt::Display> ratatui_core::widgets::Widget

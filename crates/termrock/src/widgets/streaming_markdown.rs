@@ -24,12 +24,11 @@
 use ratatui_core::{buffer::Buffer, layout::Rect};
 
 use crate::{
-    input::KeyEvent,
     style::{DesignSystem, Role},
     text::take_display_cols,
     widgets::markdown::{
-        MarkdownBlock, MarkdownBlockKind, MarkdownOutcome, MarkdownView, MarkdownViewState,
-        SourceAnchor, project_markdown,
+        MarkdownBlock, MarkdownBlockKind, MarkdownView, MarkdownViewState, SourceAnchor,
+        project_markdown,
     },
 };
 
@@ -487,14 +486,6 @@ impl StreamingMarkdownState {
         }
         lines
     }
-
-    /// Keys → markdown view (scroll/select/copy).
-    pub fn handle_key(&mut self, key: KeyEvent, view: &MarkdownView<'_>) -> MarkdownOutcome {
-        if !self.accepts_input {
-            return MarkdownOutcome::Ignored;
-        }
-        view.handle_key(&mut self.view, key)
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -702,9 +693,9 @@ impl<'a> StreamingMarkdown<'a> {
     ///
     /// The projection borrows buffers that only live for the call, so the
     /// blocks cannot be returned. Hosts that need to measure a stream before
-    /// they lay it out — the case GAP-MD-1 named — reach it through here or
-    /// through [`Self::measure_height`], rather than reparsing the document
-    /// themselves and disagreeing with the paint.
+    /// they lay it out — the case GAP-MD-1 named — reach it through here,
+    /// rather than reparsing the document themselves and disagreeing with the
+    /// paint.
     pub fn with_blocks<R>(
         &self,
         state: &StreamingMarkdownState,
@@ -728,14 +719,6 @@ impl<'a> StreamingMarkdown<'a> {
             blocks.push(b);
         }
         f(&blocks)
-    }
-
-    /// Display rows this stream needs at `width`, including an open fence.
-    #[must_use]
-    pub fn measure_height(&self, state: &StreamingMarkdownState, width: u16) -> u16 {
-        self.with_blocks(state, |blocks| {
-            MarkdownView::new(blocks, self.system).measure_height(width)
-        })
     }
 
     /// Paint streaming document.

@@ -116,27 +116,6 @@ impl<Id> FieldToken<Id> {
             disabled: false,
         }
     }
-
-    /// Builder.
-    #[must_use]
-    pub const fn removable(mut self, on: bool) -> Self {
-        self.removable = on;
-        self
-    }
-
-    /// Builder.
-    #[must_use]
-    pub const fn selected(mut self, on: bool) -> Self {
-        self.selected = on;
-        self
-    }
-
-    /// Builder.
-    #[must_use]
-    pub const fn status(mut self, status: TokenStatus) -> Self {
-        self.status = status;
-        self
-    }
 }
 
 /// Focus zone inside the field (not host Tab stops).
@@ -295,13 +274,6 @@ impl<Id> TokenFieldState<Id> {
         self
     }
 
-    /// Live typing. [`Self::new`] stays idle (`editing: false`).
-    #[must_use]
-    pub fn with_editing(mut self) -> Self {
-        self.draft.begin_edit();
-        self
-    }
-
     /// Start the insert session (Junie Enter on an idle field).
     pub fn begin_edit(&mut self) {
         self.draft.begin_edit();
@@ -328,16 +300,6 @@ impl<Id> TokenFieldState<Id> {
     #[must_use]
     pub fn labels(&self) -> Vec<&str> {
         self.tokens.iter().map(|t| t.label.as_str()).collect()
-    }
-
-    /// Selected token ids (multi-select).
-    #[must_use]
-    pub fn selected_ids(&self) -> Vec<&Id> {
-        self.tokens
-            .iter()
-            .filter(|t| t.selected)
-            .map(|t| &t.id)
-            .collect()
     }
 
     /// Focus.
@@ -390,13 +352,6 @@ impl<Id: Clone + PartialEq> TokenFieldState<Id> {
         }
     }
 
-    /// Remove by id.
-    pub fn remove_id(&mut self, id: &Id) -> Option<FieldToken<Id>> {
-        let idx = self.tokens.iter().position(|t| &t.id == id)?;
-        let t = self.tokens.remove(idx);
-        self.clamp_zone();
-        Some(t)
-    }
     /// Reorder token.
     pub fn reorder(&mut self, from: usize, to: usize) -> bool {
         if from >= self.tokens.len() || to >= self.tokens.len() || from == to {
@@ -886,28 +841,6 @@ impl<'a> TokenField<'a> {
     #[must_use]
     pub const fn label(mut self, label: &'a str) -> Self {
         self.label = label;
-        self
-    }
-
-    /// Draft placeholder.
-    #[must_use]
-    pub const fn placeholder(mut self, placeholder: &'a str) -> Self {
-        self.placeholder = placeholder;
-        self
-    }
-
-    /// Validation.
-    #[must_use]
-    pub const fn validation(mut self, validation: Validation<'a>) -> Self {
-        self.validation = validation;
-        self
-    }
-
-    /// ASCII chrome.
-    #[must_use]
-    /// Gap between tokens.
-    pub const fn gap(mut self, gap: u16) -> Self {
-        self.gap = gap;
         self
     }
 

@@ -122,17 +122,6 @@ pub enum CheckboxOutcome<Id> {
     },
 }
 
-impl<Id> CheckboxOutcome<Id> {
-    /// Convenience: checked flag when determinate change.
-    #[must_use]
-    pub const fn checked(&self) -> Option<bool> {
-        match self {
-            Self::ValueChanged { value, .. } => value.as_bool(),
-            Self::Ignored => None,
-        }
-    }
-}
-
 /// Paint geometry for a checkbox.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct CheckboxParts {
@@ -149,7 +138,7 @@ pub struct CheckboxParts {
 /// Checkbox state (interaction + projected value).
 ///
 /// Domain persistence is host-owned: apply [`CheckboxOutcome::ValueChanged`] to
-/// your model, then [`Self::set_value`]. Paint may optimistically mirror for UX.
+/// your model. Paint may optimistically mirror for UX.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct CheckboxState {
     /// Projected value.
@@ -207,20 +196,9 @@ impl CheckboxState {
         self.value.is_checked()
     }
 
-    /// Current value.
-    #[must_use]
-    pub const fn value(&self) -> CheckboxValue {
-        self.value
-    }
-
     /// Controlled set (bool).
     pub const fn set_checked(&mut self, checked: bool) {
         self.value = CheckboxValue::from_bool(checked);
-    }
-
-    /// Controlled set (tri-state).
-    pub const fn set_value(&mut self, value: CheckboxValue) {
-        self.value = value;
     }
 
     /// Focus.
@@ -247,12 +225,6 @@ impl CheckboxState {
     #[must_use]
     pub const fn can_activate(&self) -> bool {
         self.enabled && !self.read_only
-    }
-
-    /// Hit root.
-    #[must_use]
-    pub const fn region(&self) -> Option<Rect> {
-        self.region
     }
 
     fn apply_activate<Id: Clone>(&mut self, id: &Id) -> CheckboxOutcome<Id> {
@@ -338,24 +310,6 @@ impl<'a, Id> Checkbox<'a, Id> {
     pub const fn description(mut self, description: &'a str) -> Self {
         self.description = Some(description);
         self
-    }
-
-    /// Preferred height: 2 when description present, else 1.
-    #[must_use]
-    pub fn preferred_height(&self) -> u16 {
-        if self.description.is_some_and(|d| !d.is_empty()) {
-            2
-        } else {
-            1
-        }
-    }
-
-    /// Preferred width for box + gap + label (description not included).
-    #[must_use]
-    pub fn preferred_width(&self) -> u16 {
-        // gutter + `[✓]` + space + label
-        let label_w = display_cols(self.label) as u16;
-        5u16.saturating_add(label_w).max(5)
     }
 
     fn box_mark(&self, value: CheckboxValue) -> &'static str {
@@ -490,14 +444,6 @@ impl<'a, Id> Checkbox<'a, Id> {
         };
         state.parts = Some(parts.clone());
         parts
-    }
-
-    /// Keys via widget (delegates to state with owned id).
-    pub fn handle_key(&self, state: &mut CheckboxState, key: KeyEvent) -> CheckboxOutcome<Id>
-    where
-        Id: Clone,
-    {
-        state.handle_key(key, &self.id)
     }
 
     /// Mouse via widget.
@@ -649,16 +595,6 @@ impl<'a, Id> RadioOption<'a, Id> {
         self.enabled = on;
         self
     }
-
-    /// Typeahead / a11y label.
-    #[must_use]
-    pub fn a11y(&self) -> &str {
-        if self.label.is_empty() {
-            "option"
-        } else {
-            self.label
-        }
-    }
 }
 
 /// Per-option paint geometry.
@@ -758,20 +694,6 @@ impl<Id: Clone + PartialEq> RadioState<Id> {
         self.collection.active()
     }
 
-    /// Selection policy.
-    #[must_use]
-    pub const fn policy(&self) -> RadioSelectionPolicy {
-        self.policy
-    }
-
-    /// Controlled select (also moves active when `Some`).
-    pub fn set_selected(&mut self, selected: Option<Id>) {
-        self.selected = selected.clone();
-        if selected.is_some() {
-            self.collection.set_active(selected);
-        }
-    }
-
     /// Surface focus.
     pub fn set_surface_focused(&mut self, on: bool) {
         self.surface_focused = on;
@@ -790,22 +712,11 @@ impl<Id: Clone + PartialEq> RadioState<Id> {
         self.invalid = on;
     }
 
-    /// Selection policy.
-    pub const fn set_policy(&mut self, policy: RadioSelectionPolicy) {
-        self.policy = policy;
-    }
-
     /// Builder-style policy.
     #[must_use]
     pub const fn policy_mode(mut self, policy: RadioSelectionPolicy) -> Self {
         self.policy = policy;
         self
-    }
-
-    /// Hit regions (same order as painted options).
-    #[must_use]
-    pub fn regions(&self) -> &[Rect] {
-        &self.regions
     }
 }
 
@@ -849,24 +760,10 @@ impl<'a, Id> RadioGroup<'a, Id> {
         self
     }
 
-    /// Orientation.
-    #[must_use]
-    pub const fn orientation(mut self, orientation: RadioGroupOrientation) -> Self {
-        self.orientation = orientation;
-        self
-    }
-
     /// Horizontal layout.
     #[must_use]
     pub const fn horizontal(mut self) -> Self {
         self.orientation = RadioGroupOrientation::Horizontal;
-        self
-    }
-
-    /// Vertical layout (default).
-    #[must_use]
-    pub const fn vertical(mut self) -> Self {
-        self.orientation = RadioGroupOrientation::Vertical;
         self
     }
 
@@ -1551,12 +1448,6 @@ impl SwitchState {
         self.enabled && !self.read_only && !self.loading
     }
 
-    /// Hit root.
-    #[must_use]
-    pub const fn region(&self) -> Option<Rect> {
-        self.region
-    }
-
     fn apply_toggle<Id: Clone>(&mut self, id: &Id) -> SwitchOutcome<Id> {
         if !self.can_activate() {
             return SwitchOutcome::Ignored;
@@ -1673,13 +1564,6 @@ impl<'a, Id> Switch<'a, Id> {
         }
     }
 
-    /// Secondary help line (settings-row; dropped when height &lt; 2).
-    #[must_use]
-    pub const fn description(mut self, description: &'a str) -> Self {
-        self.description = Some(description);
-        self
-    }
-
     /// Compact leading-track layout.
     #[must_use]
     pub const fn compact(mut self) -> Self {
@@ -1692,18 +1576,6 @@ impl<'a, Id> Switch<'a, Id> {
     pub const fn settings_row(mut self) -> Self {
         self.recipe = SwitchRecipe::SettingsRow;
         self
-    }
-
-    /// Preferred height.
-    #[must_use]
-    pub fn preferred_height(&self) -> u16 {
-        if matches!(self.recipe, SwitchRecipe::SettingsRow)
-            && self.description.is_some_and(|d| !d.is_empty())
-        {
-            2
-        } else {
-            1
-        }
     }
 
     /// Preferred track width (cells).
@@ -1961,14 +1833,6 @@ impl<'a, Id> Switch<'a, Id> {
         };
         state.parts = Some(parts.clone());
         parts
-    }
-
-    /// Keys via widget.
-    pub fn handle_key(&self, state: &mut SwitchState, key: KeyEvent) -> SwitchOutcome<Id>
-    where
-        Id: Clone,
-    {
-        state.handle_key(key, &self.id)
     }
 
     /// Mouse via widget (Down arm / Up-in-region).

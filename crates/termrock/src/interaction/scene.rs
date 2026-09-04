@@ -865,13 +865,6 @@ impl<Id, Action> SemanticNode<Id, Action> {
         self
     }
 
-    /// Marks hidden.
-    #[must_use]
-    pub const fn hidden(mut self, hidden: bool) -> Self {
-        self.hidden = hidden;
-        self
-    }
-
     /// Replaces state flags.
     #[must_use]
     pub const fn state(mut self, state: SemanticState) -> Self {
@@ -1370,15 +1363,6 @@ impl<Id, Action> SemanticScene<Id, Action> {
             })
             .collect();
         SemanticSnapshot { nodes, diagnostics }
-    }
-
-    /// Snapshot with empty action names (structure-only).
-    #[must_use]
-    pub fn snapshot(&self) -> SemanticSnapshot
-    where
-        Id: std::fmt::Display,
-    {
-        self.snapshot_with(|_| String::new())
     }
 
     /// Topmost focusable interactive node at `position`.

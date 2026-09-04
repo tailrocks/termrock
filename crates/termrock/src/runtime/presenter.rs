@@ -339,10 +339,6 @@ impl<B> QuietBackend<B> {
         }
     }
 
-    /// Borrow the wrapped backend.
-    pub const fn inner(&self) -> &B {
-        &self.inner
-    }
     /// Forget what we believe about the terminal's cursor.
     ///
     /// Call after anything that moves the cursor behind our back (a resize, a

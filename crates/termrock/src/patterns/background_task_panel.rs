@@ -242,16 +242,6 @@ impl BackgroundOutputLine {
         }
     }
 
-    /// Stderr.
-    #[must_use]
-    pub fn stderr(id: impl Into<String>, text: impl Into<String>) -> Self {
-        Self {
-            id: id.into(),
-            stream: TerminalStream::Stderr,
-            text: text.into(),
-        }
-    }
-
     /// System.
     #[must_use]
     pub fn system(id: impl Into<String>, text: impl Into<String>) -> Self {
@@ -414,13 +404,6 @@ impl BackgroundTask {
     #[must_use]
     pub fn command(mut self, c: impl Into<String>) -> Self {
         self.command = Some(c.into());
-        self
-    }
-
-    /// Cwd.
-    #[must_use]
-    pub fn cwd(mut self, c: impl Into<String>) -> Self {
-        self.cwd = Some(c.into());
         self
     }
 
@@ -941,13 +924,6 @@ impl<'a> BackgroundTaskPanel<'a> {
             title: "Background",
             colorless: false,
         }
-    }
-
-    /// Title.
-    #[must_use]
-    pub const fn title(mut self, t: &'a str) -> Self {
-        self.title = t;
-        self
     }
 
     /// ASCII.

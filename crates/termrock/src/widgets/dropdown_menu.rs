@@ -472,18 +472,6 @@ impl DropdownMenuState {
         self.context_mode
     }
 
-    /// Last trigger.
-    #[must_use]
-    pub const fn trigger(&self) -> MenuOpenTrigger {
-        self.trigger
-    }
-
-    /// Presentation.
-    #[must_use]
-    pub const fn presentation(&self) -> DropdownMenuPresentation {
-        self.presentation
-    }
-
     /// Cursor at depth.
     #[must_use]
     pub fn panel_cursor(&self, depth: usize) -> Option<usize> {
@@ -519,11 +507,6 @@ impl DropdownMenuState {
     /// Enable.
     pub fn set_enabled(&mut self, on: bool) {
         self.enabled = on;
-    }
-
-    /// Input gate.
-    pub fn set_accepts_input(&mut self, on: bool) {
-        self.accepts_input = on;
     }
     /// Force presentation.
     pub fn set_presentation_override(&mut self, p: Option<DropdownMenuPresentation>) {
@@ -1066,13 +1049,6 @@ impl<'a, Id> DropdownMenu<'a, Id> {
             colorless: false,
             depth: 0,
         }
-    }
-
-    /// Paint cascade depth (0 = root panel of open path).
-    #[must_use]
-    pub const fn depth(mut self, d: usize) -> Self {
-        self.depth = d;
-        self
     }
 
     /// Paint one panel for `state`'s items at `self.depth` into `area`.

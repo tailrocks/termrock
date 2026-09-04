@@ -35,17 +35,6 @@ pub struct DirtyFlags {
 }
 
 impl DirtyFlags {
-    /// Everything dirty.
-    #[must_use]
-    pub const fn all() -> Self {
-        Self {
-            chrome: true,
-            body: true,
-            chrome_secondary: true,
-            overlays: true,
-        }
-    }
-
     /// Nothing dirty.
     #[must_use]
     pub const fn clean() -> Self {
@@ -98,15 +87,6 @@ impl StreamBatch {
     #[must_use]
     pub fn is_empty(&self) -> bool {
         self.append_count == 0 && self.text_delta.is_empty() && !self.force_flush
-    }
-
-    /// Clear after apply.
-    pub fn clear(&mut self) {
-        self.text_delta.clear();
-        self.append_count = 0;
-        self.priority = UpdatePriority::Normal;
-        self.dirty = DirtyFlags::clean();
-        self.force_flush = false;
     }
 }
 

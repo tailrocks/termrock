@@ -300,12 +300,6 @@ impl NumberInputState {
         self
     }
 
-    /// Constraints.
-    #[must_use]
-    pub const fn constraints(&self) -> NumberConstraints {
-        self.constraints
-    }
-
     /// Committed value.
     #[must_use]
     pub const fn value(&self) -> Option<f64> {
@@ -316,12 +310,6 @@ impl NumberInputState {
     #[must_use]
     pub fn draft_text(&self) -> &str {
         self.draft.value()
-    }
-
-    /// Editing draft (vs idle display of committed).
-    #[must_use]
-    pub const fn is_editing(&self) -> bool {
-        self.editing
     }
 
     /// Focus flag. Does not begin the draft edit session.
@@ -494,19 +482,6 @@ impl NumberInputState {
     pub fn page_by(&mut self, forward: bool) -> NumberInputOutcome {
         let pages = 10i32;
         self.step_by(if forward { pages } else { -pages })
-    }
-
-    /// Insert text into draft (paste).
-    pub fn insert_str(&mut self, text: &str) -> NumberInputOutcome {
-        if !self.enabled || self.read_only {
-            return NumberInputOutcome::Ignored;
-        }
-        self.begin_edit();
-        let filtered = filter_numeric_paste(self.kind, text);
-        match self.draft.insert_str(&filtered) {
-            TextInputOutcome::Changed => NumberInputOutcome::Changed,
-            _ => NumberInputOutcome::Ignored,
-        }
     }
 
     /// Key adapter.
@@ -799,33 +774,6 @@ fn is_allowed_char(kind: NumberKind, c: char, draft: &str) -> bool {
     }
 }
 
-fn filter_numeric_paste(kind: NumberKind, text: &str) -> String {
-    let mut out = String::with_capacity(text.len());
-    let mut started = false;
-    let mut saw_dot = false;
-    for c in text.chars() {
-        if c == '\n' || c == '\r' || c.is_control() {
-            break;
-        }
-        if c.is_ascii_digit() {
-            out.push(c);
-            started = true;
-            continue;
-        }
-        if matches!(c, '+' | '-') && !started && out.is_empty() {
-            out.push(c);
-            started = true;
-            continue;
-        }
-        if c == '.' && matches!(kind, NumberKind::Decimal { .. }) && !saw_dot {
-            out.push('.');
-            saw_dot = true;
-            started = true;
-        }
-    }
-    out
-}
-
 // ── Widget ──────────────────────────────────────────────────────────────────
 
 /// Hit geometry.
@@ -868,13 +816,6 @@ impl<'a> NumberInput<'a> {
             system,
             show_steppers: true,
         }
-    }
-
-    /// Placeholder.
-    #[must_use]
-    pub const fn placeholder(mut self, placeholder: &'a str) -> Self {
-        self.placeholder = placeholder;
-        self
     }
 
     /// Unit suffix (`px`, `%`, `ms`).

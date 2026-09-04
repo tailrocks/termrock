@@ -122,8 +122,7 @@ impl<Id: Clone> HoverState<Id> {
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// Shared result vocabulary for widget interaction handlers.
 ///
-/// Prefer wrapping non-ignored values in [`EventResult`] at host boundaries:
-/// `outcome.into_event_result()`.
+/// Prefer wrapping non-ignored values in [`EventResult`] at host boundaries.
 #[non_exhaustive]
 pub enum Outcome<T> {
     /// The event was not actionable.
@@ -136,17 +135,4 @@ pub enum Outcome<T> {
     Activated(T),
     /// The interaction was cancelled.
     Cancelled,
-}
-
-impl<T> Outcome<T> {
-    /// Converts to the standard [`EventResult`] envelope.
-    ///
-    /// `Ignored` → bubble / no paint. All other variants → stop + redraw + message.
-    #[must_use]
-    pub fn into_event_result(self) -> EventResult<Self> {
-        match self {
-            Self::Ignored => EventResult::ignored(),
-            other => EventResult::emit(other),
-        }
-    }
 }

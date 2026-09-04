@@ -404,12 +404,6 @@ impl<Id: Clone + PartialEq + Ord> EventStreamState<Id> {
         self.batched
     }
 
-    /// Shared scroll (anchors, indicator).
-    #[must_use]
-    pub const fn scroll(&self) -> &ScrollAreaState {
-        &self.scroll
-    }
-
     /// Host input gate.
     pub fn set_accepts_input(&mut self, accepts: bool) {
         self.accepts_input = accepts;

@@ -10,7 +10,7 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::{
-    style::{DesignSystem, PreviewPresentation, Role},
+    style::{DesignSystem, Role},
     text::take_display_cols,
 };
 
@@ -29,19 +29,6 @@ pub enum ImageProtocol {
     Sixel,
     /// iTerm2 inline images.
     ITerm2,
-}
-
-impl ImageProtocol {
-    /// Maps to a host presentation plan.
-    #[must_use]
-    pub const fn presentation(self) -> PreviewPresentation {
-        match self {
-            Self::Placeholder => PreviewPresentation::CellFallback,
-            Self::Kitty => PreviewPresentation::Kitty,
-            Self::ITerm2 => PreviewPresentation::ITerm2,
-            Self::Sixel => PreviewPresentation::Sixel,
-        }
-    }
 }
 
 /// Borrowed image metadata for layout (pixels stay caller-owned).
@@ -91,12 +78,6 @@ impl<'a> ImageSurface<'a> {
     #[must_use]
     pub const fn new(meta: ImageMeta<'a>, system: &'a DesignSystem) -> Self {
         Self { meta, system }
-    }
-
-    /// Meta borrow.
-    #[must_use]
-    pub const fn meta(&self) -> &ImageMeta<'a> {
-        &self.meta
     }
 }
 

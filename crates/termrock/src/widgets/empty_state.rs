@@ -249,12 +249,6 @@ impl<'a> EmptyState<'a> {
         self
     }
 
-    /// Contextual details (filter summary, path, permission scope).
-    #[must_use]
-    pub const fn context(mut self, context: &'a str) -> Self {
-        self.context = Some(context);
-        self
-    }
     /// Rows needed at `width`: every configured slot, as painted.
     #[must_use]
     pub fn measure_height(&self, width: u16) -> u16 {

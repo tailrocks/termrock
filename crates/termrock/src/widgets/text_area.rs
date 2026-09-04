@@ -250,11 +250,6 @@ impl TextAreaState {
         self.soft_wrap_width = 0;
     }
 
-    /// Wrap policy.
-    #[must_use]
-    pub const fn wrap(&self) -> TextWrap {
-        self.wrap
-    }
     /// Selection anchor.
     #[must_use]
     pub const fn selection_anchor(&self) -> Option<TextCursor> {
@@ -521,11 +516,6 @@ impl TextAreaState {
     #[must_use]
     pub const fn cursor_cell(&self) -> Option<Position> {
         self.hardware_cursor
-    }
-
-    /// Mutable scroll (hosts may overscan / chain when nested).
-    pub fn scroll_mut(&mut self) -> &mut ScrollAreaState {
-        &mut self.scroll
     }
 
     /// Applies a bounded two-axis viewport delta (y then x; native editor wheel).

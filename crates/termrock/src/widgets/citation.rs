@@ -367,12 +367,6 @@ impl CitationSource {
         parts.join(" · ")
     }
 
-    /// Destination for display (never empty for external).
-    #[must_use]
-    pub fn destination_display(&self) -> &str {
-        &self.destination
-    }
-
     /// Text for copy (title + dest + range).
     #[must_use]
     pub fn copy_text(&self) -> String {
@@ -643,14 +637,6 @@ impl<'a> SourceCitation<'a> {
         s
     }
 
-    /// Natural width.
-    #[must_use]
-    pub fn measure_width(&self) -> u16 {
-        u16::try_from(display_cols(&self.decorated()))
-            .unwrap_or(1)
-            .max(1)
-    }
-
     /// Whether open is allowed under current flags.
     #[must_use]
     pub fn can_open(&self) -> bool {
@@ -834,11 +820,6 @@ impl CitationListState {
         self.expanded = true;
     }
 
-    /// Collapse.
-    pub fn collapse(&mut self) {
-        self.expanded = false;
-    }
-
     /// Toggle.
     pub fn toggle_expanded(&mut self) -> CitationListOutcome {
         self.expanded = !self.expanded;
@@ -974,13 +955,6 @@ impl<'a> CitationList<'a> {
             title: None,
             show_destination: DestinationDisplay::Auto,
         }
-    }
-
-    /// Destination display policy for expanded rows.
-    #[must_use]
-    pub const fn show_destination(mut self, d: DestinationDisplay) -> Self {
-        self.show_destination = d;
-        self
     }
 
     /// Title.

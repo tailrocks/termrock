@@ -454,34 +454,10 @@ impl DrawerState {
         self.open
     }
 
-    /// Synchronizes host-owned visibility for embedded/story rendering.
-    ///
-    /// Stack-backed drawers should use [`Self::open_on_stack`] so geometry,
-    /// modality, and opener restoration remain coupled.
-    pub fn set_open(&mut self, on: bool) {
-        self.open = on && self.enabled;
-        self.focused = self.open;
-        if !self.open {
-            self.accepts_input = false;
-            self.resizing = false;
-            self.resize_anchor = None;
-        }
-    }
-
     /// Edge.
     #[must_use]
     pub const fn edge(&self) -> DrawerEdge {
         self.edge
-    }
-    /// Modality.
-    #[must_use]
-    pub const fn modality(&self) -> DrawerModality {
-        self.modality
-    }
-    /// Presentation.
-    #[must_use]
-    pub const fn presentation(&self) -> DrawerPresentation {
-        self.presentation
     }
 
     /// Preferred depth.
@@ -502,12 +478,6 @@ impl DrawerState {
     /// Footer rows.
     pub fn set_footer_rows(&mut self, rows: u16) {
         self.footer_rows = rows;
-    }
-
-    /// Body area convenience.
-    #[must_use]
-    pub const fn body_area(&self) -> Rect {
-        self.slots.body
     }
 
     /// Enable.
@@ -683,15 +653,6 @@ impl DrawerState {
             }
             _ => DrawerOutcome::Ignored,
         }
-    }
-
-    /// Mark focus entered.
-    pub fn enter_focus(&mut self) -> DrawerOutcome {
-        if !self.open {
-            return DrawerOutcome::Ignored;
-        }
-        self.focused = true;
-        DrawerOutcome::FocusEntered
     }
 }
 

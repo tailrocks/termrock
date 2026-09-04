@@ -255,13 +255,6 @@ impl<'a> SourceLabel<'a> {
         self.label = Some(label);
         self
     }
-
-    /// Style override.
-    #[must_use]
-    pub const fn style(mut self, style: SpanStyle) -> Self {
-        self.style = style;
-        self
-    }
 }
 
 /// Related location (another file/line).
@@ -419,13 +412,6 @@ impl<'a> Diagnostic<'a> {
     #[must_use]
     pub const fn labels(mut self, labels: &'a [SourceLabel<'a>]) -> Self {
         self.labels = labels;
-        self
-    }
-
-    /// Help.
-    #[must_use]
-    pub const fn help(mut self, help: &'a str) -> Self {
-        self.help = Some(help);
         self
     }
 
@@ -906,26 +892,10 @@ impl DiagnosticState {
         self.scroll.offset_y()
     }
 
-    /// Expanded set.
-    #[must_use]
-    pub fn expanded(&self) -> &BTreeSet<String> {
-        &self.expanded
-    }
-
     /// Whether id is expanded.
     #[must_use]
     pub fn is_expanded(&self, id: &str) -> bool {
         self.expanded.contains(id)
-    }
-
-    /// Set expanded state for an id (stories / host hydrate).
-    pub fn set_expanded(&mut self, id: impl Into<String>, on: bool) {
-        let id = id.into();
-        if on {
-            self.expanded.insert(id);
-        } else {
-            self.expanded.remove(&id);
-        }
     }
 
     fn sync_metrics(&mut self, total: u16, viewport: u16) {

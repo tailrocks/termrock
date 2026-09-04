@@ -351,21 +351,6 @@ pub fn resolve_from_detection(
 }
 
 impl TerminalCapabilities {
-    /// Detect process environment and resolve (Modern auto-clamp).
-    #[must_use]
-    pub fn detect() -> Self {
-        resolve_capabilities(None, CapabilityOverrides::default())
-    }
-
-    /// Resolve with preferred profile + overrides (reads process env).
-    #[must_use]
-    pub fn resolve(
-        preferred_profile: Option<CapabilityProfile>,
-        overrides: CapabilityOverrides,
-    ) -> Self {
-        resolve_capabilities(preferred_profile, overrides)
-    }
-
     /// Profile baseline only — no environment (Studio / pure tests).
     #[must_use]
     pub fn for_profile(profile: CapabilityProfile) -> Self {
@@ -397,19 +382,6 @@ impl TerminalCapabilities {
     #[must_use]
     pub const fn boundary(&self) -> super::boundary::CapabilityBoundary {
         super::boundary::CapabilityBoundary::from_capabilities(self)
-    }
-
-    /// Map to session flags for hosts / crossterm `SessionOptions`.
-    #[must_use]
-    pub fn session_flags(&self) -> SessionFlags {
-        SessionFlags {
-            alternate_screen: self.set.alternate_screen,
-            mouse_capture: self.set.mouse,
-            bracketed_paste: self.set.bracketed_paste,
-            raw_mode: self.set.keyboard,
-            hide_cursor: self.set.keyboard && self.set.alternate_screen,
-            disable_line_wrap: self.set.alternate_screen,
-        }
     }
 }
 

@@ -560,12 +560,6 @@ impl TraceWaterfallState {
         self.accepts_input = on;
     }
 
-    /// Selected id.
-    #[must_use]
-    pub fn selected(&self) -> Option<&str> {
-        self.selected.as_deref()
-    }
-
     /// Select.
     pub fn select(&mut self, id: Option<String>) {
         self.selected = id;

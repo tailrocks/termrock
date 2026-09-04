@@ -1483,13 +1483,6 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
         self
     }
 
-    /// Status footer (`N rows · nav:cell`). Off matches junie showcase tables.
-    #[must_use]
-    pub const fn footer(mut self, on: bool) -> Self {
-        self.show_footer = on;
-        self
-    }
-
     fn chrome_width(&self) -> u16 {
         grid_chrome_width(self.rows.len(), self.row_numbers)
     }

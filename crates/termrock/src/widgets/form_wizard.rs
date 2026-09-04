@@ -137,20 +137,6 @@ pub struct WizardProgress {
     pub failure_message: Option<String>,
 }
 
-impl WizardProgress {
-    /// Empty at start.
-    #[must_use]
-    pub fn start() -> Self {
-        Self {
-            step_index: 0,
-            phase: WizardPhase::Step,
-            completed: Vec::new(),
-            skipped: Vec::new(),
-            failure_message: None,
-        }
-    }
-}
-
 // ── Outcomes ────────────────────────────────────────────────────────────────
 
 /// Side-effect-free wizard outcomes. Host owns persistence and submit I/O.
@@ -342,12 +328,6 @@ impl FormWizardState {
     }
     // ── accessors ───────────────────────────────────────────────────────────
 
-    /// Steps.
-    #[must_use]
-    pub fn steps(&self) -> &[StepItem] {
-        &self.steps
-    }
-
     /// Current index.
     #[must_use]
     pub const fn step(&self) -> usize {
@@ -381,18 +361,6 @@ impl FormWizardState {
             .unwrap_or(WizardGate::Valid)
     }
 
-    /// Statuses for stepper.
-    #[must_use]
-    pub fn statuses(&self) -> &[StepStatus] {
-        &self.statuses
-    }
-
-    /// Presentation.
-    #[must_use]
-    pub const fn presentation(&self) -> FormWizardPresentation {
-        self.presentation
-    }
-
     /// Body paint area (host renders step form here after paint).
     #[must_use]
     pub const fn body_area(&self) -> Rect {
@@ -409,12 +377,6 @@ impl FormWizardState {
             skipped: self.skipped.clone(),
             failure_message: self.failure_message.clone(),
         }
-    }
-
-    /// Async generation.
-    #[must_use]
-    pub const fn generation(&self) -> u64 {
-        self.generation
     }
 
     /// Focus.
@@ -438,12 +400,6 @@ impl FormWizardState {
         });
     }
 
-    /// Set all gates (must match step count; truncated/padded).
-    pub fn set_gates(&mut self, gates: impl IntoIterator<Item = WizardGate>) {
-        let mut g: Vec<_> = gates.into_iter().collect();
-        g.resize(self.steps.len(), WizardGate::Valid);
-        self.gates = g;
-    }
     /// Field focus hint for next FocusFieldRequested.
     pub fn set_field_hint(&mut self, hint: Option<String>) {
         self.field_hint = hint;

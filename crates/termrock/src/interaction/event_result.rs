@@ -248,18 +248,6 @@ impl<M, FocusId> EventResult<M, FocusId> {
         }
     }
 
-    /// Maps focus identity type.
-    #[must_use]
-    pub fn map_focus<J>(self, f: impl FnOnce(FocusId) -> J) -> EventResult<M, J> {
-        EventResult {
-            propagation: self.propagation,
-            message: self.message,
-            redraw: self.redraw,
-            focus: self.focus.map(|req| req.map_id(f)),
-            overlay: self.overlay,
-        }
-    }
-
     /// If this result bubbles, replace with `fallback`; otherwise keep self.
     #[must_use]
     pub fn or_else(self, fallback: impl FnOnce() -> Self) -> Self {

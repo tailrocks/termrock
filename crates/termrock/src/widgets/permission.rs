@@ -619,13 +619,6 @@ impl PermissionRequest {
         self
     }
 
-    /// Custom destructive / egress banner (overrides defaults).
-    #[must_use]
-    pub fn notice(mut self, notice: impl Into<String>) -> Self {
-        self.destructive_notice = Some(notice.into());
-        self
-    }
-
     /// Default action strip for this risk.
     #[must_use]
     pub fn actions_for_risk(&self) -> Vec<PermissionAction> {
@@ -735,12 +728,6 @@ impl PermissionQueue {
     #[must_use]
     pub fn is_empty(&self) -> bool {
         self.pending.is_empty()
-    }
-
-    /// Pending requests oldest-first.
-    #[must_use]
-    pub fn pending(&self) -> &[PermissionRequest] {
-        &self.pending
     }
 
     /// Audit log (oldest first).
@@ -963,12 +950,6 @@ impl PermissionPromptState {
         self.scope
     }
 
-    /// Whether detail lines are shown.
-    #[must_use]
-    pub const fn details_expanded(&self) -> bool {
-        self.details_expanded
-    }
-
     /// Generation of the head request, if any.
     #[must_use]
     pub fn head_generation(&self) -> Option<u64> {
@@ -1019,14 +1000,6 @@ impl PermissionPromptState {
                 policy: None,
             },
         )
-    }
-
-    /// Dismisses the permission overlay (does **not** cancel the queue — host must
-    /// still run gate-cancel / [`Self::handle_key`] Esc / dismiss_head per KD-26).
-    pub fn dismiss_overlay<FocusId: Clone>(
-        stack: &mut OverlayStack<FocusId>,
-    ) -> OverlayOutcome<FocusId> {
-        stack.dismiss(&OverlayId::from_static(PERMISSION_OVERLAY_ID))
     }
 
     /// Keyboard routing.

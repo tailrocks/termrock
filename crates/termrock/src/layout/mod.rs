@@ -136,27 +136,6 @@ pub struct Slots {
     pub bottom: Rect,
 }
 
-impl Slots {
-    #[must_use]
-    /// Reserves bottom chrome and returns the resulting body and bottom rectangles.
-    pub const fn bottom(area: Rect, rows: u16) -> Self {
-        let bottom_height = if area.height < rows {
-            area.height
-        } else {
-            rows
-        };
-        Self {
-            body: Rect::new(area.x, area.y, area.width, area.height - bottom_height),
-            bottom: Rect::new(
-                area.x,
-                area.y.saturating_add(area.height - bottom_height),
-                area.width,
-                bottom_height,
-            ),
-        }
-    }
-}
-
 /// Split fixed rows from the bottom of an area in top-to-bottom order.
 ///
 /// The body receives all remaining height. Rows that do not fit collapse to

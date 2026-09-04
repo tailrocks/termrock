@@ -772,17 +772,6 @@ impl DependencyGraphState {
         self.accepts_input = on;
     }
 
-    /// Selected.
-    #[must_use]
-    pub fn selected(&self) -> Option<&str> {
-        self.selected.as_deref()
-    }
-
-    /// Select.
-    pub fn select(&mut self, id: Option<String>) {
-        self.selected = id;
-    }
-
     /// Keys.
     pub fn handle_key(
         &mut self,

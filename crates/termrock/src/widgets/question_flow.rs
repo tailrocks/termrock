@@ -173,24 +173,10 @@ impl Question {
         self
     }
 
-    /// Required.
-    #[must_use]
-    pub const fn required(mut self, on: bool) -> Self {
-        self.required = on;
-        self
-    }
-
     /// Allow other.
     #[must_use]
     pub const fn allow_other(mut self, on: bool) -> Self {
         self.allow_other = on;
-        self
-    }
-
-    /// Help.
-    #[must_use]
-    pub fn help(mut self, h: impl Into<String>) -> Self {
-        self.help = Some(h.into());
         self
     }
 }
@@ -552,12 +538,6 @@ impl QuestionFlowState {
             last_error: None,
             option_hits: Vec::new(),
         }
-    }
-
-    /// Sized empty legacy helper (no set yet).
-    #[must_use]
-    pub fn with_capacity(_step_count: usize) -> Self {
-        Self::new()
     }
 
     /// Gate.

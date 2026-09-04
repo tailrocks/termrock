@@ -123,52 +123,6 @@ impl CenterSpec {
             safe_margin: true,
         }
     }
-
-    /// Axis.
-    #[must_use]
-    pub const fn axis(mut self, axis: CenterAxis) -> Self {
-        self.axis = axis;
-        self
-    }
-
-    /// Preferred size.
-    #[must_use]
-    pub const fn size(mut self, width: u16, height: u16) -> Self {
-        self.width = width;
-        self.height = height;
-        self
-    }
-
-    /// Max width/height caps.
-    #[must_use]
-    pub const fn max(mut self, max_width: Option<u16>, max_height: Option<u16>) -> Self {
-        self.max_width = max_width;
-        self.max_height = max_height;
-        self
-    }
-
-    /// Minimum child size when outer allows.
-    #[must_use]
-    pub const fn min(mut self, min_width: u16, min_height: u16) -> Self {
-        self.min_width = min_width;
-        self.min_height = min_height;
-        self
-    }
-
-    /// Outer margins.
-    #[must_use]
-    pub const fn margin(mut self, margin_x: u16, margin_y: u16) -> Self {
-        self.margin_x = margin_x;
-        self.margin_y = margin_y;
-        self
-    }
-
-    /// Safe one-cell margin when room.
-    #[must_use]
-    pub const fn safe_margin(mut self, on: bool) -> Self {
-        self.safe_margin = on;
-        self
-    }
 }
 
 /// Resolved placement.
@@ -267,24 +221,10 @@ impl Center {
             spec: CenterSpec::failure(width, height),
         }
     }
-    /// Borrow spec.
-    #[must_use]
-    pub const fn spec(self) -> CenterSpec {
-        self.spec
-    }
-
     /// Axis.
     #[must_use]
     pub const fn axis(mut self, axis: CenterAxis) -> Self {
         self.spec.axis = axis;
-        self
-    }
-
-    /// Preferred size.
-    #[must_use]
-    pub const fn size(mut self, width: u16, height: u16) -> Self {
-        self.spec.width = width;
-        self.spec.height = height;
         self
     }
 
@@ -474,13 +414,6 @@ impl ModalSpec {
         self.height_num = num;
         self.height_den = den;
         self.min_height = min_height;
-        self
-    }
-
-    /// Sets the cells left to the terminal on each axis.
-    #[must_use]
-    pub const fn margin(mut self, margin: u16) -> Self {
-        self.margin = margin;
         self
     }
 }

@@ -184,11 +184,6 @@ impl BadgeState {
     pub const fn set_focused(&mut self, focused: bool) {
         self.focused = focused;
     }
-
-    /// Selection flag.
-    pub const fn set_selected(&mut self, selected: bool) {
-        self.selected = selected;
-    }
 }
 
 /// Compact status / category badge.
@@ -261,13 +256,6 @@ impl<'a> Badge<'a> {
         self
     }
 
-    /// Destructive.
-    #[must_use]
-    pub const fn destructive(mut self) -> Self {
-        self.variant = BadgeVariant::Destructive;
-        self
-    }
-
     /// Outline.
     #[must_use]
     pub const fn outline(mut self) -> Self {
@@ -295,13 +283,6 @@ impl<'a> Badge<'a> {
         self
     }
 
-    /// Soft fill convenience.
-    #[must_use]
-    pub const fn soft(mut self) -> Self {
-        self.fill = BadgeFill::Soft;
-        self
-    }
-
     /// Actionable badge (focus / select / activate apply).
     #[must_use]
     pub const fn interactive(mut self, on: bool) -> Self {
@@ -323,11 +304,6 @@ impl<'a> Badge<'a> {
         self
     }
 
-    /// Whether interactive.
-    #[must_use]
-    pub const fn is_interactive(&self) -> bool {
-        self.interactive
-    }
     /// Visible body text (without padding or count parens).
     #[must_use]
     pub fn body_text(&self) -> String {

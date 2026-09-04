@@ -116,13 +116,6 @@ impl<'a, Id> SegmentedItem<'a, Id> {
         self
     }
 
-    /// A11y name (required for icon-only).
-    #[must_use]
-    pub const fn accessible_label(mut self, name: &'a str) -> Self {
-        self.accessible_label = Some(name);
-        self
-    }
-
     /// Badge.
     #[must_use]
     pub const fn badge(mut self, badge: &'a str) -> Self {
@@ -324,13 +317,6 @@ impl<'a, Id> SegmentedControl<'a, Id> {
     #[must_use]
     pub const fn collapse_below(mut self, cols: u16) -> Self {
         self.collapse_below = cols;
-        self
-    }
-
-    /// Overflow trigger label.
-    #[must_use]
-    pub const fn overflow_label(mut self, label: &'a str) -> Self {
-        self.overflow_label = label;
         self
     }
 

@@ -588,11 +588,6 @@ impl KeyboardHelpState {
         self.query.value()
     }
 
-    /// Query mut.
-    pub const fn query_mut(&mut self) -> &mut TextInputState {
-        &mut self.query
-    }
-
     /// Cursor.
     #[must_use]
     pub fn cursor_index(&self) -> usize {

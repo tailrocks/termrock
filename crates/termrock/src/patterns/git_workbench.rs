@@ -87,19 +87,6 @@ impl GitWorkbenchPane {
             Self::Status => "status",
         }
     }
-
-    /// Default Tab focus cycle (status is chrome-only).
-    #[must_use]
-    pub fn focus_order() -> &'static [GitWorkbenchPane] {
-        &[
-            Self::Files,
-            Self::Diff,
-            Self::History,
-            Self::Branches,
-            Self::Output,
-            Self::Diagnostics,
-        ]
-    }
 }
 
 /// Responsive density.

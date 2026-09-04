@@ -642,12 +642,6 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
         self.generation
     }
 
-    /// Last applied generation.
-    #[must_use]
-    pub const fn applied_generation(&self) -> u64 {
-        self.applied_generation
-    }
-
     /// Query text.
     #[must_use]
     pub fn query_text(&self) -> &str {
@@ -660,21 +654,10 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
         &self.query
     }
 
-    /// Mutable query.
-    pub const fn query_mut(&mut self) -> &mut TextInputState {
-        &mut self.query
-    }
-
     /// Argument draft.
     #[must_use]
     pub fn argument_text(&self) -> &str {
         self.argument.value()
-    }
-
-    /// Phase.
-    #[must_use]
-    pub fn phase(&self) -> &CommandPalettePhase {
-        &self.phase
     }
 
     /// Current page id.
@@ -689,22 +672,10 @@ impl<Id: Clone + PartialEq> CommandPaletteState<Id> {
         self.page_stack.last().map(|(_, t)| t.as_str())
     }
 
-    /// Presentation.
-    #[must_use]
-    pub const fn presentation(&self) -> CommandPalettePresentation {
-        self.presentation
-    }
-
     /// Cursor index into visible flat list.
     #[must_use]
     pub fn cursor_index(&self) -> usize {
         self.collection.active().copied().unwrap_or(0)
-    }
-
-    /// History snapshot.
-    #[must_use]
-    pub fn history(&self) -> impl Iterator<Item = &str> {
-        self.history.iter().map(String::as_str)
     }
 
     /// Push query into history (dedup consecutive).
@@ -1239,31 +1210,10 @@ impl<'a, Id> CommandPalette<'a, Id> {
         }
     }
 
-    /// Footer hint.
-    #[must_use]
-    pub const fn footer_hint(mut self, hint: Option<&'a str>) -> Self {
-        self.footer_hint = hint;
-        self
-    }
-
-    /// Query with zero matches.
-    #[must_use]
-    pub const fn no_result_message(mut self, message: &'a str) -> Self {
-        self.no_result_message = message;
-        self
-    }
-
     /// Loading message.
     #[must_use]
     pub const fn loading_message(mut self, message: &'a str) -> Self {
         self.loading_message = message;
-        self
-    }
-
-    /// Show preview line for cursor entry.
-    #[must_use]
-    pub const fn show_preview(mut self, on: bool) -> Self {
-        self.show_preview = on;
         self
     }
 
@@ -1277,27 +1227,6 @@ impl<'a, Id> CommandPalette<'a, Id> {
         Id: Clone + PartialEq,
     {
         state.handle_key(key, entries)
-    }
-
-    /// Static handle_intent.
-    pub fn handle_intent(
-        state: &mut CommandPaletteState<Id>,
-        intent: UiIntent,
-        entries: &[CommandMatch<'_, Id>],
-    ) -> CommandPaletteOutcome<Id>
-    where
-        Id: Clone + PartialEq,
-    {
-        state.handle_intent(intent, entries)
-    }
-
-    /// Query accessor.
-    #[must_use]
-    pub fn query(state: &CommandPaletteState<Id>) -> &TextInputState
-    where
-        Id: Clone + PartialEq,
-    {
-        state.query()
     }
 
     /// Paint.

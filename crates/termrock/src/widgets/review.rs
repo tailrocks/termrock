@@ -242,18 +242,6 @@ pub enum DiffCommentAnchor {
     },
 }
 
-impl DiffCommentAnchor {
-    /// Stable key for maps.
-    #[must_use]
-    pub fn key(&self) -> String {
-        match self {
-            Self::File { file_id } => format!("file:{file_id}"),
-            Self::Hunk { hunk_id } => format!("hunk:{hunk_id}"),
-            Self::Line { line_id } => format!("line:{line_id}"),
-        }
-    }
-}
-
 /// One review comment (host owns persistence; TermRock owns session chrome).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DiffComment {
@@ -578,17 +566,6 @@ impl DiffReviewState {
     pub fn set_accepts_input(&mut self, accepts: bool) {
         self.accepts_input = accepts;
         self.view.set_accepts_input(accepts);
-    }
-
-    /// Vertical offset.
-    #[must_use]
-    pub fn offset_y(&self) -> u16 {
-        self.view.offset()
-    }
-    /// Prefers split when wide.
-    #[must_use]
-    pub const fn prefers_split(&self) -> bool {
-        self.view.prefers_split()
     }
 
     /// Decisions map (unit key → decision).
@@ -1313,13 +1290,6 @@ impl<'a> DiffReview<'a> {
     #[must_use]
     pub const fn show_tree(mut self, on: bool) -> Self {
         self.show_tree = on;
-        self
-    }
-
-    /// Show summary strip.
-    #[must_use]
-    pub const fn show_summary(mut self, on: bool) -> Self {
-        self.show_summary = on;
         self
     }
 

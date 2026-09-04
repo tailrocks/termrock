@@ -137,20 +137,6 @@ impl<'a> ThinkingBlock<'a> {
         }
     }
 
-    /// Expands body text.
-    #[must_use]
-    pub const fn expanded(mut self, expanded: bool) -> Self {
-        self.expanded = expanded;
-        self
-    }
-
-    /// Sets body text shown when expanded.
-    #[must_use]
-    pub const fn body(mut self, body: &'a str) -> Self {
-        self.body = body;
-        self
-    }
-
     /// Spinner/status frame while thinking.
     #[must_use]
     pub const fn frame(mut self, frame: &'a str) -> Self {
@@ -367,20 +353,6 @@ impl<'a> ToolCard<'a> {
             expanded: false,
             system,
         }
-    }
-
-    /// Optional detail / stdout slice.
-    #[must_use]
-    pub const fn detail(mut self, detail: &'a str) -> Self {
-        self.detail = Some(detail);
-        self
-    }
-
-    /// Whether detail is shown.
-    #[must_use]
-    pub const fn expanded(mut self, expanded: bool) -> Self {
-        self.expanded = expanded;
-        self
     }
 }
 

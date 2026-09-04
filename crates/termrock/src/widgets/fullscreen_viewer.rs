@@ -80,15 +80,6 @@ impl ZoomLevel {
         }
     }
 
-    /// Demote one step (saturates at Compact).
-    #[must_use]
-    pub const fn demote(self) -> Self {
-        match self {
-            Self::Fullscreen => Self::Detail,
-            Self::Detail | Self::Compact => Self::Compact,
-        }
-    }
-
     /// Whether this level uses the fullscreen overlay chrome.
     #[must_use]
     pub const fn is_fullscreen(self) -> bool {
@@ -664,11 +655,6 @@ impl<Id> FullscreenViewerState<Id> {
         self.help_open
     }
 
-    /// Title.
-    pub fn set_title(&mut self, title: impl Into<String>) {
-        self.title = title.into();
-    }
-
     /// Enable.
     pub fn set_enabled(&mut self, on: bool) {
         self.enabled = on;
@@ -688,29 +674,6 @@ impl<Id> FullscreenViewerState<Id> {
 }
 
 impl<Id: Clone + PartialEq> FullscreenViewerState<Id> {
-    /// Promote / open path with source freeze.
-    pub fn promote(
-        &mut self,
-        ctx: SourceContext<Id>,
-        title: impl Into<String>,
-    ) -> FullscreenViewerOutcome<Id> {
-        if !self.enabled {
-            return FullscreenViewerOutcome::Ignored;
-        }
-        self.title = title.into();
-        let out = self.zoom.promote(ctx);
-        if matches!(
-            out,
-            FullscreenViewerOutcome::Opened { .. } | FullscreenViewerOutcome::Promoted { .. }
-        ) {
-            if self.zoom.level().is_fullscreen() {
-                self.open = true;
-                self.chrome_focus = ViewerChromeFocus::Body;
-            }
-        }
-        out
-    }
-
     /// Enter fullscreen directly.
     pub fn enter_fullscreen(
         &mut self,

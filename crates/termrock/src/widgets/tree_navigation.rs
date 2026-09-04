@@ -328,12 +328,6 @@ impl<Id> TreeNavigationState<Id> {
         &self.filter
     }
 
-    /// Lazy generation.
-    #[must_use]
-    pub const fn generation(&self) -> u64 {
-        self.generation
-    }
-
     /// Ancestors of current route (ids).
     #[must_use]
     pub fn route_ancestors(&self) -> &[Id] {

@@ -41,21 +41,6 @@ impl RegistryItemKind {
         }
     }
 
-    /// Parse kind string.
-    #[must_use]
-    pub fn parse(s: &str) -> Option<Self> {
-        match s.trim().to_ascii_lowercase().as_str() {
-            "primitive" => Some(Self::Primitive),
-            "component" => Some(Self::Component),
-            "behavior" => Some(Self::Behavior),
-            "block" => Some(Self::Block),
-            "theme" => Some(Self::Theme),
-            "keymap" | "key-map" => Some(Self::Keymap),
-            "template" => Some(Self::Template),
-            _ => None,
-        }
-    }
-
     /// All kinds.
     pub const ALL: [Self; 7] = [
         Self::Primitive,
@@ -87,23 +72,6 @@ pub enum ContractFileRole {
     Migration,
     /// Other.
     Other,
-}
-
-impl ContractFileRole {
-    /// Parse.
-    #[must_use]
-    pub fn parse(s: &str) -> Option<Self> {
-        match s.trim().to_ascii_lowercase().as_str() {
-            "primary" => Some(Self::Primary),
-            "support" => Some(Self::Support),
-            "story" => Some(Self::Story),
-            "fixture" | "test" => Some(Self::Fixture),
-            "docs" | "doc" => Some(Self::Docs),
-            "migration" => Some(Self::Migration),
-            "other" => Some(Self::Other),
-            _ => None,
-        }
-    }
 }
 
 /// One file belonging to a contract or registry item.

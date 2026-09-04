@@ -86,13 +86,6 @@ impl<'a> GridCell<'a> {
             pending: true,
         }
     }
-
-    /// Optional style override.
-    #[must_use]
-    pub const fn style(mut self, style: Style) -> Self {
-        self.style = Some(style);
-        self
-    }
 }
 
 /// One visible body row: stable id + cells in column order.
@@ -260,12 +253,6 @@ impl<RowId, ColId> VirtualGridState<RowId, ColId> {
         self.cursor_row
     }
 
-    /// Cursor column list index.
-    #[must_use]
-    pub const fn cursor_col(&self) -> usize {
-        self.cursor_col
-    }
-
     /// Range selection anchor, when active.
     #[must_use]
     pub const fn anchor(&self) -> Option<(u64, usize)> {
@@ -282,12 +269,6 @@ impl<RowId, ColId> VirtualGridState<RowId, ColId> {
     #[must_use]
     pub const fn first_col(&self) -> usize {
         self.virt.cols.offset() as usize
-    }
-
-    /// Canonical 2D virtualizer (row/col windows, semantic budget).
-    #[must_use]
-    pub const fn virtualizer(&self) -> &Virtualizer2D {
-        &self.virt
     }
 
     /// Mutable virtualizer (overscan, sticky, anchors).
@@ -872,13 +853,6 @@ impl<'a, RowId, ColId> VirtualGrid<'a, RowId, ColId> {
     #[must_use]
     pub const fn gutter(mut self, show: bool) -> Self {
         self.show_gutter = show;
-        self
-    }
-
-    /// Shows or hides the header row.
-    #[must_use]
-    pub const fn header(mut self, show: bool) -> Self {
-        self.show_header = show;
         self
     }
 }

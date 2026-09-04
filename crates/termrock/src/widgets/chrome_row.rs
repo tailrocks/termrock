@@ -78,13 +78,6 @@ impl<'a> ChromeRow<'a> {
         }
     }
 
-    /// Overrides the glyph's tone (a rename is not a failure).
-    #[must_use]
-    pub const fn tone(mut self, role: Role) -> Self {
-        self.tone = Some(role);
-        self
-    }
-
     /// Whether the row ends in a live caret (an editable row does).
     #[must_use]
     pub const fn caret(mut self, caret: bool) -> Self {

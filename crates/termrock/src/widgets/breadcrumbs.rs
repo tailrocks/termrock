@@ -281,13 +281,6 @@ impl BreadcrumbsState {
         self
     }
 
-    /// Separator.
-    #[must_use]
-    pub const fn with_separator(mut self, sep: BreadcrumbSeparator) -> Self {
-        self.separator = sep;
-        self
-    }
-
     /// Focus index into source items.
     #[must_use]
     pub const fn focus_index(&self) -> usize {
@@ -304,12 +297,6 @@ impl BreadcrumbsState {
     #[must_use]
     pub const fn presentation(&self) -> BreadcrumbsPresentation {
         self.presentation
-    }
-
-    /// Draft path when editing.
-    #[must_use]
-    pub fn draft(&self) -> &str {
-        &self.draft
     }
 
     /// Focus whole control (single Tab stop).

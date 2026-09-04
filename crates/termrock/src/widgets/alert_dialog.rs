@@ -342,22 +342,11 @@ pub struct AlertDialogState<Id> {
 }
 
 impl<Id> AlertDialogState<Id> {
-    /// Scope.
-    #[must_use]
-    pub fn scope(&self) -> &AlertScope {
-        &self.scope
-    }
     /// Confirm gates (typed / countdown).
     pub fn set_gates(&mut self, gates: AlertConfirmGates) {
         self.countdown_left_ms = gates.countdown_ms;
         self.gates = gates;
         self.typed_buffer.clear();
-    }
-
-    /// Gates.
-    #[must_use]
-    pub fn gates(&self) -> &AlertConfirmGates {
-        &self.gates
     }
 
     /// Non-dismissable critical state (Esc always trapped; no soft cancel via Esc).
@@ -380,11 +369,6 @@ impl<Id> AlertDialogState<Id> {
         self.cancel_label = cancel.into();
     }
 
-    /// Typed buffer contents.
-    #[must_use]
-    pub fn typed_buffer(&self) -> &str {
-        &self.typed_buffer
-    }
     /// Whether typed phrase matches (or no typed gate).
     #[must_use]
     pub fn typed_satisfied(&self) -> bool {
@@ -424,12 +408,6 @@ impl<Id> AlertDialogState<Id> {
     /// Input gate.
     pub fn set_accepts_input(&mut self, on: bool) {
         self.dialog.set_accepts_input(on);
-    }
-
-    /// Underlying dialog engine.
-    #[must_use]
-    pub fn dialog(&self) -> &DialogState<Id> {
-        &self.dialog
     }
 
     /// Title for paint.

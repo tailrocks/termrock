@@ -35,7 +35,7 @@ use crate::{
         SemanticScene, SemanticState, UiIntent, place_overlay,
     },
     scroll::DialogScroll,
-    style::{DesignSystem, Role, RolePalette},
+    style::{DesignSystem, Role},
     text::{display_cols, more_note, take_display_cols, truncate_cols},
 };
 
@@ -513,12 +513,6 @@ impl<'a> Backdrop<'a> {
             system,
             policy: BackdropPolicy::Dim,
         }
-    }
-    /// Selects the semantic policy requested by the overlay stack.
-    #[must_use]
-    pub const fn policy(mut self, policy: BackdropPolicy) -> Self {
-        self.policy = policy;
-        self
     }
 }
 
@@ -1074,12 +1068,6 @@ impl<Id> DialogState<Id> {
         self.validation_message = msg;
     }
 
-    /// Current validation message, if any.
-    #[must_use]
-    pub fn validation_message(&self) -> Option<&str> {
-        self.validation_message.as_deref()
-    }
-
     /// Require typing `token` before the confirming action enables.
     pub fn set_ack_token(&mut self, token: Option<String>) {
         self.ack_token = token;
@@ -1111,17 +1099,6 @@ impl<Id> DialogState<Id> {
     #[must_use]
     pub fn action_regions(&self) -> &[HitRegion<Id>] {
         &self.action_regions
-    }
-
-    /// Body scroll state.
-    #[must_use]
-    pub fn scroll(&self) -> &DialogScroll {
-        &self.scroll
-    }
-
-    /// Mutable body scroll state.
-    pub fn scroll_mut(&mut self) -> &mut DialogScroll {
-        &mut self.scroll
     }
 
     /// Apply initial focus once.
@@ -1599,12 +1576,6 @@ impl<'a> Dialog<'a> {
         self
     }
 
-    /// Theme borrow for child widgets.
-    #[must_use]
-    pub const fn theme(&self) -> &RolePalette {
-        self.tokens.palette()
-    }
-
     /// Design tokens.
     #[must_use]
     pub const fn tokens(&self) -> &DesignSystem {
@@ -1629,13 +1600,6 @@ impl<'a> Dialog<'a> {
     #[must_use]
     pub const fn preferred_size(mut self, size: DialogSize) -> Self {
         self.preferred_size = Some(size);
-        self
-    }
-
-    /// Paint body copy as muted (source DataGrid facts).
-    #[must_use]
-    pub const fn muted_body(mut self, on: bool) -> Self {
-        self.muted_body = on;
         self
     }
 
@@ -2084,12 +2048,6 @@ impl<Id: Clone + PartialEq> ChoiceDialogState<Id> {
         }
     }
 
-    /// Action cursor id.
-    #[must_use]
-    pub fn cursor(&self) -> Option<&Id> {
-        self.cursor.as_ref()
-    }
-
     /// Host input gate.
     pub fn set_accepts_input(&mut self, accepts: bool) {
         self.accepts_input = accepts;
@@ -2100,12 +2058,6 @@ impl<Id: Clone + PartialEq> ChoiceDialogState<Id> {
     pub fn set_loading(&mut self, loading: bool) {
         self.loading = loading;
         self.dialog.set_loading(loading);
-    }
-
-    /// Whether activation is suppressed by loading.
-    #[must_use]
-    pub const fn is_loading(&self) -> bool {
-        self.loading
     }
 
     /// Access full dialog engine.
@@ -2169,34 +2121,6 @@ impl<Id: Clone + PartialEq> ChoiceDialogState<Id> {
         out.into_choice_outcome()
     }
 
-    /// Move to next enabled action.
-    pub fn select_next(&mut self, actions: &[Action<'_, Id>]) -> Outcome<Id> {
-        self.handle_intent(actions, UiIntent::Move(NavigationMove::Next))
-    }
-
-    /// Move to previous enabled action.
-    pub fn select_previous(&mut self, actions: &[Action<'_, Id>]) -> Outcome<Id> {
-        self.handle_intent(actions, UiIntent::Move(NavigationMove::Previous))
-    }
-
-    /// Activate the current cursor action if enabled.
-    #[must_use]
-    pub fn activate_selected(&self, actions: &[Action<'_, Id>]) -> Outcome<Id> {
-        if self.loading || !self.accepts_input {
-            return Outcome::Ignored;
-        }
-        self.cursor
-            .as_ref()
-            .and_then(|cur| {
-                actions
-                    .iter()
-                    .find(|action| action.enabled && &action.id == cur)
-            })
-            .map_or(Outcome::Ignored, |action| {
-                Outcome::Activated(action.id.clone())
-            })
-    }
-
     /// Click a painted action hit region.
     #[must_use]
     pub fn click(&mut self, position: ratatui_core::layout::Position) -> Outcome<Id> {
@@ -2223,7 +2147,6 @@ impl<Id: Clone + PartialEq> ChoiceDialogState<Id> {
 pub struct ChoiceDialog<'a, Id> {
     dialog: Dialog<'a>,
     actions: &'a [Action<'a, Id>],
-    gap: &'a str,
     colorless: bool,
 }
 
@@ -2234,16 +2157,8 @@ impl<'a, Id> ChoiceDialog<'a, Id> {
         Self {
             dialog,
             actions,
-            gap: " ",
             colorless: false,
         }
-    }
-
-    /// Spacing between action labels.
-    #[must_use]
-    pub const fn gap(mut self, gap: &'a str) -> Self {
-        self.gap = gap;
-        self
     }
 }
 
@@ -2342,13 +2257,6 @@ impl<'a, Id> MessageDialog<'a, Id> {
             wrap: false,
             system,
         }
-    }
-
-    /// Fixed label column width for details.
-    #[must_use]
-    pub const fn label_width(mut self, label_width: u16) -> Self {
-        self.label_width = label_width;
-        self
     }
 
     /// Wrap long detail values.

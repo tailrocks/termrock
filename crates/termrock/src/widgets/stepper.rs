@@ -378,11 +378,6 @@ impl StepperState {
         self
     }
 
-    /// Set policy.
-    pub fn set_policy(&mut self, p: StepperNavPolicy) {
-        self.policy = p;
-    }
-
     /// Force presentation.
     pub fn set_presentation_override(&mut self, p: Option<StepperPresentation>) {
         self.presentation_override = p;
@@ -430,12 +425,6 @@ impl StepperState {
             .copied()
             .unwrap_or(self.current)
             .min(len.saturating_sub(1))
-    }
-
-    /// Statuses.
-    #[must_use]
-    pub fn statuses(&self) -> &[StepStatus] {
-        &self.statuses
     }
 
     /// Presentation.

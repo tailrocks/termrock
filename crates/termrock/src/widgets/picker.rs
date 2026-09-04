@@ -183,27 +183,10 @@ impl<Id: Clone + PartialEq> PickerState<Id> {
         self.searchable = on;
     }
 
-    /// Whether the query field is live.
-    #[must_use]
-    pub const fn searchable(&self) -> bool {
-        self.searchable
-    }
-
     /// Returns the query used by the caller-owned projection.
     #[must_use]
     pub fn query_text(&self) -> &str {
         self.query.value()
-    }
-
-    /// Returns the text-input state for cursor and validation inspection.
-    #[must_use]
-    pub const fn query(&self) -> &TextInputState {
-        &self.query
-    }
-
-    /// Returns mutable query state for consumer-specific constraints.
-    pub const fn query_mut(&mut self) -> &mut TextInputState {
-        &mut self.query
     }
 
     /// Returns the list state for selection and painted-geometry inspection.

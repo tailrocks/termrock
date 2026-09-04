@@ -63,11 +63,6 @@ impl FileTreeKind {
         matches!(self, Self::Directory | Self::SymlinkDir)
     }
 
-    /// Symlink of any target.
-    #[must_use]
-    pub const fn is_symlink(self) -> bool {
-        matches!(self, Self::SymlinkFile | Self::SymlinkDir)
-    }
     /// Leading glyph.
     #[must_use]
     pub const fn glyph(self, ascii: bool) -> &'static str {
@@ -127,19 +122,6 @@ impl FileGitStatus {
             Self::Untracked => '?',
             Self::Ignored => '!',
             Self::Conflict => 'U',
-        }
-    }
-
-    /// Role for badge.
-    #[must_use]
-    pub const fn role(self) -> Role {
-        match self {
-            Self::Clean | Self::Unknown => Role::TextMuted,
-            Self::Modified | Self::Renamed => Role::Warning,
-            Self::Added => Role::Success,
-            Self::Deleted | Self::Conflict => Role::Danger,
-            Self::Untracked => Role::TextSecondary,
-            Self::Ignored => Role::TextDisabled,
         }
     }
 }
@@ -312,13 +294,6 @@ impl<'a, Id> FileTreeEntry<'a, Id> {
     #[must_use]
     pub const fn size(mut self, n: u64) -> Self {
         self.size = Some(n);
-        self
-    }
-
-    /// Status.
-    #[must_use]
-    pub const fn with_status(mut self, status: TreeNodeStatus) -> Self {
-        self.status = status;
         self
     }
 }
@@ -676,11 +651,6 @@ impl<Id: Clone + PartialEq> FileTreeState<Id> {
     /// Select id.
     pub fn select(&mut self, id: Option<Id>) {
         self.tree.select(id);
-    }
-
-    /// Programmatic reveal: select id if present.
-    pub fn reveal(&mut self, id: Id) {
-        self.tree.select(Some(id));
     }
 
     /// Keys + product chords.

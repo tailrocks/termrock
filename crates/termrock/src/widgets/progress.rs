@@ -32,8 +32,6 @@ use crate::{
     text::{display_cols, take_display_cols},
 };
 
-use super::SemanticStatus;
-
 /// The one activity frame vocabulary (D6) — re-exported under the progress
 /// name so an indeterminate bar and a spinner can never drift apart.
 pub use crate::style::SPINNER_BRAILLE_FRAMES as DEFAULT_PROGRESS_FRAMES;
@@ -160,18 +158,6 @@ impl ProgressStatus {
             Self::Paused | Self::Cancelled => Role::TextMuted,
         }
     }
-
-    /// Shared lifecycle projection used by status recipes.
-    #[must_use]
-    pub const fn semantic(self) -> SemanticStatus {
-        match self {
-            Self::Running => SemanticStatus::Running,
-            Self::Paused | Self::Cancelled => SemanticStatus::Paused,
-            Self::Buffering => SemanticStatus::Waiting,
-            Self::Complete => SemanticStatus::Success,
-            Self::Failed => SemanticStatus::Failed,
-        }
-    }
 }
 
 /// Visual recipe.
@@ -195,15 +181,6 @@ impl ProgressRecipe {
             Self::Compact => "compact",
             Self::Detailed => "detailed",
             Self::MultiLine => "multi-line",
-        }
-    }
-
-    /// Preferred height.
-    #[must_use]
-    pub const fn preferred_height(self) -> u16 {
-        match self {
-            Self::Compact | Self::Detailed => 1,
-            Self::MultiLine => 3,
         }
     }
 }
@@ -341,12 +318,6 @@ impl ProgressBarState {
         }
     }
 
-    /// Status.
-    #[must_use]
-    pub const fn status(&self) -> ProgressStatus {
-        self.status
-    }
-
     /// Generation (for host dirty checks).
     #[must_use]
     pub const fn generation(&self) -> u64 {
@@ -419,21 +390,6 @@ impl ProgressBarState {
         self.total = total.max(0.0);
         self.bump();
     }
-    /// Status.
-    pub fn set_status(&mut self, status: ProgressStatus) {
-        self.status = status;
-        if matches!(status, ProgressStatus::Complete) && self.total > 0.0 {
-            self.value = self.total;
-        }
-        self.bump();
-    }
-
-    /// Phase.
-    pub fn set_phase(&mut self, phase: impl Into<String>) {
-        self.phase = phase.into();
-        self.bump();
-    }
-
     /// Label.
     pub fn set_label(&mut self, label: impl Into<String>) {
         self.label = label.into();
@@ -466,33 +422,10 @@ impl ProgressBarState {
         self.active = on;
     }
 
-    /// Visible.
-    pub fn set_visible(&mut self, on: bool) {
-        self.visible = on;
-    }
-
     /// Visual recipe (compact / detailed / multi-line).
     pub fn set_recipe(&mut self, recipe: ProgressRecipe) {
         self.recipe = recipe;
         self.bump();
-    }
-
-    /// Current completed amount.
-    #[must_use]
-    pub const fn value(&self) -> f64 {
-        self.value
-    }
-
-    /// Total amount (`0` means indeterminate).
-    #[must_use]
-    pub const fn total(&self) -> f64 {
-        self.total
-    }
-
-    /// Phase name (e.g. compile step).
-    #[must_use]
-    pub fn phase(&self) -> &str {
-        &self.phase
     }
 
     /// Format percentage string — the reference `{:>4}` column.
@@ -637,29 +570,6 @@ impl<'a> ProgressBar<'a> {
         }
     }
 
-    /// From state + tick (preferred for task/transfer).
-    ///
-    /// Strings owned by the state cannot be borrowed here; use
-    /// [`Self::paint_state`] when the bar must carry its label, phase, and
-    /// meta line.
-    #[must_use]
-    pub fn from_state(
-        state: &mut ProgressBarState,
-        system: &'a DesignSystem,
-        tick: FrameTick,
-        motion: MotionPolicy,
-    ) -> Self {
-        Self {
-            kind: state.kind(tick, motion),
-            label: None,
-            system,
-            recipe: state.recipe,
-            status: state.status,
-            phase: None,
-            meta: None,
-        }
-    }
-
     /// Optional visible label.
     #[must_use]
     pub const fn label(mut self, label: &'a str) -> Self {
@@ -678,13 +588,6 @@ impl<'a> ProgressBar<'a> {
     #[must_use]
     pub const fn status(mut self, status: ProgressStatus) -> Self {
         self.status = status;
-        self
-    }
-
-    /// Phase label (detailed meta).
-    #[must_use]
-    pub const fn phase(mut self, phase: &'a str) -> Self {
-        self.phase = Some(phase);
         self
     }
 

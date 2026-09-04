@@ -73,12 +73,6 @@ impl<'a> Icon<'a> {
         self
     }
 
-    /// Gap between glyph and label (default 1).
-    #[must_use]
-    pub const fn gap(mut self, cols: u16) -> Self {
-        self.gap = cols;
-        self
-    }
     /// Resolved cells under the current design-system glyph profile.
     #[must_use]
     pub fn resolved(&self) -> GlyphResolved {

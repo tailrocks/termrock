@@ -177,18 +177,6 @@ impl<Id> NavItem<Id> {
         }
     }
 
-    /// Separator (id still required for list identity).
-    #[must_use]
-    pub fn separator(id: Id) -> Self {
-        Self {
-            kind: NavItemKind::Separator,
-            enabled: false,
-            has_children: false,
-            label: String::new(),
-            ..Self::new(id, "")
-        }
-    }
-
     /// Icon.
     #[must_use]
     pub fn icon(mut self, icon: impl Into<String>) -> Self {
@@ -915,15 +903,6 @@ impl<Id> SidebarState<Id> {
     #[must_use]
     pub const fn presentation(&self) -> SidebarPresentation {
         self.presentation
-    }
-
-    /// Cursor in projection.
-    #[must_use]
-    pub fn cursor_index_in(&self, items: &[NavItem<Id>]) -> usize
-    where
-        Id: Clone + PartialEq,
-    {
-        self.nav.cursor_index_in(items)
     }
 
     /// Focus.

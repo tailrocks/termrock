@@ -125,12 +125,6 @@ impl MatchRange {
         self.end <= self.start
     }
 
-    /// Byte length.
-    #[must_use]
-    pub const fn len(self) -> usize {
-        self.end.saturating_sub(self.start)
-    }
-
     /// Clamp to `source` length and ensure `start <= end`.
     #[must_use]
     pub fn clamp_to(self, source: &str) -> Self {
@@ -260,14 +254,6 @@ impl MatchRanges {
     pub fn from_ranges(iter: impl IntoIterator<Item = MatchRange>) -> Self {
         Self {
             ranges: iter.into_iter().collect(),
-        }
-    }
-
-    /// Single range convenience.
-    #[must_use]
-    pub fn single(range: MatchRange) -> Self {
-        Self {
-            ranges: vec![range],
         }
     }
 
@@ -485,19 +471,6 @@ impl<'a> HighlightedText<'a> {
     pub const fn truncate(mut self, policy: MatchTruncate) -> Self {
         self.truncate = policy;
         self
-    }
-
-    /// Focused original range index (for KeepFocusedMatch).
-    #[must_use]
-    pub const fn focused_index(mut self, index: Option<usize>) -> Self {
-        self.focused_index = index;
-        self
-    }
-
-    /// Original source (copy / semantics).
-    #[must_use]
-    pub const fn source(&self) -> &'a str {
-        self.source
     }
 
     /// Full plain source for clipboard.

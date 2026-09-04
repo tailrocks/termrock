@@ -268,13 +268,6 @@ impl MessageEntry {
         Self::new(id, MessageKind::Status, [text.into()])
     }
 
-    /// Revision.
-    #[must_use]
-    pub const fn revision(mut self, r: u64) -> Self {
-        self.revision = r;
-        self
-    }
-
     /// Actor.
     #[must_use]
     pub fn actor(mut self, a: MessageActor) -> Self {
@@ -328,13 +321,6 @@ impl MessageEntry {
     #[must_use]
     pub fn actions(mut self, a: Vec<MessageAction>) -> Self {
         self.actions = a;
-        self
-    }
-
-    /// Enabled.
-    #[must_use]
-    pub const fn enabled(mut self, on: bool) -> Self {
-        self.enabled = on;
         self
     }
 

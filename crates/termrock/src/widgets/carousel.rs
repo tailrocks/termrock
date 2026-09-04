@@ -127,21 +127,6 @@ impl CarouselState {
         self.elapsed_ms = 0;
     }
 
-    /// Current index.
-    #[must_use]
-    pub const fn index(&self) -> usize {
-        self.index
-    }
-
-    /// Clamp index to slide count.
-    pub fn clamp_to(&mut self, n: usize) {
-        if n == 0 {
-            self.index = 0;
-        } else {
-            self.index = self.index.min(n - 1);
-        }
-    }
-
     /// Go to index.
     pub fn go_to(&mut self, i: usize, slides: &[CarouselSlide]) -> CarouselOutcome {
         if slides.is_empty() {

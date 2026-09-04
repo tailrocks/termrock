@@ -141,25 +141,6 @@ impl<'a, Id> ListRow<'a, Id> {
         }
     }
 
-    /// Creates a non-interactive separator row.
-    #[must_use]
-    pub fn separator(id: Id, label: Line<'a>) -> Self {
-        Self {
-            id,
-            label,
-            leading: None,
-            secondary: None,
-            status: None,
-            badge: None,
-            shortcut: None,
-            actions: None,
-            custom: None,
-            role: RowRole::Separator,
-            enabled: true,
-            loading: false,
-        }
-    }
-
     /// Creates a group header (skipped by selection movement).
     #[must_use]
     pub fn group_header(id: Id, label: Line<'a>) -> Self {
@@ -364,11 +345,6 @@ impl<Id> ListState<Id> {
     #[must_use]
     pub fn typeahead_buffer(&self) -> &str {
         self.collection.roving().typeahead_buffer()
-    }
-
-    /// Clear typeahead.
-    pub fn clear_typeahead(&mut self) {
-        self.collection.clear_typeahead();
     }
 
     /// Virtualization: painted window of a larger universe.
@@ -1014,18 +990,6 @@ impl<'a, Id> List<'a, Id> {
     pub fn empty_message(mut self, message: Line<'a>) -> Self {
         self.empty_message = Some(message);
         self
-    }
-
-    /// Theme borrowed from design tokens.
-    #[must_use]
-    pub const fn theme(&self) -> &crate::style::RolePalette {
-        self.tokens.palette()
-    }
-
-    /// Design tokens used for recipes.
-    #[must_use]
-    pub const fn tokens(&self) -> &DesignSystem {
-        self.tokens
     }
 }
 

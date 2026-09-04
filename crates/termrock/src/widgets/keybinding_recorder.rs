@@ -273,12 +273,6 @@ impl KeybindingRecorderState {
         self
     }
 
-    /// Allow empty commit.
-    #[must_use]
-    pub const fn with_allow_empty(mut self, on: bool) -> Self {
-        self.allow_empty = on;
-        self
-    }
     /// Load occupied chords from a [`Keymap`], skipping `skip` action.
     pub fn load_occupied_from_keymap<A>(
         &mut self,
@@ -318,17 +312,6 @@ impl KeybindingRecorderState {
     #[must_use]
     pub fn value(&self) -> &[KeyChord] {
         &self.value
-    }
-    /// Draft while recording (else empty).
-    #[must_use]
-    pub fn draft(&self) -> &[KeyChord] {
-        &self.draft
-    }
-
-    /// Mode.
-    #[must_use]
-    pub const fn mode(&self) -> KeybindingRecorderMode {
-        self.mode
     }
 
     /// Recording?

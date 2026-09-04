@@ -35,7 +35,7 @@ use crate::{
     text::{display_cols, display_cols_slice_into, take_display_cols},
 };
 
-use super::{ComposedRow, StickyRegion, Virtualizer, row_chrome::RowChrome};
+use super::{ComposedRow, Virtualizer, row_chrome::RowChrome};
 
 /// Default overscan when using virtualized tree windows.
 pub const TREE_DEFAULT_OVERSCAN: u16 = 4;
@@ -228,14 +228,6 @@ impl<'a, Id> TreeNode<'a, Id> {
     #[must_use]
     pub fn error(mut self) -> Self {
         self.status = TreeNodeStatus::Error;
-        self
-    }
-
-    /// Lazy unloaded children.
-    #[must_use]
-    pub fn lazy(mut self) -> Self {
-        self.status = TreeNodeStatus::Lazy;
-        self.branch = true;
         self
     }
 
@@ -488,19 +480,6 @@ impl<Id> TreeState<Id> {
         self.h_offset = offset;
     }
 
-    /// Scrolls the label region while disclosure and indentation remain pinned.
-    pub fn scroll_horizontal(&mut self, delta: i16) -> bool {
-        let max = self.content_width.saturating_sub(self.viewport_width);
-        let next = if delta >= 0 {
-            self.h_offset.saturating_add(delta as u16).min(max)
-        } else {
-            self.h_offset.saturating_sub((-delta) as u16)
-        };
-        let changed = next != self.h_offset;
-        self.h_offset = next;
-        changed
-    }
-
     /// Selects the supplied stable identity and commits it as semantic selection.
     pub fn select(&mut self, selected: Option<Id>)
     where
@@ -515,23 +494,6 @@ impl<Id> TreeState<Id> {
     /// Enables ordered multi-selection with an empty selection.
     pub fn enable_multi_select(&mut self) {
         self.selection.get_or_insert_with(SelectionModel::multiple);
-    }
-
-    /// Typeahead buffer (roving).
-    #[must_use]
-    pub fn typeahead_buffer(&self) -> &str {
-        self.collection.roving().typeahead_buffer()
-    }
-
-    /// Clear typeahead.
-    pub fn clear_typeahead(&mut self) {
-        self.collection.clear_typeahead();
-    }
-
-    /// Filter query (`/` search chrome).
-    #[must_use]
-    pub fn filter_query(&self) -> Option<&str> {
-        self.filter_query.as_deref()
     }
 
     /// Set filter query (empty clears).
@@ -557,16 +519,6 @@ impl<Id> TreeState<Id> {
     #[must_use]
     pub const fn virtualizer(&self) -> &Virtualizer {
         &self.virt
-    }
-
-    /// Mutable virtualizer.
-    pub fn virtualizer_mut(&mut self) -> &mut Virtualizer {
-        &mut self.virt
-    }
-
-    /// Sticky region for virtualized trees (headers).
-    pub fn set_sticky(&mut self, sticky: StickyRegion) {
-        self.virt.set_sticky(sticky);
     }
 
     /// Capture index anchor for preserve-across-filter.
@@ -1172,12 +1124,6 @@ impl<'a, Id> Tree<'a, Id> {
     pub const fn spinner_frame(mut self, frame: usize) -> Self {
         self.spinner_frame = frame;
         self
-    }
-
-    /// Design tokens used for recipes and glyphs.
-    #[must_use]
-    pub const fn tokens(&self) -> &DesignSystem {
-        self.tokens
     }
 }
 

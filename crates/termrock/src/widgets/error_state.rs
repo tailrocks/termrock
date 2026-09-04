@@ -460,11 +460,6 @@ impl ErrorStateState {
         self.focus
     }
 
-    /// Set focus.
-    pub fn set_focus(&mut self, focus: ErrorFocus) {
-        self.focus = focus;
-    }
-
     /// Prefer retry when present.
     pub fn focus_retry(&mut self) {
         self.focus = ErrorFocus::Retry;
@@ -567,29 +562,11 @@ impl<'a> ErrorState<'a> {
         self
     }
 
-    /// Inline strip.
-    #[must_use]
-    pub const fn inline(mut self) -> Self {
-        self.recipe = ErrorRecipe::Inline;
-        self
-    }
-
     /// Dialog recipe.
     #[must_use]
     pub const fn dialog(mut self) -> Self {
         self.recipe = ErrorRecipe::Dialog;
         self
-    }
-    /// Summary text.
-    #[must_use]
-    pub const fn summary(self) -> &'a str {
-        self.summary
-    }
-
-    /// Kind.
-    #[must_use]
-    pub const fn error_kind(self) -> ErrorKind {
-        self.kind
     }
     fn use_ascii(&self) -> bool {
         false

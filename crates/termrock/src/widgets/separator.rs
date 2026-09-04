@@ -133,13 +133,6 @@ impl<'a> Separator<'a> {
         }
     }
 
-    /// Orientation.
-    #[must_use]
-    pub const fn orientation(mut self, orientation: SeparatorOrientation) -> Self {
-        self.orientation = orientation;
-        self
-    }
-
     /// Variant recipe.
     #[must_use]
     pub const fn variant(mut self, variant: SeparatorVariant) -> Self {
@@ -150,32 +143,11 @@ impl<'a> Separator<'a> {
         self
     }
 
-    /// Quiet recipe.
-    #[must_use]
-    pub const fn quiet(mut self) -> Self {
-        self.variant = SeparatorVariant::Quiet;
-        self
-    }
-
-    /// Strong recipe.
-    #[must_use]
-    pub const fn strong(mut self) -> Self {
-        self.variant = SeparatorVariant::Strong;
-        self
-    }
-
     /// Section-break recipe (band thickness).
     #[must_use]
     pub const fn section_break(mut self) -> Self {
         self.variant = SeparatorVariant::SectionBreak;
         self.thickness = SeparatorThickness::Band;
-        self
-    }
-
-    /// Focus-zone boundary recipe.
-    #[must_use]
-    pub const fn focus_zone(mut self) -> Self {
-        self.variant = SeparatorVariant::FocusZone;
         self
     }
 

@@ -31,17 +31,6 @@ pub enum ActivationOutcome {
     Pressed,
 }
 
-impl ActivationOutcome {
-    /// Wraps in the standard [`crate::interaction::EventResult`] envelope.
-    #[must_use]
-    pub fn into_event_result(self) -> crate::interaction::EventResult<Self> {
-        match self {
-            Self::Ignored => crate::interaction::EventResult::ignored(),
-            other => crate::interaction::EventResult::emit(other),
-        }
-    }
-}
-
 /// Armed/loading/disabled activation model shared by Button and IconButton.
 ///
 /// **Input gate** is [`Self::set_accepts_input`] (host/scene ownership). Do not
@@ -411,13 +400,6 @@ impl<'a> Button<'a> {
         self.variant = ButtonVariant::Secondary;
         self
     }
-    /// Size / pad.
-    #[must_use]
-    pub const fn size(mut self, size: ButtonSize) -> Self {
-        self.size = size;
-        self
-    }
-
     /// Compact density.
     #[must_use]
     pub const fn compact(mut self) -> Self {
@@ -446,13 +428,6 @@ impl<'a> Button<'a> {
         self
     }
 
-    /// Accessible name (required for empty / icon-only labels).
-    #[must_use]
-    pub const fn accessible_label(mut self, label: &'a str) -> Self {
-        self.accessible_label = Some(label);
-        self
-    }
-
     /// ASCII chrome / loading fallback.
     #[must_use]
     /// Reduced-color paint (force non-color cues).
@@ -467,16 +442,6 @@ impl<'a> Button<'a> {
     #[must_use]
     pub const fn is_safe_default_focus(self) -> bool {
         !matches!(self.variant, ButtonVariant::Destructive)
-    }
-
-    /// Semantic name for a11y / HintBar (label or accessible_label).
-    #[must_use]
-    pub fn a11y_name(&self) -> &str {
-        if !self.label.is_empty() {
-            self.label
-        } else {
-            self.accessible_label.unwrap_or("")
-        }
     }
 
     /// Preferred width in cells (label + chrome + glyphs).
@@ -773,7 +738,7 @@ pub struct IconButtonParts {
 ///
 /// Visual width stays 1–2 cells (plus optional badge); pointer hit is expanded
 /// to at least [`ICON_BUTTON_MIN_HIT`] **without** stretching the painted glyph
-/// (slop pads empty cells). Hosts wire [`Self::help`] into [`crate::widgets::Tooltip`]
+/// (slop pads empty cells). Hosts wire [`Self::accessible_label`] into [`crate::widgets::Tooltip`]
 /// / HintBar; this widget does not steal focus for tooltips.
 ///
 /// Activation law is shared with [`Button`] via [`ActivationState`].
@@ -785,8 +750,6 @@ pub struct IconButton<'a> {
     /// When visual width cannot fit glyph, paint this text (1–2 cells ideal).
     text_fallback: Option<&'a str>,
     accessible_label: &'a str,
-    /// Tooltip / HintBar copy (defaults to accessible_label).
-    help: Option<&'a str>,
     system: &'a DesignSystem,
     variant: ButtonVariant,
     size: IconButtonSize,
@@ -811,7 +774,6 @@ impl<'a> IconButton<'a> {
             ascii_glyph: None,
             text_fallback: None,
             accessible_label,
-            help: None,
             system,
             variant: ButtonVariant::Quiet,
             size: IconButtonSize::Toolbar,
@@ -822,53 +784,10 @@ impl<'a> IconButton<'a> {
         }
     }
 
-    /// Names the plane this icon button sits on (junie resolvers take the
-    /// container, so a toolbar on a panel is not pinned to the surface).
-    #[must_use]
-    pub const fn container(mut self, container: ratatui_core::style::Color) -> Self {
-        self.container = Some(container);
-        self
-    }
-
-    /// Destructive recipe (never safe default focus for dialogs).
-    #[must_use]
-    pub const fn destructive(mut self) -> Self {
-        self.variant = ButtonVariant::Destructive;
-        self
-    }
-
-    /// Quiet toolbar recipe (default).
-    #[must_use]
-    pub const fn quiet(mut self) -> Self {
-        self.variant = ButtonVariant::Quiet;
-        self
-    }
-
-    /// Size / density.
-    #[must_use]
-    pub const fn size(mut self, size: IconButtonSize) -> Self {
-        self.size = size;
-        self
-    }
-
-    /// Compact data-row recipe.
-    #[must_use]
-    pub const fn compact(mut self) -> Self {
-        self.size = IconButtonSize::Compact;
-        self
-    }
-
     /// ASCII glyph override (also forced when design system is ASCII).
     #[must_use]
     pub const fn ascii_glyph(mut self, glyph: &'a str) -> Self {
         self.ascii_glyph = Some(glyph);
-        self
-    }
-
-    /// Tooltip / help string (HintBar / [`crate::widgets::Tooltip`] host content).
-    #[must_use]
-    pub const fn help(mut self, help: &'a str) -> Self {
-        self.help = Some(help);
         self
     }
 
@@ -892,22 +811,10 @@ impl<'a> IconButton<'a> {
         self.accessible_label
     }
 
-    /// Help / tooltip text (help or a11y name).
-    #[must_use]
-    pub fn help_text(&self) -> &'a str {
-        self.help.unwrap_or(self.accessible_label)
-    }
-
     /// Whether label contract is satisfied.
     #[must_use]
     pub const fn has_accessible_label(&self) -> bool {
         !self.accessible_label.is_empty()
-    }
-
-    /// Safe default focus (destructive → false).
-    #[must_use]
-    pub const fn is_safe_default_focus(self) -> bool {
-        !matches!(self.variant, ButtonVariant::Destructive)
     }
     fn mono(&self) -> bool {
         self.colorless
@@ -980,23 +887,6 @@ impl IconButtonState {
     /// Toggle pressed visual.
     pub const fn set_pressed(&mut self, on: bool) {
         self.pressed = on;
-    }
-
-    /// Compat: region = hit (older hosts mirror [`ActivationState`]).
-    #[must_use]
-    pub const fn region(&self) -> Option<Rect> {
-        self.hit
-    }
-
-    /// Key routing.
-    pub fn handle_key(&mut self, key: KeyEvent) -> ActivationOutcome {
-        // No auto-toggle: the caller owns the domain value.
-        self.activation.handle_key(key)
-    }
-
-    /// Intent routing.
-    pub fn handle_intent(&mut self, intent: crate::interaction::UiIntent) -> ActivationOutcome {
-        self.activation.handle_intent(intent)
     }
 
     /// Mouse against **hit** region (slop-aware).

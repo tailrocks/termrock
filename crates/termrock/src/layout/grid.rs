@@ -52,12 +52,6 @@ pub enum TrackSize {
 }
 
 impl TrackSize {
-    /// Fixed track.
-    #[must_use]
-    pub const fn fixed(n: u16) -> Self {
-        Self::Fixed(n)
-    }
-
     /// Host-measured intrinsic size (alias of [`Self::Fixed`]; documents intent).
     #[must_use]
     pub const fn content(n: u16) -> Self {
@@ -254,23 +248,6 @@ pub struct GridLayout {
 }
 
 impl GridLayout {
-    /// Cell count.
-    #[must_use]
-    pub fn len(&self) -> usize {
-        self.cells.len()
-    }
-
-    /// Cell by item index.
-    #[must_use]
-    pub fn get(&self, index: usize) -> Option<Rect> {
-        self.cells.get(index).copied()
-    }
-
-    /// Iterate cells with stable indices.
-    pub fn iter(&self) -> impl Iterator<Item = (usize, Rect)> + '_ {
-        self.cells.iter().copied().enumerate()
-    }
-
     /// Hit-test: first cell containing the point.
     #[must_use]
     pub fn hit_cell(&self, col: u16, row: u16) -> Option<usize> {
@@ -367,38 +344,10 @@ impl Grid {
         self
     }
 
-    /// Column tracks.
-    #[must_use]
-    pub fn tracks(mut self, columns: impl IntoIterator<Item = TrackSize>) -> Self {
-        self.spec = self.spec.columns(columns);
-        self
-    }
-
-    /// Row tracks.
-    #[must_use]
-    pub fn row_tracks(mut self, rows: impl IntoIterator<Item = TrackSize>) -> Self {
-        self.spec = self.spec.rows(rows);
-        self
-    }
-
     /// Auto row height for auto-generated rows.
     #[must_use]
     pub fn auto_row(mut self, track: TrackSize) -> Self {
         self.spec = self.spec.auto_row(track);
-        self
-    }
-
-    /// Padding.
-    #[must_use]
-    pub fn padding(mut self, pad_x: u16, pad_y: u16) -> Self {
-        self.spec = self.spec.padding(pad_x, pad_y);
-        self
-    }
-
-    /// Overflow policy.
-    #[must_use]
-    pub fn overflow(mut self, policy: OverflowPolicy) -> Self {
-        self.spec = self.spec.overflow(policy);
         self
     }
 

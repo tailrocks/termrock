@@ -565,33 +565,16 @@ impl<Id: Clone + PartialEq> HistoryPickerState<Id> {
         self.redaction
     }
 
-    /// Presentation.
-    #[must_use]
-    pub const fn presentation(&self) -> HistoryPickerPresentation {
-        self.presentation
-    }
-
     /// Query.
     #[must_use]
     pub fn query_text(&self) -> &str {
         self.query.value()
     }
 
-    /// Query mut.
-    pub const fn query_mut(&mut self) -> &mut TextInputState {
-        &mut self.query
-    }
-
     /// Cursor.
     #[must_use]
     pub fn cursor_index(&self) -> usize {
         self.collection.active().copied().unwrap_or(0)
-    }
-
-    /// Hits after paint.
-    #[must_use]
-    pub fn hits(&self) -> &[(usize, Rect)] {
-        &self.hits
     }
 
     fn live(&self) -> bool {
@@ -912,20 +895,6 @@ impl<'a, Id> HistoryPicker<'a, Id> {
             footer_hint: None,
             empty_message: "No history yet",
         }
-    }
-
-    /// Title.
-    #[must_use]
-    pub const fn title(mut self, t: &'a str) -> Self {
-        self.title = t;
-        self
-    }
-
-    /// Footer.
-    #[must_use]
-    pub const fn footer_hint(mut self, h: Option<&'a str>) -> Self {
-        self.footer_hint = h;
-        self
     }
 
     /// Paint.

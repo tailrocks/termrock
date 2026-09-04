@@ -28,7 +28,7 @@ use crate::{
     text::take_display_cols,
     widgets::tag_chip::{
         Tag, TagOutcome, TagState, TokenItem, TokenPart, TokenParts, TokenStatus, TokenStrip,
-        TokenStripLayout, TokenStripOutcome, TokenStripState, remove_label,
+        TokenStripLayout, TokenStripOutcome, TokenStripState,
     },
 };
 
@@ -250,46 +250,12 @@ impl AttachmentItem {
         }
     }
 
-    /// Image attachment.
-    #[must_use]
-    pub fn image(id: impl Into<String>, name: impl Into<String>) -> Self {
-        Self {
-            id: id.into(),
-            kind: AttachmentType::Image,
-            name: name.into(),
-            meta: None,
-            bytes: None,
-            line_count: None,
-            status: AttachmentStatus::Ready,
-            validation: None,
-            sensitive: false,
-            removable: true,
-        }
-    }
-
     /// URL attachment.
     #[must_use]
     pub fn url(id: impl Into<String>, name: impl Into<String>) -> Self {
         Self {
             id: id.into(),
             kind: AttachmentType::Url,
-            name: name.into(),
-            meta: None,
-            bytes: None,
-            line_count: None,
-            status: AttachmentStatus::Ready,
-            validation: None,
-            sensitive: false,
-            removable: true,
-        }
-    }
-
-    /// Selected code reference.
-    #[must_use]
-    pub fn code(id: impl Into<String>, name: impl Into<String>) -> Self {
-        Self {
-            id: id.into(),
-            kind: AttachmentType::Code,
             name: name.into(),
             meta: None,
             bytes: None,
@@ -315,13 +281,6 @@ impl AttachmentItem {
         self
     }
 
-    /// Line count.
-    #[must_use]
-    pub const fn line_count(mut self, n: u32) -> Self {
-        self.line_count = Some(n);
-        self
-    }
-
     /// Status.
     #[must_use]
     pub const fn status(mut self, status: AttachmentStatus) -> Self {
@@ -340,13 +299,6 @@ impl AttachmentItem {
     #[must_use]
     pub const fn sensitive(mut self, on: bool) -> Self {
         self.sensitive = on;
-        self
-    }
-
-    /// Removable.
-    #[must_use]
-    pub const fn removable(mut self, on: bool) -> Self {
-        self.removable = on;
         self
     }
 
@@ -500,13 +452,6 @@ impl PastePayload {
     #[must_use]
     pub const fn sensitive(mut self, on: bool) -> Self {
         self.sensitive = on;
-        self
-    }
-
-    /// Validation.
-    #[must_use]
-    pub fn validation(mut self, msg: impl Into<String>) -> Self {
-        self.validation = Some(msg.into());
         self
     }
 
@@ -737,31 +682,6 @@ impl<'a> AttachmentChip<'a> {
         Self { item, system }
     }
 
-    /// ASCII glyphs.
-    #[must_use]
-    /// Natural width.
-    pub fn measure_width(&self) -> u16 {
-        let label = self.item.display_label(false);
-        let tag = if self.item.removable {
-            Tag::removable_tag(self.item.id.as_str(), label.as_str(), self.system)
-        } else {
-            Tag::new(self.item.id.as_str(), label.as_str(), self.system)
-        }
-        .status(self.item.status.token_status());
-        tag.measure_width()
-    }
-
-    /// Semantic remove label (uses safe name).
-    #[must_use]
-    pub fn remove_action_label(&self) -> String {
-        let name = if self.item.sensitive {
-            redacted_name(&self.item.name)
-        } else {
-            self.item.name.as_str()
-        };
-        remove_label(name)
-    }
-
     /// Paint into area.
     pub fn paint(
         &self,
@@ -881,11 +801,6 @@ impl PasteChipState {
         // Unfocusing keeps the popover expanded; only the Esc path collapses it.
         self.tag.set_focused(on);
     }
-
-    /// Collapse.
-    pub const fn collapse(&mut self) {
-        self.expanded = false;
-    }
 }
 
 /// Large-paste chip (collapsed summary + expand/copy outcomes).
@@ -900,20 +815,6 @@ impl<'a> PasteChip<'a> {
     #[must_use]
     pub const fn new(paste: &'a PastePayload, system: &'a DesignSystem) -> Self {
         Self { paste, system }
-    }
-
-    /// ASCII.
-    #[must_use]
-    /// Measure width.
-    pub fn measure_width(&self, expanded: bool) -> u16 {
-        let label = self.paste.display_label(false, expanded);
-        let tag = if self.paste.removable {
-            Tag::removable_tag(self.paste.id.as_str(), label.as_str(), self.system)
-        } else {
-            Tag::new(self.paste.id.as_str(), label.as_str(), self.system)
-        }
-        .status(self.paste.status.token_status());
-        tag.measure_width()
     }
 
     /// Paint chip chrome (expanded body is host popover or [`paint_expanded_preview`]).

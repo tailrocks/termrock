@@ -672,17 +672,6 @@ impl<RowId: Ord> Default for SelectionModel<RowId> {
 }
 
 impl<RowId: Ord + Clone> SelectionModel<RowId> {
-    /// Single-row mode.
-    #[must_use]
-    pub fn row() -> Self {
-        Self {
-            mode: SelectionMode::Row,
-            rows: crate::interaction::SelectionModel::single(),
-            cells: crate::interaction::CellSelectionModel::new(),
-            ..Self::default()
-        }
-    }
-
     /// Multi-row mode.
     #[must_use]
     pub fn multi_row() -> Self {
@@ -736,11 +725,6 @@ impl<RowId: Ord + Clone> SelectionModel<RowId> {
     pub fn select_row(&mut self, id: RowId) {
         let _ = self.rows.select(id);
     }
-    /// Drop row selection not in `still_valid`.
-    pub fn reconcile_rows(&mut self, still_valid: &[RowId]) {
-        let _ = self.rows.reconcile(still_valid);
-    }
-
     /// Clear selection sets (keeps focus cursor).
     pub fn clear_selection(&mut self) {
         let _ = self.rows.clear();
@@ -776,11 +760,6 @@ impl<RowId: Ord + Clone> SelectionModel<RowId> {
 
 /// Compatibility: field-like access for older code using `selected_rows` as set.
 impl<RowId: Ord + Clone> SelectionModel<RowId> {
-    /// Insert row id into multi selection (BTree-style).
-    pub fn insert_row(&mut self, id: RowId) {
-        let _ = self.rows.select(id);
-    }
-
     /// Remove row id.
     pub fn remove_row(&mut self, id: &RowId) {
         let _ = self.rows.deselect(id);

@@ -302,12 +302,6 @@ impl ScrollAreaState {
     pub const fn new_content(&self) -> NewContentIndicator {
         self.indicator
     }
-    #[must_use]
-    /// Current anchor, if any.
-    pub const fn anchor(&self) -> Option<&ScrollAnchor> {
-        self.anchor.as_ref()
-    }
-
     /// Visible vertical half-open range `[start, end)` in content rows.
     #[must_use]
     pub fn visible_range_y(&self) -> VisibleRange {
@@ -612,7 +606,6 @@ impl ScrollAreaState {
 pub struct ScrollArea<'a> {
     tokens: &'a DesignSystem,
     bar: ScrollBarVisibility,
-    show_new_content: bool,
     focused: bool,
     hovered: bool,
 }
@@ -624,17 +617,9 @@ impl<'a> ScrollArea<'a> {
         Self {
             tokens,
             bar: ScrollBarVisibility::Auto,
-            show_new_content: true,
             focused: false,
             hovered: false,
         }
-    }
-
-    /// Whether to paint new-content indicator when paused+unseen.
-    #[must_use]
-    pub const fn show_new_content(mut self, show: bool) -> Self {
-        self.show_new_content = show;
-        self
     }
 
     /// Keyboard owner: the thumb uses the primary rung.

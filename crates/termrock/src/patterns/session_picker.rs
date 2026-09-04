@@ -603,12 +603,6 @@ impl SessionPickerState {
         }
     }
 
-    /// Set search query and refilter (host or tests).
-    pub fn set_query(&mut self, q: impl Into<String>) {
-        self.query = q.into();
-        self.refilter();
-    }
-
     /// Replace sessions and refilter.
     pub fn set_sessions(&mut self, sessions: Vec<SessionEntry>) {
         let keep = self.current_id();

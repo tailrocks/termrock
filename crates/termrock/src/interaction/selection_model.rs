@@ -187,34 +187,6 @@ impl<Id: Clone + PartialEq> SelectionModel<Id> {
     pub fn checked(&self) -> &[Id] {
         self.selected()
     }
-    /// Application-controlled replace of the entire set.
-    pub fn replace(&mut self, ids: impl IntoIterator<Item = Id>) -> SelectionDelta<Id> {
-        if matches!(self.kind, SelectionKind::None) {
-            return SelectionDelta::Cleared;
-        }
-        self.selected.clear();
-        for id in ids {
-            if matches!(self.kind, SelectionKind::Single) {
-                self.selected.clear();
-                self.selected.push(id);
-                break;
-            }
-            if !self.selected.iter().any(|s| s == &id) {
-                self.selected.push(id);
-            }
-        }
-        if self.selected.is_empty() {
-            self.anchor = None;
-            SelectionDelta::Cleared
-        } else {
-            if self.anchor.is_none() {
-                self.anchor = self.selected.first().cloned();
-            }
-            SelectionDelta::Replaced {
-                selected: self.selected.clone(),
-            }
-        }
-    }
 
     /// Selects one id (single replaces; multi/range adds).
     pub fn select(&mut self, id: Id) -> SelectionDelta<Id> {

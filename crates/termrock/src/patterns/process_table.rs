@@ -181,20 +181,6 @@ impl ProcessSortKey {
         }
     }
 
-    /// Header label.
-    #[must_use]
-    pub const fn header(self) -> &'static str {
-        match self {
-            Self::Pid => "PID",
-            Self::Cpu => "CPU%",
-            Self::Memory => "MEM",
-            Self::Elapsed => "TIME",
-            Self::Command => "COMMAND",
-            Self::User => "USER",
-            Self::Status => "S",
-        }
-    }
-
     /// Cycle for `s` chord.
     #[must_use]
     pub const fn next(self) -> Self {
@@ -206,21 +192,6 @@ impl ProcessSortKey {
             Self::Command => Self::User,
             Self::User => Self::Status,
             Self::Status => Self::Cpu,
-        }
-    }
-
-    /// Parse column id.
-    #[must_use]
-    pub fn from_id(id: &str) -> Option<Self> {
-        match id {
-            "pid" => Some(Self::Pid),
-            "cpu" => Some(Self::Cpu),
-            "mem" => Some(Self::Memory),
-            "time" => Some(Self::Elapsed),
-            "cmd" => Some(Self::Command),
-            "user" => Some(Self::User),
-            "stat" => Some(Self::Status),
-            _ => None,
         }
     }
 }
@@ -676,14 +647,6 @@ impl ProcessTableState {
         }
     }
 
-    /// With initial selection.
-    #[must_use]
-    pub fn with_selected(key: Option<ProcessKey>) -> Self {
-        let mut s = Self::new();
-        s.selected = key;
-        s
-    }
-
     /// Host input gate.
     pub fn set_accepts_input(&mut self, on: bool) {
         self.accepts_input = on;
@@ -698,16 +661,6 @@ impl ProcessTableState {
     /// Select key.
     pub fn select(&mut self, key: Option<ProcessKey>) {
         self.selected = key;
-    }
-
-    /// Multi-check membership.
-    #[must_use]
-    pub fn checked(&self) -> &[ProcessKey] {
-        &self.checked
-    }
-    /// Enable multi-select.
-    pub fn enable_multi_select(&mut self) {
-        self.multi = true;
     }
     /// Reconcile selection after host refresh (drops dead keys; keeps stable matches).
     pub fn reconcile(&mut self, live: &[ProcessRow<'_>]) {

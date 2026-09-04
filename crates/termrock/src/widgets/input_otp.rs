@@ -327,13 +327,6 @@ impl<'a> InputOtp<'a> {
         self
     }
 
-    /// Preferred width for `n` slots.
-    #[must_use]
-    pub fn preferred_width(n: usize) -> u16 {
-        // Reserved prompt + each slot: [X] + gap = 4, last no gap.
-        (n as u16).saturating_mul(4).max(4)
-    }
-
     /// Paint.
     pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &InputOtpState) {
         if area.is_empty() {

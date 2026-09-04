@@ -566,13 +566,6 @@ impl<'a, Id> Callout<'a, Id> {
         self
     }
 
-    /// Details (shown when expanded / always in Section when set).
-    #[must_use]
-    pub const fn details(mut self, text: &'a str) -> Self {
-        self.details = Some(text);
-        self
-    }
-
     /// Source / provenance.
     #[must_use]
     pub const fn source(mut self, text: &'a str) -> Self {
@@ -598,20 +591,6 @@ impl<'a, Id> Callout<'a, Id> {
     #[must_use]
     pub const fn section(mut self) -> Self {
         self.recipe = CalloutRecipe::Section;
-        self
-    }
-
-    /// Dismissible chrome.
-    #[must_use]
-    pub const fn dismissible(mut self, on: bool) -> Self {
-        self.dismissible = on;
-        self
-    }
-
-    /// Actions.
-    #[must_use]
-    pub const fn actions(mut self, actions: &'a [Action<'a, Id>]) -> Self {
-        self.actions = actions;
         self
     }
 
@@ -790,17 +769,6 @@ impl<Id> AlertState<Id> {
     pub fn set_enabled(&mut self, on: bool) {
         self.enabled = on;
     }
-
-    /// Action cursor (which action is highlighted).
-    pub fn set_action_cursor(&mut self, id: Option<Id>) {
-        self.action_cursor = id;
-    }
-
-    /// Borrow action cursor.
-    #[must_use]
-    pub fn action_cursor(&self) -> Option<&Id> {
-        self.action_cursor.as_ref()
-    }
 }
 
 impl<Id: Clone + PartialEq> AlertState<Id> {
@@ -869,35 +837,6 @@ impl<Id: Clone + PartialEq> AlertState<Id> {
                 AlertOutcome::Dismissed
             }
             Some(UiIntent::Activate | UiIntent::Submit) => AlertOutcome::Acknowledged,
-            _ => AlertOutcome::Ignored,
-        }
-    }
-
-    /// Intent routing with actions.
-    pub fn handle_intent_with(
-        &mut self,
-        intent: UiIntent,
-        actions: &[Action<'_, Id>],
-        dismissible: bool,
-    ) -> AlertOutcome<Id> {
-        if !self.visible || !self.enabled || !self.accepts_input || !self.focused {
-            return AlertOutcome::Ignored;
-        }
-        match intent {
-            UiIntent::Cancel | UiIntent::Close if dismissible => {
-                self.dismiss();
-                AlertOutcome::Dismissed
-            }
-            UiIntent::Activate | UiIntent::Submit => {
-                if let Some(id) = self.action_cursor.clone() {
-                    if actions.iter().any(|a| a.id == id && a.enabled) {
-                        return AlertOutcome::ActionActivated { id };
-                    }
-                }
-                AlertOutcome::Acknowledged
-            }
-            UiIntent::FocusNext => self.move_action(actions, 1),
-            UiIntent::FocusPrevious => self.move_action(actions, -1),
             _ => AlertOutcome::Ignored,
         }
     }
@@ -1057,29 +996,6 @@ impl<'a, Id> Alert<'a, Id> {
     pub const fn dismissible(mut self, on: bool) -> Self {
         self.dismissible = on;
         self
-    }
-
-    /// Actions.
-    #[must_use]
-    pub const fn actions(mut self, actions: &'a [Action<'a, Id>]) -> Self {
-        self.actions = actions;
-        self
-    }
-
-    /// Measure height.
-    #[must_use]
-    pub fn measure_height(&self, width: u16, state: &AlertState<Id>) -> u16 {
-        FeedbackContent {
-            title: self.title,
-            description: self.description,
-            details: self.details,
-            source: self.source,
-            tone: self.tone,
-            recipe: self.recipe,
-            dismissible: self.dismissible,
-            show_details: state.details_open && self.details.is_some(),
-        }
-        .measure_height(width, !self.actions.is_empty())
     }
 
     /// Paint.

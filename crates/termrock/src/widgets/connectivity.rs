@@ -333,19 +333,6 @@ impl ReconnectingState {
         self.phase
     }
 
-    /// Set phase.
-    pub fn set_phase(&mut self, phase: ConnectivityPhase) {
-        self.phase = phase;
-        if matches!(phase, ConnectivityPhase::Online) {
-            self.attempt = 0;
-            self.next_retry_in_secs = None;
-            self.banner_dismissed = false;
-        }
-        if matches!(phase, ConnectivityPhase::Reconnecting) && self.attempt == 0 {
-            self.attempt = 1;
-        }
-    }
-
     /// Mark disconnected and optionally start auto-retry presentation as reconnecting.
     pub fn mark_disconnected(&mut self) {
         self.phase = ConnectivityPhase::Disconnected;
@@ -442,28 +429,11 @@ impl ReconnectingState {
         self.presentation = p;
     }
 
-    /// Presentation.
-    #[must_use]
-    pub const fn presentation(&self) -> ConnectivityPresentation {
-        self.presentation
-    }
-
     /// Force ASCII glyphs.
     /// Banner dismissed?
     #[must_use]
     pub const fn banner_dismissed(&self) -> bool {
         self.banner_dismissed
-    }
-
-    /// Focus.
-    #[must_use]
-    pub const fn focus(&self) -> ConnectivityFocus {
-        self.focus
-    }
-
-    /// Set keyboard focus target for recovery actions.
-    pub fn set_focus(&mut self, f: ConnectivityFocus) {
-        self.focus = f;
     }
 
     // ── Formatters (StatusBar / NotificationCenter) ─────────────────────────
@@ -551,12 +521,6 @@ impl ReconnectingState {
             format!("last ok: {}d ago", delta / 86_400)
         };
         Some(text)
-    }
-
-    /// Shared status vocab.
-    #[must_use]
-    pub const fn semantic_status(&self) -> SemanticStatus {
-        self.phase.semantic_status()
     }
 
     /// Notification center item (dedup by target+phase).

@@ -18,7 +18,7 @@
 //! desktop settings panels.
 use ratatui_core::{
     buffer::Buffer,
-    layout::{Position, Rect},
+    layout::Rect,
     style::{Modifier, Style},
     widgets::StatefulWidget,
 };
@@ -58,15 +58,6 @@ pub enum FieldStatus<'a> {
 }
 
 impl<'a> FieldStatus<'a> {
-    /// Message text if any.
-    #[must_use]
-    pub const fn message(self) -> Option<&'a str> {
-        match self {
-            Self::None => None,
-            Self::Help(s) | Self::Warning(s) | Self::Error(s) | Self::Pending(s) => Some(s),
-        }
-    }
-
     /// Whether this is a blocking validation error.
     #[must_use]
     pub const fn is_error(self) -> bool {
@@ -161,20 +152,6 @@ impl<'a, Id> Field<'a, Id> {
         self
     }
 
-    /// Async validation pending.
-    #[must_use]
-    pub const fn pending(mut self, message: &'a str) -> Self {
-        self.status = FieldStatus::Pending(message);
-        self
-    }
-
-    /// Explicit status.
-    #[must_use]
-    pub const fn status(mut self, status: FieldStatus<'a>) -> Self {
-        self.status = status;
-        self
-    }
-
     /// Description under label (independent of status).
     #[must_use]
     pub const fn description(mut self, description: &'a str) -> Self {
@@ -186,13 +163,6 @@ impl<'a, Id> Field<'a, Id> {
     #[must_use]
     pub const fn required(mut self, required: bool) -> Self {
         self.required = required;
-        self
-    }
-
-    /// Show optional mark.
-    #[must_use]
-    pub const fn optional(mut self, on: bool) -> Self {
-        self.show_optional = on;
         self
     }
 
@@ -372,12 +342,6 @@ impl<Id> FormState<Id> {
         }
     }
 
-    /// Hovered field.
-    #[must_use]
-    pub const fn hovered(&self) -> Option<&Id> {
-        self.hovered.as_ref()
-    }
-
     /// Enable/disable surface.
     pub const fn set_accepts_input(&mut self, accepts: bool) {
         self.accepts_input = accepts;
@@ -386,12 +350,6 @@ impl<Id> FormState<Id> {
     /// Scroll target after host focus change.
     pub fn ensure_visible(&mut self, id: Option<Id>) {
         self.ensure_visible = id;
-    }
-
-    /// Scroll offset.
-    #[must_use]
-    pub const fn offset(&self) -> usize {
-        self.offset
     }
 
     /// Content height.
@@ -430,23 +388,6 @@ impl<Id> FormState<Id> {
                 .min(maximum)
         };
         before != self.offset
-    }
-
-    /// Scrollbar track click.
-    pub fn scroll_to_position(&mut self, position: Position) -> bool {
-        let Some(area) = self.scrollbar_region else {
-            return false;
-        };
-        if !area.contains(position) {
-            return false;
-        }
-        self.offset = crate::scroll::offset_for_track_position(
-            self.content_height,
-            self.viewport_height,
-            area.height,
-            usize::from(position.y.saturating_sub(area.y)),
-        );
-        true
     }
 }
 
@@ -587,36 +528,6 @@ impl<Id: Clone + PartialEq> FormState<Id> {
             _ => FormOutcome::Ignored,
         }
     }
-
-    /// Hover update.
-    pub fn hover(&mut self, position: Position) -> Option<&Id> {
-        self.hovered = self
-            .regions
-            .iter()
-            .find(|region| region.area.contains(position))
-            .map(|region| region.id.clone());
-        self.hovered.as_ref()
-    }
-
-    /// Activate if already host-focused.
-    pub fn click(&mut self, position: Position, focused_field: Option<&Id>) -> FormOutcome<Id> {
-        if !self.accepts_input {
-            return FormOutcome::Ignored;
-        }
-        let Some(id) = self
-            .regions
-            .iter()
-            .find(|region| region.area.contains(position))
-            .map(|region| region.id.clone())
-        else {
-            return FormOutcome::Ignored;
-        };
-        if focused_field == Some(&id) {
-            FormOutcome::Activated(id)
-        } else {
-            FormOutcome::Ignored
-        }
-    }
 }
 
 // ── Form widget ─────────────────────────────────────────────────────────────
@@ -652,13 +563,6 @@ impl<'a, Id> Form<'a, Id> {
         self
     }
 
-    /// Layout recipe.
-    #[must_use]
-    pub const fn layout(mut self, layout: FormLayout) -> Self {
-        self.layout = layout;
-        self
-    }
-
     /// Compact rows.
     #[must_use]
     pub const fn compact(mut self) -> Self {
@@ -670,13 +574,6 @@ impl<'a, Id> Form<'a, Id> {
     #[must_use]
     pub const fn stacked(mut self) -> Self {
         self.layout = FormLayout::Stacked;
-        self
-    }
-
-    /// Inline-preferring layout.
-    #[must_use]
-    pub const fn inline(mut self) -> Self {
-        self.layout = FormLayout::Inline;
         self
     }
 

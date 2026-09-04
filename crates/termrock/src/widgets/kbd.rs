@@ -346,20 +346,6 @@ impl<'a> Kbd<'a> {
         self
     }
 
-    /// Inline docs form (still paints HintKey role).
-    #[must_use]
-    pub const fn inline(mut self) -> Self {
-        self.variant = KbdVariant::Inline;
-        self
-    }
-
-    /// Compact footer form.
-    #[must_use]
-    pub const fn compact(mut self) -> Self {
-        self.variant = KbdVariant::Compact;
-        self
-    }
-
     /// Display text (without keycap padding).
     #[must_use]
     pub fn text(&self) -> &str {
@@ -485,13 +471,6 @@ impl<'a> ShortcutHint<'a> {
         self.form = ShortcutForm::Footer;
         self
     }
-    /// Keycap form.
-    #[must_use]
-    pub const fn keycap(mut self) -> Self {
-        self.form = ShortcutForm::Keycap;
-        self
-    }
-
     /// Chord display.
     #[must_use]
     pub fn chord(&self) -> &str {

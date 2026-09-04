@@ -76,17 +76,6 @@ impl ErrorRecoveryPane {
             Self::Status => "status",
         }
     }
-
-    /// Tab focus order (status chrome-only).
-    #[must_use]
-    pub fn focus_order() -> &'static [ErrorRecoveryPane] {
-        &[
-            Self::Summary,
-            Self::Actions,
-            Self::Diagnostics,
-            Self::Preserved,
-        ]
-    }
 }
 
 /// Presentation mode.

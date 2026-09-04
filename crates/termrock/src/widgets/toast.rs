@@ -58,39 +58,6 @@ pub enum Severity {
     Error,
 }
 
-impl Severity {
-    /// Footer-status paint role.
-    #[must_use]
-    pub const fn role(self) -> Role {
-        match self {
-            Self::Error => Role::Danger,
-            Self::Warning => Role::Warning,
-            Self::Info | Self::Success => Role::TextSecondary,
-        }
-    }
-
-    /// Marker painted before the sentence (`!` / `•` / `✓`; info is quiet).
-    #[must_use]
-    pub const fn glyph_ascii(self) -> &'static str {
-        self.glyph()
-    }
-
-    /// Marker painted before the sentence (`!` / `•` / `✓`; info is quiet).
-    #[must_use]
-    pub const fn glyph_unicode(self) -> &'static str {
-        self.glyph()
-    }
-
-    const fn glyph(self) -> &'static str {
-        match self {
-            Self::Info => "",
-            Self::Success => "✓",
-            Self::Warning => "•",
-            Self::Error => "!",
-        }
-    }
-}
-
 /// Horizontal edge used to place the footer sentence.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[non_exhaustive]
@@ -174,12 +141,6 @@ impl ToastKind {
             Self::Warning => Role::Warning,
             Self::Info | Self::Success | Self::Progress | Self::Undo => Role::TextSecondary,
         }
-    }
-
-    /// Marker painted before the sentence.
-    #[must_use]
-    pub const fn glyph_ascii(self) -> &'static str {
-        self.glyph()
     }
 
     /// Marker painted before the sentence.
@@ -292,12 +253,6 @@ impl ToastState {
             ToastLifetime::ExpiresAfter(ttl) => Presence::toast(ttl),
         };
         Self { presence, lifetime }
-    }
-
-    /// Lifetime policy.
-    #[must_use]
-    pub const fn lifetime(self) -> ToastLifetime {
-        self.lifetime
     }
 
     /// Makes the toast visible starting at this frame.
@@ -429,24 +384,10 @@ impl ToastSpec {
         self
     }
 
-    /// Title.
-    #[must_use]
-    pub fn title(mut self, t: impl Into<String>) -> Self {
-        self.title = Some(t.into());
-        self
-    }
-
     /// Lifetime.
     #[must_use]
     pub const fn lifetime(mut self, life: ToastLifetime) -> Self {
         self.lifetime = life;
-        self
-    }
-
-    /// Persistent until dismiss.
-    #[must_use]
-    pub const fn persistent(mut self) -> Self {
-        self.lifetime = ToastLifetime::Persistent;
         self
     }
 
@@ -588,16 +529,6 @@ impl ToastQueue {
         self.max_visible = n.max(1);
     }
 
-    /// Placement edge for the footer sentence.
-    pub fn set_anchor(&mut self, anchor: Anchor) {
-        self.anchor = anchor;
-    }
-    /// Anchor.
-    #[must_use]
-    pub const fn anchor(&self) -> Anchor {
-        self.anchor
-    }
-
     /// Live count.
     #[must_use]
     pub fn len(&self) -> usize {
@@ -614,12 +545,6 @@ impl ToastQueue {
     #[must_use]
     pub const fn is_paused(&self) -> bool {
         self.paused
-    }
-
-    /// Generation.
-    #[must_use]
-    pub const fn generation(&self) -> u64 {
-        self.generation
     }
 
     /// Missed / archived count (NotificationCenter inbox size).
@@ -771,13 +696,6 @@ impl ToastQueue {
         ToastOutcome::Ignored
     }
 
-    /// Dismisses the newest live toast.
-    pub fn dismiss_top(&mut self) -> ToastOutcome {
-        let Some(id) = self.live.front().map(|t| t.id.clone()) else {
-            return ToastOutcome::Ignored;
-        };
-        self.dismiss(&id)
-    }
     /// Advance all live toasts; expire and archive.
     pub fn advance(&mut self, tick: FrameTick, motion: MotionPolicy) -> Vec<ToastOutcome> {
         let mut outs = Vec::new();
@@ -1006,13 +924,6 @@ impl<'a> Toast<'a> {
     pub const fn margins(mut self, horizontal: u16, vertical: u16) -> Self {
         self.horizontal_margin = horizontal;
         self.vertical_margin = vertical;
-        self
-    }
-
-    /// Optional title folded into the one sentence.
-    #[must_use]
-    pub const fn title(mut self, title: &'a str) -> Self {
-        self.title = Some(title);
         self
     }
 

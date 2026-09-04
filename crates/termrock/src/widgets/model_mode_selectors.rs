@@ -225,20 +225,6 @@ impl ModelOption {
         self
     }
 
-    /// Group.
-    #[must_use]
-    pub fn group(mut self, g: impl Into<String>) -> Self {
-        self.group = Some(g.into());
-        self
-    }
-
-    /// Detail.
-    #[must_use]
-    pub fn detail(mut self, d: impl Into<String>) -> Self {
-        self.detail = Some(d.into());
-        self
-    }
-
     /// Recent.
     #[must_use]
     pub const fn recent(mut self, on: bool) -> Self {
@@ -492,46 +478,6 @@ impl AgentModeOption {
         }
     }
 
-    /// Custom mode.
-    #[must_use]
-    pub fn custom(
-        id: impl Into<String>,
-        label: impl Into<String>,
-        short: impl Into<String>,
-    ) -> Self {
-        Self {
-            id: id.into(),
-            kind: AgentModeKind::Custom,
-            label: label.into(),
-            short_label: short.into(),
-            consequence: None,
-            warning: None,
-            enabled: true,
-            execution_policy: None,
-        }
-    }
-
-    /// Consequence text.
-    #[must_use]
-    pub fn consequence(mut self, c: impl Into<String>) -> Self {
-        self.consequence = Some(c.into());
-        self
-    }
-
-    /// Warning.
-    #[must_use]
-    pub fn warning(mut self, w: impl Into<String>) -> Self {
-        self.warning = Some(w.into());
-        self
-    }
-
-    /// Enabled.
-    #[must_use]
-    pub const fn enabled(mut self, on: bool) -> Self {
-        self.enabled = on;
-        self
-    }
-
     /// Whether warning role applies.
     #[must_use]
     pub fn needs_warning_role(&self) -> bool {
@@ -735,27 +681,9 @@ impl ModelSelectorState {
         self.selected.as_deref()
     }
 
-    /// Highlight id.
-    #[must_use]
-    pub fn highlight(&self) -> Option<&str> {
-        self.highlight.as_deref()
-    }
-
     /// Gate (does not clear selection).
     pub fn set_accepts_input(&mut self, on: bool) {
         self.accepts_input = on;
-    }
-
-    /// Set selected without outcome.
-    pub fn set_selected(&mut self, id: Option<String>) {
-        self.selected = id.clone();
-        self.highlight = id;
-    }
-
-    /// Recent ids.
-    #[must_use]
-    pub fn recent(&self) -> &[String] {
-        &self.recent
     }
 
     /// Open expanded list.
@@ -1258,12 +1186,6 @@ impl AgentModeSelectorState {
     /// Gate.
     pub fn set_accepts_input(&mut self, on: bool) {
         self.accepts_input = on;
-    }
-
-    /// Set selected silently.
-    pub fn set_selected(&mut self, id: Option<String>) {
-        self.selected = id.clone();
-        self.highlight = id;
     }
 
     /// Open menu.

@@ -102,19 +102,6 @@ impl ComposerChip {
         }
     }
 
-    /// Large paste chip (preview label; full body in [`Self::payload`]).
-    #[must_use]
-    pub fn paste(id: impl Into<String>, preview: impl Into<String>, bytes: usize) -> Self {
-        Self {
-            id: id.into(),
-            kind: ChipKind::Paste,
-            label: preview.into(),
-            meta: Some(format!("{bytes} B")),
-            bytes: Some(bytes),
-            payload: None,
-        }
-    }
-
     /// Large paste chip retaining full body for expand / submit.
     #[must_use]
     pub fn paste_with_body(
@@ -510,37 +497,14 @@ impl PromptComposerState {
         self.editor.set_editing(accepts);
     }
 
-    /// Agent busy flag.
-    #[must_use]
-    pub const fn is_busy(&self) -> bool {
-        self.busy
-    }
-
     /// Sets busy (queue/stop chrome).
     pub fn set_busy(&mut self, busy: bool) {
         self.busy = busy;
     }
 
-    /// Connection state.
-    #[must_use]
-    pub const fn connection(&self) -> ComposerConnection {
-        self.connection
-    }
-
     /// Sets connection.
     pub fn set_connection(&mut self, connection: ComposerConnection) {
         self.connection = connection;
-    }
-
-    /// Submit policy.
-    #[must_use]
-    pub const fn policy(&self) -> SubmitPolicy {
-        self.policy
-    }
-
-    /// Sets submit policy.
-    pub fn set_policy(&mut self, policy: SubmitPolicy) {
-        self.policy = policy;
     }
 
     /// Presentation mode.
@@ -629,11 +593,6 @@ impl PromptComposerState {
         self.editor.extract_between(anchor, cur)
     }
 
-    /// Clears selection without moving the caret.
-    pub fn clear_selection(&mut self) {
-        self.select_anchor = None;
-    }
-
     /// Selects entire draft.
     pub fn select_all(&mut self) {
         let end = self.editor.cursor_at_byte(self.text().len());
@@ -654,12 +613,6 @@ impl PromptComposerState {
             self.chip_cursor = self.chips.len().checked_sub(1);
         }
         before != self.chips.len()
-    }
-
-    /// Chip by id (e.g. expand paste payload).
-    #[must_use]
-    pub fn chip(&self, id: &str) -> Option<&ComposerChip> {
-        self.chips.iter().find(|c| c.id == id)
     }
 
     /// Removes a queue entry by id.
@@ -1164,21 +1117,6 @@ impl PromptComposerState {
             }
         } else {
             PromptComposerOutcome::Ignored
-        }
-    }
-
-    /// Unified event entry (editor + chips; use [`Self::handle_mouse_at`] for status hits).
-    pub fn handle_event(
-        &mut self,
-        event: Event,
-        editor_area: Rect,
-        chip_areas: &[(String, Rect)],
-    ) -> PromptComposerOutcome {
-        match event {
-            Event::Key(key) => self.handle_key(key),
-            Event::Paste(text) => self.handle_paste(&text),
-            Event::Mouse(mouse) => self.handle_mouse(mouse, editor_area, chip_areas),
-            _ => PromptComposerOutcome::Ignored,
         }
     }
 

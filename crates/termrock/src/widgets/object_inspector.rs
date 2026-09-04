@@ -222,13 +222,6 @@ impl<'a> InspectorField<'a> {
         self
     }
 
-    /// Branch capable of expansion.
-    #[must_use]
-    pub const fn branch(mut self) -> Self {
-        self.branch = true;
-        self
-    }
-
     /// Expanded branch.
     #[must_use]
     pub const fn expanded(mut self) -> Self {
@@ -242,21 +235,6 @@ impl<'a> InspectorField<'a> {
     pub const fn lazy(mut self) -> Self {
         self.status = InspectNodeStatus::Lazy;
         self.branch = true;
-        self
-    }
-
-    /// Loading children.
-    #[must_use]
-    pub const fn loading(mut self) -> Self {
-        self.status = InspectNodeStatus::Loading;
-        self.branch = true;
-        self
-    }
-
-    /// Error loading children.
-    #[must_use]
-    pub const fn error(mut self) -> Self {
-        self.status = InspectNodeStatus::Error;
         self
     }
 
@@ -493,12 +471,6 @@ impl ObjectInspectorState {
         self.cursor_path = Some(path.into());
     }
 
-    /// Vertical scroll offset in fields.
-    #[must_use]
-    pub fn offset_y(&self) -> u16 {
-        self.scroll.offset_y()
-    }
-
     /// Host input gate.
     pub fn set_accepts_input(&mut self, accepts: bool) {
         self.accepts_input = accepts;
@@ -548,18 +520,6 @@ impl ObjectInspectorState {
             false
         }
     }
-    /// Search query.
-    #[must_use]
-    pub fn search(&self) -> Option<&str> {
-        self.search.as_deref()
-    }
-
-    /// Logical virtual window for huge flat projections.
-    pub fn set_virtual_window(&mut self, start: u64, total: u64) {
-        self.window_start = start;
-        self.logical_len = total;
-    }
-
     /// Reconcile cursor after host reprojects `fields`.
     pub fn reconcile(&mut self, fields: &[InspectorField<'_>]) {
         if fields.is_empty() {
@@ -1081,13 +1041,6 @@ impl<'a> ObjectInspector<'a> {
     /// Reduced-color paint.
     pub const fn colorless(mut self, colorless: bool) -> Self {
         self.colorless = colorless;
-        self
-    }
-
-    /// Compact vs fullscreen chrome.
-    #[must_use]
-    pub const fn presentation(mut self, p: InspectPresentation) -> Self {
-        self.presentation = p;
         self
     }
 

@@ -18,15 +18,13 @@
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
-    text::Line,
     widgets::StatefulWidget,
 };
 
 use crate::{
-    input::KeyEvent,
     interaction::{
         HitRegion, NavigationMove, Outcome, PageMove, SemanticNode, SemanticRole, SemanticScene,
-        SemanticState, UiIntent, default_list_intent,
+        SemanticState, UiIntent,
     },
     style::{DesignSystem, Role},
     text::{display_cols, take_display_cols},
@@ -94,15 +92,6 @@ impl<'a, Id> VirtualListItem<'a, Id> {
     #[must_use]
     pub fn new(logical_index: u64, row: ListRow<'a, Id>) -> Self {
         Self { logical_index, row }
-    }
-
-    /// Placeholder loading row for a missing page.
-    #[must_use]
-    pub fn placeholder(logical_index: u64, id: Id) -> Self {
-        Self {
-            logical_index,
-            row: ListRow::item(id, Line::from("loading")).loading(),
-        }
     }
 }
 
@@ -192,11 +181,6 @@ impl<Id> VirtualListState<Id> {
         &self.virt
     }
 
-    /// Mutable virtualizer (advanced).
-    pub fn virtualizer_mut(&mut self) -> &mut Virtualizer {
-        &mut self.virt
-    }
-
     /// Nested list state over the projected window (typeahead / multi).
     #[must_use]
     pub const fn list_state(&self) -> &ListState<Id> {
@@ -214,12 +198,6 @@ impl<Id> VirtualListState<Id> {
         self.last_diag
     }
 
-    /// Follow policy.
-    #[must_use]
-    pub const fn follow(&self) -> VirtualListFollow {
-        self.follow
-    }
-
     /// Set follow-tail.
     pub fn set_follow(&mut self, follow: VirtualListFollow) {
         self.follow = follow;
@@ -235,12 +213,6 @@ impl<Id> VirtualListState<Id> {
         self.filter_query = query.filter(|q| !q.is_empty());
     }
 
-    /// Filter query.
-    #[must_use]
-    pub fn filter_query(&self) -> Option<&str> {
-        self.filter_query.as_deref()
-    }
-
     /// Host-reported match count after filter.
     pub fn set_filter_match_count(&mut self, count: Option<u64>) {
         self.filter_match_count = count;
@@ -249,11 +221,6 @@ impl<Id> VirtualListState<Id> {
     /// Configure sticky headers/footers.
     pub fn set_sticky(&mut self, sticky: StickyRegion) {
         self.virt.set_sticky(sticky);
-    }
-
-    /// Overscan for measure/prefetch.
-    pub fn set_overscan(&mut self, overscan: u16) {
-        self.virt.set_overscan(overscan);
     }
 
     /// Extent policy (fixed or variable).
@@ -291,12 +258,6 @@ impl<Id> VirtualListState<Id> {
             let max = self.virt.max_offset();
             self.virt.set_offset(max);
         }
-    }
-
-    /// Logical length.
-    #[must_use]
-    pub const fn logical_len(&self) -> u64 {
-        self.virt.logical_len()
     }
 
     /// Viewport extent (terminal rows).
@@ -347,35 +308,11 @@ impl<Id> VirtualListState<Id> {
         out.dedup();
     }
 
-    /// Visible ranges for diagnostics / host.
-    #[must_use]
-    pub fn visible_range(&self) -> VirtRange {
-        self.virt.visible_slice().visible()
-    }
-
     /// Record measured row height (variable extents).
     pub fn note_measured(&mut self, logical_index: u64, extent: u16) {
         self.virt.note_measured(logical_index, extent);
         self.virt
             .forget_measured_outside(u64::from(self.virt.overscan()).saturating_add(8));
-    }
-
-    /// Reveal logical index in the body viewport.
-    pub fn reveal(&mut self, logical_index: u64) -> bool {
-        self.follow = VirtualListFollow::Off;
-        self.virt.reveal(logical_index)
-    }
-
-    /// Capture content-id anchor for preserve-across-filter (host resolves id).
-    pub fn capture_index_anchor(&mut self) {
-        self.virt.capture_index_anchor();
-    }
-
-    /// Apply stored anchor after filter/rebuild.
-    pub fn restore_anchor(&mut self, resolve_id: impl FnOnce(&str) -> Option<u64>) {
-        if let Some(a) = self.virt.anchor().cloned() {
-            self.virt.apply_anchor(&a, resolve_id);
-        }
     }
 
     /// Hit regions from the last paint (projected body rows only).
@@ -385,19 +322,6 @@ impl<Id> VirtualListState<Id> {
     #[must_use]
     pub fn regions(&self) -> &[HitRegion<Id>] {
         self.list.regions()
-    }
-
-    /// Hover at position.
-    pub fn hover(&mut self, position: Position) -> Option<&Id>
-    where
-        Id: Clone,
-    {
-        self.pointer = Some(position);
-        self.list
-            .regions()
-            .iter()
-            .find(|r| r.area.contains(position))
-            .map(|r| &r.id)
     }
 
     /// Click at position.
@@ -506,25 +430,6 @@ impl<Id> VirtualListState<Id> {
             | UiIntent::Close => self.list.handle_intent(&rows, intent),
             _ => Outcome::Ignored,
         }
-    }
-
-    /// Key path via intents (+ list typeahead on projected labels).
-    pub fn handle_key(
-        &mut self,
-        projected: &[VirtualListItem<'_, Id>],
-        key: KeyEvent,
-    ) -> Outcome<Id>
-    where
-        Id: Clone + PartialEq,
-    {
-        if key.is_release() {
-            return Outcome::Ignored;
-        }
-        if let Some(intent) = default_list_intent(key) {
-            return self.handle_intent(projected, intent);
-        }
-        let rows = projected_rows(projected);
-        self.list.handle_key(&rows, key)
     }
 
     fn refresh_diagnostics(&mut self, projected_len: usize) {
@@ -934,6 +839,7 @@ mod tests {
     use super::*;
     use ratatui_core::backend::TestBackend;
     use ratatui_core::terminal::Terminal;
+    use ratatui_core::text::Line;
     use std::time::Instant;
 
     fn system() -> DesignSystem {

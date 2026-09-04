@@ -242,13 +242,6 @@ impl ProgressStep {
         self
     }
 
-    /// Source.
-    #[must_use]
-    pub fn source(mut self, s: impl Into<String>) -> Self {
-        self.source = Some(s.into());
-        self
-    }
-
     /// Effective verb.
     #[must_use]
     pub fn effective_verb(&self) -> &str {
@@ -377,20 +370,6 @@ impl ProgressStepsState {
         s.mode = ProgressStepsMode::Interactive;
         s.focused = true;
         s
-    }
-
-    /// Mode.
-    #[must_use]
-    pub const fn mode(&self) -> ProgressStepsMode {
-        self.mode
-    }
-
-    /// Set mode.
-    pub fn set_mode(&mut self, mode: ProgressStepsMode) {
-        self.mode = mode;
-        if matches!(mode, ProgressStepsMode::Passive) {
-            self.focused = false;
-        }
     }
 
     /// Focused (interactive).

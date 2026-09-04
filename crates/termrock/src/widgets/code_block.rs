@@ -83,19 +83,6 @@ pub enum CodeTokenKind {
 }
 
 impl CodeTokenKind {
-    /// Semantic role this kind paints through.
-    #[must_use]
-    pub const fn role(self) -> Role {
-        match self {
-            Self::Plain | Self::Ident | Self::Function => Role::Text,
-            Self::Comment => Role::SyntaxComment,
-            Self::String => Role::SyntaxString,
-            Self::Number => Role::SyntaxNumber,
-            Self::Keyword => Role::SyntaxKeyword,
-            Self::Operator | Self::Punct => Role::TextMuted,
-        }
-    }
-
     /// junie syntax class — weight + text ladder, never hue.
     #[must_use]
     pub const fn syntax_tone(self) -> SyntaxTone {
@@ -266,23 +253,6 @@ impl<'a> CodeSourceMeta<'a> {
             path: None,
             start_line_number: 1,
         }
-    }
-
-    /// Language only.
-    #[must_use]
-    pub const fn language(language: &'a str) -> Self {
-        Self {
-            language: Some(language),
-            path: None,
-            start_line_number: 1,
-        }
-    }
-
-    /// Path + language.
-    #[must_use]
-    pub const fn with_path(mut self, path: &'a str) -> Self {
-        self.path = Some(path);
-        self
     }
 
     /// Header text when space allows.
@@ -456,11 +426,6 @@ impl CodeBlockState {
     /// Cursor column (0-based display cells).
     pub const fn set_cursor_col(&mut self, col: usize) {
         self.cursor_col = col;
-    }
-
-    /// Select exclusive-end line range.
-    pub const fn set_selection(&mut self, range: Option<(usize, usize)>) {
-        self.selection = range;
     }
 
     /// Max scroll_y for `logical_len` lines and current viewport.
@@ -666,20 +631,6 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
         self
     }
 
-    /// Source path metadata.
-    #[must_use]
-    pub const fn path(mut self, path: &'a str) -> Self {
-        self.meta.path = Some(path);
-        self
-    }
-
-    /// Full metadata.
-    #[must_use]
-    pub const fn meta(mut self, meta: CodeSourceMeta<'a>) -> Self {
-        self.meta = meta;
-        self
-    }
-
     /// Gutter line numbers.
     #[must_use]
     pub const fn line_numbers(mut self, enabled: bool) -> Self {
@@ -730,13 +681,6 @@ impl<'a, H: SyntaxHighlighter> CodeBlock<'a, H> {
     #[must_use]
     pub const fn wrap(mut self, wrap: CodeWrap) -> Self {
         self.wrap = wrap;
-        self
-    }
-
-    /// Tab stop width (0 → 4).
-    #[must_use]
-    pub const fn tab_width(mut self, width: u8) -> Self {
-        self.tab_width = width;
         self
     }
 
@@ -1860,20 +1804,6 @@ impl<'a> RoleTokenSyntax<'a> {
         Self {
             system,
             language: Some("rust"),
-            keywords: KW,
-        }
-    }
-
-    /// Shell / command fence keywords + system.
-    #[must_use]
-    pub const fn shell(system: &'a DesignSystem) -> Self {
-        const KW: &[&str] = &[
-            "if", "then", "else", "fi", "for", "do", "done", "while", "case", "esac", "function",
-            "export", "local", "return", "exit", "cd", "echo", "cargo", "git",
-        ];
-        Self {
-            system,
-            language: Some("sh"),
             keywords: KW,
         }
     }

@@ -166,13 +166,6 @@ impl<'a, Id> KvEntry<'a, Id> {
         self
     }
 
-    /// Nesting depth.
-    #[must_use]
-    pub const fn depth(mut self, depth: u8) -> Self {
-        self.depth = depth;
-        self
-    }
-
     /// Whether the row has an interactive action (copy / link / secret reveal).
     #[must_use]
     pub const fn interactive(&self) -> bool {
@@ -383,20 +376,6 @@ impl<'a, Id> KeyValueList<'a, Id> {
         self
     }
 
-    /// Fixed key column width.
-    #[must_use]
-    pub const fn key_width(mut self, width: u16) -> Self {
-        self.key_width = width;
-        self
-    }
-
-    /// Column separator (default two spaces — whitespace before chrome).
-    #[must_use]
-    pub const fn separator(mut self, sep: &'a str) -> Self {
-        self.separator = sep;
-        self
-    }
-
     /// Resolve layout for width.
     #[must_use]
     pub fn resolved_layout(&self, width: u16) -> KvLayout {
@@ -498,22 +477,6 @@ impl<'a, Id: Clone + PartialEq> KeyValueList<'a, Id> {
                 u16::try_from(lines).unwrap_or(1)
             }
         }
-    }
-
-    /// Total display rows.
-    #[must_use]
-    pub fn measure_height(&self, width: u16, state: &KeyValueListState<Id>) -> u16 {
-        let layout = self.resolved_layout(width);
-        // For measure_entry Stacked branch when Auto resolves to Stacked
-        let layout = if matches!(layout, KvLayout::Stacked) {
-            KvLayout::Stacked
-        } else {
-            KvLayout::Columns
-        };
-        self.entries
-            .iter()
-            .map(|e| self.measure_entry_height(e, width, layout, state))
-            .fold(0u16, |a, h| a.saturating_add(h))
     }
 
     /// Paint.

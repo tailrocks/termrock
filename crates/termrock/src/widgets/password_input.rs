@@ -21,7 +21,7 @@ use crate::{
     input::{
         KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
     },
-    interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState, UiIntent},
+    interaction::{SemanticNode, SemanticRole, SemanticScene, SemanticState},
     style::{ButtonRecipeVariant, ControlState, DesignSystem, Role},
     text::take_display_cols,
 };
@@ -250,24 +250,9 @@ impl PasswordInputState {
         state
     }
 
-    /// Live typing. [`Self::new`] stays idle (`editing: false`).
-    #[must_use]
-    pub fn with_editing(mut self) -> Self {
-        self.editor.begin_edit();
-        self
-    }
-
     /// Start the insert session (Junie Enter on an idle field).
     pub fn begin_edit(&mut self) {
         self.editor.begin_edit();
-    }
-
-    /// Max graphemes.
-    #[must_use]
-    pub fn with_max_graphemes(mut self, max: usize) -> Self {
-        let editor = std::mem::replace(&mut self.editor, TextInputState::new(""));
-        self.editor = editor.with_max_graphemes(max);
-        self
     }
 
     fn sync_editor_gates(&mut self) {
@@ -338,12 +323,6 @@ impl PasswordInputState {
         }
     }
 
-    /// Pending.
-    #[must_use]
-    pub const fn is_pending(&self) -> bool {
-        self.pending
-    }
-
     /// Whether edits allowed.
     #[must_use]
     pub fn can_edit(&self) -> bool {
@@ -387,13 +366,6 @@ impl PasswordInputState {
         }
         self.editor.secure_clear();
         true
-    }
-
-    /// Securely clear.
-    pub fn secure_clear(&mut self) {
-        self.editor.secure_clear();
-        self.revealed = false;
-        self.hold_reveal = false;
     }
 
     /// Toggle explicit reveal.
@@ -560,33 +532,6 @@ impl PasswordInputState {
             TextInputOutcome::ClipboardPasteRequest => match self.clipboard {
                 ClipboardPolicy::DenyAll => PasswordInputOutcome::ClipboardDenied,
                 _ => PasswordInputOutcome::ClipboardPasteRequest,
-            },
-        }
-    }
-
-    /// Intent path.
-    pub fn handle_intent(&mut self, intent: UiIntent) -> PasswordInputOutcome {
-        self.sync_editor_gates();
-        if !self.enabled {
-            return PasswordInputOutcome::Ignored;
-        }
-        match intent {
-            UiIntent::Submit | UiIntent::Activate => {
-                if !self.editor.is_editing() {
-                    self.editor.begin_edit();
-                    PasswordInputOutcome::Changed
-                } else if self.editor.is_valid() {
-                    PasswordInputOutcome::Submitted
-                } else {
-                    PasswordInputOutcome::Ignored
-                }
-            }
-            UiIntent::Cancel | UiIntent::Close => PasswordInputOutcome::Cancelled,
-            other => match self.editor.handle_intent(other) {
-                TextInputOutcome::Changed => PasswordInputOutcome::Changed,
-                TextInputOutcome::Cancelled => PasswordInputOutcome::Cancelled,
-                TextInputOutcome::Submitted(_) => PasswordInputOutcome::Submitted,
-                _ => PasswordInputOutcome::Ignored,
             },
         }
     }

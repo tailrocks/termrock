@@ -173,12 +173,6 @@ impl SplitPaneState {
     }
 
     #[must_use]
-    /// Returns the currently collapsed side, if any.
-    pub const fn collapsed(&self) -> Option<SplitSide> {
-        self.collapsed
-    }
-
-    #[must_use]
     /// Resolves both panes and the divider inside the supplied rectangle.
     pub const fn layout(&self) -> SplitPaneLayout {
         self.layout

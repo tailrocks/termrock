@@ -761,12 +761,6 @@ impl DateTimePickerState {
         }
     }
 
-    /// Kind.
-    #[must_use]
-    pub const fn with_kind(mut self, kind: DateTimePickerKind) -> Self {
-        self.kind = kind;
-        self
-    }
     /// Time list step.
     #[must_use]
     pub fn with_time_step_minutes(mut self, step: u32) -> Self {
@@ -778,13 +772,6 @@ impl DateTimePickerState {
     #[must_use]
     pub fn with_timezone_label(mut self, label: impl Into<String>) -> Self {
         self.timezone_label = Some(label.into());
-        self
-    }
-
-    /// Allow empty commit.
-    #[must_use]
-    pub const fn with_allow_empty(mut self, on: bool) -> Self {
-        self.allow_empty = on;
         self
     }
 
@@ -815,45 +802,6 @@ impl DateTimePickerState {
         self.view
     }
 
-    /// Expanded.
-    #[must_use]
-    pub const fn is_open(&self) -> bool {
-        self.open
-    }
-
-    /// Validity of draft / value.
-    #[must_use]
-    pub const fn validity(&self) -> DateTimeValidity {
-        self.validity
-    }
-
-    /// Committed date.
-    #[must_use]
-    pub const fn date(&self) -> Option<CivilDate> {
-        self.value_date
-    }
-
-    /// Committed time.
-    #[must_use]
-    pub const fn time(&self) -> Option<CivilTime> {
-        self.value_time
-    }
-
-    /// Committed range.
-    #[must_use]
-    pub fn range(&self) -> Option<CivilDateRange> {
-        Some(CivilDateRange {
-            start: self.value_date?,
-            end: self.value_end?,
-        })
-    }
-
-    /// Draft text.
-    #[must_use]
-    pub fn draft(&self) -> &str {
-        self.draft.value()
-    }
-
     fn set_draft_text(&mut self, text: impl Into<String>) {
         self.draft.set_enabled(self.enabled);
         self.draft
@@ -861,28 +809,10 @@ impl DateTimePickerState {
         self.draft = self.draft.reseed(text);
     }
 
-    /// Live typing. [`Self::new`] stays idle (`editing: false`).
-    #[must_use]
-    pub fn with_editing(mut self) -> Self {
-        self.draft.begin_edit();
-        self
-    }
-
-    /// Start the insert session (Junie Enter on an idle field).
-    pub fn begin_edit(&mut self) {
-        self.draft.begin_edit();
-    }
-
     /// Focus date in calendar.
     #[must_use]
     pub const fn focus_date(&self) -> Option<CivilDate> {
         self.focus_date
-    }
-
-    /// Presentation.
-    #[must_use]
-    pub const fn presentation(&self) -> DateTimePickerPresentation {
-        self.presentation
     }
 
     /// Whether date is available (min/max).
@@ -919,23 +849,6 @@ impl DateTimePickerState {
         self.sync_draft_from_value();
         self.refresh_validity();
     }
-    /// Set range.
-    pub fn set_range(&mut self, range: Option<CivilDateRange>) {
-        if let Some(r) = range {
-            self.value_date = Some(r.start);
-            self.value_end = Some(r.end);
-            self.view_year = r.start.year;
-            self.view_month = r.start.month;
-            self.focus_date = Some(r.start);
-        } else {
-            self.value_date = None;
-            self.value_end = None;
-        }
-        self.range_picking_end = false;
-        self.sync_draft_from_value();
-        self.refresh_validity();
-    }
-
     /// Focus.
     pub fn set_focused(&mut self, on: bool) {
         self.focused = on;

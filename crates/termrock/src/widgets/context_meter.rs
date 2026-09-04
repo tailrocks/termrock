@@ -651,13 +651,6 @@ impl<'a> ContextMeter<'a> {
         self
     }
 
-    /// Monochrome density bar (no role color).
-    #[must_use]
-    pub const fn mono(mut self, on: bool) -> Self {
-        self.mono = on;
-        self
-    }
-
     /// Paint.
     pub fn paint(&self, area: Rect, buffer: &mut Buffer, state: &mut ContextMeterState) {
         state.hit = area;

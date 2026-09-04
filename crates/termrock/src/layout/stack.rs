@@ -87,12 +87,6 @@ pub enum FlexSize {
 }
 
 impl FlexSize {
-    /// Fixed helper.
-    #[must_use]
-    pub const fn fixed(n: u16) -> Self {
-        Self::Fixed(n)
-    }
-
     /// Fill residual equally (weight 1).
     #[must_use]
     pub const fn fill() -> Self {
@@ -224,21 +218,10 @@ pub struct StackLayout {
 }
 
 impl StackLayout {
-    /// Child count.
-    #[must_use]
-    pub fn len(&self) -> usize {
-        self.children.len()
-    }
-
     /// Child rect by index.
     #[must_use]
     pub fn get(&self, index: usize) -> Option<Rect> {
         self.children.get(index).copied()
-    }
-
-    /// Iterate child rects with stable indices.
-    pub fn iter(&self) -> impl Iterator<Item = (usize, Rect)> + '_ {
-        self.children.iter().copied().enumerate()
     }
 
     /// Hit-test: first child containing the cell, if any.
@@ -311,13 +294,6 @@ impl Stack {
         }
     }
 
-    /// Main-axis direction (for responsive flip without rebuilding).
-    #[must_use]
-    pub const fn direction(mut self, direction: StackDirection) -> Self {
-        self.spec.direction = direction;
-        self
-    }
-
     /// Responsive direction from outer width.
     #[must_use]
     pub const fn responsive(mut self, width: u16, inline_min_width: u16) -> Self {
@@ -329,13 +305,6 @@ impl Stack {
     #[must_use]
     pub const fn gap(mut self, gap: u16) -> Self {
         self.spec.gap = gap;
-        self
-    }
-
-    /// Cross-axis align.
-    #[must_use]
-    pub const fn align(mut self, align: Align) -> Self {
-        self.spec.align = align;
         self
     }
 
@@ -365,17 +334,6 @@ impl Stack {
     #[must_use]
     pub fn layout(self, area: Rect, children: &[FlexSize]) -> StackLayout {
         layout_stack(area, &self.spec, children)
-    }
-
-    /// Layout with per-child cross-axis preferred sizes (ignored under [`Align::Stretch`]).
-    #[must_use]
-    pub fn layout_with_cross(
-        self,
-        area: Rect,
-        children: &[FlexSize],
-        cross: &[u16],
-    ) -> StackLayout {
-        layout_stack_with_cross(area, &self.spec, children, Some(cross))
     }
 }
 

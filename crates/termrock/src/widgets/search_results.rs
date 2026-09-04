@@ -197,13 +197,6 @@ impl SearchResultGroup {
             collapsed: false,
         }
     }
-
-    /// Collapsed.
-    #[must_use]
-    pub const fn collapsed(mut self) -> Self {
-        self.collapsed = true;
-        self
-    }
 }
 
 /// One search hit (host projection of the visible window).
@@ -298,13 +291,6 @@ impl<'a> SearchResultItem<'a> {
     #[must_use]
     pub const fn line(mut self, n: u32) -> Self {
         self.line = Some(n);
-        self
-    }
-
-    /// Score.
-    #[must_use]
-    pub const fn score(mut self, s: u32) -> Self {
-        self.score = Some(s);
         self
     }
 }
@@ -585,11 +571,6 @@ impl SearchResultsState {
     /// Host input gate.
     pub fn set_accepts_input(&mut self, on: bool) {
         self.accepts_input = on;
-    }
-
-    /// Enable multi-check.
-    pub fn enable_multi_select(&mut self) {
-        self.multi = true;
     }
 
     /// Begin a new search generation (host). Returns generation to tag results.
@@ -1029,14 +1010,6 @@ impl<'a> SearchResults<'a> {
     #[must_use]
     pub const fn title(mut self, title: &'a str) -> Self {
         self.title = Some(title);
-        self
-    }
-
-    /// ASCII.
-    #[must_use]
-    /// Single-line density.
-    pub const fn compact(mut self) -> Self {
-        self.dense = false;
         self
     }
 

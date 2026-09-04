@@ -103,13 +103,6 @@ impl<'a> PanelAction<'a> {
             icon: None,
         }
     }
-
-    /// Icon for compact paint (pair with [`crate::widgets::IconButton`] in host).
-    #[must_use]
-    pub const fn icon(mut self, icon: &'a str) -> Self {
-        self.icon = Some(icon);
-        self
-    }
 }
 
 /// Priority-ordered title/footer slots for panel chrome.
@@ -447,13 +440,6 @@ impl<'a> PanelTitleSpec<'a> {
         self
     }
 
-    /// Marks the pane as following a live source.
-    #[must_use]
-    pub const fn live(mut self, live: bool) -> Self {
-        self.live = live;
-        self
-    }
-
     /// The plain title text, for semantics and for tests.
     #[must_use]
     pub fn text(&self, live_glyph: &str) -> String {
@@ -695,12 +681,6 @@ impl<'a> Panel<'a> {
                 .add_modifier(ratatui_core::style::Modifier::BOLD);
         }
         recipe
-    }
-
-    /// Palette borrow from the design system.
-    #[must_use]
-    pub const fn palette(&self) -> &crate::style::RolePalette {
-        self.tokens.palette()
     }
 
     /// Effective chrome after variant (Selected ≠ Focused).

@@ -216,12 +216,6 @@ impl AnsiLine {
             .filter_map(|s| s.href.as_ref().map(|u| (s.text.clone(), u.clone())))
             .collect()
     }
-
-    /// Display column width of plain text.
-    #[must_use]
-    pub fn width(&self) -> usize {
-        display_cols(&self.plain)
-    }
 }
 
 // ── Streaming parser ────────────────────────────────────────────────────────
@@ -361,15 +355,6 @@ impl AnsiStream {
     pub fn reset_style(&mut self) {
         self.style = self.options.default_style;
         self.href = None;
-    }
-
-    /// Clear history and partial state.
-    pub fn clear(&mut self) {
-        self.lines.clear();
-        self.cells.clear();
-        self.cursor = 0;
-        self.pending.clear();
-        self.reset_style();
     }
 
     /// Drain completed lines into a Vec.
@@ -841,33 +826,12 @@ impl AnsiTextState {
         }
     }
 
-    /// Focus.
-    pub const fn set_focused(&mut self, on: bool) {
-        self.focused = on;
-    }
-
     /// Scroll clamp.
     pub fn clamp(&mut self) {
         let max = self.total.saturating_sub(usize::from(self.viewport.max(1)));
         if self.scroll_y > max {
             self.scroll_y = max;
         }
-    }
-
-    /// Scroll by lines.
-    pub fn scroll_by(&mut self, delta: isize) -> bool {
-        let before = self.scroll_y;
-        if delta >= 0 {
-            self.scroll_y = self
-                .scroll_y
-                .saturating_add(usize::try_from(delta).unwrap_or(usize::MAX));
-        } else {
-            self.scroll_y = self
-                .scroll_y
-                .saturating_sub(usize::try_from(-delta).unwrap_or(usize::MAX));
-        }
-        self.clamp();
-        before != self.scroll_y
     }
 }
 
@@ -898,19 +862,6 @@ impl<'a> AnsiText<'a> {
     pub const fn mode(mut self, mode: AnsiTextMode) -> Self {
         self.mode = mode;
         self
-    }
-
-    /// First visible line (Widget path).
-    #[must_use]
-    pub const fn first(mut self, first: usize) -> Self {
-        self.first = first;
-        self
-    }
-
-    /// Line count.
-    #[must_use]
-    pub const fn len(&self) -> usize {
-        self.lines.len()
     }
 
     /// Paint with scroll state.

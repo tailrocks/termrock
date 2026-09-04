@@ -188,14 +188,6 @@ impl<'a, Id> TreeTableRow<'a, Id> {
         self.enabled = false;
         self
     }
-
-    /// Loading children.
-    #[must_use]
-    pub const fn loading(mut self) -> Self {
-        self.status = TreeNodeStatus::Loading;
-        self.enabled = false;
-        self
-    }
 }
 
 /// Header hit region.
@@ -341,11 +333,6 @@ impl<Id: Clone + Ord, ColId: Clone + PartialEq> TreeTableState<Id, ColId> {
     #[must_use]
     pub const fn selected(&self) -> Option<&Id> {
         self.selected.as_ref()
-    }
-
-    /// Sets selected id.
-    pub fn select(&mut self, id: Option<Id>) {
-        self.selected = id;
     }
 
     /// Logical flattened universe size (expanded rows only).
@@ -1100,13 +1087,6 @@ impl<'a, Id: Clone + Ord, ColId: Clone + PartialEq> TreeTable<'a, Id, ColId> {
     #[must_use]
     pub const fn focused(mut self, focused: bool) -> Self {
         self.focused = focused;
-        self
-    }
-
-    /// Keep column headers pinned above the body (default true).
-    #[must_use]
-    pub const fn sticky_header(mut self, sticky: bool) -> Self {
-        self.sticky_header = sticky;
         self
     }
 

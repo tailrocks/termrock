@@ -241,13 +241,6 @@ impl<'a, Id> Label<'a, Id> {
         self
     }
 
-    /// Warning tone.
-    #[must_use]
-    pub const fn warning(mut self) -> Self {
-        self.tone = LabelTone::Warning;
-        self
-    }
-
     /// Focused tone.
     #[must_use]
     pub const fn focused(mut self) -> Self {
@@ -267,19 +260,6 @@ impl<'a, Id> Label<'a, Id> {
     pub const fn compact(mut self) -> Self {
         self.layout = CaptionLayout::Compact;
         self
-    }
-
-    /// Inline recipe.
-    #[must_use]
-    pub const fn inline(mut self) -> Self {
-        self.layout = CaptionLayout::Inline;
-        self
-    }
-
-    /// Raw label text (without marks).
-    #[must_use]
-    pub const fn text(&self) -> &'a str {
-        self.text
     }
 
     /// Tone.
@@ -513,18 +493,6 @@ impl<'a, Id> Description<'a, Id> {
         self.kind
     }
 
-    /// Target id.
-    #[must_use]
-    pub const fn target(&self) -> Option<&Id> {
-        self.for_id.as_ref()
-    }
-
-    /// Body text.
-    #[must_use]
-    pub const fn text(&self) -> &'a str {
-        self.text
-    }
-
     /// Whether this description should paint at `width`.
     #[must_use]
     pub fn visible_at(&self, width: u16) -> bool {
@@ -575,37 +543,6 @@ impl<'a, Id> Description<'a, Id> {
             .truncate()
             .paint(parts.description, buffer);
         parts
-    }
-
-    /// Register semantic content node.
-    pub fn register_semantic<Action>(
-        &self,
-        scene: &mut SemanticScene<Id, Action>,
-        id: Id,
-        area: Rect,
-    ) where
-        Id: Clone + PartialEq + std::fmt::Display,
-        Action: Clone,
-    {
-        let parts = self.layout(area);
-        if parts.description.is_empty() {
-            return;
-        }
-        let desc = match &self.for_id {
-            Some(target) => format!("{} for {target}", self.semantic_description()),
-            None => self.semantic_description(),
-        };
-        let _ = scene.register(
-            SemanticNode::content(id, parts.description)
-                .role(SemanticRole::Content)
-                .label(self.text)
-                .description(desc)
-                .focusable(false)
-                .state(SemanticState {
-                    invalid: matches!(self.kind, DescriptionKind::Error),
-                    ..Default::default()
-                }),
-        );
     }
 }
 

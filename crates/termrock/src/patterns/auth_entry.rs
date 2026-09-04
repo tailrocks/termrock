@@ -283,12 +283,6 @@ impl AuthEntryState {
         self.focus
     }
 
-    /// Identity text (public, non-secret).
-    #[must_use]
-    pub fn identity(&self) -> &str {
-        self.identity.value()
-    }
-
     /// Password secret (host-only; do not log).
     #[must_use]
     pub fn password_secret(&self) -> &str {
@@ -299,18 +293,6 @@ impl AuthEntryState {
     #[must_use]
     pub fn terms_accepted(&self) -> bool {
         self.terms.is_checked()
-    }
-
-    /// Pending remote verify (blocks edits).
-    pub fn set_pending(&mut self, on: bool) {
-        self.pending = on;
-        self.secrets.password.set_pending(on);
-        self.secrets.confirm.set_pending(on);
-        self.identity.set_loading(on);
-    }
-    /// Input gate.
-    pub fn set_accepts_input(&mut self, on: bool) {
-        self.accepts_input = on;
     }
 
     /// Switch mode (clears secrets + errors; keeps identity).

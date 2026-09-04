@@ -289,23 +289,6 @@ impl ConnectionCredentialMeta {
             redacted_marker: CONNECTION_SECRET_REDACTED.into(),
         }
     }
-
-    /// Missing required secret.
-    #[must_use]
-    pub fn missing(kind_label: impl Into<String>) -> Self {
-        Self {
-            kind_label: kind_label.into(),
-            has_secret: false,
-            redacted_marker: "missing".into(),
-        }
-    }
-
-    /// Custom marker.
-    #[must_use]
-    pub fn marker(mut self, m: impl Into<String>) -> Self {
-        self.redacted_marker = m.into();
-        self
-    }
 }
 
 /// One connection projection (host-owned data; no sockets / vault).

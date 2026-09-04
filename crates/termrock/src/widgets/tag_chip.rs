@@ -157,20 +157,6 @@ impl<'a, Id> Tag<'a, Id> {
         self
     }
 
-    /// Error tag.
-    #[must_use]
-    pub const fn error(mut self) -> Self {
-        self.status = TokenStatus::Error;
-        self
-    }
-
-    /// Loading tag.
-    #[must_use]
-    pub const fn loading(mut self) -> Self {
-        self.status = TokenStatus::Loading;
-        self
-    }
-
     /// Disabled.
     #[must_use]
     pub const fn disabled(mut self, on: bool) -> Self {
@@ -182,12 +168,6 @@ impl<'a, Id> Tag<'a, Id> {
     #[must_use]
     pub const fn is_removable(&self) -> bool {
         self.removable && !self.disabled
-    }
-
-    /// Semantic remove action label.
-    #[must_use]
-    pub fn remove_action_label(&self) -> String {
-        remove_label(self.label)
     }
 
     /// Measure natural width.
@@ -379,18 +359,6 @@ pub enum BracketStyle {
     /// `[ label ]` — an interactive chip or keycap.
     #[default]
     Square,
-}
-
-impl BracketStyle {
-    /// Opening and closing brackets under the active glyph profile.
-    #[must_use]
-    pub const fn pair(self, ascii: bool) -> (&'static str, &'static str) {
-        match (self, ascii) {
-            (Self::Angle, false) => ("⟨", "⟩"),
-            (Self::Angle, true) => ("<", ">"),
-            (Self::Square, _) => ("[", "]"),
-        }
-    }
 }
 
 /// One token's paint plan: gutter, an optional mark, a label, a remove slot.
@@ -667,13 +635,6 @@ impl<'a, Id> Chip<'a, Id> {
         self
     }
 
-    /// Loading chip.
-    #[must_use]
-    pub const fn loading(mut self) -> Self {
-        self.status = TokenStatus::Loading;
-        self
-    }
-
     /// Disabled.
     #[must_use]
     pub const fn disabled(mut self, on: bool) -> Self {
@@ -681,23 +642,10 @@ impl<'a, Id> Chip<'a, Id> {
         self
     }
 
-    /// Interactive toggle.
-    #[must_use]
-    pub const fn interactive(mut self, on: bool) -> Self {
-        self.interactive = on;
-        self
-    }
-
     /// Removable and enabled.
     #[must_use]
     pub const fn is_removable(&self) -> bool {
         self.removable && !self.disabled
-    }
-
-    /// Semantic remove label.
-    #[must_use]
-    pub fn remove_action_label(&self) -> String {
-        remove_label(self.label)
     }
 
     /// Measure width for selected state.
@@ -768,12 +716,6 @@ impl ChipState {
         if !focused {
             self.part = TokenPart::Body;
         }
-    }
-
-    /// Part.
-    #[must_use]
-    pub const fn part(&self) -> TokenPart {
-        self.part
     }
 
     /// Set part.
@@ -1143,13 +1085,6 @@ impl<'a, Id> TokenStrip<'a, Id> {
     #[must_use]
     pub const fn max_visible(mut self, n: usize) -> Self {
         self.max_visible = n;
-        self
-    }
-
-    /// Gap between tokens.
-    #[must_use]
-    pub const fn gap(mut self, gap: u16) -> Self {
-        self.gap = gap;
         self
     }
 
