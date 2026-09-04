@@ -582,7 +582,6 @@ pub fn termrock::capability::CapabilityBoundary::fallback(self, termrock::capabi
 pub const fn termrock::capability::CapabilityBoundary::from_capabilities(&termrock::capability::TerminalCapabilities) -> Self
 pub const fn termrock::capability::CapabilityBoundary::from_profile(termrock::capability::CapabilityProfile) -> Self
 pub const fn termrock::capability::CapabilityBoundary::interactive(self) -> bool
-pub const fn termrock::capability::CapabilityBoundary::new(termrock::capability::CapabilitySet, termrock::capability::CapabilityProfile) -> Self
 pub fn termrock::capability::CapabilityBoundary::project_palette(self, termrock::style::RolePalette) -> termrock::style::RolePalette
 pub fn termrock::capability::CapabilityBoundary::project_system(self, termrock::style::DesignSystem) -> termrock::style::DesignSystem
 pub const fn termrock::capability::CapabilityBoundary::session_flags(self) -> termrock::capability::SessionFlags
