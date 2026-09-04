@@ -29161,52 +29161,6 @@ pub unsafe fn termrock::scroll::ScrollDelta::clone_to_uninit(&self, *mut u8)
 impl<T> core::convert::From<T> for termrock::scroll::ScrollDelta
 pub fn termrock::scroll::ScrollDelta::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::scroll::ScrollDelta
-pub struct termrock::scroll::ScrollSpan
-pub termrock::scroll::ScrollSpan::content_len: usize
-pub termrock::scroll::ScrollSpan::viewport_len: usize
-impl termrock::scroll::ScrollSpan
-pub const fn termrock::scroll::ScrollSpan::new(usize, usize) -> Self
-impl core::clone::Clone for termrock::scroll::ScrollSpan
-pub fn termrock::scroll::ScrollSpan::clone(&self) -> termrock::scroll::ScrollSpan
-impl core::cmp::Eq for termrock::scroll::ScrollSpan
-impl core::cmp::PartialEq for termrock::scroll::ScrollSpan
-pub fn termrock::scroll::ScrollSpan::eq(&self, &termrock::scroll::ScrollSpan) -> bool
-impl core::fmt::Debug for termrock::scroll::ScrollSpan
-pub fn termrock::scroll::ScrollSpan::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::Copy for termrock::scroll::ScrollSpan
-impl core::marker::StructuralPartialEq for termrock::scroll::ScrollSpan
-impl core::marker::Freeze for termrock::scroll::ScrollSpan
-impl core::marker::Send for termrock::scroll::ScrollSpan
-impl core::marker::Sync for termrock::scroll::ScrollSpan
-impl core::marker::Unpin for termrock::scroll::ScrollSpan
-impl core::marker::UnsafeUnpin for termrock::scroll::ScrollSpan
-impl core::panic::unwind_safe::RefUnwindSafe for termrock::scroll::ScrollSpan
-impl core::panic::unwind_safe::UnwindSafe for termrock::scroll::ScrollSpan
-impl<Q, K> equivalent::Equivalent<K> for termrock::scroll::ScrollSpan where Q: core::cmp::Eq + ?core::marker::Sized, K: core::borrow::Borrow<Q> + ?core::marker::Sized
-pub fn termrock::scroll::ScrollSpan::equivalent(&self, &K) -> bool
-impl<T, U> core::convert::Into<U> for termrock::scroll::ScrollSpan where U: core::convert::From<T>
-pub fn termrock::scroll::ScrollSpan::into(self) -> U
-impl<T, U> core::convert::TryFrom<U> for termrock::scroll::ScrollSpan where U: core::convert::Into<T>
-pub type termrock::scroll::ScrollSpan::Error = never
-pub fn termrock::scroll::ScrollSpan::try_from(U) -> core::result::Result<T, <T as core::convert::TryFrom<U>>::Error>
-impl<T, U> core::convert::TryInto<U> for termrock::scroll::ScrollSpan where U: core::convert::TryFrom<T>
-pub type termrock::scroll::ScrollSpan::Error = <U as core::convert::TryFrom<T>>::Error
-pub fn termrock::scroll::ScrollSpan::try_into(self) -> core::result::Result<U, <U as core::convert::TryFrom<T>>::Error>
-impl<T> alloc::borrow::ToOwned for termrock::scroll::ScrollSpan where T: core::clone::Clone
-pub type termrock::scroll::ScrollSpan::Owned = T
-pub fn termrock::scroll::ScrollSpan::clone_into(&self, &mut T)
-pub fn termrock::scroll::ScrollSpan::to_owned(&self) -> T
-impl<T> core::any::Any for termrock::scroll::ScrollSpan where T: 'static + ?core::marker::Sized
-pub fn termrock::scroll::ScrollSpan::type_id(&self) -> core::any::TypeId
-impl<T> core::borrow::Borrow<T> for termrock::scroll::ScrollSpan where T: ?core::marker::Sized
-pub fn termrock::scroll::ScrollSpan::borrow(&self) -> &T
-impl<T> core::borrow::BorrowMut<T> for termrock::scroll::ScrollSpan where T: ?core::marker::Sized
-pub fn termrock::scroll::ScrollSpan::borrow_mut(&mut self) -> &mut T
-impl<T> core::clone::CloneToUninit for termrock::scroll::ScrollSpan where T: core::clone::Clone
-pub unsafe fn termrock::scroll::ScrollSpan::clone_to_uninit(&self, *mut u8)
-impl<T> core::convert::From<T> for termrock::scroll::ScrollSpan
-pub fn termrock::scroll::ScrollSpan::from(T) -> T
-impl<T> either::into_either::IntoEither for termrock::scroll::ScrollSpan
 pub struct termrock::scroll::ScrollbarGeometry
 impl termrock::scroll::ScrollbarGeometry
 pub const fn termrock::scroll::ScrollbarGeometry::new(usize, usize, u16) -> Self
