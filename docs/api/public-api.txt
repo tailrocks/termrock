@@ -4658,7 +4658,6 @@ pub fn termrock::interaction::DismissableLayer::on_outside_click(&mut self, rata
 pub fn termrock::interaction::DismissableLayer::on_parent_closed(&mut self, &mut termrock::interaction::DismissGuard, termrock::interaction::DismissEventId) -> termrock::interaction::DismissDecision
 pub fn termrock::interaction::DismissableLayer::on_pointer_down(&mut self, ratatui_core::layout::position::Position, &mut termrock::interaction::DismissGuard, termrock::interaction::DismissEventId) -> termrock::interaction::DismissDecision
 pub fn termrock::interaction::DismissableLayer::on_pointer_up(&mut self, ratatui_core::layout::position::Position, &mut termrock::interaction::DismissGuard, termrock::interaction::DismissEventId) -> termrock::interaction::DismissDecision
-pub const fn termrock::interaction::DismissableLayer::policy(&self) -> termrock::interaction::DismissPolicy
 pub const fn termrock::interaction::DismissableLayer::rect(&self) -> ratatui_core::layout::rect::Rect
 pub fn termrock::interaction::DismissableLayer::reset_gesture(&mut self)
 pub fn termrock::interaction::DismissableLayer::set_policy(&mut self, termrock::interaction::DismissPolicy)
