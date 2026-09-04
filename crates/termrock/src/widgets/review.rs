@@ -1582,8 +1582,6 @@ impl StatefulWidget for DiffReview<'_> {
 
 /// Review session paint targets.
 pub mod bench {
-    /// Viewport rows.
-    pub const VIEWPORT: u16 = 40;
     /// Undo stack.
     pub const UNDO: usize = super::DIFF_REVIEW_UNDO_LIMIT;
 }

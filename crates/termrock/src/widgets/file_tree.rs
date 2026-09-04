@@ -1083,12 +1083,8 @@ impl<'a, Id> FileTree<'a, Id> {
 
 /// Host paging / huge-dir targets.
 pub mod bench {
-    /// Viewport rows.
-    pub const VIEWPORT: u16 = 40;
     /// Entries in a huge directory host should window.
     pub const HUGE_DIR: usize = 50_000;
-    /// Max paint cells.
-    pub const MAX_PAINT_CELLS: u32 = 40 * 80;
 }
 
 #[cfg(test)]

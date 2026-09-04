@@ -1104,8 +1104,6 @@ pub fn example_message_session() -> Vec<MessageEntry> {
 pub mod bench {
     /// Blocks in stress projection.
     pub const ENTRY_COUNT: usize = 2_000;
-    /// Paint frames.
-    pub const PAINT_FRAMES: u32 = 40;
 }
 
 // ── Tests ───────────────────────────────────────────────────────────────────

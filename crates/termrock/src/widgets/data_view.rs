@@ -852,8 +852,6 @@ pub mod bench {
     pub const ROWS_1M: u64 = 1_000_000;
     /// Paint budget: body rows visible on a large terminal.
     pub const VIEWPORT_ROWS: u16 = 40;
-    /// Target: frame paint O(viewport), not O(logical).
-    pub const MAX_PAINT_CELLS: u32 = 40 * 64;
 }
 
 #[cfg(test)]

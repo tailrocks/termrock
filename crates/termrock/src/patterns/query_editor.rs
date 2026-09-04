@@ -1377,8 +1377,6 @@ impl<'a> QueryEditor<'a> {
 pub mod bench {
     /// Lines in a large draft.
     pub const DRAFT_LINES: usize = 2_000;
-    /// Paint frames for stress.
-    pub const PAINT_FRAMES: u32 = 60;
 }
 
 #[cfg(test)]

@@ -29,14 +29,6 @@ pub enum ColorCapability {
 }
 
 impl ColorCapability {
-    /// Every rung, in capability order.
-    pub const ALL: [Self; 4] = [
-        Self::Truecolor,
-        Self::Indexed256,
-        Self::Ansi16,
-        Self::Monochrome,
-    ];
-
     /// Stable id, for stories and readouts.
     #[must_use]
     pub const fn id(self) -> &'static str {

@@ -1254,8 +1254,6 @@ pub mod bench {
     pub const PAGE_ROWS: usize = 500;
     /// Logical unknown-total stream size (host).
     pub const STREAM_RESIDENT: u64 = 50_000;
-    /// Paint frames.
-    pub const PAINT_FRAMES: u32 = 40;
 }
 
 #[cfg(test)]

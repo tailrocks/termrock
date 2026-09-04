@@ -1093,8 +1093,6 @@ pub mod bench {
     pub const VIEWPORT: u16 = 40;
     /// Burst batch size under backpressure.
     pub const BURST_BATCH: u32 = 64;
-    /// Max paint cells per frame (viewport × avg cols).
-    pub const MAX_PAINT_CELLS: u32 = 40 * 80;
 }
 
 #[cfg(test)]

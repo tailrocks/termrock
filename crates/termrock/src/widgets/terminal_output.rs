@@ -1435,10 +1435,6 @@ impl StatefulWidget for TerminalOutput<'_> {
 pub mod bench {
     /// Lines/sec host append target.
     pub const LINES_PER_SEC: u32 = 20_000;
-    /// Viewport rows.
-    pub const VIEWPORT: u16 = 40;
-    /// Max paint cells.
-    pub const MAX_PAINT_CELLS: u32 = 40 * 120;
 }
 
 #[cfg(test)]

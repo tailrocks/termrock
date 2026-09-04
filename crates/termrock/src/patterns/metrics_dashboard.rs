@@ -1033,8 +1033,6 @@ pub mod bench {
     pub const TILE_COUNT: usize = 24;
     /// Samples per sparkline.
     pub const SAMPLE_LEN: usize = 64;
-    /// Paint frames.
-    pub const PAINT_FRAMES: u32 = 40;
 }
 
 #[cfg(test)]

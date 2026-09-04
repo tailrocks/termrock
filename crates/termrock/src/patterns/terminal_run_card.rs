@@ -1119,12 +1119,8 @@ pub fn example_terminal_run_lines() -> Vec<TerminalLine<'static>> {
 
 /// Paint stress.
 pub mod bench {
-    /// Cards.
-    pub const CARD_COUNT: usize = 32;
     /// Frames.
     pub const PAINT_FRAMES: u32 = 24;
-    /// Lines per run.
-    pub const LINES: usize = 80;
 }
 
 // ── Tests ───────────────────────────────────────────────────────────────────

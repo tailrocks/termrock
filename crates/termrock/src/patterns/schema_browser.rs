@@ -1006,10 +1006,6 @@ impl<'a, Id: Clone + PartialEq + Ord> SchemaBrowser<'a, Id> {
 pub mod bench {
     /// Objects in a large projection window.
     pub const OBJECT_COUNT: usize = 5_000;
-    /// Viewport rows.
-    pub const VIEWPORT: u16 = 40;
-    /// Paint frames.
-    pub const PAINT_FRAMES: u32 = 40;
 }
 
 #[cfg(test)]

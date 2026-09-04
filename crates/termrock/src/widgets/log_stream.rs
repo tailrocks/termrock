@@ -1301,12 +1301,8 @@ pub mod bench {
     pub const LINES_PER_SEC: u32 = 20_000;
     /// Viewport rows for paint budget.
     pub const VIEWPORT: u16 = 40;
-    /// Burst batch size under pressure.
-    pub const BURST_BATCH: u32 = 128;
     /// Default bounded history (aligns with LogPane).
     pub const BOUNDED_HISTORY: usize = 10_000;
-    /// Max paint cells per frame (viewport × avg cols).
-    pub const MAX_PAINT_CELLS: u32 = 40 * 80;
 }
 
 #[cfg(test)]

@@ -40,17 +40,6 @@ impl RegistryItemKind {
             Self::Template => "template",
         }
     }
-
-    /// All kinds.
-    pub const ALL: [Self; 7] = [
-        Self::Primitive,
-        Self::Component,
-        Self::Behavior,
-        Self::Block,
-        Self::Theme,
-        Self::Keymap,
-        Self::Template,
-    ];
 }
 
 /// Role of a file in a contract / registry package.

@@ -1195,10 +1195,6 @@ fn paint_time_ruler(
 pub mod bench {
     /// Spans in a large projection.
     pub const SPAN_COUNT: usize = 2_000;
-    /// Viewport rows.
-    pub const VIEWPORT: u16 = 40;
-    /// Paint frames.
-    pub const PAINT_FRAMES: u32 = 40;
 }
 
 #[cfg(test)]

@@ -1622,8 +1622,6 @@ pub fn code_frame_window<'a>(
 pub mod bench {
     /// Viewport rows.
     pub const VIEWPORT: u16 = 30;
-    /// Max paint cells.
-    pub const MAX_PAINT_CELLS: u32 = 30 * 100;
 }
 
 #[cfg(test)]

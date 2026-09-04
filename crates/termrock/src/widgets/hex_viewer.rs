@@ -1447,14 +1447,10 @@ impl StatefulWidget for HexViewer<'_> {
 
 /// Virtualized paint targets.
 pub mod bench {
-    /// Viewport rows.
-    pub const VIEWPORT: u16 = 32;
     /// Simulated multi-GB total length for metrics only.
     pub const HUGE_LEN: u64 = 4 * 1024 * 1024 * 1024;
     /// Typical page size host projects.
     pub const PAGE_BYTES: usize = 4096;
-    /// Max paint cells.
-    pub const MAX_PAINT_CELLS: u32 = 32 * 100;
 }
 
 #[cfg(test)]

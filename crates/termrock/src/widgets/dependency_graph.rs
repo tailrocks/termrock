@@ -1352,8 +1352,6 @@ pub mod bench {
     pub const NODE_COUNT: usize = 80;
     /// Edges.
     pub const EDGE_COUNT: usize = 160;
-    /// Paint frames.
-    pub const PAINT_FRAMES: u32 = 40;
 }
 
 #[cfg(test)]

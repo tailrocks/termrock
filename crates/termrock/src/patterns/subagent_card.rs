@@ -1085,8 +1085,6 @@ impl SubagentRun {
 
 /// Paint stress.
 pub mod bench {
-    /// Cards.
-    pub const CARD_COUNT: usize = 32;
     /// Frames.
     pub const PAINT_FRAMES: u32 = 24;
 }

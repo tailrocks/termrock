@@ -1491,8 +1491,6 @@ pub mod bench {
     pub const MENTION_COUNT: usize = 48;
     /// Candidates for filter.
     pub const CANDIDATE_COUNT: usize = 200;
-    /// Paint frames.
-    pub const PAINT_FRAMES: u32 = 24;
 }
 
 // ── Tests ───────────────────────────────────────────────────────────────────
