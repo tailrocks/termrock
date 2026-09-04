@@ -639,55 +639,5 @@ pub fn chord_glyph(chord: Option<KeyChord>) -> &'static str {
     }
 }
 
-// ── Scroll hint keymap ───────────────────────────────────────────────────────
-
-/// Axis discriminant for [`SCROLL_HINT_KEYMAP`].
-///
-/// The action type is never used for dispatch; `SCROLL_HINT_KEYMAP` exists
-/// solely to produce axis-gated [`HintSpan`] sequences via
-/// [`Keymap::hint_spans_for_axes`], eliminating the duplicate gating logic
-/// that previously lived in `scroll_hint_spans`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ScrollHintAxis {
-    /// The vertical terminal axis.
-    Vertical,
-    /// The horizontal terminal axis.
-    Horizontal,
-}
-
-/// Hint-only keymap for the two scroll axes.
-///
-/// Each binding carries a pre-composed combined glyph (`"↑↓/j/k"`,
-/// `"←→/h/l"`). The chords drive axis-gating in
-/// The same axis gate used by [`Keymap::hint_spans_for_axes`] applies: a binding whose chords are all `Up`/`Down`
-/// is suppressed when `axes.vertical` is false; one whose chords are all
-/// `Left`/`Right` is suppressed when `axes.horizontal` is false.
-///
-/// Use via [`Keymap::hint_spans_for_axes`]. Never call
-/// [`Keymap::dispatch`] on this keymap — both Up and Down map to
-/// `ScrollHintAxis::Vertical`, so the return value has no directional meaning.
-static SCROLL_HINT_BINDINGS: &[KeyBinding<ScrollHintAxis>] = &[
-    KeyBinding::borrowed(
-        &[KeyChord::plain(KeyCode::Up), KeyChord::plain(KeyCode::Down)],
-        ScrollHintAxis::Vertical,
-        Some("scroll"),
-        Visibility::Shown,
-        Some("↑↓/j/k"),
-    ),
-    KeyBinding::borrowed(
-        &[
-            KeyChord::plain(KeyCode::Left),
-            KeyChord::plain(KeyCode::Right),
-        ],
-        ScrollHintAxis::Horizontal,
-        Some("scroll"),
-        Visibility::Shown,
-        Some("←→/h/l"),
-    ),
-];
-
-/// Hint-only keymap for both scroll axes, filtered at render time by available axes.
-pub static SCROLL_HINT_KEYMAP: Keymap<ScrollHintAxis> = Keymap::from_static(SCROLL_HINT_BINDINGS);
-
 #[cfg(test)]
 mod tests;
