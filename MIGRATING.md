@@ -498,6 +498,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0519 | `v0.14.0` | [Synchronize removed AnsiStream plain projection](migrations/0519-v0.14.0-sync-removed-ansi-stream-plain-projection.md) |
 | 0520 | `v0.14.0` | [Synchronize removed AnsiSegment plain constructor](migrations/0520-v0.14.0-sync-removed-ansi-segment-plain-constructor.md) |
 | 0521 | `v0.14.0` | [Synchronize removed FocusLens constructor](migrations/0521-v0.14.0-sync-removed-focus-lens-constructor.md) |
+| 0522 | `v0.14.0` | [Synchronize removed FocusLens colorless builder](migrations/0522-v0.14.0-sync-removed-focus-lens-colorless-builder.md) |
 | 0464 | `v0.14.0` | [Stepper physical one-shot actions](migrations/0464-v0.14.0-stepper-one-shot-actions.md) |
 
 Each breaking or dramatic public change adds the next zero-padded file and an

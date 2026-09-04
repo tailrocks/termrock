@@ -4903,7 +4903,6 @@ pub fn termrock::interaction::FocusGraph<Id>::from(T) -> T
 impl<T> either::into_either::IntoEither for termrock::interaction::FocusGraph<Id>
 pub struct termrock::interaction::FocusLens<'a, Id>
 impl<'a, Id> termrock::interaction::FocusLens<'a, Id>
-pub const fn termrock::interaction::FocusLens<'a, Id>::colorless(self, bool) -> Self
 pub const fn termrock::interaction::FocusLens<'a, Id>::mode(self, termrock::interaction::FocusLensMode) -> Self
 impl<'a, Id: core::clone::Clone> core::clone::Clone for termrock::interaction::FocusLens<'a, Id>
 pub fn termrock::interaction::FocusLens<'a, Id>::clone(&self) -> termrock::interaction::FocusLens<'a, Id>
