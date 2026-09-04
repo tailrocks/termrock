@@ -13532,7 +13532,6 @@ pub termrock::patterns::MetricAlertSeverity::Info
 pub termrock::patterns::MetricAlertSeverity::Warning
 impl termrock::patterns::MetricAlertSeverity
 pub const fn termrock::patterns::MetricAlertSeverity::id(self) -> &'static str
-pub const fn termrock::patterns::MetricAlertSeverity::letter(self) -> char
 pub const fn termrock::patterns::MetricAlertSeverity::semantic(self) -> termrock::widgets::SemanticStatus
 impl core::clone::Clone for termrock::patterns::MetricAlertSeverity
 pub fn termrock::patterns::MetricAlertSeverity::clone(&self) -> termrock::patterns::MetricAlertSeverity
