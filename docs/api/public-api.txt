@@ -2379,7 +2379,6 @@ pub termrock::interaction::CollectionOutcome::Ignored
 pub termrock::interaction::CollectionOutcome::Scrolled
 impl<Id: core::cmp::PartialEq> termrock::interaction::CollectionOutcome<Id>
 pub fn termrock::interaction::CollectionOutcome<Id>::active_changed(&self) -> bool
-pub fn termrock::interaction::CollectionOutcome<Id>::changed(&self) -> bool
 impl<Id: core::clone::Clone> core::clone::Clone for termrock::interaction::CollectionOutcome<Id>
 pub fn termrock::interaction::CollectionOutcome<Id>::clone(&self) -> termrock::interaction::CollectionOutcome<Id>
 impl<Id: core::cmp::Eq> core::cmp::Eq for termrock::interaction::CollectionOutcome<Id>
