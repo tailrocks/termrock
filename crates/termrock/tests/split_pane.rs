@@ -346,7 +346,6 @@ fn saturated_keyboard_is_ignored_without_mutating_collapsed_state() {
             SplitPaneOutcome::Ignored
         );
         assert_eq!(state.ratio(), before_ratio);
-        assert_eq!(state.collapsed(), None);
         assert_eq!(state.layout(), before_layout);
 
         assert_eq!(state.collapse(side), SplitPaneOutcome::Collapsed(side));
@@ -361,7 +360,6 @@ fn saturated_keyboard_is_ignored_without_mutating_collapsed_state() {
             SplitPaneOutcome::Ignored
         );
         assert_eq!(state.ratio(), before_ratio);
-        assert_eq!(state.collapsed(), Some(side));
         assert_eq!(state.layout(), before_layout);
         assert_eq!(state.is_hovered(), before_hovered);
         assert_eq!(state.is_dragging(), before_dragging);
@@ -396,7 +394,6 @@ fn no_op_drag_is_ignored_without_mutating_ratio_or_interaction_state() {
         SplitPaneOutcome::Ignored
     );
     assert_eq!(state.ratio(), before_ratio);
-    assert_eq!(state.collapsed(), Some(SplitSide::First));
     assert_eq!(state.layout(), before_layout);
     assert_eq!(state.is_hovered(), before_hovered);
     assert_eq!(state.is_dragging(), before_dragging);
@@ -419,14 +416,12 @@ fn drag_at_minimum_clamped_seam_is_ignored_without_mutating_state() {
     );
 
     let before_ratio = state.ratio();
-    let before_collapsed = state.collapsed();
     let before_layout = state.layout();
     assert_eq!(
         state.drag_move(&split, divider.as_position()),
         SplitPaneOutcome::Ignored
     );
     assert_eq!(state.ratio(), before_ratio);
-    assert_eq!(state.collapsed(), before_collapsed);
     assert_eq!(state.layout(), before_layout);
 }
 
@@ -494,7 +489,6 @@ fn keyboard_resize_ignores_ratio_change_without_physical_seam_move() {
         );
         assert_eq!(state.ratio(), before_ratio);
         assert_eq!(state.layout(), before_layout);
-        assert_eq!(state.collapsed(), None);
     }
 }
 

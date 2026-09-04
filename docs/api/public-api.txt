@@ -84463,7 +84463,6 @@ impl<T> either::into_either::IntoEither for termrock::widgets::SplitPaneLayout
 pub struct termrock::widgets::SplitPaneState
 impl termrock::widgets::SplitPaneState
 pub fn termrock::widgets::SplitPaneState::collapse(&mut self, termrock::widgets::SplitSide) -> termrock::widgets::SplitPaneOutcome
-pub const fn termrock::widgets::SplitPaneState::collapsed(&self) -> core::option::Option<termrock::widgets::SplitSide>
 pub const fn termrock::widgets::SplitPaneState::drag_end(&mut self)
 pub fn termrock::widgets::SplitPaneState::drag_move(&mut self, &termrock::widgets::SplitPane<'_>, ratatui_core::layout::position::Position) -> termrock::widgets::SplitPaneOutcome
 pub fn termrock::widgets::SplitPaneState::drag_start(&mut self, &termrock::widgets::SplitPane<'_>, ratatui_core::layout::position::Position) -> termrock::widgets::SplitPaneOutcome
