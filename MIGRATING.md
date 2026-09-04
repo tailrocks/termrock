@@ -504,6 +504,7 @@ Apply every migration after the consumer's pinned version in numeric order:
 | 0524 | `v0.14.0` | [Synchronize removed ContextUiIntent string projection](migrations/0524-v0.14.0-sync-removed-context-ui-intent-string-projection.md) |
 | 0525 | `v0.14.0` | [Synchronize removed UiContext boundary accessor](migrations/0525-v0.14.0-sync-removed-ui-context-boundary-accessor.md) |
 | 0526 | `v0.14.0` | [Synchronize removed UiContext capabilities accessor](migrations/0526-v0.14.0-sync-removed-ui-context-capabilities-accessor.md) |
+| 0534 | `v0.14.0` | [Synchronize removed FocusGraph handle_intent adapter](migrations/0534-v0.14.0-sync-removed-focus-graph-handle-intent-adapter.md) |
 | 0533 | `v0.14.0` | [Synchronize removed CollectionState set_current alias](migrations/0533-v0.14.0-sync-removed-collection-state-set-current-alias.md) |
 | 0532 | `v0.14.0` | [Synchronize removed CollectionOutcome changed predicate](migrations/0532-v0.14.0-sync-removed-collection-outcome-changed-predicate.md) |
 | 0531 | `v0.14.0` | [Synchronize removed DismissEventId next method](migrations/0531-v0.14.0-sync-removed-dismiss-event-id-next-method.md) |

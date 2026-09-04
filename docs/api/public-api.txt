@@ -4825,7 +4825,6 @@ pub fn termrock::interaction::FocusGraph<Id>::focus_previous(&mut self) -> termr
 pub fn termrock::interaction::FocusGraph<Id>::focus_spatial(&mut self, termrock::interaction::NavigationMove) -> termrock::interaction::FocusOutcome<Id>
 pub fn termrock::interaction::FocusGraph<Id>::focused_roving(&self) -> bool
 pub fn termrock::interaction::FocusGraph<Id>::from_interaction<LayerId, Action>(&termrock::interaction::InteractionScene<Id, LayerId, Action>) -> Self where Id: core::clone::Clone + core::cmp::PartialEq, LayerId: core::cmp::PartialEq, Action: core::clone::Clone
-pub fn termrock::interaction::FocusGraph<Id>::handle_intent(&mut self, termrock::context::ContextUiIntent) -> termrock::interaction::FocusOutcome<Id>
 pub fn termrock::interaction::FocusGraph<Id>::handle_key(&mut self, termrock::input::KeyEvent) -> termrock::interaction::FocusOutcome<Id>
 pub fn termrock::interaction::FocusGraph<Id>::jump_regions(&self) -> alloc::vec::Vec<termrock::interaction::HitRegion<Id>>
 pub fn termrock::interaction::FocusGraph<Id>::pop_trap(&mut self) -> termrock::interaction::FocusOutcome<Id>
