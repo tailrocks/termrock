@@ -13879,7 +13879,7 @@
         },
         "focus": {
           "applicability": "required",
-          "status": "partial",
+          "status": "missing",
           "evidence": {
             "stories": [
               "card/basic"
@@ -13894,7 +13894,7 @@
               "docs/scripts/audit-render-contracts.ts#runRenderAudit"
             ]
           },
-          "reason": "Exact mounted representative changed state or emitted an outcome through focus; alternate states and paths remain unproven."
+          "reason": "Exact mounted representative produced no observable focus outcome in the exhaustive host-event probe."
         },
         "disabled": {
           "applicability": "conditional",
@@ -21512,7 +21512,7 @@
         },
         "focus": {
           "applicability": "required",
-          "status": "partial",
+          "status": "missing",
           "evidence": {
             "stories": [
               "composed-row-parts/basic"
@@ -21527,7 +21527,7 @@
               "docs/scripts/audit-render-contracts.ts#runRenderAudit"
             ]
           },
-          "reason": "Exact mounted representative changed state or emitted an outcome through focus; alternate states and paths remain unproven."
+          "reason": "Exact mounted representative produced no observable focus outcome in the exhaustive host-event probe."
         },
         "disabled": {
           "applicability": "conditional",
@@ -26682,7 +26682,7 @@
         },
         "focus": {
           "applicability": "required",
-          "status": "partial",
+          "status": "missing",
           "evidence": {
             "stories": [
               "detail-table/basic"
@@ -26697,7 +26697,7 @@
               "docs/scripts/audit-render-contracts.ts#runRenderAudit"
             ]
           },
-          "reason": "Exact mounted representative changed state or emitted an outcome through focus; alternate states and paths remain unproven."
+          "reason": "Exact mounted representative produced no observable focus outcome in the exhaustive host-event probe."
         },
         "disabled": {
           "applicability": "conditional",
@@ -28117,7 +28117,7 @@
         },
         "focus": {
           "applicability": "required",
-          "status": "partial",
+          "status": "missing",
           "evidence": {
             "stories": [
               "dialog-scroll/basic"
@@ -28132,7 +28132,7 @@
               "docs/scripts/audit-render-contracts.ts#runRenderAudit"
             ]
           },
-          "reason": "Exact mounted representative changed state or emitted an outcome through focus; alternate states and paths remain unproven."
+          "reason": "Exact mounted representative produced no observable focus outcome in the exhaustive host-event probe."
         },
         "disabled": {
           "applicability": "required",
@@ -63400,7 +63400,7 @@
         },
         "focus": {
           "applicability": "required",
-          "status": "partial",
+          "status": "missing",
           "evidence": {
             "stories": [
               "panel/focused"
@@ -63415,7 +63415,7 @@
               "docs/scripts/audit-render-contracts.ts#runRenderAudit"
             ]
           },
-          "reason": "Exact mounted representative changed state or emitted an outcome through focus; alternate states and paths remain unproven."
+          "reason": "Exact mounted representative produced no observable focus outcome in the exhaustive host-event probe."
         },
         "disabled": {
           "applicability": "conditional",
@@ -75796,7 +75796,7 @@
         },
         "focus": {
           "applicability": "required",
-          "status": "partial",
+          "status": "missing",
           "evidence": {
             "stories": [
               "scroll-area/follow-paused"
@@ -75811,7 +75811,7 @@
               "docs/scripts/audit-render-contracts.ts#runRenderAudit"
             ]
           },
-          "reason": "Exact mounted representative changed state or emitted an outcome through focus; alternate states and paths remain unproven."
+          "reason": "Exact mounted representative produced no observable focus outcome in the exhaustive host-event probe."
         },
         "disabled": {
           "applicability": "conditional",
@@ -77230,7 +77230,7 @@
         },
         "focus": {
           "applicability": "required",
-          "status": "partial",
+          "status": "missing",
           "evidence": {
             "stories": [
               "section/quiet"
@@ -77245,7 +77245,7 @@
               "docs/scripts/audit-render-contracts.ts#runRenderAudit"
             ]
           },
-          "reason": "Exact mounted representative changed state or emitted an outcome through focus; alternate states and paths remain unproven."
+          "reason": "Exact mounted representative produced no observable focus outcome in the exhaustive host-event probe."
         },
         "disabled": {
           "applicability": "conditional",
@@ -90071,7 +90071,7 @@
         },
         "focus": {
           "applicability": "required",
-          "status": "partial",
+          "status": "missing",
           "evidence": {
             "stories": [
               "surface/ladder"
@@ -90086,7 +90086,7 @@
               "docs/scripts/audit-render-contracts.ts#runRenderAudit"
             ]
           },
-          "reason": "Exact mounted representative changed state or emitted an outcome through focus; alternate states and paths remain unproven."
+          "reason": "Exact mounted representative produced no observable focus outcome in the exhaustive host-event probe."
         },
         "disabled": {
           "applicability": "conditional",
@@ -91007,7 +91007,7 @@
         },
         "focus": {
           "applicability": "required",
-          "status": "partial",
+          "status": "missing",
           "evidence": {
             "stories": [
               "table/basic"
@@ -91022,7 +91022,7 @@
               "docs/scripts/audit-render-contracts.ts#runRenderAudit"
             ]
           },
-          "reason": "Exact mounted representative changed state or emitted an outcome through focus; alternate states and paths remain unproven."
+          "reason": "Exact mounted representative produced no observable focus outcome in the exhaustive host-event probe."
         },
         "disabled": {
           "applicability": "conditional",
@@ -105249,7 +105249,7 @@
         },
         "focus": {
           "applicability": "required",
-          "status": "partial",
+          "status": "missing",
           "evidence": {
             "stories": [
               "viewport/both-axes"
@@ -105264,7 +105264,7 @@
               "docs/scripts/audit-render-contracts.ts#runRenderAudit"
             ]
           },
-          "reason": "Exact mounted representative changed state or emitted an outcome through focus; alternate states and paths remain unproven."
+          "reason": "Exact mounted representative produced no observable focus outcome in the exhaustive host-event probe."
         },
         "disabled": {
           "applicability": "conditional",
@@ -105716,7 +105716,7 @@
         },
         "focus": {
           "applicability": "required",
-          "status": "partial",
+          "status": "missing",
           "evidence": {
             "stories": [
               "virtual-grid/basic"
@@ -105731,7 +105731,7 @@
               "docs/scripts/audit-render-contracts.ts#runRenderAudit"
             ]
           },
-          "reason": "Exact mounted representative changed state or emitted an outcome through focus; alternate states and paths remain unproven."
+          "reason": "Exact mounted representative produced no observable focus outcome in the exhaustive host-event probe."
         },
         "disabled": {
           "applicability": "conditional",
@@ -106181,7 +106181,7 @@
         },
         "focus": {
           "applicability": "required",
-          "status": "partial",
+          "status": "missing",
           "evidence": {
             "stories": [
               "virtual-list/million"
@@ -106196,7 +106196,7 @@
               "docs/scripts/audit-render-contracts.ts#runRenderAudit"
             ]
           },
-          "reason": "Exact mounted representative changed state or emitted an outcome through focus; alternate states and paths remain unproven."
+          "reason": "Exact mounted representative produced no observable focus outcome in the exhaustive host-event probe."
         },
         "disabled": {
           "applicability": "conditional",

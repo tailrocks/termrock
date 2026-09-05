@@ -320,17 +320,24 @@ impl CatalogSession {
         };
         let mut app = App::new_with_nav(profile, ColorCapability::Truecolor, nav.clone());
         app.goto(page);
-        Ok(Self {
+        let mut session = Self {
             app,
             profile,
             nav,
             page,
             scenario,
-            cols: cols.max(8),
-            rows: rows.max(4),
+            // A session smaller than the shell's own floor can only ever paint
+            // the too-small screen, so mount never accepts one.
+            cols: cols.max(crate::shell::MIN_WIDTH),
+            rows: rows.max(crate::shell::MIN_HEIGHT),
             elapsed_ms: 0,
             semantic_revision: 0,
-        })
+        };
+        // Draw once at mount: the shell seeds page focus during its first
+        // draw, and host input that arrives before that draw would otherwise
+        // be dropped by a page with no focused control.
+        session.frame();
+        Ok(session)
     }
 
     pub fn reset(&mut self) {
@@ -340,7 +347,29 @@ impl CatalogSession {
         self.semantic_revision = self.semantic_revision.saturating_add(1);
     }
 
+    /// Whether the mounted story accepts input. Layout-kind components are
+    /// passive paint: they render but their metadata promises no interaction.
+    fn interactive(&self) -> bool {
+        self.scenario.map_or_else(
+            || self.app.page_metadata().interactive,
+            |scenario| scenario.interactive,
+        )
+    }
+
     pub fn dispatch(&mut self, event: DemoEvent) -> Result<DemoUpdate, String> {
+        // A scenario-declared passive story only paints. Feeding it input
+        // would let it mutate state its own inventory declares
+        // non-interactive, so only the events that shape the paint (size,
+        // clock, host focus) still apply. Page mounts keep their input: shell
+        // chrome (navigation, help) must work even on a passive page.
+        if self.scenario.is_some_and(|scenario| !scenario.interactive)
+            && !matches!(
+                event,
+                DemoEvent::Tick { .. } | DemoEvent::Resize { .. } | DemoEvent::Focus { .. }
+            )
+        {
+            return Ok(self.update(false));
+        }
         let before = self.frame();
         let before_cursor = self.app.last_cursor;
         let is_tick = matches!(event, DemoEvent::Tick { .. });
@@ -362,8 +391,10 @@ impl CatalogSession {
         match event {
             DemoEvent::Tick { .. } => self.app.on_tick(tick),
             DemoEvent::Resize { cols, rows } => {
-                self.cols = cols.max(8);
-                self.rows = rows.max(4);
+                // Same floor as mount: below it the shell can only paint the
+                // too-small screen.
+                self.cols = cols.max(crate::shell::MIN_WIDTH);
+                self.rows = rows.max(crate::shell::MIN_HEIGHT);
                 let _ = self.app.handle_event(
                     Event::Resize {
                         width: self.cols,
@@ -519,7 +550,7 @@ impl CatalogSession {
             changed,
             outcome: None,
             hints,
-            interactive: metadata.interactive,
+            interactive: self.interactive(),
             captures_text_input: metadata.captures_text_input,
             next_deadline_ms: deadline_kind.map(|_| 80),
             deadline_kind,
@@ -554,10 +585,7 @@ impl CatalogSession {
             .map(|scenario| scenario.component.to_owned())
             .or_else(|| entry.map(|e| e.section.to_owned()))
             .unwrap_or_default();
-        let interactive = self.scenario.map_or_else(
-            || self.app.page_metadata().interactive,
-            |scenario| scenario.interactive,
-        );
+        let interactive = self.interactive();
         TerminalFrame {
             story_id,
             title,

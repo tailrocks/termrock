@@ -198,16 +198,29 @@ assert(buttonActivated.deadlineKind === 'functional', 'Rust owns functional dead
 assert(buttonActivated.semanticRevision > 0, 'Rust advances semantic activation revision')
 unmount_demo(button)
 
-const paintedOnly = mount_demo('accent-rail/actors', 40, 8)
+// Layout-kind stories publish a passive-paint contract: the host must not let
+// input mutate them, regardless of session size.
+const paintedOnly = mount_demo('stack/vertical', 80, 24)
 const passiveUpdate = JSON.parse(
   dispatch_demo(
     paintedOnly,
     JSON.stringify({ type: 'key', key: 'ArrowDown', kind: 'press' }),
   ),
-) as { changed: boolean; hints: string[] }
+) as { changed: boolean; hints: string[]; interactive: boolean }
 assert(!passiveUpdate.changed, 'passive Rust demo ignores fake interaction')
-assert(passiveUpdate.hints.length > 0, 'Rust host preserves owning-page hints')
+assert(!passiveUpdate.interactive, 'passive Rust demo publishes non-interactive state')
+assert(passiveUpdate.hints.length === 0, 'passive Rust demo publishes no input hints')
 unmount_demo(paintedOnly)
+
+const hinted = mount_demo('accent-rail/actors', 80, 24)
+const hintedUpdate = JSON.parse(
+  dispatch_demo(
+    hinted,
+    JSON.stringify({ type: 'key', key: 'ArrowDown', kind: 'press' }),
+  ),
+) as { hints: string[] }
+assert(hintedUpdate.hints.length > 0, 'Rust host preserves owning-page hints')
+unmount_demo(hinted)
 
 let rejected = false
 try {
