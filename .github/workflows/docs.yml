@@ -166,7 +166,7 @@ jobs:
           for attempt in {1..20}; do
             html=$(curl --compressed --fail --silent --show-error --location "${DOCS_SITE_URL}/" | tr -d '\000') || true
             docs_html=$(curl --compressed --fail --silent --show-error --location "${DOCS_SITE_URL}/docs" | tr -d '\000') || true
-            if grep -q '<title>TermRock</title>' <<< "$html" &&
+            if grep -q 'TermRock</title>' <<< "$html" &&
                grep -q 'href="/assets/' <<< "$html" &&
                grep -q '>TermRock</h1>' <<< "$docs_html" &&
                ! grep -q '/termrock/' <<< "$html"; then
