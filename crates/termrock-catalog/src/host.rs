@@ -281,6 +281,10 @@ pub struct CatalogSession {
     rows: u16,
     elapsed_ms: u64,
     semantic_revision: u64,
+    /// Last user-visible action result reported by the mounted page. The
+    /// browser host surfaces it as the preview outcome; it stays sticky after
+    /// the page's transient status line clears.
+    outcome: Option<String>,
 }
 
 impl CatalogSession {
@@ -332,10 +336,10 @@ impl CatalogSession {
             rows: rows.max(crate::shell::MIN_HEIGHT),
             elapsed_ms: 0,
             semantic_revision: 0,
+            outcome: None,
         };
-        // Draw once at mount: the shell seeds page focus during its first
-        // draw, and host input that arrives before that draw would otherwise
-        // be dropped by a page with no focused control.
+        // Draw once at mount so the session reports its first frame without
+        // waiting for a dispatch.
         session.frame();
         Ok(session)
     }
@@ -345,6 +349,7 @@ impl CatalogSession {
         self.app.goto(self.page);
         self.elapsed_ms = 0;
         self.semantic_revision = self.semantic_revision.saturating_add(1);
+        self.outcome = Some("Demo reset".to_owned());
     }
 
     /// Whether the mounted story accepts input. Layout-kind components are
@@ -373,6 +378,7 @@ impl CatalogSession {
         let before = self.frame();
         let before_cursor = self.app.last_cursor;
         let is_tick = matches!(event, DemoEvent::Tick { .. });
+        let before_status = self.app.status.as_ref().map(|(text, _)| text.clone());
         let before_semantic = (
             self.app.page,
             self.app.focus,
@@ -513,6 +519,21 @@ impl CatalogSession {
         }
         let after = self.frame();
         let changed = before != after || before_cursor != self.app.last_cursor;
+        // The page's status line is its user-visible action result. When an
+        // event (input or the page's own clock) moves it, that text is the
+        // outcome; a timeout later clears the transient status but the
+        // outcome stays sticky, like the page's own "last action" record.
+        // Navigation drops the outcome: it belongs to the page that produced
+        // it.
+        let after_status = self.app.status.as_ref().map(|(text, _)| text.clone());
+        if before_status != after_status
+            && let Some(text) = after_status
+        {
+            self.outcome = Some(text);
+        }
+        if before_semantic.0 != self.app.page {
+            self.outcome = None;
+        }
         let after_semantic = (
             self.app.page,
             self.app.focus,
@@ -548,7 +569,7 @@ impl CatalogSession {
         };
         DemoUpdate {
             changed,
-            outcome: None,
+            outcome: self.outcome.clone(),
             hints,
             interactive: self.interactive(),
             captures_text_input: metadata.captures_text_input,
@@ -569,7 +590,10 @@ impl CatalogSession {
         let cursor = term.get_cursor_position().ok();
         let snap = Snapshot::from_buffer(term.backend().buffer(), cursor, false);
         let cells = frame_cells(&snap);
-        let entry = self.app.nav().iter().find(|e| e.id == self.page);
+        // Identity follows the app's live page: in-session navigation (or a
+        // reset) must not report the mounted page's name for another page's
+        // paint.
+        let entry = self.app.nav().iter().find(|e| e.id == self.app.page);
         let story_id = self
             .scenario
             .map(|scenario| scenario.id.to_owned())

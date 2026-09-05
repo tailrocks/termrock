@@ -411,6 +411,20 @@ pub fn catalog_scenarios() -> Vec<CatalogScenario> {
         {
             continue;
         }
+        // Same contract as components: a paint-only pattern scenario is
+        // passive-paint. Patterns carry no kind of their own; their linked
+        // public-UI entry (when any) supplies it.
+        let interactive = entry
+            .public_ui
+            .map(|ui| {
+                !public_ui_inventory()
+                    .iter()
+                    .find(|candidate| candidate.id == ui)
+                    .is_some_and(|candidate| {
+                        matches!(candidate.kind, termrock::registry::ComponentKind::Layout)
+                    })
+            })
+            .unwrap_or(true);
         scenarios.push(CatalogScenario {
             id: entry.representative_story,
             title: entry.id.as_str(),
@@ -419,8 +433,12 @@ pub fn catalog_scenarios() -> Vec<CatalogScenario> {
             page: pattern_page(entry.id.as_str()),
             cols: 120,
             rows: 40,
-            interactive: true,
-            interaction_kind: "interactive-pattern",
+            interactive,
+            interaction_kind: if interactive {
+                "interactive-pattern"
+            } else {
+                "passive-paint"
+            },
         });
     }
     scenarios
