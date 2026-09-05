@@ -23,7 +23,7 @@ use termrock::interaction::{InteractionLayer, InteractionScene, LayerDismissPoli
 use termrock::runtime::FrameTick;
 use termrock::style::{BadgeKind, ColorCapability, DesignSystem, JunieTheme, Role, Tone};
 use termrock::widgets::{
-    ActivationOutcome, Backdrop, ButtonState, ButtonVariant, DataTableState, LineSegment, List,
+    ActivationOutcome, Backdrop, ButtonState, ButtonVariant, LineSegment, List,
     ListRow, ListState, Picker, PickerOutcome, PickerSize, PickerState, Prop, Select, SelectOption,
     SelectOutcome, SelectRecipe, SelectState, TextInput, TextInputOutcome, TextInputState,
     paint_line_segments, place_picker_modal, render_props,
@@ -34,7 +34,7 @@ use super::db::{Catalog, ColType, Environment, SafeMode, connections};
 use super::model::{History, SwitchItem, SwitchTarget, SwitcherIndex};
 use super::paint;
 use super::sql::{self, Decision};
-use super::tabs::{Filter, FilterOp, PLAN, TABLE_GRID, TABLE_MODE, TableTab, duration_label};
+use super::tabs::{Filter, FilterOp, TABLE_GRID, TABLE_MODE};
 use super::text::truncate_middle;
 use super::workbench::{EXPLORER, WorkTab, Workbench};
 use crate::ctx::{Interaction, LayerId, RenderCtx};
@@ -180,7 +180,6 @@ pub struct App {
     pub size: (u16, u16),
     /// Hardware cursor from the last `render`. None = hidden.
     pub last_cursor: Option<Position>,
-    capture_cursor_override: Option<Position>,
     overlay: Overlay,
     switcher_q: TextInputState,
     switcher_list: ListState<usize>,
@@ -192,7 +191,6 @@ pub struct App {
     confirm_cancel: ButtonState,
     help_close: ButtonState,
     host: Host,
-    focus_plan_on_result: bool,
 }
 
 impl App {
@@ -216,7 +214,6 @@ impl App {
             quit: false,
             size: (0, 0),
             last_cursor: None,
-            capture_cursor_override: None,
             overlay: Overlay::None,
             switcher_q,
             switcher_list: ListState::new(Some(0)),
@@ -228,7 +225,6 @@ impl App {
             confirm_cancel: ButtonState::new(),
             help_close: ButtonState::new(),
             host: Host::new(),
-            focus_plan_on_result: false,
         }
     }
 
@@ -259,102 +255,6 @@ impl App {
         {
             q.set_sql(sql);
         }
-    }
-
-    pub fn set_active_query_run_ticks_left(&mut self, ticks: u32) {
-        if let Some(q) = self
-            .workbench
-            .as_mut()
-            .and_then(Workbench::active_query_mut)
-        {
-            q.set_next_run_ticks_left(ticks);
-        }
-    }
-
-    pub fn set_capture_cursor(&mut self, position: Position) {
-        self.capture_cursor_override = Some(position);
-    }
-
-    /// Reconstruct a checked-in source table frame whose event provenance is
-    /// incomplete, while retaining the live table renderer and data path.
-    pub fn seed_active_table_state(
-        &mut self,
-        filter_column: &str,
-        filter_value: &str,
-        sort_column: &str,
-        sort_ascending: bool,
-        hscroll: u16,
-        cursor_row: usize,
-        cursor_col: usize,
-    ) {
-        let Some(wb) = self.workbench.as_mut() else {
-            return;
-        };
-        let cat = wb.catalog.clone();
-        let Some(WorkTab::Table(table)) = wb.tabs.get_mut(wb.active) else {
-            return;
-        };
-        let Some(filter_column) = table
-            .grid
-            .columns
-            .iter()
-            .position(|(name, _)| name == filter_column)
-        else {
-            return;
-        };
-        let Some(sort_column) = table
-            .grid
-            .columns
-            .iter()
-            .position(|(name, _)| name == sort_column)
-        else {
-            return;
-        };
-        table.table_state = DataTableState::new();
-        table.filters = vec![Filter {
-            column: table.grid.columns[filter_column].0.clone(),
-            op: FilterOp::Eq,
-            value: filter_value.to_owned(),
-            enabled: true,
-        }];
-        table.grid.sort = Some((sort_column, sort_ascending));
-        table.grid.hscroll = usize::from(hscroll);
-        table.grid.cursor_row = cursor_row;
-        table.grid.cursor_col = cursor_col;
-        table.table_state.h_offset = 0;
-        table.table_state.cursor_col = 0;
-        table.offset = 0;
-        table.load(&cat);
-        self.overlay = Overlay::None;
-        self.host.focus = Some(TABLE_GRID);
-        self.set_status("1 filter applied".to_owned());
-    }
-
-    /// Reconstruct a source table tab when recorded explorer navigation is
-    /// incomplete, preserving the requested mode and footer focus.
-    pub fn seed_active_table(&mut self, name: &str, mode: u8, focus: WidgetId) {
-        let Some(wb) = self.workbench.as_mut() else {
-            return;
-        };
-        let Some(table) = wb.catalog.find(Some("public"), name).cloned() else {
-            return;
-        };
-        let explorer_id = format!("{}/public/Tables/{name}", wb.catalog.database);
-        wb.explorer.select(Some(explorer_id));
-        let active = wb.active;
-        if active < wb.tabs.len() {
-            wb.tabs[active] = WorkTab::Table(Box::new(TableTab::new(&table)));
-        } else {
-            wb.tabs
-                .push(WorkTab::Table(Box::new(TableTab::new(&table))));
-            wb.active = wb.tabs.len().saturating_sub(1);
-        }
-        if let Some(WorkTab::Table(table)) = wb.tabs.get_mut(wb.active) {
-            table.mode.set_selected(Some(mode.min(1)));
-        }
-        wb.strip.set_selected(Some(wb.active));
-        self.overlay = Overlay::None;
-        self.host.focus = Some(focus);
     }
 
     /// Case-insensitive connect by saved name. `Production` skips the list.
@@ -497,12 +397,11 @@ impl App {
                     level_role = tone;
                     level_bold = bold;
                     if w.running().is_some() {
+                        // Source shows only the animated glyph in the strip;
+                        // the elapsed time lives on the editor's running row.
                         let frames = termrock::style::SPINNER_BRAILLE_FRAMES;
                         let frame = frames[(self.tick as usize) % frames.len()];
-                        let duration = w
-                            .running_duration_ms()
-                            .map_or_else(|| "<1 ms".to_owned(), duration_label);
-                        running_s = format!("{frame} running {duration}");
+                        running_s = format!("{frame} running");
                     }
                     let pending = w.pending_total();
                     if pending > 0 {
@@ -1023,29 +922,8 @@ impl App {
                 if let Some(wb) = self.workbench.as_mut() {
                     changed |= wb.tick(&mut self.history);
                 }
-                if self.focus_plan_on_result
-                    && self
-                        .workbench
-                        .as_ref()
-                        .and_then(|workbench| match workbench.active_tab() {
-                            Some(WorkTab::Query(query)) => Some(query.as_ref()),
-                            _ => None,
-                        })
-                        .is_some_and(|query| {
-                            !query.is_running()
-                                && query
-                                    .results
-                                    .get(query.active_result)
-                                    .is_some_and(|result| {
-                                        matches!(&result.body, super::tabs::ResultBody::Plan { .. })
-                                    })
-                        })
-                {
-                    cx.set_focus(PLAN);
-                    self.focus_plan_on_result = false;
-                }
                 if let Some((_, at)) = self.status
-                    && self.elapsed_ms.saturating_sub(at) > 4000
+                    && self.elapsed_ms.saturating_sub(at) > 5_000
                 {
                     self.status = None;
                     changed = true;
@@ -1812,13 +1690,11 @@ impl App {
             }
         }
         let Some((decision, stmt)) = worst else {
-            self.focus_plan_on_result = explain.is_some();
             q.start(statements, explain);
             return;
         };
         match decision {
             Decision::Run => {
-                self.focus_plan_on_result = explain.is_some();
                 q.start(statements, explain);
             }
             Decision::Deny => {
@@ -2013,7 +1889,6 @@ impl App {
         };
         w.active = tab;
         if let Some(q) = w.active_query_mut() {
-            self.focus_plan_on_result = explain.is_some();
             q.start(stmts, explain);
             cx.status("Running…");
         }
@@ -2363,123 +2238,12 @@ impl App {
         }
     }
 
-    /// Capture the native terminal cursor, including hidden footer cursors.
+    /// Native cursor for artifacts: only the render-reported editor cursor
+    /// (source `ctx.cursor`); every other frame leaves the terminal cursor
+    /// wherever the backend's last printed cell landed.
     #[must_use]
     pub fn capture_cursor(&self) -> Option<Position> {
-        if let Some(position) = self.capture_cursor_override {
-            return Some(position);
-        }
-        if self.size == (120, 40) && matches!(self.overlay, Overlay::SafeMode(_)) {
-            return Some(Position::new(70, self.size.1.saturating_sub(1)));
-        }
-        // The source medium-pane table capture leaves the terminal cursor on
-        // the status row after opening `orders`; its footer hint repaint is
-        // not the source cursor contract. Keep this state-specific native
-        // position ahead of the retained backend cursor.
-        if self.size == (120, 40) && self.host.focus == Some(super::tabs::TABLE_GRID) {
-            let source_cursor = self.workbench.as_ref().and_then(|wb| {
-                let super::workbench::WorkTab::Table(tab) = wb.active_tab()? else {
-                    return None;
-                };
-                (tab.name == "orders").then_some(match tab.grid.hscroll {
-                    1 => Position::new(87, 36),
-                    12 => Position::new(95, 36),
-                    _ => return None,
-                })
-            });
-            if source_cursor.is_some() {
-                return source_cursor;
-            }
-        }
-        if self.size == (120, 40)
-            && self.workbench.as_ref().is_some_and(|wb| {
-                matches!(
-                    wb.active_tab(),
-                    Some(super::workbench::WorkTab::Table(tab))
-                        if tab.mode.selected == Some(1)
-                )
-            })
-        {
-            return Some(Position::new(
-                if self.host.focus == Some(super::workbench::TABSTRIP) {
-                    73
-                } else {
-                    68
-                },
-                self.size.1.saturating_sub(1),
-            ));
-        }
-        if let Some(position) = self.last_cursor {
-            return Some(position);
-        }
-        if let Overlay::Confirm(confirm) = &self.overlay {
-            // Native modal captures retain the footer cursor from the source
-            // renderer. Safety dialogs use distinct source terminal positions
-            // for destructive and ordinary writes.
-            let x = if confirm.dangerous { 65 } else { 72 };
-            return Some(Position::new(x, self.size.1.saturating_sub(1)));
-        }
-        if self.screen == Screen::Connections {
-            return self.connections.action_cursor();
-        }
-        if self.size.1 == 0 {
-            return None;
-        }
-        let showing_plan = self.workbench.as_ref().is_some_and(|wb| {
-            matches!(
-                wb.active_tab(),
-                Some(super::workbench::WorkTab::Query(query))
-                    if query.results.get(query.active_result).is_some_and(|result| {
-                        matches!(&result.body, super::tabs::ResultBody::Plan { .. })
-                    })
-            )
-        });
-        if showing_plan {
-            return Some(Position::new(60, self.size.1.saturating_sub(1)));
-        }
-        if self.host.focus == Some(EXPLORER) {
-            if let Some(position) = self.workbench.as_ref().and_then(Workbench::explorer_cursor) {
-                return Some(position);
-            }
-        }
-        if self.host.focus == Some(super::tabs::TABLE_GRID) && self.size.0 > 80 {
-            // Let the terminal backend retain the last cell actually painted
-            // once the wide table reaches its right edge. Compact frames use
-            // the footer hint cursor below because their table body leaves
-            // the terminal's last changed cell before that edge.
-            return None;
-        }
-        let footer_right = self.size.0;
-        let mut x = 1_u16;
-        let mut wrote = false;
-        let right_w = self.status.as_ref().map_or(0, |(s, _)| {
-            let width = crate::text::width(s) as u16;
-            if footer_right > width.saturating_add(2) {
-                width.saturating_add(3)
-            } else {
-                0
-            }
-        });
-        for (key, value) in self.hints(self.host.focus) {
-            let kw = crate::text::width(key) as u16;
-            let vw = crate::text::width(value) as u16;
-            let content = kw.saturating_add(1).saturating_add(vw);
-            if x.saturating_add(content)
-                .saturating_add(2)
-                .saturating_add(right_w)
-                > footer_right
-            {
-                break;
-            }
-            x = x.saturating_add(content).saturating_add(2);
-            wrote = true;
-        }
-        let cursor_gap = if self.host.focus == Some(super::tabs::TABLE_GRID) {
-            1
-        } else {
-            2
-        };
-        wrote.then(|| Position::new(x.saturating_sub(cursor_gap), self.size.1.saturating_sub(1)))
+        self.last_cursor
     }
 
     fn draw_standalone(&mut self, area: Rect, buf: &mut Buffer, ctx: &mut RenderCtx<'_>) {

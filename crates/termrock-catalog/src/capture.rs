@@ -22,7 +22,7 @@ use termrock::style::ColorCapability;
 use unicode_width::UnicodeWidthStr;
 
 use crate::catalog::CatalogProfile;
-use crate::scenarios::{Host, Scenario, Step, TableFocusSeed};
+use crate::scenarios::{Host, Scenario, Step};
 use crate::shell::App;
 use crate::snapshot::Snapshot;
 use crate::tablepro::App as TableProApp;
@@ -66,13 +66,6 @@ impl CursorTrackingBackend {
 
     fn cursor_visible(&self) -> bool {
         self.visible
-    }
-
-    /// Mouse reports leave tmux's cursor at the reported terminal cell even
-    /// when the application redraw does not write that cell. Preserve that
-    /// terminal-side position for source-shot cursor parity.
-    fn set_input_cursor(&mut self, position: Position) {
-        self.cursor = position;
     }
 }
 
@@ -229,6 +222,14 @@ impl Drive<'_> {
         }
     }
 
+    // TEMP probe: current catalog focus id.
+    fn debug_focus(&self) -> Option<crate::id::WidgetId> {
+        match self {
+            Self::Catalog(app) => app.focus,
+            Self::TablePro(_) => None,
+        }
+    }
+
     fn draw(&mut self, term: &mut Terminal<CursorTrackingBackend>, t: FrameTick) {
         match self {
             Self::Catalog(app) => {
@@ -292,11 +293,14 @@ fn apply_step(
                 drive.send(key(KeyCode::Char(c), KeyModifiers::NONE), tick_at(*elapsed));
             }
         }
+        // The recorded positions are tmux's one-based cells; the app receives
+        // crossterm's zero-based positions.
         Step::Move(x, y) => {
+            let (x, y) = (x.saturating_sub(1), y.saturating_sub(1));
             drive.send(mouse(MouseEventKind::Moved, x, y), tick_at(*elapsed));
-            term.backend_mut().set_input_cursor(Position::new(x, y));
         }
         Step::Click(x, y) => {
+            let (x, y) = (x.saturating_sub(1), y.saturating_sub(1));
             drive.send(
                 mouse(MouseEventKind::Down(MouseButton::Left), x, y),
                 tick_at(*elapsed),
@@ -305,11 +309,10 @@ fn apply_step(
                 mouse(MouseEventKind::Up(MouseButton::Left), x, y),
                 tick_at(*elapsed),
             );
-            term.backend_mut().set_input_cursor(Position::new(x, y));
         }
         Step::WheelDown(x, y) => {
+            let (x, y) = (x.saturating_sub(1), y.saturating_sub(1));
             drive.send(mouse(MouseEventKind::ScrollDown, x, y), tick_at(*elapsed));
-            term.backend_mut().set_input_cursor(Position::new(x, y));
         }
         Step::Resize(c, r) => {
             *cols = c;
@@ -382,6 +385,14 @@ fn replay_catalog(scenario: &Scenario, page: crate::catalog::PageId) -> Artifact
             *step,
         );
         drive.draw(&mut term, tick_at(elapsed));
+        // TEMP probe: trace catalog focus per step.
+        if std::env::var_os("DUMP_SHOT").is_some() {
+            eprintln!(
+                "{} after {step:?}: focus={:?}",
+                scenario.id,
+                drive.debug_focus()
+            );
+        }
     }
     snapshot_from_terminal(&term)
 }
@@ -391,15 +402,6 @@ fn replay_tablepro(scenario: &Scenario, connect: Option<&str>) -> Artifacts {
     if let Some(name) = connect {
         app.connect_named(name)
             .unwrap_or_else(|error| panic!("capture scenario {}: {error}", scenario.id));
-    }
-    if let Some(sql) = scenario.seed_sql {
-        app.seed_active_query(sql);
-    }
-    if let Some(ticks) = scenario.run_ticks_left {
-        app.set_active_query_run_ticks_left(ticks);
-    }
-    if let Some((x, y)) = scenario.capture_cursor {
-        app.set_capture_cursor(Position::new(x, y));
     }
     let mut cols = scenario.cols;
     let mut rows = scenario.rows;
@@ -419,24 +421,6 @@ fn replay_tablepro(scenario: &Scenario, connect: Option<&str>) -> Artifacts {
         drive.draw(&mut term, tick_at(elapsed));
     }
     drop(drive);
-    if let Some(name) = scenario.table_name {
-        let focus = match scenario.table_focus {
-            Some(TableFocusSeed::TabStrip) => crate::tablepro::workbench::TABSTRIP,
-            Some(TableFocusSeed::Explorer) | None => crate::tablepro::workbench::EXPLORER,
-        };
-        app.seed_active_table(name, scenario.table_mode.unwrap_or(0), focus);
-    }
-    if let Some(state) = scenario.table_state {
-        app.seed_active_table_state(
-            state.filter_column,
-            state.filter_value,
-            state.sort_column,
-            state.sort_ascending,
-            state.hscroll,
-            state.cursor_row,
-            state.cursor_col,
-        );
-    }
     let mut drive = Drive::TablePro(&mut app);
     drive.draw(&mut term, tick_at(elapsed));
     snapshot_from_terminal(&term)
@@ -512,32 +496,6 @@ mod tests {
         backend.hide_cursor().unwrap();
         assert_eq!(backend.cursor(), Position::new(4, 2));
         assert!(!backend.cursor_visible());
-    }
-
-    #[test]
-    fn mouse_replay_steps_track_input_cursor() {
-        let mut app = TableProApp::new(ColorCapability::Truecolor);
-        let mut drive = Drive::TablePro(&mut app);
-        let mut term = Terminal::new(CursorTrackingBackend::new(20, 10)).expect("test backend");
-        let mut cols = 20;
-        let mut rows = 10;
-        let mut elapsed = 0;
-
-        for (step, expected) in [
-            (Step::Move(1, 2), Position::new(1, 2)),
-            (Step::Click(3, 4), Position::new(3, 4)),
-            (Step::WheelDown(5, 6), Position::new(5, 6)),
-        ] {
-            apply_step(
-                &mut drive,
-                &mut term,
-                &mut cols,
-                &mut rows,
-                &mut elapsed,
-                step,
-            );
-            assert_eq!(term.backend().cursor(), expected);
-        }
     }
 
     #[test]

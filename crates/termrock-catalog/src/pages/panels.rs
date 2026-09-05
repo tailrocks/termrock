@@ -230,7 +230,9 @@ impl Page for PanelsPage {
             usize::from(self.prose_view),
             prose_lines.len(),
         );
-        if !pos.is_empty() {
+        // The source reserves the badge slot but only states the visible
+        // range once the pane has actually scrolled away from the top.
+        if !pos.is_empty() && self.prose.offset_y() > 0 {
             let meta = format!(" {pos} ");
             let mw = text::width(&meta) as u16;
             if rrows[0].width > mw + 4 {
@@ -288,11 +290,17 @@ impl Page for PanelsPage {
         } else {
             ""
         };
-        let pos = crate::layout::overflow_label(
-            usize::from(self.log.offset_y()),
-            usize::from(self.log_view),
-            self.log_lines.len(),
-        );
+        // Like the framed pane: the range appears only once the view has
+        // actually scrolled away from the top.
+        let pos = if self.log.offset_y() > 0 {
+            crate::layout::overflow_label(
+                usize::from(self.log.offset_y()),
+                usize::from(self.log_view),
+                self.log_lines.len(),
+            )
+        } else {
+            String::new()
+        };
         let meta = if follow.is_empty() {
             pos
         } else if pos.is_empty() {
@@ -407,14 +415,8 @@ impl Page for PanelsPage {
     fn hints(&self, focus: Option<WidgetId>) -> Vec<Hint> {
         if focus == Some(NESTED) {
             vec![("↑ ↓", "Move"), ("Enter", "Choose")]
-        } else if focus == Some(LOG) {
-            vec![("↑ ↓", "Scroll"), ("f", "Follow tail"), ("g G", "Ends")]
         } else {
-            vec![("↑ ↓", "Scroll"), ("PgUp PgDn", "Page"), ("g G", "Ends")]
+            vec![("↑ ↓", "Scroll"), ("f", "Follow tail"), ("g G", "Ends")]
         }
-    }
-
-    fn page_hints_when_nav(&self) -> bool {
-        true
     }
 }

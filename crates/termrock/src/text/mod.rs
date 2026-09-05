@@ -78,6 +78,31 @@ pub fn truncate_cols<'a>(s: &'a str, max_cols: usize, ellipsis: &str) -> Cow<'a,
     Cow::Owned(out)
 }
 
+/// Keep both ends with an ellipsis between (source `truncate_middle`): the
+/// tail keeps `(max - ellipsis) / 3` columns and the head the remainder, so
+/// long identifiers show their prefix and their final characters.
+#[must_use]
+pub fn truncate_middle_cols<'a>(s: &'a str, max_cols: usize, ellipsis: &str) -> Cow<'a, str> {
+    if display_cols(s) <= max_cols {
+        return Cow::Borrowed(s);
+    }
+    let ell_w = display_cols(ellipsis);
+    if ell_w >= max_cols {
+        return Cow::Owned(take_display_cols(ellipsis, max_cols));
+    }
+    if max_cols < ell_w + 4 {
+        return truncate_cols(s, max_cols, ellipsis);
+    }
+    let keep_end = (max_cols - ell_w) / 3;
+    let keep_start = max_cols - ell_w - keep_end;
+    let mut out = take_display_cols(s, keep_start);
+    out.push_str(ellipsis);
+    let total = display_cols(s);
+    let skip = total.saturating_sub(keep_end);
+    out.push_str(&display_cols_slice(s, skip, keep_end));
+    Cow::Owned(out)
+}
+
 /// Substring of `s` covering display columns `[skip, skip + width)`,
 /// skipping terminal control bytes and preserving only complete grapheme clusters.
 #[must_use]

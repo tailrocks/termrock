@@ -163,6 +163,13 @@ fn fail(s: &Scenario, kind: &str, msg: String) -> ! {
 
 fn compare_one(dir: &Path, s: &Scenario, compare_png: bool) {
     let art = capture::replay(s);
+    // TEMP probe: dump our replay frame for offline diffing.
+    if std::env::var_os("DUMP_SHOT").is_some() {
+        let out = std::path::PathBuf::from("/tmp/dump");
+        std::fs::create_dir_all(&out).unwrap();
+        std::fs::write(out.join(format!("{}.txt", s.id)), art.txt()).unwrap();
+        std::fs::write(out.join(format!("{}.ansi", s.id)), art.ansi()).unwrap();
+    }
 
     let src_txt = read(dir, s.id, "txt");
     if art.txt().as_bytes() != src_txt.as_bytes() {

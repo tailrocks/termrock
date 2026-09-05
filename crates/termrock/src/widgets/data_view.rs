@@ -283,6 +283,17 @@ pub enum ColumnKind {
     Id,
 }
 
+/// How an over-wide cell contracts (source `cell_text`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CellEllipsisPolicy {
+    /// Cut at the column edge with no marker.
+    Clip,
+    /// Ellipsize at the end.
+    End,
+    /// Keep both ends around an ellipsis.
+    Middle,
+}
+
 impl ColumnKind {
     /// Picks between the row tone and the quiet tone for this column's cells.
     ///
@@ -296,10 +307,16 @@ impl ColumnKind {
         }
     }
 
-    /// Whether an over-wide cell contracts by clipping rather than by ellipsis.
+    /// How an over-wide cell contracts (source `cell_text`): status clips,
+    /// key/surrogate columns keep both ends around an ellipsis, the rest
+    /// ellipsize at the end.
     #[must_use]
-    pub const fn clips_instead_of_ellipsizing(self) -> bool {
-        matches!(self, Self::Status)
+    pub const fn ellipsis_policy(self) -> CellEllipsisPolicy {
+        match self {
+            Self::Status => CellEllipsisPolicy::Clip,
+            Self::Id => CellEllipsisPolicy::Middle,
+            Self::Text | Self::Numeric => CellEllipsisPolicy::End,
+        }
     }
 
     /// Whether header and body cells sit on the right edge of the column.
@@ -336,6 +353,8 @@ pub struct DataColumn<Id> {
     pub kind: ColumnKind,
     /// Primary key: header paints junie `⚷` over the title origin.
     pub primary: bool,
+    /// Filter active: header wears the junie `" ∇"` suffix.
+    pub filtered: bool,
 }
 
 impl<Id> DataColumn<Id> {
@@ -353,6 +372,7 @@ impl<Id> DataColumn<Id> {
             editable: false,
             kind: ColumnKind::Text,
             primary: false,
+            filtered: false,
         }
     }
 
@@ -402,6 +422,13 @@ impl<Id> DataColumn<Id> {
     #[must_use]
     pub const fn primary(mut self) -> Self {
         self.primary = true;
+        self
+    }
+
+    /// Marks the column as carrying an active filter (header `" ∇"` suffix).
+    #[must_use]
+    pub const fn filtered(mut self) -> Self {
+        self.filtered = true;
         self
     }
 }

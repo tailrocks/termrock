@@ -17,7 +17,7 @@ use ratatui_core::{
     widgets::StatefulWidget,
 };
 
-use super::data_view::ColumnKind;
+use super::data_view::{CellEllipsisPolicy, ColumnKind};
 use crate::{
     input::{KeyEvent, MouseButton, MouseEvent, MouseEventKind},
     style::{DesignSystem, ListRowVisualState, Role, VisualState},
@@ -1540,7 +1540,7 @@ fn paint_data_cells<RowId: Clone + Eq, ColumnId: Clone + Eq>(
                 // Only paint text when column left edge is in view (avoid partial misalignment).
                 let fully_left = col_left >= i32::from(clip_left);
                 if fully_left && let Some(value) = row.cells.get(column_index) {
-                    let overflow = if kind.clips_instead_of_ellipsizing() {
+                    let overflow = if kind.ellipsis_policy() == CellEllipsisPolicy::Clip {
                         CellOverflow::Clip
                     } else {
                         table.overflow

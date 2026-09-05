@@ -218,7 +218,6 @@ pub struct QueryTab {
     pub result_tabs: TabsState<usize>,
     pub active_result: usize,
     running: Option<(Vec<(String, Range<usize>)>, u32, Option<bool>, u32)>,
-    next_run_ticks_left: Option<u32>,
     pub split: u16,
     pub last_duration: Option<u32>,
     pub completion: CompletionMenuState<usize>,
@@ -240,7 +239,6 @@ impl QueryTab {
             result_tabs: TabsState::new(),
             active_result: 0,
             running: None,
-            next_run_ticks_left: None,
             split: 12,
             last_duration: None,
             completion: {
@@ -300,10 +298,6 @@ impl QueryTab {
             .map_or(0, |(_, _, _, ticks)| ticks.saturating_mul(80))
     }
 
-    pub fn set_next_run_ticks_left(&mut self, ticks: u32) {
-        self.next_run_ticks_left = Some(ticks);
-    }
-
     /// Cancel the active simulated query, matching Junie's Ctrl-C path.
     pub fn cancel(&mut self) -> bool {
         let Some((_, _, _, _)) = self.running.take() else {
@@ -336,8 +330,8 @@ impl QueryTab {
 
     pub fn start(&mut self, statements: Vec<(String, Range<usize>)>, explain: Option<bool>) {
         self.diagnostic = None;
-        let ticks_left = self.next_run_ticks_left.take().unwrap_or(2);
-        self.running = Some((statements, ticks_left, explain, 0));
+        // Source `Run::new`: every simulated run lasts six ticks.
+        self.running = Some((statements, 6, explain, 0));
     }
 
     pub fn tick(
@@ -1326,9 +1320,7 @@ fn paint_plan(
         tree_area.width,
         tree_area.height.saturating_sub(1),
     );
-    // The source frame emphasizes the active plan pane while Explorer keeps
-    // keyboard navigation; the footer carries the actual focus cue.
-    let focused = true;
+    let focused = ctx.interaction.focused(PLAN);
     StatefulWidget::render(
         &Tree::new(&nodes, ctx.system)
             .focused(focused)
@@ -1337,26 +1329,6 @@ fn paint_plan(
         buf,
         tree,
     );
-    if let Some(selected) = tree.selected()
-        && *selected < nodes.len()
-    {
-        let y = tree_body
-            .y
-            .saturating_add(u16::try_from(*selected).unwrap_or(u16::MAX));
-        if y < tree_body.bottom() {
-            // Source plan rows retain the active-row weight but stay on the
-            // canvas plane; remove only the shared tree's selection wash.
-            for x in tree_body.x..tree_body.right() {
-                if let Some(cell) = buf.cell_mut((x, y)) {
-                    let mut style = cell.style().bg(bg);
-                    if x > tree_body.x.saturating_add(2) && style.fg == Some(t.accent) {
-                        style = style.fg(t.text_primary);
-                    }
-                    cell.set_style(style);
-                }
-            }
-        }
-    }
     ctx.control(PLAN, tree_body, false);
     for (i, info) in infos.iter().enumerate() {
         let y = tree_body.y.saturating_add(i as u16);
@@ -1391,11 +1363,7 @@ fn paint_plan(
         );
         let bgc = buf[(cols_x, y)].bg;
         buf.set_string(cols_x, y, &text, base.bg(bgc));
-        let sh = if share > 50.0 {
-            format!("{:>3}▲", share.round() as u32)
-        } else {
-            format!("{:>3} ", share.round() as u32)
-        };
+        let sh = format!("{:>3} {}", share.round() as u32, if share > 50.0 { "▲" } else { " " });
         buf.set_string(cols_x.saturating_add(34), y, &sh, share_style.bg(bgc));
     }
     if detail_w == 0 {
@@ -1436,13 +1404,10 @@ fn paint_plan(
         );
     }
     for (k, v) in &info.detail {
-        // Junie presents Limit's "Actual rows" fact under the compact
-        // repeated "Rows" label used by the reference frame.
-        let label = if k == "Actual rows" { "Rows" } else { k };
-        facts.push(Prop::new(label, v.clone()).tone(Tone::Muted));
+        facts.push(Prop::new(k, v.clone()).tone(Tone::Muted).wrap());
     }
     if let Some(w) = &info.warning {
-        facts.push(Prop::new("Warning", w.clone()));
+        facts.push(Prop::new("Note", w.clone()).tone(Tone::Warning).wrap());
     }
     let _ = render_props(inner, buf, t, &facts, cbg);
     // Keep the one spare row below the facts card on the canvas plane.
@@ -1725,19 +1690,9 @@ fn paint_grid(
         .saturating_sub(state.header_regions.len());
     if hidden > 0 {
         let lbl = format!("{hidden}›");
-        let w = u16::try_from(lbl.chars().count()).unwrap_or(2);
-        // The compact source frame leaves one cell between the overflow
-        // marker and its panel border; wider frames leave two.
-        let right_gap = if id == RESULTS {
-            // The source query drawer uses one border gap in the 120-column
-            // workbench, while the explorer-less 100-column drawer keeps two.
-            if area.width >= 90 { 2 } else { 1 }
-        } else if area.width <= 80 || (grid.hscroll == 1 && area.width < 96) {
-            1
-        } else {
-            2
-        };
-        let x = area.right().saturating_sub(w.saturating_add(right_gap));
+        // Source `DataGrid`: the badge sits at `cols_area.right() + 1`, one
+        // cell past the last fitting column — never over column content.
+        let x = state.painted_columns_right().saturating_add(1);
         for clear_x in [x.saturating_sub(1), area.right().saturating_sub(1)] {
             if let Some(cell) = buf.cell_mut((clear_x, area.y))
                 && cell.symbol() == "…"
@@ -1789,27 +1744,28 @@ fn columns_for_grid(grid: &ResultGrid, filtered_columns: &[usize]) -> ColumnMode
                     _ => ColumnKind::Text,
                 };
                 let primary = grid.primary.get(i).copied().unwrap_or(false);
-                let title = if filtered_columns.contains(&i) {
-                    format!("{name} ∇")
-                } else {
-                    name.clone()
-                };
-                let filter_width = if filtered_columns.contains(&i) {
-                    u16::try_from(ttext::width(&title).saturating_add(1)).unwrap_or(u16::MAX)
-                } else {
-                    0
-                };
-                let sort_width = if grid.sort.is_some_and(|(column, _)| column == i) {
-                    u16::try_from(ttext::width(&title).saturating_add(3)).unwrap_or(u16::MAX)
+                // The `" ∇"` filter mark is a header suffix the grid widget
+                // composes after truncation, not part of the column name.
+                let title = name.clone();
+                let filtered = filtered_columns.contains(&i);
+                // Source `fit_header_marks`: name + primary 2 + filter 2 +
+                // sorted 2 + 1, summed when both marks share a column.
+                let marks = usize::from(filtered) * 2
+                    + usize::from(grid.sort.is_some_and(|(column, _)| column == i)) * 2;
+                let mark_width = if marks > 0 {
+                    u16::try_from(ttext::width(&title).saturating_add(marks + 1)).unwrap_or(u16::MAX)
                 } else {
                     0
                 };
-                let width = grid.sampled_width(i).max(filter_width).max(sort_width);
+                let width = grid.sampled_width(i).max(mark_width);
                 let mut col = DataColumn::new(i, title, DataColumnWidth::Fixed(width))
                     .kind(kind)
                     .priority(if primary { 100 } else { 50 });
                 if primary {
                     col = col.primary();
+                }
+                if filtered {
+                    col = col.filtered();
                 }
                 if !matches!(ty, ColType::Json) {
                     col = col.sortable();
@@ -1957,20 +1913,17 @@ pub fn render_table(
     } else {
         parts.push(format!("rows {}–{} of {}", tab.offset + 1, last, total));
     }
-    let vis = tab.table_state.header_regions.len();
-    if vis > 0
-        && !(tab.grid.hscroll == 4
-            && tab.grid.sort == Some((4, true))
-            && tab.active_filter_count() == 1)
-        && (tab.grid.hscroll > 0 || vis < tab.grid.columns.len().saturating_sub(tab.grid.hscroll))
+    // Source `cols_label`: shown when `hscroll.overflows()`; the range ends
+    // at `hscroll.viewport_len` — full-fitting columns only, a clipped
+    // preview column does not count.
+    let viewport_len = tab.table_state.viewport_columns();
+    let total_cols = tab.grid.columns.len();
+    if viewport_len > 0
+        && (tab.grid.hscroll > 0 || tab.grid.hscroll + viewport_len < total_cols)
     {
         let c0 = tab.grid.hscroll.saturating_add(1);
-        let c1 = tab
-            .grid
-            .hscroll
-            .saturating_add(vis)
-            .min(tab.grid.columns.len());
-        parts.push(format!("cols {c0}–{c1} of {}", tab.grid.columns.len()));
+        let c1 = tab.grid.hscroll.saturating_add(viewport_len).min(total_cols);
+        parts.push(format!("cols {c0}–{c1} of {total_cols}"));
     }
     let status = parts.join(" · ");
     buf.set_string(

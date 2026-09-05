@@ -56,37 +56,6 @@ pub struct Scenario {
     pub rows: u16,
     pub host: Host,
     pub steps: &'static [Step],
-    /// TablePro: document loaded into the active query tab before the first draw.
-    pub seed_sql: Option<&'static str>,
-    /// TablePro: optional in-flight run length for source running-state shots.
-    pub run_ticks_left: Option<u32>,
-    /// Source-retained terminal cursor for captures where no app cursor is visible.
-    pub capture_cursor: Option<(u16, u16)>,
-    /// TablePro: final table view reconstructed from source artifact evidence.
-    pub table_state: Option<TableStateSeed>,
-    /// TablePro: active table identity when source navigation evidence is stale.
-    pub table_name: Option<&'static str>,
-    /// TablePro: active table mode (0=data, 1=structure).
-    pub table_mode: Option<u8>,
-    /// TablePro: retained host focus for source footer parity.
-    pub table_focus: Option<TableFocusSeed>,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct TableStateSeed {
-    pub filter_column: &'static str,
-    pub filter_value: &'static str,
-    pub sort_column: &'static str,
-    pub sort_ascending: bool,
-    pub hscroll: u16,
-    pub cursor_row: usize,
-    pub cursor_col: usize,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum TableFocusSeed {
-    Explorer,
-    TabStrip,
 }
 
 const fn cat(
@@ -102,13 +71,6 @@ const fn cat(
         rows,
         host: Host::Catalog(page),
         steps,
-        seed_sql: None,
-        run_ticks_left: None,
-        capture_cursor: None,
-        table_state: None,
-        table_name: None,
-        table_mode: None,
-        table_focus: None,
     }
 }
 
@@ -125,83 +87,7 @@ const fn tp(
         rows,
         host: Host::TablePro { connect },
         steps,
-        seed_sql: None,
-        run_ticks_left: None,
-        capture_cursor: None,
-        table_state: None,
-        table_name: None,
-        table_mode: None,
-        table_focus: None,
     }
-}
-
-const fn tp_sql(
-    id: &'static str,
-    cols: u16,
-    rows: u16,
-    connect: Option<&'static str>,
-    sql: &'static str,
-    steps: &'static [Step],
-) -> Scenario {
-    Scenario {
-        id,
-        cols,
-        rows,
-        host: Host::TablePro { connect },
-        steps,
-        seed_sql: Some(sql),
-        run_ticks_left: None,
-        capture_cursor: None,
-        table_state: None,
-        table_name: None,
-        table_mode: None,
-        table_focus: None,
-    }
-}
-
-const fn tp_sql_running(
-    id: &'static str,
-    cols: u16,
-    rows: u16,
-    connect: Option<&'static str>,
-    sql: &'static str,
-    run_ticks_left: u32,
-    steps: &'static [Step],
-) -> Scenario {
-    let mut scenario = tp_sql(id, cols, rows, connect, sql, steps);
-    scenario.run_ticks_left = Some(run_ticks_left);
-    scenario.capture_cursor = Some((47, 17));
-    scenario
-}
-
-const fn tp_table_state(
-    id: &'static str,
-    cols: u16,
-    rows: u16,
-    connect: Option<&'static str>,
-    state: TableStateSeed,
-    steps: &'static [Step],
-) -> Scenario {
-    let mut scenario = tp(id, cols, rows, connect, steps);
-    scenario.table_state = Some(state);
-    scenario
-}
-
-const fn tp_table(
-    id: &'static str,
-    cols: u16,
-    rows: u16,
-    connect: Option<&'static str>,
-    name: &'static str,
-    mode: u8,
-    focus: TableFocusSeed,
-    steps: &'static [Step],
-) -> Scenario {
-    let mut scenario = tp(id, cols, rows, connect, steps);
-    scenario.table_name = Some(name);
-    scenario.table_mode = Some(mode);
-    scenario.table_focus = Some(focus);
-    scenario
 }
 
 /// All 63 inventoried `shots/` stems, inventory order.
@@ -211,14 +97,14 @@ pub static ALL: &[Scenario] = &[
         PageId::TASK_RUNNER,
         80,
         24,
-        &[Step::Char('r'), Step::Ticks(19)],
+        &[Step::Char('r'), Step::Ticks(18)],
     ),
     cat(
         "f_buttons_hover",
         PageId::BUTTONS,
         120,
         40,
-        &[Step::Tab, Step::Tab, Step::Move(49, 7)],
+        &[Step::Move(49, 7)],
     ),
     cat(
         "f_dialog_delete",
@@ -227,13 +113,7 @@ pub static ALL: &[Scenario] = &[
         40,
         &[Step::Tab, Step::Tab, Step::Tab, Step::Tab, Step::Enter],
     ),
-    cat(
-        "f_forms",
-        PageId::FORMS,
-        120,
-        40,
-        &[Step::Tab, Step::Tab, Step::Tab, Step::Tab],
-    ),
+    cat("f_forms", PageId::FORMS, 120, 40, &[]),
     cat(
         "f_inputs_edit",
         PageId::INPUTS,
@@ -246,47 +126,39 @@ pub static ALL: &[Scenario] = &[
         PageId::LISTS,
         120,
         40,
-        &[Step::Tab, Step::Down, Step::Down, Step::Move(86, 9)],
+        &[Step::Move(86, 9)],
     ),
     cat("f_overview", PageId::OVERVIEW, 120, 40, &[]),
-    cat("f_panels", PageId::PANELS, 120, 40, &[Step::Tab, Step::Tab]),
-    cat("f_progress", PageId::PROGRESS, 120, 40, &[Step::Ticks(26)]),
+    cat("f_panels", PageId::PANELS, 120, 40, &[]),
+    cat("f_progress", PageId::PROGRESS, 120, 40, &[Step::Ticks(25)]),
     cat(
         "f_scrolling",
         PageId::SCROLLING,
         120,
         40,
-        &[Step::Tab, Step::Tab, Step::Tab, Step::Ticks(17)],
+        &[Step::Resize(120, 40), Step::Ticks(20)],
     ),
     cat(
         "f_settings_members",
         PageId::SETTINGS,
         120,
         40,
-        &[
-            Step::Tab,
-            Step::Right,
-            Step::Tab,
-            Step::Down,
-            Step::Right,
-            Step::Right,
-            Step::Enter,
-        ],
+        &[Step::Tab, Step::Right, Step::Tab, Step::Down],
     ),
-    cat("f_sidebars", PageId::SIDEBARS, 120, 40, &[Step::Tab]),
+    cat("f_sidebars", PageId::SIDEBARS, 120, 40, &[]),
     cat(
         "f_tables_hover",
         PageId::TABLES,
         120,
         40,
-        &[Step::Tab, Step::Move(117, 9)],
+        &[Step::Move(117, 9)],
     ),
     cat(
         "f_taskrunner_running",
         PageId::TASK_RUNNER,
         120,
         40,
-        &[Step::Char('r'), Step::Ticks(35)],
+        &[Step::Char('r'), Step::Ticks(28)],
     ),
     cat("s_chips", PageId::CHIPS, 120, 40, &[Step::Tab, Step::Right]),
     cat("s_chips_80", PageId::CHIPS, 80, 24, &[Step::Tab, Step::Tab]),
@@ -432,16 +304,19 @@ pub static ALL: &[Scenario] = &[
         40,
         &[Step::Tab, Step::Tab, Step::Enter],
     ),
-    tp_sql(
+    tp(
         "t_100",
         100,
         30,
         Some("Production"),
-        "SELECT * FROM customers LIMIT 20",
-        // The source capture leaves the narrow explorer drawer before running
-        // the seeded query; this is the same Tab transition covered by the
-        // source's `narrow_terminals_turn_the_explorer_into_a_drawer` test.
-        &[Step::Tab, Step::Ctrl('r'), Step::Ticks(4)],
+        &[
+            Step::Tab,
+            Step::Char('i'),
+            Step::Type("SELECT * FROM customers LIMIT 20"),
+            Step::Esc,
+            Step::Ctrl('r'),
+            Step::Ticks(4),
+        ],
     ),
     tp(
         "t_100_table",
@@ -464,13 +339,19 @@ pub static ALL: &[Scenario] = &[
             Step::Char('s'),
         ],
     ),
-    tp_sql(
+    tp(
         "t_160",
         160,
         50,
         Some("Production"),
-        "SELECT * FROM orders WHERE status = 'pending' LIMIT 30",
-        &[Step::Alt('x'), Step::Ticks(8)],
+        &[
+            Step::Tab,
+            Step::Char('i'),
+            Step::Type("SELECT * FROM orders WHERE status = 'pending' LIMIT 30"),
+            Step::Esc,
+            Step::Alt('x'),
+            Step::Ticks(8),
+        ],
     ),
     tp(
         "t_160_table",
@@ -484,18 +365,6 @@ pub static ALL: &[Scenario] = &[
             Step::Down,
             Step::Down,
             Step::Down,
-            Step::Enter,
-            Step::Ticks(3),
-            Step::Right,
-            Step::Right,
-            Step::Right,
-            Step::Right,
-            Step::Char('f'),
-            Step::BackTab,
-            Step::BackTab,
-            Step::Enter,
-            Step::Ctrl('l'),
-            Step::Type("pending"),
             Step::Enter,
         ],
     ),
@@ -512,6 +381,11 @@ pub static ALL: &[Scenario] = &[
             Step::Down,
             Step::Down,
             Step::Enter,
+            // The source capture session outlived the status message's
+            // five-second TTL before this shot: the golden footer carries
+            // hints only. The replay outlives the TTL with ticks (80 ms
+            // each, source cadence).
+            Step::Ticks(64),
         ],
     ),
     tp(
@@ -527,13 +401,19 @@ pub static ALL: &[Scenario] = &[
             Step::Ctrl('b'),
         ],
     ),
-    tp_sql(
+    tp(
         "t_80_query",
         80,
         24,
         Some("Production"),
-        "SELECT * FROM orders LIMIT 20",
-        &[Step::Tab, Step::Ctrl('r'), Step::Ticks(8)],
+        &[
+            Step::Tab,
+            Step::Char('i'),
+            Step::Type("SELECT * FROM orders LIMIT 20"),
+            Step::Esc,
+            Step::Ctrl('r'),
+            Step::Ticks(8),
+        ],
     ),
     tp(
         "t_complete",
@@ -543,33 +423,23 @@ pub static ALL: &[Scenario] = &[
         &[
             Step::Tab,
             Step::Char('i'),
-            Step::Type("SELECT * FROM ord"),
+            // The recorded capture types only `SEL` before requesting
+            // completion; the golden popup lists keyword matches for that
+            // prefix.
+            Step::Type("SEL"),
             Step::Ctrl(' '),
         ],
     ),
-    tp_sql(
+    tp(
         "t_complete2",
         120,
         40,
         Some("Production"),
-        "SELECT o. FROM orders o",
         &[
             Step::Tab,
             Step::Char('i'),
-            Step::Home,
-            Step::Right,
-            Step::Right,
-            Step::Right,
-            Step::Right,
-            Step::Right,
-            Step::Right,
-            Step::Right,
-            Step::Right,
-            Step::Right,
+            Step::Type("SELECT * FROM o"),
             Step::Ctrl(' '),
-            // The source frame was captured after the transient connection
-            // status expired; preserve that timing in the deterministic replay.
-            Step::Ticks(51),
         ],
     ),
     tp("t_conn_dup", 120, 40, None, &[Step::Ctrl('d')]),
@@ -579,13 +449,7 @@ pub static ALL: &[Scenario] = &[
         120,
         40,
         None,
-        &[
-            Step::Tab,
-            Step::Tab,
-            Step::Enter,
-            Step::Click(116, 17),
-            Step::Move(117, 17),
-        ],
+        &[Step::Char('n'), Step::Tab],
     ),
     tp(
         "t_conn_prod",
@@ -629,19 +493,8 @@ pub static ALL: &[Scenario] = &[
             Step::Down,
             Step::Down,
             Step::Enter,
-            Step::Right,
-            Step::Right,
-            Step::Right,
-            Step::Right,
-            Step::Right,
-            Step::Right,
             Step::Enter,
-            Step::Ctrl('l'),
-            Step::Type("EUR"),
-            Step::Enter,
-            Step::Down,
-            Step::Space,
-            Step::Char('-'),
+            Step::Type("x"),
         ],
     ),
     tp(
@@ -656,15 +509,7 @@ pub static ALL: &[Scenario] = &[
             Step::Down,
             Step::Down,
             Step::Enter,
-            Step::Right,
-            Step::Right,
-            Step::Right,
-            Step::Right,
-            Step::Right,
-            Step::Right,
             Step::Enter,
-            Step::Ctrl('l'),
-            Step::Type("EUR"),
         ],
     ),
     tp(
@@ -676,6 +521,7 @@ pub static ALL: &[Scenario] = &[
             Step::Tab,
             Step::Char('i'),
             Step::Type("SELECT nope FROM orders"),
+            Step::Esc,
             Step::Esc,
             Step::Ctrl('r'),
             Step::Ticks(10),
@@ -724,39 +570,34 @@ pub static ALL: &[Scenario] = &[
             Step::Down,
             Step::Down,
             Step::Enter,
-            // The checked-in source capture is 120 columns and preserves the
-            // rightmost table window from the operator's prior navigation.
-            Step::Right,
-            Step::Right,
-            Step::Right,
-            Step::Right,
-            Step::Right,
-            Step::Right,
-            Step::Right,
-            Step::Right,
-            Step::Right,
-            Step::Right,
-            Step::Right,
-            Step::Right,
-            Step::Right,
         ],
     ),
-    tp_sql(
+    tp(
         "t_result",
         120,
         40,
         Some("Production"),
-        "SELECT * FROM orders WHERE status = 'pending' ORDER BY total_amount DESC LIMIT 40",
-        &[Step::Tab, Step::Ctrl('r'), Step::Ticks(10)],
+        &[
+            Step::Tab,
+            Step::Char('i'),
+            Step::Type("SELECT * FROM orders LIMIT 25"),
+            Step::Esc,
+            Step::Ctrl('r'),
+            Step::Ticks(10),
+        ],
     ),
-    tp_sql_running(
+    tp(
         "t_running",
         120,
         40,
         Some("Production"),
-        "SELECT * FROM orders WHERE status = 'pending' ORDER BY total_amount DESC LIMIT 40",
-        6,
-        &[Step::Tab, Step::Ctrl('r'), Step::Ticks(4)],
+        &[
+            Step::Tab,
+            Step::Char('i'),
+            Step::Type("SELECT * FROM events"),
+            Step::Esc,
+            Step::Ctrl('r'),
+        ],
     ),
     tp(
         "t_safemode",
@@ -765,20 +606,11 @@ pub static ALL: &[Scenario] = &[
         Some("Production"),
         &[Step::Ctrl('l')],
     ),
-    tp_table_state(
+    tp(
         "t_sorted_filtered",
         120,
         40,
         Some("Production"),
-        TableStateSeed {
-            filter_column: "status",
-            filter_value: "pending",
-            sort_column: "status",
-            sort_ascending: true,
-            hscroll: 4,
-            cursor_row: 0,
-            cursor_col: 4,
-        },
         &[
             Step::Down,
             Step::Down,
@@ -803,24 +635,18 @@ pub static ALL: &[Scenario] = &[
             Step::Char('f'),
         ],
     ),
-    tp_table(
+    tp(
         "t_structure",
         120,
         40,
         Some("Production"),
-        "orders",
-        1,
-        TableFocusSeed::Explorer,
         &[Step::Down, Step::Down, Step::Enter, Step::Ctrl('d')],
     ),
-    tp_table(
+    tp(
         "t_structure_fk",
         120,
         40,
         Some("Production"),
-        "orders",
-        1,
-        TableFocusSeed::TabStrip,
         &[
             Step::Down,
             Step::Down,
@@ -847,7 +673,7 @@ pub static ALL: &[Scenario] = &[
         &[
             Step::Tab,
             Step::Char('i'),
-            Step::Type("UPDATE orders SET status = 'paid' WHERE id = 'x'"),
+            Step::Type("UPDATE orders SET notes = 'x' WHERE id = 1"),
             Step::Esc,
             Step::Ctrl('r'),
         ],

@@ -105,7 +105,7 @@ fn render_source_list(
             rows.len(),
             usize::from(area.height),
             u16::try_from(state.offset()).unwrap_or(u16::MAX),
-            true,
+            focused,
             ctx.system,
         );
     }
@@ -288,8 +288,14 @@ impl Page for ListsPage {
 
         let (inner, _bg) = layout::card(cols[2], buf, t, Some("Search results"), None, false);
         let empty_rows: [ListRow<'_, usize>; 0] = [];
-        let empty_width = text::width("No results for “retry”") as u16;
-        let empty_area = Rect::new(inner.x, inner.y, inner.width.min(empty_width), inner.height);
+        // Source insets the empty pane two cells inside the card on each side,
+        // so the message clips at the pane rather than at the card.
+        let empty_area = Rect::new(
+            inner.x.saturating_add(2),
+            inner.y,
+            inner.width.saturating_sub(4),
+            inner.height,
+        );
         if let Some(pointer) = ctx.interaction.pointer {
             self.empty.hover(pointer);
         }

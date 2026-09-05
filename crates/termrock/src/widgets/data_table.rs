@@ -28,10 +28,11 @@ use crate::{
     input::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind},
     interaction::{NavigationMove, PageMove, UiIntent},
     style::{DesignSystem, Glyph, ListRowVisualState, Role},
-    text::{display_cols, take_display_cols, truncate_cols},
+    text::{display_cols, take_display_cols, truncate_cols, truncate_middle_cols},
     widgets::data_view::{
-        CellCoord, ColumnKind, ColumnModel, ColumnPin, CopyPayload, ExpandState, FilterSpec,
-        GroupHeader, LoadState, SelectionMode, SelectionModel, SortSpec, VirtualWindow,
+        CellCoord, CellEllipsisPolicy, ColumnKind, ColumnModel, ColumnPin, CopyPayload,
+        ExpandState, FilterSpec, GroupHeader, LoadState, SelectionMode, SelectionModel, SortSpec,
+        VirtualWindow,
     },
 };
 
@@ -284,6 +285,12 @@ pub struct DataTableState<RowId: Clone + Ord, ColId: Clone + PartialEq> {
     content_width: u16,
     /// Viewport width for columns (area − gutter).
     viewport_width: u16,
+    /// Exclusive right edge of the column pane — the source DataGrid's
+    /// `cols_area.right()`. Host overflow badges anchor here.
+    cols_area_right: u16,
+    /// Columns that fit in full inside the column pane (source
+    /// `hscroll.viewport_len`); hosts use it for the `cols m–n` footer label.
+    viewport_columns: u16,
 }
 
 impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> {
@@ -322,7 +329,24 @@ impl<RowId: Clone + Ord, ColId: Clone + PartialEq> DataTableState<RowId, ColId> 
             last_visible_column_ids: Vec::new(),
             content_width: 0,
             viewport_width: 0,
+            cols_area_right: 0,
+            viewport_columns: 0,
         }
+    }
+
+    /// Exclusive right edge of the last painted column — the source DataGrid's
+    /// `cols_area.right()`. Hosts that draw the `{n}›` overflow badge place it
+    /// one cell further (`cols_area.right() + 1`).
+    #[must_use]
+    pub fn painted_columns_right(&self) -> u16 {
+        self.cols_area_right
+    }
+
+    /// Columns that fit in full inside the column pane (source
+    /// `hscroll.viewport_len`). A clipped preview column does not count.
+    #[must_use]
+    pub fn viewport_columns(&self) -> usize {
+        usize::from(self.viewport_columns)
     }
 
     /// Configure logical universe size (e.g. 1_000_000) without allocating rows.
@@ -1643,6 +1667,7 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
             },
         );
         let _ = state.reveal_cursor_column(self.columns, center_left, center_right, max_h, gap);
+        let mut full_fit = 0_u16;
         resolve_column_rects(
             &state.paint_widths,
             self.columns,
@@ -1651,7 +1676,10 @@ impl<'a, RowId: Clone + Ord, ColId: Clone + PartialEq> DataTable<'a, RowId, ColI
             state.h_offset,
             gap,
             &mut state.paint_rects,
+            &mut full_fit,
         );
+        state.cols_area_right = clip_right;
+        state.viewport_columns = full_fit;
 
         // Sticky header
         if y < area.bottom() {
@@ -1786,9 +1814,11 @@ fn resolve_column_rects<ColId>(
     h_offset: u16,
     gap: u16,
     out: &mut Vec<Rect>,
+    full_fit: &mut u16,
 ) {
     out.clear();
     out.resize(widths.len(), Rect::new(0, 0, 0, 0));
+    *full_fit = 0;
     if widths.is_empty() || clip_right <= origin {
         return;
     }
@@ -1832,6 +1862,11 @@ fn resolve_column_rects<ColId>(
             ColumnPin::None => (center_left, center_right),
             ColumnPin::Start | ColumnPin::End => (origin, clip_right),
         };
+        // Source `hscroll.viewport_len`: only columns that fit in full count
+        // toward the host's "cols m–n" label; a clipped preview does not.
+        if right <= bounds_right {
+            *full_fit = full_fit.saturating_add(1);
+        }
         let visible_left = left.max(bounds_left);
         let visible_right = right.min(bounds_right);
         if visible_right > visible_left {
@@ -1857,10 +1892,10 @@ fn paint_plain_cell(
     ellipsis: &str,
 ) {
     let w = usize::from(width);
-    let shown = if kind.clips_instead_of_ellipsizing() {
-        take_display_cols(text, w)
-    } else {
-        truncate_cols(text, w, ellipsis).into_owned()
+    let shown = match kind.ellipsis_policy() {
+        CellEllipsisPolicy::Clip => take_display_cols(text, w),
+        CellEllipsisPolicy::Middle => truncate_middle_cols(text, w, ellipsis).into_owned(),
+        CellEllipsisPolicy::End => truncate_cols(text, w, ellipsis).into_owned(),
     };
     let shown_w = display_cols(&shown);
     if shown_w == 0 {
@@ -1952,25 +1987,12 @@ fn paint_header_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
         let paint_x = paint_rect.x;
         let paint_w = paint_rect.width;
         let paint_end = paint_rect.right();
-        let mut title = col.title.clone();
         let sorted = state.sort.as_ref().is_some_and(|s| s.column == col.id);
-        if sorted {
-            // Source DataGrid suffix is `" ▴"` / `" ▾"` (leading space).
-            if table.datagrid {
-                title.push(' ');
-            }
-            title.push_str(super::table_chrome::sort_marker(
-                state.sort.as_ref().is_some_and(|s| s.ascending),
-            ));
-        }
         let visible_ord = visible_column_ordinal(table.columns, col_idx).unwrap_or(paint_ord);
         let on_cursor = surface_focused && visible_ord == state.cursor_col;
-        let col_style = super::table_chrome::header_label_style(
-            table.system,
-            sorted || on_cursor,
-            false,
-            col.sortable,
-        );
+        // Only a sorted column brightens its label; the cell cursor does not.
+        let col_style =
+            super::table_chrome::header_label_style(table.system, sorted, false, col.sortable);
         let cell = Rect::new(paint_x, y, paint_w, 1);
         buffer.set_style(
             cell,
@@ -1980,29 +2002,83 @@ fn paint_header_row<RowId: Clone + Ord, ColId: Clone + PartialEq>(
                 super::table_chrome::header_style(table.system)
             },
         );
-        if col.primary {
-            // junie: title prefix `"▪ "` then overdraw `⚷` at the origin.
-            let marked = format!("{} {title}", super::table_chrome::primary_key_mark());
-            let text = take_display_cols(&marked, usize::from(paint_w));
-            buffer.set_stringn(paint_x, y, &text, usize::from(paint_w), col_style);
+        if !table.datagrid {
+            let mut title = col.title.clone();
+            if sorted {
+                title.push_str(super::table_chrome::sort_marker(
+                    state.sort.as_ref().is_some_and(|s| s.ascending),
+                ));
+            }
+            if col.primary {
+                // junie: title prefix `"▪ "` then overdraw `⚷` at the origin.
+                let marked = format!("{} {title}", super::table_chrome::primary_key_mark());
+                let text = take_display_cols(&marked, usize::from(paint_w));
+                buffer.set_stringn(paint_x, y, &text, usize::from(paint_w), col_style);
+                buffer.set_stringn(
+                    paint_x,
+                    y,
+                    super::table_chrome::primary_key_mark(),
+                    1,
+                    col_style.fg(table.system.junie_theme().text_faint),
+                );
+            } else {
+                paint_plain_cell(
+                    buffer,
+                    paint_x,
+                    y,
+                    paint_w,
+                    &title,
+                    col_style,
+                    col.kind,
+                    table.system.glyphs.ellipsis(),
+                );
+            }
+        } else {
+            // Source DataGrid header: markers are a suffix the grid composes
+            // after truncating the name, so `" ∇"` / `" ▴"` survive clipping.
+            let mut suffix = String::new();
+            if col.filtered {
+                suffix.push(' ');
+                suffix.push_str(super::table_chrome::filter_marker());
+            }
+            if sorted {
+                suffix.push(' ');
+                suffix.push_str(super::table_chrome::sort_marker(
+                    state.sort.as_ref().is_some_and(|s| s.ascending),
+                ));
+            }
+            // junie: primary columns reserve the two-cell `"▪ "` prefix and
+            // overdraw `⚷` at the origin after painting.
+            let prefix_len = usize::from(col.primary) * 2;
+            let avail = usize::from(paint_w)
+                .saturating_sub(display_cols(&suffix))
+                .saturating_sub(prefix_len)
+                .max(1);
+            let name = truncate_cols(&col.title, avail, table.system.glyphs.ellipsis());
+            let text = if col.primary {
+                format!(
+                    "{} {name}{suffix}",
+                    super::table_chrome::primary_key_mark()
+                )
+            } else {
+                format!("{name}{suffix}")
+            };
             buffer.set_stringn(
                 paint_x,
                 y,
-                super::table_chrome::primary_key_mark(),
-                1,
-                col_style.fg(table.system.junie_theme().text_faint),
-            );
-        } else {
-            paint_plain_cell(
-                buffer,
-                paint_x,
-                y,
-                paint_w,
-                &title,
+                &take_display_cols(&text, usize::from(paint_w)),
+                usize::from(paint_w),
                 col_style,
-                col.kind,
-                table.system.glyphs.ellipsis(),
             );
+            if col.primary {
+                buffer.set_stringn(
+                    paint_x,
+                    y,
+                    super::table_chrome::primary_key_mark(),
+                    1,
+                    col_style.fg(table.system.junie_theme().text_faint),
+                );
+            }
         }
         let handle_x = paint_end.saturating_sub(RESIZE_HIT);
         state.header_regions.push(DataTableHeaderRegion {
