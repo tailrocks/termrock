@@ -3,6 +3,26 @@
 Status snapshot lives in `PROGRESS.md`. This file is the complete operating
 manual for whoever (or whatever session) picks the work up.
 
+## Restart prompt
+
+Paste this into a fresh session started inside the worktree
+`/tmp/termrock-verify` (or start anywhere, then `cd /tmp/termrock-verify`):
+
+> Work in the git worktree `/tmp/termrock-verify` on branch
+> `wip/junie-showcase-loop-2026-09-05` (already pushed to origin; head
+> `6b8ad9db`). Read `HANDOFF.md` and `PROGRESS.md` in that directory first —
+> they are the authority. Resume task #4: drive the fail-first shots loop
+> (`DUMP_SHOT=1 JUNIE_SHOTS=/tmp/newscenes/scenes cargo test -p
+> termrock-catalog --test shots fail_first_shots_five_artifacts`) to green by
+> fixing the current failure — cursor-row Numeric cell (109,11) in
+> `f_settings_members` must paint BOLD — then follow `HANDOFF.md` "Remaining
+> work, in order": delete the temp probes, promote `/tmp/newscenes` goldens
+> into `verify/junie/reference/`, run the full gate, commit with `git commit
+> -s`, push, and merge PR #50. Conventions: caveman ultra-terse replies, `rtk`
+> command prefix (`rtk proxy` for raw output), DCO signoff, no legacy code.
+> The loop command and every derived source-true behavior are documented in
+> `HANDOFF.md`; do not re-derive them.
+
 ## Mission
 
 Session goal (user, verbatim): *"Spawn subagents and commit and push everyting
