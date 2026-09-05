@@ -3,12 +3,12 @@
  ▎≡ Query 1 ×                                                                                                       +
  ─━━━━━━━━━━━━─────────────────────────────────────────────────────────────────────────────────────────────────────────
  ╭─ Explorer ─────── public ─╮ ╭─ Query 1 ─────────────────────────────────────────────────────────────────────────  ─╮
- │                           │ │  ▎› 1  UPDATE orders SET status = 'paid' WHERE id = 'x'                              │
- │ ▎ Filter objects          │ │  ▎                                                                                   │
- │ ▎▾ D acme_prod            │ │  ▎                                                                                   │
- │ ▎  ▾ S public             │ │  ▎                                                                                   │
- │ ▎    ▾ Tables          7  │ │  ▎                                                                                   │
- │ ▎      ▸ T organizations  │ │  ▎                                                                                   │
+ │                           │ │  ▎›  1 UPDATE orders SET status = 'paid' WHERE id = 'x'                              │
+ │ ▎ Filter objects          │ │                                                                                      │
+ │ ▎▾ D acme_prod            │ │                                                                                      │
+ │ ▎  ▾ S public             │ │                                                                                      │
+ │ ▎    ▾ Tables          7  │ │                                                                                      │
+ │ ▎      ▸ T organizations  │ │                                                                                      │
  │ ▎      ▸ T customers╭────────────────────────────────────────────────────────────────────────╮                     │
  │ ▎      ▸ T products │                                                                        │                     │
  │ ▎      ▸ T orders   │  Execute write query?                                                  │                     │

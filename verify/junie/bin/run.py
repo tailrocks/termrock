@@ -382,7 +382,8 @@ def write_report(results, opts):
         counts["SKIP" if r["status"] == "pending-termrock-scene" else r["status"]] += 1
 
     report = {
-        "junie_commit": json.loads((ROOT / "reference" / "manifest.json").read_text()).get("junie_commit")
+        "junie_commit": json.loads((ROOT / "reference" / "manifest.json").read_text())
+        .get("source_sha", "unknown")[:7]
         if (ROOT / "reference" / "manifest.json").exists() else "unknown",
         "termrock_commit": git("rev-parse", "--short", "HEAD"),
         "generated_at": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),

@@ -314,7 +314,6 @@ pub struct GridPage {
     pending: Pending,
     undo: Vec<UndoAction>,
     commit_ticks: u8,
-    saved: u32,
     preview: bool,
     preview_facts: Vec<Prop>,
     preview_code: Vec<String>,
@@ -349,8 +348,9 @@ impl GridPage {
             DataColumn::new("mrr", "mrr", DataColumnWidth::Fixed(7))
                 .kind(ColumnKind::Numeric)
                 .sortable(),
-            // Bool cells use Junie's five-cell fit: `active` becomes `acti…`.
-            DataColumn::new("active", "active", DataColumnWidth::Fixed(5)).editable(),
+            // Bool cells clamp to five, but a header never ellipsises below
+            // its own name: 6 + 2 = 8 wins over the Bool max of 5.
+            DataColumn::new("active", "active", DataColumnWidth::Fixed(8)).editable(),
             DataColumn::new("renewed_at", "renewed_at", DataColumnWidth::Fixed(12)).editable(),
             DataColumn::new("notes", "notes", DataColumnWidth::Fixed(27)).editable(),
         ]);
@@ -374,7 +374,6 @@ impl GridPage {
             pending: Pending::new(),
             undo: Vec::new(),
             commit_ticks: 0,
-            saved: 0,
             preview: false,
             preview_facts: Vec::new(),
             preview_code: Vec::new(),
@@ -746,7 +745,6 @@ impl GridPage {
                 self.loaded = self.rows.len();
                 self.pending = Pending::new();
                 self.undo.clear();
-                self.saved += n as u32;
                 self.row_error = None;
                 self.commit_ticks = 0;
                 self.sync_load();
@@ -1004,10 +1002,10 @@ impl Page for GridPage {
             || ctx.interaction.focused(SAVE);
         let focused = ctx.interaction.focused(GRID) || bar_focus;
         let h = area.height.min(30);
-        let pending = !self.pending.is_empty();
         // Junie computes the card meta before DataGrid sets the scroll
         // viewport, so the first TestBackend frame is `rows 1–0 of 40`.
         let meta = self.position_label();
+        let pending = !self.pending.is_empty();
         let (inner, bg) = layout::card(
             Rect::new(area.x, area.y, area.width, h),
             buf,
@@ -1126,26 +1124,6 @@ impl Page for GridPage {
             }
         }
 
-        let hy = area.y.saturating_add(h).saturating_add(1);
-        if hy < area.bottom() {
-            let help = if pending {
-                format!(
-                    "Enter edits · Space selects · s sorts · + inserts · - deletes · p previews SQL · Ctrl+S saves · seats over 500 are rejected on save · saved so far: {}",
-                    self.saved
-                )
-            } else {
-                format!(
-                    "p previews SQL · Ctrl+S saves · seats over 500 are rejected on save · saved so far: {}",
-                    self.saved
-                )
-            };
-            buf.set_string(
-                area.x.saturating_add(2),
-                hy,
-                &text::truncate(&help, usize::from(area.width.saturating_sub(2))),
-                t.muted(),
-            );
-        }
         ctx.inert = saved_inert;
         if overlay {
             self.dialog.set_open(true);

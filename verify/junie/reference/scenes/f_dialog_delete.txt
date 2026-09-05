@@ -17,14 +17,14 @@
 ▎› Dialogs                  Nothi│                                                    │
 ▎  Progress                      │  Delete branch?                                    │
 ▎  Scrolling                     │                                                    │
-                                 │  feat/rate-limit has 14 commits that are not on    │
-   Screens                       │  main. This cannot be undone.                      │
-▎  Settings                      │                                                    │
-▎  Task runner                   │                          ▎Cancel  ▎Delete branch   │
+▎  Code editor                   │  feat/rate-limit has 14 commits that are not on    │
+▎  Data grid                     │  main. This cannot be undone.                      │
+▎  Chips & selects               │                                                    │
+▎  Pickers                       │                          ▎Cancel  ▎Delete branch   │
                                  │                                                    │
-                                 ╰────────────────────────────────────────────────────╯
-
-
+   Screens                       ╰────────────────────────────────────────────────────╯
+▎  Settings
+▎  Task runner
 
 
 

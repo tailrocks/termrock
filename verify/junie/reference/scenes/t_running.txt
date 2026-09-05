@@ -1,21 +1,21 @@
- ▪  TablePro  Production  ◆ production  acme_prod › public  safe           ⠼ running 320 ms  truecolor · 120×40  ? help
+ ▪  TablePro  Production  ◆ production  acme_prod › public  safe            ⠋ running <1 ms  truecolor · 120×40  ? help
 
  ▎≡ Query 1 ×                                                                                                       +
  ─━━━━━━━━━━━━─────────────────────────────────────────────────────────────────────────────────────────────────────────
  ╭─ Explorer ─────── public ─╮ ╭─ Query 1 ─────────────────────────────────────────────────────────────────────────  ─╮
- │                           │ │  ▎⠼ 1  …ROM orders WHERE status = 'pending' ORDER BY total_amount DESC LIMIT 40      │
- │ ▎ Filter objects          │ │  ▎                                                                                   │
- │ ▎▾ D acme_prod            │ │  ▎                                                                                   │
- │ ▎  ▾ S public             │ │  ▎                                                                                   │
- │ ▎    ▾ Tables          7  │ │  ▎                                                                                   │
- │ ▎      ▸ T organizations  │ │  ▎                                                                                   │
- │ ▎      ▸ T customers      │ │  ▎                                                                                   │
- │ ▎      ▸ T products  312  │ │  ▎                                                                                   │
- │ ▎      ▸ T orders         │ │  ▎                                                                                   │
- │ ▎      ▸ T order_items    │ │  ▎                                                                                   │
- │ ▎      ▸ T payments       │ │                                                                     ln 1/1 · col 82  │
+ │                           │ │  ▎⠋  1 SELECT * FROM events                                                          │
+ │ ▎ Filter objects          │ │                                                                                      │
+ │ ▎▾ D acme_prod            │ │                                                                                      │
+ │ ▎  ▾ S public             │ │                                                                                      │
+ │ ▎    ▾ Tables          7  │ │                                                                                      │
+ │ ▎      ▸ T organizations  │ │                                                                                      │
+ │ ▎      ▸ T customers      │ │                                                                                      │
+ │ ▎      ▸ T products  312  │ │                                                                                      │
+ │ ▎      ▸ T orders         │ │                                                                                      │
+ │ ▎      ▸ T order_items    │ │                                                                                      │
+ │ ▎      ▸ T payments       │ │                                                                     ln 1/1 · col 21  │
  │ ▎      ▸ T subscriptions  │ │                                                                                      │
- │ ▎    ▸ Views           2  │ │   ⠼ running 320 ms · Esc cancels                                                     │
+ │ ▎    ▸ Views           2  │ │   ⠋ running <1 ms · Esc cancels                                                      │
  │ ▎    ▸ Functions       1  │ │                                                                                      │
  │ ▎    ▸ Sequences       1  │ │                                                                                      │
  │ ▎  ▸ S analytics          │ │                                                                                      │
@@ -37,4 +37,4 @@
  │                           │ │                                                                                      │
  ╰───────────────────────────╯ ╰──────────────────────────────────────────────────────────────────────────────────────╯
 
- Esc Cancel query  Tab Next                                                                     Connected to Production
+  EDIT   Esc Cancel query                                                                       Connected to Production

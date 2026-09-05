@@ -223,24 +223,26 @@ impl Page for PanelsPage {
         self.prose
             .set_content_size(rrows[0].width, prose_lines.len() as u16);
         self.prose.set_viewport(rrows[0].width, prose_view);
-        self.prose_view = prose_view;
-        let (inner, bg) = layout::framed(rrows[0], buf, t, Some("Framed · split pane"), pf);
+        // The source reads the position label before its panel render updates
+        // the scroll state, so the label mirrors the previous paint.
         let pos = crate::layout::overflow_label(
             usize::from(self.prose.offset_y()),
             usize::from(self.prose_view),
             prose_lines.len(),
         );
-        if !pos.is_empty() {
-            let meta = format!(" {pos} ");
-            let mw = text::width(&meta) as u16;
-            if rrows[0].width > mw + 4 {
-                buf.set_string(
-                    rrows[0].right().saturating_sub(mw + 2),
-                    rrows[0].y,
-                    &meta,
-                    t.faint().bg(t.canvas),
-                );
-            }
+        self.prose_view = prose_view;
+        let (inner, bg) = layout::framed(rrows[0], buf, t, Some("Framed · split pane"), pf);
+        // Framed panels paint `Some(meta)` as ` {meta} ` even when meta is
+        // empty, which leaves a two-cell gap before the corner.
+        let meta = format!(" {pos} ");
+        let mw = text::width(&meta) as u16;
+        if rrows[0].width > mw + 4 {
+            buf.set_string(
+                rrows[0].right().saturating_sub(mw + 2),
+                rrows[0].y,
+                &meta,
+                t.faint().bg(bg),
+            );
         }
         self.prose.set_viewport(inner.width, inner.height);
         let bars = ScrollArea::new(ctx.system).focused(pf);
@@ -282,17 +284,18 @@ impl Page for PanelsPage {
         self.log
             .set_content_size(log_area.width, self.log_lines.len() as u16);
         self.log.set_viewport(log_area.width, log_view);
+        // Same previous-paint label contract as the prose pane above.
+        let pos = crate::layout::overflow_label(
+            usize::from(self.log.offset_y()),
+            usize::from(self.log_view),
+            self.log_lines.len(),
+        );
         self.log_view = log_view;
         let follow = if self.log.is_following() {
             "following"
         } else {
             ""
         };
-        let pos = crate::layout::overflow_label(
-            usize::from(self.log.offset_y()),
-            usize::from(self.log_view),
-            self.log_lines.len(),
-        );
         let meta = if follow.is_empty() {
             pos
         } else if pos.is_empty() {
@@ -412,9 +415,5 @@ impl Page for PanelsPage {
         } else {
             vec![("↑ ↓", "Scroll"), ("PgUp PgDn", "Page"), ("g G", "Ends")]
         }
-    }
-
-    fn page_hints_when_nav(&self) -> bool {
-        true
     }
 }

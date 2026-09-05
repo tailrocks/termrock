@@ -14,11 +14,11 @@
 ▎  Dialogs             ▎      integration              ▎Cancel
 ▎  Progress            ▎      e2e
 ▎  Scrolling           ▎  ▾ deploy
-▎  Settings            ▎      staging                  Log
-▎› Task runner         ▎      production
-                       ▎▾ shared-libs                    lint: step 1 of 12  │
-                       ▎    compile                      compile: step 2 of… │
-                       ▎    publish                      lint: step 3 of 12  ┃
-
+▎  Code editor         ▎      staging                  Log
+▎  Data grid           ▎      production
+▎  Chips & selects     ▎▾ shared-libs                    lint: step 1 of 12  │
+▎  Pickers             ▎    compile                      compile: step 2 of… │
+▎  Settings            ▎    publish                      lint: step 3 of 12  ┃
+▎› Task runner
 
  ↑ ↓ Move  Enter Open  Tab Into page  q Quit                   Pipeline running

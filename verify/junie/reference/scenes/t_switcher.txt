@@ -4,29 +4,29 @@
  ─━━━━━━━━━━━━─────────────────────────────────────────────────────────────────────────────────────────────────────────
  ╭─ Explorer ─────── public ─╮ ╭─ Query 1 ─────────────────────────────────────────────────────────────────────────  ─╮
  │                           │ │  ▎   1 Type SQL. Ctrl+R runs the statement under the cursor.                         │
- │ ▎ Filter objects          │ │  ▎                                                                                   │
- │ ▎▾ D acme_pro╭──────────────────────────────────────────────────────────────────────────────────────╮              │
- │ ▎  ▾ S public│ Open Quickly                                                         All · Tab scope │              │
- │ ▎    ▾ Tables│ ▎ ord                                                                                │              │
- │ ▎      ▸ T or│                                                                                      │              │
- │ ▎      ▸ T cu│ ▎T order_items                            public · Production       Tables         ┃ │              │
- │ ▎      ▸ T pr│ ▎T orders                                 public · Production                      ┃ │              │
- │ ▎      ▸ T or│ ▎V order_totals_by_day                    public · Production       Views          ┃ │              │
- │ ▎      ▸ T or│ ▎Q ALTER TABLE orders ADD COLUMN is_gif…  Development · 1 d ago     Recent queries ┃ │              │
- │ ▎      ▸ T pa│ ▎Q EXPLAIN ANALYZE SELECT * FROM orders…  Production · 15 min ago                  ┃ │              │
- │ ▎      ▸ T su│ ▎Q SELECT * FROM customers ORDER BY cre…  Production · 40 min ago                  ┃ │              │
- │ ▎    ▸ Views │ ▎Q SELECT * FROM orders WHERE status = …  Production · 4 min ago                   ┃ │              │
- │ ▎    ▸ Functi│ ▎Q SELECT * FROM ordres                   Production · 1 h ago                     ┃ │              │
- │ ▎    ▸ Sequen│ ▎Q SELECT count(*) FROM orders WHERE cr…  Production · 12 min ago                  ┃ │              │
- │ ▎  ▸ S analyt│ ▎Q SELECT day, revenue, refunds FROM an…  Production · 3 h ago                     ┃ │              │
- │ ▎  ▸ S audit │ ▎Q UPDATE orders SET status = 'shipped'…  Production · 58 min ago                  ┃ │              │
- │              │ ▎Q SELECT * FROM payments WHERE status …  Production · 1 d ago                     ┃ │              │
- │              │ ▎Q DELETE FROM audit.login_attempts WHE…  Development · 5 h ago                    │ │              │
- │              │ ↑↓ Move · Enter Open · Alt+Enter New tab · Tab Scope · Esc Clear / Close             │              │
- │              ╰──────────────────────────────────────────────────────────────────────────────────────╯              │
- │                           │ │                                                                                      │
- │                           │ │              Ctrl+R runs the statement under the cursor · Alt+R runs all             │
- │                           │ │                                                                                      │
+ │ ▎ Filter objects          │ │                                                                                      │
+ │ ▎▾ D acme_prod            │ │                                                                                      │
+ │ ▎  ▾ S public             │ │                                                                                      │
+ │ ▎    ▾ Tables          7  │ │                                                                                      │
+ │ ▎      ▸ T organizations  │ │                                                                                      │
+ │ ▎      ▸ T customers      │ ▎Open quickly                                                                          │
+ │ ▎      ▸ T products  312  │                                                                                        │
+ │ ▎      ▸ T orders         │  ▎ Filter tables, tabs, queries          All · Tab scope                               │
+ │ ▎      ▸ T order_items    │                                                                                        │
+ │ ▎      ▸ T payments       │                                                                                        │
+ │ ▎      ▸ T subscriptions  │  ▎› change_log                       audit · Production ┃                              │
+ │ ▎    ▸ Views           2  │  ▎  customers                       public · Production ┃                              │
+ │ ▎    ▸ Functions       1  │  ▎  daily_revenue                analytics · Production ┃                              │
+ │ ▎    ▸ Sequences       1  │  ▎  events                       analytics · Production ┃                              │
+ │ ▎  ▸ S analytics          │  ▎  login_attempts                   audit · Production │                              │
+ │ ▎  ▸ S audit              │  ▎  order_items                     public · Production │                              │
+ │                           │  ▎  orders                          public · Production │                              │
+ │                           │  ▎  organizations                   public · Production │                              │
+ │                           │  ▎  payments                        public · Production │                              │
+ │                           │  ▎  products                        public · Production │                              │
+ │                           │  ▎  subscriptions                   public · Production │                              │
+ │                           │  ▎  active_customers                public · Production │   Alt+R runs all             │
+ │                           │                                                                                        │
  │                           │ │                                                                                      │
  │                           │ │                                                                                      │
  │                           │ │                                                                                      │
@@ -37,4 +37,4 @@
  │                           │ │                                                                                      │
  ╰───────────────────────────╯ ╰──────────────────────────────────────────────────────────────────────────────────────╯
 
-                                                                                                Connected to Production
+ Esc Close  Enter Confirm                                                                       Connected to Production

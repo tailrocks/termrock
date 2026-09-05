@@ -821,3 +821,20 @@ rather than a port, say so in the scenario's `note`.
 * tablepro `keys` choreography for per-tab states.
 * Pillow (or a Pillow-bearing interpreter) on CI/dev machines if the advisory
   pixel layer is ever wanted locally.
+
+## Addendum — 2026-09-05: scenes are replay exports, not tmux captures
+
+The sections above describe the regime this investigation designed and the
+tmux-based capture flow originally planned for `reference/scenes/`. That flow
+was never the durable truth: the checked-in scene artifacts were regenerated
+on 2026-09-05 as deterministic exports of the canonical catalog replay
+(`termrock-catalog capture`), and `reference/manifest.json` records
+replay-export provenance accordingly. `bin/ref_capture.sh`,
+`bin/_capture_all.py`, `bin/_manifest.py`, and `bin/shim/tmux` are removed.
+The manifest shape at line ~421 (`junie_commit`, `captured_at` per scene) and
+the per-scene provenance note at line ~677 are historical; scenes now carry
+`cols`, `rows`, `events`, `evidence`, and digests only, with the event
+authority in `crates/termrock-catalog/src/scenarios.rs`. Live source anchoring
+is the `verify/junie/source-headless/` goldens read by
+`crates/termrock-catalog/tests/parity.rs`; the scenes gate is a frozen-snapshot
+drift tripwire.

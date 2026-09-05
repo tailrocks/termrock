@@ -4,7 +4,7 @@
 ▎  Overview
                            ▎customers                            rows 1–24 of 40 loaded · ~4,812 total · cols 1–6 of 8
    Components
-▎  Buttons                        ⚷ id       customer                   plan          seats      mrr  acti…       2›
+▎  Buttons                        ⚷ id       customer                   plan          seats      mrr  active      2›
 ▎  Inputs                   ▎ • 1 1001       Northwind Traders          enterprise      600    57.00  true           ┃
 ▎  Text areas               ▎ • 2 1002       Blue Yonder Airlines       team             12  1920.00  true           ┃
 ▎  Forms                    ▎   3 1003       Contoso Pharmaceuticals    pro              12   348.00  true           ┃
@@ -33,7 +33,7 @@
                              • 2 pending 2 updates                                     ▎Preview SQL  ▎Discard  ▎Save
 
 
-                            Enter edits · Space selects · s sorts · + inserts · - deletes · p previews SQL · Ctrl+S sav…
+
 
 
 

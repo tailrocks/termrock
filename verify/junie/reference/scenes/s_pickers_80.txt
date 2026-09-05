@@ -3,19 +3,19 @@
 ▎  Overv│ Open quickly                                 All · Tab scope │ searc…
 ▎  Butto│ ▎ Files and tasks…                                           │
 ▎  Input│                                                              │
-▎  Text │ ▎F Cargo.toml                            Cargo.toml  Files ┃ │
-▎  Forms│ ▎F README.md                                    README.md  ┃ │
-▎  Lists│ ▎F architecture.md                   docs/architecture.md  ┃ │
-▎  Trees│ ▎F auth.rs                                src/api/auth.rs  ┃ │ scop…
-▎  Table│ ▎F auth_flow.rs                        tests/auth_flow.rs  │ │
-▎  Edita│ ▎F billing.rs                          src/api/billing.rs  │ │
-▎  Panel│ ▎F checkout.rs                          tests/checkout.rs  │ │
-▎  Sideb│ ▎F config.rs                                src/config.rs  │ │
-▎  Dialo│ ▎F dispatch.rs               src/api/webhooks/dispatch.rs  │ │
-▎  Progr│ ▎F lib.rs                                      src/lib.rs  │ │
-▎  Scrol│ ▎F mailer.rs                        src/workers/mailer.rs  │ │
-▎  Code │ ▎F main.rs                                    src/main.rs  │ │
-▎  Data │ ▎F migrations.rs                     src/db/migrations.rs  │ │Histo…
+▎  Text │ ▎F Cargo.toml                  Cargo.toml            Files ┃ │
+▎  Forms│ ▎F README.md                   README.md                   ┃ │
+▎  Lists│ ▎F architecture.md             docs/architecture.md        ┃ │
+▎  Trees│ ▎F auth.rs                     src/api/auth.rs             ┃ │ scop…
+▎  Table│ ▎F auth_flow.rs                tests/auth_flow.rs          │ │
+▎  Edita│ ▎F billing.rs                  src/api/billing.rs          │ │
+▎  Panel│ ▎F checkout.rs                 tests/checkout.rs           │ │
+▎  Sideb│ ▎F config.rs                   src/config.rs               │ │
+▎  Dialo│ ▎F dispatch.rs                 src/api/webhooks/dis…       │ │
+▎  Progr│ ▎F lib.rs                      src/lib.rs                  │ │
+▎  Scrol│ ▎F mailer.rs                   src/workers/mailer.rs       │ │
+▎  Code │ ▎F main.rs                     src/main.rs                 │ │
+▎  Data │ ▎F migrations.rs               src/db/migrations.rs        │ │Histo…
 ▎  Chips│ ↑↓ Move · Enter Open · Alt+Enter New tab · Tab Scope · Esc … │
 ▎› Picke╰──────────────────────────────────────────────────────────────╯
 ▎  Settings

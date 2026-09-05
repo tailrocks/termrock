@@ -3,16 +3,16 @@
  ▎≡ Query 1 ×                                                                                                       +
  ─━━━━━━━━━━━━─────────────────────────────────────────────────────────────────────────────────────────────────────────
  ╭─ Explorer ─────── public ─╮ ╭─ Query 1 ─────────────────────────────────────────────────────────────────── 402 ms ─╮
- │                           │ │  ▎› 1  …CT * FROM orders WHERE notes LIKE '%gift%' ORDER BY created_at LIMIT 10      │
- │ ▎ Filter objects          │ │  ▎                                                                                   │
- │ ▎▾ D acme_prod            │ │  ▎                                                                                   │
- │ ▎  ▾ S public             │ │  ▎                                                                                   │
- │ ▎    ▾ Tables          7  │ │  ▎                                                                                   │
- │ ▎      ▸ T organizations  │ │  ▎                                                                                   │
- │ ▎      ▸ T customers      │ │  ▎                                                                                   │
- │ ▎      ▸ T products  312  │ │  ▎                                                                                   │
- │ ▎      ▸ T orders         │ │  ▎                                                                                   │
- │ ▎      ▸ T order_items    │ │  ▎                                                                                   │
+ │                           │ │  ▎›  1 …CT * FROM orders WHERE notes LIKE '%gift%' ORDER BY created_at LIMIT 10      │
+ │ ▎ Filter objects          │ │                                                                                      │
+ │ ▎▾ D acme_prod            │ │                                                                                      │
+ │ ▎  ▾ S public             │ │                                                                                      │
+ │ ▎    ▾ Tables          7  │ │                                                                                      │
+ │ ▎      ▸ T organizations  │ │                                                                                      │
+ │ ▎      ▸ T customers      │ │                                                                                      │
+ │ ▎      ▸ T products  312  │ │                                                                                      │
+ │ ▎      ▸ T orders         │ │                                                                                      │
+ │ ▎      ▸ T order_items    │ │                                                                                      │
  │ ▎      ▸ T payments       │ │                                                                                      │
  │ ▎      ▸ T subscriptions  │ │                                                                                      │
  │ ▎    ▸ Views           2  │ │  ▎EXPLAIN ANALYZE ×                                                                  │

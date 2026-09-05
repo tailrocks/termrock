@@ -17,14 +17,14 @@
 ▎  Dialogs                                           │      ▎  Row 011               │       146.52s  info   Resolv… │
 ▎  Progress                 Each step is visible.    │      ▎  Row 012               │       146.89s  info   Fetchi… │
 ▎› Scrolling                You can pause, redirect, │      ▎  Row 013               │       147.26s  info   Compil… │
-                            or take over at any      │      ▎  Row 014       flagged │       147.63s  info   Compil… │
-   Screens                  point, and every change  │      ▎  Row 015               │       148.00s  warn   unused… │
-▎  Settings                 lands as an ordinary     │      ▎  Row 016               │       148.37s  info   Compil… │
-▎  Task runner              diff in your working     │      ▎  Row 017               │       148.74s  info   Runnin… │
+▎  Code editor              or take over at any      │      ▎  Row 014       flagged │       147.63s  info   Compil… │
+▎  Data grid                point, and every change  │      ▎  Row 015               │       148.00s  warn   unused… │
+▎  Chips & selects          lands as an ordinary     │      ▎  Row 016               │       148.37s  info   Compil… │
+▎  Pickers                  diff in your working     │      ▎  Row 017               │       148.74s  info   Runnin… │
                             tree.                    │      ▎  Row 018               │       149.11s  info   test a… │
-                                                     │      ▎  Row 019               │       149.48s  info   test d… │
-                            The design system in     │      ▎  Row 020               │       149.85s  error  test c… │
-                            this prototype exists so │      ▎  Row 021       flagged │       150.22s  info   test w… │
+   Screens                                           │      ▎  Row 019               │       149.48s  info   test d… │
+▎  Settings                 The design system in     │      ▎  Row 020               │       149.85s  error  test c… │
+▎  Task runner              this prototype exists so │      ▎  Row 021       flagged │       150.22s  info   test w… │
                             that the terminal        │      ▎  Row 022               │       150.59s  info   Linkin… │
                             version of that          │      ▎  Row 023               │       150.96s  info   Resolv… │
                             experience feels as      │      ▎  Row 024               │       151.33s  info   Fetchi… │

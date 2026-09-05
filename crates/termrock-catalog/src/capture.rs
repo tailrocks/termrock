@@ -37,9 +37,9 @@ pub struct Artifacts {
 /// crossterm backend.
 ///
 /// `TestBackend` stores explicit cursor moves, but does not advance its cursor
-/// while Ratatui flushes cell updates. The source `.cursor` artifact comes
-/// from tmux after those updates, so hidden cursors still carry the position
-/// left by the final `Print`. Track that position here instead of importing
+/// while Ratatui flushes cell updates. A real terminal applies the final
+/// `Print` position even when the cursor is hidden, so exported `.cursor`
+/// artifacts carry that position. Track it here instead of importing
 /// coordinates from a fixture.
 struct CursorTrackingBackend {
     inner: TestBackend,
@@ -68,9 +68,9 @@ impl CursorTrackingBackend {
         self.visible
     }
 
-    /// Mouse reports leave tmux's cursor at the reported terminal cell even
-    /// when the application redraw does not write that cell. Preserve that
-    /// terminal-side position for source-shot cursor parity.
+    /// Mouse reports leave the terminal cursor at the reported cell even when
+    /// the application redraw does not write that cell. Preserve that
+    /// terminal-side position for cursor-artifact parity.
     fn set_input_cursor(&mut self, position: Position) {
         self.cursor = position;
     }
@@ -359,7 +359,7 @@ pub fn replay(scenario: &Scenario) -> Artifacts {
 }
 
 fn replay_catalog(scenario: &Scenario, page: crate::catalog::PageId) -> Artifacts {
-    let nav = crate::catalog::reference_nav_for_scene(scenario.id);
+    let nav = crate::catalog::SOURCE_NAV.to_vec();
     let mut app = App::new_with_nav(
         CatalogProfile::JunieReference,
         ColorCapability::Truecolor,

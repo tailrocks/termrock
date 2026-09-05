@@ -11,20 +11,20 @@
 ▎› Lists                    ▎  Python                ┃      ▎  src/db/sche… generated
 ▎  Trees                    ▎  Kotlin                ┃      ▎  tests/checkout.rs  new
 ▎  Tables                   ▎  Go                    ┃      ▎  Cargo.lock      locked
-▎  Editable tables          ▎  Java                  ┃      ▎  docs/webhook… modified       No results for “retry”
+▎  Editable tables          ▎  Java                  ┃      ▎  docs/webhook… modified         No results for “retry”
 ▎  Panels                   ▎  Swift                 ┃      ▎  src/workers/… modified
 ▎  Sidebars                 ▎  C#                    ┃      ▎  src/config.rs modified
 ▎  Dialogs                  ▎  Ruby                  │      ▎  README.md     modified
 ▎  Progress                 ▎  Scala                 │      ▎  src/main.rs   modified
 ▎  Scrolling                ▎  Elixir                │      ▎  tests/auth_flow.rs new
-                            ▎  Haskell               │      ▎  src/db/pool.… modified
-   Screens                  ▎  Zig                   │
+▎  Code editor              ▎  Haskell               │      ▎  src/db/pool.… modified
+▎  Data grid                ▎  Zig                   │
+▎  Chips & selects
+▎  Pickers
+
+   Screens
 ▎  Settings
 ▎  Task runner
-
-
-
-
 
 
 

@@ -11104,6 +11104,158 @@
       "strike": false
     },
     {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        17,
+        17,
+        17
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false,
+      "italic": false,
+      "strike": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        17,
+        17,
+        17
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false,
+      "italic": false,
+      "strike": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        17,
+        17,
+        17
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false,
+      "italic": false,
+      "strike": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        17,
+        17,
+        17
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false,
+      "italic": false,
+      "strike": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        17,
+        17,
+        17
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false,
+      "italic": false,
+      "strike": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        255,
+        255,
+        255
+      ],
+      "bg": [
+        17,
+        17,
+        17
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false,
+      "italic": false,
+      "strike": false
+    },
+    {
+      "ch": "u",
+      "fg": [
+        77,
+        77,
+        77
+      ],
+      "bg": [
+        17,
+        17,
+        17
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false,
+      "italic": false,
+      "strike": false
+    },
+    {
+      "ch": "n",
+      "fg": [
+        77,
+        77,
+        77
+      ],
+      "bg": [
+        17,
+        17,
+        17
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false,
+      "italic": false,
+      "strike": false
+    },
+    {
       "ch": "s",
       "fg": [
         77,
@@ -11200,158 +11352,6 @@
     },
     {
       "ch": "d",
-      "fg": [
-        77,
-        77,
-        77
-      ],
-      "bg": [
-        17,
-        17,
-        17
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false,
-      "italic": false,
-      "strike": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        77,
-        77,
-        77
-      ],
-      "bg": [
-        17,
-        17,
-        17
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false,
-      "italic": false,
-      "strike": false
-    },
-    {
-      "ch": "b",
-      "fg": [
-        77,
-        77,
-        77
-      ],
-      "bg": [
-        17,
-        17,
-        17
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false,
-      "italic": false,
-      "strike": false
-    },
-    {
-      "ch": "y",
-      "fg": [
-        77,
-        77,
-        77
-      ],
-      "bg": [
-        17,
-        17,
-        17
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false,
-      "italic": false,
-      "strike": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        77,
-        77,
-        77
-      ],
-      "bg": [
-        17,
-        17,
-        17
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false,
-      "italic": false,
-      "strike": false
-    },
-    {
-      "ch": "i",
-      "fg": [
-        77,
-        77,
-        77
-      ],
-      "bg": [
-        17,
-        17,
-        17
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false,
-      "italic": false,
-      "strike": false
-    },
-    {
-      "ch": "d",
-      "fg": [
-        77,
-        77,
-        77
-      ],
-      "bg": [
-        17,
-        17,
-        17
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false,
-      "italic": false,
-      "strike": false
-    },
-    {
-      "ch": " ",
-      "fg": [
-        77,
-        77,
-        77
-      ],
-      "bg": [
-        17,
-        17,
-        17
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false,
-      "italic": false,
-      "strike": false
-    },
-    {
-      "ch": "▴",
       "fg": [
         77,
         77,
@@ -14279,9 +14279,9 @@
     {
       "ch": "I",
       "fg": [
-        255,
-        255,
-        255
+        128,
+        128,
+        128
       ],
       "bg": [
         17,
@@ -14298,9 +14298,9 @@
     {
       "ch": "D",
       "fg": [
-        255,
-        255,
-        255
+        128,
+        128,
+        128
       ],
       "bg": [
         17,
@@ -14317,28 +14317,9 @@
     {
       "ch": " ",
       "fg": [
-        255,
-        255,
-        255
-      ],
-      "bg": [
-        17,
-        17,
-        17
-      ],
-      "bold": false,
-      "dim": false,
-      "underline": false,
-      "reversed": false,
-      "italic": false,
-      "strike": false
-    },
-    {
-      "ch": "▴",
-      "fg": [
-        255,
-        255,
-        255
+        128,
+        128,
+        128
       ],
       "bg": [
         17,
@@ -14355,9 +14336,28 @@
     {
       "ch": " ",
       "fg": [
-        255,
-        255,
-        255
+        128,
+        128,
+        128
+      ],
+      "bg": [
+        17,
+        17,
+        17
+      ],
+      "bold": false,
+      "dim": false,
+      "underline": false,
+      "reversed": false,
+      "italic": false,
+      "strike": false
+    },
+    {
+      "ch": " ",
+      "fg": [
+        128,
+        128,
+        128
       ],
       "bg": [
         17,

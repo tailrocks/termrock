@@ -311,7 +311,7 @@ impl CatalogSession {
                 let Host::Catalog(page) = source.host else {
                     return Err(format!("source scenario {id:?} is not a catalog page"));
                 };
-                (page, None, crate::catalog::reference_nav_for_scene(id))
+                (page, None, crate::catalog::SOURCE_NAV.to_vec())
             } else {
                 return Err(format!("unknown catalog entry {id:?}"));
             }

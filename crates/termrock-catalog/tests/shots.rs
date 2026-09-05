@@ -1,11 +1,17 @@
 // SPDX-FileCopyrightText: 2026 Alexey Zhokhov
 // SPDX-License-Identifier: Apache-2.0
 
-//! Fail-first five-artifact parity against the canonical source manifest.
+//! Fail-first five-artifact parity against the frozen replay snapshot.
 //!
-//! Source PNGs are required and decoded, but their Pillow/FreeType raster is
-//! not compared directly with TermRock's vendored raster. Pixel parity uses
-//! the source ANSI grid re-rasterized by termrock-raster.
+//! `verify/junie/reference/scenes/` holds the checked-in export of the
+//! canonical catalog replay (see `reference/manifest.json` provenance). This
+//! gate is the drift tripwire: any render, scenario, or manifest change that
+//! is not a deliberate snapshot regeneration fails here. Live source
+//! anchoring lives in `tests/parity.rs` against `verify/junie/source-headless`.
+//!
+//! Golden PNGs are required and decoded with the same vendored raster as the
+//! target. Pixel parity re-rasterizes the golden ANSI grid with
+//! termrock-raster and compares it against the rendered target PNG.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
@@ -16,16 +22,16 @@ use termrock_catalog::capture;
 use termrock_catalog::scenarios::{self, Scenario};
 
 const ARTIFACTS: [&str; 5] = ["ansi", "cursor", "txt", "html", "png"];
-const SOURCE_SCENARIO_COUNT: usize = 63;
+const SNAPSHOT_SCENARIO_COUNT: usize = 63;
 
 #[derive(serde::Deserialize)]
-struct SourceManifest {
+struct SnapshotManifest {
     artifact_set: Vec<String>,
-    scenes: BTreeMap<String, SourceScene>,
+    scenes: BTreeMap<String, SnapshotScene>,
 }
 
 #[derive(serde::Deserialize)]
-struct SourceScene {
+struct SnapshotScene {
     cols: u16,
     rows: u16,
     sha256: BTreeMap<String, String>,
@@ -44,39 +50,39 @@ fn manifest_path(dir: &Path) -> PathBuf {
         .join("manifest.json")
 }
 
-fn source_manifest(dir: &Path) -> SourceManifest {
+fn snapshot_manifest(dir: &Path) -> SnapshotManifest {
     let path = manifest_path(dir);
     let raw = std::fs::read_to_string(&path)
-        .unwrap_or_else(|e| panic!("cannot read source manifest {}: {e}", path.display()));
+        .unwrap_or_else(|e| panic!("cannot read replay manifest {}: {e}", path.display()));
     serde_json::from_str(&raw)
-        .unwrap_or_else(|e| panic!("cannot parse source manifest {}: {e}", path.display()))
+        .unwrap_or_else(|e| panic!("cannot parse replay manifest {}: {e}", path.display()))
 }
 
-fn source_ids() -> BTreeSet<&'static str> {
+fn snapshot_ids() -> BTreeSet<&'static str> {
     scenarios::ALL.iter().map(|s| s.id).collect()
 }
 
-fn validate_manifest(dir: &Path, manifest: &SourceManifest) {
+fn validate_manifest(dir: &Path, manifest: &SnapshotManifest) {
     let artifact_set: Vec<&str> = manifest.artifact_set.iter().map(String::as_str).collect();
     assert_eq!(
         artifact_set, ARTIFACTS,
-        "source manifest artifact set changed"
+        "replay manifest artifact set changed"
     );
     assert_eq!(
         scenarios::ALL.len(),
-        SOURCE_SCENARIO_COUNT,
+        SNAPSHOT_SCENARIO_COUNT,
         "replay inventory count changed"
     );
     assert_eq!(
         manifest.scenes.len(),
-        SOURCE_SCENARIO_COUNT,
-        "source manifest scene count changed"
+        SNAPSHOT_SCENARIO_COUNT,
+        "replay manifest scene count changed"
     );
 
     let manifest_ids: BTreeSet<&str> = manifest.scenes.keys().map(String::as_str).collect();
     assert_eq!(
         manifest_ids,
-        source_ids(),
+        snapshot_ids(),
         "manifest/replay scene IDs differ"
     );
 
@@ -84,11 +90,11 @@ fn validate_manifest(dir: &Path, manifest: &SourceManifest) {
         let scene = manifest
             .scenes
             .get(scenario.id)
-            .unwrap_or_else(|| panic!("source manifest missing {}", scenario.id));
+            .unwrap_or_else(|| panic!("replay manifest missing {}", scenario.id));
         assert_eq!(
             (scene.cols, scene.rows),
             (scenario.cols, scenario.rows),
-            "source manifest dimensions differ for {}",
+            "replay manifest dimensions differ for {}",
             scenario.id
         );
 
@@ -96,14 +102,14 @@ fn validate_manifest(dir: &Path, manifest: &SourceManifest) {
         let expected_digest_ids: BTreeSet<&str> = ARTIFACTS.into_iter().collect();
         assert_eq!(
             digest_ids, expected_digest_ids,
-            "source manifest digests incomplete for {}",
+            "replay manifest digests incomplete for {}",
             scenario.id
         );
         for artifact in ARTIFACTS {
             let digest = &scene.sha256[artifact];
             assert!(
                 digest.len() == 64 && digest.bytes().all(|b| b.is_ascii_hexdigit()),
-                "invalid SHA-256 for {}.{} in source manifest",
+                "invalid SHA-256 for {}.{} in replay manifest",
                 scenario.id,
                 artifact
             );
@@ -114,25 +120,25 @@ fn validate_manifest(dir: &Path, manifest: &SourceManifest) {
         let scenario = scenarios::ALL
             .iter()
             .find(|candidate| candidate.id == id)
-            .unwrap_or_else(|| panic!("source manifest scene has no replay: {id}"));
+            .unwrap_or_else(|| panic!("replay manifest scene has no scenario: {id}"));
         for artifact in ARTIFACTS {
             let bytes = read_bytes(dir, id, artifact);
             assert!(
                 !bytes.is_empty(),
-                "source artifact {}.{} is empty",
+                "snapshot artifact {}.{} is empty",
                 id,
                 artifact
             );
             if artifact == "png" {
                 if let Err(error) = termrock_raster::compare_png_pixels(&bytes, &bytes) {
-                    panic!("source artifact {id}.png is not a decodable PNG: {error}");
+                    panic!("snapshot artifact {id}.png is not a decodable PNG: {error}");
                 }
             }
         }
         assert_eq!(
             (scene.cols, scene.rows),
             (scenario.cols, scenario.rows),
-            "source manifest dimensions differ for {id}"
+            "replay manifest dimensions differ for {id}"
         );
     }
 }
@@ -147,11 +153,11 @@ fn read(dir: &Path, id: &str, ext: &str) -> String {
     let bytes = read_bytes(dir, id, ext);
     assert!(
         !bytes.is_empty(),
-        "source artifact {} is empty",
+        "snapshot artifact {} is empty",
         p.display()
     );
     String::from_utf8(bytes)
-        .unwrap_or_else(|e| panic!("source artifact {} is not UTF-8: {e}", p.display()))
+        .unwrap_or_else(|e| panic!("snapshot artifact {} is not UTF-8: {e}", p.display()))
 }
 
 fn fail(s: &Scenario, kind: &str, msg: String) -> ! {
@@ -164,46 +170,46 @@ fn fail(s: &Scenario, kind: &str, msg: String) -> ! {
 fn compare_one(dir: &Path, s: &Scenario, compare_png: bool) {
     let art = capture::replay(s);
 
-    let src_txt = read(dir, s.id, "txt");
-    if art.txt().as_bytes() != src_txt.as_bytes() {
-        let detail = first_txt_diff(&art.txt(), &src_txt)
+    let golden_txt = read(dir, s.id, "txt");
+    if art.txt().as_bytes() != golden_txt.as_bytes() {
+        let detail = first_txt_diff(&art.txt(), &golden_txt)
             .map(|(x, y, expected, actual)| {
                 format!(
-                    "first visible difference at ({x},{y}): {expected:?} != {actual:?}; ours={:?}; source={:?}",
+                    "first visible difference at ({x},{y}): {expected:?} != {actual:?}; ours={:?}; golden={:?}",
                     art.txt().lines().nth(usize::from(y)).unwrap_or(""),
-                    src_txt.lines().nth(usize::from(y)).unwrap_or("")
+                    golden_txt.lines().nth(usize::from(y)).unwrap_or("")
                 )
             })
             .unwrap_or_else(|| "line endings or trailing cells differ".to_owned());
         fail(s, "txt", format!("byte-exact mismatch: {detail}"));
     }
 
-    let src_cursor = read(dir, s.id, "cursor");
+    let golden_cursor = read(dir, s.id, "cursor");
     let ours_c = art.cursor();
-    if ours_c.as_bytes() != src_cursor.as_bytes() {
+    if ours_c.as_bytes() != golden_cursor.as_bytes() {
         fail(
             s,
             "cursor",
-            format!("expected {:?} actual {:?}", src_cursor, ours_c),
+            format!("expected {:?} actual {:?}", golden_cursor, ours_c),
         );
     }
 
-    let src_ansi = read(dir, s.id, "ansi");
-    let src_grid = parse_ansi(&src_ansi, s.cols, s.rows);
+    let golden_ansi = read(dir, s.id, "ansi");
+    let golden_grid = parse_ansi(&golden_ansi, s.cols, s.rows);
     let ours_grid = from_snapshot(&art.snapshot);
-    if let Some((x, y, why)) = src_grid.first_strict_diff(&ours_grid) {
+    if let Some((x, y, why)) = golden_grid.first_strict_diff(&ours_grid) {
         fail(s, "ansi", format!("cell ({x},{y}) {why}"));
     }
 
-    let src_html = read(dir, s.id, "html");
-    let html_grid = parse_html(&src_html, s.cols, s.rows);
+    let golden_html = read(dir, s.id, "html");
+    let html_grid = parse_html(&golden_html, s.cols, s.rows);
     if let Some((x, y, why)) = html_grid.first_strict_diff(&ours_grid) {
         fail(s, "html", format!("cell ({x},{y}) {why}"));
     }
 
-    let src_png = read_bytes(dir, s.id, "png");
-    if let Err(diff) = termrock_raster::compare_png_pixels(&src_png, &src_png) {
-        fail(s, "png", format!("decode source PNG: {diff}"));
+    let golden_png = read_bytes(dir, s.id, "png");
+    if let Err(diff) = termrock_raster::compare_png_pixels(&golden_png, &golden_png) {
+        fail(s, "png", format!("decode golden PNG: {diff}"));
     }
     let ours_png = art
         .png()
@@ -215,59 +221,59 @@ fn compare_one(dir: &Path, s: &Scenario, compare_png: bool) {
         return;
     }
 
-    let source_png =
-        termrock_raster::render_png(&src_grid.for_raster().to_buffer(), &RolePalette::junie())
-            .unwrap_or_else(|e| fail(s, "png", format!("raster source ANSI: {e}")));
-    if let Err(diff) = termrock_raster::compare_png_pixels(&source_png, &ours_png) {
+    let rerasterized =
+        termrock_raster::render_png(&golden_grid.for_raster().to_buffer(), &RolePalette::junie())
+            .unwrap_or_else(|e| fail(s, "png", format!("raster golden ANSI: {e}")));
+    if let Err(diff) = termrock_raster::compare_png_pixels(&rerasterized, &ours_png) {
         fail(s, "png", diff.to_string());
     }
 }
 
 #[test]
-fn canonical_source_manifest_contains_sixty_three_stems_and_five_artifacts() {
+fn canonical_replay_manifest_contains_sixty_three_stems_and_five_artifacts() {
     let dir = shots_dir();
-    let manifest = source_manifest(&dir);
+    let manifest = snapshot_manifest(&dir);
     validate_manifest(&dir, &manifest);
 }
 
 #[test]
-fn s_chips_idle_cell_and_cursor_match_source_shot() {
+fn s_chips_idle_cell_and_cursor_match_frozen_snapshot() {
     let dir = shots_dir();
     let s = scenarios::ALL
         .iter()
         .find(|s| s.id == "s_chips")
         .expect("s_chips");
     let art = capture::replay(s);
-    let src_txt = read(&dir, s.id, "txt");
+    let golden_txt = read(&dir, s.id, "txt");
     assert_eq!(
         art.txt().as_bytes(),
-        src_txt.as_bytes(),
-        "source text drifted"
+        golden_txt.as_bytes(),
+        "snapshot text drifted"
     );
-    let src_cursor = read(&dir, s.id, "cursor");
+    let golden_cursor = read(&dir, s.id, "cursor");
     assert_eq!(
         art.cursor().as_bytes(),
-        src_cursor.as_bytes(),
-        "source cursor drifted"
+        golden_cursor.as_bytes(),
+        "snapshot cursor drifted"
     );
-    let src = parse_ansi(&read(&dir, s.id, "ansi"), s.cols, s.rows);
+    let golden = parse_ansi(&read(&dir, s.id, "ansi"), s.cols, s.rows);
     let got = from_snapshot(&art.snapshot);
     assert!(
-        src.first_strict_diff(&got).is_none(),
-        "source ANSI grid drifted"
+        golden.first_strict_diff(&got).is_none(),
+        "snapshot ANSI grid drifted"
     );
 }
 
 #[test]
 fn fail_first_shots_five_artifacts() {
     let dir = shots_dir();
-    let manifest = source_manifest(&dir);
+    let manifest = snapshot_manifest(&dir);
     validate_manifest(&dir, &manifest);
     let compare_png = match std::env::var("TERMROCK_SHOTS_SKIP_PNG") {
         Ok(value) if value == "1" => {
             eprintln!(
                 "TERMROCK_SHOTS_SKIP_PNG=1: explicitly skipping cross-raster PNG parity; \
-                 source and target PNGs are still required and decoded"
+                 golden and target PNGs are still required and decoded"
             );
             false
         }
@@ -280,19 +286,19 @@ fn fail_first_shots_five_artifacts() {
         let s = scenarios::ALL
             .iter()
             .find(|scenario| scenario.id == id)
-            .unwrap_or_else(|| panic!("source manifest scene has no replay: {id}"));
+            .unwrap_or_else(|| panic!("replay manifest scene has no scenario: {id}"));
         compare_one(&dir, s, compare_png);
     }
 }
 
 #[test]
-fn f_80x24_taskrunner_uses_historical_source_navigation() {
+fn f_80x24_taskrunner_matches_frozen_snapshot() {
     let dir = shots_dir();
     let s = scenarios::ALL
         .iter()
         .find(|s| s.id == "f_80x24_taskrunner")
         .expect("f_80x24_taskrunner");
     let art = capture::replay(s);
-    let src = std::fs::read_to_string(dir.join("f_80x24_taskrunner.txt")).expect("src txt");
-    assert_eq!(art.txt().as_bytes(), src.as_bytes());
+    let golden = std::fs::read_to_string(dir.join("f_80x24_taskrunner.txt")).expect("golden txt");
+    assert_eq!(art.txt().as_bytes(), golden.as_bytes());
 }

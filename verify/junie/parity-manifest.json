@@ -1,16 +1,15 @@
 {
   "source_repo": "https://github.com/donbeave/terminal-components-claude",
   "source_ref": "main",
-  "source_sha": "014a07f6ade5d2732e53fcd783ff8819d43aa05b",
-  "golden_shots_last_changed_sha": "a216c7994c09c37a73ad696be711fd10491a7237",
-  "golden_shots_provenance": "main/shots last changed in a216c79; source executable is pinned to beca6d5 and checked-in selected scenes retain per-scene capture provenance in reference/manifest.json",
-  "source_behavior_selection": "checked-in shots are immutable acceptance evidence; executable/source divergence is an explicit unresolved parity failure",
+  "source_sha": "e43cf670d6cb793e5761819e8778600797bbf1aa",
+  "golden_shots_provenance": "live source anchor: verify/junie/source-headless/*_120x40.txt rendered by the source executables built from e43cf670; checked-in reference/scenes are deterministic catalog replay exports, not source captures",
+  "source_behavior_selection": "reference/scenes form the frozen replay snapshot (drift tripwire); source behavior anchoring lives in the parity gate against source-headless goldens",
   "profile": "junie-reference",
   "scenario_count": 63,
   "mapping": "scenarios.json5",
   "reference_manifest": "reference/manifest.json",
-  "event_authority": "reference/manifest.json",
+  "event_authority": "crates/termrock-catalog/src/scenarios.rs",
   "target_capture": "cargo run -q -p termrock-catalog -- capture --out DIR --scenario ID",
   "fail_first_test": "crates/termrock-catalog/tests/shots.rs::fail_first_shots_five_artifacts",
-  "note": "Metadata only. This file records no parity result and no event list. The mapping is active for all 63 source stems; reference/manifest.json owns recorded event provenance; compare_artifacts.py remains zero-tolerance."
+  "note": "Metadata only. This file records no parity result and no event list. The mapping is active for all 63 replay stems; reference/manifest.json owns digests and replay-export provenance; compare_artifacts.py remains zero-tolerance."
 }

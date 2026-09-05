@@ -12,8 +12,8 @@
 ▎  Trees                    │ Open quickly                                 All · Tab scope │
 ▎  Tables                   │ ▎ bil                                                        │
 ▎  Editable tables          │                                                              │
-▎  Panels                   │ ▎F billing.rs                     src/api/billing.rs  Files  │
-▎  Sidebars                 │ ▎T Extract billing service module      #1046 · sofia  Tasks  │
+▎  Panels                   │ ▎F billing.rs                   src/api/billing.rs    Files  │
+▎  Sidebars                 │ ▎T Extract billing service mo…  #1046 · sofia         Tasks  │
 ▎  Dialogs                  │                                                              │
 ▎  Progress                 │ ↑↓ Move · Enter Open · Alt+Enter New tab · Tab Scope · Esc … │
 ▎  Scrolling                ╰──────────────────────────────────────────────────────────────╯

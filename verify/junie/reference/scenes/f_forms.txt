@@ -17,14 +17,14 @@
 ▎  Dialogs                                                                 ▎──● Notify on completion on
 ▎  Progress                 Review                                           Managed by your organization
 ▎  Scrolling                  Reviewer  optional
-                            ▎ name@company.com
-   Screens                    Optional
+▎  Code editor              ▎ name@company.com
+▎  Data grid                  Optional
+▎  Chips & selects
+▎  Pickers
+
+   Screens
 ▎  Settings
-▎  Task runner
-
-
-
-                            ▎Create task   ▎Reset
+▎  Task runner              ▎Create task   ▎Reset
 
 
 

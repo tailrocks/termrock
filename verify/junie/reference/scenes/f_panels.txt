@@ -17,14 +17,14 @@
 ▎  Dialogs                                                                │                                          │ │
 ▎  Progress                                                               │  The design system in this prototype     │ │
 ▎  Scrolling                                                              │  exists so that the terminal version of  │ │
-                            Nested                                        │  that experience feels as deliberate as  │ │
-   Screens                                                                ╰────────────────────────────────────────────╯
-▎  Settings                 Target
-▎  Task runner              ▎  Local                                        Card · scrollable               1–13 of 60
+▎  Code editor              Nested                                        │  that experience feels as deliberate as  │ │
+▎  Data grid                                                              ╰────────────────────────────────────────────╯
+▎  Chips & selects          Target
+▎  Pickers                  ▎  Local                                        Card · scrollable               1–13 of 60
                             ▎  CLI
-                            ▎  Cloud                                           0.00s  info   Resolving workspace me… ┃
-                                                                               0.37s  info   Fetching crates.io ind… ┃
-                                                                               0.74s  info   Compiling proc-macro2 … │
+   Screens                  ▎  Cloud                                           0.00s  info   Resolving workspace me… ┃
+▎  Settings                                                                    0.37s  info   Fetching crates.io ind… ┃
+▎  Task runner                                                                 0.74s  info   Compiling proc-macro2 … │
                                                                                1.11s  info   Compiling serde v1.0.2… │
                                                                                1.48s  warn   unused import: `std::f… │
                                                                                1.85s  info   Compiling tokio v1.40.0 │

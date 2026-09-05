@@ -4,11 +4,11 @@
 ▎  Buttons
 ▎  Inputs             ▎retry.rs                                       3 blocks
 ▎  Text areas
-▎  Forms               ▎› 1  // Retry a request with exponential backoff.    ┃
-▎  Lists               ▎  2  pub async fn fetch(url: &str) -> Result<Body, E…│
-▎  Trees               ▎  3      let mut delay = 200;                        │
-▎  Tables              ▎  4      for attempt in 1..=5 {                      │
-▎  Editable tables     ▎  5          match client().get(url).await {         │
+▎  Forms               ▎›  1 // Retry a request with exponential backoff.    ┃
+▎  Lists                   2 pub async fn fetch(url: &str) -> Result<Body, E…│
+▎  Trees                   3     let mut delay = 200;                        │
+▎  Tables                  4     for attempt in 1..=5 {                      │
+▎  Editable tables         5         match client().get(url).await {         │
 ▎  Panels                                                     ln 1/26 · col 1
 ▎  Sidebars
 ▎  Dialogs             State

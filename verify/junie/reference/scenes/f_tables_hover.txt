@@ -2,9 +2,9 @@
 
    Foundations            Tables  Sort by header, hover rows, select with Enter, overflow scrolls
 ▎  Overview
-                           ▎Tasks                                                          sorted by id ▴ · 1–21 of 24
+                           ▎Tasks                                                                unsorted · 1–21 of 24
    Components
-▎  Buttons                     ID ▴   Task                      Owner    Status     Branch                  Changes …
+▎  Buttons                     ID     Task                      Owner    Status     Branch                  Changes …
 ▎  Inputs                   ▎  #1040  Add rate limiting to au…  mira     Done       feat/rate-limit              14  ┃
 ▎  Text areas               ▎  #1041  Migrate sessions table …  jonas    ▸ Running  chore/uuid-sessions          31  ┃
 ▎  Forms                    ▎  #1042  Fix flaky checkout inte…  ana      Failed     fix/checkout-flake            3  ┃
@@ -17,14 +17,14 @@
 ▎  Dialogs                  ▎  #1049  Generate API client fro…  sofia    Done       feat/api-client             118  ┃
 ▎  Progress                 ▎  #1050  Harden CSP headers        mira     Done       sec/csp                       4  ┃
 ▎  Scrolling                ▎  #1051  Speed up cold start of …  jonas    Failed     perf/worker-boot              9  ┃
-                            ▎  #1052  Localize onboarding ema…  kai      Queued     feat/i18n-emails              0  ┃
-   Screens                  ▎  #1053  Add pagination to audit…  ana      Done       feat/audit-pages             16  ┃
-▎  Settings                 ▎  #1054  Refactor retry helper i…  sofia    ▸ Running  refactor/retry               11  ┃
-▎  Task runner              ▎  #1055  Rotate signing keys qua…  mira     Queued     sec/key-rotation              0  ┃
+▎  Code editor              ▎  #1052  Localize onboarding ema…  kai      Queued     feat/i18n-emails              0  ┃
+▎  Data grid                ▎  #1053  Add pagination to audit…  ana      Done       feat/audit-pages             16  ┃
+▎  Chips & selects          ▎  #1054  Refactor retry helper i…  sofia    ▸ Running  refactor/retry               11  ┃
+▎  Pickers                  ▎  #1055  Rotate signing keys qua…  mira     Queued     sec/key-rotation              0  ┃
                             ▎  #1056  Fix timezone bug in sch…  jonas    Done       fix/tz-scheduler              7  ┃
-                            ▎  #1057  Document webhook retry …  kai      Done       docs/webhooks                 2  ┃
-                            ▎  #1058  Add dark mode to admin …  ana      Paused     feat/admin-dark              40  │
-                            ▎  #1059  Bump minimum Node to 22   sofia    Queued     chore/node-22                 0  │
+   Screens                  ▎  #1057  Document webhook retry …  kai      Done       docs/webhooks                 2  ┃
+▎  Settings                 ▎  #1058  Add dark mode to admin …  ana      Paused     feat/admin-dark              40  │
+▎  Task runner              ▎  #1059  Bump minimum Node to 22   sofia    Queued     chore/node-22                 0  │
                             ▎  #1060  Cache dependency graph …  mira     ▸ Running  perf/dep-cache               19  │
 
 

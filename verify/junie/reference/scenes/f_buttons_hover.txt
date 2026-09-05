@@ -17,14 +17,14 @@
 ▎  Dialogs                  ▎Start long job
 ▎  Progress
 ▎  Scrolling
-
-   Screens                  State matrix                                                           reference rendering
-▎  Settings
-▎  Task runner                             Primary        Secondary      Subtle         Danger
+▎  Code editor
+▎  Data grid                State matrix                                                           reference rendering
+▎  Chips & selects
+▎  Pickers                                 Primary        Secondary      Subtle         Danger
                             default        ▎ Label        ▎ Label        ▎ Label        ▎ Label
-                            hover          ▎ Label        ▎ Label        ▎ Label        ▎ Label
-                            focus          ▎ Label        ▎ Label        ▎ Label        ▎ Label
-                            focus + hover  ▎ Label        ▎ Label        ▎ Label        ▎ Label
+   Screens                  hover          ▎ Label        ▎ Label        ▎ Label        ▎ Label
+▎  Settings                 focus          ▎ Label        ▎ Label        ▎ Label        ▎ Label
+▎  Task runner              focus + hover  ▎ Label        ▎ Label        ▎ Label        ▎ Label
                             pressed        ▎ Label        ▎ Label        ▎ Label        ▎ Label
                             disabled       ▎ Label        ▎ Label        ▎ Label        ▎ Label
 

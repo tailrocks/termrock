@@ -136,8 +136,4 @@ pub trait Page {
     fn overlaying(&self) -> bool {
         false
     }
-    /// Whether the page owns footer hints while the sidebar remains selected.
-    fn page_hints_when_nav(&self) -> bool {
-        false
-    }
 }

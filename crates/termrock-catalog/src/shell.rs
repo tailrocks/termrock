@@ -182,24 +182,6 @@ impl App {
         if let Some(position) = page.capture_cursor() {
             return Some(position);
         }
-        if self.focus == Some(NAV) && page.page_hints_when_nav() {
-            let footer_x = page
-                .hints(self.focus)
-                .into_iter()
-                .fold(1_u16, |x, (key, value)| {
-                    x.saturating_add(text::width(key) as u16 + 1 + text::width(value) as u16 + 2)
-                });
-            let footer_x = if page.editing() {
-                footer_x
-            } else {
-                footer_x
-                    .saturating_add(text::width("Tab") as u16 + 1 + text::width("Next") as u16 + 2)
-            };
-            return Some(Position::new(
-                footer_x.saturating_sub(2),
-                self.size.1.saturating_sub(1),
-            ));
-        }
         None
     }
 
@@ -1009,7 +991,7 @@ impl App {
             hints.push(("Esc".into(), "Cancel".into()));
         } else if page.overlaying() {
             // Keep the dialog footer; only the status sentence is ours.
-        } else if self.focus == Some(NAV) && !page.page_hints_when_nav() {
+        } else if self.focus == Some(NAV) {
             hints.push(("↑ ↓".into(), "Move".into()));
             hints.push(("Enter".into(), "Open".into()));
             hints.push(("Tab".into(), "Into page".into()));

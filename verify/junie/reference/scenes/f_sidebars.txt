@@ -17,14 +17,14 @@
 ▎  Dialogs                ▎  K Keyboard
 ▎  Progress               ▎  A Appearance
 ▎  Scrolling
+▎  Code editor
+▎  Data grid
+▎  Chips & selects
+▎  Pickers                 ▎Collapse
 
    Screens
 ▎  Settings
-▎  Task runner             ▎Collapse
-
-
-
-
+▎  Task runner
 
 
 

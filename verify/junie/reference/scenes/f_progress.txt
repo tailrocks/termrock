@@ -17,14 +17,14 @@
 ▎  Dialogs
 ▎› Progress                 States                                                                              static
 ▎  Scrolling
-                            Queued      ───────────────────────────────────────────────────   0%
-   Screens                  Halfway     ━━━━━━━━━━━━━━━━━━━━━━━━━━─────────────────────────  50%
-▎  Settings                 Completed   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% ✓
-▎  Task runner              Failed      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━──────────────────  64% !
+▎  Code editor              Queued      ───────────────────────────────────────────────────   0%
+▎  Data grid                Halfway     ━━━━━━━━━━━━━━━━━━━━━━━━━━─────────────────────────  50%
+▎  Chips & selects          Completed   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% ✓
+▎  Pickers                  Failed      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━──────────────────  64% !
                             Paused      ━━━━━━━━━━━━━━━────────────────────────────────────  30% ‖
-
-                            Narrow bars keep the percentage and drop the label:
-                            ━━━────  42%
+   Screens
+▎  Settings                 Narrow bars keep the percentage and drop the label:
+▎  Task runner              ━━━────  42%
 
 
 

@@ -378,13 +378,12 @@ pub struct TablesPage {
 impl TablesPage {
     #[must_use]
     pub fn new() -> Self {
-        let mut tasks = tasks();
-        sort_tasks(&mut tasks, Col::Id, SortDirection::Ascending);
+        let tasks = tasks();
         Self {
             tasks,
             tasks_state: TableState::new(None),
             empty_state: TableState::new(None),
-            sort: Some((Col::Id, SortDirection::Ascending)),
+            sort: None,
             tasks_view: 0,
             capture_cursor: None,
         }

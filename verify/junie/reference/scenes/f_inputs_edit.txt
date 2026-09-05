@@ -17,14 +17,14 @@
 ▎  Dialogs
 ▎  Progress
 ▎  Scrolling                State reference                                                                     static
-
-   Screens                  default         ▎ payments-gateway
-▎  Settings                 placeholder     ▎ (feat/…)
-▎  Task runner              hover           ▎ payments-gateway
+▎  Code editor
+▎  Data grid                default         ▎ payments-gateway
+▎  Chips & selects          placeholder     ▎ (feat/…)
+▎  Pickers                  hover           ▎ payments-gateway
                             focused         ▎ payments-gateway
-                            editing         ▎ payments-gateway
-                            error           ▎ mira@example                  !
-                            error + focus   ▎ mira@example                  !
+   Screens                  editing         ▎ payments-gateway
+▎  Settings                 error           ▎ mira@example                  !
+▎  Task runner              error + focus   ▎ mira@example                  !
                             disabled        ▎ jb_live_••••
 
 

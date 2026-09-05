@@ -17,14 +17,14 @@
 ▎  Dialogs
 ▎  Progress                 ▎Invite   ▎Remove…   cursor: Jonas Weber
 ▎  Scrolling
+▎  Code editor
+▎  Data grid
+▎  Chips & selects
+▎  Pickers
 
    Screens
 ▎› Settings
 ▎  Task runner
-
-
-
-
 
 
 

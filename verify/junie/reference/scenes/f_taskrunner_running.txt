@@ -17,14 +17,14 @@
 ▎  Dialogs                  ▎      staging                  Log                                            · following
 ▎  Progress                 ▎      production
 ▎  Scrolling                ▎▾ shared-libs                  Pipeline started
-                            ▎    compile                    ▶ compile started
-   Screens                  ▎    publish                    ▶ lint started
-▎  Settings                                                   compile: step 1 of 12
-▎› Task runner                                                lint: step 1 of 12
+▎  Code editor              ▎    compile                    ▶ compile started
+▎  Data grid                ▎    publish                    ▶ lint started
+▎  Chips & selects                                            compile: step 1 of 12
+▎  Pickers                                                    lint: step 1 of 12
                                                               compile: step 2 of 12
-                                                              lint: step 3 of 12
-                                                              compile: step 3 of 12
-                                                              lint: step 5 of 12
+   Screens                                                    lint: step 3 of 12
+▎  Settings                                                   compile: step 3 of 12
+▎› Task runner                                                lint: step 5 of 12
 
 
 

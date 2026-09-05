@@ -11,10 +11,10 @@
 ▎  Lists                            │ Open tabs                                    │
 ▎  Trees                            │ ▎ Filter tabs…                               │
 ▎  Tables                   Result  │                                              │
-▎  Editable tables                  │ ▎≡ Query 1                 query  Open tabs  │
-▎  Panels                   Chosen  │ ▎T orders            public · data  active   │
-▎  Sidebars                 Detail  │ ▎T order_items               public · data   │
-▎  Dialogs                  Level   │ ▎T History                   public · data   │
+▎  Editable tables                  │ ▎≡ Query 1      query             Open tabs  │
+▎  Panels                   Chosen  │ ▎T orders       public ·… active             │
+▎  Sidebars                 Detail  │ ▎T order_items  public ·…                    │
+▎  Dialogs                  Level   │ ▎T History      public ·…                    │
 ▎  Progress                 Open tab│                                              │
 ▎  Scrolling                Pickers │ ↑↓ Move · Enter Switch · Delete Close tab ·… │
 ▎  Code editor                      ╰──────────────────────────────────────────────╯

@@ -19,7 +19,7 @@ from pathlib import Path
 SOURCE_COUNT = 63
 ATOMIC_EVENT_RE = re.compile(r"^(?:.* x[0-9]+|.*(?:\.\.\.|…))$")
 STEP_RE = re.compile(r"\bStep::([A-Za-z]+)")
-CALL_RE = re.compile(r"\b(?:cat|tp_sql|tp)\s*\(")
+CALL_RE = re.compile(r"\b(?:cat|tp_table_state|tp_table|tp_sql|tp)\s*\(")
 
 
 class ValidationError(ValueError):
@@ -171,8 +171,10 @@ def validate(manifest_path: Path, rust_path: Path) -> tuple[int, int]:
     except (OSError, json.JSONDecodeError) as error:
         raise ValidationError(f"cannot read manifest {manifest_path}: {error}") from error
 
-    if manifest.get("event_authority") != "reference/manifest.json":
-        raise ValidationError("manifest event_authority is not reference/manifest.json")
+    if manifest.get("event_authority") != "crates/termrock-catalog/src/scenarios.rs":
+        raise ValidationError(
+            "manifest event_authority is not crates/termrock-catalog/src/scenarios.rs"
+        )
     scenes = manifest.get("scenes")
     if not isinstance(scenes, dict):
         raise ValidationError("manifest scenes must be an object")

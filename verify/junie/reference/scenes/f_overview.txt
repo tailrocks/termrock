@@ -17,14 +17,14 @@
 ▎  Dialogs                      ▏ text.muted                white 50%       selection adds a marker, editing shows the
 ▎  Progress                     ▏ text.faint                white 30%       cursor.
 ▎  Scrolling                    ▏ accent                      #48e054
-                                ▏ accent.hover                #3ab343       Three planes
-   Screens                      ▏ accent.pressed              #2b8632       Canvas, surface, elevated. Depth comes
-▎  Settings                     ▏ accent.bg                 green 20%       from lightness, not borders.
-▎  Task runner                  ▏ error                       #e44545
+▎  Code editor                  ▏ accent.hover                #3ab343       Three planes
+▎  Data grid                    ▏ accent.pressed              #2b8632       Canvas, surface, elevated. Depth comes
+▎  Chips & selects              ▏ accent.bg                 green 20%       from lightness, not borders.
+▎  Pickers                      ▏ error                       #e44545
                                 ▏ warning                     #f59e09       Quiet chrome
-                                ▏ info                        #8787ff       Bold is reserved for the focused control.
-                                                                            No box around a thing unless the box
-                                                                            carries meaning.
+   Screens                      ▏ info                        #8787ff       Bold is reserved for the focused control.
+▎  Settings                                                                 No box around a thing unless the box
+▎  Task runner                                                              carries meaning.
 
 
                                                                             State language
